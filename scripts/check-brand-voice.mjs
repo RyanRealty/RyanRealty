@@ -127,6 +127,18 @@ function extractStringLiterals(src) {
 // "dynamic"). Skip them.
 const IMPORT_PATH_LINE = /(^|\s)(from|import\s*\(|require\s*\()\s*['"`]/
 
+// Framework-mechanical string VALUES that are not prose. The canonical case is
+// the Next.js route-segment-config `export const dynamic = 'force-dynamic'` —
+// the literal 'force-dynamic' contains the banned AI-filler word "dynamic", but
+// it is a Next.js API value, never user-visible copy. Matching it is a false
+// positive (it inflated the baseline across every force-dynamic admin page).
+const MECHANICAL_LITERALS = new Set([
+  'force-dynamic',
+  'force-static',
+  'force-cache',
+  'force-no-store',
+])
+
 function scanFile(absPath) {
   const relPath = normalize(relative(ROOT, absPath))
   let content
@@ -144,6 +156,8 @@ function scanFile(absPath) {
     const lineText = lines[lineNum - 1] ?? ''
     // Skip if this string literal is on an import line.
     if (IMPORT_PATH_LINE.test(lineText)) continue
+    // Skip framework-mechanical config values (e.g. Next.js 'force-dynamic').
+    if (MECHANICAL_LITERALS.has(lit.value.trim())) continue
     const lower = lit.value.toLowerCase()
     for (const word of BANNED_WORDS) {
       const re = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')

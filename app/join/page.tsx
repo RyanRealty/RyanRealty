@@ -10,7 +10,7 @@ const ogImage = `${siteUrl}/api/og?type=default`
 export const metadata: Metadata = {
   title: 'Join Our Team | Careers at Ryan Realty | Ryan Realty',
   description:
-    'Grow your real estate career with Ryan Realty. Join a passionate Bend brokerage focused on community, excellence, and results in Central Oregon.',
+    'Grow your real estate career with Ryan Realty. Join a Bend brokerage focused on community, craft, and results in Central Oregon.',
   alternates: { canonical: `${siteUrl}/join` },
   openGraph: {
     title: 'Join Our Team | Ryan Realty',
