@@ -11,6 +11,7 @@ import HideOnLP from "../components/layout/HideOnLP";
 import JsonLd from "../components/JsonLd";
 import GTMHead from "../components/GTMHead";
 import GlobalIntentTracker from "../components/GlobalIntentTracker";
+import { WebVitalsReporter } from "@/components/WebVitalsReporter";
 import AuthCodeRedirect from "../components/AuthCodeRedirect";
 import AuthErrorRedirect from "../components/AuthErrorRedirect";
 import SignUpTracker from "../components/tracking/SignUpTracker";
@@ -140,6 +141,8 @@ export default function RootLayout({
               Runs on every page including LPs because form_start on a seller
               LP is one of the strongest pre-submit intent signals we have. */}
           <GlobalIntentTracker />
+          {/* Real-user Core Web Vitals -> /api/web-vitals + GA4 (field CWV). */}
+          <WebVitalsReporter />
           <Suspense fallback={null}>
             {/* Auth + sign-up redirects do NOT run on LPs — LP visitors
                 aren't authenticating. Identity/attribution bridges DO run

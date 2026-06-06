@@ -72,6 +72,13 @@ function avgNonZeroIn(series: Series, channel: string, metric: string, scope: st
   return rows.reduce((s, r) => s + r.value, 0) / rows.length
 }
 
+// 75th percentile — the statistic Google uses for Core Web Vitals.
+function p75(values: number[]): number | null {
+  if (values.length === 0) return null
+  const sorted = [...values].sort((a, b) => a - b)
+  return sorted[Math.min(sorted.length - 1, Math.ceil(sorted.length * 0.75) - 1)]
+}
+
 function latest(series: Series, channel: string, metric: string, scope: string): { date: string; value: number } | null {
   const rows = series.get(keyOf(channel, metric, scope)) ?? []
   if (rows.length === 0) return null
@@ -140,6 +147,27 @@ async function fetchScoreboard() {
     .map(([engine, sessions]) => ({ engine, sessions }))
     .sort((a, b) => b.sessions - a.sessions)
 
+  // Real-user Core Web Vitals — field p75 over 30d (the number Google ranks on,
+  // vs the throttled lab numbers). Empty until RUM samples accumulate.
+  const { data: cwvRows } = await supabase
+    .from('web_vitals')
+    .select('metric, value')
+    .in('metric', ['LCP', 'INP', 'CLS'])
+    .gte('created_at', `${D30}T00:00:00Z`)
+    .limit(50000)
+  const cwvByMetric = new Map<string, number[]>()
+  for (const r of (cwvRows ?? []) as { metric: string; value: number | null }[]) {
+    if (typeof r.value !== 'number') continue
+    if (!cwvByMetric.has(r.metric)) cwvByMetric.set(r.metric, [])
+    cwvByMetric.get(r.metric)!.push(r.value)
+  }
+  const cwv = {
+    lcp: p75(cwvByMetric.get('LCP') ?? []),
+    inp: p75(cwvByMetric.get('INP') ?? []),
+    cls: p75(cwvByMetric.get('CLS') ?? []),
+    samples: (cwvRows ?? []).length,
+  }
+
   const series: Series = new Map()
   for (const r of [...(accountRows ?? []), ...(pipelineRows ?? [])] as (Row & { channel: string })[]) {
     if (typeof r.value !== 'number') continue
@@ -174,6 +202,7 @@ async function fetchScoreboard() {
 
   return {
     quarter: strategy?.quarter ?? null,
+    cwv,
     targets: {
       northStar: typeof strategy?.north_star_target === 'number' ? strategy.north_star_target : 18,
       sellerRank: numAt('site_health', 'organic_seller_query_rank_avg', 'target_avg_position'),
@@ -417,6 +446,24 @@ export default async function ResultsScoreboardPage() {
             <Row label="Clicks (30d)" value={data.metrics.metaClicks.cur} m={data.metrics.metaClicks} fmt={fmtInt} />
             <Row label="CTR (avg)" value={data.metrics.metaCtr.cur} m={data.metrics.metaCtr} fmt={(v) => `${v.toFixed(2)}%`} />
             <Row label="Cost per conversion" value={data.metrics.metaCpl.cur} fmt={fmtUsd1} target={data.targets.metaCpl} inverted />
+          </Panel>
+
+          <Panel title="Site speed — real users (CWV)" subtitle="field p75, last 30d — the number Google ranks on">
+            {data.cwv.samples === 0 ? (
+              <p className="py-2 text-sm text-muted-foreground">
+                Collecting. Real-user Core Web Vitals start landing as visitors load pages (just instrumented).
+                Lab tests overstate slowness under throttling — this field p75 is what actually affects ranking + UX.
+              </p>
+            ) : (
+              <>
+                <Row label="LCP — largest contentful paint" value={data.cwv.lcp} fmt={(v) => `${(v / 1000).toFixed(2)}s`} target={2500} inverted />
+                <Row label="INP — responsiveness" value={data.cwv.inp} fmt={(v) => `${Math.round(v)}ms`} target={200} inverted />
+                <Row label="CLS — layout shift" value={data.cwv.cls} fmt={(v) => v.toFixed(3)} target={0.1} inverted />
+                <p className="pt-1 text-xs text-muted-foreground">
+                  {data.cwv.samples} samples · p75 · good thresholds LCP ≤2.5s / INP ≤200ms / CLS ≤0.1
+                </p>
+              </>
+            )}
           </Panel>
 
           <p className="text-xs text-muted-foreground">
