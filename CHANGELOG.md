@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.412.0 (2026-06-06)
+
+### Features
+- feat(ai-traffic): capture + surface AI-assistant referral traffic
+
+---
+
+
 ## v1.411.1 (2026-06-06)
 
 ### Bug Fixes
