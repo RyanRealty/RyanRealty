@@ -207,7 +207,11 @@ export default async function CommunityDetailPage({ params }: Props) {
 
   const ledeParts: string[] = []
   if (activeCount > 0) {
-    ledeParts.push(`${activeCount} homes for sale in ${community.name}.`)
+    ledeParts.push(
+      `${activeCount} ${activeCount === 1 ? 'home' : 'homes'} for sale in ${community.name}, ${cityName}, Oregon.`,
+    )
+  } else {
+    ledeParts.push(`Homes for sale in ${community.name}, ${cityName}, Oregon.`)
   }
   if (medianListPrice != null) {
     const rounded = Math.round(medianListPrice / 1000) * 1000
@@ -333,7 +337,7 @@ export default async function CommunityDetailPage({ params }: Props) {
 
       {/* Hero photo + stat lede. FIX 2: communityImage() resolver. */}
       <HeroBlock
-        headline={`${community.name}, ${cityName} Oregon`}
+        headline={`Homes for Sale in ${community.name}`}
         lede={lede}
         photo={
           heroImageUrl
