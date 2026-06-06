@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.411.0 (2026-06-06)
+
+### Features
+- feat(scoreboard): honest weekly results funnel at /admin/kpi-dashboard
+
+---
+
+
 ## v1.410.6 (2026-06-06)
 
 ### Bug Fixes
