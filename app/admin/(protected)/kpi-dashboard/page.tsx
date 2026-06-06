@@ -107,7 +107,7 @@ async function fetchScoreboard() {
   // One pull: account-scope rows for the funnel channels, last 60 days. Plus the
   // campaign-scope pipeline rows (small). Aggregated in memory below.
   const FUNNEL_CHANNELS = ['gsc', 'ga4', 'fub', 'gbp', 'meta_ads']
-  const [{ data: accountRows }, { data: pipelineRows }] = await Promise.all([
+  const [{ data: accountRows }, { data: pipelineRows }, { data: aiEngineRows }] = await Promise.all([
     supabase
       .from('marketing_channel_daily')
       .select('channel, metric, scope, date, value')
@@ -121,7 +121,24 @@ async function fetchScoreboard() {
       .eq('scope', 'campaign')
       .in('metric', ['pipeline_count', 'pipeline_value'])
       .gte('date', D60),
+    // AI-assistant traffic by engine (which LLMs send visitors), last 30d.
+    supabase
+      .from('marketing_channel_daily')
+      .select('scope_id, value')
+      .eq('channel', 'ga4')
+      .eq('metric', 'ai_assistant_sessions')
+      .eq('scope', 'source')
+      .gte('date', D30),
   ])
+
+  const aiByEngine = new Map<string, number>()
+  for (const r of (aiEngineRows ?? []) as { scope_id: string; value: number | null }[]) {
+    if (typeof r.value !== 'number') continue
+    aiByEngine.set(r.scope_id, (aiByEngine.get(r.scope_id) ?? 0) + r.value)
+  }
+  const aiEngines = [...aiByEngine.entries()]
+    .map(([engine, sessions]) => ({ engine, sessions }))
+    .sort((a, b) => b.sessions - a.sessions)
 
   const series: Series = new Map()
   for (const r of [...(accountRows ?? []), ...(pipelineRows ?? [])] as (Row & { channel: string })[]) {
@@ -178,6 +195,9 @@ async function fetchScoreboard() {
       gscClicks: { cur: sum30('gsc', 'clicks'), prior: sumPrior('gsc', 'clicks') },
       gbpImpressions: { cur: gbpImpr(D30, TODAY) || null, prior: gbpImpr(D60, D30) || null },
       gbpActions: { cur: gbpActions(D30, TODAY) || null, prior: gbpActions(D60, D30) || null },
+      // AI-referred traffic — the forward-looking "future of search" signal
+      aiTraffic: { cur: sum30('ga4', 'ai_assistant_sessions'), prior: sumPrior('ga4', 'ai_assistant_sessions') },
+      aiEngines,
       // Traffic
       sessions: { cur: gaSessions30, prior: sumPrior('ga4', 'sessions') },
       newUsers: { cur: sum30('ga4', 'new_users'), prior: sumPrior('ga4', 'new_users') },
@@ -351,6 +371,21 @@ export default async function ResultsScoreboardPage() {
             <Row label="Search clicks (30d)" value={data.metrics.gscClicks.cur} m={data.metrics.gscClicks} fmt={fmtInt} />
             <Row label="Google Business impressions (30d)" value={data.metrics.gbpImpressions.cur} m={data.metrics.gbpImpressions} fmt={fmtInt} />
             <Row label="Google Business actions — calls/dir/web (30d)" value={data.metrics.gbpActions.cur} m={data.metrics.gbpActions} fmt={fmtInt} />
+          </Panel>
+
+          <Panel title="AI-referred traffic" subtitle="the future of search — which LLMs send visitors">
+            <Row label="AI-assistant sessions (30d)" value={data.metrics.aiTraffic.cur} m={data.metrics.aiTraffic} fmt={fmtInt} />
+            {data.metrics.aiEngines.length === 0 ? (
+              <p className="py-2 text-sm text-muted-foreground">
+                No AI-assistant referrals captured yet. Instrumented daily across ChatGPT, Perplexity, Gemini,
+                Claude, Copilot and 7 more engines, classified out of GA4&apos;s generic Referral bucket —
+                captured forward from today (GA4&apos;s own AI channel has no backfill).
+              </p>
+            ) : (
+              data.metrics.aiEngines.map((e) => (
+                <Row key={e.engine} label={e.engine} value={e.sessions} fmt={fmtInt} />
+              ))
+            )}
           </Panel>
 
           <Panel title="2 · Traffic" subtitle="GA4">

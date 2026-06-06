@@ -166,6 +166,26 @@ function rowsForDay(date: string, summary: Awaited<ReturnType<typeof getGA4Summa
     },
   ])
 
+  // AI-assistant referral traffic — the forward-looking "traffic through AI"
+  // signal. GA4's native AI Assistant channel (added 2026-05-13) covers only
+  // ChatGPT/Gemini/Claude and has NO backfill, so we instrument our own daily
+  // series now. d.aiReferrers (classified via lib/ai-referrers across the full
+  // engine set) gives one entry per engine; write a daily account TOTAL (even 0,
+  // so the metric never goes falsely stale) plus a per-engine breakdown so the
+  // scoreboard can show which LLMs drive traffic over time.
+  const aiTotalSessions = d.aiReferrers.reduce((sum, r) => sum + r.sessions, 0)
+  const aiRows: MetricRow[] = [
+    { ...base, scope: 'account', scope_id: '', metric: 'ai_assistant_sessions', value: aiTotalSessions },
+    ...d.aiReferrers.map((r) => ({
+      ...base,
+      scope: 'source' as const,
+      scope_id: r.engine,
+      metric: 'ai_assistant_sessions',
+      value: r.sessions,
+      metadata: { engine: r.engine, users: r.users },
+    })),
+  ]
+
   return [
     ...accountRows,
     ...sourceRows,
@@ -175,6 +195,7 @@ function rowsForDay(date: string, summary: Awaited<ReturnType<typeof getGA4Summa
     ...socialChannelRows,
     ...lpFunnelRows,
     ...eventRows,
+    ...aiRows,
   ]
 }
 
