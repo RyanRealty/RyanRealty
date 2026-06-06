@@ -113,6 +113,8 @@ export function generateBlogSchema(post: {
   slug: string
   excerpt?: string | null
   published_at?: string | null
+  updated_at?: string | null
+  image?: string | null
   author_name?: string | null
 }): Record<string, unknown> {
   return {
@@ -121,7 +123,11 @@ export function generateBlogSchema(post: {
     headline: post.title,
     url: `${SITE_URL}/blog/${encodeURIComponent(post.slug)}`,
     description: post.excerpt ?? undefined,
+    image: post.image ?? undefined,
     datePublished: post.published_at ?? undefined,
+    // dateModified drives the AI/Google recency preference; fall back to the
+    // publish date so the field is always present (no freshness cliff on edits).
+    dateModified: post.updated_at ?? post.published_at ?? undefined,
     author: post.author_name ? { '@type': 'Person', name: post.author_name } : undefined,
   }
 }

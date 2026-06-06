@@ -79,6 +79,10 @@ export default async function BlogPostPage({ params }: PageProps) {
     slug: post.slug,
     excerpt: post.excerpt,
     published_at: post.published_at,
+    updated_at: post.updated_at,
+    image: post.hero_image_url
+      ? `${siteUrl}/api/og?type=blog&id=${encodeURIComponent(post.slug)}`
+      : undefined,
     author_name: post.author_name,
   })
   const articleBody = post.content?.trim() || post.excerpt?.trim() || ''

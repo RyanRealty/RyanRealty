@@ -68,6 +68,40 @@ const CHECKS = [
       'The listing detail shell MUST emit the RealEstateListing + BreadcrumbList JSON-LD\n' +
       '  via MetadataBlock (the listing page renders this shell).',
   },
+  {
+    file: 'app/blog/[slug]/page.tsx',
+    label: 'blog: BlogPosting JSON-LD',
+    all: ['generateBlogSchema'],
+    why:
+      'Blog posts MUST emit BlogPosting JSON-LD (generateBlogSchema) so AI engines can\n' +
+      '  cite the article with author + dates.',
+  },
+  {
+    file: 'lib/structured-data.ts',
+    label: 'blog freshness: dateModified',
+    all: ['dateModified', 'generateBlogSchema'],
+    why:
+      'generateBlogSchema MUST emit dateModified — AI engines apply a steep recency\n' +
+      '  preference; without it every edited evergreen post loses its freshness signal.',
+  },
+  {
+    file: 'app/area-guides/page.tsx',
+    label: 'area-guides: breadcrumb + WebPage',
+    all: ['MetadataBlock'],
+    why: 'The area-guides index MUST emit breadcrumb + WebPage JSON-LD via MetadataBlock.',
+  },
+  {
+    file: 'app/schools/page.tsx',
+    label: 'schools index: breadcrumb + WebPage',
+    all: ['MetadataBlock'],
+    why: 'The schools index MUST emit breadcrumb + WebPage JSON-LD via MetadataBlock.',
+  },
+  {
+    file: 'app/parks/page.tsx',
+    label: 'parks index: breadcrumb + WebPage',
+    all: ['MetadataBlock'],
+    why: 'The parks index MUST emit breadcrumb + WebPage JSON-LD via MetadataBlock.',
+  },
 ]
 
 const errors = []

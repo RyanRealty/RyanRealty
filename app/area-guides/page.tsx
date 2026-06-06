@@ -8,6 +8,7 @@ import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { RelatedAreas, type RelatedAreaItem } from '@/components/site/RelatedAreas'
 import { Section, Container, H2 } from '@/components/site/primitives'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { Button } from '@/components/ui/button'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -54,6 +55,24 @@ export default async function AreaGuidesPage() {
 
   return (
     <main className="min-h-screen bg-background">
+      <MetadataBlock
+        schemas={[
+          {
+            type: 'breadcrumb',
+            items: [
+              { name: 'Home', url: '/' },
+              { name: 'Area guides', url: '/area-guides' },
+            ],
+          },
+          {
+            type: 'webPage',
+            name: 'Central Oregon area guides',
+            description:
+              'Explore Central Oregon by city and community — Bend, Redmond, Sisters, Sunriver, and beyond, with market trends and homes for sale in every area.',
+            url: '/area-guides',
+          },
+        ]}
+      />
       <ContentPageHero
         title="Discover Central Oregon"
         subtitle="From Bend and Redmond to Sisters, Sunriver, and beyond. Explore neighborhoods, market trends, and homes for sale in every corner of the region we call home."

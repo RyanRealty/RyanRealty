@@ -24,6 +24,7 @@ export type BlogPostRow = {
   category: string | null
   hero_image_url: string | null
   published_at: string | null
+  updated_at?: string | null
   author_broker_id: string | null
   seo_title: string | null
   seo_description: string | null
@@ -101,7 +102,7 @@ export async function getBlogPostBySlug(slug: string): Promise<BlogPostWithAutho
   if (!supabase) return null
   const { data: row } = await supabase
     .from('blog_posts')
-    .select('id, title, slug, content, excerpt, category, tags, hero_image_url, published_at, author_broker_id, seo_title, seo_description')
+    .select('id, title, slug, content, excerpt, category, tags, hero_image_url, published_at, updated_at, author_broker_id, seo_title, seo_description')
     .eq('slug', slug)
     .eq('status', 'published')
     .single()
