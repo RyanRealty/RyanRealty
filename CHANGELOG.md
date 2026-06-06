@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.409.2 (2026-06-06)
+
+### Bug Fixes
+- fix(design-tokens): clear arbitrary Tailwind on shipped pages
+
+### Other
+- brand(email): canonical email tokens + G37 gate to lock them
+- §0: cut unverifiable Pronghorn condo stat from golf LP
+
+---
+
+
 ## v1.409.1 (2026-06-05)
 
 ### Other
