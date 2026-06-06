@@ -19,6 +19,10 @@
  * FUB /v1/people also carries tags from the broader seller pipeline
  * (seller, seller-lead) which are included in the qualified-seller-lead
  * count so organic leads from outside the FB funnel are captured too.
+ *
+ * Buyers are measured the same way via qualified_buyer_leads (buyer:hot /
+ * buyer:warm + explicit buyer-intent tags) so the scoreboard tracks buyer
+ * demand alongside the seller north-star. See BUYER_LEAD_TAGS below.
  */
 import { NextRequest, NextResponse } from 'next/server'
 import {
@@ -72,6 +76,43 @@ function isSellerLead(tags: string[] | null | undefined): boolean {
   for (const raw of tags) {
     if (typeof raw !== 'string') continue
     if (SELLER_LEAD_TAGS.has(raw.toLowerCase().trim())) return true
+  }
+  return false
+}
+
+// Canonical buyer-lead tags — the buyer mirror of SELLER_LEAD_TAGS, so the
+// scoreboard measures buyers as honestly as sellers (Matt directive 2026-06-06:
+// seller leads stay the primary focus, but go after buyers aggressively too).
+// The canonical tagger + the buyer LP (app/lp/buyer-listing-alerts) apply
+// `audience:buyer` to every buyer plus `buyer:<tier>`. We count the QUALIFIED
+// tiers (hot/warm) plus explicit buyer-intent/lead tags that arrive from outside
+// the LP funnel (organic contact form, pre-canonical leads). We deliberately
+// EXCLUDE the low-intent ones so the buyer north-star is not inflated:
+//   - `audience:buyer`  (carried by nurture leads too)
+//   - `buyer:nurture`   (not yet qualified)
+//   - `buyer-soft` / `buyer-intent-soft` (passive: guide download, not a request)
+//   - bare `buyer` / `buyers` (generic content/audience tags, not lead signals)
+// Comparison is case-insensitive (see isBuyerLead).
+const BUYER_LEAD_TAGS = new Set<string>([
+  // Canonical schema — qualified tiers only
+  'buyer:hot',
+  'buyer:warm',
+  // Explicit lead / strong-intent tags (organic + pre-canonical paths). The
+  // strong `buyer-intent` (showing-request, custom-alerts) is included; the
+  // passive `buyer-intent-soft` is not.
+  'buyer-lead',
+  'buyer lead',
+  'buyer intent',
+  'buyer-intent',
+  'hot buyer',
+  'warm buyer',
+])
+
+function isBuyerLead(tags: string[] | null | undefined): boolean {
+  if (!Array.isArray(tags)) return false
+  for (const raw of tags) {
+    if (typeof raw !== 'string') continue
+    if (BUYER_LEAD_TAGS.has(raw.toLowerCase().trim())) return true
   }
   return false
 }
@@ -376,6 +417,37 @@ function buildRows(
         scope: 'source',
         scope_id: src,
         metric: 'qualified_seller_leads',
+        value: count,
+        metadata: { source: src },
+      })
+    }
+  }
+
+  // qualified_buyer_leads: the buyer mirror of the seller north-star. Same
+  // contract — ALWAYS emit the account row (0 is real data, not absence) so the
+  // scoreboard never goes falsely stale, and break down BY SOURCE only when
+  // non-zero so the brain can see which channel produces buyers.
+  const qualifiedBuyers = people.filter((p) => isBuyerLead(p.tags))
+  rows.push({
+    ...base,
+    scope: 'account',
+    scope_id: '',
+    metric: 'qualified_buyer_leads',
+    value: qualifiedBuyers.length,
+    metadata: { tags_matched: [...BUYER_LEAD_TAGS] },
+  })
+  if (qualifiedBuyers.length > 0) {
+    const buyersBySource = new Map<string, number>()
+    for (const p of qualifiedBuyers) {
+      const src = (typeof p.source === 'string' && p.source.trim()) ? p.source.trim() : 'unknown'
+      buyersBySource.set(src, (buyersBySource.get(src) ?? 0) + 1)
+    }
+    for (const [src, count] of buyersBySource) {
+      rows.push({
+        ...base,
+        scope: 'source',
+        scope_id: src,
+        metric: 'qualified_buyer_leads',
         value: count,
         metadata: { source: src },
       })

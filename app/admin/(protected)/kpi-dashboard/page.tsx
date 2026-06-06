@@ -194,6 +194,7 @@ async function fetchScoreboard() {
       .reduce((a, b) => a + b, 0)
 
   const sellerLeadsLatest = latest(series, 'fub', 'qualified_seller_leads', 'account')
+  const buyerLeadsLatest = latest(series, 'fub', 'qualified_buyer_leads', 'account')
   const gaSessions30 = sum30('ga4', 'sessions')
   const gaLeadEvents30 = sum30('ga4', 'total_lead_events')
   const metaSpend30 = sum30('meta_ads', 'spend')
@@ -214,6 +215,8 @@ async function fetchScoreboard() {
       // North star (daily counts summed to a 30d total vs the monthly target)
       sellerLeads: { cur: sum30('fub', 'qualified_seller_leads'), prior: sumPrior('fub', 'qualified_seller_leads') },
       sellerLeadsLatest,
+      buyerLeads: { cur: sum30('fub', 'qualified_buyer_leads'), prior: sumPrior('fub', 'qualified_buyer_leads') },
+      buyerLeadsLatest,
       newLeads: { cur: newLeads30, prior: sumPrior('fub', 'new_leads') },
       // Get found
       gscPosition: {
@@ -362,6 +365,8 @@ export default async function ResultsScoreboardPage() {
 
   const sellerLatest = data?.metrics.sellerLeadsLatest
   const sellerStale = !sellerLatest || sellerLatest.date < D30
+  const buyerLatest = data?.metrics.buyerLeadsLatest
+  const buyerStale = !buyerLatest || buyerLatest.date < D30
 
   return (
     <div className="space-y-5">
@@ -392,6 +397,16 @@ export default async function ResultsScoreboardPage() {
               note={sellerStale ? `refreshing — last write ${sellerLatest?.date ?? 'none'}; daily snapshot fix shipped 2026-06-06` : undefined}
             />
             <Row label="New leads, all (30d)" value={data.metrics.newLeads.cur} m={data.metrics.newLeads} fmt={fmtInt} />
+          </Panel>
+
+          <Panel title="Buyer demand — qualified buyer leads" subtitle="sellers stay the primary focus; grow buyers aggressively">
+            <Row
+              label="Qualified buyer leads (30d)"
+              value={data.metrics.buyerLeads.cur}
+              m={data.metrics.buyerLeads}
+              fmt={fmtInt}
+              note={buyerStale ? `collecting — buyer:hot/warm + buyer-intent, measured forward from 2026-06-06 (backfill pending)` : undefined}
+            />
           </Panel>
 
           <Panel title="1 · Get found" subtitle="rankings + local visibility">
