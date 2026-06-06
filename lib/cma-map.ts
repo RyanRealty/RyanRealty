@@ -46,13 +46,13 @@ const CMA_MAPS: Record<string, CmaMapPoint[]> = {
     { label: '5', color: COMP_COLOR, lat: 44.097956, lng: -121.369776 }, // 19083 Saddleback
   ],
   'cma-18705-tumalo-reservoir': [
-    { label: 'S', color: SUBJECT_COLOR, lat: 44.132914, lng: -121.391158 }, // 18705 Tumalo Reservoir Rd (from MLS)
-    { label: '1', color: COMP_COLOR, lat: 44.136500, lng: -121.383200 }, // 18313 Tumalo Reservoir Rd (~0.8 mi NE)
-    { label: '2', color: COMP_COLOR, lat: 44.139800, lng: -121.375400 }, // 18425 Pinehurst (~1.0 mi NE)
-    { label: '3', color: COMP_COLOR, lat: 44.128800, lng: -121.347200 }, // 64859 Collins Rd (~1.7 mi E)
-    { label: '4', color: COMP_COLOR, lat: 44.131200, lng: -121.322500 }, // 64145 Old Bend Redmond Hwy (~3.7 mi E)
-    { label: '5', color: COMP_COLOR, lat: 44.157600, lng: -121.267800 }, // 65799 93rd St (~6.5 mi NE)
-    { label: '6', color: COMP_COLOR, lat: 44.068400, lng: -121.234600 }, // 61955 Somerset (~10.2 mi SE)
+    { label: 'S', color: SUBJECT_COLOR, lat: 44.132914, lng: -121.391158 }, // 18705 Tumalo Reservoir Rd, subject
+    { label: '1', color: '0x1a6b3c',    lat: 44.132947, lng: -121.386319 }, // 18715 Tumalo Reservoir Rd, twin/anchor (0.2 mi, green)
+    { label: '2', color: COMP_COLOR,    lat: 44.154660, lng: -121.363658 }, // 19155 Pinehurst, dry EFUTRB entitled
+    { label: '3', color: COMP_COLOR,    lat: 44.051621, lng: -121.237722 }, // 21700 Bear Creek, no-entitlement floor
+    { label: '4', color: COMP_COLOR,    lat: 44.155179, lng: -121.406321 }, // 64859 Collins Rd, irrigated check
+    { label: '5', color: COMP_COLOR,    lat: 44.191341, lng: -121.286265 }, // 65799 93rd St, irrigated check (repeat sale)
+    { label: '6', color: COMP_COLOR,    lat: 44.066552, lng: -121.158124 }, // 23250 Walker, irrigated low for east location
   ],
 }
 

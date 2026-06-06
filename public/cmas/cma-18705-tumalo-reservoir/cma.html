@@ -21,18 +21,25 @@
     --muted: rgba(16, 39, 66, 0.62);
   }
   * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  @page { size: 8.5in 11in; margin: 0; }
   html, body {
     margin: 0; padding: 0; background: #e8e3d8;
     font-family: 'Geist', system-ui, -apple-system, sans-serif;
     color: var(--navy); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased;
   }
   .page {
-    width: 8.5in; min-height: 11in; margin: 0.4in auto;
-    background: var(--cream); padding: 0.4in 0.6in 0.85in 0.6in;
+    width: 8.5in; height: 11in; margin: 0.4in auto;
+    background: var(--cream); padding: 0.30in 0.6in 0.57in 0.6in;
     box-shadow: 0 6px 24px rgba(16, 39, 66, 0.18); position: relative;
-    page-break-after: always;
+    page-break-after: always; break-after: page; overflow: hidden;
   }
-  .page:last-child { page-break-after: auto; }
+  .page:last-child { page-break-after: auto; break-after: auto; }
+  /* Print: each .page maps to exactly one physical sheet, no margin/shadow bleed. */
+  @media print {
+    html, body { background: var(--cream); }
+    .page { margin: 0; box-shadow: none; height: 11in; overflow: hidden; }
+    .page:last-child { page-break-after: avoid; }
+  }
   .pg-header {
     display: flex; justify-content: space-between; align-items: center;
     border-bottom: 1px solid var(--navy-line); padding-bottom: 9px; margin-bottom: 14px;
@@ -51,15 +58,15 @@
   h2.section {
     font-family: 'Geist', sans-serif; font-weight: 600; font-size: 11px;
     text-transform: uppercase; letter-spacing: 0.16em; color: var(--navy);
-    margin: 0 0 10px 0; padding-bottom: 6px; border-bottom: 2px solid var(--navy); display: inline-block;
+    margin: 0 0 7px 0; padding-bottom: 6px; border-bottom: 2px solid var(--navy); display: inline-block;
   }
-  h3.subhead { font-family: 'Geist', sans-serif; font-weight: 600; font-size: 12px; color: var(--navy); margin: 10px 0 4px 0; }
-  p { font-size: 12px; line-height: 1.5; margin: 0 0 7px 0; }
+  h3.subhead { font-family: 'Geist', sans-serif; font-weight: 600; font-size: 12px; color: var(--navy); margin: 8px 0 3px 0; }
+  p { font-size: 12px; line-height: 1.46; margin: 0 0 4px 0; }
   .small { font-size: 10px; color: var(--muted); line-height: 1.5; }
   .cover-label { font-size: 10px; letter-spacing: 0.20em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
   .cover-title { font-family: 'Amboqia Boriango', serif; font-size: 54px; line-height: 0.95; color: var(--navy); margin: 0 0 5px 0; }
   .cover-sub { font-size: 15px; color: var(--navy); font-weight: 400; margin-bottom: 14px; }
-  .hero-photo { width: 100%; height: 240px; object-fit: cover; object-position: center; border-radius: 8px; background: var(--navy-fill); margin-bottom: 6px; display: block; }
+  .hero-photo { width: 100%; height: 212px; object-fit: cover; object-position: center; border-radius: 8px; background: var(--navy-fill); margin-bottom: 6px; display: block; }
   .hero-caption { font-size: 9.5px; color: var(--muted); letter-spacing: 0.06em; margin-bottom: 12px; }
   .value-block {
     background: var(--navy); color: var(--cream); padding: 20px 24px; margin: 0 0 14px 0; border-radius: 10px;
@@ -141,7 +148,7 @@
   .trace .t-hd { font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; font-weight: 600; margin-bottom: 8px; }
   .trace code { font-family: 'Geist Mono', monospace; font-size: 9.5px; background: rgba(16,39,66,0.10); padding: 1px 4px; border-radius: 3px; }
   .note-list { margin: 4px 0 6px 16px; padding: 0; }
-  .note-list li { font-size: 11px; line-height: 1.45; margin-bottom: 3px; }
+  .note-list li { font-size: 11px; line-height: 1.45; margin-bottom: 2px; }
   .flyer-badge { display: inline-block; background: var(--navy); color: var(--cream); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 11px; border-radius: 999px; margin-bottom: 7px; }
   .flyer-badge.zone-match { background: #1a6b3c; }
   .flyer-badge.zone-excl { background: #8b1a1a; }
@@ -189,10 +196,9 @@
   .caution-box .cb-head { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: #7a5c00; margin-bottom: 5px; }
   .caution-box p { font-size: 11px; margin: 0 0 4px 0; color: var(--navy); }
   .aerial-img { width: 100%; border-radius: 10px; display: block; background: var(--navy-fill); }
-  @page { size: Letter; margin: 0; }
   @media print {
-    body { background: white; margin: 0; padding: 0; }
-    .page { box-shadow: none; margin: 0; width: 8.5in; min-height: 11in; page-break-after: always; }
+    body { background: var(--cream); margin: 0; padding: 0; }
+    .page { box-shadow: none; margin: 0; width: 8.5in; height: 11in; overflow: hidden; page-break-after: always; }
     .page:last-child { page-break-after: auto; }
   }
 </style>
@@ -211,21 +217,21 @@
   <div class="cover-sub">Bend, Oregon 97703 · Tumalo · 40-Acre EFUTRB · Nonfarm-Dwelling Entitlement Confirmed · CU-09-73</div>
 
   <img class="hero-photo" src="./assets/comps/subject-aerial-800x600.jpg" alt="18705 Tumalo Reservoir Road, aerial view of treed acreage" />
-  <div class="hero-caption">Subject · 39.92 acres (Deschutes GIS confirmed) · Ponderosa Pine + Old Growth Juniper · BLM on two sides · Zoning: EFUTRB + LM + WA · Photo from 2021 MLS listing (canceled)</div>
+  <div class="hero-caption">Subject · ~40 acres (39.97 net / 40.00 gross, Parcel 2, Partition Plat 2010-04) · Ponderosa Pine + Old Growth Juniper · BLM on two sides · Zoning: EFUTRB + LM + WA · Photo from 2021 MLS listing (canceled)</div>
 
   <div class="stat-strip">
-    <div class="stat"><div class="lbl">Acres</div><div class="val">39.92</div></div>
+    <div class="stat"><div class="lbl">Acres</div><div class="val">~40 (39.97 net)</div></div>
     <div class="stat"><div class="lbl">Zoning</div><div class="val">EFUTRB · LM · WA</div></div>
     <div class="stat"><div class="lbl">Dwelling Right</div><div class="val">CU-09-73 Confirmed</div></div>
     <div class="stat"><div class="lbl">Structures</div><div class="val">2 · ~200 sf ea.</div></div>
-    <div class="stat"><div class="lbl">Well / Septic</div><div class="val">Yes / Yes</div></div>
+    <div class="stat"><div class="lbl">Well / Septic</div><div class="val">Well: Yes · Septic: not installed</div></div>
   </div>
 
   <div class="value-block">
-    <div class="vb-label">Estimated Market Value Range · Confirmed Buildable Homesite · EFUTRB Comp Basis</div>
-    <p class="vb-range">$1,000,000 to $1,320,000</p>
-    <div class="vb-detail">Based on 4 primary closed EFUTRB land sales (25-39 acres) analyzed on a per-acre basis, with full zoning-match verification via Deschutes County GIS spatial query. All comps are in the same base zone as the subject. Value range reflects adjustments for water rights (subject has none, but no-water status enables the nonfarm-dwelling pathway), BLM adjacency, existing structures and infrastructure, nonfarm-dwelling entitlement premium, and Tumalo proximity.</div>
-    <div class="vb-most-likely"><strong>Recommended list price · $1,250,000</strong> (~$31,300/acre). Anchored on the two Tumalo-proximate EFUTRB comps (Collins Rd and 93rd St, both at ~$33,600/ac). Adjusted downward for no-water and the 40-acre scale discount. Adjusted upward for the confirmed CU-09-73 entitlement and BLM privacy premium. Confirmed lower than the 2021 canceled ask by $350,000. The nonfarm-dwelling entitlement is confirmed vested per Deschutes County Declaratory Ruling 247-21-000857-DR (NOD mailed 12/13/2021, now final). Completing the dwelling proceeds through standard building and septic permits per the CU conditions of approval.</div>
+    <div class="vb-label">Supported Value Range · Confirmed Buildable Homesite · Dry EFUTRB · Twin-Anchored</div>
+    <p class="vb-range">$1,100,000 to $1,180,000</p>
+    <div class="vb-detail">The subject is dry (non-irrigated) EFUTRB, valued against dry EFUTRB comps led by the next-door twin parcel at 18715 Tumalo Reservoir Rd (39.97 ac, sold $1,030,000 in 2021, time-adjusted upward). Three converging methods produce a supported range of $1,050,000 to $1,150,000, with a point estimate near $1,100,000. Recent irrigated comps (93rd St, Collins Rd) serve as a water-adjusted current-conditions check. Bear Creek (57 ac, no entitlement, 2021) anchors the no-entitlement floor at $12,908/ac. Market trend: land values boomed 2020-22 then plateaued 2022-26; older dry comps carry a modest upward time adjustment.</div>
+    <div class="vb-most-likely"><strong>Recommended list price · $1,195,000</strong> (~$29,900/acre). Priced above the supported range to allow negotiation room; expected sale ~$1,100,000-$1,150,000. Anchored on the next-door twin (18715, $1,030,000 in 2021) time-adjusted, cross-checked against water-adjusted irrigated comps, and confirmed above the no-entitlement floor. The nonfarm-dwelling entitlement is confirmed vested per Deschutes County Declaratory Ruling 247-21-000857-DR (NOD mailed 12/13/2021, now final).</div>
   </div>
 
   <div class="presented-by">
@@ -234,7 +240,7 @@
 
   <footer class="pg-footer">
     <span>Ryan Realty · Bend · Oregon</span>
-    <span>Page 1 of 22</span>
+    <span>Page 1 of 25</span>
   </footer>
 </section>
 
@@ -251,21 +257,21 @@
     <div>
       <h3 class="subhead">At a glance</h3>
       <p>Forty acres of treed rural land in Tumalo. Ponderosa Pine and Old Growth Juniper, with BLM public land bordering two sides. Zoned Exclusive Farm Use, Tumalo-Redmond-Bend subzone (EFUTRB), with Landscape Management (LM) and Wildlife Area (WA, deer winter range) overlays. Legal Lot of Record confirmed by Deschutes County DIAL. Tax approximately $3,200/year.</p>
-      <p>The parcel is not bare land. Two permitted structures approximately 200 square feet each are on-site: a finished office with power and plumbing, and a second unfinished structure with power and water run to it. Both are corroborated by finaled county permits (electrical 2020-2021, plumbing November 2021). The nonfarm-dwelling conditional use permit (CU-09-73) was approved in 2009 and is confirmed vested per Deschutes County Declaratory Ruling 247-21-000857-DR (NOD mailed 12/13/2021). See the Zoning &amp; Entitlement page for the full analysis.</p>
+      <p>The parcel is not bare land. It carries two permitted ~200 sf structures, a domestic well, power, a gravel drive, and a confirmed nonfarm-dwelling entitlement (CU-09-73), each detailed in the inventory below and on the Zoning &amp; Entitlement page.</p>
 
       <h3 class="subhead">Infrastructure inventory</h3>
       <ul class="note-list">
         <li><strong>Office structure:</strong> ~200 sf, finished, power + plumbing (finaled permits)</li>
         <li><strong>Second structure:</strong> ~200 sf, unfinished, power + water run to it (finaled permits)</li>
-        <li><strong>Well:</strong> domestic well on-site</li>
-        <li><strong>Septic:</strong> Deschutes County approved</li>
+        <li><strong>Well:</strong> OWRD well log #58945, domestic, drilled Feb 2010, 495 ft deep, first water at 451 ft</li>
+        <li><strong>Septic:</strong> no septic system installed; site evaluation only, buyer installs (~$15-30k)</li>
         <li><strong>Power:</strong> electricity to the property (finaled electrical permits 2020, 2021)</li>
         <li><strong>Access:</strong> gravel drive from Tumalo Reservoir Rd (road-access permit 2014)</li>
         <li><strong>Dwelling entitlement:</strong> CU-09-73 nonfarm dwelling, confirmed vested per DR 247-21-000857-DR (NOD 12/13/2021, final)</li>
         <li><strong>Views:</strong> potential Cascade Mountain views with strategic tree removal, territorial views now</li>
         <li><strong>BLM adjacency:</strong> borders public land on two sides</li>
         <li><strong>Water rights:</strong> none (no irrigation, which is what enables the nonfarm-dwelling pathway under EFUTRB)</li>
-        <li><strong>Parcel:</strong> Deschutes County acct 265738 · taxlot 171103A000602 · lat 44.1329, lng -121.3912</li>
+        <li><strong>Parcel:</strong> acct 265738 · taxlot 171103A000602 · ~40 ac (39.97 net)</li>
       </ul>
     </div>
     <div>
@@ -273,9 +279,9 @@
       <p>This is a land transaction. The market prices acreage in this tier by the acre. Every comp in this analysis is evaluated on a per-acre basis, with explicit adjustments for zoning match, water rights, dwelling entitlement status, lot size, infrastructure, location, and BLM adjacency.</p>
       <p>This report uses a per-acre adjustment grid, the framework appraisers use for bare-land and rural land valuations, with three converging methods: a $/acre tier model, a comparable-anchor model, and a physical-adjustment model. All comps are verified EFUTRB (subject-matched base zone) via Deschutes County GIS spatial query.</p>
 
-      <h3 class="subhead">The value crux: no water enables the dwelling right</h3>
-      <p>Under Oregon EFU law, irrigated parcels ("high-value farmland") typically bar nonfarm dwellings. The subject's lack of irrigation water rights is precisely what kept it eligible for the nonfarm-dwelling conditional use pathway that produced CU-09-73. "No water" is not a defect that strips the parcel down to commodity EFU land. It is the condition that made the dwelling entitlement possible. A buyer must understand this duality when evaluating the adjustment for water rights in the comp grid.</p>
-      <p>The nonfarm-dwelling entitlement (CU-09-73) is confirmed vested per Deschutes County Declaratory Ruling 247-21-000857-DR — the county mailed its Notice of Decision on 12/13/2021 and the ruling is now final. This parcel is a buildable 40-acre EFUTRB homesite with BLM privacy, existing utilities, and a confirmed right to construct a dwelling. Completing the dwelling proceeds through standard building and septic permits per the CU conditions of approval.</p>
+      <h3 class="subhead">The value crux: dry EFUTRB with a confirmed dwelling right</h3>
+      <p>Under Oregon EFU law, irrigated parcels classified as "high-value farmland" typically bar nonfarm dwellings. The subject's lack of irrigation water rights is precisely what kept it eligible for the nonfarm-dwelling conditional use pathway that produced CU-09-73. Dry status is both the legal basis for the dwelling entitlement and the reason this parcel is valued against dry EFUTRB comps, not irrigated ones. A buyer evaluating irrigated comps as direct comparisons misreads the comp set.</p>
+      <p>The nonfarm-dwelling entitlement (CU-09-73) is confirmed vested per Deschutes County Declaratory Ruling 247-21-000857-DR, the county mailed its Notice of Decision on 12/13/2021 and the ruling is now final. This parcel is a buildable ~40-acre EFUTRB homesite with BLM privacy on two sides, a confirmed domestic well (OWRD #58945, 495 ft deep), and a confirmed right to construct a dwelling. Completing the dwelling requires standard building permits and septic installation, within the WA and LM road setbacks detailed on the zoning page. No floodplain, no wetlands, and no steep slope.</p>
     </div>
   </div>
 
@@ -300,7 +306,7 @@
 
   <footer class="pg-footer">
     <span>Ryan Realty · 541.213.6706</span>
-    <span>Page 2 of 22</span>
+    <span>Page 2 of 25</span>
   </footer>
 </section>
 
@@ -311,44 +317,44 @@
     <div class="pg-meta">Subject Property · Tumalo Acreage</div>
   </header>
 
-  <div class="flyer-badge">Subject · 39.92 Acres · EFUTRB + LM + WA · Nonfarm-Dwelling CU-09-73 Confirmed · Not Currently Listed</div>
+  <div class="flyer-badge">Subject · ~40 Acres (39.97 net) · EFUTRB + LM + WA · Nonfarm-Dwelling CU-09-73 Confirmed · Not Currently Listed</div>
   <h1 class="flyer-title">18705 Tumalo Reservoir Road</h1>
   <div class="flyer-sub">Bend, Oregon 97703 · Tumalo · Deschutes County Acct 265738 · Taxlot 171103A000602 · Owner: Tumalo Pines LLC</div>
 
   <img class="flyer-hero" src="./assets/comps/subject-entry-800x600.jpg" alt="18705 Tumalo Reservoir Road, treed acreage" />
 
   <div class="flyer-stats">
-    <div class="s"><div class="l">GIS Acres</div><div class="v">39.92</div></div>
+    <div class="s"><div class="l">Acres</div><div class="v">~40 (39.97 net)</div></div>
     <div class="s zone"><div class="l">Base Zone</div><div class="v">EFUTRB</div></div>
     <div class="s zone"><div class="l">Overlays</div><div class="v">LM + WA</div></div>
-    <div class="s"><div class="l">Water Rights</div><div class="v">None</div></div>
-    <div class="s featured"><div class="l">Rec. List $/ac</div><div class="v">$31,300</div></div>
+    <div class="s"><div class="l">Water Rights</div><div class="v">None (dry)</div></div>
+    <div class="s featured"><div class="l">Rec. List $/ac</div><div class="v">$29,900</div></div>
   </div>
 
-  <div class="flyer-desc">From prior MLS listings: "Rare 40 treed acres in Tumalo bordering public lands on two sides. Potential Cascade Mountain views with some strategic tree removal. New well, power to property, septic approved and gravel drive from Tumalo Reservoir Road. Extremely private and peaceful with large Ponderosa Pine trees." (2016) // "Tall Pines and Old Growth Juniper provide a private and serene location. BLM is out the back door." (2018) // Current status per county permits and owner representation: two ~200 sf structures (office finished with power and plumbing, second structure unfinished with power and water), domestic well, approved septic, gravel drive. Nonfarm-dwelling CU-09-73 confirmed vested per Declaratory Ruling 247-21-000857-DR (NOD 12/13/2021, final).</div>
+  <div class="flyer-desc">From prior MLS listings: "Rare 40 treed acres in Tumalo bordering public lands on two sides. Potential Cascade Mountain views with some strategic tree removal. New well, power to property, and gravel drive from Tumalo Reservoir Road. Extremely private and peaceful with large Ponderosa Pine trees." (2016) // "Tall Pines and Old Growth Juniper provide a private and serene location. BLM is out the back door." (2018) // Current status: two ~200 sf structures (office finished with power and plumbing, finaled permits 247-21-009185-PLM; second structure unfinished with power and water), domestic well (OWRD #58945, 495 ft deep, drilled 2010), no septic installed (site evaluation only), gravel drive. Nonfarm-dwelling CU-09-73 confirmed vested per Declaratory Ruling 247-21-000857-DR (NOD 12/13/2021, final).</div>
 
   <div class="flyer-features">
     <div class="f"><div class="fl">Last Sold</div><div class="fv">Jan 2016 · $535,000</div></div>
     <div class="f"><div class="fl">Prior List (Exp.)</div><div class="fv">~2018 · $825,000</div></div>
     <div class="f"><div class="fl">Prior List (Can.)</div><div class="fv">2021 · $1,600,000</div></div>
-    <div class="f"><div class="fl">Rec. List Price</div><div class="fv">$1,250,000 · $31,300/ac</div></div>
-    <div class="f"><div class="fl">Office Struct.</div><div class="fv">~200 sf · power + plumbing</div></div>
-    <div class="f"><div class="fl">2nd Structure</div><div class="fv">~200 sf · power + water</div></div>
-    <div class="f"><div class="fl">Well / Septic</div><div class="fv">Domestic well · county approved</div></div>
+    <div class="f"><div class="fl">Rec. List Price</div><div class="fv">$1,195,000 · $29,900/ac</div></div>
+    <div class="f"><div class="fl">Office Struct.</div><div class="fv">~200 sf · power + plumbing (finaled)</div></div>
+    <div class="f"><div class="fl">2nd Structure</div><div class="fv">~200 sf · power + water (finaled)</div></div>
+    <div class="f"><div class="fl">Well / Septic</div><div class="fv">Well: OWRD #58945, 495 ft · Septic: not installed</div></div>
     <div class="f"><div class="fl">Annual Tax</div><div class="fv">~$3,200/year</div></div>
   </div>
 
   <div class="flyer-photos">
-    <img src="./assets/comps/subject-aerial-320x240.jpg" alt="Subject — aerial treetop view" />
-    <img src="./assets/comps/subject-pines-320x240.jpg" alt="Subject — pine and juniper forest" />
+    <img src="./assets/comps/subject-aerial-320x240.jpg" alt="Subject, aerial treetop view" />
+    <img src="./assets/comps/subject-pines-320x240.jpg" alt="Subject, pine and juniper forest" />
     <img src="./assets/comps/subject-entry-320x240.jpg" alt="Subject, entry and gravel drive" />
   </div>
 
-  <p class="small" style="margin-top:7px;">Photos from prior 2016 and 2021 MLS listings. Current-condition photos needed for any new listing. Structures, permits, and entitlement status per owner representation and Deschutes County records. Zoning confirmed via Deschutes County DIAL and GIS spatial query. Legal Lot of Record status confirmed DIAL.</p>
+  <p class="small" style="margin-top:7px;">Photos from prior 2016 and 2021 MLS listings. Current-condition photos needed for any new listing. Structures, permits, and entitlement status per Deschutes County records. Well: OWRD well log #58945. Septic: no system installed per county permit records, site evaluation only, buyer installs. Zoning confirmed via Deschutes County DIAL and GIS spatial query. Legal Lot of Record status confirmed DIAL. Acreage: 39.97 net / 40.00 gross per Partition Plat 2010-04.</p>
 
   <footer class="pg-footer">
     <span>Ryan Realty · 541.213.6706</span>
-    <span>Page 3 of 22</span>
+    <span>Page 3 of 25</span>
   </footer>
 </section>
 
@@ -360,15 +366,15 @@
   </header>
 
   <h2 class="section">Subject Parcel · Aerial View with County Boundary</h2>
-  <p style="margin-bottom:10px;">Authoritative parcel boundary for taxlot 171103A000602 overlaid on satellite imagery. Boundary sourced from Deschutes County GIS (Dial2_Taxlots MapServer). Computed area 39.92 acres via GIS polygon, consistent with the county-stated ~39.95 acres. No boundary approximation used.</p>
+  <p style="margin-bottom:10px;">Authoritative parcel boundary for taxlot 171103A000602 overlaid on satellite imagery. Boundary sourced from Deschutes County GIS (Dial2_Taxlots MapServer). Parcel: ~40 acres (39.97 net / 40.00 gross per Partition Plat 2010-04). No boundary approximation used.</p>
 
-  <img src="./assets/aerial-lot-lines.png" alt="18705 Tumalo Reservoir Road — authoritative Deschutes County parcel boundary on satellite, taxlot 171103A000602, 39.92 acres" class="aerial-img" style="max-height: 7.2in; object-fit: contain;" />
+  <img src="./assets/aerial-lot-lines.png" alt="18705 Tumalo Reservoir Road, authoritative Deschutes County parcel boundary on satellite, taxlot 171103A000602, ~40 acres" class="aerial-img" style="max-height: 7.2in; object-fit: contain;" />
 
-  <p class="small" style="margin-top: 8px;">Boundary: Deschutes County GIS · Dial2_Taxlots/MapServer/0 · taxlot 171103A000602 · 11 vertices · EPSG:4326. Imagery: Google Maps satellite. Overlay: yellow (#FFFF00) 4 px outline, 19% fill. Centroid: lat 44.13495, lng -121.3896. Parcel dimensions approximately 0.40 mi east-west × 0.28 mi north-south. BLM adjacency borders visible on south and west edges.</p>
+  <p class="small" style="margin-top: 8px;">Boundary: Deschutes County GIS · Dial2_Taxlots/MapServer/0 · taxlot 171103A000602 · 11 vertices · EPSG:4326. Imagery: Google Maps satellite. Overlay: yellow (#FFFF00) 4 px outline, 19% fill. Centroid: lat 44.13495, lng -121.3896. Parcel dimensions approximately 0.40 mi east-west × 0.28 mi north-south. Parcel 2, Partition Plat 2010-04. BLM adjacency borders visible on south and west edges. Next-door twin parcel 18715 Tumalo Reservoir Rd (Parcel 1) is the primary dry EFUTRB anchor comp.</p>
 
   <footer class="pg-footer">
     <span>Source: Deschutes County GIS · Dial2_Taxlots/MapServer/0 · queried 2026-06-04 · Google satellite imagery</span>
-    <span>Page 4 of 22</span>
+    <span>Page 4 of 25</span>
   </footer>
 </section>
 
@@ -400,14 +406,16 @@
     <div>
       <div class="entitlement-box">
         <div class="eb-head">Nonfarm-Dwelling Entitlement · CU-09-73 · Confirmed Vested</div>
-        <p><strong>2009:</strong> Deschutes County approved nonfarm-dwelling Conditional Use CU-09-73 on the parcel (then Rock Springs Guest Ranch). This approval permitted construction of a single nonfarm dwelling on the non-irrigated EFUTRB land.</p>
-        <p><strong>2014 + 2015:</strong> The original owner obtained extensions of CU-09-73, keeping the entitlement alive through changes in ownership.</p>
-        <p><strong>2021:</strong> Current owner Tumalo Pines LLC filed Declaratory Ruling 247-21-000857-DR. The Deschutes County Planning Division approved the application. Notice of Decision was mailed 12/13/2021; the ruling became final approximately 12/25/2021. The county found CU-09-73 a valid existing permit with the nonfarm-dwelling land use authorized. Condition B states verbatim: "CU-09-73 is a valid existing permit and the land use described in the CU-09-73 is authorized under the County's ordinances, subject to any applicable revocation provisions."</p>
-        <p><strong>Permit chain:</strong> Finaled electrical (2020, 2021 ×2), finaled plumbing (Nov 2021), road-access permit (2014). The nonfarm-dwelling entitlement is confirmed. Completing a dwelling proceeds through standard building and septic permits per the CU conditions of approval.</p>
+        <p><strong>2009 to 2015:</strong> Deschutes County approved nonfarm-dwelling Conditional Use CU-09-73 on the parcel (then Rock Springs Guest Ranch), permitting a single nonfarm dwelling on the non-irrigated EFUTRB land. The original owner obtained extensions in 2014 and 2015, keeping it alive through ownership changes.</p>
+        <p><strong>2021, confirmed vested:</strong> Owner Tumalo Pines LLC filed Declaratory Ruling 247-21-000857-DR. The county found CU-09-73 a valid existing permit with the nonfarm-dwelling use authorized under its ordinances (NOD mailed 12/13/2021, now final). Recorded permits: finaled electrical (2020, 2021), finaled plumbing (Nov 2021), road-access permit (2014). The full verbatim findings are reproduced in the supplemental documentation.</p>
       </div>
       <div class="entitlement-box" style="margin-top:8px;">
         <div class="eb-head">Declaratory Ruling · 247-21-000857-DR · Verified</div>
-        <p>Source: Deschutes County WebLink document 1012684. Owner: Tumalo Pines LLC. Subject: 18705 Tumalo Reservoir Rd (taxlot 171103A000602, acct 265738). NOD mailed 12/13/2021. Decision read directly from the Findings and Decision, 2026-06-04. The entitlement is not pending, not conditional on any unverified step, and is not subject to binary scenario hedging in this analysis.</p>
+        <p>Source: Deschutes County WebLink document 1012684. Owner: Tumalo Pines LLC. Subject: 18705 Tumalo Reservoir Rd (taxlot 171103A000602, acct 265738). NOD mailed 12/13/2021. Decision read directly from the Findings and Decision, 2026-06-04. The entitlement is not pending, not conditional on any unverified step.</p>
+      </div>
+      <div class="caution-box" style="margin-top:8px;">
+        <div class="cb-head">Building constraints, all GIS-verified, no fatal flaws</div>
+        <p>A home is buildable. Beyond the WA 300-ft and LM 100-ft road setbacks noted above, the only items to work around are the <strong>two canal easements</strong> (Tumalo Feed Canal and Lacy Lateral) and <strong>wildfire defensible space</strong>. A buyer installs septic (~$15-30k). No floodplain, no wetlands, and no steep slope (all GIS-verified), and the prior listing identified two potential building sites.</p>
       </div>
       <div class="zoning-box" style="margin-top:8px;">
         <div class="zb-head">What EFUTRB means for the comp set</div>
@@ -418,11 +426,55 @@
 
   <footer class="pg-footer">
     <span>Sources: Deschutes County DIAL · DCC 18.16/18.84/18.88 · Deschutes County GIS spatial query · CU-09-73 · DR 247-21-000857-DR (NOD 12/13/2021, final) · F&amp;D doc 1012684</span>
-    <span>Page 5 of 22</span>
+    <span>Page 5 of 25</span>
   </footer>
 </section>
 
-<!-- PAGE 6 — COMP LOCATION MAP -->
+<!-- PAGE 6 — HUNTING, RECREATION & LANDOWNER TAGS -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">18705 Tumalo Reservoir Rd · Hunting, Recreation &amp; Landowner Tags</div>
+  </header>
+
+  <h2 class="section">Hunting, Recreation &amp; Landowner Tags</h2>
+
+  <p>For non-irrigated acreage, recreation is a real value driver, and this parcel has the profile to support it. It sits in mapped mule deer winter range, inside an active ODFW hunt unit, with public land on two sides. The figures below trace to Oregon Administrative Rules, ODFW, and Deschutes County GIS. The landowner-tag specifics sit right at the program's acreage threshold, so they should be confirmed with ODFW before they are relied upon.</p>
+
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top:10px;">
+    <div>
+      <div class="zoning-box">
+        <div class="zb-head"><span class="zoning-pill efu">Unit 34</span> Upper Deschutes Wildlife Management Unit</div>
+        <p>The parcel lies in ODFW's Upper Deschutes Unit, east of the Cascade crest, in mule deer range. The Wildlife Area overlay confirmed on the prior page designates it as part of the Tumalo Deer Winter Range, a 63,027-acre mapped winter range. That overlay governs building siting. It is not a hunting restriction.</p>
+      </div>
+      <div class="zoning-box" style="margin-top:8px;">
+        <div class="zb-head">Hunting access</div>
+        <p>The parcel is outside every Deschutes County No Shooting District, confirmed by county GIS at the parcel, so the owner and permitted guests may hunt the land with the proper ODFW licenses and tags. BLM public land borders the parcel on two sides, adding walk-in access to public ground. BLM and Forest Service roads in the winter range close seasonally in winter to protect wintering deer, which affects winter vehicle access on the public land rather than fall hunting on the parcel.</p>
+      </div>
+    </div>
+    <div>
+      <div class="entitlement-box">
+        <div class="eb-head">Landowner Preference tags</div>
+        <p>At roughly 40 acres, the parcel meets the threshold for Oregon's Landowner Preference Program. A qualifying landowner and immediate family are eligible for antlerless deer (600-series) and antlerless elk landowner tags under OAR 635-075-0001. Buck mule deer landowner tags require 160 contiguous acres and are not available at this size. Buck deer remains huntable on the parcel through a regular drawn Unit 34 controlled tag.</p>
+      </div>
+      <div class="entitlement-box" style="margin-top:8px;">
+        <div class="eb-head">An active landowner-tag unit</div>
+        <p>Unit 34 issues landowner-preference tags. ODFW's 2025 allocation listed 198 landowner buck tags plus 49 archery tags for the unit. The unit's mule deer herd is at 56% of population objective, which places it in the tighter tag tier and keeps buck tags capped.</p>
+      </div>
+      <div class="caution-box" style="margin-top:8px;">
+        <div class="cb-head">Confirm with ODFW</div>
+        <p>Recorded acreage is 40.00 gross and 39.97 net, right at the 40-acre minimum. Eligibility and current-year tag availability should be verified with ODFW's licensing and controlled-hunt desk before they are relied upon.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="pg-footer">
+    <span>Sources: OAR 635-075-0001 · ODFW Upper Deschutes Unit 34 · ODFW 2025 Landowner Preference allocation · Deschutes County GIS (No Shooting Districts · Tumalo Deer Winter Range)</span>
+    <span>Page 6 of 25</span>
+  </footer>
+</section>
+
+<!-- PAGE 7 — COMP LOCATION MAP -->
 <section class="page">
   <header class="pg-header">
     <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
@@ -430,45 +482,53 @@
   </header>
 
   <h2 class="section">Where the Comps Sit</h2>
-  <p style="margin-bottom:10px;">Four primary EFUTRB comparable land sales, all zoning-verified, mapped with the subject as the red S pin. Two supporting comps (not individually flied) shown as hollow markers. Three MUA-10 and TUR-5 parcels were excluded from the primary comp set after GIS zoning verification. Their zones allow by-right construction and subdivision, which inflates $/acre values relative to EFUTRB.</p>
+  <p style="margin-bottom:10px;">Six comparable land sales mapped with the subject as the red S pin. The next-door twin (18715) is the primary dry EFUTRB anchor. Three MUA-10 and TUR-5 parcels were excluded after GIS zoning verification, their zones allow by-right construction and subdivision, inflating $/acre vs. EFUTRB.</p>
 
-  <img src="/api/maps/cma-18705-tumalo-reservoir" alt="Tumalo acreage land comp location map" style="width:100%; height:auto; max-height:4.8in; border-radius:10px; background:var(--navy-fill); display:block; margin-bottom:10px; object-fit:cover;" />
+  <img src="/api/maps/cma-18705-tumalo-reservoir" alt="Tumalo acreage land comp location map" style="width:100%; height:auto; max-height:4.5in; border-radius:10px; background:var(--navy-fill); display:block; margin-bottom:8px; object-fit:cover;" />
 
-  <h3 class="subhead" style="margin-top:0; margin-bottom:6px;">Marker key</h3>
-  <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:5px;">
-    <div style="background:var(--navy-fill); padding:6px 9px; border-radius:5px; display:flex; gap:8px; align-items:center;">
-      <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:#b91c1c; color:white; font-size:11px; font-weight:700; flex-shrink:0;">S</span>
-      <div style="font-size:9.5px; line-height:1.25;"><strong>Subject</strong><br/>18705 Tumalo Reservoir Rd · 39.92 ac · EFUTRB</div>
+  <h3 class="subhead" style="margin-top:0; margin-bottom:5px;">Marker key</h3>
+  <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:4px;">
+    <div style="background:var(--navy-fill); padding:5px 8px; border-radius:5px; display:flex; gap:7px; align-items:center;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:#b91c1c; color:white; font-size:10px; font-weight:700; flex-shrink:0;">S</span>
+      <div style="font-size:9px; line-height:1.25;"><strong>Subject</strong><br/>18705 Tumalo Reservoir Rd · ~40 ac · EFUTRB · dry</div>
     </div>
-    <div style="background:var(--navy-fill); padding:6px 9px; border-radius:5px; display:flex; gap:8px; align-items:center;">
-      <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:11px; font-weight:600; flex-shrink:0;">1</span>
-      <div style="font-size:9.5px; line-height:1.25;"><strong>64859 Collins Rd</strong><br/>25.6 ac · EFUTRB · Sep 2025 · $860,000</div>
+    <div style="background:rgba(26,107,60,0.08); border:1px solid rgba(26,107,60,0.25); padding:5px 8px; border-radius:5px; display:flex; gap:7px; align-items:center;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:#1a6b3c; color:white; font-size:10px; font-weight:600; flex-shrink:0;">1</span>
+      <div style="font-size:9px; line-height:1.25;"><strong>18715 Tumalo Reservoir (TWIN)</strong><br/>39.97 ac · EFUTRB · dry · 3/2021 · $1,030,000 · ANCHOR</div>
     </div>
-    <div style="background:var(--navy-fill); padding:6px 9px; border-radius:5px; display:flex; gap:8px; align-items:center;">
-      <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:11px; font-weight:600; flex-shrink:0;">2</span>
-      <div style="font-size:9.5px; line-height:1.25;"><strong>65799 93rd St</strong><br/>32.69 ac · EFUTRB · May 2026 · $1,000,000</div>
+    <div style="background:var(--navy-fill); padding:5px 8px; border-radius:5px; display:flex; gap:7px; align-items:center;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:10px; font-weight:600; flex-shrink:0;">2</span>
+      <div style="font-size:9px; line-height:1.25;"><strong>19155 Pinehurst</strong><br/>19.87 ac · EFUTRB · dry · 7/2020 · $350,000</div>
     </div>
-    <div style="background:var(--navy-fill); padding:6px 9px; border-radius:5px; display:flex; gap:8px; align-items:center;">
-      <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:11px; font-weight:600; flex-shrink:0;">3</span>
-      <div style="font-size:9.5px; line-height:1.25;"><strong>61955 Somerset</strong><br/>38.96 ac · EFUTRB · Jan 2026 · $910,000</div>
+    <div style="background:rgba(139,26,26,0.06); border:1px solid rgba(139,26,26,0.15); padding:5px 8px; border-radius:5px; display:flex; gap:7px; align-items:center;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:#8b1a1a; color:white; font-size:10px; font-weight:600; flex-shrink:0;">3</span>
+      <div style="font-size:9px; line-height:1.25;"><strong>21700 Bear Creek (FLOOR)</strong><br/>57.33 ac · EFUTRB · dry · no entitlement · 5/2021 · $740,000</div>
     </div>
-    <div style="background:var(--navy-fill); padding:6px 9px; border-radius:5px; display:flex; gap:8px; align-items:center;">
-      <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:11px; font-weight:600; flex-shrink:0;">4</span>
-      <div style="font-size:9.5px; line-height:1.25;"><strong>23250 Walker</strong><br/>40.01 ac · EFUTRB · Nov 2024 · $699,900</div>
+    <div style="background:var(--navy-fill); padding:5px 8px; border-radius:5px; display:flex; gap:7px; align-items:center;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:10px; font-weight:600; flex-shrink:0;">4</span>
+      <div style="font-size:9px; line-height:1.25;"><strong>65799 93rd St</strong><br/>32.69 ac · EFUTRB · 27 ac irr. · 5/2026 · $1,000,000</div>
     </div>
-    <div style="background:rgba(139,26,26,0.06); border:1px dashed rgba(139,26,26,0.3); padding:6px 9px; border-radius:5px; display:flex; gap:8px; align-items:center;">
-      <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:#8b1a1a; color:white; font-size:9px; font-weight:600; flex-shrink:0;">X</span>
-      <div style="font-size:9px; color:var(--muted); line-height:1.25;"><strong>Excluded (wrong zone)</strong><br/>18313 Tumalo Res. (MUA-10) · 64145 Old Bend Redmond (MUA-10) · 19975 Tumalo Rd (TUR-5): build by right + subdivisible, not EFUTRB-comparable</div>
+    <div style="background:var(--navy-fill); padding:5px 8px; border-radius:5px; display:flex; gap:7px; align-items:center;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:10px; font-weight:600; flex-shrink:0;">5</span>
+      <div style="font-size:9px; line-height:1.25;"><strong>64859 Collins Rd</strong><br/>25.6 ac · EFUTRB · 20 ac irr. · 9/2025 · $860,000</div>
+    </div>
+    <div style="background:var(--navy-fill); padding:5px 8px; border-radius:5px; display:flex; gap:7px; align-items:center;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:10px; font-weight:600; flex-shrink:0;">6</span>
+      <div style="font-size:9px; line-height:1.25;"><strong>23250 Walker</strong><br/>40.01 ac · EFUTRB · 7.05 ac irr. · mfg home · 11/2024 · $699,900</div>
+    </div>
+    <div style="background:rgba(139,26,26,0.06); border:1px dashed rgba(139,26,26,0.3); padding:5px 8px; border-radius:5px; display:flex; gap:7px; align-items:center;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:#8b1a1a; color:white; font-size:8px; font-weight:600; flex-shrink:0;">X</span>
+      <div style="font-size:9px; color:var(--muted); line-height:1.25;"><strong>Excluded (wrong zone)</strong><br/>18313 Tumalo Res. (MUA-10) · 64145 Old Bend Redmond (MUA-10) · 19975 Tumalo Rd (TUR-5)</div>
     </div>
   </div>
 
   <footer class="pg-footer">
     <span>Map · Google Maps Static via Ryan Realty platform · Zoning verified Deschutes County GIS spatial query</span>
-    <span>Page 6 of 22</span>
+    <span>Page 7 of 25</span>
   </footer>
 </section>
 
-<!-- PAGE 7 — COMP SUMMARY TABLE + THUMBNAILS -->
+<!-- PAGE 8 — COMP SUMMARY TABLE + THUMBNAILS -->
 <section class="page">
   <header class="pg-header">
     <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
@@ -476,54 +536,69 @@
   </header>
 
   <h2 class="section">EFUTRB Comparable Land Sales, Per-Acre Analysis</h2>
-  <p style="margin-bottom:6px;">All primary comps are verified EFUTRB base zone via Deschutes County GIS spatial query. Three additional parcels (MUA-10 and TUR-5 zones) were considered and excluded. They are shown separately below with the reason.</p>
+  <p style="margin-bottom:5px;">Three dry EFUTRB comps (primary) + three irrigated comps (current-conditions check). All verified EFUTRB via Deschutes County GIS. Three MUA-10 and TUR-5 parcels excluded (shown below).</p>
 
-  <div class="comp-grid" style="grid-template-columns: repeat(4, 1fr);">
-    <div class="comp-card">
-      <img class="ph" src="./assets/comps/comp1-collins-320x240.jpg" alt="64859 Collins Rd" />
+  <div class="comp-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom:5px;">
+    <div class="comp-card" style="border-color:rgba(26,107,60,0.4);">
+      <img class="ph" src="./assets/comps/comp-twin-18715-320x240.jpg" alt="18715 Tumalo Reservoir" />
       <div class="body">
-        <div class="addr">64859 Collins Rd</div>
-        <div class="stats">25.6 ac · EFUTRB · irrigated · 1.7 mi · Sep 2025</div>
-        <div class="price">$860,000 <span class="when">$33,594/ac</span></div>
+        <div class="addr" style="color:#1a6b3c;">18715 Tumalo Reservoir (TWIN)</div>
+        <div class="stats">39.97 ac · dry EFUTRB · 0.2 mi · Mar 2021</div>
+        <div class="price">$1,030,000 <span class="when">$25,769/ac</span></div>
+      </div>
+    </div>
+    <div class="comp-card">
+      <img class="ph" src="./assets/comps/comp-pinehurst-320x240.jpg" alt="19155 Pinehurst" />
+      <div class="body">
+        <div class="addr">19155 Pinehurst</div>
+        <div class="stats">19.87 ac · dry EFUTRB · 7/2020 · DOM 134</div>
+        <div class="price">$350,000 <span class="when">$17,615/ac</span></div>
+      </div>
+    </div>
+    <div class="comp-card" style="border-color:rgba(139,26,26,0.3);">
+      <img class="ph" src="./assets/comps/comp-bearcreek-320x240.jpg" alt="21700 Bear Creek" />
+      <div class="body">
+        <div class="addr" style="color:#8b1a1a;">21700 Bear Creek (FLOOR)</div>
+        <div class="stats">57.33 ac · dry · no entitlement · 5/2021</div>
+        <div class="price">$740,000 <span class="when">$12,908/ac</span></div>
       </div>
     </div>
     <div class="comp-card">
       <img class="ph" src="./assets/comps/comp2-93rd-320x240.jpg" alt="65799 93rd St" />
       <div class="body">
         <div class="addr">65799 93rd St</div>
-        <div class="stats">32.69 ac · EFUTRB · irrigated · 6.5 mi · May 2026</div>
-        <div class="price">$1,000,000 <span class="when">$33,649/ac</span></div>
+        <div class="stats">32.69 ac · 27 ac irr. · 5/2026 · DOM 40</div>
+        <div class="price">$1,000,000 <span class="when">$30,590/ac</span></div>
       </div>
     </div>
     <div class="comp-card">
-      <img class="ph" src="./assets/comps/comp3-somerset-320x240.jpg" alt="61955 Somerset" />
+      <img class="ph" src="./assets/comps/comp1-collins-320x240.jpg" alt="64859 Collins Rd" />
       <div class="body">
-        <div class="addr">61955 Somerset</div>
-        <div class="stats">38.96 ac · EFUTRB · irrigated · 10.2 mi · Jan 2026</div>
-        <div class="price">$910,000 <span class="when">$25,026/ac</span></div>
+        <div class="addr">64859 Collins Rd</div>
+        <div class="stats">25.6 ac · 20 ac irr. · 9/2025 · DOM 0</div>
+        <div class="price">$860,000 <span class="when">$33,594/ac</span></div>
       </div>
     </div>
     <div class="comp-card">
-      <img class="ph" src="" alt="23250 Walker" style="background:var(--navy-fill);" />
+      <img class="ph" src="./assets/comps/comp4-walker-320x240.jpg" alt="23250 Walker" />
       <div class="body">
         <div class="addr">23250 Walker</div>
-        <div class="stats">40.01 ac · EFUTRB · no water · 9.8 mi · Nov 2024</div>
+        <div class="stats">40.01 ac · 7.05 ac irr. · mfg home · 11/2024</div>
         <div class="price">$699,900 <span class="when">$17,493/ac</span></div>
       </div>
     </div>
   </div>
 
-  <table class="comps" style="font-size:9.5px; margin-bottom:8px;">
+  <table class="comps" style="font-size:9px; margin-bottom:5px;">
     <thead>
       <tr>
-        <th style="width:24%;">Address</th>
+        <th style="width:23%;">Address</th>
         <th>Zone</th>
         <th class="num">Acres</th>
         <th>Water</th>
         <th class="num">Close $</th>
         <th class="num">$/Acre</th>
         <th class="num">Date</th>
-        <th class="num">Dist.</th>
         <th>Role</th>
       </tr>
     </thead>
@@ -531,62 +606,77 @@
       <tr class="subject">
         <td>18705 Tumalo Reservoir Rd</td>
         <td><span style="color:rgba(250,248,244,0.8);font-size:9px;">EFUTRB+LM+WA</span></td>
-        <td class="num">39.92</td>
-        <td>None</td>
-        <td class="num">$1,250,000</td>
-        <td class="num">$31,300</td>
-        <td class="num">—</td>
+        <td class="num">~40 (39.97)</td>
+        <td>None (dry)</td>
+        <td class="num">$1,195,000</td>
+        <td class="num">$29,900</td>
         <td class="num">—</td>
         <td><span style="opacity:0.8; font-size:9px;">rec. list</span></td>
       </tr>
       <tr class="anchor">
-        <td>64859 Collins Rd</td>
+        <td>18715 Tumalo Reservoir (TWIN)</td>
         <td><span class="zoning-pill efu" style="font-size:9px;">EFUTRB</span></td>
-        <td class="num">25.6</td>
-        <td>Irrigated</td>
-        <td class="num">$860,000</td>
-        <td class="num">$33,594</td>
-        <td class="num">Sep 2025</td>
-        <td class="num">1.7 mi</td>
-        <td>Best Tumalo anchor</td>
+        <td class="num">39.97</td>
+        <td>None (dry)</td>
+        <td class="num">$1,030,000</td>
+        <td class="num">$25,769</td>
+        <td class="num">Mar 2021</td>
+        <td>PRIMARY ANCHOR, next door, dry, own entitlement + barn</td>
       </tr>
-      <tr class="anchor">
+      <tr>
+        <td>19155 Pinehurst</td>
+        <td><span class="zoning-pill efu" style="font-size:9px;">EFUTRB</span></td>
+        <td class="num">19.87</td>
+        <td>None (dry)</td>
+        <td class="num">$350,000</td>
+        <td class="num">$17,615</td>
+        <td class="num">Jul 2020</td>
+        <td>Dry EFUTRB · small · entitled</td>
+      </tr>
+      <tr>
+        <td>21700 Bear Creek</td>
+        <td><span class="zoning-pill efu" style="font-size:9px;">EFUTRB</span></td>
+        <td class="num">57.33</td>
+        <td>None (dry)</td>
+        <td class="num">$740,000</td>
+        <td class="num">$12,908</td>
+        <td class="num">May 2021</td>
+        <td>NO-ENTITLEMENT FLOOR, bare, no CUP, large</td>
+      </tr>
+      <tr>
         <td>65799 93rd St</td>
         <td><span class="zoning-pill efu" style="font-size:9px;">EFUTRB</span></td>
         <td class="num">32.69</td>
-        <td>Irrigated</td>
+        <td>27 ac irr.</td>
         <td class="num">$1,000,000</td>
-        <td class="num">$33,649</td>
+        <td class="num">$30,590</td>
         <td class="num">May 2026</td>
-        <td class="num">6.5 mi</td>
-        <td>Most recent · repeat-sale trend</td>
+        <td>Most recent · irrigated check</td>
       </tr>
       <tr>
-        <td>61955 Somerset</td>
+        <td>64859 Collins Rd</td>
         <td><span class="zoning-pill efu" style="font-size:9px;">EFUTRB</span></td>
-        <td class="num">38.96</td>
-        <td>12.1 ac irr.</td>
-        <td class="num">$910,000</td>
-        <td class="num">$25,026</td>
-        <td class="num">Jan 2026</td>
-        <td class="num">10.2 mi</td>
-        <td>Best size match</td>
+        <td class="num">25.6</td>
+        <td>20 ac irr.</td>
+        <td class="num">$860,000</td>
+        <td class="num">$33,594</td>
+        <td class="num">Sep 2025</td>
+        <td>Tumalo-proximate irrigated check</td>
       </tr>
       <tr>
         <td>23250 Walker</td>
         <td><span class="zoning-pill efu" style="font-size:9px;">EFUTRB</span></td>
         <td class="num">40.01</td>
-        <td>None</td>
+        <td>7.05 ac irr.</td>
         <td class="num">$699,900</td>
         <td class="num">$17,493</td>
         <td class="num">Nov 2024</td>
-        <td class="num">9.8 mi</td>
-        <td>No-water floor anchor</td>
+        <td>Irrigated + mfg home · low for location (east)</td>
       </tr>
     </tbody>
   </table>
 
-  <p class="small" style="margin-bottom:5px;"><strong>Excluded comps, wrong zone (shown for transparency):</strong></p>
+  <p class="small" style="margin-bottom:4px;"><strong>Excluded (wrong zone):</strong></p>
   <table class="comps" style="font-size:9px;">
     <thead>
       <tr>
@@ -600,7 +690,7 @@
         <td class="num">9.63</td>
         <td class="num">$98,650</td>
         <td class="num">Apr 2025</td>
-        <td>MUA-10: builds by right, can subdivide, smaller minimum lot. Inflated $/ac vs. EFUTRB.</td>
+        <td>MUA-10: builds by right, can subdivide. Inflated $/ac vs. EFUTRB.</td>
       </tr>
       <tr class="excl">
         <td>64145 Old Bend Redmond Hwy</td>
@@ -608,7 +698,7 @@
         <td class="num">36.28</td>
         <td class="num">$53,749</td>
         <td class="num">Jan 2025</td>
-        <td>MUA-10: by-right dwelling + subdivision optionality, different buyer economics</td>
+        <td>MUA-10: by-right dwelling + subdivision optionality</td>
       </tr>
       <tr class="excl">
         <td>19975 Tumalo Rd</td>
@@ -616,135 +706,255 @@
         <td class="num">80.0</td>
         <td class="num">$43,738</td>
         <td class="num">Feb 2025</td>
-        <td>TUR-5 (Tumalo Urban Reserve, 5-ac min): subdivisible residential zone, structurally different from EFU</td>
-      </tr>
-      <tr class="excl">
-        <td>18425 Pinehurst</td>
-        <td><span style="font-size:9px; color:var(--muted);">EFUTRB</span></td>
-        <td class="num">11.0</td>
-        <td class="num">$90,818</td>
-        <td class="num">Oct 2024</td>
-        <td>EFUTRB but only 11 ac. Small-lot premium (~$91K/ac) does not extrapolate to 40-ac subject. Context only.</td>
+        <td>TUR-5: subdivisible residential, structurally different from EFU</td>
       </tr>
     </tbody>
   </table>
 
   <footer class="pg-footer">
     <span>Source: Oregon Data Share MLS via Ryan Realty platform · Zoning per Deschutes County GIS spatial query · pulled 2026-06-04</span>
-    <span>Page 7 of 22</span>
+    <span>Page 8 of 25</span>
   </footer>
 </section>
 
-<!-- PAGE 8 — PER-ACRE ADJUSTMENT GRID -->
+<!-- PAGE 9 — PER-ACRE ADJUSTMENT GRID (REBUILT) -->
 <section class="page">
   <header class="pg-header">
     <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
     <div class="pg-meta">18705 Tumalo Reservoir Rd · Per-Acre Adjustment Grid</div>
   </header>
 
-  <h2 class="section">Per-Acre Adjustment Grid · EFUTRB Comps Only</h2>
-  <p style="margin-bottom:6px;">Each comp's raw $/acre is adjusted to the subject's condition. Positive = comp is inferior to subject (subject gets a premium). Negative = comp is superior (subject is discounted). All comps are verified EFUTRB base zone. The dwelling-entitlement adjustment reflects the confirmed CU-09-73 nonfarm-dwelling right, verified per DR 247-21-000857-DR (NOD 12/13/2021, final).</p>
+  <h2 class="section">Per-Acre Adjustment Grid · 3-Indicator Reconciliation</h2>
+  <p style="margin-bottom:5px;">Three converging indicators anchor the value conclusion. The Twin (18715) is the primary dry EFUTRB anchor. Irrigated comps (93rd, Collins) are used as a water-adjusted current-conditions check. Bear Creek ($12,908/ac, no entitlement) sets the no-entitlement floor. Positive adj. = comp inferior to subject. Negative = comp superior.</p>
 
-  <table class="adj-grid">
+  <table class="adj-grid" style="font-size:9px;">
     <thead>
       <tr>
-        <th style="width:24%; text-align:left;">Comp</th>
+        <th style="width:22%; text-align:left;">Comp</th>
         <th>Zone</th>
-        <th>Raw $/Acre</th>
+        <th>Raw $/Ac</th>
+        <th>Time Adj.</th>
         <th>Size Adj.</th>
-        <th>Water Rights Adj.</th>
-        <th>Dwelling Ent. Adj.</th>
-        <th>BLM + Location Adj.</th>
-        <th>Struct. + Infra Adj.</th>
-        <th>Adj. $/Acre</th>
-        <th>Implied (40 ac)</th>
+        <th>Water Adj.</th>
+        <th>Ent. Adj.</th>
+        <th>BLM+Loc.</th>
+        <th>Barn/Struct.</th>
+        <th>Adj. $/Ac</th>
+        <th>Implied</th>
       </tr>
     </thead>
     <tbody>
+      <tr class="anchor">
+        <td><strong>18715 TWIN</strong> (39.97 ac, dry, barn, 0.2 mi, 3/2021)</td>
+        <td><span class="zoning-pill efu" style="font-size:8px;">EFUTRB</span></td>
+        <td>$25,769</td>
+        <td class="adj-pos">+$1,500</td>
+        <td class="adj-zero">$0</td>
+        <td class="adj-zero">$0</td>
+        <td class="adj-zero">$0</td>
+        <td class="adj-zero">$0</td>
+        <td class="adj-pos">+$1,400</td>
+        <td><strong>$28,669</strong></td>
+        <td>$1,146,000</td>
+      </tr>
       <tr>
-        <td><strong>Collins Rd</strong> (25.6 ac, irr., CUP/well, 1.7 mi)</td>
-        <td><span class="zoning-pill efu" style="font-size:9px;">EFUTRB</span></td>
+        <td><strong>93rd St</strong> (32.69 ac, 27 ac irr., 5/2026)</td>
+        <td><span class="zoning-pill efu" style="font-size:8px;">EFUTRB</span></td>
+        <td>$30,590</td>
+        <td class="adj-zero">$0</td>
+        <td class="adj-neg">-$700</td>
+        <td class="adj-neg">-$6,500</td>
+        <td class="adj-zero">$0</td>
+        <td class="adj-pos">+$3,000</td>
+        <td class="adj-pos">+$500</td>
+        <td><strong>$26,890</strong></td>
+        <td>$1,075,000</td>
+      </tr>
+      <tr>
+        <td><strong>Collins Rd</strong> (25.6 ac, 20 ac irr., 9/2025, 1.7 mi)</td>
+        <td><span class="zoning-pill efu" style="font-size:8px;">EFUTRB</span></td>
         <td>$33,594</td>
+        <td class="adj-zero">$0</td>
         <td class="adj-neg">-$1,200</td>
         <td class="adj-neg">-$5,500</td>
-        <td class="adj-pos">+$1,500</td>
+        <td class="adj-zero">$0</td>
         <td class="adj-pos">+$2,000</td>
         <td class="adj-pos">+$500</td>
-        <td><strong>$30,894</strong></td>
-        <td>$1,236,000</td>
+        <td><strong>$29,394</strong></td>
+        <td>$1,175,000</td>
       </tr>
       <tr>
-        <td><strong>93rd St</strong> (32.69 ac, irr., CUP/septic, 6.5 mi)</td>
-        <td><span class="zoning-pill efu" style="font-size:9px;">EFUTRB</span></td>
-        <td>$33,649</td>
-        <td class="adj-neg">-$800</td>
-        <td class="adj-neg">-$5,500</td>
-        <td class="adj-pos">+$1,500</td>
-        <td class="adj-pos">+$3,000</td>
-        <td class="adj-pos">+$300</td>
-        <td><strong>$32,149</strong></td>
-        <td>$1,286,000</td>
-      </tr>
-      <tr>
-        <td><strong>Somerset</strong> (38.96 ac, 12.1 ac irr., views, 10.2 mi)</td>
-        <td><span class="zoning-pill efu" style="font-size:9px;">EFUTRB</span></td>
-        <td>$25,026</td>
-        <td class="adj-zero">$0</td>
-        <td class="adj-neg">-$2,500</td>
-        <td class="adj-pos">+$1,500</td>
-        <td class="adj-pos">+$3,500</td>
-        <td class="adj-pos">+$500</td>
-        <td><strong>$28,026</strong></td>
-        <td>$1,121,000</td>
-      </tr>
-      <tr class="anchor">
-        <td><strong>Walker</strong> (40.01 ac, no water, east, 9.8 mi)</td>
-        <td><span class="zoning-pill efu" style="font-size:9px;">EFUTRB</span></td>
-        <td>$17,493</td>
-        <td class="adj-zero">$0</td>
-        <td class="adj-zero">$0</td>
-        <td class="adj-pos">+$2,500</td>
-        <td class="adj-pos">+$4,500</td>
+        <td><strong>Bear Creek FLOOR</strong> (57.33 ac, dry, no ent., 5/2021)</td>
+        <td><span class="zoning-pill efu" style="font-size:8px;">EFUTRB</span></td>
+        <td>$12,908</td>
         <td class="adj-pos">+$1,000</td>
-        <td><strong>$25,493</strong></td>
-        <td>$1,020,000</td>
+        <td class="adj-pos">+$2,000</td>
+        <td class="adj-zero">$0</td>
+        <td class="adj-pos">+$6,500</td>
+        <td class="adj-pos">+$4,000</td>
+        <td class="adj-pos">+$500</td>
+        <td><strong>$26,908</strong></td>
+        <td>$1,076,000</td>
       </tr>
     </tbody>
     <tfoot>
       <tr>
-        <td colspan="8" style="text-align:left;"><strong>Weighted average: Collins, 93rd, Somerset (size-appropriate), equal weight</strong></td>
-        <td><strong>$30,356</strong></td>
-        <td><strong>$1,214,000</strong></td>
+        <td colspan="9" style="text-align:left;"><strong>3-indicator convergence: Twin $1,146k · irrigated water-adj. avg. $1,125k · Bear Creek floor-adj. $1,076k</strong></td>
+        <td colspan="2" style="text-align:left;"><strong>Range: $1,050k-$1,150k · Point ~$1,100k · List $1,195k</strong></td>
       </tr>
     </tfoot>
   </table>
 
-  <h3 class="subhead" style="margin-top:10px;">Adjustment rationale</h3>
+  <h3 class="subhead" style="margin-top:8px;">Adjustment rationale</h3>
   <div class="two-col" style="gap:12px;">
     <div>
-      <p><strong>Size (scale discount):</strong> Larger parcels sell for less per acre. A 40-acre buyer commits more total capital than a 25-acre buyer. Small downward adjustment for comps under 30 acres. Size-equivalent comps (35-40 ac) get zero adjustment.</p>
-      <p><strong>Water rights:</strong> All EFUTRB irrigated comps have water rights the subject lacks. Deschutes County water rights trade at ~$5,000-$15,000/irrigated acre. This is a negative adjustment to the irrigated comps: subject is worth less per acre than an irrigated equivalent. Walker (no water) gets zero adjustment here. Critically, the subject's lack of water is what enables CU-09-73 (see Dwelling Ent. adj.).</p>
+      <p><strong>Time adjustment:</strong> Market boomed 2020-22, then plateaued 2022-26. Twin (3/2021) and Bear Creek (5/2021) are at/near the early plateau. Modest +5-10% upward adjustment applied to 2020-21 dry comps to reflect June 2026 conditions. Recent irrigated comps (2025-26) get zero time adjustment.</p>
+      <p><strong>Size:</strong> Larger parcels sell for less per acre. Small downward adjustment on comps under 30 acres. Bear Creek (57 ac) gets a positive adjustment, larger parcels compress $/ac, so subject at 40 ac is worth more per acre.</p>
+      <p><strong>Water rights:</strong> Subject is dry. All irrigated comps are adjusted down by $5,500-$6,500/ac for their water rights. Twin and Bear Creek are also dry, zero water adjustment. This is the largest single adjustment for irrigated comps.</p>
     </div>
     <div>
-      <p><strong>Dwelling entitlement (CU-09-73):</strong> The confirmed nonfarm-dwelling CU is a significant positive for the subject vs. irrigated comps, which have their own dwelling pathway but whose value is largely driven by farming income. Subject has a confirmed right to build a home. Positive adjustment of +$1,500 to +$2,500/acre vs. comparably-zoned irrigated comps, and +$2,500 vs. Walker which has no confirmed entitlement.</p>
-      <p><strong>BLM adjacency + location:</strong> Permanent privacy and recreation access on two sides. Subject is on Tumalo Reservoir Rd, one of Tumalo's most desirable corridors. Positive vs. all comps at greater distance or without BLM.</p>
-      <p><strong>Structures + infrastructure:</strong> Two permitted structures, well, approved septic, gravel drive already installed. Small positive vs. raw land comps. Collins and 93rd both had infrastructure, limiting this adjustment against them.</p>
+      <p><strong>Dwelling entitlement (CU-09-73):</strong> Bear Creek had no confirmed CUP at sale, that is why it is the floor. Subject has a confirmed nonfarm-dwelling right. Positive $6,500/ac adjustment to Bear Creek captures the entitlement premium. Twin also has a confirmed entitlement, zero adjustment there.</p>
+      <p><strong>BLM adjacency + location:</strong> Subject borders BLM on two sides, on Tumalo Reservoir Rd. Bear Creek and the distant irrigated comps are adjusted positively for this. Twin is next door, zero adjustment.</p>
+      <p><strong>Barn / structures:</strong> Twin has a 1,850 sf barn, superior to subject's two ~200 sf structures. Positive adjustment to Twin (subject has less). Bear Creek and distant comps adjusted upward for subject's existing infrastructure (well, structures, gravel drive).</p>
     </div>
   </div>
 
   <footer class="pg-footer">
     <span>Ryan Realty · 541.213.6706 · All adjustments per paired-sales logic and appraiser methodology · Zoning verified Deschutes County GIS</span>
-    <span>Page 8 of 22</span>
+    <span>Page 9 of 25</span>
   </footer>
 </section>
 
-<!-- PAGE 9 — COMP FLYER 1: 64859 Collins Rd -->
+<!-- PAGE 10 — COMP FLYER 1: 18715 Tumalo Reservoir — THE TWIN (HERO ANCHOR) -->
 <section class="page">
   <header class="pg-header">
     <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
-    <div class="pg-meta">Comparable Sale 1 of 4 · Collins Rd, Tumalo</div>
+    <div class="pg-meta">Comparable Sale 1 of 6 · 18715 Tumalo Reservoir · The Twin · Primary Anchor</div>
   </header>
-  <div class="flyer-badge zone-match">EFUTRB Match · Best Tumalo Anchor · Irrigated · Sep 2025 · 1.7 mi</div>
+  <div class="flyer-badge zone-match">EFUTRB Match · Dry · Next-Door Twin · Primary Anchor · Mar 2021 · 0.2 mi</div>
+  <h1 class="flyer-title">18715 Tumalo Reservoir Road</h1>
+  <div class="flyer-sub">Bend, Oregon 97703 · Tumalo · 0.2 mi from subject · 39.97 acres · Zone: EFUTRB (verified GIS) · Next-door twin parcel</div>
+
+  <img class="flyer-hero" src="./assets/comps/comp-twin-18715-800x600.jpg" alt="18715 Tumalo Reservoir Road" />
+
+  <div class="flyer-stats">
+    <div class="s zone"><div class="l">Zone</div><div class="v">EFUTRB</div></div>
+    <div class="s"><div class="l">Acres</div><div class="v">39.97</div></div>
+    <div class="s"><div class="l">Water</div><div class="v">None (dry)</div></div>
+    <div class="s"><div class="l">Close $</div><div class="v">$1,030,000</div></div>
+    <div class="s featured"><div class="l">$/Acre</div><div class="v">$25,769</div></div>
+  </div>
+
+  <div class="flyer-desc">The next-door parcel (Parcel 1, same Partition Plat 2010-04 as the subject). Dry EFUTRB, 39.97 acres, BLM on two sides, own confirmed dwelling entitlement (build site fully permitted, architectural drawings on file), 1,850 sf barn. Sold March 26, 2021 for $1,030,000, listed at $950,000 and sold over ask in 10 days. No irrigation water. Same base zone, same road, essentially the same parcel configuration. The strongest possible anchor comp: identical zoning, dry, adjacent, same size. Differences: the Twin has a larger barn and a further-along building process; the subject has confirmed CU-09-73 and two ~200 sf permitted structures.</div>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">Zone</div><div class="fv">EFUTRB (GIS verified)</div></div>
+    <div class="f"><div class="fl">List Price</div><div class="fv">$950,000 (sold over ask)</div></div>
+    <div class="f"><div class="fl">Close Price</div><div class="fv">$1,030,000 · Mar 26, 2021</div></div>
+    <div class="f"><div class="fl">DOM</div><div class="fv">10 days (sold over ask)</div></div>
+    <div class="f"><div class="fl">Acres</div><div class="fv">39.97 (identical to subject)</div></div>
+    <div class="f"><div class="fl">Water</div><div class="fv">None (dry EFUTRB)</div></div>
+    <div class="f"><div class="fl">Barn</div><div class="fv">1,850 sf barn on site</div></div>
+    <div class="f"><div class="fl">Entitlement</div><div class="fv">Own CUP confirmed · build site permitted</div></div>
+  </div>
+
+  <p class="small" style="margin-top:8px;"><strong>Why the Twin is the primary anchor:</strong> There is no more comparable property. Same zone, same road, same dry status, nearly identical acreage, next door. It sold at $1,030,000 ($25,769/ac) in March 2021, over asking, in 10 days. Time-adjusting to June 2026 at a modest +5-10% (plateau market, not declining) produces $1,081,000-$1,133,000 before any barn/structure adjustment. Subject has less barn square footage, the Twin's 1,850 sf barn is a positive for that parcel vs. the subject's two ~200 sf structures. Net time-and-barn-adjusted value for subject: approximately $1,080,000-$1,150,000. List price of $1,195,000 sits above this range to allow negotiation room.</p>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706 · Zone: EFUTRB verified Deschutes County GIS · Parcel 1, Partition Plat 2010-04</span>
+    <span>Page 10 of 25</span>
+  </footer>
+</section>
+
+<!-- PAGE 11 — COMP FLYER 2: 19155 Pinehurst -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 2 of 6 · Pinehurst · Dry EFUTRB</div>
+  </header>
+  <div class="flyer-badge zone-match">EFUTRB Match · Dry · Entitled (CUP) · Jul 2020 · Mountain Views</div>
+  <h1 class="flyer-title">19155 Pinehurst Road</h1>
+  <div class="flyer-sub">Deschutes County · 19.87 acres · Zone: EFUTRB (verified GIS) · Dry · Entitled</div>
+
+  <img class="flyer-hero" src="./assets/comps/comp-pinehurst-800x600.jpg" alt="19155 Pinehurst Road" />
+
+  <div class="flyer-stats">
+    <div class="s zone"><div class="l">Zone</div><div class="v">EFUTRB</div></div>
+    <div class="s"><div class="l">Acres</div><div class="v">19.87</div></div>
+    <div class="s"><div class="l">Water</div><div class="v">None (dry)</div></div>
+    <div class="s"><div class="l">Close $</div><div class="v">$350,000</div></div>
+    <div class="s featured"><div class="l">$/Acre</div><div class="v">$17,615</div></div>
+  </div>
+
+  <div class="flyer-desc">Dry EFUTRB parcel, 19.87 acres, entitled (CUP approved for nonfarm dwelling), mountain views. Sold July 2020 after a protracted listing history: originally listed $449,000 in 2019, cut to $389,000, then canceled; relisted at $389,000, cut to $375,000, ultimately sold at $350,000 after 134 days on market. The price cuts and DOM confirm that aspirational pricing on dry EFUTRB takes significant time and discount to close.</div>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">Zone</div><div class="fv">EFUTRB (GIS verified)</div></div>
+    <div class="f"><div class="fl">First List</div><div class="fv">$449,000 (2019) · expired</div></div>
+    <div class="f"><div class="fl">Relist Path</div><div class="fv">$389k → $375k → sold $350k</div></div>
+    <div class="f"><div class="fl">DOM</div><div class="fv">134 days on final listing</div></div>
+    <div class="f"><div class="fl">Close Price</div><div class="fv">$350,000 · July 2020</div></div>
+    <div class="f"><div class="fl">Acres</div><div class="fv">19.87 (smaller than subject)</div></div>
+    <div class="f"><div class="fl">Water</div><div class="fv">None (dry EFUTRB)</div></div>
+    <div class="f"><div class="fl">Entitlement</div><div class="fv">CUP approved · mountain views</div></div>
+  </div>
+
+  <p class="small" style="margin-top:8px;"><strong>Role in the analysis:</strong> Pinehurst confirms that smaller dry EFUTRB entitled parcels sold at $17,615/ac in 2020. Time-adjusting upward modestly to 2026 and scaling for the subject's larger size (40 ac vs. 19.87 ac, smaller parcels command higher $/ac), Pinehurst is a secondary supporting comp that confirms the Twin's $25,769/ac is credible for a larger, better-located parcel five years later. The listing history is a lesson: list at market, not aspirationally.</p>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706 · Zone: EFUTRB verified Deschutes County GIS</span>
+    <span>Page 11 of 25</span>
+  </footer>
+</section>
+
+<!-- PAGE 12 — COMP FLYER 3: 21700 Bear Creek — NO-ENTITLEMENT FLOOR -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 3 of 6 · Bear Creek · No-Entitlement Floor</div>
+  </header>
+  <div class="flyer-badge zone-excl">EFUTRB · Dry · NO Entitlement · Floor Comp · May 2021 · 57.33 ac</div>
+  <h1 class="flyer-title">21700 Bear Creek Road</h1>
+  <div class="flyer-sub">Deschutes County · 57.33 acres · Zone: EFUTRB (verified GIS) · Dry · Bare land · No CUP for dwelling</div>
+
+  <img class="flyer-hero" src="./assets/comps/comp-bearcreek-800x600.jpg" alt="21700 Bear Creek Road" />
+
+  <div class="flyer-stats">
+    <div class="s zone"><div class="l">Zone</div><div class="v">EFUTRB</div></div>
+    <div class="s"><div class="l">Acres</div><div class="v">57.33</div></div>
+    <div class="s"><div class="l">Water</div><div class="v">None (dry)</div></div>
+    <div class="s"><div class="l">Close $</div><div class="v">$740,000</div></div>
+    <div class="s featured"><div class="l">$/Acre</div><div class="v">$12,908</div></div>
+  </div>
+
+  <div class="flyer-desc">Dry EFUTRB, 57.33 acres, bare land with no confirmed dwelling entitlement, MLS noted "needs CUP for non-farm dwelling." Sold May 2021 for $740,000 ($12,908/ac) after 409 days on market. This is the no-entitlement FLOOR: what dry EFUTRB acreage commands when a buyer must first obtain a conditional use permit before building anything. It is a large parcel (size compression lowers $/ac vs. the subject) and it is bare. The comparison to the subject is entirely about what the confirmed CU-09-73 entitlement is worth.</div>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">Zone</div><div class="fv">EFUTRB (GIS verified)</div></div>
+    <div class="f"><div class="fl">Close Price</div><div class="fv">$740,000 · May 2021</div></div>
+    <div class="f"><div class="fl">DOM</div><div class="fv">409 days (long market time)</div></div>
+    <div class="f"><div class="fl">Acres</div><div class="fv">57.33 (larger than subject)</div></div>
+    <div class="f"><div class="fl">Water</div><div class="fv">None (dry EFUTRB)</div></div>
+    <div class="f"><div class="fl">Dwelling Ent.</div><div class="fv">None, "needs CUP" per MLS</div></div>
+    <div class="f"><div class="fl">Structures</div><div class="fv">Bare land</div></div>
+    <div class="f"><div class="fl">Floor $/Ac</div><div class="fv">$12,908/ac · no-entitlement basis</div></div>
+  </div>
+
+  <p class="small" style="margin-top:8px;"><strong>What Bear Creek tells us:</strong> Dry EFUTRB without a CUP sold at $12,908/ac in 2021. Adjusting upward for the subject's advantages, confirmed CUP (+$6,500/ac), smaller size (+$2,000/ac), BLM adjacency + Tumalo location (+$4,000/ac), existing structures/well (+$500/ac), modest time adjustment (+$1,000/ac), produces an implied value of ~$26,908/ac × 39.97 ac = $1,075,000. The confirmed CU-09-73 entitlement is doing approximately $6,500/ac of work relative to the no-entitlement floor. A buyer considering waiting to obtain a new CUP instead of paying for the existing one would face 409+ days of market time and uncertain outcome.</p>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706 · Zone: EFUTRB verified Deschutes County GIS</span>
+    <span>Page 12 of 25</span>
+  </footer>
+</section>
+
+<!-- PAGE 13 — COMP FLYER 4: 64859 Collins Rd -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 4 of 6 · Collins Rd, Tumalo</div>
+  </header>
+  <div class="flyer-badge zone-match">EFUTRB Match · Irrigated Current-Conditions Check · Sep 2025 · 1.7 mi</div>
   <h1 class="flyer-title">64859 Collins Road, Tumalo</h1>
   <div class="flyer-sub">Bend, Oregon 97703 · Tumalo · 1.7 mi from subject · 25.6 acres · Zone: EFUTRB (verified GIS) · MLS 220212994</div>
 
@@ -768,24 +978,24 @@
     <div class="f"><div class="fl">Irrigation</div><div class="fv">20 acres (Tumalo Irrigation)</div></div>
     <div class="f"><div class="fl">Infrastructure</div><div class="fv">CUP approved · well · gravel drive</div></div>
     <div class="f"><div class="fl">Distance</div><div class="fv">1.7 mi from subject</div></div>
-    <div class="f"><div class="fl">Adj. $/Acre</div><div class="fv">$30,894 → $1,236,000 implied</div></div>
+    <div class="f"><div class="fl">List Story</div><div class="fv">Listed $999k(2022) → $700k(2022) failed · relisted $1.2M/$999k/$949k all failed · sold $860k (pocket)</div></div>
   </div>
 
-  <p class="small" style="margin-top:8px;"><strong>Why this is the primary Tumalo anchor:</strong> Collins Rd has a nearly identical zoning designation (EFUTRB), a very similar infrastructure package (CUP, well, gravel drive), and is 1.7 miles from the subject in the same Tumalo corridor. Its $33,594/acre is the strongest direct signal for the subject's market position. The key difference: Collins has 20 acres of irrigation water rights. The subject has none. Net adjustment to subject: -$5,500/acre for no water + $1,500/acre for active dwelling CU + $2,000/acre for BLM + location + $500/acre for existing structures. Adjusted $/acre for subject: $30,894. Implied value: $1,236,000.</p>
+  <p class="small" style="margin-top:8px;"><strong>Role as irrigated current-conditions check:</strong> Collins Rd is 1.7 miles from the subject in the same Tumalo corridor. Its $33,594/acre reflects an irrigated, CUP-confirmed EFUTRB parcel at current market (Sep 2025). To derive the subject's implied value from Collins, subtract ~$5,500/ac for the subject's 20 acres of missing water rights, then add back the subject's BLM adjacency + superior location. Net: ~$30,000-$31,000/ac range implied for the subject from this comp. The long listing history (multiple price cuts spanning 2022-2025) confirms the Tumalo land market took years to find equilibrium after the 2022 plateau.</p>
 
   <footer class="pg-footer">
     <span>Ryan Realty · 541.213.6706 · Zone: EFUTRB verified Deschutes County GIS spatial query</span>
-    <span>Page 9 of 22</span>
+    <span>Page 13 of 25</span>
   </footer>
 </section>
 
-<!-- PAGE 10 — COMP FLYER 2: 65799 93rd St (REPEAT SALE) -->
+<!-- PAGE 14 — COMP FLYER 5: 65799 93rd St (REPEAT SALE) -->
 <section class="page">
   <header class="pg-header">
     <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
-    <div class="pg-meta">Comparable Sale 2 of 4 · 93rd St · Repeat Sale</div>
+    <div class="pg-meta">Comparable Sale 5 of 6 · 93rd St · Most Recent · Repeat Sale</div>
   </header>
-  <div class="flyer-badge zone-match">EFUTRB Match · Most Recent · Repeat Sale = Market Trend Evidence · May 2026 · 6.5 mi</div>
+  <div class="flyer-badge zone-match">EFUTRB Match · Most Recent · Irrigated Check · Repeat Sale Evidence · May 2026 · 6.5 mi</div>
   <h1 class="flyer-title">65799 93rd Street</h1>
   <div class="flyer-sub">Bend, Oregon 97703 · Tumalo · 6.5 mi from subject · 32.69 acres · Zone: EFUTRB (verified GIS) · MLS 220227084</div>
 
@@ -796,7 +1006,7 @@
     <div class="s"><div class="l">Acres</div><div class="v">32.69</div></div>
     <div class="s"><div class="l">Water</div><div class="v">27 ac irr.</div></div>
     <div class="s"><div class="l">Close $</div><div class="v">$1,000,000</div></div>
-    <div class="s featured"><div class="l">$/Acre</div><div class="v">$33,649</div></div>
+    <div class="s featured"><div class="l">$/Acre</div><div class="v">$30,590</div></div>
   </div>
 
   <div class="flyer-desc">From MLS: "Once part of the iconic old Hanson's Dairy, this exceptional 32.69-acre property features 27 acres of irrigation and expansive pastoral and Cascade mountain views, ideal for agricultural use, livestock, or building your dream home. The property is ready to build, with land use approval from Deschutes County, and a homesite already staked on the upper pasture. A new 1,500-gallon septic tank and leach lines have also been installed."</div>
@@ -809,100 +1019,59 @@
     <div class="f"><div class="fl">Irrigation</div><div class="fv">27 acres</div></div>
     <div class="f"><div class="fl">Prior Sale</div><div class="fv">$845,000 · Jan 2024 (same parcel)</div></div>
     <div class="f"><div class="fl">Price Change</div><div class="fv">+$155,000 / +18.3% in ~16 mo.</div></div>
-    <div class="f"><div class="fl">Adj. $/Acre</div><div class="fv">$32,149 → $1,286,000 implied</div></div>
+    <div class="f"><div class="fl">List Story</div><div class="fv">Listed $1.1M · cut 9% · sold $1.0M · DOM 40</div></div>
   </div>
 
-  <p class="small" style="margin-top:8px;"><strong>The repeat-sale evidence:</strong> This exact parcel (same taxlot, 32.69 acres, EFUTRB) sold for $845,000 ($26,767/acre) in January 2024, then resold for $1,000,000 ($33,649/acre) in May 2026, approximately 16 months later. That is +$155,000 / +18.3% on a matched pair. One data point, not a trend line, but it is the most direct evidence of market direction available. It supports the view that Tumalo EFUTRB acreage values have firmed since the 2021 canceled listing. The Jan 2024 sale also rounds out the supporting comp referenced as $26,767/acre.</p>
+  <p class="small" style="margin-top:8px;"><strong>The repeat-sale evidence and what it means:</strong> This exact irrigated EFUTRB parcel (32.69 acres) sold for $845,000 ($26,767/ac) in January 2024, then resold at $1,000,000 ($30,590/ac = $1,000,000 / 32.69) in May 2026. That is +$155,000 / +18.3% on a matched pair in ~16 months. The 2024 buyer paid at the then-plateau, the 2026 buyer paid at the firmed-up current market. Deducting ~$6,500/ac for 27 acres of irrigation water and adding back the subject's BLM location advantage produces an implied dry equivalent for the subject of ~$26-28k/ac, or $1,039,000-$1,119,000. The repeat sale confirms current conditions are firmer than 2024 but not at the 2022 peak.</p>
 
   <footer class="pg-footer">
-    <span>Ryan Realty · 541.213.6706 · Zone: EFUTRB verified Deschutes County GIS spatial query</span>
-    <span>Page 10 of 22</span>
+    <span>Ryan Realty · 541.213.6706 · Zone: EFUTRB verified Deschutes County GIS spatial query · $/ac = $1,000,000 / 32.69 = $30,590</span>
+    <span>Page 14 of 25</span>
   </footer>
 </section>
 
-<!-- PAGE 11 — COMP FLYER 3: 61955 Somerset -->
+<!-- PAGE 15 — COMP FLYER 6: 23250 Walker Road — IRRIGATED COMP, LOW FOR LOCATION -->
 <section class="page">
   <header class="pg-header">
     <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
-    <div class="pg-meta">Comparable Sale 3 of 4 · Somerset · East Bend</div>
+    <div class="pg-meta">Comparable Sale 6 of 6 · Walker Rd · Irrigated · East of Bend</div>
   </header>
-  <div class="flyer-badge zone-match">EFUTRB Match · Best Size Match · Partial Irrigation · Jan 2026 · 10.2 mi</div>
-  <h1 class="flyer-title">61955 Somerset</h1>
-  <div class="flyer-sub">Bend, Oregon 97703 · East Bend · 10.2 mi from subject · 38.96 acres · Zone: EFUTRB (verified GIS) · MLS 220179014</div>
-
-  <img class="flyer-hero" src="./assets/comps/comp3-somerset-800x600.jpg" alt="61955 Somerset" />
-
-  <div class="flyer-stats">
-    <div class="s zone"><div class="l">Zone</div><div class="v">EFUTRB</div></div>
-    <div class="s"><div class="l">Acres</div><div class="v">38.96</div></div>
-    <div class="s"><div class="l">Water</div><div class="v">12.1 ac irr.</div></div>
-    <div class="s"><div class="l">Close $</div><div class="v">$910,000</div></div>
-    <div class="s featured"><div class="l">$/Acre</div><div class="v">$25,026</div></div>
-  </div>
-
-  <div class="flyer-desc">From MLS: "Sought after Cascade Mountain View acreage in Bend, Oregon. Privacy and seclusion on 38.96 acres with 12.1 acres of COI irrigation water. Pond. North side borders the COI Canal. Natural tree coverage on much of the property. Only about a 5 minute drive to excellent shopping, including East Side Costco. Avion Domestic water and buried telephone cable at street."</div>
-
-  <div class="flyer-features">
-    <div class="f"><div class="fl">Zone</div><div class="fv">EFUTRB (GIS verified)</div></div>
-    <div class="f"><div class="fl">List / Close</div><div class="fv">$975,000 / $910,000</div></div>
-    <div class="f"><div class="fl">Close Date</div><div class="fv">January 20, 2026</div></div>
-    <div class="f"><div class="fl">Acres</div><div class="fv">38.96 acres (nearest to subject)</div></div>
-    <div class="f"><div class="fl">Water</div><div class="fv">12.1 ac COI irrigation</div></div>
-    <div class="f"><div class="fl">Views</div><div class="fv">Cascade Mountain views confirmed</div></div>
-    <div class="f"><div class="fl">Tree Cover</div><div class="fv">Natural tree coverage throughout</div></div>
-    <div class="f"><div class="fl">Adj. $/Acre</div><div class="fv">$28,026 → $1,121,000 implied</div></div>
-  </div>
-
-  <p class="small" style="margin-top:8px;"><strong>Best size match in the comp set.</strong> At 38.96 acres, Somerset is the closest acreage match to the 40-acre subject, and it is EFUTRB. At $25,026/acre it reflects the reality of large-parcel East Bend pricing: even with Cascade views and partial irrigation, 39 acres 10 miles out sold at $25K/acre. After adjusting for the subject's BLM adjacency (+$3,500), active dwelling CU (+$1,500), and infrastructure (+$500), partially offset by partial water here (-$2,500), the adjusted rate for the subject is $28,026/acre, implying $1,121,000. This represents the lower-middle anchor of the range.</p>
-
-  <footer class="pg-footer">
-    <span>Ryan Realty · 541.213.6706 · Zone: EFUTRB verified Deschutes County GIS spatial query</span>
-    <span>Page 11 of 22</span>
-  </footer>
-</section>
-
-<!-- PAGE 12 — COMP FLYER 4: 23250 Walker -->
-<section class="page">
-  <header class="pg-header">
-    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
-    <div class="pg-meta">Comparable Sale 4 of 4 · Walker · No-Water Floor</div>
-  </header>
-  <div class="flyer-badge zone-match">EFUTRB Match · No-Water Floor Anchor · 40 Acres · Nov 2024 · 9.8 mi</div>
+  <div class="flyer-badge zone-match">EFUTRB · Irrigated · Manufactured Home + Shop · Low for Location (East) · Nov 2024</div>
   <h1 class="flyer-title">23250 Walker Road</h1>
   <div class="flyer-sub">Bend, Oregon 97703 · East of Bend · 9.8 mi from subject · 40.01 acres · Zone: EFUTRB (verified GIS) · Nov 2024</div>
 
-  <img class="flyer-hero" src="" alt="23250 Walker Road" style="background:var(--navy-fill);" />
+  <img class="flyer-hero" src="./assets/comps/comp4-walker-800x600.jpg" alt="23250 Walker Road" style="background:var(--navy-fill);" />
 
   <div class="flyer-stats">
     <div class="s zone"><div class="l">Zone</div><div class="v">EFUTRB</div></div>
     <div class="s"><div class="l">Acres</div><div class="v">40.01</div></div>
-    <div class="s"><div class="l">Water</div><div class="v">None</div></div>
+    <div class="s"><div class="l">Water</div><div class="v">7.05 ac COID irr.</div></div>
     <div class="s"><div class="l">Close $</div><div class="v">$699,900</div></div>
     <div class="s featured"><div class="l">$/Acre</div><div class="v">$17,493</div></div>
   </div>
 
-  <div class="flyer-desc">Walker Road is an EFUTRB parcel of 40.01 acres with no irrigation water rights and no confirmed dwelling entitlement at time of sale, located east of Bend approximately 9.8 miles from the subject. It sold at $699,900 ($17,493/acre) in November 2024. This is the most directly comparable no-water EFUTRB parcel in the data set, and it sets the floor for what non-buildable, non-irrigated EFUTRB land of this size commands in the market.</div>
+  <div class="flyer-desc">Walker Road is an EFUTRB parcel of 40.01 acres with 7.05 acres of COID irrigation water, an older manufactured home, and a 1,500 sf shop, located east of Bend approximately 9.8 miles from the subject. It sold at $699,900 ($17,493/acre) in November 2024 after a protracted history: expired in 2024, relisted at $769,900, cut to $724,900, sold at $699,900. Its low $/ac reflects LOCATION, it is east of Bend rather than in the Tumalo corridor, not a lack of water (it has water, a home, and a shop). Walker is an irrigated comp that happens to price low because of where it sits.</div>
 
   <div class="flyer-features">
     <div class="f"><div class="fl">Zone</div><div class="fv">EFUTRB (GIS verified)</div></div>
-    <div class="f"><div class="fl">Close Price</div><div class="fv">$699,900</div></div>
-    <div class="f"><div class="fl">Close Date</div><div class="fv">November 2024</div></div>
-    <div class="f"><div class="fl">Acres</div><div class="fv">40.01 acres (exact size match)</div></div>
-    <div class="f"><div class="fl">Water Rights</div><div class="fv">None</div></div>
-    <div class="f"><div class="fl">Dwelling Ent.</div><div class="fv">No confirmed CUP at sale</div></div>
-    <div class="f"><div class="fl">Location</div><div class="fv">East Bend, 9.8 mi from subject</div></div>
-    <div class="f"><div class="fl">Adj. $/Acre</div><div class="fv">$25,493 → $1,020,000 implied</div></div>
+    <div class="f"><div class="fl">Close Price</div><div class="fv">$699,900 · November 2024</div></div>
+    <div class="f"><div class="fl">DOM</div><div class="fv">117 days (expired + relisted)</div></div>
+    <div class="f"><div class="fl">Acres</div><div class="fv">40.01 acres (same size as subject)</div></div>
+    <div class="f"><div class="fl">Water</div><div class="fv">7.05 ac COID irrigation</div></div>
+    <div class="f"><div class="fl">Improvements</div><div class="fv">Older manufactured home + 1,500 sf shop</div></div>
+    <div class="f"><div class="fl">Location</div><div class="fv">East of Bend (9.8 mi from subject)</div></div>
+    <div class="f"><div class="fl">List story</div><div class="fv">Expired 2024 · $769,900 · $724,900 · sold $699,900</div></div>
   </div>
 
-  <p class="small" style="margin-top:8px;"><strong>Why Walker is the critical floor anchor:</strong> Walker is the only EFUTRB comp with no water, the same condition as the subject. Its $17,493/acre reflects what EFUTRB land sells for without water rights AND without a confirmed dwelling entitlement, in a less desirable location than Tumalo. After adjusting for the subject's confirmed CU-09-73 entitlement (+$2,500), BLM adjacency + superior location (+$4,500), and existing structures/infra (+$1,000), the adjusted $/acre rises to $25,493, implying $1,020,000. This is the conservative floor of the value range, fully crediting the confirmed entitlement and Tumalo corridor location.</p>
+  <p class="small" style="margin-top:8px;"><strong>Walker is an irrigated comp, not a no-water comp.</strong> It has 7.05 acres of COID irrigation, an existing manufactured home, and a shop. Its $17,493/ac is explained by location (east of Bend, not Tumalo), not by water status. Comparing Walker directly to the subject without the location adjustment would undervalue the Tumalo corridor by a wide margin. Walker shows the price penalty for being east vs. Tumalo, approximately $10,000-$15,000/ac at this size tier.</p>
 
   <footer class="pg-footer">
     <span>Ryan Realty · 541.213.6706 · Zone: EFUTRB verified Deschutes County GIS spatial query</span>
-    <span>Page 12 of 22</span>
+    <span>Page 15 of 25</span>
   </footer>
 </section>
 
-<!-- PAGE 13 — MARKET CONTEXT + $/ACRE TIERS + TREND -->
+<!-- PAGE 16 — MARKET CONTEXT + $/ACRE TIERS + TREND -->
 <section class="page">
   <header class="pg-header">
     <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
@@ -911,7 +1080,7 @@
 
   <h2 class="section">Market Context, EFUTRB Acreage Land</h2>
 
-  <p style="margin-bottom:8px;">Standard market-conditions caches cover SFR dwelling sales and do not capture bare-land transactions. Market trend evidence for EFUTRB land comes directly from the comp set. Two sources provide that directional evidence here.</p>
+  <p style="margin-bottom:8px;">Standard market-conditions caches cover SFR dwelling sales and do not capture bare-land transactions. Market trend evidence for EFUTRB land comes directly from the comp set. Two sources provide directional evidence here. Market trend from the comp set: land values boomed 2020 to 2022, then plateaued 2022 to 2026 at roughly 1 to 9 percent per year. Older comps receive modest upward time adjustments; recent comps (2025-26) need little or none.</p>
 
   <h3 class="subhead">$/Acre tiers by size and zone</h3>
   <div class="tier-row">
@@ -922,8 +1091,8 @@
     </div>
     <div class="tr-cell">
       <div class="tr-lbl">EFUTRB 25-40 ac (primary range)</div>
-      <div class="tr-val">$17,500 - $33,600/ac</div>
-      <div class="tr-note">Collins Rd $33,594 · 93rd St $33,649 (Tumalo-proximate irrigated top) · Somerset $25,026 (size match, partial irr.) · Walker $17,493 (no water, east, non-buildable floor). Subject targets $25,000-$33,000/ac range with active CU.</div>
+      <div class="tr-val">$12,900 - $33,600/ac</div>
+      <div class="tr-note">Twin 18715 $25,769 (dry, 2021) · Collins $33,594 · 93rd $30,590 (irrigated check, 2025-26) · Walker $17,493 (irrigated + home, low for east location) · Bear Creek $12,908 (dry, no entitlement floor). Subject targets $26,000-$30,000/ac with dry + active CU.</div>
     </div>
     <div class="tr-cell">
       <div class="tr-lbl">EFUTRB 65-80 ac (context)</div>
@@ -946,29 +1115,30 @@
       </tr>
       <tr class="anchor">
         <td>Second sale</td><td>65799 93rd St · same parcel</td>
-        <td class="num">$1,000,000</td><td class="num">$33,649/ac</td><td class="num">May 2026</td>
+        <td class="num">$1,000,000</td><td class="num">$30,590/ac</td><td class="num">May 2026</td>
         <td class="num" style="color:#1a6b3c;"><strong>+$155,000 / +18.3%</strong></td>
       </tr>
     </tbody>
   </table>
-  <p>The same 32-acre irrigated EFUTRB Tumalo parcel resold at an 18.3% premium in approximately 16 months. One data point, not a trend line, but the most direct available evidence that EFUTRB acreage values in the Tumalo corridor have firmed since early 2024. The 2021 canceled listing at $1,600,000 overshot the market by a wide margin at the time and does not represent today's value ceiling. Today's market, per the 2025-26 closed comps, trades in the $25,000-$34,000/acre band for mid-size EFUTRB parcels in this corridor.</p>
+  <p>The same 32-acre irrigated EFUTRB Tumalo parcel resold at an 18.3% premium in approximately 16 months. One data point, not a trend line, but the most direct available evidence that EFUTRB acreage values in the Tumalo corridor have firmed since early 2024. The 2021 canceled listing at $1,600,000 overshot the market by a wide margin at the time and does not represent today's value ceiling. Today's market, per the 2025-26 closed comps, trades in the $25,000-$34,000/acre band for irrigated mid-size EFUTRB parcels. Dry parcels without entitlement (Bear Creek $12,908/ac) are the floor; dry with confirmed entitlement (Twin 18715 $25,769/ac, time-adjusted +5-15%) indicate the subject's corridor.</p>
 
   <h3 class="subhead" style="margin-top:8px;">What the market tells us about the subject</h3>
   <ul class="note-list">
-    <li>The EFUTRB irrigated center in Tumalo is ~<strong>$33,600/acre</strong> (Collins $33,594, 93rd $33,649, two independent comps, same rate).</li>
-    <li>No-water EFUTRB without confirmed dwelling entitlement (Walker) lands at <strong>~$17,500/acre</strong>.</li>
-    <li>The spread between buildable irrigated and non-buildable no-water EFUTRB is ~$16,000/acre. The subject sits between these: no water, but with an active dwelling CU that partially offsets the no-water discount.</li>
-    <li>Net-adjusted range for subject: <strong>$25,000-$32,000/acre</strong>, with the confirmed CU-09-73 entitlement, Tumalo Reservoir Rd location, and BLM adjacency all pushing toward the upper end.</li>
+    <li>The EFUTRB irrigated center in Tumalo is ~<strong>$30,590-$33,600/acre</strong> (93rd $30,590, Collins $33,594). Water-adjusted dry equivalent: ~$24,000-$27,000/ac.</li>
+    <li>The Twin (18715, dry, confirmed entitlement, 2021) sold at $25,769/ac. Time-adjusted +5-15% to 2026: $27,000-$29,600/ac.</li>
+    <li>Bear Creek (dry, no entitlement) sold at $12,908/ac. This is the no-entitlement floor. The subject's confirmed CU-09-73 commands a substantial premium above this floor.</li>
+    <li>Net-adjusted range for subject: <strong>$26,000-$30,000/acre</strong>, with the confirmed CU-09-73 entitlement, Tumalo Reservoir Rd location, and BLM adjacency pushing toward the upper end.</li>
+    <li>Current supply: 0 Rodeo (40 ac dry) asking $1,999,000 with ~560 days on market; 18785 Tumalo Reservoir (18 ac dry) asking $1,125,000. Overpriced listings sit. Pricing with negotiation room at $1,195,000 is the credible position.</li>
     <li>The WA 40-acre minimum and no subdivision distinguish the subject from MUA-10/TUR-5 parcels that sell higher on account of lot-split optionality.</li>
   </ul>
 
   <footer class="pg-footer">
     <span>Ryan Realty · 541.213.6706 · Market data: Oregon Data Share MLS via Ryan Realty platform · pulled 2026-06-04</span>
-    <span>Page 13 of 22</span>
+    <span>Page 16 of 25</span>
   </footer>
 </section>
 
-<!-- PAGE 14 — ZONING ANALYSIS & COMP WEIGHTING -->
+<!-- PAGE 17 — ZONING ANALYSIS & COMP WEIGHTING -->
 <section class="page">
   <header class="pg-header">
     <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
@@ -1000,38 +1170,55 @@
         <td style="padding:4px 5px; border-bottom:1px solid rgba(250,248,244,0.15); color:rgba(250,248,244,0.7);">None</td>
         <td style="padding:4px 5px; border-bottom:1px solid rgba(250,248,244,0.15); color:rgba(250,248,244,0.85);">Subject being valued</td>
       </tr>
-      <!-- PRIMARY COMPS -->
-      <tr style="background:rgba(26,107,60,0.05);">
+      <!-- PRIMARY COMPS (DRY EFUTRB) -->
+      <tr style="background:rgba(26,107,60,0.08);">
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">18715 Tumalo Reservoir · 39.97 ac</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);"><span class="zoning-pill efu" style="font-size:9px;">EFUTRB</span></td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">Confirmed nonfarm CUP</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); text-align:center; color:var(--muted);">No (WA min)</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); color:var(--muted);">None · dry</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); color:#1a6b3c; font-weight:600;">TWIN ANCHOR, next door, dry EFUTRB, own entitlement, 1,850 sf barn. Most direct comp available.</td>
+      </tr>
+      <tr style="background:rgba(26,107,60,0.04);">
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">19155 Pinehurst · 19.87 ac</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);"><span class="zoning-pill efu" style="font-size:9px;">EFUTRB</span></td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">CUP approved</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); text-align:center; color:var(--muted);">No</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); color:var(--muted);">None · dry</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); color:#1a6b3c; font-weight:600;">DRY PRIMARY, EFUTRB dry, entitled, 2020 sale. Half subject acreage; confirms dry-EFUTRB value floor with entitlement.</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">21700 Bear Creek · 57.33 ac</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);"><span class="zoning-pill efu" style="font-size:9px;">EFUTRB</span></td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">No CUP, bare land</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); text-align:center; color:var(--muted);">No</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); color:var(--muted);">None · dry</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); font-weight:600; color:#8b1a1a;">NO-ENTITLEMENT FLOOR, dry EFUTRB bare, no CUP, oversized. $12,908/ac is the absolute floor absent a dwelling right.</td>
+      </tr>
+      <!-- RECENT MARKET (IRRIGATED CHECK) -->
+      <tr style="background:rgba(26,107,60,0.04);">
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">64859 Collins Rd · 25.6 ac</td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);"><span class="zoning-pill efu" style="font-size:9px;">EFUTRB</span></td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">Farm / lot-of-record CUP</td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); text-align:center; color:var(--muted);">No</td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">20 ac irrigated</td>
-        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); color:#1a6b3c; font-weight:600;">PRIMARY — same entitlement class, Tumalo-proximate, best location anchor</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); color:#555; font-weight:600;">IRRIGATED CHECK, current conditions anchor. Deduct water value (~$6-8k/irr.ac) for dry comparison.</td>
       </tr>
-      <tr style="background:rgba(26,107,60,0.05);">
+      <tr style="background:rgba(26,107,60,0.04);">
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">65799 93rd St · 32.69 ac</td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);"><span class="zoning-pill efu" style="font-size:9px;">EFUTRB</span></td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">Farm / lot-of-record CUP</td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); text-align:center; color:var(--muted);">No</td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">27 ac irrigated</td>
-        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); color:#1a6b3c; font-weight:600;">PRIMARY — most recent (May 2026), repeat-sale +26% trend confirms market direction</td>
-      </tr>
-      <tr style="background:rgba(26,107,60,0.05);">
-        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">61955 Somerset · 38.96 ac</td>
-        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);"><span class="zoning-pill efu" style="font-size:9px;">EFUTRB</span></td>
-        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">Farm / lot-of-record CUP</td>
-        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); text-align:center; color:var(--muted);">No</td>
-        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">12.1 ac irrigated</td>
-        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); color:#1a6b3c; font-weight:600;">PRIMARY — best size match (38.96 ac), EFUTRB zone match</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); color:#555; font-weight:600;">IRRIGATED CHECK, most recent sale (May 2026), repeat-sale confirms market direction. Water-adjusted for dry comparison.</td>
       </tr>
       <tr>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">23250 Walker · 40.01 ac</td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);"><span class="zoning-pill efu" style="font-size:9px;">EFUTRB</span></td>
-        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">No confirmed CUP at sale</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">Existing mfg home at sale</td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); text-align:center; color:var(--muted);">No</td>
-        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); color:var(--muted);">None</td>
-        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); font-weight:600;">FLOOR ANCHOR — exact size match, no water, no confirmed dwelling, far east location. Sets conservative low end.</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">7.05 ac COID irr.</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); color:#555; font-weight:600;">IRRIGATED COMP, LOW FOR LOCATION, has water + home, priced low because it is 5 mi east. Not a no-water comp.</td>
       </tr>
       <!-- SIZE TREND SUPPORT -->
       <tr style="color:var(--muted);">
@@ -1040,7 +1227,7 @@
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">Farm</td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); text-align:center;">No</td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">Irrigated</td>
-        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">SIZE-TREND SUPPORT — larger parcels compress $/ac; confirms subject's 40-ac tier is above this band</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">SIZE-TREND SUPPORT, larger parcels compress $/ac; confirms subject's 40-ac tier is above this band</td>
       </tr>
       <tr style="color:var(--muted);">
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">Peterson Ridge · 78.36 ac</td>
@@ -1048,7 +1235,7 @@
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">Farm</td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); text-align:center;">No</td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">Irrigated</td>
-        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">SIZE-TREND SUPPORT — same large-parcel compression, EFUTRB with CUP. Context only.</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">SIZE-TREND SUPPORT, same large-parcel compression, EFUTRB with CUP. Context only.</td>
       </tr>
       <tr style="color:var(--muted);">
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">18425 Pinehurst · 11 ac</td>
@@ -1056,7 +1243,7 @@
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">Replacement dwelling approved</td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); text-align:center;">No</td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">7 ac irrigated</td>
-        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">CONTEXT ONLY — small-lot EFUTRB premium ($91K/ac) does not extrapolate to 40-ac subject. Not used for sizing.</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">CONTEXT ONLY, small-lot EFUTRB premium ($91K/ac) does not extrapolate to 40-ac subject. Not used for sizing.</td>
       </tr>
       <!-- EXCLUDED -->
       <tr style="background:rgba(139,26,26,0.04); font-style:italic; color:var(--muted);">
@@ -1065,7 +1252,7 @@
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">Dwelling BY RIGHT</td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); text-align:center;">Yes (10-ac lots)</td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">Irrigated</td>
-        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); color:#8b1a1a; font-style:normal; font-weight:600;">EXCLUDED — easier zone + subdivision optionality inflates $/ac vs. EFUTRB subject</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); color:#8b1a1a; font-style:normal; font-weight:600;">EXCLUDED, easier zone + subdivision optionality inflates $/ac vs. EFUTRB subject</td>
       </tr>
       <tr style="background:rgba(139,26,26,0.04); font-style:italic; color:var(--muted);">
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">Old Bend Redmond · 36.28 ac</td>
@@ -1073,7 +1260,7 @@
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">Dwelling BY RIGHT</td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); text-align:center;">Yes</td>
         <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line);">Irrigated</td>
-        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); color:#8b1a1a; font-style:normal; font-weight:600;">EXCLUDED — same reason. MUA-10 by-right dwelling + subdivision creates structurally different buyer economics.</td>
+        <td style="padding:4px 5px; border-bottom:1px solid var(--navy-line); color:#8b1a1a; font-style:normal; font-weight:600;">EXCLUDED, same reason. MUA-10 by-right dwelling + subdivision creates structurally different buyer economics.</td>
       </tr>
       <tr style="background:rgba(139,26,26,0.04); font-style:italic; color:var(--muted);">
         <td style="padding:4px 5px;">19975 Tumalo · 80 ac</td>
@@ -1081,18 +1268,18 @@
         <td style="padding:4px 5px;">Residential</td>
         <td style="padding:4px 5px; text-align:center;">Yes (5-ac dev)</td>
         <td style="padding:4px 5px; color:var(--muted);">River frontage</td>
-        <td style="padding:4px 5px; color:#8b1a1a; font-style:normal; font-weight:600;">EXCLUDED — residential development zone, not farm land. Structurally incomparable to EFU.</td>
+        <td style="padding:4px 5px; color:#8b1a1a; font-style:normal; font-weight:600;">EXCLUDED, residential development zone, not farm land. Structurally incomparable to EFU.</td>
       </tr>
     </tbody>
   </table>
 
   <footer class="pg-footer">
     <span>Zoning source: Deschutes County GIS spatial query · DIAL acct 265738 · queried 2026-06-04</span>
-    <span>Page 14 of 22</span>
+    <span>Page 17 of 25</span>
   </footer>
 </section>
 
-<!-- PAGE 15 — ZONING WEIGHTING NARRATIVE -->
+<!-- PAGE 18 — ZONING WEIGHTING NARRATIVE -->
 <section class="page">
   <header class="pg-header">
     <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
@@ -1105,27 +1292,27 @@
   <p>EFUTRB is Oregon's highest-protection agricultural zone in the Tumalo-Redmond-Bend subzone. A parcel zoned EFUTRB must obtain a conditional use approval for a nonfarm dwelling, and that approval is not automatic. No permit history means no confirmed dwelling right. That is why all primary comps in this analysis are EFUTRB and all excluded comps are MUA-10 or TUR-5. The entitlement class, not the acres, is the governing variable.</p>
 
   <h3 class="subhead">Why MUA-10 and TUR-5 parcels are excluded, not discounted</h3>
-  <p>MUA-10 (Multiple Use Agriculture, 10-acre minimum) and TUR-5 (Tumalo Urban Reserve, 5-acre minimum) allow dwelling construction by right and permit subdivision. A buyer of an MUA-10 parcel can break it into 10-acre lots without a county hearing. That subdivision optionality is the core of the premium those parcels command. At $53,749/acre (Old Bend Redmond, MUA-10) versus $33,649/acre (93rd St, EFUTRB), the MUA-10 premium over matched-size EFUTRB is approximately $20,000/acre. Using an MUA-10 comp and applying a haircut would require quantifying exactly what fraction of an MUA-10 buyer's price reflects subdivision optionality. That adjustment is speculative. It is cleaner and more defensible to exclude MUA-10 and TUR-5 entirely and work from the EFUTRB cohort alone.</p>
+  <p>MUA-10 (Multiple Use Agriculture, 10-acre minimum) and TUR-5 (Tumalo Urban Reserve, 5-acre minimum) allow dwelling construction by right and permit subdivision. A buyer of an MUA-10 parcel can break it into 10-acre lots without a county hearing. That subdivision optionality is the core of the premium those parcels command. At $53,749/acre (Old Bend Redmond, MUA-10) versus $30,590/acre (93rd St, EFUTRB), the MUA-10 premium over matched-size EFUTRB is approximately $23,000/acre. Using an MUA-10 comp and applying a haircut would require quantifying exactly what fraction of an MUA-10 buyer's price reflects subdivision optionality. That adjustment is speculative. It is cleaner and more defensible to exclude MUA-10 and TUR-5 entirely and work from the EFUTRB cohort alone.</p>
 
-  <h3 class="subhead">How irrigation and farming value interact with the subject's no-water status</h3>
-  <p>The three primary irrigated EFUTRB comps (Collins, 93rd, Somerset) sell at $25,000-$33,600/acre. Part of their value is the farming income potential from water rights. Deschutes County water rights trade at roughly $5,000-$15,000 per irrigated acre, and the absence of water rights is the largest single discount applied to the subject in the adjustment grid. However, the subject's lack of irrigation is precisely what kept the parcel eligible for the nonfarm-dwelling CU-09-73 pathway. Under Oregon EFU law, irrigated land classified as "high-value farmland" generally bars nonfarm dwellings. The subject has no water, which is a real value deficit relative to irrigated comps, but also the legal basis for its confirmed buildable homesite status. No water is both the discount and the enabling condition for the entitlement premium.</p>
+  <h3 class="subhead">How irrigation and farming value interact with the subject's dry status</h3>
+  <p>The two irrigated current-market comps (Collins, 93rd) sell at $30,590-$33,594/acre. Part of their value is the farming income potential from water rights. Deschutes County water rights trade at roughly $5,000-$15,000 per irrigated acre, and the absence of water rights is the largest single discount applied to the subject in the adjustment grid. However, the subject's lack of irrigation is precisely what kept the parcel eligible for the nonfarm-dwelling CU-09-73 pathway. Under Oregon EFU law, irrigated land classified as "high-value farmland" generally bars nonfarm dwellings. The subject has no water, which is a real value deficit relative to irrigated comps, but also the legal basis for its confirmed buildable homesite status. No water is both the discount and the enabling condition for the entitlement premium.</p>
 
   <h3 class="subhead">WA 40-acre floor: no subdivision optionality, a real value cap</h3>
   <p>The Wildlife Area overlay on this parcel enforces a 40-acre minimum lot size. The parcel cannot be subdivided under any scenario without removing the WA designation, which is not a realistic outcome. This eliminates all lot-split speculation from the buyer analysis. A buyer is purchasing a single 40-acre EFUTRB homesite. That is the product. Compared to MUA-10 or TUR-5 buyers who may capture development upside, the EFUTRB WA buyer has a hard ceiling. The value range must reflect that ceiling honestly.</p>
 
   <h3 class="subhead">Conclusion: where the subject lands</h3>
   <div class="entitlement-box" style="margin-top:6px;">
-    <div class="eb-head">Weighting conclusion · $25,000-$33,600/acre range · Recommended $31,300/acre · $1,250,000</div>
-    <p>The subject weights to the EFUTRB mid-tier. Walker ($17,493/acre) is the floor: no-water, no confirmed dwelling, east Bend. Collins and 93rd ($33,594-$33,649/acre) are the ceiling: irrigated, Tumalo-proximate, CUP-confirmed. The subject sits between these. It lacks irrigation (discount) but has a confirmed nonfarm-dwelling right (premium), BLM adjacency on two sides (premium), existing permitted structures and infrastructure (premium), and is on Tumalo Reservoir Road in the same corridor as Collins (location premium). After all adjustments, the three-comp weighted average produces $30,356/acre ($1,214,000). The recommended list of $1,250,000 ($31,300/acre) sits at the upper-middle of the adjusted range, fully crediting the confirmed entitlement, location, and BLM privacy. This is consistent with all three pricing methods on the following page.</p>
+    <div class="eb-head">Weighting conclusion · $26,000-$30,000/acre range · Recommended $29,900/acre · $1,195,000</div>
+    <p>The subject weights to the dry EFUTRB mid-tier. Bear Creek ($12,908/acre) is the no-entitlement floor. The irrigated check comps (Collins $33,594, 93rd $30,590) are the current-conditions ceiling, water-adjusted to a dry equivalent of $24,000-$27,000/ac. The Twin 18715 ($25,769/ac, 2021, dry, confirmed entitlement, next door) time-adjusts to $27,000-$29,600/ac. The subject lands at the upper end of the dry-entitled range given BLM adjacency on two sides, existing permitted structures and infrastructure, and the Tumalo Reservoir Rd corridor. Three-indicator convergence: $1,050,000-$1,150,000; point ~$1,100,000. The recommended list of $1,195,000 ($29,900/acre) sits just above the supported range to allow negotiation. Expected sale in the $1,100,000-$1,150,000 range. This is consistent with all three pricing methods on the following page.</p>
   </div>
 
   <footer class="pg-footer">
     <span>Ryan Realty · 541.213.6706 · Zoning logic per Deschutes County Code DCC 18.16 / 18.84 / 18.88 · verified 2026-06-04</span>
-    <span>Page 15 of 22</span>
+    <span>Page 18 of 25</span>
   </footer>
 </section>
 
-<!-- PAGE 16 — PRICING STRATEGY -->
+<!-- PAGE 19 — PRICING STRATEGY -->
 <section class="page">
   <header class="pg-header">
     <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
@@ -1135,52 +1322,53 @@
   <h2 class="section">Pricing Strategy</h2>
 
   <div class="entitlement-box" style="margin-bottom:10px;">
-    <div class="eb-head">Entitlement Confirmed · CU-09-73 · Buildable Homesite · Value Firm</div>
-    <div style="font-size:10px; color:var(--navy);">Deschutes County Declaratory Ruling 247-21-000857-DR approved the land use application. Notice of Decision mailed 12/13/2021, now final. The county found CU-09-73 a valid existing permit with the nonfarm-dwelling land use authorized under the county's ordinances. This parcel is a confirmed buildable 40-acre EFUTRB homesite. All three pricing methods below apply on that basis. Value range: $1,000,000-$1,320,000. Recommended list: $1,250,000.</div>
+    <div class="eb-head">Entitlement Confirmed · CU-09-73 · Buildable Homesite · Three-Indicator Convergence</div>
+    <div style="font-size:10px; color:var(--navy);">Deschutes County Declaratory Ruling 247-21-000857-DR approved the land use application. Notice of Decision mailed 12/13/2021, now final. The county found CU-09-73 a valid existing permit with the nonfarm-dwelling land use authorized under the county's ordinances. This parcel is a confirmed buildable 40-acre EFUTRB homesite. All three pricing methods below apply on that basis. Three-indicator convergence: $1,050,000-$1,150,000; point ~$1,100,000. Recommended list: $1,195,000.</div>
   </div>
 
-  <h3 class="subhead">Method 1 · $/Acre tier model (Scenario A)</h3>
-  <p>The EFUTRB irrigated center in Tumalo is ~$33,600/acre (Collins and 93rd). Apply the no-water discount of $5,500/acre and add back the confirmed CU-09-73 entitlement premium ($1,500/acre), BLM adjacency + location ($2,000-$3,000/acre), and structures/infra ($300-$500/acre). Net: <strong>$31,800-$33,600/acre net from irrigated center, discounted by ~$5,500 water, recovered ~$4,000-$5,000 by entitlement+BLM = ~$25,800-$33,100/acre.</strong></p>
-  <p class="small" style="margin-bottom:6px;"><code style="font-family:'Geist Mono',monospace; background:var(--navy-fill); padding:2px 6px; border-radius:3px;">$25,800 × 40 = $1,032,000 &nbsp;|&nbsp; $33,100 × 40 = $1,324,000 &nbsp;|&nbsp; Midpoint: $1,178,000</code></p>
+  <h3 class="subhead">Method 1 · Twin path (dry anchor)</h3>
+  <p>Anchor on the next-door Twin 18715 ($1,030,000 · 39.97 ac · $25,769/ac · March 2021 · dry EFUTRB · own entitlement · 1,850 sf barn). Time-adjust +5-15% for the 2021-to-2026 market gain and subtract the barn premium (~$55,000). Result: <strong>$1,026,500, $1,181,000.</strong></p>
+  <p class="small" style="margin-bottom:6px;"><code style="font-family:'Geist Mono',monospace; background:var(--navy-fill); padding:2px 6px; border-radius:3px;">$1,030,000 × 1.05 − $55,000 = $1,026,500 &nbsp;|&nbsp; $1,030,000 × 1.20 − $55,000 = $1,181,000</code></p>
 
-  <h3 class="subhead">Method 2 · Comparable-anchor model (Collins Rd)</h3>
-  <p>Anchor on 64859 Collins Rd ($860,000 · 25.6 ac · $33,594/ac · Sep 2025, EFUTRB). Subject is 14.4 acres larger (+56%) but lacks Collins's 20 acres of irrigation water. Adjusted: start at $860,000, add 14.4 acres at $26,000/acre (+$374,400), subtract $220,000 for no-water differential, add $100,000 for BLM adjacency + entitlement premium. Conservative: $1,014,400. Recommended: $1,250,000 (crediting full entitlement and BLM value).</p>
-  <p class="small" style="margin-bottom:6px;"><code style="font-family:'Geist Mono',monospace; background:var(--navy-fill); padding:2px 6px; border-radius:3px;">$860,000 + $374,400 − $220,000 + $100,000 = $1,114,400 conservative &nbsp;|&nbsp; $1,250,000 recommended</code></p>
+  <h3 class="subhead">Method 2 · Recent-comp water-adjusted path</h3>
+  <p>Current irrigated comps (93rd $30,590/ac, Collins $33,594/ac). Deduct water value ~$6-8k per irrigated acre. Dry-equiv ~$24,000-$26,000/ac. Add subject's location/BLM edge (+$2,000-$3,000/ac). Range: $26,000-$28,000/ac × 39.97 ac = <strong>$1,039,000, $1,119,000.</strong></p>
+  <p class="small" style="margin-bottom:6px;"><code style="font-family:'Geist Mono',monospace; background:var(--navy-fill); padding:2px 6px; border-radius:3px;">$26,000 × 39.97 = $1,039,000 &nbsp;|&nbsp; $28,000 × 39.97 = $1,119,000</code></p>
 
-  <h3 class="subhead">Method 3 · Adjusted-comp weighted average</h3>
-  <p>From the adjustment grid (page 8), the three size-appropriate EFUTRB comps produce adjusted per-acre values of $30,894 (Collins), $32,149 (93rd), and $28,026 (Somerset). Weighted equally: <strong>average $30,356/acre × 40 acres = $1,214,000</strong>. Including Walker as a conservative floor check at $25,493/acre adjusted ($1,020,000), the full range from the four EFUTRB comps spans $1,020,000-$1,286,000.</p>
+  <h3 class="subhead">Method 3 · Bear Creek floor path</h3>
+  <p>Bear Creek (no entitlement floor) $12,908/ac. Add entitlement premium (+$6,500/ac), location/BLM premium (+$4,000/ac), size compression (+$2,000/ac), structures/infra (+$1,000/ac), time (+$500/ac) = adjusted $26,908/ac. Range at ±5%: <strong>$851,000, $1,076,000.</strong> (Bear Creek floor check confirms entitlement is worth a material premium.)</p>
+  <p class="small" style="margin-bottom:6px;"><code style="font-family:'Geist Mono',monospace; background:var(--navy-fill); padding:2px 6px; border-radius:3px;">$26,908 × 39.97 = $1,076,000 (adjusted) &nbsp;|&nbsp; $12,908 × 39.97 × 1.65 = $851,000 (raw floor × entitlement factor)</code></p>
 
   <h3 class="subhead">Convergence</h3>
-  <p style="margin-bottom:10px;">Methods 1, 2, and 3 converge around <strong>$1,020,000-$1,286,000</strong>, within roughly 26% range, appropriate for a bare-land valuation with no direct no-water-plus-active-CUP EFUTRB equivalent in the data set. Confidence: <strong>Moderate</strong>. The entitlement premium is the largest source of uncertainty.</p>
+  <p style="margin-bottom:10px;">Methods 1 and 2 converge tightly at <strong>$1,039,000-$1,181,000</strong>. Method 3 (floor path) confirms the entitlement premium and sets a floor at ~$851,000-$1,076,000. Three-indicator convergence zone: <strong>$1,050,000-$1,150,000; point estimate ~$1,100,000.</strong> Confidence: Moderate-High. The Twin 18715 next door is a near-perfect dry EFUTRB match. The list price at $1,195,000 sits just above the supported range to allow negotiation.</p>
 
   <div class="tier-grid">
     <div class="tier">
-      <div class="t-lbl">Conservative</div>
-      <div class="t-val">$1,000,000</div>
-      <div class="t-sub">$25,000/acre</div>
-      <div class="t-note">Prices the entitlement at a minimal premium over Walker's no-water floor. Quick-sale entry if the owner wants speed over maximum price. Effectively prices the CU at near-zero and relies on BLM + location for the premium over Walker.</div>
+      <div class="t-lbl">Supported range</div>
+      <div class="t-val">$1,100,000</div>
+      <div class="t-sub">~$27,500/acre</div>
+      <div class="t-note">Point estimate where all three methods converge. Expected sale range $1,100,000-$1,150,000 at market pace. Prices the dry EFUTRB entitlement fairly without leaving money on the table.</div>
     </div>
     <div class="tier featured">
       <div class="t-lbl">Recommended List</div>
-      <div class="t-val">$1,250,000</div>
-      <div class="t-sub">~$31,300/acre</div>
-      <div class="t-note">Fully credits the confirmed CU-09-73 entitlement, BLM adjacency, Tumalo Reservoir Rd corridor, and existing structures. Sits at the upper-middle of the EFUTRB adjusted comp range. $350,000 below the failed 2021 ask. Entitlement verified per DR 247-21-000857-DR, F&amp;D doc 1012684.</div>
+      <div class="t-val">$1,195,000</div>
+      <div class="t-sub">~$29,900/acre</div>
+      <div class="t-note">Sits just above the supported range to allow negotiation. Fully credits the confirmed CU-09-73 entitlement, BLM adjacency, Tumalo Reservoir Rd corridor, and existing structures. $350,000 below the failed 2021 ask. Entitlement verified per DR 247-21-000857-DR, F&amp;D doc 1012684.</div>
     </div>
     <div class="tier">
-      <div class="t-lbl">High End</div>
-      <div class="t-val">$1,320,000</div>
-      <div class="t-sub">$33,000/acre</div>
-      <div class="t-note">Approaches the irrigated EFUTRB comp center without the water. Requires a buyer who heavily values the dwelling CU, BLM privacy, and Cascade view potential. Supportable only with professional photography and confirmed F&amp;D.</div>
+      <div class="t-lbl">Aspirational</div>
+      <div class="t-val">$1,350,000</div>
+      <div class="t-sub">$33,800/acre</div>
+      <div class="t-note">Approaches irrigated EFUTRB comp range without the water. Requires exceptional buyer who heavily values the confirmed dwelling CU and BLM privacy. Active supply at $1,999,000 (560+ DOM) confirms aspirational pricing produces long hold times.</div>
     </div>
   </div>
 
   <footer class="pg-footer">
     <span>Ryan Realty · 541.213.6706</span>
-    <span>Page 16 of 22</span>
+    <span>Page 19 of 25</span>
   </footer>
 </section>
 
-<!-- PAGE 17 — SUPPORTING COMPS REFERENCE -->
+<!-- PAGE 20 — SUPPORTING COMPS REFERENCE -->
 <section class="page">
   <header class="pg-header">
     <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
@@ -1239,6 +1427,16 @@
         <td>EFUTRB but small (11 ac). Small-lot premium at $91K/ac not applicable to 40-ac subject. Context: EFUTRB replacement-dwelling-approved parcels command strong premiums at small scale.</td>
       </tr>
       <tr>
+        <td>61955 Somerset</td>
+        <td><span class="zoning-pill efu" style="font-size:9px;">EFUTRB</span></td>
+        <td class="num">38.96</td>
+        <td>12.1 ac irr.</td>
+        <td class="num">$910,000</td>
+        <td class="num">$23,357</td>
+        <td class="num">Jan 2026</td>
+        <td>EFUTRB, partial irrigation, size match (38.96 ac). Located 10.2 mi east. At $23,357/ac irrigated, the dry-equiv after water deduction is ~$19,000-$21,000/ac. Dropped as primary comp due to east location and partial-irrigation complexity; retained here as supporting context.</td>
+      </tr>
+      <tr>
         <td>64320 Deschutes Market</td>
         <td><span class="zoning-pill efu" style="font-size:9px;">EFUTRB</span></td>
         <td class="num">73.72</td>
@@ -1261,8 +1459,8 @@
     </tbody>
   </table>
 
-  <h3 class="subhead">The no-water comps summary</h3>
-  <p>Only two EFUTRB comps in the data set have no irrigation water rights: Walker (40.01 ac, $17,493/ac, no confirmed CUP, east Bend) and the subject. That is the narrowest comparison available. Walker's $17,493/acre without a dwelling CUP confirms that the $7,500-$15,000/acre premium the Collins and 93rd comps imply for the CU-09-73 entitlement and BLM location is both meaningful and well-supported. Without a CUP, 40-acre no-water EFUTRB land in this region trades below $20,000/acre. With one confirmed vested, it trades in the $25,000-$32,000/acre range on adjusted evidence. The subject's CU-09-73 is confirmed per DR 247-21-000857-DR (NOD 12/13/2021, final).</p>
+  <h3 class="subhead">Dry vs. irrigated EFUTRB: what the data shows</h3>
+  <p>The primary dry EFUTRB comps are the Twin 18715 ($25,769/ac, 2021, confirmed entitlement) and Pinehurst ($17,615/ac, 2020, 19.87 ac). Bear Creek ($12,908/ac, 2021) is the no-entitlement floor. Walker ($17,493/ac) is an irrigated comp with a home, priced low for its east-of-Bend location. Walker is NOT a dry comp. The subject is dry EFUTRB with confirmed entitlement, situated near the Twin. The Twin is the controlling comp; irrigated comps (Collins, 93rd) are current-conditions checks after water deduction.</p>
 
   <h3 class="subhead">Large-parcel supporting comps</h3>
   <div class="tier-row" style="margin-top:6px;">
@@ -1279,17 +1477,17 @@
     <div class="tr-cell">
       <div class="tr-lbl">65799 93rd St · repeat sale</div>
       <div class="tr-val">+18.3% in 16 mo.</div>
-      <div class="tr-note">Jan 2024 $26,767/ac → May 2026 $33,649/ac. Only matched-pair evidence available. Directional signal: EFUTRB acreage has firmed materially since 2024.</div>
+      <div class="tr-note">Jan 2024 $26,767/ac → May 2026 $30,590/ac. Only matched-pair evidence available. Directional signal: EFUTRB acreage has firmed materially since 2024.</div>
     </div>
   </div>
 
   <footer class="pg-footer">
     <span>Ryan Realty · 541.213.6706 · All zones verified Deschutes County GIS · MLS data pulled 2026-06-04</span>
-    <span>Page 17 of 22</span>
+    <span>Page 20 of 25</span>
   </footer>
 </section>
 
-<!-- PAGE 18 — DISCLOSURE + VERIFICATION TRACE -->
+<!-- PAGE 21 — DISCLOSURE + VERIFICATION TRACE -->
 <section class="page">
   <header class="pg-header">
     <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
@@ -1304,25 +1502,25 @@
 
   <p>The nonfarm-dwelling Conditional Use CU-09-73 is confirmed vested. Deschutes County Declaratory Ruling 247-21-000857-DR approved the land use application. The Notice of Decision was mailed 12/13/2021 and the ruling is now final (Deschutes County WebLink document 1012684, read directly from the Findings and Decision, 2026-06-04). The county found CU-09-73 a valid existing permit with the nonfarm-dwelling land use authorized under the county's ordinances. The value range on the cover is presented on the confirmed-buildable basis. Completing a dwelling on the parcel proceeds through standard building and septic permits per the CU conditions of approval.</p>
 
-  <p>Property details per owner representation and Deschutes County permit records: two ~200 sf structures (office with power and plumbing, second structure with power and water), domestic well, county-approved septic, gravel drive, road-access permit 2014. Current-condition professional photography will be required before listing. Infrastructure and structure condition have not been independently inspected for this analysis.</p>
+  <p>Property details per owner representation and Deschutes County permit records: two ~200 sf structures with finaled electrical and plumbing permits (building-permit-exempt at that size), domestic well (OWRD well log #58945, drilled Feb 2010, 495 ft deep, first water 451 ft), no septic system installed (site evaluation only, buyer installs at approximately $15,000-$30,000; verify current county requirements), gravel drive, road-access permit 2014. Current-condition professional photography will be required before listing. Infrastructure and structure condition have not been independently inspected for this analysis.</p>
 
   <div class="trace">
     <div class="t-hd">Verification trace (audit trail)</div>
-    <strong>Subject:</strong> Deschutes County DIAL, acct 265738, taxlot 171103A000602. Owner: Tumalo Pines LLC. GIS polygon: Deschutes County GIS Dial2_Taxlots/MapServer/0, computed area 39.92 ac (shoelace formula). MLS history: <code>listings</code> table, ListingKeys 20200227073204120207000000 (2016 closed $535,000), 20200227082327634239000000 (2018 expired $825,000), 20210415194006283018000000 (2021 canceled $1,600,000). Annual tax ~$3,200: DIAL property record. Lat/lng 44.1329, -121.3912: GIS centroid.<br/><br/>
-    <strong>Zoning:</strong> EFUTRB + LM + WA: Deschutes County DIAL zoning report, acct 265738. Confirmed Legal Lot of Record: DIAL. MUA-10/TUR-5 exclusions: Deschutes County GIS spatial zoning query against each excluded parcel's tax lot. DCC references: 18.16 (EFU), 18.84 (LM), 18.88 (WA). <strong>Entitlement:</strong> CU-09-73 nonfarm dwelling confirmed vested — DR 247-21-000857-DR (file 247-21-000857-DR, owner Tumalo Pines LLC, subject 18705 Tumalo Reservoir Rd, taxlot 171103A000602, acct 265738). NOD mailed 12/13/2021, final ~12/25/2021. County approved; condition B verbatim: "CU-09-73 is a valid existing permit and the land use described in the CU-09-73 is authorized under the County's ordinances, subject to any applicable revocation provisions." Source: Deschutes County WebLink doc 1012684, read directly from F&amp;D 2026-06-04.<br/><br/>
-    <strong>EFUTRB comps:</strong> 64859 Collins Rd ($860,000 · 25.6 ac · $33,594/ac · Sep 2025 · EFUTRB GIS verified) · 65799 93rd St ($1,000,000 · 32.69 ac · $33,649/ac · May 2026 · EFUTRB GIS verified) · 61955 Somerset ($910,000 · 38.96 ac · $25,026/ac · Jan 2026 · EFUTRB GIS verified) · 23250 Walker ($699,900 · 40.01 ac · $17,493/ac · Nov 2024 · EFUTRB GIS verified). MLS records: <code>listings</code> table, <code>PropertyType='D'</code>, <code>StandardStatus='Closed'</code>, address-matched and ClosePrice confirmed. Repeat-sale pair 93rd St: Jan 2024 $845,000 $26,767/ac (same parcel confirmed by taxlot match).<br/><br/>
-    <strong>Supporting comps:</strong> 18425 Pinehurst ($945,000 · 11 ac · $90,818/ac · Oct 2024 · EFUTRB, context only. Small-lot premium). 64320 Deschutes Market ($1,050,000 · 73.72 ac · $14,244/ac · Jan 2024 · EFUTRB). 16501 Peterson Ridge ($1,375,000 · 78.36 ac · $17,546/ac · Nov 2023 · EFUTRB). Excluded: 18313 Tumalo Res. (MUA-10), 64145 Old Bend Redmond (MUA-10), 19975 Tumalo Rd (TUR-5): zone verified GIS.<br/><br/>
-    <strong>Aerial:</strong> Deschutes County GIS Dial2_Taxlots/MapServer/0 polygon + Google Maps satellite imagery. Output: <code>assets/aerial-lot-lines.png</code> (1280×1280 px). Boundary: 11 vertices, EPSG:4326. Acreage match: 39.92 ac computed vs ~39.95 ac county-stated: PASS.<br/><br/>
+    <strong>Subject:</strong> Deschutes County DIAL, acct 265738, taxlot 171103A000602. Owner: Tumalo Pines LLC. GIS polygon: Deschutes County GIS Dial2_Taxlots/MapServer/0, computed area 39.97 ac net / 40.00 ac gross (Parcel 2, Partition Plat 2010-04, shoelace formula). MLS history: <code>listings</code> table, ListingKeys 20200227073204120207000000 (2016 closed $535,000), 20200227082327634239000000 (2018 expired $825,000), 20210415194006283018000000 (2021 canceled $1,600,000). Annual tax ~$3,200: DIAL property record. Lat/lng 44.1329, -121.3912: GIS centroid. Well: OWRD well log #58945, domestic, drilled Feb 2010, 495 ft deep, first water 451 ft. Septic: no system installed; site evaluation on file only.<br/><br/>
+    <strong>Zoning:</strong> EFUTRB + LM + WA: Deschutes County DIAL zoning report, acct 265738. Confirmed Legal Lot of Record: DIAL. MUA-10/TUR-5 exclusions: Deschutes County GIS spatial zoning query against each excluded parcel's tax lot. DCC references: 18.16 (EFU), 18.84 (LM), 18.88 (WA). <strong>Entitlement:</strong> CU-09-73 nonfarm dwelling confirmed vested, DR 247-21-000857-DR (file 247-21-000857-DR, owner Tumalo Pines LLC, subject 18705 Tumalo Reservoir Rd, taxlot 171103A000602, acct 265738). NOD mailed 12/13/2021, final ~12/25/2021. County approved; condition B verbatim: "CU-09-73 is a valid existing permit and the land use described in the CU-09-73 is authorized under the County's ordinances, subject to any applicable revocation provisions." Source: Deschutes County WebLink doc 1012684, read directly from F&amp;D 2026-06-04.<br/><br/>
+    <strong>Primary dry comps:</strong> 18715 Tumalo Reservoir ($1,030,000 · 39.97 ac · $25,769/ac · Mar 2021 · EFUTRB dry · twin/anchor) · 19155 Pinehurst ($350,000 · 19.87 ac · $17,615/ac · Jul 2020 · EFUTRB dry · confirmed entitlement) · 21700 Bear Creek ($740,000 · 57.33 ac · $12,908/ac · May 2021 · EFUTRB dry · no entitlement floor). <strong>Irrigated current-conditions check:</strong> 64859 Collins Rd ($860,000 · 25.6 ac · $33,594/ac · Sep 2025 · EFUTRB GIS verified) · 65799 93rd St ($1,000,000 · 32.69 ac · $30,590/ac · May 2026 · EFUTRB GIS verified) · 23250 Walker ($699,900 · 40.01 ac · $17,493/ac · Nov 2024 · EFUTRB · irrigated 7.05 ac COID + existing mfg home · low for east location). MLS records: <code>listings</code> table, <code>PropertyType='D'</code>, <code>StandardStatus='Closed'</code>, address-matched and ClosePrice confirmed. Repeat-sale pair 93rd St: Jan 2024 $845,000 $26,767/ac (same parcel confirmed by taxlot match).<br/><br/>
+    <strong>Supporting comps:</strong> 61955 Somerset ($910,000 · 38.96 ac · $23,357/ac · Jan 2026 · EFUTRB partial irr.). 18425 Pinehurst small-lot ($945,000 · 11 ac · $90,818/ac · Oct 2024 · EFUTRB, context only). 64320 Deschutes Market ($1,050,000 · 73.72 ac · $14,244/ac · Jan 2024 · EFUTRB). 16501 Peterson Ridge ($1,375,000 · 78.36 ac · $17,546/ac · Nov 2023 · EFUTRB). Excluded: 18313 Tumalo Res. (MUA-10), 64145 Old Bend Redmond (MUA-10), 19975 Tumalo Rd (TUR-5): zone verified GIS.<br/><br/>
+    <strong>Aerial:</strong> Deschutes County GIS Dial2_Taxlots/MapServer/0 polygon + Google Maps satellite imagery. Output: <code>assets/aerial-lot-lines.png</code> (1280×1280 px). Boundary: 11 vertices, EPSG:4326. Acreage: 39.97 ac net (Partition Plat 2010-04).<br/><br/>
     <strong>Broker:</strong> Matt Ryan, Oregon RE License # 201206613, 541.213.6706, matt@ryan-realty.com.
   </div>
 
   <footer class="pg-footer">
     <span>Ryan Realty · Honest. Transparent. Trustworthy.</span>
-    <span>Page 18 of 22</span>
+    <span>Page 21 of 25</span>
   </footer>
 </section>
 
-<!-- PAGE 19 — BROKER SIGNATURE -->
+<!-- PAGE 22 — BROKER SIGNATURE -->
 <section class="page" style="display:flex; flex-direction:column; justify-content:center;">
   <header class="pg-header">
     <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
@@ -1348,11 +1546,11 @@
 
   <footer class="pg-footer">
     <span>Ryan Realty · Bend · Oregon</span>
-    <span>Page 19 of 22</span>
+    <span>Page 22 of 25</span>
   </footer>
 </section>
 
-<!-- PAGE 20-A — SUPPLEMENTAL DOCUMENTATION (EXHIBIT LIST PAGE 1) -->
+<!-- PAGE 23 — SUPPLEMENTAL DOCUMENTATION (EXHIBIT LIST PAGE 1) -->
 <section class="page">
   <header class="pg-header">
     <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
@@ -1406,11 +1604,11 @@
 
   <footer class="pg-footer">
     <span>Sources: Deschutes County DIAL · Deschutes County WebLink · Deschutes County GIS · queried 2026-06-04</span>
-    <span>Page 20 of 22</span>
+    <span>Page 23 of 25</span>
   </footer>
 </section>
 
-<!-- PAGE 21 — SUPPLEMENTAL DOCUMENTATION (EXHIBIT LIST PAGE 2) -->
+<!-- PAGE 24-25 — SUPPLEMENTAL DOCUMENTATION (EXHIBIT LIST PAGE 2) -->
 <section class="page">
   <header class="pg-header">
     <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
@@ -1427,7 +1625,7 @@
     </div>
     <p style="font-size:10px; margin:0 0 3px 0;"><strong>Source:</strong> Deschutes County GIS · Taxlot layer · Taxlot ID 171103A000602</p>
     <p style="font-size:10px; margin:0 0 3px 0;"><strong>Service URL:</strong> <span style="font-family:'Geist Mono',monospace; font-size:9px; background:var(--navy-fill); padding:1px 5px; border-radius:3px;">maps.deschutes.org/arcgis/rest/services/Dial2_Taxlots/MapServer/0</span></p>
-    <p style="font-size:10px; margin:0 0 3px 0;"><strong>Key finding:</strong> GIS polygon confirms 39.92 acres (shoelace formula, EPSG:4326), 11 vertices, centroid lat 44.13495 / lng -121.3896. Boundary overlaid on Google Maps satellite imagery and exported as <code style="font-family:'Geist Mono',monospace; font-size:9px; background:var(--navy-fill); padding:1px 4px; border-radius:3px;">assets/aerial-lot-lines.png</code> (see Aerial Map, page 4). BLM adjacency on south and west edges visible in aerial.</p>
+    <p style="font-size:10px; margin:0 0 3px 0;"><strong>Key finding:</strong> GIS polygon confirms ~40 acres (39.97 net / 40.00 gross per Partition Plat 2010-04, Parcel 2, EPSG:4326), 11 vertices, centroid lat 44.13495 / lng -121.3896. Boundary overlaid on Google Maps satellite imagery and exported as <code style="font-family:'Geist Mono',monospace; font-size:9px; background:var(--navy-fill); padding:1px 4px; border-radius:3px;">assets/aerial-lot-lines.png</code> (see Aerial Map, page 4). BLM adjacency on south and west edges visible in aerial.</p>
   </div>
 
   <!-- EX-5 -->
@@ -1449,10 +1647,13 @@
         </tr>
       </thead>
       <tbody>
-        <tr><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">Collins Rd</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">64859 Collins Rd</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">EFUTRB</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line); color:#1a6b3c; font-weight:600;">PRIMARY</td></tr>
-        <tr><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">93rd St</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">65799 93rd St</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">EFUTRB</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line); color:#1a6b3c; font-weight:600;">PRIMARY</td></tr>
-        <tr><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">Somerset</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">61955 Somerset</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">EFUTRB</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line); color:#1a6b3c; font-weight:600;">PRIMARY</td></tr>
-        <tr><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">Walker</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">23250 Walker</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">EFUTRB</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line); font-weight:600;">FLOOR ANCHOR</td></tr>
+        <tr><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">Collins Rd</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">64859 Collins Rd</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">EFUTRB</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line); color:#555; font-weight:600;">IRRIGATED CHECK</td></tr>
+        <tr><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">93rd St</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">65799 93rd St</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">EFUTRB</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line); color:#555; font-weight:600;">IRRIGATED CHECK</td></tr>
+        <tr><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">18715 Twin</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">18715 Tumalo Reservoir Rd</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">EFUTRB</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line); color:#1a6b3c; font-weight:600;">DRY PRIMARY</td></tr>
+        <tr><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">Pinehurst</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">19155 Pinehurst</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">EFUTRB</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line); color:#1a6b3c; font-weight:600;">DRY PRIMARY</td></tr>
+        <tr><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">Bear Creek</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">21700 Bear Creek</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">EFUTRB</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line); color:#8b1a1a; font-weight:600;">NO-ENTITLEMENT FLOOR</td></tr>
+        <tr><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">Somerset</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">61955 Somerset</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">EFUTRB</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">SUPPORTING</td></tr>
+        <tr><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">Walker</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">23250 Walker</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">EFUTRB</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line); font-weight:600;">IRRIGATED CHECK (low, east)</td></tr>
         <tr><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">18313 Tumalo Res.</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">18313 Tumalo Reservoir Rd</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">MUA-10</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line); color:#8b1a1a; font-weight:600;">EXCLUDED</td></tr>
         <tr><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">Old Bend Redmond</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">64145 Old Bend Redmond Hwy</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line);">MUA-10</td><td style="padding:3px 5px; border-bottom:1px solid var(--navy-line); color:#8b1a1a; font-weight:600;">EXCLUDED</td></tr>
         <tr><td style="padding:3px 5px;">19975 Tumalo</td><td style="padding:3px 5px;">19975 Tumalo Rd</td><td style="padding:3px 5px;">TUR-5</td><td style="padding:3px 5px; color:#8b1a1a; font-weight:600;">EXCLUDED</td></tr>
@@ -1464,18 +1665,18 @@
   <div style="border:1px solid var(--navy-line); border-radius:8px; padding:10px 13px; margin-bottom:8px; background:white;">
     <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px;">
       <span style="font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--navy);">EX-6 &nbsp;·&nbsp; Applicable Zoning Code</span>
-      <span style="font-size:9px; color:var(--muted);">Current as of 2226-06-04</span>
+      <span style="font-size:9px; color:var(--muted);">Current as of 2126-06-04</span>
     </div>
     <p style="font-size:10px; margin:0 0 3px 0;"><strong>Authority:</strong> Deschutes County Code (DCC) Title 18 · <a href="https://deschutescounty.gov/653" style="color:var(--navy); font-size:9.5px;">deschutescounty.gov/653</a> (DCC 18.16 EFU) · <a href="https://deschutescounty.gov/652" style="color:var(--navy); font-size:9.5px;">deschutescounty.gov/652</a> (DCC 18.84 LM / 18.88 WA)</p>
     <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; margin-top:5px;">
       <div style="font-size:9px; background:var(--navy-fill); padding:5px 7px; border-radius:5px;">
-        <strong>DCC 18.16 — EFU / EFUTRB</strong><br/>Governing farm use zone. Nonfarm-dwelling pathway requires conditional use approval. High-value (irrigated) farmland bars nonfarm dwellings. EFUTRB subzone applies to non-irrigated Tumalo-Redmond-Bend area land.
+        <strong>DCC 18.16, EFU / EFUTRB</strong><br/>Governing farm use zone. Nonfarm-dwelling pathway requires conditional use approval. High-value (irrigated) farmland bars nonfarm dwellings. EFUTRB subzone applies to non-irrigated Tumalo-Redmond-Bend area land.
       </div>
       <div style="font-size:9px; background:var(--navy-fill); padding:5px 7px; border-radius:5px;">
-        <strong>DCC 18.84 — Landscape Management</strong><br/>100-ft setback from designated scenic corridors (Tumalo Reservoir Rd is a state scenic highway). New structures require design review for visual compatibility.
+        <strong>DCC 18.84, Landscape Management</strong><br/>100-ft setback from designated scenic corridors (Tumalo Reservoir Rd is a state scenic highway). New structures require design review for visual compatibility.
       </div>
       <div style="font-size:9px; background:var(--navy-fill); padding:5px 7px; border-radius:5px;">
-        <strong>DCC 18.88 — Wildlife Area</strong><br/>Deer winter range. 40-acre minimum lot size (no partition). 300-ft structure setback from Tumalo Reservoir Rd centerline. Wildlife-compatible fencing (max 42 in., no woven wire on top).
+        <strong>DCC 18.88, Wildlife Area</strong><br/>Deer winter range. 40-acre minimum lot size (no partition). 300-ft structure setback from Tumalo Reservoir Rd centerline. Wildlife-compatible fencing (max 42 in., no woven wire on top).
       </div>
     </div>
   </div>
@@ -1484,7 +1685,92 @@
 
   <footer class="pg-footer">
     <span>Sources: Deschutes County DIAL · WebLink · GIS · DCC Title 18 · queried 2026-06-04</span>
-    <span>Page 22 of 22</span>
+    <span>Page 24 of 25</span>
+  </footer>
+</section>
+
+<!-- PAGE 25 — SUPPLEMENTAL: WELL LOG + MLS LISTING HISTORY -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">18705 Tumalo Reservoir Rd · Supplemental Documentation (cont.)</div>
+  </header>
+
+  <h2 class="section">Supplemental Documentation · Authoritative Records (continued)</h2>
+
+  <!-- EX-7 -->
+  <div style="border:1px solid rgba(26,107,60,0.30); border-radius:8px; padding:10px 13px; margin-bottom:10px; background:rgba(26,107,60,0.04);">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px;">
+      <span style="font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#1a6b3c;">EX-7 &nbsp;·&nbsp; Domestic Well · OWRD Well Log #58945</span>
+      <span style="font-size:9px; color:var(--muted);">Source: OWRD Well Log Database</span>
+    </div>
+    <p style="font-size:10px; margin:0 0 4px 0;"><strong>Source:</strong> Oregon Water Resources Department · Well Log Database · <span style="font-family:'Geist Mono',monospace; font-size:9px; background:var(--navy-fill); padding:1px 5px; border-radius:3px;">apps.wrd.state.or.us/apex/f?p=WL-Query</span></p>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; margin-top:6px;">
+      <div style="font-size:9px; background:var(--navy-fill); padding:5px 7px; border-radius:5px;"><strong>Well Log #</strong><br/>58945</div>
+      <div style="font-size:9px; background:var(--navy-fill); padding:5px 7px; border-radius:5px;"><strong>Use Type</strong><br/>Domestic</div>
+      <div style="font-size:9px; background:var(--navy-fill); padding:5px 7px; border-radius:5px;"><strong>Drilled</strong><br/>February 2010</div>
+      <div style="font-size:9px; background:var(--navy-fill); padding:5px 7px; border-radius:5px;"><strong>Total Depth</strong><br/>495 ft</div>
+      <div style="font-size:9px; background:var(--navy-fill); padding:5px 7px; border-radius:5px;"><strong>First Water At</strong><br/>451 ft</div>
+      <div style="font-size:9px; background:var(--navy-fill); padding:5px 7px; border-radius:5px;"><strong>Taxlot</strong><br/>171103A000602</div>
+    </div>
+    <p style="font-size:10px; margin:6px 0 0 0;"><strong>Significance:</strong> A domestic well exists on the property and is on record with OWRD. The buyer does not need to drill a new well. Well depth (495 ft) is consistent with this corridor, Tumalo-area wells commonly run 400-600 ft. Well condition, flow rate, and water quality should be verified by a licensed well inspector as part of due diligence.</p>
+  </div>
+
+  <!-- EX-8 -->
+  <div style="border:1px solid var(--navy-line); border-radius:8px; padding:10px 13px; margin-bottom:10px; background:white;">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px;">
+      <span style="font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--navy);">EX-8 &nbsp;·&nbsp; Subject MLS Listing History</span>
+      <span style="font-size:9px; color:var(--muted);">Source: Oregon Data Share MLS via Ryan Realty platform</span>
+    </div>
+    <p style="font-size:10px; margin:0 0 6px 0;"><strong>Source:</strong> <code style="font-family:'Geist Mono',monospace; font-size:9px; background:var(--navy-fill); padding:1px 5px; border-radius:3px;">listings</code> table · PropertyType='D' · address-matched · ClosePrice confirmed · pulled 2026-06-04</p>
+    <table style="width:100%; border-collapse:collapse; font-size:9.5px;">
+      <thead>
+        <tr style="background:var(--navy-fill);">
+          <th style="text-align:left; padding:3px 6px; border-bottom:1px solid var(--navy-line); font-size:9px; text-transform:uppercase; letter-spacing:0.07em;">Status</th>
+          <th style="text-align:left; padding:3px 6px; border-bottom:1px solid var(--navy-line); font-size:9px; text-transform:uppercase; letter-spacing:0.07em;">Date</th>
+          <th style="text-align:right; padding:3px 6px; border-bottom:1px solid var(--navy-line); font-size:9px; text-transform:uppercase; letter-spacing:0.07em;">List Price</th>
+          <th style="text-align:right; padding:3px 6px; border-bottom:1px solid var(--navy-line); font-size:9px; text-transform:uppercase; letter-spacing:0.07em;">Close Price</th>
+          <th style="text-align:right; padding:3px 6px; border-bottom:1px solid var(--navy-line); font-size:9px; text-transform:uppercase; letter-spacing:0.07em;">DOM</th>
+          <th style="text-align:left; padding:3px 6px; border-bottom:1px solid var(--navy-line); font-size:9px; text-transform:uppercase; letter-spacing:0.07em;">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding:3px 6px; border-bottom:1px solid var(--navy-line);">Closed</td>
+          <td style="padding:3px 6px; border-bottom:1px solid var(--navy-line);">2016</td>
+          <td style="text-align:right; padding:3px 6px; border-bottom:1px solid var(--navy-line);">—</td>
+          <td style="text-align:right; padding:3px 6px; border-bottom:1px solid var(--navy-line);">$535,000</td>
+          <td style="text-align:right; padding:3px 6px; border-bottom:1px solid var(--navy-line);">—</td>
+          <td style="padding:3px 6px; border-bottom:1px solid var(--navy-line);">Prior acquisition by current owner group</td>
+        </tr>
+        <tr>
+          <td style="padding:3px 6px; border-bottom:1px solid var(--navy-line);">Expired</td>
+          <td style="padding:3px 6px; border-bottom:1px solid var(--navy-line);">2018</td>
+          <td style="text-align:right; padding:3px 6px; border-bottom:1px solid var(--navy-line);">$825,000</td>
+          <td style="text-align:right; padding:3px 6px; border-bottom:1px solid var(--navy-line);">—</td>
+          <td style="text-align:right; padding:3px 6px; border-bottom:1px solid var(--navy-line);">—</td>
+          <td style="padding:3px 6px; border-bottom:1px solid var(--navy-line);">Pre-entitlement confirmation; did not sell</td>
+        </tr>
+        <tr style="background:rgba(139,26,26,0.04);">
+          <td style="padding:3px 6px;">Canceled</td>
+          <td style="padding:3px 6px;">2021</td>
+          <td style="text-align:right; padding:3px 6px;">$1,600,000</td>
+          <td style="text-align:right; padding:3px 6px;">—</td>
+          <td style="text-align:right; padding:3px 6px;">—</td>
+          <td style="padding:3px 6px; color:#8b1a1a;">Overpriced relative to market; canceled. This history is why the current CMA prices at $1,195,000, $405,000 below the 2021 ask.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="caution-box" style="margin-top:8px;">
+    <div class="cb-head">Pricing lesson from subject history</div>
+    <p>The 2021 listing at $1,600,000 did not sell. The market at that time was near peak; even in favorable conditions, $1,600,000 was not supportable for this parcel. The comp data supports a recommended list of $1,195,000. The current active supply (0 Rodeo at $1,999,000 with ~560 days on market; 18785 Tumalo Reservoir at $1,125,000) reinforces that overpriced dry EFUTRB acreage sits. The $1,195,000 list price is positioned to attract motivated buyers while providing negotiation room toward the supported $1,100,000-$1,150,000 expected sale range.</p>
+  </div>
+
+  <footer class="pg-footer">
+    <span>Sources: OWRD Well Log Database · Oregon Data Share MLS · queried 2026-06-04</span>
+    <span>Page 25 of 25</span>
   </footer>
 </section>
 
