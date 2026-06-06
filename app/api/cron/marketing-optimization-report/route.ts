@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { getDashboardMarketingData } from '@/app/actions/dashboard'
 import { sendEmail } from '@/lib/resend'
+import { EMAIL_FONT_STACK, EMAIL_NAVY, EMAIL_CREAM } from '@/lib/email/brand'
 
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET?.trim()
@@ -109,7 +110,7 @@ function buildEmailHtml(params: {
   const bend = data.bendMarketContext
   const bendBlock = bend.available
     ? `<table style="width:100%;border-collapse:collapse;margin:0 0 24px;font-size:13px;">
-         <tr><th colspan="2" style="text-align:left;padding:10px 14px;background:#F2EBDD;color:#102742;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;">Bend SFR market context</th></tr>
+         <tr><th colspan="2" style="text-align:left;padding:10px 14px;background:${EMAIL_CREAM};color:${EMAIL_NAVY};font-size:12px;text-transform:uppercase;letter-spacing:0.08em;">Bend SFR market context</th></tr>
          <tr><td style="padding:8px 14px;color:#475569;border-bottom:1px solid #f1f5f9;">Active listings</td><td style="padding:8px 14px;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:600;">${bend.activeListings ?? 'N/A'}</td></tr>
          <tr><td style="padding:8px 14px;color:#475569;border-bottom:1px solid #f1f5f9;">Median list price</td><td style="padding:8px 14px;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:600;">${bend.medianListPrice !== null ? '$' + bend.medianListPrice.toLocaleString() : 'N/A'}</td></tr>
          <tr><td style="padding:8px 14px;color:#475569;border-bottom:1px solid #f1f5f9;">Months of supply</td><td style="padding:8px 14px;color:#0f172a;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:600;">${bend.monthsOfSupply !== null ? bend.monthsOfSupply.toFixed(2) : 'N/A'}</td></tr>
@@ -120,10 +121,10 @@ function buildEmailHtml(params: {
     : ''
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background:#f8fafc;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#0f172a;">
+<body style="margin:0;padding:0;background:#f8fafc;font-family:${EMAIL_FONT_STACK};color:#0f172a;">
   <div style="max-width:640px;margin:0 auto;padding:24px;">
-    <div style="background:#102742;color:#F2EBDD;padding:24px;border-radius:8px 8px 0 0;border-bottom:3px solid #D4AF37;">
-      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.18em;color:#D4AF37;margin-bottom:6px;">Ryan Realty</div>
+    <div style="background:${EMAIL_NAVY};color:${EMAIL_CREAM};padding:24px;border-radius:8px 8px 0 0;border-bottom:3px solid ${EMAIL_CREAM};">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.18em;color:${EMAIL_CREAM};margin-bottom:6px;">Ryan Realty</div>
       <div style="font-size:18px;font-weight:600;">Weekly Marketing Optimization — ${escapeHtml(data.windowLabel)}</div>
     </div>
     <div style="background:#ffffff;padding:24px;border:1px solid #e2e8f0;border-top:0;border-radius:0 0 8px 8px;">
@@ -140,7 +141,7 @@ function buildEmailHtml(params: {
       <table style="width:100%;border-collapse:collapse;margin:0 0 24px;border:1px solid #e2e8f0;">${recommendationsHtml}</table>
 
       <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.08em;color:#102742;margin:0 0 8px;font-weight:600;">Agent pickup prompt (paste to Cursor/Claude)</div>
-      <pre style="background:#102742;color:#F2EBDD;padding:16px;border-radius:6px;font-size:12px;line-height:1.55;overflow-x:auto;white-space:pre-wrap;font-family:'JetBrains Mono',ui-monospace,monospace;">${escapeHtml(pickupPrompt)}</pre>
+      <pre style="background:${EMAIL_NAVY};color:${EMAIL_CREAM};padding:16px;border-radius:6px;font-size:12px;line-height:1.55;overflow-x:auto;white-space:pre-wrap;font-family:'JetBrains Mono',ui-monospace,monospace;">${escapeHtml(pickupPrompt)}</pre>
 
       <p style="font-size:11px;color:#94a3b8;margin:24px 0 0;">Sent automatically by /api/cron/marketing-optimization-report. Live state at <a href="https://ryan-realty.com/admin" style="color:#102742;">https://ryan-realty.com/admin</a>.</p>
     </div>

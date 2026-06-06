@@ -8,6 +8,7 @@
  */
 
 import { sendEmail } from '@/lib/resend'
+import { EMAIL_FONT_STACK } from '@/lib/email/brand'
 
 const ALERT_TO = process.env.MATT_ALERT_EMAIL ?? 'matt@ryan-realty.com'
 const ALERT_FROM = process.env.RESEND_FROM ?? 'alerts@mail.ryan-realty.com'
@@ -69,7 +70,7 @@ export async function sendExpiredAlertEmail(params: ExpiredAlertParams): Promise
   })()
 
   const html = `<!doctype html>
-<html><body style="font-family:Arial,sans-serif;color:#1a1a1a;font-size:14px;line-height:1.55;max-width:640px;margin:0 auto;padding:24px;">
+<html><body style="font-family:${EMAIL_FONT_STACK};color:#1a1a1a;font-size:14px;line-height:1.55;max-width:640px;margin:0 auto;padding:24px;">
 
 <h2 style="margin:0 0 8px 0;color:#102742;">New expired listing detected</h2>
 <p style="margin:0 0 16px 0;color:#666;">${params.status} on ${params.statusChangedAt.slice(0, 10)} · ${params.city}, OR</p>

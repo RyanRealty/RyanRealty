@@ -199,22 +199,22 @@ function renderDigestHtml(d: {
 
 <table style="border-collapse:collapse;width:100%;margin-bottom:24px;">
 <tr>
-<td style="padding:12px;background:#F2EBDD;border-radius:8px;width:25%;">
+<td style="padding:12px;background:#faf8f4;border-radius:8px;width:25%;">
   <div style="font-size:11px;color:#52606D;text-transform:uppercase;letter-spacing:0.5px;">Visitors</div>
   <div style="font-size:24px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums;">${fmtInt(d.yesterdayCount)}</div>
   <div style="font-size:11px;color:#52606D;margin-top:2px;">${trendArrow} ${trendPct} vs day before</div>
 </td>
-<td style="padding:12px;background:#F2EBDD;border-radius:8px;width:25%;">
+<td style="padding:12px;background:#faf8f4;border-radius:8px;width:25%;">
   <div style="font-size:11px;color:#52606D;text-transform:uppercase;letter-spacing:0.5px;">Identified</div>
   <div style="font-size:24px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums;">${fmtInt(d.identifiedCount)}</div>
   <div style="font-size:11px;color:#52606D;margin-top:2px;">${fmtPct(d.identifiedCount, d.yesterdayCount)} of visitors</div>
 </td>
-<td style="padding:12px;background:#F2EBDD;border-radius:8px;width:25%;">
+<td style="padding:12px;background:#faf8f4;border-radius:8px;width:25%;">
   <div style="font-size:11px;color:#52606D;text-transform:uppercase;letter-spacing:0.5px;">Hot leads</div>
   <div style="font-size:24px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums;color:${d.hotCount > 0 ? '#B22222' : '#102742'};">${fmtInt(d.hotCount)}</div>
   <div style="font-size:11px;color:#52606D;margin-top:2px;">score over 100</div>
 </td>
-<td style="padding:12px;background:#F2EBDD;border-radius:8px;width:25%;">
+<td style="padding:12px;background:#faf8f4;border-radius:8px;width:25%;">
   <div style="font-size:11px;color:#52606D;text-transform:uppercase;letter-spacing:0.5px;">Qualified sellers</div>
   <div style="font-size:24px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums;">${fmtInt(d.qualLeadsYesterday)}</div>
   <div style="font-size:11px;color:#52606D;margin-top:2px;">FUB tagged seller</div>
@@ -245,13 +245,13 @@ ${d.anomalies.length > 0 ? `
 
 <h2 style="font-size:15px;margin:24px 0 8px;color:#102742;">Top traffic sources</h2>
 <table style="border-collapse:collapse;width:100%;font-size:13px;border:1px solid #E5E2D9;border-radius:6px;overflow:hidden;">
-<thead><tr style="background:#F2EBDD;"><th style="padding:8px 10px;text-align:left;font-weight:600;">Source</th><th style="padding:8px 10px;text-align:right;font-weight:600;">Sessions</th><th style="padding:8px 10px;text-align:right;font-weight:600;">Identified</th><th style="padding:8px 10px;text-align:right;font-weight:600;">ID rate</th><th style="padding:8px 10px;text-align:right;font-weight:600;">Hot</th></tr></thead>
+<thead><tr style="background:#faf8f4;"><th style="padding:8px 10px;text-align:left;font-weight:600;">Source</th><th style="padding:8px 10px;text-align:right;font-weight:600;">Sessions</th><th style="padding:8px 10px;text-align:right;font-weight:600;">Identified</th><th style="padding:8px 10px;text-align:right;font-weight:600;">ID rate</th><th style="padding:8px 10px;text-align:right;font-weight:600;">Hot</th></tr></thead>
 <tbody>${sourcesRows || '<tr><td colspan="5" style="padding:12px;text-align:center;color:#52606D;">No source data</td></tr>'}</tbody>
 </table>
 
 <h2 style="font-size:15px;margin:24px 0 8px;color:#102742;">Top landing pages</h2>
 <table style="border-collapse:collapse;width:100%;font-size:13px;border:1px solid #E5E2D9;border-radius:6px;overflow:hidden;">
-<thead><tr style="background:#F2EBDD;"><th style="padding:8px 10px;text-align:left;font-weight:600;">LP / page</th><th style="padding:8px 10px;text-align:right;font-weight:600;">Visits</th><th style="padding:8px 10px;text-align:right;font-weight:600;">Identified</th><th style="padding:8px 10px;text-align:right;font-weight:600;">ID rate</th><th style="padding:8px 10px;text-align:right;font-weight:600;">Hot</th></tr></thead>
+<thead><tr style="background:#faf8f4;"><th style="padding:8px 10px;text-align:left;font-weight:600;">LP / page</th><th style="padding:8px 10px;text-align:right;font-weight:600;">Visits</th><th style="padding:8px 10px;text-align:right;font-weight:600;">Identified</th><th style="padding:8px 10px;text-align:right;font-weight:600;">ID rate</th><th style="padding:8px 10px;text-align:right;font-weight:600;">Hot</th></tr></thead>
 <tbody>${lpRows || '<tr><td colspan="5" style="padding:12px;text-align:center;color:#52606D;">No LP data</td></tr>'}</tbody>
 </table>
 

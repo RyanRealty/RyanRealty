@@ -7,6 +7,7 @@
  */
 
 import { sendEmail } from '@/lib/resend'
+import { EMAIL_FONT_STACK, EMAIL_BORDER } from '@/lib/email/brand'
 
 const ALERT_TO = process.env.MATT_ALERT_EMAIL ?? 'matt@ryan-realty.com'
 const ALERT_FROM = process.env.RESEND_FROM ?? 'alerts@mail.ryan-realty.com'
@@ -68,11 +69,11 @@ export async function sendFsboAlertEmail(params: FsboAlertParams): Promise<{ ok:
   })()
 
   const photoBlock = params.photoUrl
-    ? `<p style="margin:16px 0;"><img src="${params.photoUrl}" alt="" style="max-width:100%;height:auto;border-radius:8px;border:1px solid #e8e2d4;" /></p>`
+    ? `<p style="margin:16px 0;"><img src="${params.photoUrl}" alt="" style="max-width:100%;height:auto;border-radius:8px;border:1px solid ${EMAIL_BORDER};" /></p>`
     : ''
 
   const html = `<!doctype html>
-<html><body style="font-family:Arial,sans-serif;color:#1a1a1a;font-size:14px;line-height:1.55;max-width:640px;margin:0 auto;padding:24px;">
+<html><body style="font-family:${EMAIL_FONT_STACK};color:#1a1a1a;font-size:14px;line-height:1.55;max-width:640px;margin:0 auto;padding:24px;">
 
 <h2 style="margin:0 0 8px 0;color:#102742;">New FSBO listing detected</h2>
 <p style="margin:0 0 16px 0;color:#666;">Source: ${params.fsboSource} · ${params.city}, ${params.state}</p>

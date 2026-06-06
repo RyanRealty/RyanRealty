@@ -11,6 +11,7 @@
  */
 import * as React from 'react'
 import { Body, Container, Head, Heading, Hr, Html, Link, Section, Text } from '@react-email/components'
+import { EMAIL_FONT_STACK } from '@/lib/email/brand'
 
 // ---------------------------------------------------------------------------
 // Daily new-leads digest
@@ -104,7 +105,7 @@ export function DailyDigestEmail({ brokerFirstName, asOfDate, leads }: DailyDige
   return (
     <Html>
       <Head />
-      <Body style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif', backgroundColor: '#faf8f4', margin: 0, padding: 0 }}>
+      <Body style={{ fontFamily: EMAIL_FONT_STACK, backgroundColor: '#faf8f4', margin: 0, padding: 0 }}>
         <Container style={{ maxWidth: 640, margin: '0 auto' }}>
           {brandHeader()}
           <Section style={{ backgroundColor: '#ffffff', padding: 24 }}>
@@ -230,7 +231,7 @@ export function WeeklyPipelineDigestEmail({
   return (
     <Html>
       <Head />
-      <Body style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif', backgroundColor: '#faf8f4', margin: 0, padding: 0 }}>
+      <Body style={{ fontFamily: EMAIL_FONT_STACK, backgroundColor: '#faf8f4', margin: 0, padding: 0 }}>
         <Container style={{ maxWidth: 640, margin: '0 auto' }}>
           {brandHeader()}
           <Section style={{ backgroundColor: '#ffffff', padding: 24 }}>

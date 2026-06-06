@@ -1,5 +1,6 @@
 import { Html, Head, Body, Container, Section, Text, Link } from '@react-email/components'
 import * as React from 'react'
+import { EMAIL_FONT_STACK } from '@/lib/email/brand'
 
 const footerStyle: React.CSSProperties = {
   marginTop: 24,
@@ -18,7 +19,7 @@ export function EmailLayout({ children, preheader }: { children: React.ReactNode
           {preheader}
         </div>
       ) : null}
-      <Body style={{ fontFamily: 'system-ui, sans-serif', backgroundColor: '#f9fafb', margin: 0, padding: 0 }}>
+      <Body style={{ fontFamily: EMAIL_FONT_STACK, backgroundColor: '#faf8f4', margin: 0, padding: 0 }}>
         <Container style={{ maxWidth: 600, margin: '0 auto', padding: 24 }}>
           <Section style={{ backgroundColor: '#102742', padding: '16px 24px', borderRadius: '8px 8px 0 0' }}>
             <Text style={{ color: '#f0eeec', margin: 0, fontSize: 20, fontWeight: 700 }}>Ryan Realty</Text>

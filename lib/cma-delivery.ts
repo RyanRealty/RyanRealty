@@ -30,6 +30,7 @@ import {
   type CMAResult,
 } from '@/lib/cma'
 import { CMAPdfDocument } from '@/lib/pdf/cma-pdf'
+import { EMAIL_FONT_STACK } from '@/lib/email/brand'
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendEmail } from '@/lib/resend'
 import { signDeliveryToken } from '@/lib/cma-delivery-tokens'
@@ -691,7 +692,7 @@ export function composeCmaEmail(params: {
   // Brand-voice compliant: no exclamation marks, no em-dashes-as-punctuation
   // (em-dash allowed as a data placeholder), tabular nums on the figures.
   const html = `
-<div style="font-family:'Geist','Helvetica Neue',Arial,sans-serif;font-size:16px;line-height:1.55;color:#102742;max-width:580px;margin:0 auto">
+<div style="font-family:${EMAIL_FONT_STACK};font-size:16px;line-height:1.55;color:#102742;max-width:580px;margin:0 auto">
   <p>${greeting}</p>
   <p>Thanks for asking us to take a look at <strong>${escapeHtml(fullAddress)}</strong>.</p>
   <p>Based on actual recent sales near you, our best estimate is
@@ -742,7 +743,7 @@ function composeBrokerReviewEmail(params: {
   ].join('\n')
 
   const html = `
-<div style="font-family:'Geist','Helvetica Neue',Arial,sans-serif;font-size:16px;line-height:1.55;color:#102742;max-width:580px;margin:0 auto">
+<div style="font-family:${EMAIL_FONT_STACK};font-size:16px;line-height:1.55;color:#102742;max-width:580px;margin:0 auto">
   <p>Hi ${escapeHtml(brokerFirstName)},</p>
   <p><strong>${escapeHtml(leadName)}</strong> (<a href="mailto:${encodeURIComponent(leadEmail)}" style="color:#102742">${escapeHtml(leadEmail)}</a>) just requested a home value report.</p>
   <table style="border-collapse:collapse;margin:16px 0;font-size:15px">
