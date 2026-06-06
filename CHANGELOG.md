@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.414.2 (2026-06-06)
+
+### Other
+- CMA 18705 Tumalo Reservoir: final rebuild on corrected dry-EFUTRB thesis
+
+---
+
+
 ## v1.414.1 (2026-06-06)
 
 ### Other
