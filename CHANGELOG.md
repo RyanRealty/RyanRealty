@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.410.6 (2026-06-06)
+
+### Bug Fixes
+- fix(metrics): C9 latent-bug cleanup (clobber, dead write, false docstring)
+
+### Maintenance
+- chore(registry): C8 — producer registry + SKILL.md hygiene
+
+---
+
+
 ## v1.410.5 (2026-06-06)
 
 ### Bug Fixes
