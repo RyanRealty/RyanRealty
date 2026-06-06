@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.416.0 (2026-06-06)
+
+### Features
+- feat(buyers): measure qualified buyer leads alongside the seller north-star
+
+### Other
+- CMA skill v2: land-CMA learnings from the 18705 Tumalo deep build
+
+---
+
+
 ## v1.415.1 (2026-06-06)
 
 ### Bug Fixes
