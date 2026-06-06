@@ -148,7 +148,7 @@ async function fetchScoreboard() {
       .map((m) => sumIn(series, 'gbp', m, 'account', from, to) ?? 0)
       .reduce((a, b) => a + b, 0)
 
-  const sellerLeads = latest(series, 'fub', 'qualified_seller_leads', 'account')
+  const sellerLeadsLatest = latest(series, 'fub', 'qualified_seller_leads', 'account')
   const gaSessions30 = sum30('ga4', 'sessions')
   const gaLeadEvents30 = sum30('ga4', 'total_lead_events')
   const metaSpend30 = sum30('meta_ads', 'spend')
@@ -165,8 +165,9 @@ async function fetchScoreboard() {
       listingsQtr: numAt('north_star', 'quarterly_listings_signed', 'target'),
     },
     metrics: {
-      // North star
-      sellerLeads,
+      // North star (daily counts summed to a 30d total vs the monthly target)
+      sellerLeads: { cur: sum30('fub', 'qualified_seller_leads'), prior: sumPrior('fub', 'qualified_seller_leads') },
+      sellerLeadsLatest,
       newLeads: { cur: newLeads30, prior: sumPrior('fub', 'new_leads') },
       // Get found
       gscPosition: {
@@ -310,7 +311,8 @@ export default async function ResultsScoreboardPage() {
     fetchError = err instanceof Error ? err.message : 'Failed to load scoreboard'
   }
 
-  const sellerStale = data?.metrics.sellerLeads && data.metrics.sellerLeads.date < D30
+  const sellerLatest = data?.metrics.sellerLeadsLatest
+  const sellerStale = !sellerLatest || sellerLatest.date < D30
 
   return (
     <div className="space-y-5">
@@ -333,11 +335,12 @@ export default async function ResultsScoreboardPage() {
         <div className="space-y-4">
           <Panel title="North star — seller leads" subtitle="the number that matters">
             <Row
-              label="Qualified seller leads"
-              value={data.metrics.sellerLeads?.value ?? null}
+              label="Qualified seller leads (30d)"
+              value={data.metrics.sellerLeads.cur}
+              m={data.metrics.sellerLeads}
               fmt={fmtInt}
               target={data.targets.northStar}
-              note={sellerStale ? `stale — last recorded ${data.metrics.sellerLeads?.date}; snapshot-fub cron not scheduled (tags now fixed)` : undefined}
+              note={sellerStale ? `refreshing — last write ${sellerLatest?.date ?? 'none'}; daily snapshot fix shipped 2026-06-06` : undefined}
             />
             <Row label="New leads, all (30d)" value={data.metrics.newLeads.cur} m={data.metrics.newLeads} fmt={fmtInt} />
           </Panel>

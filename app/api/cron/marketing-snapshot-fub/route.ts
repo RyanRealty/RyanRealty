@@ -342,18 +342,22 @@ function buildRows(
     // (If responseTimes is empty we skip this metric entirely — no row emitted.)
   }
 
-  // qualified_seller_leads (north-star): new leads with any canonical seller tag
+  // qualified_seller_leads (north-star): new leads with any canonical seller tag.
+  // ALWAYS emit the account row — even when 0. Zero qualified sellers on a given
+  // day is real data; skipping it (the old `if > 0` guard) silently froze the
+  // north-star metric at 2026-05-07 once daily counts hit 0, hiding the headline
+  // number from the scoreboard. The by-source breakdown stays conditional below
+  // so we don't write empty source rows.
   const qualifiedSellers = people.filter((p) => isSellerLead(p.tags))
+  rows.push({
+    ...base,
+    scope: 'account',
+    scope_id: '',
+    metric: 'qualified_seller_leads',
+    value: qualifiedSellers.length,
+    metadata: { tags_matched: [...SELLER_LEAD_TAGS] },
+  })
   if (qualifiedSellers.length > 0) {
-    rows.push({
-      ...base,
-      scope: 'account',
-      scope_id: '',
-      metric: 'qualified_seller_leads',
-      value: qualifiedSellers.length,
-      metadata: { tags_matched: [...SELLER_LEAD_TAGS] },
-    })
-
     // qualified_seller_leads BY SOURCE — the attribution keystone. The account
     // row above says "N sellers today"; this breakdown says WHICH channel/source
     // drove each one, so the brain can self-improve on what actually produces
