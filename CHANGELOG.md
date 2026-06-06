@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.414.0 (2026-06-06)
+
+### Features
+- feat(ai-exposure): G39 crawler-access guard gate + blog index ItemList
+
+---
+
+
 ## v1.413.0 (2026-06-06)
 
 ### Features
