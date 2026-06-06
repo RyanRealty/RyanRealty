@@ -929,9 +929,9 @@ function StayVsBuySection() {
               </div>
             </div>
             <p className="golf-sb-note">
-              Pronghorn condos run $1.77M average and ticked +14% YoY. The carrying cost above
-              is net of mortgage interest you would have paid on resort nights, and the
-              appreciation offset is real once you hold three or four years.
+              The carrying cost above is net of the mortgage interest you would have paid on
+              resort nights, and the appreciation offset is real once you hold three or four
+              years.
             </p>
           </div>
         </div>
