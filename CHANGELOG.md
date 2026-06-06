@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.410.3 (2026-06-06)
+
+### Bug Fixes
+- fix(brand): Amboqia display face on 4 remaining ad-hoc heroes
+
+---
+
+
 ## v1.410.2 (2026-06-06)
 
 ### Bug Fixes
