@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.410.1 (2026-06-06)
+
+### Maintenance
+- refactor(brand): migrate 25 render surfaces to broker-facts module
+
+---
+
+
 ## v1.410.0 (2026-06-06)
 
 ### Features
