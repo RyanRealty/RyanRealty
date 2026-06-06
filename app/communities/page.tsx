@@ -7,6 +7,7 @@ import {
 import { RESORT_DISPLAY_NAMES } from '@/lib/communities'
 import CommunityCard from '@/components/community/CommunityCard'
 import CommunitiesFilter from '@/components/community/CommunitiesFilter'
+import { DisplayHeading } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -71,9 +72,12 @@ export default async function CommunitiesPage() {
 
       <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-7xl text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
+          <DisplayHeading
+            as="h1"
+            className="text-3xl text-primary-foreground sm:text-4xl"
+          >
             Communities in Central Oregon
-          </h1>
+          </DisplayHeading>
           <p className="mt-3 text-lg text-muted">
             Explore neighborhoods and find your next home.
           </p>

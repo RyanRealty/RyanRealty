@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { getListingsWithAdvanced } from '@/app/actions/listings'
 import { ArrowRightHugeIcon } from '@/components/icons/HugeIcons'
 import { listingDetailPath, listingsBrowsePath } from '@/lib/slug'
+import { DisplayHeading } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -36,9 +37,12 @@ export default async function OurHomesPage() {
           <p className="text-sm font-semibold uppercase tracking-widest text-accent-foreground">
             Our Homes
           </p>
-          <h1 className="mt-4 text-4xl font-bold tracking-tight text-primary-foreground sm:text-5xl">
+          <DisplayHeading
+            as="h1"
+            className="mt-4 text-4xl text-primary-foreground sm:text-5xl"
+          >
             Homes Listed by Ryan Realty
-          </h1>
+          </DisplayHeading>
           <p className="mt-6 text-lg text-muted/90">
             Explore homes for sale across Central Oregon. We help buyers and sellers with the same
             full plan: professional presentation, targeted outreach, and local expertise from listing to closing.

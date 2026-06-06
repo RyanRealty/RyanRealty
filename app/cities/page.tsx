@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { sortCitiesWithPrimaryFirst } from '@/lib/cities'
 import CityTilesGridStatic from '@/components/city/CityTilesGridStatic'
+import { DisplayHeading } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -48,9 +49,12 @@ export default async function CitiesPage() {
 
       <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-7xl text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
+          <DisplayHeading
+            as="h1"
+            className="text-3xl text-primary-foreground sm:text-4xl"
+          >
             Central Oregon Cities
-          </h1>
+          </DisplayHeading>
           <p className="mt-3 text-lg text-muted">
             Find homes in Bend, Redmond, Sisters, Sunriver, and surrounding areas.
           </p>

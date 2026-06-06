@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
+import { DisplayHeading } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -35,9 +36,13 @@ export default function JoinPage() {
 
       <section className="border-b border-border bg-card px-4 py-16 sm:px-6 sm:py-20" aria-labelledby="why-heading">
         <div className="mx-auto max-w-4xl">
-          <h2 id="why-heading" className="text-center text-3xl font-bold text-primary sm:text-4xl">
+          <DisplayHeading
+            as="h2"
+            id="why-heading"
+            className="text-center text-3xl text-primary sm:text-4xl"
+          >
             Why Ryan Realty?
-          </h2>
+          </DisplayHeading>
           <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
             We combine local market expertise with a culture that values transparency, collaboration,
             and putting clients first.
