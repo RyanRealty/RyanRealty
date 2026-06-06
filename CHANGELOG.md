@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.411.1 (2026-06-06)
+
+### Bug Fixes
+- fix(north-star): always write qualified_seller_leads; sum it on scoreboard
+
+---
+
+
 ## v1.411.0 (2026-06-06)
 
 ### Features
