@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.410.2 (2026-06-06)
+
+### Bug Fixes
+- fix(brand): ContentPageHero H1 uses the Amboqia display face
+
+---
+
+
 ## v1.410.1 (2026-06-06)
 
 ### Maintenance
