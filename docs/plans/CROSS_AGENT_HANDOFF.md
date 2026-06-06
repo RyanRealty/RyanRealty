@@ -6,7 +6,20 @@
 
 ---
 
-## Current (replace this block each time you hand off)
+## Current (2026-06-06 — Claude Code Opus 4.8 — 18705 Tumalo CMA + CMA skill v2, SHIPPED)
+
+| Field | Value |
+|--------|--------|
+| **Surface** | Claude Code (Opus 4.8). 18705 Tumalo Reservoir Rd **LAND CMA** for Travis (seller lead, FUB person 27004). SHIPPED to `main`. |
+| **What shipped** | Full rebuild of the 25-page land CMA at `public/cmas/cma-18705-tumalo-reservoir/cma.html` (+ `cma.pdf`, live at `ryan-realty.com/cmas/...`). List **$1,195,000** (supported range $1.10M-$1.18M), **twin-anchored** (18715, the next-door dry-EFUTRB sale, $1.03M/2021) + **time-adjusted via paired sales** (boom 2020-22, plateau 2022-26). Recharacterized Walker (irrigated + home, NOT a "no-water floor"); corrected every comp $/ac to close-based (`ClosePrice÷lot_size_acres`, the DB `price_per_acre` is unreliable); septic → "not installed, site-eval only" (DIAL permits); well CONFIRMED (OWRD #58945); added hunting/landowner-tags page, per-comp listing-history, building-constraints (flood/wetland/slope/wildfire GIS + WA 300ft/LM 100ft setbacks). Fixed comps-map pins to verified lat/lng in `lib/cma-map.ts`. |
+| **main @ commit** | `a720519` — pushed, `Approved-by: matt (ship it)`. CMA-skill-v2 + this handoff commit immediately after. |
+| **Skill + memory updated** | `marketing_brain_skills/producers/cma/SKILL.md` → **Step 7c** (land CMA v2 learnings) + `price_per_acre` Known-quirk + finalized exemplar ref. Memory (user, not repo): `reference_bend_land_data_sources.md` + `reference_fub_texting_phone_sent.md`, both indexed in `MEMORY.md`. |
+| **Delivery** | Matt sent the CMA-link text to Travis HIMSELF from his phone (logged in the FUB timeline, NOT visible in the `/textMessages` API — that gotcha is now in memory). FUB task 418 completed, draft note 17085 updated. No follow-up owed until next week (Matt's son's graduation). The ODFW landowner-tag inquiry is OUT — when it replies, firm up the hunting-section caveat. |
+| **Also this session** | FB lead-gen ad fixed + running; GCP Maps billing diagnosed (expired free trial) → Matt upgraded to Paid, Maps 200. |
+
+---
+
+## Prior in-flight block (2026-05-30 map search — VERIFY if still pending before resuming; `main` has moved many commits since, this may be stale)
 
 | Field | Value |
 |--------|--------|
