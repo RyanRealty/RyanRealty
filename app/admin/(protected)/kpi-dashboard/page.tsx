@@ -1,7 +1,7 @@
 /**
  * KPI dashboard — live view of every metric in the active marketing_strategy
- * channel_targets alongside actuals computed from marketing_channel_daily
- * and content_performance.
+ * channel_targets alongside actuals computed from marketing_channel_daily.
+ * Reads: marketing_strategy (targets) + marketing_channel_daily (actuals).
  *
  * Six panels matching the Q3 2026 strategy §4 six-layer model:
  *   1. North star (qualified seller leads)

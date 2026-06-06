@@ -40,12 +40,6 @@ async function readCache<T>(cacheKey: string): Promise<T | null> {
       .maybeSingle()
     if (error || !data) return null
     if (new Date(data.expires_at as string).getTime() < Date.now()) return null
-    // Increment hit count fire-and-forget (don't await; we have the data)
-    void supabase
-      .from('ga4_query_cache')
-      .update({ hit_count: 0 })  // ignored; we just want a separate update for stats
-      .eq('cache_key', cacheKey)
-      .then(() => {})
     return data.data as T
   } catch {
     return null
