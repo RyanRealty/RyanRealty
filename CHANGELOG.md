@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.415.1 (2026-06-06)
+
+### Bug Fixes
+- fix(parks): a transient listings timeout no longer fails the build
+
+---
+
+
 ## v1.415.0 (2026-06-06)
 
 ### Features
