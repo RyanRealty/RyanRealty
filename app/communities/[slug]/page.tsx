@@ -63,6 +63,7 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { listingTileHref } from '@/lib/slug'
+import { CONTACT } from '@/lib/brand/contact'
 
 export const dynamicParams = true
 export const revalidate = 60
@@ -624,7 +625,7 @@ export default async function CommunityDetailPage({ params }: Props) {
         title="Local brokers. Specific numbers. No pressure."
         body={`We close deals across ${cityName} every year. We can tell you what the market looked like last month in ${community.name}. If the numbers support it, we will say so.`}
         primary={{ href: '/contact', label: 'Meet the team' }}
-        secondary={{ href: 'tel:5412136706', label: 'Call 541.213.6706' }}
+        secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: `Call ${CONTACT.phoneDirect}` }}
         tone="navy"
       />
 

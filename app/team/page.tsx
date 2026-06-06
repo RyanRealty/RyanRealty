@@ -19,6 +19,7 @@ import { HeroBlock } from '@/components/site/HeroBlock'
 import { BrokerProfileRow } from '@/components/site/BrokerProfileRow'
 import { CTABar } from '@/components/site/CTABar'
 import { Body, Container, Eyebrow, H2, Section, Stack } from '@/components/site/primitives'
+import { CONTACT } from '@/lib/brand/contact'
 
 export const metadata: Metadata = pageMetadata({
   title: 'Our team · Ryan Realty, Bend Oregon',
@@ -94,7 +95,7 @@ export default async function TeamPage() {
         title="Have a question for the team?"
         body="Call any broker directly, or schedule a time to talk. No scripts, no hand-offs."
         primary={{ href: '/contact', label: 'Schedule a call' }}
-        secondary={{ href: 'tel:5412136706', label: '541.213.6706' }}
+        secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: CONTACT.phoneDirect }}
         tone="navy"
       />
     </main>

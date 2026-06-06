@@ -46,6 +46,7 @@ import {
   TextLink,
 } from '@/components/site/primitives'
 import type { SchemaInput } from '@/lib/site/json-ld'
+import { CONTACT } from '@/lib/brand/contact'
 
 export const dynamicParams = false
 export const revalidate = 300
@@ -364,7 +365,7 @@ export default async function ParkDetailPage({ params }: Props) {
         title="Local brokers. Specific numbers. No pressure."
         body={`We work across ${park.city} and the rest of Central Oregon. Tell us what matters to you, the trails, the river, room to roam, and we will show you the homes that fit.`}
         primary={{ href: '/contact', label: 'Meet the team' }}
-        secondary={{ href: 'tel:5412136706', label: 'Call 541.213.6706' }}
+        secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: `Call ${CONTACT.phoneDirect}` }}
         tone="navy"
       />
     </main>

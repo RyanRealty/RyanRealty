@@ -44,6 +44,7 @@ import { CTABar } from '@/components/site/CTABar'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { Container } from '@/components/site/primitives'
 import { submitMarketPageInquiry } from '@/app/housing-market/actions'
+import { CONTACT } from '@/lib/brand/contact'
 
 export const revalidate = 300
 
@@ -258,7 +259,7 @@ export default async function HousingMarketHubPage() {
         title="Local brokers. Specific numbers. No pressure."
         body="We close deals across Central Oregon. We can tell you what the data means for your situation."
         primary={{ href: '/contact', label: 'Schedule a call' }}
-        secondary={{ href: 'tel:5412136706', label: '541.213.6706' }}
+        secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: CONTACT.phoneDirect }}
         tone="navy"
       />
 

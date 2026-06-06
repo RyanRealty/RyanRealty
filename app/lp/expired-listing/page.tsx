@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Card, CardContent } from '@/components/ui/card'
 import ExpiredLPForm from './ExpiredLPForm'
+import { CONTACT } from '@/lib/brand/contact'
 
 /**
  * Expired Listings Landing Page — /lp/expired-listing
@@ -31,8 +32,8 @@ export const metadata: Metadata = {
 }
 
 // Dotted format per brand voice spec (CLAUDE.md §3): 541.703.3095
-const BROKER_PHONE = '541.703.3095'
-const BROKER_PHONE_TEL = '+15417033095'
+const BROKER_PHONE = CONTACT.phoneFub
+const BROKER_PHONE_TEL = CONTACT.phoneFubTel
 
 export default function ExpiredListingPage() {
   return (

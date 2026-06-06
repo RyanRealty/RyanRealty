@@ -25,6 +25,7 @@ import { NeighborhoodMap } from '@/components/site/NeighborhoodMap'
 import { Container } from '@/components/site/primitives'
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
 import { listingTileHref } from '@/lib/slug'
+import { CONTACT } from '@/lib/brand/contact'
 
 export const dynamicParams = true
 export const revalidate = 60
@@ -145,7 +146,7 @@ export default async function SubdivisionPage({ params }: Props) {
         title="Local brokers. Specific numbers. No pressure."
         body={`We know ${name} and the wider Central Oregon market. If you want to know what is selling here and what it is worth, we will give you the real numbers.`}
         primary={{ href: '/contact', label: 'Meet the team' }}
-        secondary={{ href: 'tel:5412136706', label: 'Call 541.213.6706' }}
+        secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: `Call ${CONTACT.phoneDirect}` }}
         tone="navy"
       />
     </main>

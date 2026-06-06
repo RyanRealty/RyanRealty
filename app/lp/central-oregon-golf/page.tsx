@@ -46,6 +46,7 @@ import {
 import { loadGolfFeaturedListings } from '@/data/golf/featured-listings'
 import { listingCardHref, type ListingCardData } from '@/components/lp/ListingCard'
 import { GolfCourseMap } from './_components/GolfCourseMap'
+import { CONTACT } from '@/lib/brand/contact'
 
 export const dynamic = 'force-static'
 export const revalidate = 21600 // 6h
@@ -178,7 +179,7 @@ function buildJsonLd() {
         '@type': 'RealEstateAgent',
         name: 'Ryan Realty',
         url: siteUrl,
-        telephone: '+1-541-213-6706',
+        telephone: CONTACT.phoneDirectTel,
         address: {
           '@type': 'PostalAddress',
           addressLocality: 'Bend',
@@ -1008,7 +1009,7 @@ function CtaSection() {
         <div className="golf-cta-meta">
           <div>
             <span className="golf-cta-meta-label">Matt Ryan, principal broker</span>
-            <span className="golf-cta-meta-num">541.213.6706</span>
+            <span className="golf-cta-meta-num">{CONTACT.phoneDirect}</span>
           </div>
           <div>
             <span className="golf-cta-meta-label">Web</span>

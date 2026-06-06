@@ -38,6 +38,7 @@ import { cn } from '@/lib/utils'
 import ListingCard from '@/components/site/ListingCard'
 import { motivatedToCardData } from '@/lib/site/listing-card'
 import type { SchemaInput } from '@/lib/site/json-ld'
+import { CONTACT } from '@/lib/brand/contact'
 
 // ─── ISR ─────────────────────────────────────────────────────────────────
 
@@ -247,7 +248,7 @@ export default async function MotivatedSellersPage() {
         title="Local brokers. Specific numbers. No pressure."
         body="We know this market. If a motivated seller has priced a home to move, we can tell you whether it is actually a deal. No hype, just the facts."
         primary={{ href: '/contact', label: 'Talk to a broker' }}
-        secondary={{ href: 'tel:5412136706', label: 'Call 541.213.6706' }}
+        secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: `Call ${CONTACT.phoneDirect}` }}
         tone="navy"
       />
     </main>

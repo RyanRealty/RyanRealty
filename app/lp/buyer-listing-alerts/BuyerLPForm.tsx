@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { submitBuyerLPForm, type BuyerLPTimeline } from './actions'
+import { CONTACT } from '@/lib/brand/contact'
 
 const SEARCH_AREAS = [
   { slug: 'northwest-crossing', label: 'NW Crossing' },
@@ -96,8 +97,8 @@ export default function BuyerLPForm() {
         <p className="mt-2 text-muted-foreground">{result.msg}</p>
         <p className="mt-4 text-sm text-muted-foreground">
           Anything specific to factor in?{' '}
-          <a href="tel:+15417033095" className="tabular-nums text-primary underline">
-            541.703.3095
+          <a href={`tel:${CONTACT.phoneFubTel}`} className="tabular-nums text-primary underline">
+            {CONTACT.phoneFub}
           </a>
         </p>
       </div>
@@ -116,7 +117,7 @@ export default function BuyerLPForm() {
         </div>
         <div>
           <Label htmlFor="phone">Phone</Label>
-          <Input id="phone" name="phone" type="tel" placeholder="541.703.3095" />
+          <Input id="phone" name="phone" type="tel" placeholder={CONTACT.phoneFub} />
         </div>
       </div>
       <div>

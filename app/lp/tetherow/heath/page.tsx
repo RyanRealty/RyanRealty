@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/breadcrumb'
 import LandingPageTracker from '@/components/LandingPageTracker'
 import HeathCmaForm from './_components/HeathCmaForm'
+import { CONTACT } from '@/lib/brand/contact'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -339,7 +340,7 @@ function buildJsonLd() {
     '@type': 'RealEstateAgent',
     name: 'Ryan Realty LLC',
     image: `${siteUrl}/images/brokers/ryan-matt.png`,
-    telephone: '+15412136706',
+    telephone: CONTACT.phoneDirectTel,
     url: siteUrl,
     address: {
       '@type': 'PostalAddress',
@@ -428,8 +429,8 @@ export default async function HeathAtTetherowPage() {
             <Button asChild size="lg" variant="secondary">
               <Link href="#cma">What is my Heath home worth?</Link>
             </Button>
-            <a href="tel:+15417033095" className="text-sm font-medium text-primary-foreground/90 tabular-nums hover:underline">
-              Or call 541.703.3095
+            <a href={`tel:${CONTACT.phoneFubTel}`} className="text-sm font-medium text-primary-foreground/90 tabular-nums hover:underline">
+              Or call {CONTACT.phoneFub}
             </a>
           </div>
 
@@ -1066,7 +1067,7 @@ export default async function HeathAtTetherowPage() {
               <div className="mt-1 text-xs text-muted-foreground">Bend · Oregon</div>
               <div className="mt-3 text-sm text-foreground">115 NW Oregon Avenue, Bend, OR 97703</div>
               <div className="mt-1 text-sm text-foreground">
-                <a href="tel:+15412136706" className="hover:underline">541.213.6706</a>
+                <a href={`tel:${CONTACT.phoneDirectTel}`} className="hover:underline">{CONTACT.phoneDirect}</a>
               </div>
               <div className="mt-1 text-xs text-muted-foreground">Oregon Principal Broker · License #201206613</div>
             </div>

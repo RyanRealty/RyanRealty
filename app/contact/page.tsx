@@ -10,6 +10,7 @@ import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { listingsBrowsePath } from '@/lib/slug'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
+import { CONTACT } from '@/lib/brand/contact'
 
 const contactOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')}/api/og?type=default`
 
@@ -96,7 +97,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
             </p>
             <div className="mt-4">
               <p className="text-sm text-muted-foreground">Call or text</p>
-              <a href="tel:+15417033095" className="text-lg font-semibold text-primary hover:underline">541.703.3095</a>
+              <a href={`tel:${CONTACT.phoneFubTel}`} className="text-lg font-semibold text-primary hover:underline">{CONTACT.phoneFub}</a>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
               Serving Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and surrounding communities across Central Oregon.

@@ -20,6 +20,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { CONTACT } from '@/lib/brand/contact'
 import LandingPageTracker from '@/components/LandingPageTracker'
 import { ListingCard, type ListingCardData } from '@/components/lp/ListingCard'
 import { BendInteractiveMap } from './_components/BendInteractiveMap'
@@ -598,7 +599,7 @@ export default async function BendCityPage() {
           {listings.length === 0 ? (
             <p className="bend-prose" style={{ color: 'rgba(16,39,66,0.6)' }}>
               Inventory is refreshing. Check back shortly or call{' '}
-              <a href="tel:+15417033095" style={{ textDecoration: 'underline' }}>541.703.3095</a>{' '}
+              <a href={`tel:${CONTACT.phoneFubTel}`} style={{ textDecoration: 'underline' }}>{CONTACT.phoneFub}</a>{' '}
               for a live search.
             </p>
           ) : (
@@ -624,8 +625,8 @@ export default async function BendCityPage() {
                 <Link href="/homes-for-sale/bend" className="featured-cta-primary">
                   Search Bend homes →
                 </Link>
-                <a href="tel:+15417033095" className="featured-cta-secondary">
-                  Talk to a broker · 541.703.3095
+                <a href={`tel:${CONTACT.phoneFubTel}`} className="featured-cta-secondary">
+                  Talk to a broker · {CONTACT.phoneFub}
                 </a>
               </div>
             </>
@@ -881,8 +882,8 @@ export default async function BendCityPage() {
                 spend 30 minutes on the phone with no pressure either way.
               </p>
               <div className="broker-cta-row">
-                <a href="tel:+15417033095" className="broker-cta-primary">
-                  Call 541.703.3095
+                <a href={`tel:${CONTACT.phoneFubTel}`} className="broker-cta-primary">
+                  Call {CONTACT.phoneFub}
                 </a>
                 <Link href="/team/matt-ryan" className="broker-cta-secondary">
                   See full bio →
@@ -914,8 +915,8 @@ export default async function BendCityPage() {
               <p>
                 Drill into any neighborhood above for HOA tiers and the buyer track, or call Matt
                 direct at{' '}
-                <a href="tel:+15417033095" style={{ color: '#102742', textDecoration: 'underline' }}>
-                  541.703.3095
+                <a href={`tel:${CONTACT.phoneFubTel}`} style={{ color: '#102742', textDecoration: 'underline' }}>
+                  {CONTACT.phoneFub}
                 </a>{' '}
                 for a 30-minute relocation call.
               </p>
@@ -979,7 +980,7 @@ export default async function BendCityPage() {
             '@type': 'RealEstateAgent',
             name: 'Ryan Realty',
             url: siteUrl,
-            telephone: '+1-541-213-6706',
+            telephone: CONTACT.phoneDirectTel,
             email: 'matt@ryan-realty.com',
             address: {
               '@type': 'PostalAddress',

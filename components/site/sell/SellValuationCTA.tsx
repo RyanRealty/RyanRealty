@@ -17,6 +17,7 @@ import {
   Stack,
   TextLink,
 } from '@/components/site/primitives'
+import { CONTACT } from '@/lib/brand/contact'
 
 type Props = {
   /** The valuation landing page URL. */
@@ -34,7 +35,7 @@ const TRUST_LINES = [
 
 export function SellValuationCTA({
   valuationHref = '/lp/seller-home-value',
-  phoneHref = 'tel:5412136706',
+  phoneHref = `tel:${CONTACT.phoneDirectTel}`,
 }: Props) {
   return (
     <Section padding="loose" tone="muted" divider>
@@ -56,7 +57,7 @@ export function SellValuationCTA({
                 Get my free valuation
               </CTAButton>
               <CTAButton href={phoneHref} tone="outline" size="lg">
-                Or call 541.213.6706
+                Or call {CONTACT.phoneDirect}
               </CTAButton>
             </div>
           </Stack>

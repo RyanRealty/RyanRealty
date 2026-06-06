@@ -52,6 +52,7 @@ import TetherowStickyCta from './_components/TetherowStickyCta'
 import TetherowExitModal from './_components/TetherowExitModal'
 import TetherowMultiStepForm from './_components/TetherowMultiStepForm'
 import TetherowBuyerForms from './_components/TetherowBuyerForms'
+import { CONTACT } from '@/lib/brand/contact'
 
 const cfg = TETHEROW_CONFIG
 
@@ -147,7 +148,7 @@ export default async function TetherowLandingPage() {
     '@type': 'RealEstateAgent',
     name: 'Ryan Realty',
     url: 'https://ryan-realty.com',
-    telephone: '+1-541-213-6706',
+    telephone: CONTACT.phoneDirectTel,
     email: 'matt@ryan-realty.com',
     address: {
       '@type': 'PostalAddress',
@@ -890,10 +891,10 @@ export default async function TetherowLandingPage() {
         <p className="-mt-4 mb-7 text-[14.5px] text-[rgba(250,248,244,0.92)]">
           Prefer to talk first? Call Matt direct at{' '}
           <a
-            href="tel:+15412136706"
+            href={`tel:${CONTACT.phoneDirectTel}`}
             className="font-semibold text-[color:var(--rr-cream)] underline decoration-[rgba(250,248,244,0.35)] underline-offset-4"
           >
-            541.213.6706
+            {CONTACT.phoneDirect}
           </a>
           .
         </p>

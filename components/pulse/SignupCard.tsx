@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { dismissSignup } from '@/lib/pulse-saves'
 import { trackEvent } from '@/lib/tracking'
+import { CONTACT } from '@/lib/brand/contact'
 
 type Props = {
   onDismiss: () => void
@@ -147,7 +148,7 @@ export default function SignupCard({ onDismiss, triggeredBy }: Props) {
           </div>
         </form>
         <p className="mt-4 text-[10px] uppercase tracking-[0.14em] text-primary-foreground/55">
-          Ryan Realty · 541.213.6706 · ryan-realty.com
+          Ryan Realty · {CONTACT.phoneDirect} · ryan-realty.com
         </p>
       </div>
     </article>

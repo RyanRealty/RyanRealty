@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { cn } from '@/lib/utils'
 import { submitHeathCmaForm, type HeathCmaTimeline } from '../actions'
 import { trackEvent } from '@/lib/tracking'
+import { CONTACT } from '@/lib/brand/contact'
 
 /**
  * Heath at Tetherow CMA form. Three-step (address + sub-plat context,
@@ -241,7 +242,7 @@ export default function HeathCmaForm() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               autoComplete="tel"
-              placeholder="541.213.6706"
+              placeholder={CONTACT.phoneDirect}
             />
           </div>
 

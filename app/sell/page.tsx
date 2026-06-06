@@ -26,6 +26,7 @@ import { SellValueProps } from '@/components/site/sell/SellValueProps'
 import { SellProcess } from '@/components/site/sell/SellProcess'
 import { SellCommission } from '@/components/site/sell/SellCommission'
 import { SellValuationCTA } from '@/components/site/sell/SellValuationCTA'
+import { CONTACT } from '@/lib/brand/contact'
 import { SellMarketContext } from '@/components/site/sell/SellMarketContext'
 import {
   Body,
@@ -137,7 +138,7 @@ export default async function SellPage() {
 
       <SellValuationCTA
         valuationHref="/lp/seller-home-value"
-        phoneHref="tel:5412136706"
+        phoneHref={`tel:${CONTACT.phoneDirectTel}`}
       />
 
       <ContentSection

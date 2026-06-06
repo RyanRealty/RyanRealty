@@ -55,6 +55,7 @@ import FeaturedListings from '@/components/site/FeaturedListings'
 import MotivatedListings from '@/components/site/MotivatedListings'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
+import { CONTACT } from '@/lib/brand/contact'
 
 // ---------------------------------------------------------------------------
 // Static params
@@ -482,7 +483,7 @@ export default async function CityDetailPage({ params }: Props) {
         title="Local brokers. Specific numbers. No pressure."
         body={`We close deals across ${cityName} every year. We can tell you what the inspection found last month two blocks over. If a market is soft, we will say so.`}
         primary={{ href: '/contact', label: 'Meet the team' }}
-        secondary={{ href: 'tel:5412136706', label: 'Call 541.213.6706' }}
+        secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: `Call ${CONTACT.phoneDirect}` }}
         tone="navy"
       />
 

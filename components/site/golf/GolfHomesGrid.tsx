@@ -10,6 +10,7 @@ import {
 } from '@/components/site/primitives'
 import { Button } from '@/components/ui/button'
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
+import { CONTACT } from '@/lib/brand/contact'
 
 /**
  * GolfHomesGrid — active golf-course homes section.
@@ -66,7 +67,7 @@ export function GolfHomesGrid({ homes, totalHomes, allHomesHref }: Props) {
         ) : (
           <div className="rounded-xl bg-muted px-6 py-12 text-center">
             <Body size="default" tone="muted">
-              No active golf-course listings right now. Check back soon, or contact us at 541.213.6706 and we will keep an eye on the market for you.
+              No active golf-course listings right now. Check back soon, or contact us at {CONTACT.phoneDirect} and we will keep an eye on the market for you.
             </Body>
             <div className="mt-4">
               <Button asChild>

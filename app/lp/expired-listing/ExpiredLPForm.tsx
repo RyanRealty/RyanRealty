@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { submitExpiredLPForm } from './actions'
+import { CONTACT } from '@/lib/brand/contact'
 import { readRrSessionId } from '@/lib/tracking'
 
 export default function ExpiredLPForm() {
@@ -51,8 +52,8 @@ export default function ExpiredLPForm() {
           <p className="mt-2 text-muted-foreground">{result.msg}</p>
           <p className="mt-4 text-sm text-muted-foreground">
             Or call us right now:{' '}
-            <a href="tel:+15417033095" className="text-primary underline tabular-nums">
-              541.703.3095
+            <a href={`tel:${CONTACT.phoneFubTel}`} className="text-primary underline tabular-nums">
+              {CONTACT.phoneFub}
             </a>
           </p>
         </CardContent>

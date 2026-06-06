@@ -3,6 +3,7 @@ import Image from 'next/image'
 import LandingPageTracker from '@/components/LandingPageTracker'
 import { Card } from '@/components/ui/card'
 import BuyerLPForm from './BuyerLPForm'
+import { CONTACT } from '@/lib/brand/contact'
 
 export const metadata: Metadata = {
   title: 'Find Your Bend Home, Personalized Listing Alerts | Ryan Realty',
@@ -26,8 +27,8 @@ export const metadata: Metadata = {
 
 // Paid-traffic / lead-capture surface uses the FUB-tracked dotted number so
 // inbound calls route through Follow Up Boss for attribution (CLAUDE.md §3).
-const BROKER_PHONE = '541.703.3095'
-const BROKER_PHONE_TEL = '+15417033095'
+const BROKER_PHONE = CONTACT.phoneFub
+const BROKER_PHONE_TEL = CONTACT.phoneFubTel
 
 export default function BuyerLPPage() {
   return (
