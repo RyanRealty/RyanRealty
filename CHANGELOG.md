@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.417.0 (2026-06-06)
+
+### Features
+- feat(buyers): capture + surface buyer leads (saved-search tagging + LP discoverability)
+
+---
+
+
 ## v1.416.0 (2026-06-06)
 
 ### Features
