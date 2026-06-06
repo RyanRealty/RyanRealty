@@ -78,6 +78,17 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
     name: 'Central Oregon Real Estate Blog | Ryan Realty',
     url: `${siteUrl}/blog`,
     description: 'Market insights and guides for Central Oregon real estate.',
+    // Machine-readable article list — lets AI engines enumerate + cite posts
+    // without scraping the HTML grid.
+    mainEntity: {
+      '@type': 'ItemList',
+      itemListElement: posts.map((p, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        url: `${siteUrl}/blog/${encodeURIComponent(p.slug)}`,
+        name: p.title,
+      })),
+    },
   }
 
   return (
