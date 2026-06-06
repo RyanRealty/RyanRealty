@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowRight01Icon } from '@hugeicons/core-free-icons'
 import { trackCtaClick } from '@/lib/cta-tracking'
+import { DisplayHeading } from '@/components/site/primitives'
 
 export type ContentPageHeroCta = { label: string; href: string; primary?: boolean }
 
@@ -48,9 +49,12 @@ export default function ContentPageHero({ title, subtitle, imageUrl, ctas }: Con
       />
       <div className="relative z-10 flex min-h-[40vh] sm:min-h-[50vh] flex-col justify-center px-4 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto w-full max-w-4xl text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-primary-foreground sm:text-5xl lg:text-6xl">
+          <DisplayHeading
+            as="h1"
+            className="text-4xl text-primary-foreground sm:text-5xl lg:text-6xl"
+          >
             {title}
-          </h1>
+          </DisplayHeading>
           {subtitle && (
             <p className="mt-4 text-lg text-muted/95 sm:text-xl md:mt-6">
               {subtitle}
