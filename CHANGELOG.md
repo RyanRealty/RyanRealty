@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.7 (2026-06-07)
+
+### Other
+- Fix live compliance risk + SEO ship-blockers (site-consistency batch 1)
+
+---
+
+
 ## v1.425.6 (2026-06-07)
 
 ### Other
