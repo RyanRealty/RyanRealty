@@ -86,6 +86,19 @@ function buildListingUrl(row: {
   )
 }
 
+/**
+ * Append the FUB email-click identity param so a click on an alert-email link
+ * identifies the recipient to their FUB contact. The site's FubIdentityBridge
+ * reads ?_fuid, logs "Visited Website", and sets a 90-day cookie; the visit
+ * tracker then logs "Viewed Property: <address>" on that FUB person. So a click
+ * on a home shows up on the lead's FUB timeline and their email-driven session
+ * is attributed to them. Unsubscribe links stay plain (no tracking).
+ */
+function appendFuid(url: string, fubPersonId: number | null): string {
+  if (!fubPersonId || fubPersonId <= 0) return url
+  return `${url}${url.includes('?') ? '&' : '?'}_fuid=${fubPersonId}`
+}
+
 export async function runSavedSearchAlerts(options?: {
   maxSearches?: number
   dryRun?: boolean
@@ -274,16 +287,20 @@ export async function runGuestSearchAlerts(options?: {
       }
 
       const topRows = fresh.slice(0, 3)
+      // Carry the recipient's FUB id on every browse link so a click logs
+      // "Visited Website" + "Viewed Property" on their FUB timeline and ties the
+      // session back to them.
+      const fuid = row.fub_person_id
       const bodyLines = topRows.map((listing, index) => {
         const path = buildListingUrl(listing)
-        const url = path ? `${siteUrl}${path}` : `${siteUrl}/homes-for-sale`
+        const url = appendFuid(path ? `${siteUrl}${path}` : `${siteUrl}/homes-for-sale`, fuid)
         const address = [listing.StreetNumber, listing.StreetName, listing.City].filter(Boolean).join(' ')
         const price = listing.ListPrice != null ? `$${Math.round(Number(listing.ListPrice)).toLocaleString()}` : 'Price on request'
         return `${index + 1}. ${address || 'Listing'}, ${price}\n${url}`
       })
 
       const label = row.name?.trim() || 'your search'
-      const searchUrl = `${siteUrl}${buildSearchUrlFromFilters(filters)}`
+      const searchUrl = appendFuid(`${siteUrl}${buildSearchUrlFromFilters(filters)}`, fuid)
       const unsubscribeUrl = `${siteUrl}/alerts/unsubscribe?token=${encodeURIComponent(row.unsubscribe_token)}`
 
       if (!dryRun) {
