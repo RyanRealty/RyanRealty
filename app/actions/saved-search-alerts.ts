@@ -7,6 +7,7 @@ import { listingDetailPath } from '@/lib/slug'
 import { buildSearchUrlFromFilters } from '@/lib/search-filters'
 import { getActiveGuestSearchAlerts, markGuestAlertNotified } from '@/lib/data/leads/guestSearchAlerts'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
+import { CONTACT } from '@/lib/brand/contact'
 
 type SavedSearchAlertRow = {
   id: string
@@ -328,7 +329,7 @@ export async function runGuestSearchAlerts(options?: {
             'You are getting this because you asked for listing alerts at ryan-realty.com.',
             `Stop these alerts: ${unsubscribeUrl}`,
             '',
-            'Ryan Realty, Bend, Oregon',
+            `Ryan Realty, ${CONTACT.mailingAddress}`,
           ].join('\n'),
         })
         if (emailResult.error) {

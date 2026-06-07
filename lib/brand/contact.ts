@@ -38,6 +38,8 @@ export const BRAND = {
     regionFull: 'Oregon',
     country: 'US',
   },
+  /** Physical mailing address for CAN-SPAM email footers (Matt, 2026-06-07). */
+  mailingAddress: '115 NW Oregon Ave #2, Bend, OR 97703',
   /** Bare handle for prose mentions. Profile URLs live in `social`. */
   socialHandle: '@ryanrealtybend',
   /** Locked 2026-05-13 (CLAUDE.md). Insertion order matches the live

@@ -25,11 +25,18 @@ export async function GET(request: Request) {
   const maxSearches = Math.min(500, Math.max(1, Number(url.searchParams.get('limit') ?? '120') || 120))
   const dryRun = url.searchParams.get('dryRun') === '1'
 
+  // Signed-in saved-search alerts stay OFF until they get the same CAN-SPAM
+  // one-click unsubscribe + postal footer + ?_fuid tracking the guest path has
+  // (they have never run). The compliant guest search-alert path runs whenever
+  // scheduled. Flip to true in the same change that hardens runSavedSearchAlerts.
+  const SIGNED_IN_ALERTS_ENABLED = false
+
   try {
-    // Signed-in saved searches (unchanged) + anonymous guest alerts from /search.
-    // allSettled so a top-level failure in one pass never discards the other's work.
+    // Guest /search alerts (compliant) always run; the signed-in saved searches
+    // are gated above. allSettled so a failure in one pass never discards the other.
+    const emptySummary = { scanned: 0, sent: 0, skipped: 0, errors: [] as Array<{ searchId: string; error: string }> }
     const [authSettled, guestSettled] = await Promise.allSettled([
-      runSavedSearchAlerts({ maxSearches, dryRun }),
+      SIGNED_IN_ALERTS_ENABLED ? runSavedSearchAlerts({ maxSearches, dryRun }) : Promise.resolve(emptySummary),
       runGuestSearchAlerts({ maxAlerts: maxSearches, dryRun }),
     ])
     const result =
@@ -40,7 +47,7 @@ export async function GET(request: Request) {
       guestSettled.status === 'fulfilled'
         ? guestSettled.value
         : { scanned: 0, sent: 0, skipped: 0, errors: [{ searchId: 'guest', error: String(guestSettled.reason) }] }
-    return NextResponse.json({ ok: true, ...result, guest })
+    return NextResponse.json({ ok: true, signedInEnabled: SIGNED_IN_ALERTS_ENABLED, ...result, guest })
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : 'Unknown error' },
