@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.5 (2026-06-07)
+
+### Other
+- Fix intermittent empty search/preset grids (data-layer timeout + poison cache)
+
+---
+
+
 ## v1.425.4 (2026-06-07)
 
 ### Other
