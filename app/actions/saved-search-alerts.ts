@@ -87,16 +87,23 @@ function buildListingUrl(row: {
 }
 
 /**
- * Append the FUB email-click identity param so a click on an alert-email link
- * identifies the recipient to their FUB contact. The site's FubIdentityBridge
- * reads ?_fuid, logs "Visited Website", and sets a 90-day cookie; the visit
- * tracker then logs "Viewed Property: <address>" on that FUB person. So a click
- * on a home shows up on the lead's FUB timeline and their email-driven session
- * is attributed to them. Unsubscribe links stay plain (no tracking).
+ * Append email-click tracking to an alert-email browse link:
+ *  - ?_fuid=<id> so the site's FubIdentityBridge identifies the recipient to
+ *    their FUB contact (logs "Visited Website" + sets the 90-day cookie; the
+ *    visit tracker then logs "Viewed Property: <address>" on that person).
+ *  - utm_source/medium/campaign so GA4 attributes the session to the alert
+ *    email as a traffic source (visible as Email on the scoreboard).
+ * So a click shows up on the lead's FUB timeline AND in GA4 as email traffic.
+ * Unsubscribe links stay plain (no tracking).
  */
-function appendFuid(url: string, fubPersonId: number | null): string {
-  if (!fubPersonId || fubPersonId <= 0) return url
-  return `${url}${url.includes('?') ? '&' : '?'}_fuid=${fubPersonId}`
+function appendTracking(url: string, fubPersonId: number | null): string {
+  const params = new URLSearchParams({
+    utm_source: 'ryan-realty',
+    utm_medium: 'email',
+    utm_campaign: 'listing-alerts',
+  })
+  if (fubPersonId && fubPersonId > 0) params.set('_fuid', String(fubPersonId))
+  return `${url}${url.includes('?') ? '&' : '?'}${params.toString()}`
 }
 
 export async function runSavedSearchAlerts(options?: {
@@ -293,14 +300,14 @@ export async function runGuestSearchAlerts(options?: {
       const fuid = row.fub_person_id
       const bodyLines = topRows.map((listing, index) => {
         const path = buildListingUrl(listing)
-        const url = appendFuid(path ? `${siteUrl}${path}` : `${siteUrl}/homes-for-sale`, fuid)
+        const url = appendTracking(path ? `${siteUrl}${path}` : `${siteUrl}/homes-for-sale`, fuid)
         const address = [listing.StreetNumber, listing.StreetName, listing.City].filter(Boolean).join(' ')
         const price = listing.ListPrice != null ? `$${Math.round(Number(listing.ListPrice)).toLocaleString()}` : 'Price on request'
         return `${index + 1}. ${address || 'Listing'}, ${price}\n${url}`
       })
 
       const label = row.name?.trim() || 'your search'
-      const searchUrl = appendFuid(`${siteUrl}${buildSearchUrlFromFilters(filters)}`, fuid)
+      const searchUrl = appendTracking(`${siteUrl}${buildSearchUrlFromFilters(filters)}`, fuid)
       const unsubscribeUrl = `${siteUrl}/alerts/unsubscribe?token=${encodeURIComponent(row.unsubscribe_token)}`
 
       if (!dryRun) {
