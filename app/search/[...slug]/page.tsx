@@ -21,9 +21,13 @@ import { getPresetBySlug, isPresetSlug, resolvePresetYearBuiltMin } from '../../
 import { getPopularSearchesForCity, getAllCityHomesLink } from '../../../lib/popular-searches'
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
 import { Container, Body, Grid, H1, H2 } from '@/components/site/primitives'
+import MarketSnapshot from '@/components/site/MarketSnapshot'
+import { FAQBlock } from '@/components/site/FAQBlock'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { buildMarketFaq } from '@/lib/site/market-faq'
 import { GolfLanding } from '@/components/site/golf/GolfLanding'
 import { GOLF_COMMUNITIES } from '@/data/golf-landing'
-import { getGolfImages, pickGolfImage, getGolfHomesForLanding } from '@/lib/data'
+import { getGolfImages, pickGolfImage, getGolfHomesForLanding, getMarketPulse } from '@/lib/data'
 import AdvancedSearchFilters from '../../../components/AdvancedSearchFilters'
 import ShareButton from '../../../components/ShareButton'
 import BreadcrumbStrip from '../../../components/layout/BreadcrumbStrip'
@@ -539,6 +543,18 @@ export default async function SearchPage({
     ? getPopularSearchesForCity(relatedCitySlug, 12).filter((l) => l.href !== searchPagePath).slice(0, 8)
     : []
 
+  // City-page SEO depth — ONLY the plain /homes-for-sale/[city] page (not the
+  // subdivision/preset/filtered variants, which are noindex). Brings this intent
+  // route to parity with the /cities/[city] hub: a self-fetching market-stat band,
+  // a verified FAQ, and Dataset + FAQPage JSON-LD, all single-sourced from
+  // buildMarketFaq so the visible numbers and the markup never diverge. Every
+  // figure is null-guarded (no invented stats, CLAUDE.md §0).
+  const isPlainCityPage = !!(city && !subdivision && !preset)
+  const cityPulse = isPlainCityPage && relatedCitySlug
+    ? await getMarketPulse({ geoType: 'city', geoSlug: relatedCitySlug }).catch(() => null)
+    : null
+  const cityMarketFaq = isPlainCityPage && city ? buildMarketFaq(city, cityPulse) : null
+
   return (
     <main className="min-h-screen bg-background">
       {searchBreadcrumbItems.length > 1 && (
@@ -599,6 +615,19 @@ export default async function SearchPage({
                   )}`
                 })
                 .filter(Boolean)}
+            />
+          )}
+          {cityMarketFaq && cityMarketFaq.datasetVariables.length > 0 && (
+            <MetadataBlock
+              schema={{
+                type: 'dataset',
+                name: `${city}, Oregon real estate market statistics${cityMarketFaq.asOfLabel ? `, ${cityMarketFaq.asOfLabel}` : ''}`,
+                description: `Live single-family home market data for ${city}, Oregon. Includes median list price, active inventory, months of supply, and median days to pending. Sourced from the regional MLS via Ryan Realty.`,
+                url: searchPagePath,
+                dateModified: cityMarketFaq.asOfIso ?? undefined,
+                spatialCoverageName: `${city}, OR`,
+                variableMeasured: cityMarketFaq.datasetVariables,
+              }}
             />
           )}
         </>
@@ -716,6 +745,20 @@ export default async function SearchPage({
             })}
           </Grid>
         </div>
+      )}
+
+      {/* City-page SEO depth — market band + verified FAQ (plain city page only). */}
+      {isPlainCityPage && (
+        <section className="mt-12">
+          <MarketSnapshot citySlug={relatedCitySlug!} cityName={city!} />
+        </section>
+      )}
+      {cityMarketFaq && cityMarketFaq.faqs.length > 0 && (
+        <FAQBlock
+          items={cityMarketFaq.faqs}
+          eyebrow="Common questions"
+          title={`${city!} real estate questions`}
+        />
       )}
 
       {/* 6. Related searches — SEO internal links to this city's other popular searches. */}
