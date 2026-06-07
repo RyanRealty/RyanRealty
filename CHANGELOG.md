@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.3 (2026-06-07)
+
+### Bug Fixes
+- fix(paid): attribute Meta ad clicks by deriving _fbc from fbclid
+
+---
+
+
 ## v1.425.2 (2026-06-07)
 
 ### Other
