@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.1 (2026-06-07)
+
+### Bug Fixes
+- fix(sellers): restore the seller valuation CTA on city + community pages
+
+---
+
+
 ## v1.425.0 (2026-06-07)
 
 ### Features
