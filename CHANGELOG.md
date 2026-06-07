@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.2 (2026-06-07)
+
+### Other
+- seo(search): thicken /homes-for-sale/[city] to /cities parity (rank lift)
+
+---
+
+
 ## v1.425.1 (2026-06-07)
 
 ### Bug Fixes
