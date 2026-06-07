@@ -9,7 +9,7 @@ import {
   getFilterNameFallback,
   buildSearchUrlFromFilters,
 } from '@/lib/search-filters'
-import { trackSavedPropertySearch, findPersonByEmail } from '@/lib/followupboss'
+import { trackSavedPropertySearch, findPersonByEmail, createRealtimeTask } from '@/lib/followupboss'
 import { upsertGuestSearchAlert } from '@/lib/data/leads/guestSearchAlerts'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 
@@ -93,8 +93,20 @@ export async function submitSearchAlertSignup(input: {
     await trackSavedPropertySearch({ user: { email }, searchName: name, filtersSummary: summary, searchUrl })
     const person = await findPersonByEmail(email)
     fubPersonId = person?.id ?? null
+    // Notify the assigned broker in FUB so a signup is never missed. The lead is
+    // already created + tagged + assigned to the broker above; this adds a task
+    // with a near-immediate phone reminder. Auto-routes to the person's assigned
+    // user (the broker). Awaited so the serverless freeze cannot drop it.
+    if (fubPersonId) {
+      await createRealtimeTask({
+        personId: fubPersonId,
+        taskName: `New listing-alert signup: ${summary}`,
+        taskType: 'Follow Up',
+        dueInMinutes: 5,
+      })
+    }
   } catch {
-    // FUB best-effort.
+    // FUB best-effort — never block the signup or the durable persistence.
   }
 
   // 6. Persist so the alert cron can email this guest when new homes match.
