@@ -280,7 +280,9 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
         eventId,
         eventSourceUrl: `${siteUrl}/lp/buyer-listing-alerts`,
         fbp: capiCookies.get('_fbp')?.value,
-        fbc: capiCookies.get('_fbc')?.value,
+        // Fall back to the middleware-captured rr_fbc (derived from ?fbclid) when
+        // the Meta pixel never set _fbc, so paid clicks attribute. See middleware.
+        fbc: capiCookies.get('_fbc')?.value ?? capiCookies.get('rr_fbc')?.value,
         customData: {
           content_name: 'buyer_lp_listing_alerts',
           lead_type: 'buyer_listing_alerts',

@@ -456,7 +456,9 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         eventId,
         eventSourceUrl: capiSourceUrl,
         fbp: capiCookies.get('_fbp')?.value,
-        fbc: capiCookies.get('_fbc')?.value,
+        // Fall back to the middleware-captured rr_fbc (derived from ?fbclid) when
+        // the Meta pixel never set _fbc, so paid clicks attribute. See middleware.
+        fbc: capiCookies.get('_fbc')?.value ?? capiCookies.get('rr_fbc')?.value,
         customData: {
           content_name: capiContentName,
           lead_type: isListNowLp ? 'seller_listing_intent' : 'seller_valuation',

@@ -213,6 +213,32 @@ function buildNextResponse(pathname: string, request: NextRequest): NextResponse
   return NextResponse.next({ request: { headers: requestHeaders } })
 }
 
+/**
+ * Paid-click attribution rescue. When a Meta ad click lands with ?fbclid and the
+ * Meta pixel has NOT already set _fbc (pre-pixel click, consent gate, blocked
+ * pixel — the common reason paid conversions show 0), drop a ready-to-use Meta
+ * _fbc value into a first-party rr_fbc cookie. The seller/buyer LP server actions
+ * fall back to it when sending the CAPI Lead event, so Meta can attribute the
+ * conversion to the ad click. Scoped to the registrable domain (subdomainIndex 1)
+ * so it works on both the apex and the seller. LP host; httpOnly (only the server
+ * action reads it). No-op without ?fbclid or when a real _fbc already exists.
+ */
+function attachFbcCookie(response: NextResponse, request: NextRequest, host: string): NextResponse {
+  const fbclid = request.nextUrl.searchParams.get('fbclid')
+  if (!fbclid) return response
+  if (request.cookies.get('_fbc') || request.cookies.get('rr_fbc')) return response
+  const isProd = host.endsWith('ryan-realty.com')
+  response.cookies.set('rr_fbc', `fb.1.${Date.now()}.${fbclid}`, {
+    maxAge: 90 * 24 * 60 * 60,
+    path: '/',
+    sameSite: 'lax',
+    httpOnly: true,
+    secure: isProd,
+    ...(isProd ? { domain: 'ryan-realty.com' } : {}),
+  })
+  return response
+}
+
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const url = request.nextUrl
   const pathname = url.pathname
@@ -266,7 +292,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     rewriteUrl.pathname = subdomainLpRoot
     const requestHeaders = new Headers(request.headers)
     requestHeaders.set('x-pathname', subdomainLpRoot)
-    return NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } })
+    return attachFbcCookie(NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } }), request, host)
   }
 
   // ─── (2) Rate limiting for /api/* ──────────────────────────────────────
@@ -298,7 +324,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   // ─── (3) Default: forward x-pathname so server components can branch ───
-  return buildNextResponse(pathname, request)
+  return attachFbcCookie(buildNextResponse(pathname, request), request, host)
 }
 
 // Run on everything that isn't a Next.js internal or static asset.
