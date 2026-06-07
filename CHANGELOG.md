@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.0 (2026-06-07)
+
+### Features
+- feat(buyers): schedule listing-alert cron (daily 14:00 UTC)
+
+---
+
+
 ## v1.424.0 (2026-06-07)
 
 ### Features
