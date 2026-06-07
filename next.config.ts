@@ -152,6 +152,9 @@ const nextConfig: NextConfig = {
       { source: '/reports', destination: '/housing-market/reports', permanent: true },
       { source: '/reports/explore', destination: '/housing-market/explore', permanent: true },
       { source: '/reports/:slug/:geoName', destination: '/housing-market/reports/:slug/:geoName', permanent: true },
+      // Single-segment report (e.g. /reports/weekly-2026-05-24) had no rule, so it
+      // and /housing-market/reports/:slug both returned 200 = duplicate content.
+      { source: '/reports/:slug', destination: '/housing-market/reports/:slug', permanent: true },
 
       // ── Legacy AgentFire/WordPress cutover 404s ─────────────────────────────
       // URL shapes the sitemap-driven legacy map (middleware + legacy-redirects.json)

@@ -109,7 +109,7 @@ export default function LeadLandingPage({ config }: Props) {
         </div>
         <div className="mt-8">
           <Link href="/contact" className="text-sm font-semibold text-primary hover:text-primary/80">
-            Prefer to talk now Contact our team
+            Prefer to talk now? Contact our team.
           </Link>
         </div>
       </section>

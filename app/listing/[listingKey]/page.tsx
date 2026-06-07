@@ -101,9 +101,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     address: addressFull || undefined,
     city: addressFull ? undefined : (listing.city ?? undefined),
   })
-  const title = addressFull
-    ? `${addressFull} | Ryan Realty`
-    : `Listing ${listing.listingKey} | Ryan Realty`
+  // Address only — the root layout title template owns the single brand suffix
+  // (" | Ryan Realty — Central Oregon Real Estate"). Adding "| Ryan Realty" here
+  // double-stamped the brand on every listing (the #1 ad-landing surface).
+  const title = addressFull ? addressFull : `Listing ${listing.listingKey}`
 
   // Canonical = the PUBLIC URL (matches the sitemap + internal links), NOT the
   // internal /listing/<key> route. Pointing the canonical at /listing/<key>
