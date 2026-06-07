@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { runSavedSearchAlerts } from '@/app/actions/saved-search-alerts'
+import { runSavedSearchAlerts, runGuestSearchAlerts } from '@/app/actions/saved-search-alerts'
 
 /**
  * Cron endpoint to send saved-search alert emails.
@@ -26,8 +26,21 @@ export async function GET(request: Request) {
   const dryRun = url.searchParams.get('dryRun') === '1'
 
   try {
-    const result = await runSavedSearchAlerts({ maxSearches, dryRun })
-    return NextResponse.json({ ok: true, ...result })
+    // Signed-in saved searches (unchanged) + anonymous guest alerts from /search.
+    // allSettled so a top-level failure in one pass never discards the other's work.
+    const [authSettled, guestSettled] = await Promise.allSettled([
+      runSavedSearchAlerts({ maxSearches, dryRun }),
+      runGuestSearchAlerts({ maxAlerts: maxSearches, dryRun }),
+    ])
+    const result =
+      authSettled.status === 'fulfilled'
+        ? authSettled.value
+        : { scanned: 0, sent: 0, skipped: 0, errors: [{ searchId: 'auth', error: String(authSettled.reason) }] }
+    const guest =
+      guestSettled.status === 'fulfilled'
+        ? guestSettled.value
+        : { scanned: 0, sent: 0, skipped: 0, errors: [{ searchId: 'guest', error: String(guestSettled.reason) }] }
+    return NextResponse.json({ ok: true, ...result, guest })
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : 'Unknown error' },

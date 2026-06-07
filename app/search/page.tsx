@@ -38,6 +38,7 @@ import SearchResults from '@/components/search/SearchResults'
 import MapSearchView from '@/components/search/MapSearchView'
 import SearchMapClustered from '@/components/LazySearchMapClustered'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
+import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
 
 const DEFAULT_VIEW = 'split'
 
@@ -170,7 +171,9 @@ export default async function SearchPage({
 
   const page = Math.max(1, parseInt(sp.page ?? '1', 10) || 1)
 
-  const session = view !== 'list' ? await getSession() : null
+  // Fetch session for every view so the anonymous-only alert strip knows the
+  // signed-in state in list view too (saved/liked keys stay gated below).
+  const session = await getSession()
   const [savedKeys, likedKeys] =
     session?.user
       ? await Promise.all([
@@ -270,6 +273,8 @@ export default async function SearchPage({
       <div className="sticky top-0 z-20 w-full border-b border-border bg-card shadow-sm">
         <SearchFilters initialFilters={initialFiltersFromUrl} />
       </div>
+      {/* Guest listing-alert capture — shown only to anonymous visitors. */}
+      <SearchAlertCapture signedIn={!!session?.user} defaultCity={effectiveFilters.city ?? ''} />
       <div className="w-full">
         {view === 'map' && (
           <div className="map-search-shell w-full">

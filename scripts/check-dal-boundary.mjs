@@ -58,6 +58,7 @@ const BANNED_TABLES = [
   'expired_listings',
   'cmas',
   'cma_comps',
+  'guest_search_alerts',
 ]
 
 // Match: .from('listings'), .from("listings"), .from(`listings`) — any quote style.

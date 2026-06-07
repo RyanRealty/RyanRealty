@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-06-06T16:16:18.776Z
+**Generated:** 2026-06-06T18:01:35.230Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -219,6 +219,14 @@ Companion files:
 ### `lib/data/leads/createSellerLead.ts`
 
 **Exports:** `createSellerLead`
+
+---
+
+### `lib/data/leads/guestSearchAlerts.ts`
+
+**Exports:** `upsertGuestSearchAlert`, `getActiveGuestSearchAlerts`, `markGuestAlertNotified`, `deactivateGuestAlertByToken`
+
+**Selected columns:** `id`, `email`, `filters`, `name`, `notification_frequency`, `is_active`, `last_notified_at`, `unsubscribe_token`
 
 ---
 

@@ -489,5 +489,14 @@ export type { ParkBoundaryGeometry } from '@/lib/data/parks/getParkBoundaryGeoJS
 export { getBrokerageTrackRecord } from '@/lib/data/track-record'
 export type { BrokerageTrackRecord } from '@/lib/data/track-record'
 
+// Guest (anonymous) search-alert capture from /search
+export {
+  upsertGuestSearchAlert,
+  getActiveGuestSearchAlerts,
+  markGuestAlertNotified,
+  deactivateGuestAlertByToken,
+} from '@/lib/data/leads/guestSearchAlerts'
+export type { GuestSearchAlertInput, GuestSearchAlertRow } from '@/lib/data/leads/guestSearchAlerts'
+
 // Cache helpers ----------------------------------------------------
 export { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'

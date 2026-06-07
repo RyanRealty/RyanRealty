@@ -28,6 +28,8 @@ export type SendEmailOptions = {
   react?: ReactElement
   /** Attachments (e.g. PDF). Content as Buffer. */
   attachments?: { filename: string; content: Buffer }[]
+  /** Custom SMTP headers, e.g. List-Unsubscribe for one-click unsubscribe. */
+  headers?: Record<string, string>
 }
 
 export async function sendEmail(options: SendEmailOptions): Promise<{ id?: string; error?: string }> {
@@ -50,6 +52,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<{ id?: strin
       replyTo: options.replyTo,
       react: options.react,
       ...(options.attachments?.length ? { attachments: options.attachments } : {}),
+      ...(options.headers ? { headers: options.headers } : {}),
     })
     if (error) {
       const g = globalThis as unknown as { captureException?: (e: unknown) => void }
