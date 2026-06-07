@@ -25,11 +25,10 @@ export async function GET(request: Request) {
   const maxSearches = Math.min(500, Math.max(1, Number(url.searchParams.get('limit') ?? '120') || 120))
   const dryRun = url.searchParams.get('dryRun') === '1'
 
-  // Signed-in saved-search alerts stay OFF until they get the same CAN-SPAM
-  // one-click unsubscribe + postal footer + ?_fuid tracking the guest path has
-  // (they have never run). The compliant guest search-alert path runs whenever
-  // scheduled. Flip to true in the same change that hardens runSavedSearchAlerts.
-  const SIGNED_IN_ALERTS_ENABLED = false
+  // Both alert paths are now CAN-SPAM compliant (postal footer + one-click token
+  // List-Unsubscribe) and FUB-tracked (?_fuid). saved_searches was empty when
+  // this was enabled (2026-06-07), so there is no dormant cohort to surprise.
+  const SIGNED_IN_ALERTS_ENABLED = true
 
   try {
     // Guest /search alerts (compliant) always run; the signed-in saved searches

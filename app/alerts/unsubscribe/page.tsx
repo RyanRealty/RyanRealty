@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { deactivateGuestAlertByToken } from '@/lib/data'
+import { deactivateGuestAlertByToken, pauseSavedSearchByToken } from '@/lib/data'
 import { Button } from '@/components/ui/button'
 import { H1 } from '@/components/site/primitives'
 
@@ -21,7 +21,12 @@ export const metadata: Metadata = {
 
 async function confirmUnsubscribe(token: string, _formData: FormData) {
   'use server'
-  if (token) await deactivateGuestAlertByToken(token)
+  // A token belongs to a guest alert OR a signed-in saved search — try both
+  // (each matches at most one row; the other is a harmless no-op).
+  if (token) {
+    await deactivateGuestAlertByToken(token)
+    await pauseSavedSearchByToken(token)
+  }
   redirect('/alerts/unsubscribe?done=1')
 }
 

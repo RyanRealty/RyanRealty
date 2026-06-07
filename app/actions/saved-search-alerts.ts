@@ -8,6 +8,7 @@ import { buildSearchUrlFromFilters } from '@/lib/search-filters'
 import { getActiveGuestSearchAlerts, markGuestAlertNotified } from '@/lib/data/leads/guestSearchAlerts'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { BRAND } from '@/lib/brand/contact'
+import { findPersonByEmail } from '@/lib/followupboss'
 
 type SavedSearchAlertRow = {
   id: string
@@ -17,6 +18,7 @@ type SavedSearchAlertRow = {
   notification_frequency: string | null
   is_paused: boolean | null
   last_notified_at: string | null
+  unsubscribe_token: string | null
 }
 
 type AlertRunSummary = {
@@ -119,7 +121,7 @@ export async function runSavedSearchAlerts(options?: {
   const supabase = createServiceClient()
   const { data: searchesRaw, error: searchesError } = await supabase
     .from('saved_searches')
-    .select('id, user_id, name, filters, notification_frequency, is_paused, last_notified_at')
+    .select('id, user_id, name, filters, notification_frequency, is_paused, last_notified_at, unsubscribe_token')
     .order('created_at', { ascending: false })
     .limit(maxSearches)
   if (searchesError) {
@@ -146,25 +148,22 @@ export async function runSavedSearchAlerts(options?: {
       }
 
       const filters = (search.filters ?? {}) as Record<string, unknown>
-      const results = await getCachedSearchListings(
-        {
-          city: parseString(filters.city),
-          subdivision: parseString(filters.subdivision),
-          minPrice: parseNumber(filters.minPrice),
-          maxPrice: parseNumber(filters.maxPrice),
-          beds: parseNumber(filters.beds),
-          baths: parseNumber(filters.baths),
-          minSqFt: parseNumber(filters.minSqFt),
-          propertyType: parseString(filters.propertyType),
-          statusFilter: parseString(filters.statusFilter) as 'active' | 'pending' | 'closed' | 'all' | undefined,
-          keywords: parseString(filters.keywords),
-          postalCode: parseString(filters.postalCode),
-          sort: 'newest',
-        },
-        1,
-        5
-      )
+      // Full stored filters (getCachedSearchListings re-normalizes + honors every key).
+      const results = await getCachedSearchListings(filters, 1, 15)
       if (!results.listings.length) {
+        summary.skipped += 1
+        continue
+      }
+
+      // Only NEW listings since the last send (first send includes current matches).
+      const sinceMs = search.last_notified_at ? Date.parse(search.last_notified_at) : 0
+      const fresh = sinceMs
+        ? results.listings.filter((l) => {
+            const onMarket = l.OnMarketDate ? Date.parse(l.OnMarketDate) : NaN
+            return Number.isFinite(onMarket) && onMarket > sinceMs
+          })
+        : results.listings
+      if (!fresh.length) {
         summary.skipped += 1
         continue
       }
@@ -188,25 +187,41 @@ export async function runSavedSearchAlerts(options?: {
         continue
       }
 
-      const topRows = results.listings.slice(0, 3)
+      // Resolve the FUB id (by account email) so email-click links log
+      // "Visited Website" + "Viewed Property" on their FUB timeline.
+      const fuid = (await findPersonByEmail(toEmail))?.id ?? null
+
+      const topRows = fresh.slice(0, 3)
       const bodyLines = topRows.map((row, index) => {
         const path = buildListingUrl(row)
-        const url = path ? `${siteUrl}${path}` : `${siteUrl}/homes-for-sale`
+        const url = appendTracking(path ? `${siteUrl}${path}` : `${siteUrl}/homes-for-sale`, fuid)
         const address = [row.StreetNumber, row.StreetName, row.City].filter(Boolean).join(' ')
         const price = row.ListPrice != null ? `$${Math.round(Number(row.ListPrice)).toLocaleString()}` : 'Price on request'
-        return `${index + 1}. ${address || 'Listing'} — ${price}\n${url}`
+        return `${index + 1}. ${address || 'Listing'}, ${price}\n${url}`
       })
+
+      const label = search.name?.trim() || 'your saved search'
+      const searchUrl = appendTracking(`${siteUrl}${buildSearchUrlFromFilters(filters)}`, fuid)
+      const unsubscribeUrl = `${siteUrl}/alerts/unsubscribe?token=${encodeURIComponent(search.unsubscribe_token ?? '')}`
 
       if (!dryRun) {
         const emailResult = await sendEmail({
           to: toEmail,
-          subject: `New listings for ${search.name?.trim() || 'your saved search'}`,
+          subject: `Listings for ${label}`,
+          headers: search.unsubscribe_token
+            ? { 'List-Unsubscribe': `<${unsubscribeUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
+            : undefined,
           text: [
-            `We found new listings matching ${search.name?.trim() || 'your saved search'}.`,
+            `Here are listings matching ${label}.`,
             '',
             ...bodyLines,
             '',
-            `Manage alerts: ${siteUrl}/account/saved-searches`,
+            `See all matches: ${searchUrl}`,
+            '',
+            `Manage your alerts: ${siteUrl}/account/saved-searches`,
+            `Stop these alerts: ${unsubscribeUrl}`,
+            '',
+            `Ryan Realty, ${BRAND.mailingAddress}`,
           ].join('\n'),
         })
         if (emailResult.error) {

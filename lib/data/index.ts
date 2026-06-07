@@ -497,6 +497,7 @@ export {
   deactivateGuestAlertByToken,
 } from '@/lib/data/leads/guestSearchAlerts'
 export type { GuestSearchAlertInput, GuestSearchAlertRow } from '@/lib/data/leads/guestSearchAlerts'
+export { pauseSavedSearchByToken } from '@/lib/data/savedSearches'
 
 // Cache helpers ----------------------------------------------------
 export { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
