@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.4 (2026-06-07)
+
+### Other
+- seo(local): full street NAP in canonical Organization JSON-LD + citations checklist
+
+---
+
+
 ## v1.425.3 (2026-06-07)
 
 ### Bug Fixes
