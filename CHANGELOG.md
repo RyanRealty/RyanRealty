@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.419.0 (2026-06-07)
+
+### Features
+- feat(buyers): route city + community page CTAs to listing-alert capture
+
+---
+
+
 ## v1.418.0 (2026-06-07)
 
 ### Features
