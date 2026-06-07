@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.424.0 (2026-06-07)
+
+### Features
+- feat(buyers): harden + activate signed-in saved-search alerts (gate ON)
+
+---
+
+
 ## v1.423.1 (2026-06-07)
 
 ### Bug Fixes
