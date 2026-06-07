@@ -628,7 +628,7 @@ export default async function CommunityDetailPage({ params }: Props) {
         eyebrow={`Why Ryan Realty in ${community.name}`}
         title="Local brokers. Specific numbers. No pressure."
         body={`We close deals across ${cityName} every year. We can tell you what the market looked like last month in ${community.name}. If the numbers support it, we will say so.`}
-        primary={{ href: '/contact', label: 'Meet the team' }}
+        primary={{ href: '/lp/buyer-listing-alerts', label: 'Get listing alerts' }}
         secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: `Call ${CONTACT.phoneDirect}` }}
         tone="navy"
       />
