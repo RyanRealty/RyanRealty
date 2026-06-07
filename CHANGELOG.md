@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.423.0 (2026-06-07)
+
+### Features
+- feat(buyers): CAN-SPAM mailing address + gate signed-in alerts (guests-first)
+
+---
+
+
 ## v1.422.0 (2026-06-07)
 
 ### Features
