@@ -77,8 +77,10 @@ export default async function JsonLd() {
     },
     address: {
       '@type': 'PostalAddress',
+      streetAddress: BRAND.address.street,
       addressLocality: BRAND.address.city,
       addressRegion: BRAND.address.region,
+      postalCode: BRAND.address.postalCode,
       addressCountry: 'US',
     },
     sameAs: SOCIAL_PROFILES,

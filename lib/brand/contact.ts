@@ -33,9 +33,11 @@ export const BRAND = {
   /** NAP. The live Organization JSON-LD carries locality + region only (no
    *  street); keep both region forms — 'OR' for schema, 'Oregon' for prose. */
   address: {
+    street: '115 NW Oregon Ave #2',
     city: 'Bend',
     region: 'OR',
     regionFull: 'Oregon',
+    postalCode: '97703',
     country: 'US',
   },
   /** Physical mailing address for CAN-SPAM email footers (Matt, 2026-06-07). */
