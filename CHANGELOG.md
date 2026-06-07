@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.418.0 (2026-06-07)
+
+### Features
+- feat(buyers): anonymous search-alert capture on /search (the #1 buyer lever)
+
+---
+
+
 ## v1.417.0 (2026-06-06)
 
 ### Features
