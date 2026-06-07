@@ -87,6 +87,7 @@ export {
   getZipListings,
   getNeighborhoodListings,
   getTotalListingCount,
+  getListingTilesCount,
 } from '@/lib/data/listings/getListingTiles'
 export type { GetListingTilesFilter } from '@/lib/data/listings/getListingTiles'
 

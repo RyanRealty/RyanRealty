@@ -584,6 +584,15 @@ export type AdvancedListingsFilters = Omit<ListingsFilters, 'sort'> & {
 }
 
 /**
+ * Upper bound on how many slim-MV rows the fast browse path pulls in one read.
+ * Set high enough to fully cover the largest Central Oregon city's active
+ * inventory (Bend ~1.4K active SFR) so search pagination AND exact counts run
+ * off listing_tile_mv instead of the heavy search_listings_advanced RPC. The
+ * MV active subset is ~7.6K rows total, so a per-city fetch stays small.
+ */
+const FAST_TILE_FETCH_CAP = 2500
+
+/**
  * Fetch listings for browse/search: card fields + lat/lng for map.
  * Supports optional filters (price, beds, baths, sq ft, propertyType) and sort.
  * Default when no options: residential only, newest first.
@@ -620,7 +629,7 @@ export async function getListings(options: {
   const baseFilter = {
     status: statusKey,
     sort: sortKey,
-    limit: Math.min((offset + limit) * 3, 500),
+    limit: Math.min((offset + limit) * 3, FAST_TILE_FETCH_CAP),
     minPrice: options.minPrice ?? undefined,
     maxPrice: options.maxPrice ?? undefined,
     minBeds: options.minBeds ?? undefined,
@@ -721,9 +730,12 @@ export async function getListingsAdvanced(options: {
   subdivision?: string
   limit?: number
   offset?: number
-} & AdvancedListingsFilters = {}): Promise<{ listings: ListingTileRow[]; totalCount: number }> {
+} & AdvancedListingsFilters = {}): Promise<{ listings: ListingTileRow[]; totalCount: number; degraded?: boolean }> {
   const supabase = getAnonSupabase()
-  if (!supabase) return { listings: [], totalCount: 0 }
+  if (!supabase) {
+    console.error('[getListingsAdvanced] no anon Supabase client (missing env)')
+    return { listings: [], totalCount: 0, degraded: true }
+  }
   const limit = Math.min(options.limit ?? 100, 200)
   const offset = options.offset ?? 0
   const validStatus = ['active', 'active_and_pending', 'pending', 'closed', 'all'] as const
@@ -771,7 +783,19 @@ export async function getListingsAdvanced(options: {
   })
 
   if (error) {
-    return { listings: [], totalCount: 0 }
+    // Fail loud: surface the data-layer failure in logs and SIGNAL degradation
+    // (degraded: true) so the search page can throw instead of rendering — and
+    // ISR-caching — an empty "no homes" grid (the poison-null pattern). This is
+    // the failure the RPC silently swallowed before (cold 57014 statement
+    // timeouts on the heavy listings scan read as "0 homes" for the whole TTL).
+    console.error('[getListingsAdvanced] search_listings_advanced RPC error', {
+      message: error.message,
+      code: (error as { code?: string }).code ?? null,
+      city: options.city ?? null,
+      subdivision: options.subdivision ?? null,
+      status: statusFilter,
+    })
+    return { listings: [], totalCount: 0, degraded: true }
   }
   const rows = (data ?? []) as (ListingTileRow & { full_count?: number })[]
   const first = rows[0] as (ListingTileRow & { full_count?: number }) | undefined
@@ -797,10 +821,27 @@ export async function getListingsWithAdvanced(options: {
   subdivision?: string
   limit?: number
   offset?: number
-} & AdvancedListingsFilters = {}): Promise<{ listings: ListingTileRow[]; totalCount: number }> {
-  if (hasAdvancedFilters(options)) {
+} & AdvancedListingsFilters = {}): Promise<{ listings: ListingTileRow[]; totalCount: number; degraded?: boolean }> {
+  const limit = options.limit ?? 100
+  const offset = options.offset ?? 0
+  // The slim-MV fast path serves any page whose last row fits inside one capped
+  // fetch; beyond that only the RPC can offset-paginate the full set.
+  const deepPage = offset + limit > FAST_TILE_FETCH_CAP
+
+  // Heavy RPC ONLY when we must: jsonb-derived feature filters (view,
+  // waterfront, fireplace, golf, keywords, open house, garage, year, lot, etc.)
+  // that listing_tile_mv doesn't carry, or pagination deeper than the fast path
+  // can reach. getListingsAdvanced fails loud + signals `degraded` on error.
+  if (hasAdvancedFilters(options) || deepPage) {
     return getListingsAdvanced(options)
   }
+
+  // Fast path: slim, resilient-cached listing_tile_mv (sub-second, already
+  // hardened against poison-empty caching). Rows from getListings; the total
+  // from an EXACT head count so the "N homes" header + pagination stay accurate
+  // past the old 500-row count cap — the reason the search page used to call
+  // the heavy RPC directly (and intermittently render an empty grid when its
+  // cold ~8s scan blew past the page's fetch timeout).
   const baseSort: ListingsFilters['sort'] =
     options.sort && BASE_SORTS.includes(options.sort as ListingsFilters['sort'])
       ? (options.sort as ListingsFilters['sort'])
@@ -810,7 +851,49 @@ export async function getListingsWithAdvanced(options: {
     sort: baseSort,
   }
   const listings = await getListings(baseOptions)
-  const totalCount = await getActiveListingsCount(baseOptions)
+
+  let totalCount: number
+  if (options.subdivision?.trim()) {
+    // Subdivisions can span multiple name aliases (handled inside getListings),
+    // so count them through the same row path. They sit well under the cap.
+    totalCount = await getActiveListingsCount(baseOptions)
+  } else {
+    const { getListingTilesCount } = await import('@/lib/data')
+    const statusKey = options.includeClosed
+      ? ('all' as const)
+      : options.includePending
+        ? ('active-and-pending' as const)
+        : ('active' as const)
+    const pt = options.propertyType?.trim()
+    totalCount = await getListingTilesCount({
+      city: options.city?.trim() || undefined,
+      status: statusKey,
+      minPrice: options.minPrice ?? undefined,
+      maxPrice: options.maxPrice ?? undefined,
+      minBeds: options.minBeds ?? undefined,
+      minBaths: options.minBaths ?? undefined,
+      minSqft: options.minSqFt ?? undefined,
+      propertyType: pt && pt !== '' && pt !== 'all' ? pt : undefined,
+    })
+  }
+
+  // Fail loud on the fast path too: an UNFILTERED city scope that returns zero
+  // is never legitimate (a real city always has active inventory), so a 0 here
+  // means the MV is empty/stale or the read failed. Signal degraded so the page
+  // serves stale instead of caching "no homes for sale in <city>".
+  const isUnfilteredCityScope =
+    !!options.city?.trim() &&
+    !options.subdivision?.trim() &&
+    options.minPrice == null && options.maxPrice == null &&
+    options.minBeds == null && options.minBaths == null && options.minSqFt == null &&
+    (!options.propertyType || options.propertyType.trim() === '' || options.propertyType.trim() === 'all')
+  if (isUnfilteredCityScope && totalCount === 0) {
+    console.error('[getListingsWithAdvanced] unfiltered city scope returned 0 — degraded (MV empty/stale or read failed)', {
+      city: options.city ?? null,
+    })
+    return { listings, totalCount, degraded: true }
+  }
+
   return { listings, totalCount }
 }
 

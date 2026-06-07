@@ -6,7 +6,7 @@ import {
   getListingKeysWithRecentPriceChange,
   getCityFromSlug,
   getSubdivisionNameFromSlug,
-  getListingsAdvanced,
+  getListingsWithAdvanced,
   type AdvancedSort,
 } from '../../actions/listings'
 import { getSession } from '../../actions/auth'
@@ -55,6 +55,17 @@ async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500
     new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
   ])
 }
+
+/**
+ * Timeout for the primary listings fetch. The common case resolves from the
+ * slim MV in well under a second; this ceiling exists only to cover the heavy
+ * search_listings_advanced RPC fallback (jsonb feature filters / deep pages),
+ * whose cold scan can take ~8s. It is long enough that a real result is never
+ * truncated to an empty fallback (the original bug, where a 2.5s timeout cut
+ * off the ~8s cold RPC) and short enough to fail loud if the data layer is
+ * genuinely stuck. The RPC warms to ~1-2s, so 12s comfortably covers a cold run.
+ */
+const LISTINGS_FETCH_TIMEOUT_MS = 12000
 
 /** Resolve slug segments to city, subdivision (display name), and preset. */
 async function resolveSlug(slug: string[]): Promise<{
@@ -350,15 +361,35 @@ export default async function SearchPage({
   //   recent price-change keys (map view), session (save-search + map view),
   //   resort entity keys (JSON-LD + breadcrumb resort flag).
   const [listingsResult, priceChangeKeys, session, resortEntityKeys] = await Promise.all([
-    // Use the advanced RPC directly: it honors the full advanced filterOpts AND
-    // returns an accurate full_count. getCachedSearchListings round-trips through
-    // the SavedSearchFilters converter, which caps/mis-maps the count (200 for
-    // every page) and breaks pagination past that cap.
-    withTimeout(getListingsAdvanced({ ...filterOpts, limit: pageSize, offset }), { listings: [], totalCount: 0 }),
+    // Route through getListingsWithAdvanced: it serves the common city + base-
+    // filter case from the slim, resilient-cached listing_tile_mv (sub-second,
+    // with an EXACT count so pagination/header stay right) and only falls back
+    // to the heavy search_listings_advanced RPC for jsonb-derived feature
+    // filters or pagination deeper than the fast path can reach. A timeout or a
+    // data-layer error yields `degraded: true` (the withTimeout fallback is
+    // degraded too) so the page fails loud below instead of caching an empty
+    // grid. This replaces the prior direct RPC call, whose cold ~8s scan blew
+    // past the old 2.5s fetch timeout and silently rendered "no homes".
+    withTimeout(
+      getListingsWithAdvanced({ ...filterOpts, limit: pageSize, offset }),
+      { listings: [], totalCount: 0, degraded: true },
+      LISTINGS_FETCH_TIMEOUT_MS,
+    ),
     withTimeout(getListingKeysWithRecentPriceChange(), new Set<string>()),
     withTimeout(getSession(), null, 600),
     withTimeout(getResortEntityKeys(), new Set<string>()),
   ])
+  // Fail loud: a timed-out or hard-errored listings fetch must NOT render — and
+  // let ISR cache — an empty "no homes" grid (the poison-null pattern). Throwing
+  // makes Next serve the last good ISR copy (stale-while-revalidate) and logs
+  // the failure, instead of freezing zero results for the whole revalidate TTL.
+  // A genuine zero-result search (clean fetch, 0 matches) has degraded=false and
+  // still renders the friendly empty state further down.
+  if (listingsResult.degraded) {
+    throw new Error(
+      `[search] listings fetch degraded (timeout or data-layer error) — city=${city ?? 'none'} subdivision=${subdivision ?? 'none'} offset=${offset}`,
+    )
+  }
   const { listings, totalCount } = listingsResult
   const effectiveStatusFilter = (filterOpts.statusFilter && ['active', 'active_and_pending', 'pending', 'closed', 'all'].includes(filterOpts.statusFilter))
     ? filterOpts.statusFilter

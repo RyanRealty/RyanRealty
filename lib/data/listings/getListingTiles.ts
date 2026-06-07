@@ -202,13 +202,31 @@ function mvRowToTile(row: ListingTileMvRow): ListingTile {
   }
 }
 
-async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]> {
-  const parsed = FilterSchema.parse(filter)
-  const supabase = supabaseAnon()
-  if (!supabase) return []
+/**
+ * Minimal structural view of the chainable PostgREST filter methods this helper
+ * uses. The real Supabase builder type is too deep to thread through a generic
+ * constraint (TS2589), so applyTileFilters takes an unconstrained `T`, casts to
+ * this view internally to apply predicates, and returns `T` so callers keep the
+ * concrete builder type for `.order()` / `.range()` / `await`.
+ */
+type TileQueryBuilder = {
+  eq: (column: string, value: string | number | boolean) => TileQueryBuilder
+  in: (column: string, values: readonly (string | number)[]) => TileQueryBuilder
+  gte: (column: string, value: string | number) => TileQueryBuilder
+  lte: (column: string, value: string | number) => TileQueryBuilder
+  gt: (column: string, value: string) => TileQueryBuilder
+  lt: (column: string, value: string) => TileQueryBuilder
+  is: (column: string, value: null) => TileQueryBuilder
+  or: (filters: string) => TileQueryBuilder
+}
 
-  let query = supabase.from('listing_tile_mv').select('*')
-
+/**
+ * Apply every WHERE predicate from a parsed filter to a `listing_tile_mv`
+ * query. Shared by the row fetch (`fetchTiles`) and the exact head-count
+ * (`fetchTileCount`) so a total can never drift from the rows it counts.
+ */
+function applyTileFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>): T {
+  let query = builder as unknown as TileQueryBuilder
   if (parsed.city) query = query.eq('city_lower', parsed.city.toLowerCase().trim())
   if (parsed.cities && parsed.cities.length > 0) {
     query = query.in(
@@ -290,6 +308,15 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
   if (parsed.listNumbers && parsed.listNumbers.length > 0) {
     query = query.in('list_number', parsed.listNumbers)
   }
+  return query as unknown as T
+}
+
+async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]> {
+  const parsed = FilterSchema.parse(filter)
+  const supabase = supabaseAnon()
+  if (!supabase) return []
+
+  let query = applyTileFilters(supabase.from('listing_tile_mv').select('*'), parsed)
 
   // Sort
   if (parsed.sort === 'newest') {
@@ -355,6 +382,49 @@ export const getTotalListingCount = (): Promise<number> =>
     ['listing-tile-count', 'all'],
     { revalidate: 300, tags: [cacheTag.listings] }
   )()
+
+/**
+ * Exact, uncapped count of `listing_tile_mv` rows matching a filter. Same
+ * predicates as fetchTiles (via applyTileFilters) but a head count — so the
+ * search page can show an accurate "N homes for sale" + drive pagination
+ * without paying the heavy search_listings_advanced RPC (which scans the full
+ * 590K-row listings table) just to read full_count.
+ *
+ * THROWS on a hard error so the resilient wrapper retries uncached rather than
+ * caching a transient 0 (the poison-null pattern). Falls back to 0 only after
+ * the retry fails.
+ */
+async function fetchTileCount(filter: GetListingTilesFilter): Promise<number> {
+  const parsed = FilterSchema.parse(filter)
+  const supabase = supabaseAnon()
+  if (!supabase) return 0
+  const query = applyTileFilters(
+    supabase.from('listing_tile_mv').select('listing_key', { count: 'exact', head: true }),
+    parsed
+  )
+  const { count, error } = await query
+  if (error) {
+    throw new Error(`[getListingTilesCount] supabase error: ${error.message}`)
+  }
+  return count ?? 0
+}
+
+export const getListingTilesCount = (filter: GetListingTilesFilter): Promise<number> => {
+  const parsed = FilterSchema.parse(filter)
+  // limit / offset / sort never change the count — normalize them out of the
+  // cache key so every page of the same filter shares one cached total.
+  const { limit: _limit, offset: _offset, sort: _sort, ...countScope } = parsed
+  void _limit
+  void _offset
+  void _sort
+  const cacheKey = JSON.stringify(countScope)
+  return makeResilientCached(
+    () => fetchTileCount(parsed),
+    ['listing-tile-count-filtered-v1', cacheKey],
+    { revalidate: CACHE_WINDOWS.listingTile, tags: [cacheTag.listings] },
+    0,
+  )()
+}
 
 /**
  * Get the active listing tiles for a city. Wrapper that applies the right
