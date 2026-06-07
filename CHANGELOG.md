@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.420.0 (2026-06-07)
+
+### Features
+- feat(buyers): notify the broker in FUB on a search-alert signup
+
+---
+
+
 ## v1.419.0 (2026-06-07)
 
 ### Features
