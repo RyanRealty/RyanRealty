@@ -55,7 +55,6 @@ import FeaturedListings from '@/components/site/FeaturedListings'
 import MotivatedListings from '@/components/site/MotivatedListings'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import { CONTACT } from '@/lib/brand/contact'
 
 // ---------------------------------------------------------------------------
 // Static params
@@ -479,11 +478,11 @@ export default async function CityDetailPage({ params }: Props) {
 
       {/* CTA bar */}
       <CTABar
-        eyebrow={`Why Ryan Realty in ${cityName}`}
-        title="Local brokers. Specific numbers. No pressure."
-        body={`We close deals across ${cityName} every year. We can tell you what the inspection found last month two blocks over. If a market is soft, we will say so.`}
-        primary={{ href: '/lp/buyer-listing-alerts', label: 'Get listing alerts' }}
-        secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: `Call ${CONTACT.phoneDirect}` }}
+        eyebrow={`Thinking of selling in ${cityName}?`}
+        title="What is your home worth?"
+        body={`A broker prepares a comparative market analysis for your ${cityName} home with recent comparable sales and an honest price range. No cost, no obligation. Looking to buy instead? Get new ${cityName} listings the day they hit the market.`}
+        primary={{ href: '/lp/seller-home-value', label: 'Get my home value' }}
+        secondary={{ href: '/lp/buyer-listing-alerts', label: 'Get listing alerts' }}
         tone="navy"
       />
 

@@ -63,7 +63,6 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { listingTileHref } from '@/lib/slug'
-import { CONTACT } from '@/lib/brand/contact'
 
 export const dynamicParams = true
 export const revalidate = 60
@@ -625,11 +624,11 @@ export default async function CommunityDetailPage({ params }: Props) {
       ) : null}
 
       <CTABar
-        eyebrow={`Why Ryan Realty in ${community.name}`}
-        title="Local brokers. Specific numbers. No pressure."
-        body={`We close deals across ${cityName} every year. We can tell you what the market looked like last month in ${community.name}. If the numbers support it, we will say so.`}
-        primary={{ href: '/lp/buyer-listing-alerts', label: 'Get listing alerts' }}
-        secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: `Call ${CONTACT.phoneDirect}` }}
+        eyebrow={`Thinking of selling in ${community.name}?`}
+        title="What is your home worth?"
+        body={`A broker prepares a comparative market analysis for your ${community.name} home with recent comparable sales and an honest price range. No cost, no obligation. Looking to buy instead? Get new ${community.name} listings the day they hit the market.`}
+        primary={{ href: '/lp/seller-home-value', label: 'Get my home value' }}
+        secondary={{ href: '/lp/buyer-listing-alerts', label: 'Get listing alerts' }}
         tone="navy"
       />
 
