@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.422.0 (2026-06-07)
+
+### Features
+- feat(buyers): tag alert-email links with UTMs so GA4 tracks email traffic
+
+---
+
+
 ## v1.421.0 (2026-06-07)
 
 ### Features
