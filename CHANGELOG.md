@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.421.0 (2026-06-07)
+
+### Features
+- feat(buyers): FUB-track alert-email clicks (?_fuid identity param)
+
+---
+
+
 ## v1.420.0 (2026-06-07)
 
 ### Features
