@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.6 (2026-06-07)
+
+### Other
+- Drop dead 28-arg search_listings_advanced overload
+
+---
+
+
 ## v1.425.5 (2026-06-07)
 
 ### Other
