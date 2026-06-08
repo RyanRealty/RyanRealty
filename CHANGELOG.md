@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.22 (2026-06-08)
+
+### Other
+- Map propertyType label->codes in the advanced-search RPC + bust poisoned cache
+
+---
+
+
 ## v1.425.21 (2026-06-08)
 
 ### Other
