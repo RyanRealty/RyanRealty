@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.14 (2026-06-08)
+
+### Other
+- Bust stale empty photo/video caches (ListNumber lookup fix)
+
+---
+
+
 ## v1.425.13 (2026-06-08)
 
 ### Other
