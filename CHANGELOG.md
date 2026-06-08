@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.18 (2026-06-08)
+
+### Other
+- Steps 9 + 12: tool instructions + misc brand-voice/UX fixes
+
+---
+
+
 ## v1.425.17 (2026-06-08)
 
 ### Other
