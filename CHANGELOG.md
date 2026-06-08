@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.10 (2026-06-08)
+
+### Other
+- Lock breadcrumb consistency with a CI gate + unblock the gate chain
+
+---
+
+
 ## v1.425.9 (2026-06-08)
 
 ### Other
