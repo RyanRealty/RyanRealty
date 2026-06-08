@@ -46,6 +46,7 @@ export default function AppreciationToolPage() {
       <ContentPageHero
         title="Home Appreciation Calculator"
         subtitle="Model different annual appreciation rates to understand long-term equity growth and plan your investment."
+        imageUrl="/images/hero/hero-old-mill-master-4k.jpg"
         ctas={[
           { label: 'Browse Listings', href: '/homes-for-sale', primary: true },
           { label: 'Mortgage Calculator', href: '/tools/mortgage-calculator', primary: false },

@@ -1,0 +1,6 @@
+{
+  "generatedAt": "2026-06-08T15:17:20.701Z",
+  "reason": "ContentPageHero usages without an imageUrl at gate-creation time. NEW imageless heroes fail CI; this list only shrinks.",
+  "total": 0,
+  "violators": []
+}

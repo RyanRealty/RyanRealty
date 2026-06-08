@@ -44,6 +44,7 @@ export default async function MortgageCalculatorPage({ searchParams }: Props) {
       <ContentPageHero
         title="Mortgage Calculator"
         subtitle="Estimate your monthly payment. Adjust home price, down payment, interest rate, and loan term to plan your purchase."
+        imageUrl="/images/hero/hero-old-mill-master-4k.jpg"
         ctas={[
           { label: 'Browse Listings', href: '/homes-for-sale', primary: true },
           { label: 'Get a Home Valuation', href: '/sell/valuation', primary: false },

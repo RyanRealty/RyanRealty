@@ -9,12 +9,17 @@ import { DisplayHeading } from '@/components/site/primitives'
 
 export type ContentPageHeroCta = { label: string; href: string; primary?: boolean }
 
+/** Canonical brand hero — the locked Old Mill District photo. Used when a page
+ *  passes no imageUrl, so a content hero is NEVER a flat navy bar. Pages should
+ *  still pass a page-specific imageUrl (enforced by the ci:hero-image gate). */
+const BRAND_HERO_FALLBACK = '/images/hero/hero-old-mill-master-4k.jpg'
+
 export type ContentPageHeroProps = {
   /** Main heading (e.g. "Buy With Us") */
   title: string
   /** Optional subheading or supporting line */
   subtitle?: string
-  /** Optional hero background image URL (Unsplash or local). When absent, solid navy. */
+  /** Hero background image URL. When absent, falls back to the brand hero (never flat navy). */
   imageUrl?: string | null
   /** Optional CTAs shown below subtitle */
   ctas?: ContentPageHeroCta[]
@@ -25,24 +30,23 @@ export type ContentPageHeroProps = {
  * Full-width, heading + subheading overlay, optional image and CTAs. Design tokens only.
  */
 export default function ContentPageHero({ title, subtitle, imageUrl, ctas }: ContentPageHeroProps) {
+  const heroSrc = imageUrl || BRAND_HERO_FALLBACK
   return (
     <section
       className="relative min-h-[40vh] sm:min-h-[50vh] overflow-hidden bg-primary"
       aria-label="Page hero"
     >
-      {imageUrl && (
-        <div className="absolute inset-0">
-          <Image
-            src={imageUrl}
-            alt={`${title}, hero image`}
-            fill
-            className="object-cover object-center"
-            sizes="100vw"
-            priority
-          />
-        </div>
-      )}
-      {/* Overlay for readability; stronger when no image */}
+      <div className="absolute inset-0">
+        <Image
+          src={heroSrc}
+          alt={`${title}, hero image`}
+          fill
+          className="object-cover object-center"
+          sizes="100vw"
+          priority
+        />
+      </div>
+      {/* Overlay for readability */}
       <div
         className="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/50 to-primary/30"
         aria-hidden
