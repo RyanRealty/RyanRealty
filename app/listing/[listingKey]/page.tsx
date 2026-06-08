@@ -290,13 +290,13 @@ export default async function ListingDetailPage({ params }: PageProps) {
     <>
       <PriceCtaStrip listing={listingWithPhotos} />
       <PropertySpecs listing={listingWithPhotos} />
+      {virtualTours.length > 0 ? <ListingVideoEmbed videos={virtualTours} variant="tour" /> : null}
       <ListingAttribution
         listAgentName={listing.listAgentName}
         listOfficeName={listing.listOfficeName}
         refreshedAt={listing.refreshedAt}
       />
       <DescriptionBlock publicRemarks={listingWithPhotos.publicRemarks} />
-      {virtualTours.length > 0 ? <ListingVideoEmbed videos={virtualTours} variant="tour" /> : null}
       {marketGeo ? (
         <NeighborhoodMarketContext
           geoName={marketGeo.name}

@@ -38,6 +38,10 @@ export function ListingVideoEmbed({ videos, className, variant = 'video' }: Prop
   const eyebrow = isTour ? 'Virtual tour' : 'Video'
   const heading = isTour ? 'Explore this home in 3D' : 'Walkthrough'
   const ctaLabel = isTour ? 'Open the virtual tour' : 'Watch the video tour'
+  // A 3D / virtual tour (Matterport, Zillow-3D) is INTERACTIVE — embed it
+  // directly so the viewer sees the tour's own start screen, instead of hiding
+  // it behind a generic "play" button the way a marketing video is gated.
+  const directEmbed = isTour && video.embedType === 'iframe'
   const orientationClass =
     video.orientation === 'portrait'
       ? 'aspect-[9/16] max-w-[420px] mx-auto'
@@ -72,11 +76,12 @@ export function ListingVideoEmbed({ videos, className, variant = 'video' }: Prop
               {ctaLabel}
             </span>
           </a>
-        ) : playing ? (
+        ) : directEmbed || playing ? (
           video.embedType === 'iframe' ? (
             <iframe
               src={video.url}
-              title="Listing video"
+              title={isTour ? 'Virtual tour' : 'Listing video'}
+              loading="lazy"
               className="absolute inset-0 w-full h-full"
               // Permissions-Policy syntax: semicolon-delimited by spec.
               // Built from an array so the brand-voice ESLint rule does
