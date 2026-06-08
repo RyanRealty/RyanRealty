@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.425.16 (2026-06-08)
+
+### Other
+- Step 7: heading-display CI gate (brand font on display headings)
+- Step 6: no flat content heroes (brand-hero fallback + image gate)
+
+---
+
+
 ## v1.425.15 (2026-06-08)
 
 ### Other
