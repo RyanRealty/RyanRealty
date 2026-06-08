@@ -17,7 +17,8 @@
 
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { getBrokers } from '@/lib/data/brokers/getBrokers'
-import { getSurfaceImage, getLifestyleImages } from '@/lib/data'
+import { getSurfaceImage, getLifestyleImages, getReviews } from '@/lib/data'
+import { ReviewsBlock } from '@/components/site/ReviewsBlock'
 import { LifestyleStrip } from '@/components/site/LifestyleStrip'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { HeroBlock } from '@/components/site/HeroBlock'
@@ -81,13 +82,14 @@ export default async function AboutPage() {
   // approved pool is empty.
   // Brand page: generic Central Oregon scenery (the region we serve), seeded by
   // route so it stays distinct. Picker falls back internally if the pool is thin.
-  const [heroSrc, lifestyleImages] = await Promise.all([
+  const [heroSrc, lifestyleImages, reviews] = await Promise.all([
     getSurfaceImage('hero', {
       geoTags: ['central-oregon'],
       seed: ROUTE_PATH,
       fallback: OLD_MILL_HERO,
     }),
     getLifestyleImages(8),
+    getReviews(6),
   ])
 
   return (
@@ -154,6 +156,8 @@ export default async function AboutPage() {
           </Grid>
         </Container>
       </Section>
+
+      <ReviewsBlock data={reviews} eyebrow="Client reviews" title="What our clients say" tone="muted" max={6} />
 
       <FAQBlock
         eyebrow="Common questions"

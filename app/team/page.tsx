@@ -13,7 +13,8 @@
 import type { Metadata } from 'next'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { getBrokers } from '@/lib/data/brokers/getBrokers'
-import { getSurfaceImage } from '@/lib/data'
+import { getSurfaceImage, getReviews } from '@/lib/data'
+import { ReviewsBlock } from '@/components/site/ReviewsBlock'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import { BrokerProfileRow } from '@/components/site/BrokerProfileRow'
@@ -38,13 +39,12 @@ export const metadata: Metadata = pageMetadata({
 const OLD_MILL_HERO = '/brand/hero/hero-old-mill-master-4k.jpg'
 
 export default async function TeamPage() {
-  const brokers = await getBrokers()
-  // Distinct approved hero so /team does not reuse the homepage Old Mill banner.
-  const heroSrc = await getSurfaceImage('hero', {
-    geoTags: ['central-oregon'],
-    seed: '/team',
-    fallback: OLD_MILL_HERO,
-  })
+  const [brokers, heroSrc, reviews] = await Promise.all([
+    getBrokers(),
+    // Distinct approved hero so /team does not reuse the homepage Old Mill banner.
+    getSurfaceImage('hero', { geoTags: ['central-oregon'], seed: '/team', fallback: OLD_MILL_HERO }),
+    getReviews(6),
+  ])
 
   return (
     <main className="min-h-screen bg-background">
@@ -89,6 +89,8 @@ export default async function TeamPage() {
 
         </Container>
       </Section>
+
+      <ReviewsBlock data={reviews} eyebrow="Client reviews" title="What our clients say" tone="muted" max={6} />
 
       <CTABar
         eyebrow="Ready to talk"

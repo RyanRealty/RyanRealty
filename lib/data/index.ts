@@ -264,6 +264,10 @@ export {
 export { resolveListingAgent } from '@/lib/data/brokers/resolveListingAgent'
 export type { ListingAgentInput } from '@/lib/data/brokers/resolveListingAgent'
 
+// Reviews (verified Google Business Profile reviews — on-site social proof)
+export { getReviews } from '@/lib/data/reviews/getReviews'
+export type { Review, ReviewsSummary } from '@/lib/data/reviews/getReviews'
+
 // Engagement counts (per-listing view/like/save/share)
 export {
   getEngagementCountsBatch,
