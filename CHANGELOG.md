@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.26 (2026-06-08)
+
+### Other
+- Dedup listing media by identity: don't show a video twice as a broken "tour"
+
+---
+
+
 ## v1.425.25 (2026-06-08)
 
 ### Other
