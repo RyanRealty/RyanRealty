@@ -203,13 +203,17 @@ export async function runSavedSearchAlerts(options?: {
       const label = search.name?.trim() || 'your saved search'
       const searchUrl = appendTracking(`${siteUrl}${buildSearchUrlFromFilters(filters)}`, fuid)
       const unsubscribeUrl = `${siteUrl}/alerts/unsubscribe?token=${encodeURIComponent(search.unsubscribe_token ?? '')}`
+      // RFC 8058 one-click target for the List-Unsubscribe header (route handler
+      // POST), separate from the page link above so a provider's one-click POST
+      // gets a 2xx instead of the page Server Action's 403.
+      const oneClickUrl = `${siteUrl}/api/alerts/unsubscribe?token=${encodeURIComponent(search.unsubscribe_token ?? '')}`
 
       if (!dryRun) {
         const emailResult = await sendEmail({
           to: toEmail,
           subject: `Listings for ${label}`,
           headers: search.unsubscribe_token
-            ? { 'List-Unsubscribe': `<${unsubscribeUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
+            ? { 'List-Unsubscribe': `<${oneClickUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
             : undefined,
           text: [
             `Here are listings matching ${label}.`,
@@ -325,13 +329,15 @@ export async function runGuestSearchAlerts(options?: {
       const label = row.name?.trim() || 'your search'
       const searchUrl = appendTracking(`${siteUrl}${buildSearchUrlFromFilters(filters)}`, fuid)
       const unsubscribeUrl = `${siteUrl}/alerts/unsubscribe?token=${encodeURIComponent(row.unsubscribe_token)}`
+      // One-click List-Unsubscribe target (see runSavedSearchAlerts note above).
+      const oneClickUrl = `${siteUrl}/api/alerts/unsubscribe?token=${encodeURIComponent(row.unsubscribe_token)}`
 
       if (!dryRun) {
         const emailResult = await sendEmail({
           to: row.email,
           subject: `Listings for ${label}`,
           headers: {
-            'List-Unsubscribe': `<${unsubscribeUrl}>`,
+            'List-Unsubscribe': `<${oneClickUrl}>`,
             'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
           },
           text: [
