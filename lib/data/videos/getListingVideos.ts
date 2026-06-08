@@ -9,7 +9,13 @@
  * Fallback order (per docs/DATA_ACCESS_LAYER.md "Listing videos"):
  *   1. listing_videos table  — our own publishes (rare)
  *   2. video_tours_cache     — nightly MLS feed (Aryeo, Vimeo, YouTube, etc.)
- *   3. listings.details.Videos JSONB  — raw MLS payload
+ *   3. listings.details.Videos JSONB        — raw MLS marketing-video payload
+ *   4. listings.details.VirtualTours JSONB  — 3D / Matterport / Zillow-3D tours
+ *
+ * Tiers 3+4 are the ONE canonical place every listing's media lives (the MLS
+ * payload in listings.details). The site previously read Videos but NEVER
+ * VirtualTours, so a home with a 3D tour and no marketing video showed nothing
+ * even though the tour URL was sitting in details.VirtualTours[].Uri.
  *
  * Returns the union, deduplicated by URL.
  */
@@ -91,6 +97,16 @@ function classifyVideo(url: string, hintSource?: string | null): {
   return { source: 'mls-other', embedType: 'iframe', professional: true }
 }
 
+/** Rank an MLS VirtualTours entry: unbranded first (no competitor chrome),
+ *  then branded, then unknown. Lower = preferred. */
+function virtualTourRank(t: unknown): number {
+  if (!t || typeof t !== 'object') return 3
+  const type = String((t as Record<string, unknown>).Type ?? '').toLowerCase()
+  if (type === 'unbranded') return 0
+  if (type === 'branded') return 1
+  return 2
+}
+
 /**
  * Derive a raw video URL from an MLS `details.Videos` entry. The RETS Spark feed
  * stores the reference under `ObjectHtml`, which may be an <iframe> snippet, an
@@ -156,12 +172,18 @@ export function normalizeEmbed(
 
   if (isDirectListingVideoFileUrl(url)) return { url, embedType: 'video-tag' }
 
-  // Hosted players that allow framing (Aryeo verified framable 2026-05-31).
+  // Hosted players + 3D tours that allow framing (Aryeo verified framable
+  // 2026-05-31; Matterport + Zillow 3D Home view-imx are built for MLS/IDX
+  // embedding, so they stay ON-site in an iframe rather than sending the
+  // visitor off to a competitor — important since these arrive via
+  // details.VirtualTours).
   if (
     low.includes('aryeo.com') ||
     low.includes('cloudflarestream.com') ||
     low.includes('videodelivery.net') ||
-    low.includes('player.vimeo.com')
+    low.includes('player.vimeo.com') ||
+    low.includes('matterport.com') ||
+    low.includes('zillow.com/view-imx')
   ) {
     return { url, embedType: 'iframe' }
   }
@@ -283,6 +305,34 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
           })
         }
       }
+
+      // ─── Tier 4: details.VirtualTours (3D / Matterport / Zillow-3D tours) ──
+      // The MLS keeps walkthrough VIDEOS in details.Videos but 3D/virtual TOURS
+      // in details.VirtualTours — a separate array the site never read. Each
+      // entry's `Uri` is the tour URL (Matterport, Zillow 3D, property-tour
+      // hosts, sometimes a YouTube/Vimeo). Unbranded first. This is why luxury
+      // homes with a Matterport but no marketing reel showed no media.
+      const tours = (details as Record<string, unknown>).VirtualTours
+      if (Array.isArray(tours)) {
+        const ranked = [...tours].sort((a, b) => virtualTourRank(a) - virtualTourRank(b))
+        for (const t of ranked) {
+          if (!t || typeof t !== 'object') continue
+          const tour = t as Record<string, unknown>
+          const raw = typeof tour.Uri === 'string' ? tour.Uri.trim() : null
+          if (!raw || !/^https?:\/\//i.test(raw) || seen.has(raw)) continue
+          seen.add(raw)
+          const hint = typeof tour.Name === 'string' ? tour.Name : null
+          const norm = normalizeEmbed(raw, hint)
+          if (!norm) continue
+          out.push({
+            source: classifyVideo(norm.url, hint).source,
+            embedType: norm.embedType,
+            url: norm.url,
+            posterUrl: norm.posterUrl,
+            professional: true,
+          })
+        }
+      }
     }
   }
 
@@ -300,7 +350,9 @@ export const getListingVideos = (listingKey: string): Promise<VideoEmbed[]> =>
     // (showcase hero) instead of the cached 'link' watch-link.
     // v6 bump 2026-06-08 — invalidate entries cached as [] when the lookup keyed
     // by ListNumber missed the ListingKey-keyed tables (every pretty-URL listing).
-    ['listing-videos-v6', listingKey],
+    // v7 bump 2026-06-08 — now reads details.VirtualTours (3D/Matterport/Zillow-3D
+    // tours); entries cached as [] for the ~280 tour-only listings were poison.
+    ['listing-videos-v7', listingKey],
     {
       revalidate: CACHE_WINDOWS.videos,
       tags: [cacheTag.listing(listingKey), cacheTag.videos],

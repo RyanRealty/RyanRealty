@@ -52,6 +52,18 @@ describe('normalizeEmbed — showcase-video eligibility', () => {
     expect(r?.embedType).toBe('link')
   })
 
+  it('Matterport 3D tour → iframe (showcase hero, stays on-site)', () => {
+    const r = normalizeEmbed('https://my.matterport.com/show/?m=dMW1nw5zYV6&mls=1')
+    expect(showcase(r)).toBe(true)
+    expect(r?.embedType).toBe('iframe')
+  })
+
+  it('Zillow 3D Home (view-imx) tour → iframe (embed, do not bounce to a competitor)', () => {
+    const r = normalizeEmbed('https://www.zillow.com/view-imx/4ed84f78-920f-4564-841e-9b9e8bb9d578?setAttribution=mls&wl=true&initialViewType=pano')
+    expect(showcase(r)).toBe(true)
+    expect(r?.embedType).toBe('iframe')
+  })
+
   it('MapRight parcel map → dropped (not a walkthrough video)', () => {
     expect(normalizeEmbed('https://app.mapright.com/maps/abc')).toBeNull()
     expect(normalizeEmbed('https://anything.com/x', 'MapRight')).toBeNull()

@@ -30,7 +30,12 @@ import { processNewExpiredListings } from '@/lib/expired-listing-processor'
  * Auth: Authorization: Bearer CRON_SECRET
  */
 
-const SPARK_EXPAND = 'Photos,Videos,OpenHouses'
+// VirtualTours added 2026-06-08: the feed keeps 3D / Matterport / Zillow-3D
+// tours in a SEPARATE sub-resource from Videos. Without expanding it the sync
+// stored only VirtualToursCount (a scalar) and never the tour URLs, so ~700
+// active listings with a tour showed no media on the site. details.VirtualTours
+// is now the canonical tour source (read by getListingVideos).
+const SPARK_EXPAND = 'Photos,Videos,VirtualTours,OpenHouses'
 const UPSERT_CHUNK = 25
 const MAX_PAGES = 100
 /** Max terminal listings to finalize per run (avoid timeout) */
