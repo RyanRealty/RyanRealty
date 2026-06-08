@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.8 (2026-06-08)
+
+### Bug Fixes
+- fix(buyers): make email one-click unsubscribe actually work (RFC 8058)
+
+---
+
+
 ## v1.425.7 (2026-06-07)
 
 ### Other
