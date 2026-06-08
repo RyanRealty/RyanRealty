@@ -228,6 +228,35 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
   const out: VideoEmbed[] = []
   const seen = new Set<string>()
 
+  // Dedup by media IDENTITY (the embed URL without query/hash), NOT the raw
+  // string. The MLS frequently lists the SAME Vimeo/YouTube/Matterport as both a
+  // Video and a VirtualTour — and the two copies often differ by a query param
+  // (e.g. the video iframe carries Vimeo's privacy `?h=` hash but the tour URL
+  // does not, so the tour copy embeds a dead/private player). Keying on the
+  // path-level identity shows that media once (the first, hash-bearing tier
+  // wins) instead of a working video plus a broken duplicate "tour".
+  const mediaKey = (u: string) => u.split('?')[0].split('#')[0]
+  const pushEmbed = (
+    raw: string | null | undefined,
+    hint: string | null | undefined,
+    extra: Partial<VideoEmbed> = {},
+  ): void => {
+    if (!raw) return
+    const norm = normalizeEmbed(raw, hint)
+    if (!norm) return
+    const key = mediaKey(norm.url)
+    if (seen.has(key)) return
+    seen.add(key)
+    out.push({
+      source: classifyVideo(norm.url, hint ?? undefined).source,
+      embedType: norm.embedType,
+      url: norm.url,
+      posterUrl: norm.posterUrl,
+      professional: true,
+      ...extra,
+    })
+  }
+
   // ─── Tier 1: listing_videos (our own publishes) ───────────────────
   const { data: ourRows, error: ourErr } = await supabase
     .from('listing_videos')
@@ -236,19 +265,9 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
     .order('sort_order', { ascending: true, nullsFirst: false })
   if (!ourErr && ourRows && ourRows.length > 0) {
     for (const row of ourRows as ListingVideosRow[]) {
-      if (!row.video_url) continue
-      const url = row.video_url
-      if (seen.has(url)) continue
-      seen.add(url)
-      const norm = normalizeEmbed(url, row.source)
-      if (!norm) continue
-      out.push({
+      pushEmbed(row.video_url, row.source, {
         source: 'our-render',
-        embedType: norm.embedType,
-        url: norm.url,
-        posterUrl: norm.posterUrl,
         durationSeconds: row.duration_seconds ?? undefined,
-        professional: true,
       })
     }
   }
@@ -265,18 +284,7 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
       const arr = Array.isArray(cacheRow.listings) ? cacheRow.listings : []
       for (const entry of arr) {
         if (!entry || entry.listing_key !== canonicalKey) continue
-        const url = entry.video_url
-        if (!url || seen.has(url)) continue
-        seen.add(url)
-        const norm = normalizeEmbed(url, entry.video_source)
-        if (!norm) continue
-        out.push({
-          source: classifyVideo(norm.url, entry.video_source).source,
-          embedType: norm.embedType,
-          url: norm.url,
-          posterUrl: entry.poster_url ?? norm.posterUrl,
-          professional: true,
-        })
+        pushEmbed(entry.video_url, entry.video_source, entry.poster_url ? { posterUrl: entry.poster_url } : {})
       }
     }
   }
@@ -297,19 +305,8 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
           // which is an <iframe> snippet for some videographers but a BARE URL
           // (Dropbox, Aryeo) for others. deriveRawUrl handles all shapes;
           // normalizeEmbed picks the embeddable form (or a watch-link).
-          const raw = deriveRawUrl(vid)
-          if (!raw || seen.has(raw)) continue
-          seen.add(raw)
           const hint = typeof vid.Source === 'string' ? vid.Source : null
-          const norm = normalizeEmbed(raw, hint)
-          if (!norm) continue
-          out.push({
-            source: classifyVideo(norm.url, hint).source,
-            embedType: norm.embedType,
-            url: norm.url,
-            posterUrl: norm.posterUrl,
-            professional: true,
-          })
+          pushEmbed(deriveRawUrl(vid), hint)
         }
       }
 
@@ -336,19 +333,11 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
         }
       }
       pushTour(det.VirtualTourURLBranded)
+      // A tour that is the SAME media as a Video above is dropped by mediaKey
+      // dedup — so it never renders as a broken duplicate. Only a genuinely
+      // distinct tour (different Matterport/3D/video) survives to its own viewer.
       for (const raw of tourCandidates) {
-        if (seen.has(raw)) continue
-        seen.add(raw)
-        const norm = normalizeEmbed(raw, 'virtual-tour')
-        if (!norm) continue
-        out.push({
-          source: classifyVideo(norm.url).source,
-          embedType: norm.embedType,
-          url: norm.url,
-          posterUrl: norm.posterUrl,
-          professional: true,
-          isVirtualTour: true,
-        })
+        pushEmbed(raw, 'virtual-tour', { isVirtualTour: true })
       }
     }
   }
@@ -372,7 +361,10 @@ export const getListingVideos = (listingKey: string): Promise<VideoEmbed[]> =>
     // v8 bump 2026-06-08 — also reads the scalar VirtualTourURLUnbranded/Branded
     // (the reliable tour source, ~298 listings) + Google-Drive tours; tags
     // isVirtualTour. Entries cached under v7 missed the scalar-only tours.
-    ['listing-videos-v8', listingKey],
+    // v9 bump 2026-06-08 — dedup by media identity (path, not raw): a tour that
+    // is the same Vimeo/YouTube as a Video is no longer shown as a broken
+    // duplicate (the tour copy lost Vimeo's privacy hash -> dead player).
+    ['listing-videos-v9', listingKey],
     {
       revalidate: CACHE_WINDOWS.videos,
       tags: [cacheTag.listing(listingKey), cacheTag.videos],
