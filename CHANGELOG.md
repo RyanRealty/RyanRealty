@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.17 (2026-06-08)
+
+### Other
+- Step 8: rebuild /sell/valuation to the design-system standard
+
+---
+
+
 ## v1.425.16 (2026-06-08)
 
 ### Other
