@@ -2,8 +2,9 @@ import type { Metadata } from 'next'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { sortCitiesWithPrimaryFirst } from '@/lib/cities'
 import CityTilesGridStatic from '@/components/city/CityTilesGridStatic'
-import { DisplayHeading, Container } from '@/components/site/primitives'
+import { Container } from '@/components/site/primitives'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import ContentPageHero from '@/components/layout/ContentPageHero'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -51,19 +52,11 @@ export default async function CitiesPage() {
         }}
       />
 
-      <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
-        <div className="mx-auto max-w-7xl text-center">
-          <DisplayHeading
-            as="h1"
-            className="text-3xl text-primary-foreground sm:text-4xl"
-          >
-            Central Oregon Cities
-          </DisplayHeading>
-          <p className="mt-3 text-lg text-muted">
-            Find homes in Bend, Redmond, Sisters, Sunriver, and surrounding areas.
-          </p>
-        </div>
-      </section>
+      <ContentPageHero
+        title="Central Oregon Cities"
+        subtitle="Find homes in Bend, Redmond, Sisters, Sunriver, and surrounding areas."
+        imageUrl="/images/lp/hero-bend-downtown.png"
+      />
 
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="cities-heading">
         <h2 id="cities-heading" className="sr-only">

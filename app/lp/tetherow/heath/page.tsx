@@ -26,7 +26,7 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 export const revalidate = 21600
 
 export const metadata: Metadata = {
-  title: 'Heath at Tetherow, Bend OR Real Estate | Ryan Realty',
+  title: 'Heath at Tetherow, Bend OR Real Estate',
   description:
     'Heath is the original golf-frontage phase of Tetherow in Bend, OR. McLay Kidd course frontage, half-acre and larger lots, $2,244 annual HOA. Live inventory and recent sales.',
   alternates: { canonical: `${siteUrl}/lp/tetherow/heath/` },

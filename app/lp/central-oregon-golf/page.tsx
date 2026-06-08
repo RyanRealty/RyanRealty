@@ -54,7 +54,7 @@ export const revalidate = 21600 // 6h
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 export const metadata: Metadata = {
-  title: 'Central Oregon golf, every course by architect | Ryan Realty',
+  title: 'Central Oregon golf, every course by architect',
   description:
     "30 courses across Bend, Sunriver, Sisters, Redmond, Powell Butte. Grouped by designer, mapped, and tied to the community you'd live in if you played here every week.",
   alternates: { canonical: `${siteUrl}/lp/central-oregon-golf/` },

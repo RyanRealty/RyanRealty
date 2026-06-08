@@ -32,7 +32,7 @@ export const revalidate = 21600 // 6h
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 export const metadata: Metadata = {
-  title: 'Homes for sale in Bend, Oregon | Ryan Realty',
+  title: 'Homes for sale in Bend, Oregon',
   description:
     "Welcome to Bend. Search active homes, explore every Bend neighborhood and resort community, and meet a local principal broker. Current market data refreshed daily.",
   alternates: { canonical: `${siteUrl}/lp/bend/` },

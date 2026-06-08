@@ -26,7 +26,7 @@ export default async function DashboardNotificationsPage() {
       </p>
       <DashboardNotificationPrefs initialPrefs={prefs} />
       <p className="mt-8 text-sm text-muted-foreground">
-        <a href="/account" className="underline hover:text-muted-foreground">Unsubscribe from all</a> (required by CAN-SPAM).
+        <a href="/alerts/unsubscribe" className="underline hover:text-muted-foreground">Unsubscribe from all</a> (required by CAN-SPAM).
       </p>
     </>
   )
