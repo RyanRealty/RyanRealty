@@ -56,15 +56,38 @@ function pickBestUri(p: DetailsPhotoJson): string | null {
   )
 }
 
+type DetailRow = { ListingKey?: string | null; details?: { Photos?: DetailsPhotoJson[] } | null; PhotoURL?: string | null }
+
 async function fetchPhotos(listingKey: string): Promise<ListingPhoto[]> {
   const sb = supabaseAnon()
   if (!sb) return []
 
-  // Tier 1 — listing_photos table.
+  // Resolve the listings row by EITHER the MLS ListNumber (which the canonical
+  // /homes-for-sale/<...>/<addr>-<listnum> URLs carry) OR the RETS ListingKey,
+  // and read the canonical key + both photo sources in one shot. The prior code
+  // keyed every tier by ListingKey only, so a listing opened via its ListNumber
+  // pretty-URL (the common path) matched nothing in details.Photos and the entire
+  // gallery collapsed to the single PhotoURL hero. ListNumber first = one query
+  // for the common pretty-URL case; ListingKey second covers raw-key access.
+  let detail = (await sb
+    .from('listings')
+    .select('ListingKey, details, PhotoURL')
+    .eq('ListNumber', listingKey)
+    .maybeSingle()).data as DetailRow | null
+  if (!detail) {
+    detail = (await sb
+      .from('listings')
+      .select('ListingKey, details, PhotoURL')
+      .eq('ListingKey', listingKey)
+      .maybeSingle()).data as DetailRow | null
+  }
+  const canonicalKey = String(detail?.ListingKey ?? listingKey).trim()
+
+  // Tier 1 — our normalized listing_photos table (keyed by the canonical ListingKey).
   const { data: rows } = await sb
     .from('listing_photos')
     .select('photo_url, cdn_url, sort_order, caption')
-    .eq('listing_key', listingKey)
+    .eq('listing_key', canonicalKey)
     .order('sort_order', { ascending: true })
     .limit(50)
 
@@ -76,15 +99,8 @@ async function fetchPhotos(listingKey: string): Promise<ListingPhoto[]> {
     }))
   }
 
-  // Tier 2 — listings.details.Photos JSONB.
-  const { data: detail } = await sb
-    .from('listings')
-    .select('details, PhotoURL')
-    .eq('ListingKey', listingKey)
-    .maybeSingle()
-
-  const details = (detail as { details?: { Photos?: DetailsPhotoJson[] } } | null)?.details
-  const photosJson = Array.isArray(details?.Photos) ? details.Photos : null
+  // Tier 2 — listings.details.Photos JSONB (the raw MLS payload — most listings).
+  const photosJson = Array.isArray(detail?.details?.Photos) ? detail.details.Photos : null
   if (photosJson && photosJson.length > 0) {
     const out: ListingPhoto[] = []
     for (let i = 0; i < photosJson.length; i++) {
@@ -98,7 +114,7 @@ async function fetchPhotos(listingKey: string): Promise<ListingPhoto[]> {
   }
 
   // Tier 3 — single PhotoURL fallback.
-  const heroUrl = (detail as { PhotoURL?: string | null } | null)?.PhotoURL
+  const heroUrl = detail?.PhotoURL
   if (heroUrl) {
     return [{ url: heroUrl, caption: null, order: 0 }]
   }
