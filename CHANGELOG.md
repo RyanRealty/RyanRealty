@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.13 (2026-06-08)
+
+### Other
+- Kill the ListNumber/ListingKey lookup bug class for good (resolver + CI gate)
+
+---
+
+
 ## v1.425.12 (2026-06-08)
 
 ### Other
