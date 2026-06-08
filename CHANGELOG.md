@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.24 (2026-06-08)
+
+### Other
+- Read all tour sources (scalar VirtualTourURL + Google Drive) + dedicated tour viewer
+
+---
+
+
 ## v1.425.23 (2026-06-08)
 
 ### Other
