@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.12 (2026-06-08)
+
+### Other
+- Fix listing video hero broken on every pretty URL (ListNumber lookup)
+
+---
+
+
 ## v1.425.11 (2026-06-08)
 
 ### Other
