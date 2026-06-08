@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.25 (2026-06-08)
+
+### Other
+- Add one-time virtual-tour backfill script
+
+---
+
+
 ## v1.425.24 (2026-06-08)
 
 ### Other
