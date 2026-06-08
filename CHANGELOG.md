@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.23 (2026-06-08)
+
+### Other
+- Surface listing 3D/virtual tours: read details.VirtualTours + sync-expand it
+
+---
+
+
 ## v1.425.22 (2026-06-08)
 
 ### Other
