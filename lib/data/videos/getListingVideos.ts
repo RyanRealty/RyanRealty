@@ -175,6 +175,27 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
   const supabase = supabaseAnon()
   if (!supabase) return []
 
+  // Resolve the row by EITHER the MLS ListNumber (carried by canonical
+  // /homes-for-sale pretty URLs) OR the RETS ListingKey, so every tier below
+  // keys off the canonical ListingKey. The prior code keyed all three tiers by
+  // ListingKey only — a ListNumber matched nothing — so listing videos (our pro
+  // renders + MLS tours) never loaded on the pretty URLs (every listing page)
+  // and the video hero silently fell back to photos. ListNumber first = one
+  // query for the common pretty-URL case; it also feeds Tier 3 (details.Videos).
+  let resolved = (await supabase
+    .from('listings')
+    .select('ListingKey, details')
+    .eq('ListNumber', listingKey)
+    .maybeSingle()).data as { ListingKey?: string | null; details?: unknown } | null
+  if (!resolved) {
+    resolved = (await supabase
+      .from('listings')
+      .select('ListingKey, details')
+      .eq('ListingKey', listingKey)
+      .maybeSingle()).data as { ListingKey?: string | null; details?: unknown } | null
+  }
+  const canonicalKey = String(resolved?.ListingKey ?? listingKey).trim()
+
   const out: VideoEmbed[] = []
   const seen = new Set<string>()
 
@@ -182,7 +203,7 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
   const { data: ourRows, error: ourErr } = await supabase
     .from('listing_videos')
     .select('video_url,source,duration_seconds,sort_order')
-    .eq('listing_key', listingKey)
+    .eq('listing_key', canonicalKey)
     .order('sort_order', { ascending: true, nullsFirst: false })
   if (!ourErr && ourRows && ourRows.length > 0) {
     for (const row of ourRows as ListingVideosRow[]) {
@@ -214,7 +235,7 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
     for (const cacheRow of cacheRows as Array<{ listings: CacheListingEntry[] | null }>) {
       const arr = Array.isArray(cacheRow.listings) ? cacheRow.listings : []
       for (const entry of arr) {
-        if (!entry || entry.listing_key !== listingKey) continue
+        if (!entry || entry.listing_key !== canonicalKey) continue
         const url = entry.video_url
         if (!url || seen.has(url)) continue
         seen.add(url)
@@ -235,13 +256,8 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
   // The `listings.details` jsonb sometimes carries a Videos array on
   // luxury listings that haven't propagated to video_tours_cache yet.
   // Fetch the row and inspect the `details->Videos` path.
-  const { data: detailRow, error: detailErr } = await supabase
-    .from('listings')
-    .select('details')
-    .eq('ListingKey', listingKey)
-    .maybeSingle()
-  if (!detailErr && detailRow) {
-    const details = (detailRow as { details: unknown }).details
+  {
+    const details = resolved?.details
     if (details && typeof details === 'object') {
       const videos = (details as Record<string, unknown>).Videos
       if (Array.isArray(videos)) {
