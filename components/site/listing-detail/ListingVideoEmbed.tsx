@@ -57,7 +57,11 @@ export function ListingVideoEmbed({ videos, className, variant = 'video' }: Prop
       </div>
       <div
         className={cn(
-          'relative rounded-[14px] overflow-hidden bg-muted border border-border',
+          // w-full is REQUIRED: this box is a flex item in <Stack> (which does
+          // not stretch its children), and aspect-video derives height FROM
+          // width — without w-full the box collapses to ~0 and the absolute
+          // iframe/video has nothing to fill (the "empty 3D tour box" bug).
+          'relative w-full rounded-[14px] overflow-hidden bg-muted border border-border',
           orientationClass,
         )}
       >
