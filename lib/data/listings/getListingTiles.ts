@@ -359,7 +359,9 @@ export const getListingTiles = (filter: GetListingTilesFilter): Promise<ListingT
   // throw-on-error fix (a swallowed anon-read once cached [] -> "0 homes").
   return makeResilientCached(
     () => fetchTiles(parsed),
-    ['listing-tiles-v2', cacheKey],
+    // v3: the propertyType filter now matches MLS codes (A-H) not labels, so
+    // entries cached under propertyType=Residential held a poisoned empty result.
+    ['listing-tiles-v3', cacheKey],
     {
       revalidate: CACHE_WINDOWS.listingTile,
       tags: [cacheTag.listings],
@@ -425,7 +427,7 @@ export const getListingTilesCount = (filter: GetListingTilesFilter): Promise<num
   const cacheKey = JSON.stringify(countScope)
   return makeResilientCached(
     () => fetchTileCount(parsed),
-    ['listing-tile-count-filtered-v1', cacheKey],
+    ['listing-tile-count-filtered-v2', cacheKey],
     { revalidate: CACHE_WINDOWS.listingTile, tags: [cacheTag.listings] },
     0,
   )()

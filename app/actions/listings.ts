@@ -6,6 +6,7 @@ import { listingDetailPath, listingKeyFromSlug, neighborhoodPagePath, reportsExp
 import { HOME_TILE_SELECT } from '@/lib/listing-tile-projections'
 import { getSubdivisionMatchNames } from '../../lib/subdivision-aliases'
 import { getPolygonBounds, isPointInPolygon, type MapPolygonPoint } from '@/lib/map-polygon'
+import { propertyTypeFilterToCodes } from '@/lib/property-type'
 import {
   getCommunityListings as getCommunityListingsDAL,
   getCityListings as getCityListingsDAL,
@@ -764,7 +765,10 @@ export async function getListingsAdvanced(options: {
     p_year_built_max: options.yearBuiltMax != null ? options.yearBuiltMax : null,
     p_lot_acres_min: options.lotAcresMin != null && options.lotAcresMin >= 0 ? options.lotAcresMin : null,
     p_lot_acres_max: options.lotAcresMax != null && options.lotAcresMax >= 0 ? options.lotAcresMax : null,
-    p_property_type: options.propertyType?.trim() || null,
+    // The UI sends labels (Residential/Land/Commercial) but listings."PropertyType"
+    // is the MLS code (A-H). Map to the code set so the RPC matches; the function
+    // now does an exact ANY(codes) match, not an ILIKE on the label. [[ryanrealty-listing-resolution-and-perf]]
+    p_property_type: (() => { const c = propertyTypeFilterToCodes(options.propertyType); return c && c.length ? c.join(',') : null })(),
     p_property_subtype: options.propertySubType?.trim() || null,
     p_status_filter: statusFilter,
     p_keywords: options.keywords?.trim() || null,
