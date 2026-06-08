@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-06-08T15:20:13.502Z",
+  "generatedAt": "2026-06-08T15:24:22.268Z",
   "reason": "Raw font-bold <h1>/<h2> (plain Geist, not the brand font-display) at gate-creation time. NEW raw display headings fail CI; this list only shrinks as page sweeps route them through the H1/H2/DisplayHeading primitives.",
-  "total": 167,
+  "total": 163,
   "violators": [
     "app/accessibility/page.tsx:22",
     "app/accessibility/page.tsx:27",
@@ -70,10 +70,6 @@
     "app/reports/sales/[city]/[period]/page.tsx:161",
     "app/reviews/page.tsx:36",
     "app/reviews/page.tsx:94",
-    "app/sell/valuation/page.tsx:37",
-    "app/sell/valuation/page.tsx:49",
-    "app/sell/valuation/page.tsx:63",
-    "app/sell/valuation/page.tsx:99",
     "app/signup/page.tsx:32",
     "app/subdivisions/[slug]/page.tsx:132",
     "app/team/[slug]/edit/page.tsx:50",
