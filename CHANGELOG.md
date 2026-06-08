@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.15 (2026-06-08)
+
+### Other
+- Allow listing-video embed hosts in CSP (Aryeo/Matterport/Cloudflare + media-src)
+
+---
+
+
 ## v1.425.14 (2026-06-08)
 
 ### Other
