@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.9 (2026-06-08)
+
+### Other
+- Consolidate to one breadcrumb + add wayfinding to ~19 pages
+
+---
+
+
 ## v1.425.8 (2026-06-08)
 
 ### Bug Fixes
