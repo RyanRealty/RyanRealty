@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.27 (2026-06-08)
+
+### Other
+- Embed 3D tours directly + move the tour viewer up the listing page
+
+---
+
+
 ## v1.425.26 (2026-06-08)
 
 ### Other
