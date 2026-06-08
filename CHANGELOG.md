@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.29 (2026-06-08)
+
+### Other
+- Add GBP reviews ingestor (Ryan Realty Google reviews -> reviews table)
+
+---
+
+
 ## v1.425.28 (2026-06-08)
 
 ### Other
