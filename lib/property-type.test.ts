@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   getPropertyTypeLabel,
   getPropertyTypeSegmentKey,
+  propertyTypeFilterToCodes,
   PROPERTY_TYPES,
   REPORT_PROPERTY_TYPE_SEGMENTS,
 } from './property-type'
@@ -96,6 +97,38 @@ describe('property-type', () => {
       expect(keys).toContain('condo_town')
       expect(keys).toContain('manufactured')
       expect(keys).toContain('acreage')
+    })
+  })
+
+  describe('propertyTypeFilterToCodes', () => {
+    // The MV / listings store the MLS PropertyType CODE (A-H), not a label.
+    // Every search-UI option must map to the code set it filters, or the
+    // property-type filter silently returns zero homes (the over-1-5m bug).
+    it('returns null for empty / all (no constraint)', () => {
+      expect(propertyTypeFilterToCodes(undefined)).toBeNull()
+      expect(propertyTypeFilterToCodes('')).toBeNull()
+      expect(propertyTypeFilterToCodes('  ')).toBeNull()
+      expect(propertyTypeFilterToCodes('all')).toBeNull()
+    })
+    it('maps Residential to A/B/C (dwellings)', () => {
+      expect(propertyTypeFilterToCodes('Residential')).toEqual(['A', 'B', 'C'])
+      expect(propertyTypeFilterToCodes('residential')).toEqual(['A', 'B', 'C'])
+    })
+    it('maps Land to D and Commercial to E-H', () => {
+      expect(propertyTypeFilterToCodes('Land')).toEqual(['D'])
+      expect(propertyTypeFilterToCodes('Commercial')).toEqual(['E', 'F', 'G', 'H'])
+    })
+    it('passes a raw code through unchanged', () => {
+      expect(propertyTypeFilterToCodes('A')).toEqual(['A'])
+      expect(propertyTypeFilterToCodes('d')).toEqual(['D'])
+    })
+    it('every non-empty PROPERTY_TYPES option resolves to codes', () => {
+      for (const opt of PROPERTY_TYPES) {
+        if (!opt.value) continue
+        const codes = propertyTypeFilterToCodes(opt.value)
+        expect(codes, `option ${opt.value} must map to codes`).not.toBeNull()
+        expect(codes!.length).toBeGreaterThan(0)
+      }
     })
   })
 })

@@ -217,6 +217,12 @@ function hasFilterOnlySearch(sp: SearchParams): boolean {
   return Boolean(sp.maxPrice || sp.minPrice || (sp.keywords?.trim()) || sp.hasWaterfront === '1')
 }
 
+/** Number -> string for the filter-bar props (the UI reflects the resolved
+ *  filterOpts, including preset-supplied values), undefined when unset. */
+function numStr(n: number | null | undefined): string | undefined {
+  return n != null && !Number.isNaN(n) ? String(n) : undefined
+}
+
 export const revalidate = 60
 
 export default async function SearchPage({
@@ -284,13 +290,19 @@ export default async function SearchPage({
   }
   // Predefined preset: apply preset params (preset wins for its keys so the page shows the right results)
   const presetYearBuiltMin = preset ? resolvePresetYearBuiltMin(preset) : undefined
+  // A preset only FILLS filters the visitor has not explicitly set in the URL.
+  // An explicit query param (the visitor changed a filter) wins over the preset
+  // for that one key. Without the `!sp.*` guards the preset always won, so
+  // changing price / sort / status on a preset page did nothing — "if you change
+  // a filter it breaks." Amenity presets (pool/view/golf/fireplace) have no
+  // off-switch in the URL, so they stay preset-driven.
   const filterOpts = preset
     ? {
         ...filterOptsBase,
-        ...(preset.params.maxPrice != null && { maxPrice: preset.params.maxPrice }),
-        ...(preset.params.minPrice != null && { minPrice: preset.params.minPrice }),
-        ...(preset.params.statusFilter != null && { statusFilter: preset.params.statusFilter }),
-        ...(preset.params.newListingsDays != null && { newListingsDays: preset.params.newListingsDays }),
+        ...(preset.params.maxPrice != null && !sp.maxPrice && { maxPrice: preset.params.maxPrice }),
+        ...(preset.params.minPrice != null && !sp.minPrice && { minPrice: preset.params.minPrice }),
+        ...(preset.params.statusFilter != null && !sp.statusFilter && { statusFilter: preset.params.statusFilter }),
+        ...(preset.params.newListingsDays != null && !sp.newListingsDays && { newListingsDays: preset.params.newListingsDays }),
         ...(preset.params.hasOpenHouse != null && { hasOpenHouse: preset.params.hasOpenHouse }),
         ...(preset.params.hasPool != null && { hasPool: preset.params.hasPool }),
         ...(preset.params.hasView != null && { hasView: preset.params.hasView }),
@@ -298,11 +310,11 @@ export default async function SearchPage({
         ...(preset.params.hasGolfCourse != null && { hasGolfCourse: preset.params.hasGolfCourse }),
         ...(preset.params.hasWaterfront != null && { hasWaterfront: preset.params.hasWaterfront }),
         ...(preset.params.viewContains != null && preset.params.viewContains !== '' && { viewContains: preset.params.viewContains }),
-        ...(preset.params.lotAcresMin != null && { lotAcresMin: preset.params.lotAcresMin }),
-        ...(presetYearBuiltMin != null && { yearBuiltMin: presetYearBuiltMin }),
-        ...(preset.params.propertySubType != null && preset.params.propertySubType !== '' && { propertySubType: preset.params.propertySubType }),
-        ...(preset.params.keywords != null && preset.params.keywords !== '' && { keywords: preset.params.keywords }),
-        ...(preset.params.sort != null && { sort: preset.params.sort as AdvancedSort }),
+        ...(preset.params.lotAcresMin != null && !sp.lotAcresMin && { lotAcresMin: preset.params.lotAcresMin }),
+        ...(presetYearBuiltMin != null && !sp.yearBuiltMin && { yearBuiltMin: presetYearBuiltMin }),
+        ...(preset.params.propertySubType != null && preset.params.propertySubType !== '' && !sp.propertySubType && { propertySubType: preset.params.propertySubType }),
+        ...(preset.params.keywords != null && preset.params.keywords !== '' && !sp.keywords && { keywords: preset.params.keywords }),
+        ...(preset.params.sort != null && !sp.sort && { sort: preset.params.sort as AdvancedSort }),
       }
     : filterOptsBase
 
@@ -687,31 +699,31 @@ export default async function SearchPage({
         <Suspense fallback={<div className="h-14 flex-1 rounded-lg border border-border bg-muted" />}>
           <AdvancedSearchFilters
             basePath={searchPagePath}
-            minPrice={sp.minPrice}
-            maxPrice={sp.maxPrice}
-            beds={sp.beds}
-            baths={sp.baths}
-            minSqFt={sp.minSqFt}
-            maxSqFt={sp.maxSqFt}
-            maxBeds={sp.maxBeds}
-            maxBaths={sp.maxBaths}
-            yearBuiltMin={sp.yearBuiltMin}
-            yearBuiltMax={sp.yearBuiltMax}
-            lotAcresMin={sp.lotAcresMin}
-            lotAcresMax={sp.lotAcresMax}
-            postalCode={sp.postalCode}
-            propertyType={sp.propertyType}
-            propertySubType={sp.propertySubType}
-            statusFilter={sp.statusFilter}
-            keywords={sp.keywords}
-            hasOpenHouse={sp.hasOpenHouse}
-            garageMin={sp.garageMin}
-            hasPool={sp.hasPool}
-            hasView={sp.hasView}
-            hasWaterfront={sp.hasWaterfront}
-            newListingsDays={sp.newListingsDays}
-            sort={sp.sort}
-            includeClosed={sp.includeClosed}
+            minPrice={numStr(filterOpts.minPrice)}
+            maxPrice={numStr(filterOpts.maxPrice)}
+            beds={numStr(filterOpts.minBeds)}
+            baths={numStr(filterOpts.minBaths)}
+            minSqFt={numStr(filterOpts.minSqFt)}
+            maxSqFt={numStr(filterOpts.maxSqFt)}
+            maxBeds={numStr(filterOpts.maxBeds)}
+            maxBaths={numStr(filterOpts.maxBaths)}
+            yearBuiltMin={numStr(filterOpts.yearBuiltMin)}
+            yearBuiltMax={numStr(filterOpts.yearBuiltMax)}
+            lotAcresMin={numStr(filterOpts.lotAcresMin)}
+            lotAcresMax={numStr(filterOpts.lotAcresMax)}
+            postalCode={filterOpts.postalCode}
+            propertyType={filterOpts.propertyType}
+            propertySubType={filterOpts.propertySubType}
+            statusFilter={filterOpts.statusFilter}
+            keywords={filterOpts.keywords}
+            hasOpenHouse={filterOpts.hasOpenHouse ? '1' : undefined}
+            garageMin={numStr(filterOpts.garageMin)}
+            hasPool={filterOpts.hasPool ? '1' : undefined}
+            hasView={filterOpts.hasView ? '1' : undefined}
+            hasWaterfront={filterOpts.hasWaterfront ? '1' : undefined}
+            newListingsDays={numStr(filterOpts.newListingsDays)}
+            sort={filterOpts.sort}
+            includeClosed={filterOpts.includeClosed ? '1' : undefined}
             view={viewParam}
             perPage={perPageParam}
           />

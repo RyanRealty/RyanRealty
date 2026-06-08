@@ -48,7 +48,7 @@ export default async function ActivityPage() {
       </Container>
       <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-7xl text-center">
-          <H1 className="text-primary-foreground sm:text-[40px]">
+          <H1 className="text-primary-foreground">
             Live Market Activity
           </H1>
           <p className="mt-3 text-lg text-muted">

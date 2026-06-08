@@ -7,10 +7,33 @@
 export const PROPERTY_TYPES = [
   { value: '', label: 'All types' },
   { value: 'Residential', label: 'Residential' },
-  { value: 'Commercial', label: 'Commercial' },
   { value: 'Land', label: 'Land' },
-  { value: 'Rental', label: 'Rental' },
+  { value: 'Commercial', label: 'Commercial' },
 ] as const
+
+/**
+ * Map a search property-type filter VALUE to the MLS PropertyType CODES stored in
+ * `listing_tile_mv.property_type` / `listings.PropertyType` (single letters A-H).
+ *
+ * The search UI offers human labels (Residential / Land / Commercial) but the
+ * feed stores codes, so a naive `.eq('property_type', 'Residential')` matched
+ * NOTHING and silently emptied filtered searches. Verified against the live MV
+ * (2026-06-08): A = residential dwellings (single family, condo, townhouse,
+ * manufactured-on-land, multi-unit), B = manufactured in park, C = multi-family
+ * / income (duplex/tri/quad), D = land/lots, E-H = commercial + other.
+ *
+ * Returns the codes to constrain by, or null when the value should NOT filter
+ * (empty / "all" / an unmapped value — never silently zero the results).
+ */
+export function propertyTypeFilterToCodes(value: string | null | undefined): string[] | null {
+  const v = (value ?? '').trim().toLowerCase()
+  if (!v || v === 'all') return null
+  if (/^[a-h]$/.test(v)) return [v.toUpperCase()] // already a raw code
+  if (v === 'residential') return ['A', 'B', 'C']
+  if (v === 'land' || v === 'lots' || v === 'acreage') return ['D']
+  if (v === 'commercial' || v === 'business') return ['E', 'F', 'G', 'H']
+  return null
+}
 
 /** Report segment key matching backend include flags (SFR, condo/town, manufactured, acreage). */
 export type ReportPropertyTypeSegmentKey =

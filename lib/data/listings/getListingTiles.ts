@@ -18,6 +18,7 @@ import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import type { ListingTile, ListingStatus } from '@/lib/data/types/listing'
+import { propertyTypeFilterToCodes } from '@/lib/property-type'
 
 const ACTIVE_STATUSES: ListingStatus[] = ['Active', 'Coming Soon', 'Active Under Contract']
 const PENDING_STATUSES: ListingStatus[] = ['Pending']
@@ -301,7 +302,11 @@ function applyTileFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>):
       )
     }
   }
-  if (parsed.propertyType) query = query.eq('property_type', parsed.propertyType)
+  // property_type in the MV is the MLS code (A-H), not a label. The search UI
+  // sends labels (Residential/Land/Commercial), so map label -> codes before
+  // constraining, else the filter silently matches nothing. [[ryanrealty-amenities-column-empty]]
+  const ptCodes = propertyTypeFilterToCodes(parsed.propertyType)
+  if (ptCodes && ptCodes.length > 0) query = query.in('property_type', ptCodes)
   if (parsed.listingKeys && parsed.listingKeys.length > 0) {
     query = query.in('listing_key', parsed.listingKeys)
   }
