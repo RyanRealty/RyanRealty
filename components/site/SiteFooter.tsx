@@ -47,22 +47,28 @@ export default function SiteFooter() {
               Sunriver, and surrounding communities.
             </Body>
 
-            {/* MLS partner logos */}
-            <div className="flex items-center gap-4 opacity-70">
-              <Image
-                src="/images/oregon-data-share-logo.svg"
-                alt="Oregon Data Share"
-                width={120}
-                height={28}
-                className="h-7 w-auto brightness-0 invert"
-              />
-              <Image
-                src="/images/morgan-data-shuttle-logo.svg"
-                alt="Morgan Data Shuttle"
-                width={120}
-                height={28}
-                className="h-7 w-auto brightness-0 invert"
-              />
+            {/* MLS data-source attribution logos. On a light pill so the
+                original brand marks stay legible on the navy footer (inverting
+                them to solid white flattened them into unreadable blobs). */}
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="inline-flex items-center rounded-md bg-white/95 px-3 py-1.5 shadow-sm">
+                <Image
+                  src="/images/oregon-data-share-logo.svg"
+                  alt="Oregon Data Share"
+                  width={120}
+                  height={28}
+                  className="h-6 w-auto"
+                />
+              </span>
+              <span className="inline-flex items-center rounded-md bg-white/95 px-3 py-1.5 shadow-sm">
+                <Image
+                  src="/images/morgan-data-shuttle-logo.svg"
+                  alt="Morgan Data Shuttle"
+                  width={120}
+                  height={28}
+                  className="h-6 w-auto"
+                />
+              </span>
             </div>
 
             {/* Contact */}
