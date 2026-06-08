@@ -23,14 +23,21 @@ import type { VideoEmbed } from '@/lib/data/types/video'
 type Props = {
   videos: ReadonlyArray<VideoEmbed>
   className?: string
+  /** 'tour' shows the interactive 3D / virtual-tour labelling; default 'video'
+   *  is the marketing walkthrough. (Matt: videos and tours are different.) */
+  variant?: 'video' | 'tour'
 }
 
-export function ListingVideoEmbed({ videos, className }: Props) {
+export function ListingVideoEmbed({ videos, className, variant = 'video' }: Props) {
   const [playing, setPlaying] = useState(false)
   if (videos.length === 0) return null
   // Prefer an inline-embeddable video; fall back to the first (e.g. a Dropbox
   // 'link' video, which renders as a watch-link below).
   const video = videos.find((v) => v.embedType !== 'link') ?? videos[0]
+  const isTour = variant === 'tour'
+  const eyebrow = isTour ? 'Virtual tour' : 'Video'
+  const heading = isTour ? 'Explore this home in 3D' : 'Walkthrough'
+  const ctaLabel = isTour ? 'Open the virtual tour' : 'Watch the video tour'
   const orientationClass =
     video.orientation === 'portrait'
       ? 'aspect-[9/16] max-w-[420px] mx-auto'
@@ -41,8 +48,8 @@ export function ListingVideoEmbed({ videos, className }: Props) {
   return (
     <Stack gap="default" className={className}>
       <div>
-        <Eyebrow>Video</Eyebrow>
-        <H2 className="mt-1.5">Walkthrough</H2>
+        <Eyebrow>{eyebrow}</Eyebrow>
+        <H2 className="mt-1.5">{heading}</H2>
       </div>
       <div
         className={cn(
@@ -56,13 +63,13 @@ export function ListingVideoEmbed({ videos, className }: Props) {
             target="_blank"
             rel="noopener noreferrer"
             className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-primary/30 to-primary/10 text-primary-foreground"
-            aria-label="Watch the listing video tour (opens in a new tab)"
+            aria-label={`${ctaLabel} (opens in a new tab)`}
           >
             <span className="w-16 h-16 rounded-full bg-white/95 text-primary flex items-center justify-center shadow-lg">
               <span aria-hidden className="text-2xl ml-1">▶</span>
             </span>
             <span className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
-              Watch the video tour
+              {ctaLabel}
             </span>
           </a>
         ) : playing ? (

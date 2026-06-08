@@ -167,6 +167,13 @@ export function normalizeEmbed(
     return { url, embedType: 'link' }
   }
 
+  // Google Drive: agents often "host" a tour as a Drive video FILE. The /view
+  // share URL blocks framing and is not a playable file, but /preview embeds a
+  // player iframe. Rewrite file/d/<id>/... -> file/d/<id>/preview. (Sutherland's
+  // tour, and other agent-uploaded tour videos, live here.)
+  const gdrive = url.match(/drive\.google\.com\/file\/d\/([A-Za-z0-9_-]+)/)
+  if (gdrive) return { url: `https://drive.google.com/file/d/${gdrive[1]}/preview`, embedType: 'iframe' }
+
   const parsed = parseListingVideoEmbedForTile(url)
   if (parsed) return { url: parsed.src, embedType: 'iframe', posterUrl: parsed.posterUrl ?? undefined }
 
@@ -306,32 +313,42 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
         }
       }
 
-      // ─── Tier 4: details.VirtualTours (3D / Matterport / Zillow-3D tours) ──
-      // The MLS keeps walkthrough VIDEOS in details.Videos but 3D/virtual TOURS
-      // in details.VirtualTours — a separate array the site never read. Each
-      // entry's `Uri` is the tour URL (Matterport, Zillow 3D, property-tour
-      // hosts, sometimes a YouTube/Vimeo). Unbranded first. This is why luxury
-      // homes with a Matterport but no marketing reel showed no media.
-      const tours = (details as Record<string, unknown>).VirtualTours
-      if (Array.isArray(tours)) {
-        const ranked = [...tours].sort((a, b) => virtualTourRank(a) - virtualTourRank(b))
-        for (const t of ranked) {
-          if (!t || typeof t !== 'object') continue
-          const tour = t as Record<string, unknown>
-          const raw = typeof tour.Uri === 'string' ? tour.Uri.trim() : null
-          if (!raw || !/^https?:\/\//i.test(raw) || seen.has(raw)) continue
-          seen.add(raw)
-          const hint = typeof tour.Name === 'string' ? tour.Name : null
-          const norm = normalizeEmbed(raw, hint)
-          if (!norm) continue
-          out.push({
-            source: classifyVideo(norm.url, hint).source,
-            embedType: norm.embedType,
-            url: norm.url,
-            posterUrl: norm.posterUrl,
-            professional: true,
-          })
+      // ─── Tier 4: virtual TOURS (distinct from videos) ─────────────────
+      // Matt: "listing videos and virtual tours are different." Walkthrough
+      // VIDEOS live in details.Videos (above); 3D / Matterport / Zillow-3D /
+      // Google-Drive TOURS live in THREE other places. Read all, unbranded
+      // first, deduped, and tag isVirtualTour so the page can show them in a
+      // dedicated tour viewer:
+      //   1. details.VirtualTourURLUnbranded — a SCALAR default field, the most
+      //      reliable (present even when the VirtualTours expansion never synced;
+      //      ~298 active listings the site previously ignored entirely).
+      //   2. details.VirtualTours[].Uri — the expansion array.
+      //   3. details.VirtualTourURLBranded — fallback (carries agency chrome).
+      const det = details as Record<string, unknown>
+      const tourCandidates: string[] = []
+      const pushTour = (v: unknown) => {
+        if (typeof v === 'string' && /^https?:\/\//i.test(v.trim())) tourCandidates.push(v.trim())
+      }
+      pushTour(det.VirtualTourURLUnbranded)
+      if (Array.isArray(det.VirtualTours)) {
+        for (const t of [...det.VirtualTours].sort((a, b) => virtualTourRank(a) - virtualTourRank(b))) {
+          if (t && typeof t === 'object') pushTour((t as Record<string, unknown>).Uri)
         }
+      }
+      pushTour(det.VirtualTourURLBranded)
+      for (const raw of tourCandidates) {
+        if (seen.has(raw)) continue
+        seen.add(raw)
+        const norm = normalizeEmbed(raw, 'virtual-tour')
+        if (!norm) continue
+        out.push({
+          source: classifyVideo(norm.url).source,
+          embedType: norm.embedType,
+          url: norm.url,
+          posterUrl: norm.posterUrl,
+          professional: true,
+          isVirtualTour: true,
+        })
       }
     }
   }
@@ -352,7 +369,10 @@ export const getListingVideos = (listingKey: string): Promise<VideoEmbed[]> =>
     // by ListNumber missed the ListingKey-keyed tables (every pretty-URL listing).
     // v7 bump 2026-06-08 — now reads details.VirtualTours (3D/Matterport/Zillow-3D
     // tours); entries cached as [] for the ~280 tour-only listings were poison.
-    ['listing-videos-v7', listingKey],
+    // v8 bump 2026-06-08 — also reads the scalar VirtualTourURLUnbranded/Branded
+    // (the reliable tour source, ~298 listings) + Google-Drive tours; tags
+    // isVirtualTour. Entries cached under v7 missed the scalar-only tours.
+    ['listing-videos-v8', listingKey],
     {
       revalidate: CACHE_WINDOWS.videos,
       tags: [cacheTag.listing(listingKey), cacheTag.videos],

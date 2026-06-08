@@ -40,4 +40,8 @@ export type VideoEmbed = {
   orientation?: VideoOrientation
   /** True when the video came from MLS via a paid videographer. */
   professional: boolean
+  /** True when this is a 3D / interactive virtual TOUR (Matterport, Zillow-3D,
+   *  Google-Drive, etc.) rather than a marketing video. The listing page shows
+   *  tours in a dedicated viewer, separate from the video hero. */
+  isVirtualTour?: boolean
 }

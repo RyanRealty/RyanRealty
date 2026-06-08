@@ -18,6 +18,7 @@ import { listingDetailPath } from '@/lib/slug'
 import type { BreadcrumbNavItem } from '@/components/site/BreadcrumbNav'
 import { ListingDetailShell } from '@/components/site/listing-detail/ListingDetailShell'
 import { ListingHero } from '@/components/site/listing-detail/ListingHero'
+import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
 import { PriceCtaStrip } from '@/components/site/listing-detail/PriceCtaStrip'
 import { PropertySpecs } from '@/components/site/listing-detail/PropertySpecs'
 import { DescriptionBlock } from '@/components/site/listing-detail/DescriptionBlock'
@@ -276,8 +277,13 @@ export default async function ListingDetailPage({ params }: PageProps) {
       : `/cities/${marketGeo.geoSlug}`
     : '/housing-market'
 
+  // Videos and virtual tours are DIFFERENT media (Matt). A marketing video (or
+  // the photo grid) is the hero; interactive 3D / virtual tours get their own
+  // viewer in the main column so a tour-only listing still leads with photos.
+  const virtualTours = videos.filter((v) => v.isVirtualTour)
+  const reelVideos = videos.filter((v) => !v.isVirtualTour)
   const hero = (
-    <ListingHero photos={photos} videos={videos} addressLine={street} />
+    <ListingHero photos={photos} videos={reelVideos} addressLine={street} />
   )
 
   const main = (
@@ -290,6 +296,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         refreshedAt={listing.refreshedAt}
       />
       <DescriptionBlock publicRemarks={listingWithPhotos.publicRemarks} />
+      {virtualTours.length > 0 ? <ListingVideoEmbed videos={virtualTours} variant="tour" /> : null}
       {marketGeo ? (
         <NeighborhoodMarketContext
           geoName={marketGeo.name}

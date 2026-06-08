@@ -64,6 +64,13 @@ describe('normalizeEmbed — showcase-video eligibility', () => {
     expect(r?.embedType).toBe('iframe')
   })
 
+  it('Google Drive tour file → /preview iframe (agent-uploaded tour video)', () => {
+    const r = normalizeEmbed('https://drive.google.com/file/d/1rlWsq0_6JmzEA6FRzIaqw0SantErbMXb/view?usp=share_link')
+    expect(showcase(r)).toBe(true)
+    expect(r?.embedType).toBe('iframe')
+    expect(r?.url).toBe('https://drive.google.com/file/d/1rlWsq0_6JmzEA6FRzIaqw0SantErbMXb/preview')
+  })
+
   it('MapRight parcel map → dropped (not a walkthrough video)', () => {
     expect(normalizeEmbed('https://app.mapright.com/maps/abc')).toBeNull()
     expect(normalizeEmbed('https://anything.com/x', 'MapRight')).toBeNull()
