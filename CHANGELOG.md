@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.20 (2026-06-08)
+
+### Other
+- Fix unreadable MLS attribution logos in the footer
+
+---
+
+
 ## v1.425.19 (2026-06-08)
 
 ### Other
