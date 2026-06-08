@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.30 (2026-06-08)
+
+### Other
+- Add verified Google reviews as on-site social proof (DAL + ReviewsBlock + team/about)
+
+---
+
+
 ## v1.425.29 (2026-06-08)
 
 ### Other
