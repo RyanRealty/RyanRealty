@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ExternalLinkHugeIcon } from '@/components/icons/HugeIcons'
 import { TESTIMONIALS, GOOGLE_REVIEWS_URL } from '@/lib/testimonials'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { Container } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -23,6 +25,9 @@ export const metadata: Metadata = {
 export default function ReviewsPage() {
   return (
     <main className="min-h-screen bg-background">
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Reviews' }]} />
+      </Container>
       <section className="bg-primary px-4 py-16 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-sm font-semibold uppercase tracking-widest text-accent-foreground">

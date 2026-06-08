@@ -7,7 +7,8 @@ import {
 import { RESORT_DISPLAY_NAMES } from '@/lib/communities'
 import CommunityCard from '@/components/community/CommunityCard'
 import CommunitiesFilter from '@/components/community/CommunitiesFilter'
-import { DisplayHeading } from '@/components/site/primitives'
+import { DisplayHeading, Container } from '@/components/site/primitives'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -56,6 +57,9 @@ export default async function CommunitiesPage() {
 
   return (
     <main className="min-h-screen bg-background">
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Communities' }]} />
+      </Container>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

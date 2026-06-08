@@ -3,6 +3,8 @@ import AppreciationCalculator from '@/components/tools/AppreciationCalculator'
 import AdUnit from '@/components/AdUnit'
 import HomeValuationCta from '@/components/HomeValuationCta'
 import ContentPageHero from '@/components/layout/ContentPageHero'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { Container } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -38,6 +40,9 @@ export default function AppreciationToolPage() {
 
   return (
     <main className="min-h-screen bg-background">
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Home appreciation calculator' }]} />
+      </Container>
       <ContentPageHero
         title="Home Appreciation Calculator"
         subtitle="Model different annual appreciation rates to understand long-term equity growth and plan your investment."

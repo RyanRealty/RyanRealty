@@ -10,6 +10,8 @@ import ShareButton from '@/components/ShareButton'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
 import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { Container } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const defaultOgImage = `${siteUrl}/api/og?type=default`
@@ -93,6 +95,12 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
 
   return (
     <main className="min-h-screen bg-background">
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav
+          includeJsonLd={false}
+          items={[{ label: 'Home', href: '/' }, { label: 'Blog' }]}
+        />
+      </Container>
       <ContentPageHero
         title="Real Estate Blog"
         subtitle="Market insights, community guides, and tips for buying and selling in Central Oregon."

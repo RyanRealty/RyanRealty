@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { Container } from '@/components/site/primitives'
 import AdUnit from '@/components/AdUnit'
 import HomeValuationCta from '@/components/HomeValuationCta'
 import CityClusterNav from '@/components/CityClusterNav'
@@ -81,14 +83,17 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ sl
           ),
         }}
       />
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav
+          includeJsonLd={false}
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Guides', href: '/guides' },
+            { label: guide.title },
+          ]}
+        />
+      </Container>
       <article className="rounded-lg border border-border bg-card p-6">
-        <nav className="mb-4 text-sm text-muted-foreground" aria-label="Breadcrumb">
-          <Link href="/" className="hover:text-foreground">Home</Link>
-          <span className="mx-2">/</span>
-          <Link href="/guides" className="hover:text-foreground">Guides</Link>
-          <span className="mx-2">/</span>
-          <span>{guide.title}</span>
-        </nav>
         <h1 className="text-3xl font-semibold text-foreground">{guide.title}</h1>
         {guide.meta_description && <p className="mt-3 text-muted-foreground">{guide.meta_description}</p>}
         <div className="mt-6">

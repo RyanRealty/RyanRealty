@@ -9,6 +9,8 @@ import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { generateBlogSchema, generateBreadcrumbSchema } from '@/lib/structured-data'
 import ShareButton from '@/components/ShareButton'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { Container } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -102,13 +104,16 @@ export default async function BlogPostPage({ params }: PageProps) {
           ),
         }}
       />
-      <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
-        <Link href="/" className="hover:text-foreground">Home</Link>
-        <span className="px-2">/</span>
-        <Link href="/blog" className="hover:text-foreground">Blog</Link>
-        <span className="px-2">/</span>
-        <span className="text-foreground">{post.title}</span>
-      </nav>
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav
+          includeJsonLd={false}
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Blog', href: '/blog' },
+            { label: post.title },
+          ]}
+        />
+      </Container>
 
       <article className="rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8">
         {post.category ? (

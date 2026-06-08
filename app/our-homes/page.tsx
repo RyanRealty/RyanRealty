@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { getListingsWithAdvanced } from '@/app/actions/listings'
 import { ArrowRightHugeIcon } from '@/components/icons/HugeIcons'
 import { listingDetailPath, listingsBrowsePath } from '@/lib/slug'
-import { DisplayHeading } from '@/components/site/primitives'
+import { DisplayHeading, Container } from '@/components/site/primitives'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -32,6 +33,9 @@ export default async function OurHomesPage() {
 
   return (
     <main className="min-h-screen bg-background">
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Our listings' }]} />
+      </Container>
       <section className="bg-primary px-4 py-16 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-4xl text-center">
           <p className="text-sm font-semibold uppercase tracking-widest text-accent-foreground">

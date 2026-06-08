@@ -5,6 +5,8 @@ import type { OpenHouseWithListing } from '@/app/actions/open-houses'
 import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { listingDetailPath, listingsBrowsePath } from '@/lib/slug'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { Container } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const openHousesOgImage = `${siteUrl}/api/og?type=default`
@@ -77,6 +79,9 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
 
   return (
     <main className="min-h-screen bg-background">
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Open houses' }]} />
+      </Container>
       <ContentPageHero
         title="Open Houses in Central Oregon"
         subtitle="This weekend and upcoming. Browse by list, map, or calendar. Add showings to your calendar or RSVP from the listing."

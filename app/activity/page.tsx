@@ -4,6 +4,8 @@ import { getActivityFeed } from '@/app/actions/activity-feed'
 import AdUnit from '@/components/AdUnit'
 import HomeValuationCta from '@/components/HomeValuationCta'
 import { listingsBrowsePath } from '@/lib/slug'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { Container } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -41,6 +43,9 @@ export default async function ActivityPage() {
 
   return (
     <main className="min-h-screen bg-background">
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Activity' }]} />
+      </Container>
       <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-7xl text-center">
           <h1 className="text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">

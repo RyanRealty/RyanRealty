@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { getCentralOregonVideosHubListings } from '@/app/actions/videos'
 import VideosClient from '@/components/videos/VideosClient'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { Container } from '@/components/site/primitives'
 
 const videosOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')}/api/og?type=default`
 
@@ -28,5 +30,12 @@ async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 15_0
 
 export default async function VideosPage() {
   const listings = await withTimeout(getCentralOregonVideosHubListings(), [])
-  return <VideosClient initialListings={listings} />
+  return (
+    <main className="min-h-screen bg-background">
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Videos' }]} />
+      </Container>
+      <VideosClient initialListings={listings} />
+    </main>
+  )
 }

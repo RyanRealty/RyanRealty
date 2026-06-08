@@ -1,5 +1,15 @@
+import type { Metadata } from 'next'
 import { permanentRedirect } from 'next/navigation'
 import { slugify } from '@/lib/slug'
+
+// Redirect-only legacy route — keep it out of the index; the redirect target
+// (/housing-market/<city>) carries the canonical, indexable content. The
+// canonical points at the live reports hub (the redirect runs before metadata
+// would ever render; this satisfies the SEO-authoring gate for the route).
+export const metadata: Metadata = {
+  robots: { index: false, follow: true },
+  alternates: { canonical: '/housing-market/reports' },
+}
 
 /**
  * Legacy per-geo market report. It read the `reporting_cache` table, which has

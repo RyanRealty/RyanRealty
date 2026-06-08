@@ -5,6 +5,8 @@ import ContentPageHero from '@/components/layout/ContentPageHero'
 import LeadLandingForm from '@/components/landing/LeadLandingForm'
 import type { LeadLandingConfig } from '@/lib/lead-landing-content'
 import { TESTIMONIALS } from '@/lib/testimonials'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { Container } from '@/components/site/primitives'
 
 type Props = {
   config: LeadLandingConfig
@@ -13,8 +15,15 @@ type Props = {
 export default function LeadLandingPage({ config }: Props) {
   const quotes = TESTIMONIALS.slice(0, 3)
 
+  const audienceCrumb = config.audience === 'seller'
+    ? { label: 'Sell', href: '/sell' }
+    : { label: 'Buy', href: '/buy' }
+
   return (
     <main className="min-h-screen bg-background">
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, audienceCrumb, { label: config.title }]} />
+      </Container>
       <ContentPageHero
         title={config.title}
         subtitle={config.subtitle}

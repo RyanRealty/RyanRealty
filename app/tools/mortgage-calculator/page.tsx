@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import MortgageCalculator from './MortgageCalculator'
 import ContentPageHero from '@/components/layout/ContentPageHero'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { Container } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -36,6 +38,9 @@ export default async function MortgageCalculatorPage({ searchParams }: Props) {
   const initialTerm = sp.term != null ? parseInt(sp.term, 10) : undefined
   return (
     <main className="min-h-screen bg-background">
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Mortgage calculator' }]} />
+      </Container>
       <ContentPageHero
         title="Mortgage Calculator"
         subtitle="Estimate your monthly payment. Adjust home price, down payment, interest rate, and loan term to plan your purchase."

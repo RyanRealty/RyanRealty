@@ -56,7 +56,7 @@ export default function SearchPageJsonLd({
     ...(pageUrl && { url: pageUrl }),
   }
 
-  // Mirror the visible breadcrumb (BreadcrumbStrip) exactly: same crumbs, same
+  // Mirror the visible breadcrumb (BreadcrumbNav) exactly: same crumbs, same
   // labels, same order — but with absolute URLs (schema.org requires them). The
   // preset crumb (Defect: previously absent) is the terminal item on /[city]/[preset].
   const breadcrumbItems: { name: string; item?: string }[] = [

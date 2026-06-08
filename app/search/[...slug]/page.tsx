@@ -30,7 +30,7 @@ import { GOLF_COMMUNITIES } from '@/data/golf-landing'
 import { getGolfImages, pickGolfImage, getGolfHomesForLanding, getMarketPulse } from '@/lib/data'
 import AdvancedSearchFilters from '../../../components/AdvancedSearchFilters'
 import ShareButton from '../../../components/ShareButton'
-import BreadcrumbStrip from '../../../components/layout/BreadcrumbStrip'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import SearchPageJsonLd from './SearchPageJsonLd'
 import ResortCommunityJsonLd from './ResortCommunityJsonLd'
 import { isResortCommunity } from '../../../lib/resort-communities'
@@ -479,7 +479,7 @@ export default async function SearchPage({
       <main className="flex flex-col map-search-shell overflow-hidden">
         {searchBreadcrumbItems.length > 1 && (
           <div className="shrink-0">
-            <BreadcrumbStrip items={searchBreadcrumbItems} />
+            <div className="border-b border-primary/20 bg-primary"><Container className="py-3"><BreadcrumbNav tone="on-navy" items={searchBreadcrumbItems} includeJsonLd={false} /></Container></div>
           </div>
         )}
         <UnifiedMapListingsView
@@ -589,7 +589,7 @@ export default async function SearchPage({
   return (
     <main className="min-h-screen bg-background">
       {searchBreadcrumbItems.length > 1 && (
-        <BreadcrumbStrip items={searchBreadcrumbItems} />
+        <div className="border-b border-primary/20 bg-primary"><Container className="py-3"><BreadcrumbNav tone="on-navy" items={searchBreadcrumbItems} includeJsonLd={false} /></Container></div>
       )}
 
       <Container className="py-8">

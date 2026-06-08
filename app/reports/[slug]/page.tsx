@@ -2,6 +2,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { Container } from '@/components/site/primitives'
 import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
@@ -74,15 +76,17 @@ export default async function ReportPage({ params }: Props) {
   return (
     <main className="min-h-screen bg-background">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reportSchema) }} />
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Market reports', href: '/housing-market/reports' },
+            { label: report.title },
+          ]}
+        />
+      </Container>
       <section className="bg-primary px-4 py-8 sm:px-6 sm:py-10">
         <div className="mx-auto max-w-4xl">
-          <nav className="mb-4 text-sm text-muted/80" aria-label="Breadcrumb">
-            <Link href="/" className="hover:text-muted">Home</Link>
-            <span className="mx-2">/</span>
-            <Link href="/reports" className="hover:text-muted">Market reports</Link>
-            <span className="mx-2">/</span>
-            <span className="text-muted">{report.title}</span>
-          </nav>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <h1 className="text-2xl font-bold tracking-tight text-primary-foreground sm:text-3xl">{report.title}</h1>
             <ShareButton

@@ -4,8 +4,9 @@ import { getSession } from '../actions/auth'
 import { getSavedListingKeys } from '../actions/saved-listings'
 import { getLikedListingKeys } from '../actions/likes'
 import FeedInfiniteList from '@/components/FeedInfiniteList'
-import Breadcrumb from '@/components/Breadcrumb'
 import ShareButton from '@/components/ShareButton'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { Container } from '@/components/site/primitives'
 import { listingsBrowsePath } from '@/lib/slug'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -44,6 +45,9 @@ export default async function FeedPage() {
 
   return (
     <main className="min-h-screen bg-background">
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Feed' }]} />
+      </Container>
       <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-7xl text-center">
           <h1 className="text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
@@ -69,12 +73,6 @@ export default async function FeedPage() {
         </div>
       </section>
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-      <Breadcrumb
-        items={[
-          { label: 'Ryan Realty', href: siteUrl },
-          { label: 'Feed' },
-        ]}
-      />
       <div className="mt-4 flex items-center justify-between gap-3">
         <h2 className="text-2xl font-semibold text-foreground">Newest first</h2>
         <ShareButton

@@ -14,14 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { Container } from '@/components/site/primitives'
 import LandingPageTracker from '@/components/LandingPageTracker'
 import HeathCmaForm from './_components/HeathCmaForm'
 import { CONTACT } from '@/lib/brand/contact'
@@ -491,35 +485,16 @@ export default async function HeathAtTetherowPage() {
       </section>
 
       {/* ── Breadcrumb ─────────────────────────────────────────────────── */}
-      <section className="border-b border-border bg-card">
-        <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link href="/">Home</Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link href="/cities/bend">Bend</Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link href="/lp/tetherow/">Tetherow</Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Heath</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
-      </section>
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Bend', href: '/cities/bend' },
+            { label: 'Tetherow', href: '/lp/tetherow/' },
+            { label: 'Heath' },
+          ]}
+        />
+      </Container>
 
       {/* ── About this sub-neighborhood ────────────────────────────────── */}
       <section className="py-16 sm:py-20">

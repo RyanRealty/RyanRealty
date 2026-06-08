@@ -5,6 +5,8 @@ import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
 import { getCityFromSlug } from '@/app/actions/listings'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { Container } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const defaultOgImage = `${siteUrl}/api/og?type=default`
@@ -72,6 +74,15 @@ export default async function OpenHousesCityPage({
 
   return (
     <main className="min-h-screen bg-background">
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Open houses', href: '/open-houses' },
+            { label: cityName },
+          ]}
+        />
+      </Container>
       <ContentPageHero
         title={`Open Houses in ${cityName}`}
         subtitle={`This weekend and upcoming in ${cityName}. Browse list, map, and calendar views.`}
