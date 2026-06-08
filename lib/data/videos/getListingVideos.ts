@@ -298,7 +298,9 @@ export const getListingVideos = (listingKey: string): Promise<VideoEmbed[]> =>
     // videos, incl. the luxury flagships, returned empty arrays).
     // v5 bump 2026-06-01 — re-resolve Dropbox video FILES as inline video-tag
     // (showcase hero) instead of the cached 'link' watch-link.
-    ['listing-videos-v5', listingKey],
+    // v6 bump 2026-06-08 — invalidate entries cached as [] when the lookup keyed
+    // by ListNumber missed the ListingKey-keyed tables (every pretty-URL listing).
+    ['listing-videos-v6', listingKey],
     {
       revalidate: CACHE_WINDOWS.videos,
       tags: [cacheTag.listing(listingKey), cacheTag.videos],

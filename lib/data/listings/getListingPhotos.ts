@@ -129,7 +129,9 @@ export const getListingPhotos = (listingKey: string): Promise<ListingPhoto[]> =>
     // v2 cache-key bump 2026-05-28 — paired with getListingDetail v2
     // bump to invalidate empty photo arrays cached during the
     // column-quoting bug window.
-    ['listing-photos-v2', listingKey],
+    // v3 bump 2026-06-08 — invalidate single-PhotoURL-fallback entries cached
+    // when the ListNumber lookup missed details.Photos (every pretty-URL listing).
+    ['listing-photos-v3', listingKey],
     {
       revalidate: CACHE_WINDOWS.listingTile,
       tags: [cacheTag.listings, cacheTag.listing(listingKey)],
