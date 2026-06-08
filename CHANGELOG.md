@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.21 (2026-06-08)
+
+### Other
+- Fix property-type search filter returning zero homes + preset filter UX
+
+---
+
+
 ## v1.425.20 (2026-06-08)
 
 ### Other
