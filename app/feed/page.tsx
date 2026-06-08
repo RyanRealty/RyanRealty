@@ -6,7 +6,7 @@ import { getLikedListingKeys } from '../actions/likes'
 import FeedInfiniteList from '@/components/FeedInfiniteList'
 import ShareButton from '@/components/ShareButton'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container } from '@/components/site/primitives'
+import { Container, H1 } from '@/components/site/primitives'
 import { listingsBrowsePath } from '@/lib/slug'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -50,9 +50,9 @@ export default async function FeedPage() {
       </Container>
       <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-7xl text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
+          <H1 className="text-primary-foreground sm:text-[40px]">
             Latest Listings
-          </h1>
+          </H1>
           <p className="mt-3 text-lg text-muted">
             Browse the newest homes for sale across Central Oregon. Scroll for more.
           </p>

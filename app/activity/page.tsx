@@ -5,7 +5,7 @@ import AdUnit from '@/components/AdUnit'
 import HomeValuationCta from '@/components/HomeValuationCta'
 import { listingsBrowsePath } from '@/lib/slug'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container } from '@/components/site/primitives'
+import { Container, H1 } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -48,9 +48,9 @@ export default async function ActivityPage() {
       </Container>
       <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-7xl text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
+          <H1 className="text-primary-foreground sm:text-[40px]">
             Live Market Activity
-          </h1>
+          </H1>
           <p className="mt-3 text-lg text-muted">
             New listings, price changes, pending sales, and closed updates across Central Oregon.
           </p>

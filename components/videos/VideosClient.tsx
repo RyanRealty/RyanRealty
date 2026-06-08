@@ -87,9 +87,11 @@ export default function VideosClient({ initialListings }: Props) {
                 <span className="absolute inset-0 flex items-center justify-center rounded-full bg-foreground/40 p-4 text-primary-foreground">
                   <HugeiconsIcon icon={PlayIcon} className="h-16 w-16" />
                 </span>
-                <span className="absolute bottom-2 left-2 rounded bg-foreground/70 px-2 py-1 text-sm font-medium text-primary-foreground">
-                  ${(listing.list_price ?? 0).toLocaleString()}
-                </span>
+                {listing.list_price ? (
+                  <span className="absolute bottom-2 left-2 rounded bg-foreground/70 px-2 py-1 text-sm font-medium text-primary-foreground">
+                    ${listing.list_price.toLocaleString()}
+                  </span>
+                ) : null}
                 <span className="absolute bottom-2 right-2 flex flex-col items-end gap-0.5 text-right text-sm font-medium text-primary-foreground drop-shadow">
                   <span>{listing.unparsed_address ?? listing.listing_key}</span>
                   {listing.video_source === 'virtual_tour' && (
@@ -99,7 +101,11 @@ export default function VideosClient({ initialListings }: Props) {
               </Button>
               <div className="p-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-semibold text-primary">${(listing.list_price ?? 0).toLocaleString()}</p>
+                  {listing.list_price ? (
+                    <p className="font-semibold text-primary">${listing.list_price.toLocaleString()}</p>
+                  ) : (
+                    <p className="font-semibold text-primary">&mdash;</p>
+                  )}
                   {listing.video_source === 'virtual_tour' && (
                     <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">Virtual tour</span>
                   )}
@@ -138,7 +144,11 @@ export default function VideosClient({ initialListings }: Props) {
                   className="h-full w-full object-cover"
                 />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-foreground/80 to-transparent p-4 text-primary-foreground">
-                  <p className="font-semibold">${(listing.list_price ?? 0).toLocaleString()}</p>
+                  {listing.list_price ? (
+                    <p className="font-semibold">${listing.list_price.toLocaleString()}</p>
+                  ) : (
+                    <p className="font-semibold">&mdash;</p>
+                  )}
                   <p className="text-sm">{listing.unparsed_address}</p>
                   <p className="text-xs opacity-90">
                     {listing.beds_total ?? '—'} bed · {listing.baths_full ?? '—'} bath
@@ -187,7 +197,11 @@ export default function VideosClient({ initialListings }: Props) {
             </div>
             <div className="w-full bg-card p-4 md:w-80">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-xl font-bold text-primary">${(selected.list_price ?? 0).toLocaleString()}</p>
+                {selected.list_price ? (
+                  <p className="text-xl font-bold text-primary">${selected.list_price.toLocaleString()}</p>
+                ) : (
+                  <p className="text-xl font-bold text-primary">&mdash;</p>
+                )}
                 {selected.video_source === 'virtual_tour' && (
                   <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">Virtual tour</span>
                 )}

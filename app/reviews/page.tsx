@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { ExternalLinkHugeIcon } from '@/components/icons/HugeIcons'
 import { TESTIMONIALS, GOOGLE_REVIEWS_URL } from '@/lib/testimonials'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container } from '@/components/site/primitives'
+import { Container, DisplayHeading } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -33,12 +33,15 @@ export default function ReviewsPage() {
           <p className="text-sm font-semibold uppercase tracking-widest text-accent-foreground">
             Read Our Reviews
           </p>
-          <h1 className="mt-4 text-4xl font-bold tracking-tight text-primary-foreground sm:text-5xl">
+          <DisplayHeading
+            as="h1"
+            className="mt-4 text-4xl text-primary-foreground sm:text-5xl"
+          >
             What Our Clients Say
-          </h1>
+          </DisplayHeading>
           <p className="mt-6 text-lg text-muted/90">
-            From first-time buyers to seasoned sellers, our clients share how Ryan Realty turned
-            their Central Oregon dreams into reality. We&apos;re proud to be the team Bend counts on.
+            Real reviews from buyers and sellers across Central Oregon. Read what clients say about
+            the process, the communication, and how deals came together.
           </p>
           <a
             href={GOOGLE_REVIEWS_URL}

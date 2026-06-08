@@ -30,7 +30,7 @@ export default function JoinPage() {
       </Container>
       <ContentPageHero
         title="Grow Your Career With Us"
-        subtitle="A passionate Central Oregon brokerage built on community and excellence. Licensed or thinking about it, we'd love to talk."
+        subtitle="A Central Oregon brokerage built on community, craft, and straight talk. Licensed or thinking about it, we'd love to talk."
         imageUrl={CONTENT_HERO_IMAGES.join}
         ctas={[
           { label: 'Get in Touch', href: '/contact?inquiry=Join%20Our%20Team', primary: true },

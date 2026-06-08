@@ -1,15 +1,16 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from '@/components/ui/select'
 
 function formatCurrency(n: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
@@ -76,98 +77,103 @@ export default function MortgageCalculator({
     }, [homePrice, downPaymentPct, interestRate, loanTermYears, propertyTaxYear, insuranceYear])
 
   return (
-    <div className="mt-8 space-y-8 rounded-xl border border-border bg-card p-6 shadow-sm">
-      <div className="grid gap-6 sm:grid-cols-2">
-        <Label className="block">
-          <span className="text-sm font-medium text-muted-foreground">Home price</span>
-          <Input
-            type="number"
-            value={homePrice}
-            onChange={(e) => setHomePrice(Number(e.target.value) || 0)}
-            min={50000}
-            step={10000}
-            className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-foreground"
-          />
-        </Label>
-        <Label className="block">
-          <span className="text-sm font-medium text-muted-foreground">Down payment (%)</span>
-          <Input
-            type="number"
-            value={downPaymentPct}
-            onChange={(e) => setDownPaymentPct(Number(e.target.value) || 0)}
-            min={0}
-            max={100}
-            step={1}
-            className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-foreground"
-          />
-        </Label>
-        <Label className="block">
-          <span className="text-sm font-medium text-muted-foreground">Interest rate (%)</span>
-          <Input
-            type="number"
-            value={interestRate}
-            onChange={(e) => setInterestRate(Number(e.target.value) || 0)}
-            min={0}
-            max={20}
-            step={0.125}
-            className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-foreground"
-          />
-        </Label>
-        <Label className="block">
-          <span className="text-sm font-medium text-muted-foreground">Loan term (years)</span>
-          <Select value={String(loanTermYears)} onValueChange={(e) => setLoanTermYears(Number(e))}>
-            <SelectTrigger className="mt-1">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="15">15</SelectItem>
-              <SelectItem value="20">20</SelectItem>
-              <SelectItem value="30">30</SelectItem>
-            </SelectContent>
-          </Select>
-        </Label>
-        <Label className="block sm:col-span-2">
-          <span className="text-sm font-medium text-muted-foreground">Property tax (yearly, optional)</span>
-          <Input
-            type="number"
-            value={propertyTaxYear}
-            onChange={(e) => setPropertyTaxYear(Number(e.target.value) || 0)}
-            min={0}
-            step={500}
-            className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-foreground"
-          />
-        </Label>
-        <Label className="block sm:col-span-2">
-          <span className="text-sm font-medium text-muted-foreground">Home insurance (yearly, optional)</span>
-          <Input
-            type="number"
-            value={insuranceYear}
-            onChange={(e) => setInsuranceYear(Number(e.target.value) || 0)}
-            min={0}
-            step={100}
-            className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-foreground"
-          />
-        </Label>
-      </div>
-
-      <div className="border-t border-border pt-6">
-        <p className="text-sm text-muted-foreground">
-          Down payment: {formatCurrency(downPayment)} · Loan amount: {formatCurrency(loanAmount)}
-          {pmi > 0 && (
-            <span className="ml-2 text-warning">· PMI (est.): {formatCurrency(pmi)}/mo</span>
-          )}
-        </p>
-        <p className="mt-4 text-3xl font-bold text-foreground">
-          {formatCurrency(monthlyTotal)}
-          <span className="text-lg font-normal text-muted-foreground">/month</span>
-        </p>
-        <div className="mt-2 flex flex-wrap gap-4 text-sm text-muted-foreground">
-          <span>Principal & interest: {formatCurrency(monthlyPrincipalInterest)}</span>
-          <span>Tax: {formatCurrency(monthlyTax)}</span>
-          <span>Insurance: {formatCurrency(monthlyInsurance)}</span>
+    <Card>
+      <CardHeader>
+        <CardTitle>Mortgage calculator</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-8">
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="home-price">Home price</Label>
+            <Input
+              id="home-price"
+              type="number"
+              value={homePrice}
+              onChange={(e) => setHomePrice(Number(e.target.value) || 0)}
+              min={50000}
+              step={10000}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="down-payment">Down payment (%)</Label>
+            <Input
+              id="down-payment"
+              type="number"
+              value={downPaymentPct}
+              onChange={(e) => setDownPaymentPct(Number(e.target.value) || 0)}
+              min={0}
+              max={100}
+              step={1}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="interest-rate">Interest rate (%)</Label>
+            <Input
+              id="interest-rate"
+              type="number"
+              value={interestRate}
+              onChange={(e) => setInterestRate(Number(e.target.value) || 0)}
+              min={0}
+              max={20}
+              step={0.125}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="loan-term">Loan term (years)</Label>
+            <Select value={String(loanTermYears)} onValueChange={(e) => setLoanTermYears(Number(e))}>
+              <SelectTrigger id="loan-term">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="15">15</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="30">30</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="property-tax">Property tax (yearly, optional)</Label>
+            <Input
+              id="property-tax"
+              type="number"
+              value={propertyTaxYear}
+              onChange={(e) => setPropertyTaxYear(Number(e.target.value) || 0)}
+              min={0}
+              step={500}
+            />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="home-insurance">Home insurance (yearly, optional)</Label>
+            <Input
+              id="home-insurance"
+              type="number"
+              value={insuranceYear}
+              onChange={(e) => setInsuranceYear(Number(e.target.value) || 0)}
+              min={0}
+              step={100}
+            />
+          </div>
         </div>
-      </div>
-    </div>
+
+        <div className="rounded-lg border border-border p-4">
+          <p className="text-sm text-muted-foreground">
+            Down payment: {formatCurrency(downPayment)} · Loan amount: {formatCurrency(loanAmount)}
+            {pmi > 0 && (
+              <span className="ml-2 text-warning">· PMI (est.): {formatCurrency(pmi)}/mo</span>
+            )}
+          </p>
+          <p className="mt-4 text-3xl font-bold text-foreground">
+            {formatCurrency(monthlyTotal)}
+            <span className="text-lg font-normal text-muted-foreground">/month</span>
+          </p>
+          <div className="mt-2 flex flex-wrap gap-4 text-sm text-muted-foreground">
+            <span>Principal &amp; interest: {formatCurrency(monthlyPrincipalInterest)}</span>
+            <span>Tax: {formatCurrency(monthlyTax)}</span>
+            <span>Insurance: {formatCurrency(monthlyInsurance)}</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

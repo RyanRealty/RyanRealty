@@ -129,6 +129,11 @@ export default async function MotivatedSellersPage() {
       <HeroBlock
         headline="Motivated Sellers in Central Oregon"
         lede="Active homes with documented price cuts or seller-signaled motivation. Sorted by most motivated, updated hourly from the regional MLS."
+        photo={{
+          src: '/images/hero/hero-old-mill-master-4k.jpg',
+          alt: 'Old Mill District drone view with the American flag, the Deschutes River, and the Cascade mountains.',
+          priority: true,
+        }}
         minHeight={480}
       />
 

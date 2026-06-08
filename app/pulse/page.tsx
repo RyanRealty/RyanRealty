@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import PulseHero from '@/components/pulse/PulseHero'
 import PulseFeed from '@/components/pulse/PulseFeed'
+import HomeValuationCta from '@/components/HomeValuationCta'
 import {
   getPulseFeed,
   getPulseCitySnapshots,
@@ -52,6 +53,9 @@ export default async function PulsePage() {
         <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Market pulse' }]} />
       </Container>
       <PulseHero regionSnapshot={regionSnapshot} />
+      <Container className="py-6">
+        <HomeValuationCta />
+      </Container>
       <PulseFeed
         initialItems={items}
         initialNextOffset={nextOffset}
