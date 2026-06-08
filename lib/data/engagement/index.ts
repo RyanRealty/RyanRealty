@@ -11,6 +11,7 @@
 
 import { supabaseAnon } from '@/lib/data/client'
 import { createServiceClient } from '@/lib/supabase/service'
+import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 
 export type EngagementCounts = {
   view_count: number
@@ -72,10 +73,11 @@ export async function getEngagementForListing(listingKey: string): Promise<Engag
   if (!supabase) return { ...ZERO_COUNTS }
   const key = String(listingKey ?? '').trim()
   if (!key) return { ...ZERO_COUNTS }
+  const canonicalKey = await resolveCanonicalListingKey(key)
   const { data: row } = await supabase
     .from('engagement_metrics')
     .select('view_count, like_count, save_count, share_count')
-    .eq('listing_key', key)
+    .eq('listing_key', canonicalKey)
     .maybeSingle()
   const r = (row ?? {}) as Partial<EngagementCounts>
   return {

@@ -30,6 +30,7 @@ import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import type { ListingTile } from '@/lib/data/types/listing'
 import { getListingTiles } from './getListingTiles'
+import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 
 const InputSchema = z.object({
   anchorKey: z.string().min(1).max(100),
@@ -46,16 +47,17 @@ async function fetchSimilarKeys(
   anchorKey: string,
   limit: number,
 ): Promise<string[]> {
+  const canonicalKey = await resolveCanonicalListingKey(anchorKey)
   const sb = supabaseAnon()
   if (!sb) return []
   const { data, error } = await sb
     .from('similar_listings_mv')
     .select('similar_key, rank, similarity_score')
-    .eq('anchor_key', anchorKey)
+    .eq('anchor_key', canonicalKey)
     .order('rank', { ascending: true })
     .limit(limit)
   if (error) {
-    console.error('[getSimilarListings] keys lookup:', { anchorKey, error })
+    console.error('[getSimilarListings] keys lookup:', { anchorKey, canonicalKey, error })
     return []
   }
   return ((data ?? []) as SimilarRow[]).map((r) => r.similar_key)

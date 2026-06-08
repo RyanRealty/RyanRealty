@@ -1,0 +1,15 @@
+{
+  "generatedAt": "2026-06-08T14:40:11.934Z",
+  "reason": "Listing-key reads not yet routed through resolveCanonicalListingKey at gate-creation time. NEW unresolved reads fail CI; this list only shrinks.",
+  "total": 8,
+  "violations": [
+    "app/actions/likes.ts:26",
+    "app/actions/likes.ts:73",
+    "app/actions/photo-classification.ts:138",
+    "app/actions/saved-listings.ts:27",
+    "app/actions/saved-listings.ts:78",
+    "lib/data/engagement/index.ts:171",
+    "lib/data/engagement/index.ts:50",
+    "lib/data/listings/getListingVideoCandidates.ts:42"
+  ]
+}

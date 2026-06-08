@@ -7,6 +7,7 @@
  */
 
 import { supabaseAnon } from '@/lib/data/client'
+import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 
 export type ListingDetailPhotoRow = {
   id: string
@@ -68,6 +69,7 @@ export async function getHeroPhotosByListingKeys(
   const { data } = await sb
     .from('listing_photos')
     .select('listing_key, photo_url')
+    // @canonical-key — callers pass ListingKeys from related tables
     .in('listing_key', listingKeys.slice(0, 5000))
     .eq('is_hero', true)
     .limit(listingKeys.length * 2)
@@ -120,12 +122,13 @@ export async function getOpenHousesInRange(options: {
 
 /** All photos for a listing, sorted ASC by sort_order. */
 export async function getListingDetailPhotos(listingKey: string): Promise<ListingDetailPhotoRow[]> {
+  const canonicalKey = await resolveCanonicalListingKey(listingKey)
   const sb = supabaseAnon()
   if (!sb) return []
   const { data } = await sb
     .from('listing_photos')
     .select('id, listing_key, photo_url, cdn_url, sort_order, caption, is_hero')
-    .eq('listing_key', listingKey)
+    .eq('listing_key', canonicalKey)
     .order('sort_order', { ascending: true })
   return (data ?? []) as ListingDetailPhotoRow[]
 }
@@ -159,6 +162,7 @@ export async function getListingKeysForBrokerByEmail(email: string): Promise<str
 
 /** Listing agent rows (role in 'list' | 'listing'). */
 export async function getListingDetailAgents(listingKey: string): Promise<ListingDetailAgentRow[]> {
+  const canonicalKey = await resolveCanonicalListingKey(listingKey)
   const sb = supabaseAnon()
   if (!sb) return []
   const { data } = await sb
@@ -166,7 +170,7 @@ export async function getListingDetailAgents(listingKey: string): Promise<Listin
     .select(
       'id, listing_key, agent_role, agent_name, agent_mls_id, agent_license, agent_email, agent_phone, office_name, office_mls_id, office_phone'
     )
-    .eq('listing_key', listingKey)
+    .eq('listing_key', canonicalKey)
     .in('agent_role', ['list', 'listing'])
   return (data ?? []) as ListingDetailAgentRow[]
 }
@@ -176,6 +180,7 @@ export async function getOpenHouseById(
   openHouseId: string,
   listingKey: string
 ): Promise<ListingDetailOpenHouseRow | null> {
+  const canonicalKey = await resolveCanonicalListingKey(listingKey)
   const sb = supabaseAnon()
   if (!sb) return null
   const today = new Date().toISOString().slice(0, 10)
@@ -183,7 +188,7 @@ export async function getOpenHouseById(
     .from('open_houses')
     .select('id, listing_key, event_date, start_time, end_time, host_agent_name, remarks')
     .eq('id', openHouseId)
-    .eq('listing_key', listingKey)
+    .eq('listing_key', canonicalKey)
     .gte('event_date', today)
     .maybeSingle()
   return (data ?? null) as ListingDetailOpenHouseRow | null
@@ -193,13 +198,14 @@ export async function getOpenHouseById(
 export async function getListingDetailOpenHouses(
   listingKey: string
 ): Promise<ListingDetailOpenHouseRow[]> {
+  const canonicalKey = await resolveCanonicalListingKey(listingKey)
   const sb = supabaseAnon()
   if (!sb) return []
   const today = new Date().toISOString().slice(0, 10)
   const { data } = await sb
     .from('open_houses')
     .select('id, listing_key, event_date, start_time, end_time, host_agent_name, remarks')
-    .eq('listing_key', listingKey)
+    .eq('listing_key', canonicalKey)
     .gte('event_date', today)
     .order('event_date', { ascending: true })
   return (data ?? []) as ListingDetailOpenHouseRow[]
@@ -207,12 +213,13 @@ export async function getListingDetailOpenHouses(
 
 /** Listing videos for the detail player, sorted by sort_order ASC. */
 export async function getListingDetailVideos(listingKey: string): Promise<ListingDetailVideoRow[]> {
+  const canonicalKey = await resolveCanonicalListingKey(listingKey)
   const sb = supabaseAnon()
   if (!sb) return []
   const { data } = await sb
     .from('listing_videos')
     .select('id, video_url, sort_order')
-    .eq('listing_key', listingKey)
+    .eq('listing_key', canonicalKey)
     .order('sort_order', { ascending: true })
   return (data ?? []) as ListingDetailVideoRow[]
 }
@@ -282,12 +289,13 @@ export async function getListingKeysWithPriceChangeSince(sinceIso: string): Prom
 export async function getListingDetailHistory(
   listingKey: string
 ): Promise<ListingHistoryEventRow[]> {
+  const canonicalKey = await resolveCanonicalListingKey(listingKey)
   const sb = supabaseAnon()
   if (!sb) return []
   const { data } = await sb
     .from('listing_history')
     .select('id, listing_key, event, event_date, price, price_change, description, raw')
-    .eq('listing_key', listingKey)
+    .eq('listing_key', canonicalKey)
     .order('event_date', { ascending: true })
     .limit(100)
   return (data ?? []) as ListingHistoryEventRow[]
