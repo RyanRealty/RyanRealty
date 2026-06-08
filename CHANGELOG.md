@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.28 (2026-06-08)
+
+### Other
+- Fix collapsed tour/video box: add w-full so aspect-video has height
+
+---
+
+
 ## v1.425.27 (2026-06-08)
 
 ### Other
