@@ -322,17 +322,17 @@ If `bleed.length > 0`, the CMA is NOT ready. Either split the offending section 
 
 Note: this check is **self-calibrating**.  it reads each page's actual footer position rather than assuming a fixed ceiling, so it works whether the per-CMA stylesheet uses 1056 px letter portrait, 1100 px legal stretch, or anything in between. The 4 px buffer below `footerTop` is the minimum gap between body content and the footer band; widen it to 8-12 px if you want stricter visual breathing room.
 
-**Step 7b.  Land / acreage CMA additions (PropertyType D — required when subject is raw land or acreage)**
+**Step 7b.  Land / acreage CMA additions (PropertyType D, required when subject is raw land or acreage)**
 
-When the subject's `PropertyType = 'D'` (land), the standard SFR layout (Steps 7 and 9) applies with the following mandatory additions. These were locked 2026-06-04 based on the 18705 Tumalo Reservoir Road CMA build — the first full zoning-aware land CMA produced under this skill. Reference: `public/cmas/cma-18705-tumalo-reservoir/cma.html` (finalized 2026-06-06, 25 pages.  see Step 7c for the deeper learnings from the full rebuild).
+When the subject's `PropertyType = 'D'` (land), the standard SFR layout (Steps 7 and 9) applies with the following mandatory additions. These were locked 2026-06-04 based on the 18705 Tumalo Reservoir Road CMA build, the first full zoning-aware land CMA produced under this skill. Reference: `public/cmas/cma-18705-tumalo-reservoir/cma.html` (finalized 2026-06-06, 25 pages.  see Step 7c for the deeper learnings from the full rebuild).
 
-**Addition 1 — Zoning Analysis & Comp Weighting (two pages, placed immediately before the Pricing Strategy page)**
+**Addition 1: Zoning Analysis & Comp Weighting (two pages, placed immediately before the Pricing Strategy page)**
 
-For land CMAs, zoning is the primary value driver. A comp in the wrong zone — even at the same acreage and price per acre — is misleading, not informative. Insert two dedicated pages:
+For land CMAs, zoning is the primary value driver. A comp in the wrong zone (even at the same acreage and price per acre) is misleading, not informative. Insert two dedicated pages:
 
 *Page A: Per-comp zoning pros/cons table.* Columns:
 - Parcel (address + acreage)
-- Zone (from authoritative GIS — see Step 3.5, never from MLS)
+- Zone (from authoritative GIS, see Step 3.5, never from MLS)
 - Dwelling pathway (by-right / conditional use / lot-of-record / none confirmed)
 - Subdividable? (yes/no, with governing code reference)
 - Irrigation / high-value farmland status
@@ -343,16 +343,16 @@ Weighting logic:
 - **FLOOR ANCHOR:** a zone-matched comp with the worst comparable conditions (no water, no confirmed CUP, poor location). Sets the conservative low end. Always include if one exists.
 - **SIZE-TREND SUPPORT:** zone-matched comps outside the primary size range (e.g., 65-80 ac supporting a 40-ac subject). Show how large-parcel compression anchors the low end and confirms the subject's tier is above that band.
 - **CONTEXT ONLY:** zone-matched comps with a small-lot premium (e.g., 11-ac EFUTRB with replacement dwelling) that does not extrapolate to the subject's acreage. Show but do not use for sizing.
-- **EXCLUDED:** comps in a different zone class (MUA-10, RR-10, TUR-5, UAR-10, residential). Do not apply a haircut and use them — exclude them entirely. The reason: by-right dwelling + subdivision optionality is the core of the premium those zones command, and there is no defensible way to strip it out with a numerical adjustment. State the exclusion reason explicitly in the table.
+- **EXCLUDED:** comps in a different zone class (MUA-10, RR-10, TUR-5, UAR-10, residential). Do not apply a haircut and use them. Exclude them entirely. The reason: by-right dwelling + subdivision optionality is the core of the premium those zones command, and there is no defensible way to strip it out with a numerical adjustment. State the exclusion reason explicitly in the table.
 
 *Page B: Weighting narrative.* Plain-language explanation of:
 1. Why the matching base zone comps are the only true matches (entitlement class logic).
 2. Why non-EFU / by-right / subdivisible comps are excluded rather than discounted (the optionality premium is not separable with paired-sales logic).
-3. How irrigation and farming value interact with the subject's water-rights status (especially relevant if subject has no irrigation: explain the dual effect — discount vs. enabling condition for dwelling CUP pathway under DCC 18.16).
+3. How irrigation and farming value interact with the subject's water-rights status (especially relevant if subject has no irrigation: explain the dual effect, discount vs. enabling condition for dwelling CUP pathway under DCC 18.16).
 4. Any subdivision floor imposed by overlay zones (e.g., WA 40-acre minimum under DCC 18.88) and what it means for buyer optionality.
 5. The explicit value conclusion: where the subject lands in the $/acre range, which comps anchor the low and high ends, and the recommended list price. This narrative ties directly to the Pricing Strategy page that follows.
 
-**Addition 2 — Supplemental Documentation exhibit appendix (two pages, placed after the Disclosure + Signature page)**
+**Addition 2: Supplemental Documentation exhibit appendix (two pages, placed after the Disclosure + Signature page)**
 
 A professional exhibit list of every authoritative county record backing the CMA. Required for any land CMA where zoning, entitlement, or parcel boundary is a value driver (which is always). Each exhibit entry must include:
 - Exhibit number (EX-1, EX-2, ...)
@@ -365,11 +365,11 @@ Required exhibits for a Deschutes County land CMA (adapt for other counties):
 
 | # | Document | Source |
 |---|---|---|
-| EX-1 | Zoning of record | Deschutes County DIAL Development Summary (`dial.deschutes.org/Real/DevelopmentSummary/<account>`) — captures base zone, overlays, Legal Lot of Record status |
-| EX-2 | Dwelling entitlement / Declaratory Ruling | Deschutes County WebLink F&D document (if a CUP or DR exists) — include verbatim condition language confirming the entitlement |
-| EX-3 | Permit history | Deschutes County DIAL Permits (`dial.deschutes.org/Real/Permits/<account>`) — lists finaled building/electrical/plumbing, land-use permits, CUP extensions |
-| EX-4 | Parcel boundary / aerial | Deschutes County GIS taxlot layer (`maps.deschutes.org/arcgis/rest/services/Dial2_Taxlots/MapServer/0`) — acreage computed from authoritative polygon, not MLS or assessor estimate |
-| EX-5 | Comp zoning | Deschutes County GIS Summary_Information layer spatial query per comp taxlot — confirms zone for every comp included or excluded |
+| EX-1 | Zoning of record | Deschutes County DIAL Development Summary (`dial.deschutes.org/Real/DevelopmentSummary/<account>`): captures base zone, overlays, Legal Lot of Record status |
+| EX-2 | Dwelling entitlement / Declaratory Ruling | Deschutes County WebLink F&D document (if a CUP or DR exists): include verbatim condition language confirming the entitlement |
+| EX-3 | Permit history | Deschutes County DIAL Permits (`dial.deschutes.org/Real/Permits/<account>`): lists finaled building/electrical/plumbing, land-use permits, CUP extensions |
+| EX-4 | Parcel boundary / aerial | Deschutes County GIS taxlot layer (`maps.deschutes.org/arcgis/rest/services/Dial2_Taxlots/MapServer/0`): acreage computed from authoritative polygon, not MLS or assessor estimate |
+| EX-5 | Comp zoning | Deschutes County GIS Summary_Information layer spatial query per comp taxlot: confirms zone for every comp included or excluded |
 | EX-6 | Applicable zoning code | Deschutes County Code Title 18 refs for each overlay (DCC 18.16 EFU, 18.84 LM, 18.88 WA, etc.) with deschutescounty.gov URLs |
 
 Note: source PDFs (F&D, permit printouts) are available from the county portal at the exhibit URLs and should be offered as attachments when the CMA is delivered.
@@ -599,7 +599,7 @@ const result = await finalizeAndDeliverCma({ slug: 'cma-<slug>' })
 **What this does (in order, all best-effort):**
 
 1. Renders the CMA HTML to a PDF buffer via `renderCmaPdfBuffer(slug)` (puppeteer + @sparticuz/chromium-min, same engine as `/api/cma/<slug>/pdf`). Errors if the PDF exceeds the 25 MB Gmail cap.
-2. Creates a **Gmail DRAFT** in the signing broker's mailbox (`matt@ryan-realty.com` by default, or the broker resolved from `public.cmas.broker_slug` if they're on the `@ryan-realty.com` domain) via `createGmailDraft` (Google DWD / `gmail.modify` scope, verified live 2026-05-29). The draft is addressed to the lead, has the CMA PDF attached, and BCC's `ryan.realty@followupboss.me` so FUB logs it the moment Matt hits Send. **Matt reviews and sends personally** — this is a DRAFT, never an auto-send to the lead.
+2. Creates a **Gmail DRAFT** in the signing broker's mailbox (`matt@ryan-realty.com` by default, or the broker resolved from `public.cmas.broker_slug` if they're on the `@ryan-realty.com` domain) via `createGmailDraft` (Google DWD / `gmail.modify` scope, verified live 2026-05-29). The draft is addressed to the lead, has the CMA PDF attached, and BCC's `ryan.realty@followupboss.me` so FUB logs it the moment Matt hits Send. **Matt reviews and sends personally.** This is a DRAFT, never an auto-send to the lead.
 3. **Fallback:** if the Gmail DWD scope is unavailable, Resend delivers the PDF to the broker (not the lead) with context to forward manually. The response field `fellBackToResend: true` signals this.
 4. Notifies Matt via Resend (`MATT_ALERT_EMAIL` env var, defaults to `matt@ryan-realty.com`) that the CMA is ready: Gmail-draft confirmation, recommended list price, PDF link at `/api/cma/<slug>/pdf`.
 
@@ -620,10 +620,10 @@ const result = await finalizeAndDeliverCma({ slug: 'cma-<slug>' })
 **Auth:** the route accepts either `Authorization: Bearer <CRON_SECRET>` or an active admin Supabase session cookie (same pattern as `/api/admin/run-producer/[id]`).
 
 **Canonical implementation files:**
-- `lib/cma-deliver.ts` — `finalizeAndDeliverCma()` — the core logic
-- `app/api/cma/[slug]/finalize-deliver/route.ts` — the HTTP trigger
+- `lib/cma-deliver.ts`: `finalizeAndDeliverCma()`, the core logic
+- `app/api/cma/[slug]/finalize-deliver/route.ts`: the HTTP trigger
 
-**Note:** The CMA HTML build itself is agentic — the agent-in-the-loop runs this SKILL.md recipe (Steps 1–14) to produce the HTML. This step (15) covers everything *after* the HTML exists: PDF render → Gmail draft → Matt notify.
+**Note:** The CMA HTML build itself is agentic. The agent-in-the-loop runs this SKILL.md recipe (Steps 1-14) to produce the HTML. This step (15) covers everything *after* the HTML exists: PDF render, Gmail draft, Matt notify.
 
 ---
 
