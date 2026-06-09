@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.427.1 (2026-06-09)
+
+### Bug Fixes
+- fix(gate): ci:broker-sales counts the real listing-detail href pattern
+
+---
+
+
 ## v1.427.0 (2026-06-09)
 
 ### Features
