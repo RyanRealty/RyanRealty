@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.435.1 (2026-06-09)
+
+### Other
+- ci: enforce 3 ungated memory invariants as gates (jsdom-500, OAuth dual-host, embed/CSP)
+
+---
+
+
 ## v1.435.0 (2026-06-09)
 
 ### Features
