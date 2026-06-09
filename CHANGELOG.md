@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.31 (2026-06-09)
+
+### Other
+- Make broker pages lead-gen landing pages: inline FUB-attributed capture + reviews
+
+---
+
+
 ## v1.425.30 (2026-06-08)
 
 ### Other
