@@ -20,9 +20,9 @@
  * Returns the union, deduplicated by URL.
  */
 
-import { unstable_cache } from 'next/cache'
 import { z } from 'zod'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { supabaseAnon } from '@/lib/data/client'
 import { parseListingVideoEmbedForTile, isDirectListingVideoFileUrl } from '@/lib/video-embed'
 import type { VideoEmbed, VideoSource } from '@/lib/data/types/video'
@@ -211,17 +211,26 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
   // renders + MLS tours) never loaded on the pretty URLs (every listing page)
   // and the video hero silently fell back to photos. ListNumber first = one
   // query for the common pretty-URL case; it also feeds Tier 3 (details.Videos).
-  let resolved = (await supabase
+  // THROW on a transient error from the core listings lookup (vs returning the
+  // empty result): this row is the source of Tier 3/4 (the real video + tour
+  // payload), so an error here would otherwise yield [] and unstable_cache would
+  // poison-cache the blank video hero for the whole videos window. The v6-v9 key
+  // bumps were repeatedly hand-evicting exactly these poisoned empties.
+  const byNumber = await supabase
     .from('listings')
     .select('ListingKey, details')
     .eq('ListNumber', listingKey)
-    .maybeSingle()).data as { ListingKey?: string | null; details?: unknown } | null
+    .maybeSingle()
+  if (byNumber.error) throw new Error(`getListingVideos resolve by ListNumber ${listingKey}: ${byNumber.error.message}`)
+  let resolved = byNumber.data as { ListingKey?: string | null; details?: unknown } | null
   if (!resolved) {
-    resolved = (await supabase
+    const byKey = await supabase
       .from('listings')
       .select('ListingKey, details')
       .eq('ListingKey', listingKey)
-      .maybeSingle()).data as { ListingKey?: string | null; details?: unknown } | null
+      .maybeSingle()
+    if (byKey.error) throw new Error(`getListingVideos resolve by ListingKey ${listingKey}: ${byKey.error.message}`)
+    resolved = byKey.data as { ListingKey?: string | null; details?: unknown } | null
   }
   const canonicalKey = String(resolved?.ListingKey ?? listingKey).trim()
 
@@ -346,7 +355,7 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
 }
 
 export const getListingVideos = (listingKey: string): Promise<VideoEmbed[]> =>
-  unstable_cache(
+  makeResilientCached(
     () => fetchVideos(listingKey),
     // v4 cache-key bump 2026-05-31 — invalidates entries cached before the
     // bare-URL ObjectHtml fix (Dropbox/Aryeo videos were dropped because only
@@ -364,9 +373,15 @@ export const getListingVideos = (listingKey: string): Promise<VideoEmbed[]> =>
     // v9 bump 2026-06-08 — dedup by media identity (path, not raw): a tour that
     // is the same Vimeo/YouTube as a Video is no longer shown as a broken
     // duplicate (the tour copy lost Vimeo's privacy hash -> dead player).
-    ['listing-videos-v9', listingKey],
+    // v10 bump 2026-06-09 — fetchVideos now THROWS on a transient row-resolution
+    // error (was: returned [] -> unstable_cache poison-cached the blank video
+    // hero, which the v6-v9 bumps kept hand-evicting). makeResilientCached retries
+    // once uncached then falls back to [], so a blip recovers next request instead
+    // of pinning empty for the videos window. v9 entries may be poisoned.
+    ['listing-videos-v10', listingKey],
     {
       revalidate: CACHE_WINDOWS.videos,
       tags: [cacheTag.listing(listingKey), cacheTag.videos],
-    }
+    },
+    [],
   )()

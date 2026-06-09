@@ -105,12 +105,20 @@ export default function PulseFeed({
   const [loading, setLoading] = useState(false)
   const [activeVideoKey, setActiveVideoKey] = useState<string | null>(null)
   const [showSignupCard, setShowSignupCard] = useState(false)
+  // Gate any localStorage/Math.random-driven ordering behind a post-mount flag.
+  // getSignals() reads localStorage and rerank() adds Math.random jitter, so doing
+  // them during render makes server HTML != first client render -> React error 418
+  // abandons hydration and the whole /pulse tree (scroll, likes, filters, autoplay)
+  // dies. SSR + first client render use the deterministic default order; the
+  // personalized re-rank applies after mount as a normal post-hydration update.
+  const [mounted, setMounted] = useState(false)
   const signupTrigger = useRef<'like_threshold' | 'dwell' | 'manual'>('like_threshold')
   const filtersDirty = useRef(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    setMounted(true)
     recordSession()
     trackEvent('homepage_view', {
       source: 'pulse_feed',
@@ -270,10 +278,14 @@ export default function PulseFeed({
   }, [citySnapshots, selectedCities])
 
   const feedEntries: FeedEntry[] = useMemo(() => {
-    // Re-rank lifestyle slate by the user's category signal each render.
-    // Same slate every time, just ordered by what they've engaged with.
-    const signals = getSignals()
-    const rankedLifestyle = rerank(LIFESTYLE_CARDS, (card) => scoreLifestyle(signals, card))
+    // Re-rank lifestyle slate by the user's category signal — but ONLY after mount.
+    // getSignals() reads localStorage and rerank() adds Math.random, both of which
+    // diverge between the server and the first client render; doing them before
+    // hydration is the error 418 crash. Until mounted, use the deterministic default
+    // slate order so SSR HTML == first client HTML; personalize after.
+    const rankedLifestyle = mounted
+      ? rerank(LIFESTYLE_CARDS, (card) => scoreLifestyle(getSignals(), card))
+      : LIFESTYLE_CARDS
 
     const out: FeedEntry[] = []
     let snapshotIndex = 0
@@ -332,7 +344,7 @@ export default function PulseFeed({
       out.push({ kind: 'signup' })
     }
     return out
-  }, [items, interstitials, showSignupCard])
+  }, [items, interstitials, showSignupCard, mounted])
 
   // Preload the next N hero images in the background so the scroll never waits on bytes.
   const preloadUrls = useMemo(() => {

@@ -14,9 +14,9 @@
  * `getGeoTileImages` covers untagged area tiles, this covers banner/hero slots.
  */
 
-import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
 
 export type SurfaceImage = { url: string; geoTags: string[]; subjectTags: string[] }
 export type Surface = 'hero' | 'card'
@@ -32,10 +32,11 @@ async function _getSurfaceImagesUncached(surface: Surface): Promise<SurfaceImage
     .contains('surface_tags', [surface])
     .not('file_url', 'is', null)
     .limit(600)
-  if (error || !data) {
-    if (error) console.error('[getSurfaceImages]', error)
-    return []
-  }
+  // THROW on a transient DB error so makeResilientCached never caches the empty
+  // result (poison-null: one pooler/timeout blip would otherwise blank every page
+  // hero/card for the whole assets window). A genuine empty success returns [].
+  if (error) throw new Error(`[getSurfaceImages] ${error.message ?? JSON.stringify(error)}`)
+  if (!data) return []
   return (data as Array<{ file_url: string; geo_tags: string[] | null; subject_tags: string[] | null }>).map((r) => ({
     url: r.file_url,
     geoTags: r.geo_tags ?? [],
@@ -43,12 +44,13 @@ async function _getSurfaceImagesUncached(surface: Surface): Promise<SurfaceImage
   }))
 }
 
-export const getSurfaceImages = unstable_cache(
+export const getSurfaceImages = makeResilientCached(
   _getSurfaceImagesUncached,
-  // v2 — bumped 2026-06-03 after the rigorous re-screen re-tagged every approved
-  // photo (identifiable landmarks place-locked, watermarked/off-region rejected).
-  ['surface-images-v3'],
+  // v4 — bumped 2026-06-09 alongside the poison-null fix (was unstable_cache, which
+  // cached [] on a transient error). v3 entries may be poisoned; v4 evicts them.
+  ['surface-images-v4'],
   { revalidate: CACHE_WINDOWS.assets, tags: [cacheTag.assets] },
+  [],
 )
 
 // Stable string hash (djb2) for deterministic, varied picks across routes.

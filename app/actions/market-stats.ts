@@ -78,12 +78,20 @@ export async function getLiveMarketPulse(input: {
 }): Promise<MarketPulseRow | null> {
   void createServiceClient
   const { getMarketPulseRowForGeo } = await import('@/lib/data')
-  const data = await getMarketPulseRowForGeo({
-    geoType: input.geoType,
-    geoSlug: input.geoSlug,
-    propertyType: input.propertyType ?? 'A',
-  })
-  return (data as MarketPulseRow | null) ?? null
+  try {
+    const data = await getMarketPulseRowForGeo({
+      geoType: input.geoType,
+      geoSlug: input.geoSlug,
+      propertyType: input.propertyType ?? 'A',
+    })
+    return (data as MarketPulseRow | null) ?? null
+  } catch (e) {
+    // getMarketPulseRowForGeo now throws on a transient DB error (so cached
+    // callers can't poison-cache null). This is an uncached per-request read, so
+    // preserve the prior null-on-error contract rather than surfacing the throw.
+    console.warn('[market-stats] getLiveMarketPulse failed:', e)
+    return null
+  }
 }
 
 function pulseToMarketStats(

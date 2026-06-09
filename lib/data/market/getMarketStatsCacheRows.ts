@@ -149,13 +149,18 @@ export async function getMarketPulseRowForGeo(options: {
   const columns =
     options.columns ??
     'geo_type, geo_slug, geo_label, active_count, pending_count, new_count_7d, new_count_30d, median_list_price, avg_list_price, market_health_score, market_health_label, updated_at'
-  const { data } = await sb
+  const { data, error } = await sb
     .from('market_pulse_live')
     .select(columns)
     .eq('geo_type', options.geoType)
     .eq('geo_slug', options.geoSlug)
     .eq('property_type', options.propertyType ?? 'A')
     .maybeSingle()
+  // THROW on a transient DB error instead of dropping it: returning null on both
+  // a real miss AND an error lets a caching caller (getRegionPulse) poison-cache
+  // the null and blank the page for the TTL. Callers that must not surface the
+  // throw wrap this in try/catch (dashboard, seller LP) or makeResilientCached.
+  if (error) throw new Error(`getMarketPulseRowForGeo(${options.geoType}/${options.geoSlug}): ${error.message}`)
   return (data ?? null) as Record<string, unknown> | null
 }
 

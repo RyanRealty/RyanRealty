@@ -11,8 +11,8 @@
  * Per CLAUDE.md §0 data accuracy: every figure traces to the same row;
  * `updatedAt` is exposed so callers can render a freshness pill.
  */
-import { unstable_cache } from 'next/cache'
 import { getMarketPulseRowForGeo } from './getMarketStatsCacheRows'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
 
 export type RegionPulse = {
   activeCount: number
@@ -42,7 +42,7 @@ const COLUMNS = [
   'updated_at',
 ].join(', ')
 
-export const getRegionPulse = unstable_cache(
+export const getRegionPulse = makeResilientCached(
   async (): Promise<RegionPulse | null> => {
     const row = await getMarketPulseRowForGeo({
       geoType: 'region',
@@ -72,6 +72,9 @@ export const getRegionPulse = unstable_cache(
       updatedAt: String(row.updated_at ?? ''),
     }
   },
-  ['region-pulse-central-oregon-v1'],
-  { revalidate: 300, tags: ['market-pulse', 'region-pulse'] }
+  // v2 — bumped 2026-06-09 with the poison-null fix (was unstable_cache, which
+  // cached null when the source dropped a transient error). v1 may be poisoned.
+  ['region-pulse-central-oregon-v2'],
+  { revalidate: 300, tags: ['market-pulse', 'region-pulse'] },
+  null,
 )
