@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.426.1 (2026-06-09)
+
+### Bug Fixes
+- fix(search): subdivision/neighborhood/preset search pages no longer 500 (blank page)
+
+---
+
+
 ## v1.426.0 (2026-06-09)
 
 ### Features
