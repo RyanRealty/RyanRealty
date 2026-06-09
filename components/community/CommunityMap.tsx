@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useCallback } from 'react'
 import { GoogleMap, Marker, Polygon, InfoWindow } from '@react-google-maps/api'
+import { MAP_NAVY } from '@/lib/maps/markers'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { useRouter } from 'next/navigation'
 import type { ListingRow } from '@/app/actions/communities'
@@ -171,9 +172,9 @@ export default function CommunityMap({
                   key={i}
                   paths={path}
                   options={{
-                    fillColor: 'var(--primary)',
+                    fillColor: MAP_NAVY,
                     fillOpacity: 0.2,
-                    strokeColor: 'var(--primary)',
+                    strokeColor: MAP_NAVY,
                     strokeWeight: 2,
                   }}
                 />

@@ -15,6 +15,7 @@ import {
   formatPriceLabel,
   buildInfoWindowHTML,
   getBaseMapOptions,
+  MAP_NAVY,
 } from '@/lib/maps/markers'
 
 type GeoJSONPolygon = { type: 'Polygon'; coordinates: number[][][] | number[][] }
@@ -221,6 +222,27 @@ export default function SearchMapClustered({
     (map: google.maps.Map) => {
       mapRef.current = map
       const padding = { top: 48, right: 48, bottom: 48, left: 48 }
+
+      // Preferred frame: the actual city/neighborhood/community boundary polygon,
+      // so the map opens fit to that area's true extent (the "not zoomed in
+      // enough" complaint) instead of a fixed zoom or the listing bbox. Clamp to a
+      // readable band so a tiny subdivision doesn't zoom to street level and a big
+      // city doesn't pull back too far.
+      if (boundaryPaths.flat().length >= 2) {
+        const bb = new google.maps.LatLngBounds()
+        for (const ring of boundaryPaths) for (const p of ring) bb.extend(p)
+        if (!bb.isEmpty()) {
+          map.fitBounds(bb, padding)
+          const z = map.getZoom()
+          if (typeof z === 'number') {
+            if (z > 15) map.setZoom(15)
+            else if (z < 9) map.setZoom(9)
+          }
+          if (onBoundsChanged) setTimeout(reportBounds, 300)
+          return
+        }
+      }
+
       if (placeQuery?.trim() && window.google?.maps?.places) {
         const service = new window.google.maps.places.PlacesService(map)
         service.findPlaceFromQuery(
@@ -256,7 +278,7 @@ export default function SearchMapClustered({
         reportBounds()
       }
     },
-    [validListings.length, bounds, placeQuery, onBoundsChanged, reportBounds]
+    [validListings.length, bounds, placeQuery, onBoundsChanged, reportBounds, boundaryPaths]
   )
 
   useEffect(() => {
@@ -471,9 +493,9 @@ export default function SearchMapClustered({
           <Polygon
             paths={drawingPoints}
             options={{
-              fillColor: 'var(--accent)',
+              fillColor: MAP_NAVY,
               fillOpacity: 0.15,
-              strokeColor: 'var(--primary)',
+              strokeColor: MAP_NAVY,
               strokeWeight: 2,
               strokeOpacity: 0.8,
             }}
@@ -484,9 +506,9 @@ export default function SearchMapClustered({
           <Polygon
             paths={activePolygon}
             options={{
-              fillColor: 'var(--accent)',
+              fillColor: MAP_NAVY,
               fillOpacity: 0.2,
-              strokeColor: 'var(--primary)',
+              strokeColor: MAP_NAVY,
               strokeWeight: 2,
             }}
           />
@@ -497,9 +519,9 @@ export default function SearchMapClustered({
               key={`geo-${i}`}
               paths={path}
               options={{
-                fillColor: 'var(--primary)',
+                fillColor: MAP_NAVY,
                 fillOpacity: 0.12,
-                strokeColor: 'var(--primary)',
+                strokeColor: MAP_NAVY,
                 strokeWeight: 2,
               }}
             />
