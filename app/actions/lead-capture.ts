@@ -346,6 +346,110 @@ export async function submitPageCTA(input: {
 }
 
 /**
+ * Rental property calculator lead — a visitor running the numbers on a rental
+ * asks a Ryan Realty broker to pull real rent comps + underwrite a deal. An
+ * investor is a buyer-side lead, so audience:'buyer', source:'contact-form',
+ * tier:'nurture' (researching, not yet hot), plus 'rental-calculator'/'investor'
+ * context tags. Routes to Matt by default (canonicallyTagLead handles routing).
+ *
+ * Mirrors submitTetherowLead's FUB-event -> Meta-CAPI -> canonical-tags -> GA4
+ * pattern, with the property + analysis context in the message.
+ */
+export async function submitRentalLead(input: {
+  name?: string
+  email?: string
+  phone?: string
+  /** Property address from the calculator, when launched from a listing. */
+  propertyLabel?: string
+  listingKey?: string
+  /** One-line analysis context, e.g. "$650K · cash flow -$1,431/mo · cap 3.7%". */
+  contextNote?: string
+  pageUrl?: string
+}): Promise<{ ok: boolean; error?: string }> {
+  const email = input.email?.trim().toLowerCase()
+  const phone = input.phone?.trim()
+  if (!email && !phone) return { ok: false, error: 'Email or phone is required' }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, error: 'Please enter a valid email address' }
+  }
+  try {
+    const fullName = input.name?.trim() || ''
+    const nameParts = fullName.split(/\s+/).filter(Boolean)
+    const firstName = nameParts[0] || undefined
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined
+
+    let person: FubEventPerson
+    if (email) {
+      const existing = await findPersonByEmail(email)
+      person = existing
+        ? { id: existing.id }
+        : {
+            emails: [{ value: email }],
+            ...(phone ? { phones: [{ value: phone }] } : {}),
+            ...(firstName ? { firstName } : {}),
+            ...(lastName ? { lastName } : {}),
+          }
+    } else {
+      person = {
+        phones: [{ value: phone! }],
+        ...(firstName ? { firstName } : {}),
+        ...(lastName ? { lastName } : {}),
+      }
+    }
+
+    const pageUrl = input.pageUrl?.trim() || `${SITE_URL}/tools/rental-property-calculator`
+    const message = `Rental calculator lead. ${[input.propertyLabel, input.contextNote].filter(Boolean).join(' · ') || 'standalone tool'}`
+
+    const result = await sendEvent({
+      type: 'General Inquiry',
+      person,
+      source: websiteSource(),
+      sourceUrl: pageUrl,
+      pageUrl,
+      pageTitle: 'Rental Property Calculator',
+      message,
+    })
+
+    await fireCapiLead({
+      eventName: 'Lead', email, phone, firstName, lastName,
+      eventSourceUrl: pageUrl,
+      contentName: 'rental_calculator_lead',
+      value: 300,
+    })
+
+    // Canonical tags MUST be awaited on serverless (the lambda freezes on return).
+    try {
+      if (email) {
+        const found = await findPersonByEmail(email)
+        if (found?.id) {
+          await canonicallyTagLead({
+            fubPersonId: found.id,
+            audience: 'buyer',
+            source: 'contact-form',
+            tier: 'nurture',
+          })
+          await addPersonTags(found.id, ['rental-calculator', 'investor'])
+        }
+      }
+    } catch (err) {
+      console.warn('[rental-lead] canonical tagging failed (non-blocking):', err)
+    }
+
+    await fireLeadGenerated({
+      lp_variant: 'rental-calculator',
+      lead_type: 'buyer',
+      value: 300,
+      extra: { listing_key: input.listingKey, property: input.propertyLabel },
+    })
+
+    return result.ok ? { ok: true } : { ok: false, error: result.error ?? 'Lead capture failed' }
+  } catch (err) {
+    console.error('[submitRentalLead]', err)
+    return { ok: false, error: 'Something went wrong. Please try again.' }
+  }
+}
+
+/**
  * Tetherow landing-page lead capture (buyer showings/alerts/guide + seller
  * valuation + exit-intent). The /api/cma POST endpoint calls this.
  *

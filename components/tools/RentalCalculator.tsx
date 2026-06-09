@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
+import RentalLeadForm from '@/components/tools/RentalLeadForm'
 import {
   Select,
   SelectContent,
@@ -501,9 +502,10 @@ export default function RentalCalculator({
               <Separator />
 
               <div className="space-y-3">
-                <Button asChild className="w-full">
-                  <Link href="/contact">Have a Ryan Realty agent review this deal</Link>
-                </Button>
+                <RentalLeadForm
+                  propertyLabel={propertyLabel}
+                  contextNote={`${formatUSD(purchasePrice)} · cash flow ${formatUSD(result.cashFlowMonthly)}/mo · cap rate ${formatPct(result.capRatePurchase)}`}
+                />
                 <Button
                   type="button"
                   variant="outline"
