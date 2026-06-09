@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.434.1 (2026-06-09)
+
+### Bug Fixes
+- fix(gates): rental PDF font (email-brand) + refresh schema-snapshot/DAL-index
+
+---
+
+
 ## v1.434.0 (2026-06-09)
 
 ### Features
