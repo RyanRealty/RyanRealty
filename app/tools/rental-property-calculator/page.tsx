@@ -46,8 +46,65 @@ export default async function RentalPropertyCalculatorPage({ searchParams }: Pro
   const initialDownPaymentPct = sp.down != null ? parseInt(sp.down, 10) : undefined
   const initialInterestRate = sp.rate != null ? parseFloat(sp.rate) : undefined
 
+  // AEO: a free finance tool + the calculator's key concepts as an FAQ, so answer
+  // engines can surface "rental property calculator" and "what is cap rate / cash
+  // flow / cash-on-cash". Answers match the engine in lib/rental-analysis.ts.
+  const toolUrl = `${siteUrl}/tools/rental-property-calculator`
+  const softwareLd = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'Rental Property Calculator',
+    applicationCategory: 'FinanceApplication',
+    operatingSystem: 'Web',
+    url: toolUrl,
+    description:
+      'Free rental property calculator for Bend and Central Oregon. See monthly cash flow, cap rate, cash-on-cash return, total cash needed, and a 30-year projection.',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    provider: { '@type': 'RealEstateAgent', name: 'Ryan Realty', url: siteUrl },
+  }
+  const faqLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: 'What is cash flow on a rental property?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Cash flow is what is left each month after the mortgage, property taxes, insurance, management, and maintenance reserves are paid out of the rent. Positive cash flow means the rent covers every cost with money to spare.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'What is cap rate?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Cap rate is the annual net operating income divided by the purchase price, shown as a percent. It measures the yield of the property independent of how you finance it.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'What is cash-on-cash return?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Cash-on-cash return compares your annual cash flow to the cash you put in, including the down payment, closing costs, and any upfront work. It shows the yearly return on the actual dollars you invested.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Are these rental numbers a guarantee?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'No. The figures are estimates based on the numbers you enter, not investment advice or a guarantee of rent, value, or return. A Ryan Realty broker can pull real rent comps and help you underwrite a specific property.',
+        },
+      },
+    ],
+  }
+
   return (
     <main className="min-h-screen bg-background">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
       <Container className="pt-3 pb-1">
         <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Rental property calculator' }]} />
       </Container>
