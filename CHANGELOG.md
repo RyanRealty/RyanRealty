@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.431.0 (2026-06-09)
+
+### Features
+- feat(seo): rental calculator discoverability — sitemap entry + SoftwareApplication/FAQ JSON-LD (6E)
+- feat(maps): clip listing pins to the rendered boundary on city/community/neighborhood maps
+
+---
+
+
 ## v1.430.2 (2026-06-09)
 
 ### Bug Fixes
