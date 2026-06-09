@@ -36,9 +36,12 @@ const CASES = [
 ]
 
 function countListingCards(html) {
-  // Each ListingCard links to /listing/<key>. Count distinct hrefs.
+  // ListingCard links to the canonical detail URL:
+  //   /homes-for-sale/<city>/[<subdivision>/]<address-slug>-<26-digit-ListingKey>
+  // Count distinct detail hrefs (a final path segment carrying an 8+ digit key
+  // is what distinguishes a listing-detail link from a search/preset link).
   const set = new Set()
-  const re = /\/listing\/[a-z0-9-]+/gi
+  const re = /\/homes-for-sale\/(?:[a-z0-9-]+\/){1,3}[a-z0-9-]*\d{8,}[a-z0-9-]*/gi
   let m
   while ((m = re.exec(html)) !== null) set.add(m[0])
   return set.size
