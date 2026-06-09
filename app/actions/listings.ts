@@ -665,35 +665,31 @@ export async function getListings(options: {
     // Explicit neighborhood scope (boundary_neighborhood tag).
     tiles = filterCity(await getNeighborhoodListingsDAL(neighborhoodName, baseFilter))
   } else if (subName) {
+    // Run the subdivision-NAME match and the boundary-NEIGHBORHOOD lookup in
+    // PARALLEL. A slug like 'mountain-view' is a Bend NEIGHBORHOOD, not a
+    // subdivision NAME, so the name match is empty and we fall back to the
+    // boundary_neighborhood tag (the same mapping the detail pages use). Doing
+    // both concurrently avoids the second sequential round-trip that was slowing
+    // these pages (title-case the de-hyphenated slug -> 'Mountain View').
     const names = getSubdivisionMatchNames(subName)
-    if (names.length === 1) {
-      tiles = await getCommunityListingsDAL(names[0]!, baseFilter)
-    } else if (names.length > 1) {
-      const results = await Promise.all(
-        names.map((n) => getCommunityListingsDAL(n, baseFilter)),
-      )
-      const seen = new Set<string>()
-      for (const r of results) for (const t of r) {
-        if (seen.has(t.listingKey)) continue
-        seen.add(t.listingKey)
-        tiles.push(t)
-      }
-    } else {
-      tiles = []
+    const asNeighborhood = subName
+      .split('-')
+      .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+      .join(' ')
+    const [subResults, nbhdTiles] = await Promise.all([
+      Promise.all(names.map((n) => getCommunityListingsDAL(n, baseFilter))),
+      getNeighborhoodListingsDAL(asNeighborhood, baseFilter),
+    ])
+    const seen = new Set<string>()
+    const subTiles: ListingTile[] = []
+    for (const r of subResults) for (const t of r) {
+      if (seen.has(t.listingKey)) continue
+      seen.add(t.listingKey)
+      subTiles.push(t)
     }
-    tiles = filterCity(tiles)
-    // Neighborhood fallback: a slug like 'mountain-view' is a Bend NEIGHBORHOOD,
-    // not a subdivision NAME, so the subdivision-name match is empty. Retry against
-    // the boundary_neighborhood tag (the same mapping the detail pages use) so the
-    // search returns the area's listings instead of zero. Title-case the de-hyphenated
-    // slug so it matches the stored value ('mountain-view' -> 'Mountain View').
-    if (tiles.length === 0) {
-      const asNeighborhood = subName
-        .split('-')
-        .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
-        .join(' ')
-      tiles = filterCity(await getNeighborhoodListingsDAL(asNeighborhood, baseFilter))
-    }
+    const subFiltered = filterCity(subTiles)
+    // Prefer the subdivision-name match; fall back to the neighborhood tag.
+    tiles = subFiltered.length > 0 ? subFiltered : filterCity(nbhdTiles)
   } else if (options.city) {
     tiles = await getCityListingsDAL(options.city, baseFilter)
   } else {
@@ -888,14 +884,18 @@ export async function getListingsWithAdvanced(options: {
     ...options,
     sort: baseSort,
   }
-  const listings = await getListings(baseOptions)
-
-  let totalCount: number
-  if (options.subdivision?.trim()) {
-    // Subdivisions can span multiple name aliases (handled inside getListings),
-    // so count them through the same row path. They sit well under the cap.
-    totalCount = await getActiveListingsCount(baseOptions)
-  } else {
+  // Rows and total count are independent — fetch them IN PARALLEL. For a
+  // subdivision / neighborhood scope the count routes through the same row path
+  // (match + neighborhood fallback), so running it sequentially after the
+  // listings doubled the round-trips on exactly the pages that were timing out
+  // (mountain-view, awbrey-butte).
+  const __t0 = Date.now()
+  const countPromise: Promise<number> = (async (): Promise<number> => {
+    if (options.subdivision?.trim()) {
+      // Subdivisions/neighborhoods count through the same row path; they sit
+      // well under the cap.
+      return getActiveListingsCount(baseOptions)
+    }
     const { getListingTilesCount } = await import('@/lib/data')
     const statusKey = options.includeClosed
       ? ('all' as const)
@@ -903,7 +903,7 @@ export async function getListingsWithAdvanced(options: {
         ? ('active-and-pending' as const)
         : ('active' as const)
     const pt = options.propertyType?.trim()
-    totalCount = await getListingTilesCount({
+    return getListingTilesCount({
       city: options.city?.trim() || undefined,
       status: statusKey,
       minPrice: options.minPrice ?? undefined,
@@ -923,6 +923,12 @@ export async function getListingsWithAdvanced(options: {
       domMax: options.newListingsDays ?? undefined,
       propertyType: pt && pt !== '' && pt !== 'all' ? pt : undefined,
     })
+  })()
+  const [listings, totalCount] = await Promise.all([getListings(baseOptions), countPromise])
+  if (Date.now() - __t0 > 4000) {
+    console.warn(
+      `[gLWA-slow] ${Date.now() - __t0}ms city=${options.city ?? ''} sub=${options.subdivision ?? ''} n=${listings.length} count=${totalCount}`,
+    )
   }
 
   // Fail loud on the fast path too: an UNFILTERED city scope that returns zero
