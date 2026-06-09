@@ -164,16 +164,23 @@ export async function GET(req: NextRequest) {
     overall: reds > 0 ? 'red' : yellows > 0 ? 'yellow' : 'green',
   }
 
-  // Persist to marketing_decisions for the daily digest to pick up
+  // Persist to marketing_decisions for the daily digest to pick up.
+  // rules_cited is a text[] NOT NULL column — it MUST be an array, not an
+  // object. The prior object insert failed every run and was swallowed by a
+  // silent catch, which is exactly why this watchdog never recorded a single
+  // observation. Never swallow this insert error again.
   try {
-    await supabase.from('marketing_decisions').insert({
+    const { error: insertError } = await supabase.from('marketing_decisions').insert({
       decision_type: 'loop_health_check',
       decision_summary: `Loop health: ${summary.overall.toUpperCase()} (${greens} green, ${yellows} yellow, ${reds} red)`,
       data_observed: { summary, checks },
-      rules_cited: { source: 'app/api/cron/loop-health-check/route.ts' },
+      rules_cited: ['app/api/cron/loop-health-check/route.ts'],
     })
+    if (insertError) {
+      console.error('[loop-health-check] marketing_decisions insert failed:', insertError.message)
+    }
   } catch (e) {
-    // soft fail
+    console.error('[loop-health-check] marketing_decisions insert threw:', e instanceof Error ? e.message : String(e))
   }
 
   return NextResponse.json({ summary, checks })

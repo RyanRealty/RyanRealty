@@ -57,10 +57,18 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
     try {
       const found = await findPersonByEmail(email)
       if (found?.id) {
+        const audience = inferAudience(inquiryType)
         await canonicallyTagLead({
           fubPersonId: found.id,
-          audience: inferAudience(inquiryType),
+          audience,
           source: 'contact-form',
+          originContext: {
+            source: 'contact-form',
+            sourceLabel: `Contact form (${inquiryType})`,
+            landingPage: process.env.NEXT_PUBLIC_SITE_URL ? `${process.env.NEXT_PUBLIC_SITE_URL}/contact` : '/contact',
+            audience,
+            ...(message ? { want: message } : {}),
+          },
         })
         // Stitch this visitor's prior anonymous browsing history to the FUB
         // person. Idempotent; only replays when a real session id came through.

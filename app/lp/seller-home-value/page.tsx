@@ -266,13 +266,13 @@ export default async function SellerHomeValuePage() {
         </div>
       </section>
 
-      {/* ─── Work with Bend's trusted team — photos + reviews together ────
+      {/* ─── The brokers behind your sale — photos + reviews together ────
           One trust block: the three brokers shown big, paired with a real
           Google review that fades through the set. Faces and words together. */}
       <section className="border-b border-primary/10 bg-card">
         <div className="mx-auto max-w-4xl px-4 py-10 text-center sm:px-6 sm:py-12">
           <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
-            Work with Bend’s trusted team
+            The brokers behind your sale
           </h2>
           <div className="mt-8 grid grid-cols-3 gap-3 sm:gap-8">
             <Broker src="/images/brokers/ryan-matt.png" name="Matt Ryan" role="Principal Broker" />
@@ -292,29 +292,11 @@ export default async function SellerHomeValuePage() {
             Why your Zestimate is probably off
           </h2>
           <p className="mt-3 max-w-2xl text-lg text-foreground/80">
-            An online estimate is a guess from public records. A real analysis starts from recent sales within a few blocks of yours, then a broker adjusts for your finishes, lot, and layout.
+            An online estimate is a guess from public records. It uses tax-record square footage, comps from a wide radius, and a national model averaged across millions of homes. It never steps inside your home.
           </p>
-          <div className="mt-6 grid gap-5 sm:grid-cols-2">
-            <Compare
-              header="An online estimate"
-              points={[
-                'Tax-record square footage and bed/bath counts',
-                'Comps from a wide radius, often miles away',
-                'A national model averaged across millions of homes',
-                'Never steps inside your home',
-              ]}
-            />
-            <Compare
-              header="A real broker CMA"
-              points={[
-                'Only true comparable sales in your neighborhood',
-                'Adjusts for finishes, view, lot, and layout',
-                'Current Bend market velocity, not a national average',
-                'From a broker who walked similar homes recently',
-              ]}
-              accent
-            />
-          </div>
+          <p className="mt-4 max-w-2xl text-lg text-foreground/80">
+            A real analysis starts from closed sales within a few blocks of yours, then a broker adjusts for your finishes, lot, and layout. That is the number worth knowing before you decide anything.
+          </p>
         </div>
       </section>
 
@@ -494,10 +476,8 @@ export default async function SellerHomeValuePage() {
         </div>
       </footer>
 
-      {/* ─── Sticky mobile CTA bar ─────────────────────────────────────
-          Pinned to viewport bottom on mobile only. Standard high-converting
-          mobile LP pattern — typical 5-15% conversion lift in seller LP
-          tests. Hidden on sm+ where the inline form is already visible. */}
+      {/* Sticky mobile CTA bar: pinned to viewport bottom on mobile only.
+          Hidden on sm+ where the inline form is already visible. */}
       <div className="fixed inset-x-0 bottom-0 z-50 border-t border-primary/15 bg-card/95 px-3 py-3 shadow-[0_-4px_12px_-2px_rgba(16,39,66,0.12)] backdrop-blur sm:hidden">
         <div className="flex items-center gap-2">
           <Link
@@ -549,45 +529,6 @@ function NextStep({ num, title, body }: { num: string; title: string; body: stri
         <p className="font-display text-lg font-semibold text-primary">{title}</p>
         <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{body}</p>
       </div>
-    </div>
-  )
-}
-
-function Compare({
-  header,
-  points,
-  accent,
-}: {
-  header: string
-  points: string[]
-  accent?: boolean
-}) {
-  return (
-    <div
-      className={`rounded-2xl border p-6 ${
-        accent ? 'border-primary bg-primary/5' : 'border-primary/10 bg-card'
-      }`}
-    >
-      <h3 className={`font-display text-xl font-semibold ${accent ? 'text-primary' : 'text-foreground/85'}`}>
-        {header}
-      </h3>
-      <ul className="mt-4 space-y-2.5">
-        {points.map((p) => (
-          <li key={p} className="flex items-start gap-2.5 text-base text-foreground/85">
-            <span
-              aria-hidden
-              className={
-                accent
-                  ? 'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground'
-                  : 'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground'
-              }
-            >
-              {accent ? '✓' : '✕'}
-            </span>
-            <span>{p}</span>
-          </li>
-        ))}
-      </ul>
     </div>
   )
 }
