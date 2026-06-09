@@ -1,6 +1,7 @@
 import RentalCalculator from '@/components/tools/RentalCalculator'
 import { Body, Eyebrow, H2, Stack } from '@/components/site/primitives'
 import type { ListingDetail } from '@/lib/data/types/listing'
+import { getAreaRentEstimate } from '@/lib/hud-fmr'
 
 /**
  * Listing-detail rental-analysis embed. Pre-fills the long-term-rental
@@ -23,15 +24,20 @@ import type { ListingDetail } from '@/lib/data/types/listing'
 const TAX_FALLBACK_PCT = 0.0075
 
 /**
- * Rough monthly gross-rent estimate from price. Central Oregon SFR gross rent
- * runs near ~0.5% of value per month; this is a conservative starting point the
- * visitor edits, NOT a comp-backed figure. A real estimate comes from RentCast
- * (lib/rentcast.ts / getRentEstimate) once a rent source is wired; until then
- * this keeps the embed useful and is clearly surfaced as an estimate + range.
+ * Fallback monthly gross-rent estimate from price (~0.5% of value/month) for
+ * listings OUTSIDE the HUD-mapped service-area counties. A conservative starting
+ * point the visitor edits, NOT a comp-backed figure. In the service area we use
+ * the free, official HUD Fair Market Rent for the county + bedroom count instead
+ * (lib/hud-fmr.ts), which is sourced and labeled.
  */
-function estimateMonthlyRent(price: number): { value: number; low: number; high: number } {
+function estimateMonthlyRent(price: number): { value: number; low: number; high: number; source: string } {
   const mid = Math.max(500, Math.round((price * 0.005) / 25) * 25)
-  return { value: mid, low: Math.round((mid * 0.85) / 25) * 25, high: Math.round((mid * 1.15) / 25) * 25 }
+  return {
+    value: mid,
+    low: Math.round((mid * 0.85) / 25) * 25,
+    high: Math.round((mid * 1.15) / 25) * 25,
+    source: 'starting estimate',
+  }
 }
 
 /** MLS PropertyType codes that make sense for a long-term rental analysis
@@ -56,7 +62,13 @@ export function RentalAnalysis({ listing }: { listing: ListingDetail }) {
       ? listing.taxAnnualAmount
       : Math.round(price * TAX_FALLBACK_PCT)
   const label = [listing.streetNumber, listing.streetName].filter(Boolean).join(' ').trim() || undefined
-  const rent = estimateMonthlyRent(price)
+  // Free, official rent estimate: HUD Fair Market Rent for the listing's county +
+  // bedroom count when it's in our service area; otherwise the price-based
+  // fallback. Either way it's a labeled, editable starting point (CLAUDE.md §0).
+  const hud = getAreaRentEstimate(listing.city, listing.beds)
+  const rent = hud
+    ? { value: hud.value, low: hud.low, high: hud.high, source: hud.label }
+    : estimateMonthlyRent(price)
 
   return (
     <Stack gap="default">
@@ -73,7 +85,7 @@ export function RentalAnalysis({ listing }: { listing: ListingDetail }) {
         initialPrice={price}
         initialPropertyTaxesYear={taxes}
         propertyLabel={label}
-        rentEstimate={{ value: rent.value, low: rent.low, high: rent.high, source: 'estimate' }}
+        rentEstimate={{ value: rent.value, low: rent.low, high: rent.high, source: rent.source }}
       />
     </Stack>
   )
