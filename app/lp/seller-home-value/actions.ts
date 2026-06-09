@@ -9,6 +9,7 @@ import {
   findPersonByEmail,
   assignPersonToUser,
   setPersonCustomFields,
+  postLeadOriginNote,
   type FubEventPerson,
 } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
@@ -190,10 +191,20 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // content_performance.north_star_attributed_seller_leads. Without this the
     // north-star metric can never move off zero.
     let leadSourceUrl = `${siteUrl}/lp/seller-home-value`
+    // Hoisted so the lead-origin note (below) can reuse the same parsed UTMs
+    // without re-reading the referer.
+    let originUtmSource: string | undefined
+    let originUtmMedium: string | undefined
+    let originUtmCampaign: string | undefined
+    let originUtmContent: string | undefined
     try {
       const referer = (await headers()).get('referer') ?? ''
       if (referer) {
         const refUrl = new URL(referer)
+        originUtmSource = refUrl.searchParams.get('utm_source') ?? undefined
+        originUtmMedium = refUrl.searchParams.get('utm_medium') ?? undefined
+        originUtmCampaign = refUrl.searchParams.get('utm_campaign') ?? undefined
+        originUtmContent = refUrl.searchParams.get('utm_content') ?? undefined
         const passthrough = new URLSearchParams()
         for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']) {
           const v = refUrl.searchParams.get(k)
@@ -379,6 +390,42 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         fubPersonId,
         tier: classification,
         source: lpSource,
+      })
+
+      // 6. Lead-origin note — the internal FUB timeline note that tells the
+      //    broker WHY this lead came in (source, page, campaign, what they want,
+      //    tier, assignment). Reuses locals already computed above. Never throws
+      //    or blocks (the wrapper try/catches and skips a header-only note).
+      const timelineLabels: Record<SellerLPTimeline, string> = {
+        'ready-now': 'ready to sell now',
+        'next-3-6': 'in 3 to 6 months',
+        'next-6-12': 'in 6 to 12 months',
+        exploring: 'just exploring',
+      }
+      const moveTimelineText = timeline ? timelineLabels[timeline] : null
+      await postLeadOriginNote(fubPersonId, {
+        source: `source:${lpSource}`,
+        sourceLabel: isListNowLp
+          ? 'Seller LP (List Now / high intent)'
+          : 'Seller LP (Home Value)',
+        landingPage: isListNowLp ? '/lp/sell-your-home' : '/lp/seller-home-value',
+        utmSource: originUtmSource,
+        utmMedium: originUtmMedium,
+        utmCampaign: originUtmCampaign,
+        utmContent: originUtmContent,
+        audience: 'seller',
+        tier: classification,
+        tierReason: moveTimelineText
+          ? `move timeline ${moveTimelineText}`
+          : undefined,
+        want: moveTimelineText
+          ? `home valuation for ${parsed.full}, plans to sell ${moveTimelineText}`
+          : `home valuation for ${parsed.full}`,
+        assignedAgent: assignment.broker,
+        assignmentReason:
+          assignment.userId === FUB_USER_MATT
+            ? 'default routing to Matt'
+            : 'agent attribution cookie',
       })
     }
 

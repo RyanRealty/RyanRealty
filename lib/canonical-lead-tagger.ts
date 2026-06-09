@@ -20,7 +20,8 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { addPersonTags, assignPersonToUser, setPersonCustomFields } from '@/lib/followupboss'
+import { addPersonTags, assignPersonToUser, setPersonCustomFields, postLeadOriginNote } from '@/lib/followupboss'
+import type { LeadOriginContext } from '@/lib/fub-lead-origin-note'
 
 export type LeadAudience = 'seller' | 'buyer'
 export type LeadSource =
@@ -47,6 +48,13 @@ export type CanonicalLeadParams = {
   address?: string
   /** Optional state for geo_scope inference. */
   state?: string
+  /**
+   * Optional lead-origin context. When provided, after the canonical tags +
+   * assignment land we post a plain "LEAD ORIGIN" note to the FUB timeline so
+   * the broker can see WHY the lead came in (source, page, campaign, what they
+   * want). No-op-safe — a missing/sparse context never blocks lead creation.
+   */
+  originContext?: LeadOriginContext
 }
 
 type BrokerSlug = 'matt' | 'rebecca' | 'paul'
@@ -219,6 +227,12 @@ export async function canonicallyTagLead(params: CanonicalLeadParams): Promise<{
       source: params.source,
       tier,
     })
+    // Post the "LEAD ORIGIN" timeline note (why this lead came in). No-op-safe:
+    // postLeadOriginNote guards a falsy id, skips a header-only note, and
+    // swallows its own errors, so this never throws or blocks lead creation.
+    if (params.originContext) {
+      await postLeadOriginNote(params.fubPersonId, params.originContext)
+    }
     return { ok: true, broker, tagsApplied: tags }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)

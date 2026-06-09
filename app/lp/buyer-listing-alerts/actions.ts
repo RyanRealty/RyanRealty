@@ -9,6 +9,7 @@ import {
   findPersonByEmail,
   assignPersonToUser,
   setPersonCustomFields,
+  postLeadOriginNote,
   type FubEventPerson,
 } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
@@ -28,7 +29,7 @@ const FUB_USER_MATT = 1
 // 2026-05-17. Manual reassignment via FUB UI only.
 
 type BrokerSlug = 'matt' | 'rebecca' | 'paul'
-type BrokerAssignment = { broker: BrokerSlug; userId: number }
+type BrokerAssignment = { broker: BrokerSlug; userId: number; reason: string }
 
 export type BuyerLPTimeline = 'ready-now' | 'next-3-6' | 'next-6-12' | 'exploring'
 
@@ -87,8 +88,8 @@ async function assignBuyerLead(
   _classification: 'hot' | 'warm' | 'nurture' | 'unknown',
 ): Promise<BrokerAssignment> {
   const attributed = await readAttributedAgentServer()
-  if (attributed) return { broker: attributed.broker, userId: attributed.userId }
-  return { broker: 'matt', userId: FUB_USER_MATT }
+  if (attributed) return { broker: attributed.broker, userId: attributed.userId, reason: 'agent attribution' }
+  return { broker: 'matt', userId: FUB_USER_MATT, reason: 'default routing' }
 }
 
 async function recordBuyerAssignment(params: {
@@ -251,6 +252,27 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
         fubPersonId,
         tier: classification,
         source: 'buyer-lp',
+      })
+
+      // ─── Lead origin note ──────────────────────────────────────────────────
+      // The prominent FUB timeline note telling the broker WHY this lead came in.
+      // No-op-safe: postLeadOriginNote guards the id, skips header-only notes,
+      // and swallows errors, so it never blocks lead creation.
+      const wantParts: string[] = []
+      if (budgetMin || budgetMax) wantParts.push(`Budget ${budgetStr}`)
+      if (searchAreasArr.length) wantParts.push(`Areas ${areasStr}`)
+      if (typeof bedsMin === 'number') wantParts.push(`Beds ${bedsMin}+`)
+      if (timeline) wantParts.push(`Timeline ${timeline}`)
+      await postLeadOriginNote(fubPersonId, {
+        source: 'buyer-lp',
+        sourceLabel: 'Buyer LP (Listing Alerts)',
+        landingPage: '/lp/buyer-listing-alerts',
+        audience: 'buyer',
+        tier: classification,
+        tierReason: timeline ? `timeline ${timeline}` : undefined,
+        want: wantParts.length ? wantParts.join(', ') : undefined,
+        assignedAgent: assignment.broker,
+        assignmentReason: assignment.reason,
       })
     }
 

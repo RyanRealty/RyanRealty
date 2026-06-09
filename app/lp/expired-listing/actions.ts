@@ -9,6 +9,7 @@ import {
   findPersonByEmail,
   assignPersonToUser,
   setPersonCustomFields,
+  postLeadOriginNote,
   type FubEventPerson,
 } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
@@ -165,6 +166,24 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
       ]
       await addPersonTags(fubPersonId, tags)
       await assignPersonToUser(fubPersonId, assignment.userId)
+
+      // Internal "why this lead came in" note Matt reads in the FUB timeline.
+      // No-op-safe (guards id, skips header-only, swallows errors), so it never
+      // blocks lead creation. Only fields actually present here are passed.
+      await postLeadOriginNote(fubPersonId, {
+        source: 'expired-lp',
+        sourceLabel: 'Expired listing landing page',
+        landingPage: `${siteUrl}/lp/expired-listing`,
+        audience: 'seller',
+        tier: 'hot',
+        tierReason: 'recently expired listing, warm re-list intent',
+        want: address
+          ? `Expired property audit. ${address}. Path: ${contactPath}.`
+          : `Expired property audit. Path: ${contactPath}.`,
+        assignedAgent: assignment.broker,
+        assignmentReason: 'expired LP routing (attributed agent or Matt by default)',
+        extra: notes ? `Notes: ${notes}` : undefined,
+      })
 
       await setPersonCustomFields(fubPersonId, {
         customLeadTier: 'hot',

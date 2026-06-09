@@ -4,6 +4,12 @@
  * Optional: X-System and X-System-Key from https://apps.followupboss.com/system-registration
  */
 
+import {
+  buildLeadOriginNote,
+  leadOriginNoteHasDetail,
+  type LeadOriginContext,
+} from './fub-lead-origin-note'
+
 const FUB_BASE = 'https://api.followupboss.com/v1'
 
 function getAuth(): { apiKey: string; system?: string; systemKey?: string } | null {
@@ -516,6 +522,30 @@ export async function addPersonNote(personId: number, body: string): Promise<boo
 }
 
 /**
+ * Post the "lead origin" note — the prominent FUB timeline entry that tells the
+ * broker WHY a lead came in (source, page, campaign, what they want, tier,
+ * assignment). Wraps addPersonNote. No-op-safe by design:
+ *   - skips when personId is falsy / non-numeric
+ *   - skips when the built note has no detail lines (header only)
+ *   - swallows any error so a note failure never breaks lead creation
+ */
+export async function postLeadOriginNote(
+  personId: string | number,
+  ctx: LeadOriginContext,
+): Promise<void> {
+  const id = typeof personId === 'string' ? Number(personId) : personId
+  if (!id || !Number.isFinite(id) || id <= 0) return
+
+  try {
+    const body = buildLeadOriginNote(ctx)
+    if (!leadOriginNoteHasDetail(body)) return
+    await addPersonNote(id, body)
+  } catch (err) {
+    console.warn('[postLeadOriginNote] failed to post lead origin note:', err)
+  }
+}
+
+/**
  * Assign a FUB person to a specific user (broker). This is what powers the
  * round-robin between Matt and Rebecca for new seller leads. The userId is
  * the FUB-side numeric id (Matt=1, Rebecca=2, Paul=3 as of 2026-05-17).
@@ -953,6 +983,14 @@ export async function trackSavedPropertySearch(params: {
         audience: 'buyer',
         source: 'idx-registration',
         tier: 'warm',
+        originContext: {
+          source: 'saved-search',
+          sourceLabel: 'Saved property search',
+          landingPage: params.searchUrl,
+          audience: 'buyer',
+          tier: 'warm',
+          want: `Listing alerts for ${name}${summary}`,
+        },
       })
     } catch {
       // non-blocking
