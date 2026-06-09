@@ -44,6 +44,7 @@
     "ci:jsonb-cast-guard": "node scripts/check-jsonb-numeric-cast-guard.mjs",
     "ci:jsonb-cast-guard:baseline": "node scripts/check-jsonb-numeric-cast-guard.mjs --write-baseline",
     "ci:measurement-loop": "node scripts/check-measurement-loop.mjs",
+    "ci:search-results": "node scripts/check-search-results.mjs",
     "ci:static-params": "node scripts/check-static-params.mjs",
     "ci:static-params:report": "node scripts/check-static-params.mjs --report",
     "ci:static-params:baseline": "node scripts/check-static-params.mjs --write-baseline",

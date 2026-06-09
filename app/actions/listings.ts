@@ -10,6 +10,7 @@ import { propertyTypeFilterToCodes } from '@/lib/property-type'
 import {
   getCommunityListings as getCommunityListingsDAL,
   getCityListings as getCityListingsDAL,
+  getNeighborhoodListings as getNeighborhoodListingsDAL,
   getGeoSnapshot,
 } from '@/lib/data'
 import type { ListingTile } from '@/lib/data'
@@ -601,9 +602,11 @@ const FAST_TILE_FETCH_CAP = 2500
 export async function getListings(options: {
   city?: string
   subdivision?: string
+  /** Bend neighborhood (boundary_neighborhood on listing_tile_mv). */
+  neighborhood?: string
   limit?: number
   offset?: number
-} & ListingsFilters = {}): Promise<ListingTileRow[]> {
+} & AdvancedListingsFilters = {}): Promise<ListingTileRow[]> {
   // DAL: read from listing_tile_mv via getCityListings/getCommunityListings/
   // getListingTiles. Status filter, price/beds/baths/sqft + propertyType
   // all flow through the DAL filter schema. Multi-alias subdivision support
@@ -636,12 +639,32 @@ export async function getListings(options: {
     minBeds: options.minBeds ?? undefined,
     minBaths: options.minBaths ?? undefined,
     minSqft: options.minSqFt ?? undefined,
+    // Flat listing_tile_mv columns: the fast path filters these directly, so
+    // these searches no longer route to the heavy (cold-timeout-prone) RPC.
+    // (acreage = lotAcresMin was timing out → empty before this.)
+    maxSqft: options.maxSqFt ?? undefined,
+    yearBuiltMin: options.yearBuiltMin ?? undefined,
+    yearBuiltMax: options.yearBuiltMax ?? undefined,
+    lotAcresMin: options.lotAcresMin ?? undefined,
+    lotAcresMax: options.lotAcresMax ?? undefined,
+    garageMin: options.garageMin ?? undefined,
+    hasPool: options.hasPool === true ? true : undefined,
+    domMax: options.newListingsDays ?? undefined,
     propertyType,
   }
 
+  const filterCity = (rows: ListingTile[]) =>
+    options.city
+      ? rows.filter((t) => t.city?.toLowerCase().trim() === options.city!.toLowerCase().trim())
+      : rows
+
   let tiles: ListingTile[] = []
   const subName = options.subdivision?.trim()
-  if (subName) {
+  const neighborhoodName = options.neighborhood?.trim()
+  if (neighborhoodName) {
+    // Explicit neighborhood scope (boundary_neighborhood tag).
+    tiles = filterCity(await getNeighborhoodListingsDAL(neighborhoodName, baseFilter))
+  } else if (subName) {
     const names = getSubdivisionMatchNames(subName)
     if (names.length === 1) {
       tiles = await getCommunityListingsDAL(names[0]!, baseFilter)
@@ -658,10 +681,18 @@ export async function getListings(options: {
     } else {
       tiles = []
     }
-    if (options.city) {
-      tiles = tiles.filter(
-        (t) => t.city?.toLowerCase().trim() === options.city!.toLowerCase().trim(),
-      )
+    tiles = filterCity(tiles)
+    // Neighborhood fallback: a slug like 'mountain-view' is a Bend NEIGHBORHOOD,
+    // not a subdivision NAME, so the subdivision-name match is empty. Retry against
+    // the boundary_neighborhood tag (the same mapping the detail pages use) so the
+    // search returns the area's listings instead of zero. Title-case the de-hyphenated
+    // slug so it matches the stored value ('mountain-view' -> 'Mountain View').
+    if (tiles.length === 0) {
+      const asNeighborhood = subName
+        .split('-')
+        .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+        .join(' ')
+      tiles = filterCity(await getNeighborhoodListingsDAL(asNeighborhood, baseFilter))
     }
   } else if (options.city) {
     tiles = await getCityListingsDAL(options.city, baseFilter)
@@ -695,29 +726,32 @@ export async function getListings(options: {
     } as ListingTileRow))
 }
 
-/** Returns true if any advanced-only filter is set (so we should use RPC). */
+/**
+ * Returns true if a filter is set that listing_tile_mv (the fast path) CANNOT
+ * serve, so we must use the heavy search_listings_advanced RPC.
+ *
+ * NOTE (2026-06-09): maxSqFt, yearBuiltMin/Max, lotAcresMin/Max, garageMin,
+ * hasPool, and newListingsDays are flat MV columns now passed through getListings'
+ * baseFilter, so they stay on the FAST path — they used to wrongly route to the
+ * cold-timeout-prone RPC, which made e.g. the acreage preset slow + empty. Only
+ * jsonb-derived amenities (view/waterfront/fireplace/golf/keywords/open-house),
+ * upper bed/bath bounds, sub-type, non-active status, and the ppsf/year sorts
+ * (which the MV can't compute/order) still need the RPC.
+ */
 function hasAdvancedFilters(opts: Record<string, unknown>): boolean {
   return (
     opts.maxBeds != null ||
     opts.maxBaths != null ||
-    opts.maxSqFt != null ||
-    opts.yearBuiltMin != null ||
-    opts.yearBuiltMax != null ||
-    opts.lotAcresMin != null ||
-    opts.lotAcresMax != null ||
     (opts.postalCode != null && String(opts.postalCode).trim() !== '') ||
     (opts.propertySubType != null && String(opts.propertySubType).trim() !== '') ||
     (opts.statusFilter != null && String(opts.statusFilter) !== 'active') ||
     (opts.keywords != null && String(opts.keywords).trim() !== '') ||
     opts.hasOpenHouse === true ||
-    opts.garageMin != null ||
-    opts.hasPool === true ||
     opts.hasView === true ||
     opts.hasWaterfront === true ||
     opts.hasFireplace === true ||
     opts.hasGolfCourse === true ||
     (opts.viewContains != null && String(opts.viewContains).trim() !== '') ||
-    opts.newListingsDays != null ||
     (opts.sort != null && ['price_per_sqft_asc', 'price_per_sqft_desc', 'year_newest', 'year_oldest'].includes(String(opts.sort)))
   )
 }
@@ -877,6 +911,16 @@ export async function getListingsWithAdvanced(options: {
       minBeds: options.minBeds ?? undefined,
       minBaths: options.minBaths ?? undefined,
       minSqft: options.minSqFt ?? undefined,
+      // Match the fast-path advanced filters so the "N homes" count equals the
+      // grid (e.g. an acreage / year-built / garage search counts correctly).
+      maxSqft: options.maxSqFt ?? undefined,
+      yearBuiltMin: options.yearBuiltMin ?? undefined,
+      yearBuiltMax: options.yearBuiltMax ?? undefined,
+      lotAcresMin: options.lotAcresMin ?? undefined,
+      lotAcresMax: options.lotAcresMax ?? undefined,
+      garageMin: options.garageMin ?? undefined,
+      hasPool: options.hasPool === true ? true : undefined,
+      domMax: options.newListingsDays ?? undefined,
       propertyType: pt && pt !== '' && pt !== 'all' ? pt : undefined,
     })
   }
