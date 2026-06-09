@@ -37,7 +37,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
-import { analyzeRental, formatUSD, formatPct } from '@/lib/rental-analysis'
+import { analyzeRental, formatUSD, formatPct, type RentalAnalysisInputs } from '@/lib/rental-analysis'
 
 const EquityProjectionChart = dynamic(() => import('./EquityProjectionChart.client'), {
   ssr: false,
@@ -237,29 +237,28 @@ export default function RentalCalculator({
   const [rentGrowthPct, setRentGrowthPct] = useState(2)
   const [expenseGrowthPct, setExpenseGrowthPct] = useState(2)
 
-  const result = useMemo(
-    () =>
-      analyzeRental({
-        purchasePrice,
-        downPaymentPct,
-        interestRatePct: interestRate,
-        loanTermYears,
-        rehabCost,
-        grossRentMonthly: grossRent,
-        vacancyPct,
-        expenses: {
-          propertyTaxes: propertyTaxesYear / 12,
-          insurance: insuranceYear / 12,
-          propertyManagement: (grossRent * mgmtPct) / 100,
-          maintenance: (grossRent * maintPct) / 100,
-          capitalReserves: (grossRent * capexPct) / 100,
-          hoa: hoaMonthly,
-        },
-        appreciationPct,
-        rentGrowthPct,
-        expenseGrowthPct,
-        projectionYears: ALL_YEARS,
-      }),
+  const inputs = useMemo<RentalAnalysisInputs>(
+    () => ({
+      purchasePrice,
+      downPaymentPct,
+      interestRatePct: interestRate,
+      loanTermYears,
+      rehabCost,
+      grossRentMonthly: grossRent,
+      vacancyPct,
+      expenses: {
+        propertyTaxes: propertyTaxesYear / 12,
+        insurance: insuranceYear / 12,
+        propertyManagement: (grossRent * mgmtPct) / 100,
+        maintenance: (grossRent * maintPct) / 100,
+        capitalReserves: (grossRent * capexPct) / 100,
+        hoa: hoaMonthly,
+      },
+      appreciationPct,
+      rentGrowthPct,
+      expenseGrowthPct,
+      projectionYears: ALL_YEARS,
+    }),
     [
       purchasePrice,
       downPaymentPct,
@@ -279,6 +278,31 @@ export default function RentalCalculator({
       expenseGrowthPct,
     ]
   )
+  const result = useMemo(() => analyzeRental(inputs), [inputs])
+
+  const [downloading, setDownloading] = useState(false)
+  async function handleDownloadPdf() {
+    setDownloading(true)
+    try {
+      const res = await fetch('/api/pdf/rental', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...inputs, propertyLabel: propertyLabel ?? null }),
+      })
+      if (!res.ok) return
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'ryan-realty-rental-analysis.pdf'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   const milestones = result.projection.filter((p) => MILESTONE_YEARS.includes(p.year))
   const cashFlowPositive = result.cashFlowMonthly >= 0
@@ -479,6 +503,15 @@ export default function RentalCalculator({
               <div className="space-y-3">
                 <Button asChild className="w-full">
                   <Link href="/contact">Have a Ryan Realty agent review this deal</Link>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleDownloadPdf}
+                  disabled={downloading}
+                >
+                  {downloading ? 'Preparing report…' : 'Download PDF report'}
                 </Button>
                 <Button asChild variant="outline" className="w-full">
                   <Link href="/homes-for-sale">Browse homes for sale</Link>
