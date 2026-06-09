@@ -69,10 +69,6 @@
       "schedule": "0 12 * * *"
     },
     {
-      "path": "/api/cron/refresh-reporting-cache",
-      "schedule": "0,45 * * * *"
-    },
-    {
       "path": "/api/cron/saved-search-alerts",
       "schedule": "0 14 * * *"
     }
