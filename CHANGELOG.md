@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.33 (2026-06-09)
+
+### Other
+- Remove dead refresh-reporting-cache cron (table + RPC dropped, page redirected)
+
+---
+
+
 ## v1.425.32 (2026-06-09)
 
 ### Other
