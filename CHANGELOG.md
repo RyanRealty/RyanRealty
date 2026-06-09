@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.440.0 (2026-06-09)
+
+### Features
+- feat(loop): THE LOOP v1.0.0 canon + learning ledgers + light up the marketing-engine crons
+
+---
+
+
 ## v1.439.0 (2026-06-09)
 
 ### Features
