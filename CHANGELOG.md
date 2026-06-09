@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.426.7 (2026-06-09)
+
+### Maintenance
+- perf(search): parallelize listings + count (+ match/neighborhood) on subdivision pages
+
+---
+
+
 ## v1.426.6 (2026-06-09)
 
 ### Bug Fixes
