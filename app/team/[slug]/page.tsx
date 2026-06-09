@@ -24,6 +24,12 @@ import { generateBreadcrumbSchema } from '@/lib/structured-data'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { BrokerContactCard } from '@/components/site/BrokerContactCard'
 import { CTABar } from '@/components/site/CTABar'
+import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
+import { ReviewsBlock } from '@/components/site/ReviewsBlock'
+import BrokerAttributionSetter from '@/components/BrokerAttributionSetter'
+import { submitBrokerSellerLead } from '@/app/team/actions'
+import { getReviews } from '@/lib/data'
+import { normalizeAgentSlug, BROKER_EMAIL_BY_SLUG, type BrokerSlug } from '@/lib/agent-attribution'
 import { Separator } from '@/components/ui/separator'
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
 import { listingTileHref } from '@/lib/slug'
@@ -162,8 +168,21 @@ export default async function TeamMemberPage({ params }: Props) {
     ? `Oregon real estate license #${broker.license_number}`
     : 'Licensed real estate broker · Ryan Realty, Bend Oregon'
 
+  // Canonical broker slug for FUB attribution. The URL slug normalizes for Paul
+  // and Rebecca; Matt's 'matthew-ryan' does not, so fall back to an email match.
+  const canonicalSlug: BrokerSlug | null =
+    normalizeAgentSlug(slug) ??
+    ((Object.entries(BROKER_EMAIL_BY_SLUG).find(
+      ([, email]) => email.toLowerCase() === (broker.email ?? '').toLowerCase(),
+    )?.[0] as BrokerSlug | undefined) ?? null)
+
+  const reviews = await getReviews(6)
+
   return (
     <main className="min-h-screen bg-background">
+      {/* Route any lead from this page to this broker in FUB. */}
+      <BrokerAttributionSetter slug={canonicalSlug} />
+
       {/* Structured data */}
       <script
         type="application/ld+json"
@@ -295,12 +314,12 @@ export default async function TeamMemberPage({ params }: Props) {
               {/* What they do */}
               <div className="mt-8 bg-muted rounded-xl p-6">
                 <Stack gap="tight">
-                  <H3>What to expect</H3>
+                  <H3>The standard your home gets</H3>
                   <ul className="mt-2 space-y-2.5 text-sm text-muted-foreground leading-relaxed">
-                    <li>One broker handles your deal from offer to close, no hand-offs</li>
-                    <li>Direct phone and email access, no assistant layers</li>
-                    <li>Transparent pricing analysis backed by current MLS data</li>
-                    <li>Licensed and active in Oregon</li>
+                    <li>Cinematic video and a 3D walkthrough on your listing, the showcase treatment buyers expect at the high end</li>
+                    <li>A price built from live Central Oregon market data, with the comparable sales that support it</li>
+                    <li>A marketing plan shaped to your home and the buyer most likely to want it</li>
+                    <li>{firstName} from the first call to the closing table, on a direct line the whole way</li>
                   </ul>
                 </Stack>
               </div>
@@ -326,6 +345,17 @@ export default async function TeamMemberPage({ params }: Props) {
         </Container>
       </Section>
 
+      {/* Lead capture — the broker's primary conversion, routed to them in FUB */}
+      <LeadCaptureBlock
+        variant="seller"
+        onSubmit={submitBrokerSellerLead}
+        eyebrow="What's your home worth"
+        title={`Get a valuation from ${firstName}`}
+        intro={`Tell ${firstName} about your home and you will get a comparative market analysis, with the comparable sales behind the number. No automated estimate, no obligation.`}
+        submitLabel="Request my valuation"
+        tone="muted"
+      />
+
       {/* Active listings */}
       {listingCards.length > 0 ? (
         <Section padding="default" tone="muted" divider>
@@ -345,6 +375,15 @@ export default async function TeamMemberPage({ params }: Props) {
           </Container>
         </Section>
       ) : null}
+
+      {/* Brokerage social proof — the firm's reputation backs every broker */}
+      <ReviewsBlock
+        data={reviews}
+        eyebrow="Client reviews"
+        title="What clients say about Ryan Realty"
+        tone="muted"
+        max={6}
+      />
 
       {/* Mobile CTA band */}
       <div className="lg:hidden">
