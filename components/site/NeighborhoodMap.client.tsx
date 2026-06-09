@@ -18,6 +18,7 @@ import {
   MAP_NAVY,
 } from '@/lib/maps/markers'
 import { isInsideAnyRing } from '@/lib/map-polygon'
+import { subdivisionLegend } from '@/lib/maps/subdivision-legend'
 import { cn } from '@/lib/utils'
 
 /**
@@ -64,6 +65,8 @@ export type MapListingPin = {
   bedroomsTotal?: number | null
   bathroomsTotal?: number | null
   sqft?: number | null
+  /** Subdivision this home sits in, for the hover-highlight legend. */
+  subdivisionName?: string | null
 }
 
 type Props = {
@@ -120,6 +123,10 @@ function computeBounds(
 type PillProps = {
   pin: MapListingPin
   isSelected: boolean
+  /** A subdivision is hovered and this pin belongs to it — emphasize. */
+  isHighlighted?: boolean
+  /** A subdivision is hovered and this pin is NOT in it — recede. */
+  isDimmed?: boolean
   onSelect: (pin: MapListingPin | null) => void
 }
 
@@ -129,7 +136,7 @@ type PillProps = {
  * Color classes reference design tokens (bg-primary, text-white) which resolve to
  * the same navy/white as the SVG markers built in lib/maps/markers.ts.
  */
-function PricePill({ pin, isSelected, onSelect }: PillProps) {
+function PricePill({ pin, isSelected, isHighlighted, isDimmed, onSelect }: PillProps) {
   const label = pin.price ? formatPriceLabel(pin.price) : null
   if (!label) return null
 
@@ -146,12 +153,14 @@ function PricePill({ pin, isSelected, onSelect }: PillProps) {
           onSelect(isSelected ? null : pin)
         }}
         className={cn(
-          'relative flex items-center justify-center rounded-full border-2 border-white px-2.5 py-1 text-xs font-semibold leading-none shadow-md transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+          'relative flex items-center justify-center rounded-full border-2 border-white px-2.5 py-1 text-xs font-semibold leading-none shadow-md transition-all hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary',
           isSelected
             ? 'scale-110 border-white bg-white text-primary'
             : 'bg-primary text-white',
+          isHighlighted && !isSelected && 'scale-125 ring-2 ring-primary ring-offset-1',
+          isDimmed && !isSelected && 'opacity-40',
         )}
-        style={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}
+        style={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', zIndex: isHighlighted ? 5 : undefined }}
         aria-label={'Listing at ' + label}
       >
         {label}
@@ -181,6 +190,9 @@ export default function NeighborhoodMapClient({
   const { ready, error } = useGoogleMapsReady()
   const mapRef = useRef<google.maps.Map | null>(null)
   const [selectedPin, setSelectedPin] = useState<MapListingPin | null>(null)
+  // Subdivision hovered in the legend -> its homes (pins) highlight. Per-
+  // subdivision polygons don't exist in `boundaries`, so we emphasize the homes.
+  const [hoveredSub, setHoveredSub] = useState<string | null>(null)
 
   // Compute the initial center+zoom ONCE (lazy useState initializer -> stable
   // references for the component's life). Why this matters: the parent passes a
@@ -264,6 +276,9 @@ export default function NeighborhoodMapClient({
       .slice(0, 150)
   }, [listings, boundaryRings])
 
+  // Subdivisions present among the in-boundary homes (>= 2 homes, top 8).
+  const legend = useMemo(() => subdivisionLegend(validPins), [validPins])
+
   if (error || !ready) {
     return (
       <div
@@ -315,6 +330,8 @@ export default function NeighborhoodMapClient({
             key={pin.lat + '-' + pin.lng + '-' + i}
             pin={pin}
             isSelected={selectedPin === pin}
+            isHighlighted={!!hoveredSub && pin.subdivisionName === hoveredSub}
+            isDimmed={!!hoveredSub && pin.subdivisionName !== hoveredSub}
             onSelect={setSelectedPin}
           />
         ))}
@@ -347,6 +364,38 @@ export default function NeighborhoodMapClient({
           </InfoWindowF>
         )}
       </GoogleMap>
+
+      {/* Subdivision legend — hover a subdivision to highlight its homes on the
+          map. Per-subdivision polygons don't exist, so we emphasize the pins.
+          Only shown when there are at least two named subdivisions to compare. */}
+      {legend.length >= 2 ? (
+        <div className="border-t border-border bg-card px-3 py-2.5">
+          <div className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Subdivisions in this neighborhood
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {legend.map((s) => (
+              <button
+                key={s.name}
+                type="button"
+                onMouseEnter={() => setHoveredSub(s.name)}
+                onMouseLeave={() => setHoveredSub((cur) => (cur === s.name ? null : cur))}
+                onFocus={() => setHoveredSub(s.name)}
+                onBlur={() => setHoveredSub((cur) => (cur === s.name ? null : cur))}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
+                  hoveredSub === s.name
+                    ? 'border-primary bg-primary text-white'
+                    : 'border-border bg-background text-foreground hover:border-primary/40',
+                )}
+              >
+                {s.name}
+                <span className="tabular-nums opacity-70">{s.count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

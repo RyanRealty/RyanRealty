@@ -141,10 +141,16 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       ? await getListingTiles({
           listingKeys: boundaryListingKeys,
           status: 'active',
-          limit: 24,
+          // Cover every map pin (not just the 24 shown cards) so each pin can be
+          // tagged with its subdivision for the map's hover-highlight legend.
+          limit: 250,
         }).catch(() => [])
       : []
-  const listingCards: ListingCardData[] = listingTiles.map(tileToCardData)
+  const listingCards: ListingCardData[] = listingTiles.slice(0, 24).map(tileToCardData)
+  // listing_key -> subdivision, to group the map pins by subdivision.
+  const subdivisionByKey = new Map(
+    listingTiles.map((t) => [t.listingKey, t.subdivisionName ?? null] as const),
+  )
 
   // ---------------------------------------------------------------------------
   // Hero lede — single source: the neighborhood object from getNeighborhoodBySlug.
@@ -308,6 +314,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             lng: p.lng,
             href: listingTileHref({ listingKey: p.listingKey }),
             price: p.price,
+            subdivisionName: subdivisionByKey.get(p.listingKey) ?? null,
           }))}
           zoom={13}
           height={480}
