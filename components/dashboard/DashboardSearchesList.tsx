@@ -79,13 +79,7 @@ export default function DashboardSearchesList({ searches, className = '' }: Prop
                 href={buildSearchUrl(s.filters)}
                 className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-accent/90"
               >
-                View results
-              </Link>
-              <Link
-                href={buildSearchUrl(s.filters)}
-                className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted"
-              >
-                Edit filters
+                View and edit
               </Link>
               {confirmId === s.id ? (
                 <>

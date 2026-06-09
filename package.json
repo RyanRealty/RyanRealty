@@ -47,6 +47,7 @@
     "ci:search-results": "node scripts/check-search-results.mjs",
     "ci:broker-sales": "node scripts/check-broker-sales.mjs",
     "ci:video-sections": "node scripts/check-video-sections.mjs",
+    "ci:collections-wiring": "node scripts/check-collections-wiring.mjs",
     "ci:static-params": "node scripts/check-static-params.mjs",
     "ci:static-params:report": "node scripts/check-static-params.mjs --report",
     "ci:static-params:baseline": "node scripts/check-static-params.mjs --write-baseline",

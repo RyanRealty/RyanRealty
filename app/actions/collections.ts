@@ -99,6 +99,82 @@ export async function addToCollection(collectionId: string, listingKey: string):
 }
 
 /**
+ * Remove a listing from a collection.
+ */
+export async function removeFromCollection(
+  collectionId: string,
+  listingKey: string,
+): Promise<{ error: string | null }> {
+  try {
+    const session = await getSession()
+    if (!session) return { error: 'Please sign in' }
+    const supabase = await createClient()
+    const { data: collection, error: fetchError } = await supabase
+      .from('listing_collections')
+      .select('listing_keys')
+      .eq('id', collectionId)
+      .eq('user_id', session.user.id)
+      .single()
+    if (fetchError || !collection) return { error: 'Collection not found' }
+    const keys = Array.isArray(collection.listing_keys) ? (collection.listing_keys as string[]) : []
+    const next = keys.filter((k) => k !== listingKey)
+    const { error } = await supabase
+      .from('listing_collections')
+      .update({ listing_keys: next, updated_at: new Date().toISOString() })
+      .eq('id', collectionId)
+      .eq('user_id', session.user.id)
+    if (error) return { error: error.message }
+    return { error: null }
+  } catch (err) {
+    console.error('[removeFromCollection]', err)
+    return { error: 'Failed to remove from collection' }
+  }
+}
+
+/**
+ * Delete a collection (owner only).
+ */
+export async function deleteCollection(collectionId: string): Promise<{ error: string | null }> {
+  try {
+    const session = await getSession()
+    if (!session) return { error: 'Please sign in' }
+    const supabase = await createClient()
+    const { error } = await supabase
+      .from('listing_collections')
+      .delete()
+      .eq('id', collectionId)
+      .eq('user_id', session.user.id)
+    if (error) return { error: error.message }
+    return { error: null }
+  } catch (err) {
+    console.error('[deleteCollection]', err)
+    return { error: 'Failed to delete collection' }
+  }
+}
+
+/**
+ * Get a single collection the signed-in user owns, by id.
+ */
+export async function getCollectionById(collectionId: string): Promise<{ data: Collection | null; error: string | null }> {
+  try {
+    const session = await getSession()
+    if (!session) return { data: null, error: 'Please sign in' }
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('listing_collections')
+      .select('id, name, description, share_token, user_id, listing_keys, created_at, updated_at')
+      .eq('id', collectionId)
+      .eq('user_id', session.user.id)
+      .single()
+    if (error) return { data: null, error: error.message }
+    return { data: data as Collection, error: null }
+  } catch (err) {
+    console.error('[getCollectionById]', err)
+    return { data: null, error: 'Failed to load collection' }
+  }
+}
+
+/**
  * Get all collections for the signed-in user.
  */
 export async function getUserCollections(): Promise<{ data: Collection[]; error: string | null }> {
