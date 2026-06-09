@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.426.8 (2026-06-09)
+
+### Bug Fixes
+- fix(search): neighborhood slugs (mountain-view, awbrey-butte) hit the fast indexed path, not the slow view-preset RPC
+
+---
+
+
 ## v1.426.7 (2026-06-09)
 
 ### Maintenance
