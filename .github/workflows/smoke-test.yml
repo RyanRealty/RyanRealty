@@ -215,6 +215,26 @@ jobs:
             exit 1
           fi
 
+      # Rigorous content gates: assert the RIGHT listings render, FAST — not just
+      # HTTP 200. Run against the just-deployed SITE_URL via each gate's
+      # *_SMOKE_BASE override. Each exits non-zero on failure -> job fails ->
+      # the issue-on-failure step fires. Pure-node fetch scripts, no npm install.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Content gates (right listings, fast)
+        env:
+          SEARCH_SMOKE_BASE: ${{ env.SITE_URL }}
+          BROKER_SMOKE_BASE: ${{ env.SITE_URL }}
+          VIDEO_SMOKE_BASE: ${{ env.SITE_URL }}
+          RENTAL_SMOKE_BASE: ${{ env.SITE_URL }}
+        run: |
+          node scripts/check-search-results.mjs
+          node scripts/check-broker-sales.mjs
+          node scripts/check-video-sections.mjs
+          node scripts/check-rental-calculator.mjs
+
       - name: Create issue on failure
         if: failure()
         uses: actions/github-script@v7
