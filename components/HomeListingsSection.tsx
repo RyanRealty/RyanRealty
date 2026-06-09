@@ -6,6 +6,7 @@ import { cityPagePath } from '@/lib/slug'
 import type { ListingTileRow } from '@/app/actions/listings'
 import { TILE_MIN_HEIGHT_PX } from '@/lib/tile-constants'
 import TilesSlider, { TilesSliderItem } from '@/components/TilesSlider'
+import { H2 } from '@/components/site/primitives'
 
 type Props = {
   city: string
@@ -34,9 +35,9 @@ export default function HomeListingsSection({
   if (listings.length === 0) {
     return (
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6" aria-labelledby="home-listings-heading">
-        <h2 id="home-listings-heading" className="text-2xl font-bold tracking-tight text-primary">
+        <H2 id="home-listings-heading" className="text-2xl text-primary">
           Homes in {city}
-        </h2>
+        </H2>
         <p className="mt-6 text-muted-foreground">
           No listings with location data on the map yet.{' '}
           <Link href={cityPagePath(city)} className="font-medium text-accent-foreground hover:underline">

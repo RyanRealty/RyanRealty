@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { trackHomeValuationCta } from '@/app/actions/lead-capture'
 import { getLpContext, readRrSessionId } from '@/lib/tracking'
+import { H2 } from '@/components/site/primitives'
 
 type Props = {
   className?: string
@@ -34,7 +35,7 @@ export default function HomeValuationCta({ className }: Props) {
   return (
     <div className={className}>
       <div className="rounded-lg border border-border bg-card p-6">
-        <h2 className="text-xl font-semibold text-foreground">Curious what your home is worth?</h2>
+        <H2 className="text-xl">Curious what your home is worth?</H2>
         <p className="mt-2 text-sm text-muted-foreground">
           Get a free valuation with local market context and next-step guidance from our team.
         </p>

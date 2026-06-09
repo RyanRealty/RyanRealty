@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import { H2 } from '@/components/site/primitives'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { trackEvent } from '@/lib/tracking'
 import {
@@ -99,9 +100,9 @@ export default function GeoMarketOverview({
   return (
     <section className="bg-muted px-4 py-10 sm:px-6 sm:py-12" aria-labelledby={headingId}>
       <div className="mx-auto max-w-7xl">
-        <h2 id={headingId} className="text-2xl font-bold tracking-tight text-primary">
+        <H2 id={headingId} className="text-2xl text-primary">
           {placeName} Market Overview
-        </h2>
+        </H2>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="shadow-sm">
             <CardContent className="pt-4">

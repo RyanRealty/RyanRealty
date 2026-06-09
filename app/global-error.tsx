@@ -12,6 +12,7 @@ export default function GlobalError({ error }: { error: Error }) {
     <html>
       <body className="m-0">
         <main className="mx-auto max-w-sm px-4 py-16 text-center text-foreground bg-secondary min-h-screen flex flex-col items-center justify-center">
+          {/* heading-display-ok: global-error renders without the root layout; --font-display CSS var is unavailable here */}
           <h1 className="text-xl font-semibold text-primary">
             Something went wrong
           </h1>

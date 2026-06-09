@@ -6,7 +6,8 @@ import LeadLandingForm from '@/components/landing/LeadLandingForm'
 import type { LeadLandingConfig } from '@/lib/lead-landing-content'
 import { TESTIMONIALS } from '@/lib/testimonials'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container } from '@/components/site/primitives'
+import { Container, H2 } from '@/components/site/primitives'
+import { generateFAQSchema } from '@/lib/structured-data'
 
 type Props = {
   config: LeadLandingConfig
@@ -38,7 +39,7 @@ export default function LeadLandingPage({ config }: Props) {
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="space-y-4 lg:col-span-2">
             <Badge variant="secondary">{config.audience === 'seller' ? 'Seller lead page' : 'Buyer lead page'}</Badge>
-            <h2 className="text-3xl font-semibold text-foreground">{config.challengeTitle}</h2>
+            <H2 className="text-3xl">{config.challengeTitle}</H2>
             <ul className="space-y-2 text-muted-foreground">
               {config.challengeBullets.map((bullet) => (
                 <li key={bullet}>{bullet}</li>
@@ -88,7 +89,7 @@ export default function LeadLandingPage({ config }: Props) {
 
       <section className="border-t border-border bg-card px-4 py-10 sm:px-6">
         <div className="mx-auto max-w-7xl">
-          <h2 className="text-2xl font-semibold text-foreground">Recent client feedback</h2>
+          <H2 className="text-2xl">Recent client feedback</H2>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {quotes.map((quote) => (
               <Card key={`${quote.author}-${quote.source}`} className="border-border bg-background">
@@ -105,7 +106,15 @@ export default function LeadLandingPage({ config }: Props) {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-        <h2 className="text-2xl font-semibold text-foreground">Questions we hear often</h2>
+        {/* FAQPage schema emitted from the same visible Q&A data — legitimate because
+            the questions are rendered to the page (not fabricated). */}
+        {config.faq.length > 0 && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(generateFAQSchema(config.faq)) }}
+          />
+        )}
+        <H2 className="text-2xl">Questions we hear often</H2>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           {config.faq.map((item) => (
             <Card key={item.question} className="border-border bg-card">

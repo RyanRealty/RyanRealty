@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { trackCtaClick } from '@/lib/cta-tracking'
+import { H2 } from '@/components/site/primitives'
 
 type Props = {
   neighborhoodName: string
@@ -30,9 +31,9 @@ export default function NeighborhoodCTA({ neighborhoodName, cityName, citySlug }
   return (
     <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="neighborhood-cta-heading">
       <div className="mx-auto max-w-3xl text-center">
-        <h2 id="neighborhood-cta-heading" className="text-2xl font-bold tracking-tight text-primary-foreground">
+        <H2 id="neighborhood-cta-heading" className="text-2xl text-primary-foreground">
           Looking for a Home in {neighborhoodName}?
-        </h2>
+        </H2>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <Button
             asChild

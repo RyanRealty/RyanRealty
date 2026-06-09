@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { trackEvent } from '@/lib/tracking'
 import ShareButton from '@/components/ShareButton'
+import { Card } from '@/components/ui/card'
 import type { SalesReportCardData } from '@/app/actions/market-reports'
 import { cityEntityKey } from '@/lib/slug'
 import { TILE_MIN_HEIGHT_PX } from '@/lib/tile-constants'
@@ -46,8 +47,8 @@ export default function SalesReportCard({ card }: Props) {
   const shareTitle = `${card.city} — ${card.periodLabel} | Ryan Realty`
 
   return (
-    <div
-      className="group relative flex w-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition hover:border-primary/20 hover:shadow-md"
+    <Card
+      className="group relative flex w-full flex-col transition hover:border-primary/20 hover:shadow-md"
       style={{ minHeight: TILE_MIN_HEIGHT_PX }}
     >
       <div className="relative aspect-[4/3] w-full flex-shrink-0 overflow-hidden">
@@ -106,6 +107,6 @@ export default function SalesReportCard({ card }: Props) {
           {hasData ? 'Addresses, sold dates, days on market, property types. Charts and PDF download.' : 'New sales data is added as listings close.'}
         </p>
       </div>
-    </div>
+    </Card>
   )
 }

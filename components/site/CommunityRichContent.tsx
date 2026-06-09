@@ -1,7 +1,7 @@
 // brand-voice:exempt — renders verified content authored + checked elsewhere
 import Image from 'next/image'
 import Link from 'next/link'
-import { Container } from '@/components/site/primitives'
+import { Container, H2 } from '@/components/site/primitives'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import type { AmenityBlogPost } from '@/lib/data'
 
@@ -130,9 +130,9 @@ export function CommunityRichContent({
       {content.amenities.length > 0 ? (
         <section className="border-t border-border bg-secondary/40 py-10 md:py-14">
           <Container>
-            <h2 className="text-2xl font-bold text-foreground mb-6">
+            <H2 className="text-2xl text-foreground mb-6">
               Amenities and lifestyle in {name}
-            </h2>
+            </H2>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {content.amenities.map((a, i) => {
                 const post = a.blog_slug ? postsBySlug[a.blog_slug] : undefined
@@ -194,7 +194,7 @@ export function CommunityRichContent({
       {content.courseSpecs || content.signatureHole || content.courseRankings.length > 0 ? (
         <section className="border-t border-border bg-background py-10 md:py-14">
           <Container>
-            <h2 className="text-2xl font-bold text-foreground mb-6">Golf at {name}</h2>
+            <H2 className="text-2xl text-foreground mb-6">Golf at {name}</H2>
 
             {content.courseSpecs ? (
               <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -267,7 +267,7 @@ export function CommunityRichContent({
       {content.membershipTiers.length > 0 ? (
         <section className="border-t border-border bg-secondary/40 py-10 md:py-14">
           <Container>
-            <h2 className="text-2xl font-bold text-foreground mb-6">Membership at {name}</h2>
+            <H2 className="text-2xl text-foreground mb-6">Membership at {name}</H2>
             <div className="grid gap-5 lg:grid-cols-3">
               {content.membershipTiers.map((t, i) => (
                 <div key={i} className="rounded-xl border border-border bg-card p-6 shadow-sm">
@@ -306,7 +306,7 @@ export function CommunityRichContent({
       {content.builders.length > 0 ? (
         <section className="border-t border-border bg-background py-10 md:py-14">
           <Container>
-            <h2 className="text-2xl font-bold text-foreground mb-6">Builders in {name}</h2>
+            <H2 className="text-2xl text-foreground mb-6">Builders in {name}</H2>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {content.builders.map((b, i) => (
                 <div key={`${b.name}-${i}`} className="rounded-xl border border-border bg-card p-5 shadow-sm">

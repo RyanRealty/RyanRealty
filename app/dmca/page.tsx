@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { H1, H2 } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -19,12 +20,12 @@ export const metadata: Metadata = {
 export default function DMCAPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
-      <h1 className="text-2xl font-bold tracking-tight text-primary">DMCA Policy</h1>
+      <H1 className="text-2xl tracking-tight text-primary">DMCA Policy</H1>
       <p className="mt-2 text-sm text-muted-foreground">Digital Millennium Copyright Act notice and takedown procedure</p>
 
       <section className="mt-8 space-y-6 text-sm text-primary">
         <div>
-          <h2 className="text-lg font-semibold">Designated agent</h2>
+          <H2 className="text-lg text-foreground">Designated agent</H2>
           <p className="mt-2">
             Ryan Realty has designated an agent to receive notifications of claimed copyright infringement. To reach our DMCA designated agent, contact:
           </p>
@@ -34,7 +35,7 @@ export default function DMCAPage() {
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold">Filing a DMCA notice</h2>
+          <H2 className="text-lg text-foreground">Filing a DMCA notice</H2>
           <p className="mt-2">
             If you believe content on this site infringes your copyright, you may send a written DMCA notice to our designated agent. Your notice must include:
           </p>
@@ -52,14 +53,14 @@ export default function DMCAPage() {
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold">Counter-notification</h2>
+          <H2 className="text-lg text-foreground">Counter-notification</H2>
           <p className="mt-2">
             If you believe material you posted was removed or disabled by mistake or misidentification, you may send a counter-notification to our designated agent. It must include your physical or electronic signature, identification of the material that was removed and its location before removal, a statement under penalty of perjury that the material was removed by mistake, your name and contact information, and consent to jurisdiction of the federal court in your district (or Oregon if outside the U.S.). We may forward the counter-notification to the original complainant. If the copyright owner does not file a court action, we may restore the material.
           </p>
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold">Repeat infringers</h2>
+          <H2 className="text-lg text-foreground">Repeat infringers</H2>
           <p className="mt-2">
             We may terminate accounts of users who are repeat infringers in appropriate circumstances.
           </p>

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { H1 } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -22,7 +23,7 @@ export default async function AuthErrorPage({ searchParams }: Props) {
         : '/'
   return (
     <main className="mx-auto max-w-lg px-4 py-16 text-center">
-      <h1 className="text-xl font-semibold text-foreground">Sign-in issue</h1>
+      <H1 className="text-xl text-foreground">Sign-in issue</H1>
       <p className="mt-2 text-muted-foreground">
         {message ? (() => { try { return decodeURIComponent(message) } catch { return message } })() : 'Something went wrong. Please try again.'}
       </p>

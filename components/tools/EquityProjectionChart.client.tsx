@@ -79,7 +79,7 @@ export default function EquityProjectionChart({ projection, height = 260 }: Prop
           <Tooltip
             cursor={{ stroke: 'rgba(16,39,66,0.18)' }}
             contentStyle={{
-              background: '#ffffff',
+              background: '#faf8f4',
               border: '1px solid rgba(16,39,66,0.12)',
               borderRadius: 10,
               padding: '8px 12px',

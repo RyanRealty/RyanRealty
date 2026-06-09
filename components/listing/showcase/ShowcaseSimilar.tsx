@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { trackEvent } from '@/lib/tracking'
 import ListingTile from '@/components/ListingTile'
 import type { ListingTileListing } from '@/components/ListingTile'
+import { H2 } from '@/components/site/primitives'
 
 type Similar = {
   listing_key: string
@@ -78,9 +79,9 @@ export default function ShowcaseSimilar({
 
   return (
     <section className="mt-12" aria-labelledby="similar-heading">
-      <h2 id="similar-heading" className="mb-6 text-xl font-semibold text-foreground">
+      <H2 id="similar-heading" className="mb-6 text-xl text-foreground">
         {title}
-      </h2>
+      </H2>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {listings.map((item) => {
           const tile = mapToTileListing(item)

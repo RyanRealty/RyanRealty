@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { trackEvent } from '@/lib/tracking'
+import { H3 } from '@/components/site/primitives'
 
 type Video = { Id?: string; Uri?: string; Name?: string }
 type VirtualTour = { Id?: string; Uri?: string; Name?: string }
@@ -24,7 +25,7 @@ export default function ShowcaseVideos({ listingKey, videos, virtualTours, heroV
   return (
     <Card className="border-border bg-card">
       <CardContent className="p-6">
-        <h2 className="text-lg font-semibold text-foreground">Videos & virtual tours</h2>
+        <H3 as="h2" className="text-lg text-foreground">Videos & virtual tours</H3>
         <div className="mt-4 flex flex-wrap gap-3">
           {otherVideos.map((v) => (
             <Button

@@ -1,0 +1,6 @@
+{
+  "generatedAt": "2026-06-09T21:25:27.372Z",
+  "reason": "Pages lacking alternates.canonical (excluding noindex, admin, api, marketing, account, dashboard). New missing-canonical pages fail CI AND the total may never exceed `total` (count ceiling). Both guards can only shrink.",
+  "total": 0,
+  "missing": []
+}

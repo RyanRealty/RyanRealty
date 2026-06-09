@@ -84,6 +84,27 @@ Drives the extended G11 route smoke (instead of 10 hardcoded routes), any future
 - `/lp/tetherow`
 - `/lp/tetherow/heath`
 
+## Buy/Sell intent LPs (2)
+
+<!-- Representative slugs: first-time-home-buyer from BUY_INTENT_PAGES, for-sale-by-owner from SELL_INTENT_PAGES (lib/lead-landing-content.ts). Added 2026-06-09 per P1.10 finding. -->
+
+- `/buy/first-time-home-buyer`
+- `/sell/for-sale-by-owner`
+
+## Geo detail pages (3)
+
+<!-- Representative slugs: summit-high from CO_SCHOOLS (data/co-schools.ts), drake-park from CO_PARKS (data/co-parks.ts), tetherow-phase-1 from boundaries (PLAT-level slugs are the real /subdivisions URL space; marketing-level areas like awbrey-butte are geo_type='neighborhood' under /communities). Added 2026-06-09 per P1.12 finding. -->
+
+- `/schools/summit-high`
+- `/parks/drake-park`
+- `/subdivisions/tetherow-phase-1`
+
+## Sales reports (1)
+
+<!-- Representative path: bend/last-month. Bend is the largest PRIMARY_CITIES entry, last-month always has closed sales. City slug from cityEntityKey('Bend'), period from SALES_PERIODS (lib/sales-report-periods.ts). Added 2026-06-09 per P1.11 finding. -->
+
+- `/reports/sales/bend/last-month`
+
 ## Market reports (6)
 
 - `/housing-market`

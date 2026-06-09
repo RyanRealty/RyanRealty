@@ -115,6 +115,67 @@ export async function updateBrokerById(
   return error ? { ok: false, error: error.message } : { ok: true }
 }
 
+// ── Slug alias map (mirrors app/actions/brokers.ts BROKER_SLUG_ALIASES) ──────
+const BROKER_SLUG_ALIASES: Record<string, string> = {
+  matt: 'matthew-ryan',
+  'matt-ryan': 'matthew-ryan',
+  matthew: 'matthew-ryan',
+  'matthew-ryan': 'matthew-ryan',
+  rebecca: 'rebecca-peterson',
+  'rebecca-peterson': 'rebecca-peterson',
+  'rebecca-ryser-peterson': 'rebecca-peterson',
+  'rebecca-ryser': 'rebecca-peterson',
+  paul: 'paul-stevenson',
+  'paul-stevenson': 'paul-stevenson',
+}
+
+// OREA-confirmed license numbers (filled when brokers table row has null).
+const CONFIRMED_LICENSES: Record<string, string> = {
+  'paul-stevenson': '201259123',
+  'rebecca-peterson': '201254727',
+}
+
+const BROKER_FULL_SELECT =
+  'id, slug, display_name, title, license_number, bio, photo_url, email, phone, google_review_url, zillow_review_url, sort_order, is_active, created_at, updated_at, tagline, specialties, designations, years_experience, social_instagram, social_facebook, social_linkedin, social_youtube, social_tiktok, social_x, mls_id, zillow_id, realtor_id, yelp_id, google_business_id, intro_video_url, saved_headshot_urls'
+
+/**
+ * getBrokerBySlug — full broker row for the /team/[slug] detail page.
+ *
+ * Resolves slug aliases (e.g. 'matt-ryan' → 'matthew-ryan') and fills the
+ * OREA-confirmed license number when the DB row has none.
+ *
+ * Uses supabaseAnon() (NOT supabaseServer) so this is safe inside
+ * unstable_cache. Cached 1h (brokers change rarely, but we want slug redirects
+ * to take effect the same day without a full deploy).
+ */
+export const getBrokerBySlug = unstable_cache(
+  async (slug: string): Promise<Record<string, unknown> | null> => {
+    const sb = supabaseAnon()
+    if (!sb) return null
+    const requested = slug.trim().toLowerCase()
+    const canonical = BROKER_SLUG_ALIASES[requested]
+    const candidates =
+      canonical && canonical !== requested ? [requested, canonical] : [requested]
+
+    const { data, error } = await sb
+      .from('brokers')
+      .select(BROKER_FULL_SELECT)
+      .in('slug', candidates)
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle()
+
+    if (error) throw new Error(`[getBrokerBySlug] ${error.message}`)
+    const broker = (data ?? null) as Record<string, unknown> | null
+    if (broker && !String(broker.license_number ?? '').trim() && CONFIRMED_LICENSES[String(broker.slug)]) {
+      broker.license_number = CONFIRMED_LICENSES[String(broker.slug)]!
+    }
+    return broker
+  },
+  ['broker-by-slug-v1'],
+  { revalidate: 3600, tags: [cacheTag.brokers] }
+)
+
 /** Read one active broker by slug — used by OG image generator + profile pages. */
 export async function getBrokerForOgBySlug(
   slug: string

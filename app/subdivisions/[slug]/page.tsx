@@ -14,15 +14,16 @@
  * individual plats frequently have zero active homes at a given moment.
  */
 
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
-import { getGeoBoundaryMapData, getListingTiles } from '@/lib/data'
+import { getGeoBoundaryMapData, getListingTiles, resolveAreaRedirect } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import { CTABar } from '@/components/site/CTABar'
 import { NeighborhoodMap } from '@/components/site/NeighborhoodMap'
-import { Container } from '@/components/site/primitives'
+import { Container, H2 } from '@/components/site/primitives'
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
 import { listingTileHref } from '@/lib/slug'
 import { CONTACT } from '@/lib/brand/contact'
@@ -78,7 +79,21 @@ export default async function SubdivisionPage({ params }: Props) {
   const boundary = await getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }).catch(
     () => ({ polygon: null, pins: [] }),
   )
-  if (!boundary.polygon) notFound()
+  if (!boundary.polygon) {
+    // No PLAT-level subdivision boundary for this slug. Before serving a
+    // soft-404, check whether it's a MARKETING-level area name that lives at a
+    // canonical home: a resort/area community (/communities/<slug>) or a Bend
+    // neighborhood (/cities/bend/<slug>). If so, 308 there — keeps a linked or
+    // typed marketing slug (e.g. /subdivisions/awbrey-butte, /subdivisions/
+    // tetherow) out of the hollow-200 soft-404 bucket for both users and SEO.
+    // Only a genuine unknown falls through to notFound(). resolveAreaRedirect
+    // swallows transient DB errors (→ null), so a hiccup degrades to notFound()
+    // rather than 500ing. permanentRedirect() throws its control-flow signal —
+    // it must stay outside any try/catch.
+    const canonical = await resolveAreaRedirect(slug)
+    if (canonical) permanentRedirect(canonical.path)
+    notFound()
+  }
 
   const listingKeys = boundary.pins.map((p) => p.listingKey)
   const tiles =
@@ -93,8 +108,26 @@ export default async function SubdivisionPage({ params }: Props) {
       ? `${count} ${count === 1 ? 'home' : 'homes'} for sale in ${name}.`
       : `No active listings in ${name} right now. We can tell you the moment one comes up.`
 
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+
   return (
     <main className="min-h-screen bg-background">
+      <MetadataBlock schemas={[
+        {
+          type: 'breadcrumb',
+          items: [
+            { name: 'Home', url: `${siteUrl}/` },
+            { name: 'Communities', url: `${siteUrl}/communities` },
+            { name: name, url: `${siteUrl}/subdivisions/${slug}` },
+          ],
+        },
+        {
+          type: 'place',
+          name: name,
+          description: `Homes for sale in ${name}, a subdivision in Central Oregon. Boundary map and live listings from a local brokerage.`,
+          url: `/subdivisions/${slug}`,
+        },
+      ]} />
       <Container className="pt-3 pb-1">
         <BreadcrumbNav
           items={[
@@ -129,7 +162,7 @@ export default async function SubdivisionPage({ params }: Props) {
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">
                   {name}
                 </p>
-                <h2 className="text-2xl font-bold text-foreground">Homes for sale in {name}</h2>
+                <H2 className="text-2xl text-foreground">Homes for sale in {name}</H2>
               </div>
             </div>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { getPublishedGuides } from '@/app/actions/guides'
+import { getPublishedGuides } from '@/lib/data'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
 import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container } from '@/components/site/primitives'
+import { Container, H2 } from '@/components/site/primitives'
 
 // Render on demand to avoid the 180s static-generation timeout. The published
 // guides query is slow enough at build time that the static export windows out.
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 }
 
 export default async function GuidesIndexPage() {
-  const guides = await getPublishedGuides()
+  const guides = await getPublishedGuides(12)
   const collectionJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
@@ -81,7 +81,7 @@ export default async function GuidesIndexPage() {
       <div className="mt-8 space-y-8">
         {[...grouped.entries()].map(([category, rows]) => (
           <section key={category}>
-            <h2 className="text-xl font-semibold text-foreground">{category}</h2>
+            <H2 className="text-xl">{category}</H2>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               {rows.map((guide) => (
                 <Link key={guide.id} href={`/guides/${guide.slug}`} className="rounded-lg border border-border bg-card p-5 hover:shadow-sm">

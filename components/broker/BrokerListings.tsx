@@ -4,6 +4,7 @@ import HomeTileCard from '@/components/home/HomeTileCard'
 import { estimatedMonthlyPayment, formatMonthlyPayment } from '@/lib/mortgage'
 import { TILE_MIN_HEIGHT_PX } from '@/lib/tile-constants'
 import TilesSlider, { TilesSliderItem } from '@/components/TilesSlider'
+import { H2 } from '@/components/site/primitives'
 
 type Props = {
   broker: AgentDetail
@@ -31,9 +32,9 @@ export default function BrokerListings({
     return (
       <section className="bg-muted px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="broker-listings-heading">
         <div className="mx-auto max-w-7xl">
-          <h2 id="broker-listings-heading" className="text-2xl font-bold tracking-tight text-primary">
+          <H2 id="broker-listings-heading" className="text-2xl text-primary">
             {firstName}&apos;s Active Listings
-          </h2>
+          </H2>
           <p className="mt-6 text-muted-foreground">
             No active listings right now. Contact {firstName} to learn about upcoming opportunities.
           </p>

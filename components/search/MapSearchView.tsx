@@ -11,6 +11,10 @@ import type { ListingForMap } from '@/components/SearchMapClustered'
 import type { MapPolygonPoint } from '@/lib/map-polygon'
 import { listingDetailPath } from '@/lib/slug'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 const SearchMapClustered = dynamic(() => import('@/components/SearchMapClustered'), {
   ssr: false,
@@ -296,13 +300,14 @@ export default function MapSearchView({
         </div>
         {listings.length > visibleCount && (
           <div className="px-4 pb-6">
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={() => setVisibleCount((c) => c + CARD_PAGE)}
-              className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm font-semibold text-primary shadow-sm transition hover:shadow-md"
+              className="w-full"
             >
               Show more homes
-            </button>
+            </Button>
           </div>
         )}
         </>
@@ -326,15 +331,13 @@ export default function MapSearchView({
         className="h-full w-full"
       />
       {/* Search-as-you-move toggle (Redfin/Zillow pattern). */}
-      <label className="absolute left-1/2 top-3 z-[100] flex -translate-x-1/2 cursor-pointer items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-md">
-        <input
-          type="checkbox"
+      <Label className="absolute left-1/2 top-3 z-[100] flex -translate-x-1/2 cursor-pointer items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-md">
+        <Checkbox
           checked={searchAsMove}
-          onChange={toggleSearchAsMove}
-          className="h-4 w-4 accent-[var(--primary)]"
+          onCheckedChange={() => toggleSearchAsMove()}
         />
         Search as I move the map
-      </label>
+      </Label>
     </div>
   )
 
@@ -342,22 +345,21 @@ export default function MapSearchView({
     <div className="map-search-shell flex w-full flex-col overflow-hidden" style={{ contain: 'layout' }}>
       {/* Mobile segmented toggle */}
       <div className="flex shrink-0 border-b border-border bg-card lg:hidden">
-        <button
-          type="button"
-          onClick={() => setMobileView('list')}
-          className={cn('flex-1 py-3 text-sm font-medium', mobileView === 'list' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground')}
-          aria-pressed={mobileView === 'list'}
+        <ToggleGroup
+          type="single"
+          value={mobileView}
+          onValueChange={(v) => { if (v === 'list' || v === 'map') setMobileView(v) }}
+          className="w-full rounded-none border-0"
+          variant="outline"
+          size="sm"
         >
-          List
-        </button>
-        <button
-          type="button"
-          onClick={() => setMobileView('map')}
-          className={cn('flex-1 py-3 text-sm font-medium', mobileView === 'map' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground')}
-          aria-pressed={mobileView === 'map'}
-        >
-          Map
-        </button>
+          <ToggleGroupItem value="list" className="flex-1 py-3 rounded-none border-0 text-sm font-medium" aria-label="List view">
+            List
+          </ToggleGroupItem>
+          <ToggleGroupItem value="map" className="flex-1 py-3 rounded-none border-0 text-sm font-medium" aria-label="Map view">
+            Map
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
       {/* Desktop: list + map side by side */}

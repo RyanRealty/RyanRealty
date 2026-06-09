@@ -2,6 +2,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import MiniSparkline from '@/components/reports/MiniSparkline'
 import type { ListingDetailPriceHistory } from '@/app/actions/listing-detail'
+import { H3 } from '@/components/site/primitives'
 
 type Props = {
   priceHistory: ListingDetailPriceHistory[]
@@ -23,7 +24,7 @@ export default function PriceHistoryChart({ priceHistory }: Props) {
   return (
     <Card>
       <CardContent className="p-6">
-        <h2 className="text-lg font-semibold text-foreground">Price history trend</h2>
+        <H3 as="h2" className="text-lg text-foreground">Price history trend</H3>
         <Separator className="my-4" />
         <MiniSparkline values={points} className="h-12 w-full text-primary" />
         <div className="mt-4 space-y-2">

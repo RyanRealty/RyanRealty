@@ -5,6 +5,7 @@ import { trackEvent } from '@/lib/tracking'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { H2 } from '@/components/site/primitives'
 
 type Props = {
   listPrice: number
@@ -49,7 +50,7 @@ export default function PaymentCalculator({ listPrice, taxAmount, associationFee
 
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-semibold text-primary">Estimated Monthly Payment</h2>
+      <H2 className="text-xl text-primary">Estimated Monthly Payment</H2>
       <p className="text-3xl font-bold text-accent-foreground">
         ${total.toLocaleString('en-US', { maximumFractionDigits: 0 })}
         <span className="text-lg font-normal text-muted-foreground">/mo</span>

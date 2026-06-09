@@ -3,11 +3,11 @@ import Image from 'next/image'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container } from '@/components/site/primitives'
+import { Container, H1 } from '@/components/site/primitives'
 import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
-import { getMarketReportBySlug, getReportImageUrl } from '../../actions/market-reports'
+import { getMarketReportBySlug, getReportImageUrl } from '@/lib/data'
 import ShareButton from '../../../components/ShareButton'
 import { sanitizeHtml } from '@/lib/sanitize'
 
@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const report = await getMarketReportBySlug(slug)
   if (!report) return { title: 'Market report' }
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-  const reportUrl = `${siteUrl}/reports/${slug}`
+  const reportUrl = `${siteUrl}/housing-market/reports/${slug}`
   // Banner RE-ENABLED 2026-06-01: the report 500s were NOT the image — they were
   // jsdom failing to load in serverless (see lib/sanitize.ts). With that fixed,
   // the banner (valid public Supabase URL, unoptimized) renders fine.
@@ -53,7 +53,7 @@ export default async function ReportPage({ params }: Props) {
   if (!report) notFound()
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-  const reportUrl = `${siteUrl}/reports/${slug}`
+  const reportUrl = `${siteUrl}/housing-market/reports/${slug}`
   const [imageUrl, session, fubPersonId] = await Promise.all([
     getReportImageUrl(report.image_storage_path),
     getSession(),
@@ -88,7 +88,7 @@ export default async function ReportPage({ params }: Props) {
       <section className="bg-primary px-4 py-8 sm:px-6 sm:py-10">
         <div className="mx-auto max-w-4xl">
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <h1 className="text-2xl font-bold tracking-tight text-primary-foreground sm:text-3xl">{report.title}</h1>
+            <H1 className="text-2xl text-primary-foreground sm:text-3xl">{report.title}</H1>
             <ShareButton
               title={report.title}
               text={`Central Oregon market report: ${report.period_start} - ${report.period_end}. Pending and closed sales by city.`}

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Card, CardContent } from '@/components/ui/card'
 import ExpiredLPForm from './ExpiredLPForm'
 import { CONTACT } from '@/lib/brand/contact'
+import { H2 } from '@/components/site/primitives'
 
 /**
  * Expired Listings Landing Page — /lp/expired-listing
@@ -92,7 +93,7 @@ export default function ExpiredListingPage() {
 
       {/* ─── The 5 things that usually broke ───────────────────────────── */}
       <section className="mx-auto max-w-3xl px-4 py-12 border-t border-border">
-        <h2 className="text-2xl font-semibold tracking-tight">The five things that usually broke</h2>
+        <H2 className="text-2xl">The five things that usually broke</H2>
         <p className="mt-3 text-muted-foreground">
           We&apos;ve looked at a lot of expired listings in Central Oregon. Almost every one comes down to one or two of these.
         </p>
@@ -132,7 +133,7 @@ export default function ExpiredListingPage() {
 
       {/* ─── What an honest re-list looks like ─────────────────────────── */}
       <section className="mx-auto max-w-3xl px-4 py-12 border-t border-border">
-        <h2 className="text-2xl font-semibold tracking-tight">What an honest re-list looks like with us</h2>
+        <H2 className="text-2xl">What an honest re-list looks like with us</H2>
         <p className="mt-3 text-muted-foreground">
           This isn&apos;t a pitch. It&apos;s a description.
         </p>
@@ -162,7 +163,7 @@ export default function ExpiredListingPage() {
 
       {/* ─── When re-list isn't the right move ─────────────────────────── */}
       <section className="mx-auto max-w-3xl px-4 py-12 border-t border-border">
-        <h2 className="text-2xl font-semibold tracking-tight">Sometimes re-listing isn&apos;t the right move</h2>
+        <H2 className="text-2xl">Sometimes re-listing isn&apos;t the right move</H2>
         <p className="mt-3 text-foreground/80">
           If the audit shows the right call is to wait, rent, or hold, we&apos;ll say that. We&apos;re not the right partner for you if you don&apos;t actually need one right now.
         </p>
@@ -170,7 +171,7 @@ export default function ExpiredListingPage() {
 
       {/* ─── CTA + FAQ ─────────────────────────────────────────────────── */}
       <section className="mx-auto max-w-3xl px-4 py-12 border-t border-border">
-        <h2 className="text-2xl font-semibold tracking-tight">Three ways to start</h2>
+        <H2 className="text-2xl">Three ways to start</H2>
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Card>
             <CardContent className="p-5">

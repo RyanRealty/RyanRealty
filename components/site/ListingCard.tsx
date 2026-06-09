@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 /**
  * Site v2 listing card — 4:3 photo on top, badge overlaid, info block below
@@ -39,12 +41,12 @@ function formatInt(n: number | null): string {
 }
 
 const BADGE_CLASS: Record<ListingBadge, string> = {
-  hot: 'bg-primary text-white',
-  new: 'bg-success text-white',
-  drop: 'bg-warning text-[#1a1305]',
-  open: 'bg-white text-foreground border border-border',
-  sold: 'bg-primary text-white',
-  video: 'bg-white/95 text-primary border border-border',
+  hot: 'bg-primary text-primary-foreground',
+  new: 'bg-success text-success-foreground',
+  drop: 'bg-warning text-warning-foreground',
+  open: 'bg-card text-foreground border border-border',
+  sold: 'bg-primary text-primary-foreground',
+  video: 'bg-card/95 text-primary border border-border',
 }
 
 /** Inline play glyph for the "Video tour" badge. */
@@ -77,12 +79,15 @@ export default function ListingCard({ listing }: { listing: ListingCardData }) {
 
         {listing.badge ? (
           <div className="absolute top-2.5 left-2.5">
-            <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium ${BADGE_CLASS[listing.badge.kind]}`}
+            <Badge
+              className={cn(
+                'px-2.5 py-0.5 rounded-full text-[11px] font-medium h-auto',
+                BADGE_CLASS[listing.badge.kind],
+              )}
             >
               {listing.badge.kind === 'video' ? <PlayGlyph /> : null}
               {listing.badge.label}
-            </span>
+            </Badge>
           </div>
         ) : null}
 

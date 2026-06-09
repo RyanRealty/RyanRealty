@@ -10,10 +10,7 @@ import SignupCard from './SignupCard'
 import BrandCard from './BrandCard'
 import LifestyleCard from './LifestyleCard'
 import { pickBrandCard, type BrandCardDefinition } from '@/lib/pulse-brand-cards'
-import {
-  LIFESTYLE_CARDS,
-  type LifestyleCard as LifestyleCardData,
-} from '@/lib/pulse-lifestyle-cards'
+import type { LifestyleCard as LifestyleCardData } from '@/lib/pulse-lifestyle-cards'
 import {
   getSignals,
   rerank,
@@ -54,6 +51,8 @@ type Props = {
   defaultCities: string[]
   citySnapshots: PulseCitySnapshot[]
   regionSnapshot: PulseRegionSnapshot | null
+  /** Resolved server-side (lib/pulse-lifestyle-cards.server.ts) so the asset-library manifest never enters the client bundle. */
+  lifestyleCards: LifestyleCardData[]
 }
 
 function parseCsv(value: string | null): string[] {
@@ -86,6 +85,7 @@ export default function PulseFeed({
   defaultCities,
   citySnapshots,
   regionSnapshot,
+  lifestyleCards,
 }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -284,8 +284,8 @@ export default function PulseFeed({
     // hydration is the error 418 crash. Until mounted, use the deterministic default
     // slate order so SSR HTML == first client HTML; personalize after.
     const rankedLifestyle = mounted
-      ? rerank(LIFESTYLE_CARDS, (card) => scoreLifestyle(getSignals(), card))
-      : LIFESTYLE_CARDS
+      ? rerank(lifestyleCards, (card) => scoreLifestyle(getSignals(), card))
+      : lifestyleCards
 
     const out: FeedEntry[] = []
     let snapshotIndex = 0
@@ -344,7 +344,7 @@ export default function PulseFeed({
       out.push({ kind: 'signup' })
     }
     return out
-  }, [items, interstitials, showSignupCard, mounted])
+  }, [items, interstitials, showSignupCard, mounted, lifestyleCards])
 
   // Preload the next N hero images in the background so the scroll never waits on bytes.
   const preloadUrls = useMemo(() => {

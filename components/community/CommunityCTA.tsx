@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { trackCtaClick } from '@/lib/cta-tracking'
 import { Button } from "@/components/ui/button"
+import { H2 } from '@/components/site/primitives'
 import {
   Dialog,
   DialogContent,
@@ -41,9 +42,9 @@ export default function CommunityCTA({ communityName, slug }: Props) {
   return (
     <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="community-cta-heading">
       <div className="mx-auto max-w-3xl text-center">
-        <h2 id="community-cta-heading" className="text-2xl font-bold tracking-tight text-primary-foreground">
+        <H2 id="community-cta-heading" className="text-2xl text-primary-foreground">
           Interested in {communityName}?
-        </h2>
+        </H2>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <Button
             asChild

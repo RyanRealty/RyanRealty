@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect } from 'react'
 import { Button } from "@/components/ui/button"
+import { H1 } from '@/components/site/primitives'
 
 export default function CitiesError({
   error,
@@ -18,7 +19,7 @@ export default function CitiesError({
   return (
     <main className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-2xl font-bold text-primary">Something went wrong</h1>
+        <H1 className="text-2xl text-primary">Something went wrong</H1>
         <p className="mt-2 text-muted-foreground">
           We couldn&apos;t load the cities page. Please try again or go back home.
         </p>

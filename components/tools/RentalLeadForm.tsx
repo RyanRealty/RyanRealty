@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { submitRentalLead } from '@/app/actions/lead-capture'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
@@ -70,33 +71,35 @@ export default function RentalLeadForm({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-      <p className="mb-3 text-sm text-muted-foreground">
-        Send your numbers to a Ryan Realty broker for real rent comps and a second look.
-      </p>
-      <div className="space-y-3">
-        <div>
-          <Label htmlFor="rental-lead-name">Name</Label>
-          <Input id="rental-lead-name" value={name} onChange={(e) => setName(e.target.value)} className="mt-1" autoComplete="name" />
+    <Card className="p-4">
+      <CardContent className="p-0">
+        <p className="mb-3 text-sm text-muted-foreground">
+          Send your numbers to a Ryan Realty broker for real rent comps and a second look.
+        </p>
+        <div className="space-y-3">
+          <div>
+            <Label htmlFor="rental-lead-name">Name</Label>
+            <Input id="rental-lead-name" value={name} onChange={(e) => setName(e.target.value)} className="mt-1" autoComplete="name" />
+          </div>
+          <div>
+            <Label htmlFor="rental-lead-email">Email</Label>
+            <Input id="rental-lead-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1" autoComplete="email" />
+          </div>
+          <div>
+            <Label htmlFor="rental-lead-phone">Phone</Label>
+            <Input id="rental-lead-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1" autoComplete="tel" />
+          </div>
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          <div className="flex items-center gap-2">
+            <Button type="button" onClick={handleSubmit} disabled={pending}>
+              {pending ? 'Sending…' : 'Send to a broker'}
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={pending}>
+              Cancel
+            </Button>
+          </div>
         </div>
-        <div>
-          <Label htmlFor="rental-lead-email">Email</Label>
-          <Input id="rental-lead-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1" autoComplete="email" />
-        </div>
-        <div>
-          <Label htmlFor="rental-lead-phone">Phone</Label>
-          <Input id="rental-lead-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1" autoComplete="tel" />
-        </div>
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
-        <div className="flex items-center gap-2">
-          <Button type="button" onClick={handleSubmit} disabled={pending}>
-            {pending ? 'Sending…' : 'Send to a broker'}
-          </Button>
-          <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={pending}>
-            Cancel
-          </Button>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

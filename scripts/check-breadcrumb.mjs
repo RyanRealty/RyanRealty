@@ -86,7 +86,18 @@ function classify(pagePath) {
   const src = readFileSync(pagePath, 'utf8')
   const rel = relative(ROOT, pagePath)
   const optOut = /@no-breadcrumb/.test(src.slice(0, 600))
-  const hasBreadcrumb = /BreadcrumbNav/.test(src)
+  // A pure re-export page (e.g. app/housing-market/explore/page.tsx doing
+  // `export { default } from '@/app/reports/explore/page'`) renders whatever
+  // its target renders — it inherits the target's breadcrumb, so it counts as
+  // compliant when the target module is the real surface. Detect: every
+  // non-comment, non-blank line is an export-from statement.
+  const meaningful = src
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith('//') && !l.startsWith('/*') && !l.startsWith('*'))
+  const isReExportOnly =
+    meaningful.length > 0 && meaningful.every((l) => /^export\s+(\{[^}]*\}|\*)\s+from\s+['"]/.test(l))
+  const hasBreadcrumb = isReExportOnly || /BreadcrumbNav/.test(src)
   const usesDeprecated = DEPRECATED_IMPORT.test(src)
   return { rel, optOut, hasBreadcrumb, usesDeprecated, exempt: isExempt(rel) }
 }

@@ -11,6 +11,7 @@ import { LinkSquare01Icon, Cancel01Icon, Download01Icon, CheckmarkCircle01Icon }
 import { Button } from "@/components/ui/button"
 import { listingDetailPath } from '@/lib/slug'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { H1, H3 } from '@/components/site/primitives'
 
 export type CompareListingData = {
   listingKey: string
@@ -130,7 +131,7 @@ export default function CompareClient({ listings }: { listings: CompareListingDa
   if (listings.length === 0) {
     return (
       <div className="py-20 text-center">
-        <h1 className="text-2xl font-bold text-primary mb-4">No Listings to Compare</h1>
+        <H1 className="text-2xl text-primary mb-4">No Listings to Compare</H1>
         <p className="text-muted-foreground mb-6">
           {comparisonItems.length > 0
             ? 'Loading your selected homes...'
@@ -150,7 +151,7 @@ export default function CompareClient({ listings }: { listings: CompareListingDa
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-primary">Compare Properties</h1>
+          <H1 className="text-2xl sm:text-3xl text-primary">Compare Properties</H1>
           <p className="text-muted-foreground mt-1">{listings.length} {listings.length === 1 ? 'property' : 'properties'} selected</p>
         </div>
         <div className="flex items-center gap-2">
@@ -269,7 +270,7 @@ export default function CompareClient({ listings }: { listings: CompareListingDa
       {/* Map */}
       {listings.some((l) => l.latitude && l.longitude) && (
         <div className="mt-8">
-          <h2 className="text-lg font-semibold text-primary mb-3">Locations</h2>
+          <H3 className="text-lg text-primary mb-3">Locations</H3>
           <div className="rounded-lg overflow-hidden border border-border h-[300px] sm:h-[400px]">
             {/* Google Static Map with pins */}
             {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (

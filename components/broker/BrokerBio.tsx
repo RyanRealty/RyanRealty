@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { AgentDetail } from '@/app/actions/agents'
 import { Button } from "@/components/ui/button"
+import { H2 } from '@/components/site/primitives'
 
 type Props = {
   broker: AgentDetail
@@ -21,9 +22,9 @@ export default function BrokerBio({ broker }: Props) {
   return (
     <section className="bg-muted px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="broker-bio-heading">
       <div className="mx-auto max-w-7xl">
-        <h2 id="broker-bio-heading" className="text-2xl font-bold tracking-tight text-primary">
+        <H2 id="broker-bio-heading" className="text-2xl text-primary">
           About {firstName}
-        </h2>
+        </H2>
         {bio ? (
           <div className="mt-4">
             <div className="prose prose-primary max-w-none text-muted-foreground">

@@ -1,5 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { H3 } from '@/components/site/primitives'
 
 type Props = {
   cityName: string | null
@@ -43,9 +44,9 @@ export default function AreaMarketContext({
   return (
     <Card>
       <CardContent className="p-6">
-        <h2 className="text-lg font-semibold text-foreground">
+        <H3 as="h2" className="text-lg text-foreground">
           Area market context{cityName ? ` in ${cityName}` : ''}
-        </h2>
+        </H3>
         <Separator className="my-4" />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Metric label="Area median sale price" value={formatMoney(medianAreaPrice)} />

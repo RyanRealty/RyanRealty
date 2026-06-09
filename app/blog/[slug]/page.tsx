@@ -3,14 +3,14 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { getBlogPostBySlug, getRelatedBlogPosts } from '@/app/actions/blog'
+import { getBlogPostBySlug, getRelatedBlogPosts } from '@/lib/data'
 import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { generateBlogSchema, generateBreadcrumbSchema } from '@/lib/structured-data'
 import ShareButton from '@/components/ShareButton'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container } from '@/components/site/primitives'
+import { Container, H1, H2 } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -124,7 +124,7 @@ export default async function BlogPostPage({ params }: PageProps) {
             {post.category}
           </Link>
         ) : null}
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">{post.title}</h1>
+        <H1 className="mt-2 text-3xl sm:text-4xl">{post.title}</H1>
         <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
           {post.author_name ? (
             post.author_slug ? (
@@ -233,7 +233,7 @@ export default async function BlogPostPage({ params }: PageProps) {
       {/* Related posts */}
       {relatedPosts.length > 0 ? (
         <section className="mt-8">
-          <h2 className="text-xl font-semibold text-foreground">Related Posts</h2>
+          <H2 className="text-xl">Related Posts</H2>
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             {relatedPosts.map((related) => (
               <Link

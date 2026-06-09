@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { getMotivatedListings } from '@/lib/data'
 import type { MotivatedListing } from '@/lib/data'
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
-import { Container } from '@/components/site/primitives'
+import { Container, H2 } from '@/components/site/primitives'
 import { listingTileHref } from '@/lib/slug'
 
 /**
@@ -83,7 +83,7 @@ async function MotivatedListingsInner({ city, title, viewAllHref, limit = 8 }: P
             <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               Price cuts and motivated sellers
             </p>
-            <h2 className="text-2xl font-bold text-foreground">{heading}</h2>
+            <H2 className="text-2xl text-foreground">{heading}</H2>
           </div>
           <Link
             href={href}

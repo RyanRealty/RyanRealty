@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/nextjs'
 import Link from 'next/link'
 import { useEffect } from 'react'
 import { Button } from "@/components/ui/button"
+import { H1 } from '@/components/site/primitives'
 
 export default function RootError({
   error,
@@ -19,7 +20,7 @@ export default function RootError({
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-16 text-center">
-      <h1 className="text-xl font-semibold text-foreground">Something went wrong</h1>
+      <H1 className="text-xl text-foreground">Something went wrong</H1>
       <p className="mt-2 text-muted-foreground">We couldn’t load this page. Please try again.</p>
       <div className="mt-6 flex justify-center gap-3">
         <Button

@@ -3,7 +3,9 @@ import Link from 'next/link'
 import { ExternalLinkHugeIcon } from '@/components/icons/HugeIcons'
 import { TESTIMONIALS, GOOGLE_REVIEWS_URL } from '@/lib/testimonials'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container, DisplayHeading } from '@/components/site/primitives'
+import { Container, DisplayHeading, H2 } from '@/components/site/primitives'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -62,19 +64,20 @@ export default function ReviewsPage() {
           </h2>
           <ul className="grid gap-8 sm:grid-cols-2">
             {TESTIMONIALS.map((t) => (
-              <li
-                key={t.author + t.quote.slice(0, 40)}
-                className="rounded-xl border border-border bg-card p-6 shadow-sm"
-              >
-                <blockquote className="text-foreground">
-                  <p className="text-lg leading-relaxed">&ldquo;{t.quote}&rdquo;</p>
-                  <footer className="mt-4 flex items-center justify-between">
-                    <cite className="not-italic font-semibold text-primary">
-                      — {t.author}
-                    </cite>
-                    <span className="text-sm text-muted-foreground">{t.source}</span>
-                  </footer>
-                </blockquote>
+              <li key={t.author + t.quote.slice(0, 40)}>
+                <Card className="p-6">
+                  <CardContent className="p-0">
+                    <blockquote className="text-foreground">
+                      <p className="text-lg leading-relaxed">&ldquo;{t.quote}&rdquo;</p>
+                      <footer className="mt-4 flex items-center justify-between">
+                        <cite className="not-italic font-semibold text-primary">
+                          {t.author}
+                        </cite>
+                        <span className="text-sm text-muted-foreground">{t.source}</span>
+                      </footer>
+                    </blockquote>
+                  </CardContent>
+                </Card>
               </li>
             ))}
           </ul>
@@ -94,25 +97,19 @@ export default function ReviewsPage() {
 
       <section className="bg-muted px-4 py-14 sm:px-6" aria-labelledby="cta-heading">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 id="cta-heading" className="text-2xl font-bold text-primary">
+          <H2 id="cta-heading" className="text-2xl text-primary">
             Ready to work with us?
-          </h2>
+          </H2>
           <p className="mt-3 text-muted-foreground">
             See why clients choose Ryan Realty for buying and selling in Central Oregon.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-4">
-            <Link
-              href="/contact"
-              className="rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-accent/90"
-            >
-              Contact us
-            </Link>
-            <Link
-              href="/team"
-              className="rounded-lg border-2 border-primary px-6 py-3 font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
-            >
-              Meet the team
-            </Link>
+            <Button asChild size="lg">
+              <Link href="/contact">Contact us</Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/team">Meet the team</Link>
+            </Button>
           </div>
         </div>
       </section>

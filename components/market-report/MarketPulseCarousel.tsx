@@ -15,6 +15,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeft01Icon, ArrowRight01Icon, ArrowUp01Icon } from '@hugeicons/core-free-icons'
 import type { CityReport, MarketReportData } from '@/app/actions/market-report-types'
 import { cn } from '@/lib/utils'
+import { H2 } from '@/components/site/primitives'
 
 const SCROLL_THRESHOLD = 4
 
@@ -191,9 +192,9 @@ export default function MarketPulseCarousel({
                   Residential only
                 </Badge>
               </div>
-              <h2 id={headingId} className="mt-3 text-2xl text-primary sm:text-3xl">
+              <H2 id={headingId} className="mt-3 text-2xl text-primary sm:text-3xl">
                 Housing Market Report
-              </h2>
+              </H2>
               <p className="mt-2 text-muted-foreground">
                 Residential home sales by city. Click a card to open the report generator with that city and year-to-date range.
               </p>

@@ -1,6 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
+import { H3 } from '@/components/site/primitives'
 
 type Props = {
   listing: {
@@ -80,7 +81,7 @@ export default function ShowcasePropertyDetails({ listing, communityName }: Prop
   return (
     <Card className="border-border bg-card">
       <CardContent className="p-6">
-        <h2 className="text-lg font-semibold text-foreground">Property details</h2>
+        <H3 as="h2" className="text-lg text-foreground">Property details</H3>
         <Separator className="my-4" />
         <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {rows.map(({ label, value }) => (

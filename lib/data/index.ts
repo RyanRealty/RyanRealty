@@ -149,6 +149,18 @@ export type { BlogPostCard } from '@/lib/data/blog/getRecentBlogPosts'
 export { getBlogPostsBySlugs } from '@/lib/data/blog/getBlogPostsBySlugs'
 export type { AmenityBlogPost } from '@/lib/data/blog/getBlogPostsBySlugs'
 
+// Blog — index page (paginated + filtered) + detail page + related posts.
+export { getPublishedBlogPosts } from '@/lib/data/blog/getPublishedBlogPosts'
+export type { BlogPostWithAuthor, GetPublishedBlogPostsResult } from '@/lib/data/blog/getPublishedBlogPosts'
+export { getBlogPostBySlug } from '@/lib/data/blog/getBlogPostBySlug'
+export type { BlogPostFull } from '@/lib/data/blog/getBlogPostBySlug'
+export { getPopularBlogSlugs } from '@/lib/data/blog/getPopularBlogSlugs'
+export { getRelatedBlogPosts } from '@/lib/data/blog/getRelatedBlogPosts'
+
+// Guides — published guides index + detail page.
+export { getPublishedGuides, getGuideBySlug } from '@/lib/data/guides/getGuides'
+export type { GuideRow } from '@/lib/data/guides/getGuides'
+
 // Geo tile imagery — representative photos from asset_library (the canonical
 // geo-tagged store) for city/neighborhood area cards. See getGeoTileImages.
 export { getGeoTileImages } from '@/lib/data/media/getGeoTileImages'
@@ -221,6 +233,12 @@ export type {
   BoundaryMapPin,
 } from '@/lib/data/geo/getGeoBoundaryMapData'
 
+// Geo — soft-404 rescue for /subdivisions/[slug]. Maps a MARKETING-level area
+// slug (no plat boundary) to its canonical /communities/<slug> or
+// /cities/bend/<slug> home so the page can 308 instead of hollow-200ing.
+export { resolveAreaRedirect, resolveAreaRedirectWith } from '@/lib/data/geo/resolveAreaRedirect'
+export type { AreaRedirect } from '@/lib/data/geo/resolveAreaRedirect'
+
 // Geo — child GIS subdivision plats of a community (for the "broken out"
 // subdivision map polygons + the subdivisions-within section) via the
 // community_subdivisions RPC. Spatial membership; cached on the geo window.
@@ -252,9 +270,14 @@ export {
 export type { MarketPulseSnapshot } from '@/lib/data/market/getMarketPulseSnapshot'
 export { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 
+// Market reports — READ paths for /reports/* pages (WRITE stays in app/actions).
+export { getMarketReportBySlug, listMarketReports, getReportImageUrl } from '@/lib/data/market/getMarketReports'
+export type { MarketReportRow, MarketReportListItem } from '@/lib/data/market/getMarketReports'
+
 // Brokers (real impls with hardcoded fallback)
 export {
   getBrokers,
+  getBrokerBySlug,
   searchBrokersByDisplayName,
   getBrokerForOgBySlug,
   getBlogPostForOgBySlug,

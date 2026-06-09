@@ -101,6 +101,7 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
         aria-modal="true"
         className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border bg-card p-6 shadow-lg sm:p-8"
       >
+        {/* heading-display-ok — dialog title, not a brand display heading */}
         <h2 id="signin-prompt-title" className="text-xl font-semibold text-foreground">
           Get the most out of Ryan Realty
         </h2>

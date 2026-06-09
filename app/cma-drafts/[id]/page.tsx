@@ -76,6 +76,7 @@ export default async function CmaDraftReviewPage({
   if (!verification.ok) {
     return (
       <main className="mx-auto max-w-xl px-6 py-16">
+        {/* heading-display-ok: internal broker-only tool, noindex */}
         <h1 className="text-2xl font-semibold text-primary">Link not valid</h1>
         <p className="mt-3 text-foreground/80">
           This review link {verification.reason === 'expired' ? 'has expired' : "isn't valid"}.
@@ -126,6 +127,7 @@ export default async function CmaDraftReviewPage({
 
       {/* ── Lead identity ── */}
       <section className="rounded-2xl border border-primary/10 bg-card p-6 shadow-sm">
+        {/* heading-display-ok: internal broker-only tool, noindex */}
         <h2 className="text-sm font-semibold uppercase tracking-wider text-primary/70">
           Lead
         </h2>
@@ -142,6 +144,7 @@ export default async function CmaDraftReviewPage({
 
       {/* ── CMA result ── */}
       <section className="mt-6 rounded-2xl border border-primary/10 bg-card p-6 shadow-sm">
+        {/* heading-display-ok: internal broker-only tool, noindex */}
         <h2 className="text-sm font-semibold uppercase tracking-wider text-primary/70">
           CMA estimate
         </h2>
@@ -184,6 +187,7 @@ export default async function CmaDraftReviewPage({
       {/* ── Draft email preview ── */}
       {r.email_body_html && (
         <section className="mt-6 rounded-2xl border border-primary/10 bg-card p-6 shadow-sm">
+          {/* heading-display-ok: internal broker-only tool, noindex */}
           <h2 className="text-sm font-semibold uppercase tracking-wider text-primary/70">
             Email to the lead
           </h2>

@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils'
  *
  * Example:
  *   <Eyebrow>Market snapshot · May 2026</Eyebrow>
- *   <h2 className="mt-1.5 text-3xl font-bold">Central Oregon housing market</h2>
+ *   then a section H2 below it for the heading itself.
  */
 
 import type { ComponentPropsWithoutRef, ElementType, ReactNode } from 'react'

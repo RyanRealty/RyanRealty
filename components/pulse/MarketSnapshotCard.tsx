@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowRight01Icon } from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 import type { PulseCitySnapshot } from '@/app/actions/pulse-feed'
 
 type Props = {
@@ -31,12 +32,15 @@ function formatHealth(label: string | null | undefined, mos: number | null | und
   return 'Buyer market'
 }
 
-function healthToneClass(label: string | null | undefined, mos: number | null | undefined): string {
+function healthBadgeVariant(
+  label: string | null | undefined,
+  mos: number | null | undefined
+): 'destructive' | 'warning' | 'secondary' | 'outline' {
   const verdict = (label ?? formatHealth(label, mos)).toLowerCase()
-  if (verdict.includes('hot') || verdict.includes('seller')) return 'bg-rose-500/20 text-rose-100'
-  if (verdict.includes('warm') || verdict.includes('balanced')) return 'bg-amber-300/30 text-amber-50'
-  if (verdict.includes('cool') || verdict.includes('buyer')) return 'bg-sky-300/30 text-sky-50'
-  return 'bg-white/15 text-white'
+  if (verdict.includes('hot') || verdict.includes('seller')) return 'destructive'
+  if (verdict.includes('warm') || verdict.includes('balanced')) return 'warning'
+  if (verdict.includes('cool') || verdict.includes('buyer')) return 'secondary'
+  return 'outline'
 }
 
 export default function MarketSnapshotCard({ snapshot, scope = 'city' }: Props) {
@@ -57,14 +61,12 @@ export default function MarketSnapshotCard({ snapshot, scope = 'city' }: Props) 
               {snapshot.geo_label}
             </p>
           </div>
-          <span
-            className={cn(
-              'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide',
-              healthToneClass(snapshot.market_health_label, snapshot.months_of_supply)
-            )}
+          <Badge
+            variant={healthBadgeVariant(snapshot.market_health_label, snapshot.months_of_supply)}
+            className="uppercase tracking-wide"
           >
             {healthLabel}
-          </span>
+          </Badge>
         </div>
         <Metric label="Median list" value={formatPriceShort(snapshot.median_list_price)} />
         <Metric

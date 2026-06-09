@@ -7,6 +7,7 @@ import HomeTileCard from '@/components/home/HomeTileCard'
 import { estimatedMonthlyPayment, formatMonthlyPayment } from '@/lib/mortgage'
 import { TILE_MIN_HEIGHT_PX } from '@/lib/tile-constants'
 import TilesSlider, { TilesSliderItem } from '@/components/TilesSlider'
+import { H2 } from '@/components/site/primitives'
 import { listingDetailPath } from '@/lib/slug'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -71,9 +72,9 @@ export default function CityListings({
       <div className="mx-auto max-w-7xl">
         {listings.length === 0 ? (
           <>
-            <h2 id="city-listings-heading" className="text-2xl font-bold tracking-tight text-primary">
+            <H2 id="city-listings-heading" className="text-2xl text-primary">
               Homes for Sale in {cityName}
-            </h2>
+            </H2>
             <Card className="mt-8">
               <CardContent className="pt-8 text-center">
                 <p className="text-muted-foreground">

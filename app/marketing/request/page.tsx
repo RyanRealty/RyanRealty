@@ -12,6 +12,7 @@
  */
 import type { Metadata } from 'next'
 import RequestBuilder from './RequestBuilder'
+import { H1 } from '@/components/site/primitives'
 
 export const metadata: Metadata = {
   title: 'Marketing request | Ryan Realty',
@@ -28,9 +29,9 @@ export default function MarketingRequestPage() {
           <p className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
             Ryan Realty marketing
           </p>
-          <h1 className="mt-2 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+          <H1 className="mt-2 text-4xl sm:text-5xl">
             Here&rsquo;s what we can build for you.
-          </h1>
+          </H1>
           <p className="mt-4 text-base text-muted-foreground">
             Pick anything you need. The team gets the request, drafts it, and replies on the email
             thread with the draft for your review. Most items land in your inbox within a day. Market

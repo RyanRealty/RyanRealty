@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import ExploreClient from './ExploreClient'
+import { H1, Container } from '@/components/site/primitives'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
@@ -12,11 +14,11 @@ export const metadata: Metadata = {
   title: 'Explore Market Data',
   description:
     'Interactive market explorer: filter by city and date range, view key metrics, price bands, and trends. Share your view via link, email, or social.',
-  alternates: { canonical: `${siteUrl}/reports/explore` },
+  alternates: { canonical: `${siteUrl}/housing-market/explore` },
   openGraph: {
     title: 'Explore Market Data | Ryan Realty',
     description: 'Interactive market data: metrics, price bands, and trends by city and period. Share your view.',
-    url: `${siteUrl}/reports/explore`,
+    url: `${siteUrl}/housing-market/explore`,
     type: 'website',
     siteName: 'Ryan Realty',
     images: [{ url: defaultOgImage, width: 1200, height: 630, alt: 'Ryan Realty explore market data' }],
@@ -59,17 +61,26 @@ export default async function ExplorePage({ searchParams }: Props) {
   const ytdEnd = now.toISOString().slice(0, 10)
   const initialPresetId = start && end && start === ytdStart && end === ytdEnd ? 'ytd' : undefined
 
-  const pageUrl = `${siteUrl}/reports/explore`
+  const pageUrl = `${siteUrl}/housing-market/explore`
   const pageTitle = 'Explore Market Data | Ryan Realty'
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
 
   return (
     <main className="min-h-screen bg-background">
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Market reports', href: '/housing-market/reports' },
+            { label: 'Explore' },
+          ]}
+        />
+      </Container>
       <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-6xl text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
+          <H1 className="text-3xl text-primary-foreground sm:text-4xl">
             Explore market data
-          </h1>
+          </H1>
           <p className="mt-3 text-lg text-muted">
             Search by city, community, or address. Choose any date range, property type, and price range. View key metrics, price bands, and monthly trends. Share your view via link, email, or social.
           </p>

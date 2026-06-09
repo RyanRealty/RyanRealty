@@ -22,6 +22,7 @@ import {
   SheetTitle,
   SheetFooter,
 } from '@/components/ui/sheet'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ArrowDown01Icon,
@@ -197,17 +198,19 @@ function useDebounce<T>(value: T, ms: number): T {
 
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2.5 py-1 text-xs font-medium text-secondary-foreground">
+    <Badge variant="secondary" className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium h-auto">
       {label}
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon"
         aria-label={`Remove filter: ${label}`}
         onClick={onRemove}
-        className="ml-0.5 flex size-3.5 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none"
+        className="ml-0.5 size-3.5 rounded-full p-0 text-muted-foreground hover:text-foreground hover:bg-transparent"
       >
         <HugeiconsIcon icon={Cancel01Icon} className="size-3" aria-hidden />
-      </button>
-    </span>
+      </Button>
+    </Badge>
   )
 }
 
@@ -564,70 +567,82 @@ export default function SearchFilters({ initialFilters }: Props) {
               suggestions.reports.length > 0) && (
               <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-auto rounded-xl border border-border bg-card shadow-lg">
                 {suggestions.cities.slice(0, 5).map((c) => (
-                  <button
+                  <Button
                     key={c.city}
                     type="button"
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start gap-2 rounded-none px-3 py-2 h-auto font-normal"
                     onMouseDown={() => handleLocationSelect('city', c.city)}
                   >
                     <Badge variant="secondary" className="shrink-0 text-xs font-normal">City</Badge>
                     <span className="truncate">{c.city}{c.count > 0 && ` (${c.count})`}</span>
-                  </button>
+                  </Button>
                 ))}
                 {suggestions.subdivisions.slice(0, 8).map((s) => (
-                  <button
+                  <Button
                     key={`${s.city}-${s.subdivisionName}`}
                     type="button"
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start gap-2 rounded-none px-3 py-2 h-auto font-normal"
                     onMouseDown={() => handleLocationSelect('subdivision', s.city, s.subdivisionName)}
                   >
                     <Badge variant="secondary" className="shrink-0 text-xs font-normal">Community</Badge>
                     <span className="truncate">{s.subdivisionName}, {s.city}</span>
-                  </button>
+                  </Button>
                 ))}
                 {suggestions.neighborhoods.slice(0, 5).map((n) => (
-                  <button
+                  <Button
                     key={n.href}
                     type="button"
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start gap-2 rounded-none px-3 py-2 h-auto font-normal"
                     onMouseDown={() => handleBrokerSelect(n.href)}
                   >
                     <Badge variant="secondary" className="shrink-0 text-xs font-normal">Neighborhood</Badge>
                     <span className="truncate">{n.neighborhoodName}, {n.cityName}</span>
-                  </button>
+                  </Button>
                 ))}
                 {suggestions.zips.slice(0, 5).map((z) => (
-                  <button
+                  <Button
                     key={z.postalCode}
                     type="button"
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start gap-2 rounded-none px-3 py-2 h-auto font-normal"
                     onMouseDown={() => handleZipSelect(z.postalCode)}
                   >
                     <Badge variant="secondary" className="shrink-0 text-xs font-normal">Zip</Badge>
                     <span className="truncate">{z.postalCode}{z.city && ` (${z.city})`}</span>
-                  </button>
+                  </Button>
                 ))}
                 {suggestions.brokers.slice(0, 5).map((b) => (
-                  <button
+                  <Button
                     key={b.label}
                     type="button"
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start gap-2 rounded-none px-3 py-2 h-auto font-normal"
                     onMouseDown={() => handleBrokerSelect(b.href)}
                   >
                     <Badge variant="secondary" className="shrink-0 text-xs font-normal">Agent</Badge>
                     <span className="truncate">{b.label}</span>
-                  </button>
+                  </Button>
                 ))}
                 {suggestions.reports.slice(0, 3).map((r) => (
-                  <button
+                  <Button
                     key={r.href}
                     type="button"
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start gap-2 rounded-none px-3 py-2 h-auto font-normal"
                     onMouseDown={() => handleBrokerSelect(r.href)}
                   >
                     <Badge variant="secondary" className="shrink-0 text-xs font-normal">Market report</Badge>
                     <span className="truncate">{r.label}</span>
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -649,24 +664,30 @@ export default function SearchFilters({ initialFilters }: Props) {
         </Select>
 
         {/* View toggle (split / list / map) */}
-        <div className="flex overflow-hidden rounded-lg border border-border">
+        <ToggleGroup
+          type="single"
+          value={view}
+          onValueChange={(v) => {
+            if (v === 'split' || v === 'list' || v === 'map') {
+              setFilter('view', v)
+              setView(v)
+            }
+          }}
+          variant="outline"
+          size="sm"
+          className="rounded-lg border border-border overflow-hidden"
+        >
           {(['split', 'list', 'map'] as const).map((v) => (
-            <button
+            <ToggleGroupItem
               key={v}
-              type="button"
-              onClick={() => { setFilter('view', v); setView(v) }}
-              className={cn(
-                'px-3 py-1.5 text-xs font-medium capitalize focus-visible:outline-none',
-                view === v
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-card text-muted-foreground hover:bg-muted'
-              )}
-              aria-pressed={view === v}
+              value={v}
+              className="px-3 py-1.5 text-xs font-medium capitalize rounded-none border-0"
+              aria-label={`${v} view`}
             >
               {v}
-            </button>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
       </div>
 
       <Separator />
@@ -687,19 +708,16 @@ export default function SearchFilters({ initialFilters }: Props) {
             <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
             <div className="flex flex-col gap-1">
               {STATUS_OPTIONS.map(({ value, label }) => (
-                <button
+                <Button
                   key={value}
                   type="button"
+                  variant={(initialFilters.status ?? 'Active') === value ? 'default' : 'ghost'}
+                  size="sm"
                   onClick={() => { setFilter('status', value === 'Active' ? undefined : value); setOpenPanel(null) }}
-                  className={cn(
-                    'rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors',
-                    (initialFilters.status ?? 'Active') === value
-                      ? 'bg-primary text-primary-foreground'
-                      : 'hover:bg-muted text-foreground'
-                  )}
+                  className="justify-start"
                 >
                   {label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -763,9 +781,11 @@ export default function SearchFilters({ initialFilters }: Props) {
                   (String(min ?? '') === (initialFilters.minPrice ?? '') &&
                     String(max ?? '') === (initialFilters.maxPrice ?? ''))
                 return (
-                  <button
+                  <Button
                     key={label}
                     type="button"
+                    variant={isActive ? 'default' : 'outline'}
+                    size="sm"
                     onClick={() => {
                       updateUrl({
                         minPrice: min != null ? String(min) : undefined,
@@ -773,15 +793,10 @@ export default function SearchFilters({ initialFilters }: Props) {
                       })
                       setOpenPanel(null)
                     }}
-                    className={cn(
-                      'rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
-                      isActive
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-border bg-card text-foreground hover:border-primary/40'
-                    )}
+                    className="rounded-full px-2.5 py-1 h-auto text-xs"
                   >
                     {label}
-                  </button>
+                  </Button>
                 )
               })}
             </div>
@@ -799,19 +814,15 @@ export default function SearchFilters({ initialFilters }: Props) {
             <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Bedrooms (min)</p>
             <div className="flex flex-wrap gap-1.5">
               {BEDS_OPTIONS.map(({ value, label }) => (
-                <button
+                <Button
                   key={value || 'any'}
                   type="button"
+                  variant={(initialFilters.beds ?? '') === value ? 'default' : 'outline'}
+                  size="sm"
                   onClick={() => { setFilter('beds', value || undefined); setOpenPanel(null) }}
-                  className={cn(
-                    'rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
-                    (initialFilters.beds ?? '') === value
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border text-foreground hover:border-primary/40'
-                  )}
                 >
                   {label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -828,19 +839,15 @@ export default function SearchFilters({ initialFilters }: Props) {
             <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Bathrooms (min)</p>
             <div className="flex flex-wrap gap-1.5">
               {BATHS_OPTIONS.map(({ value, label }) => (
-                <button
+                <Button
                   key={value || 'any'}
                   type="button"
+                  variant={(initialFilters.baths ?? '') === value ? 'default' : 'outline'}
+                  size="sm"
                   onClick={() => { setFilter('baths', value || undefined); setOpenPanel(null) }}
-                  className={cn(
-                    'rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
-                    (initialFilters.baths ?? '') === value
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border text-foreground hover:border-primary/40'
-                  )}
                 >
                   {label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -857,19 +864,16 @@ export default function SearchFilters({ initialFilters }: Props) {
             <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Home type</p>
             <div className="flex flex-col gap-1">
               {PROPERTY_TYPES.map(({ value, label }) => (
-                <button
+                <Button
                   key={value || 'all'}
                   type="button"
+                  variant={(initialFilters.propertyType ?? '') === value ? 'default' : 'ghost'}
+                  size="sm"
                   onClick={() => { setFilter('propertyType', value || undefined); setOpenPanel(null) }}
-                  className={cn(
-                    'rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors',
-                    (initialFilters.propertyType ?? '') === value
-                      ? 'bg-primary text-primary-foreground'
-                      : 'hover:bg-muted text-foreground'
-                  )}
+                  className="justify-start"
                 >
                   {label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -910,13 +914,15 @@ export default function SearchFilters({ initialFilters }: Props) {
           {moreActiveFilters.map(({ label, key }) => (
             <FilterChip key={Array.isArray(key) ? key[0] : key} label={label} onRemove={() => removeChip(key)} />
           ))}
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={clearAll}
-            className="ml-1 text-xs text-muted-foreground underline-offset-2 hover:underline focus-visible:outline-none"
+            className="ml-1 h-auto px-0 py-0 text-xs text-muted-foreground underline-offset-2 hover:underline hover:bg-transparent"
           >
             Clear all
-          </button>
+          </Button>
         </div>
       )}
 

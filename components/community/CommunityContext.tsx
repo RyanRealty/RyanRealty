@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import CommunityCard from './CommunityCard'
+import { H2 } from '@/components/site/primitives'
 
 type Props = {
   communityName: string
@@ -22,9 +23,9 @@ export default async function CommunityContext({
   return (
     <section className="bg-card px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="community-context-heading">
       <div className="mx-auto max-w-7xl">
-        <h2 id="community-context-heading" className="text-2xl font-bold tracking-tight text-primary">
+        <H2 id="community-context-heading" className="text-2xl text-primary">
           About the Area
-        </h2>
+        </H2>
         <p className="mt-2 text-muted-foreground">
           Located in{' '}
           <Link href={`/homes-for-sale?city=${encodeURIComponent(city)}`} className="font-medium text-accent-foreground hover:underline">

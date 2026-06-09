@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import LoginForm from '@/components/auth/LoginForm'
+import { H1 } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -29,7 +30,7 @@ export default async function LoginPage({ searchParams }: Props) {
             Ryan Realty
           </Link>
         </div>
-        <h1 className="text-center text-xl font-semibold text-foreground">Sign in</h1>
+        <H1 className="text-center text-xl text-foreground">Sign in</H1>
         <p className="mt-1 text-center text-sm text-muted-foreground">
           Access your saved homes and searches
         </p>

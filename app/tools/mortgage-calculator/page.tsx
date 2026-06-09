@@ -33,6 +33,19 @@ type Props = {
   }>
 }
 
+const softwareLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Mortgage Calculator',
+  applicationCategory: 'FinanceApplication',
+  operatingSystem: 'Web',
+  url: `${siteUrl}/tools/mortgage-calculator`,
+  description:
+    'Free mortgage calculator for Central Oregon home buyers. Estimate monthly payment from home price, down payment, interest rate, and loan term.',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  provider: { '@type': 'RealEstateAgent', name: 'Ryan Realty', url: siteUrl },
+}
+
 export default async function MortgageCalculatorPage({ searchParams }: Props) {
   const sp = await searchParams
   const initialPrice = sp.price ? parseInt(sp.price, 10) : undefined
@@ -41,6 +54,7 @@ export default async function MortgageCalculatorPage({ searchParams }: Props) {
   const initialTerm = sp.term != null ? parseInt(sp.term, 10) : undefined
   return (
     <main className="min-h-screen bg-background">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }} />
       <Container className="pt-3 pb-1">
         <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Mortgage calculator' }]} />
       </Container>

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Card } from '@/components/ui/card'
 import { getFallbackImage } from '@/lib/fallback-images'
+import { H2 } from '@/components/site/primitives'
 
 export type CityCardProps = {
   slug: string
@@ -43,7 +44,7 @@ export default function CityCard({
           />
           <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-6">
-            <h2 className="text-2xl font-bold text-primary-foreground drop-shadow-md">{name}</h2>
+            <H2 className="text-2xl text-primary-foreground drop-shadow-md">{name}</H2>
             <p className="mt-1 text-sm text-primary-foreground/90">
               {activeCount} homes for sale · Median {formatPrice(medianPrice)} · {communityCount} communities
             </p>

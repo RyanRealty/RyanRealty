@@ -13,6 +13,9 @@ import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import SalesReportCharts from '@/components/reports/SalesReportCharts'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { H2, Container } from '@/components/site/primitives'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -104,15 +107,54 @@ export default async function SalesReportPage({ params }: PageProps) {
   const dateRangeStr = formatDateRange(start, end)
   const pdfHref = `/api/pdf/report?geoName=${encodeURIComponent(cityName)}&period=${encodeURIComponent(periodLabel + ' — ' + dateRangeStr)}`
 
+  // Dataset JSON-LD — variableMeasured comes only from the fetched closed/pending
+  // data. Numbers are the same values shown in the StatCards above.
+  const datasetVariables: Array<{ name: string; value: string | number; unitText?: string }> = [
+    { name: 'Closed sales', value: closed.length },
+    { name: 'Pending sales', value: pending.length },
+  ]
+  if (medianPrice != null) {
+    datasetVariables.push({ name: 'Median sale price', value: Math.round(medianPrice), unitText: 'USD' })
+  }
+  if (medianDom != null) {
+    datasetVariables.push({ name: 'Median days on market', value: medianDom, unitText: 'days' })
+  }
+
+  const canonicalLiveUrl = `${siteUrl}/housing-market/reports/sales/${encodeURIComponent(cityEntityKey(cityName))}/${periodSlug}`
+
   return (
     <main className="min-h-screen bg-background">
+      <MetadataBlock
+        schema={{
+          type: 'dataset',
+          name: `${cityName} real estate sales report, ${periodLabel}`,
+          description:
+            `Closed and pending residential home sales for ${cityName}, Oregon. ` +
+            `Includes sale count, median sale price, and median days on market. ` +
+            `Sourced from Oregon Data Share via Ryan Realty.`,
+          url: canonicalLiveUrl,
+          temporalCoverage: `${start.toISOString().slice(0, 10)}/${end.toISOString().slice(0, 10)}`,
+          spatialCoverageName: `${cityName}, OR`,
+          variableMeasured: datasetVariables,
+        }}
+      />
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Market reports', href: '/housing-market/reports' },
+            { label: cityName, href: `/housing-market/${encodeURIComponent(cityEntityKey(cityName))}` },
+            { label: periodLabel },
+          ]}
+        />
+      </Container>
       <ContentPageHero
-        title={`${cityName} — ${periodLabel}`}
+        title={`${cityName}, ${periodLabel}`}
         subtitle={dateRangeStr}
         imageUrl={CONTENT_HERO_IMAGES.reports}
         ctas={[
           { label: 'Download PDF', href: pdfHref, primary: true },
-          { label: 'All Reports', href: '/reports', primary: false },
+          { label: 'All reports', href: '/housing-market/reports', primary: false },
         ]}
       />
       <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
@@ -127,9 +169,9 @@ export default async function SalesReportPage({ params }: PageProps) {
           <>
             <SalesReportCharts closed={closed} periodStart={start} periodEnd={end} />
 
-            <h2 className="mt-14 text-xl font-bold text-primary">
+            <H2 className="mt-14 text-xl text-primary">
               Closed sales ({closed.length})
-            </h2>
+            </H2>
             <p className="mt-1 text-sm text-muted-foreground">
               Address, sold date, days on market, property type, and sale price. Click a row to view the listing.
             </p>
@@ -158,9 +200,9 @@ export default async function SalesReportPage({ params }: PageProps) {
 
         {pending.length > 0 && (
           <>
-            <h2 className="mt-14 text-xl font-bold text-primary">
+            <H2 className="mt-14 text-xl text-primary">
               Went pending ({pending.length})
-            </h2>
+            </H2>
             <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
               <div className="overflow-x-auto">
                 <Table className="w-full min-w-[520px] text-left text-sm">
@@ -186,12 +228,6 @@ export default async function SalesReportPage({ params }: PageProps) {
         {closed.length === 0 && pending.length === 0 && (
           <p className="text-muted-foreground">No closed or pending sales in this period for {cityName}.</p>
         )}
-
-        <p className="mt-14">
-          <Link href="/reports" className="font-semibold text-primary hover:underline">
-            ← Back to Market Reports
-          </Link>
-        </p>
       </section>
     </main>
   )

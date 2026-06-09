@@ -6,6 +6,7 @@ import AuthModal from '@/components/auth/AuthModal'
 import { trackEvent } from '@/lib/tracking'
 import { listingDetailPath, listingsBrowsePath } from '@/lib/slug'
 import { Button } from "@/components/ui/button"
+import { H3 } from '@/components/site/primitives'
 
 type ValuationData = {
   estimatedValue: number
@@ -72,9 +73,9 @@ export default function ListingValuation({ listingKey, propertyId, valuation, si
 
   return (
     <section className="mb-8 rounded-lg border border-border bg-card p-6 shadow-sm" aria-labelledby="valuation-heading">
-      <h2 id="valuation-heading" className="mb-4 text-lg font-semibold text-foreground">
+      <H3 as="h2" id="valuation-heading" className="mb-4 text-lg text-foreground">
         Estimated Value
-      </h2>
+      </H3>
       <p className="text-2xl font-bold text-primary">
         {formatPrice(valuation.estimatedValue)}
       </p>

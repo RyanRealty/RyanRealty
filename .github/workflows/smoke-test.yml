@@ -229,11 +229,17 @@ jobs:
           BROKER_SMOKE_BASE: ${{ env.SITE_URL }}
           VIDEO_SMOKE_BASE: ${{ env.SITE_URL }}
           RENTAL_SMOKE_BASE: ${{ env.SITE_URL }}
+          LISTING_SMOKE_BASE: ${{ env.SITE_URL }}
+          GEO_SMOKE_BASE: ${{ env.SITE_URL }}
+          LEAD_SMOKE_BASE: ${{ env.SITE_URL }}
         run: |
           node scripts/check-search-results.mjs
           node scripts/check-broker-sales.mjs
           node scripts/check-video-sections.mjs
           node scripts/check-rental-calculator.mjs
+          node scripts/check-listing-detail.mjs
+          node scripts/check-geo-detail.mjs
+          node scripts/check-lead-funnels.mjs
 
       - name: Create issue on failure
         if: failure()

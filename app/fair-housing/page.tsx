@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import EqualHousing from '@/components/legal/EqualHousing'
+import { H2 } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -27,28 +28,28 @@ export default function FairHousingPage() {
 
       <section className="mt-10 space-y-6 text-sm text-primary">
         <div>
-          <h2 className="text-lg font-semibold">Equal Housing Opportunity</h2>
+          <H2 className="text-lg text-foreground">Equal Housing Opportunity</H2>
           <p className="mt-2">
             Ryan Realty is committed to compliance with the Fair Housing Act and all applicable state and local laws. We do not discriminate on the basis of race, color, religion, sex, national origin, familial status, or disability.
           </p>
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold">Fair Housing Act</h2>
+          <H2 className="text-lg text-foreground">Fair Housing Act</H2>
           <p className="mt-2">
             The Fair Housing Act prohibits discrimination in the sale, rental, or financing of housing based on: race, color, religion, sex, national origin, familial status, and disability. We support these protections and treat every client and visitor with equal respect and service.
           </p>
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold">Oregon law</h2>
+          <H2 className="text-lg text-foreground">Oregon law</H2>
           <p className="mt-2">
             Oregon law provides additional protected classes. We comply with all Oregon fair housing and civil rights requirements.
           </p>
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold">If you believe you have been discriminated against</h2>
+          <H2 className="text-lg text-foreground">If you believe you have been discriminated against</H2>
           <p className="mt-2">
             The U.S. Department of Housing and Urban Development (HUD) investigates fair housing complaints. You may contact HUD:
           </p>
@@ -67,7 +68,7 @@ export default function FairHousingPage() {
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold">Our commitment</h2>
+          <H2 className="text-lg text-foreground">Our commitment</H2>
           <p className="mt-2">
             Ryan Realty is dedicated to equal opportunity in housing and to serving all clients fairly and without discrimination.
           </p>

@@ -1,4 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card'
+import { H3 } from '@/components/site/primitives'
 
 type Props = {
   publicRemarks: string | null
@@ -13,7 +14,7 @@ export default function ShowcaseDescription({ publicRemarks, directions }: Props
   return (
     <Card className="border-border bg-card">
       <CardContent className="p-6">
-        <h2 className="text-lg font-semibold text-foreground">About this home</h2>
+        <H3 as="h2" className="text-lg text-foreground">About this home</H3>
         {hasRemarks && (
           <div className="mt-4 whitespace-pre-wrap text-sm text-foreground">{publicRemarks!.trim()}</div>
         )}

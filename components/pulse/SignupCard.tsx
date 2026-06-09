@@ -72,7 +72,7 @@ export default function SignupCard({ onDismiss, triggeredBy }: Props) {
 
   if (status === 'ok') {
     return (
-      <article className="overflow-hidden rounded-2xl bg-emerald-700 text-emerald-50 shadow-lg">
+      <article className="overflow-hidden rounded-2xl bg-success text-success-foreground shadow-lg">
         <div className="p-6 text-center">
           <p
             className="font-display text-2xl"
@@ -80,7 +80,7 @@ export default function SignupCard({ onDismiss, triggeredBy }: Props) {
           >
             Got it. You will hear from us.
           </p>
-          <p className="mt-2 text-sm text-emerald-100/90">
+          <p className="mt-2 text-sm text-success-foreground/90">
             Watch your inbox for a note when similar homes hit the market.
           </p>
         </div>
@@ -124,7 +124,7 @@ export default function SignupCard({ onDismiss, triggeredBy }: Props) {
             />
           </div>
           {status === 'error' && (
-            <p className="rounded-md border border-rose-300/40 bg-rose-500/10 p-2 text-xs text-rose-50">
+            <p className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
               {errorText ?? 'We could not send that. Try again in a moment.'}
             </p>
           )}

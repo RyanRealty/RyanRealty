@@ -2,12 +2,12 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container } from '@/components/site/primitives'
+import { Container, H1, H3 } from '@/components/site/primitives'
 import AdUnit from '@/components/AdUnit'
 import HomeValuationCta from '@/components/HomeValuationCta'
 import CityClusterNav from '@/components/CityClusterNav'
-import { getGuideBySlug, getPublishedGuides } from '@/app/actions/guides'
-import { generateBreadcrumbSchema } from '@/lib/structured-data'
+import { getGuideBySlug, getPublishedGuides } from '@/lib/data'
+import { generateBreadcrumbSchema, generateBlogSchema } from '@/lib/structured-data'
 import { cityEntityKey } from '@/lib/slug'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -38,47 +38,38 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ sl
   const { slug } = await params
   const guide = await getGuideBySlug(slug)
   if (!guide) notFound()
-  const related = (await getPublishedGuides())
+  const related = (await getPublishedGuides(200))
     .filter((row) => row.slug !== guide.slug && (row.city === guide.city || row.category === guide.category))
     .slice(0, 4)
 
-  const faqJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: [
-      {
-        '@type': 'Question',
-        name: `What should I know before buying in ${guide.city || 'Central Oregon'}?`,
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: 'Review local inventory, pricing trends, and financing options so your offer strategy matches current market conditions.',
-        },
-      },
-      {
-        '@type': 'Question',
-        name: 'How often is this guide updated?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: 'Guides are refreshed regularly as listing and market data changes.',
-        },
-      },
-    ],
-  }
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+
+  // Article JSON-LD built from live guide data — no fabricated fields.
+  // generateBlogSchema emits BlogPosting which is a sub-type of Article; the
+  // same function is used by app/blog/[slug]/page.tsx and already carries
+  // dateModified for the AI/Google recency signal.
+  const articleSchema = generateBlogSchema({
+    title: guide.title,
+    slug: `guides/${guide.slug}`,
+    excerpt: guide.meta_description ?? null,
+    published_at: (guide as Record<string, unknown>).published_at as string | null ?? null,
+    updated_at: (guide as Record<string, unknown>).updated_at as string | null ?? null,
+  })
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
       />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(
             generateBreadcrumbSchema([
-              { name: 'Home', url: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com' },
-              { name: 'Guides', url: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/guides` },
-              { name: guide.title, url: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/guides/${guide.slug}` },
+              { name: 'Home', url: siteUrl },
+              { name: 'Guides', url: `${siteUrl}/guides` },
+              { name: guide.title, url: `${siteUrl}/guides/${guide.slug}` },
             ])
           ),
         }}
@@ -94,7 +85,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ sl
         />
       </Container>
       <article className="rounded-lg border border-border bg-card p-6">
-        <h1 className="text-3xl font-semibold text-foreground">{guide.title}</h1>
+        <H1 className="text-3xl">{guide.title}</H1>
         {guide.meta_description && <p className="mt-3 text-muted-foreground">{guide.meta_description}</p>}
         <div className="mt-6">
           <AdUnit slot="4004001001" format="horizontal" />
@@ -119,7 +110,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ sl
       )}
       {related.length > 0 && (
         <section className="mt-8 rounded-lg border border-border bg-card p-6">
-          <h2 className="text-lg font-semibold text-foreground">More guides</h2>
+          <H3 className="text-lg font-semibold">More guides</H3>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {related.map((row) => (
               <Link key={row.slug} href={`/guides/${row.slug}`} className="rounded-md border border-border bg-muted px-4 py-3 text-sm font-medium text-foreground hover:bg-background">

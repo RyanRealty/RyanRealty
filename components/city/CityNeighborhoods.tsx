@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Card } from '@/components/ui/card'
+import { H2 } from '@/components/site/primitives'
 
 type Neighborhood = {
   slug: string
@@ -25,9 +26,9 @@ export default function CityNeighborhoods({ cityName, citySlug, neighborhoods }:
   return (
     <section className="bg-muted px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="city-neighborhoods-heading">
       <div className="mx-auto max-w-7xl">
-        <h2 id="city-neighborhoods-heading" className="text-2xl font-bold tracking-tight text-primary">
+        <H2 id="city-neighborhoods-heading" className="text-2xl text-primary">
           Neighborhoods in {cityName}
-        </h2>
+        </H2>
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
           {neighborhoods.map((n) => (
             <Link key={n.slug} href={`/cities/${citySlug}/${n.slug}`}>

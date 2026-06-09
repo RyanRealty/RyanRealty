@@ -68,7 +68,7 @@ export default function ContactForm({ defaultInquiryType }: { defaultInquiryType
           name="name"
           type="text"
           autoComplete="name"
-          className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          className="mt-1 block w-full"
         />
       </div>
       <div>
@@ -81,7 +81,7 @@ export default function ContactForm({ defaultInquiryType }: { defaultInquiryType
           type="email"
           required
           autoComplete="email"
-          className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          className="mt-1 block w-full"
         />
       </div>
       <div>
@@ -93,7 +93,7 @@ export default function ContactForm({ defaultInquiryType }: { defaultInquiryType
           name="phone"
           type="tel"
           autoComplete="tel"
-          className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          className="mt-1 block w-full"
         />
       </div>
       <div>
@@ -121,14 +121,14 @@ export default function ContactForm({ defaultInquiryType }: { defaultInquiryType
           id="contact-message"
           name="message"
           rows={4}
-          className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          className="mt-1 block w-full"
         />
       </div>
       {state.error && <p className="text-sm text-destructive">{state.error}</p>}
       <Button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-70"
+        className="w-full"
       >
         {loading ? 'Sending…' : 'Send message'}
       </Button>

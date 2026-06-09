@@ -30,6 +30,7 @@ import type { GetListingsForMapOptions } from '@/app/actions/listings'
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { listingsBrowsePath } from '@/lib/slug'
+import { H2 } from '@/components/site/primitives'
 
 const PER_PAGE = 20
 const SORT_OPTIONS = [
@@ -339,7 +340,7 @@ export default function UnifiedMapListingsView({
         {/* Left: scrollable sidebar — fixed width, list scrolls */}
         <div className="flex w-full flex-col min-h-0 border-r border-border bg-card md:w-[420px] lg:w-[480px] shrink-0">
           <div className="shrink-0 border-b border-border bg-card px-4 py-3">
-            <h2 className="text-lg font-semibold text-primary">{pageTitle}</h2>
+            <H2 className="text-lg text-primary">{pageTitle}</H2>
             {searchBounds != null && (
               <p className="mt-0.5 text-sm text-muted-foreground">
                 {loading ? 'Loading…' : `${totalCount.toLocaleString()} result${totalCount !== 1 ? 's' : ''} in this area`}

@@ -6,6 +6,7 @@ import { trackEvent } from '@/lib/tracking'
 import { TILE_MIN_HEIGHT_PX } from '@/lib/tile-constants'
 import TilesSlider, { TilesSliderItem } from '@/components/TilesSlider'
 import { listingDetailPath } from '@/lib/slug'
+import { H2 } from '@/components/site/primitives'
 
 type SoldRow = HomeTileRow & { ClosePrice?: number | null; CloseDate?: string | null }
 
@@ -32,9 +33,9 @@ export default function BrokerSoldHistory({ soldListings }: Props) {
     return (
       <section className="bg-card px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="broker-sold-heading">
         <div className="mx-auto max-w-7xl">
-          <h2 id="broker-sold-heading" className="text-2xl font-bold tracking-tight text-primary">
+          <H2 id="broker-sold-heading" className="text-2xl text-primary">
             Recent Sales
-          </h2>
+          </H2>
           <p className="mt-6 text-muted-foreground">No recent sales to display.</p>
         </div>
       </section>

@@ -11,6 +11,7 @@
  * does not apply to a reviewer's own words.
  */
 import { Container, Eyebrow, H2, Body, Section, Grid, Stack } from '@/components/site/primitives'
+import { Card, CardContent } from '@/components/ui/card'
 import type { ReviewsSummary } from '@/lib/data'
 
 type Props = {
@@ -68,18 +69,19 @@ export function ReviewsBlock({
         {cards.length > 0 ? (
           <Grid cols={3} gap="default">
             {cards.map((review, i) => (
-              <figure
-                key={i}
-                className="flex flex-col rounded-xl border border-border bg-card p-6 shadow-sm"
-              >
-                <Stars rating={review.rating} className="text-base" />
-                <blockquote className="mt-3 flex-1 text-sm leading-relaxed text-muted-foreground">
-                  {clampQuote(review.text)}
-                </blockquote>
-                <figcaption className="mt-4 text-sm font-semibold text-foreground">
-                  {review.reviewerName ?? 'Verified client'}
-                </figcaption>
-              </figure>
+              <Card key={i} className="p-6">
+                <CardContent className="p-0">
+                  <figure className="flex flex-col">
+                    <Stars rating={review.rating} className="text-base" />
+                    <blockquote className="mt-3 flex-1 text-sm leading-relaxed text-muted-foreground">
+                      {clampQuote(review.text)}
+                    </blockquote>
+                    <figcaption className="mt-4 text-sm font-semibold text-foreground">
+                      {review.reviewerName ?? 'Verified client'}
+                    </figcaption>
+                  </figure>
+                </CardContent>
+              </Card>
             ))}
           </Grid>
         ) : null}

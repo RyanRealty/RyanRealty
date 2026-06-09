@@ -20,6 +20,7 @@ import type { Metadata } from 'next'
 import { getZipListings, getSurfaceImage } from '@/lib/data'
 import { listingTileHref } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import { RelatedAreas, type RelatedAreaItem } from '@/components/site/RelatedAreas'
@@ -204,8 +205,47 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     ledeParts.push(`Median ${Math.round(medianDom)} days on market.`)
   }
 
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const zipPageUrl = `/zip/${zip}`
+
+  // Build verified stat entries from the live-computed values above.
+  // Only include a stat when its value is non-null so we never emit
+  // fabricated placeholder figures (CLAUDE.md data-accuracy rule).
+  type StatValue = { name: string; value: string | number; unitText?: string }
+  const datasetStats: StatValue[] = []
+  datasetStats.push({ name: 'Active single-family listings', value: activeCount, unitText: 'listings' })
+  if (medianListPrice != null) datasetStats.push({ name: 'Median list price', value: medianListPrice, unitText: 'USD' })
+  if (medianPricePerSqft != null) datasetStats.push({ name: 'Median price per sq ft', value: medianPricePerSqft, unitText: 'USD' })
+  if (medianDom != null) datasetStats.push({ name: 'Median days on market', value: Math.round(medianDom), unitText: 'days' })
+  datasetStats.push({ name: 'New listings last 30 days', value: newLast30Days, unitText: 'listings' })
+
   return (
     <main className="min-h-screen bg-background">
+      <MetadataBlock schemas={[
+        {
+          type: 'breadcrumb',
+          items: [
+            { name: 'Home', url: `${siteUrl}/` },
+            { name: 'Search', url: `${siteUrl}/search` },
+            { name: zip, url: `${siteUrl}${zipPageUrl}` },
+          ],
+        },
+        {
+          type: 'place',
+          name: `ZIP ${zip} · ${ZIP_AREA[zip] ?? 'Central Oregon'}`,
+          description: `Browse active single-family listings in ZIP code ${zip}, Central Oregon.`,
+          url: zipPageUrl,
+          address: { postalCode: zip, state: 'OR', country: 'US' },
+        },
+        {
+          type: 'dataset',
+          name: `Active single-family market snapshot for ZIP ${zip}`,
+          description: `Live market statistics for active SFR listings in ${zip}, Central Oregon, derived from the Oregon RMLS feed.`,
+          url: zipPageUrl,
+          spatialCoverageName: `ZIP ${zip} · ${ZIP_AREA[zip] ?? 'Central Oregon'}`,
+          variableMeasured: datasetStats,
+        },
+      ]} />
       <div className="bg-background border-b border-border py-3">
         <Container>
           <BreadcrumbNav

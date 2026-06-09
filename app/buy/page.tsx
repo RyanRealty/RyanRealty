@@ -16,6 +16,7 @@
  * "premier", "passionate"). See inline comments at fixed violations.
  */
 
+import Link from 'next/link'
 import { getSurfaceImage } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
@@ -24,6 +25,7 @@ import { ContentSection } from '@/components/site/ContentSection'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { CTABar } from '@/components/site/CTABar'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Body,
   Container,
@@ -230,18 +232,18 @@ export default async function BuyPage() {
               body: 'Vacation rental potential, long-term rental markets, and how to evaluate cash flow on a Central Oregon investment property.',
             },
           ].map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="rounded-xl border border-border bg-background p-5 hover:shadow-sm transition"
-            >
-              <Body size="default" className="font-semibold text-foreground mb-1">
-                {item.heading}
-              </Body>
-              <Body size="default" tone="muted">
-                {item.body}
-              </Body>
-            </a>
+            <Link key={item.href} href={item.href} className="block hover:no-underline">
+              <Card className="h-full p-5 transition hover:shadow-md cursor-pointer">
+                <CardContent className="p-0">
+                  <Body size="default" className="font-semibold text-foreground mb-1">
+                    {item.heading}
+                  </Body>
+                  <Body size="default" tone="muted">
+                    {item.body}
+                  </Body>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       </ContentSection>

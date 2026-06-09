@@ -4,6 +4,7 @@ import Link from 'next/link'
 import type { BrokerRow } from '@/app/actions/brokers'
 import { Button } from '@/components/ui/button'
 import BrokerCardCarousel from './BrokerCardCarousel'
+import { H2 } from '@/components/site/primitives'
 
 type Props = {
   /** CTA heading, e.g. "Looking for a Home in Bend?" */
@@ -30,9 +31,9 @@ export default function GeoCTAWithBroker({
       <div className="mx-auto max-w-7xl">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-10">
           <div className="lg:col-span-2 flex flex-col justify-center">
-            <h2 id="geo-cta-heading" className="text-2xl font-bold tracking-tight text-primary-foreground">
+            <H2 id="geo-cta-heading" className="text-2xl text-primary-foreground">
               {heading}
-            </h2>
+            </H2>
             <div className="mt-6 flex flex-wrap items-center gap-4">
               <Button
                 asChild

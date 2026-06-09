@@ -7,8 +7,9 @@ import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container } from '@/components/site/primitives'
+import { Container, H2, Eyebrow } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const faqOgImage = `${siteUrl}/api/og?type=default`
@@ -141,9 +142,9 @@ function faqJsonLd() {
 function FAQItemBlock({ item }: { item: FAQItem }) {
   return (
     <section id={item.id} className="border-b border-border py-8">
-      <h2 className="mb-3 scroll-mt-24 text-2xl font-medium leading-tight text-foreground">
+      <H2 className="mb-3 scroll-mt-24 text-2xl">
         {item.question}
-      </h2>
+      </H2>
       <p className="text-base leading-relaxed text-muted-foreground">{item.answer}</p>
     </section>
   )
@@ -199,14 +200,17 @@ export default async function FAQPage() {
         {/* Mini ToC */}
         <nav className="mb-12 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {grouped.map((g) => (
-            <a
+            <Button
               key={g.cat}
-              href={`#${g.cat.toLowerCase().replace(/\s+/g, '-')}`}
-              className="rounded-md border border-border bg-card px-4 py-3 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
+              asChild
+              variant="outline"
+              className="h-auto px-4 py-3 text-sm font-medium justify-start"
             >
-              {g.cat}
-              <span className="ml-2 text-xs text-muted-foreground">({g.items.length})</span>
-            </a>
+              <a href={`#${g.cat.toLowerCase().replace(/\s+/g, '-')}`}>
+                {g.cat}
+                <span className="ml-2 text-xs text-muted-foreground">({g.items.length})</span>
+              </a>
+            </Button>
           ))}
         </nav>
 
@@ -216,9 +220,9 @@ export default async function FAQPage() {
             id={g.cat.toLowerCase().replace(/\s+/g, '-')}
             className="mb-12 scroll-mt-24"
           >
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            <Eyebrow as="h2" className="mb-4 block text-sm tracking-wider text-muted-foreground">
               {g.cat}
-            </h2>
+            </Eyebrow>
             <div>
               {g.items.map((item) => (
                 <FAQItemBlock key={item.id} item={item} />
@@ -227,17 +231,19 @@ export default async function FAQPage() {
           </section>
         ))}
 
-        <div className="mt-16 rounded-lg border border-border bg-card p-8 text-center">
-          <h2 className="mb-3 text-xl font-medium text-foreground">
-            Have a question we did not cover?
-          </h2>
-          <p className="mb-6 text-base text-muted-foreground">
-            Reach out and we will give you a direct answer. No pitch, no pressure.
-          </p>
-          <Link href="/contact">
-            <Button>Contact Ryan Realty</Button>
-          </Link>
-        </div>
+        <Card className="mt-16 p-8 text-center">
+          <CardContent className="p-0">
+            <H2 className="mb-3 text-xl">
+              Have a question we did not cover?
+            </H2>
+            <p className="mb-6 text-base text-muted-foreground">
+              Reach out and we will give you a direct answer. No pitch, no pressure.
+            </p>
+            <Button asChild>
+              <Link href="/contact">Contact Ryan Realty</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </main>
   )

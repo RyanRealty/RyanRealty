@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { H2 } from '@/components/site/primitives'
 
 type Props = {
   brokerId: string
@@ -65,9 +66,9 @@ export default function BrokerContactForm({
   return (
     <section id="contact" className="bg-primary px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="broker-contact-heading">
       <div className="mx-auto max-w-2xl">
-        <h2 id="broker-contact-heading" className="text-2xl font-bold tracking-tight text-primary-foreground">
+        <H2 id="broker-contact-heading" className="text-2xl text-primary-foreground">
           Get in Touch with {brokerFirstName}
-        </h2>
+        </H2>
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
             <Label htmlFor="contact-name" className="block text-sm font-medium text-primary-foreground/90">Name</Label>

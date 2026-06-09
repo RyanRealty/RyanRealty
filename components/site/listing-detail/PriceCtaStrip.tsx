@@ -8,6 +8,7 @@ import {
   Price,
   TabularNumber,
 } from '@/components/site/primitives'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { ListingDetail } from '@/lib/data/types/listing'
 
@@ -64,10 +65,10 @@ type Props = {
 }
 
 const PILL_TONE = {
-  Active: 'bg-success/12 text-[oklch(0.35_0.15_149)] border-success/25',
+  Active: 'bg-success/12 text-success-foreground border-success/25',
   'Coming Soon': 'bg-warning/15 text-foreground border-warning/25',
   'Active Under Contract': 'bg-warning/15 text-foreground border-warning/25',
-  Pending: 'bg-primary text-white border-transparent',
+  Pending: 'bg-primary text-primary-foreground border-transparent',
   Closed: 'bg-muted text-foreground border-border',
   Withdrawn: 'bg-muted text-foreground border-border',
   Expired: 'bg-muted text-foreground border-border',
@@ -244,14 +245,14 @@ function Pill({
     cls = (PILL_TONE as Record<string, string>)[kind] ?? 'bg-muted text-foreground border-border'
   }
   return (
-    <span
+    <Badge
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-3 py-[5px] text-xs font-semibold tabular-nums',
+        'gap-1.5 rounded-full border px-3 py-[5px] text-xs font-semibold tabular-nums h-auto',
         cls,
       )}
     >
       {children}
-    </span>
+    </Badge>
   )
 }
 

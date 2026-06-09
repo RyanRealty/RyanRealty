@@ -3,6 +3,7 @@
 import type { SimilarListingRow } from '../../app/actions/listings'
 import ListingTile from '../ListingTile'
 import type { ListingTileListing } from '../ListingTile'
+import { H3 } from '@/components/site/primitives'
 
 type Props = {
   /** When no subdivision or N/A, pass e.g. "Nearby Homes"; otherwise used as "Other homes for sale in {subdivisionName}". */
@@ -23,9 +24,9 @@ export default function ListingSimilarListings({ subdivisionName, sectionTitle, 
 
   return (
     <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold">
+      <H3 as="h2" className="mb-4 text-lg">
         {heading}
-      </h2>
+      </H3>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {listings.map((row, idx) => {
           const linkKey = (row.ListNumber ?? row.ListingKey ?? '').toString().trim() || `sim-${idx}`

@@ -47,6 +47,7 @@ export default async function BrokerSelfEditPage({ params }: Props) {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+      {/* heading-display-ok: internal broker self-service tool, noindex */}
       <h1 className="text-3xl font-semibold text-foreground">Edit your profile</h1>
       <p className="mt-2 text-muted-foreground">Update your public bio, contact phone, and social links.</p>
       <form action={saveAction} className="mt-8 space-y-5 rounded-lg border border-border bg-card p-6">

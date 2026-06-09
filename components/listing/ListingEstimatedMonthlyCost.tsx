@@ -7,6 +7,7 @@ import { setBuyingPreferences } from '@/app/actions/buying-preferences'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { H3 } from '@/components/site/primitives'
 
 type DisplayPrefs = {
   downPaymentPercent: number
@@ -50,7 +51,7 @@ export default function ListingEstimatedMonthlyCost({ listPrice, initialPrefs, s
   if (listPrice <= 0) {
     return (
       <section className="mb-8 rounded-lg border border-border bg-card p-6 shadow-sm" aria-labelledby="estimated-monthly-cost-heading">
-        <h2 id="estimated-monthly-cost-heading" className="text-lg font-semibold text-foreground">Estimated monthly cost</h2>
+        <H3 as="h2" id="estimated-monthly-cost-heading" className="text-lg text-foreground">Estimated monthly cost</H3>
         <p className="mt-2 text-muted-foreground">List price not set.</p>
       </section>
     )
@@ -58,7 +59,7 @@ export default function ListingEstimatedMonthlyCost({ listPrice, initialPrefs, s
 
   return (
     <section className="mb-8 rounded-lg border border-border bg-card p-6 shadow-sm" aria-labelledby="estimated-monthly-cost-heading">
-      <h2 id="estimated-monthly-cost-heading" className="mb-3 text-lg font-semibold text-foreground">Estimated monthly cost</h2>
+      <H3 as="h2" id="estimated-monthly-cost-heading" className="mb-3 text-lg text-foreground">Estimated monthly cost</H3>
       <p className="text-2xl font-semibold text-foreground">
         {monthlyPayment != null && monthlyPayment > 0 ? `Est. ${formatMonthlyPayment(monthlyPayment)}/mo` : '—'}
       </p>

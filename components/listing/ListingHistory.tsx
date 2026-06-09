@@ -1,4 +1,5 @@
 import type { SparkListingHistoryItem } from '../../lib/spark'
+import { H3 } from '@/components/site/primitives'
 
 type Props = {
   items: SparkListingHistoryItem[] | null
@@ -18,7 +19,7 @@ export default function ListingHistory({ items }: Props) {
   if (items == null) {
     return (
       <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
-        <h2 className="mb-3 text-lg font-semibold">Listing history</h2>
+        <H3 as="h2" className="mb-3 text-lg">Listing history</H3>
         <p className="text-muted-foreground">Listing history is not available for this property.</p>
       </section>
     )
@@ -27,7 +28,7 @@ export default function ListingHistory({ items }: Props) {
   if (items.length === 0) {
     return (
       <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
-        <h2 className="mb-3 text-lg font-semibold">Listing history</h2>
+        <H3 as="h2" className="mb-3 text-lg">Listing history</H3>
         <p className="text-muted-foreground">No history recorded yet.</p>
       </section>
     )
@@ -35,7 +36,7 @@ export default function ListingHistory({ items }: Props) {
 
   return (
     <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold">Listing history</h2>
+      <H3 as="h2" className="mb-4 text-lg">Listing history</H3>
       <ul className="space-y-3">
         {items.map((item, i) => {
           const date = formatDate(item.Date)

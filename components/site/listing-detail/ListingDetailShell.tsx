@@ -47,6 +47,7 @@ type Props = {
     | 'listAgentName'
     | 'listAgentEmail'
     | 'publicRemarks'
+    | 'status'
   >
   breadcrumbs: ReadonlyArray<BreadcrumbNavItem>
   /** Full-width hero — renders edge-to-edge above the main+sidebar grid
@@ -110,6 +111,7 @@ export function ListingDetailShell({
       lotSizeSqft: listing.lotSizeAcres != null ? Math.round(listing.lotSizeAcres * 43560) : undefined,
       yearBuilt: listing.yearBuilt ?? undefined,
       listPrice: listing.listPrice ?? undefined,
+      availability: listing.status,
       photos: listing.photos.slice(0, 5).map((p) => p.url),
       listingAgent: listing.listAgentName
         ? { name: listing.listAgentName, email: listing.listAgentEmail ?? undefined }

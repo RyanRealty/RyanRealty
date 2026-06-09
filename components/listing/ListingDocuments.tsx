@@ -1,4 +1,5 @@
 import type { SparkDocument } from '../../lib/spark'
+import { H3 } from '@/components/site/primitives'
 
 type Props = {
   documents: SparkDocument[]
@@ -9,7 +10,7 @@ export default function ListingDocuments({ documents }: Props) {
 
   return (
     <section className="mb-10">
-      <h2 className="mb-4 text-lg font-semibold">Documents</h2>
+      <H3 as="h2" className="mb-4 text-lg">Documents</H3>
       <ul className="space-y-2 rounded-lg border border-border bg-card p-4 shadow-sm">
         {documents.map((doc, i) => {
           const name = doc.Name || `Document ${i + 1}`

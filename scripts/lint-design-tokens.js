@@ -10,7 +10,19 @@ const FILE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx"]);
 const EXCLUDED_DIRS = new Set(["node_modules", ".next", "out", "build", "dist"]);
 const EXCLUDED_PATHS = [
   "components/ui/",
-  "components/site/",
+  // components/site/ blanket exclusion REMOVED 2026-06-09 (P1.20 / Gate 3):
+  // all components/site/ files are now scanned by DISALLOWED_PRIMITIVES.
+  // Map .client files still need literal hex for Google Maps isolation:
+  "components/site/NeighborhoodMap.client.tsx",
+  "components/site/PriceChart.client.tsx",
+  "components/site/listing-detail/ListingLocationMap.client.tsx",
+  // Non-site map .client files with the same Google Maps isolation constraint:
+  "components/seller-lp/MarketVisuals.client.tsx",
+  "components/tools/EquityProjectionChart.client.tsx", // recharts — hex literals required in chart config
+  "components/tools/RentalCalculator.tsx",             // recharts chart axes (same class as above)
+  // Email templates — email clients don't support CSS variables:
+  "lib/email-templates/",
+  "lib/digest-email-templates.tsx",
   "_style_backup/",
   "app/globals.css",
   "scripts/",
@@ -92,6 +104,52 @@ const DISALLOWED_FONT_GOOGLE_CSS = new RegExp(
   `@import\\s+url\\([^)]*fonts\\.googleapis\\.com[^)]*(?:${RETIRED_FONTS.join('|')})`,
   'gi',
 )
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Gate 3 — Component-discipline detectors (added 2026-06-09 / P2 / Gate 3).
+// Each rule is scoped to files that don't import the canonical component,
+// so migrated files auto-pass. New violations baseline via the existing
+// --write-baseline / --ratchet mechanism (new rule category = new issue string).
+// ─────────────────────────────────────────────────────────────────────────────
+
+// (a) Hand-rolled CARD: div/li/figure/article (not inline elements like Label/span)
+//     whose className combines rounded-xl/2xl/3xl/lg + border(-*)? +
+//     (bg-card|bg-background) + (p-|px-|py-), signalling a container shell.
+//     Excludes rounded-full (that's a pill/chip, not a card).
+//     File must not import @/components/ui/card.
+const HAND_ROLLED_CARD_CLASS =
+  /<(?:div|li|figure|article)\b[^>]*className\s*=\s*(?:"[^"]*|'[^']*|`[^`]*)(?=.*\brounded-(?:xl|2xl|3xl|lg)\b)(?=.*\bborder\b)(?=.*\bbg-(?:card|background)\b)(?=.*\b(?:p-|px-|py-)\S+)[^"'`]*/g;
+const CARD_IMPORT = /@\/components\/ui\/card/;
+
+// (b) Hand-rolled BADGE: rounded-full <span> with (border-|bg-) + px-/py-
+//     in a file not importing @/components/ui/badge.
+const HAND_ROLLED_BADGE_SPAN =
+  /<span\b[^>]*className\s*=\s*(?:"[^"]*|'[^']*|`[^`]*)(?=.*\brounded-full\b)(?=.*\b(?:border-|bg-)\S+)(?=.*\b(?:px-|py-)\S+)[^"'`]*/g;
+const BADGE_IMPORT = /@\/components\/ui\/badge/;
+
+// (c) Link-as-BUTTON: <a> or <Link> className with rounded-* + (bg-primary|
+//     bg-accent|border-2 border-primary) + px- + py- + font-semibold, file not
+//     using <Button asChild>.
+const LINK_AS_BUTTON =
+  /<(?:a|Link)\b[^>]*className\s*=\s*(?:"[^"]*|'[^']*|`[^`]*)(?=.*\brounded-\w)(?=.*\b(?:bg-primary|bg-accent|border-2\s+border-primary)\b)(?=.*\bpx-\S+)(?=.*\bpy-\S+)(?=.*\bfont-semibold\b)[^"'`]*/g;
+const BUTTON_ASCHILD = /Button\s+asChild|asChild[^>]*Button/;
+
+// (d) Custom MODAL: className containing 'fixed inset-0 z-' on an element
+//     with role="dialog" or aria-modal, file not importing ui/dialog.
+const CUSTOM_MODAL_CLASS = /className\s*=\s*(?:"[^"]*|'[^']*|`[^`]*)fixed\s+inset-0\s+z-[^"'`]*/g;
+const CUSTOM_MODAL_ARIA = /role=["']dialog["']|aria-modal=["']true["']/;
+const DIALOG_IMPORT = /@\/components\/ui\/dialog/;
+
+// (e) RETIRED palette — immediate hard-fail, no baseline grandfathering.
+//     bg-/text-/border- sky-* or fir-* (deleted --rr-sky / --rr-fir tokens).
+const RETIRED_PALETTE_HARD_FAIL =
+  /\b(?:bg|text|border|from|to|via)-(?:sky|fir)-\d{1,3}\b/g;
+
+// (f) Primitive chrome-override: an <Input|Textarea|Select|Button element
+//     whose className re-declares component-owned chrome (border- AND
+//     rounded- AND focus:ring together).
+const PRIMITIVE_CHROME_OVERRIDE =
+  /<(?:Input|Textarea|Select|Button)\b[^>]*className\s*=\s*(?:"[^"]*|'[^']*|`[^`]*)(?=.*\bborder-\S+)(?=.*\brounded-\S+)(?=.*\bfocus:ring\b)[^"'`]*/g;
 
 function normalizePath(filePath) {
   return filePath.split(path.sep).join("/");
@@ -285,6 +343,65 @@ function lintFile(filePath) {
   if (retiredFontCss.length) {
     issues.push(
       `Google Fonts @import for retired font family: ${retiredFontCss.slice(0, 1).join("")}`,
+    );
+  }
+
+  // ── Gate 3: component-discipline rules ───────────────────────────────────
+
+  // (e) Retired palette — HARD FAIL regardless of baseline.
+  const retiredPalette = findAll(RETIRED_PALETTE_HARD_FAIL, content);
+  if (retiredPalette.length) {
+    issues.push(
+      `HARD FAIL — retired palette token (--rr-sky/--rr-fir deleted in DS v2): ${retiredPalette.join(", ")} — use navy/cream tokens only`,
+    );
+  }
+
+  // (a) Hand-rolled card (only when file doesn't import ui/card).
+  if (!CARD_IMPORT.test(content)) {
+    const handRolledCards = findAll(HAND_ROLLED_CARD_CLASS, content);
+    if (handRolledCards.length) {
+      issues.push(
+        `hand-rolled card shell (rounded-*+border+bg-card/background without importing @/components/ui/card): ${handRolledCards.length} occurrence(s) — use <Card> from @/components/ui/card`,
+      );
+    }
+  }
+
+  // (b) Hand-rolled badge span (only when file doesn't import ui/badge).
+  if (!BADGE_IMPORT.test(content)) {
+    const handRolledBadges = findAll(HAND_ROLLED_BADGE_SPAN, content);
+    if (handRolledBadges.length) {
+      issues.push(
+        `hand-rolled badge <span> (rounded-full+border/bg+padding without importing @/components/ui/badge): ${handRolledBadges.length} occurrence(s) — use <Badge> from @/components/ui/badge`,
+      );
+    }
+  }
+
+  // (c) Link-as-button (only when file doesn't use Button asChild).
+  if (!BUTTON_ASCHILD.test(content)) {
+    const linkAsButtons = findAll(LINK_AS_BUTTON, content);
+    if (linkAsButtons.length) {
+      issues.push(
+        `link-as-button: <a>/<Link> styled as a button (rounded+bg-primary/accent+px+py+font-semibold) without <Button asChild> — use <Button asChild><Link>`,
+      );
+    }
+  }
+
+  // (d) Custom modal (only when file doesn't import ui/dialog).
+  if (!DIALOG_IMPORT.test(content) && CUSTOM_MODAL_ARIA.test(content)) {
+    const customModals = findAll(CUSTOM_MODAL_CLASS, content);
+    if (customModals.length) {
+      issues.push(
+        `custom modal: fixed inset-0 z- with role=dialog/aria-modal without importing @/components/ui/dialog — use <Dialog>/<DialogContent> for focus-trap + Escape`,
+      );
+    }
+  }
+
+  // (f) Primitive chrome-override: Input/Textarea/Select/Button className
+  //     re-declaring border- + rounded- + focus:ring.
+  const chromeOverrides = findAll(PRIMITIVE_CHROME_OVERRIDE, content);
+  if (chromeOverrides.length) {
+    issues.push(
+      `primitive chrome-override: <Input|Textarea|Select|Button> className re-declares border-+rounded-+focus:ring — strip to layout-only classes (mt-1, w-full)`,
     );
   }
 

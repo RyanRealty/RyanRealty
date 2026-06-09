@@ -102,6 +102,89 @@ const CHECKS = [
     all: ['MetadataBlock'],
     why: 'The parks index MUST emit breadcrumb + WebPage JSON-LD via MetadataBlock.',
   },
+
+  // ── Findings P1.13 / P1.16 / P1.17 / P1.18 / P1.19 (2026-06-09) ──────
+  {
+    file: 'app/subdivisions/[slug]/page.tsx',
+    label: 'subdivisions: Place + BreadcrumbList via MetadataBlock',
+    all: ['MetadataBlock'],
+    why:
+      'Subdivision pages MUST emit a Place entity + BreadcrumbList via MetadataBlock so\n' +
+      '  AI engines can cite and navigate to individual subdivision pages.',
+  },
+  {
+    file: 'app/zip/[zip]/page.tsx',
+    label: 'zip: Place + Dataset via MetadataBlock',
+    all: ['MetadataBlock'],
+    why:
+      'ZIP pages MUST emit a Place entity + market Dataset via MetadataBlock so AI\n' +
+      '  engines can surface ZIP-level market statistics as structured claims.',
+  },
+  {
+    file: 'app/guides/[slug]/page.tsx',
+    label: 'guides: Article (BlogPosting) — no fabricated FAQPage',
+    all: ['generateBlogSchema'],
+    why:
+      'Guide pages MUST emit Article/BlogPosting JSON-LD (generateBlogSchema) with\n' +
+      '  real title/dates. A hard-coded FAQPage with Q&As that do not appear on the\n' +
+      '  rendered page violates Google policy and the no-fabrication rule.',
+  },
+  {
+    file: 'components/landing/LeadLandingPage.tsx',
+    label: 'lead LPs: FAQPage from visible config.faq',
+    all: ['generateFAQSchema'],
+    why:
+      'Lead landing pages render a visible FAQ section from config.faq and MUST\n' +
+      '  emit a matching FAQPage JSON-LD block (generateFAQSchema) so those Q&As\n' +
+      '  surface in Google rich results.',
+  },
+  {
+    file: 'app/tools/mortgage-calculator/page.tsx',
+    label: 'mortgage calculator: SoftwareApplication JSON-LD',
+    any: ['SoftwareApplication', 'WebApplication'],
+    why:
+      'The mortgage calculator MUST emit a SoftwareApplication (or WebApplication)\n' +
+      '  JSON-LD node, matching the pattern used by the rental-property-calculator\n' +
+      '  and appreciation-calculator siblings.',
+  },
+  {
+    file: 'app/lp/bend/page.tsx',
+    label: 'lp/bend: Dataset + BreadcrumbList',
+    all: ['Dataset', 'BreadcrumbList'],
+    why:
+      'The Bend LP renders a 6-stat KPI grid from live data and MUST emit a Dataset\n' +
+      '  carrying those stats plus a BreadcrumbList so AI engines can navigate to\n' +
+      '  this tier-1 search-authority surface.',
+  },
+  {
+    file: 'app/search/[...slug]/SearchPageJsonLd.tsx',
+    label: 'search: suppressPlace prop + totalCount for ItemList',
+    all: ['suppressPlace', 'totalCount'],
+    why:
+      'SearchPageJsonLd MUST accept suppressPlace (to avoid duplicate Place nodes\n' +
+      '  when ResortCommunityJsonLd is also rendered) and totalCount (so\n' +
+      '  ItemList.numberOfItems reflects the real result total, not the page slice).',
+  },
+
+  // ── Field-level assertions (P1.14) ─────────────────────────────────────
+  {
+    file: 'lib/site/json-ld.ts',
+    label: 'json-ld: availability field on RealEstateListingInput',
+    all: ['availability'],
+    why:
+      'RealEstateListingInput MUST declare an availability field so the Offer node\n' +
+      '  can reflect listing status (InStock / PreOrder / omitted) rather than\n' +
+      '  always advertising a live for-sale price on closed or withdrawn homes.',
+  },
+  {
+    file: 'components/site/listing-detail/ListingDetailShell.tsx',
+    label: 'listing shell: status field included in Pick<>',
+    all: ['status'],
+    why:
+      'ListingDetailShell MUST include status in its Pick<ListingDetail, ...> so\n' +
+      '  it can pass the listing status to the realEstateListing JSON-LD builder\n' +
+      '  and emit the correct availability on the Offer node.',
+  },
 ]
 
 const errors = []

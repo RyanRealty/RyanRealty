@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { H1 } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -27,7 +28,7 @@ const UL_CLASS = 'mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground'
 export default function PrivacyPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
-      <h1 className="text-2xl font-bold tracking-tight text-primary">Privacy & cookies</h1>
+      <H1 className="text-2xl tracking-tight text-primary">Privacy & cookies</H1>
       <p className="mt-2 text-sm text-muted-foreground">Last updated: June 1, 2026</p>
       <p className="mt-4 text-primary">
         How we collect, use, and protect your information when you use our website. For the full list of

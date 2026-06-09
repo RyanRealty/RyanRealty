@@ -4,6 +4,7 @@ import HomeTileCard from '@/components/home/HomeTileCard'
 import { estimatedMonthlyPayment, formatMonthlyPayment } from '@/lib/mortgage'
 import { TILE_MIN_HEIGHT_PX } from '@/lib/tile-constants'
 import TilesSlider, { TilesSliderItem } from '@/components/TilesSlider'
+import { H2 } from '@/components/site/primitives'
 
 type Props = {
   broker: AgentDetail
@@ -32,9 +33,9 @@ export default function BrokerPendingListings({
     return (
       <section className="bg-card px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="broker-pending-heading">
         <div className="mx-auto max-w-7xl">
-          <h2 id="broker-pending-heading" className="text-2xl font-bold tracking-tight text-primary">
+          <H2 id="broker-pending-heading" className="text-2xl text-primary">
             {firstName}&apos;s Pending Listings
-          </h2>
+          </H2>
           <p className="mt-4 text-muted-foreground">No pending or under-contract listings at this time.</p>
         </div>
       </section>

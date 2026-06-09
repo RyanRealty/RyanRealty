@@ -3,6 +3,7 @@ import Link from 'next/link'
 import type { AgentDetail } from '@/app/actions/agents'
 import BrokerHeroCtaButtons from '@/components/broker/BrokerHeroCtaButtons'
 import { teamPath } from '@/lib/slug'
+import { H1 } from '@/components/site/primitives'
 
 type Props = {
   broker: AgentDetail
@@ -85,9 +86,9 @@ export default function BrokerHero({ broker, fallbackImageUrl }: Props) {
             </div>
           </div>
           <div className="min-w-0 flex-1">
-            <h1 id="broker-hero-heading" className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">
+            <H1 id="broker-hero-heading" className="text-3xl text-primary sm:text-4xl">
               {broker.display_name}
-            </h1>
+            </H1>
             {broker.title && (
               <p className="mt-1 text-lg text-muted-foreground">{broker.title}</p>
             )}

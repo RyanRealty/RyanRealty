@@ -57,7 +57,7 @@ import { ArticleGrid } from '@/components/site/ArticleGrid'
 import { CTABar } from '@/components/site/CTABar'
 import { NeighborhoodMap } from '@/components/site/NeighborhoodMap'
 import { CommunityRichContent } from '@/components/site/CommunityRichContent'
-import { Container } from '@/components/site/primitives'
+import { Container, H2 } from '@/components/site/primitives'
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -364,9 +364,9 @@ export default async function CommunityDetailPage({ params }: Props) {
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
                 About {community.name}
               </p>
-              <h2 className="text-2xl font-bold text-foreground mb-4">
+              <H2 className="text-2xl text-foreground mb-4">
                 {community.name} at a glance
-              </h2>
+              </H2>
 
               {hasSubNeighborhoods ? (
                 <div className="mt-8">
@@ -496,9 +496,9 @@ export default async function CommunityDetailPage({ params }: Props) {
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">
                   {community.name}
                 </p>
-                <h2 className="text-2xl font-bold text-foreground">
+                <H2 className="text-2xl text-foreground">
                   Homes for sale in {community.name}
-                </h2>
+                </H2>
               </div>
               {boundaryMapData.pins.length > 24 ? (
                 <a
@@ -528,9 +528,9 @@ export default async function CommunityDetailPage({ params }: Props) {
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">
                 {community.name}
               </p>
-              <h2 className="text-2xl font-bold text-foreground">
+              <H2 className="text-2xl text-foreground">
                 Subdivisions within {community.name}
-              </h2>
+              </H2>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {communitySubdivisions.map((sub) => (

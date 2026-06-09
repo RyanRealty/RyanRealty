@@ -244,8 +244,8 @@ export default function BrandCard({ card, position }: Props) {
                 className={cn(
                   'mt-4 rounded-lg border px-3 py-2 text-sm',
                   isNavy
-                    ? 'border-emerald-300/40 bg-emerald-500/15 text-emerald-50'
-                    : 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                    ? 'border-success/40 bg-success/15 text-success-foreground'
+                    : 'border-success/30 bg-success/10 text-success-foreground'
                 )}
               >
                 Got it. Watch your inbox for the next report.
@@ -295,12 +295,7 @@ export default function BrandCard({ card, position }: Props) {
             </Link>
           )}
           {status === 'error' && card.inlineEmail && (
-            <p
-              className={cn(
-                'mt-2 text-xs',
-                isNavy ? 'text-rose-200' : 'text-rose-700'
-              )}
-            >
+            <p className="mt-2 text-xs text-destructive">
               We could not send that. Try again in a moment.
             </p>
           )}

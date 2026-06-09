@@ -6,6 +6,7 @@ import type { AgentForIndex } from '@/app/actions/agents'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import CardActionBar from '@/components/ui/CardActionBar'
+import { H3 } from '@/components/site/primitives'
 
 type Props = {
   agent: AgentForIndex
@@ -79,7 +80,7 @@ export default function BrokerCard({ agent, basePath = 'team' }: Props) {
             />
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="font-bold text-lg text-primary">{agent.display_name}</h2>
+            <H3 className="text-lg text-primary">{agent.display_name}</H3>
             {agent.title && (
               <p className="mt-0.5 text-sm text-muted-foreground">{agent.title}</p>
             )}

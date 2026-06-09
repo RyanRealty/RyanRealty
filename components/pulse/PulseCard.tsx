@@ -12,6 +12,8 @@ import {
   PlayCircleIcon,
 } from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { listingDetailPath } from '@/lib/slug'
 import HeartBurst from './HeartBurst'
 import {
@@ -174,12 +176,15 @@ function eventChip(item: PulseFeedItem): { label: string; tone: 'new' | 'sold' |
   }
 }
 
-const TONE_CHIP: Record<string, string> = {
-  new: 'bg-primary text-primary-foreground',
-  sold: 'bg-foreground text-background',
-  pending: 'bg-amber-600 text-white',
-  drop: 'bg-rose-600 text-white',
-  back: 'bg-emerald-700 text-white',
+// Badge variant mapping for each event tone — semantic tokens only (no raw palette).
+// new → default (navy), sold → secondary (dark neutral), pending → warning,
+// drop → destructive (price drop = destructive signal), back → success.
+const TONE_BADGE_VARIANT: Record<string, 'default' | 'secondary' | 'warning' | 'destructive' | 'success'> = {
+  new: 'default',
+  sold: 'secondary',
+  pending: 'warning',
+  drop: 'destructive',
+  back: 'success',
 }
 
 export default function PulseCard({
@@ -360,7 +365,12 @@ export default function PulseCard({
   const chip = eventChip(item)
   const detailLine = formatDetailLine(item)
   const location = formatLocation(item)
-  const timeAgo = relativeTime(item.event_at)
+  // P2.1 hydration fix: relativeTime reads Date.now() so server/client values
+  // can diverge → React #418 risk. Render an empty string on both sides until
+  // the component mounts, then compute the relative string client-side only.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+  const timeAgo = mounted ? relativeTime(item.event_at) : ''
   const drop = priceDropDelta(item)
   const sold = item.event_type === 'status_closed' ? soldPrice(item) : null
   const attribution = attributionText(item)
@@ -415,14 +425,12 @@ export default function PulseCard({
         {/* Top gradient + chips */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-foreground/75 via-foreground/30 to-transparent" />
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-3 sm:p-4">
-          <span
-            className={cn(
-              'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide shadow-sm',
-              TONE_CHIP[chip.tone]
-            )}
+          <Badge
+            variant={TONE_BADGE_VARIANT[chip.tone]}
+            className="rounded-full px-2.5 py-1 text-[11px] uppercase tracking-wide shadow-sm"
           >
             {chip.label}
-          </span>
+          </Badge>
           <span className="inline-flex items-center gap-1 rounded-full bg-background/15 px-2.5 py-1 text-[11px] font-medium text-background backdrop-blur">
             {timeAgo}
           </span>
@@ -444,21 +452,23 @@ export default function PulseCard({
 
         {/* Floating action column — TikTok/Reels style, right edge, vertically centered */}
         <div className="absolute right-3 top-1/2 z-20 flex -translate-y-1/2 flex-col items-center gap-3">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={handleLikeButton}
             aria-pressed={liked}
             aria-label={liked ? 'Unlike' : 'Like'}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-background/15 text-background backdrop-blur transition hover:bg-background/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-background/80"
+            className="h-12 w-12 rounded-full bg-background/15 text-background backdrop-blur hover:bg-background/25 focus-visible:ring-2 focus-visible:ring-background/80"
           >
             <HugeiconsIcon
               icon={FavouriteIcon}
               className={cn(
                 'h-7 w-7 transition',
-                liked ? 'fill-rose-500 text-rose-500' : 'text-background'
+                liked ? 'fill-destructive text-destructive' : 'text-background'
               )}
             />
-          </button>
+          </Button>
           <span
             key={likeBump}
             className={cn(
@@ -468,14 +478,16 @@ export default function PulseCard({
           >
             Like
           </span>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={handleShare}
             aria-label="Share"
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-background/15 text-background backdrop-blur transition hover:bg-background/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-background/80"
+            className="h-12 w-12 rounded-full bg-background/15 text-background backdrop-blur hover:bg-background/25 focus-visible:ring-2 focus-visible:ring-background/80"
           >
             <HugeiconsIcon icon={ShareKnowledgeIcon} className="h-6 w-6 text-background" />
-          </button>
+          </Button>
           <span className="text-xs font-semibold text-background drop-shadow">
             {shareConfirm ? 'Sent' : 'Share'}
           </span>
@@ -483,18 +495,20 @@ export default function PulseCard({
 
         {/* Inline mute control for autoplay video (bottom-left, above the info overlay) */}
         {hasInlineVideo && (
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
               setMuted((m) => !m)
             }}
             aria-label={muted ? 'Unmute video' : 'Mute video'}
-            className="absolute bottom-44 left-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-background/15 text-background backdrop-blur transition hover:bg-background/25"
+            className="absolute bottom-44 left-3 h-9 w-9 rounded-full bg-background/15 text-background backdrop-blur hover:bg-background/25"
           >
             <HugeiconsIcon icon={muted ? VolumeMute01Icon : VolumeHighIcon} className="h-4 w-4" />
-          </button>
+          </Button>
         )}
 
         {/* Bottom gradient + content overlay — tight, single-line where possible */}
@@ -519,9 +533,9 @@ export default function PulseCard({
           {drop && (
             <p className="mt-1 flex items-baseline gap-2 text-xs text-background/85">
               <span className="line-through opacity-70">Was {formatPriceShort(drop.from)}</span>
-              <span className="rounded-full bg-rose-600 px-2 py-0.5 font-semibold text-white">
+              <Badge variant="destructive" className="rounded-full px-2 py-0.5 font-semibold">
                 {drop.deltaPct.toFixed(1)}%
-              </span>
+              </Badge>
             </p>
           )}
           {location && (

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { getFeedListings } from '../actions/feed'
 import { getSession } from '../actions/auth'
 import { getSavedListingKeys } from '../actions/saved-listings'
@@ -6,7 +7,8 @@ import { getLikedListingKeys } from '../actions/likes'
 import FeedInfiniteList from '@/components/FeedInfiniteList'
 import ShareButton from '@/components/ShareButton'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container, H1 } from '@/components/site/primitives'
+import { Container, H1, H2 } from '@/components/site/primitives'
+import { Button } from '@/components/ui/button'
 import { listingsBrowsePath } from '@/lib/slug'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -57,24 +59,18 @@ export default async function FeedPage() {
             Browse the newest homes for sale across Central Oregon. Scroll for more.
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
-            <a
-              href={listingsBrowsePath()}
-              className="inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-semibold text-primary shadow-md hover:bg-accent/90"
-            >
-              View All Listings
-            </a>
-            <a
-              href="/homes-for-sale"
-              className="inline-flex items-center gap-2 rounded-lg border-2 border-primary-foreground/40 bg-card/10 px-5 py-3 text-sm font-semibold text-primary-foreground backdrop-blur-sm hover:bg-card/20"
-            >
-              Search on Map
-            </a>
+            <Button asChild size="lg" className="bg-accent text-primary hover:bg-accent/90 shadow-md">
+              <Link href={listingsBrowsePath()}>View All Listings</Link>
+            </Button>
+            <Button asChild variant="outline" size="lg" className="border-primary-foreground/40 bg-card/10 text-primary-foreground backdrop-blur-sm hover:bg-card/20">
+              <Link href="/homes-for-sale">Search on Map</Link>
+            </Button>
           </div>
         </div>
       </section>
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
       <div className="mt-4 flex items-center justify-between gap-3">
-        <h2 className="text-2xl font-semibold text-foreground">Newest first</h2>
+        <H2 className="text-2xl">Newest first</H2>
         <ShareButton
           url={`${siteUrl}/feed`}
           title="Latest listings in Central Oregon"

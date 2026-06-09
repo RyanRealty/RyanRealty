@@ -14,6 +14,7 @@ import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
 import { getEngagementCountsBatch } from '@/app/actions/engagement'
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client'
 import type { ActivityFeedItem } from '@/app/actions/activity-feed-shared'
+import { H2 } from '@/components/site/primitives'
 
 const SCROLL_THRESHOLD = 4
 /**
@@ -256,9 +257,9 @@ export default function ActivityFeedSection({
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex items-center gap-3">
-            <h2 id="activity-feed-heading" className="text-2xl text-primary sm:text-3xl">
+            <H2 id="activity-feed-heading" className="text-2xl text-primary sm:text-3xl">
               {heading}
-            </h2>
+            </H2>
             {liveConnected && (
               <span
                 className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success"

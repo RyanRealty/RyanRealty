@@ -6,6 +6,7 @@ import { trackEvent } from '@/lib/tracking'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { H2 } from '@/components/site/primitives'
 
 export default function ValuationForm() {
   const [state, setState] = useState<{ error?: string; success?: boolean; cmaSent?: boolean; eventId?: string }>({})
@@ -33,9 +34,9 @@ export default function ValuationForm() {
   if (state.success) {
     return (
       <div className="rounded-xl border border-success/30 bg-success/10 p-8 text-center">
-        <h2 className="text-xl font-semibold text-success">
+        <H2 className="text-xl text-success">
           {state.cmaSent ? "We've emailed your valuation" : "Request received"}
-        </h2>
+        </H2>
         <p className="mt-2 text-success">
           {state.cmaSent
             ? "Check your inbox for your Comparative Market Analysis. If you don't see it, check spam or reply to this email and we'll resend."

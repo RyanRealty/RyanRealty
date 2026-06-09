@@ -54,6 +54,19 @@ export type RealEstateListingInput = {
   listPrice?: number
   photos?: ReadonlyArray<string>
   listingAgent?: { name?: string; email?: string; telephone?: string }
+  /**
+   * Listing status from the MLS feed. Controls whether an Offer node is
+   * emitted and what availability value it carries.
+   *
+   * Active               -> Offer with InStock availability
+   * Active Under Contract
+   * Coming Soon          -> Offer with PreOrder availability
+   * Pending              -> no Offer (price no longer actionable)
+   * Closed / Withdrawn
+   * Expired / Canceled   -> no Offer (listing is off-market)
+   * undefined            -> behaves like Active (backwards-compatible)
+   */
+  availability?: string
 }
 
 export type BreadcrumbInput = {
@@ -174,11 +187,7 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
           unitCode: 'FTK',
         } : undefined,
         yearBuilt: input.yearBuilt,
-        offers: input.listPrice != null ? {
-          '@type': 'Offer',
-          price: input.listPrice,
-          priceCurrency: 'USD',
-        } : undefined,
+        offers: buildOffer(input.listPrice, input.availability),
         image: input.photos && input.photos.length > 0 ? input.photos.slice(0, 5).map(absoluteUrl) : undefined,
         listingAgent: input.listingAgent ? prune({
           '@type': 'RealEstateAgent',
@@ -291,6 +300,50 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
           name: input.authorName,
         } : undefined,
       })
+  }
+}
+
+/**
+ * Build a schema.org Offer node for a real-estate listing.
+ *
+ * Off-market statuses (Closed, Withdrawn, Expired, Canceled, Pending) must
+ * not advertise a live list price as a purchasable offer — a sold home at
+ * $X is not for sale at $X. Active and Coming Soon listings are on-market
+ * so an Offer makes sense. Active Under Contract is a stretch but Google
+ * accepts PreOrder for it (property is under contract, not yet sold).
+ *
+ * When availability is undefined we fall back to InStock so existing
+ * callers that do not pass the field keep the same behaviour.
+ */
+function buildOffer(
+  listPrice: number | undefined,
+  availability: string | undefined,
+): Record<string, unknown> | undefined {
+  if (listPrice == null) return undefined
+
+  const status = availability ?? 'Active'
+
+  // Off-market statuses: no Offer at all.
+  if (['Closed', 'Withdrawn', 'Expired', 'Canceled', 'Pending'].includes(status)) {
+    return undefined
+  }
+
+  // Active Under Contract / Coming Soon: price is visible but not freely buyable.
+  if (['Active Under Contract', 'Coming Soon'].includes(status)) {
+    return {
+      '@type': 'Offer',
+      price: listPrice,
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/PreOrder',
+    }
+  }
+
+  // Active (default) — in-stock, purchasable.
+  return {
+    '@type': 'Offer',
+    price: listPrice,
+    priceCurrency: 'USD',
+    availability: 'https://schema.org/InStock',
   }
 }
 

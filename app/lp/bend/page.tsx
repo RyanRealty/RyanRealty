@@ -944,6 +944,49 @@ export default async function BendCityPage() {
         </div>
       </section>
 
+      {/* BreadcrumbList — matches the page's logical position in the site hierarchy. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Home', item: `${siteUrl}/` },
+              { '@type': 'ListItem', position: 2, name: 'Bend, Oregon', item: `${siteUrl}/lp/bend/` },
+            ],
+          }),
+        }}
+      />
+      {/* Dataset — carries the KPI values the page already renders, sourced from
+          market_stats_cache (geo_slug=bend, rolling_365d). Only include a metric
+          when its value is non-null (CLAUDE.md data-accuracy rule). */}
+      {kpis && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Dataset',
+              name: 'Bend, Oregon single-family residential market statistics (rolling 12 months)',
+              description:
+                'Market statistics for Bend, Oregon single-family residential properties, rolling 365-day window, sourced from the Oregon RMLS feed via market_stats_cache.',
+              url: `${siteUrl}/lp/bend/`,
+              creator: { '@type': 'RealEstateAgent', name: 'Ryan Realty', url: siteUrl },
+              ...(kpis.computed_at ? { dateModified: kpis.computed_at } : {}),
+              spatialCoverage: { '@type': 'City', name: 'Bend', address: { '@type': 'PostalAddress', addressLocality: 'Bend', addressRegion: 'OR', addressCountry: 'US' } },
+              variableMeasured: [
+                ...(kpis.sold_count != null ? [{ '@type': 'PropertyValue', name: 'Homes sold (rolling 12 months)', value: kpis.sold_count, unitText: 'homes' }] : []),
+                ...(kpis.median_sale_price != null ? [{ '@type': 'PropertyValue', name: 'Median sale price', value: kpis.median_sale_price, unitText: 'USD' }] : []),
+                ...(kpis.median_dom != null ? [{ '@type': 'PropertyValue', name: 'Median days on market', value: kpis.median_dom, unitText: 'days' }] : []),
+                ...(kpis.avg_sale_to_list_ratio != null ? [{ '@type': 'PropertyValue', name: 'Average sale-to-list ratio', value: kpis.avg_sale_to_list_ratio }] : []),
+                ...(kpis.median_ppsf != null ? [{ '@type': 'PropertyValue', name: 'Median price per sq ft', value: kpis.median_ppsf, unitText: 'USD' }] : []),
+                ...(kpis.end_of_period_inventory != null ? [{ '@type': 'PropertyValue', name: 'Active inventory', value: kpis.end_of_period_inventory, unitText: 'homes' }] : []),
+              ],
+            }),
+          }}
+        />
+      )}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

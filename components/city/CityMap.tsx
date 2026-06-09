@@ -18,6 +18,7 @@ const SearchMapClustered = dynamic(
   }
 )
 import type { CityListingRow } from '@/app/actions/cities'
+import { H2 } from '@/components/site/primitives'
 
 type Props = {
   listings: CityListingRow[]
@@ -50,9 +51,9 @@ export default function CityMap({ listings, cityName, savedListingKeys = [], lik
   return (
     <section className="bg-muted px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="city-map-heading">
       <div className="mx-auto max-w-7xl">
-        <h2 id="city-map-heading" className="text-2xl font-bold tracking-tight text-primary">
+        <H2 id="city-map-heading" className="text-2xl text-primary">
           {cityName} Map
-        </h2>
+        </H2>
         <div className="mt-4 h-[400px] w-full overflow-hidden rounded-lg border border-border shadow-sm">
           <SearchMapClustered
             listings={mapListings}

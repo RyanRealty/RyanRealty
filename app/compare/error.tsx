@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { listingsBrowsePath } from '@/lib/slug'
+import { H1 } from '@/components/site/primitives'
 
 export default function CompareError({
   error,
@@ -20,7 +21,7 @@ export default function CompareError({
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-16 text-center">
-      <h1 className="text-xl font-semibold text-foreground">Something went wrong</h1>
+      <H1 className="text-xl text-foreground">Something went wrong</H1>
       <p className="mt-2 text-muted-foreground">We couldn&apos;t load the comparison page. Please try again.</p>
       <div className="mt-6 flex justify-center gap-3">
         <Button

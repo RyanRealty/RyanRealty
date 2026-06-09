@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { getCommunityHeroUnsplash, resolveUnsplashHeroImage } from '@/lib/hero-media'
+import { H1 } from '@/components/site/primitives'
 
 export type CommunityHeroProps = {
   name: string
@@ -57,9 +58,9 @@ export default function CommunityHero({
               Resort & master plan community
             </span>
           )}
-          <h1 className="mt-2 text-4xl font-bold tracking-tight text-primary-foreground sm:text-5xl drop-shadow-md">
+          <H1 as="h1" className="mt-2 text-4xl text-primary-foreground sm:text-5xl drop-shadow-md">
             {name}
-          </h1>
+          </H1>
           <p className="mt-1 text-lg text-muted font-sans">
             {city}, {state}
           </p>

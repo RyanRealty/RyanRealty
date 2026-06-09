@@ -11,12 +11,12 @@
  *   - `content_calendar`   · per-platform publishes (IG/FB/LinkedIn/etc.) with asset_url + platform_post_id
  *   - `content_performance` · post-publish 48h/7d/30d metrics
  *
- * This file reads `blog_posts` today; `content_calendar` wiring lands once
- * the per-platform publisher pipeline starts populating it.
+ * This file reads blog_posts via the canonical cached DAL reader
+ * (getPublishedBlogPosts from @/lib/data). The raw supabase query that used
+ * to live here was repointed to the DAL as part of Gate 6 (2026-06-09).
  */
 
-import { createClient } from '@supabase/supabase-js'
-import { unstable_cache } from 'next/cache'
+import { getPublishedBlogPosts } from '@/lib/data/blog/getPublishedBlogPosts'
 
 export type BrainBlogCard = {
   /** Stable card id. */
@@ -43,9 +43,6 @@ export type BrainBlogCard = {
   tags: string[]
 }
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
-
 /** Map blog category → pulse-feed category for chip tone + filter logic. */
 function mapCategoryToTone(blogCategory: string | null): BrainBlogCard['category'] {
   const c = (blogCategory ?? '').toLowerCase()
@@ -71,39 +68,32 @@ function kickerForCategory(category: BrainBlogCard['category']): string {
   }
 }
 
-async function _getBrainBlogCardsUncached(limit: number): Promise<BrainBlogCard[]> {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return []
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  const { data, error } = await supabase
-    .from('blog_posts')
-    .select('id, slug, title, excerpt, category, hero_image_url, published_at, tags')
-    .eq('status', 'published')
-    .not('hero_image_url', 'is', null)
-    .order('published_at', { ascending: false, nullsFirst: false })
-    .limit(Math.min(40, Math.max(1, limit)))
-  if (error || !data) return []
-  return data
-    .filter((row) => row.hero_image_url && row.title && row.slug)
-    .map((row): BrainBlogCard => {
-      const tone = mapCategoryToTone(row.category ?? null)
+/**
+ * Cached read of the brain's published blog feed.
+ *
+ * Delegates to the canonical DAL reader (getPublishedBlogPosts) which already
+ * uses makeResilientCached with a 600s TTL and the 'blog' cache tag. No
+ * double-caching — the DAL owns the cache boundary.
+ */
+export async function getBrainBlogCards(limit: number): Promise<BrainBlogCard[]> {
+  const result = await getPublishedBlogPosts({ category: null, limit: Math.min(40, Math.max(1, limit)), offset: 0 })
+  return result.posts
+    .filter((p) => p.hero_image_url && p.title && p.slug)
+    .map((p): BrainBlogCard => {
+      const tone = mapCategoryToTone(p.category ?? null)
       return {
-        id: `blog-${row.slug}`,
+        id: `blog-${p.slug}`,
         category: tone,
         kicker: kickerForCategory(tone),
-        headline: row.title as string,
-        body: ((row.excerpt as string | null) ?? '').slice(0, 140),
-        backgroundImage: row.hero_image_url as string,
-        backgroundAlt: row.title as string,
-        href: `/blog/${row.slug}`,
-        publishedAt: (row.published_at as string | null) ?? null,
-        blogCategory: (row.category as string | null) ?? null,
-        tags: ((row.tags as string[] | null) ?? []).slice(0, 6),
+        headline: p.title,
+        body: (p.excerpt ?? '').slice(0, 140),
+        backgroundImage: p.hero_image_url!,
+        backgroundAlt: p.title,
+        href: `/blog/${p.slug}`,
+        publishedAt: p.published_at ?? null,
+        blogCategory: p.category ?? null,
+        // tags is not part of the blog index shape (BlogPostWithAuthor); default to empty.
+        tags: [],
       }
     })
 }
-
-/** Cached read of the brain's published blog feed. Revalidates every 10 min. */
-export const getBrainBlogCards = unstable_cache(_getBrainBlogCardsUncached, ['pulse-brain-blog-cards-v1'], {
-  revalidate: 600,
-  tags: ['pulse-brain', 'blog-posts'],
-})

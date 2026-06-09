@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { trackEvent } from '@/lib/tracking'
 import SalesReportCard from '@/components/reports/SalesReportCard'
 import TilesSlider, { TilesSliderItem } from '@/components/TilesSlider'
+import { H2 } from '@/components/site/primitives'
+import { Button } from '@/components/ui/button'
 import type { SalesReportCardData } from '@/app/actions/market-reports'
 
 type ReportItem = { slug: string; title: string; period_start: string; period_end: string }
@@ -25,17 +27,19 @@ export default function ReportsIndexContent({ reports, salesCards }: Props) {
         ))}
       </TilesSlider>
 
-      <h2 className="mt-16 text-2xl font-bold text-primary sm:text-3xl">
+      <H2 className="mt-16 text-2xl text-primary sm:text-3xl">
         Weekly market reports
-      </h2>
-      <Link
-        href="/reports/explore"
-        className="mt-2 inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-primary shadow-sm hover:bg-accent/90"
+      </H2>
+      <Button
+        asChild
+        className="mt-2 bg-accent text-primary hover:bg-accent/90 shadow-sm"
         onClick={() => trackEvent('view_market_report', { context: 'reports_index_explore' })}
       >
-        Explore market data
-        <span aria-hidden>→</span>
-      </Link>
+        <Link href="/reports/explore">
+          Explore market data
+          <span aria-hidden>→</span>
+        </Link>
+      </Button>
       {reports.length === 0 ? (
         <p className="mt-6 text-muted-foreground">No weekly reports yet. Weekly summaries are generated on a schedule.</p>
       ) : (

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm'
+import { H1 } from '@/components/site/primitives'
 
 export const metadata: Metadata = {
   title: 'Reset Password',
@@ -17,7 +18,7 @@ export default function ForgotPasswordPage() {
             Ryan Realty
           </Link>
         </div>
-        <h1 className="text-center text-xl font-semibold text-foreground">Reset password</h1>
+        <H1 className="text-center text-xl text-foreground">Reset password</H1>
         <p className="mt-1 text-center text-sm text-muted-foreground">
           Enter your email and we&apos;ll send a reset link
         </p>

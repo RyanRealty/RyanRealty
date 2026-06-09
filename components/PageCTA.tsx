@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { trackCtaClick } from '@/lib/cta-tracking'
+import { H2 } from '@/components/site/primitives'
 
 type Props = {
   /** Main heading (e.g., "Get notified about new listings in Bend") */
@@ -96,9 +97,9 @@ export default function PageCTA({
     <Card className={className}>
       <CardContent className="p-6 sm:p-8">
         <div className="text-center">
-          <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+          <H2 className="text-xl sm:text-2xl">
             {title}
-          </h2>
+          </H2>
           {subtitle && (
             <p className="mt-2 text-sm text-muted-foreground sm:text-base">
               {subtitle}

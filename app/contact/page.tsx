@@ -12,7 +12,7 @@ import { listingsBrowsePath } from '@/lib/slug'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 import { CONTACT } from '@/lib/brand/contact'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container } from '@/components/site/primitives'
+import { Container, H2 } from '@/components/site/primitives'
 
 const contactOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')}/api/og?type=default`
 
@@ -98,7 +98,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
             <ContactForm defaultInquiryType={defaultInquiry} />
           </div>
           <div>
-            <h2 className="text-xl font-bold tracking-tight text-primary">Office</h2>
+            <H2 className="text-xl text-primary">Office</H2>
             <p className="mt-2 text-muted-foreground">
               Ryan Realty<br />
               Central Oregon

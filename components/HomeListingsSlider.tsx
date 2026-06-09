@@ -7,6 +7,7 @@ import { ArrowLeft01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons'
 import ListingTile from './ListingTile'
 import { Button } from '@/components/ui/button'
 import { cityPagePath } from '@/lib/slug'
+import { H2 } from '@/components/site/primitives'
 import type { ListingTileRow } from '@/app/actions/listings'
 
 const SCROLL_THRESHOLD = 4
@@ -57,9 +58,9 @@ export default function HomeListingsSlider({
   return (
     <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
       <div className="flex items-end justify-between gap-4">
-        <h2 className="text-2xl font-bold tracking-tight text-foreground">
+        <H2 className="text-2xl text-foreground">
           Recent & pending in {city}
-        </h2>
+        </H2>
         <Link
           href={cityPagePath(city)}
           className="text-sm font-medium text-muted-foreground hover:text-foreground"

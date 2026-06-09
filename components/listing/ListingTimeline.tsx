@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import type { ListingHistoryEvent } from '@/app/actions/listing-detail'
+import { H3 } from '@/components/site/primitives'
 
 type Props = {
   events: ListingHistoryEvent[]
@@ -76,7 +77,7 @@ export default function ListingTimeline({ events }: Props) {
   return (
     <Card>
       <CardContent className="p-6">
-        <h2 className="text-lg font-semibold text-foreground">Listing timeline</h2>
+        <H3 as="h2" className="text-lg text-foreground">Listing timeline</H3>
         <p className="mt-1 text-sm text-muted-foreground">
           Full history of this property on the market
         </p>

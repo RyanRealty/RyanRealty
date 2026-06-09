@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { getNeighborhoodHeroUnsplash, resolveUnsplashHeroImage } from '@/lib/hero-media'
+import { H1 } from '@/components/site/primitives'
 
 export type NeighborhoodHeroProps = {
   name: string
@@ -50,9 +51,9 @@ export default function NeighborhoodHero({
       <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/55 to-primary/25" aria-hidden />
       <div className="relative z-10 flex min-h-[320px] sm:min-h-[400px] flex-col justify-end px-4 pt-14 pb-8 md:pt-16 sm:px-6 sm:pb-12">
         <div className="mx-auto w-full max-w-7xl">
-          <h1 className="text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl drop-shadow-md">
+          <H1 as="h1" className="text-3xl text-primary-foreground sm:text-4xl drop-shadow-md">
             {name}
-          </h1>
+          </H1>
           <p className="mt-1 text-lg text-muted font-sans">{cityName}, Oregon</p>
           <div className="mt-4 flex flex-wrap gap-4 rounded-lg bg-foreground/30 px-4 py-3 text-sm text-primary-foreground font-sans">
             <span>{activeCount} Homes for Sale</span>

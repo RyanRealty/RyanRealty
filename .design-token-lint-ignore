@@ -96,11 +96,6 @@ lib/maps/markers.ts
 # SearchMapClustered.tsx and ListingMapGoogle.tsx.
 components/site/NeighborhoodMap.client.tsx
 
-# Map-search filter UI (SearchFilters) + map-search shell (MapSearchView) — the
-# interactive filter bar uses responsive popover widths (w-[min(...)]) and a few
-# low-level controls the strict token ladder does not cover, and the map shell
-# carries legacy map-control primitives. Same tracked-exception category as the
-# predecessor components/SearchFilterBar.tsx above. Migrate toward shadcn as the
-# search surface is reworked.
-components/search/SearchFilters.tsx
-components/search/MapSearchView.tsx
+# Map-search filter UI (SearchFilters) + map-search shell (MapSearchView) —
+# migrated to design-system components (P1.20, 2026-06-09). Files removed from
+# the ignore list so DISALLOWED_PRIMITIVES scanning resumes.

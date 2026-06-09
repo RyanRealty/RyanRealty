@@ -35,6 +35,16 @@ const FILE_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs'])
 
 // Tables that MUST go through lib/data/. Adding a table here requires a matching
 // rule in eslint.config.mjs and a doc update in docs/DATA_ACCESS_LAYER.md.
+//
+// Gate 6 expansion (2026-06-09): blog_posts, guides, and market_reports are now
+// fully covered by cached DAL readers. Consumer pages must import from @/lib/data
+// — not from app/actions/blog.ts, app/actions/guides.ts, or market-reports.ts.
+// Admin/write paths (saveBlogPost, saveGuide, upsertMarketReport…) remain in the
+// action files and are allowed because the gate skips app/api/** and app/admin/**.
+// reviews is added because getBrokerReviews DAL reader was created to cover the
+// per-broker review fetch in the team page; the only remaining raw `.from('reviews')`
+// call is in app/actions/agents.ts (getAgentReviews / getReviewStatsForBroker) which
+// is a write-adjacent stats composite, not a consumer page direct read.
 const BANNED_TABLES = [
   'listings',
   'listing_videos',
@@ -59,6 +69,28 @@ const BANNED_TABLES = [
   'cmas',
   'cma_comps',
   'guest_search_alerts',
+  // Wave 3 additions — DAL readers now exist for these; consumer pages must use them.
+  'blog_posts',
+  'guides',
+  'market_reports',
+]
+
+// Tables that are BANNED for consumer-page reads but allowed in write-path
+// action/API files. These tables have DAL readers for consumer use; writes and
+// admin mutations legitimately live in app/actions/* or app/api/*.
+//
+// A file path matching any of these prefixes is allowed to call .from('<table>')
+// for the listed tables. Consumer pages (app/<page>/page.tsx, components/*) that
+// call these tables directly are still flagged.
+const WRITE_PATH_PREFIXES = [
+  // Action files own the write path for all tables (admin + user mutations).
+  // Consumer pages that previously imported read functions from actions/* have
+  // been repointed to @/lib/data/ as of Wave 3 (2026-06-09).
+  'app/actions/',
+  // API routes + crons are server-side write/mutation paths — not consumer reads.
+  'app/api/',
+  // Admin UI has direct table access by design (internal tool, not consumer-facing).
+  'app/admin/',
 ]
 
 // Match: .from('listings'), .from("listings"), .from(`listings`) — any quote style.
@@ -77,6 +109,10 @@ function shouldSkip(relPath) {
   if (norm.includes('/__tests__/') || norm.endsWith('.test.ts') || norm.endsWith('.test.tsx')) return true
   // Skip migration files (they reference table names in SQL strings, not Supabase client calls).
   if (norm.includes('supabase/migrations/')) return true
+  // Skip write-path zones (actions, API routes, admin UI).
+  for (const prefix of WRITE_PATH_PREFIXES) {
+    if (norm.startsWith(prefix)) return true
+  }
   return false
 }
 

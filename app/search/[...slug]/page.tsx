@@ -725,6 +725,12 @@ export default async function SearchPage({
             presetLabel={preset?.shortLabel ?? null}
             canonicalPath={searchPagePath}
             listings={listings}
+            totalCount={totalCount}
+            suppressPlace={
+              // When we also render ResortCommunityJsonLd for this URL, suppress
+              // the generic Place so two nodes do not declare the same entity.
+              Boolean(city && subdivision && decodedSubdivision && isResortCommunity(city, decodedSubdivision, resortEntityKeys))
+            }
           />
           {city && subdivision && decodedSubdivision && isResortCommunity(city, decodedSubdivision, resortEntityKeys) && (
             <ResortCommunityJsonLd

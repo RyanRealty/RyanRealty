@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
-import { DisplayHeading, Container } from '@/components/site/primitives'
+import { DisplayHeading, Container, H2 } from '@/components/site/primitives'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -84,9 +84,9 @@ export default function JoinPage() {
 
       <section className="bg-muted px-4 py-16 sm:px-6 sm:py-20" aria-labelledby="next-heading">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 id="next-heading" className="text-2xl font-bold text-primary sm:text-3xl">
+          <H2 id="next-heading" className="text-2xl text-primary sm:text-3xl">
             Ready to start the conversation?
-          </h2>
+          </H2>
           <p className="mt-4 text-muted-foreground">
             Tell us a bit about yourself and your goals. We&apos;ll follow up to discuss fit,
             support, and next steps. No pressure, just a real conversation.

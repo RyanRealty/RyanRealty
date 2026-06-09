@@ -6,10 +6,13 @@ import Image from 'next/image'
 import type { VideoListingRow } from '@/app/actions/videos'
 import VideoPlayer from '@/components/video/VideoPlayer'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { PlayIcon, Cancel01Icon } from '@hugeicons/core-free-icons'
+import { PlayIcon } from '@hugeicons/core-free-icons'
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { listingDetailPath } from '@/lib/slug'
+import { H1 } from '@/components/site/primitives'
 
 type Props = { initialListings: VideoListingRow[] }
 
@@ -30,7 +33,7 @@ export default function VideosClient({ initialListings }: Props) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <h1 className="text-3xl font-bold text-primary">Video Tours</h1>
+      <H1 className="text-3xl text-primary">Video Tours</H1>
       <p className="mt-2 text-muted-foreground">
         Browse video tours of Central Oregon homes. Click to play in a lightbox.
       </p>
@@ -73,11 +76,11 @@ export default function VideosClient({ initialListings }: Props) {
       <div className="mt-8 hidden md:block">
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((listing) => (
-            <div key={listing.listing_key} className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+            <Card key={listing.listing_key} className="overflow-hidden">
               <Button
                 type="button"
                 onClick={() => setSelectedKey(listing.listing_key)}
-                className="relative block aspect-video w-full bg-foreground"
+                className="relative block aspect-video w-full bg-foreground rounded-none"
               >
                 {listing.photo_url ? (
                   <Image src={listing.photo_url} alt={`${listing.unparsed_address || listing.subdivision_name || 'Property'}, video thumbnail`} fill className="object-cover" sizes="400px" />
@@ -99,7 +102,7 @@ export default function VideosClient({ initialListings }: Props) {
                   )}
                 </span>
               </Button>
-              <div className="p-4">
+              <CardContent className="p-4">
                 <div className="flex flex-wrap items-center gap-2">
                   {listing.list_price ? (
                     <p className="font-semibold text-primary">${listing.list_price.toLocaleString()}</p>
@@ -115,18 +118,19 @@ export default function VideosClient({ initialListings }: Props) {
                   {listing.beds_total ?? '—'} bed · {listing.baths_full ?? '—'} bath
                   {listing.living_area != null && ` · ${Number(listing.living_area).toLocaleString()} sq ft`}
                 </p>
-                <Link
-                  href={listingDetailPath(
-                    listing.listing_key,
-                    { streetName: listing.unparsed_address ?? undefined, city: listing.city ?? undefined },
-                    { city: listing.city ?? undefined, subdivision: listing.subdivision_name ?? undefined }
-                  )}
-                  className="mt-2 inline-block text-sm font-medium text-accent-foreground"
-                >
-                  View Listing
-                </Link>
-              </div>
-            </div>
+                <Button asChild variant="link" className="mt-2 px-0 text-sm text-accent-foreground">
+                  <Link
+                    href={listingDetailPath(
+                      listing.listing_key,
+                      { streetName: listing.unparsed_address ?? undefined, city: listing.city ?? undefined },
+                      { city: listing.city ?? undefined, subdivision: listing.subdivision_name ?? undefined }
+                    )}
+                  >
+                    View listing
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </div>
@@ -155,76 +159,82 @@ export default function VideosClient({ initialListings }: Props) {
                     {listing.living_area != null && ` · ${Number(listing.living_area).toLocaleString()} sq ft`}
                   </p>
                 </div>
-                <Link
-                  href={listingDetailPath(
-                    listing.listing_key,
-                    { streetName: listing.unparsed_address ?? undefined, city: listing.city ?? undefined },
-                    { city: listing.city ?? undefined, subdivision: listing.subdivision_name ?? undefined }
-                  )}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg bg-card/90 px-3 py-2 text-sm font-medium text-primary"
+                <Button
+                  asChild
+                  variant="secondary"
+                  size="sm"
+                  className="absolute right-2 top-1/2 -translate-y-1/2"
                 >
-                  View Listing
-                </Link>
+                  <Link
+                    href={listingDetailPath(
+                      listing.listing_key,
+                      { streetName: listing.unparsed_address ?? undefined, city: listing.city ?? undefined },
+                      { city: listing.city ?? undefined, subdivision: listing.subdivision_name ?? undefined }
+                    )}
+                  >
+                    View listing
+                  </Link>
+                </Button>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Lightbox modal */}
-      {selectedKey && selected && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/90 p-4"
-          onClick={() => setSelectedKey(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Video lightbox"
+      {/* Lightbox — Dialog replaces the hand-rolled fixed overlay */}
+      <Dialog open={!!(selectedKey && selected)} onOpenChange={(open) => { if (!open) setSelectedKey(null) }}>
+        <DialogContent
+          showCloseButton
+          className="max-w-5xl w-full bg-foreground/95 p-4 text-primary-foreground [&_[data-slot=dialog-close]]:text-primary-foreground"
         >
-          <Button type="button" onClick={() => setSelectedKey(null)} className="absolute right-4 top-4 text-primary-foreground" aria-label="Close">
-            <HugeiconsIcon icon={Cancel01Icon} className="h-8 w-8" />
-          </Button>
-          <div className="flex w-full max-w-5xl flex-col gap-4 md:flex-row" onClick={(e) => e.stopPropagation()}>
-            <div className="flex-1">
-              <VideoPlayer
-                videoUrl={selected.video_url}
-                listingId={selected.listing_key}
-                posterUrl={selected.photo_url ?? undefined}
-                className="aspect-video w-full"
-              />
-              {selected.video_source === 'virtual_tour' && (
-                <p className="mt-2 text-center text-sm text-primary-foreground/90">Virtual tour, opens in player or new tab</p>
-              )}
-            </div>
-            <div className="w-full bg-card p-4 md:w-80">
-              <div className="flex flex-wrap items-center gap-2">
-                {selected.list_price ? (
-                  <p className="text-xl font-bold text-primary">${selected.list_price.toLocaleString()}</p>
-                ) : (
-                  <p className="text-xl font-bold text-primary">&mdash;</p>
-                )}
+          <DialogTitle className="sr-only">
+            {selected ? (selected.unparsed_address ?? 'Video tour') : 'Video tour'}
+          </DialogTitle>
+          {selected && (
+            <div className="flex w-full flex-col gap-4 md:flex-row">
+              <div className="flex-1">
+                <VideoPlayer
+                  videoUrl={selected.video_url}
+                  listingId={selected.listing_key}
+                  posterUrl={selected.photo_url ?? undefined}
+                  className="aspect-video w-full"
+                />
                 {selected.video_source === 'virtual_tour' && (
-                  <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">Virtual tour</span>
+                  <p className="mt-2 text-center text-sm text-primary-foreground/90">Virtual tour, opens in player or new tab</p>
                 )}
               </div>
-              <p className="text-muted-foreground">{selected.unparsed_address}</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {selected.beds_total ?? '—'} bed · {selected.baths_full ?? '—'} bath
-                {selected.living_area != null && ` · ${Number(selected.living_area).toLocaleString()} sq ft`}
-              </p>
-              <Link
-                href={listingDetailPath(
-                  selected.listing_key,
-                  { streetName: selected.unparsed_address ?? undefined, city: selected.city ?? undefined },
-                  { city: selected.city ?? undefined, subdivision: selected.subdivision_name ?? undefined }
-                )}
-                className="mt-4 inline-block rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-primary"
-              >
-                View Listing
-              </Link>
+              <div className="w-full bg-card p-4 text-foreground md:w-80">
+                <div className="flex flex-wrap items-center gap-2">
+                  {selected.list_price ? (
+                    <p className="text-xl font-bold text-primary">${selected.list_price.toLocaleString()}</p>
+                  ) : (
+                    <p className="text-xl font-bold text-primary">&mdash;</p>
+                  )}
+                  {selected.video_source === 'virtual_tour' && (
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">Virtual tour</span>
+                  )}
+                </div>
+                <p className="text-muted-foreground">{selected.unparsed_address}</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {selected.beds_total ?? '—'} bed · {selected.baths_full ?? '—'} bath
+                  {selected.living_area != null && ` · ${Number(selected.living_area).toLocaleString()} sq ft`}
+                </p>
+                <Button asChild className="mt-4 w-full">
+                  <Link
+                    href={listingDetailPath(
+                      selected.listing_key,
+                      { streetName: selected.unparsed_address ?? undefined, city: selected.city ?? undefined },
+                      { city: selected.city ?? undefined, subdivision: selected.subdivision_name ?? undefined }
+                    )}
+                  >
+                    View listing
+                  </Link>
+                </Button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
 
       {filtered.length === 0 && (
         <p className="mt-8 text-muted-foreground">No video tours match your filters.</p>

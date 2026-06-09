@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from "@/components/ui/button"
+import { H2 } from '@/components/site/primitives'
 
 type Props = {
   publicRemarks?: string
@@ -18,7 +19,7 @@ export default function ListingDescription({ publicRemarks, directions }: Props)
 
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-semibold text-primary">About This Home</h2>
+      <H2 className="text-xl text-primary">About This Home</H2>
       {text ? (
         <div className="text-primary whitespace-pre-line">
           {expanded ? text : (truncated ?? text)}

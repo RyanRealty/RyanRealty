@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
+import { H3 } from '@/components/site/primitives'
 
 type Props = {
   listingKey?: string
@@ -62,7 +63,7 @@ export default function DemandIndicators({ listingKey, viewCount, saveCount, lik
   return (
     <Card>
       <CardContent className="p-6">
-        <h2 className="text-lg font-semibold text-foreground">Demand indicators</h2>
+        <H3 as="h2" className="text-lg text-foreground">Demand indicators</H3>
         <Separator className="my-4" />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {counts.viewCount > 0 && <Metric label="Views" value={counts.viewCount.toLocaleString()} />}

@@ -65,10 +65,11 @@ describe('MapSearchView orchestrator', () => {
     expect(src).toMatch(/data-listing-key=/)
   })
 
-  it('has a mobile list/map toggle', () => {
+  it('has a mobile list/map toggle (design-system ToggleGroup)', () => {
     expect(src).toMatch(/mobileView/)
-    expect(src).toMatch(/setMobileView\('map'\)/)
-    expect(src).toMatch(/setMobileView\('list'\)/)
+    expect(src).toMatch(/setMobileView\(v\)/)
+    expect(src).toMatch(/ToggleGroupItem value="list"/)
+    expect(src).toMatch(/ToggleGroupItem value="map"/)
   })
 
   it('renders the search-as-you-move toggle control', () => {

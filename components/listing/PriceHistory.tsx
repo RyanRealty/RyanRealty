@@ -1,6 +1,7 @@
 'use client'
 
 import type { ListingDetailPriceHistory } from '@/app/actions/listing-detail'
+import { H2 } from '@/components/site/primitives'
 
 function formatPrice(n: number | null | undefined): string {
   if (n == null) return '—'
@@ -24,7 +25,7 @@ export default function PriceHistory({ priceHistory }: Props) {
 
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-semibold text-primary">Price History</h2>
+      <H2 className="text-xl text-primary">Price History</H2>
       <ul className="space-y-3">
         {priceHistory.map((entry) => {
           const oldP = entry.old_price ?? 0

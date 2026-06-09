@@ -3,6 +3,7 @@
 import type { SparkVideo, SparkVirtualTour } from '../../lib/spark'
 import { getVideoEmbedHtml } from '@/lib/video-embed'
 import { sanitizeHtmlWithEmbeds } from '@/lib/sanitize'
+import { H3 } from '@/components/site/primitives'
 
 const DIRECT_VIDEO_EXT = /\.(mp4|webm|ogg|mov)(\?|$)/i
 const TRUSTED_EMBED_HOSTS = new Set([
@@ -53,7 +54,7 @@ export default function ListingVideos({ videos, virtualTours }: Props) {
     <div className="space-y-8">
       {hasVideos && (
         <div>
-          <h2 className="mb-4 text-lg font-semibold">Videos</h2>
+          <H3 as="h2" className="mb-4 text-lg">Videos</H3>
           <div className="grid gap-4 sm:grid-cols-2">
             {(videos ?? []).map((v, i) => (
               <div
@@ -125,7 +126,7 @@ export default function ListingVideos({ videos, virtualTours }: Props) {
       )}
       {hasTours && (
         <div>
-          <h2 className="mb-4 text-lg font-semibold">Virtual tours</h2>
+          <H3 as="h2" className="mb-4 text-lg">Virtual tours</H3>
           <div className="flex flex-wrap gap-3">
             {(virtualTours ?? []).map((vt, i) => (
               <a

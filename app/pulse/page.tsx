@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import PulseHero from '@/components/pulse/PulseHero'
 import PulseFeed from '@/components/pulse/PulseFeed'
+import { LIFESTYLE_CARDS } from '@/lib/pulse-lifestyle-cards.server'
 import HomeValuationCta from '@/components/HomeValuationCta'
 import {
   getPulseFeed,
@@ -62,6 +63,7 @@ export default async function PulsePage() {
         defaultCities={defaultCities}
         citySnapshots={citySnapshots}
         regionSnapshot={regionSnapshot}
+        lifestyleCards={LIFESTYLE_CARDS}
       />
     </main>
   )

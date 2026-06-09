@@ -1,11 +1,6 @@
 {
-  "generatedAt": "2026-06-08T13:47:20.215Z",
+  "generatedAt": "2026-06-09T21:40:29.066Z",
   "reason": "Pages without a BreadcrumbNav at consolidation time. NEW violations fail CI; this list only shrinks as debt pages are fixed.",
-  "total": 4,
-  "violators": [
-    "app/housing-market/explore/page.tsx",
-    "app/reports/explore/page.tsx",
-    "app/reports/page.tsx",
-    "app/reports/sales/[city]/[period]/page.tsx"
-  ]
+  "total": 0,
+  "violators": []
 }

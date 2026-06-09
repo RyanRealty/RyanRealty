@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { GOOGLE_REVIEWS_URL, TESTIMONIALS } from '@/lib/testimonials'
 import { trackCtaClick } from '@/lib/cta-tracking'
+import { H2 } from '@/components/site/primitives'
 
 type Props = {
   title?: string
@@ -36,9 +37,9 @@ export default function BrokerSocialProofCta({
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="max-w-3xl">
-            <h2 id="broker-social-proof-heading" className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            <H2 id="broker-social-proof-heading" className="text-2xl sm:text-3xl">
               {title}
-            </h2>
+            </H2>
             <p className="mt-3 text-muted-foreground">{subtitle}</p>
           </div>
           <div className="flex flex-wrap gap-2">

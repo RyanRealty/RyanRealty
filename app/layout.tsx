@@ -59,7 +59,10 @@ export const metadata: Metadata = {
     description: "Find your next home in Bend and Central Oregon. Expert real estate service and listings.",
   },
   robots: "index, follow",
-  alternates: { canonical: getCanonicalSiteUrl() },
+  // No blanket alternates.canonical here — a root-layout canonical silently
+  // masks every page that forgets its own canonical (Google sees the homepage
+  // URL as canonical for every route). Each page sets its own canonical.
+  // The homepage canonical lives in app/page.tsx.
   other: {
     // Meta Business Portfolio (Ryan Realty LLC) domain verification for ryan-realty.com
     // Required for Meta Pixel/CAPI on owned domain + ads attribution + AEM priority events.

@@ -1,6 +1,7 @@
 // @no-parity static legal/utility page (same pattern as /privacy, /terms, /cookies), no mockup contract
 // @data-free static legal page, renders constant copy, no data layer needed
 import type { Metadata } from 'next'
+import { H1 } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -29,7 +30,7 @@ const UL_CLASS = 'mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground'
 export default function DataDeletionPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
-      <h1 className="text-2xl font-bold tracking-tight text-primary">Delete your data</h1>
+      <H1 className="text-2xl tracking-tight text-primary">Delete your data</H1>
       <p className="mt-2 text-sm text-muted-foreground">Last updated: June 2, 2026</p>
       <p className="mt-4 text-primary">
         You can have your Ryan Realty account and your personal data deleted at any time. This page

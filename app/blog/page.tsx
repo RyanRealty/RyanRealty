@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
-import { getPublishedBlogPosts, getPopularBlogSlugs, getBlogCategories } from '@/app/actions/blog'
+import { getPublishedBlogPosts, getPopularBlogSlugs } from '@/lib/data'
+import { getBlogCategories } from '@/app/actions/blog'
 import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
@@ -11,7 +12,7 @@ import { generateBreadcrumbSchema } from '@/lib/structured-data'
 import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container } from '@/components/site/primitives'
+import { Container, H2, H3 } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const defaultOgImage = `${siteUrl}/api/og?type=default`
@@ -124,7 +125,7 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
       />
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-2xl font-bold text-foreground">Latest Posts</h2>
+        <H2 className="text-2xl">Latest Posts</H2>
         <ShareButton
           url={`${siteUrl}/blog`}
           title="Central Oregon real estate blog"
@@ -156,7 +157,7 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
             )}
             <div className="p-6">
               {featured.category && <span className="text-xs font-medium uppercase text-muted-foreground">{featured.category}</span>}
-              <h2 className="mt-2 text-2xl font-bold text-foreground">{featured.title}</h2>
+              <H2 className="mt-2 text-2xl">{featured.title}</H2>
               {featured.excerpt && <p className="mt-2 line-clamp-2 text-muted-foreground">{featured.excerpt}</p>}
               <div className="mt-3 flex items-center gap-3 text-sm text-muted-foreground">
                 {featured.author_name && <span>{featured.author_name}</span>}
@@ -178,7 +179,7 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
               )}
               <div className="p-4">
                 {post.category && <span className="text-xs font-medium uppercase text-muted-foreground">{post.category}</span>}
-                <h2 className="mt-1 text-lg font-semibold text-foreground line-clamp-2">{post.title}</h2>
+                <H3 className="mt-1 text-lg font-semibold line-clamp-2">{post.title}</H3>
                 {post.excerpt && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{post.excerpt}</p>}
                 <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                   {post.author_name && <span>{post.author_name}</span>}
@@ -210,7 +211,7 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
       )}
 
       <aside className="mt-12 border-t border-border pt-8">
-        <h3 className="text-sm font-semibold text-foreground">Popular posts</h3>
+        <H3 className="text-sm font-semibold text-foreground">Popular posts</H3>
         <ul className="mt-2 space-y-2">
           {popularSlugs.slice(0, 5).map((slug) => {
             const title = slug

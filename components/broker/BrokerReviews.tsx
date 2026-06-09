@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { H2 } from '@/components/site/primitives'
 
 type Props = {
   brokerFirstName: string
@@ -81,9 +82,9 @@ export default function BrokerReviews({
   return (
     <section id="reviews" className="bg-muted px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="broker-reviews-heading">
       <div className="mx-auto max-w-7xl">
-        <h2 id="broker-reviews-heading" className="text-2xl font-bold tracking-tight text-primary">
+        <H2 id="broker-reviews-heading" className="text-2xl text-primary">
           Client Reviews for {brokerFirstName}
-        </h2>
+        </H2>
         <div className="mt-4 flex flex-wrap items-center gap-4">
           {avgRating != null && (
             <div className="flex items-center gap-2">

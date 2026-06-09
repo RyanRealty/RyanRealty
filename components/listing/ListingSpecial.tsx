@@ -4,6 +4,8 @@
  * "What Makes This Property Special" — listing agent voice / curated highlights.
  * Per cursor-listing-page-instructions: magazine pull-quote feel for luxury; before full description.
  */
+import { H3 } from '@/components/site/primitives'
+
 type Props = {
   /** First 3–5 sentences of description, or bullet highlights if we had highlight_bullets */
   highlights: string[]
@@ -18,9 +20,9 @@ export default function ListingSpecial({ highlights, featureTags }: Props) {
 
   return (
     <section className="rounded-lg border border-border bg-card p-6 shadow-sm" aria-labelledby="listing-special-heading">
-      <h2 id="listing-special-heading" className="mb-4 text-lg font-semibold text-foreground">
+      <H3 as="h2" id="listing-special-heading" className="mb-4 text-lg text-foreground">
         What makes this property special
-      </h2>
+      </H3>
       {hasHighlights && (
         <blockquote className="border-l-4 border-success pl-4 text-base leading-relaxed text-muted-foreground md:text-lg md:leading-relaxed">
           {highlights.map((s, i) => (

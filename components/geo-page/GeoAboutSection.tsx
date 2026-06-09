@@ -1,4 +1,5 @@
 import { Card } from '@/components/ui/card'
+import { H2 } from '@/components/site/primitives'
 
 export type QuickFact = { label: string; value: string }
 
@@ -26,9 +27,9 @@ export default function GeoAboutSection({ placeName, headingId, children, quickF
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
           <div className="min-w-0">
-            <h2 id={headingId} className="text-2xl font-bold tracking-tight text-primary">
+            <H2 id={headingId} className="text-2xl text-primary">
               About {placeName}
-            </h2>
+            </H2>
             <div className="mt-4 text-muted-foreground">{children}</div>
           </div>
           {visibleFacts.length > 0 && (

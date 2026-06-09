@@ -29,6 +29,17 @@ type Props = {
   presetLabel?: string | null
   /** Full canonical path including the preset segment, so page URLs match the canonical tag. */
   canonicalPath?: string
+  /**
+   * When true the generic Place node is suppressed. Use this when the page also
+   * renders a ResortCommunityJsonLd (or any other typed Place node) for the same
+   * URL so the two nodes do not conflict on the same entity.
+   */
+  suppressPlace?: boolean
+  /**
+   * Total result count for the search (across all pages, not just the rendered
+   * slice). Used for ItemList.numberOfItems so the value reflects the real total.
+   */
+  totalCount?: number
 }
 
 export default function SearchPageJsonLd({
@@ -42,6 +53,8 @@ export default function SearchPageJsonLd({
   listings,
   presetLabel,
   canonicalPath,
+  suppressPlace = false,
+  totalCount,
 }: Props) {
   const pagePath = canonicalPath ?? (city ? homesForSalePath(city, subdivision ?? null) : '/homes-for-sale')
   const pageUrl = siteUrl ? `${siteUrl}${pagePath}` : undefined
@@ -138,7 +151,9 @@ export default function SearchPageJsonLd({
       ? {
           '@context': 'https://schema.org',
           '@type': 'ItemList',
-          numberOfItems: listings.length,
+          // Use the real total when available; fall back to the slice length so
+          // we never report a number smaller than what is actually shown.
+          numberOfItems: totalCount ?? listings.length,
           itemListElement: listingUrls.slice(0, 10).map((url, i) => ({
             '@type': 'ListItem',
             position: i + 1,
@@ -147,11 +162,18 @@ export default function SearchPageJsonLd({
         }
       : null
 
+  // When a more-specific typed Place node (Resort, Neighborhood, etc.) is
+  // already rendered for this URL, suppress the generic Place so the two
+  // nodes do not conflict on the same entity.
+  const placeNode = suppressPlace ? null : (
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(place) }} />
+  )
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webPage) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbList) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(place) }} />
+      {placeNode}
       {itemList && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
       )}

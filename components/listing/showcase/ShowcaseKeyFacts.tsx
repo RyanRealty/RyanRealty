@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { getPropertyTypeLabel } from '@/lib/property-type-labels'
 import { normalizeMlsDisplayNumber } from '@/lib/mls-source'
 import MlsSourceBadge from '@/components/legal/MlsSourceBadge'
+import { H3 } from '@/components/site/primitives'
 
 function formatNum(n: number | null | undefined): string {
   if (n == null) return '—'
@@ -63,7 +64,7 @@ export default function ShowcaseKeyFacts({
   return (
     <Card className="border-border bg-card">
       <CardContent className="p-6">
-        <h2 className="text-lg font-semibold text-foreground">Key facts</h2>
+        <H3 as="h2" className="text-lg text-foreground">Key facts</H3>
         <Separator className="my-4" />
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
           {facts.map(({ label, value }) => (
