@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.430.0 (2026-06-09)
+
+### Features
+- feat(tools): rental property calculator (draft, approved for live review) + listing-detail video section
+
+---
+
+
 ## v1.429.0 (2026-06-09)
 
 ### Features
