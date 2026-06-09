@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.35 (2026-06-09)
+
+### Bug Fixes
+- fix(team): broker name renders in the Amboqia display face, not plain Geist
+
+---
+
+
 ## v1.425.34 (2026-06-09)
 
 ### Bug Fixes
