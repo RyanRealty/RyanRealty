@@ -83,6 +83,54 @@
     {
       "path": "/api/cron/performance-pull-30d",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/producer-dispatcher",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/producer-runtime",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/publisher-sweep",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/marketing-measurement-loop",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/cron/loop-health-check",
+      "schedule": "30 12 * * *"
+    },
+    {
+      "path": "/api/cron/detect-expired-listings",
+      "schedule": "5 * * * *"
+    },
+    {
+      "path": "/api/cron/detect-fsbo-listings",
+      "schedule": "35 9 * * *"
+    },
+    {
+      "path": "/api/cron/seller-workflow-pause",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/fub-outreach-execution",
+      "schedule": "20 * * * *"
+    },
+    {
+      "path": "/api/cron/marketing-competitor-recon",
+      "schedule": "0 10 * * 2"
+    },
+    {
+      "path": "/api/cron/marketing-audit-run",
+      "schedule": "0 11 * * 2"
+    },
+    {
+      "path": "/api/cron/marketing-weekly-cycle",
+      "schedule": "0 16 * * 1"
     }
   ]
 }

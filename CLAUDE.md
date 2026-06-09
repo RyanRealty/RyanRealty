@@ -1,3 +1,7 @@
+# THE LOOP — the canonical development process (READ ZEROTH)
+
+> **All development routes through THE LOOP v1.0.0 — see [`docs/DEVELOPMENT_PROCESS.md`](docs/DEVELOPMENT_PROCESS.md).** One self-improving cycle: ingest telemetry -> diagnose -> prioritize -> fix the class -> verify exhaustively -> ship -> measure -> learn -> lock behind a gate -> compete. It carries the preflight contract (no change starts blind), the live-environment rules, the escape-ledger protocol, and the approval model. Enforced by G44 (`ci:process-canon`). The sections below are the hard constraints THE LOOP operates under.
+
 # Data Accuracy — ABSOLUTE, NON-NEGOTIABLE (READ FIRST)
 
 > **Canonical database reference (read this BEFORE writing ANY SQL or market-report code):** [`docs/DATABASE_FOR_AI_AGENTS.md`](docs/DATABASE_FOR_AI_AGENTS.md). It covers every `public.*` table, the cache model (`market_pulse_live` 10–15 min freshness, `market_stats_cache` 6-hour freshness), the 14 resort communities + 14 Bend neighborhoods + cities, the `listings` mixed-case column quoting rule (the #1 cause of failed queries), slug formats per `geo_type`, and the SFR-only convention. **Don't aggregate raw `listings` for market reports — use the cache.** Registry source-of-truth: [`data/resort-communities.json`](data/resort-communities.json). Methodology current: `v4-2026-05-15` (rows in `public.cache_methodology_definitions`).

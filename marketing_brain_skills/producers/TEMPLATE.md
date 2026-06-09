@@ -13,6 +13,8 @@ action_types:
 
 # <Producer Name>
 
+> All development routes through THE LOOP v1.0.0 — see [docs/DEVELOPMENT_PROCESS.md](../../docs/DEVELOPMENT_PROCESS.md). Every producer inherits its preflight contract, verification bar, and approval model.
+
 **Scope:** One paragraph. What this producer makes, what surface it targets,
 what it does NOT do (be specific — prevents scope creep when the brain
 dispatches an action row and the agent must decide whether to proceed).
