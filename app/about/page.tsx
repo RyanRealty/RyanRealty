@@ -19,6 +19,7 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import { getBrokers } from '@/lib/data/brokers/getBrokers'
 import { getSurfaceImage, getLifestyleImages, getReviews } from '@/lib/data'
 import { ReviewsBlock } from '@/components/site/ReviewsBlock'
+import { MarketingStandardBlock } from '@/components/site/MarketingStandardBlock'
 import { LifestyleStrip } from '@/components/site/LifestyleStrip'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { HeroBlock } from '@/components/site/HeroBlock'
@@ -34,7 +35,7 @@ const ROUTE_PATH = '/about'
 export const metadata = pageMetadata({
   title: 'Ryan Realty · Bend, Oregon',
   description:
-    'A small Bend brokerage. Matt Ryan opened Ryan Realty in 2023; today three brokers cover Central Oregon. The broker you call is the one who closes your deal.',
+    'Ryan Realty markets Central Oregon homes with cinematic video, 3D tours, and data-backed pricing. Bend, Oregon, founded 2023. The broker you call is the one who closes your sale.',
   path: ROUTE_PATH,
   ogImage: '/brand/hero/hero-old-mill-master-4k.jpg',
   keywords: [
@@ -104,8 +105,8 @@ export default async function AboutPage() {
       </div>
 
       <HeroBlock
-        headline="A small brokerage in Bend, Oregon."
-        lede="Matt Ryan opened Ryan Realty in 2023. Today it is three brokers covering Central Oregon. The broker you call is the one who works your sale or purchase through to closing."
+        headline="Homes here deserve more than a sign in the yard."
+        lede="Every Ryan Realty listing gets cinematic video, a 3D walkthrough, and a price built from live Central Oregon market data. The showcase treatment, on every home, at every price."
         photo={{
           src: heroSrc ?? OLD_MILL_HERO,
           alt: 'Central Oregon high desert and Cascade mountains around Bend.',
@@ -113,6 +114,8 @@ export default async function AboutPage() {
         }}
         minHeight={440}
       />
+
+      <MarketingStandardBlock tone="default" />
 
       <ContentSection eyebrow="Our story" title="How Ryan Realty started." width="wide">
         <Stack gap="default">
