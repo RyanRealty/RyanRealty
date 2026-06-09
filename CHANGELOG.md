@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.435.2 (2026-06-09)
+
+### Other
+- ci: gate asset_library register() dedup against the curation-wipe regression
+
+---
+
+
 ## v1.435.1 (2026-06-09)
 
 ### Other
