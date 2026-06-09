@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.426.5 (2026-06-09)
+
+### Bug Fixes
+- fix(search): subdivision/neighborhood/preset pages return listings fast (+ gate)
+
+---
+
+
 ## v1.426.4 (2026-06-09)
 
 ### Bug Fixes
