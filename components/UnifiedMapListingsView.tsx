@@ -177,32 +177,42 @@ export default function UnifiedMapListingsView({
     ) => {
       setPage(1)
       setLoading(true)
-      const { listings: rows, totalCount: total } = await getListingsInBounds({
-        bounds: targetBounds,
-        city: city ?? undefined,
-        subdivision: subdivision ?? undefined,
-        statusFilter: statusFilter ?? undefined,
-        includeClosed,
-        minPrice,
-        maxPrice,
-        minBeds,
-        maxBeds,
-        minBaths,
-        maxBaths,
-        minSqFt,
-        maxSqFt,
-        postalCode: postalCode ?? undefined,
-        propertyType: propertyType ?? undefined,
-        limit: PER_PAGE,
-        offset: 0,
-        sort: targetSort,
-        polygon,
-      })
-      setListings(rows)
-      setTotalCount(total)
-      setSearchBounds(targetBounds)
-      setNeedsSearchThisArea(false)
-      setLoading(false)
+      try {
+        const { listings: rows, totalCount: total } = await getListingsInBounds({
+          bounds: targetBounds,
+          city: city ?? undefined,
+          subdivision: subdivision ?? undefined,
+          statusFilter: statusFilter ?? undefined,
+          includeClosed,
+          minPrice,
+          maxPrice,
+          minBeds,
+          maxBeds,
+          minBaths,
+          maxBaths,
+          minSqFt,
+          maxSqFt,
+          postalCode: postalCode ?? undefined,
+          propertyType: propertyType ?? undefined,
+          limit: PER_PAGE,
+          offset: 0,
+          sort: targetSort,
+          polygon,
+        })
+        setListings(rows)
+        setTotalCount(total)
+        setSearchBounds(targetBounds)
+        setNeedsSearchThisArea(false)
+      } catch (err) {
+        // A transient data-layer error (e.g. a cold statement timeout) must NOT
+        // leave the map stuck on a loading spinner — that is the "search as I move
+        // the map does nothing" symptom. Keep the prior results and re-offer the
+        // "Search this area" button so the user can retry.
+        console.error('[map-search] search-this-area failed:', err)
+        setNeedsSearchThisArea(true)
+      } finally {
+        setLoading(false)
+      }
     },
     [
       sort,
