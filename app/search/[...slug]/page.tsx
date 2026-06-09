@@ -51,7 +51,11 @@ import { decodeMapPolygon } from '@/lib/map-polygon'
 
 async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {
   return Promise.race([
-    promise,
+    // A rejection (e.g. a 57014 statement-timeout on a cold heavy read) must
+    // degrade to the fallback, NOT propagate and blank the whole page. The race
+    // alone only handles HANGS — a promise that rejects before timeoutMs would
+    // reject the race. Catch it so every guarded fetch fails soft.
+    promise.catch(() => fallback),
     new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
   ])
 }
@@ -398,8 +402,27 @@ export default async function SearchPage({
   // A genuine zero-result search (clean fetch, 0 matches) has degraded=false and
   // still renders the friendly empty state further down.
   if (listingsResult.degraded) {
-    throw new Error(
-      `[search] listings fetch degraded (timeout or data-layer error) — city=${city ?? 'none'} subdivision=${subdivision ?? 'none'} offset=${offset}`,
+    // Poison-null protection (see getListingsWithAdvanced): an UNFILTERED CITY
+    // scope returning degraded is never legitimate — a real city always has
+    // inventory — so throw to serve the last good ISR copy instead of caching
+    // "no homes in <city>". But a subdivision / neighborhood / preset / filtered
+    // scope can LEGITIMATELY be empty, and a hard throw there just renders a BLANK
+    // error page (the /homes-for-sale/bend/mountain-view bug: a Bend neighborhood
+    // with no exact subdivision-name match). For those, fall through to the
+    // friendly empty state below instead of blanking the page.
+    const bareCityScope =
+      !!city && !subdivision &&
+      filterOpts.minPrice == null && filterOpts.maxPrice == null &&
+      filterOpts.minBeds == null && filterOpts.minBaths == null && filterOpts.minSqFt == null &&
+      (!filterOpts.propertyType || filterOpts.propertyType.trim() === '' || filterOpts.propertyType.trim() === 'all') &&
+      !resolved.presetSlug
+    if (bareCityScope) {
+      throw new Error(
+        `[search] listings fetch degraded (timeout or data-layer error) — city=${city ?? 'none'} offset=${offset}`,
+      )
+    }
+    console.warn(
+      `[search] listings degraded for a non-bare-city scope — rendering the empty state instead of blanking the page (city=${city ?? 'none'} subdivision=${subdivision ?? 'none'} preset=${resolved.presetSlug ?? 'none'})`,
     )
   }
   const { listings, totalCount } = listingsResult
