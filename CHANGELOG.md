@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.439.0 (2026-06-09)
+
+### Features
+- feat(roll-in): parallel-session work — seller LP editorial rework, lead-origin context on contact form, loop-health insert fix, asset-library registrations
+- feat(site): execute the 2026-06-09 site-consistency audit — all P1 clusters + P2 tail, 5 new gates
+
+### Maintenance
+- docs: refresh cross-agent handoff (current state, waves, gotchas)
+
+---
+
+
 ## v1.438.0 (2026-06-09)
 
 ### Features
