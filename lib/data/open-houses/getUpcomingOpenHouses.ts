@@ -30,9 +30,9 @@
  * mixed-case RETS columns); never embed literal double-quotes in the strings.
  */
 
-import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
 
 export type UpcomingOpenHouseRow = {
   id: string
@@ -103,10 +103,10 @@ async function _getUpcomingOpenHousesUncached(options: {
   else query = query.in('City', SERVICE_AREA_CITIES)
 
   const { data, error } = await query
-  if (error) {
-    console.error('[getUpcomingOpenHouses]', error)
-    return []
-  }
+  // THROW on a transient DB error so makeResilientCached never caches the empty
+  // result (poison-null: one pooler/timeout blip would otherwise blank the
+  // "open houses this weekend" grid for the whole 15-min window). Genuine empty → [].
+  if (error) throw new Error(`[getUpcomingOpenHouses] ${error.message ?? JSON.stringify(error)}`)
 
   const soonestByListing = new Map<string, UpcomingOpenHouseRow>()
   for (const rec of (data ?? []) as Array<{ ListingKey?: string; OpenHouses?: OpenHouseJson[] }>) {
@@ -150,9 +150,12 @@ async function _getUpcomingOpenHousesUncached(options: {
  * Cached entry point. 15-minute freshness matches the listings sync cadence —
  * open houses get added/edited intraday and we never want a stale weekend.
  */
-export const getUpcomingOpenHouses = unstable_cache(
+export const getUpcomingOpenHouses = makeResilientCached(
   _getUpcomingOpenHousesUncached,
-  // v2 — excludes new-construction spec/model homes.
-  ['upcoming-open-houses-v2'],
+  // v3 — bumped alongside the poison-null fix (was unstable_cache, which cached []
+  // on a transient error). v2 excluded new-construction spec/model homes; v3 also
+  // evicts any v2 entries that may be poisoned.
+  ['upcoming-open-houses-v3'],
   { revalidate: CACHE_WINDOWS.marketPulse, tags: [cacheTag.market, 'open-houses'] },
+  [],
 )

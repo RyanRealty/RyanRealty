@@ -6,9 +6,9 @@
  * pools so an activity shot never lands on a geo tile.
  */
 
-import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
 
 export type LifestyleImage = { url: string; activity: string }
 
@@ -46,10 +46,11 @@ async function _getLifestyleImagesUncached(limit = 12): Promise<LifestyleImage[]
     .contains('surface_tags', ['lifestyle'])
     .not('file_url', 'is', null)
     .limit(60)
-  if (error || !data) {
-    if (error) console.error('[getLifestyleImages]', error)
-    return []
-  }
+  // THROW on a transient DB error so makeResilientCached never caches the empty
+  // result (poison-null: one pooler/timeout blip would otherwise blank the
+  // LifestyleStrip on /about and /sell for the whole 1d assets window). Genuine empty → [].
+  if (error) throw new Error(`[getLifestyleImages] ${error.message ?? JSON.stringify(error)}`)
+  if (!data) return []
   // One photo per activity first (variety), then fill to `limit`.
   const rows = data as Array<{ file_url: string; subject_tags: string[] | null }>
   const seen = new Set<string>()
@@ -68,8 +69,12 @@ async function _getLifestyleImagesUncached(limit = 12): Promise<LifestyleImage[]
   return [...primary, ...rest].slice(0, limit)
 }
 
-export const getLifestyleImages = unstable_cache(
+export const getLifestyleImages = makeResilientCached(
   _getLifestyleImagesUncached,
-  ['lifestyle-images-v1'],
+  // v2 — bumped alongside the poison-null fix (was unstable_cache, which cached []
+  // on a transient error). v1 entries may be poisoned; v2 evicts them. The `limit`
+  // arg is part of the cache key automatically.
+  ['lifestyle-images-v2'],
   { revalidate: CACHE_WINDOWS.assets, tags: [cacheTag.assets] },
+  [],
 )

@@ -16,9 +16,9 @@
  * hero/section image by a stable seed (e.g. a city slug or section id).
  */
 
-import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
 
 export type GolfImage = { url: string; subjectTags: string[] }
 
@@ -37,7 +37,12 @@ async function _getGolfImagesUncached(limit = 24): Promise<GolfImage[]> {
     .contains('surface_tags', ['golf'])
     .not('file_url', 'is', null)
     .limit(120)
-  if (surfaceError) console.error('[getGolfImages] surface_tags', surfaceError)
+  // THROW on a transient DB error on the PRIMARY (hero-driving) read so
+  // makeResilientCached never caches an empty golf pool (poison-null: one
+  // asset_library/pooler blip would otherwise pin the golf LP hero + section
+  // imagery to the fallback for the whole 1d assets window). A genuine empty
+  // primary pool is fine — the subject-tag backfill below still runs.
+  if (surfaceError) throw new Error(`[getGolfImages] surface_tags ${surfaceError.message ?? JSON.stringify(surfaceError)}`)
 
   const surfaceRows = (surfaceData ?? []) as GolfRow[]
 
@@ -70,10 +75,14 @@ async function _getGolfImagesUncached(limit = 24): Promise<GolfImage[]> {
   return out.slice(0, limit)
 }
 
-export const getGolfImages = unstable_cache(
+export const getGolfImages = makeResilientCached(
   _getGolfImagesUncached,
-  ['golf-images-v1'],
+  // v2 — bumped alongside the poison-null fix (was unstable_cache, which cached []
+  // on a transient error on the primary read). v1 entries may be poisoned; v2 evicts
+  // them. The `limit` arg is part of the cache key automatically.
+  ['golf-images-v2'],
   { revalidate: CACHE_WINDOWS.assets, tags: [cacheTag.assets] },
+  [],
 )
 
 // Stable string hash (djb2) for deterministic, varied picks across surfaces.

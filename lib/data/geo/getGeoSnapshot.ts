@@ -14,6 +14,7 @@ import { unstable_cache } from 'next/cache'
 import { z } from 'zod'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
 
 const GeoSnapshotSchema = z.object({
   geoType: z.enum(['city', 'community', 'neighborhood']),
@@ -145,57 +146,89 @@ export const getGeoSnapshot = async (input: GeoSnapshotInput): Promise<GeoSnapsh
   }
 }
 
+// The three list-helpers below mirror getGeoSnapshot's resilience: each fetch fn
+// THROWS on a transient DB error so makeResilientCached never caches an empty list
+// (poison-null: one pooler/timeout blip would otherwise pin the homepage city grid,
+// the admin community list, or a city's communities bar to [] for the whole window).
+// A genuine empty success still returns []. Cache keys bumped to -v2 to evict any
+// poison-null entries cached under the prior inline-unstable_cache keys.
+
+async function _fetchAllCitySnapshots(): Promise<GeoSnapshot[]> {
+  const supabase = supabaseAnon()
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('geo_snapshot_mv')
+    .select('*')
+    .eq('geo_type', 'city')
+    .gt('active_sfr_count', 0)
+    .order('active_sfr_count', { ascending: false })
+    .limit(50)
+  if (error) throw new Error(`[getAllCitySnapshots] ${error.message ?? JSON.stringify(error)}`)
+  if (!data) return []
+  return (data as GeoSnapshotMvRow[]).map(rowToSnapshot)
+}
+
 /**
  * Fetch every city snapshot, sorted by active SFR count descending.
  * Powers the homepage city grid + the cities index.
  */
-export const getAllCitySnapshots = (): Promise<GeoSnapshot[]> =>
-  unstable_cache(
-    async () => {
-      const supabase = supabaseAnon()
-      if (!supabase) return []
-      const { data, error } = await supabase
-        .from('geo_snapshot_mv')
-        .select('*')
-        .eq('geo_type', 'city')
-        .gt('active_sfr_count', 0)
-        .order('active_sfr_count', { ascending: false })
-        .limit(50)
-      if (error || !data) return []
-      return (data as GeoSnapshotMvRow[]).map(rowToSnapshot)
-    },
-    ['geo-snapshot', 'all-cities'],
-    {
-      revalidate: CACHE_WINDOWS.geoCity,
-      tags: ['cities-index'],
-    }
-  )()
+export const getAllCitySnapshots = makeResilientCached(
+  _fetchAllCitySnapshots,
+  ['geo-snapshot-all-cities-v2'],
+  { revalidate: CACHE_WINDOWS.geoCity, tags: ['cities-index'] },
+  [],
+)
+
+async function _fetchAllCommunitySnapshots(): Promise<GeoSnapshot[]> {
+  const supabase = supabaseAnon()
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('geo_snapshot_mv')
+    .select('*')
+    .eq('geo_type', 'community')
+    .gt('active_sfr_count', 0)
+    .order('geo_key', { ascending: true })
+    .limit(5000)
+  if (error) throw new Error(`[getAllCommunitySnapshots] ${error.message ?? JSON.stringify(error)}`)
+  if (!data) return []
+  return (data as GeoSnapshotMvRow[]).map(rowToSnapshot)
+}
 
 /**
  * Fetch every community snapshot across all cities. Used by admin tooling
  * that needs the full list of (city, subdivision) pairs.
  */
-export const getAllCommunitySnapshots = (): Promise<GeoSnapshot[]> =>
-  unstable_cache(
-    async () => {
-      const supabase = supabaseAnon()
-      if (!supabase) return []
-      const { data, error } = await supabase
-        .from('geo_snapshot_mv')
-        .select('*')
-        .eq('geo_type', 'community')
-        .gt('active_sfr_count', 0)
-        .order('geo_key', { ascending: true })
-        .limit(5000)
-      if (error || !data) return []
-      return (data as GeoSnapshotMvRow[]).map(rowToSnapshot)
-    },
-    ['geo-snapshot', 'all-communities'],
-    {
-      revalidate: CACHE_WINDOWS.geoCommunity,
-      tags: ['communities-index'],
-    }
-  )()
+export const getAllCommunitySnapshots = makeResilientCached(
+  _fetchAllCommunitySnapshots,
+  ['geo-snapshot-all-communities-v2'],
+  { revalidate: CACHE_WINDOWS.geoCommunity, tags: ['communities-index'] },
+  [],
+)
+
+async function _fetchCityCommunitySnapshots(cityLower: string): Promise<GeoSnapshot[]> {
+  const supabase = supabaseAnon()
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('geo_snapshot_mv')
+    .select('*')
+    .eq('geo_type', 'community')
+    .like('geo_key', `${cityLower}:%`)
+    .gt('active_sfr_count', 0)
+    .order('active_sfr_count', { ascending: false })
+    .limit(40)
+  if (error) throw new Error(`[getCityCommunitySnapshots] ${cityLower} ${error.message ?? JSON.stringify(error)}`)
+  if (!data) return []
+  return (data as GeoSnapshotMvRow[]).map(rowToSnapshot)
+}
+
+// The cityLower arg is part of the cache key automatically; the per-city tag is
+// applied via opts.tags so a city revalidation still flushes its communities bar.
+const cachedCityCommunitySnapshots = makeResilientCached(
+  _fetchCityCommunitySnapshots,
+  ['geo-snapshot-communities-v2'],
+  { revalidate: CACHE_WINDOWS.geoCity, tags: ['communities-index'] },
+  [],
+)
 
 /**
  * Fetch every community snapshot in a city. Powers the city LP communities bar.
@@ -205,25 +238,5 @@ export const getCityCommunitySnapshots = (citySlug: string): Promise<GeoSnapshot
   // hyphenated city slug ("la-pine") must be normalized or the communities bar is
   // empty on every multi-word city.
   const cityLower = citySlug.toLowerCase().trim().replace(/-/g, ' ')
-  return unstable_cache(
-    async () => {
-      const supabase = supabaseAnon()
-      if (!supabase) return []
-      const { data, error } = await supabase
-        .from('geo_snapshot_mv')
-        .select('*')
-        .eq('geo_type', 'community')
-        .like('geo_key', `${cityLower}:%`)
-        .gt('active_sfr_count', 0)
-        .order('active_sfr_count', { ascending: false })
-        .limit(40)
-      if (error || !data) return []
-      return (data as GeoSnapshotMvRow[]).map(rowToSnapshot)
-    },
-    ['geo-snapshot', 'communities', cityLower],
-    {
-      revalidate: CACHE_WINDOWS.geoCity,
-      tags: [cacheTag.city(cityLower)],
-    }
-  )()
+  return cachedCityCommunitySnapshots(cityLower)
 }

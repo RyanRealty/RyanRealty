@@ -24,10 +24,10 @@
  * migrate to this DAL function in a follow-up commit.
  */
 
-import { unstable_cache } from 'next/cache'
 import { z } from 'zod'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
 import type { ListingTile } from '@/lib/data/types/listing'
 import { getListingTiles } from './getListingTiles'
 import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
@@ -56,10 +56,11 @@ async function fetchSimilarKeys(
     .eq('anchor_key', canonicalKey)
     .order('rank', { ascending: true })
     .limit(limit)
-  if (error) {
-    console.error('[getSimilarListings] keys lookup:', { anchorKey, canonicalKey, error })
-    return []
-  }
+  // THROW on a transient DB error so the resilient cache wrapping fetchSimilarTiles
+  // never caches an empty "similar homes" rail (poison-null: this fetch is called
+  // INSIDE the cached body, so one similar_listings_mv blip would otherwise blank
+  // the rail on a listing-detail page for the whole window). Genuine empty → [].
+  if (error) throw new Error(`[getSimilarListings] keys lookup ${anchorKey}/${canonicalKey}: ${error.message ?? JSON.stringify(error)}`)
   return ((data ?? []) as SimilarRow[]).map((r) => r.similar_key)
 }
 
@@ -84,17 +85,21 @@ async function fetchSimilarTiles(
     .filter((t): t is ListingTile => !!t)
 }
 
+// Resilient cache. v2 — bumped alongside the poison-null fix. fetchSimilarKeys
+// (called inside fetchSimilarTiles) now THROWS on a DB error instead of returning
+// []; makeResilientCached retries once uncached then falls back to [] without ever
+// caching the empty rail. anchorKey + limit are part of the cache key automatically.
+const cachedSimilarTiles = makeResilientCached(
+  fetchSimilarTiles,
+  ['similar-listings-v2'],
+  { revalidate: CACHE_WINDOWS.listingTile, tags: [cacheTag.listings] },
+  [],
+)
+
 export const getSimilarListings = (
   anchorKey: string,
   limit: number = 12,
 ): Promise<ListingTile[]> => {
   InputSchema.parse({ anchorKey, limit })
-  return unstable_cache(
-    () => fetchSimilarTiles(anchorKey, limit),
-    ['similar-listings', anchorKey, String(limit)],
-    {
-      revalidate: CACHE_WINDOWS.listingTile,
-      tags: [cacheTag.listings, cacheTag.listing(anchorKey)],
-    },
-  )()
+  return cachedSimilarTiles(anchorKey, limit)
 }

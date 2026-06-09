@@ -1,0 +1,7 @@
+{
+  "generatedAt": "2026-06-09T21:30:00.000Z",
+  "reason": "Poison-null baseline — FULLY PAID DOWN. Every original offender (a resolver wrapped in unstable_cache that returned []/null/{}/a default on a Supabase error branch instead of throwing) has been converted to throw-on-error + makeResilientCached. The baseline is now empty: ANY new offender fails CI immediately. This list only shrinks and is already at zero.",
+  "total": 0,
+  "violators": [],
+  "detail": []
+}

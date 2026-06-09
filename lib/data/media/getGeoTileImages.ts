@@ -20,9 +20,9 @@
  * 'central-oregon' tag when a specific place has no tagged photo.
  */
 
-import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
 
 export type GeoTileImageMap = Record<string, string[]>
 
@@ -42,10 +42,11 @@ async function _getGeoTileImagesUncached(geoTags: string[]): Promise<GeoTileImag
     .overlaps('geo_tags', tags)
     .not('file_url', 'is', null)
     .limit(600)
-  if (error || !data) {
-    if (error) console.error('[getGeoTileImages]', error)
-    return {}
-  }
+  // THROW on a transient DB error so makeResilientCached never caches the empty
+  // map (poison-null: one pooler/timeout blip would otherwise blank every city /
+  // neighborhood area tile site-wide for the whole 1d assets window). Genuine empty → {}.
+  if (error) throw new Error(`[getGeoTileImages] ${error.message ?? JSON.stringify(error)}`)
+  if (!data) return {}
 
   // Prefer scenic/exterior shots over interiors for an area tile.
   const isScenic = (subjects: string[] | null) =>
@@ -68,12 +69,14 @@ async function _getGeoTileImagesUncached(geoTags: string[]): Promise<GeoTileImag
   return map
 }
 
-export const getGeoTileImages = unstable_cache(
+export const getGeoTileImages = makeResilientCached(
   _getGeoTileImagesUncached,
-  // v3 — bumped 2026-06-02 after the big curation pass approved ~490 new
-  // geo-tagged photos via SQL (no updateTag fired), so the warm v2 entry would
-  // otherwise serve the old small approved set for up to a day. v2 — bumped
-  // after the asset_library anon-read RLS policy landed.
-  ['geo-tile-images-v5'],
+  // v6 — bumped alongside the poison-null fix (was unstable_cache, which cached {}
+  // on a transient error). v5 entries may be poisoned; v6 evicts them. The geoTags
+  // arg is part of the cache key automatically.
+  // History: v3 (2026-06-02) after a curation pass approved ~490 geo-tagged photos
+  // via SQL with no updateTag; v2 after the asset_library anon-read RLS policy.
+  ['geo-tile-images-v6'],
   { revalidate: CACHE_WINDOWS.assets, tags: [cacheTag.assets] },
+  {},
 )

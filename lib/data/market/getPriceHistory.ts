@@ -23,10 +23,10 @@
  * cadence. Tag `market` flushes if upstream cron re-runs early.
  */
 
-import { unstable_cache } from 'next/cache'
 import { z } from 'zod'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
 import type { GeoType } from '@/lib/data/types/shared'
 import type { PriceHistoryPoint, MarketStats } from '@/lib/data/types/market'
 
@@ -61,10 +61,10 @@ async function fetchHistory(
     .eq('period_type', periodType)
     .order('period_start', { ascending: false })
     .limit(limit)
-  if (error) {
-    console.error('[getPriceHistory]', { geoType, geoSlug, periodType, error })
-    return []
-  }
+  // THROW on a transient DB error so the resilient cache never caches the empty
+  // result (poison-null: one pooler/timeout blip would otherwise flatten the price
+  // history chart on city/market/seller pages for the whole 6h window). Genuine empty → [].
+  if (error) throw new Error(`[getPriceHistory] ${geoType}:${geoSlug}:${periodType} ${error.message ?? JSON.stringify(error)}`)
   // Reverse to chronological (oldest → newest) for chart consumers.
   return ((data ?? []) as Row[])
     .map((r) => ({
@@ -75,6 +75,17 @@ async function fetchHistory(
     .reverse()
 }
 
+// Resilient cache. v2 — bumped alongside the poison-null fix (was unstable_cache,
+// which cached [] on a transient error). The per-args cache key includes geo +
+// period + limit so each tuple caches independently; v1 entries may be poisoned,
+// v2 evicts them. fetchHistory THROWS on a DB error so no empty is ever cached.
+const cachedPriceHistory = makeResilientCached(
+  fetchHistory,
+  ['price-history-v2'],
+  { revalidate: CACHE_WINDOWS.marketStats, tags: [cacheTag.market] },
+  [],
+)
+
 export const getPriceHistory = (
   geoType: GeoType,
   geoSlug: string,
@@ -82,12 +93,5 @@ export const getPriceHistory = (
   limit: number = 24,
 ): Promise<PriceHistoryPoint[]> => {
   InputSchema.parse({ geoType, geoSlug, periodType, limit })
-  return unstable_cache(
-    () => fetchHistory(geoType, geoSlug, periodType, limit),
-    ['price-history', geoType, geoSlug, periodType, String(limit)],
-    {
-      revalidate: CACHE_WINDOWS.marketStats,
-      tags: [cacheTag.market],
-    },
-  )()
+  return cachedPriceHistory(geoType, geoSlug, periodType, limit)
 }

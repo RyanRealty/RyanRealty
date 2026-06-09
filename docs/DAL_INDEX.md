@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-06-09T20:45:08.940Z
+**Generated:** 2026-06-09T21:06:32.896Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -67,8 +67,6 @@ Companion files:
 **Tables:** `blog_posts`
 
 **Selected columns:** `id`, `title`, `slug`, `excerpt`, `category`, `hero_image_url`, `published_at`
-
-**Cache keys:** `recent-blog-posts-v1`
 
 **TTL windows:** `CACHE_WINDOWS.blog`
 
@@ -190,7 +188,7 @@ Companion files:
 
 **TTL windows:** `CACHE_WINDOWS.geoCity`, `CACHE_WINDOWS.geoCommunity`
 
-**Cache tags:** `parsed.geoType === 'city' ? cacheTag.city(parsed.geoKey) : parsed.geoType === 'community' ? cacheTag.community(parsed.geoKey) : cacheTag.neighborhood(parsed.geoKey)`, `'cities-index'`, `'communities-index'`, `cacheTag.city(cityLower)`
+**Cache tags:** `parsed.geoType === 'city' ? cacheTag.city(parsed.geoKey) : parsed.geoType === 'community' ? cacheTag.community(parsed.geoKey) : cacheTag.neighborhood(parsed.geoKey)`, `'cities-index'`, `'communities-index'`
 
 ---
 
@@ -330,7 +328,7 @@ Companion files:
 
 **TTL windows:** `CACHE_WINDOWS.listingTile`
 
-**Cache tags:** `cacheTag.listings, cacheTag.listing(anchorKey)`
+**Cache tags:** `cacheTag.listings`
 
 ---
 
@@ -450,8 +448,6 @@ Companion files:
 
 **Selected columns:** `file_url`, `subject_tags`
 
-**Cache keys:** `golf-images-v1`
-
 **TTL windows:** `CACHE_WINDOWS.assets`
 
 **Cache tags:** `cacheTag.assets`
@@ -465,8 +461,6 @@ Companion files:
 **Tables:** `asset_library`
 
 **Selected columns:** `file_url`, `subject_tags`
-
-**Cache keys:** `lifestyle-images-v1`
 
 **TTL windows:** `CACHE_WINDOWS.assets`
 
@@ -554,8 +548,6 @@ Companion files:
 
 **Selected columns:** `rating`, `text`, `reviewer_name`, `review_date`
 
-**Cache keys:** `reviews-google-v1`
-
 **TTL windows:** `CACHE_WINDOWS.reviews`
 
 **Cache tags:** `cacheTag.reviews`
@@ -609,8 +601,6 @@ Companion files:
 **Tables:** `listings`
 
 **Selected columns:** `ClosePrice`
-
-**Cache keys:** `brokerage-track-record`
 
 **Cache tags:** `'market', 'listings'`
 

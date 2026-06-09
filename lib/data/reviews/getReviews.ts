@@ -9,9 +9,9 @@
  * Returns the brokerage rating summary (count + average across ALL non-hidden
  * reviews) plus the most recent reviews that carry written text, for quote cards.
  */
-import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
 
 export type Review = {
   rating: number
@@ -41,7 +41,12 @@ async function fetchReviews(limit: number): Promise<ReviewsSummary> {
     .eq('source', 'google')
     .eq('is_hidden', false)
     .order('review_date', { ascending: false, nullsFirst: false })
-  if (error || !data || data.length === 0) return EMPTY
+  // THROW on a transient DB error so makeResilientCached never caches EMPTY
+  // (poison-null: one pooler/timeout blip would otherwise drop the GBP review
+  // social proof from /about, /team, broker pages for the whole 1d window).
+  // A GENUINE empty (no rows) is a legitimate result and still returns EMPTY.
+  if (error) throw new Error(`[getReviews] ${error.message ?? JSON.stringify(error)}`)
+  if (!data || data.length === 0) return EMPTY
 
   const count = data.length
   const avg = data.reduce((s, r) => s + Number(r.rating ?? 0), 0) / count
@@ -59,9 +64,15 @@ async function fetchReviews(limit: number): Promise<ReviewsSummary> {
   return { reviews, count, averageRating, source: 'google' }
 }
 
-export const getReviews = (limit = 6): Promise<ReviewsSummary> =>
-  unstable_cache(
-    () => fetchReviews(limit),
-    ['reviews-google-v1', String(limit)],
-    { revalidate: CACHE_WINDOWS.reviews, tags: [cacheTag.reviews] },
-  )()
+// Resilient cache. v2 — bumped alongside the poison-null fix (was unstable_cache,
+// which cached EMPTY on a transient error). The per-args `limit` is part of the
+// cache key. fetchReviews THROWS on a DB error so no EMPTY is cached on a blip;
+// a genuine no-rows result still returns EMPTY. v1 entries may be poisoned.
+const cachedReviews = makeResilientCached(
+  fetchReviews,
+  ['reviews-google-v2'],
+  { revalidate: CACHE_WINDOWS.reviews, tags: [cacheTag.reviews] },
+  EMPTY,
+)
+
+export const getReviews = (limit = 6): Promise<ReviewsSummary> => cachedReviews(limit)

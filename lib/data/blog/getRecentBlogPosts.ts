@@ -10,9 +10,9 @@
  * Column names are bare (the blog_posts columns are snake_case, no quoting).
  */
 
-import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
 
 export type BlogPostCard = {
   id: string
@@ -50,10 +50,11 @@ async function _getRecentBlogPostsUncached(options: {
     .not('published_at', 'is', null)
     .order('published_at', { ascending: false })
     .limit(24)
-  if (error || !data) {
-    if (error) console.error('[getRecentBlogPosts]', error)
-    return []
-  }
+  // THROW on a transient DB error so makeResilientCached never caches the empty
+  // result (poison-null: one pooler/timeout blip would otherwise blank the
+  // "guides & insights" rail on every city/community page for the whole window).
+  if (error) throw new Error(`[getRecentBlogPosts] ${error.message ?? JSON.stringify(error)}`)
+  if (!data) return []
 
   const rows = (data as BlogRow[]).map(
     (r): BlogPostCard => ({
@@ -78,8 +79,11 @@ async function _getRecentBlogPostsUncached(options: {
   return rows.slice(0, limit)
 }
 
-export const getRecentBlogPosts = unstable_cache(
+export const getRecentBlogPosts = makeResilientCached(
   _getRecentBlogPostsUncached,
-  ['recent-blog-posts-v1'],
+  // v2 — bumped alongside the poison-null fix (was unstable_cache, which cached []
+  // on a transient error). v1 entries may be poisoned; v2 evicts them.
+  ['recent-blog-posts-v2'],
   { revalidate: CACHE_WINDOWS.blog, tags: [cacheTag.blog] },
+  [],
 )
