@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.432.2 (2026-06-09)
+
+### Bug Fixes
+- fix(search): keyword presets (single-level/with-shop/rv-parking) fast via indexed keyword RPC
+
+---
+
+
 ## v1.432.1 (2026-06-09)
 
 ### Other
