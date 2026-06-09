@@ -37,6 +37,7 @@ import {
   Body,
   Caption,
   Container,
+  DisplayHeading,
   Eyebrow,
   Grid,
   H2,
@@ -253,9 +254,9 @@ export default async function TeamMemberPage({ params }: Props) {
 
               <Stack gap="tight">
                 <Eyebrow>Ryan Realty · Bend, Oregon</Eyebrow>
-                <h1 className="text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl">
+                <DisplayHeading as="h1" className="text-4xl text-foreground sm:text-5xl">
                   {broker.display_name}
-                </h1>
+                </DisplayHeading>
                 <div className="text-lg font-semibold text-muted-foreground">
                   {broker.title ?? 'Real Estate Broker'}
                 </div>
