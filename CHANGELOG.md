@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.430.2 (2026-06-09)
+
+### Bug Fixes
+- fix(listing): commit the rental embed + video section + their gate files (missed by an autostash)
+
+---
+
+
 ## v1.430.1 (2026-06-09)
 
 ### Maintenance
