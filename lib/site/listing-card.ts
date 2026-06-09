@@ -1,5 +1,6 @@
-import type { ListingCardData } from '@/components/site/ListingCard'
-import type { MotivatedListing } from '@/lib/data'
+import type { ListingBadge, ListingCardData } from '@/components/site/ListingCard'
+import type { ListingTile, MotivatedListing } from '@/lib/data'
+import { listingTileHref } from '@/lib/slug'
 
 /**
  * Canonical mappers to the ONE listing card shape (ListingCardData → ListingCard).
@@ -30,5 +31,40 @@ export function motivatedToCardData(l: MotivatedListing): ListingCardData | null
     badge: reason
       ? { kind: l.motivationScore >= 60 ? 'hot' : 'drop', label: reason }
       : undefined,
+  }
+}
+
+/** ListingTile (the canonical DAL tile) → ListingCard, with an optional badge. */
+export function tileToCardData(
+  t: ListingTile,
+  badge?: { kind: ListingBadge; label: string },
+): ListingCardData | null {
+  const key = (t.listingKey ?? t.listNumber ?? '').toString()
+  if (!key) return null
+  const addressLine = [t.streetNumber, t.streetName].filter(Boolean).join(' ') || 'Address on request'
+  const cityParts: string[] = []
+  if (t.city) cityParts.push(`${t.city}, OR`)
+  if (t.postalCode) cityParts.push(t.postalCode)
+  if (t.subdivisionName) cityParts.push(t.subdivisionName)
+  return {
+    listingKey: key,
+    href: listingTileHref({
+      listingKey: t.listingKey,
+      listNumber: t.listNumber,
+      streetNumber: t.streetNumber,
+      streetName: t.streetName,
+      city: t.city,
+      boundaryCity: t.boundaryCity,
+      boundaryNeighborhood: t.boundaryNeighborhood,
+      subdivisionName: t.subdivisionName,
+    }),
+    photoUrl: t.photoUrl ?? null,
+    price: t.listPrice ?? null,
+    addressLine,
+    cityLine: cityParts.join(' · '),
+    beds: t.beds ?? null,
+    baths: t.baths ?? null,
+    sqft: t.sqft ?? null,
+    badge,
   }
 }

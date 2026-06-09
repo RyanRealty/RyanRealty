@@ -10,6 +10,7 @@ import OpenHousesGrid from '@/components/site/OpenHousesGrid'
 import CityGrid from '@/components/site/CityGrid'
 import ResortCommunities from '@/components/site/ResortCommunities'
 import FeaturedListings from '@/components/site/FeaturedListings'
+import VideoHomesSection from '@/components/site/VideoHomesSection'
 import TeamSection from '@/components/site/TeamSection'
 import ActivityFeed from '@/components/site/ActivityFeed'
 import CtaDuo from '@/components/site/CtaDuo'
@@ -82,6 +83,12 @@ export default async function Home() {
       {/* Featured listings — premium active Central Oregon inventory. Self-fetching
           (its own Suspense). Locked into the homepage by the mockup-parity gate. */}
       <FeaturedListings city="Bend" title="Featured Central Oregon homes" viewAllHref="/homes-for-sale" />
+
+      {/* Homes with video tours — lead with the richest, highest-engagement
+          listings. Self-fetching; renders nothing if there are too few. */}
+      <Suspense fallback={<SectionSkeleton />}>
+        <VideoHomesSection scope={{ kind: 'region' }} tone="muted" />
+      </Suspense>
 
       <PriceRangeTiles />
 

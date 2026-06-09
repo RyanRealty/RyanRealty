@@ -53,6 +53,7 @@ import { FAQBlock } from '@/components/site/FAQBlock'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import FeaturedListings from '@/components/site/FeaturedListings'
 import MotivatedListings from '@/components/site/MotivatedListings'
+import VideoHomesSection from '@/components/site/VideoHomesSection'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
 
@@ -363,6 +364,15 @@ export default async function CityDetailPage({ params }: Props) {
 
       {/* Motivated sellers — price-cut + remarks-signal homes in this city. */}
       <MotivatedListings city={cityName} />
+
+      {/* Homes with video tours in this city. Self-fetching; renders nothing
+          if the city has too few video listings. */}
+      <VideoHomesSection
+        scope={{ kind: 'city', city: cityName }}
+        heading={`Video tours in ${cityName}`}
+        viewAllHref={`/homes-for-sale/${slug}`}
+        tone="muted"
+      />
 
       {/* Price trend — verified monthly median SALE price (market_stats_cache,
           SFR-only, methodology v3). Rendered only when the series is rich enough

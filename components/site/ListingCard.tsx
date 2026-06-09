@@ -8,7 +8,7 @@ import Image from 'next/image'
  * Mirrors design_system/ryan-realty/ui_kits/website/index.html §featured-listings .listing.
  */
 
-export type ListingBadge = 'hot' | 'new' | 'drop' | 'open' | 'sold'
+export type ListingBadge = 'hot' | 'new' | 'drop' | 'open' | 'sold' | 'video'
 
 export type ListingCardData = {
   listingKey: string
@@ -41,6 +41,16 @@ const BADGE_CLASS: Record<ListingBadge, string> = {
   drop: 'bg-warning text-[#1a1305]',
   open: 'bg-white text-foreground border border-border',
   sold: 'bg-primary text-white',
+  video: 'bg-white/95 text-primary border border-border',
+}
+
+/** Inline play glyph for the "Video tour" badge. */
+function PlayGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" aria-hidden className="mr-1 shrink-0">
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  )
 }
 
 export default function ListingCard({ listing }: { listing: ListingCardData }) {
@@ -67,6 +77,7 @@ export default function ListingCard({ listing }: { listing: ListingCardData }) {
             <span
               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium ${BADGE_CLASS[listing.badge.kind]}`}
             >
+              {listing.badge.kind === 'video' ? <PlayGlyph /> : null}
               {listing.badge.label}
             </span>
           </div>

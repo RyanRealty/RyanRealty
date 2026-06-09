@@ -32,6 +32,7 @@ import { HeroBlock } from '@/components/site/HeroBlock'
 import { CTABar } from '@/components/site/CTABar'
 import { NeighborhoodMap as SiteNeighborhoodMap } from '@/components/site/NeighborhoodMap'
 import { CommunityRichContent } from '@/components/site/CommunityRichContent'
+import VideoHomesSection from '@/components/site/VideoHomesSection'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { Container, Section, Grid, Stack, Eyebrow, H2 } from '@/components/site/primitives'
@@ -341,6 +342,14 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           </Container>
         </section>
       ) : null}
+
+      {/* Homes with video tours in this neighborhood. Self-fetching; renders
+          nothing if there are too few. */}
+      <VideoHomesSection
+        scope={{ kind: 'neighborhood', neighborhood: neighborhood.name }}
+        heading={`Video tours in ${neighborhood.name}`}
+        tone="muted"
+      />
 
       {/* 7. Verified rich neighborhood content (overview + amenities + drive times)
              via the shared CommunityRichContent renderer. PRESERVED VERBATIM. */}
