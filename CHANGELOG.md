@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.437.0 (2026-06-09)
+
+### Features
+- feat(search+video): watchable video everywhere + saved-search/map-search on every results route
+
+---
+
+
 ## v1.436.0 (2026-06-09)
 
 ### Features
