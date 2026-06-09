@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.426.0 (2026-06-09)
+
+### Features
+- feat(marketing): close the measurement loop so content_performance + north-star attribution actually populate
+
+---
+
+
 ## v1.425.35 (2026-06-09)
 
 ### Bug Fixes
