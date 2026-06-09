@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.427.0 (2026-06-09)
+
+### Features
+- feat(team): broker pages show Ryan Realty active + recently-sold listings (resolution fixed + gated)
+
+---
+
+
 ## v1.426.8 (2026-06-09)
 
 ### Bug Fixes
