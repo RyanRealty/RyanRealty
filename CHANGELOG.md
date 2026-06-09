@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.428.0 (2026-06-09)
+
+### Features
+- feat(video): "homes with video tours" section on homepage + city/community/neighborhood pages (+ gate)
+
+---
+
+
 ## v1.427.1 (2026-06-09)
 
 ### Bug Fixes
