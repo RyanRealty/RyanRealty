@@ -71,6 +71,18 @@
     {
       "path": "/api/cron/saved-search-alerts",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/performance-pull-48h",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/performance-pull-7d",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/performance-pull-30d",
+      "schedule": "0 5 * * *"
     }
   ]
 }

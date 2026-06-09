@@ -96,6 +96,38 @@ export async function GET(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET
   const appUrl = process.env.NEXT_PUBLIC_SITE_URL ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
 
+  // Stamp utm_content=<action_id> onto every ryan-realty.com link in a publish
+  // payload (ctaUrl, caption text, nested per-platform fields). A seller lead who
+  // clicks through the published post then lands on the LP with the action_id in
+  // the URL; the seller LP forwards that into the FUB sourceUrl and the
+  // seller-lead-attribution cron matches it back to THIS content_performance row.
+  // This is the sender half of the north-star attribution path. Idempotent.
+  function stampAttributionUtm(value: unknown, actionId: string, actionType: string): unknown {
+    if (typeof value === 'string') {
+      return value.replace(/https?:\/\/(?:www\.)?ryan-realty\.com\/[^\s"')]*/gi, (urlStr) => {
+        try {
+          const u = new URL(urlStr)
+          if (!u.searchParams.has('utm_content')) u.searchParams.set('utm_content', actionId)
+          if (!u.searchParams.has('utm_campaign')) u.searchParams.set('utm_campaign', actionType)
+          if (!u.searchParams.has('utm_source')) u.searchParams.set('utm_source', 'social')
+          if (!u.searchParams.has('utm_medium')) u.searchParams.set('utm_medium', 'organic_post')
+          return u.toString()
+        } catch {
+          return urlStr
+        }
+      })
+    }
+    if (Array.isArray(value)) return value.map((v) => stampAttributionUtm(v, actionId, actionType))
+    if (value && typeof value === 'object') {
+      const out: Record<string, unknown> = {}
+      for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+        out[k] = stampAttributionUtm(v, actionId, actionType)
+      }
+      return out
+    }
+    return value
+  }
+
   for (const row of rows) {
     const executorResponse = (row.executor_response ?? {}) as Record<string, unknown>
     const publishPayload = executorResponse.publish_payload as Record<string, unknown> | undefined
@@ -135,6 +167,14 @@ export async function GET(request: NextRequest) {
       continue
     }
 
+    // Stamp the action_id into every ryan-realty.com link so a click-through
+    // attributes back to this row (north-star path).
+    const stampedPayload = stampAttributionUtm(
+      publishPayload,
+      row.id,
+      typeof row.action_type === 'string' ? row.action_type : 'content',
+    ) as Record<string, unknown>
+
     // POST to /api/social/publish.
     let publishResponse: Response
     try {
@@ -144,7 +184,7 @@ export async function GET(request: NextRequest) {
           'Content-Type': 'application/json',
           'x-cron-secret': cronSecret ?? '',
         },
-        body: JSON.stringify(publishPayload),
+        body: JSON.stringify(stampedPayload),
       })
     } catch (fetchError) {
       const msg = fetchError instanceof Error ? fetchError.message : String(fetchError)
@@ -195,6 +235,17 @@ export async function GET(request: NextRequest) {
           publish_result: publishBody,
           published_at: publishedAt,
           platforms_published: platformsPublished,
+          // Canonical post-identity the performance-pull crons read
+          // (executor_response.published_to: [{ platform, post_id }]). Without
+          // this the 48h/7d/30d metric pulls iterate an empty array and
+          // content_performance never gets real metrics.
+          published_to: platformsPublished.map((p) => ({
+            platform: p,
+            post_id:
+              typeof results[p]?.externalPostId === 'string'
+                ? (results[p].externalPostId as string)
+                : null,
+          })),
         },
       })
       .eq('id', row.id)

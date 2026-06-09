@@ -1075,14 +1075,119 @@ export async function getMetaAdsInsights(date: string): Promise<{
   return { accountRow, campaignRows }
 }
 
+/** Insights envelope shared by FB page-post and IG media insight endpoints. */
+type RawInsightsEnvelope = {
+  data?: Array<{ name: string; values?: Array<{ value: number | Record<string, number> | null }> }>
+}
+
 /**
- * Stub for the performance-pull cron — full per-post Meta (IG+FB)
- * metrics fetcher was scaffolded but not implemented. Returns a
- * "skipped" sentinel.
+ * Per-post metrics for a published IG media or FB page post, by external post id.
+ * The performance-pull crons (48h/7d/30d) call this to populate
+ * content_performance.metrics_*. Reuses the same Graph plumbing + token
+ * resolution (META_PAGE_ACCESS_TOKEN) as getMetaAdsInsights.
+ *
+ * Returns a normalized, platform-neutral blob — { impressions, reach,
+ * engagements, likes, comments, saves, shares, clicks, source, fetched_at }.
+ * Only metrics actually returned are included (no zero-filling) so a reader can
+ * tell "no data" from a genuine 0. Resilient to Meta's metric deprecations: it
+ * tries a complete metric set, then retries with a conservative core if a single
+ * unsupported metric would otherwise error the whole call. Throws MetaGraphError
+ * on a hard failure (auth / not found) so the cron records { error: ... } rather
+ * than a misleading skip.
  */
 export async function fetchMetaPostMetrics(
-  _postId: string,
-  _platform?: string,
-): Promise<Record<string, unknown>> {
-  throw new Error('platform_skipped:meta:fetcher_not_implemented')
+  postId: string,
+  platform: 'ig' | 'fb' | string = 'fb',
+): Promise<Record<string, number | string>> {
+  const token =
+    process.env.META_PAGE_ACCESS_TOKEN?.trim() ||
+    process.env.META_PAGE_TOKEN?.trim()
+  if (!token) {
+    throw new MetaGraphError('META_PAGE_ACCESS_TOKEN (or META_PAGE_TOKEN) is not set in the environment')
+  }
+  if (!postId) {
+    throw new MetaGraphError('fetchMetaPostMetrics: postId is required')
+  }
+
+  const isIg = platform === 'ig'
+  // Most-complete metric set first; fall back to the conservative core if a
+  // deprecated/unsupported metric (varies by media type + API version) errors
+  // the call, so one bad metric does not zero out the whole post.
+  const metricSets: string[][] = isIg
+    ? [
+        ['reach', 'likes', 'comments', 'saved', 'shares', 'total_interactions', 'views'],
+        ['reach', 'likes', 'comments', 'saved'],
+        ['reach'],
+      ]
+    : [
+        // Meta deprecated post_impressions / post_engaged_users for Page posts
+        // (verified live 2026-06-08). post_impressions_unique (= reach) is the
+        // surviving reach metric; reactions + clicks + video views remain.
+        ['post_impressions_unique', 'post_clicks', 'post_reactions_by_type_total', 'post_reactions_like_total', 'post_video_views'],
+        ['post_impressions_unique', 'post_clicks', 'post_reactions_like_total'],
+        ['post_impressions_unique'],
+      ]
+
+  let insightData: RawInsightsEnvelope | null = null
+  let lastErr: unknown = null
+  for (const metrics of metricSets) {
+    try {
+      insightData = await getJson<RawInsightsEnvelope>(
+        `${META_GRAPH_BASE}/${encodeURIComponent(postId)}/insights` +
+          `?metric=${metrics.join(',')}&period=lifetime` +
+          `&access_token=${encodeURIComponent(token)}`
+      )
+      break
+    } catch (err) {
+      lastErr = err
+      const msg = err instanceof Error ? err.message : String(err)
+      // Only retry with a smaller set on an unsupported-metric error; a real
+      // failure (auth, post not found, rate limit) should surface immediately.
+      if (!/metric|not be loaded|does not support|nonexisting|unsupported|Invalid parameter/i.test(msg)) {
+        throw err
+      }
+    }
+  }
+  if (!insightData) {
+    throw lastErr instanceof Error
+      ? lastErr
+      : new MetaGraphError('fetchMetaPostMetrics: all metric sets failed')
+  }
+
+  // Flatten the insights response into a raw name -> number map. Some metrics
+  // (e.g. post_reactions_by_type_total) return an object of sub-counts; sum them.
+  const raw: Record<string, number> = {}
+  for (const item of insightData.data ?? []) {
+    const v = item.values?.[0]?.value
+    if (typeof v === 'number') {
+      raw[item.name] = v
+    } else if (v && typeof v === 'object') {
+      raw[item.name] = Object.values(v).reduce((a, b) => a + (typeof b === 'number' ? b : 0), 0)
+    }
+  }
+
+  const out: Record<string, number | string> = {}
+  const set = (k: string, val: number | undefined) => {
+    if (typeof val === 'number') out[k] = val
+  }
+  if (isIg) {
+    set('impressions', raw['views']) // "views" is the post-2025 IG impressions successor
+    set('reach', raw['reach'])
+    set('engagements', raw['total_interactions'])
+    set('likes', raw['likes'])
+    set('comments', raw['comments'])
+    set('saves', raw['saved'])
+    set('shares', raw['shares'])
+  } else {
+    // FB no longer exposes total post impressions; post_impressions_unique is the
+    // surviving reach metric. Reactions stand in for engagements/likes.
+    set('reach', raw['post_impressions_unique'])
+    set('clicks', raw['post_clicks'])
+    set('engagements', raw['post_reactions_by_type_total'])
+    set('likes', raw['post_reactions_like_total'])
+    set('views', raw['post_video_views'])
+  }
+  out.source = `meta:${isIg ? 'ig' : 'fb'}`
+  out.fetched_at = new Date().toISOString()
+  return out
 }

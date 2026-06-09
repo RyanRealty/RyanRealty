@@ -128,9 +128,21 @@ export async function GET(req: NextRequest) {
           pulled_at: new Date().toISOString(),
           // north_star_attributed_seller_leads intentionally NOT set — owned by the seller-lead-attribution cron; setting it here clobbered attribution on every pull.
         },
-        { onConflict: 'action_id,platform,post_external_id' }
+        { onConflict: 'action_id,platform' }
       )
   }
 
-  return NextResponse.json({ ok: true, window: '30d', processed: results.length })
+  // Close the loop: a post that has reached its 30-day window is fully measured.
+  // The schema status enum has no 'measured' value (pending..executed|killed), so
+  // measured_at is the canonical "measured" marker (per the loop design).
+  const measuredActionIds = [...new Set(results.map((r) => r.action_id))]
+  if (measuredActionIds.length > 0) {
+    await supabase
+      .from('marketing_brain_actions')
+      .update({ measured_at: new Date().toISOString() })
+      .in('id', measuredActionIds)
+      .is('measured_at', null)
+  }
+
+  return NextResponse.json({ ok: true, window: '30d', processed: results.length, measured: measuredActionIds.length })
 }

@@ -79,6 +79,27 @@ interface AttributionMatch {
   match_method: string
 }
 
+/**
+ * FUB's /v1/people API exposes `sourceUrl` but NOT `utmContent`/`utmCampaign`
+ * as person fields (verified 2026-06-08, including ?fields=allFields). So the
+ * utm params a published post carried (utm_content = the action_id) survive
+ * only inside the stored sourceUrl. Recover them by parsing the query string.
+ * The seller LP forwards the inbound utm_* into the FUB sourceUrl for exactly
+ * this round-trip.
+ */
+function utmFromSourceUrl(sourceUrl?: string): { content?: string; campaign?: string } {
+  if (!sourceUrl) return {}
+  try {
+    const u = new URL(sourceUrl)
+    return {
+      content: u.searchParams.get('utm_content') ?? undefined,
+      campaign: u.searchParams.get('utm_campaign') ?? undefined,
+    }
+  } catch {
+    return {}
+  }
+}
+
 export async function GET(request: NextRequest) {
   if (!isAuthorizedCron(request)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
@@ -184,10 +205,17 @@ export async function GET(request: NextRequest) {
     let matchedPerf: typeof perf[0] | undefined
     let matchMethod = ''
 
+    // FUB returns sourceUrl but not utm* fields, so recover the utm params from
+    // the stored sourceUrl. (Keep lead.utm* as a defensive fallback in case a
+    // future FUB custom-field mapping ever surfaces them.)
+    const utm = utmFromSourceUrl(lead.sourceUrl)
+    const utmContent = lead.utmContent ?? utm.content
+    const utmCampaign = lead.utmCampaign ?? utm.campaign
+
     // Method 1: source_url contains a post_external_id.
     if (lead.sourceUrl) {
       for (const [extId, row] of byExternalId.entries()) {
-        if (lead.sourceUrl.includes(extId)) {
+        if (extId && lead.sourceUrl.includes(extId)) {
           matchedPerf = row
           matchMethod = 'source_url_contains_external_id'
           break
@@ -195,16 +223,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Method 2: utm_content matches an action_id.
-    if (!matchedPerf && lead.utmContent) {
-      matchedPerf = byActionId.get(lead.utmContent)
+    // Method 2: utm_content (= the action_id) matches a content_performance row.
+    if (!matchedPerf && utmContent) {
+      matchedPerf = byActionId.get(utmContent)
       if (matchedPerf) matchMethod = 'utm_content_action_id'
     }
 
     // Method 3: utm_campaign contains an action_id substring.
-    if (!matchedPerf && lead.utmCampaign) {
+    if (!matchedPerf && utmCampaign) {
       for (const [actionId, row] of byActionId.entries()) {
-        if (lead.utmCampaign.includes(actionId)) {
+        if (utmCampaign.includes(actionId)) {
           matchedPerf = row
           matchMethod = 'utm_campaign_action_id_substring'
           break

@@ -128,7 +128,7 @@ export async function GET(req: NextRequest) {
           pulled_at: new Date().toISOString(),
           // north_star_attributed_seller_leads intentionally NOT set — owned by the seller-lead-attribution cron; setting it here clobbered attribution on every pull.
         },
-        { onConflict: 'action_id,platform,post_external_id' }
+        { onConflict: 'action_id,platform' }
       )
   }
 

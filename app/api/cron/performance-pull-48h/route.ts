@@ -107,6 +107,25 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // The seller-lead-attribution cron stores attributed_lead_ids INSIDE
+  // metrics_48h (the only column shared with this pull). If attribution lands
+  // before this 48h pull, a naive overwrite would wipe it. Preserve any existing
+  // attributed_lead_ids so the metric write is non-destructive to attribution.
+  const existingAttributed = new Map<string, number[]>() // `${action_id}:${platform}` -> ids
+  const actionIds = [...new Set(results.map((r) => r.action_id))]
+  if (actionIds.length > 0) {
+    const { data: existingRows } = await supabase
+      .from('content_performance')
+      .select('action_id, platform, metrics_48h')
+      .in('action_id', actionIds)
+    for (const row of existingRows ?? []) {
+      const ids = (row.metrics_48h as Record<string, unknown> | null)?.attributed_lead_ids
+      if (Array.isArray(ids) && ids.length > 0) {
+        existingAttributed.set(`${row.action_id}:${row.platform}`, ids as number[])
+      }
+    }
+  }
+
   for (const r of results) {
     let metricsPayload: Record<string, unknown>
     if (r.skipped) {
@@ -115,6 +134,12 @@ export async function GET(req: NextRequest) {
       metricsPayload = { error: r.error }
     } else {
       metricsPayload = r.metrics ?? {}
+    }
+
+    // Carry forward attribution written before this pull.
+    const priorIds = existingAttributed.get(`${r.action_id}:${r.platform}`)
+    if (priorIds) {
+      metricsPayload = { ...metricsPayload, attributed_lead_ids: priorIds }
     }
 
     await supabase
@@ -128,7 +153,7 @@ export async function GET(req: NextRequest) {
           pulled_at: new Date().toISOString(),
           // north_star_attributed_seller_leads intentionally NOT set — owned by the seller-lead-attribution cron; setting it here clobbered attribution on every pull.
         },
-        { onConflict: 'action_id,platform,post_external_id' }
+        { onConflict: 'action_id,platform' }
       )
   }
 

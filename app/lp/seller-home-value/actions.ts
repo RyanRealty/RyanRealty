@@ -181,6 +181,31 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     const isListNowLp = lpSource === 'list-now-lp'
     const { classification, tierTag } = classifyTimeline(timeline)
 
+    // ─── Inbound attribution UTMs → FUB sourceUrl ──────────────────────────
+    // FUB's /v1/people API exposes sourceUrl but NOT utmContent/utmCampaign
+    // (verified 2026-06-08). So the ONLY way a published social post attributes
+    // a seller lead back to its marketing_brain_actions row is to carry the utm
+    // params INTO the FUB sourceUrl. The seller-lead-attribution cron parses
+    // utm_content (= the action_id) out of sourceUrl and increments
+    // content_performance.north_star_attributed_seller_leads. Without this the
+    // north-star metric can never move off zero.
+    let leadSourceUrl = `${siteUrl}/lp/seller-home-value`
+    try {
+      const referer = (await headers()).get('referer') ?? ''
+      if (referer) {
+        const refUrl = new URL(referer)
+        const passthrough = new URLSearchParams()
+        for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']) {
+          const v = refUrl.searchParams.get(k)
+          if (v) passthrough.set(k, v)
+        }
+        const qs = passthrough.toString()
+        if (qs) leadSourceUrl = `${siteUrl}/lp/seller-home-value?${qs}`
+      }
+    } catch {
+      // malformed referer — fall back to the bare LP url
+    }
+
     // ─── Resolve the FUB person ────────────────────────────────────────────
     // Priority: explicit email match > cookie-identified person id > new email-only.
     let fubPersonId: number | null = null
@@ -231,7 +256,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         name: name || null,
         email,
         phone: phone || null,
-        source_url: `${siteUrl}/lp/seller-home-value`,
+        source_url: leadSourceUrl,
       })
       if (insertError) {
         // Lead capture is the priority — don't fail the form on a DB hiccup.
@@ -256,7 +281,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       type: 'Seller Inquiry',
       person,
       source,
-      sourceUrl: `${siteUrl}/lp/seller-home-value`,
+      sourceUrl: leadSourceUrl,
       pageTitle: 'Seller LP — Home Value',
       message: `Seller LP submission. Address: ${parsed.full}. Timeline: ${timeline ?? 'unspecified'}. Tier: ${classification}. Assigned: ${assignment.broker}.`,
       property: {
