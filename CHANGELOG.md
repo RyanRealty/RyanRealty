@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.34 (2026-06-09)
+
+### Bug Fixes
+- fix(search): guard numeric jsonb casts so YearBuilt/GarageSpaces filters can't crash the RPC
+
+---
+
+
 ## v1.425.33 (2026-06-09)
 
 ### Other
