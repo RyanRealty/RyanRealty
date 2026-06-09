@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.426.3 (2026-06-09)
+
+### Bug Fixes
+- fix(maps): boundary polygons render in navy + the map fits the boundary
+
+---
+
+
 ## v1.426.2 (2026-06-09)
 
 ### Bug Fixes
