@@ -84,16 +84,21 @@ export const MENU: MenuEntry[] = [
         ],
       },
       {
+        // City links go to the rich city page (/cities/<slug>) — the same
+        // destination as the homepage city sliders and the Explore menu — so a
+        // city is never two different pages depending on where you click it.
+        // (Previously these pointed at /homes-for-sale/<city>, a bare search grid,
+        // which is why the menu and the sliders landed on different-looking pages.)
         heading: 'By city',
         links: [
-          { label: 'Bend', href: homesForSalePath('Bend') },
-          { label: 'Redmond', href: homesForSalePath('Redmond') },
-          { label: 'Sisters', href: homesForSalePath('Sisters') },
-          { label: 'Sunriver', href: homesForSalePath('Sunriver') },
-          { label: 'La Pine', href: homesForSalePath('La Pine') },
-          { label: 'Prineville', href: homesForSalePath('Prineville') },
-          { label: 'Terrebonne', href: homesForSalePath('Terrebonne') },
-          { label: 'Powell Butte', href: homesForSalePath('Powell Butte') },
+          { label: 'Bend', href: '/cities/bend' },
+          { label: 'Redmond', href: '/cities/redmond' },
+          { label: 'Sisters', href: '/cities/sisters' },
+          { label: 'Sunriver', href: '/cities/sunriver' },
+          { label: 'La Pine', href: '/cities/la-pine' },
+          { label: 'Prineville', href: '/cities/prineville' },
+          { label: 'Terrebonne', href: '/cities/terrebonne' },
+          { label: 'Powell Butte', href: '/cities/powell-butte' },
         ],
       },
       {
