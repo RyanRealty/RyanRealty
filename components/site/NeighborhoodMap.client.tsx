@@ -17,6 +17,7 @@ import {
   MAP_BOUNDARY_STYLES,
   MAP_NAVY,
 } from '@/lib/maps/markers'
+import { isInsideAnyRing } from '@/lib/map-polygon'
 import { cn } from '@/lib/utils'
 
 /**
@@ -243,14 +244,25 @@ export default function NeighborhoodMapClient({
 
   const handleMapClick = useCallback(() => setSelectedPin(null), [])
 
-  // Cap at 150 pins for performance.
-  const validPins = useMemo(
-    () =>
-      (listings ?? [])
-        .filter((l) => typeof l.lat === 'number' && typeof l.lng === 'number')
-        .slice(0, 150),
-    [listings],
+  // Boundary rings (outer + any holes), flattened across every polygon.
+  const boundaryRings = useMemo(
+    () => polygons.flatMap((p) => geojsonToPaths(p.geometry)),
+    [polygons],
   )
+
+  // Clip pins to the rendered boundary so homes never show OUTSIDE the polygon
+  // (Matt: "the homes listed are well outside the polygon"). The
+  // listings_in_boundary RPC already spatial-filters, but this guarantees the
+  // pins match the EXACT polygon drawn here — any RPC/geometry drift is corrected
+  // client-side against the same paths. No polygon -> show all. Cap 150 for perf.
+  const validPins = useMemo(() => {
+    const coords = (listings ?? []).filter(
+      (l) => typeof l.lat === 'number' && typeof l.lng === 'number',
+    )
+    return coords
+      .filter((l) => isInsideAnyRing({ lat: l.lat, lng: l.lng }, boundaryRings))
+      .slice(0, 150)
+  }, [listings, boundaryRings])
 
   if (error || !ready) {
     return (

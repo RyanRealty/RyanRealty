@@ -3,6 +3,7 @@
 import { useMemo, useState, useCallback } from 'react'
 import { GoogleMap, Marker, Polygon, InfoWindow } from '@react-google-maps/api'
 import { MAP_NAVY } from '@/lib/maps/markers'
+import { isInsideAnyRing } from '@/lib/map-polygon'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { useRouter } from 'next/navigation'
 import type { ListingRow } from '@/app/actions/communities'
@@ -89,19 +90,23 @@ export default function CommunityMap({
     libraries: ['places'],
   })
 
-  const validListings = useMemo(
-    () =>
-      listings.filter(
-        (l) =>
-          l.Latitude != null &&
-          l.Longitude != null &&
-          Number.isFinite(Number(l.Latitude)) &&
-          Number.isFinite(Number(l.Longitude))
-      ),
-    [listings]
-  )
-
   const paths = useMemo(() => geojsonToPaths(boundaryGeojson), [boundaryGeojson])
+
+  const validListings = useMemo(() => {
+    const coords = listings.filter(
+      (l) =>
+        l.Latitude != null &&
+        l.Longitude != null &&
+        Number.isFinite(Number(l.Latitude)) &&
+        Number.isFinite(Number(l.Longitude))
+    )
+    // Clip to the rendered boundary so homes never show OUTSIDE the polygon
+    // (Matt: "the homes listed are well outside the polygon"). No polygon -> all.
+    return coords.filter((l) =>
+      isInsideAnyRing({ lat: Number(l.Latitude), lng: Number(l.Longitude) }, paths)
+    )
+  }, [listings, paths])
+
   const bounds = useMemo(() => getBounds(validListings), [validListings])
 
   const center = useMemo(() => {

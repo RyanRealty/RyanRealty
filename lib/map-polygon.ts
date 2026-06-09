@@ -75,3 +75,14 @@ export function isPointInPolygon(point: MapPolygonPoint, polygon: MapPolygonPoin
   }
   return inside
 }
+
+/**
+ * True if the point falls inside ANY of the given rings (outer ring, or any ring
+ * of a MultiPolygon). Used to CLIP listing pins to a rendered boundary so homes
+ * never display outside the polygon on the city / community / neighborhood maps.
+ * When `rings` is empty (no boundary), returns true — i.e. "show all".
+ */
+export function isInsideAnyRing(point: MapPolygonPoint, rings: MapPolygonPoint[][]): boolean {
+  if (!rings || rings.length === 0) return true
+  return rings.some((ring) => isPointInPolygon(point, ring))
+}
