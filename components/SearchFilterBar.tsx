@@ -785,7 +785,10 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
           </SelectContent>
         </Select>
 
-      {props.signedIn && <SaveSearchButton user={true} />}
+      {/* Save this search — always present. Signed-in users get the named/public
+          save; guests get the email-capture path (FUB buyer lead, audience:buyer).
+          Gating on props.signedIn hid the affordance from most visitors. */}
+      <SaveSearchButton user={!!props.signedIn} />
         </div>
       </div>
     </div>

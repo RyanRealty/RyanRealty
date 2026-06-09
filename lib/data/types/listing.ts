@@ -48,6 +48,10 @@ export type ListingTile = {
   garageSpaces: number | null
   poolYn: boolean | null
   hasVirtualTour: boolean | null
+  /** Scalar virtual-tour / video URL from listing_tile_mv (the embeddable
+   *  source for inline play on a video card). Null when the listing has no
+   *  tour, or when has_virtual_tour is true but the URL didn't project. */
+  tourUrl: string | null
   dom: number | null
   priceDropCount: number | null
   addressSlug: Slug | null

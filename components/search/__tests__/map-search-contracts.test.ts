@@ -98,6 +98,49 @@ describe('SearchMapClustered map primitive', () => {
   })
 })
 
+describe('slug search page: guest save + reachable map-move (2026-06-09)', () => {
+  // The high-traffic /homes-for-sale/[...slug] route (every city/preset/community
+  // link lands here) must carry BOTH affordances Matt reported missing:
+  //   1. a guest save/alert path (anonymous email -> FUB buyer lead), and
+  //   2. a link into the search-as-you-move map (the split view).
+  // Pinned at the source level so a future edit that unwires either fails CI
+  // instead of silently regressing to "no save + no map" for anonymous buyers.
+  const slug = readSrc('app/search/[...slug]/page.tsx')
+
+  it('renders SearchAlertCapture for the guest email -> FUB buyer-lead path', () => {
+    expect(slug).toMatch(/import \{ SearchAlertCapture \}/)
+    expect(slug).toMatch(/<SearchAlertCapture/)
+    // It must be told the signed-in state (guests only) and the path-derived city.
+    expect(slug).toMatch(/signedIn=\{!!session\?\.user\}/)
+    expect(slug).toMatch(/defaultFilters=\{guestAlertFilters\}/)
+  })
+
+  it('keeps the signed-in save-search button', () => {
+    expect(slug).toMatch(/<SaveSearchButton user=\{!!session\?\.user\} \/>/)
+  })
+
+  it('links into the search-as-you-move map via view=split', () => {
+    // A reachable "Map view" CTA that flips the URL into the split branch.
+    expect(slug).toMatch(/view: 'split'/)
+    expect(slug).toMatch(/mapViewHref/)
+    expect(slug).toMatch(/href=\{mapViewHref\}/)
+  })
+
+  it('offers a grid-view return link from the map branch (bidirectional toggle)', () => {
+    expect(slug).toMatch(/gridViewHref/)
+    expect(slug).toMatch(/href=\{gridViewHref\}/)
+  })
+})
+
+describe('SearchAlertCapture is path-aware (slug-page filters)', () => {
+  const src = readSrc('components/search/SearchAlertCapture.tsx')
+
+  it('accepts path-derived defaults so slug-page filters are captured', () => {
+    expect(src).toMatch(/defaultSubdivision/)
+    expect(src).toMatch(/defaultFilters/)
+  })
+})
+
 describe('no mojibake in the search surface', () => {
   // The "Â·" sequence (UTF-8 decoded as Latin-1) shipped here for months. Pin it
   // dead at the file level in addition to the repo-wide ci:no-mojibake gate.

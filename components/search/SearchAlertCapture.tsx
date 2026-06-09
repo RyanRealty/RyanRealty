@@ -25,7 +25,19 @@ const FILTER_PARAM_KEYS = [
   'yearBuiltMin', 'yearBuiltMax',
 ] as const
 
-export function SearchAlertCapture({ signedIn, defaultCity }: { signedIn: boolean; defaultCity?: string }) {
+export function SearchAlertCapture({
+  signedIn,
+  defaultCity,
+  defaultSubdivision,
+  defaultFilters,
+}: {
+  signedIn: boolean
+  defaultCity?: string
+  /** Subdivision/community when it lives in the route path (the /homes-for-sale/[...slug] page), not the query. */
+  defaultSubdivision?: string
+  /** Preset-supplied filters that live in the path (e.g. /homes-for-sale/bend/under-750k), not the query. */
+  defaultFilters?: Record<string, string>
+}) {
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [company, setCompany] = useState('') // honeypot — humans never see this
@@ -34,8 +46,17 @@ export function SearchAlertCapture({ signedIn, defaultCity }: { signedIn: boolea
   const [dismissed, setDismissed] = useState(false)
   const [pending, startTransition] = useTransition()
 
+  const defaultFiltersSnapshot = JSON.stringify(defaultFilters ?? {})
   const filters = useMemo(() => {
     const out: Record<string, string> = {}
+    // Path-supplied defaults first (city/subdivision/preset live in the slug, not
+    // the query, on /homes-for-sale/[...slug]) so the captured alert matches what
+    // the visitor sees. A live query param for the same key overrides below.
+    if (defaultFilters) {
+      for (const [key, value] of Object.entries(defaultFilters)) {
+        if (value) out[key] = value
+      }
+    }
     for (const key of FILTER_PARAM_KEYS) {
       const value = searchParams.get(key)
       if (value) out[key] = value
@@ -43,8 +64,11 @@ export function SearchAlertCapture({ signedIn, defaultCity }: { signedIn: boolea
     // On bare /search the server defaults the visible results to a city the URL
     // omits — capture it so the alert matches what the visitor is looking at.
     if (!out.city && defaultCity) out.city = defaultCity
+    if (!out.subdivision && defaultSubdivision) out.subdivision = defaultSubdivision
     return out
-  }, [searchParams, defaultCity])
+    // defaultFiltersSnapshot stands in for the defaultFilters object identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, defaultCity, defaultSubdivision, defaultFiltersSnapshot])
 
   // Signed-in users already have the save-search affordance — this is for guests.
   if (signedIn || dismissed) return null

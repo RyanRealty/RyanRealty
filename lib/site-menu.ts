@@ -312,7 +312,7 @@ export const MENU: MenuEntry[] = [
         links: [
           { label: 'Mortgage calculator', href: '/tools/mortgage-calculator' },
           { label: 'Appreciation tool', href: '/tools/appreciation' },
-          { label: 'Video library', href: '/videos' },
+          { label: 'Video tours', href: '/videos' },
         ],
       },
     ],

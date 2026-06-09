@@ -23,6 +23,9 @@ export type ListingCardData = {
   baths: number | null
   sqft: number | null
   badge?: { kind: ListingBadge; label: string }
+  /** Scalar virtual-tour / video URL. When present and embeddable, the
+   *  VideoListingCard plays it inline; otherwise the card links to detail. */
+  tourUrl?: string | null
 }
 
 function formatPrice(n: number | null): string {

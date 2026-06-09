@@ -24,8 +24,15 @@ import { z } from 'zod'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { supabaseAnon } from '@/lib/data/client'
-import { parseListingVideoEmbedForTile, isDirectListingVideoFileUrl } from '@/lib/video-embed'
+import { normalizeEmbed } from '@/lib/video-embed'
 import type { VideoEmbed, VideoSource } from '@/lib/data/types/video'
+
+// normalizeEmbed moved to the pure (client-safe) lib/video-embed module so the
+// VideoListingCard client component can resolve a scalar tour URL to the same
+// CSP-safe embed without pulling next/cache into the browser bundle. Re-exported
+// here so every existing `import { normalizeEmbed } from './getListingVideos'`
+// (incl. the test) keeps working unchanged.
+export { normalizeEmbed } from '@/lib/video-embed'
 
 const InputSchema = z.object({ listingKey: z.string().min(1).max(100) })
 
@@ -129,74 +136,6 @@ function deriveRawUrl(vid: Record<string, unknown>): string | null {
     if (/^(?:https?:)?\/\/\S+$/i.test(html)) return html.replace(/&amp;/g, '&')
   }
   return null
-}
-
-/**
- * Normalize a raw URL into an embeddable form + render mode:
- *   - 'iframe'    YouTube/Vimeo/Matterport (canonical embed src) + Aryeo/Cloudflare
- *   - 'video-tag' direct progressive file (.mp4/.webm/.mov)
- *   - 'link'      hosts that block framing (Dropbox sends x-frame-options) → watch link
- * Returns null to drop the entry (MapRight parcel maps are not walkthrough videos).
- */
-export function normalizeEmbed(
-  raw: string | null,
-  hintSource?: string | null,
-): { url: string; embedType: 'iframe' | 'video-tag' | 'link'; posterUrl?: string } | null {
-  if (!raw) return null
-  let url = raw.trim()
-  if (url.startsWith('//')) url = `https:${url}`
-  if (!/^https?:\/\//i.test(url)) return null
-  const low = url.toLowerCase()
-  const hint = (hintSource ?? '').toLowerCase()
-
-  if (low.includes('mapright') || hint.includes('mapright')) return null
-
-  // Dropbox FIRST (before the generic .mp4 check): it blocks IFRAME framing, and
-  // www.dropbox.com/<file>.mp4 serves an HTML PREVIEW, not the file — so the raw
-  // share URL is useless in a <video> tag. If the link points at a video FILE,
-  // rewrite to dl.dropboxusercontent.com (+ raw=1) which serves it inline, so it
-  // becomes a proper SHOWCASE HERO instead of a buried watch-link. (Matt: listing
-  // pages must use the tour video like a showcase listing.) Folders stay a link.
-  if (low.includes('dropbox.com')) {
-    if (/\.(mp4|m4v|mov|webm)(\?|$)/i.test(low)) {
-      let direct = url.replace(/:\/\/(?:www\.)?dropbox\.com/i, '://dl.dropboxusercontent.com')
-      direct = direct.replace(/([?&])dl=0\b/i, '$1raw=1')
-      if (!/[?&](?:dl|raw)=/i.test(direct)) direct += (direct.includes('?') ? '&' : '?') + 'raw=1'
-      return { url: direct, embedType: 'video-tag' }
-    }
-    return { url, embedType: 'link' }
-  }
-
-  // Google Drive: agents often "host" a tour as a Drive video FILE. The /view
-  // share URL blocks framing and is not a playable file, but /preview embeds a
-  // player iframe. Rewrite file/d/<id>/... -> file/d/<id>/preview. (Sutherland's
-  // tour, and other agent-uploaded tour videos, live here.)
-  const gdrive = url.match(/drive\.google\.com\/file\/d\/([A-Za-z0-9_-]+)/)
-  if (gdrive) return { url: `https://drive.google.com/file/d/${gdrive[1]}/preview`, embedType: 'iframe' }
-
-  const parsed = parseListingVideoEmbedForTile(url)
-  if (parsed) return { url: parsed.src, embedType: 'iframe', posterUrl: parsed.posterUrl ?? undefined }
-
-  if (isDirectListingVideoFileUrl(url)) return { url, embedType: 'video-tag' }
-
-  // Hosted players + 3D tours that allow framing (Aryeo verified framable
-  // 2026-05-31; Matterport + Zillow 3D Home view-imx are built for MLS/IDX
-  // embedding, so they stay ON-site in an iframe rather than sending the
-  // visitor off to a competitor — important since these arrive via
-  // details.VirtualTours).
-  if (
-    low.includes('aryeo.com') ||
-    low.includes('cloudflarestream.com') ||
-    low.includes('videodelivery.net') ||
-    low.includes('player.vimeo.com') ||
-    low.includes('matterport.com') ||
-    low.includes('zillow.com/view-imx')
-  ) {
-    return { url, embedType: 'iframe' }
-  }
-
-  // Anything unrecognized: frame-blocked → watch link, never a broken iframe.
-  return { url, embedType: 'link' }
 }
 
 async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {

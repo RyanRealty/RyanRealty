@@ -66,5 +66,6 @@ export function tileToCardData(
     baths: t.baths ?? null,
     sqft: t.sqft ?? null,
     badge,
+    tourUrl: t.tourUrl ?? null,
   }
 }

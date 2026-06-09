@@ -2,7 +2,8 @@
 /**
  * Embed ↔ CSP frame-src parity gate.
  *
- * A listing video/tour that normalizeEmbed (lib/data/videos/getListingVideos.ts)
+ * A listing video/tour that normalizeEmbed (lib/video-embed.ts — the pure,
+ * client-safe module that getListingVideos and VideoListingCard both import)
  * returns as embedType:'iframe' renders inside an <iframe>. The browser only
  * loads that iframe if its host is in the Content-Security-Policy frame-src
  * allow-list in next.config.ts. Add a new tour host to normalizeEmbed but forget
@@ -23,7 +24,11 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const RESOLVER = path.join(ROOT, 'lib/data/videos/getListingVideos.ts')
+// normalizeEmbed was extracted from getListingVideos into the pure, client-safe
+// lib/video-embed.ts module (so VideoListingCard can resolve a scalar tour URL to
+// the same CSP-safe embed in the browser). getListingVideos re-exports it. The
+// iframe OR-block now lives here, so the gate reads it from the new home.
+const RESOLVER = path.join(ROOT, 'lib/video-embed.ts')
 const NEXT_CONFIG = path.join(ROOT, 'next.config.ts')
 
 const fail = (lines) => {
@@ -32,7 +37,7 @@ const fail = (lines) => {
   process.exit(1)
 }
 
-for (const [label, p] of [['lib/data/videos/getListingVideos.ts', RESOLVER], ['next.config.ts', NEXT_CONFIG]]) {
+for (const [label, p] of [['lib/video-embed.ts', RESOLVER], ['next.config.ts', NEXT_CONFIG]]) {
   if (!fs.existsSync(p)) fail(`${label} is missing — cannot verify embed/CSP parity.`)
 }
 const resolverSrc = fs.readFileSync(RESOLVER, 'utf8')

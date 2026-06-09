@@ -151,6 +151,7 @@ type ListingTileMvRow = {
   garage_spaces: number | null
   pool_yn: boolean | null
   has_virtual_tour: boolean | null
+  virtual_tour_url: string | null
   dom: number | null
   price_drop_count: number | null
   address_slug: string | null
@@ -194,6 +195,7 @@ function mvRowToTile(row: ListingTileMvRow): ListingTile {
     garageSpaces: row.garage_spaces,
     poolYn: row.pool_yn,
     hasVirtualTour: row.has_virtual_tour,
+    tourUrl: row.virtual_tour_url,
     dom: row.dom,
     priceDropCount: row.price_drop_count,
     addressSlug: row.address_slug,

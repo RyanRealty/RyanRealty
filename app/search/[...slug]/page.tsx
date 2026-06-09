@@ -15,12 +15,16 @@ import { getBannerUrl, getOrCreatePlaceBanner, getBannerSearchQuery } from '../.
 import { shareDescription, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '../../../lib/share-metadata'
 import { getBestListingHeroForGeography } from '../../actions/photo-classification'
 import SaveSearchButton from '../../../components/SaveSearchButton'
+import { SearchAlertCapture } from '../../../components/search/SearchAlertCapture'
 import { getCityContent, getSubdivisionBlurb } from '../../../lib/city-content'
 import { cityEntityKey, subdivisionEntityKey, getSubdivisionDisplayName, homesForSalePath, listingDetailPath, listingsBrowsePath, listingTileHref } from '../../../lib/slug'
 import { entityKeyToSlug } from '../../../lib/community-slug'
 import { getPresetBySlug, isPresetSlug, resolvePresetYearBuiltMin } from '../../../lib/search-presets'
 import { getPopularSearchesForCity, getAllCityHomesLink } from '../../../lib/popular-searches'
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
+import { Button } from '@/components/ui/button'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { MapsLocation01Icon } from '@hugeicons/core-free-icons'
 import { Container, Body, Grid, H1, H2 } from '@/components/site/primitives'
 import MarketSnapshot from '@/components/site/MarketSnapshot'
 import { FAQBlock } from '@/components/site/FAQBlock'
@@ -529,13 +533,33 @@ export default async function SearchPage({
         ? (await withTimeout(getCommunityBySlug(entityKeyToSlug(subdivisionEntityKey(city, decodedSubdivision))), null, 1000))?.boundaryGeojson ?? null
         : await withTimeout(getCityBoundary(city), null, 1000)
       : null
+    // Grid-view href = the same search with `view`/`poly` dropped, so the toggle
+    // returns to the static grid render of this exact city/preset page.
+    const gridViewHref = (() => {
+      const params = new URLSearchParams(
+        Object.entries(sp).filter(
+          ([k, v]) => typeof v === 'string' && v !== '' && k !== 'view' && k !== 'poly'
+        ) as [string, string][]
+      )
+      const q = params.toString()
+      return q ? `${searchPagePath}?${q}` : searchPagePath
+    })()
     return (
       <main className="flex flex-col map-search-shell overflow-hidden">
-        {searchBreadcrumbItems.length > 1 && (
-          <div className="shrink-0">
-            <div className="border-b border-primary/20 bg-primary"><Container className="py-3"><BreadcrumbNav tone="on-navy" items={searchBreadcrumbItems} includeJsonLd={false} /></Container></div>
-          </div>
-        )}
+        <div className="shrink-0 border-b border-primary/20 bg-primary">
+          <Container className="flex items-center justify-between gap-3 py-3">
+            {searchBreadcrumbItems.length > 1 ? (
+              <BreadcrumbNav tone="on-navy" items={searchBreadcrumbItems} includeJsonLd={false} />
+            ) : (
+              <span />
+            )}
+            <Button asChild variant="secondary" size="sm" className="shrink-0">
+              <Link href={gridViewHref} aria-label="Switch back to the grid view">
+                Grid view
+              </Link>
+            </Button>
+          </Container>
+        </div>
         <UnifiedMapListingsView
           containerClassName="flex-1 min-h-0 overflow-hidden"
           pageTitle={`${displayName} Real Estate & Homes For Sale`}
@@ -640,10 +664,44 @@ export default async function SearchPage({
     : null
   const cityMarketFaq = isPlainCityPage && city ? buildMarketFaq(city, cityPulse) : null
 
+  // Path-derived filters for the guest listing-alert capture. On this route the
+  // city/subdivision/preset live in the slug (not the query string), so the
+  // anonymous alert strip — which reads live filters from useSearchParams — needs
+  // them passed explicitly so the captured alert matches what the visitor sees.
+  const guestAlertFilters: Record<string, string> = {}
+  if (filterOpts.minPrice != null) guestAlertFilters.minPrice = String(filterOpts.minPrice)
+  if (filterOpts.maxPrice != null) guestAlertFilters.maxPrice = String(filterOpts.maxPrice)
+  if (filterOpts.minBeds != null) guestAlertFilters.beds = String(filterOpts.minBeds)
+  if (filterOpts.minBaths != null) guestAlertFilters.baths = String(filterOpts.minBaths)
+  if (filterOpts.keywords) guestAlertFilters.keywords = filterOpts.keywords
+
+  // "Map view" link — routes to the split list+map branch above (line ~517), which
+  // renders UnifiedMapListingsView with the perf-safe bounds-scoped "Search this
+  // area" loop. Carries the current filters/sort/perPage forward; only `view` flips.
+  const mapViewHref = `${searchPagePath}?${new URLSearchParams({
+    ...Object.fromEntries(
+      Object.entries(sp).filter(([, v]) => typeof v === 'string' && v !== '') as [string, string][]
+    ),
+    view: 'split',
+  }).toString()}`
+
   return (
     <main className="min-h-screen bg-background">
       {searchBreadcrumbItems.length > 1 && (
         <div className="border-b border-primary/20 bg-primary"><Container className="py-3"><BreadcrumbNav tone="on-navy" items={searchBreadcrumbItems} includeJsonLd={false} /></Container></div>
+      )}
+
+      {/* Guest listing-alert capture — anonymous visitors only. Signed-in users
+          get the Save-search button in the filter row below instead. This is the
+          email -> FUB buyer-lead path (audience:buyer), now present on the route
+          most city/preset links land on, not just the bare /homes-for-sale page. */}
+      {(city || hasFilterOnly) && (
+        <SearchAlertCapture
+          signedIn={!!session?.user}
+          defaultCity={city ?? ''}
+          defaultSubdivision={decodedSubdivision ?? ''}
+          defaultFilters={guestAlertFilters}
+        />
       )}
 
       <Container className="py-8">
@@ -728,12 +786,22 @@ export default async function SearchPage({
             </Body>
           )}
         </div>
-        <ShareButton
-          title={`Homes for sale in ${displayName}`}
-          text={subdivisionBlurb ?? cityContent?.metaDescription ?? `Browse homes for sale in ${displayName}, Central Oregon.`}
-          url={siteUrl ? `${siteUrl}${searchPagePath}` : undefined}
-          variant="default"
-        />
+        <div className="flex items-center gap-2">
+          {(city || hasFilterOnly) && (
+            <Button asChild variant="outline">
+              <Link href={mapViewHref} aria-label="Switch to the map view and search as you move the map">
+                <HugeiconsIcon icon={MapsLocation01Icon} className="size-4" aria-hidden />
+                Map view
+              </Link>
+            </Button>
+          )}
+          <ShareButton
+            title={`Homes for sale in ${displayName}`}
+            text={subdivisionBlurb ?? cityContent?.metaDescription ?? `Browse homes for sale in ${displayName}, Central Oregon.`}
+            url={siteUrl ? `${siteUrl}${searchPagePath}` : undefined}
+            variant="default"
+          />
+        </div>
       </header>
 
       {/* 3. Filter bar — the existing URL-driven filters, presented as one tidy row. */}

@@ -184,6 +184,9 @@ function rowToDetail(row: ListingRow): ListingDetail {
     garageSpaces: row.garage_spaces,
     poolYn: row.pool_yn,
     hasVirtualTour: row.has_virtual_tour,
+    // The detail page resolves its full video/tour set via getListingVideos
+    // (the rich 3-tier DAL), so the tile-level scalar tourUrl isn't needed here.
+    tourUrl: null,
     dom: row.DaysOnMarket,
     priceDropCount: row.price_drop_count,
     addressSlug:

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Container, Section, Stack, Grid, Eyebrow, H2, Body } from '@/components/site/primitives'
-import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
+import VideoListingCard from '@/components/site/VideoListingCard'
+import { type ListingCardData } from '@/components/site/ListingCard'
 import { tileToCardData } from '@/lib/site/listing-card'
 import {
   getCityListings,
@@ -107,7 +108,7 @@ export default async function VideoHomesSection({
         </div>
         <Grid cols={4} gap="default">
           {cards.map((card) => (
-            <ListingCard key={card.listingKey} listing={card} />
+            <VideoListingCard key={card.listingKey} listing={card} />
           ))}
         </Grid>
       </Container>

@@ -142,7 +142,7 @@ export const PRIMARY_NAV: NavGroup[] = [
       { href: '/guides', label: 'Buyer and seller guides' },
       { href: '/resources', label: 'Resources' },
       { href: '/faq', label: 'FAQ' },
-      { href: '/videos', label: 'Video library' },
+      { href: '/videos', label: 'Video tours' },
       { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
       { href: '/tools/appreciation', label: 'Appreciation tool' },
     ],
@@ -223,6 +223,7 @@ export const FOOTER_NAV: FooterGroup[] = [
     links: [
       { href: '/blog', label: 'Blog' },
       { href: '/guides', label: 'Guides' },
+      { href: '/videos', label: 'Video tours' },
       { href: '/faq', label: 'FAQ' },
       { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
       { href: '/tools/appreciation', label: 'Appreciation tool' },
