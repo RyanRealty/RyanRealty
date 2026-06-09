@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.425.32 (2026-06-09)
+
+### Other
+- Rebuild team + about heroes to the marketing-standard angle (kill "Three brokers")
+
+---
+
+
 ## v1.425.31 (2026-06-09)
 
 ### Other
