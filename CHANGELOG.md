@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.430.1 (2026-06-09)
+
+### Maintenance
+- test(gate): ci:rental-calculator smoke gate (standalone tool renders its calculator)
+
+---
+
+
 ## v1.430.0 (2026-06-09)
 
 ### Features
