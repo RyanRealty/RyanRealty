@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.435.0 (2026-06-09)
+
+### Features
+- feat(maps): subdivision hover-highlight on neighborhood maps (#8)
+
+---
+
+
 ## v1.434.1 (2026-06-09)
 
 ### Bug Fixes
