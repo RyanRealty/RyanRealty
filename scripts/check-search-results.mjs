@@ -35,6 +35,13 @@ const CASES = [
   { path: '/homes-for-sale/bend/awbrey-butte', label: 'neighborhood: Awbrey Butte', min: 1 },
   { path: '/homes-for-sale/powell-butte/acreage-5', label: 'preset: 5+ acres, Powell Butte', min: 1 },
   { path: '/homes-for-sale/bend/under-750k', label: 'preset: under $750k, Bend', min: 1 },
+  // Keyword presets: free-text PublicRemarks search. These routed to the heavy
+  // search_listings_advanced RPC, whose full-table jsonb ILIKE + count(*) OVER ()
+  // hit the 12s statement timeout -> empty grid. Now served by the indexed
+  // search_keyword_listings RPC. (Bend active+pending: single-level ~278.)
+  { path: '/homes-for-sale/bend/single-level', label: 'keyword: single-level, Bend', min: 1 },
+  { path: '/homes-for-sale/bend/with-shop', label: 'keyword: with-shop, Bend', min: 1 },
+  { path: '/homes-for-sale/bend/rv-parking', label: 'keyword: RV parking, Bend', min: 1 },
 ]
 
 function parseCount(html) {

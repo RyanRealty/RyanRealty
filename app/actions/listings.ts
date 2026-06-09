@@ -779,6 +779,58 @@ export async function getListingsAdvanced(options: {
           ? 'active_and_pending'
           : 'active'
 
+  // Keyword-only searches (the single-level / with-shop / rv-parking presets, or
+  // any free-text search with no other filters) route to the dedicated, indexed
+  // keyword RPC. It uses the partial GIN full-text index on active+pending
+  // PublicRemarks (sub-second) instead of the advanced RPC's full-table jsonb
+  // ILIKE scan + count(*) OVER (), which hit the 12s statement timeout and
+  // rendered an empty grid. Falls through to the full advanced RPC the moment any
+  // other filter (price, beds, subdivision, amenity, property type, etc.) is set,
+  // since the keyword RPC only constrains city + keywords + (active|pending).
+  const kw = options.keywords?.trim()
+  const keywordOnly =
+    !!kw &&
+    (statusFilter === 'active' || statusFilter === 'active_and_pending') &&
+    !options.subdivision?.trim() &&
+    (options.minPrice ?? 0) <= 0 && (options.maxPrice ?? 0) <= 0 &&
+    (options.minBeds ?? 0) <= 0 && (options.maxBeds ?? 0) <= 0 &&
+    (options.minBaths ?? 0) <= 0 && (options.maxBaths ?? 0) <= 0 &&
+    (options.minSqFt ?? 0) <= 0 && (options.maxSqFt ?? 0) <= 0 &&
+    options.yearBuiltMin == null && options.yearBuiltMax == null &&
+    options.lotAcresMin == null && options.lotAcresMax == null &&
+    !options.postalCode?.trim() && !options.propertySubType?.trim() && !options.viewContains?.trim() &&
+    options.hasOpenHouse !== true && options.hasPool !== true && options.hasView !== true &&
+    options.hasWaterfront !== true && options.hasFireplace !== true && options.hasGolfCourse !== true &&
+    options.garageMin == null && options.newListingsDays == null &&
+    (options.propertyType == null || (propertyTypeFilterToCodes(options.propertyType)?.length ?? 0) === 0)
+
+  if (keywordOnly) {
+    const { data: kwData, error: kwErr } = await supabase.rpc('search_keyword_listings', {
+      p_city: options.city?.trim() || null,
+      p_keywords: kw,
+      p_limit: limit,
+      p_offset: offset,
+    })
+    if (kwErr) {
+      console.error('[getListingsAdvanced] search_keyword_listings RPC error', {
+        message: kwErr.message,
+        city: options.city ?? null,
+        keywords: kw,
+      })
+      return { listings: [], totalCount: 0, degraded: true }
+    }
+    const kwRows = (kwData ?? []) as (ListingTileRow & { full_count?: number })[]
+    const kwFirst = kwRows[0]
+    const kwTotal =
+      kwFirst != null && typeof kwFirst.full_count === 'number' ? kwFirst.full_count : kwRows.length
+    const kwListings = kwRows.map((r) => {
+      const { full_count, ...rest } = r as ListingTileRow & { full_count?: number }
+      void full_count
+      return rest as ListingTileRow
+    })
+    return { listings: kwListings, totalCount: kwTotal }
+  }
+
   const { data, error } = await supabase.rpc('search_listings_advanced', {
     p_city: options.city?.trim() || null,
     p_subdivision: options.subdivision?.trim() || null,
