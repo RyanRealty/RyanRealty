@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.426.2 (2026-06-09)
+
+### Bug Fixes
+- fix(search): map "Search this area" never gets stuck on a transient error
+
+---
+
+
 ## v1.426.1 (2026-06-09)
 
 ### Bug Fixes
