@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.432.1 (2026-06-09)
+
+### Other
+- ci: wire every gate into the pipeline + meta-gate so orphaned gates fail CI
+
+---
+
+
 ## v1.432.0 (2026-06-09)
 
 ### Features
