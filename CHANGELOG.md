@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.432.0 (2026-06-09)
+
+### Features
+- feat(tools): branded rental-analysis PDF report (6D) — "Download PDF report"
+
+---
+
+
 ## v1.431.0 (2026-06-09)
 
 ### Features
