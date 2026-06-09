@@ -81,7 +81,7 @@ interface ExpiredListingRow {
   list_agent_email: string | null
   PropertyType: string | null
   BedroomsTotal: number | string | null
-  BathroomsTotalDecimal: number | string | null
+  BathroomsTotal: number | string | null
   TotalLivingAreaSqFt: number | string | null
   SubdivisionName: string | null
 }
@@ -157,7 +157,7 @@ function buildListingNote(l: ExpiredListingRow, ownerNotes: string | null): stri
   if (dom != null) lines.push(`Days on market: ${dom}`)
   lines.push('')
   if (l.BedroomsTotal) lines.push(`Beds: ${l.BedroomsTotal}`)
-  if (l.BathroomsTotalDecimal) lines.push(`Baths: ${l.BathroomsTotalDecimal}`)
+  if (l.BathroomsTotal) lines.push(`Baths: ${l.BathroomsTotal}`)
   const sqft = num(l.TotalLivingAreaSqFt)
   if (sqft) lines.push(`Sqft: ${new Intl.NumberFormat('en-US').format(Math.round(sqft))}`)
   lines.push('')
@@ -329,7 +329,7 @@ export async function processNewExpiredListings(
         daysOnMarket: num(l.CumulativeDaysOnMarket),
         listAgentName: l.ListAgentName,
         bedrooms: typeof l.BedroomsTotal === 'number' ? l.BedroomsTotal : null,
-        bathrooms: num(l.BathroomsTotalDecimal),
+        bathrooms: num(l.BathroomsTotal),
         sqft: num(l.TotalLivingAreaSqFt),
         subdivision: l.SubdivisionName,
         ownerLookupStatus: owner.status,
@@ -371,7 +371,7 @@ export async function processNewExpiredListings(
           status_change_timestamp: l.status_change_timestamp,
           property_type: l.PropertyType,
           bedrooms: typeof l.BedroomsTotal === 'number' ? l.BedroomsTotal : null,
-          bathrooms: num(l.BathroomsTotalDecimal),
+          bathrooms: num(l.BathroomsTotal),
           sqft: num(l.TotalLivingAreaSqFt),
           subdivision: l.SubdivisionName,
           fub_person_id: fubPersonId,
