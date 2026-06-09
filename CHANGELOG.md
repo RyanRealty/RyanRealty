@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.438.0 (2026-06-09)
+
+### Features
+- feat(reliability): ci:poison-null gate + convert the remaining 10 DAL resolvers
+
+### Bug Fixes
+- fix(fub): wire rental-lead originContext into the lead-origin note (missed from 3c439dc)
+
+---
+
+
 ## v1.437.0 (2026-06-09)
 
 ### Features
