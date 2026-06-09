@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-09T13:48:07.500Z
+**Generated:** 2026-06-09T15:41:44.771Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -59,7 +59,7 @@ One row per MLS-history event for a listing. snake_case columns; `listing_key` r
 | `sort_order` | integer | no | 0 |
 | `created_at` | timestamp with time zone | no | now() |
 
-### `listings` · **rows ≈ 605,284**
+### `listings` · **rows ≈ 590,791**
 
 Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case columns** — `"ListingKey"`, `"StreetNumber"`, `"StreetName"`, `"ListPrice"`, `"StandardStatus"`, `"Latitude"`, `"Longitude"`, etc. The `details` jsonb column carries the raw RETS payload. **Never aggregate from this table at request time** — use `listing_tile_mv` / `market_pulse_live` / `market_stats_cache`.
 
@@ -299,7 +299,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 590,788**
+### `listing_tile_mv` · **rows ≈ 593,437**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -641,7 +641,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `asset_library_refs` | ARRAY | yes |  |
 | `pulled_at` | timestamp with time zone | yes |  |
 
-### `expired_listings` · **rows ≈ 0**
+### `expired_listings` · **rows ≈ 1**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -685,7 +685,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `owner_lookup_attempts` | integer | yes | 0 |
 | `last_owner_lookup_at` | timestamp with time zone | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 54**
+### `marketing_brain_actions` · **rows ≈ 55**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|

@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-06-09T13:48:07.558Z
+**Generated:** 2026-06-09T15:41:44.824Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -254,7 +254,7 @@ Companion files:
 
 **Tables:** `listing_photos`, `open_houses`, `listing_agents`, `listings`, `listing_videos`, `listing_embeddings`, `listing_history`, `communities`, `neighborhoods`, `cities`
 
-**Selected columns:** `listing_key`, `photo_url`, `id`, `open_house_key`, `event_date`, `start_time`, `end_time`, `host_agent_name`, `remarks`, `rsvp_count`, `cdn_url`, `sort_order`, `caption`, `is_hero`, `agent_role`, `agent_name`, `agent_mls_id`, `agent_license`, `agent_email`, `agent_phone`, `office_name`, `office_mls_id`, `office_phone`, `video_url`, `event`, `price`, `description`, `price_change`, `raw`, `name`, `slug`, `neighborhood_id`, `city_id`
+**Selected columns:** `listing_key`, `photo_url`, `id`, `open_house_key`, `event_date`, `start_time`, `end_time`, `host_agent_name`, `remarks`, `rsvp_count`, `cdn_url`, `sort_order`, `caption`, `is_hero`, `ListingKey`, `agent_role`, `agent_name`, `agent_mls_id`, `agent_license`, `agent_email`, `agent_phone`, `office_name`, `office_mls_id`, `office_phone`, `video_url`, `event`, `price`, `description`, `price_change`, `raw`, `name`, `slug`, `neighborhood_id`, `city_id`
 
 ---
 

@@ -14,7 +14,7 @@ import type { RentalAnalysisResult } from '@/lib/rental-analysis'
 
 const NAVY = '#102742'
 const styles = StyleSheet.create({
-  page: { padding: 40, fontSize: 10, color: '#1a1a1a', fontFamily: 'Helvetica' },
+  page: { padding: 40, fontSize: 10, color: '#1a1a1a' },
   navyBar: { backgroundColor: NAVY, padding: 14, marginBottom: 18 },
   logoText: { color: '#faf8f4', fontSize: 16, fontWeight: 'bold' },
   kicker: { color: '#c9d2dd', fontSize: 9, marginTop: 2 },
