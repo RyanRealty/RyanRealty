@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.435.3 (2026-06-09)
+
+### Bug Fixes
+- fix(reliability): P0 poison-null caching x3 + the /pulse hydration crash
+
+---
+
+
 ## v1.435.2 (2026-06-09)
 
 ### Other
