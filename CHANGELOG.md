@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.426.6 (2026-06-09)
+
+### Bug Fixes
+- fix(sync): expired-listing detection used a non-existent column (BathroomsTotalDecimal)
+
+---
+
+
 ## v1.426.5 (2026-06-09)
 
 ### Bug Fixes
