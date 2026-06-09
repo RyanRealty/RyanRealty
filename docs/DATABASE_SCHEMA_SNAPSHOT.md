@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-08T23:45:36.821Z
+**Generated:** 2026-06-09T13:48:07.500Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -299,7 +299,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 593,868**
+### `listing_tile_mv` · **rows ≈ 590,788**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -343,7 +343,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 75,233**
+### `similar_listings_mv` · **rows ≈ 74,813**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 
@@ -412,7 +412,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 10,712**
+### `market_stats_cache` · **rows ≈ 11,809**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -613,10 +613,10 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `brief_id` | uuid | yes |  |
 | `calendar_id` | uuid | yes |  |
 | `platform` | text | no |  |
-| `platform_post_id` | text | no |  |
-| `published_at` | timestamp with time zone | no |  |
+| `platform_post_id` | text | yes |  |
+| `published_at` | timestamp with time zone | yes |  |
 | `measured_at` | timestamp with time zone | no | now() |
-| `hours_since_publish` | numeric | no |  |
+| `hours_since_publish` | numeric | yes |  |
 | `impressions` | numeric | yes |  |
 | `reach` | numeric | yes |  |
 | `views` | numeric | yes |  |
@@ -630,7 +630,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `conversions` | numeric | yes |  |
 | `attributed_leads` | numeric | yes |  |
 | `metadata` | jsonb | no | '{}'::jsonb |
-| `source` | text | no |  |
+| `source` | text | yes |  |
 | `action_id` | uuid | yes |  |
 | `post_external_id` | text | yes |  |
 | `posted_at` | timestamp with time zone | yes |  |
@@ -1603,6 +1603,19 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `standard_status` | text | yes |  |
 | `property_type` | text | yes |  |
 | `property_sub_type` | text | yes |  |
+
+### `listing_collections`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `user_id` | uuid | no |  |
+| `name` | text | no |  |
+| `description` | text | yes |  |
+| `share_token` | text | no |  |
+| `listing_keys` | ARRAY | no | '{}'::text[] |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
 
 ### `listing_inquiries`
 

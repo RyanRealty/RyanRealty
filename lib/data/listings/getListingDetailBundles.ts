@@ -178,7 +178,7 @@ export async function getListingKeysByListAgentEmail(email: string): Promise<str
   if (!sb || !email?.trim()) return []
   const { data } = await sb
     .from('listings')
-    .select('"ListingKey"')
+    .select('ListingKey')
     .eq('list_agent_email', email.trim().toLowerCase())
     .limit(5000)
   return [
