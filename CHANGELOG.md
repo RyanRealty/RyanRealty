@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.434.0 (2026-06-09)
+
+### Features
+- feat(tools): rental-calculator FUB lead capture (6C) — "review this deal" -> Follow Up Boss
+
+---
+
+
 ## v1.433.0 (2026-06-09)
 
 ### Features
