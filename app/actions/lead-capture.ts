@@ -427,6 +427,16 @@ export async function submitRentalLead(input: {
             audience: 'buyer',
             source: 'contact-form',
             tier: 'nurture',
+            originContext: {
+              source: 'rental-calculator',
+              sourceLabel: 'Rental property calculator',
+              landingPage: pageUrl,
+              audience: 'buyer',
+              tier: 'nurture',
+              ...(input.propertyLabel || input.contextNote
+                ? { want: [input.propertyLabel, input.contextNote].filter(Boolean).join(' · ') }
+                : {}),
+            },
           })
           await addPersonTags(found.id, ['rental-calculator', 'investor'])
         }
