@@ -6,6 +6,7 @@ import {
   getListingKeysWithRecentPriceChange,
   getCityFromSlug,
   getSubdivisionNameFromSlug,
+  getNeighborhoodNameForCitySlug,
   getListingsWithAdvanced,
   type AdvancedSort,
 } from '../../actions/listings'
@@ -78,31 +79,43 @@ async function resolveSlug(slug: string[]): Promise<{
   subdivisionDisplayName: string | null
   presetSlug: string | null
   preset: ReturnType<typeof getPresetBySlug>
+  /** Set when the second segment is a known boundary_neighborhood (e.g. Bend
+   *  "Mountain View"). Drives the single-indexed neighborhood fast path. */
+  neighborhoodName: string | null
 }> {
   const citySlug = slug[0]
   const resolvedCity = citySlug ? (await getCityFromSlug(citySlug)) ?? decodeURIComponent(citySlug).trim() : null
   const city = resolvedCity ?? citySlug ?? null
 
   if (slug.length === 0) {
-    return { city: null, subdivisionSlug: null, subdivisionDisplayName: null, presetSlug: null, preset: null }
+    return { city: null, subdivisionSlug: null, subdivisionDisplayName: null, presetSlug: null, preset: null, neighborhoodName: null }
   }
   if (slug.length === 1) {
-    return { city, subdivisionSlug: null, subdivisionDisplayName: null, presetSlug: null, preset: null }
+    return { city, subdivisionSlug: null, subdivisionDisplayName: null, presetSlug: null, preset: null, neighborhoodName: null }
   }
   if (slug.length === 2) {
     const second = slug[1]!
+    // A real neighborhood wins over a same-named preset. 'mountain-view' is BOTH
+    // the Mountain View neighborhood AND a "mountain view" amenity preset; the
+    // preset routed to the slow advanced RPC and timed out to an empty grid,
+    // while the neighborhood resolves to one indexed boundary_neighborhood query.
+    const neighborhoodName = citySlug ? await getNeighborhoodNameForCitySlug(citySlug, second) : null
+    if (neighborhoodName) {
+      return { city, subdivisionSlug: second, subdivisionDisplayName: neighborhoodName, presetSlug: null, preset: null, neighborhoodName }
+    }
     if (isPresetSlug(second)) {
-      return { city, subdivisionSlug: null, subdivisionDisplayName: null, presetSlug: second, preset: getPresetBySlug(second) }
+      return { city, subdivisionSlug: null, subdivisionDisplayName: null, presetSlug: second, preset: getPresetBySlug(second), neighborhoodName: null }
     }
     const subdivisionDisplayName = city ? (await getSubdivisionNameFromSlug(city, second)) ?? decodeURIComponent(second) : null
-    return { city, subdivisionSlug: second, subdivisionDisplayName, presetSlug: null, preset: null }
+    return { city, subdivisionSlug: second, subdivisionDisplayName, presetSlug: null, preset: null, neighborhoodName: null }
   }
-  // slug.length >= 3: [city, subdivision, preset]
+  // slug.length >= 3: [city, subdivision-or-neighborhood, preset]
   const subSlug = slug[1]!
-  const subdivisionDisplayName = city ? (await getSubdivisionNameFromSlug(city, subSlug)) ?? decodeURIComponent(subSlug) : null
+  const nbhd3 = citySlug ? await getNeighborhoodNameForCitySlug(citySlug, subSlug) : null
+  const subdivisionDisplayName = nbhd3 ?? (city ? (await getSubdivisionNameFromSlug(city, subSlug)) ?? decodeURIComponent(subSlug) : null)
   const presetSlug = slug[2] ?? null
   const preset = presetSlug ? getPresetBySlug(presetSlug) : null
-  return { city, subdivisionSlug: subSlug, subdivisionDisplayName, presetSlug, preset }
+  return { city, subdivisionSlug: subSlug, subdivisionDisplayName, presetSlug, preset, neighborhoodName: nbhd3 }
 }
 
 function buildCanonicalPath(city: string | null, subdivisionDisplayName: string | null, subdivisionSlug: string | null, presetSlug: string | null): string {
@@ -246,6 +259,11 @@ export default async function SearchPage({
   const city = cityResolved ?? undefined
   const subdivision = resolved.subdivisionSlug ?? undefined
   const decodedSubdivision = resolved.subdivisionDisplayName ?? (subdivision ? decodeURIComponent(subdivision) : undefined)
+  // When the slug is a known neighborhood (boundary_neighborhood), drive the
+  // single-indexed fast path. getListings prefers the neighborhood branch over
+  // the subdivision-name match, so the page serves the full neighborhood (e.g.
+  // Mountain View, Awbrey Butte) in ~4ms instead of the slow advanced RPC.
+  const neighborhood = resolved.neighborhoodName ?? undefined
   const hasFilterOnly = !city && hasFilterOnlySearch(sp)
   const presetLabel = !city ? getPresetSearchLabel(sp) : null
 
@@ -262,6 +280,7 @@ export default async function SearchPage({
   const filterOptsBase = {
     city: city || undefined,
     subdivision: decodedSubdivision,
+    neighborhood,
     minPrice: sp.minPrice ? Number(sp.minPrice) : undefined,
     maxPrice: sp.maxPrice ? Number(sp.maxPrice) : undefined,
     minBeds: sp.beds ? Number(sp.beds) : undefined,

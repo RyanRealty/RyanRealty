@@ -853,6 +853,8 @@ const BASE_SORTS: ListingsFilters['sort'][] = ['newest', 'oldest', 'price_asc', 
 export async function getListingsWithAdvanced(options: {
   city?: string
   subdivision?: string
+  /** Bend neighborhood (boundary_neighborhood tag) — single-indexed fast path. */
+  neighborhood?: string
   limit?: number
   offset?: number
 } & AdvancedListingsFilters = {}): Promise<{ listings: ListingTileRow[]; totalCount: number; degraded?: boolean }> {
@@ -891,9 +893,31 @@ export async function getListingsWithAdvanced(options: {
   // (mountain-view, awbrey-butte).
   const __t0 = Date.now()
   const countPromise: Promise<number> = (async (): Promise<number> => {
+    if (options.neighborhood?.trim()) {
+      // A known neighborhood counts through the single boundary_neighborhood
+      // index (HEAD count, no row re-fetch) — matches the rows the neighborhood
+      // branch in getListings returns, in ~4ms. This is the fix for the
+      // mountain-view / awbrey-butte pages that timed out re-running the heavy
+      // subdivision-match row path twice (once for rows, once for the count).
+      const { getListingTilesCount } = await import('@/lib/data')
+      const statusKey = options.includeClosed
+        ? ('all' as const)
+        : options.includePending
+          ? ('active-and-pending' as const)
+          : ('active' as const)
+      return getListingTilesCount({
+        neighborhood: options.neighborhood.trim(),
+        city: options.city?.trim() || undefined,
+        status: statusKey,
+        minPrice: options.minPrice ?? undefined,
+        maxPrice: options.maxPrice ?? undefined,
+        minBeds: options.minBeds ?? undefined,
+        minBaths: options.minBaths ?? undefined,
+        minSqft: options.minSqFt ?? undefined,
+      })
+    }
     if (options.subdivision?.trim()) {
-      // Subdivisions/neighborhoods count through the same row path; they sit
-      // well under the cap.
+      // Subdivisions count through the same row path; they sit well under the cap.
       return getActiveListingsCount(baseOptions)
     }
     const { getListingTilesCount } = await import('@/lib/data')
@@ -2108,6 +2132,49 @@ export async function getSubdivisionNameFromSlug(
     (s) => subdivisionSlugify(s.subdivisionName) === key || s.subdivisionName.trim() === decoded
   )
   return match ? match.subdivisionName : null
+}
+
+/**
+ * Cached `${citySlug}/${neighborhoodSlug}` -> neighborhood display name map,
+ * built from the `neighborhoods` table. The display name equals the
+ * `boundary_neighborhood` tag on listing_tile_mv (e.g. "Mountain View"), so it
+ * drives the single-indexed neighborhood fast path. The table is tiny and rarely
+ * changes, so one cached read serves every search render.
+ */
+const _getCityNeighborhoodMap = unstable_cache(
+  async (): Promise<Record<string, string>> => {
+    const { getAllNeighborhoodsWithCity } = await import('@/lib/data')
+    const rows = await getAllNeighborhoodsWithCity()
+    const map: Record<string, string> = {}
+    for (const r of rows) {
+      const city = Array.isArray(r.cities) ? r.cities[0] : r.cities
+      const citySlug = (city?.slug ?? '').toLowerCase().trim()
+      const nSlug = (r.slug ?? '').toLowerCase().trim()
+      if (citySlug && nSlug && r.name) map[`${citySlug}/${nSlug}`] = r.name
+    }
+    return map
+  },
+  ['city-neighborhood-slug-map-v1'],
+  { revalidate: 3600, tags: ['neighborhoods'] },
+)
+
+/**
+ * Resolve a `(citySlug, slug)` pair to a known neighborhood display name, or null.
+ *
+ * A Bend neighborhood like `mountain-view` shares its slug with a "homes with a
+ * mountain view" amenity preset (`viewContains: 'Mountain'`). The preset routed
+ * to the heavy search_listings_advanced RPC, which hit its 12s statement timeout
+ * and rendered an EMPTY grid (the /homes-for-sale/bend/mountain-view bug). When a
+ * slug is a real neighborhood, the page resolves it to the single-indexed
+ * `boundary_neighborhood` fast path (4ms) instead — correct AND fast.
+ */
+export async function getNeighborhoodNameForCitySlug(
+  citySlug: string,
+  neighborhoodSlug: string
+): Promise<string | null> {
+  if (!citySlug?.trim() || !neighborhoodSlug?.trim()) return null
+  const map = await _getCityNeighborhoodMap()
+  return map[`${citySlug.toLowerCase().trim()}/${neighborhoodSlug.toLowerCase().trim()}`] ?? null
 }
 
 export type ListingDetailRow = {
