@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.433.0 (2026-06-09)
+
+### Features
+- feat(tools): free rent estimates from HUD Fair Market Rents (best free option, no RentCast)
+
+---
+
+
 ## v1.432.2 (2026-06-09)
 
 ### Bug Fixes
