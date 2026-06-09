@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.429.0 (2026-06-09)
+
+### Features
+- feat(dashboard): collections actually work end to end (create / view / add / remove / delete)
+
+---
+
+
 ## v1.428.0 (2026-06-09)
 
 ### Features
