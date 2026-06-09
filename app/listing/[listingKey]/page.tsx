@@ -26,9 +26,11 @@ import { NeighborhoodMarketContext } from '@/components/site/listing-detail/Neig
 import { SchoolsBlock } from '@/components/site/listing-detail/SchoolsBlock'
 import { ParksNearbyBlock } from '@/components/site/listing-detail/ParksNearbyBlock'
 import { MortgageCalculator } from '@/components/site/listing-detail/MortgageCalculator'
+import { RentalAnalysis } from '@/components/site/listing-detail/RentalAnalysis'
 import { PropertyHistory } from '@/components/site/listing-detail/PropertyHistory'
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
 import { SimilarListings } from '@/components/site/listing-detail/SimilarListings'
+import VideoHomesSection, { type VideoHomesScope } from '@/components/site/VideoHomesSection'
 import { ListingAgentCard } from '@/components/site/listing-detail/ListingAgentCard'
 import { TextMattCTA } from '@/components/site/listing-detail/TextMattCTA'
 import { ClimateRiskBlock } from '@/components/site/listing-detail/ClimateRiskBlock'
@@ -312,6 +314,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         listPrice={listing.listPrice}
         taxAnnualAmount={listing.taxAnnualAmount}
       />
+      <RentalAnalysis listing={listing} />
       {history.length > 0 ? <PropertyHistory history={history} mode="all" /> : null}
       <ListingLocationMap
         lat={listing.lat}
@@ -325,6 +328,19 @@ export default async function ListingDetailPage({ params }: PageProps) {
       <VacationRentalPotential projection={null} />
       <TransparentCMASummary cma={null} />
       {similar.length > 0 ? <SimilarListings similar={similar} /> : null}
+      <VideoHomesSection
+        scope={
+          (listing.subdivisionName && listing.subdivisionName !== 'N/A'
+            ? { kind: 'community', subdivision: listing.subdivisionName }
+            : listing.city
+              ? { kind: 'city', city: listing.city }
+              : { kind: 'region' }) as VideoHomesScope
+        }
+        excludeKey={listing.listingKey}
+        limit={4}
+        heading="More homes with video tours"
+        tone="muted"
+      />
     </>
   )
 
