@@ -160,6 +160,36 @@ export async function getListingKeysForBrokerByEmail(email: string): Promise<str
   return [...new Set((data ?? []).map((r: { listing_key?: string | null }) => (r.listing_key ?? '').trim()).filter(Boolean))]
 }
 
+/**
+ * Get listing_keys where a broker is the LIST agent, via the populated top-level
+ * `listings.list_agent_email` column.
+ *
+ * The normalized `listing_agents` table does NOT carry agent_email/license for
+ * Ryan Realty's own brokers (it's a partial third-party-sourced sample with only
+ * agent_name populated, and zero Ryan Realty rows), so the email/license lookups
+ * above return [] for our team — which is why the broker pages showed no active
+ * or sold listings. This direct column read is the reliable source. The column
+ * is btree-indexed (idx_listings_list_agent_email, partial WHERE NOT NULL), and
+ * the stored values are lowercase, so an exact lowercase match uses the index.
+ * Returns ListingKeys for hydration through listing_tile_mv (getListingTiles).
+ */
+export async function getListingKeysByListAgentEmail(email: string): Promise<string[]> {
+  const sb = supabaseAnon()
+  if (!sb || !email?.trim()) return []
+  const { data } = await sb
+    .from('listings')
+    .select('"ListingKey"')
+    .eq('list_agent_email', email.trim().toLowerCase())
+    .limit(5000)
+  return [
+    ...new Set(
+      (data ?? [])
+        .map((r: { ListingKey?: string | null }) => (r.ListingKey ?? '').trim())
+        .filter(Boolean),
+    ),
+  ]
+}
+
 /** Listing agent rows (role in 'list' | 'listing'). */
 export async function getListingDetailAgents(listingKey: string): Promise<ListingDetailAgentRow[]> {
   const canonicalKey = await resolveCanonicalListingKey(listingKey)

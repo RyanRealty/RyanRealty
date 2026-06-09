@@ -37,7 +37,8 @@ async function getListingKeysForBroker(
 ): Promise<string[]> {
   const keys = new Set<string>()
   void supabase
-  const { getListingKeysForBrokerByLicense, getListingKeysForBrokerByEmail } = await import('@/lib/data')
+  const { getListingKeysForBrokerByLicense, getListingKeysForBrokerByEmail, getListingKeysByListAgentEmail } =
+    await import('@/lib/data')
 
   if (licenseNumber?.trim()) {
     const byLicense = await getListingKeysForBrokerByLicense(licenseNumber)
@@ -45,8 +46,16 @@ async function getListingKeysForBroker(
   }
 
   if (brokerEmail?.trim()) {
-    const byEmail = await getListingKeysForBrokerByEmail(brokerEmail)
+    // listing_agents is a partial third-party sample with no Ryan Realty rows, so
+    // the normalized email lookup returns [] for our own brokers. The populated,
+    // indexed listings.list_agent_email column is the reliable source — without it
+    // the broker pages showed neither active nor sold listings.
+    const [byEmail, byListAgent] = await Promise.all([
+      getListingKeysForBrokerByEmail(brokerEmail),
+      getListingKeysByListAgentEmail(brokerEmail),
+    ])
     byEmail.forEach((k) => keys.add(k))
+    byListAgent.forEach((k) => keys.add(k))
   }
 
   return [...keys]

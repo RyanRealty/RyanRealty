@@ -8,7 +8,7 @@ import Image from 'next/image'
  * Mirrors design_system/ryan-realty/ui_kits/website/index.html §featured-listings .listing.
  */
 
-export type ListingBadge = 'hot' | 'new' | 'drop' | 'open'
+export type ListingBadge = 'hot' | 'new' | 'drop' | 'open' | 'sold'
 
 export type ListingCardData = {
   listingKey: string
@@ -40,6 +40,7 @@ const BADGE_CLASS: Record<ListingBadge, string> = {
   new: 'bg-success text-white',
   drop: 'bg-warning text-[#1a1305]',
   open: 'bg-white text-foreground border border-border',
+  sold: 'bg-primary text-white',
 }
 
 export default function ListingCard({ listing }: { listing: ListingCardData }) {

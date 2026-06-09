@@ -111,6 +111,7 @@ export {
   getListingDetailAgents,
   getListingKeysForBrokerByLicense,
   getListingKeysForBrokerByEmail,
+  getListingKeysByListAgentEmail,
   getListingDetailOpenHouses,
   getOpenHouseById,
   getListingDetailVideos,

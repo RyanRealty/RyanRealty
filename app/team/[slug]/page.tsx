@@ -18,7 +18,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Image from 'next/image'
-import { getAgentBySlug, getAgentActiveListings } from '@/app/actions/agents'
+import { getAgentBySlug, getAgentActiveListings, getAgentSoldListings } from '@/app/actions/agents'
 import { getBrokerageSettings } from '@/app/actions/brokerage'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
@@ -118,6 +118,32 @@ function toListingCardData(tile: {
   }
 }
 
+/** Format a close date (ISO or YYYY-MM-DD) to "Sold Mon YYYY" for the SOLD badge. */
+function soldBadgeLabel(closeDate: string | null | undefined): string {
+  if (!closeDate) return 'Sold'
+  const d = new Date(closeDate)
+  if (Number.isNaN(d.getTime())) return 'Sold'
+  return `Sold ${d.toLocaleString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })}`
+}
+
+/**
+ * Map a sold tile (from getAgentSoldListings) to a ListingCardData. The card
+ * price is the recorded MLS closing price (CLAUDE.md §0: a verified figure
+ * straight from the listing row, not a derived stat), with a SOLD badge carrying
+ * the close month + year.
+ */
+function toSoldCardData(
+  tile: Parameters<typeof toListingCardData>[0] & { ClosePrice?: number | null; CloseDate?: string | null },
+): ListingCardData | null {
+  const base = toListingCardData(tile)
+  if (!base) return null
+  return {
+    ...base,
+    price: tile.ClosePrice ?? base.price,
+    badge: { kind: 'sold', label: soldBadgeLabel(tile.CloseDate) },
+  }
+}
+
 /**
  * Factual fallback bio when the broker has no bio in the database.
  * Sentence-case, no banned words, no invented claims.
@@ -137,14 +163,24 @@ export default async function TeamMemberPage({ params }: Props) {
   const hasLicense = Boolean(broker.license_number?.trim())
   const canonicalUrl = `${siteUrl}/team/${slug}`
 
-  // Active listings — only fetch when the broker has a license or email to match against
-  const activeListings = (hasLicense || broker.email)
-    ? await getAgentActiveListings(broker.license_number ?? null, 6, broker.email)
-    : []
+  // Active + recently-sold listings — only fetch when the broker has a license or
+  // email to match against. Resolution runs through listings.list_agent_email
+  // (the populated, indexed source) so our own brokers actually resolve.
+  const canMatch = hasLicense || !!broker.email
+  const [activeListings, soldListings] = canMatch
+    ? await Promise.all([
+        getAgentActiveListings(broker.license_number ?? null, 6, broker.email),
+        getAgentSoldListings(broker.license_number ?? null, 9, broker.email),
+      ])
+    : [[], []]
   const listingCards: ListingCardData[] = activeListings
     .map(toListingCardData)
     .filter((c): c is ListingCardData => c !== null)
     .slice(0, 6)
+  const soldCards: ListingCardData[] = soldListings
+    .map(toSoldCardData)
+    .filter((c): c is ListingCardData => c !== null)
+    .slice(0, 9)
 
   // Bio — use data row value if present; else a factual fallback sentence
   const bioText: string = broker.bio?.trim()
@@ -218,6 +254,42 @@ export default async function TeamMemberPage({ params }: Props) {
           ),
         }}
       />
+      {/* AEO: the broker's recently-sold homes as a structured ItemList, so an
+          answer engine can surface "homes <broker> has sold". Sale prices are the
+          recorded MLS closing prices (verified from the listing row). */}
+      {soldCards.length > 0 ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'ItemList',
+              name: `Homes ${broker.display_name} recently sold`,
+              description: `Closed sales from the last two years where ${broker.display_name} represented the seller, from the Oregon Data Share MLS.`,
+              numberOfItems: soldCards.length,
+              itemListElement: soldCards.map((c, i) => ({
+                '@type': 'ListItem',
+                position: i + 1,
+                item: {
+                  '@type': 'SingleFamilyResidence',
+                  name: c.addressLine,
+                  address: c.cityLine,
+                  ...(c.price
+                    ? {
+                        offers: {
+                          '@type': 'Offer',
+                          price: c.price,
+                          priceCurrency: 'USD',
+                          availability: 'https://schema.org/SoldOut',
+                        },
+                      }
+                    : {}),
+                },
+              })),
+            }),
+          }}
+        />
+      ) : null}
 
       {/* Breadcrumb */}
       <div className="bg-background border-b border-border py-3">
@@ -370,6 +442,27 @@ export default async function TeamMemberPage({ params }: Props) {
             </Stack>
             <Grid cols={3} gap="default">
               {listingCards.map((card) => (
+                <ListingCard key={card.listingKey} listing={card} />
+              ))}
+            </Grid>
+          </Container>
+        </Section>
+      ) : null}
+
+      {/* Recently sold — closed sales where this broker represented the seller */}
+      {soldCards.length > 0 ? (
+        <Section padding="default" tone="default" divider>
+          <Container>
+            <Stack gap="tight" className="mb-8">
+              <Eyebrow>Recently sold</Eyebrow>
+              <H2>Homes {firstName} recently sold</H2>
+              <Body size="default" tone="muted">
+                Closed sales from the last two years where {firstName} represented the seller, pulled directly from
+                the Oregon Data Share MLS. Each price is the recorded closing price.
+              </Body>
+            </Stack>
+            <Grid cols={3} gap="default">
+              {soldCards.map((card) => (
                 <ListingCard key={card.listingKey} listing={card} />
               ))}
             </Grid>
