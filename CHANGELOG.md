@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.426.4 (2026-06-09)
+
+### Bug Fixes
+- fix(nav): "Homes > By city" links go to the rich city page, not a second one
+
+---
+
+
 ## v1.426.3 (2026-06-09)
 
 ### Bug Fixes
