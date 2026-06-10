@@ -15,9 +15,15 @@
  * so this recovers MORE history than FUB could ever return.
  */
 
+import { createHash } from 'node:crypto'
 import { google, type gmail_v1 } from 'googleapis'
 import { createServiceClient } from '@/lib/supabase/service'
 import { CRM_BROKER_BY_EMAIL, type CrmBrokerSlug } from '@/lib/crm/constants'
+
+// System/notification senders that must never create timeline entries — their
+// mail is platform noise (FUB missed-call alerts, surveys, port updates), not
+// a communication from a contact.
+const BLOCKED_SENDER_DOMAINS = new Set(['followupboss.com'])
 
 export const CRM_MAILBOXES: Array<{ email: string; slug: CrmBrokerSlug }> = [
   { email: 'matt@ryan-realty.com', slug: 'matt' },
@@ -171,7 +177,7 @@ export async function syncMailboxWindow(params: {
       for (let i = 0; i < ids.length; i += CHUNK) {
         const chunk = await Promise.all(
           ids.slice(i, i + CHUNK).map((m) =>
-            gmail.users.messages.get({ userId: 'me', id: m.id!, format: 'metadata', metadataHeaders: ['From', 'To', 'Cc', 'Subject', 'Date'] }).then((r) => r.data),
+            gmail.users.messages.get({ userId: 'me', id: m.id!, format: 'metadata', metadataHeaders: ['From', 'To', 'Cc', 'Subject', 'Date', 'Message-ID'] }).then((r) => r.data),
           ),
         )
         metas.push(...chunk)
@@ -181,6 +187,7 @@ export async function syncMailboxWindow(params: {
         const internal = Number(meta.internalDate ?? 0)
         if (internal > maxInternal) maxInternal = internal
         const from = parseAddresses(headerOf(meta, 'From'))
+        if (from.length && from.every((a) => BLOCKED_SENDER_DOMAINS.has(a.split('@')[1] ?? ''))) continue
         const toCc = [...parseAddresses(headerOf(meta, 'To')), ...parseAddresses(headerOf(meta, 'Cc'))]
         const candidates = new Map<number, 'in' | 'out'>()
         for (const a of from) { const pid = emailMap.get(a); if (pid) candidates.set(pid, 'in') }
@@ -191,6 +198,11 @@ export async function syncMailboxWindow(params: {
         const fullMsg = await gmail.users.messages.get({ userId: 'me', id: meta.id!, format: 'full' })
         const subject = headerOf(fullMsg.data, 'Subject') ?? null
         const body = extractBody(fullMsg.data.payload) || (fullMsg.data.snippet ?? null)
+        // RFC822 Message-ID is stable across mailboxes — an email delivered to
+        // two broker inboxes gets a different gmailId per mailbox but the same
+        // Message-ID, so keying on it makes the second copy an upsert no-op.
+        const rfcId = headerOf(fullMsg.data, 'Message-ID')
+        const messageKey = rfcId ? `rfc:${createHash('sha1').update(rfcId.trim()).digest('hex').slice(0, 24)}` : fullMsg.data.id
         for (const [personId, dir] of candidates) {
           matched++
           rows.push({
@@ -207,7 +219,7 @@ export async function syncMailboxWindow(params: {
             },
             broker: brokerSlug,
             source: 'gmail',
-            dedupe_key: `gmail:${fullMsg.data.id}:p${personId}`,
+            dedupe_key: `gmail:${messageKey}:p${personId}`,
           })
         }
       }

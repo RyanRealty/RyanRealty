@@ -265,6 +265,29 @@ await tryCheck('alerts.relay', async () => {
   check('alerts.relay', (stuck ?? 0) > 0 ? 'FAIL' : (failedDay ?? 0) > 0 ? 'WARN' : 'PASS', `${stuck ?? 0} stuck >10m (relay dead?), ${failedDay ?? 0} failed in 24h`);
 });
 
+// ── 8a3. TIMELINE DUPLICATE DETECTOR (audit 2026-06-10 regression class) ───
+// The inbox showed every email twice: FUB-backfill twins of Gmail rows +
+// cross-mailbox Gmail twins. Fixed at ingest (Message-ID keying + sender
+// blocklist in lib/crm/gmail.ts); this guards against recurrence.
+await tryCheck('data.timeline-dupes', async () => {
+  const since = new Date(Date.now() - 48 * 3600e3).toISOString();
+  const { data } = await sb.from('crm_timeline').select('person_id,kind,ts,title').in('kind', ['email_in', 'email_out']).gte('ts', since).order('person_id').order('kind').order('ts').limit(5000);
+  let dupes = 0;
+  const rows = data ?? [];
+  for (let i = 1; i < rows.length; i++) {
+    const a = rows[i - 1], b = rows[i];
+    if (a.person_id === b.person_id && a.kind === b.kind && (a.title ?? '') === (b.title ?? '') && Math.abs(new Date(b.ts) - new Date(a.ts)) <= 90000) dupes++;
+  }
+  check('data.timeline-dupes', dupes === 0 ? 'PASS' : 'WARN', `${dupes} near-twin email rows in last 48h`);
+});
+
+// ── 8a4. SYNTHETIC TEST ARTIFACTS (hard rule: clean up in-iteration) ───────
+await tryCheck('data.synthetic-artifacts', async () => {
+  const { data } = await sb.from('crm_people').select('id,name').or('name.ilike.%smoketest%,name.ilike.%deleteme%,name.ilike.%test-artifact%');
+  const n = (data ?? []).length;
+  check('data.synthetic-artifacts', n === 0 ? 'PASS' : 'WARN', n === 0 ? 'no synthetic people in book' : `${n} synthetic test people present: ${(data ?? []).map((p) => `#${p.id} ${p.name}`).join(', ')}`);
+});
+
 // ── 8b. BROKER LICENSES (compliance: never let a license lapse) ────────────
 await tryCheck('compliance.licenses', async () => {
   const { data } = await sb.from('brokers').select('display_name,license_status,license_expires_on,license_checked_at').eq('is_active', true);
