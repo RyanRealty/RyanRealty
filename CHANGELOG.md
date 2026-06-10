@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.470.0 (2026-06-10)
+
+### Features
+- feat(tc): principal-broker sign-off queue (rung 13)
+
+---
+
+
 ## v1.469.0 (2026-06-10)
 
 ### Features
