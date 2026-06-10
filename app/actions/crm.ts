@@ -16,15 +16,38 @@ import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import {
   addPersonNote,
   addPersonTags,
+  assignPersonToUser,
   completeFubTask,
   createRealtimeTask,
   replacePersonTags,
   updatePersonAutomationState,
 } from '@/lib/followupboss'
 import { normalizeCrmPhone } from '@/lib/crm/mirror'
-import { CRM_STAGES } from '@/lib/crm/constants'
+import {
+  CRM_STAGES,
+  CRM_BROKERS,
+  CRM_BROKER_BY_EMAIL,
+  FUB_USER_ID_BY_BROKER,
+  type CrmBrokerSlug,
+} from '@/lib/crm/constants'
 
 export type CrmActionResult = { ok: true } | { ok: false; error: string }
+
+export type CrmAccess = {
+  email: string
+  role: 'superuser' | 'broker' | 'report_viewer'
+  /** The signed-in user's own broker slug, when their email maps to one. */
+  brokerSlug: CrmBrokerSlug | null
+}
+
+/** Resolve the caller's CRM access (role + own-broker slug). Null when not an admin. */
+export async function getCrmAccess(): Promise<CrmAccess | null> {
+  const session = await getSession()
+  const email = session?.user?.email?.trim().toLowerCase() ?? null
+  const role = await getAdminRoleForEmail(email)
+  if (!role || !email) return null
+  return { email, role: role.role, brokerSlug: CRM_BROKER_BY_EMAIL[email] ?? null }
+}
 
 export type CrmPersonRow = {
   id: number
@@ -61,12 +84,10 @@ export type CrmSavedView = {
 
 const PAGE_SIZE = 50
 
-async function requireCrmAccess(): Promise<{ ok: true; email: string } | { ok: false; error: string }> {
-  const session = await getSession()
-  const email = session?.user?.email ?? null
-  const role = await getAdminRoleForEmail(email)
-  if (!role) return { ok: false, error: 'Unauthorized' }
-  return { ok: true, email: email ?? '' }
+async function requireCrmAccess(): Promise<{ ok: true; access: CrmAccess } | { ok: false; error: string }> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
+  return { ok: true, access }
 }
 
 // ── Reads ──────────────────────────────────────────────────────────────────
@@ -276,16 +297,61 @@ export async function addCrmNoteAction(formData: FormData): Promise<CrmActionRes
   const person = await getPersonCore(personId)
   if (!person) return { ok: false, error: 'Person not found' }
 
+  const broker = access.access.brokerSlug ?? undefined
   if (person.fub_legacy_id) {
-    const ok = await addPersonNote(person.fub_legacy_id, body)
+    const ok = await addPersonNote(person.fub_legacy_id, body, { broker })
     if (!ok) return { ok: false, error: 'FUB note write failed' }
-    // mirror layer writes the local timeline row
+    // mirror layer writes the local timeline row (with the broker stamp)
   } else {
     const sb = createServiceClient()
     const { error } = await sb.from('crm_timeline').insert({
-      person_id: personId, kind: 'note', body, source: 'app',
+      person_id: personId, kind: 'note', body, source: 'app', broker: broker ?? null,
     })
     if (error) return { ok: false, error: error.message }
+  }
+  revalidateCrm(personId)
+  return { ok: true }
+}
+
+/** Reassign a contact to a broker — updates CRM + FUB assignedUserId + broker: tag, logs to timeline. */
+export async function assignCrmBrokerAction(formData: FormData): Promise<CrmActionResult> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  const personId = Number(formData.get('personId'))
+  const brokerSlug = String(formData.get('broker') ?? '').trim() as CrmBrokerSlug
+  if (!personId || !(CRM_BROKERS as readonly string[]).includes(brokerSlug)) {
+    return { ok: false, error: 'Broker required' }
+  }
+  const sb = createServiceClient()
+  const { data: person } = await sb
+    .from('crm_people')
+    .select('id,fub_legacy_id,tags,assigned_broker')
+    .eq('id', personId)
+    .maybeSingle()
+  if (!person) return { ok: false, error: 'Person not found' }
+  if (person.assigned_broker === brokerSlug) return { ok: true }
+
+  const newTags = [
+    ...(person.tags as string[]).filter((t) => !t.startsWith('broker:')),
+    `broker:${brokerSlug}`,
+  ]
+  const { error } = await sb.from('crm_people').update({
+    assigned_broker: brokerSlug,
+    assigned_fub_user_id: FUB_USER_ID_BY_BROKER[brokerSlug],
+    tags: newTags,
+    updated_at: new Date().toISOString(),
+  }).eq('id', personId)
+  if (error) return { ok: false, error: error.message }
+  await sb.from('crm_timeline').insert({
+    person_id: personId,
+    kind: 'system',
+    title: `Assigned to ${brokerSlug}${person.assigned_broker ? ` (was ${person.assigned_broker})` : ''}`,
+    source: 'app',
+    broker: access.access.brokerSlug,
+  })
+  if (person.fub_legacy_id) {
+    await assignPersonToUser(person.fub_legacy_id, FUB_USER_ID_BY_BROKER[brokerSlug])
+    await replacePersonTags(person.fub_legacy_id, newTags)
   }
   revalidateCrm(personId)
   return { ok: true }

@@ -572,7 +572,11 @@ export async function applyActionPlan(personId: number, actionPlanId: number): P
   }
 }
 
-export async function addPersonNote(personId: number, body: string): Promise<boolean> {
+export async function addPersonNote(
+  personId: number,
+  body: string,
+  opts: { broker?: string } = {},
+): Promise<boolean> {
   const auth = getAuth()
   if (!auth) return false
   if (!Number.isFinite(personId) || personId <= 0) return false
@@ -593,7 +597,7 @@ export async function addPersonNote(personId: number, body: string): Promise<boo
       } catch {
         // response body optional — mirror without the FUB note id
       }
-      void mirrorNoteToCrm(personId, trimmed, { fubNoteId })
+      void mirrorNoteToCrm(personId, trimmed, { fubNoteId, broker: opts.broker })
     }
     return res.ok
   } catch (err) {

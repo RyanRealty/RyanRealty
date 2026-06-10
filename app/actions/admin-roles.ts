@@ -46,12 +46,15 @@ export async function getAdminRoleForEmail(email: string | null | undefined): Pr
   const trimmed = email.trim().toLowerCase()
   if (!trimmed) return null
   if (isSuperuserAdmin(trimmed)) return { role: 'superuser', brokerId: null }
-  const supabase = await createServerClient()
+  // Service-role read: admin_roles is RLS-locked, and the broker's own session
+  // cannot see its row (this silently denied Rebecca + Paul until 2026-06-09).
+  // The email always comes from the verified Supabase session, never user input.
+  const supabase = getServiceSupabase()
   const { data } = await supabase
     .from('admin_roles')
     .select('role, broker_id')
     .eq('email', trimmed)
-    .single()
+    .maybeSingle()
   if (!data) return null
   return { role: data.role as AdminRoleType, brokerId: data.broker_id ?? null }
 }

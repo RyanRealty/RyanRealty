@@ -19,7 +19,7 @@ export default function AdminLoginPage() {
         </div>
         <h1 className="text-center text-lg font-semibold text-foreground">Admin Portal</h1>
         <p className="mt-1 text-center text-sm text-muted-foreground">
-          Sign in with Google (recommended) or your admin email
+          Sign in with your Ryan Realty Google account
         </p>
         <AdminLoginForm />
       </div>

@@ -3,11 +3,12 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import { CRM_STAGES } from '@/lib/crm/constants'
+import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import {
   addCrmNoteAction,
   addCrmTagAction,
   addCrmTaskAction,
+  assignCrmBrokerAction,
   completeCrmTaskAction,
   getCrmPersonFull,
   removeCrmTagAction,
@@ -55,6 +56,11 @@ async function completeTaskForm(formData: FormData): Promise<void> {
   'use server'
   const r = await completeCrmTaskAction(formData)
   if (!r.ok) console.error('[crm] completeTask failed:', r.error)
+}
+async function assignBrokerForm(formData: FormData): Promise<void> {
+  'use server'
+  const r = await assignCrmBrokerAction(formData)
+  if (!r.ok) console.error('[crm] assignBroker failed:', r.error)
 }
 
 const KIND_ICON: Record<string, string> = {
@@ -156,10 +162,21 @@ export default async function CrmPersonPage({ params }: { params: Promise<{ id: 
                 <Button type="submit" size="sm" variant="outline">Set stage</Button>
               </form>
 
-              <div className="flex items-center gap-2 text-sm">
+              <form action={assignBrokerForm} className="flex items-center gap-2 text-sm">
+                <input type="hidden" name="personId" value={person.id} />
                 <span className="text-muted-foreground">Broker:</span>
-                <Badge variant="secondary">{person.assigned_broker ?? 'unassigned'}</Badge>
-              </div>
+                <select
+                  name="broker"
+                  defaultValue={person.assigned_broker ?? ''}
+                  className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                >
+                  {!person.assigned_broker ? <option value="">unassigned</option> : null}
+                  {CRM_BROKERS.map((b) => (
+                    <option key={b} value={b}>{CRM_BROKER_DISPLAY[b]}</option>
+                  ))}
+                </select>
+                <Button type="submit" size="sm" variant="outline">Assign</Button>
+              </form>
 
               <Separator />
 

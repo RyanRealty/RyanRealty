@@ -1,10 +1,8 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { getSession } from '@/app/actions/auth'
-import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import { getCrmOverview, listCrmPeople, listCrmSavedViews } from '@/app/actions/crm'
-import { CRM_STAGES, CRM_BROKERS } from '@/lib/crm/constants'
+import { getCrmAccess, getCrmOverview, listCrmPeople, listCrmSavedViews } from '@/app/actions/crm'
+import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -32,16 +30,22 @@ function primaryContact(items: Array<{ value?: string; isPrimary?: number | bool
 type SearchParams = { q?: string; stage?: string; broker?: string; tag?: string; view?: string; page?: string }
 
 export default async function CrmPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
-  const session = await getSession()
-  const adminRole = await getAdminRoleForEmail(session?.user?.email ?? null)
-  if (!adminRole) redirect('/admin/access-denied')
+  const access = await getCrmAccess()
+  if (!access) redirect('/admin/access-denied')
 
   const sp = await searchParams
   const page = Math.max(1, Number(sp.page ?? '1') || 1)
+
+  // Brokers land on THEIR leads by default; '?broker=all' (or the All brokers
+  // option in the filter) opens the shared book. Matt (superuser) sees all.
+  const defaultBroker = access.role === 'broker' ? access.brokerSlug ?? undefined : undefined
+  const effectiveBroker = sp.broker === 'all' ? undefined : sp.broker || defaultBroker
+  const isMyLeads = !!access.brokerSlug && effectiveBroker === access.brokerSlug
+
   const [views, overview, result] = await Promise.all([
     listCrmSavedViews(),
     getCrmOverview(),
-    listCrmPeople({ q: sp.q, stage: sp.stage, broker: sp.broker, tag: sp.tag, view: sp.view, page }),
+    listCrmPeople({ q: sp.q, stage: sp.stage, broker: effectiveBroker, tag: sp.tag, view: sp.view, page }),
   ])
 
   const { rows, total, pageSize, appliedView } = result
@@ -71,7 +75,8 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         <div>
           <h1 className="text-2xl font-bold text-foreground">CRM</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Ryan Realty contact database · synced with FUB during the parallel run
+            {isMyLeads ? `Showing your leads (${CRM_BROKER_DISPLAY[access.brokerSlug!]})` : 'Ryan Realty contact database'}
+            {' · synced with FUB during the parallel run'}
             {overview.lastDeltaSync ? ` · last sync ${fmtDate(overview.lastDeltaSync)}` : ''}
           </p>
         </div>
@@ -89,11 +94,26 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
 
       {/* Saved views */}
       <div className="mt-6 flex flex-wrap gap-2">
-        <Link href="/admin/crm">
-          <Badge variant={!sp.view && !sp.stage && !sp.tag && !sp.q ? 'default' : 'outline'} className="cursor-pointer px-3 py-1">
-            All
-          </Badge>
-        </Link>
+        {access.brokerSlug ? (
+          <>
+            <Link href="/admin/crm">
+              <Badge variant={isMyLeads && !sp.view && !sp.stage && !sp.tag && !sp.q ? 'default' : 'outline'} className="cursor-pointer px-3 py-1">
+                My leads
+              </Badge>
+            </Link>
+            <Link href="/admin/crm?broker=all">
+              <Badge variant={sp.broker === 'all' && !sp.view && !sp.stage && !sp.tag && !sp.q ? 'default' : 'outline'} className="cursor-pointer px-3 py-1">
+                All contacts
+              </Badge>
+            </Link>
+          </>
+        ) : (
+          <Link href="/admin/crm">
+            <Badge variant={!sp.view && !sp.stage && !sp.tag && !sp.q ? 'default' : 'outline'} className="cursor-pointer px-3 py-1">
+              All
+            </Badge>
+          </Link>
+        )}
         {views.map((v) => (
           <Link key={v.id} href={`/admin/crm?view=${v.id}`}>
             <Badge variant={sp.view === String(v.id) ? 'default' : 'outline'} className="cursor-pointer px-3 py-1">
@@ -124,12 +144,12 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         </select>
         <select
           name="broker"
-          defaultValue={sp.broker ?? ''}
+          defaultValue={effectiveBroker ?? 'all'}
           className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground"
         >
-          <option value="">All brokers</option>
+          <option value="all">All brokers</option>
           {CRM_BROKERS.map((b) => (
-            <option key={b} value={b}>{b}</option>
+            <option key={b} value={b}>{CRM_BROKER_DISPLAY[b]}</option>
           ))}
         </select>
         <Button type="submit" size="sm">Apply</Button>
