@@ -89,7 +89,7 @@ export async function GET(request: Request) {
     .limit(BATCH)
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
 
-  let executed = 0, paused = 0, completed = 0, skippedSms = 0, suppressed = 0, errored = 0
+  let executed = 0, paused = 0, completed = 0, skippedSms = 0, skippedDupEmail = 0, suppressed = 0, errored = 0
 
   for (const en of due ?? []) {
     const seq = en.crm_sequences as unknown as { name: string; stop_on_reply: boolean; steps: Step[] }
@@ -145,6 +145,40 @@ export async function GET(request: Request) {
         const to = (person.emails as Array<{ value?: string }>)?.[0]?.value
         if (!to) { await finish({ status: 'stopped' }); await log(`Sequence "${seq.name}" stopped — no email on file`); errored++; continue }
 
+        // Same-human guard (audit 2026-06-10): farm imports create one person
+        // row PER PARCEL, so the same email address can sit on several people.
+        // Never send the same template to an address that already got it via a
+        // sibling person — advance the step without sending.
+        if (step.templateKey) {
+          const { data: siblings } = await sb
+            .from('crm_contact_points')
+            .select('person_id')
+            .eq('kind', 'email')
+            .ilike('value', to)
+            .neq('person_id', person.id)
+          if (siblings?.length) {
+            const { count: alreadySent } = await sb
+              .from('crm_timeline')
+              .select('id', { count: 'exact', head: true })
+              .in('person_id', siblings.map((s) => s.person_id))
+              .eq('kind', 'email_out')
+              .eq('source', 'sequence')
+              .filter('payload->>templateKey', 'eq', step.templateKey)
+            if ((alreadySent ?? 0) > 0) {
+              await log(`Sequence "${seq.name}" step ${en.step_index} skipped — ${to} already received ${step.templateKey} via a sibling person row`)
+              skippedDupEmail++
+              const nextIdx = en.step_index + 1
+              const nxt = (seq.steps ?? [])[nextIdx] as Step | undefined
+              if (!nxt) { await finish({ status: 'completed', step_index: nextIdx }); completed++ }
+              else {
+                const dMs = ((nxt.delayDays ?? 0) * 86400 + (nxt.delayMinutes ?? 0) * 60) * 1000
+                await finish({ step_index: nextIdx, next_run_at: new Date(Date.now() + Math.max(dMs, 60000)).toISOString() })
+              }
+              continue
+            }
+          }
+        }
+
         let subject = step.subject ?? ''
         let body = step.body ?? ''
         if (step.templateKey) {
@@ -160,7 +194,7 @@ export async function GET(request: Request) {
         if (!sent.ok) { await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log(`Sequence email send failed, retrying in 30m`, sent.error); errored++; continue }
         await sb.from('crm_timeline').insert({
           person_id: person.id, kind: 'email_out', title: subject, body,
-          payload: { gmailId: sent.gmailId, sequence: seq.name, step: en.step_index },
+          payload: { gmailId: sent.gmailId, sequence: seq.name, step: en.step_index, templateKey: step.templateKey ?? null, to },
           broker: mailbox.slug, source: 'sequence', dedupe_key: `gmail:${sent.gmailId}:p${person.id}`,
         })
       } else if (step.channel === 'sms') {
@@ -208,7 +242,7 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    ok: true, due: (due ?? []).length, executed, paused, completed, skippedSms, suppressed, errored,
+    ok: true, due: (due ?? []).length, executed, paused, completed, skippedSms, skippedDupEmail, suppressed, errored,
     duration_ms: Date.now() - startMs,
   })
 }

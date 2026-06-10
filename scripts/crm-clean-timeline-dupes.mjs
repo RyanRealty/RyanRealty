@@ -66,15 +66,19 @@ for (const list of byPersonKind.values()) {
     if (gmailTimes.some((g) => Math.abs(g - t) <= 120000)) toDelete.set(r.id, 'A:fub-twin-of-gmail');
   }
   // Pass B: consecutive gmail rows, same title, ±90s, different mailbox
+  // Pass B2: same mailbox, same title, ≤5s apart — Gmail sent-copy + inbox-copy
+  // of one message (two gmailIds, same RFC Message-ID; ingest collapses these
+  // going forward).
   const gmailRows = list.filter((r) => r.source === 'gmail' && !toDelete.has(r.id));
   for (let i = 1; i < gmailRows.length; i++) {
     const a = gmailRows[i - 1];
     const b = gmailRows[i];
     if (toDelete.has(b.id)) continue;
     const sameTitle = (a.title ?? '') === (b.title ?? '');
-    const close = Math.abs(new Date(b.ts) - new Date(a.ts)) <= 90000;
+    const gapMs = Math.abs(new Date(b.ts) - new Date(a.ts));
     const diffMailbox = (a.payload?.mailbox ?? '') !== (b.payload?.mailbox ?? '');
-    if (sameTitle && close && diffMailbox) toDelete.set(b.id, 'B:cross-mailbox-twin');
+    if (sameTitle && gapMs <= 90000 && diffMailbox) toDelete.set(b.id, 'B:cross-mailbox-twin');
+    else if (sameTitle && gapMs <= 5000 && !diffMailbox) toDelete.set(b.id, 'B2:same-mailbox-dual-copy');
   }
 }
 
