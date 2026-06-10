@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.472.0 (2026-06-10)
+
+### Features
+- feat(crm): broker license tracking — OREA-verified status, renewal calendars, always-visible card
+
+---
+
+
 ## v1.471.0 (2026-06-10)
 
 ### Features
