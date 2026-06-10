@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.467.1 (2026-06-10)
+
+### Maintenance
+- chore(crm): e2e watcher catches Twilio transfer-approval emails; gmail driver targets production
+
+---
+
+
 ## v1.467.0 (2026-06-10)
 
 ### Features
