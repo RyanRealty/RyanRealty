@@ -108,6 +108,14 @@ AI lets us make things that earn "how'd they make that": impossible camera moves
 
 ---
 
-## 8. How to load this skill
+## 8. Trend freshness is a build-time input — NEVER a stored fact (locked 2026-06-09)
+
+Named trends, trending audios, "what's hot," and algorithm-weighting claims expire in DAYS. This playbook stores MECHANICS (hook timing, format frameworks, series logic). It must never be the source for "the current trend."
+
+**Mandatory before any trend-driven build:** run live web research and only trust evidence dated within the last 14 days (trend-report roundups with explicit dates: Later, Newengen, SocialBee, Buffer, HeyOrca, TikTok Creative Center). Check three things per candidate trend: (1) open to business accounts or creator-licensed-only, (2) does it need a face/performer (brand-first rule: the brokerage, not a broker, is the constant), (3) where it sits in its lifecycle (most peak in 7-10 days; a trend "two weeks running" ships this week or not at all). Reconcile the research against this playbook's durable rules. The §0 data mandate, hook timing, and anti-slop gates always win over a trend's native conventions.
+
+Why this rule exists: on 2026-06-09 this playbook was 11 days old and its trending-audio claims were already stale, while the durable mechanics held. Storing "what's hot" creates the staleness. Researching it at build time is the fix. (First applied: the algorithm-prefers Reel, action row 924bd206.)
+
+## 9. How to load this skill
 
 Mandatory ref in `marketing_brain_skills/producers/TEMPLATE.md` (Tier 2 — every content producer), `automation_skills/content_engine/SKILL.md`, and `marketing_brain_skills/producers/REGISTRY.md` Section G. Load with `tool-mastery` before specifying any content piece: this decides WHAT to make; tool-mastery decides HOW to build it; the format skill governs the build.
