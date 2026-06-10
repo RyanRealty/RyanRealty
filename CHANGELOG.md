@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.456.0 (2026-06-10)
+
+### Features
+- feat(assets): AI enhancement pipeline — Real-ESRGAN fidelity + single deterministic brand grade
+
+---
+
+
 ## v1.455.0 (2026-06-10)
 
 ### Features
