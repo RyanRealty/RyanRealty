@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { ComparisonProvider } from '@/contexts/ComparisonContext'
 import CookieConsentBanner from '@/components/CookieConsentBanner'
-import HideOnLP from '@/components/layout/HideOnLP'
+import HideOnLP, { HideOnAdmin } from '@/components/layout/HideOnLP'
 import { AnalyticsScripts } from './AnalyticsScripts'
 import { IdentityBridges } from './IdentityBridges'
 
@@ -24,7 +24,12 @@ import { IdentityBridges } from './IdentityBridges'
 export function RootProvider({ children }: { children: ReactNode }) {
   return (
     <ComparisonProvider>
-      <AnalyticsScripts />
+      {/* No analytics/pixels/ads on /admin: broker usage was inflating GA4 +
+          Meta metrics (the loop's own scoreboard) and loading AdSense for
+          nothing. Identity bridges stay — harmless and auth-adjacent. */}
+      <HideOnAdmin>
+        <AnalyticsScripts />
+      </HideOnAdmin>
       <IdentityBridges />
       {children}
       <HideOnLP>

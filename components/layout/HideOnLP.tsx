@@ -33,3 +33,16 @@ export function OnLPOnly({ children }: { children: React.ReactNode }) {
   if (!pathname?.startsWith("/lp/")) return null
   return <>{children}</>
 }
+
+/**
+ * Hide on /admin only (unlike HideOnLP, children still render on /lp/*).
+ * Used to keep the analytics/pixel/ads stack off admin: broker usage was
+ * firing GA4 sessions, Meta PageViews, and AdSense requests on every admin
+ * page — wasted bytes AND scoreboard pollution (admin traffic inflated the
+ * very GA4 metrics THE LOOP's diagnose step reads). Fixed 2026-06-10.
+ */
+export function HideOnAdmin({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  if (pathname === "/admin" || pathname?.startsWith("/admin/")) return null
+  return <>{children}</>
+}
