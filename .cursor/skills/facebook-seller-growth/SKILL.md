@@ -192,3 +192,14 @@ Re-run `node scripts/ga4-admin-setup.mjs --dry-run` any time to verify state (sh
 - Page verification (requires business document upload)
 - Dead pixel `590593947302147` System User + foreign account unassignment (cosmetic only — leak source killed via Zapier zap removal)
 - IG / TikTok / LinkedIn bio link UTMs (Meta locks IG bio update API)
+
+### LIVE STATE delta (2026-06-09 — Claude Code review cycle, supersedes conflicting rows above)
+
+- **Spending now:** T2A "AdSet 2" (`120244926443800698`, $20/day, LANDING_PAGE_VIEWS, targets `RR Database — Targetable`) trimmed to 2 ads: champion `react-t2a-v2-out-of-state` (2.43% link CTR, $1.06/LPV) + `react-t1-v1-worth-today`. Three dead ads paused 2026-06-09.
+- **Tier 3 LIVE:** new ad set `RR — T3 — Absentee Owners — AdSet 2 (LPV)` (`120245421093840698`, $5/day, CA/OR/WA home-location, includes `RR Absentee / Out-of-Area Owners` `120244510681250698`) reusing the champion creative (`creative_id 1310064894013970`). Total live spend $25/day.
+- **The 2026-05-26 MLS audience IDs above are STALE** — `120244161528410698` etc. no longer exist. Current audiences are the `meta-rebuild-audiences-from-fub.mjs` seed set (`RR Absentee / Out-of-Area Owners`, `RR Seller-Intent — Warm + Hot`, `RR Westside Bend Homeowners`, ...). Always re-pull `act_1178780510184911/customaudiences` instead of trusting doc IDs.
+- **Attribution:** zero Meta-attributed leads through 2026-06-08 explained by timing — the `rr_fbc` fbclid-rescue middleware shipped 2026-06-07 (a9592372), AFTER the only plausible paid lead (Jun 4). CAPI match-quality fix (real visitor IP/UA forwarded from server actions) shipped 6f29133e. Judge attribution only on leads after 2026-06-09.
+- **`AUD-CORE-Converters-365d` is ~empty (~20 users)** — do not exclude it until lead volume populates it; pointless learning reset.
+- **Weekly packet cron** `marketing-optimization-report` re-scheduled in vercel.json (Mon 06:30 UTC) after being unscheduled ~May 18. Next packet 2026-06-15.
+- **Pending approval:** challenger creatives `chal-a-net-number` + `chal-b-ten-years` rendered to `out/seller-ad-concepts/v10/` (drafts; not attached to Meta).
+- Full cycle detail: LEARNINGS.md entry 2026-06-09.
