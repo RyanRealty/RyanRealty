@@ -36,7 +36,9 @@ export default defineConfig({
 
   /* Shared settings for all projects */
   use: {
-    baseURL: 'http://127.0.0.1:3000',
+    // When BASE_URL is set (CI against a deployed site, or local override),
+    // use it. Otherwise fall back to the local dev server.
+    baseURL: process.env.BASE_URL ?? 'http://127.0.0.1:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
@@ -105,11 +107,15 @@ export default defineConfig({
     },
   ],
 
-  /* Start the Next.js production server before running tests */
-  webServer: {
-    command: 'npm run start:ci',
-    url: 'http://127.0.0.1:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  /* Start the Next.js production server before running tests.
+   * Skipped when BASE_URL points to a remote host (CI post-deploy runs,
+   * local runs against the live production or staging site). */
+  ...(process.env.BASE_URL ? {} : {
+    webServer: {
+      command: 'npm run start:ci',
+      url: 'http://127.0.0.1:3000',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120000,
+    },
+  }),
 })

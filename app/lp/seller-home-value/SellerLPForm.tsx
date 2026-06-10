@@ -242,11 +242,11 @@ export default function SellerLPForm({
           {knownVisitor ? 'Welcome back. See what your home is worth.' : 'See what your home is worth'}
         </h2>
         <div className="mt-5">
-          <Label htmlFor="seller-lp-address" className="sr-only">
+          <Label htmlFor="seller-lp-address-card" className="sr-only">
             Property address
           </Label>
           <AddressAutocomplete
-            id="seller-lp-address"
+            id="seller-lp-address-card"
             value={address}
             onChange={setAddress}
             placeholder="Enter your home address"

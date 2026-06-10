@@ -241,6 +241,46 @@ jobs:
           node scripts/check-geo-detail.mjs
           node scripts/check-lead-funnels.mjs
 
+      # Post-deploy Playwright E2E: feature specs + sampled crawl (CRAWL_LIMIT=60)
+      # Runs against the live SITE_URL. Kept under ~8 min: feature specs are
+      # fast; the crawl samples 60 routes, not all 176.
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Install npm dependencies (for Playwright test runner)
+        run: npm ci --ignore-scripts
+
+      - name: E2E — feature specs against live site
+        env:
+          BASE_URL: ${{ env.SITE_URL }}
+        run: npx playwright test e2e/features/ --project=chromium --reporter=github
+        continue-on-error: true  # report individually; don't block artifact upload
+        id: e2e_features
+
+      - name: E2E — sampled page crawl (CRAWL_LIMIT=60) against live site
+        env:
+          BASE_URL: ${{ env.SITE_URL }}
+          CRAWL_LIMIT: "60"
+        run: npx playwright test e2e/full-crawl.spec.ts --project=chromium --reporter=github
+        continue-on-error: true
+        id: e2e_crawl
+
+      - name: Upload E2E artifacts on failure
+        if: steps.e2e_features.outcome == 'failure' || steps.e2e_crawl.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-post-deploy-artifacts
+          path: |
+            e2e/test-results/
+            e2e/html-report/
+          retention-days: 7
+
+      - name: Fail job if any E2E step failed
+        if: steps.e2e_features.outcome == 'failure' || steps.e2e_crawl.outcome == 'failure'
+        run: |
+          echo "::error::Post-deploy E2E tests failed. See artifacts for screenshots and traces."
+          exit 1
+
       - name: Create issue on failure
         if: failure()
         uses: actions/github-script@v7

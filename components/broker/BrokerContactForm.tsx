@@ -83,9 +83,9 @@ export default function BrokerContactForm({
             />
           </div>
           <div>
-            <Label htmlFor="contact-email" className="block text-sm font-medium text-primary-foreground/90">Email</Label>
+            <Label htmlFor="broker-contact-email" className="block text-sm font-medium text-primary-foreground/90">Email</Label>
             <Input
-              id="contact-email"
+              id="broker-contact-email"
               type="email"
               required
               value={email}

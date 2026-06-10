@@ -133,9 +133,9 @@ function ContactModal({
               <span className="text-sm">Name</span>
               <Input type="text" name="name" id="contact-name" required className="mt-1" />
             </Label>
-            <Label htmlFor="contact-email" className="block">
+            <Label htmlFor="agent-contact-email" className="block">
               <span className="text-sm">Email</span>
-              <Input type="email" name="email" id="contact-email" required className="mt-1" />
+              <Input type="email" name="email" id="agent-contact-email" required className="mt-1" />
             </Label>
             <Label htmlFor="contact-phone" className="block">
               <span className="text-sm">Phone</span>
