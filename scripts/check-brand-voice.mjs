@@ -132,6 +132,13 @@ const IMPORT_PATH_LINE = /(^|\s)(from|import\s*\(|require\s*\()\s*['"`]/
 // the literal 'force-dynamic' contains the banned AI-filler word "dynamic", but
 // it is a Next.js API value, never user-visible copy. Matching it is a false
 // positive (it inflated the baseline across every force-dynamic admin page).
+// Files whose PURPOSE is voice enforcement embed the banned-word lexicon
+// itself (regexes, LLM prompt rules listing the banned words). Every hit in
+// them is a meta-reference, not prose — skip the whole file.
+const LEXICON_FILES = new Set([
+  'app/api/cron/crm-smart-followups/route.ts',
+])
+
 const MECHANICAL_LITERALS = new Set([
   'force-dynamic',
   'force-static',
@@ -141,6 +148,7 @@ const MECHANICAL_LITERALS = new Set([
 
 function scanFile(absPath) {
   const relPath = normalize(relative(ROOT, absPath))
+  if (LEXICON_FILES.has(relPath)) return null
   let content
   try {
     content = readFileSync(absPath, 'utf8')

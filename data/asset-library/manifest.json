@@ -172,7 +172,10 @@
       "vision_scene": "mountain-landscape",
       "vision_quality": "A",
       "vision_watermark": false,
-      "vision_location": "Mt. Bachelor"
+      "vision_location": "Mt. Bachelor",
+      "enhanced_path": "public/asset-library/photos/enhanced/fc74fcc1-be7a-45d3-8bd4-c080d88e977b-enhanced.jpg",
+      "enhanced_at": "2026-06-09",
+      "enhanced_pipeline": "real-esrgan+brand-grade-v1"
     },
     {
       "id": "4a8123ab-4db4-4c6c-b5b5-c782d0bf6b9f",
@@ -4385,7 +4388,10 @@
       "vision_scene": "aerial-town",
       "vision_quality": "A",
       "vision_watermark": false,
-      "vision_location": "Old Mill District"
+      "vision_location": "Old Mill District",
+      "enhanced_path": "public/asset-library/photos/enhanced/429e7228-96fa-4dd3-9b0d-4b1da3982741-enhanced.jpg",
+      "enhanced_at": "2026-06-09",
+      "enhanced_pipeline": "real-esrgan+brand-grade-v1"
     },
     {
       "id": "207fcca3-d4ea-4e92-98f7-6e6ed680509f",
@@ -5426,7 +5432,10 @@
       "vision_scene": "aerial-nature",
       "vision_quality": "A",
       "vision_watermark": false,
-      "vision_note": "caption corrected eyes-on 2026-06-09 (audit row was shuffled \u2014 said dry meadow)"
+      "vision_note": "caption corrected eyes-on 2026-06-09 (audit row was shuffled \u2014 said dry meadow)",
+      "enhanced_path": "public/asset-library/photos/enhanced/ba294855-26c1-493e-a07a-752fa6151eb4-enhanced.jpg",
+      "enhanced_at": "2026-06-09",
+      "enhanced_pipeline": "real-esrgan+brand-grade-v1"
     },
     {
       "id": "41ed1146-a859-4edf-b392-dde456065ac2",
@@ -7484,7 +7493,10 @@
       "vision_caption": "An aerial view of a wide river or canal with calm water reflecting the sky, flanked by a residential neighborhood with green lawns and ponderosa pines.",
       "vision_scene": "aerial-residential",
       "vision_quality": "A",
-      "vision_watermark": false
+      "vision_watermark": false,
+      "enhanced_path": "public/asset-library/photos/enhanced/45ee98f1-cf09-4bf0-8100-69a2c1d34fdb-enhanced.jpg",
+      "enhanced_at": "2026-06-09",
+      "enhanced_pipeline": "real-esrgan+brand-grade-v1"
     },
     {
       "id": "6ae94ec1-fd80-4a94-8b7c-041093262318",
@@ -8996,7 +9008,10 @@
       "vision_caption": "Ground-level view of a calm golf course pond reflecting blue sky, surrounded by ponderosa pines and a manicured green fairway.",
       "vision_scene": "golf-ground",
       "vision_quality": "A",
-      "vision_watermark": false
+      "vision_watermark": false,
+      "enhanced_path": "public/asset-library/photos/enhanced/f6040e62-833f-4170-844b-4c68f29283ac-enhanced.jpg",
+      "enhanced_at": "2026-06-09",
+      "enhanced_pipeline": "real-esrgan+brand-grade-v1"
     },
     {
       "id": "283580be-6f52-4521-a0bf-3da77f9943de",
@@ -10033,7 +10048,10 @@
       "vision_caption": "Aerial view of a golf course with a pond, sagebrush rough, and residential homes dotting the tree-lined fairways under blue sky.",
       "vision_scene": "aerial-golf",
       "vision_quality": "A",
-      "vision_watermark": false
+      "vision_watermark": false,
+      "enhanced_path": "public/asset-library/photos/enhanced/c5a01c8a-7dc1-4579-9896-63781151ccd2-enhanced.jpg",
+      "enhanced_at": "2026-06-09",
+      "enhanced_pipeline": "real-esrgan+brand-grade-v1"
     },
     {
       "id": "20dbd7c3-0ff9-4ae7-8665-a243ae1d68a2",
@@ -15082,7 +15100,10 @@
       "vision_caption": "Aerial view of a calm, straight river channel lined with ponderosa pines and sandy banks under a blue sky.",
       "vision_scene": "aerial-nature",
       "vision_quality": "A",
-      "vision_watermark": false
+      "vision_watermark": false,
+      "enhanced_path": "public/asset-library/photos/enhanced/752be187-3ff1-404d-9299-299be11c650a-enhanced.jpg",
+      "enhanced_at": "2026-06-09",
+      "enhanced_pipeline": "real-esrgan+brand-grade-v1"
     },
     {
       "id": "ee6d5fc5-4084-49ca-ac03-44fe67d0291c",

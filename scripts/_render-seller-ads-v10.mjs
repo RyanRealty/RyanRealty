@@ -90,13 +90,13 @@ const P = {
   awbreySign:   `${ROOT}/public/lp/central-oregon-golf/img/awbrey-glen-01.jpg`,  // Awbrey Glen entrance monument — hyper-local recognition
   nwCrossing:   `${ROOT}/out/seller-ad-concepts/assets/nw-crossing-02.jpg`,      // NW Crossing roundabout + craftsman district (real, Drive area-guide)
   // ── 2026-06-09 asset-library curated additions (license: owned, visually verified this session) ──
-  alOldMill:    `${ROOT}/public/asset-library/photos/curated/429e7228-96fa-4dd3-9b0d-4b1da3982741.JPG`, // Old Mill aerial: smokestacks, footbridge flags, Deschutes (4200x2957)
-  alRiverWest:  `${ROOT}/public/asset-library/photos/curated/ba294855-26c1-493e-a07a-752fa6151eb4.JPG`, // River West footbridge over Deschutes, Cascades horizon (3840x2160)
-  alTetherow:   `${ROOT}/public/asset-library/photos/curated/c5a01c8a-7dc1-4579-9896-63781151ccd2.JPG`, // Tetherow golf, high desert, snow-capped Cascades, modern homes (4200x3150)
-  alNwxPond:    `${ROOT}/public/asset-library/photos/curated/45ee98f1-cf09-4bf0-8100-69a2c1d34fdb.JPG`, // NW Crossing Discovery Park pond + homes (4200x3150)
-  alWidgi:      `${ROOT}/public/asset-library/photos/curated/f6040e62-833f-4170-844b-4c68f29283ac.JPG`, // Widgi Creek pond, pines, fairway (4200x3150)
-  alMtnLake:    `${ROOT}/public/asset-library/photos/unsplash/fc74fcc1-be7a-45d3-8bd4-c080d88e977b.jpg`, // snow-capped Cascade peak mirrored in alpine lake at dawn (7736x5160, unsplash approved)
-  alRiverPines: `${ROOT}/public/asset-library/photos/curated/752be187-3ff1-404d-9299-299be11c650a.JPG`,  // calm river channel through ponderosa pines, mountains on horizon (4200x3150, grade A)
+  alOldMill:    `${ROOT}/public/asset-library/photos/enhanced/429e7228-96fa-4dd3-9b0d-4b1da3982741-enhanced.jpg`, // Old Mill aerial: smokestacks, footbridge flags, Deschutes (4200x2957)
+  alRiverWest:  `${ROOT}/public/asset-library/photos/enhanced/ba294855-26c1-493e-a07a-752fa6151eb4-enhanced.jpg`, // River West footbridge over Deschutes, Cascades horizon (3840x2160)
+  alTetherow:   `${ROOT}/public/asset-library/photos/enhanced/c5a01c8a-7dc1-4579-9896-63781151ccd2-enhanced.jpg`, // Tetherow golf, high desert, snow-capped Cascades, modern homes (4200x3150)
+  alNwxPond:    `${ROOT}/public/asset-library/photos/enhanced/45ee98f1-cf09-4bf0-8100-69a2c1d34fdb-enhanced.jpg`, // NW Crossing Discovery Park pond + homes (4200x3150)
+  alWidgi:      `${ROOT}/public/asset-library/photos/enhanced/f6040e62-833f-4170-844b-4c68f29283ac-enhanced.jpg`, // Widgi Creek pond, pines, fairway (4200x3150)
+  alMtnLake:    `${ROOT}/public/asset-library/photos/enhanced/fc74fcc1-be7a-45d3-8bd4-c080d88e977b-enhanced.jpg`, // snow-capped Cascade peak mirrored in alpine lake at dawn (7736x5160, unsplash approved)
+  alRiverPines: `${ROOT}/public/asset-library/photos/enhanced/752be187-3ff1-404d-9299-299be11c650a-enhanced.jpg`,  // calm river channel through ponderosa pines, mountains on horizon (4200x3150, grade A)
 }
 
 // ── Grade-A gate (Matt directive 2026-06-09: "always use the best grade A") ──
@@ -113,7 +113,7 @@ import { readFileSync } from 'node:fs'
       console.warn(`  [grade-gate] P.${key} is not an asset-library photo — ungraded, eyeball before use`)
       continue
     }
-    const stem = p.split('/').pop().replace(/\.[A-Za-z]+$/, '')
+    const stem = p.split('/').pop().replace(/\.[A-Za-z]+$/, '').replace(/-enhanced$/, '')
     const grade = gradeById.get(stem)
     if (grade !== 'A') {
       throw new Error(`[grade-gate] P.${key} (${stem}) is grade ${grade ?? 'UNKNOWN'} — only grade-A asset-library photos may render into ads (Matt 2026-06-09)`)

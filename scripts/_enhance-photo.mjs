@@ -28,6 +28,12 @@ if (!input) throw new Error('usage: node scripts/_enhance-photo.mjs <input> [out
 mkdirSync(outdir, { recursive: true })
 const stem = basename(input).replace(/\.[A-Za-z]+$/, '')
 
+// Sources already ≥4200px on the long side don't need ESRGAN (capping the
+// upload at 1500px and 3x-ing back would LOSE native resolution) — they get
+// the brand grade only, at native res. GRADE_ONLY=1 forces it.
+const srcMeta = await sharp(input).metadata()
+const gradeOnly = process.env.GRADE_ONLY === '1' || Math.max(srcMeta.width || 0, srcMeta.height || 0) >= 4200
+
 async function rep(path, opts = {}) {
   const r = await fetch(`https://api.replicate.com/v1${path}`, {
     ...opts,
@@ -37,29 +43,35 @@ async function rep(path, opts = {}) {
   return r.json()
 }
 
-// ── Layer 1: Real-ESRGAN via Replicate ─────────────────────────────────────
-const model = await rep('/models/nightmareai/real-esrgan')
-const version = model.latest_version.id
+// ── Layer 1: Real-ESRGAN via Replicate (skipped for ≥4200px sources) ───────
+let aiBuf
+if (gradeOnly) {
+  aiBuf = await sharp(input).jpeg({ quality: 95 }).toBuffer()
+  console.log(`  [grade-only] ${stem} (${srcMeta.width}x${srcMeta.height})`)
+} else {
+  const model = await rep('/models/nightmareai/real-esrgan')
+  const version = model.latest_version.id
 
-// Source: this Replicate ESRGAN deployment caps input at ~2.1M pixels
-// (GPU memory). Cap the long side at 1500px (≤1.8M px) and recover
-// resolution on the way back up via the scale factor.
-const srcBuf = await sharp(input).resize(1500, 1500, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 92 }).toBuffer()
-const dataUri = `data:image/jpeg;base64,${srcBuf.toString('base64')}`
+  // This Replicate ESRGAN deployment caps input at ~2.1M pixels (GPU memory).
+  // Cap the long side at 1500px (≤1.8M px) and recover resolution on the way
+  // back up via the scale factor.
+  const srcBuf = await sharp(input).resize(1500, 1500, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 92 }).toBuffer()
+  const dataUri = `data:image/jpeg;base64,${srcBuf.toString('base64')}`
 
-let pred = await rep('/predictions', {
-  method: 'POST',
-  body: JSON.stringify({ version, input: { image: dataUri, scale: Number(scaleArg), face_enhance: false } }),
-})
-const t0 = Date.now()
-while (!['succeeded', 'failed', 'canceled'].includes(pred.status)) {
-  if (Date.now() - t0 > 180_000) throw new Error('replicate timeout')
-  await new Promise((r) => setTimeout(r, 2500))
-  pred = await rep(`/predictions/${pred.id}`)
+  let pred = await rep('/predictions', {
+    method: 'POST',
+    body: JSON.stringify({ version, input: { image: dataUri, scale: Number(scaleArg), face_enhance: false } }),
+  })
+  const t0 = Date.now()
+  while (!['succeeded', 'failed', 'canceled'].includes(pred.status)) {
+    if (Date.now() - t0 > 180_000) throw new Error('replicate timeout')
+    await new Promise((r) => setTimeout(r, 2500))
+    pred = await rep(`/predictions/${pred.id}`)
+  }
+  if (pred.status !== 'succeeded') throw new Error(`prediction ${pred.status}: ${JSON.stringify(pred.error)}`)
+  const outUrl = Array.isArray(pred.output) ? pred.output[0] : pred.output
+  aiBuf = Buffer.from(await (await fetch(outUrl)).arrayBuffer())
 }
-if (pred.status !== 'succeeded') throw new Error(`prediction ${pred.status}: ${JSON.stringify(pred.error)}`)
-const outUrl = Array.isArray(pred.output) ? pred.output[0] : pred.output
-const aiBuf = Buffer.from(await (await fetch(outUrl)).arrayBuffer())
 
 // ── Layer 2: the ONE brand grade (identical for every image) ───────────────
 function brandGrade(img) {

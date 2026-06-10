@@ -39,7 +39,49 @@ export const metadata: Metadata = {
 const BROKER_PHONE = '541.703.3095'
 const BROKER_PHONE_TEL = '+15417033095'
 
-export default async function SellerHomeValuePage() {
+// ─── Ad-matched hero variants (?v=) ──────────────────────────────────────
+// Message match: each paid ad concept lands on a hero with the SAME photo
+// family + the SAME headline as the ad that was clicked. Default (no ?v=)
+// stays the original Old Mill banner + bring-today copy. Alt text describes
+// only what is visibly in frame — no place claims beyond what is provable
+// (CLAUDE.md §0).
+type HeroVariant = { img: string; alt: string; h1: string; sub: string }
+const HERO_VARIANTS: Record<string, HeroVariant> = {
+  mountain: {
+    img: '/images/lp/hero-mountain.jpg',
+    alt: 'A snow-capped Cascade peak reflected in a still alpine lake at dawn',
+    h1: 'What is your Bend home worth?',
+    sub: 'A real number from closed sales near you, not an online guess.',
+  },
+  oos: {
+    img: '/images/lp/hero-oldmill.jpg',
+    alt: 'Aerial view of the Old Mill District and Deschutes River in Bend, Oregon',
+    h1: 'Own a Bend home from another state?',
+    sub: 'We handle the prep, the repairs, and the sale while you stay put.',
+  },
+  nopressure: {
+    img: '/images/lp/hero-pond.jpg',
+    alt: 'A neighborhood pond and homes in Bend, Oregon',
+    h1: 'No pressure. Just the real number.',
+    sub: 'Honest guidance for your Bend home, whenever you are ready to think about selling.',
+  },
+}
+const DEFAULT_HERO: HeroVariant = {
+  img: '/images/lp/hero-banner.jpg',
+  alt: '',
+  h1: 'What would your Bend home bring today?',
+  sub: 'See what buyers are paying for homes like yours, from recent Bend sales. A real number from a local broker, not an algorithm.',
+}
+
+export default async function SellerHomeValuePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ v?: string }>
+}) {
+  const { v } = await searchParams
+  const variantKey = v && HERO_VARIANTS[v] ? v : null
+  const hero = variantKey ? HERO_VARIANTS[variantKey] : DEFAULT_HERO
+
   // Detect prior identification via the fub_cid cookie. Server-side check
   // so the visible UX adjusts before first paint.
   const cookiePersonId = await getFubPersonIdFromCookie()
@@ -161,7 +203,7 @@ export default async function SellerHomeValuePage() {
 
   return (
     <div className="bg-background text-foreground">
-      <LandingPageTracker lpVariant="seller-home-value" />
+      <LandingPageTracker lpVariant={variantKey ? `seller-home-value:${variantKey}` : 'seller-home-value'} />
       {/* JSON-LD structured data for Google rich results */}
       <script
         type="application/ld+json"
@@ -205,8 +247,8 @@ export default async function SellerHomeValuePage() {
       {/* ─── Hero ────────────────────────────────────────────────────────── */}
       <section className="relative isolate border-b border-primary/10">
         <Image
-          src="/images/lp/hero-banner.jpg"
-          alt=""
+          src={hero.img}
+          alt={hero.alt}
           fill
           priority
           sizes="100vw"
@@ -230,14 +272,14 @@ export default async function SellerHomeValuePage() {
             Bend · Oregon homeowners
           </p>
 
-          {/* 2 — H1 (Amboqia) — message-matched to live FB ad */}
+          {/* 2 — H1 (Amboqia) — message-matched to the ad concept (?v=) */}
           <h1 className="mt-4 font-display text-4xl font-semibold leading-tight tracking-tight text-card drop-shadow-sm sm:text-5xl lg:text-6xl">
-            What would your Bend home bring today?
+            {hero.h1}
           </h1>
 
           {/* 3 — Subhead */}
           <p className="mt-4 text-lg leading-relaxed text-card drop-shadow-sm">
-            See what buyers are paying for homes like yours, from recent Bend sales. A real number from a local broker, not an algorithm.
+            {hero.sub}
           </p>
 
           {/* 4 — Address field + button: the hero centerpiece */}
