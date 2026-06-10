@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.465.0 (2026-06-10)
+
+### Features
+- feat(assets): A-pool enhancement complete — enhanced_path recorded
+- feat(tc): smart required-document anticipation (Oregon-law matrix) — tc-builder rung 2
+
+### Maintenance
+- docs(tc): roadmap — smart required-doc anticipation shipped (rung 2c)
+
+---
+
+
 ## v1.464.0 (2026-06-10)
 
 ### Features
