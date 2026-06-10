@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.461.1 (2026-06-10)
+
+### Bug Fixes
+- fix(crm): gmail backfill resumes mid-walk — page token persists in the cursor
+
+---
+
+
 ## v1.461.0 (2026-06-10)
 
 ### Features
