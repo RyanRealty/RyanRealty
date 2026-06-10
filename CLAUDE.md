@@ -570,6 +570,14 @@ Research sources at `docs/research/best-practices-*.md` (Instagram, TikTok, YouT
 
 Any agent producing content, writing site copy, mutating ad campaigns, or sending communications on behalf of Ryan Realty reads this section first. The architecture governs how every marketing action is generated, dispatched, executed, and approved.
 
+### Producer-layer freeze — Matt directive 2026-06-09 (enforced by G45 `ci:producer-freeze`)
+
+**The brain's EXECUTION layer is frozen at its 2026-06-09 footprint. Maintenance-only.** No new producers, no new REGISTRY rows, no new dispatcher/runtime choreography, no new content crons — by default. Rationale: the execution scaffolding (producer registry + SKILL-recipe runtime) ages with every model generation and had published zero content posts as of the freeze date, while its maintenance cost is real (three silently broken measurement paths repaired 2026-06-09). The durable spine compounds and stays fully active and protected: the Supabase data layer (`marketing_channel_daily`, `content_performance`, `visitor_sessions`, the snapshot ingestors), the action-row protocol + approval queue + audit trail, the voice/QA gates, the admin dashboards, and the `comms:`/`analyze:` digests that already work.
+
+- **Content default:** the live agent produces in-session via `marketing_brain_skills/produce/` — still writing the action row, still routing through Matt's approval and the publish gate, still measured. Producer SKILL.md files remain valuable as recipes the live agent loads; what is frozen is GROWING the autonomous layer, not using the knowledge in it.
+- **A producer already in the REGISTRY keeps working and keeps getting maintained.** This freezes growth, not operation.
+- **Unfreeze condition:** ten real posts through approve → publish → measure that yield a decision-grade insight, then Matt explicitly lifts the freeze. Until then `scripts/check-producer-freeze.mjs` ratchets the REGISTRY row count; regenerating its baseline (`npm run ci:producer-freeze:baseline`) requires Matt's explicit approval in the session transcript, cited in the commit message.
+
 ### Three invocation modes
 
 | Mode | When Matt says | Skill | What happens |

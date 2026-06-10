@@ -11,6 +11,13 @@ action_types:
   # is documentation and self-validation, not runtime routing.
 ---
 
+> **FROZEN — do not scaffold new producers from this template by default (Matt directive 2026-06-09).**
+> The producer layer is growth-frozen: `ci:producer-freeze` (G45) fails the build on any new REGISTRY
+> row. Content gets produced in-session via `marketing_brain_skills/produce/` — same action row, same
+> approval gate, same measurement. See CLAUDE.md "Producer-layer freeze" for the rationale and the
+> unfreeze condition. Existing producers keep working and keep getting maintained; this template stays
+> as the reference for maintaining them.
+
 # <Producer Name>
 
 > All development routes through THE LOOP v1.0.0 — see [docs/DEVELOPMENT_PROCESS.md](../../docs/DEVELOPMENT_PROCESS.md). Every producer inherits its preflight contract, verification bar, and approval model.

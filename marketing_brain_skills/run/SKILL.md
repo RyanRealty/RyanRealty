@@ -19,6 +19,15 @@ explicit approval after he sees the summary.
 
 **Status:** Canonical. Locked 2026-05-13.
 
+**Producer-layer freeze (Matt directive 2026-06-09, G45):** the cycle still
+runs its audits and generates briefs, and `comms:`/`analyze:` actions still
+execute autonomously. `content:*` rows surface to Matt as briefs, but their
+execution defaults to the LIVE AGENT working in-session via
+`marketing_brain_skills/produce/` (same action row, same approval gate, same
+measurement) instead of dispatch to the autonomous producer-runtime. Do not
+add producers or REGISTRY rows — `ci:producer-freeze` fails the build. See
+CLAUDE.md "Producer-layer freeze."
+
 ---
 
 ## 1. When to use this skill

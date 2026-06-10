@@ -20,6 +20,13 @@ he wants, the brain routes it immediately.
 
 **Status:** Canonical. Locked 2026-05-13.
 
+**Producer-layer freeze (Matt directive 2026-06-09, G45):** produce-mode is
+now the DEFAULT content path. The live agent builds the deliverable
+in-session — loading the matching producer's SKILL.md as the recipe, writing
+the action row, passing the approval gate, getting measured — rather than
+handing off to the autonomous producer-runtime. The registry is
+growth-frozen (`ci:producer-freeze`); see CLAUDE.md "Producer-layer freeze."
+
 ---
 
 ## 1. When to use this skill
