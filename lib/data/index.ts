@@ -225,6 +225,10 @@ export { getBoundaryGeoJSON } from '@/lib/data/geo/getBoundaryGeoJSON'
 export type { BoundaryGeoJSONInput, BoundaryGeometry } from '@/lib/data/geo/getBoundaryGeoJSON'
 export { getResortBoundaryGeoJSON } from '@/lib/data/geo/getResortBoundaryGeoJSON'
 
+// Geo — Bend westside neighborhood stats for homepage map section
+export { getBendNeighborhoodStats } from '@/lib/data/geo/getBendNeighborhoodStats'
+export type { NeighborhoodStatRow } from '@/lib/data/geo/getBendNeighborhoodStats'
+
 // Geo — shared boundary map data (polygon + spatial pins) via listings_in_boundary RPC.
 // THE shared DAL for all three page types (city / neighborhood / community).
 // Gate G31 enforces this is the only import path for map data on geo pages.
@@ -259,6 +263,8 @@ export {
 } from '@/lib/data/market/getMarketStatsCacheRows'
 export type { MarketStatsCacheRow } from '@/lib/data/market/getMarketStatsCacheRows'
 export { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+export { getRegionPulse } from '@/lib/data/market/getRegionPulse'
+export type { RegionPulse } from '@/lib/data/market/getRegionPulse'
 export {
   getMarketPulseRegionSnapshot,
   getMarketPulseCitySnapshots,
