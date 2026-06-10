@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.488.1 (2026-06-10)
+
+### Bug Fixes
+- fix(brand): purge website-screenshot 'hero images' — 11 refs across join/contact/sell/buy/team/communities/listings/videos/pulse cards
+
+---
+
+
 ## v1.488.0 (2026-06-10)
 
 ### Features
