@@ -186,7 +186,7 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
         <div className="flex min-w-0 flex-col gap-1">
           <span className={labelClass}>Beds</span>
           <Select value={beds || '__all__'} onValueChange={(v) => setBeds(v === '__all__' ? '' : v)}>
-            <SelectTrigger className="w-full min-w-0">
+            <SelectTrigger className="w-full min-w-0" aria-label="Minimum bedrooms">
               <SelectValue placeholder="Any" />
             </SelectTrigger>
             <SelectContent>

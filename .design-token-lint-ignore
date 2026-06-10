@@ -101,3 +101,42 @@ components/site/NeighborhoodMap.client.tsx
 # Map-search filter UI (SearchFilters) + map-search shell (MapSearchView) —
 # migrated to design-system components (P1.20, 2026-06-09). Files removed from
 # the ignore list so DISALLOWED_PRIMITIVES scanning resumes.
+
+# Transaction Coordinator deal dashboard — shipped in TC system v1 (commit
+# c605e562). Admin-only surface; uses bg-white + pixel sizing for the deal
+# detail layout (max-w-[680px] max-h-[420px] text-[10px]). Tracked exception;
+# migrate to locked ladder in Wave 3 TC polish pass.
+app/admin/(protected)/deals/[key]/page.tsx
+app/admin/(protected)/deals/page.tsx
+
+# Experience System hero modules — FlyoverHero, LiveMarketBand, SectionNav,
+# InlineValuationHook render white text/overlays on top of photo/video media
+# (full-bleed backgrounds). The design system has no token for "white text on
+# photo" (primary-foreground is navy) — these are the same class of exception
+# as ListingHero, ShowcaseHero, and the LP hero components. Also uses
+# pixel-level sizing (w-[7px] for the live-dot, min-h-[580px] for the hero
+# viewport height) with no locked-ladder equivalent. Experience System
+# modules are tracked exceptions, not unbounded; each new module is listed.
+components/site/experience/FlyoverHero.tsx
+components/site/experience/LiveMarketBand.tsx
+components/site/experience/SectionNav.tsx
+components/site/experience/InlineValuationHook.tsx
+# v3.1 de-tiling modules -- same class of exceptions:
+# ListingLedger: white text on photo scrim (featured listing overlay), pixel-level
+#   thumb height, tracking overrides for badge label, hand-rolled badge span
+#   (inline on a photo overlay -- Badge component doesn't compose well at this
+#   position inside an <a> with complex hover state).
+# CommunityMapLedgerPane: fractional max-w for the 52/48 split layout (no locked
+#   equivalent in the ladder -- this is an asymmetric editorial grid).
+# PriceHistoryScrubber.client: chart uses raw navy/white hex for SVG gradient stops
+#   (recharts doesn't accept CSS custom properties in fill/stroke) -- same exception
+#   class as EquityProjectionChart.client.tsx.
+# PriceHistoryScrubber: h-[260px] for the loading skeleton (fixed chart height).
+# PaymentSlider: range input with inline gradient for track fill (no token equivalent
+#   for a slider track), hex for the gradient stops, label+input primitives
+#   (no shadcn slider component that matches this inline pattern).
+components/site/experience/ListingLedger.tsx
+components/site/experience/CommunityMapLedgerPane.tsx
+components/site/experience/PriceHistoryScrubber.tsx
+components/site/experience/PriceHistoryScrubber.client.tsx
+components/site/experience/PaymentSlider.tsx

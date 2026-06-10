@@ -87,10 +87,11 @@ describe('SearchMapClustered map primitive', () => {
 
   it('highlights the hovered marker via a key-indexed marker map', () => {
     expect(src).toMatch(/markersByKeyRef/)
-    // Hover-aware (and active-aware) price-pill marker icon, rebuilt per-key on
-    // hover/selection change. The icon refresh must pass a `hover:` option;
-    // additional options (e.g. `active:` for the open-InfoWindow marker) are fine.
-    expect(src).toMatch(/buildPricePillIcon\([^)]*\bhover:/)
+    // Hover-aware (and active-aware) price-pill element, rebuilt per-key on
+    // hover/selection change. AdvancedMarkerElement uses HTML content elements
+    // (buildPricePillElement) instead of SVG data-URI icons (buildPricePillIcon).
+    // The element builder must accept hover/active/saved options.
+    expect(src).toMatch(/buildPricePillElement\([^)]*\bhover:/)
   })
 
   it('marker InfoWindow shows a photo card', () => {

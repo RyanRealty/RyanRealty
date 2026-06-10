@@ -57,6 +57,59 @@ export type MenuEntry = {
   promo?: MenuPromo
 }
 
+// ─── Live enrichment data (fetched server-side in SiteHeader, passed as prop) ──
+
+/** One area row for the Areas panel editorial index. */
+export type AreaPulseRow = {
+  slug: string
+  label: string
+  href: string
+  /** Active SFR listings. Null = data not available (renders —). */
+  activeCount: number | null
+  /** Median list price. Null = data not available. */
+  medianListPrice: number | null
+}
+
+/**
+ * The biggest price drop this week — for the Homes panel editorial strip.
+ * Null when no drops are available (panel falls back to text-only).
+ */
+export type TopPriceDrop = {
+  address: string
+  /** Dollar amount of the drop (positive). */
+  amount: number
+  /** Percent of the drop (positive). e.g. 4.2 = 4.2%. */
+  pct: number
+  /** Current list price. */
+  listPrice: number
+  /** Photo URL. */
+  photoUrl: string | null
+  /** Neighborhood or city label. */
+  neighborhood: string | null
+  /** Full listing href. */
+  href: string
+}
+
+/**
+ * NavData — the live enrichment bundle fetched once in SiteHeader and passed
+ * as a prop to MegaMenu + MobileNav. Every field is nullable so a DB failure
+ * silently falls back to the static link-only layout.
+ */
+export type NavData = {
+  /** Areas panel: city pulse rows (8 cities). */
+  cityRows: AreaPulseRow[]
+  /** Areas panel: community + neighborhood rows — static, no live data yet. */
+  communityRows: AreaPulseRow[]
+  /** Homes panel: biggest price drop this week. */
+  topDrop: TopPriceDrop | null
+  /** Homes panel: total price-drop count for the badge. */
+  dropCount: number
+  /** Market panel: region-level active count. */
+  regionActive: number | null
+  /** Market panel: region-level median list price. */
+  regionMedian: number | null
+}
+
 // ─── Helpers (build-time only, fully static) ─────────────────────────────────
 
 const bend = homesForSalePath('Bend') // "/homes-for-sale/bend"

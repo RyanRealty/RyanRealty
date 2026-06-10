@@ -66,6 +66,35 @@ export function getBaseMapOptions(): google.maps.MapOptions {
 }
 
 /**
+ * Search-map specific options — extends base options with:
+ * - gestureHandling 'greedy': single-finger pan/zoom inside the map container
+ *   (no ctrl-key required). Standard behavior on Zillow/Redfin search maps.
+ * - Fewer cluttering controls (no fullscreen on the constrained split panel,
+ *   zoom still top-right).
+ */
+export function getSearchMapOptions(): google.maps.MapOptions {
+  const base = getBaseMapOptions()
+  return {
+    ...base,
+    gestureHandling: 'greedy',
+    fullscreenControl: false,
+    // Suppress clutter POI labels (restaurants, shops) so listing markers read.
+    styles: MAP_SEARCH_STYLES,
+  }
+}
+
+/**
+ * Minimal map style for search: suppress transit + fine-grained POI icons so
+ * listing price-pill markers are the dominant visual element.
+ * Roadmap labels (roads, parks, waterbodies) are preserved for orientation.
+ */
+export const MAP_SEARCH_STYLES: google.maps.MapTypeStyle[] = [
+  { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.attraction', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+]
+
+/**
  * POI-suppressed map style used when embedding a boundary/neighborhood map.
  * Removes distracting points of interest, transit overlays, and fine-grained
  * parcel/neighborhood labels so the polygon boundary is the focal element.
@@ -231,43 +260,59 @@ export function buildInfoWindowHTML(listing: InfoWindowListingData): string {
 
   // Note: intentional use of template-literal HTML. All style values are literal
   // hex because InfoWindow content is Tailwind-isolated.
-  let html = `<div style="width:240px;font-family:system-ui,-apple-system,sans-serif;color:${MAP_TEXT_DARK};line-height:1.4;">`
+  // 2026 card: photo hero, price bold, address, stats, full-width CTA button.
+  const MAP_CREAM = '#faf8f4'
+  const MAP_BORDER = 'rgba(16,39,66,0.10)'
+
+  let html =
+    `<div style="width:264px;font-family:system-ui,-apple-system,sans-serif;` +
+    `color:${MAP_TEXT_DARK};line-height:1.4;border-radius:12px;overflow:hidden;` +
+    `background:${MAP_CREAM};border:1px solid ${MAP_BORDER};">`
 
   if (listing.photoURL) {
     html +=
-      `<div style="margin-bottom:10px;border-radius:8px;overflow:hidden;aspect-ratio:4/3;">` +
-      `<img src="${listing.photoURL}" alt="${photoAlt}" width="240" height="180" loading="lazy"` +
+      `<div style="width:100%;height:152px;overflow:hidden;background:#e5e5e5;">` +
+      `<img src="${listing.photoURL}" alt="${photoAlt}" width="264" height="152" loading="lazy"` +
       ` style="width:100%;height:100%;object-fit:cover;display:block;"/>` +
       `</div>`
   }
 
+  html += `<div style="padding:12px 14px 14px;">`
+
   if (priceStr) {
     html +=
-      `<div style="font-weight:700;font-size:16px;color:${MAP_NAVY};font-variant-numeric:tabular-nums;">` +
+      `<div style="font-weight:800;font-size:18px;color:${MAP_NAVY};font-variant-numeric:tabular-nums;letter-spacing:-0.01em;">` +
       priceStr +
       (listing.isSaved
-        ? `<span style="margin-left:6px;color:${MAP_RED_HEART};font-size:14px;" aria-hidden>&#9829;</span>`
+        ? `<span style="margin-left:7px;color:${MAP_RED_HEART};font-size:15px;" aria-hidden>&#9829;</span>`
         : '') +
       `</div>`
   }
 
-  if (addressLine) {
-    html += `<div style="font-size:13px;color:${MAP_TEXT_MID};margin-top:2px;">${addressLine}</div>`
+  if (streetLine) {
+    html += `<div style="font-size:13px;font-weight:600;color:${MAP_TEXT_DARK};margin-top:4px;">${streetLine}</div>`
+  }
+
+  if (cityLine) {
+    html += `<div style="font-size:12px;color:${MAP_TEXT_MID};margin-top:1px;">${cityLine}</div>`
   }
 
   if (statsLine) {
     html +=
-      `<div style="font-size:12px;color:${MAP_TEXT_LIGHT};margin-top:3px;font-variant-numeric:tabular-nums;">` +
+      `<div style="font-size:12px;color:${MAP_TEXT_MID};margin-top:6px;font-variant-numeric:tabular-nums;` +
+      `padding-top:6px;border-top:1px solid ${MAP_BORDER};">` +
       statsLine +
       `</div>`
   }
 
   html +=
     `<a href="${listing.href}"` +
-    ` style="display:inline-block;margin-top:10px;padding:6px 14px;border-radius:8px;background:${MAP_NAVY};color:${MAP_WHITE};font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;">` +
-    `View listing` +
+    ` style="display:block;margin-top:12px;padding:9px 0;border-radius:8px;` +
+    `background:${MAP_NAVY};color:${MAP_WHITE};font-size:13px;font-weight:700;` +
+    `text-decoration:none;cursor:pointer;text-align:center;letter-spacing:0.01em;">` +
+    `View listing &rarr;` +
     `</a>`
 
-  html += `</div>`
+  html += `</div></div>`
   return html
 }

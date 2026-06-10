@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react'
-import { GoogleMap, InfoWindow, Polygon } from '@react-google-maps/api'
+import { GoogleMap, InfoWindow, MapContext, Polygon } from '@react-google-maps/api'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { MarkerClusterer } from '@googlemaps/markerclusterer'
 
@@ -10,13 +10,22 @@ import { listingDetailPath } from '@/lib/slug'
 import type { MapPolygonPoint } from '@/lib/map-polygon'
 import { Button } from "@/components/ui/button"
 import {
-  buildPricePillIcon,
   buildClusterIcon,
   formatPriceLabel,
   buildInfoWindowHTML,
-  getBaseMapOptions,
+  getSearchMapOptions,
   MAP_NAVY,
+  MAP_WHITE,
 } from '@/lib/maps/markers'
+
+// Optional: set NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID in Vercel env to enable Cloud-based
+// vector map styling (POI suppression, custom map style). Without it the map runs
+// in raster mode — fully interactive, AdvancedMarkerElement still works.
+// Matt: create a Map ID in Google Cloud Console:
+//   Maps Platform → Map IDs → Create Map ID → Type: JavaScript, Map type: Vector
+const MAP_ID =
+  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID) ||
+  'DEMO_MAP_ID'
 
 type GeoJSONPolygon = { type: 'Polygon'; coordinates: number[][][] | number[][] }
 type GeoJSONMultiPolygon = { type: 'MultiPolygon'; coordinates: number[][][][] }
@@ -113,6 +122,102 @@ type Props = {
   onMarkerHover?: (listingKey: string | null) => void
 }
 
+/**
+ * Build the HTML element for an AdvancedMarkerElement price pill.
+ * Returns a <div> that Google Maps renders as a custom marker via the
+ * content property of AdvancedMarkerElement.
+ *
+ * Navy pill + cream text, caret pointing down, hover/active scale ring.
+ * Isolated from Tailwind (rendered in Maps overlay context) — inline styles only.
+ */
+function buildPricePillElement(
+  label: string,
+  opts?: { hover?: boolean; active?: boolean; saved?: boolean },
+): HTMLDivElement {
+  const hover = opts?.hover ?? false
+  const active = opts?.active ?? false
+  const saved = opts?.saved ?? false
+
+  const el = document.createElement('div')
+  el.style.cssText = [
+    'position:relative',
+    'display:inline-flex',
+    'align-items:center',
+    'cursor:pointer',
+    'transition:transform 120ms ease,box-shadow 120ms ease',
+    'transform-origin:50% 100%',
+    hover || active ? 'transform:scale(1.18)' : 'transform:scale(1)',
+    'filter:drop-shadow(0 2px 6px rgba(16,39,66,0.32))',
+  ].join(';')
+  el.setAttribute('data-price-pill', '1')
+
+  const pill = document.createElement('div')
+  pill.style.cssText = [
+    `background:${active ? MAP_WHITE : MAP_NAVY}`,
+    `color:${active ? MAP_NAVY : MAP_WHITE}`,
+    'font-family:system-ui,-apple-system,sans-serif',
+    `font-size:${hover || active ? '14px' : '13px'}`,
+    'font-weight:700',
+    'padding:5px 11px',
+    'border-radius:999px',
+    'white-space:nowrap',
+    'letter-spacing:-0.01em',
+    'font-variant-numeric:tabular-nums',
+    active ? `box-shadow:0 0 0 2px ${MAP_NAVY},0 0 0 4px ${MAP_WHITE}` : '',
+    saved ? `box-shadow:0 0 0 2px #dc2626` : '',
+    'line-height:1.3',
+  ].join(';')
+  pill.textContent = label + (saved ? ' ♥' : '')
+
+  // Caret (downward triangle)
+  const caret = document.createElement('div')
+  caret.style.cssText = [
+    'position:absolute',
+    'bottom:-6px',
+    'left:50%',
+    'transform:translateX(-50%)',
+    'width:0',
+    'height:0',
+    `border-left:6px solid transparent`,
+    `border-right:6px solid transparent`,
+    `border-top:7px solid ${active ? MAP_WHITE : MAP_NAVY}`,
+  ].join(';')
+
+  el.appendChild(pill)
+  el.appendChild(caret)
+  return el
+}
+
+/**
+ * Build the HTML element for a cluster bubble.
+ * Navy circle with white count — AdvancedMarkerElement version.
+ */
+function buildClusterElement(count: number): HTMLDivElement {
+  const size = count >= 100 ? 44 : count >= 20 ? 38 : 32
+  const fontSize = count >= 100 ? 11 : count >= 20 ? 12 : 13
+  const el = document.createElement('div')
+  el.style.cssText = [
+    `width:${size}px`,
+    `height:${size}px`,
+    `border-radius:50%`,
+    `background:${MAP_NAVY}`,
+    `border:2px solid ${MAP_WHITE}`,
+    `display:flex`,
+    `align-items:center`,
+    `justify-content:center`,
+    `color:${MAP_WHITE}`,
+    `font-family:system-ui,-apple-system,sans-serif`,
+    `font-size:${fontSize}px`,
+    `font-weight:700`,
+    `font-variant-numeric:tabular-nums`,
+    `cursor:pointer`,
+    `box-shadow:0 2px 8px rgba(16,39,66,0.4)`,
+    `transition:transform 120ms ease`,
+  ].join(';')
+  el.textContent = String(count)
+  return el
+}
+
 export default function SearchMapClustered({
   listings,
   savedListingKeys = [],
@@ -130,9 +235,16 @@ export default function SearchMapClustered({
   onMarkerHover,
 }: Props) {
   const mapRef = useRef<google.maps.Map | null>(null)
+  // Ref for the DOM container we pass to new google.maps.Map(). We manage map
+  // creation ourselves so we are not dependent on @react-google-maps/api's
+  // internal useEffect timing (which had a race against our custom loader).
+  const mapContainerRef = useRef<HTMLDivElement | null>(null)
+  // mapInstance drives MapContext.Provider so <Polygon>/<InfoWindow> etc. work.
+  const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null)
   const clustererRef = useRef<MarkerClusterer | null>(null)
-  const markersRef = useRef<google.maps.Marker[]>([])
-  const markersByKeyRef = useRef<Map<string, google.maps.Marker>>(new Map())
+  // AdvancedMarkerElement refs (replaces legacy google.maps.Marker)
+  const advMarkersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
+  const markersByKeyRef = useRef<Map<string, google.maps.marker.AdvancedMarkerElement>>(new Map())
   const placeViewportRef = useRef<google.maps.LatLngBounds | null>(null)
   const [placeViewport, setPlaceViewport] = useState<google.maps.LatLngBounds | null>(null)
   const [showBoundary, setShowBoundary] = useState(true)
@@ -145,8 +257,9 @@ export default function SearchMapClustered({
     listing: ListingForMap & { Latitude: number; Longitude: number }
   } | null>(null)
 
+  // 'marker' library required for AdvancedMarkerElement
   const { ready: isLoaded, error: loadError } = useGoogleMapsReady({
-    libraries: ['places'],
+    libraries: ['places', 'marker'],
   })
 
   const validListings = useMemo(
@@ -218,10 +331,123 @@ export default function SearchMapClustered({
     if (onBoundsChanged) setTimeout(reportBounds, 300)
   }, [onBoundsChanged, reportBounds])
 
+  // Map options: greedy gesture handling.
+  //
+  // mapId strategy:
+  //   - When a real NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID env var is set (Vercel + prod),
+  //     we pass `mapId` and strip `styles` (the two are mutually exclusive — mapId
+  //     uses Cloud-based styling while `styles` is the raster-only API).
+  //   - When DEMO_MAP_ID would be used (local dev / no env var), we omit `mapId`
+  //     entirely and keep `styles` for POI suppression. @react-google-maps/api
+  //     v2.20.8 renders a static image placeholder instead of an interactive map
+  //     when mapId='DEMO_MAP_ID' is passed on localhost, so we skip it.
+  //   - AdvancedMarkerElement works without mapId (no vector-map optimization,
+  //     but fully functional custom HTML markers).
+  //
+  // Matt: to enable vector map + Cloud styling in prod, create a Map ID in:
+  //   Maps Platform → Map IDs → Create Map ID → Type: JavaScript, Map type: Vector
+  // Then set NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID=<your-map-id> in Vercel env.
+  //
+  // Declared before any effects that use it to avoid TS2448 forward-reference error.
+  const mapOptions = useMemo(() => {
+    const base = getSearchMapOptions()
+    const hasRealMapId = MAP_ID && MAP_ID !== 'DEMO_MAP_ID'
+    if (hasRealMapId) {
+      // Real map ID: strip styles (mutually exclusive with mapId)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { styles: _styles, ...baseWithoutStyles } = base
+      return {
+        ...baseWithoutStyles,
+        mapId: MAP_ID,
+        draggable: !drawingMode,
+        clickableIcons: !drawingMode,
+      }
+    }
+    // No real mapId: use raster map with styles for POI suppression
+    return {
+      ...base,
+      draggable: !drawingMode,
+      clickableIcons: !drawingMode,
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawingMode])
+
+  // ─── Imperative map creation ───────────────────────────────────────────────
+  // We create the google.maps.Map instance ourselves rather than relying on
+  // @react-google-maps/api's GoogleMapFunctional.useEffect([], []). That
+  // component's effect had an unresolved timing race against our custom loader
+  // (useGoogleMapsReady): both run "after mount" in the same commit cycle, and
+  // depending on execution order the lib's ref.current was null and no map was
+  // constructed. By owning the Map() call here we eliminate the race entirely.
+  //
+  // mapContainerRef is attached to the div we render. Once isLoaded is true and
+  // the div is in the DOM, this effect fires, constructs the Map, calls onLoad,
+  // and stores the instance in mapInstance (→ MapContext.Provider) so that
+  // <Polygon> / <InfoWindow> children from @react-google-maps/api work as before.
+  useEffect(() => {
+    if (!isLoaded) return
+    const container = mapContainerRef.current
+    if (!container) return
+    // Already initialized — skip re-creation on unrelated re-renders.
+    if (mapRef.current) return
+
+    const map = new google.maps.Map(container, {
+      ...mapOptions,
+      center,
+      zoom,
+    })
+    mapRef.current = map
+    setMapInstance(map)
+    onLoad(map)
+
+    return () => {
+      // On unmount, clean up the map. The clusterer cleanup is handled by the
+      // marker effect. We null out mapRef so the init guard above resets.
+      mapRef.current = null
+      setMapInstance(null)
+    }
+  // We intentionally omit center/zoom/mapOptions from deps: those are the
+  // initial values and we don't want to recreate the map on every pan/zoom.
+  // The map manages its own view after construction. onLoad is stable
+  // (useCallback with stable deps). isLoaded only goes false→true once.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded])
+
+  // When mapOptions changes (e.g. drawingMode toggle), push the delta to the
+  // existing map instance rather than recreating it.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    map.setOptions(mapOptions)
+  }, [mapOptions])
+
   const onLoad = useCallback(
     (map: google.maps.Map) => {
       mapRef.current = map
       const padding = { top: 48, right: 48, bottom: 48, left: 48 }
+
+      // Attach the idle listener HERE — inside onLoad — so we always have a
+      // reference to the live map instance. The separate useEffect below had a
+      // race: it checked mapRef.current when isLoaded changed, but onLoad fires
+      // slightly AFTER that effect runs, so mapRef.current was null and the
+      // listener was never attached. Attaching here guarantees the listener is
+      // set before the map ever fires its first idle event.
+      //
+      // This is the primary mechanism for "search as you move": every time the
+      // map settles after a pan/zoom, reportBounds fires (debounced 200 ms) and
+      // UnifiedMapListingsView's onBoundsChanged updates the listing results.
+      if (onBoundsChanged) {
+        let idleTimeout: ReturnType<typeof setTimeout> | null = null
+        const onIdle = () => {
+          if (idleTimeout) clearTimeout(idleTimeout)
+          idleTimeout = setTimeout(reportBounds, 200)
+        }
+        try {
+          map.addListener('idle', onIdle)
+        } catch {
+          // map already destroyed — skip
+        }
+      }
 
       // Preferred frame: the actual city/neighborhood/community boundary polygon,
       // so the map opens fit to that area's true extent (the "not zoomed in
@@ -238,7 +464,7 @@ export default function SearchMapClustered({
             if (z > 15) map.setZoom(15)
             else if (z < 9) map.setZoom(9)
           }
-          if (onBoundsChanged) setTimeout(reportBounds, 300)
+          // idle listener above will fire reportBounds after tiles settle
           return
         }
       }
@@ -262,10 +488,10 @@ export default function SearchMapClustered({
               )
               map.fitBounds(b, padding)
             }
-            if (onBoundsChanged) setTimeout(reportBounds, 300)
+            // idle listener fires reportBounds once the map settles
           }
         )
-        } else if (validListings.length > 0 && bounds) {
+      } else if (validListings.length > 0 && bounds) {
         const b = new google.maps.LatLngBounds(
           { lat: bounds.minLat, lng: bounds.minLng },
           { lat: bounds.maxLat, lng: bounds.maxLng }
@@ -273,64 +499,52 @@ export default function SearchMapClustered({
         map.fitBounds(b, padding)
         const zoom = map.getZoom()
         if (typeof zoom === 'number' && zoom < 12) map.setZoom(12)
-        if (onBoundsChanged) setTimeout(reportBounds, 300)
-      } else if (onBoundsChanged) {
-        reportBounds()
+        // idle listener fires reportBounds once the map settles
       }
+      // If neither case applies the idle listener above will still fire once
+      // the map renders its initial center/zoom position.
     },
     [validListings.length, bounds, placeQuery, onBoundsChanged, reportBounds, boundaryPaths]
   )
 
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map || !onBoundsChanged) return
-    let timeout: ReturnType<typeof setTimeout> | null = null
-    const onIdle = () => {
-      if (timeout) clearTimeout(timeout)
-      timeout = setTimeout(reportBounds, 200)
-    }
-    let listener: google.maps.MapsEventListener | null = null
-    try {
-      listener = map.addListener('idle', onIdle)
-    } catch {
-      return
-    }
-    return () => {
-      if (timeout) clearTimeout(timeout)
-      try {
-        listener?.remove?.()
-      } catch {
-        // ignore if map/DOM already gone
-      }
-    }
-  }, [isLoaded, onBoundsChanged, reportBounds])
+  // NOTE: The idle listener for bounds reporting is attached directly in onLoad
+  // above. This effect is intentionally removed to avoid the race condition where
+  // the effect ran before onLoad set mapRef.current (causing no listener to be
+  // attached). Only the markers effect and the onPolygon/recenter helpers remain.
 
-  // Create markers and clusterer when map and listings are ready.
+  // Create AdvancedMarkerElement markers and clusterer when map and listings are ready.
   useEffect(() => {
     const map = mapRef.current
     if (!map || !window.google || validListings.length === 0) return
+
+    // AdvancedMarkerElement requires the 'marker' library (loaded via useGoogleMapsReady).
+    // Fall back gracefully if the API is not yet available (edge case on slow load).
+    const AdvancedMarkerElement = window.google.maps.marker?.AdvancedMarkerElement
+    if (!AdvancedMarkerElement) return
 
     // Clear previous clusterer and markers.
     if (clustererRef.current) {
       clustererRef.current.clearMarkers()
       clustererRef.current = null
     }
-    markersRef.current.forEach((m) => m.setMap(null))
-    markersRef.current = []
+    advMarkersRef.current.forEach((m) => { m.map = null })
+    advMarkersRef.current = []
     markersByKeyRef.current = new Map()
 
-    const newMarkers: google.maps.Marker[] = validListings.map((l, i) => {
+    const newMarkers: google.maps.marker.AdvancedMarkerElement[] = validListings.map((l, i) => {
       const listingKey = (l.ListNumber ?? l.ListingKey ?? `point-${i}`).toString()
       const price = Number(l.ListPrice ?? 0)
       const label = formatPriceLabel(price)
       const isSaved = savedSet.has(listingKey)
-      // Append a heart suffix for saved listings so it is visible on the pill.
-      const pillLabel = isSaved ? `${label} ♥` : label
 
-      const marker = new google.maps.Marker({
+      const pillEl = buildPricePillElement(label, { saved: isSaved })
+
+      const marker = new AdvancedMarkerElement({
         position: { lat: l.Latitude, lng: l.Longitude },
         map,
-        icon: buildPricePillIcon(pillLabel),
+        content: pillEl,
+        title: `${label} — ${[l.StreetNumber, l.StreetName].filter(Boolean).join(' ') || 'View listing'}`,
+        zIndex: 1,
       })
 
       marker.addListener('click', () => {
@@ -347,28 +561,32 @@ export default function SearchMapClustered({
       })
 
       if (onMarkerHover) {
-        marker.addListener('mouseover', () => onMarkerHover(listingKey))
-        marker.addListener('mouseout', () => onMarkerHover(null))
+        pillEl.addEventListener('mouseenter', () => onMarkerHover(listingKey))
+        pillEl.addEventListener('mouseleave', () => onMarkerHover(null))
       }
 
       markersByKeyRef.current.set(listingKey, marker)
       return marker
     })
 
-    markersRef.current = newMarkers
+    advMarkersRef.current = newMarkers
+
+    // Cluster renderer using AdvancedMarkerElement bubble.
     clustererRef.current = new MarkerClusterer({
       map,
-      markers: newMarkers,
+      markers: newMarkers as unknown as google.maps.Marker[],
       renderer: {
         render: (cluster, _stats, map) => {
           const count = cluster.count
           const position = cluster.position
-          return new google.maps.Marker({
+          const bubbleEl = buildClusterElement(count)
+          const clusterMarker = new AdvancedMarkerElement({
             position,
             map,
-            icon: buildClusterIcon(count),
+            content: bubbleEl,
             zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count,
           })
+          return clusterMarker as unknown as google.maps.Marker
         },
       },
     })
@@ -376,30 +594,21 @@ export default function SearchMapClustered({
     return () => {
       try {
         newMarkers.forEach((m) => {
-          try {
-            m.setMap(null)
-          } catch {
-            // ignore if marker DOM is already gone
-          }
+          try { m.map = null } catch { /* ignore */ }
         })
         if (clustererRef.current) {
-          try {
-            clustererRef.current.clearMarkers()
-          } catch {
-            // ignore parentNode etc. if map container was already unmounted
-          }
+          try { clustererRef.current.clearMarkers() } catch { /* ignore */ }
           clustererRef.current = null
         }
       } catch {
-        // guard against "Cannot read properties of null (reading 'parentNode')" on unmount
+        // guard against unmount race
       }
     }
   }, [isLoaded, validListings, savedSet, onMarkerClick, onMarkerHover])
 
-  // Marker emphasis: in-place icon refresh for the marker that is either hovered
-  // (list-card sync) OR active (its InfoWindow is open after a click). Mutating
-  // the existing marker's icon — instead of recreating all markers — keeps the
-  // map flicker-free and avoids re-running the clusterer on every hover/click.
+  // Marker emphasis: update the pill element in-place for hovered / active marker.
+  // AdvancedMarkerElement uses HTML content, so we mutate styles directly — much
+  // smoother than recreating the element (no flicker, no clusterer churn).
   const activeKey = openInfo?.listingKey ?? null
   useEffect(() => {
     const byKey = markersByKeyRef.current
@@ -409,21 +618,25 @@ export default function SearchMapClustered({
       const isActive = key === activeKey
       const emphasized = isHover || isActive
       try {
-        // Rebuild the pill icon at emphasized scale so it stays sharp (SVG-based).
         const listing = validListings.find(
           (l) => (l.ListNumber ?? l.ListingKey ?? '').toString() === key
         )
         const price = Number(listing?.ListPrice ?? 0)
         const label = formatPriceLabel(price)
         const isSaved = savedSet.has(key)
-        const pillLabel = isSaved ? `${label} ♥` : label
-        marker.setIcon(buildPricePillIcon(pillLabel, { hover: emphasized, active: isActive }))
-        marker.setZIndex(emphasized ? Number(google.maps.Marker.MAX_ZINDEX) : undefined)
+        // Replace content element with updated state
+        const newEl = buildPricePillElement(label, { hover: emphasized, active: isActive, saved: isSaved })
+        marker.content = newEl
+        marker.zIndex = emphasized ? Number(google.maps.Marker.MAX_ZINDEX) : 1
+        if (onMarkerHover) {
+          newEl.addEventListener('mouseenter', () => onMarkerHover(key))
+          newEl.addEventListener('mouseleave', () => onMarkerHover(null))
+        }
       } catch {
         // marker DOM may be gone mid-pan; ignore
       }
     }
-  }, [hoveredKey, activeKey, validListings, savedSet])
+  }, [hoveredKey, activeKey, validListings, savedSet, onMarkerHover])
 
   if (loadError) {
     return (
@@ -470,103 +683,130 @@ export default function SearchMapClustered({
   const showBoundaryControls = boundaryPaths.length > 0 || (placeQuery != null && placeQuery !== '')
 
   return (
-    <div className={`relative ${className}`.trim()} style={{ height: '100%', minHeight: 360 }}>
-      <GoogleMap
-        mapContainerStyle={{ width: '100%', height: '100%', minHeight: 360, cursor: drawingMode ? 'crosshair' : '' }}
-        center={center}
-        zoom={zoom}
-        onLoad={onLoad}
-        onClick={(e) => {
-          if (drawingMode && e.latLng) {
-            const point = { lat: e.latLng.lat(), lng: e.latLng.lng() }
+    <div
+      className={`relative ${className}`.trim()}
+      style={{
+        height: '100%',
+        minHeight: 360,
+        borderRadius: '12px',
+        overflow: 'hidden',
+        boxShadow: '0 4px 20px rgba(16,39,66,0.14), 0 1px 4px rgba(16,39,66,0.10)',
+      }}
+    >
+      {/* Map container — we own map creation via the imperative useEffect above.
+          MapContext.Provider makes mapInstance available to <Polygon> and
+          <InfoWindow> children which read it via useGoogleMap() internally. */}
+      <MapContext.Provider value={mapInstance}>
+        <div
+          ref={mapContainerRef}
+          style={{ width: '100%', height: '100%', minHeight: 360, cursor: drawingMode ? 'crosshair' : '' }}
+          onClick={(e) => {
+            if (!drawingMode) return
+            // Translate click coordinates to lat/lng via the map's projection.
+            const map = mapRef.current
+            if (!map) return
+            const proj = map.getProjection()
+            const bounds = map.getBounds()
+            if (!proj || !bounds) return
+            const ne = bounds.getNorthEast()
+            const sw = bounds.getSouthWest()
+            const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect()
+            const x = e.clientX - rect.left
+            const y = e.clientY - rect.top
+            const w = rect.width
+            const h = rect.height
+            const lng = sw.lng() + (x / w) * (ne.lng() - sw.lng())
+            const lat = ne.lat() - (y / h) * (ne.lat() - sw.lat())
+            const point = { lat, lng }
             setDrawingPoints((prev) => [...prev, point])
-          }
-        }}
-        options={{
-          ...getBaseMapOptions(),
-          draggable: !drawingMode,
-          clickableIcons: !drawingMode,
-        }}
-      >
-        {/* Drawing preview polygon */}
-        {drawingMode && drawingPoints.length >= 2 && (
-          <Polygon
-            paths={drawingPoints}
-            options={{
-              fillColor: MAP_NAVY,
-              fillOpacity: 0.15,
-              strokeColor: MAP_NAVY,
-              strokeWeight: 2,
-              strokeOpacity: 0.8,
-            }}
-          />
+          }}
+        />
+        {/* Overlays — only rendered once the map instance exists */}
+        {mapInstance && (
+          <>
+            {/* Drawing preview polygon */}
+            {drawingMode && drawingPoints.length >= 2 && (
+              <Polygon
+                paths={drawingPoints}
+                options={{
+                  fillColor: MAP_NAVY,
+                  fillOpacity: 0.15,
+                  strokeColor: MAP_NAVY,
+                  strokeWeight: 2,
+                  strokeOpacity: 0.8,
+                }}
+              />
+            )}
+            {/* Completed drawn polygon */}
+            {!drawingMode && activePolygon && activePolygon.length >= 3 && (
+              <Polygon
+                paths={activePolygon}
+                options={{
+                  fillColor: MAP_NAVY,
+                  fillOpacity: 0.2,
+                  strokeColor: MAP_NAVY,
+                  strokeWeight: 2,
+                }}
+              />
+            )}
+            {/* City / neighborhood boundary overlay — brand signature navy stroke + 6% fill */}
+            {showBoundary && boundaryPaths.flat().length > 0 &&
+              boundaryPaths.map((path, i) => (
+                <Polygon
+                  key={`geo-${i}`}
+                  paths={path}
+                  options={{
+                    fillColor: MAP_NAVY,
+                    fillOpacity: 0.06,
+                    strokeColor: MAP_NAVY,
+                    strokeWeight: 2.5,
+                    strokeOpacity: 0.75,
+                  }}
+                />
+              ))}
+            {openInfo && openListing && openKey && (
+              <InfoWindow
+                position={openInfo.position}
+                onCloseClick={() => setOpenInfo(null)}
+                options={{ maxWidth: 280, pixelOffset: new google.maps.Size(0, -12) }}
+              >
+                {/* Inline styles required: Google InfoWindow renders in an isolated
+                    DOM context that does not inherit the app's Tailwind stylesheet.
+                    All styles come from buildInfoWindowHTML in lib/maps/markers.ts. */}
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: buildInfoWindowHTML({
+                      price: openListing.ListPrice ?? null,
+                      photoURL: openListing.PhotoURL ?? null,
+                      streetNumber: openListing.StreetNumber ?? null,
+                      streetName: openListing.StreetName ?? null,
+                      city: openListing.City ?? null,
+                      state: openListing.State ?? null,
+                      postalCode: openListing.PostalCode ?? null,
+                      bedroomsTotal: openListing.BedroomsTotal ?? null,
+                      bathroomsTotal: openListing.BathroomsTotal ?? null,
+                      sqft: openListing.TotalLivingAreaSqFt ?? null,
+                      isSaved: savedSet.has(openKey),
+                      href: listingDetailPath(
+                        openKey,
+                        {
+                          streetNumber: openListing.StreetNumber,
+                          streetName: openListing.StreetName,
+                          city: openListing.City,
+                          state: openListing.State,
+                          postalCode: openListing.PostalCode,
+                        },
+                        undefined,
+                        { mlsNumber: openListing.ListNumber != null ? String(openListing.ListNumber) : null }
+                      ),
+                    }),
+                  }}
+                />
+              </InfoWindow>
+            )}
+          </>
         )}
-        {/* Completed drawn polygon */}
-        {!drawingMode && activePolygon && activePolygon.length >= 3 && (
-          <Polygon
-            paths={activePolygon}
-            options={{
-              fillColor: MAP_NAVY,
-              fillOpacity: 0.2,
-              strokeColor: MAP_NAVY,
-              strokeWeight: 2,
-            }}
-          />
-        )}
-        {showBoundary && boundaryPaths.flat().length > 0 &&
-          boundaryPaths.map((path, i) => (
-            <Polygon
-              key={`geo-${i}`}
-              paths={path}
-              options={{
-                fillColor: MAP_NAVY,
-                fillOpacity: 0.12,
-                strokeColor: MAP_NAVY,
-                strokeWeight: 2,
-              }}
-            />
-          ))}
-        {openInfo && openListing && openKey && (
-          <InfoWindow
-            position={openInfo.position}
-            onCloseClick={() => setOpenInfo(null)}
-            options={{ maxWidth: 260 }}
-          >
-            {/* Inline styles required: Google InfoWindow renders in an isolated
-                DOM context that does not inherit the app's Tailwind stylesheet.
-                All styles come from buildInfoWindowHTML in lib/maps/markers.ts. */}
-            <div
-              dangerouslySetInnerHTML={{
-                __html: buildInfoWindowHTML({
-                  price: openListing.ListPrice ?? null,
-                  photoURL: openListing.PhotoURL ?? null,
-                  streetNumber: openListing.StreetNumber ?? null,
-                  streetName: openListing.StreetName ?? null,
-                  city: openListing.City ?? null,
-                  state: openListing.State ?? null,
-                  postalCode: openListing.PostalCode ?? null,
-                  bedroomsTotal: openListing.BedroomsTotal ?? null,
-                  bathroomsTotal: openListing.BathroomsTotal ?? null,
-                  sqft: openListing.TotalLivingAreaSqFt ?? null,
-                  isSaved: savedSet.has(openKey),
-                  href: listingDetailPath(
-                    openKey,
-                    {
-                      streetNumber: openListing.StreetNumber,
-                      streetName: openListing.StreetName,
-                      city: openListing.City,
-                      state: openListing.State,
-                      postalCode: openListing.PostalCode,
-                    },
-                    undefined,
-                    { mlsNumber: openListing.ListNumber != null ? String(openListing.ListNumber) : null }
-                  ),
-                }),
-              }}
-            />
-          </InfoWindow>
-        )}
-      </GoogleMap>
+      </MapContext.Provider>
       {/* Draw-on-map controls */}
       {onPolygonDrawn && (
         <div className="absolute left-3 top-3 z-[100] flex gap-2" aria-label="Draw controls">

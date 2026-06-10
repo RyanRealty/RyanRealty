@@ -28,6 +28,8 @@ import { MAP_DEFAULT_CENTER } from '@/lib/map-constants'
 import { estimatedMonthlyPayment, formatMonthlyPayment, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_TERM_YEARS } from '@/lib/mortgage'
 import type { GetListingsForMapOptions } from '@/app/actions/listings'
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { listingsBrowsePath } from '@/lib/slug'
 import { H2 } from '@/components/site/primitives'
@@ -150,9 +152,11 @@ export default function UnifiedMapListingsView({
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [needsSearchThisArea, setNeedsSearchThisArea] = useState(false)
+  const [searchAsMove, setSearchAsMove] = useState(true)
   const [, setPage] = useState(1)
   const [sort, setSort] = useState<'newest' | 'oldest' | 'price_asc' | 'price_desc'>('newest')
   const [polygonFilter, setPolygonFilter] = useState<MapPolygonPoint[] | null>(initialPolygon)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -291,19 +295,39 @@ export default function UnifiedMapListingsView({
   const onBoundsChanged = useCallback(
     (newBounds: MapBounds) => {
       setBounds(newBounds)
+      // First load: always fetch to seed the list.
       if (!searchBounds) {
         runSearchForBounds(newBounds, sort, polygonFilter)
         return
       }
-      setNeedsSearchThisArea(!areBoundsSimilar(newBounds, searchBounds))
+      const moved = !areBoundsSimilar(newBounds, searchBounds)
+      if (!moved) return
+      if (searchAsMove) {
+        // Auto-refetch on move — debounced ~400ms (Zillow/Redfin standard).
+        if (debounceRef.current) clearTimeout(debounceRef.current)
+        debounceRef.current = setTimeout(() => {
+          runSearchForBounds(newBounds, sort, polygonFilter)
+        }, 400)
+      } else {
+        // Show the "Search this area" pill when toggle is OFF.
+        setNeedsSearchThisArea(true)
+      }
     },
     [
       searchBounds,
+      searchAsMove,
       sort,
       polygonFilter,
       runSearchForBounds,
     ]
   )
+
+  // Cleanup debounce on unmount.
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [])
 
   const onMarkerClick = useCallback((listingKey: string) => {
     const el = listRef.current?.querySelector(`[data-listing-key="${listingKey}"]`)
@@ -343,16 +367,30 @@ export default function UnifiedMapListingsView({
             <H2 className="text-lg text-primary">{pageTitle}</H2>
             {searchBounds != null && (
               <p className="mt-0.5 text-sm text-muted-foreground">
-                {loading ? 'Loading…' : `${totalCount.toLocaleString()} result${totalCount !== 1 ? 's' : ''} in this area`}
+                {loading ? 'Updating…' : `${totalCount.toLocaleString()} result${totalCount !== 1 ? 's' : ''} in this area`}
               </p>
             )}
             {searchBounds == null && (
-              <p className="mt-0.5 text-sm text-muted-foreground">Move or zoom the map to see listings in that area.</p>
-            )}
-            {searchBounds != null && needsSearchThisArea && (
-              <p className="mt-1 text-sm text-muted-foreground">Map moved. Click Search this area to refresh results.</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">Move the map to see listings in that area.</p>
             )}
             <div className="mt-2 flex flex-wrap items-center gap-2">
+              {/* Search-as-you-move toggle */}
+              <Label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-muted-foreground select-none">
+                <Checkbox
+                  checked={searchAsMove}
+                  onCheckedChange={(checked) => {
+                    const next = checked === true
+                    setSearchAsMove(next)
+                    // When toggling ON, immediately sync to current viewport.
+                    if (next && bounds) {
+                      runSearchForBounds(bounds, sort, polygonFilter)
+                    }
+                    setNeedsSearchThisArea(!next && !!searchBounds && !!bounds && !areBoundsSimilar(bounds, searchBounds))
+                  }}
+                />
+                Search as I move
+              </Label>
+              <span className="text-muted-foreground/30 text-xs">·</span>
               <span className="text-xs font-medium text-muted-foreground">Sort:</span>
               <Select
                 value={sort}
@@ -391,15 +429,6 @@ export default function UnifiedMapListingsView({
                   size="sm"
                 >
                   Clear drawn area
-                </Button>
-              )}
-              {needsSearchThisArea && bounds && (
-                <Button
-                  type="button"
-                  onClick={() => runSearchForBounds(bounds, sort, polygonFilter)}
-                  size="sm"
-                >
-                  Search this area
                 </Button>
               )}
             </div>
@@ -465,7 +494,7 @@ export default function UnifiedMapListingsView({
           </div>
         </div>
 
-        {/* Right: map — fills remaining space; zoomed in (12) so Bend area is visible */}
+        {/* Right: map — fills remaining space */}
         <div className="hidden flex-1 min-h-0 md:block relative">
           <SearchMapClustered
             listings={mapListings}
@@ -488,11 +517,26 @@ export default function UnifiedMapListingsView({
             }}
             className="h-full"
           />
+          {/* Floating "Search this area" pill — shown when toggle is OFF and map moved */}
+          {needsSearchThisArea && bounds && !searchAsMove && (
+            <div className="pointer-events-none absolute inset-x-0 top-3 z-[200] flex justify-center">
+              <Button
+                type="button"
+                onClick={() => {
+                  runSearchForBounds(bounds, sort, polygonFilter)
+                  setNeedsSearchThisArea(false)
+                }}
+                className="pointer-events-auto rounded-full px-5 shadow-lg ring-2 ring-white/20"
+              >
+                Search this area
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Mobile: map below list */}
-      <div className="h-[320px] shrink-0 border-t border-border md:hidden">
+      <div className="h-[320px] shrink-0 border-t border-border md:hidden relative">
         <SearchMapClustered
           listings={mapListings}
           savedListingKeys={savedKeys}
@@ -514,6 +558,21 @@ export default function UnifiedMapListingsView({
           }}
           className="h-full"
         />
+        {/* Floating "Search this area" pill — mobile */}
+        {needsSearchThisArea && bounds && !searchAsMove && (
+          <div className="pointer-events-none absolute inset-x-0 top-3 z-[200] flex justify-center">
+            <Button
+              type="button"
+              onClick={() => {
+                runSearchForBounds(bounds, sort, polygonFilter)
+                setNeedsSearchThisArea(false)
+              }}
+              className="pointer-events-auto rounded-full px-5 shadow-lg ring-2 ring-white/20"
+            >
+              Search this area
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )

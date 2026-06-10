@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-10T01:28:26.970Z
+**Generated:** 2026-06-10T11:46:04.128Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -299,7 +299,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 589,894**
+### `listing_tile_mv` · **rows ≈ 592,131**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -343,7 +343,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 74,813**
+### `similar_listings_mv` · **rows ≈ 74,753**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 
@@ -412,7 +412,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 11,809**
+### `market_stats_cache` · **rows ≈ 12,234**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -685,7 +685,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `owner_lookup_attempts` | integer | yes | 0 |
 | `last_owner_lookup_at` | timestamp with time zone | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 55**
+### `marketing_brain_actions` · **rows ≈ 57**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -2642,6 +2642,75 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `is_broker_notes` | boolean | no | false |
 | `classification` | jsonb | no | '{}'::jsonb |
 
+### `tc_envelope_documents`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `envelope_id` | uuid | no |  |
+| `document_id` | uuid | no |  |
+| `form_version_id` | uuid | yes |  |
+| `sort_order` | integer | no | 0 |
+
+### `tc_envelope_fields`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `envelope_id` | uuid | no |  |
+| `document_id` | uuid | no |  |
+| `recipient_id` | uuid | yes |  |
+| `type` | text | no |  |
+| `page` | integer | no |  |
+| `x` | numeric | no |  |
+| `y` | numeric | no |  |
+| `w` | numeric | no |  |
+| `h` | numeric | no |  |
+| `required` | boolean | no | true |
+| `value` | jsonb | yes |  |
+| `signed_at` | timestamp with time zone | yes |  |
+| `signed_ip` | text | yes |  |
+
+### `tc_envelope_recipients`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `envelope_id` | uuid | no |  |
+| `role` | text | no |  |
+| `name` | text | no |  |
+| `email` | text | no |  |
+| `fub_person_id` | bigint | yes |  |
+| `signing_order` | integer | no | 1 |
+| `auth_token_hash` | text | yes |  |
+| `consented_at` | timestamp with time zone | yes |  |
+| `viewed_at` | timestamp with time zone | yes |  |
+| `completed_at` | timestamp with time zone | yes |  |
+| `declined_at` | timestamp with time zone | yes |  |
+| `decline_reason` | text | yes |  |
+| `ip` | text | yes |  |
+| `user_agent` | text | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+
+### `tc_envelopes`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `cycle_id` | uuid | no |  |
+| `name` | text | no |  |
+| `status` | text | no | 'draft'::text |
+| `created_by` | text | no | 'matt'::text |
+| `sent_at` | timestamp with time zone | yes |  |
+| `completed_at` | timestamp with time zone | yes |  |
+| `voided_at` | timestamp with time zone | yes |  |
+| `void_reason` | text | yes |  |
+| `sealed_sha256` | text | yes |  |
+| `executed_document_id` | uuid | yes |  |
+| `certificate_storage_path` | text | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
 ### `tc_events`
 
 | Column | Type | Nullable | Default |
@@ -2654,6 +2723,37 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `action` | text | no |  |
 | `detail` | jsonb | no | '{}'::jsonb |
 | `created_at` | timestamp with time zone | no | now() |
+
+### `tc_form_libraries`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `code` | text | no |  |
+| `name` | text | no |  |
+| `region` | text | yes |  |
+| `license_note` | text | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+
+### `tc_form_versions`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `library_id` | uuid | no |  |
+| `form_number` | text | yes |  |
+| `name` | text | no |  |
+| `effective_date` | date | yes |  |
+| `retired_at` | date | yes |  |
+| `blank_pdf_storage_path` | text | yes |  |
+| `sha256` | text | yes |  |
+| `page_count` | integer | yes |  |
+| `field_map` | jsonb | no | '[]'::jsonb |
+| `field_map_source` | text | no | 'manual'::text |
+| `signer_profile` | text | yes |  |
+| `checklist_activity_hint` | text | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
 
 ### `tc_sessions`
 
