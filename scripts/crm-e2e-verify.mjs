@@ -126,13 +126,23 @@ await tryCheck('coverage.owner-resolution', async () => {
   check('coverage.owner-resolution', (count ?? 0) === 0 ? 'PASS' : 'WARN', `${count} fresh placeholder names in last 24h (non-Deschutes counties land here)`);
 });
 await tryCheck('sync.fub-spot', async () => {
-  const res = await fetch('https://api.followupboss.com/v1/people?sort=-updated&limit=1&fields=id,updated', { headers: FUB_HEADERS });
+  // Race-tolerant reconciliation: a person updated in FUB seconds ago is
+  // EXPECTED to be unmirrored until the next sync tick. Unhealthy = a FUB
+  // update that has gone unmirrored for longer than the 45m grace window.
+  const res = await fetch('https://api.followupboss.com/v1/people?sort=-updated&limit=5&fields=id,updated', { headers: FUB_HEADERS });
   const d = await res.json();
-  const fubP = d.people?.[0];
-  if (!fubP) return check('sync.fub-spot', 'WARN', 'no FUB people returned');
-  const { data: mirror } = await sb.from('crm_people').select('fub_updated_at').eq('fub_legacy_id', fubP.id).maybeSingle();
-  const lagMin = mirror ? (new Date(fubP.updated).getTime() - new Date(mirror.fub_updated_at).getTime()) / 60000 : Infinity;
-  check('sync.fub-spot', mirror && lagMin < 45 ? 'PASS' : 'FAIL', mirror ? `mirror lag ${Math.round(lagMin)}m on FUB #${fubP.id}` : `FUB #${fubP.id} missing from mirror`);
+  const people = d.people ?? [];
+  if (!people.length) return check('sync.fub-spot', 'WARN', 'no FUB people returned');
+  const { data: mirrors } = await sb.from('crm_people').select('fub_legacy_id,fub_updated_at').in('fub_legacy_id', people.map((p) => p.id));
+  const byId = new Map((mirrors ?? []).map((m) => [m.fub_legacy_id, m]));
+  const stale = [];
+  for (const p of people) {
+    const m = byId.get(p.id);
+    const synced = m && new Date(m.fub_updated_at) >= new Date(p.updated);
+    const graceMin = (Date.now() - new Date(p.updated)) / 60000;
+    if (!synced && graceMin > 45) stale.push(`FUB #${p.id} unsynced ${Math.round(graceMin)}m after its FUB update${m ? '' : ' (missing from mirror)'}`);
+  }
+  check('sync.fub-spot', stale.length ? 'FAIL' : 'PASS', stale.length ? stale.join('; ') : `${people.length} freshest FUB people reconciled (45m grace)`);
 });
 
 // ── 4. WEB SURFACE (site wiring) ───────────────────────────────────────────
