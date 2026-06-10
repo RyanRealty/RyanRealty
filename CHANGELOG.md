@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.461.0 (2026-06-10)
+
+### Features
+- feat(paid): v13 challenger layouts — bignumber / editorial / proof-first
+
+---
+
+
 ## v1.460.0 (2026-06-10)
 
 ### Features
