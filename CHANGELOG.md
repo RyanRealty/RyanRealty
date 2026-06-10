@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.455.0 (2026-06-10)
+
+### Features
+- feat(paid): grade-A-only gate for ad photos + estate ad photo swap
+- feat(crm): auto-enrollment + smart follow-ups — no lead manually assigned again
+
+---
+
+
 ## v1.454.0 (2026-06-10)
 
 ### Features
