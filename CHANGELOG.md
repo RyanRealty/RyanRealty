@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.458.0 (2026-06-10)
+
+### Features
+- feat(assets): batch enhancement driver — A-pool + site images
+
+---
+
+
 ## v1.457.0 (2026-06-10)
 
 ### Features
