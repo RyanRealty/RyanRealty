@@ -28,6 +28,7 @@ Matt: **"finish everything else that was left, then start working on the brain."
 | `a48de35` | **Wave 2**: `ci:poison-null` gate (baseline 0) + converted the remaining 10 poison-null resolvers |
 | `516afe0f` | **TC rung 1 complete (phase 2a done)**: document upload to a deal cycle — signed-upload-URL flow, sha256 dedupe, pdfjs page count, checklist assignment, `document_uploaded` audit events. `/admin/deals/<key>` → Upload document. |
 | (next) | **TC rung 11: commission tracking** — `tc_commissions` table + backfill (settlement-verified, reconciles to the cent), Commission block on deal pages, `/admin/commissions` roll-up, linked from the Deals header. NOTE for the nav-refactor session: please add `item('/admin/commissions', 'Commissions', '💰')` to the transactions group in your uncommitted `app/components/admin/admin-nav.ts` — my earlier in-file addition was overwritten by your rewrite. |
+| (next) | **TC rung 12: financials** — `tc_expenses` + `/admin/financials` P&L (commission income, agent share, brokerage retained, auto ads-spend line, manual expenses, net). Financials nav item added to admin-nav.ts transactions group. |
 
 `ci:gates` = **58/58 wired, 0 orphaned**. tsc clean, ~531 tests green.
 

@@ -70,11 +70,19 @@ export default async function CommissionsPage() {
 
   return (
     <main className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-bold text-foreground">Commissions</h1>
-        <p className="text-sm text-muted-foreground">
-          Settlement-verified figures from the transaction record. Projections stay separate and never roll up.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Commissions</h1>
+          <p className="text-sm text-muted-foreground">
+            Settlement-verified figures from the transaction record. Projections stay separate and never roll up.
+          </p>
+        </div>
+        <Link
+          href="/admin/financials"
+          className="text-sm font-medium text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground"
+        >
+          Financials →
+        </Link>
       </header>
 
       {/* Office + per-broker summary */}

@@ -30,6 +30,7 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
   const transactions: AdminNavItem[] = []
   if (canBrokers) transactions.push(item('/admin/deals', 'Deals', '🤝'))
   if (canBrokers) transactions.push(item('/admin/commissions', 'Commissions', '💰'))
+  if (canBrokers) transactions.push(item('/admin/financials', 'Financials', '📒'))
   if (canBrokers) transactions.push(item('/admin/forms', 'Forms', '📝'))
   if (isSuperuser) transactions.push(item('/admin/sign-off', 'Sign-off queue', '✍'))
 
