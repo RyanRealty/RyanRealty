@@ -21,8 +21,10 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/h
 import { getTcDeal, type TcCycle, type TcDocument } from '@/app/actions/tc'
 import { getAnticipatedDocuments, type AnticipatedDocsResult } from '@/app/actions/tc-required-docs'
 import { cn } from '@/lib/utils'
+import { getDealContacts } from '@/app/actions/tc-contacts'
 import { ArchiveToggle, DownloadButton } from './DocumentRowActions'
 import { ChecklistStatusControl } from './ChecklistControls'
+import { DealContacts } from './DealContacts'
 
 export const dynamic = 'force-dynamic'
 
@@ -282,6 +284,8 @@ export default async function TcDealPage({ params, searchParams }: Props) {
   const deal = await getTcDeal(decodeURIComponent(key))
   if (!deal) notFound()
 
+  const contacts = await getDealContacts(deal.id)
+
   const anticipatedByCycle = new Map<string, AnticipatedDocsResult | null>(
     await Promise.all(
       deal.cycles.map(
@@ -352,6 +356,9 @@ export default async function TcDealPage({ params, searchParams }: Props) {
           </AccordionItem>
         ))}
       </Accordion>
+
+      {/* Deal team & contacts (co-agents + lender/title/escrow/appraiser/TC) */}
+      <DealContacts dealId={deal.id} contacts={contacts} />
 
       {/* Forms & signing placeholder (Phase 2b) */}
       <Card>
