@@ -269,7 +269,7 @@ await tryCheck('external.anthropic-credits', async () => {
   });
   if (res.ok) return check('external.anthropic-credits', 'PASS', 'smart follow-ups unblocked');
   const body = await res.text();
-  check('external.anthropic-credits', 'WARN', /credit balance/i.test(body) ? 'OUT OF CREDITS — smart follow-ups + producers starved' : `HTTP ${res.status}`);
+  check('external.anthropic-credits', 'WARN', /credit balance/i.test(body) ? 'OUT OF CREDITS — affects marketing producer-runtime only (smart follow-ups run on-plan via LaunchAgent)' : `HTTP ${res.status}`);
 });
 await tryCheck('external.fub-port-reply', async () => {
   const { google } = await import('googleapis');
