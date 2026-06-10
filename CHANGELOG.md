@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.464.0 (2026-06-10)
+
+### Features
+- feat(crm): sequences management page — view cadence, pause/activate, enrollment counts
+
+---
+
+
 ## v1.463.1 (2026-06-10)
 
 ### Maintenance
