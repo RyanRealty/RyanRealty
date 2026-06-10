@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.486.0 (2026-06-10)
+
+### Features
+- feat(crm): normalize the 3 paused nurture sequences to engine schema
+
+### Maintenance
+- docs(loop): brand-query investigation closed (name-collision noise, no action) — /team agent-intent depth queued next
+- docs(research): Oregon law sweep — 23 verified proposed additions, 5 matrix corrections (DRAFT for review)
+
+---
+
+
 ## v1.485.0 (2026-06-10)
 
 ### Features
