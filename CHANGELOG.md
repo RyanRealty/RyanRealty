@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.471.0 (2026-06-10)
+
+### Features
+- feat(crm): every site touchpoint on the contact timeline, in real time
+
+---
+
+
 ## v1.470.1 (2026-06-10)
 
 ### Maintenance
