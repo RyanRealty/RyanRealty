@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.487.2 (2026-06-10)
+
+### Bug Fixes
+- fix(experience): count-up stats stranded at 0 + brand-illegal K price format
+
+---
+
+
 ## v1.487.1 (2026-06-10)
 
 ### Bug Fixes
