@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.476.1 (2026-06-10)
+
+### Bug Fixes
+- fix(crm): alert relay retries transient send failures (3 attempts) instead of terminal-failing
+
+---
+
+
 ## v1.476.0 (2026-06-10)
 
 ### Features
