@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.476.2 (2026-06-10)
+
+### Bug Fixes
+- fix(loop): site_signal scope disambiguation — rollup rows no longer masquerade as a page named 'account'
+
+### Maintenance
+- docs(process): THE LOOP v1.1.0 — five-loop topology locked (Growth/Demand/Nurture/Transaction/Experience) + growth-loop orchestrator skill
+
+---
+
+
 ## v1.476.1 (2026-06-10)
 
 ### Bug Fixes
