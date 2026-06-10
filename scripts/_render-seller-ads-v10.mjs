@@ -171,7 +171,15 @@ const VARIANTS = [
   { slug: 'react-t2a-v2-out-of-state',     intent: 'lp', theme: 'Out of area',  broker: 'matt', photo: P.riverHome,   photoFocus: 'center 38%', headline: 'Own a Bend home from out of state?',        subHeading: "Our team and trusted network handle the prep, the repairs, and the sale while you stay put.",       button: "Get your home's value",       quote: Q.swank },
   { slug: 'react-t2b-v1-west-bend-worth',  intent: 'lp', theme: 'West Bend',    broker: 'matt', photo: P.awbreyAerial, photoFocus: 'center 45%', headline: "What's your West Bend home worth?",         subHeading: "Find out what homes near you have actually sold for. A real number from our team, no pressure.",    button: "See your home's value",       quote: Q.fess },
   { slug: 'react-t2b-v2-westside-going-for',intent:'lp', theme: 'West Bend',    broker: 'matt', photo: P.nwCrossing,  photoFocus: 'center 45%', headline: 'What are westside homes going for?',        subHeading: "See what comparable homes near you have actually sold for, with a real number from our local team.", button: "Get your home's value",       quote: Q.cjenkins },
+
+  // ── 2026-06-09 challenger round — two angles vs the t2a-v2-out-of-state champion (2.43% CTR) ──
+  { slug: 'chal-a-net-number',  intent: 'lp', theme: 'Net proceeds', broker: 'matt', photo: P.farmhouse,  photoFocus: 'center 52%', headline: 'What would you walk away with?',            subHeading: "Sale price is one number. What you keep is another. We run both for your Bend home, free.",          button: 'See your net number',         quote: Q.annie },
+  { slug: 'chal-b-ten-years',   intent: 'lp', theme: 'Long tenure',  broker: 'matt', photo: P.barnAerial, photoFocus: 'center 45%', headline: 'Owned your Bend home for 10 years or more?', subHeading: "Prices near you have moved since you bought. See what your home is worth now, from real closed sales.", button: "Get your home's value",       quote: Q.hedberg },
 ]
+
+// Render only the named slugs when ONLY=slug1,slug2 is set (challenger rounds
+// re-render two ads, not the whole library).
+const ONLY = process.env.ONLY ? new Set(process.env.ONLY.split(',').map((s) => s.trim())) : null
 
 // ── Output formats (Meta placements) ─────────────────────────────────────────
 // Same 1080 width across all three so the horizontal layout (x insets) is shared;
@@ -249,6 +257,7 @@ const page = await ctx.newPage()
 const results = []
 for (let i = 0; i < VARIANTS.length; i++) {
   const v = VARIANTS[i]
+  if (ONLY && !ONLY.has(v.slug)) continue
   const htmlPath = resolve(OUT_DIR, `seller-v10-${v.slug}.html`)
   const jpgPath = resolve(OUT_DIR, `seller-v10-${v.slug}.jpg`)
   await writeFile(htmlPath, html(v), 'utf-8')
@@ -310,12 +319,16 @@ const MULTISIZE = [
   { slug: 'react-t2a-v2-out-of-state' },     // T2a absentee owner
   { slug: 'react-t2b-v1-west-bend-worth' },  // T2b west Bend value
   { slug: 'react-t2b-v2-westside-going-for'},// T2b westside comps
+  // ── 2026-06-09 challenger round ──────────────────────────────────────────────
+  { slug: 'chal-a-net-number',  button: 'See your net number' },
+  { slug: 'chal-b-ten-years',   button: "Get your home's value" },
 ]
 const MULTI_DIR = resolve(OUT_DIR, 'multisize')
 const MULTI_THUMB = resolve(MULTI_DIR, 'thumbs')
 await mkdir(MULTI_THUMB, { recursive: true })
 const multiResults = []
 for (const choice of MULTISIZE) {
+  if (ONLY && !ONLY.has(choice.slug)) continue
   const base = VARIANTS.find(x => x.slug === choice.slug)
   if (!base) { console.log(`  multisize SKIP — no variant ${choice.slug}`); continue }
   const v = { ...base, button: choice.button || base.button }
