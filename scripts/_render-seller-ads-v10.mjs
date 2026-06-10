@@ -92,10 +92,33 @@ const P = {
   // ── 2026-06-09 asset-library curated additions (license: owned, visually verified this session) ──
   alOldMill:    `${ROOT}/public/asset-library/photos/curated/429e7228-96fa-4dd3-9b0d-4b1da3982741.JPG`, // Old Mill aerial: smokestacks, footbridge flags, Deschutes (4200x2957)
   alRiverWest:  `${ROOT}/public/asset-library/photos/curated/ba294855-26c1-493e-a07a-752fa6151eb4.JPG`, // River West footbridge over Deschutes, Cascades horizon (3840x2160)
-  alDrakePark:  `${ROOT}/public/asset-library/photos/curated/3d509f16-7535-4a58-8ae8-6efbb220f075.JPG`, // Drake Park / Mirror Pond aerial, downtown + Pilot Butte (3840x2160)
   alTetherow:   `${ROOT}/public/asset-library/photos/curated/c5a01c8a-7dc1-4579-9896-63781151ccd2.JPG`, // Tetherow golf, high desert, snow-capped Cascades, modern homes (4200x3150)
   alNwxPond:    `${ROOT}/public/asset-library/photos/curated/45ee98f1-cf09-4bf0-8100-69a2c1d34fdb.JPG`, // NW Crossing Discovery Park pond + homes (4200x3150)
   alWidgi:      `${ROOT}/public/asset-library/photos/curated/f6040e62-833f-4170-844b-4c68f29283ac.JPG`, // Widgi Creek pond, pines, fairway (4200x3150)
+  alMtnLake:    `${ROOT}/public/asset-library/photos/unsplash/fc74fcc1-be7a-45d3-8bd4-c080d88e977b.jpg`, // snow-capped Cascade peak mirrored in alpine lake at dawn (7736x5160, unsplash approved)
+  alRiverPines: `${ROOT}/public/asset-library/photos/curated/752be187-3ff1-404d-9299-299be11c650a.JPG`,  // calm river channel through ponderosa pines, mountains on horizon (4200x3150, grade A)
+}
+
+// ── Grade-A gate (Matt directive 2026-06-09: "always use the best grade A") ──
+// Any photo under public/asset-library/ must carry vision_quality 'A' in the
+// manifest or the render REFUSES. Non-library paths (LP imgs, own-listing MLS
+// shots) are ungraded — warn so they get eyeballed manually.
+import { readFileSync } from 'node:fs'
+{
+  const manifest = JSON.parse(readFileSync(resolve(ROOT, 'data/asset-library/manifest.json'), 'utf-8'))
+  const rows = Array.isArray(manifest) ? manifest : manifest.assets || []
+  const gradeById = new Map(rows.map((a) => [String(a.id), a.vision_quality || null]))
+  for (const [key, p] of Object.entries(P)) {
+    if (!p.includes('/public/asset-library/')) {
+      console.warn(`  [grade-gate] P.${key} is not an asset-library photo — ungraded, eyeball before use`)
+      continue
+    }
+    const stem = p.split('/').pop().replace(/\.[A-Za-z]+$/, '')
+    const grade = gradeById.get(stem)
+    if (grade !== 'A') {
+      throw new Error(`[grade-gate] P.${key} (${stem}) is grade ${grade ?? 'UNKNOWN'} — only grade-A asset-library photos may render into ads (Matt 2026-06-09)`)
+    }
+  }
 }
 
 // ── Quote bank ─────────────────────────────────────────────────────────────
@@ -194,10 +217,14 @@ const VARIANTS = [
   // out-of-state family = champion (2.43% CTR); generic worth questions died (<0.6%).
   { slug: 'v11-oos-oldmill',     intent: 'lp', theme: 'Out of area',   broker: 'matt', photo: P.alOldMill,   photoFocus: 'center 45%', headline: 'Own a Bend home from another state?',        subHeading: "We handle the prep, the repairs, and the sale while you stay put.",                                       button: "Get your home's value", quote: Q.creekmore },
   { slug: 'v11-weekly-updates',  intent: 'lp', theme: 'Communication', broker: 'matt', photo: P.alRiverWest, photoFocus: 'center 40%', headline: 'Know where your sale stands, every week.',   subHeading: "Clear updates from listing day to closing day, so you are never left wondering.",                          button: "Get your home's value", quote: Q.grantWeekly },
-  { slug: 'v11-estate-sale',     intent: 'lp', theme: 'Estate',        broker: 'matt', photo: P.alDrakePark, photoFocus: 'center 45%', headline: 'Settling an estate property in Bend?',       subHeading: "We coordinate the repairs, the cleaning, and the sale, even when you live somewhere else.",                button: "Get your home's value", quote: Q.creekmoreReady },
+  { slug: 'v11-estate-sale',     intent: 'lp', theme: 'Estate',        broker: 'matt', photo: P.alRiverPines, photoFocus: 'center 48%', headline: 'Settling an estate property in Bend?',       subHeading: "We coordinate the repairs, the cleaning, and the sale, even when you live somewhere else.",                button: "Get your home's value", quote: Q.creekmoreReady },
   { slug: 'v11-tetherow-equity', intent: 'lp', theme: 'Long tenure',   broker: 'matt', photo: P.alTetherow,  photoFocus: 'center 38%', headline: 'Owned your Bend home for 10 years or more?', subHeading: "Prices near you have moved since you bought. See what your home is worth now, from real closed sales.",    button: "Get your home's value", quote: Q.hedberg },
   { slug: 'v11-low-pressure',    intent: 'lp', theme: 'No pressure',   broker: 'matt', photo: P.alNwxPond,   photoFocus: 'center 55%', headline: 'No pressure. Just the real number.',         subHeading: "Honest guidance for your Bend home, whenever you are ready to think about selling.",                       button: "Get your home's value", quote: Q.timmsLowPressure },
   { slug: 'v11-net-number',      intent: 'lp', theme: 'Net proceeds',  broker: 'matt', photo: P.alWidgi,     photoFocus: 'center 45%', headline: 'What would you walk away with?',             subHeading: "Sale price is one number. What you keep is another. We run both for your Bend home, free.",                button: 'See your net number',   quote: Q.annieFull },
+
+  // ── 2026-06-09 v12 — Concept M "mountain background" (design-first round).
+  // Ad headline + sub are IDENTICAL to /lp/seller-home-value?v=mountain (message match).
+  { slug: 'v12-mountain',        intent: 'lp', theme: 'Mountain value', broker: 'matt', photo: P.alMtnLake,  photoFocus: 'center 62%', headline: 'What is your Bend home worth?',              subHeading: "A real number from closed sales near you, not an online guess.",                                           button: "Get your home's value", quote: Q.charise },
 ]
 
 // Render only the named slugs when ONLY=slug1,slug2 is set (challenger rounds
@@ -352,6 +379,7 @@ const MULTISIZE = [
   { slug: 'v11-tetherow-equity' },
   { slug: 'v11-low-pressure' },
   { slug: 'v11-net-number',     button: 'See your net number' },
+  { slug: 'v12-mountain' },
 ]
 const MULTI_DIR = resolve(OUT_DIR, 'multisize')
 const MULTI_THUMB = resolve(MULTI_DIR, 'thumbs')

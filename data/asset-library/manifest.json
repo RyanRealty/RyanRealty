@@ -5422,10 +5422,11 @@
       "approval": "approved",
       "notes": "Ingested from Google Drive (Area Guide - River West - 03.JPG)",
       "file_path": "public/asset-library/photos/curated/ba294855-26c1-493e-a07a-752fa6151eb4.JPG",
-      "vision_caption": "Aerial view of a dry high-desert meadow with a winding dry creek, pine forest, and a prominent snow-capped volcanic peak dominating the background.",
+      "vision_caption": "Aerial of a wooden footbridge crossing the calm Deschutes River between riverside parks, homes in the trees, Cascade peaks on the horizon",
       "vision_scene": "aerial-nature",
       "vision_quality": "A",
-      "vision_watermark": false
+      "vision_watermark": false,
+      "vision_note": "caption corrected eyes-on 2026-06-09 (audit row was shuffled \u2014 said dry meadow)"
     },
     {
       "id": "41ed1146-a859-4edf-b392-dde456065ac2",
@@ -8216,11 +8217,12 @@
       "approval": "approved",
       "notes": "Ingested from Google Drive (Area Guide - Bend - 06.JPG)",
       "file_path": "public/asset-library/photos/curated/3d509f16-7535-4a58-8ae8-6efbb220f075.JPG",
-      "vision_caption": "Aerial view of a calm pond or river bend lined with green trees and residential properties, with a butte visible in the background.",
+      "vision_caption": "Aerial of a calm tree-lined pond with a footpath causeway, downtown rooftops and Pilot Butte beyond (Drake Park / Mirror Pond area)",
       "vision_scene": "aerial-residential",
       "vision_quality": "B",
       "vision_watermark": false,
-      "vision_location": "Pilot Butte"
+      "vision_location": "Pilot Butte",
+      "vision_note": "caption enriched eyes-on 2026-06-09; grade B per audit stands"
     },
     {
       "id": "aab6f55b-1d78-4872-9631-b00f9b529be1",
