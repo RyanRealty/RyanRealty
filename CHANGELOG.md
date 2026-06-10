@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.468.0 (2026-06-10)
+
+### Features
+- feat(tc): interactive checklist status transitions + reviewer accept/reject (rung 1 write-side)
+
+### Maintenance
+- docs(tc): roadmap — checklist status transitions shipped (rung 1)
+
+---
+
+
 ## v1.467.1 (2026-06-10)
 
 ### Maintenance
