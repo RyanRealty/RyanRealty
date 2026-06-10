@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.459.0 (2026-06-10)
+
+### Features
+- feat(tc): document hover previews (first + signature page) + forms library load
+
+---
+
+
 ## v1.458.0 (2026-06-10)
 
 ### Features
