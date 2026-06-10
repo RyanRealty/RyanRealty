@@ -41,7 +41,7 @@ const AD_ACCT = AD_ACCT_RAW.startsWith('act_') ? AD_ACCT_RAW : `act_${AD_ACCT_RA
 const API = 'https://graph.facebook.com/v21.0'
 
 const LP =
-  'https://ryan-realty.com/lp/seller-home-value?utm_source=meta&utm_medium=paid_social'
+  'https://ryan-realty.com/lp/seller-home-value?utm_source=facebook&utm_medium=paid_social'
 
 /** @type {Array<{ name: string, adset_id: string, image: string, utm_content: string, message: string, headline: string, description?: string }>} */
 const ADS = [

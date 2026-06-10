@@ -53,6 +53,10 @@
       "schedule": "0 14 * * *"
     },
     {
+      "path": "/api/cron/marketing-optimization-report",
+      "schedule": "30 6 * * 1"
+    },
+    {
       "path": "/api/cron/analytics-daily-digest",
       "schedule": "30 14 * * *"
     },

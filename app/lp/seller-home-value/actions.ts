@@ -512,6 +512,12 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // ─── Meta CAPI Lead $500 with dedup event_id ──────────────────────────
     const eventId = generateEventId()
     const capiCookies = await cookies()
+    // Forward the REAL visitor IP + UA. This fetch runs server-to-server, so
+    // without these the CAPI route would capture Vercel's egress IP and Node's
+    // user-agent — tanking Meta event match quality for every paid lead.
+    const capiReqHeaders = await headers()
+    const capiClientIp = capiReqHeaders.get('x-forwarded-for')?.split(',')[0]?.trim() || undefined
+    const capiClientUa = capiReqHeaders.get('user-agent') || undefined
     const capiSourceUrl = isListNowLp
       ? `${siteUrl}/lp/sell-your-home`
       : `${siteUrl}/lp/seller-home-value`
@@ -531,6 +537,8 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         // Fall back to the middleware-captured rr_fbc (derived from ?fbclid) when
         // the Meta pixel never set _fbc, so paid clicks attribute. See middleware.
         fbc: capiCookies.get('_fbc')?.value ?? capiCookies.get('rr_fbc')?.value,
+        clientIp: capiClientIp,
+        clientUserAgent: capiClientUa,
         customData: {
           content_name: capiContentName,
           lead_type: isListNowLp ? 'seller_listing_intent' : 'seller_valuation',

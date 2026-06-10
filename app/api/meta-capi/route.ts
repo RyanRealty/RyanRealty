@@ -53,6 +53,8 @@ export async function POST(req: NextRequest) {
       eventSourceUrl,
       fbp: bodyFbp,
       fbc: bodyFbc,
+      clientIp: bodyClientIp,
+      clientUserAgent: bodyClientUserAgent,
     } = body as {
       eventName?: string
       email?: string
@@ -64,6 +66,8 @@ export async function POST(req: NextRequest) {
       eventSourceUrl?: string
       fbp?: string
       fbc?: string
+      clientIp?: string
+      clientUserAgent?: string
     }
 
     if (!eventName) {
@@ -95,16 +99,19 @@ export async function POST(req: NextRequest) {
     if (fbcCookie) userData.fbc = fbcCookie.value
     else if (bodyFbc) userData.fbc = bodyFbc
 
-    // Capture client IP (try multiple headers for proxies)
+    // Capture client IP. Server-action callers fetch this route server-to-server,
+    // so request headers carry Vercel's egress IP / Node's UA — they forward the
+    // real visitor values in the body instead. Body wins when present.
     const clientIp =
+      bodyClientIp?.trim() ||
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       req.headers.get('x-real-ip') ||
       req.headers.get('cf-connecting-ip') ||
       undefined
     if (clientIp) userData.client_ip_address = clientIp
 
-    // Capture user agent
-    const userAgent = req.headers.get('user-agent') || undefined
+    // Capture user agent (same body-first rule as IP)
+    const userAgent = bodyClientUserAgent?.trim() || req.headers.get('user-agent') || undefined
     if (userAgent) userData.client_user_agent = userAgent
 
     // Send to Meta CAPI
