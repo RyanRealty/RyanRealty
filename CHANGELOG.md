@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.488.0 (2026-06-10)
+
+### Features
+- feat(tc): revenue + expense tracking (rung 12) — brokerage P&L at /admin/financials
+
+---
+
+
 ## v1.487.2 (2026-06-10)
 
 ### Bug Fixes
