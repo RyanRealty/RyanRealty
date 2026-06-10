@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.462.0 (2026-06-10)
+
+### Features
+- feat(crm): /crm-e2e guardian battery — 30-check production E2E verification
+
+---
+
+
 ## v1.461.1 (2026-06-10)
 
 ### Bug Fixes
