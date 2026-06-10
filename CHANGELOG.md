@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.483.1 (2026-06-10)
+
+### Bug Fixes
+- fix(guides): /guides rendered an empty family — guides table was never applied to prod (March migration drift)
+
+---
+
+
 ## v1.483.0 (2026-06-10)
 
 ### Features
