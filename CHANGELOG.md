@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.443.1 (2026-06-10)
+
+### Bug Fixes
+- fix(paid): repair Meta lead-attribution measurement chain
+
+### Maintenance
+- chore(data-access): refresh schema snapshot + DAL index for tc_* and skyslope_* tables (G16 companion to c605e562)
+
+---
+
+
 ## v1.443.0 (2026-06-10)
 
 ### Features
