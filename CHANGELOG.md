@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.447.0 (2026-06-10)
+
+### Features
+- feat(brain): producer-layer freeze — G45 ci:producer-freeze ratchet
+
+---
+
+
 ## v1.446.0 (2026-06-10)
 
 ### Features
