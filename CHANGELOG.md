@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.473.0 (2026-06-10)
+
+### Features
+- feat(crm): smart follow-ups now run on Matt's Claude plan, not API credits
+
+---
+
+
 ## v1.472.0 (2026-06-10)
 
 ### Features
