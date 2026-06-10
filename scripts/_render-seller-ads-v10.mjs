@@ -225,6 +225,17 @@ const VARIANTS = [
   // ── 2026-06-09 v12 — Concept M "mountain background" (design-first round).
   // Ad headline + sub are IDENTICAL to /lp/seller-home-value?v=mountain (message match).
   { slug: 'v12-mountain',        intent: 'lp', theme: 'Mountain value', broker: 'matt', photo: P.alMtnLake,  photoFocus: 'center 62%', headline: 'What is your Bend home worth?',              subHeading: "A real number from closed sales near you, not an online guess.",                                           button: "Get your home's value", quote: Q.charise },
+
+  // ── 2026-06-09 v13 — challenger LAYOUTS (format test vs the scrim template).
+  // Stat verified live this session: market_pulse_live geo_type=city geo_slug=bend,
+  // median_close_price_90d = 725000, median_days_to_pending = 11, updated 2026-06-10T04:33Z.
+  { slug: 'v13-bignumber-value', intent: 'lp', theme: 'Data card',    layout: 'bignumber',  broker: 'matt', photo: null, photoFocus: '',
+    stat: '$725,000', statLabel: 'Median sale price · Bend single-family homes · closed in the last 90 days', statSource: 'Source: MLS sales data · updated June 2026 · ryan-realty.com',
+    headline: 'Where does your home land?', subHeading: 'A real number for your exact home, from closed sales near you.', button: "Get your home's value", quote: Q.charise },
+  { slug: 'v13-editorial-mountain', intent: 'lp', theme: 'Editorial', layout: 'editorial',  broker: 'matt', photo: P.alMtnLake, photoFocus: 'center 58%',
+    headline: 'What is your Bend home worth?', subHeading: '', button: 'Get your free home estimate', quote: Q.charise },
+  { slug: 'v13-proof-sold-fast', intent: 'lp', theme: 'Proof first',  layout: 'prooffirst', broker: 'matt', photo: P.alRiverPines, photoFocus: 'center 60%',
+    headline: '', subHeading: '', button: "Get your home's value", quote: Q.charise },
 ]
 
 // Render only the named slugs when ONLY=slug1,slug2 is set (challenger rounds
@@ -244,7 +255,95 @@ const FORMATS = {
   '9x16': { W: 1080, H: 1920, scrimTop: 33, scrimBot: 34, hlTop: 150, subTop: 296, btnTop: 446, brokerBottom: 220, reviewBottom: 330, logoBottom: 220, hlStart: 96 },
 }
 
+// ── Challenger layouts (2026-06-09, Matt: "I don't notice many changes") ────
+// Visually DISTINCT registers vs the photo-scrim default. Brand-locked: navy
+// #102742 on cream #faf8f4, same locked ad fonts. Dispatch via spec.layout.
+const LOGO_BLUE = `${ROOT}/public/images/brand/logo-horizontal-navy-transparent.png`
+
+function htmlBigNumber(v, fmt) {
+  // Data-led card. v.stat / v.statLabel / v.statSource are VERIFIED inputs —
+  // never hardcode without a fresh pull (CLAUDE.md §0).
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+    ${FONTS_CSS}
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{width:${fmt.W}px;height:${fmt.H}px;overflow:hidden;background:#faf8f4;color:#102742;font-family:'National Park',sans-serif;position:relative}
+    .eyebrow{position:absolute;top:84px;left:0;right:0;text-align:center;font-family:'National Park Bold',sans-serif;font-size:24px;letter-spacing:0.22em;color:rgba(16,39,66,0.62)}
+    .stat{position:absolute;top:160px;left:0;right:0;text-align:center;font-family:'Instrument Serif Italic',serif;font-size:228px;line-height:1;color:#102742;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+    .stat-label{position:absolute;top:420px;left:120px;right:120px;text-align:center;font-family:'National Park',sans-serif;font-size:30px;line-height:1.4;color:rgba(16,39,66,0.78)}
+    .rule{position:absolute;top:540px;left:380px;right:380px;height:2px;background:rgba(16,39,66,0.16)}
+    .headline{position:absolute;top:596px;left:90px;right:90px;text-align:center;font-family:'Instrument Serif Italic',serif;font-size:74px;line-height:1.05;color:#102742;white-space:nowrap}
+    .sub-heading{position:absolute;top:706px;left:140px;right:140px;text-align:center;font-family:'National Park',sans-serif;font-size:28px;line-height:1.4;color:rgba(16,39,66,0.8)}
+    .btn{position:absolute;top:824px;left:50%;transform:translateX(-50%);background:#102742;color:#faf8f4;padding:24px 52px;font-family:'National Park Bold',sans-serif;font-size:22px;letter-spacing:0.18em;text-transform:uppercase;border-radius:2px}
+    .source{position:absolute;bottom:118px;left:0;right:0;text-align:center;font-family:'National Park',sans-serif;font-size:17px;color:rgba(16,39,66,0.5)}
+    .logo{position:absolute;bottom:44px;left:50%;transform:translateX(-50%);width:250px;height:50px;background:url('file://${LOGO_BLUE}') center/contain no-repeat}
+  </style></head><body>
+    <div class="eyebrow">BEND · OREGON SINGLE-FAMILY HOMES</div>
+    <div class="stat">${v.stat}</div>
+    <div class="stat-label">${v.statLabel}</div>
+    <div class="rule"></div>
+    <div class="headline">${v.headline}</div>
+    <div class="sub-heading">${v.subHeading}</div>
+    <div class="btn">${v.button}</div>
+    <div class="source">${v.statSource}</div>
+    <div class="logo"></div>
+  </body></html>`
+}
+
+function htmlEditorial(v, fmt) {
+  // Photo-pure premium register: full-bleed photo, one line of copy, no
+  // headshot, no quote, no button block. The photo does the stopping.
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+    ${FONTS_CSS}
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{width:${fmt.W}px;height:${fmt.H}px;overflow:hidden;background:#0a0d12;color:#faf6ec;font-family:'National Park',sans-serif;position:relative}
+    .photo{position:absolute;inset:0;background:url('file://${v.photo}') ${v.photoFocus}/cover no-repeat;z-index:1}
+    .grad{position:absolute;left:0;right:0;bottom:0;height:34%;background:linear-gradient(180deg,rgba(10,13,18,0) 0%,rgba(10,13,18,0.62) 70%,rgba(10,13,18,0.78) 100%);z-index:2}
+    .headline{position:absolute;bottom:170px;left:64px;right:64px;z-index:5;font-family:'Instrument Serif Italic',serif;font-size:72px;line-height:1.04;color:#faf6ec;letter-spacing:-0.015em;text-shadow:0 2px 24px rgba(0,0,0,0.6);white-space:nowrap}
+    .cta-line{position:absolute;bottom:108px;left:66px;z-index:5;font-family:'National Park Bold',sans-serif;font-size:24px;letter-spacing:0.16em;text-transform:uppercase;color:#faf6ec;border-bottom:3px solid #faf6ec;padding-bottom:8px}
+    .logo{position:absolute;right:56px;bottom:104px;width:230px;height:46px;background:url('file://${LOGO_HORIZONTAL_WHITE}') right center/contain no-repeat;z-index:5;filter:drop-shadow(0 2px 14px rgba(0,0,0,0.5))}
+  </style></head><body>
+    <div class="photo"></div>
+    <div class="grad"></div>
+    <div class="headline">${v.headline}</div>
+    <div class="cta-line">${v.button}</div>
+    <div class="logo"></div>
+  </body></html>`
+}
+
+function htmlProofFirst(v, fmt) {
+  // Review-led: the verbatim GBP quote IS the hero on cream; photo is a
+  // bottom band with the CTA riding on it.
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+    ${FONTS_CSS}
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{width:${fmt.W}px;height:${fmt.H}px;overflow:hidden;background:#faf8f4;color:#102742;font-family:'National Park',sans-serif;position:relative}
+    .stars{position:absolute;top:130px;left:0;right:0;text-align:center;font-size:52px;letter-spacing:0.32em;color:#102742}
+    .eyebrow{position:absolute;top:212px;left:0;right:0;text-align:center;font-family:'National Park Bold',sans-serif;font-size:21px;letter-spacing:0.22em;color:rgba(16,39,66,0.55)}
+    .review{position:absolute;top:300px;left:90px;right:90px;text-align:center}
+    .review .text{font-family:'Crimson Italic',serif;font-size:84px;line-height:1.2;color:#102742;letter-spacing:-0.005em}
+    .review .tag{margin-top:36px;font-family:'National Park Bold',sans-serif;font-size:23px;letter-spacing:0.04em;color:rgba(16,39,66,0.62)}
+    .photo{position:absolute;left:0;right:0;bottom:0;height:460px;background:url('file://${v.photo}') ${v.photoFocus}/cover no-repeat}
+    .photo-grad{position:absolute;left:0;right:0;bottom:0;height:460px;background:linear-gradient(180deg,rgba(16,39,66,0.18) 0%,rgba(16,39,66,0.52) 100%)}
+    .btn{position:absolute;bottom:196px;left:50%;transform:translateX(-50%);background:#faf8f4;color:#102742;padding:24px 52px;font-family:'National Park Bold',sans-serif;font-size:22px;letter-spacing:0.18em;text-transform:uppercase;border-radius:2px;box-shadow:0 12px 36px rgba(0,0,0,0.35)}
+    .logo{position:absolute;bottom:78px;left:50%;transform:translateX(-50%);width:240px;height:48px;background:url('file://${LOGO_HORIZONTAL_WHITE}') center/contain no-repeat;filter:drop-shadow(0 2px 12px rgba(0,0,0,0.45))}
+  </style></head><body>
+    <div class="stars">★★★★★</div>
+    <div class="eyebrow">FROM A RECENT GOOGLE REVIEW</div>
+    <div class="review">
+      <div class="text">"${v.quote.text}"</div>
+      <div class="tag">${v.quote.author} · sold with Ryan Realty</div>
+    </div>
+    <div class="photo"></div>
+    <div class="photo-grad"></div>
+    <div class="btn">${v.button}</div>
+    <div class="logo"></div>
+  </body></html>`
+}
+
 function html(v, fmt = FORMATS['1x1']) {
+  if (v.layout === 'bignumber') return htmlBigNumber(v, fmt)
+  if (v.layout === 'editorial') return htmlEditorial(v, fmt)
+  if (v.layout === 'prooffirst') return htmlProofFirst(v, fmt)
   const brokerImg = v.broker === 'team' ? TEAM : MATT
   const brokerW = v.broker === 'team' ? 380 : 260
   const brokerH = v.broker === 'team' ? 224 : 340 // ≤ 360 = 1/3 of 1080
@@ -319,6 +418,7 @@ for (let i = 0; i < VARIANTS.length; i++) {
     await document.fonts.ready
     const fit = (sel, start, min) => {
       const el = document.querySelector(sel)
+      if (!el) return start
       let size = start
       el.style.fontSize = size + 'px'
       while (el.scrollWidth > el.clientWidth && size > min) {
@@ -330,6 +430,7 @@ for (let i = 0; i < VARIANTS.length; i++) {
     // Review wraps to multiple lines, so fit by HEIGHT: shrink until the block is no taller than maxH.
     const fitH = (sel, start, min, maxH) => {
       const el = document.querySelector(sel)
+      if (!el) return start
       let size = start
       el.style.fontSize = size + 'px'
       while (el.scrollHeight > maxH && size > min) {
