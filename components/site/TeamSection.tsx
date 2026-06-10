@@ -28,7 +28,7 @@ export default function TeamSection({ teamImageSrc }: { teamImageSrc?: string | 
             <Eyebrow>Meet the team</Eyebrow>
             <H2>Brokers who live and work across Central Oregon.</H2>
             <Body size="default" tone="muted" className="leading-[1.6] max-w-[52ch]">
-              Local knowledge, honest guidance, and a small team that has lived,
+              Local knowledge and honest guidance from brokers who have lived,
               worked, and closed deals across Bend, Redmond, Sisters, Sunriver, and
               surrounding communities. We tell you what the inspection found. We
               tell you when a listing has been sitting. We tell you what we

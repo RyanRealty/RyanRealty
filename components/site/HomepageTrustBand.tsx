@@ -77,12 +77,12 @@ export default function HomepageTrustBand({ brokers = [] }: Props) {
           <div>
             <Eyebrow className="mb-4">The team</Eyebrow>
             <DisplayHeading as="h2" id="trust-heading" className="text-foreground mb-6" style={{ maxWidth: '380px' }}>
-              Three brokers who live and work here.
+              Brokers who answer their own phones.
             </DisplayHeading>
             <p className="text-[15px] leading-[1.7] text-foreground/60 mb-8" style={{ maxWidth: '44ch' }}>
-              We are a small brokerage in Bend. One office, three active brokers,
-              no out-of-state team, no referral farms. When you call, you reach
-              one of us.
+              Based in Bend, working every market in Central Oregon. No
+              out-of-state call centers, no referral farms. When you call, you
+              reach the broker on your deal.
             </p>
             <div className="flex flex-col gap-2">
               <div className="text-sm text-foreground/60">

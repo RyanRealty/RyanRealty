@@ -20,6 +20,7 @@ import { MarketingStandardBlock } from '@/components/site/MarketingStandardBlock
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import { BrokerProfileRow } from '@/components/site/BrokerProfileRow'
+import { FAQBlock } from '@/components/site/FAQBlock'
 import { CTABar } from '@/components/site/CTABar'
 import { Body, Container, Eyebrow, H2, Section, Stack } from '@/components/site/primitives'
 import { CONTACT } from '@/lib/brand/contact'
@@ -39,6 +40,32 @@ export const metadata: Metadata = pageMetadata({
 })
 
 const OLD_MILL_HERO = '/brand/hero/hero-old-mill-master-4k.jpg'
+
+// Agent-choice intent FAQ ("bend oregon realtor", "bend real estate agent" —
+// target-query benchmark 2026-06-10). DATA ACCURACY: every answer reuses facts
+// already approved on live /team and /about copy. No new claims.
+const TEAM_FAQ_ITEMS = [
+  {
+    question: 'What does working directly with a broker mean?',
+    answer:
+      'You work with one broker from the first call to the closing table. There is no hand-off to a junior agent or a transaction desk, and the broker who prices your home is the one who answers your calls.',
+  },
+  {
+    question: 'What does my listing get?',
+    answer:
+      'Every Ryan Realty listing gets cinematic video, a 3D walkthrough, and a price built from live Central Oregon market data. The same treatment at every price point.',
+  },
+  {
+    question: 'Which areas do Ryan Realty brokers cover?',
+    answer:
+      'Bend, Redmond, Sisters, Sunriver, La Pine, Tumalo, Prineville, and Terrebonne, plus the resort communities including Tetherow, Pronghorn, Eagle Crest, and Brasada Ranch.',
+  },
+  {
+    question: 'How do I start?',
+    answer:
+      'Call 541.213.6706 or schedule a time through the contact page. You talk directly with a broker, not a call center.',
+  },
+] as const
 
 export default async function TeamPage() {
   const [brokers, heroSrc, reviews] = await Promise.all([
@@ -116,6 +143,13 @@ export default async function TeamPage() {
       </Section>
 
       <ReviewsBlock data={reviews} eyebrow="Client reviews" title="What our clients say" tone="muted" max={6} />
+
+      <FAQBlock
+        eyebrow="Choosing a broker"
+        title="Working with a Bend broker"
+        items={TEAM_FAQ_ITEMS}
+        tone="default"
+      />
 
       <CTABar
         eyebrow="Ready to talk"

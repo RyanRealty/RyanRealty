@@ -168,7 +168,7 @@ export default async function AboutPage() {
             <Eyebrow>The team</Eyebrow>
             <H2>The brokers</H2>
             <Body size="default" tone="muted" className="leading-relaxed">
-              Three brokers, each reachable directly. <TextLink href="/team" underline="on-hover">See full profiles</TextLink>.
+              Every broker, reachable directly. <TextLink href="/team" underline="on-hover">See full profiles</TextLink>.
             </Body>
           </Stack>
           <Grid cols={3} gap="default">

@@ -156,7 +156,7 @@ export default async function BuyPage() {
           {[
             {
               heading: 'Local market knowledge',
-              body: 'Three brokers who live and work in Central Oregon. We know Bend, Redmond, Sisters, Sunriver, and every neighborhood in between. You get honest guidance on schools, commute, and resale.',
+              body: 'Brokers who live and work in Central Oregon. We know Bend, Redmond, Sisters, Sunriver, and every neighborhood in between. You get honest guidance on schools, commute, and resale.',
             },
             {
               heading: 'Live MLS listings',

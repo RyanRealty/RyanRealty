@@ -105,6 +105,22 @@ const MARKETING_SLOP = [
   'your trusted',
 ]
 
+// Smallness positioning — BANNED on all site/marketing copy (Matt directive
+// 2026-06-10: "is that going to position us, our intent is to grow"). Headcount
+// is not a position; capability is. The brokerage positions on its standard,
+// its data, and direct-broker accountability — never on being small. ("a small
+// business like ours" remains allowed ONLY in Matt's personal 1:1
+// correspondence voice, e.g. review replies — not on site surfaces.)
+const SMALLNESS_POSITIONING = [
+  'three brokers',
+  'small brokerage',
+  'small team',
+  'small business like ours',
+  'boutique brokerage',
+  'just the three of us',
+  'team of three',
+]
+
 // Fake urgency — §6.2 (full canonical list).
 const FAKE_URGENCY = [
   'act fast',
@@ -137,6 +153,7 @@ const BANNED_WORDS = [
   ...VAGUE_QUALIFIERS.map((word) => ({ word, category: 'vague qualifier' })),
   ...MARKETING_SLOP.map((word) => ({ word, category: 'marketing slop' })),
   ...FAKE_URGENCY.map((word) => ({ word, category: 'fake urgency' })),
+  ...SMALLNESS_POSITIONING.map((word) => ({ word, category: 'smallness positioning' })),
   ...HYPE_OPENINGS.map((word) => ({ word, category: 'hype opening' })),
   ...PANDERING.map((word) => ({ word, category: 'pandering' })),
 ]
@@ -152,6 +169,7 @@ module.exports = {
   VAGUE_QUALIFIERS,
   MARKETING_SLOP,
   FAKE_URGENCY,
+  SMALLNESS_POSITIONING,
   HYPE_OPENINGS,
   PANDERING,
   BANNED_WORDS,

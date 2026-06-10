@@ -224,10 +224,10 @@ export default async function ListYourHomePage() {
       <section className="bg-background py-16 sm:py-20">
         <div className="mx-auto max-w-5xl px-6">
           <h2 className="not-italic font-display text-3xl font-semibold text-primary sm:text-4xl">
-            Three brokers, all based in Bend
+            Your broker is based in Bend
           </h2>
           <p className="mt-3 max-w-lg text-base leading-relaxed text-foreground/65">
-            All active, all licensed in Oregon. One of them will be your broker from listing to close.
+            Working this market every day. The broker you meet is your broker from listing to close.
           </p>
 
           {/* Asymmetric: Matt large + primary, Paul + Rebecca secondary + offset */}

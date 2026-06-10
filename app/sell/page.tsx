@@ -107,7 +107,7 @@ export default async function SellPage() {
 
       <HeroBlock
         headline="Selling your home, done honestly."
-        lede="A small team of three brokers. Specific numbers from the data. No layered hand-offs. The broker who prices your home is the broker who walks you to the finish line."
+        lede="Specific numbers from the data. No layered hand-offs. The broker who prices your home is the broker who walks you to the finish line."
         photo={{
           src: heroSrc ?? OLD_MILL_HERO,
           alt: 'Central Oregon high desert and Cascade mountains around Bend.',

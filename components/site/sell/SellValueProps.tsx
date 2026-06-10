@@ -36,7 +36,7 @@ const VALUE_PROPS: ValueProp[] = [
   {
     title: 'One broker, first call to closing',
     body: 'The broker who prices your home is the broker who lists it, markets it, negotiates the offers, and closes the transaction. No hand-offs. No call center.',
-    detail: 'A small business like ours.',
+    detail: 'Accountable to you, start to finish.',
   },
   {
     title: 'Marketed by someone who knows this market',
@@ -51,7 +51,7 @@ export function SellValueProps() {
       <Container>
         <Stack gap="tight" className="mb-10 max-w-[52ch]">
           <Eyebrow>Why list with us</Eyebrow>
-          <H2>A small brokerage that prices on numbers, not adjectives.</H2>
+          <H2>Pricing built on numbers, not adjectives.</H2>
         </Stack>
         <Grid cols={3} gap="loose">
           {VALUE_PROPS.map((v) => (
