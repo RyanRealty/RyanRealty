@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.468.1 (2026-06-10)
+
+### Bug Fixes
+- fix(build): stage the nav_interact EventName union extension — heals the blocked deploy queue
+
+---
+
+
 ## v1.468.0 (2026-06-10)
 
 ### Features
