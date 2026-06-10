@@ -139,7 +139,7 @@ export function buildTextProducerSystemPrompt(skillContent: string): string {
 
 ---
 
-All development routes through THE LOOP v1.0.0 — see docs/DEVELOPMENT_PROCESS.md
+All development routes through THE LOOP v1.1.0 — see docs/DEVELOPMENT_PROCESS.md
 (ingest -> diagnose -> prioritize -> fix-the-class -> verify -> ship -> measure ->
 learn -> lock). Producers inherit its preflight contract and approval model.
 

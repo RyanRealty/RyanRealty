@@ -1,6 +1,6 @@
 # THE LOOP — the canonical development process
 
-**Version: 1.0.0** · Locked 2026-06-09 · Supersedes every plan in `docs/plans/` (they are history, not process)
+**Version: 1.1.0** · Locked 2026-06-09 · Topology locked 2026-06-10 · Supersedes every plan in `docs/plans/` (they are history, not process)
 
 All development in this repo — site code, the marketing brain, cron agents, producers, every Claude Code session — routes through this one self-improving cycle. This document is the single source of truth for HOW work happens. The sync gate (`scripts/check-process-canon.mjs`, G44) fails the build if the entry points stop pointing here, if a pointer's version drifts from this header, or if a new plan doc lands unregistered.
 
@@ -26,6 +26,26 @@ ingest -> diagnose -> prioritize -> fix-the-class -> verify -> ship -> measure -
 8. **Learn.** After the window closes, write `(change_class, surface, predicted_delta, actual_delta)` to `site_improvement_ledger`. The per-class win-rate it accumulates is the `confidence` input for the next cycle's prioritization. Mispredictions sharpen the value function.
 9. **Lock.** Every fix that killed a class adds or tightens a mechanical gate so it cannot recur. A win that can silently regress is incomplete work. Catalog: `docs/MECHANICAL_GATES.md`.
 10. **Compete.** A standing benchmark of rankings / CTR / conversion vs named competitors on target queries. The gap to the leader feeds the value function, so the loop preferentially attacks where we are losing.
+
+## Loop topology (locked 2026-06-10)
+
+THE LOOP is the meta-process. It runs as **five domain loops over one shared spine**, plus a deterministic cron substrate. One Claude Code session per loop — never two sessions in the same domain at once.
+
+| # | Loop | Session / trigger | Cadence | Owns | State ledger |
+|---|---|---|---|---|---|
+| 1 | **Growth** (SEO, AI visibility, content depth, conversion) | Orchestrator session — runs THE LOOP cycle directly | Continuous | Page content/meta/JSON-LD/llms.txt, thin-vs-thick fixes, CWV, competitor benchmark | `site_improvement_ledger`, `site_signal` |
+| 2 | **Demand** (paid + organic acquisition) | `/facebook-seller-growth` | Weekly + producer crons | Meta ads, audiences, LP conversion, organic social, experiments | `LEARNINGS.md`, `.auto-memory/fb-ads-loop-state.json` |
+| 3 | **Nurture** (CRM, comms, follow-up intelligence) | `/loop /crm-e2e` | Self-paced guardian | FUB mirror, Gmail/Twilio ingest, sequences, auto-enroll, suppressions, smart follow-ups | `tmp/crm-e2e-latest.json`, `docs/CRM_REPLACEMENT_BLUEPRINT.md` |
+| 4 | **Transaction** (TC + Oregon law) | `/loop /tc-builder` | Self-paced ladder | Deals, documents, signing, compliance engine, the Oregon law/forms knowledge base | `docs/TC_SYSTEM.md`, `docs/TC_OREGON_COMPLIANCE.md` |
+| 5 | **Experience** (UX archetype migration) | `/loop /experience-rollout` | One family per iteration | Page-family visual/UX rebuilds to the v3 archetype language | `docs/EXPERIENCE_SYSTEM.md` §Rollout status |
+| — | **Substrate** (deterministic machinery) | Vercel crons (`vercel.json`) | 10 min – weekly | Spark→Supabase sync, market stats cache, CRM crons, producer dispatch/runtime/publish, measurement, digests | Supabase tables |
+| — | **Immune system** | `/deep-audit` | On demand / monthly | Cross-cutting health: stuck rows, dead crons, expired tokens, drifted skills | `out/audits/` |
+
+**The shared spine** every loop reads and writes: Supabase (one database, DAL-only access), the ledgers above, and the **contact journey** — one stage per person (`visitor → lead → nurtured → active client → under contract → closed → past client → repeat`) so Growth hands to Demand hands to Nurture hands to Transaction without a seam. The journey stage lives on `crm_people`; any loop may advance it, no loop may fork its own funnel model.
+
+**Collision rules.** Experience owns page *structure*; Growth owns page *content and meta* — a file family under active Experience migration is frozen to Growth until the family ships. Nurture owns outbound comms; Demand never sends directly. Transaction owns anything legally binding. The orchestrator session arbitrates conflicts and owns prioritization across loops (step 3 of the cycle, applied fleet-wide).
+
+**Session discipline.** Ad-hoc sessions are for one-off tasks only and close when done. Anything recurring belongs to one of the five loops or becomes a cron. A sixth standing session is a smell — fold it in or gate it.
 
 ## The preflight contract (no change starts blind)
 
@@ -72,6 +92,7 @@ Everything in `docs/plans/` is registered here. A new file in that directory wit
 | `SITE_AUDIT_2026-06-03.md` | superseded (record) |
 | `master-plan.md`, `PRODUCT_SPEC_V2.md`, `INDEX_MASTER_DEAL_PIPELINE.md`, `USER_JOURNEYS.md`, `data-architecture-plan.md`, `continuous-improvement.md`, `phase-0-brief.md`, `phase-1-brief.md`, `phase-2-brief.md`, `phase-3-brief.md`, `phase-4-brief.md`, `phase-5-brief.md`, `phase-6-brief.md` | superseded by this canon (archive) |
 | `money-path-contract-plan-2026-06-04.md` | open input — feed into the loop's backlog |
+| `../EXPERIENCE_SYSTEM.md` | **live canon** — six page archetypes, route map, shared module kit, engagement telemetry spec, never-regress mechanics. Orchestrator for the Wave 3 UX rebuild. |
 | `RENTAL_CALCULATOR_BUILD_PROMPT.md` | executed (record) |
 | `SKYSLOPE_COMPLIANCE_HANDOFF_2026-05-28.md` | ops record (not site process) |
 | `CROSS_AGENT_HANDOFF.md`, `SESSION_HANDOFF_2026-06-01.md`, `SESSION_HANDOFF_2026-06-01_PARTB.md`, `task-handoff-template.md` | session-continuity records |
@@ -80,4 +101,5 @@ Everything in `docs/plans/` is registered here. A new file in that directory wit
 
 ## Changelog
 
+- **1.1.0 (2026-06-10)** — Loop topology locked: five domain loops (Growth, Demand, Nurture, Transaction, Experience) over one shared spine + cron substrate; one session per loop; contact-journey stage as the cross-loop funnel object; collision and session-discipline rules.
 - **1.0.0 (2026-06-09)** — Initial canon, distilled from `ultracode-site-consistency-kickoff.md` after the 06-09 audit was executed end to end. Ledgers + sync gate land in the same delivery.

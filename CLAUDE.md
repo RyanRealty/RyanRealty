@@ -1,6 +1,6 @@
 # THE LOOP — the canonical development process (READ ZEROTH)
 
-> **All development routes through THE LOOP v1.0.0 — see [`docs/DEVELOPMENT_PROCESS.md`](docs/DEVELOPMENT_PROCESS.md).** One self-improving cycle: ingest telemetry -> diagnose -> prioritize -> fix the class -> verify exhaustively -> ship -> measure -> learn -> lock behind a gate -> compete. It carries the preflight contract (no change starts blind), the live-environment rules, the escape-ledger protocol, and the approval model. Enforced by G44 (`ci:process-canon`). The sections below are the hard constraints THE LOOP operates under.
+> **All development routes through THE LOOP v1.1.0 — see [`docs/DEVELOPMENT_PROCESS.md`](docs/DEVELOPMENT_PROCESS.md).** One self-improving cycle: ingest telemetry -> diagnose -> prioritize -> fix the class -> verify exhaustively -> ship -> measure -> learn -> lock behind a gate -> compete. It carries the preflight contract (no change starts blind), the live-environment rules, the escape-ledger protocol, and the approval model. Enforced by G44 (`ci:process-canon`). The sections below are the hard constraints THE LOOP operates under.
 
 # Data Accuracy — ABSOLUTE, NON-NEGOTIABLE (READ FIRST)
 
