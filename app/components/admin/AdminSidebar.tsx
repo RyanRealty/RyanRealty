@@ -28,6 +28,7 @@ export default function AdminSidebar({ role, brokerId }: AdminSidebarProps) {
   ]
   if (canBrokers) main.push(navItem('/admin/deals', 'Deals', '🤝'))
   if (canBrokers) main.push(navItem('/admin/forms', 'Forms', '📝'))
+  if (isSuperuser) main.push(navItem('/admin/sign-off', 'Sign-off queue', '✍'))
   if (isSuperuser) {
     main.push(navItem('/admin/analytics', 'Analytics', '📊'))
     main.push(navItem('/admin/analytics/social', 'Social channels', '📣'))
