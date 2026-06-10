@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { unstable_cache } from 'next/cache'
 import { getSetupComplete } from '@/app/actions/admin-setup'
 import {
   getDashboardSyncData,
@@ -20,17 +21,29 @@ import DashboardMarketingCommandCenterPanel from '@/components/admin/DashboardMa
 
 export const dynamic = 'force-dynamic'
 
+// The five dashboard fetchers hit live third-party APIs (GA4, Meta Graph, FUB
+// fallback) and exact-count scans — 30-45s uncached per render, which read as
+// "admin is down" on a phone. All five are service-role + Matt-scoped (no
+// cookies inside), so the bundle is globally cacheable. unstable_cache serves
+// stale while revalidating: only a cold start ever pays the full fetch.
+const getDashboardData = unstable_cache(
+  async () =>
+    Promise.all([
+      getDashboardSyncData(),
+      getDashboardLeadData(),
+      getDashboardDataQuality(),
+      getDashboardContentStatus(),
+      getDashboardMarketingData(),
+    ]),
+  ['admin-dashboard-data'],
+  { revalidate: 180, tags: ['admin-dashboard'] }
+)
+
 export default async function AdminDashboardPage() {
   const setupComplete = await getSetupComplete()
   if (!setupComplete) redirect('/admin/setup')
 
-  const [syncData, leadData, dataQuality, contentStatus, marketingData] = await Promise.all([
-    getDashboardSyncData(),
-    getDashboardLeadData(),
-    getDashboardDataQuality(),
-    getDashboardContentStatus(),
-    getDashboardMarketingData(),
-  ])
+  const [syncData, leadData, dataQuality, contentStatus, marketingData] = await getDashboardData()
 
   return (
     <main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6">

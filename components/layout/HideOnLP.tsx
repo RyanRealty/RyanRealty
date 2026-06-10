@@ -1,7 +1,11 @@
 "use client"
 
 /**
- * HideOnLP — client-side route gate that hides chrome on /lp/* routes.
+ * HideOnLP — client-side route gate that hides public chrome on /lp/* and
+ * /admin routes. Admin carries its own header + nav (AdminHeader,
+ * AdminSidebar/AdminMobileNav); stacking the public SiteHeader above it
+ * double-spent ~140px of phone viewport and put two hamburgers on screen
+ * (fixed 2026-06-10, Matt report).
  *
  * We can't use `headers()` in the root layout for LP detection: that call
  * forces the entire route tree to render dynamically, which prevents the
@@ -19,6 +23,7 @@ import { usePathname } from "next/navigation"
 export default function HideOnLP({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   if (pathname?.startsWith("/lp/")) return null
+  if (pathname === "/admin" || pathname?.startsWith("/admin/")) return null
   return <>{children}</>
 }
 

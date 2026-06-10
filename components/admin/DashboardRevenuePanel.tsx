@@ -1,11 +1,18 @@
+import { unstable_cache } from 'next/cache'
 import { getRevenueDashboardData } from '@/app/actions/partnership-revenue'
+
+const getRevenueDashboardDataCached = unstable_cache(
+  getRevenueDashboardData,
+  ['admin-revenue-dashboard'],
+  { revalidate: 300, tags: ['admin-dashboard'] }
+)
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
 }
 
 export default async function DashboardRevenuePanel() {
-  const data = await getRevenueDashboardData()
+  const data = await getRevenueDashboardDataCached()
 
   return (
     <div className="space-y-6">

@@ -1,5 +1,13 @@
 import Link from 'next/link'
+import { unstable_cache } from 'next/cache'
 import { getGA4Summary } from '@/app/actions/ga4-report'
+
+// Live GA4 Data API call — cached so the admin dashboard doesn't pay the
+// round-trip per render (args are part of the cache key).
+const getGA4SummaryCached = unstable_cache(getGA4Summary, ['admin-ga4-summary'], {
+  revalidate: 300,
+  tags: ['admin-dashboard'],
+})
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${Math.round(seconds)}s`
@@ -15,7 +23,7 @@ export default async function DashboardGA4Panel() {
   const startDate = start.toISOString().slice(0, 10)
   const endDate = end.toISOString().slice(0, 10)
 
-  const result = await getGA4Summary(startDate, endDate)
+  const result = await getGA4SummaryCached(startDate, endDate)
   const ga4PropertyId = process.env.GOOGLE_GA4_PROPERTY_ID?.trim() || '(missing)'
   const ga4ServiceAccountEmail =
     process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL?.trim() || '(missing)'

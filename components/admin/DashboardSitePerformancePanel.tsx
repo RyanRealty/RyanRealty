@@ -1,5 +1,14 @@
 import Link from 'next/link'
+import { unstable_cache } from 'next/cache'
 import { getSearchConsoleSummary } from '@/app/actions/search-console-report'
+
+// Live Search Console API call — cached per-args so the dashboard render
+// doesn't pay the round-trip every request.
+const getSearchConsoleSummaryCached = unstable_cache(
+  getSearchConsoleSummary,
+  ['admin-gsc-summary'],
+  { revalidate: 300, tags: ['admin-dashboard'] }
+)
 
 function formatPercent(value: number) {
   return `${(value * 100).toFixed(2)}%`
@@ -12,7 +21,7 @@ export default async function DashboardSitePerformancePanel() {
   const startDate = start.toISOString().slice(0, 10)
   const endDate = end.toISOString().slice(0, 10)
 
-  const result = await getSearchConsoleSummary(startDate, endDate)
+  const result = await getSearchConsoleSummaryCached(startDate, endDate)
 
   if (!result.ok) {
     const configured = result.error !== 'SEARCH_CONSOLE_NOT_CONFIGURED'

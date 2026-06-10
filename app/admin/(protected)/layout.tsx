@@ -33,6 +33,8 @@ export default async function AdminProtectedLayout({
           avatarUrl: session.user.avatar_url ?? session.user.user_metadata?.avatar_url ?? session.user.user_metadata?.picture ?? null,
           fullName: session.user.user_metadata?.full_name ?? session.user.user_metadata?.name ?? null,
         }}
+        role={adminRole.role}
+        brokerId={adminRole.brokerId}
       />
       <div className="flex">
         <AdminSidebar role={adminRole.role} brokerId={adminRole.brokerId} />
