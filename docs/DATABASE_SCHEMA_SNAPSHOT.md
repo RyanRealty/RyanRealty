@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-10T19:19:44.437Z
+**Generated:** 2026-06-10T21:43:03.354Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -299,7 +299,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 595,525**
+### `listing_tile_mv` · **rows ≈ 589,207**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -1689,6 +1689,22 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `created_at` | timestamp with time zone | no | now() |
 | `updated_at` | timestamp with time zone | no | now() |
 
+### `guides`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `slug` | text | no |  |
+| `title` | text | no |  |
+| `meta_description` | text | yes |  |
+| `content_html` | text | no |  |
+| `category` | text | yes |  |
+| `city` | text | yes |  |
+| `status` | text | no | 'draft'::text |
+| `published_at` | timestamp with time zone | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
 ### `headshot_prompts`
 
 | Column | Type | Nullable | Default |
@@ -2791,6 +2807,27 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `action` | text | no |  |
 | `detail` | jsonb | no | '{}'::jsonb |
 | `created_at` | timestamp with time zone | no | now() |
+
+### `tc_expenses`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `deal_id` | uuid | yes |  |
+| `cycle_id` | uuid | yes |  |
+| `broker_slug` | text | yes |  |
+| `category` | text | no |  |
+| `description` | text | no |  |
+| `vendor` | text | yes |  |
+| `amount` | numeric | no |  |
+| `incurred_on` | date | no |  |
+| `archived` | boolean | no | false |
+| `archived_reason` | text | yes |  |
+| `archived_at` | timestamp with time zone | yes |  |
+| `source` | jsonb | no | '{}'::jsonb |
+| `created_by` | text | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
 
 ### `tc_form_libraries`
 

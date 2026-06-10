@@ -129,7 +129,14 @@ async function _getPublishedGuidesUncached(_limit: number): Promise<GuideRow[]> 
     .order('published_at', { ascending: false, nullsFirst: false })
     .limit(200)
 
-  if (error) throw new Error(`[getPublishedGuides] ${error.message}`)
+  if (error) {
+    // The stats-generated fallback must be reachable on a FAILED query too —
+    // before 2026-06-10 a throw here was swallowed by the resilient cache into
+    // [], so /guides rendered an empty family for months while the table was
+    // missing in prod (migration drift). Degrade to generated guides, log loud.
+    console.error(`[getPublishedGuides] ${error.message} — serving stats-generated guides`)
+    return getGeneratedGuidesFromStats(12)
+  }
   const rows = (data ?? []) as GuideRow[]
   if (rows.length > 0) return rows
   return getGeneratedGuidesFromStats(12)
