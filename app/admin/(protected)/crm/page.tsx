@@ -80,7 +80,9 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
             {overview.lastDeltaSync ? ` · last sync ${fmtDate(overview.lastDeltaSync)}` : ''}
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex items-center gap-3">
+          <Link href="/admin/crm/inbox"><Button variant="outline" size="sm">Inbox</Button></Link>
+          <Link href="/admin/crm/deals"><Button variant="outline" size="sm">Pipeline</Button></Link>
           {stats.map((s) => (
             <Card key={s.label} className="min-w-[120px]">
               <CardContent className="px-4 py-3">

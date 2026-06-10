@@ -313,6 +313,111 @@ export async function addCrmNoteAction(formData: FormData): Promise<CrmActionRes
   return { ok: true }
 }
 
+/** Send a 1:1 email from the acting broker's own Gmail mailbox. Suppression-checked. */
+export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionResult> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  const personId = Number(formData.get('personId'))
+  const subject = String(formData.get('subject') ?? '').trim()
+  const body = String(formData.get('body') ?? '').trim()
+  if (!personId || !subject || !body) return { ok: false, error: 'Subject and body required' }
+
+  const sb = createServiceClient()
+  const { data: person } = await sb
+    .from('crm_people')
+    .select('id,emails,assigned_broker,name')
+    .eq('id', personId)
+    .maybeSingle()
+  if (!person) return { ok: false, error: 'Person not found' }
+  const to = (person.emails as Array<{ value?: string; isPrimary?: number | boolean }>)
+    ?.sort((a, b) => Number(!!b.isPrimary) - Number(!!a.isPrimary))[0]?.value
+  if (!to) return { ok: false, error: 'No email address on file' }
+
+  const { isSuppressed } = await import('@/lib/crm/suppressions')
+  const gate = await isSuppressed(personId, 'email')
+  if (gate.suppressed) return { ok: false, error: `Blocked by suppression (${gate.reasons.join(', ')})` }
+
+  const { CRM_MAILBOXES, sendCrmEmail } = await import('@/lib/crm/gmail')
+  const actingSlug = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
+  const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
+  const sent = await sendCrmEmail({ fromMailbox: mailbox.email, to, subject, bodyText: body })
+  if (!sent.ok) return { ok: false, error: sent.error }
+
+  await sb.from('crm_timeline').insert({
+    person_id: personId, kind: 'email_out', title: subject, body,
+    payload: { gmailId: sent.gmailId, to, mailbox: mailbox.email },
+    broker: mailbox.slug, source: 'app', dedupe_key: `gmail:${sent.gmailId}:p${personId}`,
+  })
+  revalidateCrm(personId)
+  return { ok: true }
+}
+
+export type CrmInboxRow = {
+  id: number
+  person_id: number
+  ts: string
+  kind: string
+  title: string | null
+  body: string | null
+  broker: string | null
+  person: { name: string | null; stage: string } | null
+}
+
+/** Latest inbound communications across all contacts (the unified inbox feed). */
+export async function listCrmInbox(limit = 100): Promise<CrmInboxRow[]> {
+  const sb = createServiceClient()
+  const { data } = await sb
+    .from('crm_timeline')
+    .select('id,person_id,ts,kind,title,body,broker,crm_people!inner(name,stage)')
+    .in('kind', ['email_in', 'sms_in', 'call', 'voicemail'])
+    .order('ts', { ascending: false })
+    .limit(limit)
+  return (data ?? []).map((r) => ({
+    id: r.id as number,
+    person_id: r.person_id as number,
+    ts: r.ts as string,
+    kind: r.kind as string,
+    title: (r.title ?? null) as string | null,
+    body: (r.body ?? null) as string | null,
+    broker: (r.broker ?? null) as string | null,
+    person: (r as unknown as { crm_people: { name: string | null; stage: string } }).crm_people ?? null,
+  }))
+}
+
+export type CrmDealRow = {
+  id: number
+  name: string | null
+  pipeline: string | null
+  stage: string | null
+  value: number | null
+  entered_stage_at: string | null
+  person_id: number | null
+  person: { name: string | null } | null
+}
+
+export async function listCrmDeals(): Promise<CrmDealRow[]> {
+  const sb = createServiceClient()
+  const { data } = await sb
+    .from('crm_deals')
+    .select('id,name,pipeline,stage,value,entered_stage_at,person_id,crm_people(name)')
+    .order('pipeline')
+    .order('entered_stage_at', { ascending: false })
+  return (data ?? []).map((r) => ({
+    ...(r as unknown as Omit<CrmDealRow, 'person'>),
+    person: (r as unknown as { crm_people: { name: string | null } | null }).crm_people ?? null,
+  }))
+}
+
+export async function getCrmEmailTemplates(): Promise<Array<{ key: string; name: string; subject: string | null; body: string }>> {
+  const sb = createServiceClient()
+  const { data } = await sb
+    .from('crm_templates')
+    .select('key,name,subject,body')
+    .eq('channel', 'email')
+    .order('name')
+  return (data ?? []) as Array<{ key: string; name: string; subject: string | null; body: string }>
+}
+
 /** Reassign a contact to a broker — updates CRM + FUB assignedUserId + broker: tag, logs to timeline. */
 export async function assignCrmBrokerAction(formData: FormData): Promise<CrmActionResult> {
   const access = await requireCrmAccess()

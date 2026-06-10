@@ -10,8 +10,10 @@ import {
   addCrmTaskAction,
   assignCrmBrokerAction,
   completeCrmTaskAction,
+  getCrmEmailTemplates,
   getCrmPersonFull,
   removeCrmTagAction,
+  sendCrmEmailAction,
   updateCrmStageAction,
 } from '@/app/actions/crm'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -62,6 +64,11 @@ async function assignBrokerForm(formData: FormData): Promise<void> {
   const r = await assignCrmBrokerAction(formData)
   if (!r.ok) console.error('[crm] assignBroker failed:', r.error)
 }
+async function sendEmailForm(formData: FormData): Promise<void> {
+  'use server'
+  const r = await sendCrmEmailAction(formData)
+  if (!r.ok) console.error('[crm] sendEmail failed:', r.error)
+}
 
 const KIND_ICON: Record<string, string> = {
   note: '📝', email_in: '📥', email_out: '📤', sms_in: '💬', sms_out: '📲',
@@ -87,7 +94,7 @@ function fmtPhoneDisplay(tenDigits: string): string {
   return `${tenDigits.slice(0, 3)}.${tenDigits.slice(3, 6)}.${tenDigits.slice(6)}`
 }
 
-export default async function CrmPersonPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CrmPersonPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tpl?: string }> }) {
   const session = await getSession()
   const adminRole = await getAdminRoleForEmail(session?.user?.email ?? null)
   if (!adminRole) redirect('/admin/access-denied')
@@ -96,9 +103,13 @@ export default async function CrmPersonPage({ params }: { params: Promise<{ id: 
   const id = Number(idRaw)
   if (!Number.isFinite(id) || id <= 0) notFound()
 
+  const { tpl } = await searchParams
   const full = await getCrmPersonFull(id)
   const person = full.person
   if (!person) notFound()
+  const templates = await getCrmEmailTemplates()
+  const activeTpl = tpl ? templates.find((t) => t.key === tpl) ?? null : null
+  const primaryEmail = full.contactPoints.find((c) => c.kind === 'email')?.value ?? null
 
   const customEntries = Object.entries(person.custom ?? {}).filter(
     ([, v]) => v !== null && v !== '' && v !== undefined,
@@ -327,6 +338,40 @@ export default async function CrmPersonPage({ params }: { params: Promise<{ id: 
                 </select>
                 <Button type="submit" size="sm" variant="outline">Add task</Button>
               </form>
+            </CardContent>
+          </Card>
+
+          {/* Email composer */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">
+                Send email {primaryEmail ? <span className="font-normal text-muted-foreground">to {primaryEmail}</span> : null}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {primaryEmail ? (
+                <>
+                  <form method="GET" className="flex items-center gap-2">
+                    <select name="tpl" defaultValue={tpl ?? ''} className="h-8 max-w-[360px] flex-1 rounded-md border border-input bg-background px-2 text-sm text-foreground">
+                      <option value="">Blank email</option>
+                      {templates.map((t) => (
+                        <option key={t.key} value={t.key}>{t.name}</option>
+                      ))}
+                    </select>
+                    <Button type="submit" size="sm" variant="outline">Load template</Button>
+                  </form>
+                  <form action={sendEmailForm} className="space-y-2">
+                    <input type="hidden" name="personId" value={person.id} />
+                    <Input name="subject" placeholder="Subject" defaultValue={activeTpl?.subject ?? ''} />
+                    <Textarea name="body" rows={5} placeholder="Message — sends from the signed-in broker's own mailbox" defaultValue={activeTpl?.body ?? ''} />
+                    <div className="flex justify-end">
+                      <Button type="submit" size="sm">Send email</Button>
+                    </div>
+                  </form>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">No email address on file.</p>
+              )}
             </CardContent>
           </Card>
 

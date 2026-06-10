@@ -21,6 +21,7 @@ export default function AdminSidebar({ role, brokerId }: AdminSidebarProps) {
   const main: Array<{ href: string; label: string; icon: string }> = [
     navItem('/admin', 'Dashboard', '◉'),
     navItem('/admin/crm', 'CRM', '🗃'),
+    navItem('/admin/crm/inbox', 'CRM inbox', '📥'),
     navItem('/admin/search', 'Search', '🔎'),
     navItem('/admin/listings', 'Listings', '🏠'),
     navItem('/admin/sync', 'Sync status', '🔄'),
