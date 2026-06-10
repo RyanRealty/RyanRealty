@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.483.0 (2026-06-10)
+
+### Features
+- feat(loop): grind semantics — a firing chains cycles until genuinely blocked (Matt directive 2026-06-10)
+
+---
+
+
 ## v1.482.2 (2026-06-10)
 
 ### Bug Fixes
