@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.477.0 (2026-06-10)
+
+### Features
+- feat(tc): document upload to a deal cycle (rung 1 complete — phase 2a done)
+
+### Maintenance
+- docs(tc): handoff — document upload shipped (rung 1 / phase 2a complete)
+
+---
+
+
 ## v1.476.2 (2026-06-10)
 
 ### Bug Fixes
