@@ -152,6 +152,39 @@ export async function GET(req: NextRequest) {
          set ? 'set' : 'unset', set ? undefined : required ? 'REQUIRED' : 'Recommended')
   }
 
+  // GSC query-slice freshness. The by-query data the diagnose rules need
+  // (striking-distance: position 5-15 on real volume) lives under
+  // scope='campaign' with scope_id 'query:<q>' (see marketing-snapshot-gsc
+  // rowsForDay). The account-level snapshot check stays green even when this
+  // slice silently stops, so probe it explicitly.
+  try {
+    const eightDaysAgo = new Date(Date.now() - 8 * 86_400_000).toISOString().slice(0, 10)
+    // Existence probe on 'date' (this table has NO id column — composite PK),
+    // with the query error surfaced as its own red: a silently swallowed
+    // error here reads identical to "slice dark", which is this check's
+    // whole failure mode.
+    const { data: gscQueryProbe, error: gscQueryErr } = await supabase
+      .from('marketing_channel_daily')
+      .select('date')
+      .eq('channel', 'gsc')
+      .eq('scope', 'campaign')
+      .gte('date', eightDaysAgo)
+      .limit(1)
+    if (gscQueryErr) {
+      push('value:gsc-queries', 'red', 'probe failed', gscQueryErr.message)
+    } else {
+      const hasQueryRows = (gscQueryProbe?.length ?? 0) > 0
+      push(
+        'value:gsc-queries',
+        hasQueryRows ? 'green' : 'red',
+        hasQueryRows ? 'query rows present 8d' : '0 query rows 8d',
+        hasQueryRows ? undefined : 'GSC query slice dark. Striking-distance diagnosis impossible.'
+      )
+    }
+  } catch (e) {
+    push('value:gsc-queries', 'red', 'probe failed', e instanceof Error ? e.message : String(e))
+  }
+
   const greens = checks.filter((c) => c.status === 'green').length
   const yellows = checks.filter((c) => c.status === 'yellow').length
   const reds = checks.filter((c) => c.status === 'red').length
