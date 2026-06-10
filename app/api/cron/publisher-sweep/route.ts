@@ -110,7 +110,9 @@ export async function GET(request: NextRequest) {
           if (!u.searchParams.has('utm_content')) u.searchParams.set('utm_content', actionId)
           if (!u.searchParams.has('utm_campaign')) u.searchParams.set('utm_campaign', actionType)
           if (!u.searchParams.has('utm_source')) u.searchParams.set('utm_source', 'social')
-          if (!u.searchParams.has('utm_medium')) u.searchParams.set('utm_medium', 'organic_post')
+          // 'social' (not 'organic_post') so GA4's default channel grouping
+          // buckets the click as Organic Social instead of Unassigned.
+          if (!u.searchParams.has('utm_medium')) u.searchParams.set('utm_medium', 'social')
           return u.toString()
         } catch {
           return urlStr

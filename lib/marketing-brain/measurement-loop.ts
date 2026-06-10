@@ -2,9 +2,12 @@
  * marketing-brain: measurement-loop
  *
  * The brain's feedback layer. Pulls per-post performance metrics from each
- * platform at 24h / 7d / 30d intervals after an action row's executed_at
- * timestamp, writes one row per (action, measurement-window) to
- * public.content_performance.
+ * platform at 48h / 7d / 30d intervals after an action row's executed_at
+ * timestamp, upserting the canonical (action_id, platform) row's
+ * metrics_48h / metrics_7d / metrics_30d columns in public.content_performance
+ * — the same row contract publisher-sweep seeds and the performance-pull
+ * crons fill. The loop is the backstop sweeper; the pull crons stay
+ * authoritative (a window already populated is skipped, never overwritten).
  *
  * Once populated, downstream consumers can:
  *   - audit-findings-builder weighs existing_producers_validated by ER
@@ -14,19 +17,14 @@
  * Without this loop, the brain proposes but never measures. That's the
  * single biggest structural gap noted in the 2026-05-14 session.
  *
- * Producer contract:
- *   When a producer transitions an action_row to status='executed', it
- *   MUST write its published posts to executor_response.published_posts
- *   in this shape:
- *     {
- *       published_posts: [
- *         { platform: 'instagram', platform_post_id: '17890...', url: 'https://...', published_at: '2026-05-14T...' },
- *         { platform: 'facebook', platform_post_id: '12345_67890', url: '...', published_at: '...' }
- *       ]
- *     }
- *   The measurement loop reads from there. Producers that publish to
- *   multiple platforms (list-kit, listing_launch) write one entry per
- *   destination.
+ * Post-identity contract (two executor_response keys, both supported):
+ *   - published_to: [{ platform, post_id }] — CANONICAL. Written by
+ *     publisher-sweep when it transitions a row to executed; the same key
+ *     the performance-pull crons read. published_at comes from
+ *     executor_response.published_at (sweep writes it) or executed_at.
+ *   - published_posts: [{ platform, platform_post_id, published_at }] —
+ *     legacy producer contract, still honored for rows that predate the
+ *     sweep or producers that publish directly.
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
@@ -92,9 +90,32 @@ const EMPTY_METRICS: MeasurementMetrics = {
   metadata: {},
 }
 
-/** Hours-since-publish windows the loop measures at. */
-export const MEASUREMENT_WINDOWS_HOURS = [24, 168, 720] // 1d, 7d, 30d
+/**
+ * Hours-since-publish windows the loop measures at — aligned with the
+ * performance-pull crons (48h/7d/30d) so both writers share one contract.
+ */
+export const MEASUREMENT_WINDOWS_HOURS = [48, 168, 720] // 2d, 7d, 30d
 const WINDOW_TOLERANCE_HOURS = 24 // measure within this many hours of the target window
+
+/** content_performance column each measurement window writes into. */
+const WINDOW_COLUMN: Record<number, 'metrics_48h' | 'metrics_7d' | 'metrics_30d'> = {
+  48: 'metrics_48h',
+  168: 'metrics_7d',
+  720: 'metrics_30d',
+}
+
+/** executor_response platform spellings → the loop's Platform union. */
+const PLATFORM_ALIASES: Record<string, Platform> = {
+  instagram: 'instagram',
+  facebook: 'facebook',
+  tiktok: 'tiktok',
+  youtube: 'youtube',
+  linkedin: 'linkedin',
+  x: 'x',
+  gbp: 'gbp',
+  google_business_profile: 'gbp',
+  blog: 'blog',
+}
 
 export interface MeasurementCandidate {
   action_id: string
@@ -213,18 +234,16 @@ async function findUnmeasuredCandidates(maxCandidates: number): Promise<Candidat
 
   for (const row of (rows ?? []) as Array<{ id: string; action_type: string; topic: string | null; executed_at: string; executor_response: Record<string, unknown> | null }>) {
     if (!row.executor_response) continue
-    const publishedPosts = (row.executor_response.published_posts as PublishedPost[] | undefined) ?? []
+    const publishedPosts = extractPublishedPosts(row.executor_response, row.executed_at)
     if (publishedPosts.length === 0) continue
 
     for (const post of publishedPosts) {
-      if (!post.platform || !post.platform_post_id || !post.published_at) continue
-
       const hoursSince = (Date.now() - Date.parse(post.published_at)) / 3_600_000
       // Pick the highest target window we have not yet measured for this post
       const targetWindow = pickTargetWindow(hoursSince)
       if (targetWindow === null) continue
 
-      const alreadyMeasured = await isAlreadyMeasured(post.platform_post_id, targetWindow)
+      const alreadyMeasured = await isAlreadyMeasured(row.id, post.platform, targetWindow)
       if (alreadyMeasured) continue
 
       candidates.push({
@@ -244,6 +263,45 @@ async function findUnmeasuredCandidates(maxCandidates: number): Promise<Candidat
   return { scanned, list: candidates }
 }
 
+/**
+ * Normalize both post-identity keys (published_to canonical, published_posts
+ * legacy — see header contract) into PublishedPost[], deduped by
+ * (platform, post id). Platforms the loop cannot measure drop out here.
+ */
+function extractPublishedPosts(executorResponse: Record<string, unknown>, executedAt: string): PublishedPost[] {
+  const fallbackPublishedAt =
+    typeof executorResponse.published_at === 'string' && executorResponse.published_at
+      ? executorResponse.published_at
+      : executedAt
+  const canonical = (Array.isArray(executorResponse.published_to) ? executorResponse.published_to : []) as Array<{
+    platform?: unknown
+    post_id?: unknown
+  }>
+  const legacy = (Array.isArray(executorResponse.published_posts) ? executorResponse.published_posts : []) as Array<{
+    platform?: unknown
+    platform_post_id?: unknown
+    published_at?: unknown
+  }>
+
+  const out = new Map<string, PublishedPost>()
+  for (const p of canonical) {
+    const platform = typeof p.platform === 'string' ? PLATFORM_ALIASES[p.platform] : undefined
+    const postId = typeof p.post_id === 'string' && p.post_id ? p.post_id : null
+    if (!platform || !postId) continue
+    out.set(`${platform}|${postId}`, { platform, platform_post_id: postId, published_at: fallbackPublishedAt })
+  }
+  for (const p of legacy) {
+    const platform = typeof p.platform === 'string' ? PLATFORM_ALIASES[p.platform] : undefined
+    const postId = typeof p.platform_post_id === 'string' && p.platform_post_id ? p.platform_post_id : null
+    if (!platform || !postId) continue
+    const publishedAt = typeof p.published_at === 'string' && p.published_at ? p.published_at : fallbackPublishedAt
+    if (!out.has(`${platform}|${postId}`)) {
+      out.set(`${platform}|${postId}`, { platform, platform_post_id: postId, published_at: publishedAt })
+    }
+  }
+  return [...out.values()]
+}
+
 /** Return the highest MEASUREMENT_WINDOWS_HOURS bucket that hoursSince is past. */
 function pickTargetWindow(hoursSince: number): number | null {
   for (const w of [...MEASUREMENT_WINDOWS_HOURS].reverse()) {
@@ -254,16 +312,21 @@ function pickTargetWindow(hoursSince: number): number | null {
   return null
 }
 
-async function isAlreadyMeasured(platformPostId: string, targetWindowHours: number): Promise<boolean> {
+/**
+ * A window is already measured when the canonical (action_id, platform) row
+ * has its metrics_<window> column populated — by a performance-pull cron or
+ * a prior loop run. The loop defers; the pull crons stay authoritative.
+ */
+async function isAlreadyMeasured(actionId: string, platform: Platform, targetWindowHours: number): Promise<boolean> {
   const supabase = getSupabase()
-  const lowerBound = targetWindowHours - WINDOW_TOLERANCE_HOURS
-  const upperBound = targetWindowHours + WINDOW_TOLERANCE_HOURS
+  const windowColumn = WINDOW_COLUMN[targetWindowHours]
+  if (!windowColumn) return true
   const { count } = await supabase
     .from('content_performance')
     .select('id', { count: 'planned', head: true })
-    .eq('platform_post_id', platformPostId)
-    .gte('hours_since_publish', lowerBound)
-    .lte('hours_since_publish', upperBound)
+    .eq('action_id', actionId)
+    .eq('platform', platform)
+    .not(windowColumn, 'is', null)
   return (count ?? 0) > 0
 }
 
@@ -833,7 +896,7 @@ async function persistLoopDigest(report: MeasurementLoopReport): Promise<void> {
       bottom_3_losers: bottom3,
       completed_at: new Date().toISOString(),
     },
-    rules_cited: ['measurement-loop: 24h/7d/30d platform metrics ingestion'],
+    rules_cited: ['measurement-loop: 48h/7d/30d platform metrics ingestion'],
     predicted_outcome: {},
     actual_outcome: {},
     reviewer: 'marketing_brain:measurement-loop',
@@ -843,27 +906,39 @@ async function persistLoopDigest(report: MeasurementLoopReport): Promise<void> {
 
 async function persistMeasurement(candidate: MeasurementCandidate, metrics: MeasurementMetrics): Promise<boolean> {
   const supabase = getSupabase()
-  const { error } = await supabase.from('content_performance').insert({
-    brief_id: candidate.action_id,
-    platform: candidate.published_post.platform,
-    platform_post_id: candidate.published_post.platform_post_id,
-    published_at: candidate.published_post.published_at,
-    hours_since_publish: candidate.hours_since_publish,
-    impressions: metrics.impressions,
-    reach: metrics.reach,
-    views: metrics.views,
-    engagements: metrics.engagements,
-    clicks: metrics.clicks,
-    saves: metrics.saves,
-    shares: metrics.shares,
-    comments: metrics.comments,
-    follows: metrics.follows,
-    watch_time_seconds: metrics.watch_time_seconds,
-    conversions: metrics.conversions,
-    attributed_leads: metrics.attributed_leads,
-    metadata: { ...metrics.metadata, target_window_hours: candidate.target_window_hours, action_type: candidate.action_type, topic: candidate.topic },
-    source: 'measurement-loop',
-  })
+  const windowColumn = WINDOW_COLUMN[candidate.target_window_hours]
+  if (!windowColumn) {
+    console.error(`persistMeasurement: no canonical column for ${candidate.target_window_hours}h window`)
+    return false
+  }
+  const { metadata, ...metricValues } = metrics
+  // Same row contract as publisher-sweep (seed) and the performance-pull
+  // crons (windows): one row per (action_id, platform). Columns not listed
+  // here (other windows, north_star_attributed_seller_leads) survive the
+  // upsert untouched.
+  const { error } = await supabase.from('content_performance').upsert(
+    {
+      action_id: candidate.action_id,
+      platform: candidate.published_post.platform,
+      post_external_id: candidate.published_post.platform_post_id,
+      platform_post_id: candidate.published_post.platform_post_id,
+      posted_at: candidate.published_post.published_at,
+      published_at: candidate.published_post.published_at,
+      pulled_at: new Date().toISOString(),
+      source: 'measurement-loop',
+      [windowColumn]: {
+        ...metricValues,
+        metadata: {
+          ...metadata,
+          hours_since_publish: Math.round(candidate.hours_since_publish * 10) / 10,
+          target_window_hours: candidate.target_window_hours,
+          action_type: candidate.action_type,
+          topic: candidate.topic,
+        },
+      },
+    },
+    { onConflict: 'action_id,platform' }
+  )
   if (error) {
     console.error('persistMeasurement:', error.message)
     return false

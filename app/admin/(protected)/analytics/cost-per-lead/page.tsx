@@ -49,7 +49,7 @@ async function CostPerLead() {
   // Spend pulls BOTH Meta + Google Ads so cost-per-lead is computed against
   // total paid spend, not Meta-only. Channel column is preserved per row so
   // we can break out by platform in the table.
-  const [spendRes, gadsSpendRes, fubQualRes, fubNewRes, identifiedRes] = await Promise.all([
+  const [spendRes, gadsSpendRes, fubQualRes, fubNewRes, identifiedRes, closedWonRes, closedVolRes] = await Promise.all([
     supabase.from('marketing_channel_daily')
       .select('date, scope_id, value, metadata')
       .eq('channel', 'meta_ads').eq('scope', 'campaign').eq('metric', 'spend')
@@ -71,6 +71,14 @@ async function CostPerLead() {
       .select('first_seen_at, utm_source, identified_at, hot_lead_fired_at')
       .gte('first_seen_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
       .limit(20000),
+    supabase.from('marketing_channel_daily')
+      .select('date, value')
+      .eq('channel', 'fub').eq('scope', 'account').eq('metric', 'deals_closed_won')
+      .gte('date', cutoff),
+    supabase.from('marketing_channel_daily')
+      .select('date, value')
+      .eq('channel', 'fub').eq('scope', 'account').eq('metric', 'closed_deal_volume_usd')
+      .gte('date', cutoff),
   ])
 
   if (spendRes.error) return <Card><CardContent className="p-6 text-sm text-destructive">spend read failed: {spendRes.error.message}</CardContent></Card>
@@ -78,10 +86,10 @@ async function CostPerLead() {
   // ─── Per-week roll-up: spend (Meta + Google), qualified leads, identified ────
   // metaSpend + googleSpend tracked separately so the table shows per-platform.
   // spend = sum of both = total paid spend driving cost-per-lead math.
-  const byWeek = new Map<string, { spend: number; metaSpend: number; googleSpend: number; qualifiedLeads: number; newLeads: number; fbIdentified: number; fbHot: number; fbSessions: number; campaigns: Map<string, number> }>()
+  const byWeek = new Map<string, { spend: number; metaSpend: number; googleSpend: number; qualifiedLeads: number; newLeads: number; fbIdentified: number; fbHot: number; fbSessions: number; closedWon: number; closedVolume: number; campaigns: Map<string, number> }>()
   function bucket(weekStart: string) {
     let b = byWeek.get(weekStart)
-    if (!b) { b = { spend: 0, metaSpend: 0, googleSpend: 0, qualifiedLeads: 0, newLeads: 0, fbIdentified: 0, fbHot: 0, fbSessions: 0, campaigns: new Map() }; byWeek.set(weekStart, b) }
+    if (!b) { b = { spend: 0, metaSpend: 0, googleSpend: 0, qualifiedLeads: 0, newLeads: 0, fbIdentified: 0, fbHot: 0, fbSessions: 0, closedWon: 0, closedVolume: 0, campaigns: new Map() }; byWeek.set(weekStart, b) }
     return b
   }
 
@@ -108,6 +116,12 @@ async function CostPerLead() {
   }
   for (const r of (fubNewRes.data ?? []) as DailyRow[]) {
     bucket(isoWeekStart(r.date)).newLeads += Number(r.value) || 0
+  }
+  for (const r of (closedWonRes.data ?? []) as DailyRow[]) {
+    bucket(isoWeekStart(r.date)).closedWon += Number(r.value) || 0
+  }
+  for (const r of (closedVolRes.data ?? []) as DailyRow[]) {
+    bucket(isoWeekStart(r.date)).closedVolume += Number(r.value) || 0
   }
   for (const raw of (identifiedRes.data ?? [])) {
     const row = raw as { first_seen_at: string; utm_source: string | null; identified_at: string | null; hot_lead_fired_at: string | null }
@@ -138,6 +152,19 @@ async function CostPerLead() {
   }), { spend: 0, qualifiedLeads: 0, fbIdentified: 0 })
   const last4Cpl = last4Sum.qualifiedLeads > 0 ? last4Sum.spend / last4Sum.qualifiedLeads : null
 
+  // 90-day closed-deal outcomes. Closings are sparse, so the meaningful
+  // aggregation is the full window, not per-week. Blended metric: total paid
+  // spend ÷ all closings regardless of source (the label carries the caveat).
+  const totals90 = Array.from(byWeek.values()).reduce(
+    (acc, b) => ({
+      spend: acc.spend + b.spend,
+      closedWon: acc.closedWon + b.closedWon,
+      closedVolume: acc.closedVolume + b.closedVolume,
+    }),
+    { spend: 0, closedWon: 0, closedVolume: 0 }
+  )
+  const costPerClosed90 = totals90.closedWon > 0 ? totals90.spend / totals90.closedWon : null
+
   return (
     <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -162,6 +189,22 @@ async function CostPerLead() {
         </CardContent></Card>
       </div>
 
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <Card><CardContent className="p-4">
+          <p className="text-xs text-muted-foreground">Closed deals (90d)</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums">{formatInt(totals90.closedWon)}</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-4">
+          <p className="text-xs text-muted-foreground">Closed volume (90d)</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums">{formatUsd(totals90.closedVolume)}</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-4">
+          <p className="text-xs text-muted-foreground">Paid spend per closing (90d, blended)</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums">{costPerClosed90 == null ? '—' : formatUsd(costPerClosed90)}</p>
+          <p className="text-xs text-muted-foreground">Total paid spend across all closings, every source. The by-source split builds in channel data as closings land.</p>
+        </CardContent></Card>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Weekly trend (last 12 weeks)</CardTitle>
@@ -180,6 +223,7 @@ async function CostPerLead() {
                   <TableHead className="text-right tabular-nums">Spend</TableHead>
                   <TableHead className="text-right tabular-nums">Qualified leads</TableHead>
                   <TableHead className="text-right tabular-nums">Cost / qualified lead</TableHead>
+                  <TableHead className="text-right tabular-nums">Closed deals</TableHead>
                   <TableHead className="text-right tabular-nums">All new leads (FUB)</TableHead>
                   <TableHead className="text-right tabular-nums">FB sessions</TableHead>
                   <TableHead className="text-right tabular-nums">FB identified</TableHead>
@@ -198,6 +242,7 @@ async function CostPerLead() {
                       <TableCell className="text-right">
                         <Badge variant={cplVariant} className="tabular-nums">{cpl == null ? '—' : formatUsd(cpl)}</Badge>
                       </TableCell>
+                      <TableCell className="text-right tabular-nums">{formatInt(b.closedWon)}</TableCell>
                       <TableCell className="text-right tabular-nums text-muted-foreground">{formatInt(b.newLeads)}</TableCell>
                       <TableCell className="text-right tabular-nums">{formatInt(b.fbSessions)}</TableCell>
                       <TableCell className="text-right tabular-nums">{formatInt(b.fbIdentified)}</TableCell>

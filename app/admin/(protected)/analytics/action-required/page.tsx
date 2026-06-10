@@ -326,6 +326,64 @@ async function LpRebuildCard() {
   )
 }
 
+type LoopHealthCheck = { name: string; status: 'green' | 'yellow' | 'red' | string; value?: string | number | null; note?: string | null }
+
+async function LoopHealthCard() {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('marketing_decisions')
+    .select('decided_at, decision_summary, data_observed')
+    .eq('decision_type', 'loop_health_check')
+    .order('decided_at', { ascending: false })
+    .limit(1)
+  if (error) return null
+  const latest = data?.[0] as {
+    decided_at: string | null
+    decision_summary: string | null
+    data_observed: { summary?: Record<string, unknown>; checks?: LoopHealthCheck[] } | null
+  } | undefined
+  const checks = latest?.data_observed?.checks ?? []
+  const reds = checks.filter((c) => c.status === 'red')
+  const yellows = checks.filter((c) => c.status === 'yellow')
+  const greens = checks.filter((c) => c.status === 'green').length
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <span className={`inline-block w-2 h-2 rounded-full ${reds.length ? 'bg-red-500' : yellows.length ? 'bg-yellow-500' : 'bg-green-500'}`} />
+          Pipeline health — {reds.length} red · {yellows.length} yellow
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {!latest ? (
+          <p className="text-sm text-muted-foreground">No loop-health run recorded yet. The daily 12:30 UTC cron writes the first row.</p>
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground mb-3">
+              The loop-health cron checks snapshot freshness, dark channels, queue depths, and cost daily, but its findings only lived in marketing_decisions until now. {greens} checks green. Last run {latest.decided_at ? fmtRel(latest.decided_at) : 'unknown'}.
+            </p>
+            {reds.length === 0 && yellows.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Everything the loop monitors is green. Nothing is running dark.</p>
+            ) : (
+              <ul className="space-y-2">
+                {[...reds, ...yellows].map((c) => (
+                  <li key={c.name} className="flex items-start justify-between gap-3 rounded border border-border p-2 text-sm">
+                    <div>
+                      <span className="font-medium">{c.name}</span>
+                      {c.note ? <span className="ml-2 text-xs text-muted-foreground">{c.note}</span> : null}
+                    </div>
+                    <Badge variant={c.status === 'red' ? 'destructive' : 'secondary'} className="shrink-0">{String(c.value ?? c.status)}</Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 export default async function ActionRequiredPage() {
   return (
     <div className="space-y-6">
@@ -344,6 +402,8 @@ export default async function ActionRequiredPage() {
       </div>
 
       <Suspense fallback={<Skeleton className="h-32 w-full" />}><SpendAlerts /></Suspense>
+
+      <Suspense fallback={<Skeleton className="h-32 w-full" />}><LoopHealthCard /></Suspense>
     </div>
   )
 }

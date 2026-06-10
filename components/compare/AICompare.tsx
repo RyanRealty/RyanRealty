@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { trackEvent } from '@/lib/tracking'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -41,6 +42,7 @@ export default function AICompare({ listings, className }: Props) {
   if (listings.length < 2) return null
 
   function generateComparison() {
+    trackEvent('ai_compare_used', { listing_count: listings.length })
     startTransition(async () => {
       try {
         const prompt = buildComparisonPrompt(listings)

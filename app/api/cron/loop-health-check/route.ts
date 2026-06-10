@@ -169,12 +169,19 @@ export async function GET(req: NextRequest) {
   // object. The prior object insert failed every run and was swallowed by a
   // silent catch, which is exactly why this watchdog never recorded a single
   // observation. Never swallow this insert error again.
+  // reviewer is ALSO text NOT NULL with no default — omitting it kept the
+  // insert failing after the rules_cited fix (verified 2026-06-09: zero rows
+  // despite a clean 200 response). Same convention as the measurement-loop
+  // digest: reviewer names the writer, final_decision 'recorded' (automated
+  // observations are terminal, never 'awaiting_review').
   try {
     const { error: insertError } = await supabase.from('marketing_decisions').insert({
       decision_type: 'loop_health_check',
       decision_summary: `Loop health: ${summary.overall.toUpperCase()} (${greens} green, ${yellows} yellow, ${reds} red)`,
       data_observed: { summary, checks },
       rules_cited: ['app/api/cron/loop-health-check/route.ts'],
+      reviewer: 'marketing_brain:loop-health-check',
+      final_decision: 'recorded',
     })
     if (insertError) {
       console.error('[loop-health-check] marketing_decisions insert failed:', insertError.message)

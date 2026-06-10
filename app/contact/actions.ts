@@ -5,6 +5,7 @@ import { sendEvent, findPersonByEmail } from '@/lib/followupboss'
 import { sendContactNotification } from '@/lib/resend'
 import { canonicallyTagLead, type LeadAudience } from '@/lib/canonical-lead-tagger'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
+import { fireLeadGenerated } from '@/lib/lead-tracking'
 
 const source = (process.env.NEXT_PUBLIC_SITE_URL ?? 'ryan-realty.com').replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase()
 
@@ -116,6 +117,21 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
     }),
   }).catch((err) => {
     console.warn('[Contact Form] CAPI call failed:', err)
+  })
+
+  // GA4 Measurement Protocol mirror — server-side generate_lead so the
+  // conversion still lands when gtag is blocked (ad blockers, denied consent).
+  const leadType = inquiryLower.includes('property') || inquiryLower.includes('listing')
+    ? 'listing_inquiry'
+    : inquiryLower.includes('seller') || inquiryLower.includes('valuation')
+      ? 'seller'
+      : 'general'
+  await fireLeadGenerated({
+    lp_variant: 'contact',
+    lead_type: leadType,
+    value: leadValue,
+    event_id: eventId,
+    extra: { inquiry_type: inquiryType },
   })
 
   return { success: true, eventId }

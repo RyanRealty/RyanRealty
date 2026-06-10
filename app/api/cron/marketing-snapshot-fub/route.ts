@@ -259,6 +259,28 @@ type FubDeal = {
   updatedAt?: string | null
   stage?: string | null
   stageUpdatedAt?: string | null
+  /** Stage truth. The `status` field is 'Active' on every deal (verified live 2026-06-09). */
+  stageName?: string | null
+  /** When the deal entered its current stage — the only transition timestamp the API returns. */
+  enteredStageAt?: string | null
+  /** Linked person stubs; first person's id resolves the deal's lead source. */
+  people?: Array<{ id?: number }> | null
+}
+
+/** Terminal-stage helpers. FUB pipelines here use stageName 'Closed' for won
+ * and 'Lost' / 'Lost / Terminated' for lost (verified live 2026-06-09). */
+function dealStage(d: FubDeal): string {
+  return typeof d.stageName === 'string' ? d.stageName.toLowerCase() : ''
+}
+function isClosedWonDeal(d: FubDeal): boolean {
+  const s = dealStage(d)
+  return s.includes('closed') && !s.includes('lost')
+}
+function isLostDeal(d: FubDeal): boolean {
+  return dealStage(d).includes('lost')
+}
+function dealPrice(d: FubDeal): number {
+  return typeof d.price === 'number' && Number.isFinite(d.price) ? d.price : 0
 }
 
 // ─── metric builders ─────────────────────────────────────────────────────────
@@ -269,6 +291,7 @@ function buildRows(
   events: FubEvent[],
   deals: FubDeal[],
   allDeals: FubDeal[], // full pipeline snapshot for stage metrics
+  dealPersonSource: Map<number, string>, // person id → lead source, for closed-deal attribution
 ): MetricRow[] {
   const base = { date, channel: 'fub' as const, source: SOURCE }
   const rows: MetricRow[] = []
@@ -305,48 +328,85 @@ function buildRows(
     value: deals.length,
   })
 
-  // deals_closed_won / deals_closed_lost: deals whose status was updated to terminal
-  // on this day. FUB doesn't expose a stageUpdatedAt filter via query params, so we
-  // use the deals returned (filtered by createdAt). For transition metrics we check
-  // updatedAt falls within the day window (best available proxy without webhooks).
-  // This is a known approximation; cite as such in metadata.
+  // deals_closed_won / deals_lost: deals that ENTERED a terminal stage on this
+  // day. Truth lives in stageName + enteredStageAt — the deal `status` field is
+  // 'Active' on every row and stageUpdatedAt/updatedAt are absent from the API
+  // response (verified live 2026-06-09; the old status-based filter counted
+  // zero forever).
   const { after, before } = dayWindow(date)
   const afterMs = Date.parse(after)
   const beforeMs = Date.parse(before)
-
-  const closedWon = allDeals.filter((d) => {
-    if (typeof d.status !== 'string') return false
-    if (d.status.toLowerCase() !== 'closed won') return false
-    const upd = d.stageUpdatedAt ?? d.updatedAt
-    if (!upd) return false
-    const ms = Date.parse(upd)
+  const enteredStageInDay = (d: FubDeal): boolean => {
+    if (!d.enteredStageAt) return false
+    const ms = Date.parse(d.enteredStageAt)
     return Number.isFinite(ms) && ms >= afterMs && ms < beforeMs
-  })
+  }
+
+  const closedWon = allDeals.filter((d) => isClosedWonDeal(d) && enteredStageInDay(d))
   rows.push({
     ...base,
     scope: 'account',
     scope_id: '',
     metric: 'deals_closed_won',
     value: closedWon.length,
-    metadata: { approximation: 'stageUpdatedAt|updatedAt within day window' },
+    metadata: { transition_field: 'enteredStageAt', stage_match: 'stageName ~ closed (not lost)' },
   })
 
-  const closedLost = allDeals.filter((d) => {
-    if (typeof d.status !== 'string') return false
-    if (d.status.toLowerCase() !== 'closed lost') return false
-    const upd = d.stageUpdatedAt ?? d.updatedAt
-    if (!upd) return false
-    const ms = Date.parse(upd)
-    return Number.isFinite(ms) && ms >= afterMs && ms < beforeMs
-  })
+  const closedLost = allDeals.filter((d) => isLostDeal(d) && enteredStageInDay(d))
   rows.push({
     ...base,
     scope: 'account',
     scope_id: '',
     metric: 'deals_lost',
     value: closedLost.length,
-    metadata: { approximation: 'stageUpdatedAt|updatedAt within day window' },
+    metadata: { transition_field: 'enteredStageAt', stage_match: 'stageName ~ lost' },
   })
+
+  // closed_deal_volume_usd: dollars closed on this day (FUB deal price summed
+  // across the day's closed-won transitions). Pairs with meta_ads spend for
+  // cost-per-closed-deal — the outcome metric CPL can't see.
+  rows.push({
+    ...base,
+    scope: 'account',
+    scope_id: '',
+    metric: 'closed_deal_volume_usd',
+    value: closedWon.reduce((sum, d) => sum + dealPrice(d), 0),
+    metadata: { deals: closedWon.length },
+  })
+
+  if (closedWon.length > 0) {
+    // deals_closed_won BY SOURCE — the outcome mirror of the qualified_seller_leads
+    // source breakdown above: which channel produced actual closings, not just
+    // leads. Source resolves from the deal's first linked person (fetched once
+    // in the GET handler); 'unknown' when the person carries no source.
+    const closedBySource = new Map<string, { count: number; volume: number }>()
+    for (const d of closedWon) {
+      const personId = d.people?.[0]?.id
+      const src = (typeof personId === 'number' ? dealPersonSource.get(personId) : undefined) ?? 'unknown'
+      const cur = closedBySource.get(src) ?? { count: 0, volume: 0 }
+      cur.count += 1
+      cur.volume += dealPrice(d)
+      closedBySource.set(src, cur)
+    }
+    for (const [src, agg] of closedBySource) {
+      rows.push({
+        ...base,
+        scope: 'source',
+        scope_id: src,
+        metric: 'deals_closed_won',
+        value: agg.count,
+        metadata: { source: src },
+      })
+      rows.push({
+        ...base,
+        scope: 'source',
+        scope_id: src,
+        metric: 'closed_deal_volume_usd',
+        value: agg.volume,
+        metadata: { source: src },
+      })
+    }
+  }
 
   // avg_response_time_minutes: mean of (respondedAt - createdAt) for new leads.
   // FUB does not reliably expose a machine-readable firstAgentRespondedAt on the
@@ -556,6 +616,39 @@ export async function GET(request: NextRequest) {
   const fullStartISO = `${startDate}T00:00:00Z`
   const fullEndISO = dayWindow(endDate).before
 
+  // Resolve lead source for deals that entered a terminal stage inside the
+  // pull range — the by-source closed-deal rows need person.source and the
+  // deal payload only embeds person ids. Bounded: a brokerage closes a
+  // handful of deals per window; capped defensively regardless.
+  const rangeStartMs = Date.parse(fullStartISO)
+  const rangeEndMs = Date.parse(fullEndISO)
+  const terminalPersonIds = [
+    ...new Set(
+      allDeals
+        .filter((d) => {
+          if (!isClosedWonDeal(d) && !isLostDeal(d)) return false
+          if (!d.enteredStageAt) return false
+          const ms = Date.parse(d.enteredStageAt)
+          return Number.isFinite(ms) && ms >= rangeStartMs && ms < rangeEndMs
+        })
+        .map((d) => d.people?.[0]?.id)
+        .filter((id): id is number => typeof id === 'number')
+    ),
+  ].slice(0, 25)
+  const dealPersonSource = new Map<number, string>()
+  for (const personId of terminalPersonIds) {
+    try {
+      const res = await fetch(`${FUB_BASE}/people/${personId}?fields=id,source`, { headers })
+      if (!res.ok) continue
+      const body = (await res.json()) as { source?: string | null }
+      if (typeof body.source === 'string' && body.source.trim()) {
+        dealPersonSource.set(personId, body.source.trim())
+      }
+    } catch {
+      // Source resolution is best-effort; the metric row falls back to 'unknown'.
+    }
+  }
+
   let allPeople: FubPerson[] = []
   let allEvents: FubEvent[] = []
   let allDealsCreated: FubDeal[] = []
@@ -587,7 +680,7 @@ export async function GET(request: NextRequest) {
       const events = allEvents.filter((e) => inDay(e.created ?? e.createdAt, day))
       const dealsCreated = allDealsCreated.filter((d) => inDay(d.created ?? d.createdAt, day))
 
-      const rows = buildRows(day, people, events, dealsCreated, allDeals)
+      const rows = buildRows(day, people, events, dealsCreated, allDeals, dealPersonSource)
       const upserted = await upsertMetricRows(rows)
       totalRows += upserted
       rows.forEach((r) => metricsCovered.add(r.metric))

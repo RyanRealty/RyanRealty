@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { submitRentalLead } from '@/app/actions/lead-capture'
+import { trackEvent } from '@/lib/tracking'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -51,6 +52,13 @@ export default function RentalLeadForm({
         return
       }
       setDone(true)
+      // Client-side mirror of the server fireLeadGenerated call inside
+      // submitRentalLead — keeps GA4 client/session attribution intact.
+      trackEvent('generate_lead', {
+        source: 'rental_calculator',
+        listing_key: listingKey,
+        page_path: typeof window !== 'undefined' ? window.location.pathname : undefined,
+      })
     })
   }
 
