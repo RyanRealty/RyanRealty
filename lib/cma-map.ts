@@ -45,6 +45,17 @@ const CMA_MAPS: Record<string, CmaMapPoint[]> = {
     { label: '4', color: COMP_COLOR, lat: 44.105719, lng: -121.370582 }, // 63510 Gold Spur
     { label: '5', color: COMP_COLOR, lat: 44.097956, lng: -121.369776 }, // 19083 Saddleback
   ],
+  'cma-3735-eagle-usa': [
+    { label: 'S', color: SUBJECT_COLOR, lat: 44.0903379, lng: -121.2531089 }, // 3735 Eagle Rd, subject — Google ROOFTOP geocode (the two MLS rows carry conflicting coords ~150m apart)
+    { label: '1', color: COMP_COLOR, lat: 44.089903, lng: -121.253773 }, // 3714 NE Petrosa Ave, end-unit resale anchor
+    { label: '2', color: COMP_COLOR, lat: 44.090239, lng: -121.252378 }, // 3731 Eagle Rd, interior resale next door
+    { label: '3', color: COMP_COLOR, lat: 44.090079, lng: -121.253512 }, // 3723 Eagle Rd, interior resale Apr 2025
+    { label: '4', color: COMP_COLOR, lat: 44.092226, lng: -121.249512 }, // 3808 NE Suchy St, new end unit
+    { label: '5', color: COMP_COLOR, lat: 44.092243, lng: -121.250503 }, // 3093 NE Nipper Rd, new end unit
+    { label: '6', color: COMP_COLOR, lat: 44.092123, lng: -121.249984 }, // 3806 NE Suchy St, new interior
+    { label: '7', color: COMP_COLOR, lat: 44.09211, lng: -121.250704 }, // 3820 Eagle Rd, new interior
+    { label: '8', color: COMP_COLOR, lat: 44.091867, lng: -121.250461 }, // 3812 Eagle Rd, new interior
+  ],
   'cma-18705-tumalo-reservoir': [
     { label: 'S', color: SUBJECT_COLOR, lat: 44.132914, lng: -121.391158 }, // 18705 Tumalo Reservoir Rd, subject
     { label: '1', color: '0x1a6b3c',    lat: 44.132947, lng: -121.386319 }, // 18715 Tumalo Reservoir Rd, twin/anchor (0.2 mi, green)

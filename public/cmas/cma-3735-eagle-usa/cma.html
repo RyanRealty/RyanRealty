@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="robots" content="noindex,nofollow" />
+<title>CMA · 3735 Eagle Road · Bend, OR 97701</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  @font-face {
+    font-family: 'Amboqia Boriango';
+    src: url('./assets/Amboqia_Boriango.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  :root {
+    --navy: #102742;
+    --cream: #faf8f4;
+    --navy-line: rgba(16, 39, 66, 0.18);
+    --navy-fill: rgba(16, 39, 66, 0.06);
+    --muted: rgba(16, 39, 66, 0.62);
+  }
+
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #e8e3d8;
+    font-family: 'Geist', system-ui, -apple-system, sans-serif;
+    color: var(--navy);
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    width: 8.5in;
+    height: 11in;
+    min-height: 11in;
+    margin: 0.4in auto;
+    background: var(--cream);
+    padding: 0.4in 0.6in 0.85in 0.6in;
+    box-shadow: 0 6px 24px rgba(16, 39, 66, 0.18);
+    position: relative;
+    page-break-after: always;
+    overflow: hidden;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  .pg-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--navy-line);
+    padding-bottom: 9px;
+    margin-bottom: 16px;
+  }
+  .pg-header img.logo { height: 34px; }
+  .pg-header .pg-meta {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: right;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .pg-footer {
+    position: absolute;
+    bottom: 0.32in;
+    left: 0.6in;
+    right: 0.6in;
+    border-top: 1px solid var(--navy-line);
+    padding-top: 7px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    background: var(--cream);
+  }
+
+  h2.section {
+    font-family: 'Geist', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--navy);
+    margin: 0 0 10px 0;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--navy);
+    display: inline-block;
+  }
+  h3.subhead {
+    font-family: 'Geist', sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--navy);
+    margin: 12px 0 5px 0;
+  }
+  p { font-size: 11px; line-height: 1.45; margin: 0 0 6px 0; }
+  .small { font-size: 10px; color: var(--muted); line-height: 1.45; }
+
+  .cover-label {
+    font-size: 10px;
+    letter-spacing: 0.20em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .cover-title {
+    font-family: 'Amboqia Boriango', serif;
+    font-size: 60px;
+    line-height: 0.95;
+    color: var(--navy);
+    margin: 0 0 6px 0;
+  }
+  .cover-sub {
+    font-size: 16px;
+    color: var(--navy);
+    font-weight: 400;
+    margin-bottom: 18px;
+  }
+
+  .hero-photo {
+    width: 100%;
+    height: 280px;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 8px;
+    background: var(--navy-fill);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .hero-caption {
+    font-size: 9.5px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    margin-bottom: 16px;
+  }
+
+  .value-block {
+    background: var(--navy);
+    color: var(--cream);
+    padding: 24px 28px;
+    margin: 0 0 18px 0;
+    border-radius: 10px;
+  }
+  .value-block .vb-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(250, 248, 244, 0.72);
+    margin-bottom: 8px;
+  }
+  .value-block .vb-range {
+    font-family: 'Amboqia Boriango', serif;
+    font-size: 44px;
+    line-height: 1;
+    color: var(--cream);
+    margin: 0;
+  }
+  .value-block .vb-detail {
+    font-size: 11px;
+    color: rgba(250, 248, 244, 0.80);
+    margin-top: 10px;
+    line-height: 1.55;
+  }
+  .value-block .vb-most-likely {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(250, 248, 244, 0.20);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .value-block .vb-most-likely strong { color: var(--cream); font-weight: 600; }
+
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    margin: 14px 0 18px 0;
+    border-top: 1px solid var(--navy-line);
+    border-bottom: 1px solid var(--navy-line);
+  }
+  .stat-strip .stat {
+    padding: 12px 8px;
+    text-align: center;
+    border-right: 1px solid var(--navy-line);
+  }
+  .stat-strip .stat:last-child { border-right: 0; }
+  .stat-strip .stat .lbl {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+  .stat-strip .stat .val {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--navy);
+  }
+
+  .presented-by {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--navy-line);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+  }
+  .presented-by strong {
+    color: var(--navy);
+    font-weight: 500;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  table.comps {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9px;
+    margin-top: 4px;
+  }
+  table.comps thead th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 8.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--navy);
+    padding: 5px 5px;
+    border-bottom: 2px solid var(--navy);
+  }
+  table.comps tbody td {
+    padding: 4px 5px;
+    border-bottom: 1px solid var(--navy-line);
+    vertical-align: middle;
+  }
+  table.comps tbody tr.subject td {
+    background: var(--navy);
+    color: var(--cream);
+    font-weight: 500;
+  }
+  table.comps .num { text-align: right; }
+  table.comps .anchor td {
+    background: var(--navy-fill);
+    font-weight: 500;
+  }
+
+  .comp-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin: 4px 0 10px 0;
+  }
+  .comp-card {
+    border: 1px solid var(--navy-line);
+    border-radius: 6px;
+    overflow: hidden;
+    background: white;
+  }
+  .comp-card .ph {
+    width: 100%;
+    height: 58px;
+    object-fit: cover;
+    display: block;
+    background: var(--navy-fill);
+  }
+  .comp-card .body {
+    padding: 5px 7px 6px;
+  }
+  .comp-card .addr {
+    font-size: 9px;
+    font-weight: 500;
+    color: var(--navy);
+    line-height: 1.2;
+    margin-bottom: 2px;
+  }
+  .comp-card .stats {
+    font-size: 8px;
+    color: var(--muted);
+    line-height: 1.3;
+  }
+  .comp-card .price {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .comp-card .price .when {
+    font-size: 8px;
+    font-weight: 400;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-left: 3px;
+  }
+
+  .tier-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .tier {
+    border: 1px solid var(--navy-line);
+    border-radius: 10px;
+    padding: 16px 14px;
+    background: white;
+  }
+  .tier.featured {
+    background: var(--navy);
+    color: var(--cream);
+    border-color: var(--navy);
+  }
+  .tier .t-lbl {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .tier.featured .t-lbl { color: rgba(250, 248, 244, 0.72); }
+  .tier .t-val {
+    font-family: 'Amboqia Boriango', serif;
+    font-size: 24px;
+    line-height: 1;
+    color: var(--navy);
+    margin: 0 0 7px 0;
+  }
+  .tier.featured .t-val { color: var(--cream); }
+  .tier .t-note { font-size: 10px; color: var(--muted); line-height: 1.4; }
+  .tier.featured .t-note { color: rgba(250, 248, 244, 0.80); }
+
+  .signature-page {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 36px;
+    align-items: end;
+    margin-top: 22px;
+    padding-top: 22px;
+    border-top: 1px solid var(--navy-line);
+  }
+  .signature-page .portrait {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .signature-page .sig-content { padding-bottom: 6px; }
+  .signature-page .sig-name {
+    font-family: 'Caveat', cursive;
+    font-size: 48px;
+    color: var(--navy);
+    line-height: 1;
+    border-bottom: 1px solid var(--navy);
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+    width: 260px;
+  }
+  .signature-page .sig-printed {
+    font-family: 'Amboqia Boriango', serif;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--navy);
+    margin: 0 0 4px 0;
+  }
+  .signature-page .sig-title {
+    font-size: 11px;
+    color: var(--navy);
+    margin-bottom: 14px;
+    line-height: 1.45;
+  }
+  .signature-page .sig-contact {
+    font-size: 11px;
+    line-height: 1.7;
+    color: var(--navy);
+  }
+  .signature-page .sig-contact strong { font-weight: 500; }
+  .signature-page .sig-license {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--navy-line);
+    font-size: 9.5px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  .trace {
+    background: var(--navy-fill);
+    border-left: 3px solid var(--navy);
+    padding: 12px 14px;
+    margin-top: 14px;
+    font-size: 9.5px;
+    line-height: 1.55;
+    color: var(--navy);
+  }
+  .trace .t-hd {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .trace code {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9px;
+    background: rgba(16,39,66,0.10);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+
+  .note-list {
+    margin: 5px 0 8px 16px;
+    padding: 0;
+  }
+  .note-list li {
+    font-size: 10.5px;
+    line-height: 1.4;
+    margin-bottom: 3px;
+  }
+
+  .flyer-badge {
+    display: inline-block;
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 8.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 3px 11px;
+    border-radius: 999px;
+    margin-bottom: 8px;
+  }
+  .flyer-title {
+    font-family: 'Amboqia Boriango', serif;
+    font-size: 32px;
+    line-height: 1;
+    color: var(--navy);
+    margin: 0 0 3px 0;
+  }
+  .flyer-sub {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    margin-bottom: 9px;
+  }
+  .flyer-hero {
+    width: 100%;
+    height: 2.4in;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 8px;
+    background: var(--navy-fill);
+    display: block;
+    margin-bottom: 9px;
+  }
+  .flyer-stats {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    border-top: 1px solid var(--navy-line);
+    border-bottom: 1px solid var(--navy-line);
+    margin-bottom: 9px;
+  }
+  .flyer-stats .s {
+    padding: 7px 6px;
+    text-align: center;
+    border-right: 1px solid var(--navy-line);
+  }
+  .flyer-stats .s:last-child { border-right: 0; }
+  .flyer-stats .s .l {
+    font-size: 8px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1px;
+  }
+  .flyer-stats .s .v {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--navy);
+  }
+  .flyer-stats .s.featured .v {
+    color: var(--navy);
+    font-weight: 600;
+  }
+  .flyer-desc {
+    font-size: 9.5px;
+    line-height: 1.45;
+    color: var(--navy);
+    margin: 0 0 9px 0;
+  }
+  .flyer-features {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+    margin-bottom: 9px;
+    font-size: 9px;
+  }
+  .flyer-features .f {
+    background: var(--navy-fill);
+    padding: 4px 8px;
+    border-radius: 5px;
+    color: var(--navy);
+  }
+  .flyer-features .f .fl {
+    font-size: 7.5px;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0;
+  }
+  .flyer-features .f .fv {
+    font-size: 9px;
+    line-height: 1.2;
+  }
+  .flyer-photos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+  }
+  .flyer-photos img {
+    width: 100%;
+    height: 0.95in;
+    object-fit: cover;
+    border-radius: 5px;
+    display: block;
+    background: var(--navy-fill);
+  }
+
+  table.adj {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9px;
+    margin-top: 4px;
+  }
+  table.adj thead th {
+    text-align: right;
+    font-weight: 600;
+    font-size: 8.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--navy);
+    padding: 5px 5px;
+    border-bottom: 2px solid var(--navy);
+  }
+  table.adj thead th:first-child { text-align: left; }
+  table.adj tbody td {
+    padding: 5px 5px;
+    border-bottom: 1px solid var(--navy-line);
+    text-align: right;
+    vertical-align: middle;
+  }
+  table.adj tbody td:first-child { text-align: left; }
+  table.adj tbody tr.total td {
+    background: var(--navy-fill);
+    font-weight: 600;
+  }
+
+  @page {
+    size: Letter;
+    margin: 0;
+  }
+  @media print {
+    body { background: white; margin: 0; padding: 0; }
+    .page {
+      box-shadow: none;
+      margin: 0;
+      width: 8.5in;
+      height: 11in;
+      min-height: 11in;
+      max-height: 11in;
+      overflow: hidden;
+      page-break-after: always;
+    }
+    .page:last-child { page-break-after: auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PAGE 1 — COVER -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparative Market Analysis · June 10, 2026</div>
+  </header>
+
+  <div class="cover-label">Prepared for Dota Sotelo</div>
+  <h1 class="cover-title">3735 Eagle Road</h1>
+  <div class="cover-sub">Bend, Oregon 97701 · Petrosa · Parkside end-unit townhome</div>
+
+  <img class="hero-photo" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20240501202656856430000000-o.jpg" alt="3735 Eagle Road" />
+  <div class="hero-caption">Subject · most recent MLS listing photo from May 2024. Current condition unverified</div>
+
+  <div class="stat-strip">
+    <div class="stat"><div class="lbl">Beds</div><div class="val">3</div></div>
+    <div class="stat"><div class="lbl">Baths</div><div class="val">2.5</div></div>
+    <div class="stat"><div class="lbl">Living Sqft</div><div class="val">1,450</div></div>
+    <div class="stat"><div class="lbl">Lot</div><div class="val">0.05 ac</div></div>
+    <div class="stat"><div class="lbl">Year Built</div><div class="val">2021</div></div>
+  </div>
+
+  <div class="value-block">
+    <div class="vb-label">Estimated Market Value Range</div>
+    <p class="vb-range">$455,000 to $475,000</p>
+    <div class="vb-detail">Based on the 8 most decision-relevant closed sales of the same Parkside floor plan inside Petrosa, all seven 2026 closes plus the most recent prior resale, time-adjusted to today and normalized for end-unit and new-construction differences. Three independent pricing methods land within 1% of each other, centered near $464,700.</div>
+    <div class="vb-most-likely"><strong>Recommended list price · $469,000.</strong> Anchored on the end-unit resale at 3714 NE Petrosa Ave ($470,000 in March 2026, offer in 11 days) and the same-vintage resale at 3741 Eagle Rd now pending at a $469,000 ask. Priced below the builder's new end-unit asks so the listing competes on value, not against Pahlisch's warranty.</div>
+  </div>
+
+  <div class="presented-by">
+    Presented by <strong>Matt Ryan</strong> · Owner &amp; Principal Broker · Ryan Realty · 541.213.6706
+  </div>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · Bend · Oregon</span>
+    <span>Page 1 of 18</span>
+  </footer>
+</section>
+
+<!-- PAGE 2 — SUBJECT + CONTEXT -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">3735 Eagle Rd · Subject &amp; Context</div>
+  </header>
+
+  <h2 class="section">Subject Property</h2>
+
+  <div class="two-col">
+    <div>
+      <h3 class="subhead">At a glance</h3>
+      <p>End-unit Parkside townhome built by Pahlisch Homes in 2021 inside Petrosa, the master-planned community on Bend's northeast side. The original 2021 builder listing describes it as the "Parkside south end unit townhome with small fenced side yard." 3 bedrooms, 2.5 bathrooms, 1,450 sqft on two levels with a loft, skylights, vaulted ceilings, gas fireplace, quartz counters, luxury vinyl plank flooring, AC, and a 2-car garage. Currently off-market.</p>
+
+      <h3 class="subhead">Site &amp; structure</h3>
+      <ul class="note-list">
+        <li>3 bedrooms · 2.5 bathrooms · 1,450 sqft</li>
+        <li>End unit with added windows and skylit loft</li>
+        <li>0.05-acre site · small private patio</li>
+        <li>2-car garage · smart home package · AC</li>
+        <li>Petrosa amenities: pool, clubhouse, fitness, parks, trails</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="subhead">Why this matters</h3>
+      <p>The Parkside plan is the single most-traded floor plan in Petrosa, with 38 closes in the last 24 months. This CMA uses the 8 that decide today's value: all seven 2026 closes plus the most recent prior resale, with 4 active listings and 1 pending as live context. The pricing question is not what a Petrosa townhome is worth. It is where an end-unit 2021 resale sits inside a plan band the market re-prices every few weeks.</p>
+      <p>Two facts drive the answer. End units carry a verified premium over interior units. And the builder is still selling new Parkside units a few blocks away, which puts a hard ceiling on what any resale can ask.</p>
+
+      <h3 class="subhead">Listing history</h3>
+      <ul class="note-list">
+        <li><strong>2021-09-30:</strong> New construction close at $484,900 (Pahlisch)</li>
+        <li><strong>2024-05-02 to 2024-07-02:</strong> Listed $529,900, closed $529,900 at full price. Offer in 32 days</li>
+        <li><strong>2024-07 to present:</strong> Off-market. No MLS activity in 23 months</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 class="section" style="margin-top:24px;">What the listing history tells us</h2>
+  <p>The July 2024 purchase at $529,900 ($365/sqft) was a full-price close near the top of this plan's pricing cycle. The market for this exact floor plan has moved down since: Pahlisch's own asks for new Parkside units fell from the $484,900 to $534,900 band in 2024 to $449,900 to $499,900 today, and 2026 resales of 2021-vintage units have closed between $447,900 and $470,000. Bend's overall single-family price per sqft is down 3.3% year over year on a rolling 12-month basis. The 2024 purchase price is a reference point, not today's value. Current value is set by the 2026 comp set on the pages that follow, and this report states that plainly rather than working backward from the purchase price.</p>
+
+  <h3 class="subhead" style="margin-top:14px;">Current condition note</h3>
+  <p>This CMA assumes condition consistent with the May 2024 listing photos (shown on the cover and page 3). Any documented improvements made since July 2024 should be surfaced and the range will be rebuilt with a value-add credit. Lead timeline on file: exploring, no committed sale date.</p>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 2 of 18</span>
+  </footer>
+</section>
+
+<!-- PAGE 3 — SUBJECT PROPERTY FLYER -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Subject Property · Petrosa</div>
+  </header>
+  <div class="flyer-badge">Subject · Off-Market · Last sold Jul 2024 at $529,900</div>
+  <h1 class="flyer-title">3735 Eagle Road</h1>
+  <div class="flyer-sub">Bend, Oregon 97701 · Petrosa · Parkside end unit · built 2021</div>
+
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20240501202612163465000000-o.jpg" alt="3735 Eagle Road" />
+
+  <div class="flyer-stats">
+    <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">2.5</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">1,450</div></div>
+    <div class="s"><div class="l">Lot</div><div class="v">0.05 ac</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">2021</div></div>
+    <div class="s featured"><div class="l">Rec. $/sqft</div><div class="v">$323</div></div>
+  </div>
+
+  <p class="flyer-desc">From the May 2024 MLS public remarks: "Welcome to Parkside, the pinnacle of NE living in Petrosa Community by Pahlisch Homes... Vaulted ceilings create an expansive ambiance while the primary suite offers unparalleled comfort with dual sinks and a walk-in closet. This End Unit offers a spacious loft, illuminated by skylights... Warm yourself by the gas fireplace adorned with designer tile. Smart home integration enhances lifestyle with seamless technology. The open-concept design seamlessly integrates the kitchen, dining, and great room. Bright white cabinetry, Quartz counters, and luxury vinyl plank flooring elevate each space... Enjoy front yard landscaping, sliding glass doors leading to a small private patio, AC, and access to private recreational amenities."</p>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">Recommended List</div><div class="fv">$469,000</div></div>
+    <div class="f"><div class="fl">Last Sale (Jul 2024)</div><div class="fv">$529,900 · full price</div></div>
+    <div class="f"><div class="fl">New-Build Sale (Sep 2021)</div><div class="fv">$484,900</div></div>
+    <div class="f"><div class="fl">Unit Type</div><div class="fv">End unit · skylit loft</div></div>
+    <div class="f"><div class="fl">Garage</div><div class="fv">2-car attached</div></div>
+    <div class="f"><div class="fl">Systems</div><div class="fv">AC · smart home · gas fireplace</div></div>
+    <div class="f"><div class="fl">Community</div><div class="fv">Pool · clubhouse · parks · trails</div></div>
+    <div class="f"><div class="fl">Photos</div><div class="fv">Last MLS set May 2024 (60)</div></div>
+  </div>
+
+  <div class="flyer-photos">
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20240501202658889021000000-o.jpg" alt="Subject — interior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20240501202747267206000000-o.jpg" alt="Subject — interior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20240501202741653649000000-o.jpg" alt="Subject — interior" />
+  </div>
+
+  <p class="small" style="margin-top:10px;">Photos shown are from the May 2024 MLS listing and reflect condition at that time. Pre-list, professional photography of the current condition will be required to support the recommended price.</p>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 3 of 18</span>
+  </footer>
+</section>
+
+<!-- PAGE 4 — COMP LOCATION MAP -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sales Map · Petrosa</div>
+  </header>
+
+  <h2 class="section">Where the Comps Sit</h2>
+  <p style="margin-bottom:14px;">The eight comparable closes, all inside Petrosa, all within a quarter mile of the subject. The S pin is the subject (Google-verified rooftop position). Marker numbers correspond to comp flyer order on pages 7 to 14, ordered by relevance: end-unit resale anchor first, then the nearest resales, then the builder's recent new-construction closes.</p>
+
+  <img src="/api/maps/cma-3735-eagle-usa" alt="Petrosa comp location map" style="width:100%; height:auto; border-radius:10px; background:var(--navy-fill); display:block; margin-bottom:14px;" />
+
+  <h3 class="subhead" style="margin-top:0;">Marker Key</h3>
+  <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:6px;">
+    <div style="background:var(--navy-fill); padding:6px 9px; border-radius:6px; display:flex; gap:9px; align-items:center;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:#c0392b; color:#fff; font-size:12px; font-weight:600; flex-shrink:0;">S</span>
+      <div style="font-size:9.5px; line-height:1.3;"><strong>Subject</strong> · 3735 Eagle Rd · end unit · off-market</div>
+    </div>
+    <div style="background:var(--navy-fill); padding:6px 9px; border-radius:6px; display:flex; gap:9px; align-items:center;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:11px; font-weight:600; flex-shrink:0;">1</span>
+      <div style="font-size:9.5px; line-height:1.3;"><strong>3714 NE Petrosa Ave</strong> · end-unit resale anchor<br/>$470,000 · Mar 2026 · offer in 11 days</div>
+    </div>
+    <div style="background:var(--navy-fill); padding:6px 9px; border-radius:6px; display:flex; gap:9px; align-items:center;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:11px; font-weight:600; flex-shrink:0;">2</span>
+      <div style="font-size:9.5px; line-height:1.3;"><strong>3731 Eagle Rd</strong> · interior resale, two doors down<br/>$447,900 · May 2026 · cut from $482,000</div>
+    </div>
+    <div style="background:var(--navy-fill); padding:6px 9px; border-radius:6px; display:flex; gap:9px; align-items:center;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:11px; font-weight:600; flex-shrink:0;">3</span>
+      <div style="font-size:9.5px; line-height:1.3;"><strong>3723 Eagle Rd</strong> · interior resale<br/>$490,000 · Apr 2025 · sold over ask</div>
+    </div>
+    <div style="background:var(--navy-fill); padding:6px 9px; border-radius:6px; display:flex; gap:9px; align-items:center;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:11px; font-weight:600; flex-shrink:0;">4</span>
+      <div style="font-size:9.5px; line-height:1.3;"><strong>3808 NE Suchy St</strong> · new end unit (builder)<br/>$489,900 · Apr 2026 · presale</div>
+    </div>
+    <div style="background:var(--navy-fill); padding:6px 9px; border-radius:6px; display:flex; gap:9px; align-items:center;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:11px; font-weight:600; flex-shrink:0;">5</span>
+      <div style="font-size:9.5px; line-height:1.3;"><strong>3093 NE Nipper Rd</strong> · new end unit (builder)<br/>$469,900 · Mar 2026 · cut from $527,750</div>
+    </div>
+    <div style="background:var(--navy-fill); padding:6px 9px; border-radius:6px; display:flex; gap:9px; align-items:center;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:11px; font-weight:600; flex-shrink:0;">6</span>
+      <div style="font-size:9.5px; line-height:1.3;"><strong>3806 NE Suchy St</strong> · new interior (builder)<br/>$460,000 · May 2026</div>
+    </div>
+    <div style="background:var(--navy-fill); padding:6px 9px; border-radius:6px; display:flex; gap:9px; align-items:center;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:11px; font-weight:600; flex-shrink:0;">7</span>
+      <div style="font-size:9.5px; line-height:1.3;"><strong>3820 Eagle Rd</strong> · new interior (builder)<br/>$459,900 · Mar 2026</div>
+    </div>
+    <div style="background:var(--navy-fill); padding:6px 9px; border-radius:6px; display:flex; gap:9px; align-items:center;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:11px; font-weight:600; flex-shrink:0;">8</span>
+      <div style="font-size:9.5px; line-height:1.3;"><strong>3812 Eagle Rd</strong> · new interior (builder)<br/>$459,900 · Jan 2026 · cut from $499,900</div>
+    </div>
+  </div>
+
+  <footer class="pg-footer">
+    <span>Map · Google Maps Static via Ryan Realty platform · Coordinates from Oregon Data Share MLS</span>
+    <span>Page 4 of 18</span>
+  </footer>
+</section>
+
+<!-- PAGE 5 — COMP THUMBNAILS + SALE TABLE -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">3735 Eagle Rd · Comparable Sales</div>
+  </header>
+
+  <h2 class="section">Same-Plan Comparable Sales · Petrosa</h2>
+  <p>The 1,450-sqft Parkside plan has closed 38 times inside Petrosa in the last 24 months. Shown here are the 8 closes that decide today's value: all seven 2026 closes plus the most recent prior resale. The set splits cleanly into 2021-vintage resales (like the subject) and the builder's new-construction closes, and into end units (like the subject) and interior units.</p>
+
+  <div class="comp-grid">
+    <div class="comp-card">
+      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260225182131543310000000-o.jpg" alt="3714 NE Petrosa Ave" />
+      <div class="body">
+        <div class="addr">3714 NE Petrosa Ave</div>
+        <div class="stats">End · resale 2021 · 0.05 ac</div>
+        <div class="price">$470,000 <span class="when">Mar 2026</span></div>
+      </div>
+    </div>
+    <div class="comp-card">
+      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20251110232949027217000000-o.jpg" alt="3731 Eagle Rd" />
+      <div class="body">
+        <div class="addr">3731 Eagle Rd</div>
+        <div class="stats">Interior · resale 2021 · 0.04 ac</div>
+        <div class="price">$447,900 <span class="when">May 2026</span></div>
+      </div>
+    </div>
+    <div class="comp-card">
+      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250216012739054866000000-o.jpg" alt="3723 Eagle Rd" />
+      <div class="body">
+        <div class="addr">3723 Eagle Rd</div>
+        <div class="stats">Interior · resale 2021 · 0.04 ac</div>
+        <div class="price">$490,000 <span class="when">Apr 2025</span></div>
+      </div>
+    </div>
+    <div class="comp-card">
+      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260104014159911967000000-o.jpg" alt="3808 NE Suchy St" />
+      <div class="body">
+        <div class="addr">3808 NE Suchy St</div>
+        <div class="stats">End · new 2025 · 0.06 ac</div>
+        <div class="price">$489,900 <span class="when">Apr 2026</span></div>
+      </div>
+    </div>
+    <div class="comp-card">
+      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20251016232103474368000000-o.jpg" alt="3093 NE Nipper Rd" />
+      <div class="body">
+        <div class="addr">3093 NE Nipper Rd</div>
+        <div class="stats">End · new 2025 · 0.06 ac</div>
+        <div class="price">$469,900 <span class="when">Mar 2026</span></div>
+      </div>
+    </div>
+    <div class="comp-card">
+      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260228004355088969000000-o.jpg" alt="3806 NE Suchy St" />
+      <div class="body">
+        <div class="addr">3806 NE Suchy St</div>
+        <div class="stats">Interior · new 2026 · 0.04 ac</div>
+        <div class="price">$460,000 <span class="when">May 2026</span></div>
+      </div>
+    </div>
+    <div class="comp-card">
+      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260108212114578250000000-o.jpg" alt="3820 Eagle Rd" />
+      <div class="body">
+        <div class="addr">3820 Eagle Rd</div>
+        <div class="stats">Interior · new 2025 · 0.04 ac</div>
+        <div class="price">$459,900 <span class="when">Mar 2026</span></div>
+      </div>
+    </div>
+    <div class="comp-card">
+      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20251203202227464339000000-o.jpg" alt="3812 Eagle Rd" />
+      <div class="body">
+        <div class="addr">3812 Eagle Rd</div>
+        <div class="stats">Interior · new 2025 · 0.04 ac</div>
+        <div class="price">$459,900 <span class="when">Jan 2026</span></div>
+      </div>
+    </div>
+  </div>
+
+  <table class="comps">
+    <thead>
+      <tr>
+        <th style="width:22%;">Address</th>
+        <th>Type</th>
+        <th class="num">Sqft</th>
+        <th class="num">Yr</th>
+        <th class="num">Orig List</th>
+        <th class="num">Final List</th>
+        <th class="num">Sold</th>
+        <th class="num">$/sqft</th>
+        <th class="num">Offer In</th>
+        <th class="num">Close</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="subject">
+        <td>3735 Eagle Rd <span style="opacity:0.7;">(subject · rec. list)</span></td>
+        <td>End · resale</td>
+        <td class="num">1,450</td>
+        <td class="num">2021</td>
+        <td class="num">—</td>
+        <td class="num">$469,000</td>
+        <td class="num">—</td>
+        <td class="num">$323</td>
+        <td class="num">—</td>
+        <td class="num">—</td>
+      </tr>
+      <tr>
+        <td>3806 NE Suchy St</td>
+        <td>Int · new</td>
+        <td class="num">1,450</td>
+        <td class="num">2026</td>
+        <td class="num">$459,900</td>
+        <td class="num">$459,900</td>
+        <td class="num">$460,000</td>
+        <td class="num">$317</td>
+        <td class="num">12 days</td>
+        <td class="num">May 2026</td>
+      </tr>
+      <tr class="anchor">
+        <td>3731 Eagle Rd <span style="opacity:0.7;">(two doors)</span></td>
+        <td>Int · resale</td>
+        <td class="num">1,450</td>
+        <td class="num">2021</td>
+        <td class="num">$482,000</td>
+        <td class="num">$449,000</td>
+        <td class="num">$447,900</td>
+        <td class="num">$309</td>
+        <td class="num">68 days</td>
+        <td class="num">May 2026</td>
+      </tr>
+      <tr>
+        <td>3808 NE Suchy St</td>
+        <td>End · new</td>
+        <td class="num">1,450</td>
+        <td class="num">2025</td>
+        <td class="num">$469,900</td>
+        <td class="num">$489,900</td>
+        <td class="num">$489,900</td>
+        <td class="num">$338</td>
+        <td class="num">presale</td>
+        <td class="num">Apr 2026</td>
+      </tr>
+      <tr class="anchor">
+        <td>3714 NE Petrosa Ave <span style="opacity:0.7;">(anchor)</span></td>
+        <td>End · resale</td>
+        <td class="num">1,450</td>
+        <td class="num">2021</td>
+        <td class="num">$479,000</td>
+        <td class="num">$479,000</td>
+        <td class="num">$470,000</td>
+        <td class="num">$324</td>
+        <td class="num">11 days</td>
+        <td class="num">Mar 2026</td>
+      </tr>
+      <tr>
+        <td>3820 Eagle Rd</td>
+        <td>Int · new</td>
+        <td class="num">1,450</td>
+        <td class="num">2025</td>
+        <td class="num">$459,900</td>
+        <td class="num">$459,900</td>
+        <td class="num">$459,900</td>
+        <td class="num">$317</td>
+        <td class="num">56 days</td>
+        <td class="num">Mar 2026</td>
+      </tr>
+      <tr>
+        <td>3093 NE Nipper Rd</td>
+        <td>End · new</td>
+        <td class="num">1,450</td>
+        <td class="num">2025</td>
+        <td class="num">$527,750</td>
+        <td class="num">$469,900</td>
+        <td class="num">$469,900</td>
+        <td class="num">$324</td>
+        <td class="num">41 days</td>
+        <td class="num">Mar 2026</td>
+      </tr>
+      <tr>
+        <td>3812 Eagle Rd</td>
+        <td>Int · new</td>
+        <td class="num">1,450</td>
+        <td class="num">2025</td>
+        <td class="num">$499,900</td>
+        <td class="num">$459,900</td>
+        <td class="num">$459,900</td>
+        <td class="num">$317</td>
+        <td class="num">9 days</td>
+        <td class="num">Jan 2026</td>
+      </tr>
+      <tr>
+        <td>3723 Eagle Rd</td>
+        <td>Int · resale</td>
+        <td class="num">1,450</td>
+        <td class="num">2021</td>
+        <td class="num">$484,900</td>
+        <td class="num">$484,900</td>
+        <td class="num">$490,000</td>
+        <td class="num">$338</td>
+        <td class="num">27 days</td>
+        <td class="num">Apr 2025</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="small" style="margin-top:8px;">All units are the 1,450-sqft / 3-bed / 2.5-bath / 2-car Parkside plan. "Offer in" is days from list to accepted offer (pending), the cleaner demand signal. The Oregon Data Share DOM field also counts time under contract. Bath count shown as configuration (2 full + 1 half). One additional close sits inside the six-month window: 3822 Eagle Rd (builder interior, cut from $499,900, closed $460,000 on Dec 23, 2025). It adjusts to roughly $454,200, inside the interior cluster, and does not move the reconciliation. Active context today: 3712 NE Petrosa Ave (2021 resale) asking $465,000 after a cut, 75 days. 3741 Eagle Rd (2021 resale) pending at $469,000 after 40 days. Builder: 3095 and 3097 NE Nipper at $449,900 (cut from $459,900), 3865 Eagle Rd new build at $499,900.</p>
+
+  <footer class="pg-footer">
+    <span>Source · Oregon Data Share MLS via Supabase listings · pulled 2026-06-10</span>
+    <span>Page 5 of 18</span>
+  </footer>
+</section>
+
+<!-- PAGE 6 — ADJUSTMENT GRID -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">3735 Eagle Rd · Comp Adjustment Grid</div>
+  </header>
+
+  <h2 class="section">Per-Comp Adjustment Grid</h2>
+  <p>Each comp's close price is reconciled to the subject in three transparent steps. <strong>Time</strong> normalizes the close to today using Bend's verified 12-month trend of −2.7% per year (price per sqft is down 3.3% on the same basis). <strong>End unit</strong> adds $10,000 to interior-unit comps, the premium verified by paired sales below. <strong>New build</strong> subtracts $10,000 from builder closes, the premium a never-occupied unit with a full builder warranty carries over a 2021 resale.</p>
+
+  <table class="adj">
+    <thead>
+      <tr>
+        <th style="width:24%;">Comp</th>
+        <th>Close $</th>
+        <th>Time (−2.7%/yr)</th>
+        <th>End unit</th>
+        <th>New build</th>
+        <th>Adjusted $</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>1 · 3714 NE Petrosa Ave · end resale · Mar 2026</td><td>$470,000</td><td>−$2,626</td><td>$0</td><td>$0</td><td><strong>$467,374</strong></td></tr>
+      <tr><td>2 · 3731 Eagle Rd · int resale · May 2026</td><td>$447,900</td><td>−$1,235</td><td>+$10,000</td><td>$0</td><td><strong>$456,665</strong></td></tr>
+      <tr><td>3 · 3723 Eagle Rd · int resale · Apr 2025</td><td>$490,000</td><td>−$15,513</td><td>+$10,000</td><td>$0</td><td><strong>$484,487</strong></td></tr>
+      <tr><td>4 · 3808 NE Suchy St · end new · Apr 2026</td><td>$489,900</td><td>−$2,555</td><td>$0</td><td>−$10,000</td><td><strong>$477,345</strong></td></tr>
+      <tr><td>5 · 3093 NE Nipper Rd · end new · Mar 2026</td><td>$469,900</td><td>−$3,465</td><td>$0</td><td>−$10,000</td><td><strong>$456,435</strong></td></tr>
+      <tr><td>6 · 3806 NE Suchy St · int new · May 2026</td><td>$460,000</td><td>−$994</td><td>+$10,000</td><td>−$10,000</td><td><strong>$459,006</strong></td></tr>
+      <tr><td>7 · 3820 Eagle Rd · int new · Mar 2026</td><td>$459,900</td><td>−$3,357</td><td>+$10,000</td><td>−$10,000</td><td><strong>$456,543</strong></td></tr>
+      <tr><td>8 · 3812 Eagle Rd · int new · Jan 2026</td><td>$459,900</td><td>−$5,276</td><td>+$10,000</td><td>−$10,000</td><td><strong>$454,624</strong></td></tr>
+      <tr class="total"><td>Similarity-weighted reconciliation (Method 3)</td><td colspan="4"></td><td><strong>$464,235</strong></td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subhead" style="margin-top:14px;">Where the adjustments come from</h3>
+  <ul class="note-list">
+    <li><strong>Time.</strong> Bend city, rolling 12 months: median sale price −2.7% year over year, price per sqft −3.3% (cache methodology v3-2026-05-07, computed June 10, 2026). Applied per comp by months since close. Recent comps need almost no adjustment, which is why they carry the most weight.</li>
+    <li><strong>End-unit premium, $10,000.</strong> Paired sales in the same month: end units 3714 NE Petrosa Ave ($470,000, Mar 27) and 3093 NE Nipper Rd ($469,900, Mar 3) against interior 3820 Eagle Rd ($459,900, Mar 4). The active market confirms the split today: the interior unit at 3712 NE Petrosa Ave sits at $465,000 after 68 days while end-unit closes cleared $470,000 with an offer in 11 days.</li>
+    <li><strong>New-build premium, $10,000.</strong> New interior closes ran $459,900 to $460,000 from January through May 2026 while the 2021 interior resale next door at 3731 Eagle Rd closed at $447,900 in May 2026, a $12,000 gap. $10,000 is the conservative read.</li>
+    <li><strong>Unit positions are primary-sourced.</strong> The subject's original 2021 builder listing reads "Parkside south end unit townhome with small fenced side yard." 3731 Eagle Rd's original 2021 builder listing reads "Parkside middle townhome." The end-unit callouts for 3714, 3093, and 3808 come from their own MLS remarks.</li>
+    <li><strong>No size, bed, bath, or garage adjustments.</strong> Every comp is the identical 1,450-sqft, 3-bed, 2.5-bath, 2-car plan. This is the cleanest adjustment grid a Bend CMA can produce.</li>
+    <li><strong>Weights.</strong> Method 3 weights the end-unit resale anchor highest (25%), then the next-door resale (20%), then the recent builder end units (15% and 10%), the 14-month-old resale (10%), and the remaining new interior closes (8%, 7%, 5%).</li>
+  </ul>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 6 of 18</span>
+  </footer>
+</section>
+
+<!-- PAGE 7 — COMP FLYER 1 of 8 : 3714 NE Petrosa Ave -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 1 of 8 · Petrosa</div>
+  </header>
+  <div class="flyer-badge">Primary Anchor · End-Unit Resale · Offer in 11 Days</div>
+  <h1 class="flyer-title">3714 NE Petrosa Avenue</h1>
+  <div class="flyer-sub">Bend, Oregon 97701 · Petrosa · same plan, same vintage, same unit type as subject</div>
+
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20260225182131543310000000-o.jpg" alt="3714 NE Petrosa Avenue" />
+
+  <div class="flyer-stats">
+    <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">2.5</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">1,450</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">2021</div></div>
+    <div class="s"><div class="l">Sold</div><div class="v">$470,000</div></div>
+    <div class="s featured"><div class="l">$/sqft</div><div class="v">$324</div></div>
+  </div>
+
+  <p class="flyer-desc">From the MLS public remarks: "Beautifully maintained end unit townhome in Petrosa filled with natural light and gorgeous finishes. This 3 bed, 2.5 bath home offers an open great room layout with a cozy gas fireplace and flexible upstairs living space. The kitchen features quartz countertops, stainless appliances, slate cabinetry, and ample storage. Luxury vinyl plank flooring runs through the main level, baths, and laundry... Enjoy views toward Pilot Butte, the added privacy of an end unit, and a 2-car garage."</p>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">Closed</div><div class="fv">Mar 27, 2026 · $470,000</div></div>
+    <div class="f"><div class="fl">List</div><div class="fv">$479,000 · sold 98.1% of ask</div></div>
+    <div class="f"><div class="fl">Offer In</div><div class="fv">11 days</div></div>
+    <div class="f"><div class="fl">Why It Anchors</div><div class="fv">End-unit 2021 resale, identical profile</div></div>
+  </div>
+
+  <div class="flyer-photos">
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260225182140760648000000-o.jpg" alt="3714 NE Petrosa — interior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260225182033556292000000-o.jpg" alt="3714 NE Petrosa — interior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260225181347557377000000-o.jpg" alt="3714 NE Petrosa — interior" />
+  </div>
+
+  <p class="small" style="margin-top:8px;">The single most important comp in this report. Identical floor plan, identical 2021 vintage, identical end-unit position. Listed at $479,000, took an offer inside 11 days, closed at $470,000. Time-adjusted value: $467,374.</p>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 7 of 18</span>
+  </footer>
+</section>
+
+<!-- PAGE 8 — COMP FLYER 2 of 8 : 3731 Eagle Rd -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 2 of 8 · Petrosa</div>
+  </header>
+  <div class="flyer-badge">Next Door · Interior Resale · The Overpricing Lesson</div>
+  <h1 class="flyer-title">3731 Eagle Road</h1>
+  <div class="flyer-sub">Bend, Oregon 97701 · Petrosa · two doors from subject · interior unit</div>
+
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20251110232949027217000000-o.jpg" alt="3731 Eagle Road" />
+
+  <div class="flyer-stats">
+    <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">2.5</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">1,450</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">2021</div></div>
+    <div class="s"><div class="l">Sold</div><div class="v">$447,900</div></div>
+    <div class="s featured"><div class="l">$/sqft</div><div class="v">$309</div></div>
+  </div>
+
+  <p class="flyer-desc">From the MLS public remarks: "Welcome to this lightly lived in, stylish and move-in-ready home located in the sought-after Petrosa community on Bend's vibrant east side... Inside, you'll find an open and functional floor plan featuring abundant natural light, modern finishes, and thoughtful upgrades throughout. The spacious kitchen flows seamlessly into the living and dining areas... Petrosa residents enjoy access to community parks, walking trails, a pool, clubhouse, and more."</p>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">Closed</div><div class="fv">May 4, 2026 · $447,900</div></div>
+    <div class="f"><div class="fl">Price Path</div><div class="fv">$482,000 list · cut to $449,000</div></div>
+    <div class="f"><div class="fl">Offer In</div><div class="fv">68 days, after the cut</div></div>
+    <div class="f"><div class="fl">Why It Matters</div><div class="fv">Purest recent resale baseline · interior</div></div>
+  </div>
+
+  <div class="flyer-photos">
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20251110232933811059000000-o.jpg" alt="3731 Eagle — interior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20251110232945801777000000-o.jpg" alt="3731 Eagle — interior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20251110232913731195000000-o.jpg" alt="3731 Eagle — interior" />
+  </div>
+
+  <p class="small" style="margin-top:8px;">The cautionary tale two doors down. Listed at $482,000 in January 2026, sat without an offer, cut to $449,000, and closed at $447,900 after 68 days on market. Same plan, same vintage as the subject, but an interior unit, confirmed by its original 2021 builder listing ("Parkside middle townhome"). Adjusted to the subject's end-unit profile: $456,665.</p>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 8 of 18</span>
+  </footer>
+</section>
+
+<!-- PAGE 9 — COMP FLYER 3 of 8 : 3723 Eagle Rd -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 3 of 8 · Petrosa</div>
+  </header>
+  <div class="flyer-badge">Interior Resale · Apr 2025 · Sold Over Ask</div>
+  <h1 class="flyer-title">3723 Eagle Road</h1>
+  <div class="flyer-sub">Bend, Oregon 97701 · Petrosa · same block as subject · interior unit</div>
+
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20250216012739054866000000-o.jpg" alt="3723 Eagle Road" />
+
+  <div class="flyer-stats">
+    <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">2.5</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">1,450</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">2021</div></div>
+    <div class="s"><div class="l">Sold</div><div class="v">$490,000</div></div>
+    <div class="s featured"><div class="l">$/sqft</div><div class="v">$338</div></div>
+  </div>
+
+  <p class="flyer-desc">From the MLS public remarks: "RARE resale townhome at Petrosa. This home is an interior townhome located in the perfect spot near the amenities and many community features. As you enter, you are greeted by an open concept great room that leads into a spacious kitchen with quartz counters throughout... Your primary is separated from the other two bedrooms by a spacious loft. Your primary is an oasis with large walk-in closet and spacious en suite."</p>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">Closed</div><div class="fv">Apr 11, 2025 · $490,000</div></div>
+    <div class="f"><div class="fl">List</div><div class="fv">$484,900 · sold 101.1% of ask</div></div>
+    <div class="f"><div class="fl">Offer In</div><div class="fv">27 days</div></div>
+    <div class="f"><div class="fl">Why It Matters</div><div class="fv">Shows the 2025 price level, 14 months old</div></div>
+  </div>
+
+  <div class="flyer-photos">
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250216012739238118000000-o.jpg" alt="3723 Eagle — interior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250216012739392396000000-o.jpg" alt="3723 Eagle — interior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250216012739603523000000-o.jpg" alt="3723 Eagle — interior" />
+  </div>
+
+  <p class="small" style="margin-top:8px;">An interior unit that sold over ask in spring 2025, before the builder's price cuts reset the plan band. The oldest comp in the set and the high outlier after adjustment ($484,487). It is held at a 10% weight and read as a ceiling reference, not a primary anchor. Page 17 explains why.</p>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 9 of 18</span>
+  </footer>
+</section>
+
+<!-- PAGE 10 — COMP FLYER 4 of 8 : 3808 NE Suchy St -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 4 of 8 · Petrosa</div>
+  </header>
+  <div class="flyer-badge">New Construction · End Unit · Builder Presale</div>
+  <h1 class="flyer-title">3808 NE Suchy Street</h1>
+  <div class="flyer-sub">Bend, Oregon 97701 · Petrosa · Parkside Right-End plan · Pahlisch Homes</div>
+
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20260104014159911967000000-o.jpg" alt="3808 NE Suchy Street" />
+
+  <div class="flyer-stats">
+    <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">2.5</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">1,450</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">2025</div></div>
+    <div class="s"><div class="l">Sold</div><div class="v">$489,900</div></div>
+    <div class="s featured"><div class="l">$/sqft</div><div class="v">$338</div></div>
+  </div>
+
+  <p class="flyer-desc">From the MLS public remarks: "Live a good life in Petrosa at homesite #273. Introducing the Parkside Right-End plan at Petrosa by award-winning builder Pahlisch Homes... This particular home is a end unit townhome with side yard and located near the amenities. Has an open floorplan downstairs, and a loft and all bedrooms up."</p>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">Closed</div><div class="fv">Apr 1, 2026 · $489,900</div></div>
+    <div class="f"><div class="fl">Sale Type</div><div class="fv">Builder presale, contracted Jan 2026</div></div>
+    <div class="f"><div class="fl">Extras</div><div class="fv">Side yard · 0.06 ac · new warranty</div></div>
+    <div class="f"><div class="fl">Why It Matters</div><div class="fv">Top of the current end-unit band</div></div>
+  </div>
+
+  <div class="flyer-photos">
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260104014159997698000000-o.jpg" alt="3808 NE Suchy — interior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260104014200082157000000-o.jpg" alt="3808 NE Suchy — interior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260104014200154953000000-o.jpg" alt="3808 NE Suchy — interior" />
+  </div>
+
+  <p class="small" style="margin-top:8px;">A never-occupied end unit with a side yard and full builder warranty at $489,900. This is what the subject's direct competition charges for the new version of the same plan. Normalized for the new-build premium and time: $477,345. A resale cannot ask more than this and expect to win the buyer.</p>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 10 of 18</span>
+  </footer>
+</section>
+
+<!-- PAGE 11 — COMP FLYER 5 of 8 : 3093 NE Nipper Rd -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 5 of 8 · Petrosa</div>
+  </header>
+  <div class="flyer-badge">New Construction · End Unit · Cut From $527,750</div>
+  <h1 class="flyer-title">3093 NE Nipper Road</h1>
+  <div class="flyer-sub">Bend, Oregon 97701 · Petrosa · Parkside end unit · across from city park</div>
+
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20251016232103474368000000-o.jpg" alt="3093 NE Nipper Road" />
+
+  <div class="flyer-stats">
+    <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">2.5</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">1,450</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">2025</div></div>
+    <div class="s"><div class="l">Sold</div><div class="v">$469,900</div></div>
+    <div class="s featured"><div class="l">$/sqft</div><div class="v">$324</div></div>
+  </div>
+
+  <p class="flyer-desc">From the MLS public remarks: "Be life ready on Homesite #269. Introducing the Parkside end unit plan at Petrosa by award-winning builder Pahlisch Homes... This particular home is an end unit townhome located near the amenities and across from a city park on Eagle Rd. Has an fully fenced site yard, inside is an open floorplan downstairs, and a loft and all bedrooms up."</p>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">Closed</div><div class="fv">Mar 3, 2026 · $469,900</div></div>
+    <div class="f"><div class="fl">Price Path</div><div class="fv">$527,750 original · cut to $469,900</div></div>
+    <div class="f"><div class="fl">Offer In</div><div class="fv">41 days at the final price</div></div>
+    <div class="f"><div class="fl">Why It Matters</div><div class="fv">Builder repricing the end-unit tier</div></div>
+  </div>
+
+  <div class="flyer-photos">
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20251016232102533127000000-o.jpg" alt="3093 NE Nipper — interior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20251016232106385382000000-o.jpg" alt="3093 NE Nipper — interior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20251016232104704684000000-o.jpg" alt="3093 NE Nipper — interior" />
+  </div>
+
+  <p class="small" style="margin-top:8px;">The clearest evidence of the reset: Pahlisch originally asked $527,750 for this new end unit and closed at $469,900, an 11% cut. The subject's 2024 purchase at $529,900 happened at the old band. Normalized for the new-build premium and time: $456,435.</p>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 11 of 18</span>
+  </footer>
+</section>
+
+<!-- PAGE 12 — COMP FLYER 6 of 8 : 3806 NE Suchy St -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 6 of 8 · Petrosa</div>
+  </header>
+  <div class="flyer-badge">New Construction · Interior · Most Recent Close</div>
+  <h1 class="flyer-title">3806 NE Suchy Street</h1>
+  <div class="flyer-sub">Bend, Oregon 97701 · Petrosa · Parkside interior unit · Pahlisch Homes</div>
+
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20260228004355088969000000-o.jpg" alt="3806 NE Suchy Street" />
+
+  <div class="flyer-stats">
+    <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">2.5</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">1,450</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">2026</div></div>
+    <div class="s"><div class="l">Sold</div><div class="v">$460,000</div></div>
+    <div class="s featured"><div class="l">$/sqft</div><div class="v">$317</div></div>
+  </div>
+
+  <p class="flyer-desc">From the MLS public remarks: "Homesite #274 is a spacious plan at Petrosa by award-winning builder Pahlisch Homes. The homes in this community are crafted with the integrity and quality that the brand is known for including many high-end features. This particular home is located near the amenities. Has an open floorplan downstairs, and a loft and all bedrooms up."</p>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">Closed</div><div class="fv">May 12, 2026 · $460,000</div></div>
+    <div class="f"><div class="fl">List</div><div class="fv">$459,900 · sold at ask</div></div>
+    <div class="f"><div class="fl">Offer In</div><div class="fv">12 days</div></div>
+    <div class="f"><div class="fl">Why It Matters</div><div class="fv">Freshest close in the set, 4 weeks old</div></div>
+  </div>
+
+  <div class="flyer-photos">
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260228004351555585000000-o.jpg" alt="3806 NE Suchy — interior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260228004354124520000000-o.jpg" alt="3806 NE Suchy — interior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260228004358273812000000-o.jpg" alt="3806 NE Suchy — interior" />
+  </div>
+
+  <p class="small" style="margin-top:8px;">The most recent close of the plan, four weeks ago. A brand-new interior unit at $460,000 with an offer in 12 days shows where correctly-priced product moves fast. Normalized to the subject's end-unit resale profile: $459,006.</p>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 12 of 18</span>
+  </footer>
+</section>
+
+<!-- PAGE 13 — COMP FLYER 7 of 8 : 3820 Eagle Rd -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 7 of 8 · Petrosa</div>
+  </header>
+  <div class="flyer-badge">New Construction · Interior · Same Street</div>
+  <h1 class="flyer-title">3820 Eagle Road</h1>
+  <div class="flyer-sub">Bend, Oregon 97701 · Petrosa · Parkside interior unit · Pahlisch Homes</div>
+
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20260108212114578250000000-o.jpg" alt="3820 Eagle Road" />
+
+  <div class="flyer-stats">
+    <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">2.5</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">1,450</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">2025</div></div>
+    <div class="s"><div class="l">Sold</div><div class="v">$459,900</div></div>
+    <div class="s featured"><div class="l">$/sqft</div><div class="v">$317</div></div>
+  </div>
+
+  <p class="flyer-desc">From the MLS public remarks: "Homesite #263 is a spacious plan at Petrosa by award-winning builder Pahlisch Homes. The homes in this community are crafted with the integrity and quality that the brand is known for including many high-end features. This particular home is located near the amenities. Has an open floorplan downstairs, and a loft and all bedrooms up."</p>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">Closed</div><div class="fv">Mar 4, 2026 · $459,900</div></div>
+    <div class="f"><div class="fl">List</div><div class="fv">$459,900 · sold at ask</div></div>
+    <div class="f"><div class="fl">Offer In</div><div class="fv">56 days</div></div>
+    <div class="f"><div class="fl">Why It Matters</div><div class="fv">Same-month pair against end-unit closes</div></div>
+  </div>
+
+  <div class="flyer-photos">
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260108212115158483000000-o.jpg" alt="3820 Eagle — interior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260108212113795757000000-o.jpg" alt="3820 Eagle — interior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260108212115718761000000-o.jpg" alt="3820 Eagle — interior" />
+  </div>
+
+  <p class="small" style="margin-top:8px;">Closed the day after 3093 NE Nipper Rd, which makes the pair the cleanest same-month read on the end-unit premium: $469,900 end against $459,900 interior. Normalized to the subject's profile: $456,543.</p>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 13 of 18</span>
+  </footer>
+</section>
+
+<!-- PAGE 14 — COMP FLYER 8 of 8 : 3812 Eagle Rd -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 8 of 8 · Petrosa</div>
+  </header>
+  <div class="flyer-badge">New Construction · Interior · Cut From $499,900</div>
+  <h1 class="flyer-title">3812 Eagle Road</h1>
+  <div class="flyer-sub">Bend, Oregon 97701 · Petrosa · Parkside interior unit · Pahlisch Homes</div>
+
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20251203202227464339000000-o.jpg" alt="3812 Eagle Road" />
+
+  <div class="flyer-stats">
+    <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">2.5</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">1,450</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">2025</div></div>
+    <div class="s"><div class="l">Sold</div><div class="v">$459,900</div></div>
+    <div class="s featured"><div class="l">$/sqft</div><div class="v">$317</div></div>
+  </div>
+
+  <p class="flyer-desc">From the MLS public remarks: "Homesite #267. Introducing the Parkside plan at Petrosa by award-winning builder Pahlisch Homes. The homes in this community are crafted with the integrity and quality that the brand is known for including many high-end features. This particular home is located near the amenities. Has an open floorplan downstairs, and a loft and all bedrooms up."</p>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">Closed</div><div class="fv">Jan 7, 2026 · $459,900</div></div>
+    <div class="f"><div class="fl">Price Path</div><div class="fv">$499,900 original · cut to $459,900</div></div>
+    <div class="f"><div class="fl">Offer In</div><div class="fv">9 days at the final price</div></div>
+    <div class="f"><div class="fl">Why It Matters</div><div class="fv">Confirms the interior new-build floor</div></div>
+  </div>
+
+  <div class="flyer-photos">
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20251203202227555588000000-o.jpg" alt="3812 Eagle — interior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20251203202227629082000000-o.jpg" alt="3812 Eagle — interior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20251203202227706948000000-o.jpg" alt="3812 Eagle — interior" />
+  </div>
+
+  <p class="small" style="margin-top:8px;">Another builder cut, $499,900 to $459,900, then an offer in 9 days. The lesson repeats across the set: this plan moves quickly at the corrected band and sits when priced to the 2024 band. Normalized to the subject's profile: $454,624.</p>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 14 of 18</span>
+  </footer>
+</section>
+
+<!-- PAGE 15 — MARKET CONTEXT -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">3735 Eagle Rd · Market Context</div>
+  </header>
+
+  <h2 class="section">Market Context · Bend, Oregon</h2>
+  <p>Verified city-level conditions as of June 10, 2026, from the Ryan Realty market data platform (Oregon Data Share MLS, single-family residential).</p>
+
+  <div class="stat-strip" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="stat"><div class="lbl">Months of Supply</div><div class="val">4.78</div></div>
+    <div class="stat"><div class="lbl">Market Verdict</div><div class="val">Balanced</div></div>
+    <div class="stat"><div class="lbl">Median Days to Pending</div><div class="val">11</div></div>
+    <div class="stat"><div class="lbl">Median Sale-to-List</div><div class="val">99.0%</div></div>
+  </div>
+
+  <div class="stat-strip" style="grid-template-columns: repeat(4, 1fr); margin-top:0;">
+    <div class="stat"><div class="lbl">Sold Over Asking</div><div class="val">20.4%</div></div>
+    <div class="stat"><div class="lbl">Sold Under Asking</div><div class="val">56.6%</div></div>
+    <div class="stat"><div class="lbl">$/Sqft YoY (12-mo)</div><div class="val">↓ 3.3%</div></div>
+    <div class="stat"><div class="lbl">Active Listings</div><div class="val">531</div></div>
+  </div>
+
+  <h3 class="subhead">What this means for pricing</h3>
+  <p>Bend sits at 4.78 months of supply, inside the 4-to-6 balanced band. This is not the seller's market of 2021 to 2022 and it is not a buyer's collapse. Correctly priced homes still take offers in roughly 11 median days, but 56.6% of closes finish under asking and the median close lands at 99.0% of the final list. The rolling 12-month price per sqft is down 3.3% year over year citywide.</p>
+  <p>For this specific floor plan the local picture is sharper than the citywide one. Pahlisch repriced the Parkside band twice in the comp window (cuts of $57,850 on 3093 NE Nipper Rd and $40,000 on 3812 Eagle Rd before sale), and resales that ignored the reset sat. The next-door comp at 3731 Eagle Rd needed a $33,000 cut and 68 days to find its buyer. The end-unit resale that priced to the new band, 3714 NE Petrosa Ave, took an offer in 11 days.</p>
+  <p>A balanced market does not support an aspirational ceiling. The High End tier on the next page is capped accordingly, below the builder's new end-unit pricing.</p>
+
+  <h3 class="subhead">The competition the subject would face today</h3>
+  <ul class="note-list">
+    <li><strong>3712 NE Petrosa Ave</strong> · 2021 resale · asking $465,000 after a cut from $470,000 · 75 days and counting</li>
+    <li><strong>3741 Eagle Rd</strong> · 2021 resale · listed $469,000 April 3 · went pending in 40 days</li>
+    <li><strong>3095 + 3097 NE Nipper Rd</strong> · builder new interiors · asking $449,900 after cuts from $459,900</li>
+    <li><strong>3865 Eagle Rd</strong> · builder new 2026 build · asking $499,900, 38 days without a pending</li>
+  </ul>
+
+  <div class="trace">
+    <div class="t-hd">Source trace</div>
+    Months of supply, sale-to-list, over/under-asking shares, days to pending, active count: <code>market_pulse_live</code>, geo bend (city), methodology v3-2026-05-07, updated 2026-06-10 17:18 UTC. Price-per-sqft trend and YoY: <code>market_stats_cache</code>, geo bend, rolling_365d window (median $/sqft closed $381.41, YoY −3.3% ppsf, −2.7% median price), computed 2026-06-10 17:15 UTC. Verdict thresholds: 4 or less seller's, 4 to 6 balanced, 6 or more buyer's.
+  </div>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 15 of 18</span>
+  </footer>
+</section>
+
+<!-- PAGE 16 — PRICING STRATEGY -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">3735 Eagle Rd · Pricing Strategy</div>
+  </header>
+
+  <h2 class="section">Pricing Strategy</h2>
+
+  <p>Three independent methods, one answer. They land within 0.9% of each other, which is as tight as a CMA gets.</p>
+
+  <h3 class="subhead">Method 1. End-unit tier price per sqft</h3>
+  <p>The three end-unit comps, time-adjusted and normalized for the new-build premium, span $315 to $329 per sqft (3093 NE Nipper at the low end, 3808 NE Suchy at the high end, 3714 NE Petrosa in the middle at $322). Applied to the subject's 1,450 sqft:</p>
+  <p class="small"><code style="font-family:'Geist Mono',monospace; background: var(--navy-fill); padding:2px 6px; border-radius:3px;">$314.78 × 1,450 ≈ $456,400 &nbsp;|&nbsp; $329.20 × 1,450 ≈ $477,300 &nbsp;|&nbsp; tier midpoint = $467,100</code></p>
+
+  <h3 class="subhead">Method 2. Interior-resale baseline + end-unit premium</h3>
+  <p>Baseline on 3731 Eagle Rd, the purest recent resale data point: same plan, same 2021 vintage, two doors away, closed May 4 at $447,900 ($446,665 time-adjusted). Add the end-unit premium, bracketed between the paired-sales read ($10,000) and the raw resale pair spread against 3714 NE Petrosa ($22,100):</p>
+  <p class="small"><code style="font-family:'Geist Mono',monospace; background: var(--navy-fill); padding:2px 6px; border-radius:3px;">$446,665 + $10,000 = $456,700 (low) &nbsp;|&nbsp; $446,665 + $22,100 = $468,800 (high) &nbsp;|&nbsp; mid = $462,700</code></p>
+
+  <h3 class="subhead">Method 3. Similarity-weighted adjusted-comp reconciliation</h3>
+  <p>The weighted average of all eight adjusted comps from the grid on page 6, weighted by similarity and recency (end-unit resale anchor 25%, next-door resale 20%, recent builder closes the remainder):</p>
+  <p class="small"><code style="font-family:'Geist Mono',monospace; background: var(--navy-fill); padding:2px 6px; border-radius:3px;">Method 3 = $464,200 &nbsp;|&nbsp; Method spread: $462,700 to $467,100 = 0.9% &nbsp;|&nbsp; center ≈ $464,700</code></p>
+
+  <h3 class="subhead">Converged range · confidence: High</h3>
+  <p class="small">8 same-plan comps, 7 closed within the last 6 months, all within a quarter mile, method spread under 1%. The one caveat: interior condition is assumed consistent with the May 2024 photos.</p>
+  <div class="tier-grid">
+    <div class="tier">
+      <div class="t-lbl">Conservative</div>
+      <div class="t-val">$455,000</div>
+      <div class="t-note">Quick-sale entry. Undercuts the sitting resale at 3712 NE Petrosa ($465,000) and prices level with the adjusted interior cluster. Use this to target an offer inside 2 weeks.</div>
+    </div>
+    <div class="tier featured">
+      <div class="t-lbl">Recommended List</div>
+      <div class="t-val">$469,000</div>
+      <div class="t-note">Matches the proven price point: 3714 NE Petrosa closed $470,000 with an offer in 11 days, and 3741 Eagle Rd went pending at a $469,000 ask in 40 days. Stays under the builder's new end units so the resale wins on value.</div>
+    </div>
+    <div class="tier">
+      <div class="t-lbl">High End</div>
+      <div class="t-val">$475,000</div>
+      <div class="t-note">Supportable ceiling with flawless presentation and professional photography. Above this the listing competes with Pahlisch's brand-new end units ($489,900 closed, $499,900 active) and the balanced market does not reward that fight.</div>
+    </div>
+  </div>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 16 of 18</span>
+  </footer>
+</section>
+
+<!-- PAGE 17 — WHY THIS LIST PRICE + VERIFICATION TRACE -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">3735 Eagle Rd · Why This List Price</div>
+  </header>
+
+  <h2 class="section">Why this list price</h2>
+
+  <h3 class="subhead">About the July 2024 purchase price</h3>
+  <p>The subject was purchased in July 2024 for $529,900, at full ask, near the top of this plan's pricing cycle. Since then Pahlisch cut its asks for the same plan by $40,000 to $57,850 before selling, citywide price per sqft fell 3.3% on a rolling 12-month basis, and every 2026 close of this plan landed between $447,900 and $489,900. An honest valuation today is $455,000 to $475,000. Listing at the 2024 purchase price would place the home $60,000 above the nearest competing ask and the comp record shows exactly how that ends: the unit two doors down at 3731 Eagle Rd asked $482,000, sat for weeks, cut to $449,000, and closed at $447,900. If waiting is an option, the timeline on file says exploring, holding costs and market direction belong in that conversation. This report prices the home for today's market.</p>
+
+  <h3 class="subhead">Reading the high outlier</h3>
+  <p>3723 Eagle Rd adjusts to $484,487, well above the rest of the set. Its close happened in April 2025, before the builder's two rounds of cuts reset the band, and the time adjustment only partially captures that reset because the citywide trend understates what happened inside Petrosa. It carries a 10% weight and serves as the ceiling reference. It is not a defensible 2026 anchor.</p>
+
+  <h3 class="subhead">Why $469,000 is the right list</h3>
+  <p>It is the tested number. The identical end-unit resale closed at $470,000 eleven weeks ago after taking an offer in 11 days at a $479,000 ask. A same-vintage resale is pending right now at a $469,000 ask after 40 days. The sitting inventory shows the boundary: $465,000 for an interior unit draws no offer in 75 days, while the builder's $449,900 interiors define the floor below. At $469,000 the subject is the best-value end unit in the neighborhood, $21,000 under the builder's last new end-unit close, with room to negotiate to a close in the low-to-mid $460s that the comp set fully supports.</p>
+
+  <h2 class="section" style="margin-top:18px;">Verification trace</h2>
+  <div class="trace">
+    <div class="t-hd">Data sources (audit trail)</div>
+    Every figure traces to the Ryan Realty Supabase platform (Oregon Data Share MLS), queried live 2026-06-10. Full per-figure citations ship in <code>citations.json</code> alongside this report.<br/>
+    Subject: <code>listings."ListingKey" = 20240429233535736950000000</code> (Jul 2024 close, $529,900) and <code>20210718124713683715000000</code> (Sep 2021 new-construction close, $484,900).<br/>
+    Comp set: <code>SubdivisionName='Petrosa' AND PropertyType='A' AND StandardStatus='Closed' AND CloseDate &gt;= now()−24 months AND TotalLivingAreaSqFt BETWEEN 1116 AND 1784</code> → 53 rows, of which 38 are the 1,450-sqft Parkside plan. The 8 shown are all seven 2026 closes plus the most recent prior resale. Larger Petrosa plans (1,602 to 1,773 sqft homes, closes from $620,000 to $777,000) are a different product and were excluded.<br/>
+    Active context: same filter with <code>StandardStatus IN ('Active','Pending')</code> → 12 rows, 5 of them the 1,450 plan.<br/>
+    Market context: <code>market_pulse_live</code> (bend, 2026-06-10 17:18 UTC) and <code>market_stats_cache</code> (bend, rolling_365d, 2026-06-10 17:15 UTC), methodology v3-2026-05-07.<br/>
+    Time adjustment: −2.72% per year, <code>market_stats_cache.yoy_median_price_delta_pct</code>, bend rolling_365d. Photo URLs HEAD-checked via the Spark CDN. Comp map pins use each comp's stored MLS Latitude/Longitude. The subject pin uses the Google-geocoded rooftop coordinate (44.09034, -121.25311) because the subject's two MLS rows carry conflicting coordinates roughly 150 meters apart.
+  </div>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 17 of 18</span>
+  </footer>
+</section>
+
+<!-- PAGE 18 — DISCLOSURE + SIGNATURE -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">3735 Eagle Rd · Presented by Matt Ryan</div>
+  </header>
+
+  <h2 class="section">Disclosure</h2>
+
+  <p>This Comparative Market Analysis is an estimate of market value based on closed sales of the same floor plan inside Petrosa over the prior 24 months. It is not a formal appraisal and is not binding on any party. Market conditions change continuously. Figures are accurate as of the pull date noted in the verification trace on page 17. Equal Housing Opportunity.</p>
+
+  <p>The pricing range assumes interior and exterior condition consistent with the May 2024 MLS listing. The photos on the cover and page 3 are from that listing. If improvements were completed since July 2024 with documentation, surface them and the range will be rebuilt with a value-add credit using Pacific-region cost-vs-value recovery rates. Conversely, condition issues would compress the range toward the conservative tier.</p>
+
+  <p>Comparable sales were drawn from the Oregon Data Share MLS via the Ryan Realty data platform on June 10, 2026. The comp set is unusually strong: every comp is the identical 1,450-sqft Parkside plan inside the same community, selected from 38 closes of the plan in the prior 24 months, and seven of eight closed within the last six months. One comp (3723 Eagle Rd, April 2025) predates the builder's price reset and is used as a ceiling reference at reduced weight.</p>
+
+  <p>Thank you so much for taking the time to request this analysis. If anything here raises questions, or if you would like to talk through timing in the current market, I'm always here if you need anything down the road.</p>
+
+  <div class="signature-page">
+    <img class="portrait" src="./assets/matt-ryan.png" alt="Matt Ryan" />
+    <div class="sig-content">
+      <div class="sig-name">Matt Ryan</div>
+      <div class="sig-printed">Matt Ryan</div>
+      <div class="sig-title">Owner &amp; Principal Broker · Ryan Realty</div>
+      <div class="sig-contact">
+        <strong>541.213.6706</strong><br/>
+        matt@ryan-realty.com<br/>
+        ryan-realty.com · Bend · Oregon
+      </div>
+      <div class="sig-license">Oregon Real Estate License # 201206613</div>
+    </div>
+  </div>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · Honest. Transparent. Trustworthy.</span>
+    <span>Page 18 of 18</span>
+  </footer>
+</section>
+
+</body>
+</html>
