@@ -183,8 +183,13 @@ export async function getListingHistoryTableStatus(): Promise<{ exists: boolean;
 export async function getAllListingsCount(): Promise<CountResult> {
   const sb = client()
   if (!sb) return ZERO
+  // 'estimated' (planner reltuples) — an exact count is a full scan of the
+  // ~589k-row table that times out, and withRetry collapsed that error into
+  // {count: 0}, so the dashboard's "Listings (total)" card showed 0 next to
+  // sibling cards proving ~585k. The estimate is instant and within a fraction
+  // of a percent on a table this size, which is all a health card needs.
   return withRetry(async () =>
-    sb.from('listings').select('ListingKey', { count: 'exact', head: true })
+    sb.from('listings').select('ListingKey', { count: 'estimated', head: true })
   )
 }
 
