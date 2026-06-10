@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.480.1 (2026-06-10)
+
+### Bug Fixes
+- fix(admin): Listings-total card showed 0 — exact count over 589k rows timed out, swallowed to zero
+
+---
+
+
 ## v1.480.0 (2026-06-10)
 
 ### Features
