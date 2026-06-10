@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.482.1 (2026-06-10)
+
+### Bug Fixes
+- fix(perf): FlyoverHero 60s LCP — poster paints first, 37MB hero video mounts post-paint
+
+---
+
+
 ## v1.482.0 (2026-06-10)
 
 ### Features
