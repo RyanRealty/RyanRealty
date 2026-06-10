@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.466.0 (2026-06-10)
+
+### Features
+- feat(site): consistent polish pass over 24 site geo images
+
+---
+
+
 ## v1.465.0 (2026-06-10)
 
 ### Features
