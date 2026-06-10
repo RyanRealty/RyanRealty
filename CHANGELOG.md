@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.448.0 (2026-06-10)
+
+### Features
+- feat(crm): FUB comms backfill — per-person texts + emails into the unified timeline
+
+---
+
+
 ## v1.447.0 (2026-06-10)
 
 ### Features
