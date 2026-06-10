@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.476.0 (2026-06-10)
+
+### Features
+- feat(tc): deal team & contacts (rung 15) — multiple brokers + all parties on a deal
+
+### Bug Fixes
+- fix(brand): LinkedIn company URL in JSON-LD sameAs — real slug is ryan-realty-llc-bend-oregon (old /company/ryanrealtybend 404s, verified live 2026-06-10)
+- fix(build): export the Bend neighborhood stats types from the DAL index — completes 9907ba67
+
+### Maintenance
+- docs(tc): roadmap — deal team & contacts shipped (rung 15)
+
+---
+
+
 ## v1.475.0 (2026-06-10)
 
 ### Features
