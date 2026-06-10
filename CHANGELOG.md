@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.484.0 (2026-06-10)
+
+### Features
+- feat(gates): migration-drift gate — repo migrations must exist in prod (caught 4 silently-dead features)
+
+### Bug Fixes
+- fix(crm): kill inbox email duplication at ingest + block FUB system-sender noise
+
+---
+
+
 ## v1.483.1 (2026-06-10)
 
 ### Bug Fixes
