@@ -11,6 +11,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { autoEnrollPerson, ENROLLMENT_EPOCH } from '@/lib/crm/enroll'
+import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -36,24 +37,44 @@ export async function GET(request: Request) {
 
   const { data: candidates, error } = await sb
     .from('crm_people')
-    .select('id')
+    .select('id,name,source,stage,assigned_broker,tags,fub_created_at')
     .gte('fub_created_at', windowStart)
     .order('id', { ascending: false })
     .limit(300)
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
 
   let enrolled = 0
+  let alerted = 0
   const skipped: Record<string, number> = {}
   for (const p of candidates ?? []) {
     const r = await autoEnrollPerson(p.id)
     if (r.enrolled) enrolled++
     else skipped[r.reason] = (skipped[r.reason] ?? 0) + 1
+
+    // Instant broker text on every NEW lead (any door: LP, FUB entry, Meta,
+    // IDX registration via delta, inbound SMS, detection crons). Dedup is in
+    // queueBrokerAlert; the relay on the mini delivers within ~45s.
+    if ((p.tags ?? []).includes('compliance:hard-stop')) continue
+    const queued = await queueBrokerAlert({
+      broker: p.assigned_broker,
+      personId: p.id,
+      kind: 'new-lead',
+      body: newLeadAlertBody({
+        name: p.name,
+        source: p.source,
+        stage: p.stage,
+        personId: p.id,
+        detail: r.enrolled ? 'Auto-enrolled in nurture workflow.' : null,
+      }),
+    })
+    if (queued) alerted++
   }
 
   return NextResponse.json({
     ok: true,
     scanned: (candidates ?? []).length,
     enrolled,
+    alerted,
     skipped,
     duration_ms: Date.now() - startMs,
   })

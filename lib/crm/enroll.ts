@@ -102,5 +102,30 @@ export async function autoEnrollByFubId(fubPersonId: number): Promise<AutoEnroll
     ;({ data } = await sb.from('crm_people').select('id').eq('fub_legacy_id', fubPersonId).maybeSingle())
   }
   if (!data) return { enrolled: false, reason: 'mirror not available' }
-  return autoEnrollPerson(data.id)
+  const result = await autoEnrollPerson(data.id)
+  // Instant broker text for site-originated leads (dedupe inside the queue —
+  // the 15-min auto-enroll cron will hit the same key and no-op).
+  try {
+    const { data: p } = await sb
+      .from('crm_people')
+      .select('id,name,source,stage,assigned_broker,tags,fub_created_at')
+      .eq('id', data.id)
+      .maybeSingle()
+    if (p && new Date(p.fub_created_at ?? 0) >= new Date(ENROLLMENT_EPOCH) && !(p.tags ?? []).includes('compliance:hard-stop')) {
+      const { queueBrokerAlert, newLeadAlertBody } = await import('@/lib/crm/broker-alerts')
+      await queueBrokerAlert({
+        broker: p.assigned_broker,
+        personId: p.id,
+        kind: 'new-lead',
+        body: newLeadAlertBody({
+          name: p.name,
+          source: p.source,
+          stage: p.stage,
+          personId: p.id,
+          detail: result.enrolled ? 'Auto-enrolled in nurture workflow.' : null,
+        }),
+      })
+    }
+  } catch { /* alert must never break enrollment */ }
+  return result
 }

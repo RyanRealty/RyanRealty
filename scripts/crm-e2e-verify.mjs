@@ -245,6 +245,16 @@ await tryCheck('wiring.static', async () => {
   check('wiring.static', problems.length === 0 ? 'PASS' : 'FAIL', problems.join('; '));
 });
 
+// ── 8a2. ALERT RELAY HEALTH (instant new-lead texts) ───────────────────────
+await tryCheck('alerts.relay', async () => {
+  const tenMinAgo = new Date(Date.now() - 10 * 60000).toISOString();
+  const [{ count: stuck }, { count: failedDay }] = await Promise.all([
+    sb.from('crm_broker_alerts').select('id', { count: 'exact', head: true }).eq('status', 'pending').lt('created_at', tenMinAgo),
+    sb.from('crm_broker_alerts').select('id', { count: 'exact', head: true }).eq('status', 'failed').gte('created_at', new Date(Date.now() - 86400e3).toISOString()),
+  ]);
+  check('alerts.relay', (stuck ?? 0) > 0 ? 'FAIL' : (failedDay ?? 0) > 0 ? 'WARN' : 'PASS', `${stuck ?? 0} stuck >10m (relay dead?), ${failedDay ?? 0} failed in 24h`);
+});
+
 // ── 8b. BROKER LICENSES (compliance: never let a license lapse) ────────────
 await tryCheck('compliance.licenses', async () => {
   const { data } = await sb.from('brokers').select('display_name,license_status,license_expires_on,license_checked_at').eq('is_active', true);
