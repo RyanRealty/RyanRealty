@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.469.0 (2026-06-10)
+
+### Features
+- feat(crm): A2P FILED — profile Active, brand APPROVED (30s), LOW_VOLUME campaign IN_PROGRESS
+
+---
+
+
 ## v1.468.1 (2026-06-10)
 
 ### Bug Fixes
