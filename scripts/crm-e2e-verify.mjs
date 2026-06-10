@@ -190,6 +190,17 @@ await tryCheck('twilio.a2p-brand', async () => {
   if (!brand) return check('twilio.a2p-brand', 'WARN', 'no brand yet — console wizard pending (outbound SMS blocked)');
   check('twilio.a2p-brand', brand.status === 'APPROVED' ? 'PASS' : 'WARN', `brand ${brand.status}`);
 });
+await tryCheck('twilio.a2p-campaign', async () => {
+  const ms = env.TWILIO_MESSAGING_SERVICE_SID;
+  if (!ms) return check('twilio.a2p-campaign', 'WARN', 'no messaging service sid in env');
+  const res = await fetch(`https://messaging.twilio.com/v1/Services/${ms}/Compliance/Usa2p`, { headers: TW_AUTH });
+  const d = await res.json();
+  const c = (d.compliance ?? d.us_app_to_person ?? [])[0];
+  if (!c) return check('twilio.a2p-campaign', 'WARN', 'no campaign yet');
+  const st = c.campaign_status ?? c.status;
+  // VERIFIED = outbound texting live to all US carriers
+  check('twilio.a2p-campaign', st === 'VERIFIED' ? 'PASS' : st === 'FAILED' ? 'FAIL' : 'WARN', `campaign ${st} (QE submitted 2026-06-10)`);
+});
 
 // ── 6. GMAIL (send-as capability per broker) ──────────────────────────────
 await tryCheck('gmail.dwd-auth', async () => {
