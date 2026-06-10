@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.487.1 (2026-06-10)
+
+### Bug Fixes
+- fix(voice): kill smallness positioning site-wide — position on capability, not headcount (Matt directive)
+
+---
+
+
 ## v1.487.0 (2026-06-10)
 
 ### Features
