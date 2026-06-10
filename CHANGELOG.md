@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.457.0 (2026-06-10)
+
+### Features
+- feat(paid): ad-matched LP hero variants + enhanced masters + launch wiring
+
+### Maintenance
+- docs(skill): viral-playbook §8 — trend freshness is a build-time input, never a stored fact
+
+---
+
+
 ## v1.456.0 (2026-06-10)
 
 ### Features
