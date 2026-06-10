@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.450.0 (2026-06-10)
+
+### Features
+- feat(crm): comms layer complete — Gmail sync + sequence engine + composer + inbox + pipeline
+
+---
+
+
 ## v1.449.0 (2026-06-10)
 
 ### Features
