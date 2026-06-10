@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.449.0 (2026-06-10)
+
+### Features
+- feat(paid): v11 seller ad round — asset-library photos + fresh GBP quote bank
+
+---
+
+
 ## v1.448.0 (2026-06-10)
 
 ### Features
