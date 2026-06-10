@@ -1,0 +1,251 @@
+'use server'
+
+import { createClient } from '@supabase/supabase-js'
+import { revalidatePath } from 'next/cache'
+import { getSession } from '@/app/actions/auth'
+import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+
+/**
+ * TC system actions — Ryan Realty's own transaction system of record
+ * (tc_* tables + tc-documents Storage bucket). See docs/TC_SYSTEM.md.
+ *
+ * Every mutation appends a tc_events row (append-only audit spine).
+ */
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- PostgREST rows narrow at the mapping sites below
+type DbRow = Record<string, any>
+
+function getServiceSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url?.trim() || !key?.trim()) throw new Error('Supabase service role not configured')
+  return createClient(url, key, { auth: { persistSession: false } })
+}
+
+export type TcDocument = {
+  id: string
+  source_doc_id: string | null
+  name: string
+  storage_path: string | null
+  sha256: string | null
+  bytes: number | null
+  page_count: number | null
+  source_uploaded_at: string | null
+  archived: boolean
+  archived_reason: string | null
+  archived_at: string | null
+  is_broker_notes: boolean
+  classification: Record<string, unknown>
+}
+
+export type TcChecklistItem = {
+  id: string
+  name: string
+  type_name: string | null
+  status: 'required' | 'optional' | 'in_review' | 'completed' | 'na'
+  sort_order: number | null
+  documentIds: string[]
+}
+
+export type TcCycle = {
+  id: string
+  kind: 'sale' | 'listing'
+  source_guid: string
+  status: string | null
+  mls_number: string | null
+  escrow_number: string | null
+  escrow_company: string | null
+  sellers: string[]
+  buyers: string[]
+  listing_price: number | null
+  sale_price: number | null
+  office_gross: number | null
+  commission_percent: number | null
+  contract_acceptance_date: string | null
+  escrow_closing_date: string | null
+  actual_closing_date: string | null
+  expiration_date: string | null
+  dead_date: string | null
+  checklist_type: string | null
+  broker_name: string | null
+  documents: TcDocument[]
+  checklist: TcChecklistItem[]
+}
+
+export type TcEvent = {
+  id: number
+  actor: string
+  action: string
+  detail: Record<string, unknown>
+  created_at: string
+}
+
+export type TcDeal = {
+  id: string
+  property_key: string
+  address: string
+  broker_name: string | null
+  stage: string
+  stage_detail: string | null
+  fub_person_ids: unknown[]
+  cycles: TcCycle[]
+  events: TcEvent[]
+}
+
+export async function getTcDeal(propertyKey: string): Promise<TcDeal | null> {
+  const supabase = getServiceSupabase()
+  const { data: deal } = await supabase
+    .from('tc_deals')
+    .select('*')
+    .eq('property_key', propertyKey)
+    .maybeSingle()
+  if (!deal) return null
+
+  const { data: cycles } = await supabase
+    .from('tc_cycles')
+    .select('*')
+    .eq('deal_id', deal.id)
+    .order('created_at', { ascending: true })
+
+  const cycleIds = (cycles ?? []).map((c) => c.id)
+  const [{ data: docs }, { data: items }, { data: assignments }, { data: events }] = await Promise.all([
+    cycleIds.length
+      ? supabase.from('tc_documents').select('*').in('cycle_id', cycleIds).order('source_uploaded_at', { ascending: false })
+      : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+    cycleIds.length
+      ? supabase.from('tc_checklist_items').select('*').in('cycle_id', cycleIds).order('sort_order', { ascending: true })
+      : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+    cycleIds.length
+      ? supabase.from('tc_checklist_assignments').select('item_id, document_id')
+      : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+    supabase.from('tc_events').select('id, actor, action, detail, created_at').eq('deal_id', deal.id).order('id', { ascending: false }).limit(15),
+  ])
+
+  const assignmentsByItem = new Map<string, string[]>()
+  for (const a of (assignments ?? []) as Array<{ item_id: string; document_id: string }>) {
+    const arr = assignmentsByItem.get(a.item_id) ?? []
+    arr.push(a.document_id)
+    assignmentsByItem.set(a.item_id, arr)
+  }
+
+  const rank = (c: { kind: string; status: string | null; actual_closing_date: string | null }) =>
+    c.status === 'Pending' ? 0 : c.status === 'Closed' ? 1 : c.kind === 'listing' ? 3 : 2
+
+  const fullCycles: TcCycle[] = ((cycles ?? []) as DbRow[])
+    .map((c) => ({
+      id: c.id,
+      kind: c.kind,
+      source_guid: c.source_guid,
+      status: c.status,
+      mls_number: c.mls_number,
+      escrow_number: c.escrow_number,
+      escrow_company: c.escrow_company,
+      sellers: c.sellers ?? [],
+      buyers: c.buyers ?? [],
+      listing_price: c.listing_price,
+      sale_price: c.sale_price,
+      office_gross: c.office_gross,
+      commission_percent: c.commission_percent,
+      contract_acceptance_date: c.contract_acceptance_date,
+      escrow_closing_date: c.escrow_closing_date,
+      actual_closing_date: c.actual_closing_date,
+      expiration_date: c.expiration_date,
+      dead_date: c.dead_date,
+      checklist_type: c.checklist_type,
+      broker_name: c.broker_name,
+      documents: ((docs ?? []) as DbRow[])
+        .filter((doc) => doc.cycle_id === c.id)
+        .map((doc) => ({
+          id: doc.id,
+          source_doc_id: doc.source_doc_id,
+          name: doc.name,
+          storage_path: doc.storage_path,
+          sha256: doc.sha256,
+          bytes: doc.bytes,
+          page_count: doc.page_count,
+          source_uploaded_at: doc.source_uploaded_at,
+          archived: doc.archived,
+          archived_reason: doc.archived_reason,
+          archived_at: doc.archived_at,
+          is_broker_notes: doc.is_broker_notes,
+          classification: doc.classification ?? {},
+        })),
+      checklist: ((items ?? []) as DbRow[])
+        .filter((it) => it.cycle_id === c.id)
+        .map((it) => ({
+          id: it.id,
+          name: it.name,
+          type_name: it.type_name,
+          status: it.status,
+          sort_order: it.sort_order,
+          documentIds: assignmentsByItem.get(it.id) ?? [],
+        })),
+    }))
+    .sort((a, b) => rank(a) - rank(b))
+
+  return {
+    id: deal.id,
+    property_key: deal.property_key,
+    address: deal.address,
+    broker_name: deal.broker_name,
+    stage: deal.stage,
+    stage_detail: deal.stage_detail,
+    fub_person_ids: deal.fub_person_ids ?? [],
+    cycles: fullCycles,
+    events: (events ?? []) as TcEvent[],
+  }
+}
+
+/** Short-lived signed URL for a stored document (5 minutes). */
+export async function getTcDocumentUrl(documentId: string): Promise<{ url: string | null; error?: string }> {
+  const supabase = getServiceSupabase()
+  const { data: doc } = await supabase.from('tc_documents').select('storage_path').eq('id', documentId).maybeSingle()
+  if (!doc?.storage_path) return { url: null, error: 'No stored binary for this document' }
+  const { data, error } = await supabase.storage.from('tc-documents').createSignedUrl(doc.storage_path, 300)
+  if (error) return { url: null, error: error.message }
+  return { url: data.signedUrl }
+}
+
+/** The archive fix: one flag flip + one audit row. Reversible. No renames. */
+export async function setTcDocumentArchived(
+  documentId: string,
+  archived: boolean,
+  reason: string | null
+): Promise<{ ok: boolean; error?: string }> {
+  const session = await getSession()
+  const role = await getAdminRoleForEmail(session?.user?.email ?? null)
+  if (!role || (role.role !== 'superuser' && role.role !== 'broker')) {
+    return { ok: false, error: 'Not authorized' }
+  }
+
+  const supabase = getServiceSupabase()
+  const { data: doc } = await supabase
+    .from('tc_documents')
+    .select('id, name, archived, cycle_id, tc_cycles(deal_id)')
+    .eq('id', documentId)
+    .maybeSingle()
+  if (!doc) return { ok: false, error: 'Document not found' }
+
+  const { error: upErr } = await supabase
+    .from('tc_documents')
+    .update({
+      archived,
+      archived_reason: archived ? reason || 'archived by user' : null,
+      archived_at: archived ? new Date().toISOString() : null,
+    })
+    .eq('id', documentId)
+  if (upErr) return { ok: false, error: upErr.message }
+
+  const dealId = (doc as DbRow).tc_cycles?.deal_id ?? null
+  await supabase.from('tc_events').insert({
+    deal_id: dealId,
+    cycle_id: doc.cycle_id,
+    document_id: doc.id,
+    actor: session?.user?.email ?? 'admin',
+    action: archived ? 'document_archived' : 'document_unarchived',
+    detail: { name: doc.name, reason: reason ?? null },
+  })
+
+  revalidatePath('/admin/deals')
+  return { ok: true }
+}

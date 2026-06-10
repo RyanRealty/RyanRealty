@@ -81,3 +81,15 @@ Matt: **"finish everything else that was left, then start working on the brain."
 2. Launch Wave 3b (components) → Wave 4 → Wave 5, each a Workflow (discover → implement → verify, structured output, adversarial verify), verified + shipped before the next.
 3. Then #19 (brain), #20 (hero).
 4. Workflow scripts live in `out/wf-*.mjs` (gitignored) — reuse the pattern.
+
+## TC SYSTEM (SkySlope replacement) — session 2026-06-09/10
+
+Matt approved recreating SkySlope ("yes lets do that... start by getting all of our existing Transactions into the system"). Spec: `docs/TC_SYSTEM.md`. Schema applied to hosted Supabase: `tc_deals / tc_cycles / tc_documents / tc_checklist_items / tc_checklist_assignments / tc_events` (+ Storage bucket `tc-documents`), migration `20260610010000_tc_system_v1.sql`. Full historical migration running via `scripts/tc-migrate-from-skyslope.mjs` (live re-fetch per folder, sha256 binaries, ARCHIVE-name → archived flag). Dashboard `/admin/deals` + snapshot tables `skyslope_transactions`/`skyslope_dashboard_meta` already synced (33 properties).
+
+**Coordination with the CRM/FUB-replacement session (`crm_*`, docs/CRM_REPLACEMENT_BLUEPRINT.md):** disjoint namespaces, no collisions. `tc_deals.fub_person_ids` (jsonb of FUB person ids) is the intended join to `crm_people.fub_legacy_id` — when linking transactions to people, join through FUB ids, do NOT create a second person store in tc_*. `crm_deals` (CRM pipeline concept) ≠ `tc_deals` (transaction/property record); a future bridge table or fk can map them. Note: `20260610010000_` timestamp prefix is shared by `crm_core.sql` and `tc_system_v1.sql` — both already applied to hosted; do not rename either file.
+
+Uncommitted (draft-first, awaiting Matt): deals dashboard page + action, sync scripts, master-file toolchain, skill-doc update, `data/skyslope-audit/broker-notes-review.json`, `docs/TC_SYSTEM.md`, both my migrations, this handoff block. The dev-preview harness `app/dev/deals-preview/` gets DELETED before commit.
+
+### TC SYSTEM update — migration COMPLETE 2026-06-10
+
+Full historical migration verified: 33 deals / 51 cycles / **2,355 documents, 948.9 MB, 0 failures, 0 missing binaries**, sha256 round-trips verified, source reconciliation exact (2,355 = 2,355). Deal detail page live at `/admin/deals/[key]` (documents + one-click archive/unarchive with tc_events audit + checklist + signed-URL downloads). Archive flow proven end-to-end authenticated (and reverted). Forms/signing DDL (`20260610020000_tc_forms_signing_v1.sql`) drafted + form-template importer built; apply pending Supabase MCP connector recovery. Commit bundle awaiting Matt sign-off.

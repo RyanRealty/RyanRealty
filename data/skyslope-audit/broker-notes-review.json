@@ -1,0 +1,23 @@
+{
+  "reviewedAt": "2026-06-09",
+  "method": "foreground sonnet subagent, full-text cross-check vs analysis.json (settlement-verified metadata)",
+  "totals": { "total": 25, "clean": 14, "minor": 7, "needsCorrection": 4 },
+  "needsRegeneration": [
+    { "guid8": "13e20213", "address": "54474 Huntington Road", "reasons": ["BN predates 5-29 metadata remediation", "escrow# stale (4250991 vs verified 7064-4224031)", "buyer 'TBD Buyer' vs verified Michele Sciaraffo", "close-date line conflicts (2026-04-09 vs verified 2025-01-08)", "commission $10,200 not stated"] },
+    { "guid8": "1f4436e6", "address": "534 Crowson Rd", "reasons": ["BN predates remediation", "'TBD Seller'/'TBD Buyer' placeholders vs verified Hogge sellers + Evans/Axel buyers", "escrow# 7161-4250991 absent", "commission $10,200 absent"] },
+    { "guid8": "b3d7cb82", "address": "61271 Kwinnum Drive", "reasons": ["BN flags SkySlope salePrice $525K as drift — since cured to $750K (5-29)", "BN commission-underpayment flag ($1,972.50 vs ~$16,875) predates Matt's verified $18,750 entry", "regenerate to reflect resolved state"] },
+    { "guid8": "eb9a24d6", "address": "29500 Ochoco Way", "reasons": ["BN close date 2024-11-22 vs settlement-verified 2024-10-31 (set 5-29)", "commission $12,600 not stated", "'SE' directional in BN vs SkySlope record"] }
+  ],
+  "worthRefreshing": [
+    { "guid8": "ce3c30de", "address": "2680 NW Nordic Avenue", "reasons": ["BN office gross $33,000 (2.5% of $1.32M net) vs verified $33,750 (2.5% of $1.35M contract) — $750 delta; Matt to confirm which the settlement supports"] },
+    { "guid8": "c9fcc145", "address": "2354 NW Drouillard Ave", "reasons": ["'NW NW' doubled directional typo in BN header (cosmetic)"] }
+  ],
+  "carriedComplianceFlags": [
+    { "guid8": "2b9046c3", "address": "15352 Bear St", "flag": "OREF 021 LBP buyer certification blank — pre-1978 manufactured home; buyer Hernandez never countersigned. Retroactive cure or documented waiver needed.", "severity": "legal_gap" },
+    { "guid8": "f50fe2a6", "address": "712 SW 1st St", "flag": "MLSCO Listing Contract unsigned by principal broker (both cycles flag it). OREF 059 contingency removal missing buyer signature (legal_gap_candidate).", "severity": "legal_gap_candidate" },
+    { "guid8": "740abefb", "address": "1974 NW Newport Hills", "flag": "OREF 060 sellers-only signer gap (parked 2026-06-02).", "severity": "flag" },
+    { "guid8": "f88642ff", "address": "2732 Ordway Avenue", "flag": "Buyer-only _X addenda ruling pending (keep/strip). SkySlope folder.sellers missing co-seller Ashlee M Bellinson.", "severity": "flag" },
+    { "guid8": "32c42212", "address": "56111 School House Rd", "flag": "RSA canonical pick pending: bundle 58f5ca81 (16pp RSA+PP1) vs standalone 64d96848 — both live in RSA activity.", "severity": "decision" },
+    { "guid8": "1f4436e6", "address": "534 Crowson Rd", "flag": "Listing Agreement with no matching activity (parked 2026-06-02).", "severity": "flag" }
+  ]
+}

@@ -216,3 +216,18 @@ Test prompts in `evals/evals.json` run against frozen folder snapshots in `evals
 - `evals/fixtures/ochoco-way/` — Stradford closing where prior subagent fabricated 51 placeholder docIds
 
 Each fixture has `documents.json`, `sale-detail.json`, `binaries/*.pdf`, and `gold.json` (the hand-verified Phase 4 + Phase 5 output). The eval grades against `gold.json` for: (a) correct canonical winners, (b) zero fabricated docIds, (c) all single_party forms retain `_X`, (d) all bundles detected.
+
+## Master inventory + deal dashboard toolchain (added 2026-06-09)
+
+Cross-folder, read-only tooling that feeds the `/admin/deals` dashboard and the master transaction file. None of these mutate SkySlope.
+
+| Script | Purpose |
+|---|---|
+| `scripts/skyslope-master-inventory.mjs` | Enumerate EVERY folder (sales + listings, archived included, 1990–2037 window, all brokers); save per-folder `detail.json` + `documents.json` under `tmp/skyslope-master/` |
+| `scripts/skyslope-master-analyze.mjs` | Local re-derive of per-folder summaries (correct field names: `actualClosingDate`, `escrowClosingDate`, `contractAcceptanceDate`, `deadDate`, activity `status` ∈ Required/Optional/In Review/Completed) |
+| `scripts/skyslope-master-file.mjs` | Property-centric merge → `tmp/skyslope-master/master.json` + `MASTER_TRANSACTIONS.md` (groups offer-cycle folders per property, carries BN review + doc-gap findings) |
+| `scripts/skyslope-fetch-broker-notes.mjs` | Download + pdfjs-extract every live Broker Notes PDF for review (re-fetches doc lists live — saved `doc.url` S3 links expire in 5 min) |
+| `scripts/skyslope-sync-dashboard.mjs` | Upsert master.json → Supabase `skyslope_transactions` + `skyslope_dashboard_meta` (service role) for `/admin/deals` |
+| `scripts/skyslope-dashboard-refresh.mjs` | One command: inventory → analyze → master → sync |
+
+Key facts the toolchain encodes (verified 2026-06-09): checklist activities carry NO `required` boolean — the per-activity `status` field IS the state machine; `GET /{kind}/{guid}/documents` returns mirror duplicates (dedup by docId); saved pre-signed S3 `doc.url`s expire in ~5 minutes; agentGuid map Matt `41c18058`, Rebecca `512ee312`, Paul `1f5cb058`.
