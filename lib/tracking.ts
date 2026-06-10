@@ -85,6 +85,8 @@ export type EventName =
   | 'pulse_card_share'      // tap on share icon
   | 'pulse_cta_click'       // tap on a card's primary CTA (schedule/read/etc.)
   | 'pulse_filter_change'   // user changed a feed filter (city, event type)
+  // Nav telemetry — locked 2026-06-09. Top conversion surface; every open + click measured.
+  | 'nav_interact'          // panel open/close or link click inside the mega-menu
 
 function pushDataLayer(obj: Record<string, unknown>) {
   if (typeof window === 'undefined') return
