@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.487.0 (2026-06-10)
+
+### Features
+- feat(crm): same-human send guard in sequence engine + finish timeline dedupe
+
+---
+
+
 ## v1.486.1 (2026-06-10)
 
 ### Bug Fixes
