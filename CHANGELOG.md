@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.452.0 (2026-06-10)
+
+### Features
+- feat(seo): retarget 51 dead market-report legacy redirects + loop-health GSC query-slice check
+
+---
+
+
 ## v1.451.0 (2026-06-10)
 
 ### Features
