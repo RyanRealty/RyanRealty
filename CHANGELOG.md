@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.444.0 (2026-06-10)
+
+### Features
+- feat(e2e): every-page every-feature walker — full crawl + 9 interaction suites + nightly CI; fix duplicate form ids it caught
+
+---
+
+
 ## v1.443.1 (2026-06-10)
 
 ### Bug Fixes
