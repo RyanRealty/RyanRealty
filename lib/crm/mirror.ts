@@ -163,6 +163,56 @@ export async function mirrorPersonByEmail(email: string | null | undefined): Pro
   }
 }
 
+/**
+ * Site behavioral event → CRM timeline, in real time (Matt directive
+ * 2026-06-10: track leads at every site touchpoint). One chokepoint: every
+ * sendEvent success calls this, so listing views, searches, saves, inquiries,
+ * and return visits land on the contact's CRM timeline the moment they happen
+ * — and the person mirror refreshes for lastActivity/tags.
+ */
+export async function mirrorSiteEvent(params: {
+  email: string | null | undefined
+  type: string
+  source?: string
+  pageUrl?: string
+  pageTitle?: string
+  message?: string
+  propertyStreet?: string
+}): Promise<void> {
+  if (!mirrorEnabled()) return
+  const email = String(params.email ?? '').trim().toLowerCase()
+  if (!email) return
+  try {
+    const sb = createServiceClient()
+    const { data: pt } = await sb
+      .from('crm_contact_points')
+      .select('person_id')
+      .eq('kind', 'email')
+      .eq('value', email)
+      .limit(1)
+      .maybeSingle()
+    if (pt?.person_id) {
+      await sb.from('crm_timeline').insert({
+        person_id: pt.person_id,
+        kind: 'web_event',
+        title: [params.type, params.propertyStreet ?? params.pageTitle].filter(Boolean).join(' · ').slice(0, 180),
+        body: params.message ?? params.pageUrl ?? null,
+        payload: {
+          type: params.type,
+          source: params.source ?? null,
+          pageUrl: params.pageUrl ?? null,
+          property: params.propertyStreet ?? null,
+        },
+        source: 'site',
+      })
+    }
+  } catch (err) {
+    console.warn('[crm-mirror] mirrorSiteEvent error:', err)
+  }
+  // refresh the person mirror too (lastActivity, tag drift)
+  await mirrorPersonByEmail(email)
+}
+
 async function crmIdForFub(fubPersonId: number): Promise<number | null> {
   try {
     const sb = createServiceClient()

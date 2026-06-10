@@ -261,10 +261,47 @@ export async function getCrmPersonFull(id: number): Promise<CrmPersonFull> {
     fubId ? sb.from('visitor_sessions').select('id', { count: 'exact', head: true }).eq('fub_person_id', fubId) : Promise.resolve({ count: 0 }),
   ])
 
+  // Merge the first-party website trail (visitor_events via this person's
+  // identified sessions) into the timeline view — every site touchpoint
+  // visible on the contact, no data duplication (read-time merge).
+  let merged = (timeline.data ?? []) as CrmTimelineRow[]
+  if (fubId) {
+    const { data: sessions } = await sb
+      .from('visitor_sessions')
+      .select('session_id')
+      .eq('fub_person_id', fubId)
+      .order('last_seen_at', { ascending: false })
+      .limit(20)
+    const sessionIds = (sessions ?? []).map((s) => s.session_id)
+    if (sessionIds.length) {
+      const { data: vevents } = await sb
+        .from('visitor_events')
+        .select('id,event_at,event_type,page_url,page_title,listing_street,listing_city,dwell_seconds,scroll_depth_pct')
+        .in('session_id', sessionIds)
+        .order('event_at', { ascending: false })
+        .limit(30)
+      const visitorRows: CrmTimelineRow[] = (vevents ?? []).map((v) => ({
+        id: -Number(v.id),
+        ts: v.event_at as string,
+        kind: 'web_event',
+        title: [v.event_type, v.listing_street ? `${v.listing_street}, ${v.listing_city ?? ''}`.trim() : v.page_title]
+          .filter(Boolean).join(' · ').slice(0, 180),
+        body: [v.page_url, v.dwell_seconds ? `${v.dwell_seconds}s on page` : null, v.scroll_depth_pct ? `${v.scroll_depth_pct}% scroll` : null]
+          .filter(Boolean).join(' · '),
+        source: 'visitor',
+        broker: null,
+        payload: {},
+      }))
+      merged = [...merged, ...visitorRows]
+        .sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())
+        .slice(0, 100)
+    }
+  }
+
   return {
     person,
     contactPoints: (points.data ?? []) as CrmPersonFull['contactPoints'],
-    timeline: (timeline.data ?? []) as CrmTimelineRow[],
+    timeline: merged,
     timelineTotal: timeline.count ?? 0,
     tasks: (tasks.data ?? []) as CrmTaskRow[],
     suppressions: (suppressions.data ?? []) as CrmPersonFull['suppressions'],

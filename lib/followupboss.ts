@@ -12,8 +12,8 @@ import {
 import {
   mirrorEnrollmentToCrm,
   mirrorNoteToCrm,
-  mirrorPersonByEmail,
   mirrorPersonFromFub,
+  mirrorSiteEvent,
   mirrorTaskToCrm,
 } from './crm/mirror'
 
@@ -804,7 +804,15 @@ export async function sendEvent(params: SendEventParams): Promise<{ ok: true; st
         console.error(message)
       }
     }
-    void mirrorPersonByEmail(params.person?.emails?.[0]?.value)
+    void mirrorSiteEvent({
+      email: params.person?.emails?.[0]?.value,
+      type: params.type,
+      source: params.source,
+      pageUrl: params.pageUrl ?? params.sourceUrl,
+      pageTitle: params.pageTitle,
+      message: params.message,
+      propertyStreet: params.property?.street,
+    })
     return { ok: true, status: 204 }
   }
   if (res.ok) {
@@ -822,7 +830,15 @@ export async function sendEvent(params: SendEventParams): Promise<{ ok: true; st
         console.error(message)
       }
     }
-    void mirrorPersonByEmail(params.person?.emails?.[0]?.value)
+    void mirrorSiteEvent({
+      email: params.person?.emails?.[0]?.value,
+      type: params.type,
+      source: params.source,
+      pageUrl: params.pageUrl ?? params.sourceUrl,
+      pageTitle: params.pageTitle,
+      message: params.message,
+      propertyStreet: params.property?.street,
+    })
     return { ok: true, status: res.status }
   }
   let error: string | undefined
