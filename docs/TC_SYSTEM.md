@@ -79,6 +79,15 @@ tc_envelope_fields     typed fields with page/x/y/w/h, recipient assignment, val
 
 Signing flow: compose (pick form versions → render filled PDF from field_map + deal data) → send (unique tokenized links via Resend `mail.ryan-realty.com`) → sign (public signing page: consent record → click-to-sign per field) → seal (flatten PDF, append audit-certificate page, sha256, store as executed `tc_documents` row, auto-assign to checklist, `tc_events` rows throughout). Legal bar: ESIGN + Oregon UETA (ORS ch. 84) — intent, consent, attribution, tamper evidence, signer copy, retention.
 
+**Email-first signing UX (Matt requirement 2026-06-09 — the acceptance bar for Phase 2b):**
+documents are EMAILED to recipients and signing must be easy straight from the email.
+
+1. Per-recipient branded email from `mail.ryan-realty.com`: subject "Signature requested: <property> — <form name>", one prominent "Review & sign" button, reply-to the sending broker. Brand-voice rules apply (client-facing copy).
+2. The link IS the auth — unique per-recipient token, no account, no login, no app. First open records ESIGN/UETA consent; opens log IP/UA/timestamp to `tc_envelope_recipients`.
+3. Mobile-first signing page: tap-to-sign, auto-advance through assigned fields, typed or drawn signature, progress indicator, unmistakable finish state.
+4. On completion: sealed PDF + audit certificate auto-emailed to every party and the broker; executed doc auto-filed to the checklist.
+5. Pending-signer reminders (48h default) and per-recipient status (sent / viewed / signed) on the deal detail page.
+
 **Licensing boundary:** form templates are copyrighted (OREF especially). The engine is generic; blank PDFs load under Matt's OREF/ODS member access only and are never redistributed. Template onboarding: AcroForm field maps extracted programmatically where the blanks carry form fields; manual placement UI otherwise.
 
 ## Roadmap
