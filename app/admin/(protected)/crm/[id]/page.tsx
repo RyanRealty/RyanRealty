@@ -415,6 +415,14 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
                             {((e.payload as { isHtml?: boolean })?.isHtml ? stripHtml(e.body) : e.body).slice(0, 1200)}
                           </p>
                         ) : null}
+                        {(e.payload as { recordingSid?: string })?.recordingSid ? (
+                          <audio
+                            controls
+                            preload="none"
+                            className="mt-1.5 h-9 w-full max-w-md"
+                            src={`/api/admin/crm/recording/${(e.payload as { recordingSid: string }).recordingSid}`}
+                          />
+                        ) : null}
                       </div>
                     </div>
                   ))
