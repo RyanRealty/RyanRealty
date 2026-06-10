@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/table'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { getTcDeal, type TcCycle, type TcDocument } from '@/app/actions/tc'
+import { getAnticipatedDocuments, type AnticipatedDocsResult } from '@/app/actions/tc-required-docs'
 import { cn } from '@/lib/utils'
 import { ArchiveToggle, DownloadButton } from './DocumentRowActions'
 
@@ -92,7 +93,80 @@ function DocNameWithPreview({ doc }: { doc: TcDocument }) {
   )
 }
 
-function CycleSection({ cycle, showArchived }: { cycle: TcCycle; showArchived: boolean }) {
+const ROLE_LABEL: Record<string, string> = {
+  listing: 'Listing side',
+  buyer: 'Buyer side',
+  dual: 'Disclosed dual agency',
+  unknown: 'Role not set',
+}
+
+/** Anticipated-documents view — the Oregon-law required-doc predictor. */
+function AnticipatedDocs({ data }: { data: AnticipatedDocsResult | null }) {
+  if (!data || data.documents.length === 0) return null
+  const missing = data.documents.filter((d) => !d.present)
+  return (
+    <div className="rounded-lg border border-border bg-card p-4">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <p className="text-sm font-medium text-foreground">
+          Documents anticipated{' '}
+          <span className="font-normal text-muted-foreground">
+            ({ROLE_LABEL[data.role] ?? data.role})
+          </span>
+        </p>
+        <p className="text-xs tabular-nums text-muted-foreground">
+          {data.documents.filter((d) => d.present).length}/{data.documents.length} present
+          {data.missingRequired > 0 ? ` · ${data.missingRequired} required missing` : ''}
+        </p>
+      </div>
+      <ul className="space-y-1.5">
+        {data.documents.map((d) => (
+          <li key={d.id} className="flex items-start gap-2 text-sm">
+            <span
+              className={cn(
+                'mt-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold',
+                d.present
+                  ? 'bg-success text-success-foreground'
+                  : d.severity === 'required'
+                    ? 'bg-destructive text-destructive-foreground'
+                    : 'bg-warning/30 text-foreground'
+              )}
+              aria-hidden
+            >
+              {d.present ? '✓' : '!'}
+            </span>
+            <span className="min-w-0">
+              <span className={cn('text-foreground', d.present && 'text-muted-foreground line-through')}>
+                {d.label}
+              </span>
+              {d.orefForm ? <span className="ml-1 text-xs text-muted-foreground">OREF {d.orefForm}</span> : null}
+              <span className="ml-2 text-xs text-muted-foreground" title={d.citation}>
+                {d.severity === 'verify' ? '⚑ verify · ' : ''}
+                {d.citation}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+      {missing.length > 0 ? (
+        <p className="mt-3 text-xs text-muted-foreground">
+          {missing.length} not yet on file. {data.unknown.length > 0
+            ? `Confirm to refine: ${data.unknown.slice(0, 4).join(', ')}${data.unknown.length > 4 ? '…' : ''}`
+            : ''}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+function CycleSection({
+  cycle,
+  showArchived,
+  anticipated,
+}: {
+  cycle: TcCycle
+  showArchived: boolean
+  anticipated: AnticipatedDocsResult | null
+}) {
   const docs = cycle.documents.filter((doc) => (showArchived ? true : !doc.archived))
   const archivedCount = cycle.documents.filter((doc) => doc.archived).length
   const docNameById = new Map(cycle.documents.map((doc) => [doc.id, doc.name]))
@@ -118,6 +192,9 @@ function CycleSection({ cycle, showArchived }: { cycle: TcCycle; showArchived: b
           {cycle.buyers.length ? `Buyers: ${cycle.buyers.join(', ')}` : ''}
         </p>
       ) : null}
+
+      {/* Anticipated documents (Oregon-law required-doc predictor) */}
+      <AnticipatedDocs data={anticipated} />
 
       {/* Documents */}
       <div className="rounded-lg border border-border bg-card">
@@ -219,6 +296,14 @@ export default async function TcDealPage({ params, searchParams }: Props) {
   const deal = await getTcDeal(decodeURIComponent(key))
   if (!deal) notFound()
 
+  const anticipatedByCycle = new Map<string, AnticipatedDocsResult | null>(
+    await Promise.all(
+      deal.cycles.map(
+        async (c) => [c.id, await getAnticipatedDocuments(c.id)] as [string, AnticipatedDocsResult | null]
+      )
+    )
+  )
+
   const stageLabel: Record<string, string> = {
     pending: 'Under contract',
     active_listing: 'Active listing',
@@ -272,7 +357,11 @@ export default async function TcDealPage({ params, searchParams }: Props) {
               </span>
             </AccordionTrigger>
             <AccordionContent>
-              <CycleSection cycle={cycle} showArchived={showArchived} />
+              <CycleSection
+                cycle={cycle}
+                showArchived={showArchived}
+                anticipated={anticipatedByCycle.get(cycle.id) ?? null}
+              />
             </AccordionContent>
           </AccordionItem>
         ))}
