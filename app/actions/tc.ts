@@ -271,6 +271,208 @@ export async function setTcDocumentArchived(
   return { ok: true }
 }
 
+// ---------------------------------------------------------------------------
+// Document upload (rung 1 write-side). Two-step: a signed upload URL keeps the
+// file out of the server-action body (4 MB limit), then finalize verifies the
+// stored object (sha256 dedupe, page count), inserts the row, and audits.
+// ---------------------------------------------------------------------------
+
+const UPLOAD_MAX_BYTES = 50 * 1024 * 1024
+const UPLOAD_TYPES: Record<string, string> = {
+  'application/pdf': 'pdf',
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+}
+
+function sanitizeUploadName(name: string): string {
+  const cleaned = name
+    .replace(/[/\\<>:"|?*\u0000-\u001f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return cleaned.slice(0, 140) || 'document'
+}
+
+async function requireBrokerRole(): Promise<{ email: string } | { error: string }> {
+  const session = await getSession()
+  const email = session?.user?.email ?? null
+  const role = await getAdminRoleForEmail(email)
+  if (!email || !role || (role.role !== 'superuser' && role.role !== 'broker')) {
+    return { error: 'Not authorized' }
+  }
+  return { email }
+}
+
+export type TcUploadTicket = {
+  ok: boolean
+  error?: string
+  docId?: string
+  path?: string
+  signedUrl?: string
+}
+
+/** Step 1: validate + mint a short-lived signed upload URL into tc-documents. */
+export async function createTcUploadUrl(
+  cycleId: string,
+  fileName: string,
+  contentType: string,
+  sizeBytes: number
+): Promise<TcUploadTicket> {
+  const auth = await requireBrokerRole()
+  if ('error' in auth) return { ok: false, error: auth.error }
+
+  if (!UPLOAD_TYPES[contentType]) return { ok: false, error: 'Only PDF, JPG, or PNG files can be filed to a deal' }
+  if (!Number.isFinite(sizeBytes) || sizeBytes <= 0) return { ok: false, error: 'Empty file' }
+  if (sizeBytes > UPLOAD_MAX_BYTES) return { ok: false, error: 'File is over the 50 MB limit' }
+
+  const supabase = getServiceSupabase()
+  const { data: cycle } = await supabase
+    .from('tc_cycles')
+    .select('id, source_guid')
+    .eq('id', cycleId)
+    .maybeSingle()
+  if (!cycle) return { ok: false, error: 'Cycle not found' }
+
+  const docId = crypto.randomUUID()
+  const path = `tc/${cycle.source_guid}/${docId.slice(0, 8)}__${sanitizeUploadName(fileName)}`
+  const { data, error } = await supabase.storage.from('tc-documents').createSignedUploadUrl(path)
+  if (error || !data) return { ok: false, error: error?.message ?? 'Could not create upload URL' }
+
+  return { ok: true, docId, path, signedUrl: data.signedUrl }
+}
+
+/** PDF page count via pdfjs (pure JS, no canvas). Null on any parse failure. */
+async function pdfPageCount(buf: ArrayBuffer): Promise<number | null> {
+  try {
+    const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs')
+    const doc = await getDocument({ data: new Uint8Array(buf), isEvalSupported: false }).promise
+    const n = doc.numPages
+    await doc.destroy()
+    return n
+  } catch (err) {
+    console.warn('[tc] pdf page count failed:', err instanceof Error ? err.message : err)
+    return null
+  }
+}
+
+/**
+ * Step 2: verify the uploaded object, dedupe by sha256 within the cycle,
+ * insert tc_documents (+ optional checklist assignment), append tc_events.
+ * Rejected uploads are removed from Storage so nothing orphans.
+ */
+export async function finalizeTcUpload(input: {
+  docId: string
+  cycleId: string
+  path: string
+  originalName: string
+  contentType: string
+  checklistItemId?: string | null
+}): Promise<{ ok: boolean; error?: string }> {
+  const auth = await requireBrokerRole()
+  if ('error' in auth) return { ok: false, error: auth.error }
+  const { docId, cycleId, path, originalName, contentType, checklistItemId } = input
+  if (!UPLOAD_TYPES[contentType]) return { ok: false, error: 'Unsupported file type' }
+
+  const supabase = getServiceSupabase()
+  const { data: cycle } = await supabase
+    .from('tc_cycles')
+    .select('id, deal_id, source_guid')
+    .eq('id', cycleId)
+    .maybeSingle()
+  if (!cycle) return { ok: false, error: 'Cycle not found' }
+  // The path must be the one we minted for this cycle + docId — never an
+  // arbitrary object reference.
+  if (!path.startsWith(`tc/${cycle.source_guid}/${docId.slice(0, 8)}__`)) {
+    return { ok: false, error: 'Upload path mismatch' }
+  }
+
+  const { data: blob, error: dlErr } = await supabase.storage.from('tc-documents').download(path)
+  if (dlErr || !blob) return { ok: false, error: 'Uploaded file not found in storage. Try again.' }
+  const buf = await blob.arrayBuffer()
+  // Capture the size BEFORE pdfjs touches the buffer — getDocument() transfers
+  // (detaches) the ArrayBuffer, after which byteLength reads 0.
+  const sizeBytes = buf.byteLength
+  if (sizeBytes === 0 || sizeBytes > UPLOAD_MAX_BYTES) {
+    await supabase.storage.from('tc-documents').remove([path])
+    return { ok: false, error: sizeBytes === 0 ? 'Empty file' : 'File is over the 50 MB limit' }
+  }
+
+  const { createHash } = await import('node:crypto')
+  const sha256 = createHash('sha256').update(Buffer.from(buf)).digest('hex')
+
+  // Dedupe: identical bytes already live on this cycle → reject, point at it.
+  const { data: dup } = await supabase
+    .from('tc_documents')
+    .select('id, name, archived')
+    .eq('cycle_id', cycleId)
+    .eq('sha256', sha256)
+    .limit(1)
+    .maybeSingle()
+  if (dup) {
+    await supabase.storage.from('tc-documents').remove([path])
+    return {
+      ok: false,
+      error: `Identical file already on this deal: "${dup.name}"${dup.archived ? ' (archived)' : ''}`,
+    }
+  }
+
+  // pdfjs gets its own copy (slice) so the original buffer stays intact.
+  const pageCount = contentType === 'application/pdf' ? await pdfPageCount(buf.slice(0)) : 1
+  const name = sanitizeUploadName(originalName)
+  const now = new Date().toISOString()
+
+  const { error: insErr } = await supabase.from('tc_documents').insert({
+    id: docId,
+    cycle_id: cycleId,
+    name,
+    original_name: originalName,
+    storage_path: path,
+    sha256,
+    bytes: sizeBytes,
+    content_type: contentType,
+    page_count: pageCount,
+    source_uploaded_at: now,
+    classification: { source: 'native_upload', uploaded_by: auth.email },
+  })
+  if (insErr) {
+    await supabase.storage.from('tc-documents').remove([path])
+    return { ok: false, error: insErr.message }
+  }
+
+  let checklistItemName: string | null = null
+  if (checklistItemId) {
+    const { data: item } = await supabase
+      .from('tc_checklist_items')
+      .select('id, name, cycle_id')
+      .eq('id', checklistItemId)
+      .eq('cycle_id', cycleId)
+      .maybeSingle()
+    if (item) {
+      const { error: asgErr } = await supabase
+        .from('tc_checklist_assignments')
+        .insert({ item_id: item.id, document_id: docId })
+      if (!asgErr) checklistItemName = item.name
+    }
+  }
+
+  await supabase.from('tc_events').insert({
+    deal_id: cycle.deal_id,
+    cycle_id: cycleId,
+    document_id: docId,
+    actor: auth.email,
+    action: 'document_uploaded',
+    detail: {
+      name,
+      bytes: sizeBytes,
+      pages: pageCount,
+      sha256_prefix: sha256.slice(0, 12),
+      checklist_item: checklistItemName,
+    },
+  })
+
+  revalidatePath('/admin/deals')
+  return { ok: true }
+}
+
 const CHECKLIST_STATUSES = ['required', 'optional', 'in_review', 'completed', 'na'] as const
 export type TcChecklistStatus = (typeof CHECKLIST_STATUSES)[number]
 

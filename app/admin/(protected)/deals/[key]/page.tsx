@@ -23,6 +23,7 @@ import { getAnticipatedDocuments, type AnticipatedDocsResult } from '@/app/actio
 import { cn } from '@/lib/utils'
 import { getDealContacts } from '@/app/actions/tc-contacts'
 import { ArchiveToggle, DownloadButton } from './DocumentRowActions'
+import { DocumentUpload } from './DocumentUpload'
 import { ChecklistStatusControl } from './ChecklistControls'
 import { DealContacts } from './DealContacts'
 
@@ -197,6 +198,10 @@ function CycleSection({
           <p className="text-sm font-medium text-foreground">
             Documents <span className="tabular-nums text-muted-foreground">({docs.length}{!showArchived && archivedCount ? ` live · ${archivedCount} archived hidden` : ''})</span>
           </p>
+          <DocumentUpload
+            cycleId={cycle.id}
+            checklistItems={cycle.checklist.map((it) => ({ id: it.id, name: it.name }))}
+          />
         </div>
         <Table>
           <TableHeader>
