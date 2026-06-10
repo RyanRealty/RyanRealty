@@ -501,6 +501,28 @@ export async function setCrmSequenceStatusAction(formData: FormData): Promise<Cr
   return { ok: true }
 }
 
+export type BrokerLicenseRow = {
+  slug: string
+  display_name: string
+  license_number: string | null
+  license_type: string | null
+  license_status: string | null
+  license_expires_on: string | null
+  license_checked_at: string | null
+  nrds_id: string | null
+}
+
+/** License + membership info for the license card (broker sees own, superuser sees all). */
+export async function listBrokerLicenses(): Promise<BrokerLicenseRow[]> {
+  const sb = createServiceClient()
+  const { data } = await sb
+    .from('brokers')
+    .select('slug,display_name,license_number,license_type,license_status,license_expires_on,license_checked_at,nrds_id')
+    .eq('is_active', true)
+    .order('sort_order')
+  return (data ?? []) as BrokerLicenseRow[]
+}
+
 /** Reassign a contact to a broker — updates CRM + FUB assignedUserId + broker: tag, logs to timeline. */
 export async function assignCrmBrokerAction(formData: FormData): Promise<CrmActionResult> {
   const access = await requireCrmAccess()

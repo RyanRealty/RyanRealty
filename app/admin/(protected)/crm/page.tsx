@@ -1,7 +1,7 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { getCrmAccess, getCrmOverview, listCrmPeople, listCrmSavedViews } from '@/app/actions/crm'
+import { getCrmAccess, getCrmOverview, listBrokerLicenses, listCrmPeople, listCrmSavedViews } from '@/app/actions/crm'
 import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -42,11 +42,19 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
   const effectiveBroker = sp.broker === 'all' ? undefined : sp.broker || defaultBroker
   const isMyLeads = !!access.brokerSlug && effectiveBroker === access.brokerSlug
 
-  const [views, overview, result] = await Promise.all([
+  const [views, overview, result, licenses] = await Promise.all([
     listCrmSavedViews(),
     getCrmOverview(),
     listCrmPeople({ q: sp.q, stage: sp.stage, broker: effectiveBroker, tag: sp.tag, view: sp.view, page }),
+    listBrokerLicenses(),
   ])
+
+  // broker sees their own license; Matt (superuser) sees the whole roster
+  const SLUG_MAP: Record<string, string> = { 'matthew-ryan': 'matt', 'rebecca-peterson': 'rebecca', 'paul-stevenson': 'paul' }
+  const visibleLicenses = access.role === 'superuser'
+    ? licenses
+    : licenses.filter((l) => SLUG_MAP[l.slug] === access.brokerSlug)
+  const daysLeft = (iso: string | null) => iso ? Math.ceil((new Date(iso).getTime() - Date.now()) / 86400e3) : null
 
   const { rows, total, pageSize, appliedView } = result
   const lastPage = Math.max(1, Math.ceil(total / pageSize))
@@ -94,6 +102,49 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
           ))}
         </div>
       </div>
+
+      {/* Licenses & renewals — every broker always sees their license state */}
+      {visibleLicenses.length > 0 ? (
+        <div className="mt-6 grid gap-3 md:grid-cols-3">
+          {visibleLicenses.map((l) => {
+            const dl = daysLeft(l.license_expires_on)
+            const urgency = dl === null ? 'secondary' : dl < 60 ? 'destructive' : dl < 180 ? 'default' : 'secondary'
+            return (
+              <Card key={l.slug}>
+                <CardContent className="px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-foreground">{l.display_name}</span>
+                    <Badge variant={l.license_status === 'ACTIVE' ? 'secondary' : 'destructive'} className="text-xs">
+                      {l.license_status ?? 'unknown'}
+                    </Badge>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {l.license_type ?? 'License'} #{l.license_number ?? '?'}
+                    {l.nrds_id ? <> · NRDS {l.nrds_id}</> : <> · NRDS pending</>}
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-2 text-xs">
+                    <span className="text-muted-foreground">Renews by</span>
+                    <Badge variant={urgency} className="tabular-nums text-xs">
+                      {l.license_expires_on ?? '?'}{dl !== null ? ` · ${dl} days` : ''}
+                    </Badge>
+                    <a
+                      href="https://orea.elicense.micropact.com"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-muted-foreground underline hover:text-foreground"
+                    >
+                      Renew at eLicense
+                    </a>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    30 CE hours incl. LARRC, then renew in eLicense ($300). Renewal events are on your calendar.
+                  </p>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      ) : null}
 
       {/* Saved views */}
       <div className="mt-6 flex flex-wrap gap-2">

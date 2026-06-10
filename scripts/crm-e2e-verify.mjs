@@ -245,6 +245,21 @@ await tryCheck('wiring.static', async () => {
   check('wiring.static', problems.length === 0 ? 'PASS' : 'FAIL', problems.join('; '));
 });
 
+// ── 8b. BROKER LICENSES (compliance: never let a license lapse) ────────────
+await tryCheck('compliance.licenses', async () => {
+  const { data } = await sb.from('brokers').select('display_name,license_status,license_expires_on,license_checked_at').eq('is_active', true);
+  const problems = [];
+  const warns = [];
+  for (const b of data ?? []) {
+    if (b.license_status !== 'ACTIVE') problems.push(`${b.display_name}: status ${b.license_status ?? 'unknown'}`);
+    const days = b.license_expires_on ? (new Date(b.license_expires_on) - Date.now()) / 86400e3 : null;
+    if (days !== null && days < 0) problems.push(`${b.display_name}: license EXPIRED`);
+    else if (days !== null && days < 90) warns.push(`${b.display_name}: renews in ${Math.ceil(days)}d`);
+    if (!b.license_checked_at || (Date.now() - new Date(b.license_checked_at)) / 86400e3 > 35) warns.push(`${b.display_name}: OREA re-verify due (last check ${b.license_checked_at ?? 'never'})`);
+  }
+  check('compliance.licenses', problems.length ? 'FAIL' : warns.length ? 'WARN' : 'PASS', [...problems, ...warns].join('; ') || 'all ACTIVE, no renewal inside 90d');
+});
+
 // ── 9. EXTERNAL BLOCKERS ───────────────────────────────────────────────────
 await tryCheck('external.anthropic-credits', async () => {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
