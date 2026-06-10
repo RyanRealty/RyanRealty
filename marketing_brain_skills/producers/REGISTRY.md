@@ -78,6 +78,7 @@ Single-deliverable specialists. Each handles one or more `content:*` action_type
 | meta-creative-variant | `social_media_skills/meta-creative-variant/` | `content:meta_creative_variant` | matt-review-draft | 5–10 min | NEW 2026-05-16. 3-5 creative variants (headline + primary text + image) for active FB seller-funnel ad sets. |
 | google-ads-copy | `social_media_skills/google-ads-copy/` | `content:google_ads_copy` | matt-review-draft | 5–10 min | NEW 2026-05-16. Search + Performance Max headlines + descriptions + sitelinks for Google Ads. Tied to SEO keywords. |
 | nextdoor-business-ad | `social_media_skills/nextdoor-business-ad/` | `content:nextdoor_business_ad` | matt-review-draft | 5–10 min | NEW 2026-05-16. Nextdoor for Business sponsored post or local awareness ad. Hyperlocal seller-funnel. |
+| price-drop-digest | `marketing_brain_skills/producers/price-drop-digest/` | `content:price_drop_digest` | matt-review-draft | 5–10 min | NEW 2026-06-09. Weekly social artifact from the Price Drop Radar DAL (getPriceDropDigest). Produces city-scoped or region-wide short-form social post (IG caption + IG static card + optional IG Reel hook). Pulls live data from `lib/data/listings/getPriceDrops.ts`. ⚠️ NO_SCRIPT — skill-only, runs via producer-runtime cron. |
 
 ---
 

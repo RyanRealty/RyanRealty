@@ -217,6 +217,7 @@ export const MENU: MenuEntry[] = [
           { label: 'Latest market report', href: '/housing-market/reports' },
           { label: 'Explore reports', href: '/housing-market/explore' },
           { label: 'Recent activity', href: '/activity' },
+          { label: 'Price drops', href: '/price-drops' },
           { label: 'Neighborhood guides', href: '/area-guides' },
         ],
       },

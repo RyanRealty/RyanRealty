@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 import legacyRedirects from '@/data/legacy-redirects.json'
+import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
 
 /**
  * Next.js Edge Middleware.
@@ -267,6 +268,36 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       redirectUrl.pathname = legacyDest
       redirectUrl.search = ''
       return NextResponse.redirect(redirectUrl, 301)
+    }
+  }
+
+  // ─── (0a) /subdivisions marketing-slug → canonical area (hard 308) ─────
+  // /subdivisions/[slug] serves PLAT slugs only (geo_type='subdivision', e.g.
+  // 'tetherow-phase-1'). A MARKETING-level area name ('awbrey-butte', 'tetherow')
+  // has no plat boundary, so the page notFound()s — which, under Next 16
+  // streaming, ships as a hollow 200 (soft-404): bad UX + an SEO sink. An App
+  // Router page cannot emit a hard 3xx once the shell has streamed, so the real
+  // permanent redirect has to happen HERE, before render. Resolution is a
+  // synchronous lookup in a committed-JSON map (resort registry + City-of-Bend
+  // neighborhoods) — no DB, Edge-safe, no penalty on the ~3,213 valid plats
+  // (they are not in the map → pass straight through). Single hop → 200.
+  // See lib/subdivision-area-redirects.ts.
+  if (!pathname.startsWith('/api/')) {
+    const subMatch = pathname.match(/^\/subdivisions\/([^/]+)\/?$/)
+    if (subMatch) {
+      let subSlug = subMatch[1]
+      try {
+        subSlug = decodeURIComponent(subSlug)
+      } catch {
+        /* malformed escape — fall back to the raw segment */
+      }
+      const areaDest = resolveSubdivisionAreaRedirect(subSlug)
+      if (areaDest) {
+        const redirectUrl = url.clone()
+        redirectUrl.pathname = areaDest
+        redirectUrl.search = ''
+        return NextResponse.redirect(redirectUrl, 308)
+      }
     }
   }
 

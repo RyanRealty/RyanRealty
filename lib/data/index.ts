@@ -99,6 +99,8 @@ export type { ListingRawRow } from '@/lib/data/listings/getListingRawRow'
 export { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 export { getPriceDropTiles, getBrokerageListingTiles } from '@/lib/data/listings/getPriceDropTiles'
 export type { PriceDropTile } from '@/lib/data/listings/getPriceDropTiles'
+export { getPriceDrops, getPriceDropDigest } from '@/lib/data/listings/getPriceDrops'
+export type { PriceDrop, PriceDropDigest, GetPriceDropsInput, GetPriceDropsResult } from '@/lib/data/listings/getPriceDrops'
 export { getMotivatedListings } from '@/lib/data/listings/getMotivatedListings'
 export type {
   MotivatedListing,
@@ -232,12 +234,6 @@ export type {
   GeoBoundaryMapData,
   BoundaryMapPin,
 } from '@/lib/data/geo/getGeoBoundaryMapData'
-
-// Geo — soft-404 rescue for /subdivisions/[slug]. Maps a MARKETING-level area
-// slug (no plat boundary) to its canonical /communities/<slug> or
-// /cities/bend/<slug> home so the page can 308 instead of hollow-200ing.
-export { resolveAreaRedirect, resolveAreaRedirectWith } from '@/lib/data/geo/resolveAreaRedirect'
-export type { AreaRedirect } from '@/lib/data/geo/resolveAreaRedirect'
 
 // Geo — child GIS subdivision plats of a community (for the "broken out"
 // subdivision map polygons + the subdivisions-within section) via the

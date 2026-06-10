@@ -136,10 +136,15 @@ async function check(label, path) {
 
 /**
  * Assert that `path` PERMANENT-redirects (301/308) to a Location containing
- * `expectLocationIncludes`. Uses redirect:'manual' so we read the 3xx status +
- * Location header directly instead of following the hop. A 200 here is the
- * exact soft-404 regression we are guarding against: the marketing slug would
- * be rendering a hollow not-found shell under a 200 instead of redirecting.
+ * `expectLocationIncludes`, AND that the destination itself resolves (200) —
+ * i.e. the marketing slug single-hops to a real page, not a soft-404 and not a
+ * redirect-to-404.
+ *
+ *   1. redirect:'manual' — read the 3xx status + Location directly (a 200 here
+ *      is the exact soft-404 regression: the slug rendered a hollow not-found
+ *      shell under a 200 instead of redirecting).
+ *   2. follow the hop — confirm the canonical destination returns 200, so the
+ *      map can never point a slug at a 404.
  */
 async function checkRedirect(label, path, expectLocationIncludes) {
   const url = `${BASE}${path}?_smoke=${Date.now()}`
@@ -173,7 +178,27 @@ async function checkRedirect(label, path, expectLocationIncludes) {
     fails.push(`Location '${location}' does not point to '${expectLocationIncludes}'`)
   }
 
-  return { label, path, ok: fails.length === 0, status, location, fails }
+  // Destination must resolve — follow the hop and assert a real 200 (no
+  // redirect-to-404). Only attempt when we actually got a Location.
+  let destStatus
+  if (location) {
+    const destUrl = location.startsWith('http') ? location : `${BASE}${location}`
+    try {
+      const ctrl = new AbortController()
+      const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
+      const destRes = await fetch(destUrl, { signal: ctrl.signal, headers: { 'user-agent': UA }, redirect: 'follow' })
+      clearTimeout(t)
+      destStatus = destRes.status
+      if (destStatus !== 200) {
+        fails.push(`destination ${location} → HTTP ${destStatus} (redirect points at a non-200 page)`)
+      }
+    } catch (e) {
+      fails.push(`destination ${location} unreachable: ${String(e?.message ?? e)}`)
+    }
+  }
+
+  const detail = destStatus ? `${status} → ${location} → ${destStatus}` : `${status} → ${location}`
+  return { label, path, ok: fails.length === 0, status, location, detail, fails }
 }
 
 // ---------------------------------------------------------------------------
@@ -221,9 +246,7 @@ async function main() {
 
   for (const r of results) {
     if (r.ok) {
-      const detail = r.location
-        ? `${r.status} → ${r.location}`
-        : `${r.status}, ${r.bodyLen} bytes`
+      const detail = r.detail ?? (r.location ? `${r.status} → ${r.location}` : `${r.status}, ${r.bodyLen} bytes`)
       console.log(`  OK    ${r.label}  (${detail})`)
     } else {
       console.log(`  FAIL  ${r.label}`)

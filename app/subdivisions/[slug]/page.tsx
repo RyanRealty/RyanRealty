@@ -16,7 +16,8 @@
 
 import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
-import { getGeoBoundaryMapData, getListingTiles, resolveAreaRedirect } from '@/lib/data'
+import { getGeoBoundaryMapData, getListingTiles } from '@/lib/data'
+import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
@@ -80,18 +81,20 @@ export default async function SubdivisionPage({ params }: Props) {
     () => ({ polygon: null, pins: [] }),
   )
   if (!boundary.polygon) {
-    // No PLAT-level subdivision boundary for this slug. Before serving a
-    // soft-404, check whether it's a MARKETING-level area name that lives at a
-    // canonical home: a resort/area community (/communities/<slug>) or a Bend
-    // neighborhood (/cities/bend/<slug>). If so, 308 there — keeps a linked or
-    // typed marketing slug (e.g. /subdivisions/awbrey-butte, /subdivisions/
-    // tetherow) out of the hollow-200 soft-404 bucket for both users and SEO.
-    // Only a genuine unknown falls through to notFound(). resolveAreaRedirect
-    // swallows transient DB errors (→ null), so a hiccup degrades to notFound()
-    // rather than 500ing. permanentRedirect() throws its control-flow signal —
+    // No PLAT-level subdivision boundary for this slug. Middleware already 308s a
+    // known MARKETING-level area slug (resort community → /communities/<slug>, or
+    // a City-of-Bend neighborhood → /cities/bend/<slug>) to its canonical home
+    // BEFORE this page renders — see middleware.ts §(0a) + lib/subdivision-area-
+    // redirects.ts. This is the belt-and-suspenders backstop for the rare case
+    // the page is reached without that hop (e.g. an RSC client navigation):
+    // resolve against the SAME map and send the visitor to the right place. Under
+    // Next 16 streaming a page-level redirect is a soft 200→client-hop, not a
+    // hard 308 — which is exactly why the authoritative redirect lives in
+    // middleware. Only a genuine unknown (or a real-but-boundary-less plat) falls
+    // through to notFound(). permanentRedirect() throws its control-flow signal —
     // it must stay outside any try/catch.
-    const canonical = await resolveAreaRedirect(slug)
-    if (canonical) permanentRedirect(canonical.path)
+    const dest = resolveSubdivisionAreaRedirect(slug)
+    if (dest) permanentRedirect(dest)
     notFound()
   }
 

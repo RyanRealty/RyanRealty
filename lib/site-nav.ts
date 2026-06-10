@@ -112,6 +112,7 @@ export const PRIMARY_NAV: NavGroup[] = [
       { href: '/housing-market/reports', label: 'Market reports' },
       { href: '/reports/explore', label: 'Explore reports' },
       { href: '/activity', label: 'Recent activity' },
+      { href: '/price-drops', label: 'Price drops' },
     ],
   },
   {

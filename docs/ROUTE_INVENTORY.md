@@ -139,6 +139,20 @@ Drives the extended G11 route smoke (instead of 10 hardcoded routes), any future
 - `/privacy`
 - `/terms`
 
+## Price Drop Radar (11)
+
+- `/price-drops`
+- `/price-drops/bend`
+- `/price-drops/culver`
+- `/price-drops/la-pine`
+- `/price-drops/madras`
+- `/price-drops/powell-butte`
+- `/price-drops/prineville`
+- `/price-drops/redmond`
+- `/price-drops/sisters`
+- `/price-drops/sunriver`
+- `/price-drops/terrebonne`
+
 ## Other / utility routes
 
 - `(no enumeration)`
@@ -235,5 +249,5 @@ Drives the extended G11 route smoke (instead of 10 hardcoded routes), any future
 
 ---
 
-**Total canonical public routes:** 80
-**Cities:** 9 · **Communities:** 14 · **Bend neighborhoods:** 13 · **ZIPs:** 11 · **LPs:** 3
+**Total canonical public routes:** 91
+**Cities:** 9 · **Communities:** 14 · **Bend neighborhoods:** 13 · **ZIPs:** 11 · **LPs:** 3 · **Price Drop Radar:** 11

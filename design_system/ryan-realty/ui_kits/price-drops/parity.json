@@ -1,0 +1,13 @@
+{
+  "route": "/price-drops",
+  "description": "Price-Drop Radar region-wide page. Amboqia display numerals in hero, editorial listing grid, neighborhood mini-table, per-city chip nav, Dataset + ItemList JSON-LD.",
+  "locked": "2026-06-09",
+  "requiredImports": [
+    "MetadataBlock",
+    "BreadcrumbNav",
+    "DisplayHeading",
+    "ListingCard",
+    "CTABar",
+    "getPriceDrops"
+  ]
+}

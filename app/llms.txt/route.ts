@@ -15,6 +15,12 @@ export async function GET() {
 - Redmond homes for sale: ${SITE_URL}/homes-for-sale/redmond
 - Sisters homes for sale: ${SITE_URL}/homes-for-sale/sisters
 
+## Price Drops
+- Price Drop Radar (Central Oregon): ${SITE_URL}/price-drops
+- Bend price drops: ${SITE_URL}/price-drops/bend
+- Redmond price drops: ${SITE_URL}/price-drops/redmond
+- Sisters price drops: ${SITE_URL}/price-drops/sisters
+
 ## Market Data
 - Housing market hub: ${SITE_URL}/housing-market
 - Market reports: ${SITE_URL}/reports

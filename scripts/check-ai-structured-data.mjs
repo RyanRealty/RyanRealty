@@ -166,6 +166,25 @@ const CHECKS = [
       '  ItemList.numberOfItems reflects the real result total, not the page slice).',
   },
 
+  // ── Price Drop Radar (2026-06-09) ──────────────────────────────────────
+  {
+    file: 'app/price-drops/page.tsx',
+    label: 'price-drops region: BreadcrumbList + Dataset via MetadataBlock',
+    all: ['MetadataBlock', 'getPriceDrops'],
+    why:
+      'The Price Drop Radar region page MUST emit a BreadcrumbList + Dataset JSON-LD\n' +
+      '  (via MetadataBlock) carrying aggregate stats (count, totalReduced, medianDropPct)\n' +
+      '  dated to fetchedAt so AI engines can surface verified Central Oregon price-drop data.',
+  },
+  {
+    file: 'app/price-drops/[city]/page.tsx',
+    label: 'price-drops city: BreadcrumbList + Dataset via MetadataBlock',
+    all: ['MetadataBlock', 'getPriceDrops'],
+    why:
+      'Per-city Price Drop Radar pages MUST emit BreadcrumbList + Dataset JSON-LD\n' +
+      '  (via MetadataBlock) so AI engines can navigate and cite city-scoped price-drop data.',
+  },
+
   // ── Field-level assertions (P1.14) ─────────────────────────────────────
   {
     file: 'lib/site/json-ld.ts',

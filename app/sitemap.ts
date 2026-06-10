@@ -93,7 +93,23 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     { url: `${baseUrl}/dmca`, lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
   ]
 
-  // Motivated sellers — pillar + per-city pages
+  // Price Drop Radar -- pillar + per-city pages (daily-crawl magnet)
+  staticPages.push({
+    url: `${baseUrl}/price-drops`,
+    lastModified: now,
+    changeFrequency: 'daily',
+    priority: 0.85,
+  })
+  for (const citySlug of SITE_CITY_SLUGS) {
+    staticPages.push({
+      url: `${baseUrl}/price-drops/${citySlug}`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.8,
+    })
+  }
+
+  // Motivated sellers -- pillar + per-city pages
   staticPages.push({
     url: `${baseUrl}/motivated-sellers`,
     lastModified: now,

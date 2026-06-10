@@ -138,6 +138,7 @@ export default async function BuyPage() {
         chips={[
           { label: 'Search homes', href: '/homes-for-sale' },
           { label: 'Get listing alerts', href: '/lp/buyer-listing-alerts' },
+          { label: 'Price drops', href: '/price-drops' },
           { label: 'Talk to a broker', href: '/contact?inquiry=Buying' },
           { label: 'Area guides', href: '/area-guides' },
         ]}
