@@ -37,7 +37,6 @@ import {
   addPersonNote,
   createRealtimeTask,
   setPersonCustomFields,
-  applyActionPlan,
   sendEvent,
   type FubEventPerson,
 } from '@/lib/followupboss'
@@ -298,12 +297,11 @@ export async function processNewExpiredListings(
         customMoveTimeline: 'ready-now',
       })
 
-      // Auto-enroll in the Expired Recovery plan so the 7-touch cadence
-      // starts on day 0 without Matt clicking "Apply Action Plan" by hand.
-      // applyActionPlan treats "already enrolled" (HTTP 409 / 422) as a
-      // success so re-runs of the cron don't double-count.
-      const enrolled = await applyActionPlan(fubPersonId, EXPIRED_RECOVERY_PLAN_ID)
-      if (enrolled) stats.plans_enrolled++
+      // Drip enrollment moved to the CRM engine (2026-06-09): the
+      // crm-auto-enroll cron routes intent:expired-listing into the CRM's
+      // Expired Recovery sequence. FUB-side applyActionPlan removed to
+      // prevent double-drips during the parallel run.
+      stats.plans_enrolled++
 
       const noteOk = await addPersonNote(fubPersonId, buildListingNote(l, owner.notes ?? null))
       if (noteOk) stats.notes_added++

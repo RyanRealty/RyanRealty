@@ -70,6 +70,7 @@ function renderMerge(text: string, person: { first_name?: string | null; name?: 
   const first = person.first_name || (person.name ?? '').split(' ')[0] || 'there'
   const address = String(person.custom?.customSellerPropertyAddress ?? person.custom?.customPropertyAddress ?? '')
   return text
+    .replaceAll('%contact_first_name%', first)
     .replaceAll('%first%', first).replaceAll('{{first_name}}', first).replaceAll('{{firstName}}', first)
     .replaceAll('%address%', address).replaceAll('{{address}}', address)
 }

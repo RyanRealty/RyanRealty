@@ -233,6 +233,13 @@ export async function canonicallyTagLead(params: CanonicalLeadParams): Promise<{
     if (params.originContext) {
       await postLeadOriginNote(params.fubPersonId, params.originContext)
     }
+    // Auto-enroll the new lead in its workflow (no manual assignment — Matt
+    // directive 2026-06-09). Fire-and-forget; the 15-min crm-auto-enroll cron
+    // is the catch-all if this misses.
+    void import('@/lib/crm/enroll')
+      .then(({ autoEnrollByFubId }) => autoEnrollByFubId(params.fubPersonId))
+      .then((r) => { if (r.enrolled) console.log(`[canonical-lead-tagger] auto-enrolled ${params.fubPersonId} → ${r.sequence}`) })
+      .catch((e) => console.warn('[canonical-lead-tagger] auto-enroll failed:', e))
     return { ok: true, broker, tagsApplied: tags }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)

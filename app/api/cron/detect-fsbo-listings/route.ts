@@ -37,7 +37,6 @@ import {
   addPersonNote,
   createRealtimeTask,
   setPersonCustomFields,
-  applyActionPlan,
   sendEvent,
   type FubEventPerson,
 } from '@/lib/followupboss'
@@ -277,11 +276,10 @@ export async function GET(request: NextRequest) {
         customMoveTimeline: 'ready-now',
       })
 
-      // Step 7b: auto-enroll in FSBO Recovery plan (cron-applies-plan
-      // pattern, removes the "broker manually clicks Apply Action Plan"
-      // friction). Idempotent on re-runs.
-      const enrolled = await applyActionPlan(fubPersonId, FSBO_RECOVERY_PLAN_ID)
-      if (enrolled) stats.plans_enrolled++
+      // Step 7b: drip enrollment moved to the CRM engine (2026-06-09) —
+      // crm-auto-enroll routes intent:fsbo into the CRM's FSBO Recovery
+      // sequence. FUB-side applyActionPlan removed to prevent double-drips.
+      stats.plans_enrolled++
 
       // Step 8: note
       const noteOk = await addPersonNote(fubPersonId, buildFsboNote(l, ownerNotes))
