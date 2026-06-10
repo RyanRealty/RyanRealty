@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.441.0 (2026-06-10)
+
+### Features
+- feat(analytics): close the measurement loop end to end
+
+---
+
+
 ## v1.440.0 (2026-06-09)
 
 ### Features
