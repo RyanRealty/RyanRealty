@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.475.0 (2026-06-10)
+
+### Features
+- feat(crm): instant new-lead texts to brokers + 3095 transfer watchdog
+
+---
+
+
 ## v1.474.0 (2026-06-10)
 
 ### Features
