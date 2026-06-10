@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-10T21:43:03.354Z
+**Generated:** 2026-06-10T21:47:11.281Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -1118,6 +1118,19 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `metadata` | jsonb | yes | '{}'::jsonb |
 | `created_at` | timestamp with time zone | no | now() |
 
+### `broker_stats`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `broker_id` | uuid | no |  |
+| `period_type` | text | no |  |
+| `period_start` | date | no |  |
+| `period_end` | date | no |  |
+| `metrics` | jsonb | no | '{}'::jsonb |
+| `computed_at` | timestamp with time zone | no | now() |
+| `created_at` | timestamp with time zone | no | now() |
+
 ### `brokerage_settings`
 
 | Column | Type | Nullable | Default |
@@ -1837,6 +1850,16 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `created_at` | timestamp with time zone | no | now() |
 | `updated_at` | timestamp with time zone | no | now() |
 
+### `listing_embeddings`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `listing_key` | text | no |  |
+| `city` | text | yes |  |
+| `search_content` | text | no |  |
+| `embedding` | USER-DEFINED | no |  |
+| `updated_at` | timestamp with time zone | no | now() |
+
 ### `listing_inquiries`
 
 | Column | Type | Nullable | Default |
@@ -2127,6 +2150,35 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `source` | text | no | 'unsplash'::text |
 | `created_at` | timestamp with time zone | no | now() |
 
+### `partner_programs`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `slug` | text | no |  |
+| `name` | text | no |  |
+| `category` | text | no |  |
+| `default_payout` | numeric | yes |  |
+| `active` | boolean | no | true |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
+### `partner_referrals`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `partner_slug` | text | no |  |
+| `lead_source` | text | no |  |
+| `lead_identifier` | text | yes |  |
+| `campaign_source` | text | yes |  |
+| `campaign_medium` | text | yes |  |
+| `estimated_value` | numeric | yes |  |
+| `actual_value` | numeric | yes |  |
+| `status` | text | no | 'new'::text |
+| `notes` | text | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
 ### `pinterest_auth`
 
 | Column | Type | Nullable | Default |
@@ -2286,6 +2338,33 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `user_id` | uuid | yes |  |
 | `endpoint` | text | no |  |
 | `keys` | jsonb | no |  |
+| `created_at` | timestamp with time zone | no | now() |
+
+### `reporting_cache`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `geo_type` | text | no |  |
+| `geo_name` | text | no |  |
+| `period_type` | text | no |  |
+| `period_start` | date | no |  |
+| `period_end` | date | no |  |
+| `metrics` | jsonb | no | '{}'::jsonb |
+| `computed_at` | timestamp with time zone | no | now() |
+| `created_at` | timestamp with time zone | no | now() |
+
+### `revenue_events`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `revenue_type` | text | no |  |
+| `page_cluster` | text | no | 'unknown'::text |
+| `amount` | numeric | no |  |
+| `event_date` | date | no | CURRENT_DATE |
+| `source_label` | text | yes |  |
+| `reference_id` | text | yes |  |
 | `created_at` | timestamp with time zone | no | now() |
 
 ### `reviews`
@@ -2900,6 +2979,18 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `expires_at` | timestamp with time zone | no |  |
 | `updated_at` | timestamp with time zone | no | now() |
 | `open_id` | text | yes |  |
+
+### `trending_scores`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `entity_type` | text | no |  |
+| `entity_id` | text | no |  |
+| `score` | double precision | no |  |
+| `badges` | jsonb | yes | '[]'::jsonb |
+| `computed_at` | timestamp with time zone | no | now() |
+| `created_at` | timestamp with time zone | no | now() |
 
 ### `user_activities`
 

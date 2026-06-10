@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-06-10T21:43:03.397Z
+**Generated:** 2026-06-10T21:47:11.342Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
