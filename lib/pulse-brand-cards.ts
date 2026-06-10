@@ -72,9 +72,9 @@ export type BrandCardDefinition = {
 }
 
 const BEND_HERO = '/images/hero-poster.webp'
-const BEND_ALPINE = '/images/lp/hero-bend-alpine.png'
-const BEND_DOWNTOWN = '/images/lp/hero-bend-downtown.png'
-const DESCHUTES = '/images/lp/hero-deschutes-clean.jpg'
+const BEND_ALPINE = '/images/hero/hero-old-mill-master-4k.jpg'
+const BEND_DOWNTOWN = '/images/hero/hero-old-mill-master-4k.jpg'
+const DESCHUTES = '/images/hero/hero-old-mill-master-4k.jpg'
 const SCHOOLHOUSE = '/images/lp/schoolhouse-rd-hero.jpg'
 
 const MATT_HEADSHOT = '/images/brokers/ryan-matt.png'

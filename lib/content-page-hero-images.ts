@@ -7,30 +7,30 @@ export const CONTENT_HERO_IMAGES = {
   // ─── BROKERAGE PAGES ───────────────────────────────────────────────
   /** About: Old Mill District drone — the canonical brand photo */
   about: '/images/hero/hero-old-mill-master-4k.jpg',
-  /** Team: Deschutes River — Central Oregon waterfront scene */
-  team: '/images/lp/hero-deschutes-clean.jpg',
-  /** Contact: downtown Bend streetscape */
-  contact: '/images/lp/hero-bend-downtown.png',
+  /** Team: Old Mill District drone — canonical brand hero (screenshot image purged 2026-06-10) */
+  team: '/images/hero/hero-old-mill-master-4k.jpg',
+  /** Contact: canonical brand hero */
+  contact: '/images/hero/hero-old-mill-master-4k.jpg',
   /** Reviews: Old Mill District drone — brand anchor */
   reviews: '/images/hero/hero-old-mill-master-4k.jpg',
-  /** Join: Cascade alpine view — wide open Central Oregon horizon */
-  join: '/images/lp/hero-bend-alpine.png',
-  /** Sell: downtown Bend — where sellers live and list */
-  sell: '/images/lp/hero-bend-downtown.png',
-  /** Buy: Deschutes River — where buyers want to land */
-  buy: '/images/lp/hero-deschutes-clean.jpg',
+  /** Join: canonical brand hero */
+  join: '/images/hero/hero-old-mill-master-4k.jpg',
+  /** Sell: canonical brand hero */
+  sell: '/images/hero/hero-old-mill-master-4k.jpg',
+  /** Buy: canonical brand hero */
+  buy: '/images/hero/hero-old-mill-master-4k.jpg',
 
   // ─── LISTING-RELATED PAGES ─────────────────────────────────────────
   /** Open houses: Deschutes aerial — broad Central Oregon context */
   openHouses: '/images/hero-poster.webp',
-  /** Listings: Cascade alpine — high country backdrop for property search */
-  listings: '/images/lp/hero-bend-alpine.png',
+  /** Listings: canonical brand hero */
+  listings: '/images/hero/hero-old-mill-master-4k.jpg',
   /** Reports: Old Mill District drone — authority and local grounding */
   reports: '/images/hero/hero-old-mill-master-4k.jpg',
-  /** Area guides: Deschutes River — connects geography to lifestyle */
-  areaGuides: '/images/lp/hero-deschutes-clean.jpg',
-  /** Videos: downtown Bend — visual anchor for local market content */
-  videos: '/images/lp/hero-bend-downtown.png',
+  /** Area guides: canonical brand hero */
+  areaGuides: '/images/hero/hero-old-mill-master-4k.jpg',
+  /** Videos: canonical brand hero */
+  videos: '/images/hero/hero-old-mill-master-4k.jpg',
 } as const
 
 export type ContentHeroKey = keyof typeof CONTENT_HERO_IMAGES

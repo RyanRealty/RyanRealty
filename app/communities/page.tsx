@@ -78,7 +78,7 @@ export default async function CommunitiesPage() {
       <ContentPageHero
         title="Communities in Central Oregon"
         subtitle="Explore neighborhoods and find your next home."
-        imageUrl="/images/lp/hero-deschutes-clean.jpg"
+        imageUrl="/images/hero/hero-old-mill-master-4k.jpg"
       />
 
       {resortCommunities.length > 0 && (
