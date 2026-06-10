@@ -52,7 +52,8 @@ export const BRAND = {
     youtube: 'https://www.youtube.com/@ryanrealtybend',
     tiktok: 'https://www.tiktok.com/@ryanrealtybend',
     x: 'https://x.com/ryanrealtybend',
-    linkedin: 'https://www.linkedin.com/company/ryanrealtybend',
+    /** Real claimed slug (verified live 2026-06-10) — /company/ryanrealtybend 404s. */
+    linkedin: 'https://www.linkedin.com/company/ryan-realty-llc-bend-oregon',
     pinterest: 'https://www.pinterest.com/ryanrealtybend',
     threads: 'https://www.threads.net/@ryanrealtybend',
   },
