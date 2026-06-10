@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.446.0 (2026-06-10)
+
+### Features
+- feat(growth): Price-Drop Radar live + true-308 edge redirects for marketing-slug subdivisions
+
+---
+
+
 ## v1.445.0 (2026-06-10)
 
 ### Features
