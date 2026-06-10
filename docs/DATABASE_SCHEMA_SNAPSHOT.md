@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-10T15:32:41.429Z
+**Generated:** 2026-06-10T17:20:41.473Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -299,7 +299,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 590,891**
+### `listing_tile_mv` · **rows ≈ 588,698**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -576,7 +576,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 5**
+### `cmas` · **rows ≈ 6**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -691,7 +691,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `owner_lookup_attempts` | integer | yes | 0 |
 | `last_owner_lookup_at` | timestamp with time zone | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 59**
+### `marketing_brain_actions` · **rows ≈ 60**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -1320,6 +1320,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `channel` | text | yes |  |
 | `sent_at` | timestamp with time zone | yes |  |
 | `error` | text | yes |  |
+| `attempts` | integer | no | 0 |
 
 ### `crm_contact_points`
 

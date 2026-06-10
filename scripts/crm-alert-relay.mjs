@@ -37,7 +37,7 @@ function sendIMessage(to, body) {
         send msgBody to targetBuddy
       end tell
     end run`;
-  execFileSync('osascript', ['-e', script, to, body], { timeout: 20000 });
+  execFileSync('osascript', ['-e', script, to, body], { timeout: 30000 });
 }
 
 async function sendTwilioSms(to, body) {
@@ -69,8 +69,15 @@ if (pending?.length) {
       await sb.from('crm_broker_alerts').update({ status: 'sent', channel: useTwilio ? 'twilio-sms' : 'imessage', sent_at: new Date().toISOString() }).eq('id', a.id);
       console.log(`sent #${a.id} → ${a.broker} via ${useTwilio ? 'twilio' : 'imessage'}`);
     } catch (e) {
-      await sb.from('crm_broker_alerts').update({ status: 'failed', error: String(e.message ?? e).slice(0, 300) }).eq('id', a.id);
-      console.warn(`failed #${a.id}:`, String(e.message ?? e).slice(0, 140));
+      // Transient failures (osascript ETIMEDOUT, Twilio 5xx) get retried on the
+      // next 45s run; only after 3 attempts does the row go terminally failed.
+      const attempts = (a.attempts ?? 0) + 1;
+      const terminal = attempts >= 3;
+      await sb.from('crm_broker_alerts').update({
+        status: terminal ? 'failed' : 'pending', attempts,
+        error: String(e.message ?? e).slice(0, 300),
+      }).eq('id', a.id);
+      console.warn(`${terminal ? 'failed' : `retry ${attempts}/3`} #${a.id}:`, String(e.message ?? e).slice(0, 140));
     }
   }
 }
