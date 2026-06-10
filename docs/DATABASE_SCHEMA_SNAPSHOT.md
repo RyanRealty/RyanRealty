@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-10T21:47:11.281Z
+**Generated:** 2026-06-10T22:08:14.115Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -2666,6 +2666,30 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `next_history_offset` | integer | no | 0 |
 | `total_listings` | integer | yes |  |
 | `updated_at` | timestamp with time zone | no | now() |
+
+### `target_queries`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `query` | text | no |  |
+| `segment` | text | no |  |
+| `target_url` | text | yes |  |
+| `priority` | integer | no | 2 |
+| `notes` | text | yes |  |
+| `added_at` | timestamp with time zone | no | now() |
+
+### `target_query_benchmark`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `query` | text | yes |  |
+| `segment` | text | yes |  |
+| `priority` | integer | yes |  |
+| `target_url` | text | yes |  |
+| `date` | date | yes |  |
+| `impressions` | numeric | yes |  |
+| `clicks` | numeric | yes |  |
+| `position` | numeric | yes |  |
 
 ### `tc_checklist_assignments`
 

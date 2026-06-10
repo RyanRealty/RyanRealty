@@ -68,13 +68,18 @@ One tight block: what shipped (with evidence), what is now measuring (metric + w
 
 Check for cross-loop conflicts before picking work: a family Experience is migrating that Growth wants to edit (Growth yields), a Demand LP test that needs a Growth page change (Growth executes it as a scored candidate), a Nurture journey-stage change another loop depends on (sequence it explicitly in the report). Topology collision rules in the canon are the law; log any arbitration call in the iteration report.
 
-## Backlog seed (2026-06-10 — re-score every iteration, do not treat as a queue)
+## Target-query benchmark (canon step 10 substrate — live 2026-06-10)
 
-- JSON-LD field-level coverage completion across listing/place/article surfaces
-- Wave-4 SEO gates: wire `scripts/check-seo-routes.mjs` into `ci:gates` (canonical redirects + structured-data coverage)
-- Thin-content depth pass on ranking geo pages (position 5–15 candidates first)
-- llms.txt freshness + coverage audit
-- Commit the v1.1.0 canon topology change once the working tree allows a clean stage (pending from 2026-06-10)
+`public.target_queries` (23 seeded must-win/important queries) + `public.target_query_benchmark` view (our daily GSC position/impressions/clicks per query). EVERY iteration's ingest reads the 28d rollup of this view, gap-sorted: queries at position 5-15 with volume on shipped families are depth/meta candidates; position >15 on a priority-1 query is a content-strategy candidate; a priority-1 query that LOSES position vs prior window is a defend candidate. Add new target queries as they earn impressions (seed source: GSC query rows, scope='campaign'). Phase 2 backlog: competitor SERP positions per query (recon-driven) to make gap-to-leader literal.
+
+## Backlog seed (updated 2026-06-10 — re-score every iteration, do not treat as a queue)
+
+- **/communities/tetherow title/meta + depth** — benchmark: "tetherow homes for sale" 62 imp / 28d, pos 13.5, ZERO clicks (shipped family, Growth-owned)
+- "luxury homes bend oregon" 81 imp pos 10.3 → /homes-for-sale/bend/luxury — YIELDED to Experience family 3 (preset depth brief); re-take if family 3 stalls
+- "bend real estate agent" pos 46 / "bend oregon realtor" pos 17 → /team depth (agent-intent content)
+- Brand query "ryan realty" at pos 14.3 — investigate what outranks our own brand
+- zip pages + subdivisions in llms.txt (below threshold 2026-06-10; re-score)
+- Oregon-law sweep draft (docs/research/oregon-law-sweep-2026-06-10.md when the background agent lands) → route additions to tc-builder + Matt
 
 ## Hard rules inherited (non-negotiable)
 
