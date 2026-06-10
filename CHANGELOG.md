@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.470.1 (2026-06-10)
+
+### Maintenance
+- docs(tc): roadmap — principal sign-off queue shipped (rung 13)
+
+---
+
+
 ## v1.470.0 (2026-06-10)
 
 ### Features
