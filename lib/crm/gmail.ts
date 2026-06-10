@@ -138,16 +138,19 @@ export async function syncMailboxWindow(params: {
     .order('id', { ascending: false })
     .limit(1)
     .maybeSingle()
+  const cursor = (cursorRow?.cursor ?? {}) as { after_ms?: number; page_token?: string; max_internal_ms?: number }
   // default start: 2023-01-01 (account history horizon)
-  const afterSec = Math.floor(Number((cursorRow?.cursor as { after_ms?: number })?.after_ms ?? Date.UTC(2023, 0, 1)) / 1000)
+  const afterSec = Math.floor(Number(cursor.after_ms ?? Date.UTC(2023, 0, 1)) / 1000)
 
   const emailMap = params.emailMap ?? (await loadEmailPersonMap())
 
   let processed = 0
   let matched = 0
   let pagesUsed = 0
-  let maxInternal = afterSec * 1000
-  let pageToken: string | undefined
+  // carry walk-wide max across resumed invocations (a long mailbox walk spans
+  // many invocations; the page token below persists mid-walk progress)
+  let maxInternal = Math.max(afterSec * 1000, Number(cursor.max_internal_ms ?? 0))
+  let pageToken: string | undefined = cursor.page_token || undefined
   let done = false
 
   try {
@@ -221,18 +224,29 @@ export async function syncMailboxWindow(params: {
     return { mailbox: mailboxEmail, processed, matched, pagesUsed, done: false, cursorAdvancedTo: null, error: e instanceof Error ? e.message : String(e) }
   }
 
-  // Advance cursor ONLY when the window completed (otherwise re-walk from the
-  // same point next run; dedupe keys make the overlap free).
+  // Persist progress EVERY invocation: mid-walk runs save the Gmail page
+  // token so the next invocation resumes where this one stopped (a 47K-message
+  // mailbox spans many invocations); completed walks advance the time cursor
+  // and clear the token.
   let cursorAdvancedTo: string | null = null
-  if (done && maxInternal > afterSec * 1000) {
+  if (done) {
+    const advanced = maxInternal > afterSec * 1000
     await sb.from('crm_imports').insert({
       source,
       status: 'done',
       finished_at: new Date().toISOString(),
       counts: { processed, matched },
-      cursor: { after_ms: maxInternal },
+      cursor: { after_ms: advanced ? maxInternal : afterSec * 1000 },
     })
-    cursorAdvancedTo = new Date(maxInternal).toISOString()
+    if (advanced) cursorAdvancedTo = new Date(maxInternal).toISOString()
+  } else if (pageToken) {
+    await sb.from('crm_imports').insert({
+      source,
+      status: 'done',
+      finished_at: new Date().toISOString(),
+      counts: { processed, matched, midWalk: true },
+      cursor: { after_ms: afterSec * 1000, page_token: pageToken, max_internal_ms: maxInternal },
+    })
   }
   return { mailbox: mailboxEmail, processed, matched, pagesUsed, done, cursorAdvancedTo }
 }
