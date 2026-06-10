@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.467.0 (2026-06-10)
+
+### Features
+- feat(tc): auto-populate property facts for the anticipation engine (rung 2b)
+
+### Maintenance
+- docs(tc): roadmap — property-fact auto-population shipped (rung 2b)
+
+---
+
+
 ## v1.466.0 (2026-06-10)
 
 ### Features
