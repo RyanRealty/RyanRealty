@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.482.2 (2026-06-10)
+
+### Bug Fixes
+- fix(perf): Tetherow flyover hero re-encoded 39MB -> 11MB + flyover size gate
+
+---
+
+
 ## v1.482.1 (2026-06-10)
 
 ### Bug Fixes
