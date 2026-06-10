@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.478.0 (2026-06-10)
+
+### Features
+- feat(tc): commission tracking (rung 11) — settlement-verified GCI, splits, deal surface + brokerage roll-up
+
+---
+
+
 ## v1.477.1 (2026-06-10)
 
 ### Bug Fixes
