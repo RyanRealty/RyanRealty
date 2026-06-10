@@ -60,8 +60,31 @@ if (!existsSync(ROBOTS)) {
   }
 }
 
+// llms.txt must keep covering the high-citation-value content families. It was
+// a static list until 2026-06-10, which silently omitted blog posts, market
+// reports, guides, and tools — the exact content AI assistants cite. The route
+// is now DAL-driven; these markers keep the families (and the dynamic wiring)
+// from being dropped in a future edit.
+const REQUIRED_LLMS_MARKERS = [
+  { marker: '/blog', why: 'blog family (dynamic post list via getRecentBlogPosts)' },
+  { marker: 'getRecentBlogPosts', why: 'dynamic blog wiring' },
+  { marker: '/guides', why: 'guides family' },
+  { marker: 'getPublishedGuides', why: 'dynamic guides wiring' },
+  { marker: '/housing-market/reports/', why: 'market-report detail family' },
+  { marker: 'listMarketReports', why: 'dynamic reports wiring' },
+  { marker: '/tools/mortgage-calculator', why: 'tools family' },
+  { marker: '/open-houses', why: 'open houses' },
+]
+
 if (!existsSync(LLMS)) {
   errors.push('app/llms.txt/route.ts is missing — /llms.txt (the AI content map) is no longer served.')
+} else {
+  const llms = readFileSync(LLMS, 'utf8')
+  for (const { marker, why } of REQUIRED_LLMS_MARKERS) {
+    if (!llms.includes(marker)) {
+      errors.push(`llms.txt route no longer references "${marker}" (${why}) — AI assistants lose discovery of that family.`)
+    }
+  }
 }
 
 if (errors.length === 0) {
