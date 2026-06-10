@@ -250,9 +250,9 @@ await tryCheck('external.fub-port-reply', async () => {
   const key = env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.replace(/\\n/g, '\n').replace(/^"|"$/g, '');
   const jwt = new google.auth.JWT({ email: env.GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL, key, scopes: ['https://www.googleapis.com/auth/gmail.readonly'], subject: 'matt@ryan-realty.com' });
   const gmail = google.gmail({ version: 'v1', auth: jwt });
-  const r = await gmail.users.messages.list({ userId: 'me', q: 'from:followupboss.com subject:(port OR transfer OR Twilio) -subject:"Missed Call" newer_than:7d', maxResults: 3 });
+  const r = await gmail.users.messages.list({ userId: 'me', q: '(from:followupboss.com OR from:twilio.com) subject:(port OR transfer) -subject:"Missed Call" newer_than:7d', maxResults: 3 });
   const n = (r.data.messages ?? []).length;
-  check('external.fub-port-reply', n > 0 ? 'WARN' : 'PASS', n > 0 ? `${n} FUB message(s) about the port — READ THEM` : 'no reply yet (request pending)');
+  check('external.fub-port-reply', n > 1 ? 'WARN' : 'PASS', n > 1 ? `${n} port/transfer message(s) — check for Twilio approval` : 'transfer submitted by FUB 2026-06-10; awaiting Twilio approval email');
 });
 
 // ── summary ────────────────────────────────────────────────────────────────

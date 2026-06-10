@@ -5,10 +5,10 @@
 # and dedupe keys make overlaps free.
 set -u
 SECRET=$(grep '^CRON_SECRET=' .env.local | cut -d= -f2)
-BASE="http://localhost:3000/api/cron/crm-gmail-sync"
+BASE="${CRM_GMAIL_SYNC_BASE:-https://ryan-realty.com}/api/cron/crm-gmail-sync"
 
-for round in $(seq 1 200); do
-  out=$(curl -s -m 280 -H "Authorization: Bearer $SECRET" "$BASE?pages=8")
+for round in $(seq 1 400); do
+  out=$(curl -s -m 280 -H "Authorization: Bearer $SECRET" "$BASE?pages=8${CRM_GMAIL_MAILBOX:+&mailbox=$CRM_GMAIL_MAILBOX}")
   echo "[round $round] $(date +%H:%M:%S) $out" | head -c 600
   echo ""
   all_done=$(echo "$out" | python3 -c "
