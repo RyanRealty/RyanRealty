@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.480.0 (2026-06-10)
+
+### Features
+- feat(cma): 3735 Eagle Rd CMA for Dota Sotelo — $455K-$475K, rec list $469K (producers/cma SKILL Steps 1-14)
+- feat(seo): llms.txt goes DAL-driven — blog, market reports, guides, tools now discoverable by AI crawlers
+
+---
+
+
 ## v1.479.0 (2026-06-10)
 
 ### Features
