@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.479.0 (2026-06-10)
+
+### Features
+- feat(admin): Commissions nav item — page shipped in e40d11b0, link held back until it was live
+
+### Bug Fixes
+- fix(crm): race-tolerant fub-spot reconciliation — grace window instead of raw lag
+
+---
+
+
 ## v1.478.0 (2026-06-10)
 
 ### Features
