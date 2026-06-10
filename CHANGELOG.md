@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.481.0 (2026-06-10)
+
+### Features
+- feat(cma): email engagement tracking — open pixel + click-through alerts via crm_broker_alerts relay
+
+---
+
+
 ## v1.480.1 (2026-06-10)
 
 ### Bug Fixes
