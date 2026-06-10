@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.443.0 (2026-06-10)
+
+### Features
+- feat(tc): TC system v1 — full SkySlope migration, deal dashboard, archive semantics, forms/signing schema
+
+---
+
+
 ## v1.442.0 (2026-06-10)
 
 ### Features
