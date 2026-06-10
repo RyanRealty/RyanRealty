@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.454.0 (2026-06-10)
+
+### Features
+- feat(assets): permanent purge — 270 graphics/screenshots/watermarked removed from asset library
+- feat(crm): call recording + transcripts + voicemail capture (FUB parity, plus)
+
+---
+
+
 ## v1.453.1 (2026-06-10)
 
 ### Bug Fixes
