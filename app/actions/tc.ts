@@ -270,3 +270,49 @@ export async function setTcDocumentArchived(
   revalidatePath('/admin/deals')
   return { ok: true }
 }
+
+const CHECKLIST_STATUSES = ['required', 'optional', 'in_review', 'completed', 'na'] as const
+export type TcChecklistStatus = (typeof CHECKLIST_STATUSES)[number]
+
+/**
+ * Move a checklist item through its status (Required -> In Review -> Completed,
+ * reviewer accept/reject). Every change appends a tc_events row (from -> to).
+ */
+export async function setTcChecklistStatus(
+  itemId: string,
+  status: TcChecklistStatus,
+  note?: string
+): Promise<{ ok: boolean; error?: string }> {
+  const session = await getSession()
+  const role = await getAdminRoleForEmail(session?.user?.email ?? null)
+  if (!role || (role.role !== 'superuser' && role.role !== 'broker')) {
+    return { ok: false, error: 'Not authorized' }
+  }
+  if (!CHECKLIST_STATUSES.includes(status)) return { ok: false, error: 'Invalid status' }
+
+  const supabase = getServiceSupabase()
+  const { data: item } = await supabase
+    .from('tc_checklist_items')
+    .select('id, name, status, cycle_id, tc_cycles(deal_id)')
+    .eq('id', itemId)
+    .maybeSingle()
+  if (!item) return { ok: false, error: 'Checklist item not found' }
+  const from = (item as DbRow).status as string
+
+  const { error: upErr } = await supabase
+    .from('tc_checklist_items')
+    .update({ status })
+    .eq('id', itemId)
+  if (upErr) return { ok: false, error: upErr.message }
+
+  await supabase.from('tc_events').insert({
+    deal_id: (item as DbRow).tc_cycles?.deal_id ?? null,
+    cycle_id: item.cycle_id,
+    actor: session?.user?.email ?? 'admin',
+    action: 'checklist_status_changed',
+    detail: { item: item.name, from, to: status, note: note ?? null },
+  })
+
+  revalidatePath('/admin/deals')
+  return { ok: true }
+}

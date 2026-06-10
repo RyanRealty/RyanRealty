@@ -22,6 +22,7 @@ import { getTcDeal, type TcCycle, type TcDocument } from '@/app/actions/tc'
 import { getAnticipatedDocuments, type AnticipatedDocsResult } from '@/app/actions/tc-required-docs'
 import { cn } from '@/lib/utils'
 import { ArchiveToggle, DownloadButton } from './DocumentRowActions'
+import { ChecklistStatusControl } from './ChecklistControls'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,14 +36,6 @@ const money = (v: number | null | undefined) =>
 const d10 = (v: string | null | undefined) => (v ? String(v).slice(0, 10) : '—')
 const kb = (n: number | null | undefined) =>
   n == null ? '—' : n > 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.round(n / 1024)} KB`
-
-const CHECK_STATUS_LABEL: Record<string, string> = {
-  required: 'Required',
-  optional: 'Optional',
-  in_review: 'In review',
-  completed: 'Completed',
-  na: 'N/A',
-}
 
 /** Mouse-over preview: first page + last page (signature blocks live on the
  *  last page of most OREF forms) so signature state is visible without a click. */
@@ -269,18 +262,11 @@ function CycleSection({
                   </p>
                 ) : null}
               </div>
-              <Badge
-                variant="outline"
-                className={cn(
-                  'shrink-0',
-                  item.status === 'completed' && 'border-success text-success',
-                  item.status === 'required' && item.documentIds.length === 0 && 'border-destructive text-destructive',
-                  item.status === 'in_review' && 'border-warning text-foreground'
-                )}
-              >
-                {CHECK_STATUS_LABEL[item.status] ?? item.status}
-                {item.documentIds.length ? ` · ${item.documentIds.length}` : ''}
-              </Badge>
+              <ChecklistStatusControl
+                itemId={item.id}
+                status={item.status}
+                docCount={item.documentIds.length}
+              />
             </div>
           ))}
         </div>
