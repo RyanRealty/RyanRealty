@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.453.1 (2026-06-10)
+
+### Bug Fixes
+- fix(crm): pass caller's real number as caller ID on forwarded calls
+
+---
+
+
 ## v1.453.0 (2026-06-10)
 
 ### Features
