@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.453.0 (2026-06-10)
+
+### Features
+- feat(assets): full visual audit of photo library — 1,104 photos cataloged
+- feat(crm): A2P registration tooling + messaging service
+
+---
+
+
 ## v1.452.0 (2026-06-10)
 
 ### Features
