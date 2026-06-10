@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.486.1 (2026-06-10)
+
+### Bug Fixes
+- fix(gates): design-token ratchet back under baseline — DealContacts to shadcn Card/Label/Select, AdminNavList text-xs, AdminSidebar calc-height ignore entry; baseline 329→328
+
+---
+
+
 ## v1.486.0 (2026-06-10)
 
 ### Features
