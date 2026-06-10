@@ -5,7 +5,9 @@ description: Run ONE iteration of the Growth loop (Loop 1, the orchestrator) —
 
 # Growth loop — one iteration of THE LOOP, run by the orchestrator
 
-This is Loop 1 of the five-loop topology in `docs/DEVELOPMENT_PROCESS.md` §Loop topology (canon, v1.1.0+). One firing = one cycle of ingest → diagnose → prioritize → fix-the-class → verify → ship → measure → learn → lock. Never two cycles per firing. Quiet when blocked on a Matt review or an open measurement window with nothing else actionable.
+This is Loop 1 of the five-loop topology in `docs/DEVELOPMENT_PROCESS.md` §Loop topology (canon, v1.1.0+). Each cycle = ingest → diagnose → prioritize → fix-the-class → verify → ship → measure → learn → lock.
+
+**GRIND SEMANTICS (Matt directive 2026-06-10): a firing does not stop after one cycle.** Chain cycles back-to-back — ship, re-prioritize, take the next candidate — until one of these is true: (a) every remaining candidate is blocked on a Matt review or an open measurement window, (b) no candidate clears the score threshold (don't manufacture work), or (c) the session's context is nearly spent — in which case finish the in-flight commit, write the handoff, and spawn a fresh session to keep grinding (per `feedback_continuous_work_and_handoff`). Sleeping between wake-ups is for the BLOCKED state, not the default. "Did something then stopped" is the failure mode this paragraph exists to prevent.
 
 ## Scope (what this loop owns)
 
