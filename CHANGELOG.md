@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.474.0 (2026-06-10)
+
+### Features
+- feat(experience): cities family live — every city page on the experience architecture
+
+---
+
+
 ## v1.473.0 (2026-06-10)
 
 ### Features
