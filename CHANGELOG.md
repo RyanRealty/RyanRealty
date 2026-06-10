@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.445.0 (2026-06-10)
+
+### Features
+- feat(crm): broker access end-to-end — Google-only admin login, my-leads scoping, reassignment
+- feat(paid): challenger round specs + ONLY slug filter in seller-ad generator
+
+### Maintenance
+- docs(skill): facebook-seller-growth LIVE STATE delta 2026-06-09
+
+---
+
+
 ## v1.444.0 (2026-06-10)
 
 ### Features
