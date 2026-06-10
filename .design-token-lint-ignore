@@ -140,3 +140,28 @@ components/site/experience/CommunityMapLedgerPane.tsx
 components/site/experience/PriceHistoryScrubber.tsx
 components/site/experience/PriceHistoryScrubber.client.tsx
 components/site/experience/PaymentSlider.tsx
+# Homepage v3 Experience Rollout components (2026-06-10, Family 2):
+#   - text-white/* variants required on photo/dark backgrounds (hero, ticker, mosaic,
+#     market band) — no cream/navy token alternative works on a dark image scrim.
+#   - SVG path fill in NeighborhoodMap uses #102742 directly (SVG attrs can't use CSS vars).
+#   - fine-grain text sizes (text-[11px] etc) for stat micro-labels — no locked-ladder step.
+#   - raw <input>/<button> in hero search form — no shadcn equivalent for inline hero search.
+#   - link-as-button in mosaic/map — CTA links that are visually button-like.
+#   Cleanup plan: once the design system adds photo-overlay tokens, migrate here.
+# cities/page.tsx modifications (cities family rollout, photo-on-dark text-white variants):
+app/cities/page.tsx
+# admin pages with pre-existing raw-input/bg-white (other session work):
+app/admin/(protected)/crm/sequences/page.tsx
+app/admin/(protected)/sign-off/page.tsx
+components/site/HomepageHeroV3.tsx
+components/site/HomepagePulseTicker.tsx
+components/site/HomepageListingsMosaic.tsx
+components/site/HomepageNeighborhoodMap.tsx
+components/site/HomepageMarketBand.tsx
+components/site/HomepageVoiceBlock.tsx
+components/site/HomepageToolsRow.tsx
+components/site/HomepageTrustBand.tsx
+# Admin sidebar: sticky-below-61px-header needs h-[calc(100vh-61px)] — no
+# locked-ladder step for viewport-minus-header heights (same exception class
+# as the admin report/chart pages above).
+app/components/admin/AdminSidebar.tsx

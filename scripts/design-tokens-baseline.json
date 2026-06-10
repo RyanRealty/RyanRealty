@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-06-09T21:30:00.890Z",
-  "total": 329,
+  "generatedAt": "2026-06-10T22:37:10.895Z",
+  "total": 328,
   "byFile": {
     "app/account/page.tsx": 1,
     "app/account/saved-cities/page.tsx": 1,
@@ -23,6 +23,7 @@
     "app/admin/(protected)/brokers/page.tsx": 1,
     "app/admin/(protected)/cmas/page.tsx": 1,
     "app/admin/(protected)/expired-listings/ExpiredListingRow.tsx": 1,
+    "app/admin/(protected)/financials/page.tsx": 1,
     "app/admin/(protected)/fub-attribution/page.tsx": 1,
     "app/admin/(protected)/guides/page.tsx": 1,
     "app/admin/(protected)/media/page.tsx": 1,
@@ -65,7 +66,7 @@
     "app/cities/[slug]/[neighborhoodSlug]/page.tsx": 1,
     "app/cma-drafts/[id]/SendCmaButton.tsx": 1,
     "app/cma-drafts/[id]/page.tsx": 2,
-    "app/communities/[slug]/page.tsx": 2,
+    "app/communities/[slug]/page.tsx": 1,
     "app/dashboard/error.tsx": 1,
     "app/dashboard/history/page.tsx": 1,
     "app/dashboard/marketing/inbox/page.tsx": 2,
@@ -152,7 +153,6 @@
     "components/listing/ListingTimeline.tsx": 1,
     "components/listing/ListingVideos.tsx": 1,
     "components/listing/NearbySchools.tsx": 1,
-    "components/listing/PropertyDetails.tsx": 1,
     "components/listing/TaxHistory.tsx": 2,
     "components/lp/ListingCard.tsx": 1,
     "components/market-report/MarketPulseCarousel.tsx": 3,

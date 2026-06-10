@@ -2,8 +2,11 @@
 
 import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { saveDealContact, deleteDealContact } from '@/app/actions/tc-contacts'
 import { TC_CONTACT_ROLES, TC_CONTACT_ROLE_LABEL, type TcContact } from '@/lib/tc/contact-roles'
 
@@ -50,7 +53,7 @@ export function DealContacts({ dealId, contacts }: { dealId: string; contacts: T
   const set = (k: keyof FormState, v: string) => setForm((f) => (f ? { ...f, [k]: v } : f))
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <Card className="p-4">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm font-medium text-foreground">Deal team &amp; contacts</p>
         {!form ? (
@@ -99,20 +102,21 @@ export function DealContacts({ dealId, contacts }: { dealId: string; contacts: T
       {form ? (
         <div className="mt-3 space-y-2 rounded-md bg-muted/50 p-3">
           <div className="grid gap-2 sm:grid-cols-2">
-            <label className="text-xs text-muted-foreground">
-              Role
-              <select
-                value={form.role}
-                onChange={(e) => set('role', e.target.value)}
-                className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
-              >
-                {TC_CONTACT_ROLES.map((r) => (
-                  <option key={r} value={r}>
-                    {TC_CONTACT_ROLE_LABEL[r]}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div>
+              <Label className="text-xs text-muted-foreground">Role</Label>
+              <Select value={form.role} onValueChange={(v) => set('role', v)}>
+                <SelectTrigger className="mt-1 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TC_CONTACT_ROLES.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {TC_CONTACT_ROLE_LABEL[r]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Input placeholder="Name" value={form.name} onChange={(e) => set('name', e.target.value)} />
             <Input placeholder="Company" value={form.company} onChange={(e) => set('company', e.target.value)} />
             <Input placeholder="Email" type="email" value={form.email} onChange={(e) => set('email', e.target.value)} />
@@ -128,6 +132,6 @@ export function DealContacts({ dealId, contacts }: { dealId: string; contacts: T
           </div>
         </div>
       ) : null}
-    </div>
+    </Card>
   )
 }
