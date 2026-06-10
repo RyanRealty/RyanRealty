@@ -96,7 +96,7 @@ documents are EMAILED to recipients and signing must be easy straight from the e
 |---|---|---|
 | 0 | Read side: master file + `/admin/deals` dashboard | Built 2026-06-09 |
 | 1 | Schema + full historical migration (51 folders, all binaries) | This delivery |
-| 2a | Write side: doc upload, archive/unarchive UI, checklist transitions, reviewer sign-off — all writing `tc_events` | Archive + checklist status transitions (submit/accept/reject) shipped 2026-06-10; doc upload next |
+| 2a | Write side: doc upload, archive/unarchive UI, checklist transitions, reviewer sign-off — all writing `tc_events` | Archive + checklist status transitions (submit/accept/reject) shipped 2026-06-10; sign-off queue shipped 2026-06-10; doc upload next |
 | 2c | **Smart required-document anticipation** — `docs/TC_OREGON_COMPLIANCE.md` (cited matrix) + `lib/tc/required-documents.ts` (engine) + "Documents anticipated" on the deal page (role×property → needed/present/missing). Property facts auto-populate from the listing feed via `lib/data/listings/getPropertyFactsByMls.ts` (year-built→LBP, sewer→septic, HOA, sub-type→condo/manufactured/land); unknowns surface as confirm prompts. | Shipped 2026-06-10 |
 | 2b | Forms + signing: template onboarding (OREF/ODS/OR blanks + field maps), envelope composer (place fields, assign signers), signing pages, sealing | With 2a |
 | 3 | Email ingest: per-deal inbound address → Storage → auto-classify → auto-assign (fixes dead-folder contamination by design) | After 2 |
