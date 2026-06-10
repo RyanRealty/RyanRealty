@@ -8,6 +8,7 @@ import {
   type BrokerRole,
   type PropertyFacts,
 } from '@/lib/tc/required-documents'
+import { getPropertyFactsByMls } from '@/lib/data/listings/getPropertyFactsByMls'
 
 /**
  * Anticipated-documents surface for a deal cycle. Reads the cycle's role +
@@ -88,11 +89,21 @@ export async function getAnticipatedDocuments(cycleId: string): Promise<Anticipa
       .map((d) => d.name),
   ]
 
-  // Year-built / property facts come from the SkySlope raw snapshot for now;
-  // a canonical lib/data listings lookup (by MLS#) is a follow-up enrichment
-  // (kept out here to honor the DAL boundary — raw `listings` is gated).
   const role = roleFromRaw(cycle.kind, cycle.raw ?? {})
   const facts = factsFromRaw(cycle.raw ?? {}, null)
+
+  // Auto-populate facts from the synced listing (by MLS#) via the canonical DAL
+  // function — well/septic/HOA/condo/manufactured/land/year-built light up
+  // automatically instead of all-confirm. Listing data overrides only the
+  // fields the feed actually knows; the rest stay null (confirm prompt).
+  if (cycle.mls_number) {
+    const lf = await getPropertyFactsByMls(cycle.mls_number).catch(() => null)
+    if (lf) {
+      for (const key of Object.keys(lf) as (keyof typeof lf)[]) {
+        if (lf[key] != null) (facts as Record<string, unknown>)[key] = lf[key]
+      }
+    }
+  }
   const documents = anticipateDocuments(role, facts, presentNames)
 
   return {
