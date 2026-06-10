@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.451.0 (2026-06-10)
+
+### Features
+- feat(crm): Twilio phone layer — inbound SMS routing, voice forwarding, provisioning
+
+---
+
+
 ## v1.450.0 (2026-06-10)
 
 ### Features
