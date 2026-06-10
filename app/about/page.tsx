@@ -16,6 +16,7 @@
  */
 
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { getBrokers } from '@/lib/data/brokers/getBrokers'
 import { getSurfaceImage, getLifestyleImages, getReviews } from '@/lib/data'
 import { ReviewsBlock } from '@/components/site/ReviewsBlock'
@@ -95,6 +96,26 @@ export default async function AboutPage() {
 
   return (
     <main className="min-h-screen bg-background">
+      <MetadataBlock
+        schemas={[
+          {
+            type: 'webPage',
+            pageType: 'AboutPage',
+            aboutOrganization: true,
+            name: 'About Ryan Realty',
+            description:
+              'Independent real estate brokerage in Bend, Oregon serving Central Oregon buyers and sellers.',
+            url: '/about',
+          },
+          {
+            type: 'breadcrumb',
+            items: [
+              { name: 'Home', url: '/' },
+              { name: 'About', url: '/about' },
+            ],
+          },
+        ]}
+      />
       <div className="bg-background border-b border-border py-3">
         <Container>
           <BreadcrumbNav

@@ -12,6 +12,7 @@
 
 import type { Metadata } from 'next'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { getBrokers } from '@/lib/data/brokers/getBrokers'
 import { getSurfaceImage, getReviews } from '@/lib/data'
 import { ReviewsBlock } from '@/components/site/ReviewsBlock'
@@ -49,6 +50,26 @@ export default async function TeamPage() {
 
   return (
     <main className="min-h-screen bg-background">
+      <MetadataBlock
+        schemas={[
+          {
+            type: 'webPage',
+            pageType: 'CollectionPage',
+            aboutOrganization: true,
+            name: 'The Ryan Realty Team',
+            description:
+              'The licensed Oregon brokers behind Ryan Realty in Bend, serving buyers and sellers across Central Oregon.',
+            url: '/team',
+          },
+          {
+            type: 'breadcrumb',
+            items: [
+              { name: 'Home', url: '/' },
+              { name: 'Team', url: '/team' },
+            ],
+          },
+        ]}
+      />
       <div className="bg-background border-b border-border py-3">
         <Container>
           <BreadcrumbNav

@@ -36,6 +36,22 @@ const CHECKS = [
       '  RealEstateAgent + LocalBusiness + WebSite entity (the anchor AI engines cite).',
   },
   {
+    file: 'app/about/page.tsx',
+    label: 'about: AboutPage entity link + breadcrumb',
+    all: ['MetadataBlock', 'AboutPage', 'aboutOrganization'],
+    why:
+      'The about page MUST type itself as AboutPage with mainEntity -> #organization\n' +
+      '  — the page AI assistants read to answer "who is Ryan Realty".',
+  },
+  {
+    file: 'app/team/page.tsx',
+    label: 'team: CollectionPage entity link + breadcrumb',
+    all: ['MetadataBlock', 'CollectionPage', 'aboutOrganization'],
+    why:
+      'The team page MUST type itself as CollectionPage with mainEntity -> #organization\n' +
+      '  — the page AI assistants read to answer "who are the brokers".',
+  },
+  {
     file: 'app/cities/[slug]/page.tsx',
     label: 'city: entity + market Dataset + FAQPage',
     all: ['MetadataBlock', 'buildMarketFaq'],

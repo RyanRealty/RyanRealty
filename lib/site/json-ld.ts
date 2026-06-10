@@ -79,6 +79,10 @@ export type WebPageInput = {
   name: string
   description?: string
   url?: string
+  /** schema.org WebPage subtype, e.g. 'AboutPage', 'CollectionPage', 'ContactPage'. Defaults to 'WebPage'. */
+  pageType?: 'AboutPage' | 'CollectionPage' | 'ContactPage'
+  /** Set true to point mainEntity at the sitewide Organization (#organization) — the brand-entity anchor AI engines attribute citations to. */
+  aboutOrganization?: boolean
 }
 
 export type FaqPageInput = {
@@ -212,10 +216,11 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
     case 'webPage':
       return prune({
         '@context': 'https://schema.org',
-        '@type': 'WebPage',
+        '@type': input.pageType ?? 'WebPage',
         name: input.name,
         description: input.description,
         url: absoluteUrl(input.url),
+        mainEntity: input.aboutOrganization ? { '@id': `${site}#organization` } : undefined,
       })
 
     case 'faqPage':
