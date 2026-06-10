@@ -67,14 +67,15 @@ describe('design directive contracts', () => {
   it('D83/D85 — defined neighborhoods section sources designated Bend polygons only', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
     expect(src).toMatch(/bendNeighborhoodPolygons/)
-    expect(src).toMatch(/items=\{bendNeighborhoodItems\}/)
+    // Experience System Geo archetype v3.1 uses editorial index rows (no tile
+    // RelatedAreas) for neighborhoods — bendNeighborhoodItems still drives the section.
+    expect(src).toMatch(/bendNeighborhoodItems/)
   })
 
   it('D85 — golf & master-planned communities are a SEPARATE section from neighborhoods', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
-    // distinct item list + its own RelatedAreas section
+    // distinct item list + its own section (editorial index rows, not RelatedAreas tiles)
     expect(src).toMatch(/golfCommunityItems/)
-    expect(src).toMatch(/items=\{golfCommunityItems\}/)
     expect(src).toMatch(/master-planned/)
     // the old combined "neighborhoods and communities" list must be gone
     expect(src).not.toMatch(/withinCityItems/)

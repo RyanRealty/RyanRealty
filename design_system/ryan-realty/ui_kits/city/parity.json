@@ -1,95 +1,95 @@
 {
   "route": "app/cities/[slug]/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/city/index.html",
-  "competitiveTarget": "Beat Coldwell Banker / Windermere city pages — live neighborhood-level market data no competitor surfaces, plus the in-boundary listing map (EXECUTION_PLAN §8 rank 1).",
-  "note": "Wave 3 rebuild has LANDED. app/cities/[slug]/page.tsx now imports the Wave 2 site-v2 blocks below (zero components/city/* or components/geo-page/* legacy imports remain). The baseline is CLEARED — the gate now enforces the city page's real block set, so dropping any required block fails G6. SiteHeader/SiteFooter render from app/layout.tsx (not the route file) and are documented under layoutComponents, not requiredComponents (the gate checks the route file's imports).",
+  "competitiveTarget": "Beat Coldwell Banker / Windermere city pages — live neighborhood-level market data no competitor surfaces, plus the in-boundary listing map and scrubbable price history.",
+  "note": "Experience System Geo archetype v3.1, 2026-06-10. Rebuilt from HeroBlock+MarketSnapshot to FlyoverHero+LiveMarketBand+CommunityMapLedgerPane+PriceHistoryScrubber+PaymentSlider+InlineValuationHook. Neighborhoods and communities render as editorial index rows (no tile grid). SectionNav anchor rail on every section. useEngagementTracking on every section via experience modules. All JSON-LD (City/Dataset/FAQPage/Breadcrumb) retained.",
   "requiredComponents": [
     {
       "name": "BreadcrumbNav",
-      "section": "Home > Homes for sale > {City}",
+      "section": "Home > Cities > {City}",
       "blocking": true
     },
     {
-      "name": "HeroBlock",
-      "section": "hero — 'Homes for sale in {City}, Oregon' + lede + canonical Old Mill photo + Ken Burns (D28/D35)",
+      "name": "FlyoverHero",
+      "section": "hero — FlyoverHero in POSTER mode (videoSrc=null, photoSrc=city hero image). Live activeCount + medianPrice Amboqia overlay + pulsing live-dot. Count-up animation via useCountUp.",
       "blocking": true
     },
     {
-      "name": "MarketSnapshot",
-      "section": "'{City} housing market' — live SFR stat cards from getMarketStats('city', slug) + getMarketPulse (active count, median list, median DOM, months of supply)",
+      "name": "LiveMarketBand",
+      "section": "market band — navy band overlapping hero by -mt-12. One giant living activeCount (Amboqia ~6rem count-up) + 3 quiet aux stats (median, days, supply) + market verdict pill + report link.",
       "blocking": true
     },
     {
-      "name": "FeaturedListings",
-      "section": "'Featured homes in {City}' — premium active inventory slider for the city (getListings, price-desc). Real homes on every city page, not just stats + links.",
+      "name": "SectionNav",
+      "section": "sticky anchor rail — appears on scroll past hero. Links: market, listings, price-history, neighborhoods (Bend only), communities, open-houses, faq.",
       "blocking": true
     },
     {
-      "name": "PriceChart",
-      "section": "'Price trend' — verified monthly median SALE price (getPriceHistory -> market_stats_cache, SFR-only). Completed months only (drops the in-progress month), linear + per-month dots (no smoothing), data-range y-axis. Renders only where the series is >= 6 complete months; thin sub-city geos are omitted. D98.",
+      "name": "CommunityMapLedgerPane",
+      "section": "listings + map — split-scroll spine: ListingLedger (top 8 newest active) on left, NeighborhoodMap pinned right (desktop). Hover sync between ledger rows and map price pills.",
       "blocking": true
     },
     {
-      "name": "PriceRangeTiles",
-      "section": "'Browse {City} homes by budget' — price-bracket tiles linking to filtered search",
+      "name": "ListingLedger",
+      "section": "listings — 1 dominant featured listing + hairline ledger rows, Amboqia price, edge-bleed photo. Used inside CommunityMapLedgerPane.",
+      "blocking": true
+    },
+    {
+      "name": "PriceHistoryScrubber",
+      "section": "price-history — scrubbable recharts AreaChart for city median sale price (completed months only, >= 4 months gate).",
+      "blocking": true
+    },
+    {
+      "name": "PaymentSlider",
+      "section": "price-history — inline mortgage payment estimate around city median. Renders when medianListPrice is available.",
       "blocking": true
     },
     {
       "name": "OpenHousesGrid",
-      "section": "'Open houses · {weekend}' — this city's upcoming open houses (renders nothing when none scheduled)",
-      "blocking": true
-    },
-    {
-      "name": "NeighborhoodMap",
-      "section": "in-boundary listing map — authoritative city polygon + for-sale pins via getGeoBoundaryMapData (D93/D94)",
-      "blocking": true
-    },
-    {
-      "name": "RelatedAreas",
-      "section": "'Explore by neighborhood' + 'Resort & master-planned communities' — split neighborhood vs golf/community cross-nav tiles with photos + active counts",
+      "section": "open-houses — next 14 days in this city. Renders nothing when none scheduled.",
       "blocking": true
     },
     {
       "name": "ArticleGrid",
-      "section": "'Guides & market updates' — recent blog posts scoped to the city (D80)",
+      "section": "guides — recent blog posts scoped to the city.",
       "blocking": true
     },
     {
       "name": "ActivityFeed",
-      "section": "'What's happening right now' — live new / price-drop / pending / sold rows (getRecentActivity, city-scoped)",
+      "section": "activity — live new / price-drop / pending / sold rows, city-scoped.",
       "blocking": true
     },
     {
-      "name": "CTABar",
-      "section": "'Local brokers. Specific numbers. No pressure.' — contact CTA band",
+      "name": "FAQBlock",
+      "section": "faq — verified market Q&A + FAQPage JSON-LD. Renders when pulse data is available.",
+      "blocking": true
+    },
+    {
+      "name": "InlineValuationHook",
+      "section": "valuation-hook — navy CTA band replacing generic CTABar. What is your {City} home worth?",
       "blocking": true
     }
   ],
   "layoutComponents": [
     {
       "name": "SiteHeader",
-      "section": "site chrome — navy bar, horizontal logo, 15px nav (D73/D74). Renders from app/layout.tsx.",
-      "note": "Not in requiredComponents because the gate checks the route file; documented here for full-surface completeness."
+      "section": "site chrome — renders from app/layout.tsx.",
+      "note": "Not in requiredComponents because the gate checks the route file."
     },
     {
       "name": "SiteFooter",
-      "section": "navy footer — license #201206613, dotted phone, hyphen URL, middle-dot separator (D65). Renders from app/layout.tsx.",
-      "note": "Not in requiredComponents because the gate checks the route file; documented here for full-surface completeness."
+      "section": "navy footer — renders from app/layout.tsx.",
+      "note": "Not in requiredComponents because the gate checks the route file."
     }
   ],
-  "deferredComponents": [
-    {
-      "name": "FAQBlock",
-      "reason": "City FAQ is a Wave 3 content-pass addition once per-city Q/A copy is written."
-    }
-  ],
-  "legacyToDelete": [
-    "components/city/CityHero.tsx",
-    "components/city/CityOverview.tsx",
-    "components/city/CityMarketStats.tsx",
-    "components/geo-page/CityPageActionBar.tsx",
-    "components/geo-page/CommunitiesBar.tsx",
-    "components/geo-page/GeoCTAWithBroker.tsx",
-    "components/geo-page/GeoSectionLatestActivity.tsx"
+  "removedComponents": [
+    "HeroBlock (replaced by FlyoverHero)",
+    "MarketSnapshot (replaced by LiveMarketBand)",
+    "FeaturedListings (replaced by ListingLedger inside CommunityMapLedgerPane)",
+    "PriceChart (replaced by PriceHistoryScrubber)",
+    "NeighborhoodMap (still used inside CommunityMapLedgerPane)",
+    "CTABar (replaced by InlineValuationHook)",
+    "RelatedAreas for neighborhoods (replaced by editorial index rows)",
+    "RelatedAreas for golf communities (replaced by editorial index rows)"
   ]
 }
