@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.477.1 (2026-06-10)
+
+### Bug Fixes
+- fix(admin): mobile-usable admin shell + cached dashboard (escape: Matt report 2026-06-10)
+
+---
+
+
 ## v1.477.0 (2026-06-10)
 
 ### Features
