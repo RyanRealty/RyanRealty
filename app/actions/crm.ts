@@ -418,6 +418,52 @@ export async function getCrmEmailTemplates(): Promise<Array<{ key: string; name:
   return (data ?? []) as Array<{ key: string; name: string; subject: string | null; body: string }>
 }
 
+export type CrmSequenceRow = {
+  id: number
+  name: string
+  status: string
+  stop_on_reply: boolean
+  steps: Array<{ channel: string; delayDays?: number; templateKey?: string; taskName?: string; addTags?: string[]; removeTags?: string[] }>
+  fub_legacy_plan_id: number | null
+  counts: { running: number; paused_reply: number; completed: number; stopped: number; suppressed: number }
+}
+
+export async function listCrmSequences(): Promise<CrmSequenceRow[]> {
+  const sb = createServiceClient()
+  const { data: seqs } = await sb
+    .from('crm_sequences')
+    .select('id,name,status,stop_on_reply,steps,fub_legacy_plan_id')
+    .order('fub_legacy_plan_id', { ascending: true, nullsFirst: false })
+  const out: CrmSequenceRow[] = []
+  for (const s of seqs ?? []) {
+    const counts = { running: 0, paused_reply: 0, completed: 0, stopped: 0, suppressed: 0 }
+    const { data: rows } = await sb
+      .from('crm_sequence_enrollments')
+      .select('status')
+      .eq('sequence_id', s.id)
+    for (const r of rows ?? []) {
+      const k = r.status as keyof typeof counts
+      if (k in counts) counts[k]++
+    }
+    out.push({ ...(s as Omit<CrmSequenceRow, 'counts'>), counts })
+  }
+  return out
+}
+
+/** Activate or pause a sequence. Paused sequences' enrollments hold in place. */
+export async function setCrmSequenceStatusAction(formData: FormData): Promise<CrmActionResult> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  const sequenceId = Number(formData.get('sequenceId'))
+  const status = String(formData.get('status') ?? '')
+  if (!sequenceId || !['active', 'paused'].includes(status)) return { ok: false, error: 'Bad input' }
+  const sb = createServiceClient()
+  const { error } = await sb.from('crm_sequences').update({ status, updated_at: new Date().toISOString() }).eq('id', sequenceId)
+  if (error) return { ok: false, error: error.message }
+  revalidatePath('/admin/crm/sequences')
+  return { ok: true }
+}
+
 /** Reassign a contact to a broker — updates CRM + FUB assignedUserId + broker: tag, logs to timeline. */
 export async function assignCrmBrokerAction(formData: FormData): Promise<CrmActionResult> {
   const access = await requireCrmAccess()
