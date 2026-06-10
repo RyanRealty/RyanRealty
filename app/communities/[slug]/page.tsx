@@ -206,7 +206,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     : null
 
   const medianPriceK = medianListPrice != null
-    ? `$${Math.round(medianListPrice / 1000).toLocaleString()}K`
+    ? `$${(Math.round(medianListPrice / 1000) * 1000).toLocaleString()}`
     : null
 
   // LiveMarketBand v2: heroStat = activeCount (big), auxStats = [median, days, supply]

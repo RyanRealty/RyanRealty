@@ -34,9 +34,10 @@ import { useEngagementTracking } from './useEngagementTracking'
 import { useCountUp } from './useCountUp'
 
 function fmtPrice(n: number | null): string {
-  if (n == null) return '—'
-  const k = Math.round(n / 1000)
-  return `$${k.toLocaleString()}K`
+  if (n == null) return '\u2014'
+  // Brand spec: currency rounded to the nearest thousand, full form —
+  // $1,425,000, never $1,425K (CLAUDE.md voice rules).
+  return `$${(Math.round(n / 1000) * 1000).toLocaleString()}`
 }
 
 function fmtCount(n: number | null): string {
@@ -52,6 +53,19 @@ function fmtDays(n: number | null): string {
 type Props = {
   slug: string
   headline: string
+  /**
+   * Optional place-name display treatment (Geo archetype v3.2, Family 4):
+   * renders the place name HUGE in Amboqia inside the same <h1> with the
+   * headline as a smaller second line — the name IS the design, the headline
+   * keeps the full SEO text. Omit for the original single-line H1.
+   */
+  displayName?: string
+  /**
+   * Optional small label over the media (bottom-right). Used to honestly
+   * label a regional fallback photo ("Regional view · Cascade Range") so a
+   * city without a verified photo never implies a wrong place.
+   */
+  mediaCaption?: string
   activeCount?: number | null
   medianPrice?: number | null
   medianDays?: number | null
@@ -66,6 +80,8 @@ type Props = {
 export function FlyoverHero({
   slug,
   headline,
+  displayName,
+  mediaCaption,
   activeCount = null,
   medianPrice = null,
   medianDays = null,
@@ -187,6 +203,16 @@ export function FlyoverHero({
         }}
       />
 
+      {/* Honest media label (e.g. regional-fallback photo) */}
+      {mediaCaption ? (
+        <span
+          className="absolute bottom-3 right-3 z-10 rounded-md px-2 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-white/75"
+          style={{ background: 'rgba(16,39,66,0.55)' }}
+        >
+          {mediaCaption}
+        </span>
+      ) : null}
+
       {/* Content */}
       <Container className="relative w-full pb-12 md:pb-16">
         {/* Live indicator */}
@@ -203,6 +229,41 @@ export function FlyoverHero({
             Live market
           </span>
         </div>
+
+        {/* Place-name display treatment (Family 4): the name IS the design.
+            One <h1> carries both the huge Amboqia place name and the full
+            SEO headline as a smaller second line. Stats follow below. */}
+        {displayName ? (
+          <DisplayHeading
+            as="h1"
+            className="text-white mb-5"
+            style={{
+              animation: 'rr-fade-up 0.9s cubic-bezier(0.16,1,0.3,1) 0.10s both',
+            }}
+          >
+            <span
+              className="block leading-none"
+              style={{
+                fontSize: 'clamp(3.25rem, 11vw, 7rem)',
+                letterSpacing: '-0.02em',
+                textShadow: '0 2px 18px rgba(0,0,0,0.28)',
+              }}
+            >
+              {displayName}
+            </span>
+            <span
+              className="block mt-3 font-sans font-medium text-white/85"
+              style={{
+                fontSize: 'clamp(0.95rem, 1.6vw, 1.15rem)',
+                letterSpacing: '0.005em',
+                lineHeight: 1.35,
+                textShadow: '0 1px 8px rgba(0,0,0,0.20)',
+              }}
+            >
+              {headline}
+            </span>
+          </DisplayHeading>
+        ) : null}
 
         {/* Stats in Amboqia — data IS the identity */}
         {hasStats ? (
@@ -282,20 +343,22 @@ export function FlyoverHero({
           </div>
         ) : null}
 
-        {/* H1 headline */}
-        <DisplayHeading
-          as="h1"
-          className="text-white max-w-[680px]"
-          style={{
-            fontSize: 'clamp(1.75rem, 3.2vw, 2.75rem)',
-            letterSpacing: '-0.01em',
-            lineHeight: 1.18,
-            textShadow: '0 1px 10px rgba(0,0,0,0.18)',
-            animation: 'rr-fade-up 0.9s cubic-bezier(0.16,1,0.3,1) 0.15s both',
-          }}
-        >
-          {headline}
-        </DisplayHeading>
+        {/* H1 headline (original treatment — only when no displayName) */}
+        {!displayName ? (
+          <DisplayHeading
+            as="h1"
+            className="text-white max-w-[680px]"
+            style={{
+              fontSize: 'clamp(1.75rem, 3.2vw, 2.75rem)',
+              letterSpacing: '-0.01em',
+              lineHeight: 1.18,
+              textShadow: '0 1px 10px rgba(0,0,0,0.18)',
+              animation: 'rr-fade-up 0.9s cubic-bezier(0.16,1,0.3,1) 0.15s both',
+            }}
+          >
+            {headline}
+          </DisplayHeading>
+        ) : null}
       </Container>
 
       {/* Keyframe definitions — injected once here, reused by all stat-reveal instances */}

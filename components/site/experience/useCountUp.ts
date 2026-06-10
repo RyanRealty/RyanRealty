@@ -103,6 +103,13 @@ export function useCountUp(
         const start = performance.now()
         const from = 0
 
+        // Settle guard: rAF is throttled/suspended in background or busy tabs,
+        // which stranded hero stats at the animation's starting 0 (Matt hit
+        // this live on /communities/broken-top, 2026-06-10 — hero said 0
+        // active while the band said 1). Whatever happens to the animation,
+        // the final value lands.
+        const settle = window.setTimeout(() => setCount(safeTarget), duration + 150)
+
         const tick = (now: number) => {
           const elapsed = now - start
           const t = Math.min(elapsed / duration, 1)
@@ -111,6 +118,7 @@ export function useCountUp(
           if (t < 1) {
             requestAnimationFrame(tick)
           } else {
+            window.clearTimeout(settle)
             setCount(safeTarget)
           }
         }
