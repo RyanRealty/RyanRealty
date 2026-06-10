@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.442.0 (2026-06-10)
+
+### Features
+- feat(crm): Phase 0+ of the in-house CRM — full FUB mirror, dual-write, /admin/crm live
+
+---
+
+
 ## v1.441.0 (2026-06-10)
 
 ### Features
