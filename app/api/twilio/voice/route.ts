@@ -42,9 +42,12 @@ export async function POST(request: Request) {
     })
   }
 
+  // Pass the CALLER's real number through as caller ID (allowed on bridged
+  // inbound calls) so the broker sees who is calling and can call back
+  // directly — FUB's forwarding behavior.
   const body = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial timeout="25" callerId="${params.To ?? ''}">${target}</Dial>
+  <Dial timeout="25" callerId="${from || params.To || ''}">${target}</Dial>
 </Response>`
   return new NextResponse(body, { status: 200, headers: { 'Content-Type': 'text/xml' } })
 }
