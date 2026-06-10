@@ -96,6 +96,14 @@ export function FlyoverHero({
   // Reduced-motion check (client-side)
   const [prefersReduced, setPrefersReduced] = useState(false)
   const [videoError, setVideoError] = useState(false)
+  // LCP fix (2026-06-10, RUM showed 60s LCP on /communities/tetherow): the
+  // hero <video> (37 MB) used to be the painted media layer, so LCP waited on
+  // video bytes and the raw 814 KB poster.jpg (the poster attribute bypasses
+  // Next image optimization). Now the optimized poster <Image priority> always
+  // paints first as the base layer, and the video element mounts ~1.2s later,
+  // fading in over the poster once it can actually play.
+  const [mountVideo, setMountVideo] = useState(false)
+  const [videoPlaying, setVideoPlaying] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
@@ -106,7 +114,12 @@ export function FlyoverHero({
     return () => mq.removeEventListener('change', handler)
   }, [])
 
-  const showVideo = resolvedVideo && !prefersReduced && !videoError
+  useEffect(() => {
+    const t = window.setTimeout(() => setMountVideo(true), 1200)
+    return () => window.clearTimeout(t)
+  }, [])
+
+  const showVideo = resolvedVideo && !prefersReduced && !videoError && mountVideo
 
   const hasStats = activeCount != null || medianPrice != null || medianDays != null
 
@@ -121,33 +134,38 @@ export function FlyoverHero({
       )}
       style={{ paddingTop: 'max(88px, env(safe-area-inset-top))' }}
     >
-      {/* Media layer */}
+      {/* Media layer — optimized poster paints first (the LCP element); the
+          video mounts after first paint and fades in over it once playing. */}
       <div className="absolute inset-0">
+        {(resolvedPoster || photoSrc) ? (
+          <Image
+            src={(photoSrc ?? resolvedPoster) as string}
+            alt={photoAlt ?? `${headline}, aerial view`}
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+        ) : null}
         {showVideo ? (
           <video
             ref={videoRef}
             src={resolvedVideo as string}
-            poster={resolvedPoster ?? undefined}
             autoPlay
             muted
             loop
             playsInline
-            className="absolute inset-0 w-full h-full object-cover"
+            preload="none"
+            className={cn(
+              'absolute inset-0 w-full h-full object-cover transition-opacity duration-700',
+              videoPlaying ? 'opacity-100' : 'opacity-0',
+            )}
+            onPlaying={() => setVideoPlaying(true)}
             onError={() => setVideoError(true)}
             aria-hidden
           />
         ) : (
-          /* Static poster/photo fallback */
-          (resolvedPoster || photoSrc) ? (
-            <Image
-              src={(photoSrc ?? resolvedPoster) as string}
-              alt={photoAlt ?? `${headline}, aerial view`}
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover"
-            />
-          ) : null
+          null
         )}
       </div>
 
