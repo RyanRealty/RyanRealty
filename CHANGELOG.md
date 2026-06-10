@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.463.1 (2026-06-10)
+
+### Maintenance
+- docs(rollout): competitive-verification protocol + family 1 marked shipped
+
+---
+
+
 ## v1.463.0 (2026-06-10)
 
 ### Features
