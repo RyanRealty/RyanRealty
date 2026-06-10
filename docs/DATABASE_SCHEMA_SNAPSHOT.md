@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-10T17:29:14.780Z
+**Generated:** 2026-06-10T17:58:42.433Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -2591,6 +2591,32 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `type_name` | text | yes |  |
 | `status` | text | no | 'optional'::text |
 | `sort_order` | integer | yes |  |
+
+### `tc_commissions`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `cycle_id` | uuid | no |  |
+| `agent_guid` | text | yes |  |
+| `broker_slug` | text | yes |  |
+| `broker_name` | text | no |  |
+| `side` | text | no | 'unknown'::text |
+| `basis` | text | no | 'percent'::text |
+| `commission_percent` | numeric | yes |  |
+| `gci` | numeric | yes |  |
+| `referral_fee` | numeric | no | 0 |
+| `tc_fee` | numeric | no | 0 |
+| `other_deductions` | numeric | no | 0 |
+| `split_percent` | numeric | no | 100 |
+| `agent_net` | numeric | yes |  |
+| `brokerage_net` | numeric | yes |  |
+| `status` | text | no | 'projected'::text |
+| `paid_at` | date | yes |  |
+| `notes` | text | yes |  |
+| `source` | jsonb | no | '{}'::jsonb |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
 
 ### `tc_cycles`
 

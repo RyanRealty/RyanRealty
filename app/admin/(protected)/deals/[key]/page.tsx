@@ -22,8 +22,10 @@ import { getTcDeal, type TcCycle, type TcDocument } from '@/app/actions/tc'
 import { getAnticipatedDocuments, type AnticipatedDocsResult } from '@/app/actions/tc-required-docs'
 import { cn } from '@/lib/utils'
 import { getDealContacts } from '@/app/actions/tc-contacts'
+import { getCommissionsForCycles, type TcCommission } from '@/app/actions/tc-commissions'
 import { ArchiveToggle, DownloadButton } from './DocumentRowActions'
 import { DocumentUpload } from './DocumentUpload'
+import { CommissionEdit } from './CommissionControls'
 import { ChecklistStatusControl } from './ChecklistControls'
 import { DealContacts } from './DealContacts'
 
@@ -96,6 +98,60 @@ const ROLE_LABEL: Record<string, string> = {
   unknown: 'Role not set',
 }
 
+const SIDE_LABEL: Record<string, string> = {
+  listing: 'Listing side',
+  buyer: 'Buyer side',
+  both: 'Both sides',
+  unknown: 'Side not set',
+}
+
+const COMMISSION_STATUS: Record<string, { label: string; className: string }> = {
+  projected: { label: 'Projected', className: 'bg-warning/30 text-foreground hover:bg-warning/30' },
+  settlement_verified: { label: 'Settlement verified', className: 'bg-success/15 text-success hover:bg-success/15' },
+  paid: { label: 'Paid', className: 'bg-primary text-primary-foreground hover:bg-primary' },
+}
+
+/** Commission block per sale cycle (rung 11). */
+function CommissionSection({ rows }: { rows: TcCommission[] }) {
+  if (!rows.length) return null
+  return (
+    <div className="rounded-lg border border-border bg-card p-4">
+      <p className="mb-3 text-sm font-medium text-foreground">Commission</p>
+      <div className="space-y-2">
+        {rows.map((r) => {
+          const st = COMMISSION_STATUS[r.status] ?? COMMISSION_STATUS.projected
+          const fees = r.referral_fee + r.tc_fee + r.other_deductions
+          return (
+            <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-muted/50 px-3 py-2">
+              <div className="min-w-0 space-y-0.5">
+                <p className="text-sm text-foreground">
+                  {r.broker_name}
+                  <span className="ml-2 text-xs text-muted-foreground">{SIDE_LABEL[r.side]}</span>
+                  {r.commission_percent != null ? (
+                    <span className="ml-2 text-xs tabular-nums text-muted-foreground">{Number(r.commission_percent.toFixed(2))}%</span>
+                  ) : null}
+                </p>
+                <p className="text-xs tabular-nums text-muted-foreground">
+                  Gross {money(r.gci)}
+                  {fees > 0 ? <> · fees {money(fees)}</> : null}
+                  {' · '}agent {money(r.agent_net)} ({Number(r.split_percent)}%)
+                  {' · '}brokerage {money(r.brokerage_net)}
+                  {r.paid_at ? <> · paid {d10(r.paid_at)}</> : null}
+                </p>
+                {r.notes ? <p className="truncate text-xs text-muted-foreground">{r.notes}</p> : null}
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge className={st.className}>{st.label}</Badge>
+                <CommissionEdit row={r} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 /** Anticipated-documents view — the Oregon-law required-doc predictor. */
 function AnticipatedDocs({ data }: { data: AnticipatedDocsResult | null }) {
   if (!data || data.documents.length === 0) return null
@@ -158,10 +214,12 @@ function CycleSection({
   cycle,
   showArchived,
   anticipated,
+  commissions,
 }: {
   cycle: TcCycle
   showArchived: boolean
   anticipated: AnticipatedDocsResult | null
+  commissions: TcCommission[]
 }) {
   const docs = cycle.documents.filter((doc) => (showArchived ? true : !doc.archived))
   const archivedCount = cycle.documents.filter((doc) => doc.archived).length
@@ -191,6 +249,9 @@ function CycleSection({
 
       {/* Anticipated documents (Oregon-law required-doc predictor) */}
       <AnticipatedDocs data={anticipated} />
+
+      {/* Commission (rung 11) */}
+      <CommissionSection rows={commissions} />
 
       {/* Documents */}
       <div className="rounded-lg border border-border bg-card">
@@ -290,6 +351,7 @@ export default async function TcDealPage({ params, searchParams }: Props) {
   if (!deal) notFound()
 
   const contacts = await getDealContacts(deal.id)
+  const commissions = await getCommissionsForCycles(deal.cycles.map((c) => c.id))
 
   const anticipatedByCycle = new Map<string, AnticipatedDocsResult | null>(
     await Promise.all(
@@ -356,6 +418,7 @@ export default async function TcDealPage({ params, searchParams }: Props) {
                 cycle={cycle}
                 showArchived={showArchived}
                 anticipated={anticipatedByCycle.get(cycle.id) ?? null}
+                commissions={commissions.filter((r) => r.cycle_id === cycle.id)}
               />
             </AccordionContent>
           </AccordionItem>

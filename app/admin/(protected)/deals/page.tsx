@@ -163,13 +163,21 @@ export default async function DealsPage() {
 
   return (
     <main className="space-y-8">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold text-foreground">Deals</h1>
-        <p className="text-sm text-muted-foreground">
-          Every SkySlope transaction — live pipeline, closed-file compliance, and open action items.
-          {data.syncedAt ? ` Synced ${d10(data.syncedAt)}.` : null}
-          {data.source === 'local-file' ? ' (dev preview: reading local master.json)' : null}
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold text-foreground">Deals</h1>
+          <p className="text-sm text-muted-foreground">
+            Every SkySlope transaction — live pipeline, closed-file compliance, and open action items.
+            {data.syncedAt ? ` Synced ${d10(data.syncedAt)}.` : null}
+            {data.source === 'local-file' ? ' (dev preview: reading local master.json)' : null}
+          </p>
+        </div>
+        <Link
+          href="/admin/commissions"
+          className="text-sm font-medium text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground"
+        >
+          Commissions →
+        </Link>
       </header>
 
       {/* KPI row */}
