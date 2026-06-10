@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.482.0 (2026-06-10)
+
+### Features
+- feat(seo): AboutPage + CollectionPage entity typing on /about and /team
+
+---
+
+
 ## v1.481.0 (2026-06-10)
 
 ### Features
