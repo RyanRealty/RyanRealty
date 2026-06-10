@@ -41,6 +41,12 @@ export type OwnerLookupResult = {
   ownerPhone?: string
   source?: string
   notes?: string
+  /** TCPA/DNC tags to apply on the FUB person (from BatchData flags). */
+  complianceTags?: string[]
+  /** Owner's mailing address differs from the property. */
+  absentee?: boolean
+  /** Owner's mailing address is outside Oregon. */
+  outOfState?: boolean
 }
 
 function getSupabase() {
@@ -557,25 +563,44 @@ export async function lookupOwnerForExpiredListing(params: {
     return fubMatch
   }
 
-  // Strategy 2: Deschutes DIAL (gives owner name + mailing)
-  const dialMatch = await deschutesDialLookup(params.streetAddress, params.city)
-  if (dialMatch) {
-    // Strategy 3+4: enrich with phone/email
-    const enrichment = await enrichOwnerContact({
-      streetAddress: params.streetAddress,
-      city: params.city,
-      state: 'OR',
-      ownerName: dialMatch.ownerName,
-    })
-    if (enrichment?.email || enrichment?.phone) {
+  // Strategy 2 (canonical since 2026-06-09): Deschutes County assessor
+  // taxlots via ArcGIS REST (structured public records — owner name +
+  // mailing address) + BatchData skip-trace (phones, emails, TCPA flags).
+  // Replaces the old Apify screen-scrape of dial.deschutes.org, which was
+  // fragile and silently dead whenever the Apify usage cap tripped.
+  try {
+    const { resolveOwnerContact } = await import('./owner-resolution.mjs')
+    const resolved = await resolveOwnerContact(params.streetAddress, params.city)
+    if (resolved) {
+      const c = resolved.county
+      const fullName = c.isEntity
+        ? c.ownerRaw
+        : [c.firstName, c.lastName].filter(Boolean).join(' ') || c.ownerRaw
+      const mailing = [c.mailingStreet, c.mailingCity, c.mailingState, c.mailingZip]
+        .filter(Boolean).join(', ')
       return {
-        ...dialMatch,
-        ownerEmail: enrichment.email,
-        ownerPhone: enrichment.phone,
-        notes: `${dialMatch.notes ?? ''} ${enrichment.notes}`.trim(),
+        status: 'matched-dial',
+        ownerName: fullName,
+        ownerMailingAddress: mailing || undefined,
+        ownerEmail: resolved.bestEmail ?? undefined,
+        ownerPhone: resolved.bestPhone ?? undefined,
+        source: `deschutes-county:${c.taxlot ?? 'taxlot'}`,
+        notes: [
+          `Resolved via Deschutes County assessor records (taxlot ${c.taxlot ?? 'unknown'}, account ${c.accountId ?? 'unknown'}).`,
+          mailing ? `Mailing: ${mailing}.` : '',
+          c.absentee ? 'ABSENTEE owner (mailing differs from property).' : 'Owner-occupied per mailing address.',
+          c.outOfState ? 'OUT-OF-STATE owner.' : '',
+          resolved.trace
+            ? `Skip trace: ${resolved.trace.phones.length} phone(s), ${resolved.trace.emails.length} email(s).${resolved.trace.hardStop ? ' HARD STOP flags present (litigator/TCPA/deceased).' : ''}`
+            : 'Skip trace unavailable.',
+        ].filter(Boolean).join(' '),
+        complianceTags: resolved.complianceTags,
+        absentee: c.absentee,
+        outOfState: c.outOfState,
       }
     }
-    return dialMatch
+  } catch (err) {
+    console.warn('[expired-owner-lookup] county resolution error:', err)
   }
 
   // Strategy 3+4 standalone: try skiptrace by address even without DIAL owner name

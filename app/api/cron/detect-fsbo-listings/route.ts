@@ -181,6 +181,7 @@ export async function GET(request: NextRequest) {
       let ownerSource: string = 'placeholder'
       let ownerNotes: string | null = null
       let fubPersonId: number | null = null
+      let ownerLookup: import('@/lib/expired-owner-lookup').OwnerLookupResult | null = null
 
       const hasDirectContact = Boolean(ownerName || ownerPhone || ownerEmail)
       if (hasDirectContact) {
@@ -193,6 +194,7 @@ export async function GET(request: NextRequest) {
           streetAddress: l.streetAddress,
           city: l.city,
         })
+        ownerLookup = lookup
         ownerStatus = lookup.status
         ownerSource = lookup.source ?? 'placeholder'
         ownerNotes = lookup.notes ?? null
@@ -267,6 +269,10 @@ export async function GET(request: NextRequest) {
         'broker:matt',
         `city:${citySlug(l.city)}`,
         ownerStatus === 'pending' ? 'owner-lookup:pending' : 'owner-lookup:resolved',
+        // owner-resolution intel (county records + skip trace, 2026-06-09)
+        ...(ownerLookup?.absentee ? ['owner:absentee'] : []),
+        ...(ownerLookup?.outOfState ? ['geo:out-of-state'] : []),
+        ...(ownerLookup?.complianceTags ?? []),
       ])
 
       // Step 7: custom fields

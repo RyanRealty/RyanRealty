@@ -289,6 +289,10 @@ export async function processNewExpiredListings(
         'source:expired-listing-cron',
         'broker:matt',
         owner.status === 'pending' ? 'owner-lookup:pending' : 'owner-lookup:resolved',
+        // owner-resolution intel (county records + skip trace, 2026-06-09)
+        ...(owner.absentee ? ['owner:absentee'] : []),
+        ...(owner.outOfState ? ['geo:out-of-state'] : []),
+        ...(owner.complianceTags ?? []),
       ])
 
       await setPersonCustomFields(fubPersonId, {
