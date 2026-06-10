@@ -5,6 +5,10 @@
       "schedule": "3,18,33,48 * * * *"
     },
     {
+      "path": "/api/cron/crm-fub-delta",
+      "schedule": "7,37 * * * *"
+    },
+    {
       "path": "/api/cron/sync-history-terminal",
       "schedule": "12 * * * *"
     },

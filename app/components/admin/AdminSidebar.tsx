@@ -20,10 +20,12 @@ export default function AdminSidebar({ role, brokerId }: AdminSidebarProps) {
 
   const main: Array<{ href: string; label: string; icon: string }> = [
     navItem('/admin', 'Dashboard', '◉'),
+    navItem('/admin/crm', 'CRM', '🗃'),
     navItem('/admin/search', 'Search', '🔎'),
     navItem('/admin/listings', 'Listings', '🏠'),
     navItem('/admin/sync', 'Sync status', '🔄'),
   ]
+  if (canBrokers) main.push(navItem('/admin/deals', 'Deals', '🤝'))
   if (isSuperuser) {
     main.push(navItem('/admin/analytics', 'Analytics', '📊'))
     main.push(navItem('/admin/analytics/social', 'Social channels', '📣'))

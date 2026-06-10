@@ -474,6 +474,11 @@ async function createFubContact(lead: ParsedLead): Promise<number | null> {
   }
 
   const personId = (data.id || (data.person as Record<string, unknown>)?.id) as number | undefined
+  if (personId) {
+    // Dual-write: mirror the new person into crm_people (parallel-run, blueprint §7)
+    const { mirrorPersonFromFub } = await import('@/lib/crm/mirror')
+    void mirrorPersonFromFub(personId)
+  }
   return personId ?? null
 }
 

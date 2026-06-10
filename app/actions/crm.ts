@@ -1,0 +1,409 @@
+'use server'
+
+/**
+ * CRM server actions — reads + mutations for /admin/crm (blueprint §5).
+ *
+ * Dual-write rule during the parallel run: when a person has a fub_legacy_id,
+ * mutations go to FUB FIRST and the mirror layer (lib/crm/mirror.ts) writes the
+ * local copy — that keeps one source of merge semantics and avoids duplicate
+ * timeline rows. People without a FUB id (future native leads) write locally.
+ */
+
+import { revalidatePath } from 'next/cache'
+import { createServiceClient } from '@/lib/supabase/service'
+import { getSession } from '@/app/actions/auth'
+import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import {
+  addPersonNote,
+  addPersonTags,
+  completeFubTask,
+  createRealtimeTask,
+  replacePersonTags,
+  updatePersonAutomationState,
+} from '@/lib/followupboss'
+import { normalizeCrmPhone } from '@/lib/crm/mirror'
+import { CRM_STAGES } from '@/lib/crm/constants'
+
+export type CrmActionResult = { ok: true } | { ok: false; error: string }
+
+export type CrmPersonRow = {
+  id: number
+  fub_legacy_id: number | null
+  name: string | null
+  first_name: string | null
+  last_name: string | null
+  stage: string
+  source: string | null
+  assigned_broker: string | null
+  tags: string[]
+  emails: Array<{ value?: string; isPrimary?: number | boolean }>
+  phones: Array<{ value?: string; isPrimary?: number | boolean }>
+  last_activity_at: string | null
+  fub_created_at: string | null
+}
+
+export type CrmListFilters = {
+  q?: string
+  stage?: string
+  broker?: string
+  tag?: string
+  view?: string
+  page?: number
+}
+
+export type CrmSavedView = {
+  id: number
+  name: string
+  description: string | null
+  filter: { stage?: string; tagsAny?: string[] }
+  position: number
+}
+
+const PAGE_SIZE = 50
+
+async function requireCrmAccess(): Promise<{ ok: true; email: string } | { ok: false; error: string }> {
+  const session = await getSession()
+  const email = session?.user?.email ?? null
+  const role = await getAdminRoleForEmail(email)
+  if (!role) return { ok: false, error: 'Unauthorized' }
+  return { ok: true, email: email ?? '' }
+}
+
+// ── Reads ──────────────────────────────────────────────────────────────────
+
+export async function listCrmSavedViews(): Promise<CrmSavedView[]> {
+  const sb = createServiceClient()
+  const { data } = await sb
+    .from('crm_saved_views')
+    .select('id,name,description,filter,position')
+    .order('position', { ascending: true })
+  return (data ?? []) as CrmSavedView[]
+}
+
+export async function listCrmPeople(filters: CrmListFilters): Promise<{
+  rows: CrmPersonRow[]
+  total: number
+  page: number
+  pageSize: number
+  appliedView: CrmSavedView | null
+}> {
+  const sb = createServiceClient()
+  const page = Math.max(1, filters.page ?? 1)
+
+  let appliedView: CrmSavedView | null = null
+  if (filters.view) {
+    const { data } = await sb
+      .from('crm_saved_views')
+      .select('id,name,description,filter,position')
+      .eq('id', Number(filters.view))
+      .maybeSingle()
+    appliedView = (data as CrmSavedView | null) ?? null
+  }
+
+  let query = sb
+    .from('crm_people')
+    .select(
+      'id,fub_legacy_id,name,first_name,last_name,stage,source,assigned_broker,tags,emails,phones,last_activity_at,fub_created_at',
+      { count: 'exact' },
+    )
+
+  const stage = filters.stage || appliedView?.filter?.stage
+  if (stage) query = query.eq('stage', stage)
+  const tagsAny = filters.tag ? [filters.tag] : appliedView?.filter?.tagsAny
+  if (tagsAny?.length) query = query.overlaps('tags', tagsAny)
+  if (filters.broker) query = query.eq('assigned_broker', filters.broker)
+
+  const q = filters.q?.trim()
+  if (q) {
+    if (q.includes('@')) {
+      const { data: pts } = await sb
+        .from('crm_contact_points')
+        .select('person_id')
+        .eq('kind', 'email')
+        .eq('value', q.toLowerCase())
+        .limit(200)
+      const ids = (pts ?? []).map((p) => p.person_id)
+      query = query.in('id', ids.length ? ids : [-1])
+    } else if (q.replace(/\D/g, '').length >= 7) {
+      const normalized = normalizeCrmPhone(q)
+      const { data: pts } = await sb
+        .from('crm_contact_points')
+        .select('person_id')
+        .eq('kind', 'phone')
+        .eq('value', normalized ?? '')
+        .limit(200)
+      const ids = (pts ?? []).map((p) => p.person_id)
+      query = query.in('id', ids.length ? ids : [-1])
+    } else {
+      query = query.ilike('name', `%${q}%`)
+    }
+  }
+
+  const from = (page - 1) * PAGE_SIZE
+  const { data, count, error } = await query
+    .order('last_activity_at', { ascending: false, nullsFirst: false })
+    .order('fub_created_at', { ascending: false, nullsFirst: false })
+    .range(from, from + PAGE_SIZE - 1)
+
+  if (error) {
+    console.error('[listCrmPeople]', error.message)
+    return { rows: [], total: 0, page, pageSize: PAGE_SIZE, appliedView }
+  }
+  return { rows: (data ?? []) as CrmPersonRow[], total: count ?? 0, page, pageSize: PAGE_SIZE, appliedView }
+}
+
+export type CrmOverview = {
+  total: number
+  sellers: number
+  buyers: number
+  hardStops: number
+  openTasks: number
+  lastDeltaSync: string | null
+}
+
+export async function getCrmOverview(): Promise<CrmOverview> {
+  const sb = createServiceClient()
+  const head = { count: 'exact' as const, head: true }
+  const [total, sellers, buyers, hardStops, openTasks, lastSync] = await Promise.all([
+    sb.from('crm_people').select('id', head),
+    sb.from('crm_people').select('id', head).contains('tags', ['audience:seller']),
+    sb.from('crm_people').select('id', head).contains('tags', ['audience:buyer']),
+    sb.from('crm_people').select('id', head).contains('tags', ['compliance:hard-stop']),
+    sb.from('crm_tasks').select('id', head).is('completed_at', null),
+    sb.from('crm_imports').select('finished_at').eq('status', 'done').order('id', { ascending: false }).limit(1).maybeSingle(),
+  ])
+  return {
+    total: total.count ?? 0,
+    sellers: sellers.count ?? 0,
+    buyers: buyers.count ?? 0,
+    hardStops: hardStops.count ?? 0,
+    openTasks: openTasks.count ?? 0,
+    lastDeltaSync: lastSync.data?.finished_at ?? null,
+  }
+}
+
+export type CrmTimelineRow = {
+  id: number
+  ts: string
+  kind: string
+  title: string | null
+  body: string | null
+  source: string
+  broker: string | null
+  payload: Record<string, unknown>
+}
+
+export type CrmTaskRow = {
+  id: number
+  name: string
+  type: string | null
+  due_at: string | null
+  completed_at: string | null
+  assigned_broker: string | null
+  fub_legacy_id: number | null
+}
+
+export type CrmPersonFull = {
+  person: (CrmPersonRow & {
+    addresses: unknown[]
+    custom: Record<string, unknown>
+    background: string | null
+    source_url: string | null
+    picture_url: string | null
+    fub_updated_at: string | null
+  }) | null
+  contactPoints: Array<{ id: number; kind: string; value: string; label: string | null; is_primary: boolean }>
+  timeline: CrmTimelineRow[]
+  timelineTotal: number
+  tasks: CrmTaskRow[]
+  suppressions: Array<{ id: number; channel: string; reason: string; source: string }>
+  enrollments: Array<{ id: number; status: string; step_index: number; crm_sequences: { name: string } | null }>
+  geo: Record<string, unknown> | null
+  cmaDeliveries: Array<Record<string, unknown>>
+  visitorSessions: number
+}
+
+export async function getCrmPersonFull(id: number): Promise<CrmPersonFull> {
+  const sb = createServiceClient()
+  const personQ = await sb.from('crm_people').select('*').eq('id', id).maybeSingle()
+  const person = personQ.data as CrmPersonFull['person']
+
+  const fubId = person?.fub_legacy_id ?? null
+  const [points, timeline, tasks, suppressions, enrollments, geo, cma, visitors] = await Promise.all([
+    sb.from('crm_contact_points').select('id,kind,value,label,is_primary').eq('person_id', id).order('is_primary', { ascending: false }),
+    sb.from('crm_timeline').select('id,ts,kind,title,body,source,broker,payload', { count: 'exact' }).eq('person_id', id).order('ts', { ascending: false }).limit(100),
+    sb.from('crm_tasks').select('id,name,type,due_at,completed_at,assigned_broker,fub_legacy_id').eq('person_id', id).order('completed_at', { ascending: true, nullsFirst: true }).order('due_at', { ascending: true }).limit(50),
+    sb.from('crm_suppressions').select('id,channel,reason,source').eq('person_id', id),
+    sb.from('crm_sequence_enrollments').select('id,status,step_index,crm_sequences(name)').eq('person_id', id),
+    fubId ? sb.from('fub_person_geo').select('*').eq('fub_person_id', fubId).maybeSingle() : Promise.resolve({ data: null }),
+    fubId ? sb.from('cma_deliveries').select('*').eq('fub_person_id', fubId).order('created_at', { ascending: false }).limit(5) : Promise.resolve({ data: [] }),
+    fubId ? sb.from('visitor_sessions').select('id', { count: 'exact', head: true }).eq('fub_person_id', fubId) : Promise.resolve({ count: 0 }),
+  ])
+
+  return {
+    person,
+    contactPoints: (points.data ?? []) as CrmPersonFull['contactPoints'],
+    timeline: (timeline.data ?? []) as CrmTimelineRow[],
+    timelineTotal: timeline.count ?? 0,
+    tasks: (tasks.data ?? []) as CrmTaskRow[],
+    suppressions: (suppressions.data ?? []) as CrmPersonFull['suppressions'],
+    enrollments: (enrollments.data ?? []) as unknown as CrmPersonFull['enrollments'],
+    geo: (geo as { data: Record<string, unknown> | null }).data ?? null,
+    cmaDeliveries: ((cma as { data: Array<Record<string, unknown>> | null }).data ?? []),
+    visitorSessions: (visitors as { count: number | null }).count ?? 0,
+  }
+}
+
+// ── Mutations (dual-write) ─────────────────────────────────────────────────
+
+async function getPersonCore(personId: number): Promise<{ id: number; fub_legacy_id: number | null; tags: string[]; stage: string } | null> {
+  const sb = createServiceClient()
+  const { data } = await sb.from('crm_people').select('id,fub_legacy_id,tags,stage').eq('id', personId).maybeSingle()
+  return (data as { id: number; fub_legacy_id: number | null; tags: string[]; stage: string } | null) ?? null
+}
+
+function revalidateCrm(personId?: number) {
+  revalidatePath('/admin/crm')
+  if (personId) revalidatePath(`/admin/crm/${personId}`)
+}
+
+export async function addCrmNoteAction(formData: FormData): Promise<CrmActionResult> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  const personId = Number(formData.get('personId'))
+  const body = String(formData.get('body') ?? '').trim()
+  if (!personId || !body) return { ok: false, error: 'Note body required' }
+  const person = await getPersonCore(personId)
+  if (!person) return { ok: false, error: 'Person not found' }
+
+  if (person.fub_legacy_id) {
+    const ok = await addPersonNote(person.fub_legacy_id, body)
+    if (!ok) return { ok: false, error: 'FUB note write failed' }
+    // mirror layer writes the local timeline row
+  } else {
+    const sb = createServiceClient()
+    const { error } = await sb.from('crm_timeline').insert({
+      person_id: personId, kind: 'note', body, source: 'app',
+    })
+    if (error) return { ok: false, error: error.message }
+  }
+  revalidateCrm(personId)
+  return { ok: true }
+}
+
+export async function updateCrmStageAction(formData: FormData): Promise<CrmActionResult> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  const personId = Number(formData.get('personId'))
+  const stage = String(formData.get('stage') ?? '').trim()
+  if (!personId || !stage) return { ok: false, error: 'Stage required' }
+  if (!(CRM_STAGES as readonly string[]).includes(stage)) return { ok: false, error: 'Unknown stage' }
+  const person = await getPersonCore(personId)
+  if (!person) return { ok: false, error: 'Person not found' }
+  if (person.stage === stage) return { ok: true }
+
+  const sb = createServiceClient()
+  const { error } = await sb.from('crm_people').update({ stage, updated_at: new Date().toISOString() }).eq('id', personId)
+  if (error) return { ok: false, error: error.message }
+  await sb.from('crm_timeline').insert({
+    person_id: personId, kind: 'stage_change',
+    title: `Stage: ${person.stage} → ${stage}`, source: 'app',
+  })
+  if (person.fub_legacy_id) {
+    await updatePersonAutomationState({ personId: person.fub_legacy_id, stage })
+  }
+  revalidateCrm(personId)
+  return { ok: true }
+}
+
+export async function addCrmTagAction(formData: FormData): Promise<CrmActionResult> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  const personId = Number(formData.get('personId'))
+  const tag = String(formData.get('tag') ?? '').trim().toLowerCase()
+  if (!personId || !tag || tag.length > 80) return { ok: false, error: 'Tag required (max 80 chars)' }
+  const person = await getPersonCore(personId)
+  if (!person) return { ok: false, error: 'Person not found' }
+  if (person.tags.includes(tag)) return { ok: true }
+
+  const sb = createServiceClient()
+  const { error } = await sb.from('crm_people').update({
+    tags: [...person.tags, tag], updated_at: new Date().toISOString(),
+  }).eq('id', personId)
+  if (error) return { ok: false, error: error.message }
+  if (person.fub_legacy_id) await addPersonTags(person.fub_legacy_id, [tag])
+  revalidateCrm(personId)
+  return { ok: true }
+}
+
+export async function removeCrmTagAction(formData: FormData): Promise<CrmActionResult> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  const personId = Number(formData.get('personId'))
+  const tag = String(formData.get('tag') ?? '').trim()
+  if (!personId || !tag) return { ok: false, error: 'Tag required' }
+  const person = await getPersonCore(personId)
+  if (!person) return { ok: false, error: 'Person not found' }
+  const nextTags = person.tags.filter((t) => t !== tag)
+  if (nextTags.length === person.tags.length) return { ok: true }
+
+  const sb = createServiceClient()
+  const { error } = await sb.from('crm_people').update({
+    tags: nextTags, updated_at: new Date().toISOString(),
+  }).eq('id', personId)
+  if (error) return { ok: false, error: error.message }
+  if (person.fub_legacy_id) await replacePersonTags(person.fub_legacy_id, nextTags)
+  revalidateCrm(personId)
+  return { ok: true }
+}
+
+export async function addCrmTaskAction(formData: FormData): Promise<CrmActionResult> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  const personId = Number(formData.get('personId'))
+  const name = String(formData.get('name') ?? '').trim()
+  const type = String(formData.get('type') ?? 'Follow Up')
+  const dueHours = Math.max(0.05, Number(formData.get('dueHours') ?? 24))
+  if (!personId || !name) return { ok: false, error: 'Task name required' }
+  const person = await getPersonCore(personId)
+  if (!person) return { ok: false, error: 'Person not found' }
+
+  if (person.fub_legacy_id) {
+    const ok = await createRealtimeTask({
+      personId: person.fub_legacy_id,
+      taskName: name,
+      taskType: (['Follow Up', 'Call', 'Text', 'Email'].includes(type) ? type : 'Follow Up') as 'Follow Up' | 'Call' | 'Text' | 'Email',
+      dueInMinutes: Math.round(dueHours * 60),
+    })
+    if (!ok) return { ok: false, error: 'FUB task create failed' }
+    // mirror layer writes the local task row
+  } else {
+    const sb = createServiceClient()
+    const { error } = await sb.from('crm_tasks').insert({
+      person_id: personId, name, type,
+      due_at: new Date(Date.now() + dueHours * 3600 * 1000).toISOString(),
+      origin: 'app',
+    })
+    if (error) return { ok: false, error: error.message }
+  }
+  revalidateCrm(personId)
+  return { ok: true }
+}
+
+export async function completeCrmTaskAction(formData: FormData): Promise<CrmActionResult> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  const taskId = Number(formData.get('taskId'))
+  const personId = Number(formData.get('personId')) || undefined
+  if (!taskId) return { ok: false, error: 'Task id required' }
+  const sb = createServiceClient()
+  const { data: task } = await sb.from('crm_tasks').select('id,fub_legacy_id').eq('id', taskId).maybeSingle()
+  if (!task) return { ok: false, error: 'Task not found' }
+  const { error } = await sb.from('crm_tasks').update({
+    completed_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+  }).eq('id', taskId)
+  if (error) return { ok: false, error: error.message }
+  if (task.fub_legacy_id) await completeFubTask(task.fub_legacy_id)
+  revalidateCrm(personId)
+  return { ok: true }
+}

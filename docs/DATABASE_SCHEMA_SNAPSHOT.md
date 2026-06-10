@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-09T23:34:28.354Z
+**Generated:** 2026-06-10T00:50:04.224Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -299,7 +299,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 590,344**
+### `listing_tile_mv` · **rows ≈ 588,301**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -641,7 +641,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `asset_library_refs` | ARRAY | yes |  |
 | `pulled_at` | timestamp with time zone | yes |  |
 
-### `expired_listings` · **rows ≈ 3**
+### `expired_listings` · **rows ≈ 4**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -1299,6 +1299,188 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `rationale` | text | yes |  |
 | `cost_usd` | numeric | yes | 0 |
 | `raw_response` | jsonb | yes |  |
+
+### `crm_contact_points`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `person_id` | bigint | no |  |
+| `kind` | text | no |  |
+| `value` | text | no |  |
+| `label` | text | yes |  |
+| `is_primary` | boolean | no | false |
+
+### `crm_deals`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `person_id` | bigint | yes |  |
+| `name` | text | yes |  |
+| `pipeline` | text | yes |  |
+| `stage` | text | yes |  |
+| `entered_stage_at` | timestamp with time zone | yes |  |
+| `value` | numeric | yes |  |
+| `status` | text | yes |  |
+| `listing_key` | text | yes |  |
+| `fub_legacy_id` | bigint | yes |  |
+| `raw` | jsonb | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
+### `crm_imports`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `source` | text | no |  |
+| `started_at` | timestamp with time zone | no | now() |
+| `finished_at` | timestamp with time zone | yes |  |
+| `status` | text | no | 'running'::text |
+| `counts` | jsonb | no | '{}'::jsonb |
+| `cursor` | jsonb | no | '{}'::jsonb |
+| `notes` | text | yes |  |
+
+### `crm_people`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `fub_legacy_id` | bigint | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+| `fub_created_at` | timestamp with time zone | yes |  |
+| `fub_updated_at` | timestamp with time zone | yes |  |
+| `first_name` | text | yes |  |
+| `last_name` | text | yes |  |
+| `name` | text | yes |  |
+| `stage` | text | no | 'Lead'::text |
+| `source` | text | yes |  |
+| `source_url` | text | yes |  |
+| `assigned_broker` | text | yes |  |
+| `assigned_fub_user_id` | integer | yes |  |
+| `emails` | jsonb | no | '[]'::jsonb |
+| `phones` | jsonb | no | '[]'::jsonb |
+| `addresses` | jsonb | no | '[]'::jsonb |
+| `tags` | ARRAY | no | '{}'::text[] |
+| `custom` | jsonb | no | '{}'::jsonb |
+| `background` | text | yes |  |
+| `price` | numeric | yes |  |
+| `picture_url` | text | yes |  |
+| `deleted` | boolean | no | false |
+| `last_activity_at` | timestamp with time zone | yes |  |
+| `raw` | jsonb | yes |  |
+
+### `crm_relationships`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `person_id` | bigint | no |  |
+| `related_person_id` | bigint | yes |  |
+| `related_name` | text | yes |  |
+| `kind` | text | yes |  |
+| `fub_legacy_id` | bigint | yes |  |
+
+### `crm_saved_views`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `name` | text | no |  |
+| `description` | text | yes |  |
+| `filter` | jsonb | no | '{}'::jsonb |
+| `sort` | text | no | 'updated_desc'::text |
+| `shared` | boolean | no | true |
+| `owner` | text | yes |  |
+| `position` | integer | no | 0 |
+| `created_at` | timestamp with time zone | no | now() |
+
+### `crm_sequence_enrollments`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `person_id` | bigint | no |  |
+| `sequence_id` | bigint | no |  |
+| `step_index` | integer | no | 0 |
+| `next_run_at` | timestamp with time zone | yes |  |
+| `status` | text | no | 'running'::text |
+| `enrolled_by` | text | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
+### `crm_sequences`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `name` | text | no |  |
+| `status` | text | no | 'paused'::text |
+| `description` | text | yes |  |
+| `stop_on_reply` | boolean | no | true |
+| `steps` | jsonb | no | '[]'::jsonb |
+| `fub_legacy_plan_id` | integer | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
+### `crm_suppressions`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `person_id` | bigint | yes |  |
+| `channel` | text | no |  |
+| `value` | text | yes |  |
+| `reason` | text | no |  |
+| `source` | text | no | 'import'::text |
+| `created_at` | timestamp with time zone | no | now() |
+
+### `crm_tasks`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `person_id` | bigint | yes |  |
+| `name` | text | no |  |
+| `type` | text | yes |  |
+| `due_at` | timestamp with time zone | yes |  |
+| `completed_at` | timestamp with time zone | yes |  |
+| `assigned_broker` | text | yes |  |
+| `origin` | text | no | 'app'::text |
+| `fub_legacy_id` | bigint | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
+### `crm_templates`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `key` | text | no |  |
+| `channel` | text | no |  |
+| `name` | text | no |  |
+| `subject` | text | yes |  |
+| `body` | text | no |  |
+| `fub_legacy_id` | integer | yes |  |
+| `updated_at` | timestamp with time zone | no | now() |
+
+### `crm_timeline`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `person_id` | bigint | no |  |
+| `ts` | timestamp with time zone | no | now() |
+| `kind` | text | no |  |
+| `title` | text | yes |  |
+| `body` | text | yes |  |
+| `payload` | jsonb | no | '{}'::jsonb |
+| `broker` | text | yes |  |
+| `source` | text | no | 'app'::text |
+| `fub_legacy_id` | bigint | yes |  |
+| `dedupe_key` | text | yes |  |
 
 ### `email_campaigns`
 
@@ -2173,6 +2355,33 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `source` | text | yes |  |
 | `observed_at` | timestamp with time zone | yes |  |
 
+### `skyslope_dashboard_meta`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | integer | no | 1 |
+| `totals` | jsonb | no | '{}'::jsonb |
+| `system_findings` | jsonb | no | '[]'::jsonb |
+| `bn_review` | jsonb | no | '{}'::jsonb |
+| `generated_at` | timestamp with time zone | yes |  |
+| `synced_at` | timestamp with time zone | no | now() |
+
+### `skyslope_transactions`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `property_key` | text | no |  |
+| `address` | text | no |  |
+| `broker` | text | yes |  |
+| `stage` | text | no |  |
+| `stage_detail` | text | yes |  |
+| `zombie` | text | yes |  |
+| `compliance_state` | text | no | 'clean'::text |
+| `headline` | jsonb | no | '{}'::jsonb |
+| `cycles` | jsonb | no | '[]'::jsonb |
+| `rollup` | jsonb | no | '{}'::jsonb |
+| `synced_at` | timestamp with time zone | no | now() |
+
 ### `spatial_ref_sys`
 
 | Column | Type | Nullable | Default |
@@ -2339,6 +2548,112 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `next_history_offset` | integer | no | 0 |
 | `total_listings` | integer | yes |  |
 | `updated_at` | timestamp with time zone | no | now() |
+
+### `tc_checklist_assignments`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `item_id` | uuid | no |  |
+| `document_id` | uuid | no |  |
+| `assigned_at` | timestamp with time zone | no | now() |
+
+### `tc_checklist_items`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `cycle_id` | uuid | no |  |
+| `source_activity_id` | bigint | yes |  |
+| `name` | text | no |  |
+| `type_name` | text | yes |  |
+| `status` | text | no | 'optional'::text |
+| `sort_order` | integer | yes |  |
+
+### `tc_cycles`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `deal_id` | uuid | no |  |
+| `kind` | text | no |  |
+| `source` | text | no | 'skyslope'::text |
+| `source_guid` | text | no |  |
+| `status` | text | yes |  |
+| `mls_number` | text | yes |  |
+| `escrow_number` | text | yes |  |
+| `escrow_company` | text | yes |  |
+| `sellers` | jsonb | no | '[]'::jsonb |
+| `buyers` | jsonb | no | '[]'::jsonb |
+| `listing_price` | numeric | yes |  |
+| `sale_price` | numeric | yes |  |
+| `office_gross` | numeric | yes |  |
+| `commission_percent` | numeric | yes |  |
+| `earnest_money` | jsonb | yes |  |
+| `listing_date` | date | yes |  |
+| `contract_acceptance_date` | date | yes |  |
+| `escrow_closing_date` | date | yes |  |
+| `actual_closing_date` | date | yes |  |
+| `expiration_date` | date | yes |  |
+| `dead_date` | date | yes |  |
+| `source_created_on` | timestamp with time zone | yes |  |
+| `portal_email` | text | yes |  |
+| `checklist_type` | text | yes |  |
+| `broker_name` | text | yes |  |
+| `raw` | jsonb | no | '{}'::jsonb |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
+### `tc_deals`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `property_key` | text | no |  |
+| `address` | text | no |  |
+| `city` | text | yes |  |
+| `state` | text | yes |  |
+| `zip` | text | yes |  |
+| `broker_name` | text | yes |  |
+| `stage` | text | no | 'closed'::text |
+| `stage_detail` | text | yes |  |
+| `fub_person_ids` | jsonb | no | '[]'::jsonb |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
+### `tc_documents`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `cycle_id` | uuid | no |  |
+| `source_doc_id` | text | yes |  |
+| `name` | text | no |  |
+| `original_name` | text | yes |  |
+| `storage_path` | text | yes |  |
+| `sha256` | text | yes |  |
+| `bytes` | bigint | yes |  |
+| `content_type` | text | yes |  |
+| `page_count` | integer | yes |  |
+| `source_uploaded_at` | timestamp with time zone | yes |  |
+| `ingested_at` | timestamp with time zone | no | now() |
+| `archived` | boolean | no | false |
+| `archived_reason` | text | yes |  |
+| `archived_at` | timestamp with time zone | yes |  |
+| `is_broker_notes` | boolean | no | false |
+| `classification` | jsonb | no | '{}'::jsonb |
+
+### `tc_events`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `deal_id` | uuid | yes |  |
+| `cycle_id` | uuid | yes |  |
+| `document_id` | uuid | yes |  |
+| `actor` | text | no | 'system'::text |
+| `action` | text | no |  |
+| `detail` | jsonb | no | '{}'::jsonb |
+| `created_at` | timestamp with time zone | no | now() |
 
 ### `tc_sessions`
 

@@ -9,6 +9,13 @@ import {
   leadOriginNoteHasDetail,
   type LeadOriginContext,
 } from './fub-lead-origin-note'
+import {
+  mirrorEnrollmentToCrm,
+  mirrorNoteToCrm,
+  mirrorPersonByEmail,
+  mirrorPersonFromFub,
+  mirrorTaskToCrm,
+} from './crm/mirror'
 
 const FUB_BASE = 'https://api.followupboss.com/v1'
 
@@ -214,9 +221,43 @@ export async function createRealtimeTask(params: RealtimeTaskContext): Promise<b
       body: JSON.stringify(body),
       next: { revalidate: 0 },
     })
+    if (res.ok) {
+      let fubTaskId: number | undefined
+      try {
+        const created = (await res.clone().json()) as { id?: number }
+        if (typeof created.id === 'number') fubTaskId = created.id
+      } catch {
+        // response body optional
+      }
+      void mirrorTaskToCrm(params.personId, {
+        name: body.name as string,
+        type: (body.type as string) ?? 'Call',
+        dueAt: dueDateTime,
+        fubTaskId,
+      })
+    }
     return res.ok
   } catch (error) {
     console.error('[createRealtimeTask] Network error:', error)
+    return false
+  }
+}
+
+/** Mark a FUB task complete (dual-write back from the CRM task list). */
+export async function completeFubTask(fubTaskId: number): Promise<boolean> {
+  const auth = getAuth()
+  if (!auth) return false
+  if (!Number.isFinite(fubTaskId) || fubTaskId <= 0) return false
+  try {
+    const res = await fetch(`${FUB_BASE}/tasks/${fubTaskId}`, {
+      method: 'PUT',
+      headers: fubHeaders(auth),
+      body: JSON.stringify({ isCompleted: true }),
+      next: { revalidate: 0 },
+    })
+    return res.ok
+  } catch (err) {
+    console.error('[completeFubTask] Network error:', err)
     return false
   }
 }
@@ -432,9 +473,36 @@ export async function addPersonTags(personId: number, tags: Array<string | undef
       body: JSON.stringify({ tags: cleaned }),
       next: { revalidate: 0 },
     })
+    if (res.ok) void mirrorPersonFromFub(personId)
     return res.ok
   } catch (err) {
     console.error('[addPersonTags] Network error:', err)
+    return false
+  }
+}
+
+/**
+ * Replace the FULL tag set on a person (no merge). This is the only way to
+ * REMOVE a tag via the FUB API — mergeTags=true can only add.
+ */
+export async function replacePersonTags(personId: number, tags: string[]): Promise<boolean> {
+  const auth = getAuth()
+  if (!auth) return false
+  if (!Number.isFinite(personId) || personId <= 0) return false
+  const cleaned = Array.from(
+    new Set(tags.map((t) => t.trim()).filter((t) => t.length > 0 && t.length <= 80)),
+  )
+  try {
+    const res = await fetch(`${FUB_BASE}/people/${personId}`, {
+      method: 'PUT',
+      headers: fubHeaders(auth),
+      body: JSON.stringify({ tags: cleaned }),
+      next: { revalidate: 0 },
+    })
+    if (res.ok) void mirrorPersonFromFub(personId)
+    return res.ok
+  } catch (err) {
+    console.error('[replacePersonTags] Network error:', err)
     return false
   }
 }
@@ -481,7 +549,10 @@ export async function applyActionPlan(personId: number, actionPlanId: number): P
       body: JSON.stringify({ personId, actionPlanId }),
       next: { revalidate: 0 },
     })
-    if (res.ok) return true
+    if (res.ok) {
+      void mirrorEnrollmentToCrm(personId, actionPlanId)
+      return true
+    }
     // Treat "already enrolled" as success-equivalent.
     if (res.status === 409 || res.status === 422) {
       console.warn(
@@ -514,6 +585,16 @@ export async function addPersonNote(personId: number, body: string): Promise<boo
       body: JSON.stringify({ personId, body: trimmed, isHtml: false }),
       next: { revalidate: 0 },
     })
+    if (res.ok) {
+      let fubNoteId: number | undefined
+      try {
+        const created = (await res.clone().json()) as { id?: number }
+        if (typeof created.id === 'number') fubNoteId = created.id
+      } catch {
+        // response body optional — mirror without the FUB note id
+      }
+      void mirrorNoteToCrm(personId, trimmed, { fubNoteId })
+    }
     return res.ok
   } catch (err) {
     console.error('[addPersonNote] Network error:', err)
@@ -572,6 +653,7 @@ export async function assignPersonToUser(personId: number, userId: number): Prom
     if (!res.ok) {
       console.warn(`[assignPersonToUser] PUT failed: personId=${personId} userId=${userId} status=${res.status}`)
     }
+    if (res.ok) void mirrorPersonFromFub(personId)
     return res.ok
   } catch (err) {
     console.error('[assignPersonToUser] Network error:', err)
@@ -623,6 +705,7 @@ export async function setPersonCustomFields(
     if (!res.ok) {
       console.warn(`[setPersonCustomFields] PUT failed: personId=${personId} status=${res.status}`)
     }
+    if (res.ok) void mirrorPersonFromFub(personId)
     return res.ok
   } catch (err) {
     console.error('[setPersonCustomFields] Network error:', err)
@@ -663,6 +746,7 @@ export async function updatePersonAutomationState(params: {
       body: JSON.stringify(body),
       next: { revalidate: 0 },
     })
+    if (response.ok) void mirrorPersonFromFub(params.personId)
     return response.ok
   } catch (error) {
     console.error('[updatePersonAutomationState] Network error:', error)
@@ -716,6 +800,7 @@ export async function sendEvent(params: SendEventParams): Promise<{ ok: true; st
         console.error(message)
       }
     }
+    void mirrorPersonByEmail(params.person?.emails?.[0]?.value)
     return { ok: true, status: 204 }
   }
   if (res.ok) {
@@ -733,6 +818,7 @@ export async function sendEvent(params: SendEventParams): Promise<{ ok: true; st
         console.error(message)
       }
     }
+    void mirrorPersonByEmail(params.person?.emails?.[0]?.value)
     return { ok: true, status: res.status }
   }
   let error: string | undefined
