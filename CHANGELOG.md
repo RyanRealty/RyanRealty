@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.488.2 (2026-06-10)
+
+### Bug Fixes
+- fix(quality): machine-vision photo gate at point of use + homepage tools 404s
+
+---
+
+
 ## v1.488.1 (2026-06-10)
 
 ### Bug Fixes
