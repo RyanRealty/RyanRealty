@@ -29,6 +29,10 @@ async function _getSurfaceImagesUncached(surface: Surface): Promise<SurfaceImage
     .select('file_url, geo_tags, subject_tags')
     .eq('type', 'photo')
     .eq('approval', 'approved')
+    // Machine-vision quality gate at the point of use (2026-06-10): hero/card
+    // slots only serve A/B-grade photography. C-grade and ungraded assets
+    // never reach a page surface — Matt does not taste-test photos.
+    .in('vision_grade', ['A', 'B'])
     .contains('surface_tags', [surface])
     .not('file_url', 'is', null)
     .limit(600)

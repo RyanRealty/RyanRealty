@@ -12,7 +12,7 @@ import { Container, DisplayHeading, Eyebrow } from '@/components/site/primitives
 
 const TOOLS = [
   {
-    href: '/mortgage',
+    href: '/tools/mortgage-calculator',
     name: 'Mortgage calculator',
     desc: 'Estimate your monthly payment at current rates. Adjust down payment, term, and price to find a range that works.',
     cta: 'Calculate payment',
@@ -23,7 +23,7 @@ const TOOLS = [
     ),
   },
   {
-    href: '/rental',
+    href: '/tools/rental-property-calculator',
     name: 'Rent vs. buy',
     desc: 'See how renting compares to buying at today\'s prices. Uses local market data for a Central Oregon-specific estimate.',
     cta: 'Run the numbers',
@@ -34,7 +34,7 @@ const TOOLS = [
     ),
   },
   {
-    href: '/appreciation',
+    href: '/tools/appreciation',
     name: 'Appreciation estimate',
     desc: 'Look up the historical price trend for a Bend neighborhood or city. Pulls from our closed-sale database, not national indices.',
     cta: 'Explore trends',
