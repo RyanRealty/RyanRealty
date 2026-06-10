@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.484.1 (2026-06-10)
+
+### Bug Fixes
+- fix(analytics): no GA4/Meta/AdSense on /admin — broker usage was polluting the scoreboard
+
+---
+
+
 ## v1.484.0 (2026-06-10)
 
 ### Features
