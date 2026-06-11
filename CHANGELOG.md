@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.488.7 (2026-06-11)
+
+### Maintenance
+- chore: consolidation commit — full working tree per Matt's clean-slate order (binaries excluded)
+
+---
+
+
 ## v1.488.6 (2026-06-11)
 
 ### Bug Fixes
