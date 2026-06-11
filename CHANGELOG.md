@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.488.5 (2026-06-11)
+
+### Bug Fixes
+- fix(dal): P0-3 — Central Oregon service-area guard on tile/feed DALs (Grants Pass/Medford/Winston leak)
+
+---
+
+
 ## v1.488.4 (2026-06-11)
 
 ### Bug Fixes
