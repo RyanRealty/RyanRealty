@@ -41,6 +41,7 @@ import { supabaseAnon } from '@/lib/data/client'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { cacheTag } from '@/lib/data/cache/unstable-cache'
 import { getListingTiles } from '@/lib/data/listings/getListingTiles'
+import { isServiceAreaCity } from '@/lib/data/listings/service-area'
 import type { ListingTile } from '@/lib/data/types/listing'
 
 // ─── Types ────────────────────────────────────────────────────────────────
@@ -311,6 +312,12 @@ async function fetchPriceDrops(
     // City filter
     if (city && tile.city?.toLowerCase() !== city.toLowerCase()) continue
 
+    // Service-area guard (audit P0-3 2026-06-10): activity_events arrive
+    // feed-wide (statewide MLS), so the region-wide pull (no city) must scope
+    // to the Central Oregon allowlist — a Winston, OR (Douglas County) drop
+    // was live on /price-drops the day of the audit.
+    if (!city && !isServiceAreaCity(tile.city)) continue
+
     const drop = tileAndEventToDrop(tile, event, nowMs)
     if (!drop) continue
 
@@ -419,7 +426,9 @@ export const getPriceDrops = (
   })
   return makeResilientCached(
     () => fetchPriceDrops(input),
-    ['price-drops-v2', key],
+    // v3 (2026-06-10, audit P0-3): region-wide pull now scoped to the Central
+    // Oregon service area — evict entries holding out-of-area drops.
+    ['price-drops-v3', key],
     { revalidate: 1800, tags: [cacheTag.listings] },
     { drops: [], total: 0, fetchedAt: new Date().toISOString() },
   )()
@@ -441,7 +450,8 @@ export const getPriceDropDigest = (
   const key = `${cityOrRegion.toLowerCase()}-${days}d`
   return makeResilientCached(
     () => fetchPriceDropDigest(cityOrRegion, days),
-    ['price-drop-digest-v2', key],
+    // v3 (2026-06-10, audit P0-3): same service-area eviction as price-drops-v3.
+    ['price-drop-digest-v3', key],
     { revalidate: 3600, tags: [cacheTag.listings] },
     {
       count: 0,

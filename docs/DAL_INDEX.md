@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-06-11T00:48:34.957Z
+**Generated:** 2026-06-11T01:08:51.277Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -447,6 +447,12 @@ Companion files:
 **TTL windows:** `CACHE_WINDOWS.listingTile`
 
 **Cache tags:** `cacheTag.listings`
+
+---
+
+### `lib/data/listings/service-area.ts`
+
+**Exports:** `SERVICE_AREA_CITIES_LOWER`, `SERVICE_AREA_CITIES_PROPER`, `isServiceAreaCity`
 
 ---
 

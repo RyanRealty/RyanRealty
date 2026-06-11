@@ -19,6 +19,7 @@ import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import type { ListingTile, ListingStatus } from '@/lib/data/types/listing'
 import { propertyTypeFilterToCodes } from '@/lib/property-type'
+import { SERVICE_AREA_CITIES_LOWER } from '@/lib/data/listings/service-area'
 
 const ACTIVE_STATUSES: ListingStatus[] = ['Active', 'Coming Soon', 'Active Under Contract']
 const PENDING_STATUSES: ListingStatus[] = ['Pending']
@@ -111,6 +112,21 @@ const FilterSchema = z.object({
    * listings table is 'A' so most LP routes get SFR + multi-family.
    */
   propertyType: z.string().min(1).max(4).optional(),
+  /**
+   * Geographic scope guard (audit P0-3 2026-06-10). The MLS feed is statewide,
+   * so an unscoped pull surfaces Grants Pass / Ashland / Klamath Falls homes
+   * on "Central Oregon" surfaces.
+   *  - omitted (default): the Central Oregon city allowlist applies ONLY when
+   *    the caller passes no geographic predicate of its own (no city/cities/
+   *    subdivision/postalCode/neighborhood/bbox/listingKeys/listNumbers/
+   *    searchQuery) — i.e. bare region-wide pulls get service-area scoped,
+   *    every explicitly-scoped call is untouched.
+   *  - 'service-area': force the allowlist even with keys/search present
+   *    (activity/pulse feed joins use this — events arrive feed-wide).
+   *  - 'all': explicit opt-out for genuinely region-wide reads (admin
+   *    listing browser, data-quality counts).
+   */
+  scope: z.enum(['service-area', 'all']).optional(),
   status: z.enum(['active', 'active-and-pending', 'pending-only', 'closed', 'all']).default('active'),
   // 'close-newest' sorts by close_date DESC NULLS LAST — for recently-sold rows.
   sort: z.enum(['newest', 'oldest', 'price-asc', 'price-desc', 'close-newest']).default('newest'),
@@ -230,6 +246,29 @@ type TileQueryBuilder = {
  */
 function applyTileFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>): T {
   let query = builder as unknown as TileQueryBuilder
+
+  // ── Service-area guard (audit P0-3) ──────────────────────────────────────
+  // Bare region-wide pulls default to the Central Oregon city allowlist so
+  // the statewide MLS feed can never leak Southern Oregon listings onto
+  // "Central Oregon" surfaces. See lib/data/listings/service-area.ts for the
+  // canonical definition and the county-vs-city rationale.
+  const hasExplicitGeo = Boolean(
+    parsed.city ||
+      (parsed.cities && parsed.cities.length > 0) ||
+      parsed.subdivision ||
+      parsed.postalCode ||
+      parsed.neighborhood ||
+      parsed.bbox ||
+      (parsed.listingKeys && parsed.listingKeys.length > 0) ||
+      (parsed.listNumbers && parsed.listNumbers.length > 0) ||
+      parsed.searchQuery
+  )
+  const applyServiceArea =
+    parsed.scope === 'service-area' || (parsed.scope !== 'all' && !hasExplicitGeo)
+  if (applyServiceArea) {
+    query = query.in('city_lower', SERVICE_AREA_CITIES_LOWER)
+  }
+
   if (parsed.city) query = query.eq('city_lower', parsed.city.toLowerCase().trim())
   if (parsed.cities && parsed.cities.length > 0) {
     query = query.in(
@@ -363,7 +402,9 @@ export const getListingTiles = (filter: GetListingTilesFilter): Promise<ListingT
     () => fetchTiles(parsed),
     // v3: the propertyType filter now matches MLS codes (A-H) not labels, so
     // entries cached under propertyType=Residential held a poisoned empty result.
-    ['listing-tiles-v3', cacheKey],
+    // v4 (2026-06-10, audit P0-3): default service-area guard — evict entries
+    // cached before the guard that held region-wide (Southern Oregon) tiles.
+    ['listing-tiles-v4', cacheKey],
     {
       revalidate: CACHE_WINDOWS.listingTile,
       tags: [cacheTag.listings],
@@ -429,7 +470,9 @@ export const getListingTilesCount = (filter: GetListingTilesFilter): Promise<num
   const cacheKey = JSON.stringify(countScope)
   return makeResilientCached(
     () => fetchTileCount(parsed),
-    ['listing-tile-count-filtered-v2', cacheKey],
+    // v3 (2026-06-10, audit P0-3): default service-area guard changes unscoped
+    // counts — evict pre-guard region-wide totals.
+    ['listing-tile-count-filtered-v3', cacheKey],
     { revalidate: CACHE_WINDOWS.listingTile, tags: [cacheTag.listings] },
     0,
   )()

@@ -11,6 +11,7 @@
  */
 
 import { supabaseAnon } from '@/lib/data/client'
+import { SERVICE_AREA_CITIES_PROPER } from '@/lib/data/listings/service-area'
 
 const ACTIVE_OR =
   'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%'
@@ -105,6 +106,9 @@ export async function getPriceDropTiles(options?: {
     .order('total_price_change_pct', { ascending: true })
     .limit(limit)
   if (options?.city?.trim()) query = query.eq('City', options.city.trim())
+  // Service-area guard (audit P0-3 2026-06-10): the feed is statewide, so the
+  // no-city pull scopes to the Central Oregon allowlist.
+  else query = query.in('City', SERVICE_AREA_CITIES_PROPER as string[])
   const { data, error } = await query
   if (error) return []
   return (data ?? []) as unknown as PriceDropTile[]

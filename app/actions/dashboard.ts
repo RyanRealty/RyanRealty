@@ -829,10 +829,14 @@ export async function getDashboardDataQuality(): Promise<DashboardDataQuality> {
   void supabase // legacy client retained for sibling queries elsewhere
   const { getListingTiles } = await import('@/lib/data')
   const [totalActivePending, missingPhotoTiles, classifiedRes] = await Promise.all([
-    // DAL: count active+pending tiles via listing_tile_mv.
-    getListingTiles({ status: 'active-and-pending', limit: 500 }).then((tiles) => tiles.length),
-    // DAL: active+pending tiles missing a hero photo.
-    getListingTiles({ status: 'active-and-pending', missingPhoto: true, limit: 500 }).then(
+    // DAL: count active+pending tiles via listing_tile_mv. scope:'all' —
+    // admin data-quality counts intentionally cover the full statewide feed
+    // (the default service-area guard would shrink them; audit P0-3).
+    getListingTiles({ status: 'active-and-pending', scope: 'all', limit: 500 }).then(
+      (tiles) => tiles.length
+    ),
+    // DAL: active+pending tiles missing a hero photo (feed-wide, see above).
+    getListingTiles({ status: 'active-and-pending', missingPhoto: true, scope: 'all', limit: 500 }).then(
       (tiles) => tiles.length
     ),
     createClient(url, serviceKey)

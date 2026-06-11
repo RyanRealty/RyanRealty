@@ -33,6 +33,7 @@
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
+import { SERVICE_AREA_CITIES_PROPER } from '@/lib/data/listings/service-area'
 
 export type UpcomingOpenHouseRow = {
   id: string
@@ -51,10 +52,10 @@ type OpenHouseJson = { Date?: string; StartTime?: string; EndTime?: string }
 // Ryan Realty's Central Oregon service area. The listings feed is statewide,
 // so the no-city (homepage) pull is scoped to these so we never surface a
 // Medford or Portland open house on a Central Oregon site.
-const SERVICE_AREA_CITIES = [
-  'Bend', 'Redmond', 'Sisters', 'La Pine', 'Sunriver', 'Madras',
-  'Prineville', 'Culver', 'Terrebonne', 'Tumalo', 'Powell Butte',
-]
+// 2026-06-10 (audit P0-3): the local hand-typed list was a drifted copy —
+// now derived from the canonical service-area module (strict superset of the
+// old list: adds Black Butte Ranch, Camp Sherman, Crooked River Ranch, etc.).
+const SERVICE_AREA_CITIES = SERVICE_AREA_CITIES_PROPER as string[]
 
 // "MM/DD/YYYY" → "YYYY-MM-DD" (null on anything else).
 function toIsoDate(d: string | undefined): string | null {
@@ -155,7 +156,9 @@ export const getUpcomingOpenHouses = makeResilientCached(
   // v3 — bumped alongside the poison-null fix (was unstable_cache, which cached []
   // on a transient error). v2 excluded new-construction spec/model homes; v3 also
   // evicts any v2 entries that may be poisoned.
-  ['upcoming-open-houses-v3'],
+  // v4 (2026-06-10, audit P0-3): city allowlist now derives from the canonical
+  // service-area module (superset of the old hand-typed list).
+  ['upcoming-open-houses-v4'],
   { revalidate: CACHE_WINDOWS.marketPulse, tags: [cacheTag.market, 'open-houses'] },
   [],
 )

@@ -91,6 +91,16 @@ export {
 } from '@/lib/data/listings/getListingTiles'
 export type { GetListingTilesFilter } from '@/lib/data/listings/getListingTiles'
 
+// Listings — Central Oregon service-area guard (audit P0-3 2026-06-10).
+// ONE source of truth for the city allowlist that keeps the statewide MLS
+// feed off "Central Oregon" surfaces. Derived from lib/central-oregon.ts.
+export {
+  SERVICE_AREA_CITIES_LOWER,
+  SERVICE_AREA_CITIES_PROPER,
+  isServiceAreaCity,
+} from '@/lib/data/listings/service-area'
+export type { ListingScope } from '@/lib/data/listings/service-area'
+
 // Listings — detail page (stub today; real impl with listing_detail_mv in Wave 1.5)
 export { getListingDetail } from '@/lib/data/listings/getListingDetail'
 export { getListingPhotos } from '@/lib/data/listings/getListingPhotos'

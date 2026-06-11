@@ -24,6 +24,7 @@ import { supabaseAnon } from '@/lib/data/client'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { cacheTag } from '@/lib/data/cache/unstable-cache'
 import type { ListingStatus } from '@/lib/data/types/listing'
+import { SERVICE_AREA_CITIES_PROPER } from '@/lib/data/listings/service-area'
 
 // ─── Motivation lexicon ────────────────────────────────────────────────────
 
@@ -356,6 +357,10 @@ async function fetchMotivatedListings(
   if (city) {
     // Case-insensitive city match — listings.City is display-case
     query = query.ilike('City', city)
+  } else {
+    // Service-area guard (audit P0-3 2026-06-10): region-wide pull scopes to
+    // the Central Oregon allowlist — the MLS feed is statewide.
+    query = query.in('City', SERVICE_AREA_CITIES_PROPER as string[])
   }
 
   // Require at least one motivation signal to narrow the scan
@@ -415,7 +420,8 @@ export const getMotivatedListings = (
   })
   return makeResilientCached(
     () => fetchMotivatedListings(input),
-    ['motivated-listings-v1', key],
+    // v2 (2026-06-10, audit P0-3): region-wide pull now service-area scoped.
+    ['motivated-listings-v2', key],
     { revalidate: 600, tags: [cacheTag.listings] },
     { listings: [], total: 0 }
   )()

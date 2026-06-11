@@ -34,6 +34,10 @@ export async function getAdminListingsPage(
   const tiles = await getListingTiles({
     status: dalStatus,
     searchQuery: search?.trim() ? search.trim() : undefined,
+    // scope:'all' — the admin listing browser intentionally covers the full
+    // statewide feed (the default service-area guard would hide out-of-area
+    // rows admins may need to inspect; audit P0-3).
+    scope: 'all',
     sort: 'newest',
     limit: from + pageSize,
   })

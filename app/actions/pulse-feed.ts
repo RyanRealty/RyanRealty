@@ -137,15 +137,17 @@ export async function getPulseFeed(options: PulseFeedQuery): Promise<PulseFeedRe
   void LISTING_SELECT
   const safeKeys = keys.filter((k) => /^[a-zA-Z0-9._-]+$/.test(k)).slice(0, 5000)
   const { getListingTiles } = await import('@/lib/data')
+  // scope:'service-area' — activity_events arrive feed-wide (statewide MLS),
+  // so the join forces the Central Oregon allowlist (audit P0-3).
   const [byListingKey, byListNumber] = await Promise.all([
     withTimeout(
-      getListingTiles({ listingKeys: safeKeys, status: 'all', sort: 'newest', limit: 500 }),
+      getListingTiles({ listingKeys: safeKeys, status: 'all', scope: 'service-area', sort: 'newest', limit: 500 }),
       QUERY_TIMEOUT_MS,
       [] as Awaited<ReturnType<typeof getListingTiles>>,
       'listings join (byListingKey)'
     ),
     withTimeout(
-      getListingTiles({ listNumbers: safeKeys, status: 'all', sort: 'newest', limit: 500 }),
+      getListingTiles({ listNumbers: safeKeys, status: 'all', scope: 'service-area', sort: 'newest', limit: 500 }),
       QUERY_TIMEOUT_MS,
       [] as Awaited<ReturnType<typeof getListingTiles>>,
       'listings join (byListNumber)'

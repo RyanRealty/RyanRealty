@@ -43,9 +43,12 @@ export async function getActivityFeed(options?: {
   // DAL: parallel listingKey + listNumber lookups against listing_tile_mv.
   // Activity event records can store either a ListingKey or a ListNumber
   // in the listing_key field, so we issue both filters and merge.
+  // scope:'service-area' — activity_events arrive feed-wide (statewide MLS),
+  // so the join forces the Central Oregon allowlist; out-of-area events are
+  // silently dropped from the feed (audit P0-3).
   const [byKeyTiles, byNumTiles] = await Promise.all([
-    getListingTiles({ listingKeys: keys.slice(0, 5000), status: 'all', limit: 500 }),
-    getListingTiles({ listNumbers: keys.slice(0, 5000), status: 'all', limit: 500 }),
+    getListingTiles({ listingKeys: keys.slice(0, 5000), status: 'all', scope: 'service-area', limit: 500 }),
+    getListingTiles({ listNumbers: keys.slice(0, 5000), status: 'all', scope: 'service-area', limit: 500 }),
   ])
   const tilesCombined = [...byKeyTiles, ...byNumTiles]
   const listingRows = tilesCombined.map((t) => ({
@@ -116,6 +119,10 @@ export async function getActivityFeed(options?: {
   const subdivisionFilter = options?.subdivision?.trim().toLowerCase()
   for (const e of events as { id: string; listing_key: string; event_type: string; event_at: string; payload?: unknown }[]) {
     const listing = byKey.get(e.listing_key)
+    // No joined tile = either an out-of-area listing (the join is forced to
+    // scope:'service-area' — audit P0-3) or a row not yet in the hourly MV.
+    // Either way a feed item with no price/address/photo is slop — skip it.
+    if (!listing) continue
     const listingCity = (listing?.City ?? '').toString().trim()
     const listingCityNormalized = listingCity.toLowerCase()
     const listingSubdivision = (listing?.SubdivisionName ?? '').toString().trim()
