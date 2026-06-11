@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.489.0 (2026-06-11)
+
+### Features
+- feat(voice): voice system v2 APPROVED and canonical — Four Laws + newer-brokerage proof hierarchy
+
+---
+
+
 ## v1.488.9 (2026-06-11)
 
 ### Maintenance
