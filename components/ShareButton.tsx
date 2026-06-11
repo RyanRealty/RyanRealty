@@ -68,7 +68,17 @@ export default function ShareButton({
 }: ShareButtonProps) {
   const [open, setOpen] = useState(false)
 
-  const shareUrl = url ?? (typeof window !== 'undefined' ? window.location.href : '')
+  // Resolved INSIDE handlers only (handlers run exclusively in the browser).
+  // Accepts a RELATIVE url (e.g. `/communities/tetherow`) and resolves it
+  // against the current origin at interaction time. Callers should pass the
+  // relative href instead of the
+  // `typeof window !== 'undefined' ? window.location.origin + href : ...`
+  // pattern — that render-time server/client branch is exactly what React's
+  // hydration-mismatch error warns about (site audit 2026-06-10, P0-5).
+  const resolveShareUrl = useCallback(() => {
+    if (url) return url.startsWith('/') ? new URL(url, window.location.origin).href : url
+    return window.location.href
+  }, [url])
   const shareTitle = title ?? (typeof document !== 'undefined' ? document.title : '')
   const shareText = text ?? shareTitle
 
@@ -89,35 +99,35 @@ export default function ShareButton({
       await navigator.share({
         title: shareTitle,
         text: shareText,
-        url: shareUrl,
+        url: resolveShareUrl(),
       })
       trackShare('native')
       setOpen(false)
     } catch (err) {
       if ((err as Error).name !== 'AbortError') setOpen(true)
     }
-  }, [shareTitle, shareText, shareUrl, trackShare])
+  }, [shareTitle, shareText, resolveShareUrl, trackShare])
 
   const handleCopyLink = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl)
+      await navigator.clipboard.writeText(resolveShareUrl())
       trackShare('copy_link')
       setOpen(false)
     } catch {
       setOpen(true)
     }
-  }, [shareUrl, trackShare])
+  }, [resolveShareUrl, trackShare])
 
   const handlePlatformShare = useCallback((platform: string) => {
     trackShare(platform)
-    const link = buildShareUrl(platform, { url: shareUrl, title: shareTitle, text: shareText })
+    const link = buildShareUrl(platform, { url: resolveShareUrl(), title: shareTitle, text: shareText })
     if (platform === 'email') {
       window.location.href = link
     } else {
       window.open(link, '_blank', 'noopener,noreferrer,width=600,height=500')
     }
     setOpen(false)
-  }, [shareUrl, shareTitle, shareText, trackShare])
+  }, [resolveShareUrl, shareTitle, shareText, trackShare])
 
   return (
     <div className="relative inline-block">

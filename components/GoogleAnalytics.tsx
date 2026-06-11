@@ -165,13 +165,22 @@ export default function GoogleAnalytics() {
         </>
       )}
 
-      {/* AdSense — loaded immediately. Its own ad-display logic respects
+      {/* AdSense — loaded during browser idle (lazyOnload), AFTER hydration
+          completes. With afterInteractive the ad script could execute while
+          React was still hydrating a large page, and adsbygoogle.js mutates
+          the DOM (auto-ads insertion + relocating its own tag, logging
+          "AdSense head tag doesn't support data-nscript attribute") — the
+          intermittent "Hydration failed because the server rendered HTML
+          didn't match the client" errors the 2026-06-10 site audit caught on
+          /communities, /cities, and /about (P0-5). Manual <AdUnit> slots are
+          unaffected: they push to the window.adsbygoogle queue, which the
+          script drains whenever it loads. Its ad-display logic still respects
           the consent state Google already knows about. */}
       {hasAdSense && (
         <Script
           id="adsense"
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ID}`}
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           crossOrigin="anonymous"
           async
         />

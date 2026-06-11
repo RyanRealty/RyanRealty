@@ -135,7 +135,12 @@ export default function CommunityCard({
           onClickWrap={(e) => { e.preventDefault(); e.stopPropagation() }}
           viewCount={viewCount}
           share={{
-            url: typeof window !== 'undefined' ? `${window.location.origin}${href}` : undefined!,
+            // Relative href — ShareButton resolves it against the origin at
+            // interaction time. The old `typeof window !== 'undefined' ?
+            // window.location.origin + href : undefined!` render branch is the
+            // server/client divergence pattern React's hydration error names
+            // (site audit 2026-06-10, P0-5).
+            url: href,
             title: `${name} homes for sale in ${city}`,
             ariaLabel: `Share ${name}`,
             shareCount,
