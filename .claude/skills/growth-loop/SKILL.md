@@ -74,9 +74,9 @@ Check for cross-loop conflicts before picking work: a family Experience is migra
 
 ## Backlog seed (updated 2026-06-10 — re-score every iteration, do not treat as a queue)
 
-- **/communities/tetherow title/meta + depth** — benchmark: "tetherow homes for sale" 62 imp / 28d, pos 13.5, ZERO clicks (shipped family, Growth-owned)
+- /communities/tetherow depth — DEFERRED to the unification sweep (title already query-aligned; pos 13.5 needs page depth, which the geo-archetype rework rebuilds anyway; don't do work that gets redone)
 - "luxury homes bend oregon" 81 imp pos 10.3 → /homes-for-sale/bend/luxury — YIELDED to Experience family 3 (preset depth brief); re-take if family 3 stalls
-- **NEXT FIRST: /team agent-intent depth** — "bend oregon realtor" pos 17.4 / "bend real estate agent" pos 46. Add an honest, §0-verified content section to /team answering agent-choice intent (how we work, marketing standard, direct-broker model). Consumer-visible → DRAFT-FIRST: build full draft + screenshots, present to Matt, ship on approval. Load voice_guidelines.md before writing.
+- ~~/team agent-intent depth~~ SHIPPED 2026-06-10 (b1af0f5d, FAQ section live; measuring via ledger 99f585a8). NOTE: its copy gets re-audited against voice v2 parity-claims law during the voice rollout.
 - ~~Brand query "ryan realty"~~ RESOLVED 2026-06-10: we rank #2 nationally (behind a 32-yr C21 Florida namesake); pos 14.3 avg is multi-state name-collision noise (5+ unrelated Ryan Realtys), not a deficiency. Entity/sameAs work shipped today is the right defense. No action.
 - zip pages + subdivisions in llms.txt (below threshold 2026-06-10; re-score)
 - Oregon-law sweep draft (docs/research/oregon-law-sweep-2026-06-10.md when the background agent lands) → route additions to tc-builder + Matt
