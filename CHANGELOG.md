@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.488.8 (2026-06-11)
+
+### Bug Fixes
+- fix(conversion): sign-in modal engagement-gated — never interrupts the first pageview
+
+---
+
+
 ## v1.488.7 (2026-06-11)
 
 ### Maintenance
