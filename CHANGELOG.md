@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.488.9 (2026-06-11)
+
+### Maintenance
+- docs(loop): backlog state sync — team FAQ shipped, tetherow deferred to sweep
+
+---
+
+
 ## v1.488.8 (2026-06-11)
 
 ### Bug Fixes
