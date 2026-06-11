@@ -18,14 +18,23 @@ import {
   MAP_WHITE,
 } from '@/lib/maps/markers'
 
-// Optional: set NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID in Vercel env to enable Cloud-based
-// vector map styling (POI suppression, custom map style). Without it the map runs
-// in raster mode — fully interactive, AdvancedMarkerElement still works.
-// Matt: create a Map ID in Google Cloud Console:
-//   Maps Platform → Map IDs → Create Map ID → Type: JavaScript, Map type: Vector
+// Map ID strategy (dual-path, P0-1 fix 2026-06-10):
+//   - With NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID set (Vercel env): vector map via
+//     `mapId` + AdvancedMarkerElement price pills. Raster `styles` must NOT be
+//     passed alongside `mapId` — Google ignores them and logs a warning.
+//   - Without it: Google HARD-REQUIRES a valid Map ID for AdvancedMarkerElement.
+//     Constructing them on a mapId-less map rejects every marker, logs
+//     "initialized without a valid Map ID" once per marker, and drops the map
+//     into degraded mode (the "Do you own this website?" error dialog). So in
+//     this mode we render the SAME price-pill HTML through a classic
+//     google.maps.OverlayView subclass (PricePillOverlay below) on a raster map
+//     with `styles` — no Map ID required, no degraded mode.
+// Matt: to enable the vector path, create a Map ID in Google Cloud Console
+// (Maps Platform → Map IDs → Create Map ID → Type: JavaScript, Map type:
+// Vector) and set NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID in Vercel + .env.local.
 const MAP_ID =
-  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID) ||
-  'DEMO_MAP_ID'
+  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID) || ''
+const HAS_MAP_ID = MAP_ID.length > 0
 
 type GeoJSONPolygon = { type: 'Polygon'; coordinates: number[][][] | number[][] }
 type GeoJSONMultiPolygon = { type: 'MultiPolygon'; coordinates: number[][][][] }
@@ -218,6 +227,155 @@ function buildClusterElement(count: number): HTMLDivElement {
   return el
 }
 
+// ─── Classic OverlayView price pill (no-Map-ID raster path) ────────────────────
+
+/**
+ * Marker-like surface shared by AdvancedMarkerElement and PricePillOverlay so
+ * the marker layer + emphasis effect are path-agnostic. `content` / `zIndex`
+ * mirror the AdvancedMarkerElement property API.
+ */
+interface PricePillOverlayHandle {
+  content: HTMLElement
+  zIndex: number
+  setMap(map: google.maps.Map | null): void
+  getPosition(): google.maps.LatLng
+  getVisible(): boolean
+}
+
+type PriceMarker = google.maps.marker.AdvancedMarkerElement | PricePillOverlayHandle
+
+interface PricePillOverlayOptions {
+  position: google.maps.LatLng | google.maps.LatLngLiteral
+  content: HTMLElement
+  map?: google.maps.Map | null
+  title?: string
+  zIndex?: number
+  /** Fired on pill click. Propagation to the map container is stopped. */
+  onClick?: (ev: MouseEvent) => void
+}
+
+type PricePillOverlayCtor = new (opts: PricePillOverlayOptions) => PricePillOverlayHandle
+
+let PricePillOverlayClass: PricePillOverlayCtor | null = null
+
+/**
+ * Lazily build the OverlayView subclass — the class body references
+ * google.maps.OverlayView, which only exists after the Maps script loads.
+ *
+ * Duck-types the subset of the classic google.maps.Marker API that
+ * @googlemaps/markerclusterer's MarkerUtils calls on non-Advanced markers:
+ * setMap + addListener (inherited from OverlayView/MVCObject), getPosition,
+ * getVisible. DOM clicks re-fire as a Maps 'click' event so the clusterer's
+ * default zoom-into-cluster handler works on cluster bubbles.
+ */
+function getPricePillOverlayClass(): PricePillOverlayCtor {
+  if (PricePillOverlayClass) return PricePillOverlayClass
+
+  class PricePillOverlay extends google.maps.OverlayView {
+    private container: HTMLDivElement | null = null
+    private contentEl: HTMLElement
+    private latLng: google.maps.LatLng
+    private zIndexValue: number
+    private titleText: string
+    private onClick?: (ev: MouseEvent) => void
+
+    constructor(opts: PricePillOverlayOptions) {
+      super()
+      this.contentEl = opts.content
+      this.latLng =
+        opts.position instanceof google.maps.LatLng
+          ? opts.position
+          : new google.maps.LatLng(opts.position)
+      this.zIndexValue = opts.zIndex ?? 1
+      this.titleText = opts.title ?? ''
+      this.onClick = opts.onClick
+      if (opts.map) this.setMap(opts.map)
+    }
+
+    onAdd() {
+      const div = document.createElement('div')
+      div.style.position = 'absolute'
+      // Anchor bottom-center so the caret tip sits on the exact lat/lng.
+      div.style.transform = 'translate(-50%, -100%)'
+      div.style.zIndex = String(this.zIndexValue)
+      div.style.cursor = 'pointer'
+      if (this.titleText) div.title = this.titleText
+      div.appendChild(this.contentEl)
+      div.addEventListener('click', (ev) => {
+        // Don't let pill clicks bubble into the map container (the polygon-draw
+        // click handler lives there).
+        ev.stopPropagation()
+        this.onClick?.(ev)
+        // Re-fire as a Maps event: MarkerClusterer attaches its cluster-click
+        // (zoom) handler via addListener('click', …) on non-Advanced markers.
+        google.maps.event.trigger(this, 'click', ev)
+      })
+      // Clicks/gestures on the pill must not hit the map underneath (parity
+      // with native marker behavior).
+      google.maps.OverlayView.preventMapHitsAndGesturesFrom(div)
+      this.getPanes()?.overlayMouseTarget.appendChild(div)
+      this.container = div
+    }
+
+    draw() {
+      const div = this.container
+      if (!div) return
+      const proj = this.getProjection()
+      if (!proj) return
+      const pt = proj.fromLatLngToDivPixel(this.latLng)
+      if (!pt) return
+      div.style.left = `${pt.x}px`
+      div.style.top = `${pt.y}px`
+    }
+
+    onRemove() {
+      this.container?.remove()
+      this.container = null
+    }
+
+    // AdvancedMarkerElement-compatible accessors (the emphasis effect mutates
+    // these on hover/select).
+    get content(): HTMLElement {
+      return this.contentEl
+    }
+    set content(el: HTMLElement) {
+      if (this.container) this.contentEl.replaceWith(el)
+      this.contentEl = el
+    }
+    get zIndex(): number {
+      return this.zIndexValue
+    }
+    set zIndex(z: number) {
+      this.zIndexValue = z
+      if (this.container) this.container.style.zIndex = String(z)
+    }
+
+    // Classic-Marker duck-typing for @googlemaps/markerclusterer MarkerUtils.
+    getPosition(): google.maps.LatLng {
+      return this.latLng
+    }
+    getVisible(): boolean {
+      return true
+    }
+  }
+
+  PricePillOverlayClass = PricePillOverlay as unknown as PricePillOverlayCtor
+  return PricePillOverlayClass
+}
+
+/** Detach a marker from the map, whichever implementation it is. */
+function detachMarker(m: PriceMarker) {
+  try {
+    if ('setMap' in m && typeof m.setMap === 'function') {
+      m.setMap(null)
+    } else {
+      ;(m as google.maps.marker.AdvancedMarkerElement).map = null
+    }
+  } catch {
+    // marker already torn down mid-unmount — ignore
+  }
+}
+
 export default function SearchMapClustered({
   listings,
   savedListingKeys = [],
@@ -242,9 +400,10 @@ export default function SearchMapClustered({
   // mapInstance drives MapContext.Provider so <Polygon>/<InfoWindow> etc. work.
   const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null)
   const clustererRef = useRef<MarkerClusterer | null>(null)
-  // AdvancedMarkerElement refs (replaces legacy google.maps.Marker)
-  const advMarkersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
-  const markersByKeyRef = useRef<Map<string, google.maps.marker.AdvancedMarkerElement>>(new Map())
+  // Price-pill marker refs — AdvancedMarkerElement on the vector map (Map ID
+  // present), PricePillOverlay on the raster map (no Map ID).
+  const advMarkersRef = useRef<PriceMarker[]>([])
+  const markersByKeyRef = useRef<Map<string, PriceMarker>>(new Map())
   const placeViewportRef = useRef<google.maps.LatLngBounds | null>(null)
   const [placeViewport, setPlaceViewport] = useState<google.maps.LatLngBounds | null>(null)
   const [showBoundary, setShowBoundary] = useState(true)
@@ -257,9 +416,10 @@ export default function SearchMapClustered({
     listing: ListingForMap & { Latitude: number; Longitude: number }
   } | null>(null)
 
-  // 'marker' library required for AdvancedMarkerElement
+  // 'marker' library only needed for AdvancedMarkerElement (vector/Map ID path).
+  // The raster path uses OverlayView from the core 'maps' module.
   const { ready: isLoaded, error: loadError } = useGoogleMapsReady({
-    libraries: ['places', 'marker'],
+    libraries: HAS_MAP_ID ? ['places', 'marker'] : ['places'],
   })
 
   const validListings = useMemo(
@@ -331,29 +491,16 @@ export default function SearchMapClustered({
     if (onBoundsChanged) setTimeout(reportBounds, 300)
   }, [onBoundsChanged, reportBounds])
 
-  // Map options: greedy gesture handling.
-  //
-  // mapId strategy:
-  //   - When a real NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID env var is set (Vercel + prod),
-  //     we pass `mapId` and strip `styles` (the two are mutually exclusive — mapId
-  //     uses Cloud-based styling while `styles` is the raster-only API).
-  //   - When DEMO_MAP_ID would be used (local dev / no env var), we omit `mapId`
-  //     entirely and keep `styles` for POI suppression. @react-google-maps/api
-  //     v2.20.8 renders a static image placeholder instead of an interactive map
-  //     when mapId='DEMO_MAP_ID' is passed on localhost, so we skip it.
-  //   - AdvancedMarkerElement works without mapId (no vector-map optimization,
-  //     but fully functional custom HTML markers).
-  //
-  // Matt: to enable vector map + Cloud styling in prod, create a Map ID in:
-  //   Maps Platform → Map IDs → Create Map ID → Type: JavaScript, Map type: Vector
-  // Then set NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID=<your-map-id> in Vercel env.
+  // Map options: greedy gesture handling. See the MAP_ID strategy comment at the
+  // top of this file — `mapId` (vector / Cloud styling) and raster `styles` are
+  // mutually exclusive, so we guard against ever passing both.
   //
   // Declared before any effects that use it to avoid TS2448 forward-reference error.
   const mapOptions = useMemo(() => {
     const base = getSearchMapOptions()
-    const hasRealMapId = MAP_ID && MAP_ID !== 'DEMO_MAP_ID'
-    if (hasRealMapId) {
-      // Real map ID: strip styles (mutually exclusive with mapId)
+    if (HAS_MAP_ID) {
+      // Map ID present: vector map. Strip raster `styles` (Google ignores them
+      // alongside mapId and logs a warning).
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { styles: _styles, ...baseWithoutStyles } = base
       return {
@@ -363,13 +510,14 @@ export default function SearchMapClustered({
         clickableIcons: !drawingMode,
       }
     }
-    // No real mapId: use raster map with styles for POI suppression
+    // No Map ID: raster map with `styles` for POI suppression. Markers render
+    // via PricePillOverlay — AdvancedMarkerElement is never constructed in this
+    // mode because Google hard-requires a valid Map ID for Advanced Markers.
     return {
       ...base,
       draggable: !drawingMode,
       clickableIcons: !drawingMode,
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawingMode])
 
   // ─── Imperative map creation ───────────────────────────────────────────────
@@ -512,42 +660,55 @@ export default function SearchMapClustered({
   // the effect ran before onLoad set mapRef.current (causing no listener to be
   // attached). Only the markers effect and the onPolygon/recenter helpers remain.
 
-  // Create AdvancedMarkerElement markers and clusterer when map and listings are ready.
+  // Keep the latest callbacks + saved-state in refs so the marker-creation
+  // effect does NOT depend on them. Markers are created once per data change
+  // (map instance + listings), never per parent re-render. (P0-1: the old deps
+  // rebuilt the whole layer on unrelated re-renders — with ~58 markers that
+  // multiplied one Google warning into 1,160 console lines per page load.)
+  const onMarkerClickRef = useRef(onMarkerClick)
+  const onMarkerHoverRef = useRef(onMarkerHover)
+  const savedSetRef = useRef(savedSet)
   useEffect(() => {
-    const map = mapRef.current
+    onMarkerClickRef.current = onMarkerClick
+    onMarkerHoverRef.current = onMarkerHover
+    savedSetRef.current = savedSet
+  })
+
+  // Create the price-pill marker layer + clusterer when map and listings are
+  // ready. Dual-path: AdvancedMarkerElement on the vector map (Map ID present),
+  // classic OverlayView pills on the raster map (no Map ID) — see the MAP_ID
+  // strategy comment at the top of this file.
+  useEffect(() => {
+    const map = mapInstance
     if (!map || !window.google || validListings.length === 0) return
 
-    // AdvancedMarkerElement requires the 'marker' library (loaded via useGoogleMapsReady).
-    // Fall back gracefully if the API is not yet available (edge case on slow load).
-    const AdvancedMarkerElement = window.google.maps.marker?.AdvancedMarkerElement
-    if (!AdvancedMarkerElement) return
+    // Vector path: AdvancedMarkerElement requires the 'marker' library (loaded
+    // via useGoogleMapsReady). Bail gracefully if not yet available (edge case
+    // on slow load). Raster path: OverlayView ships with the core 'maps' module.
+    const AdvancedMarkerElement = HAS_MAP_ID
+      ? window.google.maps.marker?.AdvancedMarkerElement
+      : undefined
+    if (HAS_MAP_ID && !AdvancedMarkerElement) return
+    const PricePillOverlay = AdvancedMarkerElement ? null : getPricePillOverlayClass()
 
     // Clear previous clusterer and markers.
     if (clustererRef.current) {
       clustererRef.current.clearMarkers()
       clustererRef.current = null
     }
-    advMarkersRef.current.forEach((m) => { m.map = null })
+    advMarkersRef.current.forEach(detachMarker)
     advMarkersRef.current = []
     markersByKeyRef.current = new Map()
 
-    const newMarkers: google.maps.marker.AdvancedMarkerElement[] = validListings.map((l, i) => {
+    const newMarkers: PriceMarker[] = validListings.map((l, i) => {
       const listingKey = (l.ListNumber ?? l.ListingKey ?? `point-${i}`).toString()
       const price = Number(l.ListPrice ?? 0)
       const label = formatPriceLabel(price)
-      const isSaved = savedSet.has(listingKey)
+      const isSaved = savedSetRef.current.has(listingKey)
 
       const pillEl = buildPricePillElement(label, { saved: isSaved })
-
-      const marker = new AdvancedMarkerElement({
-        position: { lat: l.Latitude, lng: l.Longitude },
-        map,
-        content: pillEl,
-        title: `${label} — ${[l.StreetNumber, l.StreetName].filter(Boolean).join(' ') || 'View listing'}`,
-        zIndex: 1,
-      })
-
-      marker.addListener('click', () => {
+      const title = `${label} — ${[l.StreetNumber, l.StreetName].filter(Boolean).join(' ') || 'View listing'}`
+      const handleClick = () => {
         setOpenInfo((prev) =>
           prev?.listingKey === listingKey
             ? null
@@ -557,13 +718,35 @@ export default function SearchMapClustered({
                 listing: l,
               }
         )
-        onMarkerClick?.(listingKey)
-      })
-
-      if (onMarkerHover) {
-        pillEl.addEventListener('mouseenter', () => onMarkerHover(listingKey))
-        pillEl.addEventListener('mouseleave', () => onMarkerHover(null))
+        onMarkerClickRef.current?.(listingKey)
       }
+
+      let marker: PriceMarker
+      if (AdvancedMarkerElement) {
+        const adv = new AdvancedMarkerElement({
+          position: { lat: l.Latitude, lng: l.Longitude },
+          map,
+          content: pillEl,
+          title,
+          zIndex: 1,
+          gmpClickable: true,
+        })
+        // 'gmp-click' replaces the deprecated 'click' listener on Advanced Markers.
+        adv.addEventListener('gmp-click', handleClick)
+        marker = adv
+      } else {
+        marker = new PricePillOverlay!({
+          position: { lat: l.Latitude, lng: l.Longitude },
+          map,
+          content: pillEl,
+          title,
+          zIndex: 1,
+          onClick: handleClick,
+        })
+      }
+
+      pillEl.addEventListener('mouseenter', () => onMarkerHoverRef.current?.(listingKey))
+      pillEl.addEventListener('mouseleave', () => onMarkerHoverRef.current?.(null))
 
       markersByKeyRef.current.set(listingKey, marker)
       return marker
@@ -571,7 +754,7 @@ export default function SearchMapClustered({
 
     advMarkersRef.current = newMarkers
 
-    // Cluster renderer using AdvancedMarkerElement bubble.
+    // Cluster renderer: navy count bubble in whichever marker tech is active.
     clustererRef.current = new MarkerClusterer({
       map,
       markers: newMarkers as unknown as google.maps.Marker[],
@@ -580,22 +763,33 @@ export default function SearchMapClustered({
           const count = cluster.count
           const position = cluster.position
           const bubbleEl = buildClusterElement(count)
-          const clusterMarker = new AdvancedMarkerElement({
+          const zIndex = Number(google.maps.Marker.MAX_ZINDEX) + count
+          if (AdvancedMarkerElement) {
+            const clusterMarker = new AdvancedMarkerElement({
+              position,
+              map,
+              content: bubbleEl,
+              zIndex,
+              gmpClickable: true,
+            })
+            return clusterMarker as unknown as google.maps.Marker
+          }
+          // OverlayView bubble: its DOM click re-fires as a Maps 'click' event,
+          // which drives MarkerClusterer's default zoom-into-cluster handler.
+          const clusterOverlay = new PricePillOverlay!({
             position,
             map,
             content: bubbleEl,
-            zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count,
+            zIndex,
           })
-          return clusterMarker as unknown as google.maps.Marker
+          return clusterOverlay as unknown as google.maps.Marker
         },
       },
     })
 
     return () => {
       try {
-        newMarkers.forEach((m) => {
-          try { m.map = null } catch { /* ignore */ }
-        })
+        newMarkers.forEach(detachMarker)
         if (clustererRef.current) {
           try { clustererRef.current.clearMarkers() } catch { /* ignore */ }
           clustererRef.current = null
@@ -604,11 +798,13 @@ export default function SearchMapClustered({
         // guard against unmount race
       }
     }
-  }, [isLoaded, validListings, savedSet, onMarkerClick, onMarkerHover])
+  }, [mapInstance, validListings])
 
-  // Marker emphasis: update the pill element in-place for hovered / active marker.
-  // AdvancedMarkerElement uses HTML content, so we mutate styles directly — much
-  // smoother than recreating the element (no flicker, no clusterer churn).
+  // Marker emphasis: update the pill element in-place for hovered / active
+  // marker. Both marker implementations expose the same `content` / `zIndex`
+  // property API, so we mutate directly — much smoother than recreating the
+  // marker (no flicker, no clusterer churn). Also refreshes the saved-heart
+  // state when savedSet changes (marker creation reads it once).
   const activeKey = openInfo?.listingKey ?? null
   useEffect(() => {
     const byKey = markersByKeyRef.current
@@ -628,15 +824,13 @@ export default function SearchMapClustered({
         const newEl = buildPricePillElement(label, { hover: emphasized, active: isActive, saved: isSaved })
         marker.content = newEl
         marker.zIndex = emphasized ? Number(google.maps.Marker.MAX_ZINDEX) : 1
-        if (onMarkerHover) {
-          newEl.addEventListener('mouseenter', () => onMarkerHover(key))
-          newEl.addEventListener('mouseleave', () => onMarkerHover(null))
-        }
+        newEl.addEventListener('mouseenter', () => onMarkerHoverRef.current?.(key))
+        newEl.addEventListener('mouseleave', () => onMarkerHoverRef.current?.(null))
       } catch {
         // marker DOM may be gone mid-pan; ignore
       }
     }
-  }, [hoveredKey, activeKey, validListings, savedSet, onMarkerHover])
+  }, [hoveredKey, activeKey, validListings, savedSet])
 
   if (loadError) {
     return (
