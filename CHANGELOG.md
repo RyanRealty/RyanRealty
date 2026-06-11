@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.488.4 (2026-06-11)
+
+### Bug Fixes
+- fix(quality): P0-4 blog heroes + P0-6 mobile horizontal scroll (audit 2026-06-10)
+
+---
+
+
 ## v1.488.3 (2026-06-11)
 
 ### Bug Fixes
