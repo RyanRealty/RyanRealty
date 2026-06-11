@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.488.6 (2026-06-11)
+
+### Bug Fixes
+- fix(hydration): two cross-page hydration-race classes (audit P0-5 diagnosis)
+
+---
+
+
 ## v1.488.5 (2026-06-11)
 
 ### Bug Fixes
