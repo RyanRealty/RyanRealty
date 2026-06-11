@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.488.3 (2026-06-11)
+
+### Bug Fixes
+- fix(map): P0-1 — search map pinless + degraded dialog on prod (AdvancedMarker hard-requires Map ID)
+
+---
+
+
 ## v1.488.2 (2026-06-10)
 
 ### Bug Fixes
