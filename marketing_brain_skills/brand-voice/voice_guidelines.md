@@ -1,3 +1,11 @@
+> **SUPERSEDED IN PART (2026-06-11): the governing voice system is now
+> [`voice_system_v2.md`](voice_system_v2.md) — the Four Laws, the proof hierarchy
+> (market > work product > process > NEVER our résumé), parity-claims ban, and
+> before/after pairs. This file remains canonical ONLY for the mechanical floor
+> (banned words/punctuation §6, formatting, channel calibration §11) and the
+> Matt 1:1 correspondence voice (§7, now scoped to review replies + personal
+> letters ONLY — never site/marketing copy).**
+
 # Ryan Realty Voice Guidelines
 
 **Version**: 1.5

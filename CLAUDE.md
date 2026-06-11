@@ -89,7 +89,7 @@ If a deliverable could plausibly be the kind of thing Matt would want to review,
 
 **Every piece of text generated for Ryan Realty — whether it ships to a channel, lands in a file, or is pasted into chat for Matt to copy into his own email client — must comply with the brand voice rules below.** No exceptions. This rule outranks convenience, speed, and any prior chat context. Matt should never have to remind the agent to strip em-dashes or banned words from a draft.
 
-**Canonical source:** `marketing_brain_skills/brand-voice/SKILL.md` and `marketing_brain_skills/brand-voice/voice_guidelines.md`. Load the full guidelines doc when generating long-form (blog, listing description, video VO script, multi-paragraph email, ad copy). For short chat-drafted snippets (one-paragraph email, social caption, headline), the inline rules below are the floor.
+**Canonical source:** `marketing_brain_skills/brand-voice/voice_system_v2.md` (the Four Laws + proof hierarchy, APPROVED 2026-06-11 — governs all copy) with `voice_guidelines.md` for the mechanical floor and `SKILL.md` for workflow. Load the full guidelines doc when generating long-form (blog, listing description, video VO script, multi-paragraph email, ad copy). For short chat-drafted snippets (one-paragraph email, social caption, headline), the inline rules below are the floor.
 
 ## What triggers this rule
 
@@ -157,7 +157,7 @@ Compound hyphens are allowed where standard English requires them (single-family
 - **Tabular numerals** on every numeric surface in the UI.
 - **No emoji** in blog posts, email body, ad headlines, or video on-screen text. One emoji max in a social caption.
 
-### Canonical phrases (use these as templates — drawn from Matt's actual writing)
+### Canonical phrases (Matt 1:1 correspondence ONLY — review replies, personal letters; NEVER site/marketing copy per voice_system_v2.md, approved 2026-06-11)
 
 - "Thank you so much for taking the time to..."
 - "It was genuinely a pleasure working with you."
