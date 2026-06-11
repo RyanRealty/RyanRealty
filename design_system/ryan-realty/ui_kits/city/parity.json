@@ -2,16 +2,16 @@
   "route": "app/cities/[slug]/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/city/index.html",
   "competitiveTarget": "Beat Coldwell Banker / Windermere city pages — live neighborhood-level market data no competitor surfaces, plus the in-boundary listing map and scrubbable price history.",
-  "note": "Experience System Geo archetype v3.1, 2026-06-10. Rebuilt from HeroBlock+MarketSnapshot to FlyoverHero+LiveMarketBand+CommunityMapLedgerPane+PriceHistoryScrubber+PaymentSlider+InlineValuationHook. Neighborhoods and communities render as editorial index rows (no tile grid). SectionNav anchor rail on every section. useEngagementTracking on every section via experience modules. All JSON-LD (City/Dataset/FAQPage/Breadcrumb) retained.",
+  "note": "Experience System Geo archetype v3.2 (Family 4 rework, 2026-06-10). v3.2 changes after Matt's changes-requested verdict: (1) VERIFIED city hero photography via cityHero() registry (lib/geo-images.ts, Family 4 asset-library curation; regional fallback is LABELED via FlyoverHero mediaCaption, never a wrong-city photo); (2) city name leads HUGE in Amboqia (FlyoverHero displayName treatment, SEO headline preserved in the same h1); (3) honest editorial About section (getCityContent / data-driven fallback) + quick-facts ledger; (4) tile walls removed — PriceRangeTiles cut, RelatedAreas tile grid replaced by editorial index rows with verified thumbnails; (5) Bend neighborhoods are stat-rich ledger rows (getBendNeighborhoodStats live median/count); (6) EngagedSection wraps every server-rendered section so engagement telemetry covers the whole page. All JSON-LD (City/Dataset/FAQPage/Breadcrumb) retained.",
   "requiredComponents": [
     {
-      "name": "BreadcrumbNav",
+      "name": "PageBreadcrumb",
       "section": "Home > Cities > {City}",
       "blocking": true
     },
     {
       "name": "FlyoverHero",
-      "section": "hero — FlyoverHero in POSTER mode (videoSrc=null, photoSrc=city hero image). Live activeCount + medianPrice Amboqia overlay + pulsing live-dot. Count-up animation via useCountUp.",
+      "section": "hero — FlyoverHero in POSTER mode (videoSrc=null, photoSrc=VERIFIED city hero via cityHero()). City name HUGE in Amboqia (displayName), live activeCount + medianPrice overlay + pulsing live-dot, count-up via useCountUp. Unverified-photo cities carry the honest mediaCaption label.",
       "blocking": true
     },
     {
@@ -68,6 +68,11 @@
       "name": "InlineValuationHook",
       "section": "valuation-hook — navy CTA band replacing generic CTABar. What is your {City} home worth?",
       "blocking": true
+    },
+    {
+      "name": "EngagedSection",
+      "section": "about / neighborhoods / communities / nearby — client engagement wrapper giving server-rendered sections section_view telemetry (docs/EXPERIENCE_SYSTEM.md section 4).",
+      "blocking": true
     }
   ],
   "layoutComponents": [
@@ -90,6 +95,9 @@
     "NeighborhoodMap (still used inside CommunityMapLedgerPane)",
     "CTABar (replaced by InlineValuationHook)",
     "RelatedAreas for neighborhoods (replaced by editorial index rows)",
-    "RelatedAreas for golf communities (replaced by editorial index rows)"
+    "RelatedAreas for golf communities (replaced by editorial index rows)",
+    "PriceRangeTiles (v3.2 — generic tile wall cut per the no-tile-walls calibration)",
+    "RelatedAreas for other cities (v3.2 — replaced by editorial index rows with verified thumbnails)",
+    "getSurfaceImage seeded-pool hero (v3.2 — replaced by the explicit verified cityHero() registry)"
   ]
 }

@@ -5,7 +5,7 @@
   "note": "Created 2026-06-01 to gate the neighborhood page's listings grid (Matt directive: featured/real listings on every geo page, enforced by a gate not a one-off). The page already imports all required components, so this passes immediately and LOCKS the listings section + core structure against regression.",
   "requiredComponents": [
     {
-      "name": "BreadcrumbNav",
+      "name": "PageBreadcrumb",
       "section": "Home > {City} > {Neighborhood}",
       "blocking": true
     },

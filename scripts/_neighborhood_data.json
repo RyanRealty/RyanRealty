@@ -1,0 +1,1892 @@
+{
+  "tier1": [
+    {
+      "slug": "bend-river-west",
+      "label": "River West",
+      "eyebrow": "BEND · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.0635,
+        "lon": -121.3275
+      },
+      "groundM": 1050,
+      "diagM": 5395,
+      "bbox": {
+        "widthM": 4061,
+        "heightM": 3552,
+        "diagM": 5395
+      },
+      "cameraParams": {
+        "radiusM": 3500,
+        "altitudeM": 2000,
+        "pitchDeg": 52,
+        "fovDeg": 28
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 4316,
+          "north": 3391,
+          "altitude": 4933
+        },
+        {
+          "t": 0.2,
+          "east": 2775,
+          "north": 2158,
+          "altitude": 3391
+        },
+        {
+          "t": 0.4,
+          "east": -1850,
+          "north": -617,
+          "altitude": 2775
+        },
+        {
+          "t": 0.6,
+          "east": -3391,
+          "north": -2775,
+          "altitude": 2158
+        },
+        {
+          "t": 0.75,
+          "east": -1541,
+          "north": -3391,
+          "altitude": 1387
+        },
+        {
+          "t": 0.88,
+          "east": 925,
+          "north": -2466,
+          "altitude": 925
+        },
+        {
+          "t": 1,
+          "east": 1850,
+          "north": -1541,
+          "altitude": 1079
+        }
+      ],
+      "stat": {
+        "median_sale_price": 892500,
+        "sold_count": 10,
+        "computed_at": "2026-06-09T07:00:55.492588+00:00"
+      }
+    },
+    {
+      "slug": "bend-old-bend",
+      "label": "Old Bend",
+      "eyebrow": "BEND · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.0561,
+        "lon": -121.3191
+      },
+      "groundM": 1050,
+      "diagM": 1899,
+      "bbox": {
+        "widthM": 1482,
+        "heightM": 1187,
+        "diagM": 1899
+      },
+      "cameraParams": {
+        "radiusM": 1800,
+        "altitudeM": 1200,
+        "pitchDeg": 48,
+        "fovDeg": 32
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 1960,
+          "north": 1540,
+          "altitude": 2240
+        },
+        {
+          "t": 0.2,
+          "east": 1260,
+          "north": 980,
+          "altitude": 1540
+        },
+        {
+          "t": 0.4,
+          "east": -840,
+          "north": -280,
+          "altitude": 1260
+        },
+        {
+          "t": 0.6,
+          "east": -1540,
+          "north": -1260,
+          "altitude": 980
+        },
+        {
+          "t": 0.75,
+          "east": -700,
+          "north": -1540,
+          "altitude": 630
+        },
+        {
+          "t": 0.88,
+          "east": 420,
+          "north": -1120,
+          "altitude": 420
+        },
+        {
+          "t": 1,
+          "east": 840,
+          "north": -700,
+          "altitude": 490
+        }
+      ],
+      "stat": {
+        "median_sale_price": null,
+        "sold_count": 0,
+        "computed_at": "2026-06-09T07:00:55.116745+00:00"
+      }
+    },
+    {
+      "slug": "bend-summit-west",
+      "label": "Summit West",
+      "eyebrow": "BEND · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.0631,
+        "lon": -121.3621
+      },
+      "groundM": 1130,
+      "diagM": 5515,
+      "bbox": {
+        "widthM": 3560,
+        "heightM": 4212,
+        "diagM": 5515
+      },
+      "cameraParams": {
+        "radiusM": 3500,
+        "altitudeM": 2000,
+        "pitchDeg": 52,
+        "fovDeg": 28
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 4412,
+          "north": 3467,
+          "altitude": 5042
+        },
+        {
+          "t": 0.2,
+          "east": 2836,
+          "north": 2206,
+          "altitude": 3467
+        },
+        {
+          "t": 0.4,
+          "east": -1891,
+          "north": -630,
+          "altitude": 2836
+        },
+        {
+          "t": 0.6,
+          "east": -3467,
+          "north": -2836,
+          "altitude": 2206
+        },
+        {
+          "t": 0.75,
+          "east": -1576,
+          "north": -3467,
+          "altitude": 1418
+        },
+        {
+          "t": 0.88,
+          "east": 945,
+          "north": -2521,
+          "altitude": 945
+        },
+        {
+          "t": 1,
+          "east": 1891,
+          "north": -1576,
+          "altitude": 1103
+        }
+      ],
+      "stat": {
+        "median_sale_price": 1435000,
+        "sold_count": 3,
+        "computed_at": "2026-06-09T07:00:56.001484+00:00"
+      }
+    },
+    {
+      "slug": "bend-century-west",
+      "label": "Century West",
+      "eyebrow": "BEND · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.0357,
+        "lon": -121.3467
+      },
+      "groundM": 1050,
+      "diagM": 5617,
+      "bbox": {
+        "widthM": 2788,
+        "heightM": 4876,
+        "diagM": 5617
+      },
+      "cameraParams": {
+        "radiusM": 3500,
+        "altitudeM": 2000,
+        "pitchDeg": 52,
+        "fovDeg": 28
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 4494,
+          "north": 3531,
+          "altitude": 5136
+        },
+        {
+          "t": 0.2,
+          "east": 2889,
+          "north": 2247,
+          "altitude": 3531
+        },
+        {
+          "t": 0.4,
+          "east": -1926,
+          "north": -642,
+          "altitude": 2889
+        },
+        {
+          "t": 0.6,
+          "east": -3531,
+          "north": -2889,
+          "altitude": 2247
+        },
+        {
+          "t": 0.75,
+          "east": -1605,
+          "north": -3531,
+          "altitude": 1444
+        },
+        {
+          "t": 0.88,
+          "east": 963,
+          "north": -2568,
+          "altitude": 963
+        },
+        {
+          "t": 1,
+          "east": 1926,
+          "north": -1605,
+          "altitude": 1123
+        }
+      ],
+      "stat": {
+        "median_sale_price": 920000,
+        "sold_count": 1,
+        "computed_at": "2026-06-09T07:00:54.699493+00:00"
+      }
+    },
+    {
+      "slug": "bend-orchard-district",
+      "label": "Orchard District",
+      "eyebrow": "BEND · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.0724,
+        "lon": -121.2863
+      },
+      "groundM": 1050,
+      "diagM": 4081,
+      "bbox": {
+        "widthM": 2678,
+        "heightM": 3080,
+        "diagM": 4081
+      },
+      "cameraParams": {
+        "radiusM": 3500,
+        "altitudeM": 2000,
+        "pitchDeg": 52,
+        "fovDeg": 28
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 3265,
+          "north": 2565,
+          "altitude": 3731
+        },
+        {
+          "t": 0.2,
+          "east": 2099,
+          "north": 1632,
+          "altitude": 2565
+        },
+        {
+          "t": 0.4,
+          "east": -1399,
+          "north": -466,
+          "altitude": 2099
+        },
+        {
+          "t": 0.6,
+          "east": -2565,
+          "north": -2099,
+          "altitude": 1632
+        },
+        {
+          "t": 0.75,
+          "east": -1166,
+          "north": -2565,
+          "altitude": 1049
+        },
+        {
+          "t": 0.88,
+          "east": 700,
+          "north": -1866,
+          "altitude": 700
+        },
+        {
+          "t": 1,
+          "east": 1399,
+          "north": -1166,
+          "altitude": 816
+        }
+      ],
+      "stat": {
+        "median_sale_price": 857500,
+        "sold_count": 2,
+        "computed_at": "2026-06-09T07:00:55.359891+00:00"
+      }
+    },
+    {
+      "slug": "bend-mountain-view",
+      "label": "Mountain View",
+      "eyebrow": "BEND · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.0778,
+        "lon": -121.2669
+      },
+      "groundM": 1050,
+      "diagM": 4659,
+      "bbox": {
+        "widthM": 2602,
+        "heightM": 3865,
+        "diagM": 4659
+      },
+      "cameraParams": {
+        "radiusM": 3500,
+        "altitudeM": 2000,
+        "pitchDeg": 52,
+        "fovDeg": 28
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 3727,
+          "north": 2929,
+          "altitude": 4260
+        },
+        {
+          "t": 0.2,
+          "east": 2396,
+          "north": 1864,
+          "altitude": 2929
+        },
+        {
+          "t": 0.4,
+          "east": -1597,
+          "north": -532,
+          "altitude": 2396
+        },
+        {
+          "t": 0.6,
+          "east": -2929,
+          "north": -2396,
+          "altitude": 1864
+        },
+        {
+          "t": 0.75,
+          "east": -1331,
+          "north": -2929,
+          "altitude": 1198
+        },
+        {
+          "t": 0.88,
+          "east": 799,
+          "north": -2130,
+          "altitude": 799
+        },
+        {
+          "t": 1,
+          "east": 1597,
+          "north": -1331,
+          "altitude": 932
+        }
+      ],
+      "stat": {
+        "median_sale_price": 555250,
+        "sold_count": 12,
+        "computed_at": "2026-06-09T07:00:54.968231+00:00"
+      }
+    },
+    {
+      "slug": "bend-larkspur",
+      "label": "Larkspur",
+      "eyebrow": "BEND · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.0488,
+        "lon": -121.2872
+      },
+      "groundM": 1050,
+      "diagM": 4974,
+      "bbox": {
+        "widthM": 4351,
+        "heightM": 2409,
+        "diagM": 4974
+      },
+      "cameraParams": {
+        "radiusM": 3500,
+        "altitudeM": 2000,
+        "pitchDeg": 52,
+        "fovDeg": 28
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 3979,
+          "north": 3127,
+          "altitude": 4548
+        },
+        {
+          "t": 0.2,
+          "east": 2558,
+          "north": 1990,
+          "altitude": 3127
+        },
+        {
+          "t": 0.4,
+          "east": -1705,
+          "north": -568,
+          "altitude": 2558
+        },
+        {
+          "t": 0.6,
+          "east": -3127,
+          "north": -2558,
+          "altitude": 1990
+        },
+        {
+          "t": 0.75,
+          "east": -1421,
+          "north": -3127,
+          "altitude": 1279
+        },
+        {
+          "t": 0.88,
+          "east": 853,
+          "north": -2274,
+          "altitude": 853
+        },
+        {
+          "t": 1,
+          "east": 1705,
+          "north": -1421,
+          "altitude": 995
+        }
+      ],
+      "stat": {
+        "median_sale_price": 620000,
+        "sold_count": 9,
+        "computed_at": "2026-06-09T07:00:54.82793+00:00"
+      }
+    },
+    {
+      "slug": "bend-old-farm-district",
+      "label": "Old Farm District",
+      "eyebrow": "BEND · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.0254,
+        "lon": -121.2998
+      },
+      "groundM": 1050,
+      "diagM": 5339,
+      "bbox": {
+        "widthM": 4632,
+        "heightM": 2655,
+        "diagM": 5339
+      },
+      "cameraParams": {
+        "radiusM": 3500,
+        "altitudeM": 2000,
+        "pitchDeg": 52,
+        "fovDeg": 28
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 4271,
+          "north": 3356,
+          "altitude": 4881
+        },
+        {
+          "t": 0.2,
+          "east": 2746,
+          "north": 2136,
+          "altitude": 3356
+        },
+        {
+          "t": 0.4,
+          "east": -1831,
+          "north": -610,
+          "altitude": 2746
+        },
+        {
+          "t": 0.6,
+          "east": -3356,
+          "north": -2746,
+          "altitude": 2136
+        },
+        {
+          "t": 0.75,
+          "east": -1525,
+          "north": -3356,
+          "altitude": 1373
+        },
+        {
+          "t": 0.88,
+          "east": 915,
+          "north": -2441,
+          "altitude": 915
+        },
+        {
+          "t": 1,
+          "east": 1831,
+          "north": -1525,
+          "altitude": 1068
+        }
+      ],
+      "stat": {
+        "median_sale_price": 588000,
+        "sold_count": 17,
+        "computed_at": "2026-06-09T07:00:55.234249+00:00"
+      }
+    },
+    {
+      "slug": "bend-boyd-acres",
+      "label": "Boyd Acres",
+      "eyebrow": "BEND · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.0986,
+        "lon": -121.2989
+      },
+      "groundM": 1050,
+      "diagM": 6826,
+      "bbox": {
+        "widthM": 4373,
+        "heightM": 5242,
+        "diagM": 6826
+      },
+      "cameraParams": {
+        "radiusM": 5500,
+        "altitudeM": 3000,
+        "pitchDeg": 54,
+        "fovDeg": 26
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 5461,
+          "north": 4291,
+          "altitude": 6241
+        },
+        {
+          "t": 0.2,
+          "east": 3511,
+          "north": 2730,
+          "altitude": 4291
+        },
+        {
+          "t": 0.4,
+          "east": -2340,
+          "north": -780,
+          "altitude": 3511
+        },
+        {
+          "t": 0.6,
+          "east": -4291,
+          "north": -3511,
+          "altitude": 2730
+        },
+        {
+          "t": 0.75,
+          "east": -1950,
+          "north": -4291,
+          "altitude": 1755
+        },
+        {
+          "t": 0.88,
+          "east": 1170,
+          "north": -3120,
+          "altitude": 1170
+        },
+        {
+          "t": 1,
+          "east": 2340,
+          "north": -1950,
+          "altitude": 1365
+        }
+      ],
+      "stat": {
+        "median_sale_price": 735000,
+        "sold_count": 7,
+        "computed_at": "2026-06-09T07:00:54.552218+00:00"
+      }
+    },
+    {
+      "slug": "bend-southern-crossing",
+      "label": "Southern Crossing",
+      "eyebrow": "BEND · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.0405,
+        "lon": -121.3214
+      },
+      "groundM": 1050,
+      "diagM": 3514,
+      "bbox": {
+        "widthM": 2406,
+        "heightM": 2562,
+        "diagM": 3514
+      },
+      "cameraParams": {
+        "radiusM": 2500,
+        "altitudeM": 1600,
+        "pitchDeg": 50,
+        "fovDeg": 30
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 2811,
+          "north": 2209,
+          "altitude": 3213
+        },
+        {
+          "t": 0.2,
+          "east": 1807,
+          "north": 1406,
+          "altitude": 2209
+        },
+        {
+          "t": 0.4,
+          "east": -1205,
+          "north": -402,
+          "altitude": 1807
+        },
+        {
+          "t": 0.6,
+          "east": -2209,
+          "north": -1807,
+          "altitude": 1406
+        },
+        {
+          "t": 0.75,
+          "east": -1004,
+          "north": -2209,
+          "altitude": 904
+        },
+        {
+          "t": 0.88,
+          "east": 602,
+          "north": -1606,
+          "altitude": 602
+        },
+        {
+          "t": 1,
+          "east": 1205,
+          "north": -1004,
+          "altitude": 703
+        }
+      ],
+      "stat": {
+        "median_sale_price": 1550000,
+        "sold_count": 4,
+        "computed_at": "2026-06-09T07:00:55.752699+00:00"
+      }
+    },
+    {
+      "slug": "bend-southwest-bend",
+      "label": "Southwest Bend",
+      "eyebrow": "BEND · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.0236,
+        "lon": -121.3328
+      },
+      "groundM": 1050,
+      "diagM": 5029,
+      "bbox": {
+        "widthM": 4146,
+        "heightM": 2846,
+        "diagM": 5029
+      },
+      "cameraParams": {
+        "radiusM": 3500,
+        "altitudeM": 2000,
+        "pitchDeg": 52,
+        "fovDeg": 28
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 4023,
+          "north": 3161,
+          "altitude": 4598
+        },
+        {
+          "t": 0.2,
+          "east": 2586,
+          "north": 2012,
+          "altitude": 3161
+        },
+        {
+          "t": 0.4,
+          "east": -1724,
+          "north": -575,
+          "altitude": 2586
+        },
+        {
+          "t": 0.6,
+          "east": -3161,
+          "north": -2586,
+          "altitude": 2012
+        },
+        {
+          "t": 0.75,
+          "east": -1437,
+          "north": -3161,
+          "altitude": 1293
+        },
+        {
+          "t": 0.88,
+          "east": 862,
+          "north": -2299,
+          "altitude": 862
+        },
+        {
+          "t": 1,
+          "east": 1724,
+          "north": -1437,
+          "altitude": 1006
+        }
+      ],
+      "stat": {
+        "median_sale_price": 770000,
+        "sold_count": 14,
+        "computed_at": "2026-06-09T07:00:55.87151+00:00"
+      }
+    },
+    {
+      "slug": "bend-southeast-bend",
+      "label": "Southeast Bend",
+      "eyebrow": "BEND · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.0138,
+        "lon": -121.3048
+      },
+      "groundM": 1050,
+      "diagM": 3962,
+      "bbox": {
+        "widthM": 3192,
+        "heightM": 2347,
+        "diagM": 3962
+      },
+      "cameraParams": {
+        "radiusM": 2500,
+        "altitudeM": 1600,
+        "pitchDeg": 50,
+        "fovDeg": 30
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 3170,
+          "north": 2490,
+          "altitude": 3622
+        },
+        {
+          "t": 0.2,
+          "east": 2038,
+          "north": 1585,
+          "altitude": 2490
+        },
+        {
+          "t": 0.4,
+          "east": -1358,
+          "north": -453,
+          "altitude": 2038
+        },
+        {
+          "t": 0.6,
+          "east": -2490,
+          "north": -2038,
+          "altitude": 1585
+        },
+        {
+          "t": 0.75,
+          "east": -1132,
+          "north": -2490,
+          "altitude": 1019
+        },
+        {
+          "t": 0.88,
+          "east": 679,
+          "north": -1811,
+          "altitude": 679
+        },
+        {
+          "t": 1,
+          "east": 1358,
+          "north": -1132,
+          "altitude": 792
+        }
+      ],
+      "stat": {
+        "median_sale_price": 715000,
+        "sold_count": 5,
+        "computed_at": "2026-06-09T07:00:55.618122+00:00"
+      }
+    }
+  ],
+  "tier2": [
+    {
+      "slug": "tetherow",
+      "label": "Tetherow",
+      "city": "Bend",
+      "eyebrow": "BEND · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.0455,
+        "lon": -121.3619
+      },
+      "groundM": 1050,
+      "diagM": 3656,
+      "bbox": {
+        "widthM": 1628,
+        "heightM": 3273,
+        "diagM": 3656
+      },
+      "cameraParams": {
+        "radiusM": 2500,
+        "altitudeM": 1600,
+        "pitchDeg": 50,
+        "fovDeg": 30
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 2925,
+          "north": 2298,
+          "altitude": 3343
+        },
+        {
+          "t": 0.2,
+          "east": 1880,
+          "north": 1462,
+          "altitude": 2298
+        },
+        {
+          "t": 0.4,
+          "east": -1253,
+          "north": -418,
+          "altitude": 1880
+        },
+        {
+          "t": 0.6,
+          "east": -2298,
+          "north": -1880,
+          "altitude": 1462
+        },
+        {
+          "t": 0.75,
+          "east": -1045,
+          "north": -2298,
+          "altitude": 940
+        },
+        {
+          "t": 0.88,
+          "east": 627,
+          "north": -1671,
+          "altitude": 627
+        },
+        {
+          "t": 1,
+          "east": 1253,
+          "north": -1045,
+          "altitude": 731
+        }
+      ],
+      "stat": {
+        "median_sale_price": 1300000,
+        "sold_count": 11,
+        "computed_at": "2026-06-09T07:00:57.300705+00:00"
+      }
+    },
+    {
+      "slug": "broken-top",
+      "label": "Broken Top",
+      "city": "Bend",
+      "eyebrow": "BEND · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.05,
+        "lon": -121.3554
+      },
+      "groundM": 1050,
+      "diagM": 11622,
+      "bbox": {
+        "widthM": 7635,
+        "heightM": 8761,
+        "diagM": 11622
+      },
+      "cameraParams": {
+        "radiusM": 8000,
+        "altitudeM": 4500,
+        "pitchDeg": 56,
+        "fovDeg": 24
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 8400,
+          "north": 6600,
+          "altitude": 9600
+        },
+        {
+          "t": 0.2,
+          "east": 5400,
+          "north": 4200,
+          "altitude": 6600
+        },
+        {
+          "t": 0.4,
+          "east": -3600,
+          "north": -1200,
+          "altitude": 5400
+        },
+        {
+          "t": 0.6,
+          "east": -6600,
+          "north": -5400,
+          "altitude": 4200
+        },
+        {
+          "t": 0.75,
+          "east": -3000,
+          "north": -6600,
+          "altitude": 2700
+        },
+        {
+          "t": 0.88,
+          "east": 1800,
+          "north": -4800,
+          "altitude": 1800
+        },
+        {
+          "t": 1,
+          "east": 3600,
+          "north": -3000,
+          "altitude": 2100
+        }
+      ],
+      "stat": {
+        "median_sale_price": 1317500,
+        "sold_count": 12,
+        "computed_at": "2026-06-09T07:00:56.447298+00:00"
+      }
+    },
+    {
+      "slug": "eagle-crest",
+      "label": "Eagle Crest",
+      "city": "Redmond",
+      "eyebrow": "REDMOND · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.2687,
+        "lon": -121.2651
+      },
+      "groundM": 770,
+      "diagM": 11537,
+      "bbox": {
+        "widthM": 10943,
+        "heightM": 3656,
+        "diagM": 11537
+      },
+      "cameraParams": {
+        "radiusM": 8000,
+        "altitudeM": 4500,
+        "pitchDeg": 56,
+        "fovDeg": 24
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 8400,
+          "north": 6600,
+          "altitude": 9600
+        },
+        {
+          "t": 0.2,
+          "east": 5400,
+          "north": 4200,
+          "altitude": 6600
+        },
+        {
+          "t": 0.4,
+          "east": -3600,
+          "north": -1200,
+          "altitude": 5400
+        },
+        {
+          "t": 0.6,
+          "east": -6600,
+          "north": -5400,
+          "altitude": 4200
+        },
+        {
+          "t": 0.75,
+          "east": -3000,
+          "north": -6600,
+          "altitude": 2700
+        },
+        {
+          "t": 0.88,
+          "east": 1800,
+          "north": -4800,
+          "altitude": 1800
+        },
+        {
+          "t": 1,
+          "east": 3600,
+          "north": -3000,
+          "altitude": 2100
+        }
+      ],
+      "stat": {
+        "median_sale_price": 842500,
+        "sold_count": 16,
+        "computed_at": "2026-06-09T07:00:56.796112+00:00"
+      }
+    },
+    {
+      "slug": "sunriver",
+      "label": "Sunriver",
+      "city": "Sunriver",
+      "eyebrow": "SUNRIVER · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 43.8688,
+        "lon": -121.4551
+      },
+      "groundM": 1280,
+      "diagM": 13539,
+      "bbox": {
+        "widthM": 10283,
+        "heightM": 8806,
+        "diagM": 13539
+      },
+      "cameraParams": {
+        "radiusM": 8000,
+        "altitudeM": 4500,
+        "pitchDeg": 56,
+        "fovDeg": 24
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 8400,
+          "north": 6600,
+          "altitude": 9600
+        },
+        {
+          "t": 0.2,
+          "east": 5400,
+          "north": 4200,
+          "altitude": 6600
+        },
+        {
+          "t": 0.4,
+          "east": -3600,
+          "north": -1200,
+          "altitude": 5400
+        },
+        {
+          "t": 0.6,
+          "east": -6600,
+          "north": -5400,
+          "altitude": 4200
+        },
+        {
+          "t": 0.75,
+          "east": -3000,
+          "north": -6600,
+          "altitude": 2700
+        },
+        {
+          "t": 0.88,
+          "east": 1800,
+          "north": -4800,
+          "altitude": 1800
+        },
+        {
+          "t": 1,
+          "east": 3600,
+          "north": -3000,
+          "altitude": 2100
+        }
+      ],
+      "stat": {
+        "median_sale_price": 737500,
+        "sold_count": 14,
+        "computed_at": "2026-06-09T07:00:57.170929+00:00"
+      }
+    },
+    {
+      "slug": "pronghorn",
+      "label": "Pronghorn",
+      "city": "Bend",
+      "eyebrow": "BEND · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.1893,
+        "lon": -121.1698
+      },
+      "groundM": 960,
+      "diagM": 7123,
+      "bbox": {
+        "widthM": 6940,
+        "heightM": 1604,
+        "diagM": 7123
+      },
+      "cameraParams": {
+        "radiusM": 5500,
+        "altitudeM": 3000,
+        "pitchDeg": 54,
+        "fovDeg": 26
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 5698,
+          "north": 4477,
+          "altitude": 6512
+        },
+        {
+          "t": 0.2,
+          "east": 3663,
+          "north": 2849,
+          "altitude": 4477
+        },
+        {
+          "t": 0.4,
+          "east": -2442,
+          "north": -814,
+          "altitude": 3663
+        },
+        {
+          "t": 0.6,
+          "east": -4477,
+          "north": -3663,
+          "altitude": 2849
+        },
+        {
+          "t": 0.75,
+          "east": -2035,
+          "north": -4477,
+          "altitude": 1832
+        },
+        {
+          "t": 0.88,
+          "east": 1221,
+          "north": -3256,
+          "altitude": 1221
+        },
+        {
+          "t": 1,
+          "east": 2442,
+          "north": -2035,
+          "altitude": 1425
+        }
+      ],
+      "stat": {
+        "median_sale_price": null,
+        "sold_count": 0,
+        "computed_at": "2026-06-09T07:00:57.038831+00:00"
+      }
+    },
+    {
+      "slug": "black-butte-ranch",
+      "label": "Black Butte Ranch",
+      "city": "Sisters",
+      "eyebrow": "SISTERS · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.355,
+        "lon": -121.658
+      },
+      "groundM": 1200,
+      "diagM": 5401,
+      "bbox": {
+        "widthM": 3242,
+        "heightM": 4319,
+        "diagM": 5401
+      },
+      "cameraParams": {
+        "radiusM": 3500,
+        "altitudeM": 2000,
+        "pitchDeg": 52,
+        "fovDeg": 28
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 4321,
+          "north": 3395,
+          "altitude": 4938
+        },
+        {
+          "t": 0.2,
+          "east": 2778,
+          "north": 2160,
+          "altitude": 3395
+        },
+        {
+          "t": 0.4,
+          "east": -1852,
+          "north": -617,
+          "altitude": 2778
+        },
+        {
+          "t": 0.6,
+          "east": -3395,
+          "north": -2778,
+          "altitude": 2160
+        },
+        {
+          "t": 0.75,
+          "east": -1543,
+          "north": -3395,
+          "altitude": 1389
+        },
+        {
+          "t": 0.88,
+          "east": 926,
+          "north": -2469,
+          "altitude": 926
+        },
+        {
+          "t": 1,
+          "east": 1852,
+          "north": -1543,
+          "altitude": 1080
+        }
+      ],
+      "stat": {
+        "median_sale_price": 912500,
+        "sold_count": 10,
+        "computed_at": "2026-06-09T07:00:56.219832+00:00"
+      }
+    },
+    {
+      "slug": "caldera-springs",
+      "label": "Caldera Springs",
+      "city": "Sunriver",
+      "eyebrow": "SUNRIVER · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 43.8526,
+        "lon": -121.4429
+      },
+      "groundM": 1280,
+      "diagM": 8905,
+      "bbox": {
+        "widthM": 8059,
+        "heightM": 3790,
+        "diagM": 8905
+      },
+      "cameraParams": {
+        "radiusM": 5500,
+        "altitudeM": 3000,
+        "pitchDeg": 54,
+        "fovDeg": 26
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 7124,
+          "north": 5597,
+          "altitude": 8142
+        },
+        {
+          "t": 0.2,
+          "east": 4580,
+          "north": 3562,
+          "altitude": 5597
+        },
+        {
+          "t": 0.4,
+          "east": -3053,
+          "north": -1018,
+          "altitude": 4580
+        },
+        {
+          "t": 0.6,
+          "east": -5597,
+          "north": -4580,
+          "altitude": 3562
+        },
+        {
+          "t": 0.75,
+          "east": -2544,
+          "north": -5597,
+          "altitude": 2290
+        },
+        {
+          "t": 0.88,
+          "east": 1527,
+          "north": -4071,
+          "altitude": 1527
+        },
+        {
+          "t": 1,
+          "east": 3053,
+          "north": -2544,
+          "altitude": 1781
+        }
+      ],
+      "stat": {
+        "median_sale_price": 1400000,
+        "sold_count": 5,
+        "computed_at": "2026-06-09T07:00:56.567596+00:00"
+      }
+    },
+    {
+      "slug": "awbrey-glen",
+      "label": "Awbrey Glen",
+      "city": "Bend",
+      "eyebrow": "BEND · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.084,
+        "lon": -121.3494
+      },
+      "groundM": 1130,
+      "diagM": 2043,
+      "bbox": {
+        "widthM": 1061,
+        "heightM": 1746,
+        "diagM": 2043
+      },
+      "cameraParams": {
+        "radiusM": 1800,
+        "altitudeM": 1200,
+        "pitchDeg": 48,
+        "fovDeg": 32
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 1960,
+          "north": 1540,
+          "altitude": 2240
+        },
+        {
+          "t": 0.2,
+          "east": 1260,
+          "north": 980,
+          "altitude": 1540
+        },
+        {
+          "t": 0.4,
+          "east": -840,
+          "north": -280,
+          "altitude": 1260
+        },
+        {
+          "t": 0.6,
+          "east": -1540,
+          "north": -1260,
+          "altitude": 980
+        },
+        {
+          "t": 0.75,
+          "east": -700,
+          "north": -1540,
+          "altitude": 630
+        },
+        {
+          "t": 0.88,
+          "east": 420,
+          "north": -1120,
+          "altitude": 420
+        },
+        {
+          "t": 1,
+          "east": 840,
+          "north": -700,
+          "altitude": 490
+        }
+      ],
+      "stat": {
+        "median_sale_price": 1274500,
+        "sold_count": 6,
+        "computed_at": "2026-06-09T07:00:54.261767+00:00"
+      }
+    },
+    {
+      "slug": "northwest-crossing",
+      "label": "NorthWest Crossing",
+      "city": "Bend",
+      "eyebrow": "BEND · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.0579,
+        "lon": -121.3506
+      },
+      "groundM": 1050,
+      "diagM": 9108,
+      "bbox": {
+        "widthM": 4235,
+        "heightM": 8064,
+        "diagM": 9108
+      },
+      "cameraParams": {
+        "radiusM": 5500,
+        "altitudeM": 3000,
+        "pitchDeg": 54,
+        "fovDeg": 26
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 7286,
+          "north": 5725,
+          "altitude": 8327
+        },
+        {
+          "t": 0.2,
+          "east": 4684,
+          "north": 3643,
+          "altitude": 5725
+        },
+        {
+          "t": 0.4,
+          "east": -3123,
+          "north": -1041,
+          "altitude": 4684
+        },
+        {
+          "t": 0.6,
+          "east": -5725,
+          "north": -4684,
+          "altitude": 3643
+        },
+        {
+          "t": 0.75,
+          "east": -2602,
+          "north": -5725,
+          "altitude": 2342
+        },
+        {
+          "t": 0.88,
+          "east": 1561,
+          "north": -4164,
+          "altitude": 1561
+        },
+        {
+          "t": 1,
+          "east": 3123,
+          "north": -2602,
+          "altitude": 1822
+        }
+      ],
+      "stat": {
+        "median_sale_price": 1194500,
+        "sold_count": 24,
+        "computed_at": "2026-06-09T07:00:56.920762+00:00"
+      }
+    },
+    {
+      "slug": "crosswater",
+      "label": "Crosswater",
+      "city": "Sunriver",
+      "eyebrow": "SUNRIVER · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 43.8542,
+        "lon": -121.4485
+      },
+      "groundM": 1280,
+      "diagM": 5032,
+      "bbox": {
+        "widthM": 1618,
+        "heightM": 4765,
+        "diagM": 5032
+      },
+      "cameraParams": {
+        "radiusM": 3500,
+        "altitudeM": 2000,
+        "pitchDeg": 52,
+        "fovDeg": 28
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 4026,
+          "north": 3163,
+          "altitude": 4601
+        },
+        {
+          "t": 0.2,
+          "east": 2588,
+          "north": 2013,
+          "altitude": 3163
+        },
+        {
+          "t": 0.4,
+          "east": -1725,
+          "north": -575,
+          "altitude": 2588
+        },
+        {
+          "t": 0.6,
+          "east": -3163,
+          "north": -2588,
+          "altitude": 2013
+        },
+        {
+          "t": 0.75,
+          "east": -1438,
+          "north": -3163,
+          "altitude": 1294
+        },
+        {
+          "t": 0.88,
+          "east": 863,
+          "north": -2300,
+          "altitude": 863
+        },
+        {
+          "t": 1,
+          "east": 1725,
+          "north": -1438,
+          "altitude": 1006
+        }
+      ],
+      "stat": {
+        "median_sale_price": null,
+        "sold_count": 0,
+        "computed_at": "2026-06-09T07:00:56.684931+00:00"
+      }
+    },
+    {
+      "slug": "brasada-ranch",
+      "label": "Brasada Ranch",
+      "city": "Powell Butte",
+      "eyebrow": "POWELL BUTTE · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.1795,
+        "lon": -121.0355
+      },
+      "groundM": 960,
+      "diagM": 17167,
+      "bbox": {
+        "widthM": 8357,
+        "heightM": 14996,
+        "diagM": 17167
+      },
+      "cameraParams": {
+        "radiusM": 8000,
+        "altitudeM": 4500,
+        "pitchDeg": 56,
+        "fovDeg": 24
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 8400,
+          "north": 6600,
+          "altitude": 9600
+        },
+        {
+          "t": 0.2,
+          "east": 5400,
+          "north": 4200,
+          "altitude": 6600
+        },
+        {
+          "t": 0.4,
+          "east": -3600,
+          "north": -1200,
+          "altitude": 5400
+        },
+        {
+          "t": 0.6,
+          "east": -6600,
+          "north": -5400,
+          "altitude": 4200
+        },
+        {
+          "t": 0.75,
+          "east": -3000,
+          "north": -6600,
+          "altitude": 2700
+        },
+        {
+          "t": 0.88,
+          "east": 1800,
+          "north": -4800,
+          "altitude": 1800
+        },
+        {
+          "t": 1,
+          "east": 3600,
+          "north": -3000,
+          "altitude": 2100
+        }
+      ],
+      "stat": {
+        "median_sale_price": 1425000,
+        "sold_count": 7,
+        "computed_at": "2026-06-09T07:00:56.330786+00:00"
+      }
+    },
+    {
+      "slug": "widgi-creek",
+      "label": "Widgi Creek",
+      "city": "Bend",
+      "eyebrow": "BEND · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 44.0069,
+        "lon": -121.384
+      },
+      "groundM": 1050,
+      "diagM": 9736,
+      "bbox": {
+        "widthM": 7287,
+        "heightM": 6456,
+        "diagM": 9736
+      },
+      "cameraParams": {
+        "radiusM": 5500,
+        "altitudeM": 3000,
+        "pitchDeg": 54,
+        "fovDeg": 26
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 7789,
+          "north": 6120,
+          "altitude": 8901
+        },
+        {
+          "t": 0.2,
+          "east": 5007,
+          "north": 3894,
+          "altitude": 6120
+        },
+        {
+          "t": 0.4,
+          "east": -3338,
+          "north": -1113,
+          "altitude": 5007
+        },
+        {
+          "t": 0.6,
+          "east": -6120,
+          "north": -5007,
+          "altitude": 3894
+        },
+        {
+          "t": 0.75,
+          "east": -2782,
+          "north": -6120,
+          "altitude": 2504
+        },
+        {
+          "t": 0.88,
+          "east": 1669,
+          "north": -4451,
+          "altitude": 1669
+        },
+        {
+          "t": 1,
+          "east": 3338,
+          "north": -2782,
+          "altitude": 1947
+        }
+      ],
+      "stat": {
+        "median_sale_price": 1412500,
+        "sold_count": 2,
+        "computed_at": "2026-06-09T07:00:57.654677+00:00"
+      }
+    },
+    {
+      "slug": "vandevert-ranch",
+      "label": "Vandevert Ranch",
+      "city": "Sunriver",
+      "eyebrow": "SUNRIVER · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 43.8403,
+        "lon": -121.4432
+      },
+      "groundM": 1280,
+      "diagM": 6779,
+      "bbox": {
+        "widthM": 1377,
+        "heightM": 6638,
+        "diagM": 6779
+      },
+      "cameraParams": {
+        "radiusM": 5500,
+        "altitudeM": 3000,
+        "pitchDeg": 54,
+        "fovDeg": 26
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 5423,
+          "north": 4261,
+          "altitude": 6198
+        },
+        {
+          "t": 0.2,
+          "east": 3486,
+          "north": 2712,
+          "altitude": 4261
+        },
+        {
+          "t": 0.4,
+          "east": -2324,
+          "north": -775,
+          "altitude": 3486
+        },
+        {
+          "t": 0.6,
+          "east": -4261,
+          "north": -3486,
+          "altitude": 2712
+        },
+        {
+          "t": 0.75,
+          "east": -1937,
+          "north": -4261,
+          "altitude": 1743
+        },
+        {
+          "t": 0.88,
+          "east": 1162,
+          "north": -3099,
+          "altitude": 1162
+        },
+        {
+          "t": 1,
+          "east": 2324,
+          "north": -1937,
+          "altitude": 1356
+        }
+      ],
+      "stat": {
+        "median_sale_price": 3025000,
+        "sold_count": 1,
+        "computed_at": "2026-06-09T07:00:57.554703+00:00"
+      }
+    },
+    {
+      "slug": "three-rivers",
+      "label": "Three Rivers",
+      "city": "Sunriver",
+      "eyebrow": "SUNRIVER · OREGON",
+      "status": "OK",
+      "centroid": {
+        "lat": 43.7875,
+        "lon": -121.5007
+      },
+      "groundM": 1280,
+      "diagM": 16871,
+      "bbox": {
+        "widthM": 8315,
+        "heightM": 14679,
+        "diagM": 16871
+      },
+      "cameraParams": {
+        "radiusM": 8000,
+        "altitudeM": 4500,
+        "pitchDeg": 56,
+        "fovDeg": 24
+      },
+      "socialPath": [
+        {
+          "t": 0,
+          "east": 8400,
+          "north": 6600,
+          "altitude": 9600
+        },
+        {
+          "t": 0.2,
+          "east": 5400,
+          "north": 4200,
+          "altitude": 6600
+        },
+        {
+          "t": 0.4,
+          "east": -3600,
+          "north": -1200,
+          "altitude": 5400
+        },
+        {
+          "t": 0.6,
+          "east": -6600,
+          "north": -5400,
+          "altitude": 4200
+        },
+        {
+          "t": 0.75,
+          "east": -3000,
+          "north": -6600,
+          "altitude": 2700
+        },
+        {
+          "t": 0.88,
+          "east": 1800,
+          "north": -4800,
+          "altitude": 1800
+        },
+        {
+          "t": 1,
+          "east": 3600,
+          "north": -3000,
+          "altitude": 2100
+        }
+      ],
+      "stat": {
+        "median_sale_price": 607500,
+        "sold_count": 14,
+        "computed_at": "2026-06-09T07:00:57.431287+00:00"
+      }
+    }
+  ]
+}

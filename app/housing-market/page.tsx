@@ -34,7 +34,7 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import type { RelatedAreaItem } from '@/components/site/RelatedAreas'
 
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import MarketSnapshot from '@/components/site/MarketSnapshot'
 import { RelatedAreas } from '@/components/site/RelatedAreas'
@@ -42,7 +42,6 @@ import { ContentSection } from '@/components/site/ContentSection'
 import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
 import { CTABar } from '@/components/site/CTABar'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { Container } from '@/components/site/primitives'
 import { submitMarketPageInquiry } from '@/app/housing-market/actions'
 import { CONTACT } from '@/lib/brand/contact'
 
@@ -180,15 +179,7 @@ export default async function HousingMarketHubPage() {
       <MetadataBlock schemas={schemas} />
 
       {/* Breadcrumb */}
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          includeJsonLd={false}
-          items={[
-            { label: 'Home', href: '/' },
-            { label: 'Housing market' },
-          ]}
-        />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Housing market' }]} includeJsonLd={false} />
 
       {/* Hero — DisplayHeading H1 in Amboqia via HeroBlock; lede is a region glance. */}
       <HeroBlock

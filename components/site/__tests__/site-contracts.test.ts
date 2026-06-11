@@ -81,10 +81,18 @@ describe('design directive contracts', () => {
     expect(src).not.toMatch(/withinCityItems/)
   })
 
-  it('D86 — area tiles source imagery from the canonical helpers', () => {
+  it('D86 — city imagery sources from the VERIFIED cityHero registry (Family 4, 2026-06-10)', () => {
+    // v3.2 supersedes the v3.1 tile-imagery contract: the seeded-pool
+    // getGeoTileImages/golfCommunityImage path put wrong-city photos on city
+    // pages (Tumalo Falls as the Bend hero). Imagery now resolves ONLY
+    // through cityHero() — the visually-verified per-city registry — and a
+    // city without a verified photo renders the LABELED regional fallback.
     const src = readSrc('app/cities/[slug]/page.tsx')
-    expect(src).toMatch(/getGeoTileImages/)
-    expect(src).toMatch(/golfCommunityImage|GOLF_COMMUNITY_IMAGES/)
+    expect(src).toMatch(/cityHero\s*\(/)
+    expect(src).toMatch(/mediaCaption/)
+    expect(src).toMatch(/Regional view/)
+    // the unverified seeded-pool resolvers must stay out of this page
+    expect(src).not.toMatch(/getGeoTileImages|getSurfaceImage|pickGeoImage/)
     // never hardcode a landing-page image path in the page
     expect(src).not.toMatch(/['"`]\/lp\/[^'"`]*\.(jpg|jpeg|png|webp)/)
   })

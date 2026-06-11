@@ -48,7 +48,7 @@ import type { SchemaInput } from '@/lib/site/json-ld'
 import type { CityComparisonRow } from '@/components/site/CityComparisonTable'
 import type { MarketPulse } from '@/lib/data'
 
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import MarketSnapshot from '@/components/site/MarketSnapshot'
 import { PriceChart } from '@/components/site/PriceChart'
@@ -61,7 +61,7 @@ import { RelatedAreas, type RelatedAreaItem } from '@/components/site/RelatedAre
 import { CTABar } from '@/components/site/CTABar'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { MarketDetailStats } from '@/components/site/MarketDetailStats'
-import { Container, DisplayHeading } from '@/components/site/primitives'
+import { DisplayHeading } from '@/components/site/primitives'
 
 // ---------------------------------------------------------------------------
 // Static params — pre-heat the 11 core Central Oregon city slugs at build
@@ -449,21 +449,13 @@ export default async function HousingMarketGeoPage({ params }: Props) {
       <MetadataBlock schemas={schemas} />
 
       {/* Breadcrumb */}
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          includeJsonLd={false}
-          items={[
-            { label: 'Home', href: '/' },
-            { label: 'Housing market', href: '/housing-market' },
+      <PageBreadcrumb trail={[{ label: 'Housing market', href: '/housing-market' },
             ...(communityName
               ? [
                   { label: cityName, href: `/housing-market/${citySlug}` },
                   { label: communityName },
                 ]
-              : [{ label: geoName }]),
-          ]}
-        />
-      </Container>
+              : [{ label: geoName }])]} includeJsonLd={false} />
 
       {/* Hero — DisplayHeading H1 in Amboqia via HeroBlock.
           lede is data-driven from pulse (market_pulse_live). */}

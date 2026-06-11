@@ -17,7 +17,7 @@
 import { getMarketPulse, getSurfaceImage, getLifestyleImages } from '@/lib/data'
 import { LifestyleStrip } from '@/components/site/LifestyleStrip'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import { ContentSection } from '@/components/site/ContentSection'
 import { FAQBlock } from '@/components/site/FAQBlock'
@@ -28,10 +28,7 @@ import { SellCommission } from '@/components/site/sell/SellCommission'
 import { SellValuationCTA } from '@/components/site/sell/SellValuationCTA'
 import { CONTACT } from '@/lib/brand/contact'
 import { SellMarketContext } from '@/components/site/sell/SellMarketContext'
-import {
-  Body,
-  Container,
-} from '@/components/site/primitives'
+import { Body } from '@/components/site/primitives'
 
 export const revalidate = 300
 
@@ -96,14 +93,7 @@ export default async function SellPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="bg-background border-b border-border py-3">
-        <Container>
-          <BreadcrumbNav
-            items={[{ label: 'Home', href: '/' }, { label: 'Sell' }]}
-            tone="on-light"
-          />
-        </Container>
-      </div>
+      <PageBreadcrumb trail={[{ label: 'Sell' }]} />
 
       <HeroBlock
         headline="Selling your home, done honestly."

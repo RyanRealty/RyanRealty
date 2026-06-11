@@ -9,7 +9,7 @@ import {
   getPulseRegionSnapshot,
 } from '@/app/actions/pulse-feed'
 import { PULSE_DEFAULT_CITIES } from '@/lib/pulse-config'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { Container } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -50,9 +50,7 @@ export default async function PulsePage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Market pulse' }]} />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Market pulse' }]} />
       <PulseHero regionSnapshot={regionSnapshot} />
       <Container className="py-6">
         <HomeValuationCta />

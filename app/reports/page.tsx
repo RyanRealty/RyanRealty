@@ -14,8 +14,8 @@ import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import ReportsByCityView from '@/components/reports/ReportsByCityView'
 import ReportsIndexContent from './ReportsIndexContent'
-import { H2, Container } from '@/components/site/primitives'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { H2 } from '@/components/site/primitives'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -181,14 +181,7 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
 
   return (
     <main className="min-h-screen bg-background">
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          items={[
-            { label: 'Home', href: '/' },
-            { label: 'Market reports' },
-          ]}
-        />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Market reports' }]} />
       <ContentPageHero
         title="Market Reports"
         subtitle="Real-time market data by city. Add or remove cities and change the time range. Default: last 7 days."

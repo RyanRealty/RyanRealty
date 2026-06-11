@@ -1,57 +1,52 @@
 {
   "route": "app/page.tsx",
-  "mockup": "design_system/ryan-realty/ui_kits/index.html",
-  "competitiveTarget": "The homepage is the brand's front door. Beat Coldwell Banker / Windermere / eXp Central Oregon home pages by leading with live local market data + open houses + real broker presence instead of a stock hero + IDX search box (EXECUTION_PLAN §8).",
-  "note": "The homepage was already rebuilt onto the Wave 2 site-v2 blocks (no legacy components left), so this contract is NOT baselined — it passes immediately and exists to LOCK the block set against regression. SiteHeader/SiteFooter are intentionally omitted from requiredComponents because they render from app/layout.tsx, not app/page.tsx (the gate checks the route file's imports).",
+  "mockup": "design_system/ryan-realty/ui_kits/homepage-v3/index.html",
+  "competitiveTarget": "Lead with live local market data, Amboqia stat numerals, interactive neighborhood map, and editorial editorial editorial broker presence. Beat Cascade Hasson / Stellar Realty / Zillow Central Oregon by showing the real numbers first and keeping every stat traceable to the Supabase DAL.",
+  "note": "Homepage rebuilt to v3 design language (2026-06-10 Experience Rollout family 2). All v3 components imported by app/page.tsx. SiteHeader/SiteFooter render from app/layout.tsx and are intentionally omitted from requiredComponents. The gate checks the route file's imports.",
   "requiredComponents": [
     {
-      "name": "Hero",
-      "section": "hero — 'Find Your Home in Central Oregon' + search-everything bar + canonical Old Mill drone photo",
+      "name": "HomepageHeroV3",
+      "section": "hero — full-bleed Old Mill photo, live Amboqia stat trio (active SFR, median price, days to pending), search bar, seller CTA",
       "blocking": true
     },
     {
-      "name": "MarketSnapshot",
-      "section": "Central Oregon / Bend market snapshot — live SFR stat cards from getMarketPulse + getMarketStats",
+      "name": "HomepagePulseTicker",
+      "section": "CSS-marquee ribbon of real market events (sold, new, pending, price drop) from getActivityFeed",
       "blocking": true
     },
     {
-      "name": "FeaturedListings",
-      "section": "'Featured Central Oregon homes' — premium active inventory slider (getListings, price-desc). Real homes high on the page, not just search entry points.",
+      "name": "HomepageListingsMosaic",
+      "section": "asymmetric editorial mosaic — 1 dominant + 4 supporting cards, no arrows/dots, Amboqia price display",
       "blocking": true
     },
     {
-      "name": "PriceRangeTiles",
-      "section": "'Browse by price range' — budget-bracket tiles linking to filtered search",
+      "name": "HomepageNeighborhoodMap",
+      "section": "interactive SVG boundary map for 7 westside Bend neighborhoods with live stat chips from getBendNeighborhoodStats",
       "blocking": true
     },
     {
-      "name": "OpenHousesGrid",
-      "section": "'Open houses this weekend' — upcoming open houses across the service area (getUpcomingOpenHouses, spec homes filtered out)",
+      "name": "HomepageMarketBand",
+      "section": "navy band — 4 live region stats: active SFR, median list price, months of supply, closed 30d",
       "blocking": true
     },
     {
-      "name": "CityGrid",
-      "section": "'Explore Central Oregon' — city photo cards (Bend, Redmond, Sisters, Sunriver, La Pine, …) via getGeoTileImages",
+      "name": "HomepageVoiceBlock",
+      "section": "editorial brokerage statement — facts-only copy, heritage illustration-05.png, license numbers, founding year",
       "blocking": true
     },
     {
-      "name": "ResortCommunities",
-      "section": "'Resort + master-planned communities' — 8 marquee resort/golf community photo cards (Tetherow, Broken Top, Pronghorn, …) with live median + active count from getCommunityBySlug, linking to /communities/[slug]",
+      "name": "HomepageToolsRow",
+      "section": "three quiet tool cards — mortgage calculator, rent vs buy, appreciation estimate",
       "blocking": true
     },
     {
-      "name": "TeamSection",
-      "section": "'Meet the team' — the three brokers (Matt, Paul, Rebecca) with transparent headshots",
-      "blocking": true
-    },
-    {
-      "name": "ActivityFeed",
-      "section": "'What's happening right now' — live new / price-drop / pending / sold activity",
+      "name": "HomepageTrustBand",
+      "section": "three broker portraits floating on cream — transparent PNGs, license numbers, phone 541.213.6706",
       "blocking": true
     },
     {
       "name": "CtaDuo",
-      "section": "buyer + seller dual CTA band — 'Find your home' / 'List your home'",
+      "section": "buyer + seller dual CTA band — find your home / list your home",
       "blocking": true
     }
   ]

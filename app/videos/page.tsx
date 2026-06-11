@@ -4,7 +4,7 @@ import { getListingTiles, getCityListings, type ListingTile } from '@/lib/data'
 import { tileToCardData } from '@/lib/site/listing-card'
 import VideoListingCard from '@/components/site/VideoListingCard'
 import type { ListingCardData } from '@/components/site/ListingCard'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { Container, Section, Stack, Grid, Eyebrow, H1, Body } from '@/components/site/primitives'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -99,14 +99,7 @@ export default async function VideosPage({
 
   return (
     <main className="min-h-screen bg-background">
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          items={[
-            { label: 'Home', href: '/' },
-            ...(city ? [{ label: 'Video tours', href: '/videos' }, { label: city }] : [{ label: 'Video tours' }]),
-          ]}
-        />
-      </Container>
+      <PageBreadcrumb trail={[...(city ? [{ label: 'Video tours', href: '/videos' }, { label: city }] : [{ label: 'Video tours' }])]} />
 
       {/* AEO: the video-tour homes as a structured ItemList so an answer engine
           can surface "homes for sale with video tours in <area>". Mirrors the

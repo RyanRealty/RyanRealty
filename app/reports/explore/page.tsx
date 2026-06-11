@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import ExploreClient from './ExploreClient'
-import { H1, Container } from '@/components/site/primitives'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { H1 } from '@/components/site/primitives'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
@@ -67,15 +67,8 @@ export default async function ExplorePage({ searchParams }: Props) {
 
   return (
     <main className="min-h-screen bg-background">
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          items={[
-            { label: 'Home', href: '/' },
-            { label: 'Market reports', href: '/housing-market/reports' },
-            { label: 'Explore' },
-          ]}
-        />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Market reports', href: '/housing-market/reports' },
+            { label: 'Explore' }]} />
       <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-6xl text-center">
           <H1 className="text-3xl text-primary-foreground sm:text-4xl">

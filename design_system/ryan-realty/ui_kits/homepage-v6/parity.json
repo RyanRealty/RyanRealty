@@ -1,0 +1,7 @@
+{
+  "route": "app/page.tsx",
+  "mockup": "design_system/ryan-realty/ui_kits/homepage-v6/index.html",
+  "status": "concept-locked-not-implemented",
+  "note": "Homepage v6 Linear finish LOCKED 2026-06-11 (Matt concept #3). Bones: live 3D city, ask bar, deal-flow cards, neighborhood ledger, coords readout. Finish: Linear discipline — hairline borders, glass panels, one Amboqia moment, 150ms motion. Production components TBD after mockup approval. SiteHeader/SiteFooter from app/layout.tsx omitted.",
+  "requiredComponents": []
+}

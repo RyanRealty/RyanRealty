@@ -264,8 +264,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const street = [listing.streetNumber, listing.streetName].filter(Boolean).join(' ').trim()
   const cityHref = listing.citySlug ? `/cities/${listing.citySlug}` : null
 
+  // Trail AFTER the Home root — ListingDetailShell renders it through the
+  // canonical PageBreadcrumb, which bakes Home in (P1-1 canon).
   const breadcrumbs: BreadcrumbNavItem[] = [
-    { label: 'Home', href: '/' },
     { label: 'Homes for sale', href: '/homes-for-sale' },
     ...(listing.city && cityHref ? [{ label: listing.city, href: cityHref }] : []),
     { label: street || `Listing ${listingKey}` },

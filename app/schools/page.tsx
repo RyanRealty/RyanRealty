@@ -16,7 +16,7 @@ import Link from 'next/link'
 import { getSchools, getSchoolsCount } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import {
   BadgePill,
   Body,
@@ -74,12 +74,7 @@ export default function SchoolsIndexPage() {
         ]}
       />
 
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          includeJsonLd={false}
-          items={[{ label: 'Home', href: '/' }, { label: 'Schools' }]}
-        />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Schools' }]} includeJsonLd={false} />
 
       <Section padding="default">
         <Container>

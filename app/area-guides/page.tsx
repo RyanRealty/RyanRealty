@@ -9,7 +9,7 @@ import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { RelatedAreas, type RelatedAreaItem } from '@/components/site/RelatedAreas'
 import { Section, Container, H2 } from '@/components/site/primitives'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { Button } from '@/components/ui/button'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -56,12 +56,7 @@ export default async function AreaGuidesPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          includeJsonLd={false}
-          items={[{ label: 'Home', href: '/' }, { label: 'Area guides' }]}
-        />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Area guides' }]} includeJsonLd={false} />
       <MetadataBlock
         schemas={[
           {

@@ -1,0 +1,21 @@
+import { chromium } from 'playwright'
+const browser = await chromium.launch()
+const UA='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
+const XFF={ 'x-forwarded-for': '73.157.10.20' }
+const d = await browser.newContext({ userAgent: UA, extraHTTPHeaders: XFF, viewport: { width: 1440, height: 1400 } })
+const dp = await d.newPage()
+await dp.goto('http://localhost:3000/lp/seller-home-value', { waitUntil: 'networkidle', timeout: 90000 })
+await dp.waitForSelector('#seller-lp-address', { state: 'visible', timeout: 60000 })
+await dp.waitForTimeout(2500)
+await dp.screenshot({ path: 'out/lp-review/seller-DESKTOP.png' })
+const box = await dp.locator('#seller-lp-address').boundingBox()
+console.log('desktop field box:', JSON.stringify(box))
+const m = await browser.newContext({ userAgent: UA, extraHTTPHeaders: XFF, viewport: { width: 390, height: 844 }, isMobile: true, deviceScaleFactor: 2 })
+const mp = await m.newPage()
+await mp.goto('http://localhost:3000/lp/seller-home-value', { waitUntil: 'networkidle', timeout: 90000 })
+await mp.waitForSelector('#seller-lp-address', { state: 'visible', timeout: 60000 })
+await mp.waitForTimeout(2500)
+await mp.screenshot({ path: 'out/lp-review/seller-MOBILE-fold.png' })
+const mbox = await mp.locator('#seller-lp-address').boundingBox()
+console.log('mobile field top Y:', mbox ? Math.round(mbox.y) : 'n/a', '(<844 = above fold)')
+await browser.close()

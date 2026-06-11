@@ -355,6 +355,18 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       if (isListNowLp) {
         tags.push('seller:listing-intent')
       }
+      // Paid-channel attribution — a referer carrying utm_source=facebook means
+      // this visitor arrived from a Meta ad click. Without these tags the FUB
+      // person reads source "Ryan-Realty.com" and paid leads are
+      // indistinguishable from organic site leads in FUB smart lists (the UTM
+      // detail lives only in sourceUrl, which FUB cannot filter on). Mirrors
+      // the lead-webhook's source:fb-ads-* namespace for Lead Ads.
+      if (originUtmSource === 'facebook') {
+        tags.push('channel:fb-ads')
+        if (originUtmCampaign) {
+          tags.push(`campaign:${originUtmCampaign.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}`)
+        }
+      }
       await addPersonTags(fubPersonId, tags)
 
       // 2. Broker assignment via FUB's assignedUserId.

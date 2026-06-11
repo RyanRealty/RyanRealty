@@ -2,8 +2,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container, H1 } from '@/components/site/primitives'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
+import { H1 } from '@/components/site/primitives'
 import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
@@ -76,15 +76,8 @@ export default async function ReportPage({ params }: Props) {
   return (
     <main className="min-h-screen bg-background">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reportSchema) }} />
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          items={[
-            { label: 'Home', href: '/' },
-            { label: 'Market reports', href: '/housing-market/reports' },
-            { label: report.title },
-          ]}
-        />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Market reports', href: '/housing-market/reports' },
+            { label: report.title }]} />
       <section className="bg-primary px-4 py-8 sm:px-6 sm:py-10">
         <div className="mx-auto max-w-4xl">
           <div className="flex flex-wrap items-start justify-between gap-4">

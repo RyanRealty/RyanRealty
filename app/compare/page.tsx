@@ -22,7 +22,7 @@ import type { Metadata } from 'next'
 import { getListingTiles, getListingDetailPhotos } from '@/lib/data'
 import CompareClient, { type CompareListingData } from '@/components/compare/CompareClient'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import {
   Container,
   Section,
@@ -148,14 +148,7 @@ export default async function ComparePage({
         }}
       />
 
-      <div className="bg-background border-b border-border py-3">
-        <Container>
-          <BreadcrumbNav
-            items={[{ label: 'Home', href: '/' }, { label: 'Compare properties' }]}
-            tone="on-light"
-          />
-        </Container>
-      </div>
+      <PageBreadcrumb trail={[{ label: 'Compare properties' }]} />
 
       <Section padding="tight" tone="default">
         <Container>

@@ -21,7 +21,7 @@ import Image from 'next/image'
 import { getAgentBySlug, getAgentActiveListings, getAgentSoldListings } from '@/app/actions/agents'
 import { getBrokerageSettings } from '@/app/actions/brokerage'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { BrokerContactCard } from '@/components/site/BrokerContactCard'
 import { CTABar } from '@/components/site/CTABar'
 import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
@@ -292,18 +292,8 @@ export default async function TeamMemberPage({ params }: Props) {
       ) : null}
 
       {/* Breadcrumb */}
-      <div className="bg-background border-b border-border py-3">
-        <Container>
-          <BreadcrumbNav
-            items={[
-              { label: 'Home', href: '/' },
-              { label: 'Team', href: '/team' },
-              { label: broker.display_name },
-            ]}
-            tone="on-light"
-          />
-        </Container>
-      </div>
+      <PageBreadcrumb trail={[{ label: 'Team', href: '/team' },
+              { label: broker.display_name }]} />
 
       {/* Hero section — large headshot + identity + contact */}
       <Section padding="loose" tone="default">

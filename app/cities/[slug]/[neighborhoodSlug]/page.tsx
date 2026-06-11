@@ -27,7 +27,7 @@ import {
 } from '@/lib/data'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import { CTABar } from '@/components/site/CTABar'
 import { NeighborhoodMap as SiteNeighborhoodMap } from '@/components/site/NeighborhoodMap'
@@ -239,19 +239,14 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
              Dataset. FAQPage emitted by FAQBlock below. PRESERVED VERBATIM. */}
       <MetadataBlock schemas={neighborhoodSchemas} />
 
-      {/* 2. Breadcrumb — site-v2 BreadcrumbNav.
-             JSON-LD suppressed because MetadataBlock above carries the full trail. */}
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          includeJsonLd={false}
-          items={[
-            { label: 'Home', href: '/' },
-            { label: 'Cities', href: '/cities' },
-            { label: neighborhood.cityName, href: `/cities/${citySlug}` },
-            { label: neighborhood.name },
-          ]}
-        />
-      </Container>
+      <PageBreadcrumb
+        trail={[
+          { label: 'Cities', href: '/cities' },
+          { label: neighborhood.cityName, href: `/cities/${citySlug}` },
+          { label: neighborhood.name },
+        ]}
+        includeJsonLd={false}
+      />
 
       {/* 3. Hero — canonical Old Mill master photo + data-driven lede.
              Numbers come from the neighborhood object (single source). */}

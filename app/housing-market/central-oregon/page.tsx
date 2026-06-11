@@ -42,7 +42,7 @@ import type { SchemaInput } from '@/lib/site/json-ld'
 import type { CityComparisonRow } from '@/components/site/CityComparisonTable'
 import type { RelatedAreaItem } from '@/components/site/RelatedAreas'
 
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import MarketSnapshot from '@/components/site/MarketSnapshot'
 import { PriceChart } from '@/components/site/PriceChart'
@@ -53,7 +53,6 @@ import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
 import { RelatedAreas } from '@/components/site/RelatedAreas'
 import { CTABar } from '@/components/site/CTABar'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { Container } from '@/components/site/primitives'
 import { submitMarketPageInquiry } from '@/app/housing-market/actions'
 import { CONTACT } from '@/lib/brand/contact'
 
@@ -318,16 +317,8 @@ export default async function CentralOregonRegionPage() {
       <MetadataBlock schemas={schemas} />
 
       {/* Breadcrumb */}
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          includeJsonLd={false}
-          items={[
-            { label: 'Home', href: '/' },
-            { label: 'Housing market', href: '/housing-market' },
-            { label: 'Central Oregon' },
-          ]}
-        />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Housing market', href: '/housing-market' },
+            { label: 'Central Oregon' }]} includeJsonLd={false} />
 
       {/* Hero — DisplayHeading H1 in Amboqia via HeroBlock.
           lede is data-driven from regionPulse (market_pulse_live). */}

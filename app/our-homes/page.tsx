@@ -4,7 +4,7 @@ import { getListingsWithAdvanced, type ListingTileRow } from '@/app/actions/list
 import { ArrowRightHugeIcon } from '@/components/icons/HugeIcons'
 import { listingDetailPath, listingsBrowsePath } from '@/lib/slug'
 import { Container, Eyebrow, H2, Body, Section, Stack, Grid } from '@/components/site/primitives'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
 
@@ -70,11 +70,7 @@ export default async function OurHomesPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="bg-background border-b border-border py-3">
-        <Container>
-          <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Our listings' }]} />
-        </Container>
-      </div>
+      <PageBreadcrumb trail={[{ label: 'Our homes' }]} />
 
       <HeroBlock
         headline="Homes Listed by Ryan Realty"

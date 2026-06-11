@@ -11,7 +11,7 @@
 
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { lookupPersonByPhone, normalizeTo10, validateTwilioSignature } from '@/lib/crm/twilio'
+import { lookupPersonByPhone, normalizeTo10, twilioWebhookValidationUrl, validateTwilioSignature } from '@/lib/crm/twilio'
 import { addSuppression } from '@/lib/crm/suppressions'
 import { CRM_MAILBOXES, sendCrmEmail } from '@/lib/crm/gmail'
 
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   const params: Record<string, string> = {}
   for (const [k, v] of form.entries()) params[k] = String(v)
 
-  const url = `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/api/twilio/inbound-sms`
+  const url = twilioWebhookValidationUrl(request)
   const signature = request.headers.get('x-twilio-signature')
   if (process.env.NODE_ENV === 'production' && !validateTwilioSignature(url, params, signature)) {
     return NextResponse.json({ error: 'invalid signature' }, { status: 403 })

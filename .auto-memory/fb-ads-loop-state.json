@@ -1,0 +1,77 @@
+{
+ "loop": "fb-ads-optimize",
+ "iteration": 14,
+ "updated": "2026-06-11T01:50:00Z",
+ "adsets": {
+  "M_cold": "120245429943770698",
+  "N_database": "120245429944370698",
+  "O_absentee": "120245429945270698"
+ },
+ "live_rotation": {
+  "M": [
+   "v12-mountain (multi-placement)",
+   "v13-editorial-mountain",
+   "v11-tetherow-equity"
+  ],
+  "N": [
+   "v11-low-pressure (multi-placement)",
+   "v13-bignumber-value",
+   "champion-control"
+  ],
+  "O": [
+   "v11-oos-oldmill (multi-placement)",
+   "v11-estate-sale"
+  ]
+ },
+ "thresholds": {
+  "kill_ad": "$15 spend AND 0 link clicks",
+  "creative_refresh": "CPL > $60 over 7d",
+  "scale": "+20%/wk only if CPL < $40 over >= 5 leads",
+  "frequency_watch": "> 2.8 weekly"
+ },
+ "iteration1_actions": [
+  "multi-placement creatives on 3 primaries (4:5 feed + 9:16 story)",
+  "v13 bignumber -> N, v13 editorial -> M",
+  "paused 1:1-only primaries",
+  "verified: 6/6 launch ads cleared review; M delivering 3.3% early CTR; O zero delivery yet"
+ ],
+ "iteration2_actions": [
+  "verified: all 5 iteration-1 ads (3 multi-placement + 2 v13) cleared review, ACTIVE",
+  "O zero-delivery day 2 (LPV predecessor also never delivered on this audience) -> widened include to union(Absentee, Premium Sellers seed 120244514285040698); budget unchanged $5/day",
+  "kill rules: no trips (max ad spend $2.30); v13 challengers earning first clicks"
+ ],
+ "iteration4_actions": [
+  "O dark across 3 adset generations on absentee seeds (below delivery floor) -> removed custom-audience include entirely; broad CA/OR/WA home-location, creative self-selects (champion-validated angle). Exclusions kept. $5/day unchanged. WATCH lead quality closely once delivering."
+ ],
+ "iteration5_actions": [
+  "WEEKLY CYCLE (skill run): FIRST META-ATTRIBUTED LEAD 2026-06-10 16:47Z \u2014 utm concept-m-mountain/v13-editorial -> valuation_request -> FUB 27012 in <1s. Attribution chain proven.",
+  "no budget moves / no kills (day-1 flight, learning phase); tetherow-equity at $2.57/0 clicks, kill at $15/0",
+  "old LPV ad sets verified PAUSED ($17.17 Jun 9 trailing spend only)",
+  "LEARNINGS.md 2026-06-10 entry written"
+ ],
+ "watch_next": [
+  "lead velocity + CPL toward the >=5-lead scale gate",
+  "O spend ramp + quality under broad",
+  "editorial vs scrim head-to-head as leads accrue",
+  "champion 0-click streak vs kill rule"
+ ],
+ "first_attributed_lead": {
+  "at": "2026-06-10T16:47Z",
+  "ad": "v13-editorial-mountain",
+  "cpl_at_time": 4.67,
+  "utm_verified": "facebook/concept-m-mountain/v13-editorial",
+  "fub_person": 27012,
+  "note": "challenger layout built same morning; full chain ad->LP(?v=mountain)->form->pixel->attribution->FUB verified"
+ },
+ "iteration6_actions": [
+  "no mutations \u2014 n=1; scale gate needs >=5 leads",
+  "O unlocked under broad targeting (first impressions)"
+ ],
+ "protocol_fix": "ALWAYS query insights by the ACCOUNT timezone date (America/Los_Angeles), e.g. date_preset=today or compute PT date \u2014 UTC date rolled over 7h early and produced a false zero-delivery alarm at iteration 14.",
+ "day1_totals": {
+  "spend": 20.55,
+  "impressions": 732,
+  "leads": 1,
+  "date": "2026-06-10 PT"
+ }
+}

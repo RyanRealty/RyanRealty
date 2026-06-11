@@ -181,6 +181,16 @@ const CHECKS = [
       '  when ResortCommunityJsonLd is also rendered) and totalCount (so\n' +
       '  ItemList.numberOfItems reflects the real result total, not the page slice).',
   },
+  {
+    file: 'app/search/[...slug]/page.tsx',
+    label: 'search presets: SearchPageJsonLd + Dataset + preset FAQPage depth (P1.13)',
+    all: ['SearchPageJsonLd', 'MetadataBlock', 'buildPresetFaq'],
+    why:
+      'The search route MUST render SearchPageJsonLd (ItemList + Place + Breadcrumb),\n' +
+      '  the city market Dataset via MetadataBlock, and the preset-page FAQ depth via\n' +
+      '  buildPresetFaq (whose FAQBlock emits FAQPage JSON-LD). The ~320 indexable\n' +
+      '  preset pages are destination pages; stripping their structured data fails CI.',
+  },
 
   // ── Price Drop Radar (2026-06-09) ──────────────────────────────────────
   {

@@ -5,7 +5,7 @@
   "note": "Hub page at /housing-market. Region-level snapshot (no citySlug = getRegionPulse via MarketSnapshot). Per-city tiles from ONE getMarketPulseCitySnapshots call. Shares the market-report/index.html mockup; a dedicated hub mockup is a follow-up deliverable.",
   "requiredComponents": [
     {
-      "name": "BreadcrumbNav",
+      "name": "PageBreadcrumb",
       "section": "Home > Housing market, includeJsonLd=false (schemas array on MetadataBlock handles the single BreadcrumbList)",
       "blocking": true
     },
@@ -69,8 +69,14 @@
   ],
   "jsonLd": {
     "required": [
-      { "type": "BreadcrumbList", "emittedBy": "MetadataBlock schemas array (breadcrumb entry)" },
-      { "type": "WebPage", "emittedBy": "MetadataBlock schemas array (webPage entry)" }
+      {
+        "type": "BreadcrumbList",
+        "emittedBy": "MetadataBlock schemas array (breadcrumb entry)"
+      },
+      {
+        "type": "WebPage",
+        "emittedBy": "MetadataBlock schemas array (webPage entry)"
+      }
     ],
     "note": "Hub is a nav/overview page. The region Dataset + FAQPage are emitted by /housing-market/central-oregon (market-report-region) so the two URLs do not duplicate the same structured market data."
   },

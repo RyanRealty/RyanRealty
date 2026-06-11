@@ -1,0 +1,12 @@
+import { chromium } from 'playwright'
+const b = await chromium.launch()
+const p = await b.newPage({ viewport: { width: 1440, height: 900 } })
+const r = await p.goto('http://localhost:3000/cities/bend', { waitUntil: 'load', timeout: 90000 })
+console.error('HTTP', r.status())
+await p.waitForTimeout(5000)
+await p.evaluate(async () => { const h=document.documentElement.scrollHeight; for(let y=0;y<h;y+=600){window.scrollTo(0,y);await new Promise(r=>setTimeout(r,150))} window.scrollTo(0,0); await new Promise(r=>setTimeout(r,400)) })
+const dims = await p.evaluate(() => ({ h: document.documentElement.scrollHeight }))
+console.error('PAGE height', dims.h)
+const errs = await p.evaluate(() => (window).__consoleErrors || 'n/a')
+await p.screenshot({ path: 'out/city-bend-full.png', fullPage: true })
+await b.close()

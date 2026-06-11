@@ -2,9 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
-import { DisplayHeading, Container, H2 } from '@/components/site/primitives'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-
+import { DisplayHeading, H2 } from '@/components/site/primitives'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
 
@@ -25,9 +24,7 @@ export const metadata: Metadata = {
 export default function JoinPage() {
   return (
     <main className="min-h-screen bg-background">
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Join our team' }]} />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Join our team' }]} />
       <ContentPageHero
         title="Grow Your Career With Us"
         subtitle="A Central Oregon brokerage built on community, craft, and straight talk. Licensed or thinking about it, we'd love to talk."

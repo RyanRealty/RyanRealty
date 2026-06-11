@@ -13,8 +13,8 @@ import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import SalesReportCharts from '@/components/reports/SalesReportCharts'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { H2, Container } from '@/components/site/primitives'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { H2 } from '@/components/site/primitives'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -138,16 +138,9 @@ export default async function SalesReportPage({ params }: PageProps) {
           variableMeasured: datasetVariables,
         }}
       />
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          items={[
-            { label: 'Home', href: '/' },
-            { label: 'Market reports', href: '/housing-market/reports' },
+      <PageBreadcrumb trail={[{ label: 'Market reports', href: '/housing-market/reports' },
             { label: cityName, href: `/housing-market/${encodeURIComponent(cityEntityKey(cityName))}` },
-            { label: periodLabel },
-          ]}
-        />
-      </Container>
+            { label: periodLabel }]} />
       <ContentPageHero
         title={`${cityName}, ${periodLabel}`}
         subtitle={dateRangeStr}

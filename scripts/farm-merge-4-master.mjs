@@ -1,0 +1,135 @@
+#!/usr/bin/env node
+// STEP 4 (rebuilt): UPDATE-EXISTING-ONLY review CSV. For each farm property that
+// matches an existing FUB contact, compute (a) property/address fields to FILL
+// (gaps only — never overwrite) and (b) canonical smart-tags to ADD, deduped
+// against that contact's CURRENT tags so nothing duplicates and existing tags
+// (incl. all expired-listing data) are preserved. NEW (unmatched) rows are
+// dropped entirely per Matt's "no more than 17,100" rule. NO FUB writes.
+import fs from 'node:fs'
+import path from 'node:path'
+import os from 'node:os'
+const OUT = '/Users/matthewryan/RyanRealty/out/farm-merge'
+const DL = path.join(os.homedir(), 'Downloads')
+
+function parseCSV(text) {
+  const rows = []; let row = [], cur = '', q = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++ } else q = false } else cur += c }
+    else { if (c === '"') q = true; else if (c === ',') { row.push(cur); cur = '' } else if (c === '\r') {} else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = '' } else cur += c }
+  }
+  if (cur.length || row.length) { row.push(cur); rows.push(row) }
+  return rows
+}
+function toObjs(text){const r=parseCSV(text);if(!r.length)return[];const h=r[0].map(x=>x.trim());return r.slice(1).filter(x=>x.length>1).map(x=>{const o={};h.forEach((k,i)=>o[k]=(x[i]??'').trim());return o})}
+
+// --- load FUB current tags keyed by name+email+phone so we can dedup per contact ---
+const norm = s => (s || '').trim().toLowerCase()
+const digits = s => (s || '').replace(/\D/g, '').replace(/^1(\d{10})$/, '$1')
+const fub = toObjs(fs.readFileSync(path.join(DL, 'all-people-2026-06-01.csv'), 'utf8'))
+const fubByEmail = new Map(), fubByName = new Map(), fubByPhone = new Map()
+for (const p of fub) {
+  const tagset = new Set((p['Tags'] || '').split(',').map(t => t.trim()).filter(Boolean))
+  const rec = { name: p['Name'], tags: tagset, stage: p['Stage'] }
+  const em = norm(p['Email 1']); if (em) fubByEmail.set(em, rec)
+  const nm = norm(p['Name']); if (nm) { if (!fubByName.has(nm)) fubByName.set(nm, []); fubByName.get(nm).push(rec) }
+  const ph = digits(p['Phone 1']); if (ph.length === 10) fubByPhone.set(ph, rec)
+}
+function fubTagsFor(m, r) {
+  // resolve the matched contact's current tag set to dedup against
+  if (m.how === 'email' && r.email && fubByEmail.has(r.email)) return fubByEmail.get(r.email).tags
+  if (m.how.startsWith('name')) { const c = fubByName.get(norm(m.name)); if (c && c.length === 1) return c[0].tags; if (c) { const ph = digits(r.phone); const x = c.find(z => true); return x ? x.tags : new Set() } }
+  if (m.how === 'phone') { const ph = digits(r.phone); if (fubByPhone.has(ph)) return fubByPhone.get(ph).tags }
+  return new Set()
+}
+
+// --- canonical tag computation matching existing FUB vocabulary ---
+const yearsOwned = pd => { const y = (pd || '').match(/(\d{4})/); if (!y) return null; const n = 2026 - parseInt(y[1]); return n >= 0 && n < 120 ? n : null }
+function tenureBands(yo) { // matches FUB: tenure:long-term + tenure:Nyr bands
+  if (yo == null) return []
+  const t = []
+  if (yo >= 10) t.push('tenure:long-term')
+  if (yo <= 2) t.push('tenure:0-2yr'); else if (yo <= 5) t.push('tenure:3-5yr'); else if (yo <= 8) t.push('tenure:6-8yr'); else if (yo <= 12) t.push('tenure:9-12yr'); else if (yo <= 17) t.push('tenure:13-17yr'); else if (yo <= 24) t.push('tenure:18-24yr'); else t.push('tenure:25plus')
+  if (yo >= 1 && yo <= 3) t.push('tenure:recent')
+  return t
+}
+function ownerTag(r) { // owner:occupied / absentee / absentee-local / absentee-outofstate
+  const oo = (r.owner_occupied || '').toLowerCase()
+  if (oo === 'yes' || oo === 'y' || oo === 'true') return ['owner:occupied']
+  if (oo === 'no' || oo === 'n' || oo === 'false') {
+    const ms = (r.mail_state || '').toUpperCase()
+    if (ms && ms !== 'OR') return ['owner:absentee', 'owner:absentee-outofstate']
+    return ['owner:absentee', 'owner:absentee-local']
+  }
+  return []
+}
+function stateGeo(r) { const ms = (r.mail_state || '').toUpperCase(); if (!ms) return []; return ms === 'OR' ? ['state:in-state'] : ['state:out-of-state', 'geo:out-of-state'] }
+function contactTags(r) {
+  const t = []
+  if (r.email) t.push('contact:has-email')
+  if (r.phone) { t.push('contact:has-phone'); const lt = (r.phone_type || '').toLowerCase(); if (lt.includes('mobile') || lt.includes('cell') || lt.includes('wireless')) t.push('contact:mobile-phone'); else if (lt.includes('land')) t.push('contact:landline-phone') }
+  return t
+}
+function computeTags(r) {
+  const t = new Set()
+  if (r.city_slug) t.add(`city:${r.city_slug}`)
+  if (r.neighborhood_slug) t.add(`neighborhood:${r.neighborhood_slug}`)
+  if (r.subdivision_slug) t.add(`subdivision:${r.subdivision_slug}`)
+  ownerTag(r).forEach(x => t.add(x))
+  stateGeo(r).forEach(x => t.add(x))
+  contactTags(r).forEach(x => t.add(x))
+  tenureBands(yearsOwned(r.purchase_date)).forEach(x => t.add(x))
+  if (r.neighborhood_slug || r.city_slug === 'bend') t.add('geo:local')
+  t.add('source:farm-merge-2026-06')   // provenance, new tag (intentional)
+  return t
+}
+
+const recs = JSON.parse(fs.readFileSync(OUT + '/03c-matched.json', 'utf8')).filter(r => r.fub_match)  // UPDATE-only
+
+const esc = s => { s = (s ?? '').toString(); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s }
+const cols = ['match_method','fub_name','fub_stage','apn','owner','site_address','site_city','site_zip','neighborhood','subdivision',
+  'email','phone','beds','baths','year_built','years_owned','purchase_price','market_value','owner_occupied','mail_state',
+  'TAGS_TO_ADD','tags_already_present','property_fields_to_fill']
+
+const lines = [cols.join(',')]
+const addTagHist = {}
+let withNewTags = 0, addrFillable = 0
+for (const r of recs) {
+  const m = r.fub_match
+  const computed = computeTags(r)
+  // dedup against the contact's REAL live tags (from the live index), not the lossy CSV
+  const current = new Set(m.tags || [])
+  const toAdd = [...computed].filter(t => !current.has(t))         // DEDUP vs contact's existing tags
+  const already = [...computed].filter(t => current.has(t))
+  toAdd.forEach(t => addTagHist[t] = (addTagHist[t] || 0) + 1)
+  if (toAdd.length) withNewTags++
+  // property fields we could fill (FUB export carries none of these, so all are "fillable" gaps)
+  const fill = []
+  if (r.site_address) { fill.push('property-address'); addrFillable++ }
+  if (r.apn_raw) fill.push('APN'); if (r.beds) fill.push('beds'); if (r.baths) fill.push('baths')
+  if (r.year_built) fill.push('year-built'); if (r.purchase_price) fill.push('purchase-price'); if (r.market_value) fill.push('market-value')
+  const row = {
+    match_method: m.how, fub_name: m.name, fub_stage: m.stage,
+    apn: r.apn_raw, owner: `${r.owner_first} ${r.owner_last}`.trim(),
+    site_address: r.site_address, site_city: r.site_city, site_zip: r.site_zip,
+    neighborhood: r.neighborhood_slug || '', subdivision: r.subdivision_slug || '',
+    email: r.email, phone: r.phone, beds: r.beds, baths: r.baths, year_built: r.year_built,
+    years_owned: yearsOwned(r.purchase_date) ?? '', purchase_price: r.purchase_price, market_value: r.market_value,
+    owner_occupied: r.owner_occupied, mail_state: r.mail_state,
+    TAGS_TO_ADD: toAdd.join('; '), tags_already_present: already.join('; '), property_fields_to_fill: fill.join('; '),
+  }
+  lines.push(cols.map(c => esc(row[c])).join(','))
+}
+fs.writeFileSync(OUT + '/MASTER-farm-enhance-existing.csv', lines.join('\n'))
+
+const summary = {
+  scope: 'UPDATE existing FUB contacts ONLY (new records dropped per 17,100 cap)',
+  farm_properties_matched_to_fub: recs.length,
+  matched_by: { email: recs.filter(r=>r.fub_match.how==='email').length, name: recs.filter(r=>r.fub_match.how.startsWith('name')).length, phone: recs.filter(r=>r.fub_match.how==='phone').length },
+  contacts_gaining_new_tags: withNewTags,
+  contacts_gaining_property_address: addrFillable,
+  top_tags_to_add: Object.fromEntries(Object.entries(addTagHist).sort((a,b)=>b[1]-a[1]).slice(0,40)),
+  file: 'MASTER-farm-enhance-existing.csv',
+}
+fs.writeFileSync(OUT + '/04-summary.json', JSON.stringify(summary, null, 2))
+console.log(JSON.stringify(summary, null, 2))

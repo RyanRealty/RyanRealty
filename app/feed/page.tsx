@@ -6,8 +6,8 @@ import { getSavedListingKeys } from '../actions/saved-listings'
 import { getLikedListingKeys } from '../actions/likes'
 import FeedInfiniteList from '@/components/FeedInfiniteList'
 import ShareButton from '@/components/ShareButton'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container, H1, H2 } from '@/components/site/primitives'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
+import { H1, H2 } from '@/components/site/primitives'
 import { Button } from '@/components/ui/button'
 import { listingsBrowsePath } from '@/lib/slug'
 
@@ -47,9 +47,7 @@ export default async function FeedPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Feed' }]} />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Feed' }]} />
       <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-7xl text-center">
           <H1 className="text-primary-foreground">

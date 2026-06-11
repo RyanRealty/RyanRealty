@@ -6,9 +6,7 @@ import HomeValuationCta from '@/components/HomeValuationCta'
 import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { listingsBrowsePath } from '@/lib/slug'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container } from '@/components/site/primitives'
-
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
 
@@ -75,9 +73,7 @@ export default function ResourcesPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Resources' }]} />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Resources' }]} />
       <ContentPageHero
         title="Buyer and Seller Resources"
         subtitle="Tools, market data, and guides to help you make confident decisions in Central Oregon real estate."

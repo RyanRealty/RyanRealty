@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ryan Realty — v6 Linear: the city is the homepage</title>
+<!--
+  LOCKED 2026-06-11 — Matt concept #3: Linear finish on v6 bones.
+  See CONCEPT.md. One Amboqia moment (hero H1). 150ms motion only.
+  Data mirrors 2026-06-10 SSR snapshot. Wire via lib/data at production build.
+-->
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/",
+  "three/examples/jsm/": "https://unpkg.com/three@0.170.0/examples/jsm/",
+  "3d-tiles-renderer": "https://unpkg.com/3d-tiles-renderer@0.4.10/src/index.js",
+  "3d-tiles-renderer/plugins": "https://unpkg.com/3d-tiles-renderer@0.4.10/src/plugins/index.js"
+} }
+</script>
+<style>
+@font-face { font-family:'Amboqia'; src:url('../../fonts/Amboqia_Boriango.otf') format('opentype'); font-display:swap; }
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap');
+
+:root {
+  --navy: #102742;
+  --cream: #faf8f4;
+  --canvas: #0b1c30;
+  --hairline-dark: rgba(250, 248, 244, 0.12);
+  --hairline-dark-strong: rgba(250, 248, 244, 0.22);
+  --hairline-light: rgba(16, 39, 66, 0.10);
+  --glass: rgba(11, 28, 48, 0.72);
+  --glass-border: rgba(250, 248, 244, 0.14);
+  --muted-dark: rgba(250, 248, 244, 0.58);
+  --muted-light: rgba(16, 39, 66, 0.62);
+  --live: #3ddc84;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur: 150ms;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  background: var(--canvas);
+  color: var(--cream);
+  font-family: 'Geist', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+.disp { font-family: 'Amboqia', serif; font-weight: 400; }
+.label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-dark);
+}
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* ── chrome ── */
+.chrome {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 48px;
+  border-bottom: 1px solid transparent;
+}
+.chrome img { height: 26px; display: block; }
+.chrome nav { display: flex; gap: 32px; align-items: center; }
+.chrome a {
+  color: rgba(250, 248, 244, 0.78);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  transition: color var(--dur) var(--ease);
+}
+.chrome a:hover { color: var(--cream); }
+.chrome a.tel { color: var(--cream); letter-spacing: 0.02em; }
+
+/* ── hero / live city ── */
+.hero { position: relative; min-height: 100vh; overflow: hidden; }
+#city { position: absolute; inset: 0; }
+#city canvas { display: block; }
+.hero .fallback {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, #0b1c30 0%, #102742 48%, #0b1c30 100%);
+}
+.hero .fallback::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(to right, rgba(11,28,48,.88) 0%, rgba(11,28,48,.42) 42%, rgba(11,28,48,.08) 68%);
+  pointer-events: none;
+}
+.scrim-bottom {
+  position: absolute; inset: auto 0 0 0; height: 40%;
+  background: linear-gradient(to top, rgba(11,28,48,.92), transparent);
+  pointer-events: none;
+  z-index: 2;
+}
+.boundaries {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  z-index: 1;
+}
+.boundaries svg {
+  position: absolute;
+  right: -2%; top: 50%;
+  transform: translateY(-50%) rotate(-2deg);
+  width: 58vw; max-width: 820px;
+}
+.nb {
+  fill: none;
+  stroke: rgba(250, 248, 244, 0.28);
+  stroke-width: 1;
+}
+
+/* glass panel primitive */
+.panel {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.hero-stack {
+  position: absolute;
+  z-index: 4;
+  left: 48px;
+  bottom: 48px;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.live-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  width: fit-content;
+}
+.live-chip .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--live);
+  flex-shrink: 0;
+}
+.live-chip .label { color: rgba(250,248,244,.72); }
+
+/* ONE Amboqia moment */
+h1.disp {
+  font-size: clamp(40px, 3.8vw, 56px);
+  line-height: 1.06;
+  letter-spacing: -0.01em;
+  font-weight: 400;
+}
+
+.ask {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 16px;
+  border-radius: 10px;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.ask:focus-within {
+  border-color: var(--hairline-dark-strong);
+  box-shadow: 0 0 0 1px rgba(250,248,244,.08);
+}
+.ask input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--cream);
+  font-size: 15px;
+  font-family: 'Geist', sans-serif;
+  font-weight: 400;
+  padding: 12px 0;
+}
+.ask input::placeholder { color: rgba(250,248,244,.42); }
+.ask button {
+  background: var(--cream);
+  color: var(--navy);
+  border: none;
+  border-radius: 7px;
+  padding: 11px 20px;
+  font-weight: 600;
+  font-size: 13px;
+  font-family: 'Geist', sans-serif;
+  cursor: pointer;
+  transition: opacity var(--dur) var(--ease);
+}
+.ask button:hover { opacity: 0.92; }
+
+/* coords readout — data jewelry */
+.coords-panel {
+  position: absolute;
+  z-index: 4;
+  right: 48px;
+  bottom: 48px;
+  min-width: 220px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.coords-panel .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--muted-dark);
+}
+.coords-panel .row b {
+  color: rgba(250,248,244,.88);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+.coords-panel .row span { text-align: right; }
+
+/* ── deal flow (replaces cinematic marquee) ── */
+.deal-flow {
+  border-top: 1px solid var(--hairline-dark);
+  border-bottom: 1px solid var(--hairline-dark);
+  background: rgba(11, 28, 48, 0.96);
+  padding: 16px 48px;
+}
+.deal-flow-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.deal-flow-head .label { color: rgba(250,248,244,.48); }
+.deal-flow-head a {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(250,248,244,.62);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  transition: color var(--dur) var(--ease);
+}
+.deal-flow-head a:hover { color: var(--cream); }
+.deal-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.deal-card {
+  padding: 12px 14px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.deal-card:hover {
+  border-color: var(--hairline-dark-strong);
+  background: rgba(11, 28, 48, 0.88);
+}
+.deal-card .type {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(250,248,244,.52);
+}
+.deal-card .place {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cream);
+  letter-spacing: -0.01em;
+}
+.deal-card .meta {
+  font-size: 12px;
+  color: var(--muted-dark);
+}
+.deal-card .meta .pos { color: #7fd6a4; }
+
+/* ── proof / ledger ── */
+.proof {
+  background: var(--cream);
+  color: var(--navy);
+  padding: 80px 48px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: start;
+  border-top: 1px solid var(--hairline-light);
+}
+.proof-copy h2 {
+  font-size: clamp(28px, 2.4vw, 36px);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.proof-copy p {
+  margin-top: 16px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--muted-light);
+  max-width: 42ch;
+}
+.ledger {
+  border: 1px solid var(--hairline-light);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+.ledger-head {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--hairline-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ledger-head .label { color: rgba(16,39,66,.45); }
+.ledger-head span:last-child {
+  font-size: 11px;
+  color: rgba(16,39,66,.38);
+  letter-spacing: 0.04em;
+}
+.ledger .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--hairline-light);
+  font-size: 14px;
+  transition: background var(--dur) var(--ease);
+}
+.ledger .row:last-child { border-bottom: none; }
+.ledger .row:hover { background: rgba(16,39,66,.03); }
+.ledger .name { font-weight: 600; letter-spacing: -0.01em; }
+.ledger .val { color: rgba(16,39,66,.72); font-size: 13px; }
+.ledger-foot {
+  padding: 10px 16px;
+  border-top: 1px solid var(--hairline-light);
+  font-size: 11px;
+  color: rgba(16,39,66,.40);
+  letter-spacing: 0.03em;
+}
+
+/* ── closer ── */
+.closer {
+  background: var(--navy);
+  padding: 64px 48px;
+  border-top: 1px solid var(--hairline-dark);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 32px;
+}
+.closer h2 {
+  font-size: clamp(24px, 2.2vw, 32px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.closer-actions { display: flex; gap: 12px; align-items: center; }
+.closer a.primary {
+  background: var(--cream);
+  color: var(--navy);
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  transition: opacity var(--dur) var(--ease);
+}
+.closer a.primary:hover { opacity: 0.92; }
+.closer a.ghost {
+  color: rgba(250,248,244,.78);
+  font-weight: 500;
+  font-size: 14px;
+  text-decoration: none;
+  padding: 12px 16px;
+  border: 1px solid var(--hairline-dark);
+  border-radius: 8px;
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.closer a.ghost:hover {
+  border-color: var(--hairline-dark-strong);
+  color: var(--cream);
+}
+
+@media (max-width: 960px) {
+  .chrome { padding: 20px 24px; }
+  .chrome nav { display: none; }
+  .hero-stack { left: 24px; right: 24px; bottom: 32px; }
+  .coords-panel { display: none; }
+  .deal-flow { padding: 16px 24px; }
+  .deal-grid { grid-template-columns: 1fr 1fr; }
+  .proof { grid-template-columns: 1fr; padding: 56px 24px; gap: 32px; }
+  .closer { flex-direction: column; align-items: flex-start; padding: 48px 24px; }
+}
+@media (max-width: 540px) {
+  .deal-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="fallback" id="fallback" aria-hidden="true"></div>
+  <div id="city" aria-hidden="true"></div>
+  <div class="boundaries" aria-hidden="true">
+    <svg viewBox="-40 -40 1280 1060" focusable="false">
+      <path class="nb" d="M 711.5 825.4 L 718.6 824.9 L 721.0 824.9 L 747.5 824.8 L 754.7 824.8 L 759.7 824.7 L 768.6 824.5 L 805.6 823.2 L 842.0 822.3 L 843.9 824.4 L 846.7 833.2 L 849.3 841.8 L 849.1 851.7 L 848.9 855.1 L 848.5 860.9 L 848.6 864.5 L 847.9 865.8 L 847.1 866.1 L 846.6 866.6 L 846.4 867.2 L 846.6 867.7 L 847.1 868.1 L 847.7 868.4 L 848.5 873.0 L 848.6 908.5 L 847.8 909.6 L 846.8 910.2 L 846.5 910.9 L 813.8 910.9 L 796.6 910.9 L 789.4 911.7 L 783.7 913.1 L 778.9 915.1 L 773.7 919.4 L 775.9 922.0 L 776.0 928.4 L 762.3 933.5 L 750.3 968.6 L 693.6 968.9 L 682.8 969.1 L 673.6 972.8 L 660.4 975.6 L 645.7 975.9 L 632.5 975.2 L 619.7 975.6 L 612.4 976.4 L 606.7 978.2 L 603.2 980.0 L 581.4 960.9 L 572.1 955.0 L 532.1 931.3 L 525.4 927.1 L 523.0 925.1 L 514.7 917.0 L 510.1 914.3 L 507.0 913.1 L 527.7 883.4 L 534.1 875.1 L 543.7 861.5 L 544.9 858.9 L 546.0 853.7 L 546.4 848.2 L 548.6 842.4 L 553.2 841.1 L 555.4 840.0 L 558.9 833.4 L 563.7 822.9 L 567.1 816.3 L 577.1 817.6 L 584.9 821.0 L 585.5 821.8 L 585.6 821.9 L 585.8 821.9 L 585.9 822.0 L 586.1 822.1 L 586.3 822.1 L 586.4 822.2 L 586.6 822.2 L 586.8 822.3 L 587.0 822.4 L 587.1 822.4 L 587.3 822.5 L 587.5 822.5 L 587.7 822.6 L 587.8 822.7 L 588.0 822.7 L 588.2 822.8 L 588.4 822.8 L 588.6 822.9 L 588.7 822.9 L 588.9 823.0 L 589.1 823.0 L 589.3 823.1 L 589.3 823.2 L 592.3 823.8 L 594.0 823.8 L 601.7 823.9 L 606.5 823.7 L 621.8 822.0 L 640.9 820.1 L 652.6 819.1 L 656.4 819.5 L 660.8 820.9 L 673.9 825.1 L 677.0 825.8 L 681.8 826.3 L 684.7 826.0 L 690.5 825.9 L 711.5 825.4 Z"/>
+      <path class="nb" d="M 1024.5 700.7 L 1023.2 772.1 L 1025.2 796.8 L 1023.7 796.6 L 1021.0 796.6 L 989.7 796.4 L 978.6 796.4 L 978.1 825.7 L 956.6 825.7 L 936.0 827.0 L 932.9 853.8 L 895.1 853.9 L 849.0 853.9 L 849.5 843.2 L 848.8 839.4 L 844.1 825.3 L 843.7 822.3 L 820.1 823.0 L 773.2 824.3 L 762.6 824.6 L 756.7 824.7 L 751.4 824.8 L 721.0 824.9 L 718.6 824.9 L 711.5 825.4 L 704.6 825.8 L 690.5 825.9 L 684.7 826.0 L 681.8 826.3 L 677.0 825.8 L 673.9 825.1 L 660.8 820.9 L 656.4 819.5 L 652.6 819.1 L 640.9 820.1 L 621.8 822.0 L 606.5 823.7 L 601.7 823.9 L 594.0 823.8 L 592.3 823.8 L 589.3 823.2 L 589.3 823.1 L 589.1 823.0 L 588.9 823.0 L 588.7 822.9 L 588.6 822.9 L 588.4 822.8 L 588.2 822.8 L 588.0 822.7 L 587.8 822.7 L 587.7 822.6 L 587.5 822.5 L 587.3 822.5 L 587.1 822.4 L 587.0 822.4 L 586.8 822.3 L 586.6 822.2 L 586.4 822.2 L 586.3 822.1 L 586.1 822.1 L 585.9 822.0 L 585.8 821.9 L 585.6 821.9 L 585.5 821.8 L 584.9 821.0 L 577.1 817.6 L 568.8 812.3 L 576.6 795.0 L 579.4 789.1 L 583.5 780.0 L 591.7 762.3 L 594.5 757.4 L 596.2 755.3 L 604.4 747.1 L 586.2 747.1 L 580.0 742.7 L 592.1 729.9 L 594.3 726.9 L 597.3 721.7 L 598.8 717.6 L 601.9 707.5 L 605.1 699.4 L 607.9 695.5 L 616.5 688.3 L 625.2 682.3 L 631.5 677.6 L 642.8 669.5 L 649.8 670.1 L 660.0 670.2 L 704.9 670.1 L 708.5 669.7 L 720.8 666.7 L 723.2 666.5 L 724.8 666.6 L 735.3 668.7 L 753.7 672.3 L 765.0 675.5 L 771.5 678.5 L 776.1 679.8 L 788.9 682.2 L 796.9 682.5 L 815.3 682.7 L 844.8 682.9 L 865.4 682.6 L 901.2 682.2 L 937.8 681.7 L 974.3 681.9 L 1003.1 682.1 L 1026.2 682.3 L 1068.1 682.5 L 1024.5 700.7 Z"/>
+      <path class="nb" d="M 1068.9 569.7 L 1068.5 611.5 L 1068.4 638.8 L 1068.1 682.5 L 1053.3 682.5 L 1026.2 682.3 L 1024.8 682.3 L 991.8 682.1 L 974.3 681.9 L 946.2 681.7 L 932.5 681.8 L 901.2 682.2 L 872.7 682.7 L 861.2 682.7 L 844.8 682.9 L 824.5 682.8 L 804.9 682.6 L 796.9 682.5 L 790.6 682.3 L 787.3 682.0 L 776.1 679.8 L 772.9 679.0 L 770.0 677.9 L 765.0 675.5 L 757.5 673.1 L 748.6 671.3 L 735.3 668.7 L 726.2 666.9 L 723.9 666.5 L 723.2 666.5 L 722.2 666.5 L 719.4 666.9 L 708.5 669.7 L 705.7 670.0 L 703.6 670.1 L 660.0 670.2 L 653.1 670.1 L 645.4 669.9 L 642.8 669.5 L 647.6 665.9 L 651.2 663.2 L 653.3 661.4 L 655.1 659.3 L 656.7 657.3 L 659.4 653.0 L 660.1 651.1 L 661.1 646.3 L 661.4 644.3 L 661.4 635.1 L 661.3 622.1 L 660.9 604.9 L 659.7 597.5 L 656.7 589.1 L 653.1 580.3 L 652.4 577.6 L 650.9 569.5 L 650.9 564.2 L 650.7 563.4 L 650.8 545.4 L 650.8 533.5 L 662.6 533.5 L 677.9 533.5 L 705.3 533.4 L 721.3 533.4 L 746.4 533.3 L 762.6 533.4 L 769.3 533.4 L 774.7 533.4 L 793.7 533.4 L 803.2 533.4 L 808.4 532.5 L 808.4 531.5 L 808.4 530.2 L 808.4 528.0 L 808.4 526.9 L 808.4 525.8 L 808.4 524.8 L 808.4 522.8 L 808.4 522.1 L 808.4 520.9 L 808.4 520.4 L 808.4 519.4 L 808.4 517.0 L 808.4 514.8 L 808.4 513.3 L 808.7 512.4 L 816.6 512.5 L 819.9 513.4 L 823.1 517.0 L 826.5 520.0 L 830.3 522.4 L 834.5 524.4 L 839.8 526.4 L 844.9 527.7 L 849.0 528.4 L 852.5 528.8 L 858.4 529.3 L 868.7 529.7 L 874.6 529.9 L 878.1 529.5 L 883.6 529.6 L 887.8 529.8 L 892.4 530.4 L 894.5 530.8 L 899.3 532.1 L 904.2 533.4 L 908.5 534.6 L 917.0 536.9 L 921.3 538.1 L 927.2 539.7 L 935.1 541.0 L 938.8 541.2 L 953.9 541.4 L 973.1 541.4 L 981.7 541.4 L 1020.6 541.8 L 1029.1 541.8 L 1068.1 542.0 L 1100.5 542.1 L 1112.1 542.9 L 1112.3 553.9 L 1111.9 569.7 L 1101.7 569.0 L 1069.1 569.0 L 1068.9 569.7 Z"/>
+    </svg>
+  </div>
+  <div class="scrim-bottom" aria-hidden="true"></div>
+
+  <header class="chrome">
+    <img src="../../assets/brand/logo-horizontal-white-transparent.png" alt="Ryan Realty" onerror="this.outerHTML='<span class=disp style=font-size:20px>Ryan Realty</span>'">
+    <nav>
+      <a href="#">Homes for sale</a>
+      <a href="#">Neighborhoods</a>
+      <a href="#">Sell</a>
+      <a href="tel:+15412136706" class="tel">541.213.6706</a>
+    </nav>
+  </header>
+
+  <div class="hero-stack">
+    <div class="live-chip panel tnum">
+      <span class="dot" aria-hidden="true"></span>
+      <span class="label">Live · 1,808 active · median $740,000 · 3h ago</span>
+    </div>
+    <h1 class="disp">This is Bend, right now.</h1>
+    <div class="ask panel">
+      <input type="text" placeholder="Which Tetherow streets back the fairway?" aria-label="Ask about Central Oregon real estate">
+      <button type="button">Ask</button>
+    </div>
+  </div>
+
+  <aside class="coords-panel panel tnum" aria-label="Camera telemetry">
+    <div class="row"><b>44.0582° N</b><span>121.3153° W</span></div>
+    <div class="row"><b>Alt</b><span id="alt">2,400 m · fixed</span></div>
+    <div class="row"><b>Source</b><span>Google 3D tiles</span></div>
+  </aside>
+</section>
+
+<section class="deal-flow" aria-label="Live market activity">
+  <div class="deal-flow-head">
+    <span class="label">Deal flow</span>
+    <a href="#">Open pulse →</a>
+  </div>
+  <div class="deal-grid tnum">
+    <article class="deal-card panel">
+      <span class="type">New</span>
+      <span class="place">NorthWest Crossing</span>
+      <span class="meta">$1,049,000 · 22m ago</span>
+    </article>
+    <article class="deal-card panel">
+      <span class="type">Price drop</span>
+      <span class="place">Larkspur</span>
+      <span class="meta">$649,000 · <span class="pos">−$26,000</span> · 1h</span>
+    </article>
+    <article class="deal-card panel">
+      <span class="type">Pending</span>
+      <span class="place">Old Bend</span>
+      <span class="meta">9 days on market · 3h ago</span>
+    </article>
+    <article class="deal-card panel">
+      <span class="type">Sold</span>
+      <span class="place">Awbrey Butte</span>
+      <span class="meta">$1,302,000 · today</span>
+    </article>
+  </div>
+</section>
+
+<section class="proof">
+  <div class="proof-copy">
+    <h2>Ask about a street. Get the whole story.</h2>
+    <p>Median list, days to pending, and sold history for every neighborhood, drawn from the boundary up. Same numbers we use to price a listing, sources shown.</p>
+  </div>
+  <div class="ledger">
+    <div class="ledger-head">
+      <span class="label">Bend neighborhoods</span>
+      <span class="tnum">Updated 10 min</span>
+    </div>
+    <div class="row tnum"><span class="name">Old Mill District</span><span class="val">$749,000 · 28 active</span></div>
+    <div class="row tnum"><span class="name">Old Bend</span><span class="val">$1,295,000 · 4 active</span></div>
+    <div class="row tnum"><span class="name">Awbrey Butte</span><span class="val">$1,150,000 · 22 active</span></div>
+    <div class="row tnum"><span class="name">NorthWest Crossing</span><span class="val">$929,000 · 11 active</span></div>
+    <div class="row tnum"><span class="name">Tetherow</span><span class="val">$1,595,000 · 18 active</span></div>
+    <div class="ledger-foot">market_pulse_live · 2026-06-10 snapshot</div>
+  </div>
+</section>
+
+<section class="closer">
+  <h2>Selling? See what we see.</h2>
+  <div class="closer-actions">
+    <a class="primary" href="#">Get the reading on your home</a>
+    <a class="ghost" href="tel:+15412136706">541.213.6706</a>
+  </div>
+</section>
+
+<script type="module">
+const key = new URLSearchParams(location.search).get('key');
+if (key) {
+  try {
+    const THREE = await import('three');
+    const { TilesRenderer } = await import('3d-tiles-renderer');
+    const { GoogleCloudAuthPlugin } = await import('3d-tiles-renderer/plugins');
+
+    const mount = document.getElementById('city');
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    mount.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 10, 1e7);
+
+    const tiles = new TilesRenderer();
+    tiles.registerPlugin(new GoogleCloudAuthPlugin({ apiToken: key }));
+    tiles.setCamera(camera);
+    tiles.setResolutionFromRenderer(camera, renderer);
+    scene.add(tiles.group);
+    tiles.setLatLonToYUp(44.0582 * Math.PI / 180, -121.3153 * Math.PI / 180);
+
+    // Fixed oblique camera — no cinematic drift
+    const az = 1.15;
+    const r = 2600;
+    camera.position.set(Math.cos(az) * r, 1450, Math.sin(az) * r);
+    camera.lookAt(-600, 120, -300);
+    camera.updateMatrixWorld();
+
+    function frame() {
+      tiles.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(frame);
+    }
+    frame();
+
+    addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
+    tiles.addEventListener('load-tile-set', () => {
+      const fb = document.getElementById('fallback');
+      fb.style.transition = 'opacity 150ms ease-out';
+      fb.style.opacity = '0';
+      document.getElementById('alt').textContent = '2,300 m · live';
+    });
+  } catch (e) {
+    console.warn('3D tiles unavailable:', e.message);
+  }
+}
+</script>
+</body>
+</html>

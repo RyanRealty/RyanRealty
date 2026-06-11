@@ -1,0 +1,64 @@
+{
+  "route": "app/cities/page.tsx",
+  "mockup": "design_system/ryan-realty/ui_kits/cities/index.html",
+  "competitiveTarget": "Beat portal city-directory pages — a real editorial destination with verified per-city photography and a live regional pulse, not a link farm.",
+  "note": "Experience System Geo hub v3.2 (Family 4 rework, 2026-06-10). Built after Matt's 'ultra thin' verdict on the v3.1 index. Structure: live region pulse hero (getRegionPulse) -> featured city editorial rows (full-width, hairline rules, alternating photo/content, VERIFIED cityHero() photography, live per-city stat bands from getMarketPulseCitySnapshots with geo_snapshot_mv fallback, one honest editorial sentence per city, links to city page + searches + open houses) -> other-areas compact ledger -> navy search CTA. CollectionPage + ItemList + Breadcrumb JSON-LD. EngagedSection telemetry on every section. No tile walls.",
+  "requiredComponents": [
+    {
+      "name": "PageBreadcrumb",
+      "section": "Home > Cities",
+      "blocking": true
+    },
+    {
+      "name": "MetadataBlock",
+      "section": "structured data — breadcrumb schema; CollectionPage + ItemList rendered inline.",
+      "blocking": true
+    },
+    {
+      "name": "EngagedSection",
+      "section": "featured-cities / other-cities / search-cta — section_view telemetry on every section.",
+      "blocking": true
+    },
+    {
+      "name": "DisplayHeading",
+      "section": "hero H1 + city names in Amboqia display — data and place names ARE the design.",
+      "blocking": true
+    },
+    {
+      "name": "getRegionPulse",
+      "section": "hero — LIVE region stats (active count, median list, months-of-supply verdict). Honest em-dash empties.",
+      "blocking": true
+    },
+    {
+      "name": "getMarketPulseCitySnapshots",
+      "section": "featured rows — live per-city stat bands (active / median / median DOM / verdict).",
+      "blocking": true
+    },
+    {
+      "name": "cityHero",
+      "section": "featured rows — VERIFIED per-city photography from the Family 4 curation registry; unverified cities get the labeled regional fallback.",
+      "blocking": true
+    },
+    {
+      "name": "getCityContent",
+      "section": "featured rows — one honest editorial sentence per city (hand-written content first, verifiable geographic fact fallback).",
+      "blocking": true
+    }
+  ],
+  "layoutComponents": [
+    {
+      "name": "SiteHeader",
+      "section": "site chrome — renders from app/layout.tsx.",
+      "note": "Not in requiredComponents because the gate checks the route file."
+    },
+    {
+      "name": "SiteFooter",
+      "section": "navy footer — renders from app/layout.tsx.",
+      "note": "Not in requiredComponents because the gate checks the route file."
+    }
+  ],
+  "removedComponents": [
+    "Primary-cities name-and-number ledger (v3.1 — replaced by full editorial rows with verified photography and live stat bands)",
+    "Low-opacity Bend photo wash behind the hero (v3.2 hero is the live region pulse on navy, no decorative photo)"
+  ]
+}

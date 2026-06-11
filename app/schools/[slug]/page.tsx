@@ -26,7 +26,7 @@ import {
 import { CO_SCHOOLS, slugifySchoolName, type SchoolLevel } from '@/data/co-schools'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { NeighborhoodMap } from '@/components/site/NeighborhoodMap'
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
 import { CTABar } from '@/components/site/CTABar'
@@ -193,16 +193,8 @@ export default async function SchoolDetailPage({ params }: Props) {
     <main className="min-h-screen bg-background">
       <MetadataBlock schemas={schemas} />
 
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          includeJsonLd={false}
-          items={[
-            { label: 'Home', href: '/' },
-            { label: 'Schools', href: '/schools' },
-            { label: school.name },
-          ]}
-        />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Schools', href: '/schools' },
+            { label: school.name }]} includeJsonLd={false} />
 
       {/* Hero heading */}
       <Section padding="default">

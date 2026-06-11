@@ -77,7 +77,7 @@ export async function getPropertyFactsByMls(mlsNumber: string): Promise<ListingP
 
   const { data } = await sb
     .from('listings')
-    .select('year_built, property_sub_type, "PropertyType", sewer, water, association_yn, hoa_monthly')
+    .select('year_built, property_sub_type, PropertyType, sewer, water, association_yn, hoa_monthly')
     .eq('ListNumber', k)
     .maybeSingle()
   if (!data) return null

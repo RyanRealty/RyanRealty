@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ExternalLinkHugeIcon } from '@/components/icons/HugeIcons'
 import { TESTIMONIALS, GOOGLE_REVIEWS_URL } from '@/lib/testimonials'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container, DisplayHeading, H2 } from '@/components/site/primitives'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
+import { DisplayHeading, H2 } from '@/components/site/primitives'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
@@ -27,9 +27,7 @@ export const metadata: Metadata = {
 export default function ReviewsPage() {
   return (
     <main className="min-h-screen bg-background">
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Reviews' }]} />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Reviews' }]} />
       <section className="bg-primary px-4 py-16 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-sm font-semibold uppercase tracking-widest text-accent-foreground">

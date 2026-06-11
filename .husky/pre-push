@@ -1,45 +1,26 @@
 #!/usr/bin/env sh
-. "$(dirname "$0")/_/h"
+. "$(dirname "$0")/_/husky.sh"
+
+# G46 — commit self-containment gate
+#
+# This is the ONLY check that runs here.  The old body (ci:gates) was
+# replaced because ci:gates operates on the working tree — it can silently
+# pass when the commit is broken (working tree has symbols the commit lacks).
+#
+# check-commit-compiles.mjs materializes the actual HEAD tree into a temp dir
+# (git archive HEAD | tar -x), symlinks node_modules, and type-checks it in
+# isolation.  This is tree-state-INDEPENDENT: it sees exactly what was
+# committed, nothing more.
+#
+# ci:gates still runs in GitHub Actions CI on every push, so the full suite
+# is not skipped — it just runs at the right moment (after code lands) rather
+# than on the working tree before push.
+#
+# SKIP_LOCAL_GATES=1 bypasses this hook (same escape hatch as before).
 
 if [ "$SKIP_LOCAL_GATES" = "1" ]; then
   echo "Skipping local quality gates (SKIP_LOCAL_GATES=1)."
   exit 0
 fi
 
-if [ "$SKIP_DB_GUARD" = "1" ]; then
-  echo "Skipping Supabase migration drift guard (SKIP_DB_GUARD=1)."
-else
-  echo "Checking Supabase migration drift..."
-  npm run db:guard
-fi
-
-BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
-CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRTUXB @{upstream}...HEAD 2>/dev/null || git diff --name-only --diff-filter=ACMRTUXB HEAD~1 2>/dev/null || true)
-
-NEEDS_STRICT=0
-if [ "$BRANCH_NAME" = "main" ] || [ "$BRANCH_NAME" = "master" ]; then
-  NEEDS_STRICT=1
-fi
-
-if [ "$NEEDS_STRICT" -eq 0 ]; then
-  for file in $CHANGED_FILES; do
-    case "$file" in
-      app/*|components/*|lib/*|types/*|next.config.*|package.json|tsconfig*.json|eslint.config.*)
-        NEEDS_STRICT=1
-        break
-        ;;
-    esac
-  done
-fi
-
-if [ "$NEEDS_STRICT" -eq 1 ]; then
-  # Canonical gate suite (cross-platform). Replaces quality:local:strict,
-  # whose build:clean-local step is PowerShell-only and silently no-ops /
-  # breaks on macOS — which is why this hook had been effectively disabled.
-  # Re-armed 2026-05-30 to enforce the same ci:gates that CI runs (LAUNCH-15).
-  echo "Running canonical gate suite (ci:gates)..."
-  npm run ci:gates
-else
-  echo "Running fast local quality gates..."
-  npm run quality:local
-fi
+node scripts/check-commit-compiles.mjs --head

@@ -20,7 +20,7 @@ import { getGeoBoundaryMapData, getListingTiles } from '@/lib/data'
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import { CTABar } from '@/components/site/CTABar'
 import { NeighborhoodMap } from '@/components/site/NeighborhoodMap'
@@ -131,15 +131,8 @@ export default async function SubdivisionPage({ params }: Props) {
           url: `/subdivisions/${slug}`,
         },
       ]} />
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          items={[
-            { label: 'Home', href: '/' },
-            { label: 'Communities', href: '/communities' },
-            { label: name },
-          ]}
-        />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Communities', href: '/communities' },
+            { label: name }]} />
 
       <HeroBlock headline={`${name}, Oregon`} lede={lede} minHeight={420} />
 

@@ -21,7 +21,7 @@ import { getZipListings, getSurfaceImage } from '@/lib/data'
 import { listingTileHref } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import { RelatedAreas, type RelatedAreaItem } from '@/components/site/RelatedAreas'
 import { ZipMarketStats, type ZipMarketStatsData } from '@/components/site/ZipMarketStats'
@@ -246,18 +246,8 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           variableMeasured: datasetStats,
         },
       ]} />
-      <div className="bg-background border-b border-border py-3">
-        <Container>
-          <BreadcrumbNav
-            items={[
-              { label: 'Home', href: '/' },
-              { label: 'Search', href: '/search' },
-              { label: zip },
-            ]}
-            tone="on-light"
-          />
-        </Container>
-      </div>
+      <PageBreadcrumb trail={[{ label: 'Homes for sale', href: '/homes-for-sale' },
+              { label: zip }]} />
 
       <HeroBlock
         headline={`Homes for sale in ${zip}`}

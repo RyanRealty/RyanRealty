@@ -4,8 +4,8 @@ import { getPublishedGuides } from '@/lib/data'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
 import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container, H2 } from '@/components/site/primitives'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
+import { H2 } from '@/components/site/primitives'
 
 // Render on demand to avoid the 180s static-generation timeout. The published
 // guides query is slow enough at build time that the static export windows out.
@@ -47,12 +47,7 @@ export default async function GuidesIndexPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          includeJsonLd={false}
-          items={[{ label: 'Home', href: '/' }, { label: 'Guides' }]}
-        />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Guides' }]} includeJsonLd={false} />
       <ContentPageHero
         title="Real Estate Guides"
         subtitle="Local market explainers and step-by-step playbooks for buyers and sellers in Central Oregon."

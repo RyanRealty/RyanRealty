@@ -5,7 +5,7 @@
   "note": "Region report page at /housing-market/central-oregon. A dedicated mockup is a follow-up deliverable; the page currently shares market-report/index.html. The CityComparisonTable replaces the legacy ~12-call per-city pulse fan-out with ONE getMarketPulseCitySnapshots call. MarketSnapshot with no citySlug serves the region aggregate via getRegionPulse.",
   "requiredComponents": [
     {
-      "name": "BreadcrumbNav",
+      "name": "PageBreadcrumb",
       "section": "Home > Housing market > Central Oregon, includeJsonLd=false (schemas array on MetadataBlock handles the single BreadcrumbList)",
       "blocking": true
     },

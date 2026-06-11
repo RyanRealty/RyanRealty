@@ -4,15 +4,47 @@
   "competitiveTarget": "Long-tail SEO: 'homes for sale in {zip}'. ZIPs carry no cached market row, so the snapshot + subdivision grid are derived live from listing_tile_mv tiles (CLAUDE.md §0) — a real ZIP market page, not a bare listings dump.",
   "note": "Wave 3 site-v2 rebuild, full mockup fidelity 2026-06-02. ONE getZipListings(zip, {propertyType:'A', limit:250}) call feeds the hero lede (active count, median list, median DOM), the ZipMarketStats snapshot (active SFR, median list, median $/sqft, new-30d — all derived from the tiles), the subdivision RelatedAreas grid (grouped from the same tiles), and the ListingCard grid. A second RelatedAreas renders the other canonical ZIPs (static service-area labels). CtaDuo replaces the prior single CTABar. NO getMarketPulse/getMarketStats — there are no ZIP-keyed rows, so nothing is fabricated; values that can't be derived render as an em-dash. SiteHeader/SiteFooter render from app/layout.tsx. Canonical 10 ZIPs, dynamicParams=false.",
   "requiredComponents": [
-    { "name": "BreadcrumbNav", "section": "Home > Search > {zip}", "blocking": true },
-    { "name": "HeroBlock", "section": "hero — 'Homes for sale in {zip}' + active count + median list + median DOM", "blocking": true },
-    { "name": "RelatedAreas", "section": "'What's in this ZIP' subdivision grid (derived from tiles) + 'Looking elsewhere' other-ZIP grid (two instances)", "blocking": true },
-    { "name": "ZipMarketStats", "section": "'{zip} market right now' — 4 stat cards derived live from listing_tile_mv tiles", "blocking": true },
-    { "name": "ListingCard", "section": "'All active homes in {zip}' grid via getZipListings", "blocking": true },
-    { "name": "CtaDuo", "section": "dual CTA — buyer listing alerts + seller home valuation", "blocking": true }
+    {
+      "name": "PageBreadcrumb",
+      "section": "Home > Search > {zip}",
+      "blocking": true
+    },
+    {
+      "name": "HeroBlock",
+      "section": "hero — 'Homes for sale in {zip}' + active count + median list + median DOM",
+      "blocking": true
+    },
+    {
+      "name": "RelatedAreas",
+      "section": "'What's in this ZIP' subdivision grid (derived from tiles) + 'Looking elsewhere' other-ZIP grid (two instances)",
+      "blocking": true
+    },
+    {
+      "name": "ZipMarketStats",
+      "section": "'{zip} market right now' — 4 stat cards derived live from listing_tile_mv tiles",
+      "blocking": true
+    },
+    {
+      "name": "ListingCard",
+      "section": "'All active homes in {zip}' grid via getZipListings",
+      "blocking": true
+    },
+    {
+      "name": "CtaDuo",
+      "section": "dual CTA — buyer listing alerts + seller home valuation",
+      "blocking": true
+    }
   ],
   "layoutComponents": [
-    { "name": "SiteHeader", "section": "renders from app/layout.tsx", "note": "gate checks the route file" },
-    { "name": "SiteFooter", "section": "renders from app/layout.tsx", "note": "gate checks the route file" }
+    {
+      "name": "SiteHeader",
+      "section": "renders from app/layout.tsx",
+      "note": "gate checks the route file"
+    },
+    {
+      "name": "SiteFooter",
+      "section": "renders from app/layout.tsx",
+      "note": "gate checks the route file"
+    }
   ]
 }

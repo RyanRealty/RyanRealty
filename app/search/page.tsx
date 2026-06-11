@@ -33,6 +33,7 @@ function bboxFromGeometry(
   }
   return { west, south, east, north }
 }
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import SearchFilters from '@/components/search/SearchFilters'
 import SearchResults from '@/components/search/SearchResults'
 import MapSearchView from '@/components/search/MapSearchView'
@@ -265,6 +266,9 @@ export default async function SearchPage({
   return (
     <div className="min-h-screen w-full bg-muted">
       <h1 className="sr-only">{h1Text}</h1>
+      {/* P1-1: the search index was the only top-3 page with no breadcrumb at
+          all (its child /homes-for-sale/<city> has one). Canonical chrome. */}
+      <PageBreadcrumb trail={[{ label: 'Homes for sale' }]} />
       <TrackSearchView
         city={filters.city ?? undefined}
         subdivision={filters.subdivision ?? undefined}

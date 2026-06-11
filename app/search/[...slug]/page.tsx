@@ -30,6 +30,12 @@ import MarketSnapshot from '@/components/site/MarketSnapshot'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { buildMarketFaq } from '@/lib/site/market-faq'
+import {
+  buildPresetFaq,
+  getAdjacentPriceBandLinks,
+  getSamePresetCityLinks,
+  isSortOnlyPreset,
+} from '@/lib/site/preset-faq'
 import { GolfLanding } from '@/components/site/golf/GolfLanding'
 import { GOLF_COMMUNITIES } from '@/data/golf-landing'
 import { getGolfImages, pickGolfImage, getGolfHomesForLanding, getMarketPulse } from '@/lib/data'
@@ -504,7 +510,7 @@ export default async function SearchPage({
 
   const searchBreadcrumbItems: { label: string; href?: string }[] = [
     { label: 'Home', href: '/' },
-    { label: 'Homes for Sale', href: '/homes-for-sale' },
+    { label: 'Homes for sale', href: '/homes-for-sale' },
   ]
   const cityLabel = city ?? (slug[0] ? decodeURIComponent(slug[0]) : '')
   // Visible breadcrumb hrefs are RELATIVE so they use the client-side router and
@@ -659,10 +665,32 @@ export default async function SearchPage({
   // buildMarketFaq so the visible numbers and the markup never diverge. Every
   // figure is null-guarded (no invented stats, CLAUDE.md §0).
   const isPlainCityPage = !!(city && !subdivision && !preset)
-  const cityPulse = isPlainCityPage && relatedCitySlug
+  // Preset-page SEO depth (Family 3). The indexable /homes-for-sale/[city]/[preset]
+  // pages get destination-page depth: an honest editorial intro, a preset-scoped
+  // FAQ (+ FAQPage JSON-LD via FAQBlock), and cross-links. Gated to the CLEAN
+  // canonical render: no subdivision segment, no user filter/sort/page params
+  // (shouldNoIndexSearchVariant, those variants are noindex and their counts
+  // would not match the preset copy), not a sort-only preset (a pure re-order of
+  // the city page carries no segment of its own), and not a degraded fetch (a
+  // timed-out count must never produce "none on the market" copy, CLAUDE.md §0).
+  const isPresetDepthPage = !!(
+    city &&
+    !subdivision &&
+    preset &&
+    !isSortOnlyPreset(preset) &&
+    !shouldNoIndexSearchVariant(sp)
+  )
+  const cityPulse = (isPlainCityPage || isPresetDepthPage) && relatedCitySlug
     ? await getMarketPulse({ geoType: 'city', geoSlug: relatedCitySlug }).catch(() => null)
     : null
   const cityMarketFaq = isPlainCityPage && city ? buildMarketFaq(city, cityPulse) : null
+  const presetDepth =
+    isPresetDepthPage && city && preset && !listingsResult.degraded
+      ? buildPresetFaq(city, preset, totalCount, cityPulse)
+      : null
+  const presetBandLinks = isPresetDepthPage && city && preset ? getAdjacentPriceBandLinks(city, preset.slug) : []
+  const presetCityLinks =
+    isPresetDepthPage && preset && relatedCitySlug ? getSamePresetCityLinks(preset, relatedCitySlug) : []
 
   // Path-derived filters for the guest listing-alert capture. On this route the
   // city/subdivision/preset live in the slug (not the query string), so the
@@ -786,11 +814,17 @@ export default async function SearchPage({
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-2xl">
           <H1>{headerTitle}</H1>
-          {headerIntro && (
+          {presetDepth ? (
+            // Preset editorial intro carries the verified count plus labeled
+            // city-wide context, so it replaces the bare count line.
+            <Body size="large" className="mt-3 tabular-nums">
+              {presetDepth.intro}
+            </Body>
+          ) : headerIntro ? (
             <Body size="large" className="mt-3 tabular-nums">
               {headerIntro}
             </Body>
-          )}
+          ) : null}
         </div>
         <div className="flex items-center gap-2">
           {(city || hasFilterOnly) && (
@@ -918,6 +952,57 @@ export default async function SearchPage({
           eyebrow="Common questions"
           title={`${city!} real estate questions`}
         />
+      )}
+
+      {/* Preset-page depth: preset-scoped FAQ + FAQPage JSON-LD (FAQBlock emits
+          the schema from the same items, so text and markup never diverge). */}
+      {presetDepth && presetDepth.faqs.length > 0 && (
+        <FAQBlock
+          items={presetDepth.faqs}
+          eyebrow="Common questions"
+          title={presetDepth.faqTitle}
+        />
+      )}
+
+      {/* Preset cross-links: adjacent price bands + the same search in other
+          cities (only cities whose data-grounded popular-search list carries
+          this preset, so no empty-inventory links). */}
+      {(presetBandLinks.length > 0 || presetCityLinks.length > 0) && (
+        <section className="mt-14 border-t border-border pt-10" aria-labelledby="preset-crosslinks-heading">
+          <H2 id="preset-crosslinks-heading">Similar searches</H2>
+          {presetBandLinks.length > 0 && (
+            <div className="mt-5">
+              <Body size="small">Nearby price ranges</Body>
+              <div className="mt-2.5 flex flex-wrap gap-2.5">
+                {presetBandLinks.map((l) => (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    className="rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/30 hover:shadow-sm"
+                  >
+                    {l.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+          {presetCityLinks.length > 0 && (
+            <div className="mt-5">
+              <Body size="small">{preset ? `${preset.shortLabel} in other cities` : 'In other cities'}</Body>
+              <div className="mt-2.5 flex flex-wrap gap-2.5">
+                {presetCityLinks.map((l) => (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    className="rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/30 hover:shadow-sm"
+                  >
+                    {l.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
       )}
 
       {/* 6. Related searches — SEO internal links to this city's other popular searches. */}

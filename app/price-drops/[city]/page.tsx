@@ -19,7 +19,7 @@ import Link from 'next/link'
 import { getPriceDrops } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { CTABar } from '@/components/site/CTABar'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
@@ -238,16 +238,8 @@ export default async function PriceDropsCityPage({ params }: Props) {
       <MetadataBlock schemas={schemas} />
 
       {/* Breadcrumb */}
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          includeJsonLd={false}
-          items={[
-            { label: 'Home', href: '/' },
-            { label: 'Price drops', href: '/price-drops' },
-            { label: cityName },
-          ]}
-        />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Price drops', href: '/price-drops' },
+            { label: cityName }]} includeJsonLd={false} />
 
       {/* Hero with live aggregate in Amboqia display numerals */}
       <section className="relative bg-primary text-primary-foreground overflow-hidden">

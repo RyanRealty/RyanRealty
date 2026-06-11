@@ -11,8 +11,8 @@ import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { listingsBrowsePath } from '@/lib/slug'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 import { CONTACT } from '@/lib/brand/contact'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container, H2 } from '@/components/site/primitives'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
+import { H2 } from '@/components/site/primitives'
 
 const contactOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')}/api/og?type=default`
 
@@ -74,12 +74,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
 
   return (
     <main className="min-h-screen bg-background">
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          includeJsonLd={false}
-          items={[{ label: 'Home', href: '/' }, { label: 'Contact' }]}
-        />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Contact' }]} includeJsonLd={false} />
       <ContentPageHero
         title={contactTitle}
         subtitle="Questions about buying, selling, or just exploring? We're here to help. Reach out and we'll get back to you quickly."

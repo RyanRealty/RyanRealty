@@ -13,6 +13,8 @@ import { ClipSunBeltCorrection, CLIP_SBC_TOTAL_SEC } from './news/ClipSunBeltCor
 import { ClipTariffs, CLIP_TARIFFS_TOTAL_SEC } from './news/ClipTariffs';
 import { ClipRemaxRealMerger, CLIP_MERGER_TOTAL_SEC } from './news/ClipRemaxRealMerger';
 import { SingleImageReel, SINGLE_IMAGE_REEL_DURATION_FRAMES } from './SingleImageReel';
+import { AlgorithmPrefers, ALGO_PREFERS_TOTAL_SEC } from './AlgorithmPrefers';
+import { ThenAndNowEp1, THEN_NOW_EP1_FRAMES } from './then-now/ThenAndNowEp1';
 
 const FPS = 30;
 const W_PORT = 1080;
@@ -114,6 +116,22 @@ export const RemotionRoot: React.FC = () => (
         sub: 'Off-market  ·  $3,025,000',
         address: '56111 SCHOOL HOUSE RD  ·  VANDEVERT RANCH  ·  BEND, OREGON',
       }}
+    />
+    <Composition
+      id="AlgorithmPrefers"
+      component={AlgorithmPrefers as any}
+      durationInFrames={Math.round(ALGO_PREFERS_TOTAL_SEC * FPS)}
+      fps={FPS}
+      width={W_PORT}
+      height={H_PORT}
+    />
+    <Composition
+      id="ThenAndNowEp1"
+      component={ThenAndNowEp1 as any}
+      durationInFrames={THEN_NOW_EP1_FRAMES}
+      fps={FPS}
+      width={W_PORT}
+      height={H_PORT}
     />
   </>
 );

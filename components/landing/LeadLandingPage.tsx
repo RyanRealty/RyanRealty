@@ -5,8 +5,8 @@ import ContentPageHero from '@/components/layout/ContentPageHero'
 import LeadLandingForm from '@/components/landing/LeadLandingForm'
 import type { LeadLandingConfig } from '@/lib/lead-landing-content'
 import { TESTIMONIALS } from '@/lib/testimonials'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container, H2 } from '@/components/site/primitives'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
+import { H2 } from '@/components/site/primitives'
 import { generateFAQSchema } from '@/lib/structured-data'
 
 type Props = {
@@ -22,9 +22,7 @@ export default function LeadLandingPage({ config }: Props) {
 
   return (
     <main className="min-h-screen bg-background">
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, audienceCrumb, { label: config.title }]} />
-      </Container>
+      <PageBreadcrumb trail={[audienceCrumb, { label: config.title }]} />
       <ContentPageHero
         title={config.title}
         subtitle={config.subtitle}

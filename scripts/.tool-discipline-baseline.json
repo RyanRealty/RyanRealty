@@ -1,6 +1,7 @@
 {
   "generated": "manual",
   "violations": [
+    "elevenlabs-inline::app/api/twilio/recording/route.ts",
     "elevenlabs-inline::listing_video_v4/scripts/align_bend_pulse_bridges.py",
     "elevenlabs-inline::listing_video_v4/scripts/gen_tumalo_alignment.py",
     "elevenlabs-inline::listing_video_v4/scripts/gen_tumalo_vo.py",

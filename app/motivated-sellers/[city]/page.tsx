@@ -19,7 +19,7 @@ import Link from 'next/link'
 import { getMotivatedListings } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import { CTABar } from '@/components/site/CTABar'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -136,16 +136,8 @@ export default async function MotivatedSellersCityPage({ params }: Props) {
       <MetadataBlock schemas={schemas} />
 
       {/* Breadcrumb */}
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          includeJsonLd={false}
-          items={[
-            { label: 'Home', href: '/' },
-            { label: 'Motivated sellers', href: '/motivated-sellers' },
-            { label: cityName },
-          ]}
-        />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Motivated sellers', href: '/motivated-sellers' },
+            { label: cityName }]} includeJsonLd={false} />
 
       {/* Hero */}
       <HeroBlock

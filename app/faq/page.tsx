@@ -8,8 +8,8 @@ import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container, H2, Eyebrow } from '@/components/site/primitives'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
+import { H2, Eyebrow } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const faqOgImage = `${siteUrl}/api/og?type=default`
@@ -177,9 +177,7 @@ export default async function FAQPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'FAQ' }]} />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'FAQ' }]} />
       {/* JSON-LD FAQPage schema for Gemini Ask Maps + Google Search featured snippets */}
       <script
         type="application/ld+json"

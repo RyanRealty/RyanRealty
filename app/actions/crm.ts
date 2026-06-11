@@ -381,7 +381,7 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   if (!sent.ok) return { ok: false, error: sent.error }
 
   await sb.from('crm_timeline').insert({
-    person_id: personId, kind: 'email_out', title: subject, body,
+    person_id: personId, kind: 'email_out', title: subject, body: sent.plainBody,
     payload: { gmailId: sent.gmailId, to, mailbox: mailbox.email },
     broker: mailbox.slug, source: 'app', dedupe_key: `gmail:${sent.gmailId}:p${personId}`,
   })

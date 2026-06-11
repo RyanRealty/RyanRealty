@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess, listCrmInbox } from '@/app/actions/crm'
+import { timelineEmailBody } from '@/lib/crm/email-body'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -49,7 +50,7 @@ export default async function CrmInboxPage() {
                     <span className="text-xs tabular-nums text-muted-foreground">{fmt(r.ts)}</span>
                   </div>
                   {r.title ? <div className="mt-0.5 truncate text-sm text-foreground">{r.title}</div> : null}
-                  {r.body ? <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">{r.body.slice(0, 300)}</p> : null}
+                  {r.body ? <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">{timelineEmailBody(r.body).slice(0, 300)}</p> : null}
                 </div>
               </CardContent>
             </Card>

@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import ValuationForm from '@/app/home-valuation/ValuationForm'
 import ContentPageHero from '@/components/layout/ContentPageHero'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container, H2 } from '@/components/site/primitives'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
+import { H2 } from '@/components/site/primitives'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
@@ -35,9 +35,7 @@ const VALUE_STEPS = [
 export default function SellValuationPage() {
   return (
     <main className="min-h-screen bg-background">
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Sell', href: '/sell' }, { label: "What's your home worth" }]} />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Sell', href: '/sell' }, { label: "What's your home worth" }]} />
 
       <ContentPageHero
         title="What's your home worth?"

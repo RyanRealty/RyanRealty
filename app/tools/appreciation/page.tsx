@@ -4,8 +4,8 @@ import AppreciationCalculator from '@/components/tools/AppreciationCalculator'
 import AdUnit from '@/components/AdUnit'
 import HomeValuationCta from '@/components/HomeValuationCta'
 import ContentPageHero from '@/components/layout/ContentPageHero'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container, H2, Body } from '@/components/site/primitives'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
+import { H2, Body } from '@/components/site/primitives'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
@@ -43,9 +43,7 @@ export default function AppreciationToolPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Home appreciation calculator' }]} />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Home appreciation calculator' }]} />
       <ContentPageHero
         title="Home Appreciation Calculator"
         subtitle="Model different annual appreciation rates to understand long-term equity growth and plan your investment."

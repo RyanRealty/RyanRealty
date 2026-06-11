@@ -150,6 +150,10 @@ components/site/experience/PaymentSlider.tsx
 #   Cleanup plan: once the design system adds photo-overlay tokens, migrate here.
 # cities/page.tsx modifications (cities family rollout, photo-on-dark text-white variants):
 app/cities/page.tsx
+# communities index rebuild (P0-5, same Experience System hub language as
+# app/cities/page.tsx: navy hero with text-white/* on-dark variants, live-dot
+# h-[7px], micro-label text-[11px]/tracking ladder — same exception class):
+app/communities/page.tsx
 # admin pages with pre-existing raw-input/bg-white (other session work):
 app/admin/(protected)/crm/sequences/page.tsx
 app/admin/(protected)/sign-off/page.tsx

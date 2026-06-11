@@ -23,6 +23,18 @@ function authHeader(c: { sid: string; token: string }): string {
   return 'Basic ' + Buffer.from(`${c.sid}:${c.token}`).toString('base64')
 }
 
+/**
+ * URL Twilio signed for this webhook POST. Must match the configured webhook URL
+ * exactly (e.g. ryan-realty.com), not NEXT_PUBLIC_SITE_URL (often vercel.app).
+ */
+export function twilioWebhookValidationUrl(request: Request): string {
+  const u = new URL(request.url)
+  return `${u.origin}${u.pathname}`
+}
+
+/** Canonical origin for TwiML callbacks wired in Twilio console. */
+export const TWILIO_PUBLIC_ORIGIN = 'https://ryan-realty.com'
+
 /** Twilio request signature validation (X-Twilio-Signature, HMAC-SHA1). */
 export function validateTwilioSignature(url: string, params: Record<string, string>, signature: string | null): boolean {
   const c = creds()

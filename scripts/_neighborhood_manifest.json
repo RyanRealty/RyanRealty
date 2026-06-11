@@ -1,0 +1,342 @@
+{
+  "areas": [
+    {
+      "slug": "bend-river-west",
+      "label": "River West",
+      "eyebrow": "BEND · OREGON",
+      "tier": 2,
+      "constName": "BendRiverWest",
+      "centroid": {
+        "lat": 44.0635,
+        "lon": -121.3275
+      },
+      "diagM": 5395,
+      "hasStat": true
+    },
+    {
+      "slug": "bend-old-bend",
+      "label": "Old Bend",
+      "eyebrow": "BEND · OREGON",
+      "tier": 2,
+      "constName": "BendOldBend",
+      "centroid": {
+        "lat": 44.0561,
+        "lon": -121.3191
+      },
+      "diagM": 1899,
+      "hasStat": true
+    },
+    {
+      "slug": "bend-summit-west",
+      "label": "Summit West",
+      "eyebrow": "BEND · OREGON",
+      "tier": 2,
+      "constName": "BendSummitWest",
+      "centroid": {
+        "lat": 44.0631,
+        "lon": -121.3621
+      },
+      "diagM": 5515,
+      "hasStat": true
+    },
+    {
+      "slug": "bend-century-west",
+      "label": "Century West",
+      "eyebrow": "BEND · OREGON",
+      "tier": 2,
+      "constName": "BendCenturyWest",
+      "centroid": {
+        "lat": 44.0357,
+        "lon": -121.3467
+      },
+      "diagM": 5617,
+      "hasStat": true
+    },
+    {
+      "slug": "bend-orchard-district",
+      "label": "Orchard District",
+      "eyebrow": "BEND · OREGON",
+      "tier": 2,
+      "constName": "BendOrchardDistrict",
+      "centroid": {
+        "lat": 44.0724,
+        "lon": -121.2863
+      },
+      "diagM": 4081,
+      "hasStat": true
+    },
+    {
+      "slug": "bend-mountain-view",
+      "label": "Mountain View",
+      "eyebrow": "BEND · OREGON",
+      "tier": 2,
+      "constName": "BendMountainView",
+      "centroid": {
+        "lat": 44.0778,
+        "lon": -121.2669
+      },
+      "diagM": 4659,
+      "hasStat": true
+    },
+    {
+      "slug": "bend-larkspur",
+      "label": "Larkspur",
+      "eyebrow": "BEND · OREGON",
+      "tier": 2,
+      "constName": "BendLarkspur",
+      "centroid": {
+        "lat": 44.0488,
+        "lon": -121.2872
+      },
+      "diagM": 4974,
+      "hasStat": true
+    },
+    {
+      "slug": "bend-old-farm-district",
+      "label": "Old Farm District",
+      "eyebrow": "BEND · OREGON",
+      "tier": 2,
+      "constName": "BendOldFarmDistrict",
+      "centroid": {
+        "lat": 44.0254,
+        "lon": -121.2998
+      },
+      "diagM": 5339,
+      "hasStat": true
+    },
+    {
+      "slug": "bend-boyd-acres",
+      "label": "Boyd Acres",
+      "eyebrow": "BEND · OREGON",
+      "tier": 2,
+      "constName": "BendBoydAcres",
+      "centroid": {
+        "lat": 44.0986,
+        "lon": -121.2989
+      },
+      "diagM": 6826,
+      "hasStat": true
+    },
+    {
+      "slug": "bend-southern-crossing",
+      "label": "Southern Crossing",
+      "eyebrow": "BEND · OREGON",
+      "tier": 2,
+      "constName": "BendSouthernCrossing",
+      "centroid": {
+        "lat": 44.0405,
+        "lon": -121.3214
+      },
+      "diagM": 3514,
+      "hasStat": true
+    },
+    {
+      "slug": "bend-southwest-bend",
+      "label": "Southwest Bend",
+      "eyebrow": "BEND · OREGON",
+      "tier": 2,
+      "constName": "BendSouthwestBend",
+      "centroid": {
+        "lat": 44.0236,
+        "lon": -121.3328
+      },
+      "diagM": 5029,
+      "hasStat": true
+    },
+    {
+      "slug": "bend-southeast-bend",
+      "label": "Southeast Bend",
+      "eyebrow": "BEND · OREGON",
+      "tier": 2,
+      "constName": "BendSoutheastBend",
+      "centroid": {
+        "lat": 44.0138,
+        "lon": -121.3048
+      },
+      "diagM": 3962,
+      "hasStat": true
+    },
+    {
+      "slug": "tetherow",
+      "label": "Tetherow",
+      "eyebrow": "BEND · OREGON",
+      "tier": 2,
+      "constName": "Tetherow",
+      "centroid": {
+        "lat": 44.0455,
+        "lon": -121.3619
+      },
+      "diagM": 3656,
+      "hasStat": true
+    },
+    {
+      "slug": "broken-top",
+      "label": "Broken Top",
+      "eyebrow": "BEND · OREGON",
+      "tier": 2,
+      "constName": "BrokenTop",
+      "centroid": {
+        "lat": 44.05,
+        "lon": -121.3554
+      },
+      "diagM": 11622,
+      "hasStat": true
+    },
+    {
+      "slug": "eagle-crest",
+      "label": "Eagle Crest",
+      "eyebrow": "REDMOND · OREGON",
+      "tier": 2,
+      "constName": "EagleCrest",
+      "centroid": {
+        "lat": 44.2687,
+        "lon": -121.2651
+      },
+      "diagM": 11537,
+      "hasStat": true
+    },
+    {
+      "slug": "sunriver",
+      "label": "Sunriver",
+      "eyebrow": "SUNRIVER · OREGON",
+      "tier": 2,
+      "constName": "Sunriver",
+      "centroid": {
+        "lat": 43.8688,
+        "lon": -121.4551
+      },
+      "diagM": 13539,
+      "hasStat": true
+    },
+    {
+      "slug": "pronghorn",
+      "label": "Pronghorn",
+      "eyebrow": "BEND · OREGON",
+      "tier": 2,
+      "constName": "Pronghorn",
+      "centroid": {
+        "lat": 44.1893,
+        "lon": -121.1698
+      },
+      "diagM": 7123,
+      "hasStat": true
+    },
+    {
+      "slug": "black-butte-ranch",
+      "label": "Black Butte Ranch",
+      "eyebrow": "SISTERS · OREGON",
+      "tier": 2,
+      "constName": "BlackButteRanch",
+      "centroid": {
+        "lat": 44.355,
+        "lon": -121.658
+      },
+      "diagM": 5401,
+      "hasStat": true
+    },
+    {
+      "slug": "caldera-springs",
+      "label": "Caldera Springs",
+      "eyebrow": "SUNRIVER · OREGON",
+      "tier": 2,
+      "constName": "CalderaSprings",
+      "centroid": {
+        "lat": 43.8526,
+        "lon": -121.4429
+      },
+      "diagM": 8905,
+      "hasStat": true
+    },
+    {
+      "slug": "awbrey-glen",
+      "label": "Awbrey Glen",
+      "eyebrow": "BEND · OREGON",
+      "tier": 2,
+      "constName": "AwbreyGlen",
+      "centroid": {
+        "lat": 44.084,
+        "lon": -121.3494
+      },
+      "diagM": 2043,
+      "hasStat": true
+    },
+    {
+      "slug": "northwest-crossing",
+      "label": "NorthWest Crossing",
+      "eyebrow": "BEND · OREGON",
+      "tier": 2,
+      "constName": "NorthwestCrossing",
+      "centroid": {
+        "lat": 44.0579,
+        "lon": -121.3506
+      },
+      "diagM": 9108,
+      "hasStat": true
+    },
+    {
+      "slug": "crosswater",
+      "label": "Crosswater",
+      "eyebrow": "SUNRIVER · OREGON",
+      "tier": 2,
+      "constName": "Crosswater",
+      "centroid": {
+        "lat": 43.8542,
+        "lon": -121.4485
+      },
+      "diagM": 5032,
+      "hasStat": true
+    },
+    {
+      "slug": "brasada-ranch",
+      "label": "Brasada Ranch",
+      "eyebrow": "POWELL BUTTE · OREGON",
+      "tier": 2,
+      "constName": "BrasadaRanch",
+      "centroid": {
+        "lat": 44.1795,
+        "lon": -121.0355
+      },
+      "diagM": 17167,
+      "hasStat": true
+    },
+    {
+      "slug": "widgi-creek",
+      "label": "Widgi Creek",
+      "eyebrow": "BEND · OREGON",
+      "tier": 2,
+      "constName": "WidgiCreek",
+      "centroid": {
+        "lat": 44.0069,
+        "lon": -121.384
+      },
+      "diagM": 9736,
+      "hasStat": true
+    },
+    {
+      "slug": "vandevert-ranch",
+      "label": "Vandevert Ranch",
+      "eyebrow": "SUNRIVER · OREGON",
+      "tier": 2,
+      "constName": "VandevertRanch",
+      "centroid": {
+        "lat": 43.8403,
+        "lon": -121.4432
+      },
+      "diagM": 6779,
+      "hasStat": true
+    },
+    {
+      "slug": "three-rivers",
+      "label": "Three Rivers",
+      "eyebrow": "SUNRIVER · OREGON",
+      "tier": 2,
+      "constName": "ThreeRivers",
+      "centroid": {
+        "lat": 43.7875,
+        "lon": -121.5007
+      },
+      "diagM": 16871,
+      "hasStat": true
+    }
+  ]
+}

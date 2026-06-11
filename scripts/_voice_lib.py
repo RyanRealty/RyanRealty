@@ -54,7 +54,10 @@ from typing import TypedDict
 
 VOICE_ID = "qSeXEcewz7tA0Q0qk9fH"  # Victoria — locked permanent per CLAUDE.md
 DEFAULT_MODEL = "eleven_turbo_v2_5"
-PHONEME_MODEL = "eleven_v3"  # use only when <phoneme> tags appear in text
+# Phoneme tags run on eleven_turbo_v2_5 (CLAUDE.md: IPA works on turbo_v2_5 +
+# flash_v2, silently SKIPPED on eleven_v3 — and v3 rejects this request shape
+# with HTTP 400, reproduced 2026-06-10). Same model either way.
+PHONEME_MODEL = "eleven_turbo_v2_5"
 BANNED_MODEL = "eleven_multilingual_v2"  # never use
 
 DEFAULT_SETTINGS: dict[str, float | bool] = {
@@ -263,7 +266,8 @@ def get_forced_alignment(audio_path: Path, transcript: str, *, timeout: int = 60
     parts.append(transcript.encode() + b"\r\n")
     parts.append(f"--{boundary}\r\n".encode())
     parts.append(
-        f'Content-Disposition: form-data; name="audio_file"; filename="{audio_path.name}"\r\nContent-Type: audio/mpeg\r\n\r\n'.encode()
+        # API field name is "file" — "audio_file" returns HTTP 422 (verified 2026-06-10)
+        f'Content-Disposition: form-data; name="file"; filename="{audio_path.name}"\r\nContent-Type: audio/mpeg\r\n\r\n'.encode()
     )
     parts.append(audio_bytes + b"\r\n")
     parts.append(f"--{boundary}--\r\n".encode())

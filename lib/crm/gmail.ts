@@ -19,6 +19,7 @@ import { createHash } from 'node:crypto'
 import { google, type gmail_v1 } from 'googleapis'
 import { createServiceClient } from '@/lib/supabase/service'
 import { CRM_BROKER_BY_EMAIL, type CrmBrokerSlug } from '@/lib/crm/constants'
+import { prepareOutboundEmailBody } from '@/lib/crm/email-body'
 
 // System/notification senders that must never create timeline entries — their
 // mail is platform noise (FUB missed-call alerts, surveys, port updates), not
@@ -270,23 +271,52 @@ export async function sendCrmEmail(params: {
   to: string
   subject: string
   bodyText: string
-}): Promise<{ ok: true; gmailId: string } | { ok: false; error: string }> {
+  bodyHtml?: string | null
+}): Promise<{ ok: true; gmailId: string; plainBody: string } | { ok: false; error: string }> {
   const gmail = getGmailFor(params.fromMailbox, SEND)
   if (!gmail) return { ok: false, error: 'service account not configured' }
-  const raw = Buffer.from(
-    [
+
+  const source = params.bodyHtml?.trim() || params.bodyText
+  const { html, plain } = prepareOutboundEmailBody(source)
+
+  let mime: string
+  if (html) {
+    const boundary = `rr_${Date.now().toString(36)}`
+    mime = [
+      `From: ${params.fromMailbox}`,
+      `To: ${params.to}`,
+      `Subject: ${params.subject}`,
+      'MIME-Version: 1.0',
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      '',
+      `--${boundary}`,
+      'Content-Type: text/plain; charset=UTF-8',
+      'Content-Transfer-Encoding: 7bit',
+      '',
+      plain,
+      `--${boundary}`,
+      'Content-Type: text/html; charset=UTF-8',
+      'Content-Transfer-Encoding: 7bit',
+      '',
+      html,
+      `--${boundary}--`,
+    ].join('\r\n')
+  } else {
+    mime = [
       `From: ${params.fromMailbox}`,
       `To: ${params.to}`,
       `Subject: ${params.subject}`,
       'MIME-Version: 1.0',
       'Content-Type: text/plain; charset=UTF-8',
       '',
-      params.bodyText,
-    ].join('\r\n'),
-  ).toString('base64url')
+      plain,
+    ].join('\r\n')
+  }
+
+  const raw = Buffer.from(mime).toString('base64url')
   try {
     const res = await gmail.users.messages.send({ userId: 'me', requestBody: { raw } })
-    return { ok: true, gmailId: res.data.id ?? '' }
+    return { ok: true, gmailId: res.data.id ?? '', plainBody: plain }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) }
   }

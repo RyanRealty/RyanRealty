@@ -149,3 +149,11 @@ public/proof/
 
 # FUB audit raw dumps — large, regenerable via .tmp_env/fub-audit/fub-audit.mjs
 .tmp_env/fub-audit/dump/
+
+# Binary media pools — disk/CDN-served, manifest-governed, never in git
+# (a 2026-06-11 consolidation commit hit GitHub's 2GiB pack limit on these)
+public/asset-library/photos/
+listing_video_v4/out/
+listing_video_v4/public/then-now/
+listing_video_v4/public/trend/
+scratch/

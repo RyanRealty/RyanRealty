@@ -4,24 +4,92 @@
   "competitiveTarget": "Resort / master-planned community detail page (e.g. Tetherow). Beats Zillow/Redfin community pages by pairing live verified market data with authored local knowledge (sub-neighborhoods, HOA + club dues, amenities, drive times), a split-scroll map/ledger spine, scrubbable price history, and an inline payment slider.",
   "note": "Geo archetype v3.1 (Experience System de-tiling pass, 2026-06-09). ListingLedger replaces uniform ListingCard grid (1 dominant featured + hairline ledger rows). CommunityMapLedgerPane provides split-scroll spine (map sticky right desktop, ledger scrolls left). LiveMarketBand v2: one giant Amboqia activeCount + quiet aux stats, overlaps hero by 3rem. PriceHistoryScrubber adds scrubbable recharts price history. PaymentSlider adds inline mortgage estimate. useCountUp wired to hero + band activeCount stats. All SEO output (MetadataBlock: breadcrumb + Place + Dataset + FAQPage) and data accuracy (CLAUDE.md §0) preserved. SiteHeader/SiteFooter render from app/layout.tsx.",
   "requiredComponents": [
-    { "name": "BreadcrumbNav", "section": "Home > Communities > {City} > {Community}", "blocking": true },
-    { "name": "FlyoverHero", "section": "Geo archetype hero — video flyover + Amboqia live stat overlay with count-up animation", "blocking": true },
-    { "name": "LiveMarketBand", "section": "navy band — one giant Amboqia activeCount + 3 quiet aux stats, overlaps hero by 3rem", "blocking": true },
-    { "name": "SectionNav", "section": "sticky in-page anchor navigation rail", "blocking": true },
-    { "name": "CommunityRichContent", "section": "About + amenities + drive times + golf/course + HOA + builders (verified, from data/resort-community-*.json)", "blocking": true },
-    { "name": "PriceHistoryScrubber", "section": "scrubbable recharts price history chart with large tabular readout", "blocking": true },
-    { "name": "PaymentSlider", "section": "inline mortgage payment slider with labeled rate assumption", "blocking": true },
-    { "name": "CommunityMapLedgerPane", "section": "split-scroll spine: sticky map right + listing ledger left (desktop), stacked on mobile — renders ListingLedger internally", "blocking": true },
-    { "name": "PriceRangeTiles", "section": "browse by price range", "blocking": true },
-    { "name": "OpenHousesGrid", "section": "upcoming open houses in the community", "blocking": true },
-    { "name": "RelatedAreas", "section": "golf + master-planned communities cross-nav and other-cities cross-nav (two instances)", "blocking": true },
-    { "name": "ActivityFeed", "section": "live market activity for the city", "blocking": true },
-    { "name": "ArticleGrid", "section": "guides + insights blog grid", "blocking": true },
-    { "name": "FAQBlock", "section": "common questions — verified market Q&A (single source feeds FAQPage JSON-LD)", "blocking": true },
-    { "name": "InlineValuationHook", "section": "community-specific seller CTA band — 'What is your {Community} home worth?'", "blocking": true }
+    {
+      "name": "PageBreadcrumb",
+      "section": "Home > Communities > {City} > {Community}",
+      "blocking": true
+    },
+    {
+      "name": "FlyoverHero",
+      "section": "Geo archetype hero — video flyover + Amboqia live stat overlay with count-up animation",
+      "blocking": true
+    },
+    {
+      "name": "LiveMarketBand",
+      "section": "navy band — one giant Amboqia activeCount + 3 quiet aux stats, overlaps hero by 3rem",
+      "blocking": true
+    },
+    {
+      "name": "SectionNav",
+      "section": "sticky in-page anchor navigation rail",
+      "blocking": true
+    },
+    {
+      "name": "CommunityRichContent",
+      "section": "About + amenities + drive times + golf/course + HOA + builders (verified, from data/resort-community-*.json)",
+      "blocking": true
+    },
+    {
+      "name": "PriceHistoryScrubber",
+      "section": "scrubbable recharts price history chart with large tabular readout",
+      "blocking": true
+    },
+    {
+      "name": "PaymentSlider",
+      "section": "inline mortgage payment slider with labeled rate assumption",
+      "blocking": true
+    },
+    {
+      "name": "CommunityMapLedgerPane",
+      "section": "split-scroll spine: sticky map right + listing ledger left (desktop), stacked on mobile — renders ListingLedger internally",
+      "blocking": true
+    },
+    {
+      "name": "PriceRangeTiles",
+      "section": "browse by price range",
+      "blocking": true
+    },
+    {
+      "name": "OpenHousesGrid",
+      "section": "upcoming open houses in the community",
+      "blocking": true
+    },
+    {
+      "name": "RelatedAreas",
+      "section": "golf + master-planned communities cross-nav and other-cities cross-nav (two instances)",
+      "blocking": true
+    },
+    {
+      "name": "ActivityFeed",
+      "section": "live market activity for the city",
+      "blocking": true
+    },
+    {
+      "name": "ArticleGrid",
+      "section": "guides + insights blog grid",
+      "blocking": true
+    },
+    {
+      "name": "FAQBlock",
+      "section": "common questions — verified market Q&A (single source feeds FAQPage JSON-LD)",
+      "blocking": true
+    },
+    {
+      "name": "InlineValuationHook",
+      "section": "community-specific seller CTA band — 'What is your {Community} home worth?'",
+      "blocking": true
+    }
   ],
   "layoutComponents": [
-    { "name": "SiteHeader", "section": "navy header — renders from app/layout.tsx", "note": "gate checks the route file" },
-    { "name": "SiteFooter", "section": "navy footer — renders from app/layout.tsx", "note": "gate checks the route file" }
+    {
+      "name": "SiteHeader",
+      "section": "navy header — renders from app/layout.tsx",
+      "note": "gate checks the route file"
+    },
+    {
+      "name": "SiteFooter",
+      "section": "navy footer — renders from app/layout.tsx",
+      "note": "gate checks the route file"
+    }
   ]
 }

@@ -15,7 +15,7 @@ import Link from 'next/link'
 import { getParks, getParksCount } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import {
   BadgePill,
   Body,
@@ -70,12 +70,7 @@ export default function ParksIndexPage() {
         ]}
       />
 
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          includeJsonLd={false}
-          items={[{ label: 'Home', href: '/' }, { label: 'Parks' }]}
-        />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Parks' }]} includeJsonLd={false} />
 
       <Section padding="default">
         <Container>

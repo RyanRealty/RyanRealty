@@ -22,7 +22,7 @@ import { getSurfaceImage, getLifestyleImages, getReviews } from '@/lib/data'
 import { ReviewsBlock } from '@/components/site/ReviewsBlock'
 import { MarketingStandardBlock } from '@/components/site/MarketingStandardBlock'
 import { LifestyleStrip } from '@/components/site/LifestyleStrip'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import { ContentSection } from '@/components/site/ContentSection'
 import { BrokerCard } from '@/components/site/BrokerCard'
@@ -116,14 +116,7 @@ export default async function AboutPage() {
           },
         ]}
       />
-      <div className="bg-background border-b border-border py-3">
-        <Container>
-          <BreadcrumbNav
-            items={[{ label: 'Home', href: '/' }, { label: 'Ryan Realty' }]}
-            tone="on-light"
-          />
-        </Container>
-      </div>
+      <PageBreadcrumb trail={[{ label: 'About' }]} />
 
       <HeroBlock
         headline="Homes here deserve more than a sign in the yard."

@@ -4,12 +4,32 @@
   "competitiveTarget": "Utility comparison page: side-by-side property table. noindex — not an SEO surface. Design system compliance: DisplayHeading H1, Container + Section primitives, BreadcrumbNav.",
   "note": "Wave 3 site-v2 rebuild. Removed dead createClient import — data now via @/lib/data DAL only. Plain h1 replaced with DisplayHeading (Amboqia). No JSON-LD WebPage (noindex utility route). Breadcrumb JSON-LD only. AICompare is built but not wired — see inline comment in page.tsx for wire-or-delete recommendation.",
   "requiredComponents": [
-    { "name": "BreadcrumbNav", "section": "Home > Compare breadcrumb", "blocking": true },
-    { "name": "DisplayHeading", "section": "page H1 — 'Compare properties' in Amboqia", "blocking": true },
-    { "name": "MetadataBlock", "section": "JSON-LD — BreadcrumbList", "blocking": true }
+    {
+      "name": "PageBreadcrumb",
+      "section": "Home > Compare breadcrumb",
+      "blocking": true
+    },
+    {
+      "name": "DisplayHeading",
+      "section": "page H1 — 'Compare properties' in Amboqia",
+      "blocking": true
+    },
+    {
+      "name": "MetadataBlock",
+      "section": "JSON-LD — BreadcrumbList",
+      "blocking": true
+    }
   ],
   "layoutComponents": [
-    { "name": "SiteHeader", "section": "renders from app/layout.tsx", "note": "gate checks the route file" },
-    { "name": "SiteFooter", "section": "renders from app/layout.tsx", "note": "gate checks the route file" }
+    {
+      "name": "SiteHeader",
+      "section": "renders from app/layout.tsx",
+      "note": "gate checks the route file"
+    },
+    {
+      "name": "SiteFooter",
+      "section": "renders from app/layout.tsx",
+      "note": "gate checks the route file"
+    }
   ]
 }

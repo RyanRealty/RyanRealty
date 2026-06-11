@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Container, Section } from '@/components/site/primitives'
-import { BreadcrumbNav, type BreadcrumbNavItem } from '@/components/site/BreadcrumbNav'
+import type { BreadcrumbNavItem } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb, BREADCRUMB_HOME } from '@/components/site/PageBreadcrumb'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { ListingDetail } from '@/lib/data/types/listing'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -49,6 +50,7 @@ type Props = {
     | 'publicRemarks'
     | 'status'
   >
+  /** Crumb trail AFTER the Home root (PageBreadcrumb bakes Home in). */
   breadcrumbs: ReadonlyArray<BreadcrumbNavItem>
   /** Full-width hero — renders edge-to-edge above the main+sidebar grid
    * per Zillow Showcase parity. The photo grid / autoplay video lives
@@ -87,7 +89,7 @@ export function ListingDetailShell({
   const schemas: SchemaInput[] = [
     {
       type: 'breadcrumb',
-      items: breadcrumbs
+      items: [BREADCRUMB_HOME, ...breadcrumbs]
         .filter((item) => item.href)
         .map((item) => ({ name: item.label, url: item.href as string })),
     },
@@ -122,11 +124,9 @@ export function ListingDetailShell({
   return (
     <>
       <MetadataBlock schemas={schemas} />
-      <Section padding="tight" tone="muted">
-        <Container>
-          <BreadcrumbNav items={breadcrumbs} includeJsonLd={false} />
-        </Container>
-      </Section>
+      {/* Canonical crumb chrome (P1-1): same Container pt-3 pb-1 placement as
+          every other page — the old muted Section band sat the crumb at y≈113. */}
+      <PageBreadcrumb trail={breadcrumbs} includeJsonLd={false} />
       {hero ? (
         // Hero band: edge-to-edge full-viewport-width, no Container
         // constraint. Zillow Showcase parity — immersive photo / video

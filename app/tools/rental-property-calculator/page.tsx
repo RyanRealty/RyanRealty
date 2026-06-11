@@ -4,8 +4,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import RentalCalculator from '@/components/tools/RentalCalculator'
 import ContentPageHero from '@/components/layout/ContentPageHero'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container, H2, Body } from '@/components/site/primitives'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
+import { H2, Body } from '@/components/site/primitives'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
@@ -105,9 +105,7 @@ export default async function RentalPropertyCalculatorPage({ searchParams }: Pro
     <main className="min-h-screen bg-background">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Rental property calculator' }]} />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Rental property calculator' }]} />
       <ContentPageHero
         title="Rental Property Calculator"
         subtitle="Run the numbers on any rental. Adjust price, financing, rent, and expenses to see monthly cash flow, cap rate, cash-on-cash return, and how equity builds over time."

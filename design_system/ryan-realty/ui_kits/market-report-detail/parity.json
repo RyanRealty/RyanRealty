@@ -5,7 +5,7 @@
   "note": "Flagship ranking route. Dedicated detail mockup is a follow-up deliverable; the page currently shares the market-report/index.html mockup dir. The two-table components (PriceBandTable, CityComparisonTable) are built as stubs pending verified DAL price-band aggregation — see stubbed reason in page file. Route is app/housing-market/[...slug]/page.tsx (catch-all for both /housing-market/<city> and /housing-market/<city>/<community>).",
   "requiredComponents": [
     {
-      "name": "BreadcrumbNav",
+      "name": "PageBreadcrumb",
       "section": "Home > Housing market > {geoName}, includeJsonLd=false (schemas array on MetadataBlock handles the single BreadcrumbList)",
       "blocking": true
     },

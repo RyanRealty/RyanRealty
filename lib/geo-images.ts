@@ -189,34 +189,90 @@ export function pickGeoImage(urls: string[] | undefined, seed: string): string |
 // specific wrong city) until a curated hero is sourced + verified.
 // ---------------------------------------------------------------------------
 
-export type CityHero = { src: string; alt: string }
+export type CityHero = { src: string; alt: string; verified: boolean }
 
-const CITY_HERO: Record<string, CityHero> = {
+// ---------------------------------------------------------------------------
+// Family 4 curation pass (2026-06-10): every entry below is a VERIFIED,
+// visually-reviewed photo of the actual place, served from the asset library
+// (`public.asset_library`, per-city geo_tags + surface_tags:['hero']).
+// Provenance per photo: snowdriftvisuals "Area Guide" professional shoot
+// (license: owned), vision-location grading, or Unsplash location metadata —
+// AND a human visual review of each hero in the Family 4 session. Curation
+// scripts: scripts/_family4-curate-city-photos.mjs and
+// scripts/_family4-audit-fix-city-tags.mjs.
+//
+// The previous sunriver entry pointed at a night-sky cabin photo (an Unsplash
+// query-named file) while its alt claimed "Deschutes River winding through
+// Sunriver" — removed 2026-06-10 per the data-accuracy rule.
+// ---------------------------------------------------------------------------
+
+const ASSET_CDN =
+  'https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated'
+
+const CITY_HERO: Record<string, Omit<CityHero, 'verified'>> = {
   bend: {
-    src: '/brand/hero/hero-old-mill-master-4k.jpg',
-    alt: 'The Old Mill District and Deschutes River in Bend, Oregon',
+    src: `${ASSET_CDN}/aa132eaa-26f4-408d-b374-5875fd185130.JPG`,
+    alt: 'The Old Mill District smokestacks and the Deschutes River in Bend, Oregon',
+  },
+  redmond: {
+    src: `${ASSET_CDN}/d18c0ff9-f464-4fdf-b5a1-ea4804692dd1.JPG`,
+    alt: 'Downtown Redmond, Oregon from above, with the Cascade Range on the horizon',
   },
   sisters: {
-    src: '/lp/central-oregon-golf/img/three-sisters-backdrop.jpg',
-    alt: 'The Three Sisters mountains rising above Sisters, Oregon',
+    src: `${ASSET_CDN}/70073a44-9745-48e8-8f56-42afdd20080a.JPG`,
+    alt: 'Downtown Sisters, Oregon beneath the Three Sisters peaks',
   },
   sunriver: {
-    src: '/lp/central-oregon-golf/img/sunriver-river.jpg',
-    alt: 'The Deschutes River winding through Sunriver, Oregon',
+    src: `${ASSET_CDN}/53a6958e-dd1d-4cbb-b770-6fcbcafcb0d6.JPG`,
+    alt: 'The Lake House and lake at Caldera Springs in Sunriver, Oregon',
+  },
+  'la-pine': {
+    src: `${ASSET_CDN}/3b5f140c-a316-4702-a980-790bd020d514.JPG`,
+    alt: 'The Little Deschutes River meandering through the meadows near La Pine, Oregon',
+  },
+  terrebonne: {
+    src: `${ASSET_CDN}/c73cff7d-84b3-4bbe-9851-2a49afe7ee36.JPG`,
+    alt: 'Smith Rock and the Crooked River in Terrebonne, Oregon',
+  },
+  tumalo: {
+    src: `${ASSET_CDN}/4522af07-a852-4a47-a38b-1ac62ed07aae.JPG`,
+    alt: 'The Deschutes River at Tumalo State Park near Tumalo, Oregon',
+  },
+  prineville: {
+    src: `${ASSET_CDN}/2dcf6fef-dc49-4972-bb6c-086ba8b9002f.JPG`,
+    alt: 'Prineville, Oregon and the Crooked River from the Ochoco Wayside viewpoint',
+  },
+  madras: {
+    src: `${ASSET_CDN}/f0ba61e9-3ad2-42ba-85c7-de34b1183a6b.JPG`,
+    alt: 'A Madras, Oregon neighborhood and city park from above',
+  },
+  'powell-butte': {
+    src: `${ASSET_CDN}/63c06a53-06c0-4e59-92b7-5f2c239bdea6.JPG`,
+    alt: 'Irrigated farmland in Powell Butte, Oregon with the Cascade Range in the distance',
+  },
+  culver: {
+    src: `${ASSET_CDN}/cdd3bf60-6c98-4287-82dd-7240868587f6.JPG`,
+    alt: 'Lake Billy Chinook at The Cove Palisades near Culver, Oregon',
+  },
+  'crooked-river-ranch': {
+    src: `${ASSET_CDN}/965f2175-3afb-4152-8ef3-e081073cdb83.JPG`,
+    alt: 'The golf course and canyon rims at Crooked River Ranch, Oregon',
   },
 }
 
-/** Regional fallback — accurate for any Central Oregon place; NEVER the Bend
- *  Old Mill. Replaced per-city as curated heroes are sourced + verified. */
+/** Regional fallback — accurate for any Central Oregon place; NEVER a specific
+ *  wrong city. `verified: false` tells the page to LABEL it as a regional view. */
 const REGION_HERO: CityHero = {
   src: '/lp/central-oregon-golf/img/three-sisters-backdrop.jpg',
   alt: 'The Cascade Range over Central Oregon',
+  verified: false,
 }
 
-/** Resolve a verified hero photo for a city slug. Never returns the Bend
- *  Old Mill photo for a non-Bend city. */
+/** Resolve a verified hero photo for a city slug. A city without a verified
+ *  photo gets the labeled regional Cascade image — never a wrong-city photo. */
 export function cityHero(slug: string): CityHero {
-  return CITY_HERO[slug] ?? REGION_HERO
+  const hit = CITY_HERO[slug]
+  return hit ? { ...hit, verified: true } : REGION_HERO
 }
 
 /** True when a slug has a city-specific (not regional-fallback) verified hero.

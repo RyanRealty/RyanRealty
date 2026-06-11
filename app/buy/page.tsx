@@ -19,17 +19,14 @@
 import Link from 'next/link'
 import { getSurfaceImage } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import { ContentSection } from '@/components/site/ContentSection'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { CTABar } from '@/components/site/CTABar'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { Card, CardContent } from '@/components/ui/card'
-import {
-  Body,
-  Container,
-} from '@/components/site/primitives'
+import { Body } from '@/components/site/primitives'
 
 export const revalidate = 300
 
@@ -117,14 +114,7 @@ export default async function BuyPage() {
         ]}
       />
 
-      <div className="bg-background border-b border-border py-3">
-        <Container>
-          <BreadcrumbNav
-            items={[{ label: 'Home', href: '/' }, { label: 'Buy' }]}
-            tone="on-light"
-          />
-        </Container>
-      </div>
+      <PageBreadcrumb trail={[{ label: 'Buy' }]} />
 
       <HeroBlock
         headline="Buy a home in Central Oregon."

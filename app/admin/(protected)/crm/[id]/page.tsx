@@ -16,6 +16,7 @@ import {
   sendCrmEmailAction,
   updateCrmStageAction,
 } from '@/app/actions/crm'
+import { timelineEmailBody } from '@/lib/crm/email-body'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -86,7 +87,7 @@ function fmtDateTime(iso: string | null): string {
 }
 
 function stripHtml(s: string): string {
-  return s.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
+  return timelineEmailBody(s)
 }
 
 function fmtPhoneDisplay(tenDigits: string): string {
@@ -412,7 +413,7 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
                         </div>
                         {e.body ? (
                           <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-muted-foreground">
-                            {((e.payload as { isHtml?: boolean })?.isHtml ? stripHtml(e.body) : e.body).slice(0, 1200)}
+                            {stripHtml(e.body).slice(0, 1200)}
                           </p>
                         ) : null}
                         {(e.payload as { recordingSid?: string })?.recordingSid ? (

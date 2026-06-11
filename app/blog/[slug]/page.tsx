@@ -9,8 +9,8 @@ import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { generateBlogSchema, generateBreadcrumbSchema } from '@/lib/structured-data'
 import ShareButton from '@/components/ShareButton'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container, H1, H2 } from '@/components/site/primitives'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
+import { H1, H2 } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -90,7 +90,7 @@ export default async function BlogPostPage({ params }: PageProps) {
   const articleBody = post.content?.trim() || post.excerpt?.trim() || ''
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6">
+    <main className="min-h-screen bg-background">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
       <script
         type="application/ld+json"
@@ -104,17 +104,9 @@ export default async function BlogPostPage({ params }: PageProps) {
           ),
         }}
       />
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          includeJsonLd={false}
-          items={[
-            { label: 'Home', href: '/' },
-            { label: 'Blog', href: '/blog' },
-            { label: post.title },
-          ]}
-        />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Blog', href: '/blog' }, { label: post.title }]} includeJsonLd={false} />
 
+      <div className="mx-auto w-full max-w-4xl px-4 pb-10 pt-4 sm:px-6">
       <article className="rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8">
         {post.category ? (
           <Link
@@ -265,6 +257,7 @@ export default async function BlogPostPage({ params }: PageProps) {
           </div>
         </section>
       ) : null}
+      </div>
     </main>
   )
 }

@@ -1,21 +1,32 @@
 #!/usr/bin/env node
 /**
- * check-breadcrumb.mjs — CI gate for "one breadcrumb, on every public page."
+ * check-breadcrumb.mjs — CI gate for "ONE breadcrumb canon, on every public page."
  *
- * Site-consistency program. The site shipped three different breadcrumb
- * components (BreadcrumbNav, the old components/Breadcrumb, and a
- * BreadcrumbStrip wrapper) and ~19 public pages with no breadcrumb at all.
- * After consolidation, `components/site/BreadcrumbNav` is the SOLE breadcrumb.
- * This gate keeps it that way:
+ * Site-consistency program (2026-06-09) + site-polish audit P1-1 (2026-06-10).
+ * The site shipped three breadcrumb components, ~19 crumbless pages, and then
+ * FOUR different chromes around the one surviving component (floating
+ * Container, a border-b band, a navy band, detail-shell offsets at y=113/125)
+ * plus label drift ("Ryan Realty" root on /about, "Homes for Sale" vs
+ * "Homes for sale" vs "Search" for the same surface).
  *
- *   1. Every public content page must render <BreadcrumbNav> (directly or via a
- *      shared wrapper — wrappers/intentional exceptions are exempt below).
- *   2. No page may import a deprecated breadcrumb variant (the old
+ * The canon: `components/site/PageBreadcrumb` is the ONLY way a page renders
+ * a breadcrumb — Container pt-3 pb-1, Home root baked in, on-light tone,
+ * sentence-case labels, JSON-LD once. This gate enforces:
+ *
+ *   1. Every public content page must render a breadcrumb (<PageBreadcrumb>,
+ *      or via a shared shell — intentional exceptions are exempt below).
+ *      Ratcheted via baseline `violators`.
+ *   2. No page may render <BreadcrumbNav> directly — pages go through
+ *      PageBreadcrumb so placement/labels/tone cannot drift. Ratcheted via
+ *      baseline `directUsage` (the excluded-lane debt pages; list only shrinks).
+ *   3. No page may import a deprecated breadcrumb variant (the old
  *      components/Breadcrumb or any re-created BreadcrumbStrip) — hard fail.
- *
- * Ratcheted: pre-existing pages without a breadcrumb are recorded in
- * scripts/breadcrumb-baseline.json. NEW violations fail CI; the baseline only
- * shrinks (fix a debt page, drop it from the baseline).
+ *   4. Banned crumb labels (hard fail): a 'Ryan Realty' crumb (the root is
+ *      "Home", the about page is "About"), Title-Case 'Homes for Sale', and
+ *      a 'Search' crumb (the surface is "Homes for sale" -> /homes-for-sale).
+ *   5. tone="on-navy" is reserved for the full-bleed search map band
+ *      (app/search/[...slug]) — anywhere else is a hard fail.
+ *   6. The retired border-b band wrapper around a crumb — hard fail.
  *
  * Opt-out: a leading `// @no-breadcrumb` comment for a page that legitimately
  * renders none (rare — prefer the exempt list).
@@ -46,7 +57,6 @@ const SKIP_TOP_LEVEL = ['api', 'admin', 'account', 'dashboard', 'marketing']
 // wrapper component (so their own page.tsx has no BreadcrumbNav token).
 const EXEMPT = [
   /^app\/page\.tsx$/, // homepage
-  /^app\/search\/page\.tsx$/, // full-bleed map app (no hero, no crumb)
   /^app\/(login|signup|forgot-password|auth-error|offline)\//, // auth + utility
   /^app\/(privacy|terms|fair-housing|accessibility|cookies|dmca|data-deletion)\/page\.tsx$/, // legal
   /^app\/alerts\//, // email unsubscribe utility
@@ -62,6 +72,24 @@ const EXEMPT = [
 
 // Deprecated breadcrumb implementations that must never reappear in a page.
 const DEPRECATED_IMPORT = /from ['"](?:[^'"]*\/)?(?:components\/Breadcrumb|components\/layout\/BreadcrumbStrip)['"]/
+
+// Direct JSX render of the low-level component (pages must use PageBreadcrumb).
+// \b keeps `<BreadcrumbNavItem` (the type) from matching.
+const DIRECT_RENDER = /<BreadcrumbNav\b/
+
+// The only file allowed to use tone="on-navy" (the full-bleed search map band).
+const NAVY_TONE_ALLOWED = new Set(['app/search/[...slug]/page.tsx'])
+
+// Canon label violations — each entry is [regex, why]. Scoped to page sources;
+// these strings only plausibly occur as crumb labels.
+const BANNED_LABELS = [
+  [/label:\s*['"]Ryan Realty['"]/, `crumb label 'Ryan Realty' — the root is "Home"; the about page crumb is "About"`],
+  [/label:\s*['"]Homes for Sale['"]/, `crumb label 'Homes for Sale' (Title Case) — canon is sentence case "Homes for sale"`],
+  [/label:\s*['"]Search['"]/, `crumb label 'Search' — the search surface is "Homes for sale" -> /homes-for-sale`],
+]
+
+// The retired border-b band chrome wrapping a crumb (P1-1 variant b).
+const BAND_WRAPPER = /border-b border-border py-3"[\s\S]{0,200}?<(?:BreadcrumbNav\b|PageBreadcrumb)/
 
 function isExempt(rel) {
   return EXEMPT.some((re) => re.test(rel))
@@ -97,15 +125,29 @@ function classify(pagePath) {
     .filter((l) => l && !l.startsWith('//') && !l.startsWith('/*') && !l.startsWith('*'))
   const isReExportOnly =
     meaningful.length > 0 && meaningful.every((l) => /^export\s+(\{[^}]*\}|\*)\s+from\s+['"]/.test(l))
-  const hasBreadcrumb = isReExportOnly || /BreadcrumbNav/.test(src)
+  const hasBreadcrumb = isReExportOnly || /BreadcrumbNav|PageBreadcrumb/.test(src)
   const usesDeprecated = DEPRECATED_IMPORT.test(src)
-  return { rel, optOut, hasBreadcrumb, usesDeprecated, exempt: isExempt(rel) }
+  const directRender = DIRECT_RENDER.test(src)
+  const navyTone = /tone="on-navy"/.test(src) && !NAVY_TONE_ALLOWED.has(rel)
+  const bannedLabels = BANNED_LABELS.filter(([re]) => re.test(src)).map(([, why]) => why)
+  const bandWrapper = BAND_WRAPPER.test(src)
+  return {
+    rel,
+    optOut,
+    hasBreadcrumb,
+    usesDeprecated,
+    directRender,
+    navyTone,
+    bannedLabels,
+    bandWrapper,
+    exempt: isExempt(rel),
+  }
 }
 
 function loadBaseline() {
-  if (!existsSync(BASELINE_PATH)) return new Set()
+  if (!existsSync(BASELINE_PATH)) return { missing: new Set(), direct: new Set() }
   const raw = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'))
-  return new Set(raw.violators ?? [])
+  return { missing: new Set(raw.violators ?? []), direct: new Set(raw.directUsage ?? []) }
 }
 
 function main() {
@@ -114,61 +156,116 @@ function main() {
   // Hard fail (never baselined): a page importing a deprecated breadcrumb.
   const deprecated = results.filter((r) => r.usesDeprecated)
 
-  // Missing breadcrumb (ratcheted): not exempt, not opted out, no BreadcrumbNav.
+  // Missing breadcrumb (ratcheted): not exempt, not opted out, no breadcrumb.
   const missing = results.filter((r) => !r.exempt && !r.optOut && !r.hasBreadcrumb)
   const compliant = results.filter((r) => !r.exempt && r.hasBreadcrumb)
+
+  // Canon violations (P1-1).
+  const direct = results.filter((r) => r.directRender) // ratcheted (excluded-lane debt)
+  const navyTone = results.filter((r) => r.navyTone) // hard fail
+  const allLabelFails = results.filter((r) => r.bannedLabels.length > 0)
+  const bandWrapper = results.filter((r) => r.bandWrapper) // hard fail
 
   if (WRITE_BASELINE) {
     const baseline = {
       generatedAt: new Date().toISOString(),
-      reason: 'Pages without a BreadcrumbNav at consolidation time. NEW violations fail CI; this list only shrinks as debt pages are fixed.',
+      reason: 'Breadcrumb debt at canon time (P1-1). `violators` = pages with no breadcrumb. `directUsage` = pages still rendering <BreadcrumbNav> directly instead of <PageBreadcrumb> (excluded-lane pages pending their own migration). NEW entries in either class fail CI; both lists only shrink.',
       total: missing.length,
       violators: missing.map((r) => r.rel).sort(),
+      directUsage: direct.map((r) => r.rel).sort(),
     }
     writeFileSync(BASELINE_PATH, JSON.stringify(baseline, null, 2) + '\n')
-    console.log(`Wrote baseline: ${missing.length} debt pages recorded at ${relative(ROOT, BASELINE_PATH)}`)
+    console.log(`Wrote baseline: ${missing.length} crumbless + ${direct.length} direct-usage debt pages recorded at ${relative(ROOT, BASELINE_PATH)}`)
     process.exit(0)
   }
 
   const baseline = loadBaseline()
-  const newMissing = missing.filter((r) => !baseline.has(r.rel))
-  const fixedSinceBaseline = [...baseline].filter((rel) => !missing.some((r) => r.rel === rel))
-  const fail = newMissing.length > 0 || deprecated.length > 0
+  const newMissing = missing.filter((r) => !baseline.missing.has(r.rel))
+  const newDirect = direct.filter((r) => !baseline.direct.has(r.rel))
+  // Label canon hard-fails only on pages already migrated to the canon —
+  // direct-usage debt pages get their labels fixed when their lane migrates.
+  const labelFails = allLabelFails.filter((r) => !baseline.direct.has(r.rel))
+  const labelDebt = allLabelFails.filter((r) => baseline.direct.has(r.rel))
+  const fixedSinceBaseline = [...baseline.missing].filter((rel) => !missing.some((r) => r.rel === rel))
+  const fail =
+    newMissing.length > 0 ||
+    deprecated.length > 0 ||
+    newDirect.length > 0 ||
+    navyTone.length > 0 ||
+    labelFails.length > 0 ||
+    bandWrapper.length > 0
 
   if (JSON_OUT) {
     console.log(JSON.stringify({
       pagesScanned: results.length,
       compliant: compliant.length,
       totalMissing: missing.length,
-      baselineSize: baseline.size,
+      baselineSize: baseline.missing.size,
       newMissing: newMissing.map((r) => r.rel),
+      directUsage: direct.map((r) => r.rel),
+      newDirectUsage: newDirect.map((r) => r.rel),
+      navyTone: navyTone.map((r) => r.rel),
+      bannedLabels: labelFails.map((r) => ({ page: r.rel, why: r.bannedLabels })),
+      bannedLabelDebt: labelDebt.map((r) => ({ page: r.rel, why: r.bannedLabels })),
+      bandWrapper: bandWrapper.map((r) => r.rel),
       deprecated: deprecated.map((r) => r.rel),
       fixedSinceBaseline,
     }, null, 2))
     process.exit(fail ? 1 : 0)
   }
 
-  console.log('Breadcrumb consistency check (ratcheted)')
+  console.log('Breadcrumb canon check (P1-1, ratcheted)')
   console.log('========================================')
   console.log()
-  console.log(`Public pages scanned:            ${results.length}`)
-  console.log(`  With BreadcrumbNav:            ${compliant.length}`)
-  console.log(`  Missing (total):              ${missing.length}`)
-  console.log(`  Baseline (tracked debt):      ${baseline.size}`)
-  console.log(`  NEW missing (CI BLOCKER):     ${newMissing.length}`)
-  console.log(`  Deprecated import (BLOCKER):  ${deprecated.length}`)
-  console.log(`  Fixed since baseline:         ${fixedSinceBaseline.length}`)
+  console.log(`Public pages scanned:             ${results.length}`)
+  console.log(`  With a breadcrumb:              ${compliant.length}`)
+  console.log(`  Missing (total):                ${missing.length}`)
+  console.log(`  Missing baseline (debt):        ${baseline.missing.size}`)
+  console.log(`  NEW missing (CI BLOCKER):       ${newMissing.length}`)
+  console.log(`  Direct <BreadcrumbNav> (total): ${direct.length}`)
+  console.log(`  Direct-usage baseline (debt):   ${baseline.direct.size}`)
+  console.log(`  NEW direct usage (BLOCKER):     ${newDirect.length}`)
+  console.log(`  on-navy tone misuse (BLOCKER):  ${navyTone.length}`)
+  console.log(`  Banned crumb labels (BLOCKER):  ${labelFails.length}`)
+  console.log(`  Band wrapper chrome (BLOCKER):  ${bandWrapper.length}`)
+  console.log(`  Deprecated import (BLOCKER):    ${deprecated.length}`)
+  console.log(`  Fixed since baseline:           ${fixedSinceBaseline.length}`)
   console.log()
   if (deprecated.length > 0) {
-    console.log('Deprecated breadcrumb import (use @/components/site/BreadcrumbNav):')
+    console.log('Deprecated breadcrumb import (use @/components/site/PageBreadcrumb):')
     for (const r of deprecated) console.log(`  ${r.rel}`)
+    console.log()
+  }
+  if (newDirect.length > 0) {
+    console.log('NEW direct <BreadcrumbNav> usage (use <PageBreadcrumb trail={[...]}> — Home root is baked in):')
+    for (const r of newDirect) console.log(`  ${r.rel}`)
+    console.log()
+  }
+  if (navyTone.length > 0) {
+    console.log('tone="on-navy" outside the search map band (canon tone is on-light):')
+    for (const r of navyTone) console.log(`  ${r.rel}`)
+    console.log()
+  }
+  if (labelFails.length > 0) {
+    console.log('Banned crumb labels:')
+    for (const r of labelFails) for (const why of r.bannedLabels) console.log(`  ${r.rel}: ${why}`)
+    console.log()
+  }
+  if (labelDebt.length > 0) {
+    console.log('Banned crumb labels on direct-usage debt pages (fix when that lane migrates — not blocking):')
+    for (const r of labelDebt) for (const why of r.bannedLabels) console.log(`  ${r.rel}: ${why}`)
+    console.log()
+  }
+  if (bandWrapper.length > 0) {
+    console.log('Retired border-b band wrapper around a crumb (PageBreadcrumb owns its chrome):')
+    for (const r of bandWrapper) console.log(`  ${r.rel}`)
     console.log()
   }
   if (newMissing.length > 0) {
     console.log('NEW pages without a breadcrumb (these fail CI):')
     for (const r of newMissing) console.log(`  ${r.rel}`)
     console.log()
-    console.log('Fix: render <BreadcrumbNav items={[...]} /> at the top of <main> (see app/cities/[slug]/page.tsx),')
+    console.log('Fix: render <PageBreadcrumb trail={[...]} /> as the first element of <main> (see app/contact/page.tsx),')
     console.log('or add `// @no-breadcrumb` if the page legitimately has none.')
   }
 

@@ -5,7 +5,7 @@
   "note": "Site-v2 + understated-voice rework 2026-06-02 (Matt directive: don't overtly state things — see memory feedback-voice-no-overt-statements). SiteHeader/SiteFooter render from app/layout.tsx. Every claim verified: Ryan Realty LLC (founded June 2023, OREA 201253677), Matt PB 201206613, brokers from getBrokers(), CityGrid counts live from geo_snapshot_mv, the founder/fire-service/Red-Erickson story from Matt's verified broker bio. REMOVED per the voice directive: the Jax mascot section (Matt: 'that's dumb'), the heritage-strip self-label ('Independent brokerage'), the 'Four rules we hold to' virtue-stating block, and 'Three brokers. All licensed. All active.' (a licensed active broker is the baseline, not a selling point). The page now leads with the concrete origin story + live data, not stated virtues. Distinct hero (Deschutes, not the Old Mill brand hero) so /about doesn't look identical to every other page. NO testimonials (no verified review source wired).",
   "requiredComponents": [
     {
-      "name": "BreadcrumbNav",
+      "name": "PageBreadcrumb",
       "section": "Home > Ryan Realty — schema.org breadcrumb",
       "blocking": true
     },

@@ -23,6 +23,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { sendCrmEmail } from '@/lib/crm/gmail'
 import { isSuppressed } from '@/lib/crm/suppressions'
 import { CRM_MAILBOXES } from '@/lib/crm/gmail'
+import { renderCrmMerge } from '@/lib/crm/merge'
 import { addPersonTags, replacePersonTags } from '@/lib/followupboss'
 
 export const runtime = 'nodejs'
@@ -67,12 +68,7 @@ type Step = {
 }
 
 function renderMerge(text: string, person: { first_name?: string | null; name?: string | null; custom?: Record<string, unknown> }): string {
-  const first = person.first_name || (person.name ?? '').split(' ')[0] || 'there'
-  const address = String(person.custom?.customSellerPropertyAddress ?? person.custom?.customPropertyAddress ?? '')
-  return text
-    .replaceAll('%contact_first_name%', first)
-    .replaceAll('%first%', first).replaceAll('{{first_name}}', first).replaceAll('{{firstName}}', first)
-    .replaceAll('%address%', address).replaceAll('{{address}}', address)
+  return renderCrmMerge(text, person)
 }
 
 export async function GET(request: Request) {
@@ -193,7 +189,7 @@ export async function GET(request: Request) {
         const sent = await sendCrmEmail({ fromMailbox: mailbox.email, to, subject, bodyText: body })
         if (!sent.ok) { await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log(`Sequence email send failed, retrying in 30m`, sent.error); errored++; continue }
         await sb.from('crm_timeline').insert({
-          person_id: person.id, kind: 'email_out', title: subject, body,
+          person_id: person.id, kind: 'email_out', title: subject, body: sent.plainBody,
           payload: { gmailId: sent.gmailId, sequence: seq.name, step: en.step_index, templateKey: step.templateKey ?? null, to },
           broker: mailbox.slug, source: 'sequence', dedupe_key: `gmail:${sent.gmailId}:p${person.id}`,
         })

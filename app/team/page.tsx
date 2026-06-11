@@ -17,13 +17,13 @@ import { getBrokers } from '@/lib/data/brokers/getBrokers'
 import { getSurfaceImage, getReviews } from '@/lib/data'
 import { ReviewsBlock } from '@/components/site/ReviewsBlock'
 import { MarketingStandardBlock } from '@/components/site/MarketingStandardBlock'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import { BrokerProfileRow } from '@/components/site/BrokerProfileRow'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { CTABar } from '@/components/site/CTABar'
-import { Body, Container, Eyebrow, H2, Section, Stack } from '@/components/site/primitives'
 import { CONTACT } from '@/lib/brand/contact'
+import { Body, Container, Eyebrow, H2, Section, Stack } from '@/components/site/primitives'
 
 export const metadata: Metadata = pageMetadata({
   title: 'Our team · Ryan Realty, Bend Oregon',
@@ -63,7 +63,7 @@ const TEAM_FAQ_ITEMS = [
   {
     question: 'How do I start?',
     answer:
-      'Call 541.213.6706 or schedule a time through the contact page. You talk directly with a broker, not a call center.',
+      `Call ${CONTACT.phoneDirect} or schedule a time through the contact page. You talk directly with a broker, not a call center.`,
   },
 ] as const
 
@@ -97,14 +97,7 @@ export default async function TeamPage() {
           },
         ]}
       />
-      <div className="bg-background border-b border-border py-3">
-        <Container>
-          <BreadcrumbNav
-            items={[{ label: 'Home', href: '/' }, { label: 'Team' }]}
-            tone="on-light"
-          />
-        </Container>
-      </div>
+      <PageBreadcrumb trail={[{ label: 'Team' }]} />
 
       <HeroBlock
         headline="The marketing your home deserves."

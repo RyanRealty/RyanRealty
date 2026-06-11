@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import MortgageCalculator from './MortgageCalculator'
 import ContentPageHero from '@/components/layout/ContentPageHero'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
-import { Container, H2, Body } from '@/components/site/primitives'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
+import { H2, Body } from '@/components/site/primitives'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
@@ -55,9 +55,7 @@ export default async function MortgageCalculatorPage({ searchParams }: Props) {
   return (
     <main className="min-h-screen bg-background">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }} />
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Mortgage calculator' }]} />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Mortgage calculator' }]} />
       <ContentPageHero
         title="Mortgage Calculator"
         subtitle="Estimate your monthly payment. Adjust home price, down payment, interest rate, and loan term to plan your purchase."

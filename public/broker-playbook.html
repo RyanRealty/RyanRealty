@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Broker Playbook · Ryan Realty</title>
+<style>
+  :root {
+    --navy: #102742;
+    --cream: #faf8f4;
+    --border: rgba(16, 39, 66, 0.12);
+    --muted: rgba(16, 39, 66, 0.65);
+    --warn: #b45309;
+    --warn-bg: #fef3c7;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--cream); color: var(--navy);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 24px 96px; }
+  header { border-bottom: 2px solid var(--navy); padding-bottom: 16px; margin-bottom: 24px; }
+  h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .meta { color: var(--muted); font-size: 13px; }
+  h2 { font-size: 22px; border-top: 1px solid var(--border); padding-top: 24px; margin: 32px 0 12px;
+    letter-spacing: -0.01em; }
+  h3 { font-size: 17px; margin: 18px 0 8px; }
+  p, li { font-size: 15px; }
+  ul, ol { padding-left: 22px; }
+  li { margin: 4px 0; }
+  code { font-family: ui-monospace, SF Mono, Menlo, Consolas, monospace;
+    background: rgba(16,39,66,0.06); padding: 1px 6px; border-radius: 4px; font-size: 13.5px; }
+  pre { background: rgba(16,39,66,0.06); padding: 12px 14px; border-radius: 6px; overflow-x: auto;
+    font-size: 13.5px; line-height: 1.5; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0 20px; font-size: 14px; }
+  th, td { border: 1px solid var(--border); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: rgba(16,39,66,0.04); font-weight: 600; }
+  tr:nth-child(even) td { background: rgba(16,39,66,0.02); }
+  a { color: var(--navy); text-decoration: underline; text-decoration-color: rgba(16,39,66,0.35); }
+  a:hover { text-decoration-color: var(--navy); }
+  .warn { background: var(--warn-bg); color: var(--warn); padding: 12px 16px; border-radius: 6px;
+    border-left: 4px solid var(--warn); margin: 12px 0; font-size: 14px; }
+  .toc { background: rgba(16,39,66,0.04); padding: 16px 22px; border-radius: 8px; margin: 16px 0 32px; }
+  .toc ul { margin: 6px 0; padding-left: 18px; }
+  .toc a { text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+  .tag { font-family: ui-monospace, monospace; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Broker Playbook</h1>
+  <div class="meta">Ryan Realty · Follow Up Boss workflow reference · Updated 2026-05-26</div>
+</header>
+
+<nav class="toc">
+  <strong>Quick jump:</strong>
+  <ul>
+    <li><a href="#open">1. When you open a contact</a></li>
+    <li><a href="#tags">2. Tag glossary</a></li>
+    <li><a href="#tree">3. Decision tree — what to do per contact</a></li>
+    <li><a href="#plans">4. Action Plan reference</a></li>
+    <li><a href="#lists">5. Smart lists</a></li>
+    <li><a href="#compliance">6. Compliance — never do this</a></li>
+    <li><a href="#stages">7. Stages</a></li>
+    <li><a href="#patterns">8. Common patterns</a></li>
+  </ul>
+</nav>
+
+<h2 id="open">1. When you open a FUB contact</h2>
+<p><strong>Look at three things in order:</strong></p>
+<ol>
+  <li><strong>Background brief</strong> (top of the right sidebar) — the cheat sheet specific to that contact. Tells you who they are, what they own, and what to do.</li>
+  <li><strong>Tags</strong> (below name) — drives all smart-list inclusion and compliance gating.</li>
+  <li><strong>Stage</strong> — current lifecycle position. Don't change unless they engage.</li>
+</ol>
+<p>Then take action based on what the Background says under <strong>NEXT STEPS</strong>. Don't free-style.</p>
+
+<h2 id="tags">2. Tag glossary</h2>
+
+<h3>Source + batch</h3>
+<table>
+  <tr><th>Tag</th><th>What it means</th></tr>
+  <tr><td class="tag">import:westside-2026-05</td><td>Came in via the May 2026 westside Bend homeowner import</td></tr>
+  <tr><td class="tag">import:expired-backfill-2026</td><td>Came in via the YTD 2026 expired-listing backfill</td></tr>
+  <tr><td class="tag">source:county-assessor</td><td>Data originated from Deschutes County assessor records</td></tr>
+  <tr><td class="tag">source:expired-listing-mls</td><td>Data originated from MLS (Spark API or textexport)</td></tr>
+  <tr><td class="tag">area:bend-westside</td><td>Property is on the west side of Bend</td></tr>
+</table>
+
+<h3>Geography</h3>
+<table>
+  <tr><th>Tag prefix</th><th>Examples</th></tr>
+  <tr><td class="tag">city:*</td><td><code>city:bend</code>, <code>city:redmond</code>, <code>city:sunriver</code>, <code>city:sisters</code>, <code>city:la-pine</code>, <code>city:tumalo</code></td></tr>
+  <tr><td class="tag">neighborhood:*</td><td><code>neighborhood:northwest-crossing</code>, <code>neighborhood:awbrey-glen</code>, <code>neighborhood:bend-river-west</code>, <code>neighborhood:tetherow</code>, <code>neighborhood:widgi-creek</code>, <code>neighborhood:broken-top</code></td></tr>
+  <tr><td class="tag">subdivision:*</td><td>~385 unique subdivisions, e.g. <code>subdivision:orokla</code>, <code>subdivision:highland-addition</code></td></tr>
+</table>
+
+<h3>Owner type + mailing geography</h3>
+<table>
+  <tr><th>Tag</th><th>What it means</th></tr>
+  <tr><td class="tag">owner:occupied</td><td>Owner lives in the property</td></tr>
+  <tr><td class="tag">owner:absentee</td><td>Owner does not live in the property</td></tr>
+  <tr><td class="tag">owner:absentee-local</td><td>Absentee but mails to Oregon</td></tr>
+  <tr><td class="tag">owner:absentee-outofstate</td><td>Out-of-state absentee. Primary OOS pool.</td></tr>
+  <tr><td class="tag">owner:entity</td><td>LLC / trust / estate. Deeded to a non-human.</td></tr>
+  <tr><td class="tag">geo:local</td><td>Owner mails to Deschutes County</td></tr>
+  <tr><td class="tag">geo:out-of-area</td><td>Owner mails to Oregon but outside Deschutes</td></tr>
+  <tr><td class="tag">geo:out-of-state</td><td>Owner mails outside Oregon</td></tr>
+</table>
+
+<h3>Tenure (how long they've owned)</h3>
+<table>
+  <tr><th>Tag</th><th>Years owned</th></tr>
+  <tr><td class="tag">tenure:0-2yr</td><td>Just bought</td></tr>
+  <tr><td class="tag">tenure:3-5yr</td><td>Early</td></tr>
+  <tr><td class="tag">tenure:6-8yr</td><td>Approaching seller-window</td></tr>
+  <tr><td class="tag">tenure:9-12yr</td><td><strong>Peak seller window per NAR data</strong></td></tr>
+  <tr><td class="tag">tenure:13-17yr</td><td>Long-held</td></tr>
+  <tr><td class="tag">tenure:18-24yr</td><td>Very long-held</td></tr>
+  <tr><td class="tag">tenure:25plus</td><td>Legacy holders</td></tr>
+  <tr><td class="tag">tenure:long-term</td><td>Convenience tag (≥8 yrs owned)</td></tr>
+  <tr><td class="tag">tenure:recent</td><td>Convenience tag (≤3 yrs owned)</td></tr>
+</table>
+
+<h3>Equity</h3>
+<table>
+  <tr><th>Tag</th><th>Equity % (market ÷ purchase)</th></tr>
+  <tr><td class="tag">equity:low</td><td>Less than 20% appreciation</td></tr>
+  <tr><td class="tag">equity:medium</td><td>20 to 49%</td></tr>
+  <tr><td class="tag">equity:high</td><td>50 to 99%</td></tr>
+  <tr><td class="tag">equity:very-high</td><td>100% or more</td></tr>
+</table>
+
+<h3>Seller score (0 to 100)</h3>
+<table>
+  <tr><th>Tag</th><th>Band</th><th>What it means</th><th>Expected listing rate</th></tr>
+  <tr><td class="tag">seller-score:hot</td><td>75 to 100</td><td>High-probability seller in the next 12 months</td><td>10 to 18%</td></tr>
+  <tr><td class="tag">seller-score:warm</td><td>50 to 74</td><td>Worth quarterly touches</td><td>5 to 10%</td></tr>
+  <tr><td class="tag">seller-score:cool</td><td>25 to 49</td><td>Annual touch, low-pressure</td><td>3 to 5%</td></tr>
+  <tr><td class="tag">seller-score:cold</td><td>0 to 24</td><td>Baseline only (annual mailer)</td><td>2 to 3%</td></tr>
+</table>
+
+<h3>Lifecycle flags</h3>
+<table>
+  <tr><th>Tag</th><th>What it means</th></tr>
+  <tr><td class="tag">lifecycle:rate-locked</td><td>Bought 2020 to 2021 at sub-3%. Less likely to sell.</td></tr>
+  <tr><td class="tag">lifecycle:likely-retirement-age</td><td>Property age + tenure suggest owner is 55+ retiring</td></tr>
+</table>
+
+<h3>Expired-listing tags</h3>
+<table>
+  <tr><th>Tag</th><th>What it means</th></tr>
+  <tr><td class="tag">intent:expired-listing</td><td>Listing expired, canceled, or withdrew in 2025 to 2026</td></tr>
+  <tr><td class="tag">expired-status:expired</td><td>Specific status at expiry</td></tr>
+  <tr><td class="tag">expired-mls:*</td><td>Original MLS number for cross-reference</td></tr>
+  <tr><td class="tag">expired-detected:YYYY-MM-DD</td><td>When we caught it</td></tr>
+  <tr><td class="tag">owner-lookup:resolved-westside</td><td>Owner is in our westside import (full data)</td></tr>
+  <tr><td class="tag">owner-lookup:pending-fub-or-paid</td><td>Owner unknown. Run DIAL skip-trace before outreach.</td></tr>
+</table>
+
+<h3>Contact channels</h3>
+<table>
+  <tr><th>Tag</th><th>What it means</th></tr>
+  <tr><td class="tag">contact:has-email</td><td>We have an email on file</td></tr>
+  <tr><td class="tag">contact:has-phone</td><td>We have any phone on file</td></tr>
+  <tr><td class="tag">contact:mobile-phone</td><td>Phone is mobile / cell (texting OK if no DNC flags)</td></tr>
+  <tr><td class="tag">contact:landline-phone</td><td>Phone is a landline (no text)</td></tr>
+  <tr><td class="tag">contact:needs-enrichment</td><td>No phone, no email. Direct mail only.</td></tr>
+  <tr><td class="tag">contact:direct-mail-only</td><td>Entity contact, no skip-trace possible</td></tr>
+  <tr><td class="tag">contact:do-not-call</td><td>Phone outreach blocked (DNC or manual)</td></tr>
+  <tr><td class="tag">contact:do-not-text</td><td>SMS blocked (litigator, DNC, or manual)</td></tr>
+  <tr><td class="tag">contact:do-not-email</td><td>Email blocked</td></tr>
+</table>
+
+<h3>Compliance / hard-stop (auto-excluded from every smart list)</h3>
+<div class="warn"><strong>These flags auto-exclude the contact from every smart list, every blast, and every FB Custom Audience.</strong> They are FUB-managed or set by our compliance scrub. Do not override.</div>
+<table>
+  <tr><th>Tag</th><th>What it means</th></tr>
+  <tr><td class="tag">tcpa:litigator</td><td><strong>Active TCPA lawsuit history.</strong> Never text or auto-dial. $1,500 per violation risk.</td></tr>
+  <tr><td class="tag">compliance:hard-stop</td><td>Cumulative stop tag (litigators + deceased + realtors + manual hard-stops)</td></tr>
+  <tr><td class="tag">compliance:deceased</td><td>Person is deceased. Skip all outreach.</td></tr>
+  <tr><td class="tag">compliance:dnc-registry</td><td>On federal Do Not Call registry</td></tr>
+  <tr><td class="tag">do_not_email</td><td>Email blocked, FUB-managed (legacy)</td></tr>
+  <tr><td class="tag">Unsubscribed</td><td>They opted out (FUB system tag)</td></tr>
+  <tr><td class="tag">Bounced</td><td>Email bounced (FUB system tag)</td></tr>
+</table>
+
+<h3>Industry / realtor</h3>
+<table>
+  <tr><th>Tag</th><th>What it means</th></tr>
+  <tr><td class="tag">industry:realtor</td><td>Licensed Oregon agent. Recruit / listing share only.</td></tr>
+  <tr><td class="tag">audience:broker-recruit</td><td>Candidate for joining Ryan Realty</td></tr>
+  <tr><td class="tag">brokerage:*</td><td>Current brokerage (e.g. <code>brokerage:re-max-key-properties</code>)</td></tr>
+  <tr><td class="tag">realtor-source:orea</td><td>Matched via OREA license registry</td></tr>
+</table>
+
+<h2 id="tree">3. Decision tree — what to do per contact</h2>
+
+<ol>
+  <li>Open the contact, read <strong>Background → NEXT STEPS</strong> section.</li>
+  <li>Check for <strong>COMPLIANCE</strong> flags. If any <code>tcpa:litigator</code> or <code>compliance:deceased</code> → <strong>STOP. No outreach.</strong></li>
+  <li>Find the score band tag.</li>
+  <li>Match the table below.</li>
+</ol>
+
+<table>
+  <tr><th>Score</th><th>Has phone?</th><th>Has email?</th><th>First touch</th></tr>
+  <tr><td><code>hot</code> + owner-occupied local</td><td>yes</td><td>—</td><td><strong>Call today.</strong> Tenure + equity hook, free CMA offer</td></tr>
+  <tr><td><code>hot</code> + owner-occupied local</td><td>—</td><td>yes</td><td><strong>Email today.</strong> Short CMA offer</td></tr>
+  <tr><td><code>hot</code> + owner-occupied local</td><td>—</td><td>—</td><td><strong>Hold.</strong> Wait for enrichment</td></tr>
+  <tr><td><code>hot</code> + OOS owner</td><td>any</td><td>any</td><td><strong>Call/email today.</strong> Lead with remote-seller logistics</td></tr>
+  <tr><td><code>warm</code></td><td>yes</td><td>—</td><td>Quarterly check-in call (low pressure)</td></tr>
+  <tr><td><code>warm</code></td><td>—</td><td>yes</td><td>Send neighborhood market update email this week</td></tr>
+  <tr><td><code>cool</code></td><td>any</td><td>any</td><td>Annual mailer only until score promotes</td></tr>
+  <tr><td><code>cold</code></td><td>any</td><td>any</td><td>Annual mailer only</td></tr>
+  <tr><td><code>intent:expired-listing</code></td><td>any</td><td>any</td><td><strong>Plan 71 auto-enrolled.</strong> First touch: Touch 0 call within 24h. Empathy-first.</td></tr>
+  <tr><td><code>industry:realtor</code></td><td>any</td><td>any</td><td>Recruit / listing share only. <strong>No</strong> seller plans.</td></tr>
+  <tr><td><code>owner:entity</code></td><td>n/a</td><td>n/a</td><td>Direct mail only. Research decision-maker first.</td></tr>
+</table>
+
+<h3>After they engage</h3>
+<table>
+  <tr><th>If…</th><th>Then</th></tr>
+  <tr><td>Hot owner-occupied local responds</td><td>Stage → Warm. Apply <strong>Plan 74 (Neighborhood Resident Nurture)</strong>.</td></tr>
+  <tr><td>Hot OOS owner responds</td><td>Stage → Warm. Apply <strong>Plan 73 (Out-of-State Owner Nurture)</strong>.</td></tr>
+  <tr><td>Expired-listing person responds</td><td>Add tag <code>seller:in-conversation</code> (pauses Plan 71 on next pause-on-reply cron).</td></tr>
+  <tr><td>Any contact requests CMA</td><td>Generate via marketing-brain CMA producer</td></tr>
+  <tr><td>Any contact unsubscribes</td><td>Add <code>Unsubscribed</code> AND <code>compliance:hard-stop</code>. Out of every blast forever.</td></tr>
+</table>
+
+<h2 id="plans">4. Action Plan reference</h2>
+<table>
+  <tr><th>Plan</th><th>Name</th><th>When it fires</th><th>Auto or manual</th></tr>
+  <tr><td><strong>69</strong></td><td>Seller Master Workflow</td><td><strong>Only</strong> on seller LP submission at ryan-realty.com</td><td>Auto on LP</td></tr>
+  <tr><td><strong>71</strong></td><td>Expired Recovery (auto)</td><td>Auto on <code>intent:expired-listing</code> tag</td><td>Auto</td></tr>
+  <tr><td><strong>73</strong></td><td>Out-of-State Owner Nurture</td><td>After your <strong>first live conversation</strong> with an OOS owner</td><td><strong>Manual</strong></td></tr>
+  <tr><td><strong>74</strong></td><td>Neighborhood Resident Nurture</td><td>After your <strong>first live conversation</strong> with a local hot/warm owner</td><td><strong>Manual</strong></td></tr>
+</table>
+
+<div class="warn"><strong>Hard rules:</strong>
+<ul>
+  <li>Never apply <strong>Plan 69</strong> unless they submitted the website seller LP. It assumes prior consent.</li>
+  <li>Never apply <strong>Plan 71</strong> unless they were detected as an expired listing. Empathy-first framing.</li>
+  <li><strong>Plans 73 + 74 are manual.</strong> Only after a live conversation.</li>
+  <li><strong>No plan applies on import.</strong> The westside batch auto-enrolls zero plans.</li>
+</ul>
+</div>
+
+<h2 id="lists">5. Smart lists</h2>
+<h3>Tier 1 — populated now</h3>
+<table>
+  <tr><th>ID</th><th>Name</th><th>What it shows</th></tr>
+  <tr><td>130</td><td>Homeowner DB — West Side All</td><td>Every westside contact (7,675)</td></tr>
+  <tr><td>131</td><td>Likely Sellers — Hot</td><td><code>seller-score:hot</code> (~352)</td></tr>
+  <tr><td>132</td><td>Likely Sellers — Warm</td><td><code>seller-score:warm</code> (~3,000)</td></tr>
+  <tr><td>145</td><td>Likely Sellers — Cool</td><td><code>seller-score:cool</code></td></tr>
+  <tr><td>133</td><td>Out-of-State Owners</td><td><code>geo:out-of-state</code> (~1,157)</td></tr>
+  <tr><td>134</td><td>High Equity Owners</td><td><code>equity:high</code> or <code>equity:very-high</code></td></tr>
+  <tr><td>137</td><td>Needs Enrichment — West Side</td><td><code>contact:needs-enrichment</code></td></tr>
+  <tr><td>142</td><td>Rate Locked Owners</td><td><code>lifecycle:rate-locked</code> (~996)</td></tr>
+</table>
+<h3>Tier 2 — industry</h3>
+<table>
+  <tr><th>ID</th><th>Name</th><th>What it shows</th></tr>
+  <tr><td>135</td><td>Industry Realtors — West Side</td><td><code>industry:realtor</code></td></tr>
+  <tr><td>136</td><td>Broker Recruit Pool</td><td><code>audience:broker-recruit</code></td></tr>
+</table>
+<h3>Tier 3 — life events</h3>
+<table>
+  <tr><th>ID</th><th>Name</th><th>Populates from</th></tr>
+  <tr><td>138</td><td>Empty Nest Owners</td><td>BatchData tier upgrade needed</td></tr>
+  <tr><td>139</td><td>Life Event — Recently Divorced</td><td><code>life:recently-divorced</code></td></tr>
+  <tr><td>140</td><td>Life Event — Recently Moved</td><td><code>life:recently-moved</code></td></tr>
+  <tr><td>141</td><td>Retirement Age Long-Term</td><td><code>demo:age-55-plus</code> + <code>tenure:long-term</code></td></tr>
+  <tr><td>143</td><td>Has Mobile Phone</td><td><code>contact:mobile-phone</code></td></tr>
+  <tr><td>144</td><td>BatchData Enriched</td><td><code>enrich:batchdata-matched</code> (~5,771)</td></tr>
+</table>
+<p>Neighborhood shells (IDs 104 to 122) — 12 westside Bend neighborhoods + 6 resort communities. Filter on the matching <code>neighborhood:*</code> tag.</p>
+<p><strong>Every smart list auto-excludes:</strong> <code>industry:realtor</code> · <code>compliance:hard-stop</code> · <code>do_not_email</code> · <code>Unsubscribed</code> · <code>Bounced</code> · stage <code>Real Estate Agent</code>.</p>
+
+<h2 id="compliance">6. Compliance — what to never do</h2>
+<table>
+  <tr><th>Flag</th><th>Hard rule</th></tr>
+  <tr><td><code>tcpa:litigator</code></td><td><strong>Never</strong> auto-text or auto-dial. Manual one-to-one email only. $1,500 per violation if you slip.</td></tr>
+  <tr><td><code>compliance:deceased</code></td><td>Never send any outreach. If a family member responds, treat as a new lead.</td></tr>
+  <tr><td><code>compliance:hard-stop</code></td><td>Auto-excluded from every smart list. Do not override.</td></tr>
+  <tr><td><code>do_not_email</code> / <code>Unsubscribed</code></td><td>Email blocked permanently. Other channels still open.</td></tr>
+  <tr><td><code>contact:do-not-call</code></td><td>Phone blocked. Email or mail only.</td></tr>
+  <tr><td><code>contact:do-not-text</code></td><td>SMS blocked. Voice call still OK if not also <code>do-not-call</code>.</td></tr>
+</table>
+
+<h2 id="stages">7. Stages</h2>
+<table>
+  <tr><th>Stage</th><th>When to use</th></tr>
+  <tr><td>Seller Prospect</td><td>Imported homeowner who hasn't engaged. Don't promote.</td></tr>
+  <tr><td>Lead</td><td>Inbound — they reached out first (website, IDX, referral)</td></tr>
+  <tr><td>Warm</td><td>They've engaged at least once (call, email reply)</td></tr>
+  <tr><td>Hot</td><td>Active CMA, showing request, pre-listing conversation</td></tr>
+  <tr><td>Active Client</td><td>Listing agreement signed OR buyer-rep signed</td></tr>
+  <tr><td>Pending</td><td>Under contract</td></tr>
+  <tr><td>Closed</td><td>Transaction closed. Move to Past Clients.</td></tr>
+  <tr><td>Past Clients</td><td>Closed last 7 years. Stay-in-touch cadence.</td></tr>
+  <tr><td>Sphere</td><td>Personal sphere — family, friends, repeat referrers</td></tr>
+  <tr><td>Real Estate Agent</td><td>Industry contact. Don't move this stage even if they buy/sell personally.</td></tr>
+  <tr><td>Trash</td><td>Bad data / unreachable / wrong number / full DNC. Never bring back.</td></tr>
+</table>
+
+<h2 id="patterns">8. Common patterns</h2>
+
+<h3>I want to find every hot seller in NWX with a phone</h3>
+<p>Open smart list <strong>Likely Sellers — Hot</strong> (131), then filter by tag <code>neighborhood:northwest-crossing</code> AND <code>contact:has-phone</code>.</p>
+
+<h3>I just got off a great call with an OOS owner. What's next?</h3>
+<ol>
+  <li>Stage → <code>Warm</code></li>
+  <li>Add note with their timeline + motivation</li>
+  <li>Apply Action Plan → <strong>Plan 73 (Out-of-State Owner Nurture)</strong></li>
+  <li>Schedule next touch task per their timeline</li>
+</ol>
+
+<h3>Someone called me back from an expired listing. They want to relist.</h3>
+<ol>
+  <li>Stage → <code>Hot</code></li>
+  <li>Add tag <code>seller:in-conversation</code> (pauses Plan 71 on next pause-on-reply cron)</li>
+  <li>Schedule CMA or in-person meeting</li>
+  <li>Once they sign listing agreement → Stage → <code>Active Client</code></li>
+</ol>
+
+<h3>I want to export a list for a Facebook Custom Audience</h3>
+<ol>
+  <li>Open the smart list (e.g. <strong>Likely Sellers — Hot</strong>)</li>
+  <li>Top-right → Export → CSV (include email + phone columns)</li>
+  <li>Facebook Ads Manager → Audiences → Create Audience → Customer List</li>
+  <li>Tag <code>exclude:fb-cas</code> and <code>compliance:hard-stop</code> are auto-excluded. No manual scrubbing needed.</li>
+</ol>
+
+<hr>
+<p style="color: var(--muted); font-size: 12px;">
+Ryan Realty internal reference. Source-of-truth taxonomy in
+<code>scripts/westside-bend-build-fub-import.mjs</code> (<code>deriveTags</code> function).
+Background brief generator in <code>scripts/lib/westside-broker-brief.mjs</code>.
+</p>
+
+</div>
+</body>
+</html>

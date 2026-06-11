@@ -47,7 +47,7 @@ import { communityImage, pickGeoImage } from '@/lib/geo-images'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import {
   FlyoverHero,
   LiveMarketBand,
@@ -275,7 +275,6 @@ export default async function CommunityDetailPage({ params }: Props) {
       items: [
         { name: 'Home', url: '/' },
         { name: 'Communities', url: '/communities' },
-        { name: cityName, url: `/cities/${citySlug}` },
         { name: community.name, url: `/communities/${slug}` },
       ],
     },
@@ -346,17 +345,8 @@ export default async function CommunityDetailPage({ params }: Props) {
       <MetadataBlock schemas={communitySchemas} />
 
       {/* Breadcrumb */}
-      <Container className="pt-3 pb-1">
-        <BreadcrumbNav
-          includeJsonLd={false}
-          items={[
-            { label: 'Home', href: '/' },
-            { label: 'Communities', href: '/communities' },
-            { label: cityName, href: `/cities/${citySlug}` },
-            { label: community.name },
-          ]}
-        />
-      </Container>
+      <PageBreadcrumb trail={[{ label: 'Communities', href: '/communities' },
+            { label: community.name }]} includeJsonLd={false} />
 
       {/* Geo archetype hero: video flyover + Amboqia live stat overlay + count-up */}
       <div id="hero">

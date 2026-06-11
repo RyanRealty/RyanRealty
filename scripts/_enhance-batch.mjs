@@ -31,7 +31,8 @@ if (!siteMode) {
         if (existsSync(resolve(ROOT, `public/asset-library/photos/${d}/${a.id}${ext}`))) {
           src = `public/asset-library/photos/${d}/${a.id}${ext}`; break
         }
-    if (src) jobs.push({ id: a.id, src, out: 'public/asset-library/photos/enhanced' })
+    if (src && !existsSync(resolve(ROOT, `public/asset-library/photos/enhanced/${a.id}-enhanced.jpg`)))
+      jobs.push({ id: a.id, src, out: 'public/asset-library/photos/enhanced' })
   }
 } else {
   const RED = ['pronghorn-01', 'sunriver-river', 'eagle-crest-01', 'three-sisters-backdrop']

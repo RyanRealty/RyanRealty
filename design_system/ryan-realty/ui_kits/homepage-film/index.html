@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ryan Realty — THE FILM concept</title>
+
+  <!--
+    DATA CITATIONS (fetched 2026-06-10, source: https://ryan-realty.com SSR HTML)
+    ─────────────────────────────────────────────────────────────────────────────
+    active_listings  : 1,797   (SSR market snapshot, label "Active Single-Family Homes")
+    median_price     : $740,000 (SSR market snapshot, label "Median List Price")
+    days_to_pending  : 14       (SSR market snapshot, label "Typical Days to Pending")
+    featured_listing : 16802 Pony Express, Bend OR · $790,000
+    listing_photo    : https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260605221458070104000000-o.jpg
+    market_condition : Buyer's market · 6.9 months supply · 337 closings last 30 days
+
+    ASSETS
+    ──────
+    hero-poster.jpg      copied from public/videos/flyovers/tetherow/poster.jpg
+    nb-tetherow.jpg      copied from out/neighborhood-flyover/tetherow/tetherow-poster.jpg
+    nb-broken-top.jpg    copied from out/neighborhood-flyover/broken-top/broken-top-poster.jpg
+    nb-sunriver.jpg      copied from out/neighborhood-flyover/sunriver/sunriver-poster.jpg
+
+    PRODUCTION NOTE — VIDEO HERO
+    ─────────────────────────────
+    In production this hero background is a 15s muted looping <video> element
+    cycling through 27 aerial flyover files from public/videos/flyovers/*/hero.mp4.
+    The poster.jpg serves as the static frame while the video loads and for
+    prefers-reduced-motion users. The <video> tag, autoplay, loop, muted, and
+    playsinline attributes are added in the Next.js component.
+    The subtle dark gradient scrim is always present regardless of playback state.
+  -->
+
+  <!-- Geist via Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ═══════════════════════════════════════════════════════════════
+       BRAND TOKENS
+    ═══════════════════════════════════════════════════════════════ */
+    :root {
+      --navy:   #102742;
+      --cream:  #faf8f4;
+      --white:  #ffffff;
+
+      /* Shadows — navy-tinted */
+      --shadow-sm: 0 1px 3px rgb(16 39 66 / 0.12);
+      --shadow-md: 0 4px 16px rgb(16 39 66 / 0.18);
+      --shadow-lg: 0 8px 32px rgb(16 39 66 / 0.24);
+
+      /* Radii */
+      --r-sm: 6px;
+      --r-md: 8px;
+      --r-lg: 10px;
+      --r-xl: 14px;
+
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       RESET
+    ═══════════════════════════════════════════════════════════════ */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Geist', system-ui, sans-serif;
+      background: var(--navy);
+      color: var(--cream);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       AMBOQIA — @font-face (relative to ui_kits/homepage-film/)
+    ═══════════════════════════════════════════════════════════════ */
+    @font-face {
+      font-family: 'Amboqia';
+      src: url('../../fonts/Amboqia_Boriango.otf') format('opentype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    .font-display { font-family: 'Amboqia', Georgia, serif; }
+
+    /* ═══════════════════════════════════════════════════════════════
+       NAV STRIP — ultra-minimal, ghost on video
+    ═══════════════════════════════════════════════════════════════ */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 48px;
+      /* Fades to transparent — we let the hero own this zone */
+    }
+
+    .nav-wordmark {
+      font-family: 'Amboqia', Georgia, serif;
+      font-size: 18px;
+      letter-spacing: 0.06em;
+      color: var(--white);
+      text-decoration: none;
+      text-transform: uppercase;
+      opacity: 0.92;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 36px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: 'Geist', sans-serif;
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(250, 248, 244, 0.80);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--white); }
+
+    /* ═══════════════════════════════════════════════════════════════
+       HERO — FULL VIEWPORT, CINEMATIC
+    ═══════════════════════════════════════════════════════════════ */
+    .hero {
+      position: relative;
+      height: 100svh;
+      min-height: 700px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Aerial background — poster frame (production: <video> element) */
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('hero-poster.jpg');
+      background-size: cover;
+      background-position: center 40%;
+      /*
+        PRODUCTION: replace with:
+        <video autoplay loop muted playsinline poster="poster.jpg"
+               style="object-fit:cover;width:100%;height:100%;position:absolute;inset:0">
+          <source src="/videos/flyovers/[rotating-slug]/hero.mp4" type="video/mp4" />
+        </video>
+        27 flyovers rotate on each page load or after 15s.
+        prefers-reduced-motion: stays on poster.jpg.
+      */
+    }
+
+    /* Multi-stop scrim — light at top (nav legibility), heavy at bottom (content legibility) */
+    .hero-scrim {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(
+          to bottom,
+          rgba(16, 39, 66, 0.28) 0%,
+          rgba(16, 39, 66, 0.08) 28%,
+          rgba(16, 39, 66, 0.05) 48%,
+          rgba(16, 39, 66, 0.38) 68%,
+          rgba(16, 39, 66, 0.72) 88%,
+          rgba(16, 39, 66, 0.88) 100%
+        );
+    }
+
+    /* Main content — centered, above scrim */
+    .hero-content {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      padding: 0 24px;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      /* Nudge content slightly above center for visual balance */
+      margin-top: -60px;
+    }
+
+    .hero-eyebrow {
+      font-family: 'Geist', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(250, 248, 244, 0.65);
+      margin-bottom: 20px;
+    }
+
+    .hero-headline {
+      font-family: 'Amboqia', Georgia, serif;
+      font-size: clamp(52px, 7.2vw, 96px);
+      line-height: 1.04;
+      letter-spacing: -0.01em;
+      color: var(--white);
+      margin-bottom: 40px;
+      text-shadow: 0 2px 32px rgba(16, 39, 66, 0.45);
+    }
+
+    /* Search field */
+    .hero-search {
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      align-items: center;
+      background: rgba(250, 248, 244, 0.10);
+      border: 1px solid rgba(250, 248, 244, 0.22);
+      border-radius: var(--r-lg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      overflow: hidden;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .hero-search:focus-within {
+      border-color: rgba(250, 248, 244, 0.55);
+      background: rgba(250, 248, 244, 0.15);
+      outline: 3px solid var(--cream);
+      outline-offset: 2px;
+    }
+
+    .hero-search input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 18px 20px;
+      font-family: 'Geist', sans-serif;
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--white);
+      caret-color: var(--cream);
+    }
+
+    .hero-search input::placeholder {
+      color: rgba(250, 248, 244, 0.55);
+    }
+
+    .hero-search-btn {
+      padding: 12px 22px;
+      margin: 6px;
+      background: var(--cream);
+      color: var(--navy);
+      border: none;
+      border-radius: var(--r-md);
+      font-family: 'Geist', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .hero-search-btn:hover {
+      background: var(--white);
+      transform: translateY(-1px);
+    }
+
+    /* Seller CTA — quiet, beneath the fold tension */
+    .hero-seller-cta {
+      margin-top: 28px;
+      font-family: 'Geist', sans-serif;
+      font-size: 13px;
+      font-weight: 400;
+      color: rgba(250, 248, 244, 0.60);
+      letter-spacing: 0.03em;
+    }
+
+    .hero-seller-cta a {
+      color: rgba(250, 248, 244, 0.85);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: rgba(250, 248, 244, 0.35);
+      transition: color 0.2s, text-decoration-color 0.2s;
+    }
+
+    .hero-seller-cta a:hover {
+      color: var(--white);
+      text-decoration-color: rgba(250, 248, 244, 0.70);
+    }
+
+    /* Live aerial cue — bottom-left of hero */
+    .aerial-cue {
+      position: absolute;
+      bottom: 36px;
+      left: 48px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Geist', sans-serif;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(250, 248, 244, 0.50);
+      cursor: default;
+    }
+
+    .aerial-cue-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(250, 248, 244, 0.55);
+      /* PRODUCTION: animation: pulse 2s ease-in-out infinite; */
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.55; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.3); }
+    }
+
+    /* Scroll indicator */
+    .scroll-cue {
+      position: absolute;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scroll-line {
+      width: 1px;
+      height: 40px;
+      background: linear-gradient(to bottom, rgba(250,248,244,0.50), rgba(250,248,244,0));
+      /* PRODUCTION: animation: scroll-drop 1.8s ease-in-out infinite; */
+    }
+
+    @keyframes scroll-drop {
+      0% { transform: scaleY(0); transform-origin: top; opacity: 1; }
+      50% { transform: scaleY(1); transform-origin: top; opacity: 1; }
+      100% { transform: scaleY(1); transform-origin: top; opacity: 0; }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       LIVE DATA BAND
+       Real values fetched 2026-06-10 from ryan-realty.com
+    ═══════════════════════════════════════════════════════════════ */
+    .data-band {
+      background: var(--navy);
+      border-top: 1px solid rgba(250, 248, 244, 0.08);
+      border-bottom: 1px solid rgba(250, 248, 244, 0.08);
+      padding: 28px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .data-band-inner {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex: 1;
+    }
+
+    .data-stat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 0 24px;
+      position: relative;
+    }
+
+    .data-stat + .data-stat::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(250, 248, 244, 0.10);
+    }
+
+    .data-stat-value {
+      font-family: 'Geist', sans-serif;
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--cream);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .data-stat-label {
+      font-family: 'Geist', sans-serif;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: rgba(250, 248, 244, 0.45);
+    }
+
+    .data-band-meta {
+      font-family: 'Geist', sans-serif;
+      font-size: 11px;
+      color: rgba(250, 248, 244, 0.28);
+      white-space: nowrap;
+      letter-spacing: 0.02em;
+    }
+
+    .data-band-condition {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .condition-badge {
+      font-family: 'Geist', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(250, 248, 244, 0.50);
+      border: 1px solid rgba(250, 248, 244, 0.18);
+      border-radius: 100px;
+      padding: 4px 12px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       FEATURED LISTING — EDITORIAL, FULL-BLEED PHOTO
+    ═══════════════════════════════════════════════════════════════ */
+    .featured {
+      position: relative;
+      height: min(680px, 65vw);
+      min-height: 420px;
+      overflow: hidden;
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .featured-photo {
+      position: absolute;
+      inset: 0;
+      background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260605221458070104000000-o.jpg');
+      background-size: cover;
+      background-position: center;
+      transition: transform 8s ease-out;
+    }
+
+    .featured:hover .featured-photo {
+      transform: scale(1.02);
+    }
+
+    .featured-scrim {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        rgba(16, 39, 66, 0.92) 0%,
+        rgba(16, 39, 66, 0.40) 40%,
+        rgba(16, 39, 66, 0.05) 70%,
+        transparent 100%
+      );
+    }
+
+    .featured-content {
+      position: relative;
+      z-index: 10;
+      padding: 48px 64px;
+      width: 100%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 32px;
+    }
+
+    .featured-label {
+      font-family: 'Geist', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(250, 248, 244, 0.50);
+      margin-bottom: 12px;
+    }
+
+    .featured-price {
+      font-family: 'Amboqia', Georgia, serif;
+      font-size: clamp(40px, 5.5vw, 72px);
+      line-height: 1;
+      color: var(--white);
+      letter-spacing: -0.01em;
+    }
+
+    .featured-address {
+      font-family: 'Geist', sans-serif;
+      font-size: 16px;
+      font-weight: 400;
+      color: rgba(250, 248, 244, 0.75);
+      margin-top: 10px;
+    }
+
+    .featured-details {
+      font-family: 'Geist', sans-serif;
+      font-size: 13px;
+      font-weight: 400;
+      color: rgba(250, 248, 244, 0.50);
+      margin-top: 6px;
+      letter-spacing: 0.04em;
+    }
+
+    .featured-cta {
+      flex-shrink: 0;
+      font-family: 'Geist', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--cream);
+      text-decoration: none;
+      border: 1px solid rgba(250, 248, 244, 0.35);
+      border-radius: var(--r-lg);
+      padding: 16px 32px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .featured-cta:hover {
+      border-color: rgba(250, 248, 244, 0.75);
+      background: rgba(250, 248, 244, 0.08);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       SECTION HEADER — reusable
+    ═══════════════════════════════════════════════════════════════ */
+    .section-header {
+      padding: 80px 64px 40px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .section-title {
+      font-family: 'Amboqia', Georgia, serif;
+      font-size: clamp(28px, 3vw, 44px);
+      color: var(--cream);
+      letter-spacing: -0.01em;
+    }
+
+    .section-link {
+      font-family: 'Geist', sans-serif;
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(250, 248, 244, 0.45);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .section-link:hover { color: var(--cream); }
+
+    /* ═══════════════════════════════════════════════════════════════
+       NEIGHBORHOOD FILM-STRIP — 3 AERIAL TILES
+    ═══════════════════════════════════════════════════════════════ */
+    .film-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+      margin: 0;
+      /* No horizontal padding — tiles bleed to the edge */
+    }
+
+    .film-tile {
+      position: relative;
+      aspect-ratio: 9/16;
+      max-height: 540px;
+      overflow: hidden;
+      cursor: pointer;
+      text-decoration: none;
+      display: block;
+    }
+
+    .film-tile-photo {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      transition: transform 6s ease-out;
+    }
+
+    .film-tile:hover .film-tile-photo {
+      transform: scale(1.04);
+    }
+
+    .film-tile-scrim {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        transparent 45%,
+        rgba(16, 39, 66, 0.60) 72%,
+        rgba(16, 39, 66, 0.88) 100%
+      );
+    }
+
+    .film-tile-label {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 24px 22px;
+      z-index: 10;
+    }
+
+    .film-tile-name {
+      font-family: 'Amboqia', Georgia, serif;
+      font-size: 22px;
+      color: var(--white);
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+
+    .film-tile-sub {
+      font-family: 'Geist', sans-serif;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: rgba(250, 248, 244, 0.50);
+    }
+
+    /* Play icon — appears on hover */
+    .film-tile-play {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 1px solid rgba(250, 248, 244, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.25s;
+      background: rgba(16, 39, 66, 0.30);
+      backdrop-filter: blur(4px);
+    }
+
+    .film-tile-play svg {
+      width: 16px;
+      height: 16px;
+      fill: rgba(250, 248, 244, 0.85);
+      margin-left: 2px;
+    }
+
+    .film-tile:hover .film-tile-play {
+      opacity: 1;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       BROKER TRUST BAND
+    ═══════════════════════════════════════════════════════════════ */
+    .trust-band {
+      background: rgba(250, 248, 244, 0.03);
+      border-top: 1px solid rgba(250, 248, 244, 0.07);
+      padding: 80px 64px;
+    }
+
+    .trust-band-header {
+      margin-bottom: 56px;
+    }
+
+    .trust-band-title {
+      font-family: 'Amboqia', Georgia, serif;
+      font-size: clamp(22px, 2.4vw, 36px);
+      color: var(--cream);
+      letter-spacing: -0.01em;
+      margin-bottom: 8px;
+    }
+
+    .trust-band-sub {
+      font-family: 'Geist', sans-serif;
+      font-size: 14px;
+      color: rgba(250, 248, 244, 0.45);
+      font-weight: 400;
+    }
+
+    .broker-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 48px;
+    }
+
+    .broker-card {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0;
+    }
+
+    .broker-photo-wrap {
+      width: 100%;
+      aspect-ratio: 2/3;
+      max-height: 320px;
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--r-xl);
+      margin-bottom: 20px;
+      /*
+        Subtle navy-to-cream gradient provides portrait contrast for
+        the transparent PNG headshots. The subjects sit above mid-tone
+        so this is sufficient without adding a colored background box.
+      */
+      background: linear-gradient(
+        160deg,
+        rgba(250, 248, 244, 0.10) 0%,
+        rgba(16, 39, 66, 0.60) 100%
+      );
+    }
+
+    .broker-photo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top center;
+      /* Transparent PNG — floats on the dark background */
+    }
+
+    .broker-name {
+      font-family: 'Geist', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--cream);
+      margin-bottom: 4px;
+    }
+
+    .broker-role {
+      font-family: 'Geist', sans-serif;
+      font-size: 13px;
+      font-weight: 400;
+      color: rgba(250, 248, 244, 0.50);
+      margin-bottom: 8px;
+    }
+
+    .broker-license {
+      font-family: 'Geist', sans-serif;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      color: rgba(250, 248, 244, 0.28);
+    }
+
+    /* Brokerage identity row below broker cards */
+    .brokerage-identity {
+      margin-top: 64px;
+      padding-top: 40px;
+      border-top: 1px solid rgba(250, 248, 244, 0.07);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+    }
+
+    .brokerage-name {
+      font-family: 'Amboqia', Georgia, serif;
+      font-size: 26px;
+      color: var(--cream);
+      letter-spacing: 0.03em;
+    }
+
+    .brokerage-contact {
+      font-family: 'Geist', sans-serif;
+      font-size: 14px;
+      color: rgba(250, 248, 244, 0.50);
+      text-align: right;
+    }
+
+    .brokerage-contact a {
+      color: rgba(250, 248, 244, 0.70);
+      text-decoration: none;
+    }
+
+    .brokerage-contact a:hover {
+      color: var(--cream);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       FOOTER STUB
+    ═══════════════════════════════════════════════════════════════ */
+    .footer {
+      background: var(--navy);
+      border-top: 1px solid rgba(250, 248, 244, 0.06);
+      padding: 40px 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .footer-legal {
+      font-family: 'Geist', sans-serif;
+      font-size: 11px;
+      color: rgba(250, 248, 244, 0.28);
+      line-height: 1.6;
+      max-width: 680px;
+    }
+
+    .footer-eho {
+      font-family: 'Geist', sans-serif;
+      font-size: 11px;
+      color: rgba(250, 248, 244, 0.25);
+      white-space: nowrap;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       MOBILE — max-width 768px
+    ═══════════════════════════════════════════════════════════════ */
+    @media (max-width: 768px) {
+      .nav {
+        padding: 20px 20px;
+      }
+
+      .nav-links {
+        display: none; /* collapse to hamburger in production */
+      }
+
+      .hero-content {
+        margin-top: -40px;
+        padding: 0 20px;
+      }
+
+      .hero-headline {
+        font-size: clamp(38px, 10.5vw, 56px);
+      }
+
+      .aerial-cue {
+        left: 20px;
+        bottom: 28px;
+      }
+
+      .data-band {
+        padding: 24px 20px;
+        flex-direction: column;
+        gap: 20px;
+        align-items: stretch;
+      }
+
+      .data-band-inner {
+        width: 100%;
+      }
+
+      .data-stat {
+        padding: 0 16px;
+      }
+
+      .data-stat-value {
+        font-size: 22px;
+      }
+
+      .data-band-condition {
+        align-items: center;
+      }
+
+      .data-band-meta {
+        text-align: center;
+        white-space: normal;
+      }
+
+      .featured-content {
+        padding: 32px 24px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+      }
+
+      .featured-cta {
+        align-self: flex-start;
+      }
+
+      .section-header {
+        padding: 60px 24px 32px;
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+      }
+
+      .film-strip {
+        grid-template-columns: 1fr;
+        gap: 3px;
+      }
+
+      .film-tile {
+        aspect-ratio: 16/9;
+        max-height: none;
+        height: 280px;
+      }
+
+      .trust-band {
+        padding: 60px 24px;
+      }
+
+      .broker-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+
+      .broker-photo-wrap {
+        max-height: 260px;
+      }
+
+      .brokerage-identity {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+
+      .brokerage-contact {
+        text-align: left;
+      }
+
+      .footer {
+        padding: 32px 24px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+
+      .footer-eho {
+        white-space: normal;
+      }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       REDUCED MOTION — poster stays, no Ken Burns
+    ═══════════════════════════════════════════════════════════════ */
+    @media (prefers-reduced-motion: reduce) {
+      .featured:hover .featured-photo,
+      .film-tile:hover .film-tile-photo {
+        transform: none;
+      }
+
+      .aerial-cue-dot {
+        animation: none;
+      }
+
+      .scroll-line {
+        animation: none;
+        opacity: 0.4;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─────────────────────────────────────────────────────────────
+       NAV
+  ───────────────────────────────────────────────────────────────── -->
+  <nav class="nav" aria-label="Site navigation">
+    <a href="/" class="nav-wordmark" aria-label="Ryan Realty home">Ryan Realty</a>
+    <ul class="nav-links" role="list">
+      <li><a href="/listings">Buy</a></li>
+      <li><a href="/sell">Sell</a></li>
+      <li><a href="/communities">Communities</a></li>
+      <li><a href="/market">Market</a></li>
+    </ul>
+  </nav>
+
+  <!-- ─────────────────────────────────────────────────────────────
+       HERO — full viewport, aerial flyover
+  ───────────────────────────────────────────────────────────────── -->
+  <section class="hero" aria-label="Hero">
+
+    <!-- Background: production replaces this with a <video> element.
+         See DATA CITATIONS note at top of file for the video spec. -->
+    <div class="hero-bg" role="img" aria-label="Aerial view over Central Oregon"></div>
+    <div class="hero-scrim" aria-hidden="true"></div>
+
+    <div class="hero-content">
+      <p class="hero-eyebrow">Central Oregon real estate</p>
+
+      <h1 class="hero-headline font-display">
+        The land does the talking.
+      </h1>
+
+      <div class="hero-search" role="search">
+        <input
+          type="text"
+          placeholder="Search by city, neighborhood, or address"
+          aria-label="Search listings"
+        />
+        <button class="hero-search-btn" type="button">Search</button>
+      </div>
+
+      <p class="hero-seller-cta">
+        Thinking about selling? <a href="/sell">Get a complimentary market review.</a>
+      </p>
+    </div>
+
+    <!-- Live aerial cue — bottom-left -->
+    <div class="aerial-cue" aria-hidden="true">
+      <span class="aerial-cue-dot"></span>
+      Live aerial
+    </div>
+
+    <!-- Scroll indicator -->
+    <div class="scroll-cue" aria-hidden="true">
+      <div class="scroll-line"></div>
+    </div>
+
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────────
+       LIVE DATA BAND
+       Real values fetched 2026-06-10 from ryan-realty.com
+       Source: SSR HTML market snapshot, Oregon Data Share, 15-min refresh
+  ───────────────────────────────────────────────────────────────── -->
+  <div class="data-band" aria-label="Live market snapshot">
+
+    <div class="data-band-inner" role="list">
+
+      <div class="data-stat" role="listitem">
+        <span class="data-stat-value">1,797</span>
+        <span class="data-stat-label">Active homes</span>
+      </div>
+
+      <div class="data-stat" role="listitem">
+        <span class="data-stat-value">$740,000</span>
+        <span class="data-stat-label">Median list price</span>
+      </div>
+
+      <div class="data-stat" role="listitem">
+        <span class="data-stat-value">14 days</span>
+        <span class="data-stat-label">Typical days to pending</span>
+      </div>
+
+      <div class="data-stat" role="listitem">
+        <span class="data-stat-value">6.9</span>
+        <span class="data-stat-label">Months of supply</span>
+      </div>
+
+    </div>
+
+    <div class="data-band-condition">
+      <span class="condition-badge">Buyer's market</span>
+      <!-- fetched-at: 2026-06-10, source: ryan-realty.com SSR, Oregon Data Share -->
+      <span class="data-band-meta">Updated every 15 min &middot; Oregon Data Share</span>
+    </div>
+
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────────
+       FEATURED LISTING — editorial full-bleed
+       16802 Pony Express, Bend OR · $790,000 · 3bd 2ba
+       Photo: Spark CDN, fetched 2026-06-10
+  ───────────────────────────────────────────────────────────────── -->
+  <section aria-label="Featured listing">
+
+    <div class="section-header">
+      <h2 class="section-title font-display">On the market now</h2>
+      <a href="/listings" class="section-link" aria-label="Browse all listings">View all &rarr;</a>
+    </div>
+
+    <div class="featured">
+      <div class="featured-photo" role="img" aria-label="16802 Pony Express, Bend, Oregon"></div>
+      <div class="featured-scrim" aria-hidden="true"></div>
+      <div class="featured-content">
+        <div>
+          <p class="featured-label">Featured listing</p>
+          <p class="featured-price font-display">$790,000</p>
+          <p class="featured-address">16802 Pony Express &middot; Bend, OR 97707</p>
+          <p class="featured-details">3 bedrooms &middot; 2 bathrooms &middot; River Meadows</p>
+        </div>
+        <a href="/listings" class="featured-cta" aria-label="View this listing">View listing</a>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────────
+       NEIGHBORHOOD FILM-STRIP
+       3 aerial poster frames from out/neighborhood-flyover/
+       Links to each community page in production
+  ───────────────────────────────────────────────────────────────── -->
+  <section aria-label="Neighborhoods and communities">
+
+    <div class="section-header">
+      <h2 class="section-title font-display">Communities, from above</h2>
+      <a href="/communities" class="section-link" aria-label="Explore all communities">All communities &rarr;</a>
+    </div>
+
+    <div class="film-strip" role="list">
+
+      <!-- Tetherow -->
+      <a href="/communities/tetherow" class="film-tile" role="listitem" aria-label="Explore Tetherow">
+        <div
+          class="film-tile-photo"
+          role="img"
+          aria-label="Aerial view of Tetherow"
+          style="background-image: url('nb-tetherow.jpg');"
+        ></div>
+        <div class="film-tile-scrim" aria-hidden="true"></div>
+        <div class="film-tile-play" aria-hidden="true">
+          <svg viewBox="0 0 16 16"><path d="M3 2.5l10 5.5-10 5.5z"/></svg>
+        </div>
+        <div class="film-tile-label">
+          <p class="film-tile-name font-display">Tetherow</p>
+          <p class="film-tile-sub">Golf resort &middot; Bend</p>
+        </div>
+      </a>
+
+      <!-- Broken Top -->
+      <a href="/communities/broken-top" class="film-tile" role="listitem" aria-label="Explore Broken Top">
+        <div
+          class="film-tile-photo"
+          role="img"
+          aria-label="Aerial view of Broken Top"
+          style="background-image: url('nb-broken-top.jpg');"
+        ></div>
+        <div class="film-tile-scrim" aria-hidden="true"></div>
+        <div class="film-tile-play" aria-hidden="true">
+          <svg viewBox="0 0 16 16"><path d="M3 2.5l10 5.5-10 5.5z"/></svg>
+        </div>
+        <div class="film-tile-label">
+          <p class="film-tile-name font-display">Broken Top</p>
+          <p class="film-tile-sub">Gated community &middot; Bend</p>
+        </div>
+      </a>
+
+      <!-- Sunriver -->
+      <a href="/communities/sunriver" class="film-tile" role="listitem" aria-label="Explore Sunriver">
+        <div
+          class="film-tile-photo"
+          role="img"
+          aria-label="Aerial view of Sunriver"
+          style="background-image: url('nb-sunriver.jpg');"
+        ></div>
+        <div class="film-tile-scrim" aria-hidden="true"></div>
+        <div class="film-tile-play" aria-hidden="true">
+          <svg viewBox="0 0 16 16"><path d="M3 2.5l10 5.5-10 5.5z"/></svg>
+        </div>
+        <div class="film-tile-label">
+          <p class="film-tile-name font-display">Sunriver</p>
+          <p class="film-tile-sub">Resort community &middot; Deschutes County</p>
+        </div>
+      </a>
+
+    </div>
+
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────────
+       BROKER TRUST BAND
+       License numbers from OREA (public record)
+  ───────────────────────────────────────────────────────────────── -->
+  <section class="trust-band" aria-label="Our brokers">
+
+    <div class="trust-band-header">
+      <h2 class="trust-band-title font-display">Three brokers. One small business.</h2>
+      <p class="trust-band-sub">Licensed, active, and based in Bend.</p>
+    </div>
+
+    <div class="broker-grid" role="list">
+
+      <div class="broker-card" role="listitem">
+        <div class="broker-photo-wrap">
+          <img
+            src="../../assets/team/matt-ryan.png"
+            alt="Matt Ryan, Principal Broker"
+            loading="lazy"
+          />
+        </div>
+        <p class="broker-name">Matt Ryan</p>
+        <p class="broker-role">Principal Broker &middot; Owner</p>
+        <p class="broker-license">OR License 201206613</p>
+      </div>
+
+      <div class="broker-card" role="listitem">
+        <div class="broker-photo-wrap">
+          <img
+            src="../../assets/team/paul-stevenson.png"
+            alt="Paul Stevenson, Broker"
+            loading="lazy"
+          />
+        </div>
+        <p class="broker-name">Paul Stevenson</p>
+        <p class="broker-role">Broker</p>
+        <p class="broker-license">OR License 201259123</p>
+      </div>
+
+      <div class="broker-card" role="listitem">
+        <div class="broker-photo-wrap">
+          <img
+            src="../../assets/team/rebecca-peterson.png"
+            alt="Rebecca Ryser Peterson, Broker"
+            loading="lazy"
+          />
+        </div>
+        <p class="broker-name">Rebecca Ryser Peterson</p>
+        <p class="broker-role">Broker</p>
+        <p class="broker-license">OR License 201254727</p>
+      </div>
+
+    </div>
+
+    <div class="brokerage-identity">
+      <p class="brokerage-name font-display">Ryan Realty</p>
+      <div class="brokerage-contact">
+        <p><a href="tel:+15412136706">541.213.6706</a></p>
+        <p><a href="https://ryan-realty.com">ryan-realty.com</a></p>
+        <p>BEND &middot; OREGON</p>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────────
+       FOOTER STUB
+  ───────────────────────────────────────────────────────────────── -->
+  <footer class="footer" aria-label="Site footer">
+    <p class="footer-legal">
+      Listings courtesy of Oregon Data Share. Information deemed reliable but not guaranteed.
+      &copy; 2026 Ryan Realty LLC &middot; Bend, Oregon &middot; Licensed in Oregon &middot;
+      Principal Broker license 201206613.
+    </p>
+    <p class="footer-eho">Equal Housing Opportunity</p>
+  </footer>
+
+</body>
+</html>
