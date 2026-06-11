@@ -12,6 +12,7 @@
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
+import { resolveBlogHeroImage } from '@/lib/blog-hero-images'
 
 export type BlogPostWithAuthor = {
   id: string
@@ -98,6 +99,8 @@ async function _getPublishedBlogPostsUncached(options: {
     const author = p.author_broker_id ? brokerMap.get(p.author_broker_id) : null
     return {
       ...p,
+      // P0-4: never serve a remote/stock/dead hero — resolve to a verified local photo.
+      hero_image_url: resolveBlogHeroImage(p.slug, p.category, p.hero_image_url),
       author_name: author?.display_name ?? null,
       author_slug: author?.slug ?? null,
       author_photo_url: author?.photo_url ?? null,
@@ -111,7 +114,8 @@ async function _getPublishedBlogPostsUncached(options: {
 // independently. TTL matches the existing blog window (CACHE_WINDOWS.blog = 600s).
 export const getPublishedBlogPosts = makeResilientCached(
   _getPublishedBlogPostsUncached,
-  ['published-blog-posts-v1'],
+  // v2 — local hero resolution (P0-4); evicts cached rows carrying Unsplash URLs.
+  ['published-blog-posts-v2'],
   { revalidate: CACHE_WINDOWS.blog, tags: [cacheTag.blog] },
   { posts: [], total: 0 },
 )

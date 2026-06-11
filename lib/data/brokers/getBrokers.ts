@@ -202,7 +202,12 @@ export async function getBlogPostForOgBySlug(
     .select('title, hero_image_url, category')
     .eq('slug', slug)
     .maybeSingle()
-  return (data ?? null) as { title?: string; hero_image_url?: string; category?: string } | null
+  const row = (data ?? null) as { title?: string; hero_image_url?: string; category?: string } | null
+  if (!row) return null
+  // P0-4: never serve a remote/stock/dead hero — resolve to a verified local photo.
+  // The OG renderer absolutizes the relative path against the request origin.
+  const { resolveBlogHeroImage } = await import('@/lib/blog-hero-images')
+  return { ...row, hero_image_url: resolveBlogHeroImage(slug, row.category ?? null, row.hero_image_url ?? null) }
 }
 
 /** Search brokers by display_name ilike (active only). Used by search-suggestions. */

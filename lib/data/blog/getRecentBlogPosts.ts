@@ -13,6 +13,7 @@
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
+import { resolveBlogHeroImage } from '@/lib/blog-hero-images'
 
 export type BlogPostCard = {
   id: string
@@ -63,7 +64,8 @@ async function _getRecentBlogPostsUncached(options: {
       slug: r.slug,
       excerpt: r.excerpt,
       category: r.category,
-      heroImageUrl: r.hero_image_url,
+      // P0-4: never serve a remote/stock/dead hero — resolve to a verified local photo.
+      heroImageUrl: resolveBlogHeroImage(r.slug, r.category, r.hero_image_url),
       publishedAt: r.published_at,
     }),
   )
@@ -83,7 +85,8 @@ export const getRecentBlogPosts = makeResilientCached(
   _getRecentBlogPostsUncached,
   // v2 — bumped alongside the poison-null fix (was unstable_cache, which cached []
   // on a transient error). v1 entries may be poisoned; v2 evicts them.
-  ['recent-blog-posts-v2'],
+  // v3 — local hero resolution (P0-4); evicts cached rows carrying Unsplash URLs.
+  ['recent-blog-posts-v3'],
   { revalidate: CACHE_WINDOWS.blog, tags: [cacheTag.blog] },
   [],
 )

@@ -469,7 +469,7 @@ export default async function PriceDropsRegionPage() {
             <Stack gap="tight">
               <Eyebrow>By neighborhood</Eyebrow>
               <H3>Where prices are being cut</H3>
-              <div className="overflow-x-auto no-scrollbar mt-2">
+              <div className="w-full max-w-full overflow-x-auto no-scrollbar mt-2">
                 <Table className="text-sm">
                   <TableHeader>
                     <TableRow className="text-muted-foreground">

@@ -109,7 +109,10 @@ export async function GET(request: Request) {
       const { getBlogPostForOgBySlug } = await import('@/lib/data')
       const p = await getBlogPostForOgBySlug(id)
       if (p?.title) {
-        const heroUrl = p.hero_image_url
+        // P0-4: heroes are local public/ paths now — satori needs an absolute URL.
+        const heroUrl = p.hero_image_url?.startsWith('/')
+          ? new URL(p.hero_image_url, request.url).toString()
+          : p.hero_image_url
         return new ImageResponse(
           (
             <div

@@ -124,7 +124,10 @@ export function SearchAlertCapture({
             aria-hidden="true"
             value={company}
             onChange={(event) => setCompany(event.target.value)}
-            className="sr-only"
+            // P0-6: h-px w-px so tailwind-merge drops the Input base h-8/w-full —
+            // bare sr-only loses the width war to w-full (absolute 390px input
+            // widened the document and caused horizontal page scroll at 390px).
+            className="sr-only h-px w-px"
           />
           <Input
             type="email"

@@ -16,6 +16,7 @@
 import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { resolveBlogHeroImage } from '@/lib/blog-hero-images'
 
 export type AmenityBlogPost = {
   slug: string
@@ -55,14 +56,16 @@ async function _getBlogPostsBySlugsUncached(
     map[row.slug] = {
       slug: row.slug,
       title: row.title,
-      heroImageUrl: row.hero_image_url ?? null,
+      // P0-4: never serve a remote/stock/dead hero — resolve to a verified local photo.
+      heroImageUrl: resolveBlogHeroImage(row.slug, null, row.hero_image_url ?? null),
     }
   }
   return map
 }
 
+// Key bumped to v2 for local hero resolution (P0-4) — evicts cached Unsplash rows.
 export const getBlogPostsBySlugs = unstable_cache(
   _getBlogPostsBySlugsUncached,
-  ['blog-posts-by-slugs-v1'],
+  ['blog-posts-by-slugs-v2'],
   { revalidate: CACHE_WINDOWS.blog, tags: [cacheTag.blog] },
 )

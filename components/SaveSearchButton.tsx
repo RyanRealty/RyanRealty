@@ -207,7 +207,9 @@ export default function SaveSearchButton({ user }: Props) {
                 aria-hidden="true"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
-                className="sr-only"
+                // P0-6: h-px w-px so tailwind-merge drops the Input base h-8/w-full
+                // (bare sr-only loses width:1px to the base w-full in the cascade).
+                className="sr-only h-px w-px"
               />
               <Label htmlFor="save-search-email" className="mt-3 block text-sm font-medium text-muted-foreground">
                 Email
