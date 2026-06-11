@@ -9,6 +9,24 @@ import { GoogleIcon, FacebookIcon } from '@/components/icons/AuthProviderIcons'
 
 const DISMISS_KEY = 'ryan_realty_signin_prompt_dismissed'
 const DISMISS_HOURS = 24
+const PV_KEY = 'rr_session_pageviews'
+
+/**
+ * Engagement gate (2026-06-11, polish-audit P2 + Matt's conversion standard):
+ * the prompt used to fire 1s into the FIRST pageview, stacking with the cookie
+ * banner over the money pages — a login wall before a visitor saw a single
+ * home. Now: first pageview of the session is never interrupted; the prompt
+ * waits for the second pageview (the engaged visitor, who actually converts).
+ */
+function countPageview(): number {
+  try {
+    const n = Number(sessionStorage.getItem(PV_KEY) || '0') + 1
+    sessionStorage.setItem(PV_KEY, String(n))
+    return n
+  } catch {
+    return 2 // storage unavailable: keep legacy behavior
+  }
+}
 
 function wasDismissed(): boolean {
   if (typeof localStorage === 'undefined') return true
@@ -69,7 +87,8 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
       return
     }
     if (wasDismissed()) return
-    // Prompt logged-out visitors right away (don't wait). Tiny delay lets the first paint land.
+    // Engagement gate: never interrupt the first pageview of a session.
+    if (countPageview() < 2) return
     // Re-check the 404 flag at fire time — by 1s the not-found page's effect has set it.
     const t = setTimeout(() => {
       if (!isNotFoundPage()) setShow(true)
