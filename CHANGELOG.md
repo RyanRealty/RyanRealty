@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.489.1 (2026-06-11)
+
+### Bug Fixes
+- fix(compliance): carrier-verifiable SMS consent disclosure on every lead form
+
+---
+
+
 ## v1.489.0 (2026-06-11)
 
 ### Features
