@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import { cn } from '@/lib/utils'
 
 /**
@@ -308,6 +309,8 @@ export function LeadCaptureBlock({
                   {pending ? 'Sending...' : (submitLabel ?? defaults.submitLabel)}
                 </CTAButton>
               </div>
+
+              {variant !== 'inquiry' ? <SmsConsentDisclosure /> : null}
 
               <p className="text-xs text-muted-foreground">
                 {consentLine ?? defaults.consentLine}

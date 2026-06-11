@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -84,7 +85,7 @@ export default function LeadLandingForm({
 
       setSubmitted(true)
       toast.success('Thanks. We will reach out shortly.')
-      trackCtaClick({
+      trackCtaClick({ // hydration-safe — inside the submit handler, not render
         label: buttonLabel,
         destination: pagePath,
         context: `lead_landing:${leadIntent}`,
@@ -171,9 +172,7 @@ export default function LeadLandingForm({
             <Button type="submit" className="w-full" disabled={isPending}>
               {isPending ? 'Sending request...' : buttonLabel}
             </Button>
-            <p className="text-xs text-muted-foreground">
-              By submitting you agree to be contacted by Ryan Realty about your request.
-            </p>
+            <SmsConsentDisclosure />
           </form>
         )}
       </CardContent>

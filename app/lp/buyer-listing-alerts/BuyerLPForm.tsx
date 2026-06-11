@@ -16,6 +16,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { submitBuyerLPForm, type BuyerLPTimeline } from './actions'
 import { CONTACT } from '@/lib/brand/contact'
+import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 
 const SEARCH_AREAS = [
   { slug: 'northwest-crossing', label: 'NW Crossing' },
@@ -127,6 +128,7 @@ export default function BuyerLPForm() {
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? 'Setting up your search…' : 'Start my listing alerts'}
       </Button>
+      <SmsConsentDisclosure />
       <p className="text-center text-xs text-muted-foreground">
         Add details below to sharpen your matches. All optional.
       </p>
@@ -200,6 +202,7 @@ export default function BuyerLPForm() {
       <Button type="submit" disabled={pending} variant="outline" className="w-full">
         {pending ? 'Setting up your search…' : 'Save my details and start alerts'}
       </Button>
+      <SmsConsentDisclosure />
     </form>
   )
 }

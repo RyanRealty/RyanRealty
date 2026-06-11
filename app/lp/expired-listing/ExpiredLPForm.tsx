@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select'
 import { submitExpiredLPForm } from './actions'
 import { CONTACT } from '@/lib/brand/contact'
+import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import { readRrSessionId } from '@/lib/tracking'
 
 export default function ExpiredLPForm() {
@@ -104,6 +105,7 @@ export default function ExpiredLPForm() {
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? 'Sending…' : 'Get my audit'}
       </Button>
+      <SmsConsentDisclosure />
       <p className="text-center text-xs text-muted-foreground">
         No commitment. You get the audit either way.
       </p>

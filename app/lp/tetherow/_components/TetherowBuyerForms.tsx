@@ -16,6 +16,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 
 const SUB_NEIGHBORHOODS = [
   'Heath',
@@ -179,10 +180,7 @@ function ShowingCard({
           >
             {submitting ? 'Sending...' : 'Request showing'}
           </Button>
-          <div className="mt-1 text-[11px] leading-[1.4] text-[rgba(250,248,244,0.5)]">
-            By submitting, you agree to receive a marketing communication via SMS, AI voice call,
-            or email from Ryan Realty. Reply STOP to unsubscribe.
-          </div>
+          <SmsConsentDisclosure tone="on-dark" className="mt-1 text-[11px]" />
         </form>
       )}
     </div>

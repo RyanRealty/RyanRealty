@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { H2 } from '@/components/site/primitives'
+import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 
 export default function ValuationForm() {
   const [state, setState] = useState<{ error?: string; success?: boolean; cmaSent?: boolean; eventId?: string }>({})
@@ -116,6 +117,7 @@ export default function ValuationForm() {
       >
         {loading ? 'Sending…' : 'Get my home value'}
       </Button>
+      <SmsConsentDisclosure />
     </form>
   )
 }

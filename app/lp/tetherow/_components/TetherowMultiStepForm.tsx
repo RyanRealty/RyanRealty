@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 
 const SUB_OPTIONS = [
   'Heath',
@@ -361,12 +362,7 @@ export function TetherowMultiStepForm() {
                 {submitting ? 'Sending...' : 'Send my value report'}
               </Button>
             </div>
-            <div className="text-[11.5px] leading-[1.5] text-[rgba(250,248,244,0.62)]">
-              By submitting, you agree to receive a marketing communication via SMS, AI voice call,
-              or email from Ryan Realty | Bend, Oregon Real Estate Experts. Consent is not a
-              condition of receiving the CMA. Standard message rates apply. Reply STOP to
-              unsubscribe.
-            </div>
+            <SmsConsentDisclosure tone="on-dark" className="text-[11.5px]" />
           </>
         )}
       </form>

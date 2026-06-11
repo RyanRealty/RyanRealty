@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { submitContactForm } from './actions'
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
 import { Input } from "@/components/ui/input"
+import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -132,6 +133,7 @@ export default function ContactForm({ defaultInquiryType }: { defaultInquiryType
       >
         {loading ? 'Sending…' : 'Send message'}
       </Button>
+      <SmsConsentDisclosure />
     </form>
   )
 }
