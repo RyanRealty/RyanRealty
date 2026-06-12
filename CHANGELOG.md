@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.500.0 (2026-06-12)
+
+### Features
+- feat(crm): phone-first person page — conversation thread, sticky + contact button, comms-first ordering
+
+---
+
+
 ## v1.499.2 (2026-06-12)
 
 ### Bug Fixes
