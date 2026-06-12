@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.490.0 (2026-06-12)
+
+### Features
+- feat(crm): A2P resubmit + FUB->Twilio opt-out backfill scripts
+
+---
+
+
 ## v1.489.2 (2026-06-12)
 
 ### Bug Fixes
