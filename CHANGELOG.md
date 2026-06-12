@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.500.1 (2026-06-12)
+
+### Bug Fixes
+- fix(crm): conversation thread sizing onto the locked Tailwind ladder
+
+---
+
+
 ## v1.500.0 (2026-06-12)
 
 ### Features
