@@ -1470,9 +1470,22 @@ export async function trackReturnVisit(params: {
     message: 'return',
   })
 
+  // Instant broker text with the CRM deep link — catch the lead while they
+  // are still on the site (once per person per day). Independent of the FUB
+  // note/task push below, which is flag-disabled in prod since 2026-06-10.
+  const livePersonId = existing?.id ?? (await resolvePersonId(person))
+  if (livePersonId) {
+    try {
+      const { queueReturnVisitAlert } = await import('@/lib/crm/broker-alerts')
+      await queueReturnVisitAlert({ fubPersonId: livePersonId, who: email, pageUrl: params.pageUrl, pageTitle: params.pageTitle })
+    } catch (err) {
+      console.warn('[fub] return-visit alert queue failed:', err)
+    }
+  }
+
   // Optional real-time push signal: add a note so Matt is notified in FUB app.
   if (!isRealtimeActivityAlertsEnabled()) return
-  const personId = await resolvePersonId(person)
+  const personId = livePersonId
   if (!personId) return
   const who = email || `FUB Contact ${personId}`
   const titlePart = params.pageTitle?.trim() ? ` (${params.pageTitle.trim()})` : ''
@@ -1484,14 +1497,6 @@ export async function trackReturnVisit(params: {
     dueInMinutes: 10,
     taskName: 'Lead returned to website. Follow up now.',
   })
-  // Instant broker text with the CRM deep link — catch the lead while they
-  // are still on the site (once per person per day).
-  try {
-    const { queueReturnVisitAlert } = await import('@/lib/crm/broker-alerts')
-    await queueReturnVisitAlert({ fubPersonId: personId, who, pageUrl: params.pageUrl, pageTitle: params.pageTitle })
-  } catch (err) {
-    console.warn('[fub] return-visit alert queue failed:', err)
-  }
 }
 
 /**
