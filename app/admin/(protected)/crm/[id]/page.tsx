@@ -26,6 +26,8 @@ import { getOwnedHomeMatches, type OwnedHomeMatch } from '@/lib/data'
 import { getOwnedHomeMedia } from '@/lib/crm/owned-home-media'
 import { EmailComposer } from '@/components/admin/crm/EmailComposer'
 import { SmsComposer } from '@/components/admin/crm/SmsComposer'
+import ConversationThread, { isConversationEvent } from '@/components/admin/crm/ConversationThread'
+import QuickContactFab from '@/components/admin/crm/QuickContactFab'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -233,8 +235,8 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
-        {/* ── Left: identity ── */}
-        <div className="space-y-6">
+        {/* ── Left: identity (second on phones — comms come first) ── */}
+        <div className="order-2 space-y-6 lg:order-none">
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-3">
@@ -499,8 +501,23 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
           ) : null}
         </div>
 
-        {/* ── Right: tasks + timeline ── */}
-        <div className="space-y-6">
+        {/* ── Right: conversation + tasks + timeline (first on phones) ── */}
+        <div className="order-1 space-y-6 lg:order-none">
+          {/* Conversation — texts and emails only, chat style */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Conversation</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ConversationThread
+                events={full.timeline.filter((t) => isConversationEvent(t.kind)).map((t) => ({
+                  id: t.id, ts: t.ts, kind: t.kind, title: t.title, body: t.body, broker: t.broker,
+                }))}
+                personName={person.first_name ?? person.name ?? 'this contact'}
+              />
+            </CardContent>
+          </Card>
+
           {/* Tasks */}
           <Card>
             <CardHeader className="pb-3">
@@ -618,7 +635,7 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
           </Card>
 
           {/* Composer */}
-          <Card>
+          <Card id="add-note" className="scroll-mt-20">
             <CardHeader className="pb-3"><CardTitle className="text-base">Add note</CardTitle></CardHeader>
             <CardContent>
               <form action={addNoteForm} className="space-y-2">
@@ -674,6 +691,7 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
           </Card>
         </div>
       </div>
+      <QuickContactFab phone={primaryPhone} email={primaryEmail} />
     </main>
   )
 }
