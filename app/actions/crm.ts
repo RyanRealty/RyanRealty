@@ -204,6 +204,81 @@ export async function getCrmOverview(): Promise<CrmOverview> {
   }
 }
 
+export type CrmHomeDashboard = {
+  funnel: Array<{ stage: string; count: number }>
+  attention: {
+    approvalsPending: number
+    tasksOverdue: number
+    tasksToday: number
+    inbound24h: number
+    hotLeads48h: number
+    newLeads7d: number
+  }
+  newest: Array<{
+    id: number
+    name: string | null
+    stage: string
+    source: string | null
+    picture_url: string | null
+    created_at: string | null
+    last_activity_at: string | null
+  }>
+}
+
+/** Broker-focused home dashboard: the lead funnel + what needs attention. */
+export async function getCrmHomeDashboard(broker?: string): Promise<CrmHomeDashboard> {
+  const sb = createServiceClient()
+  const head = { count: 'exact' as const, head: true }
+  // supabase's builder generics explode (TS2589) on a generic passthrough —
+  // keep the helper untyped; results are cast at the destructuring sites.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const withBroker = (q: any): any => (broker ? q.eq('assigned_broker', broker) : q)
+
+  const now = new Date()
+  const endOfToday = new Date(now)
+  endOfToday.setHours(23, 59, 59, 999)
+  const dayAgo = new Date(now.getTime() - 24 * 3600e3).toISOString()
+  const twoDaysAgo = new Date(now.getTime() - 48 * 3600e3).toISOString()
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 3600e3).toISOString()
+
+  const [stageCounts, approvals, overdue, today, inbound, hot, newLeads, newest] = await Promise.all([
+    Promise.all(
+      CRM_STAGES.map(async (stage) => {
+        const { count } = await withBroker(sb.from('crm_people').select('id', head).eq('stage', stage))
+        return { stage, count: count ?? 0 }
+      }),
+    ),
+    sb.from('crm_sequence_enrollments').select('id', head).eq('status', 'awaiting_broker'),
+    withBroker(sb.from('crm_tasks').select('id', head).is('completed_at', null).lt('due_at', now.toISOString())),
+    withBroker(
+      sb.from('crm_tasks').select('id', head).is('completed_at', null)
+        .gte('due_at', now.toISOString()).lte('due_at', endOfToday.toISOString()),
+    ),
+    sb.from('crm_timeline').select('id', head).in('kind', ['sms_in', 'email_in', 'call', 'voicemail']).gte('ts', dayAgo),
+    sb.from('visitor_sessions').select('session_id', head).gte('hot_lead_fired_at', twoDaysAgo),
+    withBroker(sb.from('crm_people').select('id', head).gte('created_at', weekAgo)),
+    withBroker(
+      sb.from('crm_people')
+        .select('id,name,stage,source,picture_url,created_at,last_activity_at')
+        .order('created_at', { ascending: false })
+        .limit(8),
+    ),
+  ])
+
+  return {
+    funnel: stageCounts.filter((s) => s.count > 0),
+    attention: {
+      approvalsPending: approvals.count ?? 0,
+      tasksOverdue: overdue.count ?? 0,
+      tasksToday: today.count ?? 0,
+      inbound24h: inbound.count ?? 0,
+      hotLeads48h: hot.count ?? 0,
+      newLeads7d: newLeads.count ?? 0,
+    },
+    newest: (newest.data ?? []) as CrmHomeDashboard['newest'],
+  }
+}
+
 export type CrmTimelineRow = {
   id: number
   ts: string
