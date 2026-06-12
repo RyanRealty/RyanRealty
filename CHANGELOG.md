@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.498.0 (2026-06-12)
+
+### Features
+- feat(crm): global Tasks page + manual contact creation + phone-native admin
+
+---
+
+
 ## v1.497.2 (2026-06-12)
 
 ### Bug Fixes
