@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.496.0 (2026-06-12)
+
+### Features
+- feat(crm): generic %custom*% merge resolution + unresolved-token warning in composers
+
+---
+
+
 ## v1.495.0 (2026-06-12)
 
 ### Features
