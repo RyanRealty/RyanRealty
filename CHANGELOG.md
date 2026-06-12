@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.497.0 (2026-06-12)
+
+### Features
+- feat(admin): job-based nav IA + command palette + instant loading states + person-page perf
+
+---
+
+
 ## v1.496.0 (2026-06-12)
 
 ### Features
