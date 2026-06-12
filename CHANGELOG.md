@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.494.3 (2026-06-12)
+
+### Maintenance
+- test(crm): widen synthetic-artifact patterns (ImportTest, Smoke Test, Test Lead, Funnel Test)
+
+---
+
+
 ## v1.494.2 (2026-06-12)
 
 ### Bug Fixes
