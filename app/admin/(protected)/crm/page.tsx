@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { getCrmAccess, getCrmOverview, listBrokerLicenses, listCrmPeople, listCrmSavedViews } from '@/app/actions/crm'
 import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import { Badge } from '@/components/ui/badge'
+import ContactsSearch from '@/components/admin/crm/ContactsSearch'
 import StageBadge from '@/components/admin/crm/StageBadge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -12,7 +13,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 
-export const metadata = { title: 'CRM | Admin' }
+export const metadata = { title: 'Contacts | Admin' }
 export const dynamic = 'force-dynamic'
 
 function fmtDate(iso: string | null): string {
@@ -88,7 +89,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
     <main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">CRM</h1>
+          <h1 className="text-2xl font-bold text-foreground">Contacts</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {isMyLeads ? `Showing your leads (${CRM_BROKER_DISPLAY[access.brokerSlug!]})` : 'Ryan Realty contact database'}
             {' · synced with FUB during the parallel run'}
@@ -146,15 +147,15 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         ))}
       </div>
 
+      {/* Search — filters live as you type */}
+      <div className="mt-4">
+        <ContactsSearch initial={sp.q ?? ''} />
+      </div>
+
       {/* Filters */}
-      <form method="GET" action="/admin/crm" className="mt-4 flex flex-wrap items-center gap-2">
+      <form method="GET" action="/admin/crm" className="mt-2 flex flex-wrap items-center gap-2">
         {sp.view ? <input type="hidden" name="view" value={sp.view} /> : null}
-        <Input
-          name="q"
-          defaultValue={sp.q ?? ''}
-          placeholder="Search name, email, or phone"
-          className="w-72"
-        />
+        {sp.q ? <input type="hidden" name="q" value={sp.q} /> : null}
         <select
           name="stage"
           defaultValue={sp.stage ?? ''}
