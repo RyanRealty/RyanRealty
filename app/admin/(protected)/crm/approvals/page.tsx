@@ -1,0 +1,175 @@
+// @no-parity — internal admin surface, no public mockup contract
+import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import {
+  getCrmAccess,
+  getAwaitingApprovals,
+  approveEnrollmentAction,
+  skipFirstTouchAction,
+  dismissEnrollmentAction,
+} from '@/app/actions/crm'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Textarea } from '@/components/ui/textarea'
+
+export const metadata = { title: 'First-touch approvals | CRM | Admin' }
+export const dynamic = 'force-dynamic'
+
+async function approveForm(formData: FormData): Promise<void> {
+  'use server'
+  const enrollmentId = Number(formData.get('enrollmentId'))
+  const r = await approveEnrollmentAction(enrollmentId)
+  if (!r.ok) console.error('[crm] approveEnrollment failed:', r.error)
+}
+
+async function approveEditedForm(formData: FormData): Promise<void> {
+  'use server'
+  const enrollmentId = Number(formData.get('enrollmentId'))
+  const body = (formData.get('body') as string | null)?.trim() || null
+  const r = await approveEnrollmentAction(enrollmentId, body)
+  if (!r.ok) console.error('[crm] approveEnrollmentEdited failed:', r.error)
+}
+
+async function skipForm(formData: FormData): Promise<void> {
+  'use server'
+  const enrollmentId = Number(formData.get('enrollmentId'))
+  const r = await skipFirstTouchAction(enrollmentId)
+  if (!r.ok) console.error('[crm] skipFirstTouch failed:', r.error)
+}
+
+async function dismissForm(formData: FormData): Promise<void> {
+  'use server'
+  const enrollmentId = Number(formData.get('enrollmentId'))
+  const r = await dismissEnrollmentAction(enrollmentId)
+  if (!r.ok) console.error('[crm] dismissEnrollment failed:', r.error)
+}
+
+function fmtRelative(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime()
+  if (ms < 60_000) return 'just now'
+  if (ms < 3_600_000) return `${Math.floor(ms / 60_000)}m ago`
+  if (ms < 86_400_000) return `${Math.floor(ms / 3_600_000)}h ago`
+  return `${Math.floor(ms / 86_400_000)}d ago`
+}
+
+export default async function CrmApprovalsPage() {
+  const access = await getCrmAccess()
+  if (!access) redirect('/admin/access-denied')
+
+  const items = await getAwaitingApprovals()
+
+  return (
+    <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+      <div className="mb-1 text-sm text-muted-foreground">
+        <Link href="/admin/crm" className="hover:text-foreground">Back to CRM</Link>
+      </div>
+      <h1 className="text-2xl font-bold text-foreground">First-touch approvals</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Each new lead lands here with its first text prepared. Review, edit if needed, then send
+        to start the workflow. New leads auto-enroll and wait here until a broker acts.
+      </p>
+
+      <div className="mt-6 space-y-5">
+        {items.length === 0 ? (
+          <Card>
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">
+              Nothing waiting on you. New leads land here with their first text prepared.
+            </CardContent>
+          </Card>
+        ) : (
+          items.map((item) => (
+            <Card key={item.enrollmentId}>
+              <CardHeader className="pb-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <CardTitle className="text-base">
+                      <Link
+                        href={`/admin/crm/${item.personId}`}
+                        className="hover:underline"
+                      >
+                        {item.personName ?? `Contact #${item.personId}`}
+                      </Link>
+                    </CardTitle>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <Badge variant="secondary" className="text-[11px]">{item.sequenceName}</Badge>
+                      {item.source ? <span>{item.source}</span> : null}
+                      {item.assignedBroker ? <span>{item.assignedBroker}</span> : null}
+                      <span className="tabular-nums">{fmtRelative(item.enrolledAt)}</span>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Prepared message preview */}
+                {item.preview ? (
+                  <blockquote className="rounded-md border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+                    <p className="whitespace-pre-wrap">{item.preview.body}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{item.preview.channel} channel</p>
+                  </blockquote>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No message step first — task or email opens this workflow.
+                  </p>
+                )}
+
+                {/* CMA link */}
+                {item.cmaLink ? (
+                  <a
+                    href={item.cmaLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-block text-sm text-foreground underline hover:text-muted-foreground"
+                  >
+                    View CMA
+                  </a>
+                ) : (
+                  <p className="text-sm text-muted-foreground">CMA builds before the text can send.</p>
+                )}
+
+                {/* Primary actions */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <form action={approveForm}>
+                    <input type="hidden" name="enrollmentId" value={item.enrollmentId} />
+                    <Button type="submit" size="sm">Send and start</Button>
+                  </form>
+                  <form action={skipForm}>
+                    <input type="hidden" name="enrollmentId" value={item.enrollmentId} />
+                    <Button type="submit" size="sm" variant="outline">Skip first text</Button>
+                  </form>
+                  <form action={dismissForm}>
+                    <input type="hidden" name="enrollmentId" value={item.enrollmentId} />
+                    <Button type="submit" size="sm" variant="outline">Dismiss</Button>
+                  </form>
+                </div>
+
+                {/* Edit text disclosure */}
+                {item.preview ? (
+                  <details className="rounded-md border border-border">
+                    <summary className="cursor-pointer px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
+                      Edit text before sending
+                    </summary>
+                    <div className="border-t border-border px-3 pb-3 pt-3">
+                      <form action={approveEditedForm} className="space-y-2">
+                        <input type="hidden" name="enrollmentId" value={item.enrollmentId} />
+                        <Textarea
+                          name="body"
+                          rows={5}
+                          defaultValue={item.preview.body.replace('[CMA link attaches when built]', '%cma_link%')}
+                          className="text-sm"
+                        />
+                        <div className="flex justify-end">
+                          <Button type="submit" size="sm">Send edited text</Button>
+                        </div>
+                      </form>
+                    </div>
+                  </details>
+                ) : null}
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+    </main>
+  )
+}

@@ -744,3 +744,193 @@ export async function completeCrmTaskAction(formData: FormData): Promise<CrmActi
   revalidateCrm(personId)
   return { ok: true }
 }
+
+// ─── Workflow approval gate + board (Matt directive 2026-06-12) ─────────────
+// New enrollments wait in status='awaiting_broker' with a prepared first
+// touch. The broker approves (optionally editing the text), skips, or
+// dismisses. The board actions move people through workflows manually.
+
+export type AwaitingApproval = {
+  enrollmentId: number
+  personId: number
+  personName: string | null
+  assignedBroker: string | null
+  source: string | null
+  sequenceId: number
+  sequenceName: string
+  enrolledAt: string
+  preview: { channel: string; body: string } | null
+  cmaLink: string | null
+}
+
+export async function getAwaitingApprovals(): Promise<AwaitingApproval[]> {
+  const access = await getCrmAccess()
+  if (!access) return []
+  const sb = createServiceClient()
+  const { data } = await sb
+    .from('crm_sequence_enrollments')
+    .select('id,person_id,sequence_id,created_at,crm_sequences!inner(id,name),crm_people!inner(id,name,source,assigned_broker,custom)')
+    .eq('status', 'awaiting_broker')
+    .order('created_at', { ascending: false })
+    .limit(100)
+  const { renderFirstTouchPreview } = await import('@/lib/crm/enroll')
+  const out: AwaitingApproval[] = []
+  for (const row of data ?? []) {
+    const seq = row.crm_sequences as unknown as { id: number; name: string }
+    const person = row.crm_people as unknown as { id: number; name: string | null; source: string | null; assigned_broker: string | null; custom: Record<string, unknown> | null }
+    out.push({
+      enrollmentId: row.id as number,
+      personId: person.id,
+      personName: person.name,
+      assignedBroker: person.assigned_broker,
+      source: person.source,
+      sequenceId: seq.id,
+      sequenceName: seq.name,
+      enrolledAt: row.created_at as string,
+      preview: await renderFirstTouchPreview(seq.id, person.id),
+      cmaLink: (person.custom?.cmaLink as string | undefined) ?? null,
+    })
+  }
+  return out
+}
+
+async function setEnrollment(
+  enrollmentId: number,
+  patch: Record<string, unknown>,
+  timelineTitle: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'not authorized' }
+  const sb = createServiceClient()
+  const { data: en, error } = await sb
+    .from('crm_sequence_enrollments')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('id', enrollmentId)
+    .select('person_id')
+    .maybeSingle()
+  if (error || !en) return { ok: false, error: error?.message ?? 'enrollment not found' }
+  await sb.from('crm_timeline').insert({
+    person_id: en.person_id,
+    kind: 'system',
+    title: timelineTitle,
+    source: 'workflow-board',
+  })
+  revalidatePath('/admin/crm/approvals')
+  revalidatePath('/admin/crm/workflows')
+  return { ok: true }
+}
+
+/** Approve the prepared first touch (optionally edited) and start the workflow. */
+export async function approveEnrollmentAction(
+  enrollmentId: number,
+  editedBody?: string | null,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'not authorized' }
+  const trimmed = editedBody?.trim() || null
+  return setEnrollment(
+    enrollmentId,
+    {
+      status: 'running',
+      next_run_at: new Date().toISOString(),
+      approved_by: access.email,
+      approved_at: new Date().toISOString(),
+      ...(trimmed ? { first_touch_override: trimmed } : {}),
+    },
+    trimmed ? 'Workflow approved with edited first text' : 'Workflow approved — first touch queued to send',
+  )
+}
+
+/** Start the workflow but skip the prepared first touch. */
+export async function skipFirstTouchAction(enrollmentId: number) {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false as const, error: 'not authorized' }
+  return setEnrollment(
+    enrollmentId,
+    { status: 'running', step_index: 1, next_run_at: new Date().toISOString(), approved_by: access.email, approved_at: new Date().toISOString() },
+    'Workflow started — first text skipped by broker',
+  )
+}
+
+export async function dismissEnrollmentAction(enrollmentId: number) {
+  return setEnrollment(enrollmentId, { status: 'stopped' }, 'Workflow dismissed by broker')
+}
+
+export async function pauseEnrollmentAction(enrollmentId: number) {
+  return setEnrollment(enrollmentId, { status: 'paused' }, 'Workflow paused by broker')
+}
+
+export async function resumeEnrollmentAction(enrollmentId: number) {
+  return setEnrollment(
+    enrollmentId,
+    { status: 'running', next_run_at: new Date().toISOString() },
+    'Workflow resumed by broker',
+  )
+}
+
+/** Run the next step now instead of waiting for its scheduled time. */
+export async function advanceEnrollmentNowAction(enrollmentId: number) {
+  return setEnrollment(
+    enrollmentId,
+    { next_run_at: new Date().toISOString() },
+    'Next workflow step pulled forward by broker',
+  )
+}
+
+export type WorkflowBoardSequence = {
+  sequenceId: number
+  sequenceName: string
+  stepCount: number
+  stepLabels: string[]
+  enrollments: Array<{
+    enrollmentId: number
+    personId: number
+    personName: string | null
+    assignedBroker: string | null
+    status: string
+    stepIndex: number
+    nextRunAt: string | null
+    enrolledAt: string
+  }>
+}
+
+export async function getWorkflowBoard(): Promise<WorkflowBoardSequence[]> {
+  const access = await getCrmAccess()
+  if (!access) return []
+  const sb = createServiceClient()
+  const { data: seqs } = await sb
+    .from('crm_sequences')
+    .select('id,name,steps,status')
+    .eq('status', 'active')
+    .order('id')
+  const { data: ens } = await sb
+    .from('crm_sequence_enrollments')
+    .select('id,person_id,sequence_id,status,step_index,next_run_at,created_at,crm_people!inner(id,name,assigned_broker)')
+    .in('status', ['awaiting_broker', 'running', 'paused', 'paused_reply'])
+    .order('created_at', { ascending: false })
+    .limit(500)
+  return (seqs ?? []).map((s) => {
+    const steps = (s.steps as Array<{ channel?: string; delayDays?: number; taskName?: string }> | null) ?? []
+    return {
+      sequenceId: s.id as number,
+      sequenceName: s.name as string,
+      stepCount: steps.length,
+      stepLabels: steps.map((st, i) => `${i + 1}. ${st.channel ?? 'step'}${st.delayDays ? ` +${st.delayDays}d` : ''}`),
+      enrollments: (ens ?? [])
+        .filter((e) => e.sequence_id === s.id)
+        .map((e) => {
+          const p = e.crm_people as unknown as { id: number; name: string | null; assigned_broker: string | null }
+          return {
+            enrollmentId: e.id as number,
+            personId: p.id,
+            personName: p.name,
+            assignedBroker: p.assigned_broker,
+            status: e.status as string,
+            stepIndex: e.step_index as number,
+            nextRunAt: e.next_run_at as string | null,
+            enrolledAt: e.created_at as string,
+          }
+        }),
+    }
+  })
+}

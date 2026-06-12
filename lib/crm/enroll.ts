@@ -74,11 +74,14 @@ export async function autoEnrollPerson(personId: number): Promise<AutoEnrollResu
     .limit(1)
   if (existing?.length) return { enrolled: false, reason: 'already enrolled in a master sequence' }
 
+  // Broker-approval gate (Matt directive 2026-06-12): the workflow does NOT
+  // start until the assigned broker approves the prepared first touch. The
+  // sequence engine only processes status='running', so this row waits.
   const { error } = await sb.from('crm_sequence_enrollments').insert({
     person_id: personId,
     sequence_id: seq.id,
-    status: 'running',
-    next_run_at: new Date().toISOString(),
+    status: 'awaiting_broker',
+    next_run_at: null,
     enrolled_by: 'auto-rule',
   })
   if (error) return { enrolled: false, reason: error.message }
@@ -86,10 +89,34 @@ export async function autoEnrollPerson(personId: number): Promise<AutoEnrollResu
   await sb.from('crm_timeline').insert({
     person_id: personId,
     kind: 'system',
-    title: `Auto-enrolled in "${seq.name}"`,
+    title: `Enrolled in "${seq.name}" — waiting on broker approval of the first touch`,
     source: 'auto-enroll',
   })
   return { enrolled: true, sequence: seq.name }
+}
+
+/** Render the prepared first touch of a sequence for a person (for the broker
+ *  approval ask). Returns null when step 0 is not a message step. */
+export async function renderFirstTouchPreview(
+  sequenceId: number,
+  personId: number,
+): Promise<{ channel: string; body: string } | null> {
+  const sb = createServiceClient()
+  const [{ data: seq }, { data: person }] = await Promise.all([
+    sb.from('crm_sequences').select('steps').eq('id', sequenceId).maybeSingle(),
+    sb.from('crm_people').select('first_name,name,custom').eq('id', personId).maybeSingle(),
+  ])
+  const step = (seq?.steps as Array<{ channel?: string; body?: string }> | null)?.[0]
+  if (!step?.channel || !['sms', 'email'].includes(step.channel) || !step.body || !person) return null
+  const { renderCrmMerge } = await import('@/lib/crm/merge')
+  // CMA may not be built yet at enroll time — swap the token for a readable
+  // placeholder BEFORE merge (merge renders an empty string when no link yet).
+  const hasCma = Boolean((person.custom as Record<string, unknown> | null)?.cmaLink)
+  const raw = hasCma
+    ? step.body
+    : step.body.replace(/%cma_link%|\{\{cma_link\}\}/g, '[CMA link attaches when built]')
+  const body = renderCrmMerge(raw, person).replace(/ {2,}/g, ' ').trim()
+  return { channel: step.channel, body }
 }
 
 /** Resolve a FUB person id to the CRM mirror (mirroring first if needed), then auto-enroll. */
@@ -113,17 +140,49 @@ export async function autoEnrollByFubId(fubPersonId: number): Promise<AutoEnroll
       .maybeSingle()
     if (p && new Date(p.fub_created_at ?? 0) >= new Date(ENROLLMENT_EPOCH) && !(p.tags ?? []).includes('compliance:hard-stop')) {
       const { queueBrokerAlert, newLeadAlertBody } = await import('@/lib/crm/broker-alerts')
-      await queueBrokerAlert({
-        broker: p.assigned_broker,
-        personId: p.id,
-        kind: 'new-lead',
-        body: newLeadAlertBody({
+      // Approval ask (Matt directive 2026-06-12): the alert carries the
+      // prepared first touch so the broker can approve and start the workflow.
+      let body: string
+      if (result.enrolled) {
+        const tags = (p.tags ?? []) as string[]
+        const leadType = tags.includes('intent:expired-listing')
+          ? 'expired seller'
+          : tags.includes('audience:seller')
+            ? 'seller'
+            : tags.includes('audience:buyer')
+              ? 'buyer'
+              : 'lead'
+        const { data: en } = await sb
+          .from('crm_sequence_enrollments')
+          .select('sequence_id')
+          .eq('person_id', p.id)
+          .eq('status', 'awaiting_broker')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        const preview = en ? await renderFirstTouchPreview(en.sequence_id, p.id) : null
+        body = [
+          `New ${leadType} lead: ${p.name ?? 'Unknown'}${p.source ? ` (${p.source})` : ''}`,
+          preview
+            ? `Prepared first ${preview.channel === 'sms' ? 'text' : 'email'}: "${preview.body}"`
+            : `Enrolled in "${result.sequence}".`,
+          'Want me to send it and start the workflow?',
+          `Approve or edit: ryan-realty.com/admin/crm/approvals`,
+        ].join('\n')
+      } else {
+        body = newLeadAlertBody({
           name: p.name,
           source: p.source,
           stage: p.stage,
           personId: p.id,
-          detail: result.enrolled ? 'Auto-enrolled in nurture workflow.' : null,
-        }),
+          detail: null,
+        })
+      }
+      await queueBrokerAlert({
+        broker: p.assigned_broker,
+        personId: p.id,
+        kind: 'new-lead',
+        body,
       })
     }
   } catch { /* alert must never break enrollment */ }

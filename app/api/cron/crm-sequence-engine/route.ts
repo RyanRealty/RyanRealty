@@ -83,7 +83,7 @@ export async function GET(request: Request) {
 
   const { data: due, error } = await sb
     .from('crm_sequence_enrollments')
-    .select('id,person_id,sequence_id,step_index,created_at,crm_sequences!inner(id,name,status,stop_on_reply,steps)')
+    .select('id,person_id,sequence_id,step_index,created_at,first_touch_override,crm_sequences!inner(id,name,status,stop_on_reply,steps)')
     .eq('status', 'running')
     .eq('crm_sequences.status', 'active')
     .or(`next_run_at.is.null,next_run_at.lte.${new Date().toISOString()}`)
@@ -204,10 +204,10 @@ export async function GET(request: Request) {
           broker: mailbox.slug, source: 'sequence', dedupe_key: `gmail:${sent.gmailId}:p${person.id}`,
         })
       } else if (step.channel === 'sms') {
-        if (inSmsQuietHours()) {
-          await finish({ next_run_at: nextSendWindow().toISOString() })
-          continue
-        }
+        // Gate order matters: suppression first (suppressed people never even
+        // show a queued text), then CMA hold + A2P queue (visible immediately,
+        // even during quiet hours — nothing is being sent), then quiet hours
+        // for the actual send.
         const gate = await isSuppressed(person.id, 'sms')
         if (gate.suppressed) {
           await finish({ status: 'suppressed' })
@@ -232,6 +232,10 @@ export async function GET(request: Request) {
         if (step.templateKey) {
           const { data: tpl } = await sb.from('crm_templates').select('body').eq('key', step.templateKey).maybeSingle()
           if (tpl?.body) body = tpl.body
+        }
+        // Broker-edited first touch (set at approval) wins over the template.
+        if (en.step_index === 0 && (en as { first_touch_override?: string | null }).first_touch_override) {
+          body = (en as { first_touch_override?: string | null }).first_touch_override as string
         }
         if (!body.trim()) {
           await finish({ status: 'stopped' })
@@ -274,6 +278,12 @@ export async function GET(request: Request) {
           )
           await finish({ next_run_at: new Date(Date.now() + 4 * 3600e3).toISOString() })
           queuedSms++
+          continue
+        }
+
+        // Quiet hours gate the actual send only (8 AM to 9 PM PT).
+        if (inSmsQuietHours()) {
+          await finish({ next_run_at: nextSendWindow().toISOString() })
           continue
         }
 

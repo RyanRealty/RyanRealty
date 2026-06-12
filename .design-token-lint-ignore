@@ -156,6 +156,8 @@ app/cities/page.tsx
 app/communities/page.tsx
 # admin pages with pre-existing raw-input/bg-white (other session work):
 app/admin/(protected)/crm/sequences/page.tsx
+app/admin/(protected)/crm/approvals/page.tsx
+app/admin/(protected)/crm/workflows/page.tsx
 app/admin/(protected)/sign-off/page.tsx
 components/site/HomepageHeroV3.tsx
 components/site/HomepagePulseTicker.tsx

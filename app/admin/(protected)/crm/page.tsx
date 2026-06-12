@@ -92,6 +92,8 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
           <Link href="/admin/crm/inbox"><Button variant="outline" size="sm">Inbox</Button></Link>
           <Link href="/admin/crm/deals"><Button variant="outline" size="sm">Pipeline</Button></Link>
           <Link href="/admin/crm/sequences"><Button variant="outline" size="sm">Sequences</Button></Link>
+          <Link href="/admin/crm/approvals"><Button variant="outline" size="sm">Approvals</Button></Link>
+          <Link href="/admin/crm/workflows"><Button variant="outline" size="sm">Workflows</Button></Link>
           {stats.map((s) => (
             <Card key={s.label} className="min-w-[120px]">
               <CardContent className="px-4 py-3">
