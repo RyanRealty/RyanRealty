@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.499.2 (2026-06-12)
+
+### Bug Fixes
+- fix(crm): live-visit alert moved server-side into visitor tracking
+
+---
+
+
 ## v1.499.1 (2026-06-12)
 
 ### Bug Fixes
