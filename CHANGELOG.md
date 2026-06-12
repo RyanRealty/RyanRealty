@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.497.2 (2026-06-12)
+
+### Bug Fixes
+- fix(admin): longest-match-wins nav highlight — /admin no longer lights up on every page
+
+---
+
+
 ## v1.497.1 (2026-06-12)
 
 ### Bug Fixes
