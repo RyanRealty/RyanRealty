@@ -1,8 +1,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import type { AdminRoleType } from '@/app/actions/admin-roles'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import { buildAdminNav } from '@/app/components/admin/admin-nav'
+import AdminCommandPalette from '@/app/components/admin/AdminCommandPalette'
 import AdminMobileNav from '@/app/components/admin/AdminMobileNav'
 
 type AdminHeaderProps = {
@@ -25,10 +25,7 @@ export default function AdminHeader({ user, role, brokerId }: AdminHeaderProps) 
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-end gap-3">
-          <form action="/admin/search" method="get" className="hidden items-center gap-2 md:flex">
-            <Input name="q" type="search" placeholder="Search listings, brokers, users" className="w-72" />
-            <Button type="submit" variant="outline">Search</Button>
-          </form>
+          <AdminCommandPalette sections={buildAdminNav(role, brokerId)} />
           <span className="hidden text-sm text-muted-foreground sm:inline" title={user.email}>
             {user.fullName || user.email}
           </span>

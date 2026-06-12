@@ -9,7 +9,7 @@
  * timeline rows. People without a FUB id (future native leads) write locally.
  */
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, unstable_cache } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
@@ -472,9 +472,19 @@ export async function getCrmSmsTemplates(): Promise<Array<{ key: string; name: s
   return (data ?? []) as Array<{ key: string; name: string; body: string }>
 }
 
+// A2P campaign status changes on a multi-day carrier-review cadence — a live
+// Twilio API roundtrip per admin page view is pure latency. 5-min cache.
+const getCachedA2pStatus = unstable_cache(
+  async () => {
+    const { getA2pCampaignStatus } = await import('@/lib/crm/twilio')
+    return getA2pCampaignStatus()
+  },
+  ['crm-a2p-status'],
+  { revalidate: 300 },
+)
+
 export async function getTwilioSmsStatus(): Promise<{ a2p: string | null; canSend: boolean }> {
-  const { getA2pCampaignStatus } = await import('@/lib/crm/twilio')
-  const a2p = await getA2pCampaignStatus()
+  const a2p = await getCachedA2pStatus()
   return { a2p, canSend: a2p === 'VERIFIED' }
 }
 

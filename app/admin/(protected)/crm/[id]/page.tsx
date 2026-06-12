@@ -1,8 +1,6 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { getSession } from '@/app/actions/auth'
-import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import {
   addCrmNoteAction,
@@ -114,24 +112,23 @@ function fmtPhoneDisplay(tenDigits: string): string {
 }
 
 export default async function CrmPersonPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tpl?: string; smsTpl?: string }> }) {
-  const session = await getSession()
-  const adminRole = await getAdminRoleForEmail(session?.user?.email ?? null)
-  if (!adminRole) redirect('/admin/access-denied')
-
   const { id: idRaw } = await params
   const id = Number(idRaw)
   if (!Number.isFinite(id) || id <= 0) notFound()
-
   const { tpl, smsTpl } = await searchParams
-  const full = await getCrmPersonFull(id)
-  const person = full.person
-  if (!person) notFound()
-  const [templates, smsTemplates, twilioStatus, crmAccess] = await Promise.all([
+
+  // One parallel wave — getCrmAccess carries the auth gate (session + role),
+  // so the old sequential session → role → data chain is gone.
+  const [crmAccess, full, templates, smsTemplates, twilioStatus] = await Promise.all([
+    getCrmAccess(),
+    getCrmPersonFull(id),
     getCrmEmailTemplates(),
     getCrmSmsTemplates(),
     getTwilioSmsStatus(),
-    getCrmAccess(),
   ])
+  if (!crmAccess) redirect('/admin/access-denied')
+  const person = full.person
+  if (!person) notFound()
   const activeTpl = tpl ? templates.find((t) => t.key === tpl) ?? null : null
   const activeSmsTpl = smsTpl ? smsTemplates.find((t) => t.key === smsTpl) ?? null : null
 
