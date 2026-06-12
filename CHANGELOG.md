@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.493.0 (2026-06-12)
+
+### Features
+- feat(lp): redesigned ad landing pages — seller, expired, buyer + new FSBO LP
+
+### Bug Fixes
+- fix(crm): unblock A2P CTA verification — exempt compliance pages from bot screen + SMS terms in privacy policy
+
+---
+
+
 ## v1.492.0 (2026-06-12)
 
 ### Features
