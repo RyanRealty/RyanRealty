@@ -33,13 +33,23 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   findPersonByEmail,
+  findPersonByPhone,
+  getPersonById,
+  updatePersonProfile,
+  isPlaceholderFubEmail,
   addPersonTags,
   addPersonNote,
+  postLeadOriginNote,
   createRealtimeTask,
   setPersonCustomFields,
   sendEvent,
   type FubEventPerson,
 } from '@/lib/followupboss'
+import {
+  lookupOwnerForExpiredListing,
+  hasReachableOwnerContact,
+  type OwnerLookupResult,
+} from '@/lib/expired-owner-lookup'
 
 /**
  * FUB Action Plan id for the Expired Recovery (auto) plan. The 7-touch
@@ -50,7 +60,6 @@ import {
  * new lead.
  */
 const EXPIRED_RECOVERY_PLAN_ID = 71
-import { lookupOwnerForExpiredListing } from '@/lib/expired-owner-lookup'
 import { sendExpiredAlertEmail } from '@/lib/expired-alert'
 
 export const SERVICE_AREA_CITIES = [
@@ -98,6 +107,7 @@ export interface ProcessExpiredStats {
   fub_existing_matched: number
   fub_created_dial: number
   fub_created_placeholder: number
+  fub_skipped_no_contact: number
   notes_added: number
   tasks_created: number
   plans_enrolled: number
@@ -110,6 +120,7 @@ export interface ProcessExpiredStats {
     status: string
     ownerStatus: string
     fubPersonId?: number
+    skippedFub?: boolean
   }>
 }
 
@@ -120,6 +131,7 @@ function emptyStats(): ProcessExpiredStats {
     fub_existing_matched: 0,
     fub_created_dial: 0,
     fub_created_placeholder: 0,
+    fub_skipped_no_contact: 0,
     notes_added: 0,
     tasks_created: 0,
     plans_enrolled: 0,
@@ -135,14 +147,16 @@ function num(v: number | string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-function buildListingNote(l: ExpiredListingRow, ownerNotes: string | null): string {
+function buildListingNote(l: ExpiredListingRow, owner: OwnerLookupResult): string {
   const lines: string[] = []
   const addr = `${l.StreetNumber ?? ''} ${l.StreetName ?? ''}`.trim()
-  lines.push(`EXPIRED LISTING. ${l.StandardStatus} on ${l.status_change_timestamp.slice(0, 10)}.`)
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'
+  lines.push(`EXPIRED LISTING ALERT. ${l.StandardStatus} on ${l.status_change_timestamp.slice(0, 10)}.`)
   lines.push('')
   lines.push(`Property: ${addr}, ${l.City}, OR ${l.PostalCode ?? ''}`)
   lines.push(`MLS #: ${l.ListNumber ?? l.ListingKey}`)
-  if (l.SubdivisionName) lines.push(`Subdivision: ${l.SubdivisionName}`)
+  if (l.SubdivisionName) lines.push(`Community: ${l.SubdivisionName}`)
+  if (owner.taxlot) lines.push(`County taxlot: ${owner.taxlot}`)
   lines.push('')
   const lp = num(l.ListPrice)
   const olp = num(l.OriginalListPrice)
@@ -150,25 +164,96 @@ function buildListingNote(l: ExpiredListingRow, ownerNotes: string | null): stri
   if (olp != null && lp != null && olp !== lp) {
     const drop = olp - lp
     const dropPct = ((drop / olp) * 100).toFixed(1)
-    lines.push(`Original list: $${new Intl.NumberFormat('en-US').format(Math.round(olp))} (dropped ${dropPct}%)`)
+    lines.push(`Original list: $${new Intl.NumberFormat('en-US').format(Math.round(olp))} (dropped $${new Intl.NumberFormat('en-US').format(Math.round(drop))}, ${dropPct}%)`)
   }
   const dom = num(l.CumulativeDaysOnMarket)
-  if (dom != null) lines.push(`Days on market: ${dom}`)
+  if (dom != null) lines.push(`Days on market: ${dom} days`)
   lines.push('')
   if (l.BedroomsTotal) lines.push(`Beds: ${l.BedroomsTotal}`)
   if (l.BathroomsTotal) lines.push(`Baths: ${l.BathroomsTotal}`)
   const sqft = num(l.TotalLivingAreaSqFt)
-  if (sqft) lines.push(`Sqft: ${new Intl.NumberFormat('en-US').format(Math.round(sqft))}`)
+  if (sqft) lines.push(`Living area: ${new Intl.NumberFormat('en-US').format(Math.round(sqft))} sqft`)
   lines.push('')
-  lines.push(`Prior list agent: ${l.ListAgentName ?? 'unknown'}${l.list_agent_email ? ` <${l.list_agent_email}>` : ''}`)
-  if (ownerNotes) {
+  lines.push(`Prior list agent: ${l.ListAgentName ?? 'unknown'}${l.list_agent_email ? ` (${l.list_agent_email})` : ''}`)
+  lines.push('')
+  lines.push('OWNER CONTACT')
+  if (owner.ownerName) lines.push(`Name: ${owner.ownerName}`)
+  if (owner.ownerMailingAddress) lines.push(`Mailing: ${owner.ownerMailingAddress}`)
+  if (owner.ownerEmail) lines.push(`Email: ${owner.ownerEmail}`)
+  if (owner.ownerPhone) lines.push(`Phone: ${owner.ownerPhone}`)
+  if (owner.allPhones && owner.allPhones.length > 1) {
+    lines.push(`All phones: ${owner.allPhones.map((p) => `${p.value}${p.dnc ? ' (DNC)' : ''}`).join(', ')}`)
+  }
+  if (owner.allEmails && owner.allEmails.length > 1) {
+    lines.push(`All emails: ${owner.allEmails.join(', ')}`)
+  }
+  if (!hasReachableOwnerContact(owner)) {
+    lines.push('No verified email or phone yet. Do not cold-call until skip trace completes.')
+  }
+  if (owner.complianceTags?.length) {
+    lines.push(`Compliance: ${owner.complianceTags.join(', ')}`)
+  }
+  if (owner.notes) {
     lines.push('')
-    lines.push(`Owner lookup: ${ownerNotes}`)
+    lines.push(`Lookup detail: ${owner.notes}`)
   }
   lines.push('')
-  lines.push('Landing page to drive owner to:')
-  lines.push(`  ${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/lp/expired-listing`)
+  lines.push(`Expired LP: ${siteUrl}/lp/expired-listing`)
+  if (l.ListNumber) {
+    lines.push(`MLS history: ${siteUrl}/homes-for-sale/listing/${l.ListNumber}`)
+  }
   return lines.join('\n')
+}
+
+function splitOwnerName(fullName: string): { firstName: string; lastName: string } {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return { firstName: 'Owner', lastName: '' }
+  if (parts.length === 1) return { firstName: parts[0], lastName: '' }
+  return { firstName: parts[0], lastName: parts.slice(1).join(' ') }
+}
+
+async function mergeContactOntoFubPerson(
+  personId: number,
+  owner: OwnerLookupResult,
+): Promise<void> {
+  const existing = await getPersonById(personId)
+  if (!existing) return
+
+  const emails = [...(existing.emails ?? [])]
+  const phones = [...(existing.phones ?? [])]
+
+  const hasRealEmail = emails.some(
+    (e) => e.value && !isPlaceholderFubEmail(e.value) && /@/.test(e.value),
+  )
+
+  if (owner.ownerEmail && !emails.some((e) => e.value?.toLowerCase() === owner.ownerEmail?.toLowerCase())) {
+    const withoutPlaceholders = emails.filter((e) => !isPlaceholderFubEmail(e.value))
+    if (hasRealEmail) {
+      withoutPlaceholders.push({ value: owner.ownerEmail, type: 'home' })
+    } else {
+      withoutPlaceholders.unshift({ value: owner.ownerEmail, type: 'home', isPrimary: 1 })
+    }
+    emails.splice(0, emails.length, ...withoutPlaceholders)
+  }
+
+  if (owner.ownerPhone) {
+    const norm = owner.ownerPhone.replace(/\D/g, '').slice(-10)
+    if (norm && !phones.some((p) => p.value?.replace(/\D/g, '').slice(-10) === norm)) {
+      phones.push({ value: owner.ownerPhone, type: 'mobile' })
+    }
+  }
+
+  const { firstName, lastName } = owner.ownerName
+    ? splitOwnerName(owner.ownerName)
+    : { firstName: existing.firstName ?? 'Owner', lastName: existing.lastName ?? '' }
+
+  await updatePersonProfile({
+    personId,
+    firstName,
+    lastName,
+    emails: emails.length ? emails : undefined,
+    phones: phones.length ? phones : undefined,
+  })
 }
 
 async function fetchNewExpiredListings(
@@ -221,23 +306,29 @@ export async function processNewExpiredListings(
       const owner = await lookupOwnerForExpiredListing({
         streetAddress,
         city: l.City,
+        postalCode: l.PostalCode,
       })
 
+      const hasContact = hasReachableOwnerContact(owner)
       let fubPersonId: number | null = owner.fubPersonId ?? null
-      let matchedBy: string = owner.source ?? 'placeholder'
+      let matchedBy: string = owner.source ?? 'unresolved'
+      let skippedFub = false
 
-      if (!fubPersonId) {
-        const isReal = owner.status === 'matched-dial' && owner.ownerName
-        const nameForRecord = owner.ownerName ?? `Owner of ${streetAddress}`
-        const [firstName, ...rest] = nameForRecord.split(/\s+/)
-        const lastName = rest.join(' ') || (isReal ? '' : `(${l.City})`)
-        const syntheticEmail =
-          owner.ownerEmail ?? `expired-listing-${l.ListingKey}@placeholder.ryan-realty.com`
+      if (fubPersonId) {
+        stats.fub_existing_matched++
+        matchedBy = owner.source ?? 'fub-existing'
+        if (hasContact) {
+          await mergeContactOntoFubPerson(fubPersonId, owner)
+        }
+      } else if (hasContact) {
+        const { firstName, lastName } = owner.ownerName
+          ? splitOwnerName(owner.ownerName)
+          : { firstName: 'Expired', lastName: `Listing ${l.ListNumber ?? l.ListingKey}` }
 
         const person: FubEventPerson = {
           firstName,
           lastName,
-          emails: [{ value: syntheticEmail }],
+          ...(owner.ownerEmail ? { emails: [{ value: owner.ownerEmail }] } : {}),
           ...(owner.ownerPhone ? { phones: [{ value: owner.ownerPhone }] } : {}),
         }
 
@@ -247,76 +338,95 @@ export async function processNewExpiredListings(
           sourceUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/lp/expired-listing`,
           pageTitle: 'Expired Listing. Auto-detected.',
           person,
-          message: `Auto-detected expired listing at ${fullAddress}. Source: ${matchedBy}.`,
+          message: `Auto-detected expired listing at ${fullAddress}. Owner source: ${matchedBy}.`,
         })
         if (eventRes.ok) {
-          const newly = await findPersonByEmail(syntheticEmail)
-          if (newly?.id) {
-            fubPersonId = newly.id
-            if (isReal) {
-              stats.fub_created_dial++
-              matchedBy = 'dial-create'
-            } else {
-              stats.fub_created_placeholder++
-              matchedBy = 'placeholder'
-            }
+          if (owner.ownerEmail) {
+            const newly = await findPersonByEmail(owner.ownerEmail)
+            if (newly?.id) fubPersonId = newly.id
+          }
+          if (!fubPersonId && owner.ownerPhone) {
+            const byPhone = await findPersonByPhone(owner.ownerPhone)
+            if (byPhone?.id) fubPersonId = byPhone.id
           }
         }
+        if (fubPersonId) {
+          stats.fub_created_dial++
+          matchedBy = `${owner.source ?? 'skiptrace'}-create`
+        } else {
+          stats.errors++
+        }
       } else {
-        stats.fub_existing_matched++
-        matchedBy = owner.source ?? 'fub-existing'
+        // Matt directive 2026-06-09: no placeholder FUB leads without real contact.
+        skippedFub = true
+        stats.fub_skipped_no_contact++
+        matchedBy = 'no-contact-skip-fub'
       }
 
-      if (!fubPersonId) {
+      if (!fubPersonId && !skippedFub) {
         stats.errors++
-        continue
       }
 
-      const plainStatusTag =
-        l.StandardStatus === 'Expired'
-          ? 'Expired'
-          : l.StandardStatus === 'Canceled'
-            ? 'canceled'
-            : l.StandardStatus === 'Withdrawn'
-              ? 'withdrawn'
-              : 'Expired'
+      const lookupPending = !hasContact
+      const listingNote = buildListingNote(l, owner)
 
-      await addPersonTags(fubPersonId, [
-        plainStatusTag,
-        'audience:seller',
-        'seller:hot',
-        'intent:expired-listing',
-        'source:expired-listing-cron',
-        'broker:matt',
-        owner.status === 'pending' ? 'owner-lookup:pending' : 'owner-lookup:resolved',
-        // owner-resolution intel (county records + skip trace, 2026-06-09)
-        ...(owner.absentee ? ['owner:absentee'] : []),
-        ...(owner.outOfState ? ['geo:out-of-state'] : []),
-        ...(owner.complianceTags ?? []),
-      ])
+      if (fubPersonId) {
+        const plainStatusTag =
+          l.StandardStatus === 'Expired'
+            ? 'Expired'
+            : l.StandardStatus === 'Canceled'
+              ? 'canceled'
+              : l.StandardStatus === 'Withdrawn'
+                ? 'withdrawn'
+                : 'Expired'
 
-      await setPersonCustomFields(fubPersonId, {
-        customSellerPropertyAddress: fullAddress,
-        customLeadTier: 'hot',
-        customMoveTimeline: 'ready-now',
-      })
+        await addPersonTags(fubPersonId, [
+          plainStatusTag,
+          'audience:seller',
+          'seller:hot',
+          'intent:expired-listing',
+          'source:expired-listing-cron',
+          'broker:matt',
+          lookupPending ? 'owner-lookup:pending' : 'owner-lookup:resolved',
+          ...(owner.absentee ? ['owner:absentee'] : []),
+          ...(owner.outOfState ? ['geo:out-of-state'] : []),
+          ...(owner.complianceTags ?? []),
+        ])
 
-      // Drip enrollment moved to the CRM engine (2026-06-09): the
-      // crm-auto-enroll cron routes intent:expired-listing into the CRM's
-      // Expired Recovery sequence. FUB-side applyActionPlan removed to
-      // prevent double-drips during the parallel run.
-      stats.plans_enrolled++
+        await setPersonCustomFields(fubPersonId, {
+          customSellerPropertyAddress: fullAddress,
+          customLeadTier: 'hot',
+          customMoveTimeline: 'ready-now',
+        })
 
-      const noteOk = await addPersonNote(fubPersonId, buildListingNote(l, owner.notes ?? null))
-      if (noteOk) stats.notes_added++
+        stats.plans_enrolled++
 
-      const taskOk = await createRealtimeTask({
-        personId: fubPersonId,
-        taskName: `Expired listing. ${streetAddress}, ${l.City} (${l.StandardStatus} ${l.status_change_timestamp.slice(0, 10)}).`,
-        taskType: 'Call',
-        dueInMinutes: 60,
-      })
-      if (taskOk) stats.tasks_created++
+        const noteOk = await addPersonNote(fubPersonId, listingNote)
+        if (noteOk) stats.notes_added++
+
+        await postLeadOriginNote(fubPersonId, {
+          source: 'expired-listing-cron',
+          sourceLabel: 'Expired listing auto-detect (MLS delta)',
+          landingPage: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/lp/expired-listing`,
+          audience: 'seller',
+          tier: 'hot',
+          tierReason: `${l.StandardStatus} in service area, ListPrice above floor`,
+          want: `Reach owner at ${fullAddress} before re-list window closes.`,
+          assignedAgent: 'matt',
+          assignmentReason: 'expired listing cron routing',
+          extra: lookupPending
+            ? 'Owner name may be known but contact is still pending. Do not enroll outreach until phone or email is verified.'
+            : `Owner contact resolved via ${owner.source ?? 'skip trace'}.`,
+        })
+
+        const taskOk = await createRealtimeTask({
+          personId: fubPersonId,
+          taskName: `Expired listing. ${streetAddress}, ${l.City} (${l.StandardStatus} ${l.status_change_timestamp.slice(0, 10)}).`,
+          taskType: 'Call',
+          dueInMinutes: 60,
+        })
+        if (taskOk) stats.tasks_created++
+      }
 
       const alertRes = await sendExpiredAlertEmail({
         listingKey: l.ListingKey,
@@ -334,7 +444,7 @@ export async function processNewExpiredListings(
         bathrooms: num(l.BathroomsTotal),
         sqft: num(l.TotalLivingAreaSqFt),
         subdivision: l.SubdivisionName,
-        ownerLookupStatus: owner.status,
+        ownerLookupStatus: lookupPending ? 'pending' : owner.status,
         ownerName: owner.ownerName ?? null,
         ownerMailingAddress: owner.ownerMailingAddress ?? null,
         ownerEmail: owner.ownerEmail ?? null,
@@ -380,7 +490,7 @@ export async function processNewExpiredListings(
           fub_person_matched_by: matchedBy,
           alert_sent_at: alertRes.ok ? new Date().toISOString() : null,
           alert_method: alertRes.ok ? 'resend-email' : null,
-          owner_lookup_status: owner.status === 'pending' ? 'pending' : 'resolved',
+          owner_lookup_status: lookupPending ? 'pending' : 'resolved',
           owner_lookup_attempts: 1,
           last_owner_lookup_at: new Date().toISOString(),
         },
@@ -391,8 +501,9 @@ export async function processNewExpiredListings(
         address: streetAddress,
         city: l.City,
         status: l.StandardStatus,
-        ownerStatus: owner.status,
-        fubPersonId,
+        ownerStatus: lookupPending ? 'pending' : owner.status,
+        fubPersonId: fubPersonId ?? undefined,
+        skippedFub: skippedFub || undefined,
       })
     } catch (err) {
       stats.errors++

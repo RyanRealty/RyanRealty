@@ -44,7 +44,16 @@ export type FubPerson = {
   firstName?: string
   lastName?: string
   name?: string
-  emails?: Array<{ value: string }>
+  emails?: Array<{ value: string; type?: string; isPrimary?: number }>
+  phones?: Array<{ value: string; type?: string }>
+  tags?: string[]
+}
+
+const PLACEHOLDER_EMAIL_RE = /@placeholder\.ryan-realty\.com$/i
+
+export function isPlaceholderFubEmail(email: string | null | undefined): boolean {
+  if (!email?.trim()) return false
+  return PLACEHOLDER_EMAIL_RE.test(email.trim())
 }
 
 /**
@@ -66,6 +75,96 @@ export async function findPersonByEmail(email: string): Promise<FubPerson | null
   } catch (err) {
     console.error('[findPersonByEmail] Network error:', err)
     return null
+  }
+}
+
+/** Search for a person by phone (last 10 digits). Returns the first match or null. */
+export async function findPersonByPhone(phone: string): Promise<FubPerson | null> {
+  const auth = getAuth()
+  if (!auth) return null
+  const digits = phone.replace(/\D/g, '').slice(-10)
+  if (digits.length !== 10) return null
+  try {
+    const q = new URLSearchParams({
+      phone: digits,
+      limit: '1',
+      fields: 'id,firstName,lastName,name,emails,phones',
+    })
+    const res = await fetch(`${FUB_BASE}/people?${q}`, {
+      headers: fubHeaders(auth),
+      next: { revalidate: 0 },
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as { people?: FubPerson[] }
+    const people = data.people
+    return Array.isArray(people) && people.length > 0 ? people[0] : null
+  } catch (err) {
+    console.error('[findPersonByPhone] Network error:', err)
+    return null
+  }
+}
+
+/** Fetch a FUB person by id (emails, phones, tags for merge updates). */
+export async function getPersonById(personId: number): Promise<FubPerson | null> {
+  const auth = getAuth()
+  if (!auth) return null
+  if (!Number.isFinite(personId) || personId <= 0) return null
+  try {
+    const q = new URLSearchParams({
+      fields: 'id,firstName,lastName,name,emails,phones,tags',
+    })
+    const res = await fetch(`${FUB_BASE}/people/${personId}?${q}`, {
+      headers: fubHeaders(auth),
+      next: { revalidate: 0 },
+    })
+    if (!res.ok) return null
+    return (await res.json()) as FubPerson
+  } catch (err) {
+    console.error('[getPersonById] Network error:', err)
+    return null
+  }
+}
+
+export type UpdatePersonProfileParams = {
+  personId: number
+  firstName?: string
+  lastName?: string
+  emails?: Array<{ value: string; type?: string; isPrimary?: number }>
+  phones?: Array<{ value: string; type?: string }>
+}
+
+/**
+ * Merge name, email, and phone onto an existing FUB person. Replaces
+ * placeholder emails when a real address is supplied. Mirrors CRM during
+ * the parallel FUB run.
+ */
+export async function updatePersonProfile(params: UpdatePersonProfileParams): Promise<boolean> {
+  const auth = getAuth()
+  if (!auth) return false
+  if (!Number.isFinite(params.personId) || params.personId <= 0) return false
+
+  const body: Record<string, unknown> = {}
+  if (params.firstName?.trim()) body.firstName = params.firstName.trim()
+  if (params.lastName !== undefined) body.lastName = params.lastName.trim()
+  if (params.emails?.length) body.emails = params.emails
+  if (params.phones?.length) body.phones = params.phones
+  if (Object.keys(body).length === 0) return false
+
+  try {
+    const res = await fetch(`${FUB_BASE}/people/${params.personId}`, {
+      method: 'PUT',
+      headers: fubHeaders(auth),
+      body: JSON.stringify(body),
+      next: { revalidate: 0 },
+    })
+    if (!res.ok) {
+      console.warn(`[updatePersonProfile] PUT failed: personId=${params.personId} status=${res.status}`)
+    }
+    if (res.ok) void mirrorPersonFromFub(params.personId)
+    return res.ok
+  } catch (err) {
+    console.error('[updatePersonProfile] Network error:', err)
+    return false
   }
 }
 

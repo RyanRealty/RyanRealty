@@ -28,6 +28,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import type { CountyOwner, SkipTraceResult } from './owner-resolution.d.ts'
 
 const APIFY_BASE = 'https://api.apify.com/v2'
 const APIFY_DIAL_ACTOR_ID = 'apify/web-scraper'  // generic scraper; can be replaced with a custom actor
@@ -41,12 +42,28 @@ export type OwnerLookupResult = {
   ownerPhone?: string
   source?: string
   notes?: string
+  /** All phones returned by skip trace (for FUB notes). */
+  allPhones?: Array<{ value: string; type?: string; dnc?: boolean }>
+  /** All emails returned by skip trace (for FUB notes). */
+  allEmails?: string[]
+  /** County taxlot when resolved from assessor records. */
+  taxlot?: string | null
   /** TCPA/DNC tags to apply on the FUB person (from BatchData flags). */
   complianceTags?: string[]
   /** Owner's mailing address differs from the property. */
   absentee?: boolean
   /** Owner's mailing address is outside Oregon. */
   outOfState?: boolean
+}
+
+const PLACEHOLDER_EMAIL_RE = /@placeholder\.ryan-realty\.com$/i
+
+/** True when we have a real email or a dialable phone (not a synthetic placeholder). */
+export function hasReachableOwnerContact(owner: Pick<OwnerLookupResult, 'ownerEmail' | 'ownerPhone'>): boolean {
+  const email = owner.ownerEmail?.trim()
+  if (email && !PLACEHOLDER_EMAIL_RE.test(email) && /@/.test(email)) return true
+  const digits = (owner.ownerPhone ?? '').replace(/\D/g, '')
+  return digits.length === 10 || digits.length === 11
 }
 
 function getSupabase() {
@@ -545,83 +562,126 @@ export async function enrichOwnerContact(params: {
   return apifyRes
 }
 
+function buildCountyNotes(c: CountyOwner, trace: SkipTraceResult | null): string {
+  const mailing = [c.mailingStreet, c.mailingCity, c.mailingState, c.mailingZip]
+    .filter(Boolean)
+    .join(', ')
+  return [
+    `Resolved via Deschutes County assessor records (taxlot ${c.taxlot ?? 'unknown'}, account ${c.accountId ?? 'unknown'}).`,
+    mailing ? `Mailing: ${mailing}.` : '',
+    c.absentee ? 'ABSENTEE owner (mailing differs from property).' : 'Owner-occupied per mailing address.',
+    c.outOfState ? 'OUT-OF-STATE owner.' : '',
+    trace
+      ? `Skip trace: ${trace.phones.length} phone(s), ${trace.emails.length} email(s).${trace.hardStop ? ' HARD STOP flags present (litigator/TCPA/deceased).' : ''}`
+      : 'Skip trace unavailable (check BATCHDATA_API_KEY on Vercel).',
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
 /**
- * Run all four strategies in order, return the first useful result.
- *
- * Updates the expired_listings.owner_lookup_status + last_owner_lookup_at
- * via the caller (the cron writes the row).
+ * Run county records + skip trace first, then optional FUB dedupe match.
+ * Never returns early on a weak FUB geo hit without also running enrichment.
  */
 export async function lookupOwnerForExpiredListing(params: {
   streetAddress: string
   city: string
+  postalCode?: string | null
 }): Promise<OwnerLookupResult> {
-  // Strategy 1: FUB internal match
-  const fubMatch = await fubAddressMatch(params.streetAddress, params.city)
-  if (fubMatch) {
-    // Even with a FUB match, try to enrich the phone/email if the existing
-    // FUB record is light (no email/phone). Skip for now to save credits.
-    return fubMatch
-  }
+  const zip = params.postalCode?.trim().slice(0, 5) || undefined
 
-  // Strategy 2 (canonical since 2026-06-09): Deschutes County assessor
-  // taxlots via ArcGIS REST (structured public records — owner name +
-  // mailing address) + BatchData skip-trace (phones, emails, TCPA flags).
-  // Replaces the old Apify screen-scrape of dial.deschutes.org, which was
-  // fragile and silently dead whenever the Apify usage cap tripped.
+  // FUB dedupe (parallel — do not short-circuit enrichment on a geo hit).
+  const fubMatchPromise = fubAddressMatch(params.streetAddress, params.city)
+
+  // Strategy 1 (canonical): Deschutes County assessor + BatchData skip trace.
   try {
     const { resolveOwnerContact } = await import('./owner-resolution.mjs')
-    const resolved = await resolveOwnerContact(params.streetAddress, params.city)
+    const resolved = await resolveOwnerContact(params.streetAddress, params.city, zip)
     if (resolved) {
       const c = resolved.county
       const fullName = c.isEntity
         ? c.ownerRaw
         : [c.firstName, c.lastName].filter(Boolean).join(' ') || c.ownerRaw
       const mailing = [c.mailingStreet, c.mailingCity, c.mailingState, c.mailingZip]
-        .filter(Boolean).join(', ')
-      return {
-        status: 'matched-dial',
+        .filter(Boolean)
+        .join(', ')
+      const fubMatch = await fubMatchPromise
+      const tracePhones = (resolved.trace?.phones ?? []).map((p: SkipTraceResult['phones'][number]) => ({
+        value: p.number,
+        type: p.type ?? undefined,
+        dnc: p.dnc,
+      }))
+      const traceEmails = resolved.trace?.emails ?? []
+      const result: OwnerLookupResult = {
+        status: hasReachableOwnerContact({
+          ownerEmail: resolved.bestEmail ?? undefined,
+          ownerPhone: resolved.bestPhone ?? undefined,
+        })
+          ? 'matched-dial'
+          : 'pending',
         ownerName: fullName,
         ownerMailingAddress: mailing || undefined,
         ownerEmail: resolved.bestEmail ?? undefined,
         ownerPhone: resolved.bestPhone ?? undefined,
         source: `deschutes-county:${c.taxlot ?? 'taxlot'}`,
-        notes: [
-          `Resolved via Deschutes County assessor records (taxlot ${c.taxlot ?? 'unknown'}, account ${c.accountId ?? 'unknown'}).`,
-          mailing ? `Mailing: ${mailing}.` : '',
-          c.absentee ? 'ABSENTEE owner (mailing differs from property).' : 'Owner-occupied per mailing address.',
-          c.outOfState ? 'OUT-OF-STATE owner.' : '',
-          resolved.trace
-            ? `Skip trace: ${resolved.trace.phones.length} phone(s), ${resolved.trace.emails.length} email(s).${resolved.trace.hardStop ? ' HARD STOP flags present (litigator/TCPA/deceased).' : ''}`
-            : 'Skip trace unavailable.',
-        ].filter(Boolean).join(' '),
+        notes: buildCountyNotes(c, resolved.trace),
+        allPhones: tracePhones,
+        allEmails: traceEmails,
+        taxlot: c.taxlot,
         complianceTags: resolved.complianceTags,
         absentee: c.absentee,
         outOfState: c.outOfState,
       }
+      if (fubMatch?.fubPersonId) {
+        result.fubPersonId = fubMatch.fubPersonId
+        result.notes = `${fubMatch.notes ?? ''} ${result.notes ?? ''}`.trim()
+      }
+      return result
     }
   } catch (err) {
     console.warn('[expired-owner-lookup] county resolution error:', err)
   }
 
-  // Strategy 3+4 standalone: try skiptrace by address even without DIAL owner name
+  // Strategy 2: Tracerfy / Apify by address when county records miss.
   const directEnrichment = await enrichOwnerContact({
     streetAddress: params.streetAddress,
     city: params.city,
     state: 'OR',
+    postalCode: zip ?? null,
+    ownerName: undefined,
   })
   if (directEnrichment?.email || directEnrichment?.phone) {
-    return {
+    const fubMatch = await fubMatchPromise
+    const result: OwnerLookupResult = {
       status: 'matched-apollo',
+      ownerName: directEnrichment.ownerName,
       ownerEmail: directEnrichment.email,
       ownerPhone: directEnrichment.phone,
-      source: 'tracerfy-direct',
+      source: 'skiptrace-direct',
       notes: directEnrichment.notes,
+      allPhones: directEnrichment.allPhones,
+      allEmails: directEnrichment.allEmails,
+    }
+    if (fubMatch?.fubPersonId) {
+      result.fubPersonId = fubMatch.fubPersonId
+      result.notes = `${fubMatch.notes ?? ''} ${result.notes ?? ''}`.trim()
+    }
+    return result
+  }
+
+  // Strategy 3: FUB address match only (existing person, no fresh contact).
+  const fubMatch = await fubMatchPromise
+  if (fubMatch) {
+    return {
+      ...fubMatch,
+      status: 'matched-fub',
+      notes: `${fubMatch.notes ?? ''} County/skip trace returned no contact. Enrich manually or re-run backfill.`.trim(),
     }
   }
 
-  // No match — placeholder pending manual lookup
   return {
     status: 'pending',
-    notes: 'No FUB address match. DIAL lookup returned no result or city not in Deschutes County (Crook/Jefferson need separate scrapers). Manual skiptrace required.',
+    notes:
+      'No county owner match, no skip-trace contact, and no FUB address match. Manual skiptrace required. Confirm BATCHDATA_API_KEY is set on Vercel production.',
   }
 }
