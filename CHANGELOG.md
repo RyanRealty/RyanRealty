@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.502.1 (2026-06-12)
+
+### Bug Fixes
+- fix(admin): auto-recover from stale-deploy chunk errors
+
+---
+
+
 ## v1.502.0 (2026-06-12)
 
 ### Features
