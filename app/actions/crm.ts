@@ -258,7 +258,8 @@ export async function getCrmPersonFull(id: number): Promise<CrmPersonFull> {
     sb.from('crm_sequence_enrollments').select('id,status,step_index,crm_sequences(name)').eq('person_id', id),
     fubId ? sb.from('fub_person_geo').select('*').eq('fub_person_id', fubId).maybeSingle() : Promise.resolve({ data: null }),
     fubId ? sb.from('cma_deliveries').select('*').eq('fub_person_id', fubId).order('created_at', { ascending: false }).limit(5) : Promise.resolve({ data: [] }),
-    fubId ? sb.from('visitor_sessions').select('id', { count: 'exact', head: true }).eq('fub_person_id', fubId) : Promise.resolve({ count: 0 }),
+    // visitor_sessions keys on session_id (no `id` column — selecting it errors and reads 0 forever)
+    fubId ? sb.from('visitor_sessions').select('session_id', { count: 'exact', head: true }).eq('fub_person_id', fubId) : Promise.resolve({ count: 0 }),
   ])
 
   // Merge the first-party website trail (visitor_events via this person's
