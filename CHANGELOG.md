@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.502.0 (2026-06-12)
+
+### Features
+- feat(site): attributed-broker card on listing pages so CRM-steered leads see their broker first
+
+---
+
+
 ## v1.501.0 (2026-06-12)
 
 ### Features
