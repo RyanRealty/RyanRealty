@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.504.0 (2026-06-12)
+
+### Features
+- feat(crm): semantic stage colors + license cards off the contacts page
+
+---
+
+
 ## v1.503.0 (2026-06-12)
 
 ### Features
