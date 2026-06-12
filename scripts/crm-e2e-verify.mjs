@@ -209,7 +209,33 @@ await tryCheck('twilio.a2p-campaign', async () => {
   if (!c) return check('twilio.a2p-campaign', 'WARN', 'no campaign yet');
   const st = c.campaign_status ?? c.status;
   // VERIFIED = outbound texting live to all US carriers
-  check('twilio.a2p-campaign', st === 'VERIFIED' ? 'PASS' : st === 'FAILED' ? 'FAIL' : 'WARN', `campaign ${st} (QE submitted 2026-06-10)`);
+  check('twilio.a2p-campaign', st === 'VERIFIED' ? 'PASS' : st === 'FAILED' ? 'FAIL' : 'WARN', `campaign ${st} (created ${String(c.date_created ?? '').slice(0, 10)})`);
+});
+
+// ── 5b. A2P CTA pages stay verifiable by carrier reviewer tooling ──────────
+// Round-2 rejection root cause (2026-06-12): the middleware bot screen 403'd
+// HTTP-library UAs on every URL cited in the campaign message_flow. Keep the
+// URL list in sync with CTA_URLS in scripts/crm-a2p-resubmit.mjs +
+// COMPLIANCE_VERIFICATION_PATHS in middleware.ts.
+await tryCheck('web.compliance-cta-reachable', async () => {
+  const urls = [
+    `${SITE}/contact`, `${SITE}/sell/valuation`, `${SITE}/lp/seller-home-value`,
+    `${SITE}/lp/sell-your-home`, `${SITE}/lp/buyer-listing-alerts`, `${SITE}/lp/expired-listing`,
+  ];
+  const ua = { 'User-Agent': 'python-requests/2.31.0' };
+  const problems = [];
+  for (const url of urls) {
+    const res = await fetch(url, { headers: ua, redirect: 'follow' });
+    const html = res.ok ? await res.text() : '';
+    if (!res.ok || !html.includes('you agree to receive calls and texts from Ryan Realty'))
+      problems.push(`${url.replace(SITE, '')}:${res.status}`);
+  }
+  const priv = await fetch(`${SITE}/privacy`, { headers: ua, redirect: 'follow' });
+  const privHtml = priv.ok ? await priv.text() : '';
+  if (!priv.ok || !privHtml.includes('No mobile information will be shared with third parties'))
+    problems.push(`/privacy:${priv.status} (mobile-data clause)`);
+  check('web.compliance-cta-reachable', problems.length === 0 ? 'PASS' : 'FAIL',
+    problems.length ? 'reviewer-UA blocked or consent text missing: ' + problems.join(', ') : '7 URLs verifiable with HTTP-library UA');
 });
 
 // ── 6. GMAIL (send-as capability per broker) ──────────────────────────────
