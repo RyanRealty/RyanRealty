@@ -101,6 +101,10 @@ export {
 } from '@/lib/data/listings/service-area'
 export type { ListingScope } from '@/lib/data/listings/service-area'
 
+// CRM — owned-home proximity match (person page)
+export { getOwnedHomeMatches } from '@/lib/data/crm/getOwnedHome'
+export type { OwnedHomeMatch } from '@/lib/data/crm/getOwnedHome'
+
 // Listings — detail page (stub today; real impl with listing_detail_mv in Wave 1.5)
 export { getListingDetail } from '@/lib/data/listings/getListingDetail'
 export { getListingPhotos } from '@/lib/data/listings/getListingPhotos'

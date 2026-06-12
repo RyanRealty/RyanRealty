@@ -20,6 +20,8 @@ import {
   updateCrmStageAction,
 } from '@/app/actions/crm'
 import { timelineEmailBody } from '@/lib/crm/email-body'
+import { getOwnedHomeMatches, type OwnedHomeMatch } from '@/lib/data'
+import { getOwnedHomeMedia } from '@/lib/crm/owned-home-media'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -131,7 +133,40 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
   )
   const openTasks = full.tasks.filter((t) => !t.completed_at)
   const doneTasks = full.tasks.filter((t) => t.completed_at)
-  const geo = full.geo as { city?: string; neighborhood?: string; subdivision?: string } | null
+  const geo = full.geo as {
+    city?: string
+    neighborhood?: string
+    subdivision?: string
+    city_slug?: string
+    neighborhood_slug?: string
+    subdivision_slug?: string
+    source_address?: string
+    formatted_address?: string
+    latitude?: number
+    longitude?: number
+    owner_type?: string
+  } | null
+
+  // Owned home — map, exterior photo, MLS history for the address we have.
+  const homeLat = typeof geo?.latitude === 'number' ? geo.latitude : null
+  const homeLng = typeof geo?.longitude === 'number' ? geo.longitude : null
+  const homeAddress = geo?.formatted_address ?? geo?.source_address ?? null
+  let homeMedia: Awaited<ReturnType<typeof getOwnedHomeMedia>> | null = null
+  let homeMatches: OwnedHomeMatch[] = []
+  if (homeLat !== null && homeLng !== null) {
+    ;[homeMedia, homeMatches] = await Promise.all([
+      getOwnedHomeMedia(homeLat, homeLng),
+      getOwnedHomeMatches(homeLat, homeLng),
+    ])
+  }
+  const homeMlsPhoto = homeMatches.find((m) => m.photoUrl)?.photoUrl ?? null
+  const homeActiveListing = homeMatches.find((m) =>
+    ['Active', 'Coming Soon', 'Active Under Contract', 'Pending'].includes(m.status ?? ''),
+  ) ?? null
+  const homeSales = homeMatches.filter((m) => m.closePrice && m.closeDate)
+  const homeFacts = homeMatches.find((m) => m.beds || m.sqft) ?? null
+
+  const webEvents = full.timeline.filter((t) => t.kind === 'web_event').slice(0, 8)
 
   return (
     <main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6">
@@ -286,6 +321,109 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
               ) : null}
             </CardContent>
           </Card>
+
+          {/* Owned home — address, exterior photos, map, MLS history */}
+          {homeAddress && homeMedia ? (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center justify-between text-base">
+                  <span>Owned home</span>
+                  {geo?.owner_type ? <Badge variant="outline" className="text-[11px]">{geo.owner_type}</Badge> : null}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <a
+                  href={homeMedia.googleMapsLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block font-medium text-foreground hover:underline"
+                >
+                  {homeAddress}
+                </a>
+                {homeFacts ? (
+                  <div className="text-muted-foreground">
+                    {[
+                      homeFacts.beds ? `${homeFacts.beds} bed` : null,
+                      homeFacts.baths ? `${homeFacts.baths} bath` : null,
+                      homeFacts.sqft ? `${Math.round(homeFacts.sqft).toLocaleString('en-US')} sqft` : null,
+                      homeFacts.yearBuilt ? `built ${homeFacts.yearBuilt}` : null,
+                    ].filter(Boolean).join(' · ')}
+                  </div>
+                ) : null}
+                {homeActiveListing ? (
+                  <Alert>
+                    <AlertTitle className="text-sm">On the market right now</AlertTitle>
+                    <AlertDescription className="text-sm">
+                      {homeActiveListing.status}
+                      {homeActiveListing.listPrice ? ` · $${(Math.round(homeActiveListing.listPrice / 1000) * 1000).toLocaleString('en-US')}` : ''}
+                      {homeActiveListing.listingKey ? (
+                        <> · <Link href={`/listing/${homeActiveListing.listingKey}`} className="underline">view listing</Link></>
+                      ) : null}
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
+                {(homeMedia.streetViewUrl || homeMlsPhoto) ? (
+                  <div className={`grid gap-2 ${homeMedia.streetViewUrl && homeMlsPhoto ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                    {homeMedia.streetViewUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={homeMedia.streetViewUrl} alt={`Street view of ${homeAddress}`} className="aspect-[2/1] w-full rounded-md border border-border object-cover" loading="lazy" />
+                    ) : null}
+                    {homeMlsPhoto ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={homeMlsPhoto} alt={`MLS photo of ${homeAddress}`} className="aspect-[2/1] w-full rounded-md border border-border object-cover" loading="lazy" />
+                    ) : null}
+                  </div>
+                ) : null}
+                {homeMedia.mapUrl ? (
+                  <a href={homeMedia.googleMapsLink} target="_blank" rel="noopener noreferrer" className="block">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={homeMedia.mapUrl} alt={`Map of ${homeAddress}`} className="w-full rounded-md border border-border" loading="lazy" />
+                  </a>
+                ) : null}
+                {homeSales.length > 0 ? (
+                  <div>
+                    <div className="mb-1 text-muted-foreground">Sale history (MLS)</div>
+                    {homeSales.slice(0, 4).map((s, i) => (
+                      <div key={`${s.listingKey ?? i}`} className="flex justify-between">
+                        <span className="text-foreground">
+                          {s.listingKey ? (
+                            <Link href={`/listing/${s.listingKey}`} className="hover:underline">
+                              Sold ${(Math.round((s.closePrice as number) / 1000) * 1000).toLocaleString('en-US')}
+                            </Link>
+                          ) : (
+                            <>Sold ${(Math.round((s.closePrice as number) / 1000) * 1000).toLocaleString('en-US')}</>
+                          )}
+                        </span>
+                        <span className="tabular-nums text-muted-foreground">
+                          {new Date(s.closeDate as string).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'America/Los_Angeles' })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+                {homeMatches.length === 0 ? (
+                  <p className="text-muted-foreground">No MLS record within 40m of this address. Map and street view are from the geocoded point.</p>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {/* Website activity — most recent identified page views */}
+          {webEvents.length > 0 ? (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Website activity ({full.visitorSessions} sessions)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {webEvents.map((e) => (
+                  <div key={e.id} className="flex items-start justify-between gap-2">
+                    <span className="min-w-0 truncate text-foreground">{e.title ?? 'page view'}</span>
+                    <span className="shrink-0 tabular-nums text-muted-foreground">{fmtDateTime(e.ts)}</span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : null}
 
           {/* Custom fields */}
           {customEntries.length > 0 ? (
