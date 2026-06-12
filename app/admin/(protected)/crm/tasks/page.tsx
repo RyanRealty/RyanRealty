@@ -43,7 +43,7 @@ function groupTasks(tasks: CrmOpenTask[]) {
   }
   return [
     { label: 'Overdue', tasks: overdue, tone: 'text-destructive' },
-    { label: 'Today', tasks: today, tone: 'text-foreground' },
+    { label: 'Today', tasks: today, tone: 'text-warning' },
     { label: 'Upcoming', tasks: upcoming, tone: 'text-foreground' },
     { label: 'No due date', tasks: someday, tone: 'text-muted-foreground' },
   ].filter((g) => g.tasks.length > 0)

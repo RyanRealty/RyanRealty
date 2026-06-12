@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { getCrmAccess, getCrmOverview, listBrokerLicenses, listCrmPeople, listCrmSavedViews } from '@/app/actions/crm'
 import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import { Badge } from '@/components/ui/badge'
+import StageBadge from '@/components/admin/crm/StageBadge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -113,48 +114,6 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         </div>
       </div>
 
-      {/* Licenses & renewals — every broker always sees their license state */}
-      {visibleLicenses.length > 0 ? (
-        <div className="mt-6 grid gap-3 md:grid-cols-3">
-          {visibleLicenses.map((l) => {
-            const dl = daysLeft(l.license_expires_on)
-            const urgency = dl === null ? 'secondary' : dl < 60 ? 'destructive' : dl < 180 ? 'default' : 'secondary'
-            return (
-              <Card key={l.slug}>
-                <CardContent className="px-4 py-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-foreground">{l.display_name}</span>
-                    <Badge variant={l.license_status === 'ACTIVE' ? 'secondary' : 'destructive'} className="text-xs">
-                      {l.license_status ?? 'unknown'}
-                    </Badge>
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {l.license_type ?? 'License'} #{l.license_number ?? '?'}
-                    {l.nrds_id ? <> · NRDS {l.nrds_id}</> : <> · NRDS pending</>}
-                  </div>
-                  <div className="mt-1.5 flex items-center gap-2 text-xs">
-                    <span className="text-muted-foreground">Renews by</span>
-                    <Badge variant={urgency} className="tabular-nums text-xs">
-                      {l.license_expires_on ?? '?'}{dl !== null ? ` · ${dl} days` : ''}
-                    </Badge>
-                    <a
-                      href="https://orea.elicense.micropact.com"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-muted-foreground underline hover:text-foreground"
-                    >
-                      Renew at eLicense
-                    </a>
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    30 CE hours incl. LARRC, then renew in eLicense ($300). Renewal events are on your calendar.
-                  </p>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      ) : null}
 
       {/* Saved views */}
       <div className="mt-6 flex flex-wrap gap-2">
@@ -249,7 +208,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
                   <Link href={`/admin/crm/${p.id}`} className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate text-sm font-semibold text-foreground">{p.name ?? `Contact #${p.id}`}</span>
-                      <Badge variant="secondary" className="shrink-0">{p.stage}</Badge>
+                      <StageBadge stage={p.stage} className="shrink-0" />
                     </div>
                     <div className="mt-1 truncate text-xs text-muted-foreground">
                       {[email, phone ? fmtPhone(phone) : null].filter(Boolean).join(' · ') || 'No contact info'}
@@ -304,7 +263,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
                         {p.name ?? `Contact #${p.id}`}
                       </Link>
                     </TableCell>
-                    <TableCell><Badge variant="secondary">{p.stage}</Badge></TableCell>
+                    <TableCell><StageBadge stage={p.stage} /></TableCell>
                     <TableCell className="max-w-[260px]">
                       <div className="flex flex-wrap gap-1">
                         {p.tags.slice(0, 3).map((t) => (

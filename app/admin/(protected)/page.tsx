@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { getSetupComplete } from '@/app/actions/admin-setup'
 import { getCrmAccess, getCrmHomeDashboard } from '@/app/actions/crm'
 import { CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
-import { Badge } from '@/components/ui/badge'
+import StageBadge from '@/components/admin/crm/StageBadge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -128,7 +128,7 @@ export default async function AdminHomePage({ searchParams }: { searchParams: Pr
                     <span className="block truncate text-xs text-muted-foreground">{p.source ?? ''}</span>
                   </span>
                   <span className="flex shrink-0 flex-col items-end gap-1">
-                    <Badge variant="secondary" className="text-xs">{p.stage}</Badge>
+                    <StageBadge stage={p.stage} className="text-xs" />
                     <span className="text-xs tabular-nums text-muted-foreground">{fmtDate(p.created_at)}</span>
                   </span>
                 </Link>
