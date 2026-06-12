@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.495.0 (2026-06-12)
+
+### Features
+- feat(crm): rendered send previews + per-broker HTML signatures with Oregon agency disclosure link
+
+---
+
+
 ## v1.494.3 (2026-06-12)
 
 ### Maintenance
