@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.499.1 (2026-06-12)
+
+### Bug Fixes
+- fix(crm): live-visit broker text fires independently of the disabled FUB-note flag
+
+---
+
+
 ## v1.499.0 (2026-06-12)
 
 ### Features
