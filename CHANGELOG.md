@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.491.0 (2026-06-12)
+
+### Features
+- feat(crm): expired CMA auto-queue + queued-pending-A2P SMS + instant enroll on every lead path
+
+---
+
+
 ## v1.490.0 (2026-06-12)
 
 ### Features
