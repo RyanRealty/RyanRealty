@@ -33,6 +33,7 @@ import { SimilarListings } from '@/components/site/listing-detail/SimilarListing
 import VideoHomesSection, { type VideoHomesScope } from '@/components/site/VideoHomesSection'
 import { ListingAgentCard } from '@/components/site/listing-detail/ListingAgentCard'
 import { TextMattCTA } from '@/components/site/listing-detail/TextMattCTA'
+import AttributedBrokerCard from '@/components/site/AttributedBrokerCard.client'
 import { ClimateRiskBlock } from '@/components/site/listing-detail/ClimateRiskBlock'
 import { VacationRentalPotential } from '@/components/site/listing-detail/VacationRentalPotential'
 import { TransparentCMASummary } from '@/components/site/listing-detail/TransparentCMASummary'
@@ -347,6 +348,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const sidebar = ctaBroker ? (
     <>
+      {/* Lead steered here by their broker (CRM link / ad) sees THAT broker
+          first — generic CTAs stay for everyone else. */}
+      <AttributedBrokerCard hideForSlug={ctaBroker.slug} />
       <TextMattCTA broker={ctaBroker} listingKey={listingKey} />
       <ListingAgentCard broker={listingAgent} listing={listing} />
     </>
