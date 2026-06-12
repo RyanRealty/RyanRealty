@@ -238,6 +238,8 @@ export { getResortBoundaryGeoJSON } from '@/lib/data/geo/getResortBoundaryGeoJSO
 // Geo — Bend westside neighborhood stats for homepage map section
 export { getBendNeighborhoodStats } from '@/lib/data/geo/getBendNeighborhoodStats'
 export type { NeighborhoodStatRow } from '@/lib/data/geo/getBendNeighborhoodStats'
+export { getBendNeighborhoodLedger } from '@/lib/data/geo/getBendNeighborhoodLedger'
+export type { NeighborhoodLedgerRow } from '@/lib/data/geo/getBendNeighborhoodLedger'
 
 // Geo — shared boundary map data (polygon + spatial pins) via listings_in_boundary RPC.
 // THE shared DAL for all three page types (city / neighborhood / community).
@@ -539,6 +541,10 @@ export {
   deactivateGuestAlertByToken,
 } from '@/lib/data/leads/guestSearchAlerts'
 export type { GuestSearchAlertInput, GuestSearchAlertRow } from '@/lib/data/leads/guestSearchAlerts'
+
+// Anonymous partial-address capture — LP step-1 advance without cookie identity.
+export { saveAnonymousPartialAddress } from '@/lib/data/leads/saveAnonymousPartialAddress'
+export type { AnonymousPartialAddressInput } from '@/lib/data/leads/saveAnonymousPartialAddress'
 export { pauseSavedSearchByToken } from '@/lib/data/savedSearches'
 
 // Cache helpers ----------------------------------------------------

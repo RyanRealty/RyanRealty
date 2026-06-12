@@ -1,6 +1,10 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
+import ExitIntentPrompt from '@/components/landing/ExitIntentPrompt'
+import ScrollReveal from '@/components/landing/ScrollReveal'
+import { TrustStrip } from '@/components/landing/TrustStrip'
+import { ReviewStrip } from '@/components/landing/ReviewCard'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import {
   Accordion,
@@ -10,24 +14,20 @@ import {
 } from '@/components/ui/accordion'
 import LandingPageTracker from '@/components/LandingPageTracker'
 import SellerLPForm from './SellerLPForm'
-import SellerSocialProof from '@/components/seller-lp/SellerSocialProof'
-import MarketVisuals from '@/components/seller-lp/MarketVisuals'
-import type { StatCard } from '@/components/seller-lp/MarketVisuals.client'
+import { TESTIMONIALS } from '@/lib/testimonials'
 import {
   getBendMarketSnapshot,
-  getBendPriceTrend,
   getOurListings,
-  getSoldStories,
   getTestimonialAggregate,
 } from './data'
 
 export const metadata: Metadata = {
-  title: 'What’s Your Home Worth in Today’s Market? | Ryan Realty',
+  title: 'What Would Your Home Bring Today? | Ryan Realty',
   description:
     'A real number from recent local Bend sales, not an algorithm. Prepared by a local broker.',
   robots: { index: false, follow: false },
   openGraph: {
-    title: 'What’s Your Home Worth in Today’s Market?',
+    title: 'What Would Your Home Bring Today?',
     description:
       'A real number from recent local Bend sales, not an algorithm. Prepared by a local broker.',
     type: 'website',
@@ -39,39 +39,47 @@ export const metadata: Metadata = {
 const BROKER_PHONE = '541.703.3095'
 const BROKER_PHONE_TEL = '+15417033095'
 
+// Em-dash as a data placeholder for unavailable values — the one allowed use
+// per the brand spec ("Unavailable → em-dash"). Escaped so the punctuation
+// gate (which bans em-dash as prose punctuation) stays clean.
+const MDASH = '—'
+
 // ─── Ad-matched hero variants (?v=) ──────────────────────────────────────
 // Message match: each paid ad concept lands on a hero with the SAME photo
 // family + the SAME headline as the ad that was clicked. Default (no ?v=)
-// stays the original Old Mill banner + bring-today copy. Alt text describes
-// only what is visibly in frame — no place claims beyond what is provable
-// (CLAUDE.md §0).
+// is the approved Figma LP 1 hero — Old Mill banner photo + bring-today copy.
 type HeroVariant = { img: string; alt: string; h1: string; sub: string }
 const HERO_VARIANTS: Record<string, HeroVariant> = {
   mountain: {
     img: '/images/lp/hero-mountain.jpg',
     alt: 'A snow-capped Cascade peak reflected in a still alpine lake at dawn',
-    h1: 'What is your Bend home worth?',
+    h1: 'What Is Your Bend Home Worth?',
     sub: 'A real number from closed sales near you, not an online guess.',
   },
   oos: {
     img: '/images/lp/hero-oldmill.jpg',
     alt: 'Aerial view of the Old Mill District and Deschutes River in Bend, Oregon',
-    h1: 'Own a Bend home from another state?',
+    h1: 'Own a Bend Home From Another State?',
     sub: 'We handle the prep, the repairs, and the sale while you stay put.',
   },
   nopressure: {
     img: '/images/lp/hero-pond.jpg',
     alt: 'A neighborhood pond and homes in Bend, Oregon',
-    h1: 'No pressure. Just the real number.',
+    h1: 'No Pressure. Just the Real Number.',
     sub: 'Honest guidance for your Bend home, whenever you are ready to think about selling.',
   },
 }
 const DEFAULT_HERO: HeroVariant = {
   img: '/images/lp/hero-banner.jpg',
-  alt: '',
-  h1: 'What would your Bend home bring today?',
-  sub: 'See what buyers are paying for homes like yours, from recent Bend sales. A real number from a local broker, not an algorithm.',
+  alt: 'Aerial view of the Old Mill District smokestacks and the Deschutes River in Bend, Oregon',
+  h1: 'What Would Your Home Bring Today?',
+  sub: 'See what buyers are paying for homes like yours, from recent Central Oregon sales. A real number from a local broker, not an algorithm.',
 }
+
+// Two seller-side reviews for the brokers section (approved Figma LP 1, S3).
+const SELLER_LP_REVIEWS = TESTIMONIALS.filter((t) =>
+  ['Gary Timms', 'Doug Millard'].includes(t.author),
+)
 
 export default async function SellerHomeValuePage({
   searchParams,
@@ -87,80 +95,70 @@ export default async function SellerHomeValuePage({
   const cookiePersonId = await getFubPersonIdFromCookie()
   const knownVisitor = cookiePersonId != null && cookiePersonId > 0
 
-  // Live local data — Bend market snapshot + the unified "homes we represent"
-  // matrix (active listings + closed sales × optional Google reviews × broker
-  // headshots). Each falls back gracefully if Supabase is briefly unreachable.
-  const [marketSnapshot, priceTrend, soldStories, aggregate, allListings] = await Promise.all([
+  // Live local data — Bend market snapshot (market_pulse_live via the DAL) +
+  // the curated real-listings matrix. Each falls back gracefully if Supabase
+  // is briefly unreachable. CLAUDE.md §0 Data Accuracy: live values or the
+  // em-dash placeholder, never an invented number.
+  const [marketSnapshot, aggregate, allListings] = await Promise.all([
     getBendMarketSnapshot(),
-    getBendPriceTrend(),
-    getSoldStories(),
     getTestimonialAggregate(),
     getOurListings(),
   ])
 
-  // Live Bend market stat cards. Only render a card when the underlying value
-  // is present — never a placeholder number. Each value is the live SFR pulse
-  // from market_pulse_live (see data.ts). CLAUDE.md §0 Data Accuracy.
   const snap = marketSnapshot
-  let marketCards: StatCard[] = []
-  if (snap) {
-    const raw: Array<StatCard | null> = [
-      snap.medianSold90d != null
-        ? { countTo: snap.medianSold90d, format: 'money', label: 'Median sale price', sub: 'Closed in the last 90 days' }
-        : null,
-      snap.medianDaysToPending != null
-        ? { countTo: snap.medianDaysToPending, format: 'days', label: 'Time to pending', sub: 'Median, list to under contract' }
-        : null,
-      snap.saleToListPct != null
-        ? { countTo: snap.saleToListPct, format: 'pct', label: 'Sale to list', sub: 'Median final price vs asking' }
-        : null,
-      snap.soldCount30d != null
-        ? { countTo: snap.soldCount30d, format: 'int', label: 'Homes sold', sub: 'Closed in the last 30 days' }
-        : null,
-    ]
-    marketCards = raw.filter((c): c is StatCard => c !== null)
-  }
+
+  // Stat band values — formatted live, em-dash placeholder when unavailable.
+  const statCards: Array<{ value: string; label: string; sub: string }> = [
+    {
+      value:
+        snap?.medianSold90d != null
+          ? `$${(Math.round(snap.medianSold90d / 1000) * 1000).toLocaleString('en-US')}`
+          : MDASH,
+      label: 'Median sale price',
+      sub: 'Closed in the last 90 days',
+    },
+    {
+      value:
+        snap?.medianDaysToPending != null
+          ? `${Math.round(snap.medianDaysToPending)} days`
+          : MDASH,
+      label: 'Time to pending',
+      sub: 'Median, list to under contract',
+    },
+    {
+      value: snap?.saleToListPct != null ? `${snap.saleToListPct.toFixed(1)}%` : MDASH,
+      label: 'Sale to list',
+      sub: 'Median final price vs asking',
+    },
+    {
+      value: snap?.soldCount30d != null ? snap.soldCount30d.toLocaleString('en-US') : MDASH,
+      label: 'Homes sold',
+      sub: 'Closed in the last 30 days',
+    },
+  ]
 
   const updatedLabel = snap?.updatedAt
     ? new Date(snap.updatedAt).toLocaleDateString('en-US', {
         month: 'long',
+        day: 'numeric',
         year: 'numeric',
         timeZone: 'America/Los_Angeles',
       })
-    : ''
-  const hasMarketVisuals = priceTrend.points.length >= 2 || marketCards.length > 0
+    : null
 
-  // Proof strip: 3 recently sold Bend listings, badge==='Sold', photo available.
-  // These are the real verified closed sales specified in the LP brief (2026-06-03).
-  // We pull from allListings (same getOurListings() source) so photo + address
-  // data is live from the DAL — never hardcoded beyond the address key filter.
+  // Recently sold nearby — 3 real verified closed sales, photo + price live
+  // from the DAL (getOurListings → listing_tile_mv). Never hardcoded beyond
+  // the address key filter.
   const PROOF_STRIP_ADDRESSES = [
-    '2354 NW Drouillard Ave',  // NorthWest Crossing · $1,715,000
-    '1974 NE Newport Hills Dr', // Forest Hills · $1,191,000
-    '64350 Old Bend Redmond Hwy', // Tumalo · $1,030,000
+    '2354 NW Drouillard Ave', // NorthWest Crossing
+    '1974 NE Newport Hills Dr', // Forest Hills
+    '64350 Old Bend Redmond Hwy', // Tumalo
   ]
   const proofStripListings = PROOF_STRIP_ADDRESSES.map((addr) =>
-    allListings.find((l) => l.addressLine === addr && l.badge === 'Sold')
-  )
+    allListings.find((l) => l.addressLine === addr && l.badge === 'Sold'),
+  ).filter((l): l is NonNullable<typeof l> => l != null)
 
-  // Market section derived values (computed from live snapshot).
-  const mos = marketSnapshot?.monthsOfSupply ?? null
-  const mosVerdict =
-    mos == null
-      ? null
-      : mos <= 4
-      ? "Seller's market"
-      : mos < 6
-      ? 'Balanced market'
-      : "Buyer's market"
-  const yoyDirection =
-    priceTrend.yoyPct == null ? null : priceTrend.yoyPct >= 0 ? 'up' : 'down'
-  const yoyAbs =
-    priceTrend.yoyPct == null ? null : Math.abs(priceTrend.yoyPct).toFixed(1)
-
-  // JSON-LD review schema for SEO rich results. Each review is attached to
-  // the property it reviewed via itemReviewed → real-estate-agent's named
-  // RealEstateListing. Mirrors the pattern HomeLight uses.
+  // JSON-LD review schema for SEO rich results.
   const reviewSchema = {
     '@context': 'https://schema.org',
     '@type': 'RealEstateAgent',
@@ -179,49 +177,23 @@ export default async function SellerHomeValuePage({
       reviewCount: aggregate.count,
       bestRating: '5',
     },
-    review: soldStories
-      .filter((s): s is typeof s & { testimonial: NonNullable<typeof s.testimonial> } =>
-        s.testimonial !== null
-      )
-      .map((s) => ({
-        '@type': 'Review',
-        reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' },
-        author: { '@type': 'Person', name: s.testimonial.author },
-        reviewBody: s.testimonial.quote,
-        itemReviewed: {
-          '@type': 'RealEstateListing',
-          name: s.listing.addressLine,
-          address: {
-            '@type': 'PostalAddress',
-            addressLocality: 'Bend',
-            addressRegion: 'OR',
-            addressCountry: 'US',
-          },
-        },
-      })),
   }
 
   return (
     <div className="bg-background text-foreground">
-      <LandingPageTracker lpVariant={variantKey ? `seller-home-value:${variantKey}` : 'seller-home-value'} />
+      <LandingPageTracker
+        lpVariant={variantKey ? `seller-home-value:${variantKey}` : 'seller-home-value'}
+      />
       {/* JSON-LD structured data for Google rich results */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewSchema) }}
       />
 
-      {/* ─── Sticky minimal header ───────────────────────────────────────
-          Horizontal wordmark (logo-horizontal-blue.png — the 5:1 banner-
-          format Ryan Realty wordmark in navy on cream). Canonical pre-
-          rendered PNG; never re-typeset. Includes "BEND · OREGON" in the
-          art itself so no separate subtitle is needed. */}
+      {/* ─── Sticky minimal header — wordmark + phone ─────────────────────── */}
       <header className="sticky top-0 z-40 border-b border-primary/10 bg-card/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-          <Link
-            href="/"
-            className="flex items-center"
-            aria-label="Ryan Realty · Bend, Oregon"
-          >
+          <Link href="/" className="flex items-center" aria-label="Ryan Realty · Bend, Oregon">
             <span className="relative block h-7 w-[140px] shrink-0 sm:h-9 sm:w-[180px]">
               <Image
                 src="/images/brand/logo-horizontal-blue.png"
@@ -244,7 +216,7 @@ export default async function SellerHomeValuePage({
         </div>
       </header>
 
-      {/* ─── Hero ────────────────────────────────────────────────────────── */}
+      {/* ─── HERO — full-bleed photo, navy gradient scrim, centered capture ── */}
       <section className="relative isolate border-b border-primary/10">
         <Image
           src={hero.img}
@@ -254,261 +226,327 @@ export default async function SellerHomeValuePage({
           sizes="100vw"
           className="lp-kenburns absolute inset-0 -z-20 object-cover object-center"
         />
-        {/* Two-layer navy treatment so the Bend aerial reads as a real feature.
-            Base vertical gradient keeps the eyebrow (top) and trust strip
-            (bottom) legible while letting the river + Cascades show through the
-            middle. A centered radial spotlight concentrates contrast behind the
-            headline + address field, then fades to transparent toward the left
-            and right edges so the photo opens up at the sides instead of
-            sitting under a flat dark box. */}
+        {/* Navy gradient scrim per the approved Figma hero — lighter through
+            the middle so the photo reads, denser at top and bottom where the
+            eyebrow + form sit. */}
         <div
-          className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/60 via-primary/55 to-primary/65"
+          className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/60 via-primary/55 to-primary/70"
           aria-hidden="true"
         />
 
-        <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-10 text-center sm:px-6 sm:py-14 lg:py-16">
-          {/* 1 — Eyebrow */}
+        <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-12 text-center sm:px-6 sm:py-16 lg:py-20">
+          {/* Eyebrow */}
           <p className="text-sm font-semibold uppercase tracking-wider text-card/85 drop-shadow-sm">
             Bend · Oregon homeowners
           </p>
 
-          {/* 2 — H1 (Amboqia) — message-matched to the ad concept (?v=) */}
+          {/* H1 — Amboqia display, Title Case (hero only), message-matched */}
           <h1 className="mt-4 font-display text-4xl font-semibold leading-tight tracking-tight text-card drop-shadow-sm sm:text-5xl lg:text-6xl">
             {hero.h1}
           </h1>
 
-          {/* 3 — Subhead */}
-          <p className="mt-4 text-lg leading-relaxed text-card drop-shadow-sm">
-            {hero.sub}
-          </p>
+          {/* Subhead */}
+          <p className="mt-4 text-lg leading-relaxed text-card drop-shadow-sm">{hero.sub}</p>
 
-          {/* 4 — Address field + button: the hero centerpiece */}
-          <div className="mt-7 w-full">
+          {/* Broker trust chip */}
+          <div className="mt-5 flex items-center gap-2.5">
+            <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-card/10 ring-2 ring-card/40">
+              <Image
+                src="/images/brokers/ryan-matt.png"
+                alt="Matt Ryan, Principal Broker"
+                fill
+                sizes="40px"
+                className="object-cover object-top"
+                priority
+              />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-semibold leading-tight text-card">Matt Ryan</p>
+              <p className="text-xs leading-tight text-card/75">Principal broker · Ryan Realty</p>
+            </div>
+          </div>
+
+          {/* Address capture — the hero centerpiece. SmsConsentDisclosure is
+              rendered inside the form (first-paint HTML, A2P-verified text). */}
+          <div className="mt-5 w-full">
             <SellerLPForm knownVisitor={knownVisitor} heroVariant />
           </div>
 
-          {/* 5 — Micro-assurance line under the form */}
+          {/* Micro-assurance */}
           <p className="mt-3 text-sm text-card/70 drop-shadow-sm">
             No pitch, no obligation. Plenty of owners check their number a year before they sell.
           </p>
         </div>
       </section>
 
-      {/* ─── What happens next — 3 steps on light/cream bg ──────────────── */}
+      {/* ─── S2 · Trust strip band (cream) ─────────────────────────────────── */}
       <section className="border-b border-primary/10 bg-background">
-        <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-12">
-          <h2 className="font-display text-center text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
-            What happens next
-          </h2>
-          <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
-            <NextStep num="1" title="Enter the address" body="Any home you want a real estimate on." />
-            <NextStep num="2" title="We'll send you the report" body="Just tell us where to send it." />
-            <NextStep num="3" title="You decide what's next" body="Schedule a call, ask questions, or just keep it." />
-          </div>
+        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
+          <TrustStrip />
         </div>
       </section>
 
-      {/* ─── The brokers behind your sale — photos + reviews together ────
-          One trust block: the three brokers shown big, paired with a real
-          Google review that fades through the set. Faces and words together. */}
+      {/* ─── S3 · The brokers behind your sale ─────────────────────────────── */}
       <section className="border-b border-primary/10 bg-card">
-        <div className="mx-auto max-w-4xl px-4 py-10 text-center sm:px-6 sm:py-12">
-          <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
-            The brokers behind your sale
-          </h2>
-          <div className="mt-8 grid grid-cols-3 gap-3 sm:gap-8">
-            <Broker src="/images/brokers/ryan-matt.png" name="Matt Ryan" role="Principal Broker" />
-            <Broker src="/images/brokers/stevenson-paul.png" name="Paul Stevenson" role="Broker" />
-            <Broker src="/images/brokers/peterson-rebecca.png" name="Rebecca Peterson" role="Broker" />
-          </div>
-          <div className="mt-8 flex justify-center border-t border-primary/10 pt-8">
-            <SellerSocialProof tone="light" align="center" size="lg" />
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Anti-Zillow education ────────────────────────────────────── */}
-      <section className="border-b border-primary/10">
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12">
-          <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
-            Why your Zestimate is probably off
-          </h2>
-          <p className="mt-3 max-w-2xl text-lg text-foreground/80">
-            An online estimate is a guess from public records. It uses tax-record square footage, comps from a wide radius, and a national model averaged across millions of homes. It never steps inside your home.
-          </p>
-          <p className="mt-4 max-w-2xl text-lg text-foreground/80">
-            A real analysis starts from closed sales within a few blocks of yours, then a broker adjusts for your finishes, lot, and layout. That is the number worth knowing before you decide anything.
-          </p>
-        </div>
-      </section>
-
-      {/* ─── Proof strip — recently sold in Bend ─────────────────────────
-          3 real verified closed sales (2026-06-03 brief). Address + neighborhood
-          + sold price only. Photo from allListings (live DAL). No reviews,
-          no broker headshots — keep this section light and credibility-focused. */}
-      <section className="border-b border-primary/10 bg-card">
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12">
-          <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
-            Recently sold in Bend
-          </h2>
-          <p className="mt-2 text-base text-muted-foreground">
-            Recent closed sales from our clients. Verified against MLS records.
-          </p>
-          <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
-            {proofStripListings.map((listing) => {
-              if (listing == null) return null
-              // Every field is live from getOurListings (MLS via the DAL) — never
-              // hardcoded. Full currency, rounded to the nearest thousand (brand voice).
-              const price =
-                listing.closePrice != null
-                  ? `$${(Math.round(listing.closePrice / 1000) * 1000).toLocaleString('en-US')}`
-                  : listing.displayPrice
-              return (
-                <div key={listing.key} className="overflow-hidden rounded-2xl border border-primary/10 bg-background">
-                  {listing.photoUrl ? (
-                    <div className="relative h-44 w-full">
-                      <Image
-                        src={listing.photoUrl}
-                        alt={`${listing.addressLine}, ${listing.neighborhood ?? 'Bend'}`}
-                        fill
-                        sizes="(max-width: 640px) 100vw, 33vw"
-                        className="object-cover"
-                      />
-                    </div>
-                  ) : null}
-                  <div className="p-5">
-                    <p className="font-semibold text-primary">{listing.addressLine}</p>
-                    {listing.neighborhood ? (
-                      <p className="mt-0.5 text-sm text-muted-foreground">{listing.neighborhood}</p>
-                    ) : null}
-                    <p className="mt-3 font-display text-xl font-semibold tabular-nums text-foreground">
-                      Sold {price}
-                    </p>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Where Bend stands — live market chart + stat cards ───────────
-          Real Bend single-family data. The trend is market_stats_cache
-          monthly median sale price (current partial month dropped); the cards
-          are the live market_pulse_live SFR snapshot. Every value traces to
-          Supabase via data.ts — never invented. CLAUDE.md §0. */}
-      {hasMarketVisuals && (
-        <section className="border-b border-primary/10 bg-primary text-primary-foreground">
-          <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-14">
-            <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
-              Where Bend stands today
+        <div className="mx-auto max-w-4xl px-4 py-12 text-center sm:px-6 sm:py-16">
+          <ScrollReveal>
+            <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+              The brokers behind your sale
             </h2>
-            {/* Live YoY headline — computed from getBendPriceTrend(), sign-safe */}
-            {yoyDirection !== null && yoyAbs !== null ? (
-              <p className="mt-3 text-lg font-medium text-primary-foreground/90">
-                {"Bend’s median sale price is "}
-                {yoyDirection === 'up' ? 'up' : 'down'}{' '}
-                {yoyAbs}% over the past year.
-              </p>
-            ) : null}
-            {/* Market verdict pill — computed from monthsOfSupply against spec thresholds */}
-            {mosVerdict !== null && mos !== null ? (
-              <div className="mt-3">
-                <span className="inline-flex items-center rounded-full bg-card/10 px-4 py-1.5 text-sm font-semibold text-primary-foreground ring-1 ring-primary-foreground/20">
-                  {mosVerdict} · {mos.toFixed(1)} months of supply
-                </span>
-              </div>
-            ) : null}
-            <p className="mt-4 max-w-2xl text-lg text-primary-foreground/85">
-              Price it right in the first week and you tend to outperform sellers who reach for the top
-              and reduce later. Here is what Bend single-family homes are actually doing right now.
+            <p className="mx-auto mt-3 max-w-xl text-base text-muted-foreground">
+              Your comps are pulled and your questions are answered by a licensed Oregon
+              broker, not a call center.
             </p>
-            <div className="mt-6">
-              <MarketVisuals
-                points={priceTrend.points}
-                latest={priceTrend.latest}
-                yoyPct={priceTrend.yoyPct}
-                updatedLabel={updatedLabel}
-                cards={marketCards}
-              />
+          </ScrollReveal>
+          <div className="mt-8 grid grid-cols-3 gap-3 sm:gap-8">
+            <ScrollReveal delayMs={0}>
+              <Broker src="/images/brokers/ryan-matt.png" name="Matt Ryan" role="Principal Broker" />
+            </ScrollReveal>
+            <ScrollReveal delayMs={75}>
+              <Broker src="/images/brokers/stevenson-paul.png" name="Paul Stevenson" role="Broker" />
+            </ScrollReveal>
+            <ScrollReveal delayMs={150}>
+              <Broker src="/images/brokers/peterson-rebecca.png" name="Rebecca Peterson" role="Broker" />
+            </ScrollReveal>
+          </div>
+          {SELLER_LP_REVIEWS.length > 0 ? (
+            <ScrollReveal className="mt-10 border-t border-primary/10 pt-8 text-left">
+              <ReviewStrip reviews={SELLER_LP_REVIEWS} tone="light" />
+            </ScrollReveal>
+          ) : null}
+        </div>
+      </section>
+
+      {/* ─── S4 · Stat band (navy) — live market_pulse_live data ──────────── */}
+      <section className="border-b border-primary/10 bg-primary text-primary-foreground">
+        <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-14">
+          <ScrollReveal>
+            <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+              What Bend homes are doing right now
+            </h2>
+            <p className="mt-3 max-w-2xl text-base text-primary-foreground/80">
+              Live single-family figures for Bend. The same data your report is built from.
+            </p>
+          </ScrollReveal>
+          <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {statCards.map((card, i) => (
+              <ScrollReveal key={card.label} delayMs={i * 75}>
+                <div className="rounded-2xl bg-card/10 p-5 ring-1 ring-primary-foreground/15">
+                  <p className="font-display text-3xl font-semibold tabular-nums sm:text-4xl">
+                    {card.value}
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-primary-foreground/90">
+                    {card.label}
+                  </p>
+                  <p className="mt-0.5 text-xs text-primary-foreground/65">{card.sub}</p>
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
+          <p className="mt-5 text-xs text-primary-foreground/60">
+            {updatedLabel ? `Live data · updated ${updatedLabel} · ` : 'Live data · '}
+            Bend single-family · MLS via Ryan Realty
+          </p>
+        </div>
+      </section>
+
+      {/* ─── S5 · Algorithms guess. Comps don't. — split panel ────────────── */}
+      <section className="border-b border-primary/10 bg-background">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-2">
+          <ScrollReveal>
+            <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+              {'Algorithms guess. Comps don’t.'}
+            </h2>
+            <p className="mt-4 text-lg leading-relaxed text-foreground/80">
+              Your online estimate is built from tax records. Your report is built from the
+              homes that actually sold around you, adjusted by a broker who walks these streets.
+            </p>
+            <p className="mt-4 text-base leading-relaxed text-foreground/70">
+              An automated model never steps inside your home. A broker accounts for your
+              finishes, your lot, and your layout, and shows the math.
+            </p>
+          </ScrollReveal>
+          {/* Report mock — typographic mini CMA page. Data slots are honest
+              placeholders that bind to live data in the real report. */}
+          <ScrollReveal delayMs={100}>
+            <div className="mx-auto w-full max-w-sm rounded-2xl border border-primary/10 bg-card p-6 shadow-md">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Comparative market analysis
+              </p>
+              <p className="mt-1 font-display text-lg font-semibold text-primary">
+                Your street, your comps
+              </p>
+              <div className="mt-4 space-y-3">
+                {['Comparable sale 1', 'Comparable sale 2', 'Comparable sale 3'].map((row) => (
+                  <div
+                    key={row}
+                    className="flex items-center justify-between rounded-lg bg-secondary px-3 py-2.5"
+                  >
+                    <span className="text-sm text-foreground/75">{row}</span>
+                    <span className="text-sm font-semibold tabular-nums text-primary">{`$${MDASH}`}</span>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between rounded-lg bg-primary px-3 py-3">
+                  <span className="text-sm font-medium text-primary-foreground">
+                    Your adjusted value
+                  </span>
+                  <span className="font-display text-base font-semibold tabular-nums text-primary-foreground">
+                    {`$${MDASH}`}
+                  </span>
+                </div>
+              </div>
+              <p className="mt-3 text-right text-[11px] text-muted-foreground">
+                Sample layout · your report carries the live figures
+              </p>
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* ─── S6 · How it works — 3 steps ───────────────────────────────────── */}
+      <section className="border-b border-primary/10 bg-card">
+        <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16">
+          <ScrollReveal>
+            <h2 className="text-center font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+              How it works
+            </h2>
+          </ScrollReveal>
+          <div className="mt-8 grid grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-5">
+            <ScrollReveal delayMs={0}>
+              <ProcessStep num="1" title="Enter the address" body="Any home you want a real number on." />
+            </ScrollReveal>
+            <ScrollReveal delayMs={75}>
+              <ProcessStep num="2" title="A broker pulls the comps" body="Recent closed sales near you, adjusted for your home." />
+            </ScrollReveal>
+            <ScrollReveal delayMs={150}>
+              <ProcessStep num="3" title="Your number lands in your inbox" body="Within one business day. Questions go to the broker who built it." />
+            </ScrollReveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── S7 · Recently sold nearby — real DAL sold listings ───────────── */}
+      {proofStripListings.length > 0 ? (
+        <section className="border-b border-primary/10 bg-background">
+          <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+            <ScrollReveal>
+              <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+                Recently sold nearby
+              </h2>
+              <p className="mt-2 text-base text-muted-foreground">
+                Closed sales from our clients, verified against MLS records.
+              </p>
+            </ScrollReveal>
+            <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
+              {proofStripListings.map((listing, i) => {
+                const price =
+                  listing.closePrice != null
+                    ? `$${(Math.round(listing.closePrice / 1000) * 1000).toLocaleString('en-US')}`
+                    : listing.displayPrice
+                return (
+                  <ScrollReveal key={listing.key} delayMs={i * 75}>
+                    <div className="overflow-hidden rounded-2xl border border-primary/10 bg-card shadow-sm">
+                      {listing.photoUrl ? (
+                        <div className="relative aspect-[4/3] w-full">
+                          <Image
+                            src={listing.photoUrl}
+                            alt={`${listing.addressLine}, ${listing.neighborhood ?? 'Bend'}`}
+                            fill
+                            sizes="(max-width: 640px) 100vw, 33vw"
+                            className="object-cover"
+                          />
+                        </div>
+                      ) : null}
+                      <div className="p-5">
+                        <p className="font-semibold text-primary">{listing.addressLine}</p>
+                        {listing.neighborhood ? (
+                          <p className="mt-0.5 text-sm text-muted-foreground">
+                            {listing.neighborhood}
+                          </p>
+                        ) : null}
+                        <p className="mt-3 inline-flex rounded-full bg-primary px-3 py-1 font-display text-sm font-semibold tabular-nums text-primary-foreground">
+                          Sold {price}
+                        </p>
+                      </div>
+                    </div>
+                  </ScrollReveal>
+                )
+              })}
             </div>
           </div>
         </section>
-      )}
+      ) : null}
 
-      {/* ─── FAQ ──────────────────────────────────────────────────────────
-          Single centered column, max-w-3xl, heading on top, accordion below. */}
+      {/* ─── S8 · FAQ ──────────────────────────────────────────────────────── */}
       <section className="border-b border-primary/10 bg-card">
-        <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-12">
-          <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
-            What you’re probably wondering
-          </h2>
-          <p className="mt-3 text-base leading-relaxed text-foreground/75">
-            Still have a question? Talk to a broker directly.{" "}
-            <a
-              href={`tel:${BROKER_PHONE_TEL}`}
-              className="inline-flex items-center gap-1.5 font-semibold text-primary underline-offset-4 hover:underline"
-            >
-              <PhoneIcon className="h-4 w-4" />
-              {BROKER_PHONE}
-            </a>
-          </p>
+        <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
+          <ScrollReveal>
+            <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+              {'What you’re probably wondering'}
+            </h2>
+            <p className="mt-3 text-base leading-relaxed text-foreground/75">
+              Still have a question? Talk to a broker directly.{' '}
+              <a
+                href={`tel:${BROKER_PHONE_TEL}`}
+                className="inline-flex items-center gap-1.5 font-semibold text-primary underline-offset-4 hover:underline"
+              >
+                <PhoneIcon className="h-4 w-4" />
+                <span className="tabular-nums">{BROKER_PHONE}</span>
+              </a>
+            </p>
+          </ScrollReveal>
           <Accordion type="single" collapsible className="mt-6 gap-4">
             <FAQ
-              value="faq-how"
-              q="How is the number put together?"
-              a="A broker pulls the recent comparable sales near your home, then adjusts for your finishes, lot, view, and layout. You get a written comparative market analysis, not an automated guess. The precise figure tightens after a short walkthrough, which you can take or skip."
+              value="faq-cost"
+              q="What does the report cost?"
+              a="Nothing. The comparative market analysis is free, and there is no listing agreement attached to it. We send it because owners who get an honest number tend to remember where it came from."
             />
             <FAQ
-              value="faq-real"
-              q="Is this a real estimate, or marketing fluff?"
-              a="It’s a real comparative market analysis from actual recent sales near your home. The precise valuation requires a 15-minute walkthrough, which you can decline. The number we send is genuinely useful on its own."
+              value="faq-timing"
+              q="How fast does it arrive?"
+              a="Your report lands in your inbox within one business day. If your home or timeline is unusual, the broker preparing it may call first to get a detail right."
             />
             <FAQ
               value="faq-list"
               q="Do I have to list with you to get the value?"
-              a="No. Many of the homeowners we send valuations to decide to stay another year, or longer. We send it anyway. We’re here when the timing is right, whether that’s next month or three years from now."
+              a="No. Many of the homeowners we send valuations to decide to stay another year, or longer. We send it anyway. We are here when the timing is right, whether that is next month or three years from now."
             />
             <FAQ
-              value="faq-after"
-              q="What happens after I submit?"
-              a="A broker pulls the recent comparable sales near your home and builds the analysis, then sends it to you. If you have questions, you talk to the broker who prepared it, not a call center."
+              value="faq-accuracy"
+              q="How accurate is the number?"
+              a="It starts from the comparable sales that actually closed near your home, adjusted for your finishes, lot, and layout. The precise figure tightens after a short walkthrough, which you can take or skip. Either way you see the comps behind the number."
             />
           </Accordion>
         </div>
       </section>
 
-      {/* ─── Footer CTA ───────────────────────────────────────────────── */}
+      {/* ─── S9 · Closing navy band — second address capture ──────────────── */}
       <section className="bg-primary text-primary-foreground">
-        <div className="mx-auto max-w-3xl px-4 py-12 text-center sm:px-6 sm:py-14">
-          <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
-            Ready to know your number?
-          </h2>
-          <p className="mx-auto mt-3 max-w-xl text-lg text-primary-foreground/85">
-            Enter your address. Get your real home value.
-          </p>
-          <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link
-              href="#get-value"
-              scroll
-              className="inline-flex h-14 items-center justify-center rounded-xl bg-warning px-7 text-lg font-semibold text-warning-foreground transition-colors hover:bg-warning/90"
-            >
-              Get my home value
-            </Link>
-            <a
-              href={`tel:${BROKER_PHONE_TEL}`}
-              className="inline-flex h-14 items-center justify-center rounded-xl border-2 border-primary-foreground/30 px-7 text-lg font-semibold text-primary-foreground transition-colors hover:border-primary-foreground"
-            >
-              Call Matt: {BROKER_PHONE}
-            </a>
+        <div className="mx-auto max-w-2xl px-4 py-14 text-center sm:px-6 sm:py-16">
+          <ScrollReveal>
+            <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+              Ready for your number?
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-lg text-primary-foreground/85">
+              Enter the address. A broker takes it from there.
+            </p>
+          </ScrollReveal>
+          <div className="mt-7 text-left">
+            <SellerLPForm knownVisitor={knownVisitor} formId="get-value-closing" />
           </div>
+          <p className="mt-5 text-sm text-primary-foreground/75">
+            Prefer to talk?{' '}
+            <a href={`tel:${BROKER_PHONE_TEL}`} className="font-semibold underline underline-offset-2 tabular-nums">
+              Call {BROKER_PHONE}
+            </a>
+          </p>
         </div>
       </section>
 
-      {/* ─── Mini fine print ─────────────────────────────────────────── */}
-      <footer className="bg-card pb-20 sm:pb-8">
+      {/* ─── Mini fine print ─────────────────────────────────────────────── */}
+      <footer className="bg-card pb-24 sm:pb-8">
         <div className="mx-auto max-w-7xl px-4 py-8 text-center text-sm text-muted-foreground sm:px-6">
-          <p>Ryan Realty LLC • Equal Housing Opportunity</p>
+          <p>Ryan Realty LLC · Equal Housing Opportunity · Bend · Oregon</p>
           <p className="mt-2">
             <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">
               Privacy
@@ -518,14 +556,21 @@ export default async function SellerHomeValuePage({
         </div>
       </footer>
 
-      {/* Sticky mobile CTA bar: pinned to viewport bottom on mobile only.
-          Hidden on sm+ where the inline form is already visible. */}
+      {/* Exit-intent prompt — desktop-only, once per session. */}
+      <ExitIntentPrompt
+        headline="Not ready for a valuation?"
+        body="See what Bend homes are actually selling for. Real closed-sale data, no email required."
+        ctaLabel="See the market"
+        ctaTarget="/housing-market"
+      />
+
+      {/* Sticky mobile CTA bar — pinned to viewport bottom on mobile only. */}
       <div className="fixed inset-x-0 bottom-0 z-50 border-t border-primary/15 bg-card/95 px-3 py-3 shadow-[0_-4px_12px_-2px_rgba(16,39,66,0.12)] backdrop-blur sm:hidden">
         <div className="flex items-center gap-2">
           <Link
             href="#get-value"
             scroll
-            className="flex-1 rounded-xl bg-warning px-4 py-3 text-center text-sm font-semibold text-warning-foreground"
+            className="flex-1 rounded-xl bg-primary px-4 py-3 text-center text-sm font-semibold text-primary-foreground"
           >
             Get my home value
           </Link>
@@ -545,13 +590,16 @@ export default async function SellerHomeValuePage({
 // ─── Tiny presentational helpers ─────────────────────────────────────────
 
 function Broker({ src, name, role }: { src: string; name: string; role: string }) {
-  // Big, face-forward broker headshot. Transparent-PNG portrait on a soft navy
-  // disc, circular-cropped to the head + shoulders (object-top). Bigger than a
-  // trust-strip dot so visitors actually see who they will be working with.
   return (
     <div className="flex flex-col items-center">
       <span className="relative h-24 w-24 overflow-hidden rounded-full bg-primary/5 sm:h-32 sm:w-32">
-        <Image src={src} alt={name} fill sizes="(max-width: 640px) 96px, 128px" className="object-cover object-top" />
+        <Image
+          src={src}
+          alt={name}
+          fill
+          sizes="(max-width: 640px) 96px, 128px"
+          className="object-cover object-top"
+        />
       </span>
       <p className="mt-3 font-display text-base font-semibold text-primary sm:text-lg">{name}</p>
       <p className="text-xs text-muted-foreground sm:text-sm">{role}</p>
@@ -559,18 +607,14 @@ function Broker({ src, name, role }: { src: string; name: string; role: string }
   )
 }
 
-function NextStep({ num, title, body }: { num: string; title: string; body: string }) {
-  // Card-style step on the cream/light background below the hero.
-  // Navy number badge, display font for the title, Geist body.
+function ProcessStep({ num, title, body }: { num: string; title: string; body: string }) {
   return (
-    <div className="flex items-start gap-4 rounded-2xl border border-primary/10 bg-card p-5">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary font-display text-base font-semibold text-primary-foreground">
+    <div className="flex flex-col items-center text-center">
+      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary font-display text-lg font-semibold text-primary-foreground">
         {num}
       </span>
-      <div>
-        <p className="font-display text-lg font-semibold text-primary">{title}</p>
-        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{body}</p>
-      </div>
+      <p className="mt-4 font-display text-lg font-semibold text-primary">{title}</p>
+      <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{body}</p>
     </div>
   )
 }

@@ -101,6 +101,14 @@ export const TESTIMONIALS: Testimonial[] = [
     author: "Paul Robinson",
     source: "Google",
   },
+  {
+    // Buyer-side review naming Rebecca — verified via GBP API pull 2026-06-12
+    // (tmp/figma-lp-build/gbp-reviews-live-2026-06-12.json, created 2025-02-24).
+    quote:
+      "I cannot recommend Ryan Realty enough! Our realtor, Rebecca, went above and beyond for us. She advocated fiercely for us, was extremely detail oriented and made sure we were always comfortable when negotiating. She always kept us on track and didn't allow us to settle even when our home search was at times frustrating. Matt also jumped in and offered his time and expertise, we cannot thank them both enough for all the time and energy they gave us during our hunt!",
+    author: "Lauren Dewey",
+    source: "Google",
+  },
 ]
 
 export const GOOGLE_REVIEWS_URL = "https://www.google.com/maps/search/?api=1&query=Ryan+Realty+Bend+OR"

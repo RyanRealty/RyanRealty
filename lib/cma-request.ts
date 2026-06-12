@@ -38,7 +38,7 @@ export type CreateCmaRequestInput = {
   leadClassification?: string | null
   fubPersonId?: number | null
   /** Where the request came from. Default 'seller-lp'. */
-  requestSource?: 'seller-lp' | 'expired-listing-cron'
+  requestSource?: 'seller-lp' | 'expired-listing-cron' | 'fsbo-lp'
   /** Send the "we received your request" email to the lead. Default true.
    *  MUST be false for outbound-originated requests (expired) — the owner
    *  never asked us for anything. */
@@ -108,7 +108,12 @@ export async function createCmaRequest(
     const leadEmail = input.leadEmail?.toLowerCase().trim() || null
     const leadName = input.leadName?.trim() || null
     const requestSource = input.requestSource ?? 'seller-lp'
-    const sourceLabel = requestSource === 'expired-listing-cron' ? 'Expired-listing detection' : 'Seller LP submission'
+    const sourceLabel =
+      requestSource === 'expired-listing-cron'
+        ? 'Expired-listing detection'
+        : requestSource === 'fsbo-lp'
+          ? 'FSBO LP submission'
+          : 'Seller LP submission'
     const broker = await resolveBrokerSlug(input.fubPersonId ?? null)
 
     // Resolve broker uuid so the cmas row has a valid FK if the cmas.broker_id

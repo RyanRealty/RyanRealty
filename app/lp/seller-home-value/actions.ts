@@ -13,6 +13,7 @@ import {
   type FubEventPerson,
 } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { saveAnonymousPartialAddress } from '@/lib/data'
 import { createCmaRequest } from '@/lib/cma-request'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
 import { geocodeAndTagLead } from '@/lib/lead-geocode'
@@ -61,6 +62,59 @@ export type SellerLPSubmission = {
 export type SellerLPResult =
   | { success: true; eventId: string; classification: 'hot' | 'warm' | 'nurture' | 'unknown'; alreadyKnown: boolean; assignedBroker: BrokerSlug | null }
   | { success: false; error: string }
+
+/**
+ * Lightweight partial-lead capture. Fires when the seller enters their
+ * address and advances to step 2 (before they fill out contact info).
+ *
+ * Non-blocking fire-and-forget: sends a FUB Seller Inquiry event with
+ * just the address and tags source:seller-lp-partial so we can see
+ * partial-completion in FUB without triggering the full workflow
+ * enrollment. Never throws. The UI step change must never wait on this.
+ */
+export async function saveSellerPartialLead(params: {
+  address: string
+  sessionId: string | undefined
+  source: 'seller-lp' | 'list-now-lp'
+}): Promise<void> {
+  try {
+    const rawAddress = params.address?.trim() ?? ''
+    if (!rawAddress) return
+
+    // Always try to capture the address anonymously via the visitor_events DAL
+    // so a sessionId-keyed row lands even when there is no cookie identity.
+    // Fire-and-forget — must never delay the step change.
+    void saveAnonymousPartialAddress({
+      sessionId: params.sessionId,
+      address: rawAddress,
+      lpSurface: 'seller-lp',
+    }).catch(() => {/* swallowed */})
+
+    // Cookie-identified visitor only for the FUB partial event write below.
+    // Anonymous visitors already captured via the visitor_events row above.
+    const cookiePersonId = await getFubPersonIdFromCookie()
+    if (!cookiePersonId) return
+
+    const eventResult = await sendEvent({
+      type: 'Seller Inquiry',
+      person: { id: cookiePersonId },
+      source,
+      sourceUrl: `${siteUrl}/lp/seller-home-value`,
+      pageTitle: 'Seller LP. Address step (partial)',
+      message: `Partial lead: address entered, step 2 not yet completed. Address: ${rawAddress}. Source: ${params.source}.`,
+    })
+
+    if (!eventResult.ok) {
+      console.warn('[seller-lp] partial lead sendEvent failed (non-blocking):', eventResult.error)
+      return
+    }
+
+    await addPersonTags(cookiePersonId, ['source:seller-lp-partial'])
+  } catch (e) {
+    // Intentionally silent. Partial-lead capture must never affect the UI.
+    console.warn('[seller-lp] saveSellerPartialLead swallowed error:', e)
+  }
+}
 
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL

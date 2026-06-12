@@ -260,6 +260,17 @@ const CITY_HERO: Record<string, Omit<CityHero, 'verified'>> = {
   },
 }
 
+/**
+ * Sunriver — geo-verified Deschutes River kayak photo (asset 41fbd658,
+ * geo_tags: ['sunriver'], vision quality A, no watermark; data/asset-library/
+ * manifest.json). Served from the project's Supabase storage like the city
+ * heroes above. Used by the buyer LP "communities we watch" Sunriver tile —
+ * communityImage('sunriver') points at a night-sky cabin photo that does not
+ * read as Sunriver (see the 2026-06-10 note above), so consumers needing a
+ * daylight river scene import this instead.
+ */
+export const SUNRIVER_DESCHUTES_PHOTO = `${ASSET_CDN}/41fbd658-1cb6-4f0e-a3ab-038e9e72cfd3.jpg`
+
 /** Regional fallback — accurate for any Central Oregon place; NEVER a specific
  *  wrong city. `verified: false` tells the page to LABEL it as a regional view. */
 const REGION_HERO: CityHero = {

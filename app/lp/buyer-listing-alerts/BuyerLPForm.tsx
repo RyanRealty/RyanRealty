@@ -14,6 +14,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import { submitBuyerLPForm, type BuyerLPTimeline } from './actions'
 import { CONTACT } from '@/lib/brand/contact'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
@@ -111,98 +117,118 @@ export default function BuyerLPForm() {
       <p className="font-display text-lg font-semibold leading-tight text-foreground">
         Start your listing alerts
       </p>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="name">Name</Label>
-          <Input id="name" name="name" required placeholder="Jane Smith" />
-        </div>
-        <div>
-          <Label htmlFor="phone">Phone</Label>
-          <Input id="phone" name="phone" type="tel" placeholder={CONTACT.phoneFub} />
-        </div>
+
+      {/* ── Core fields — always visible ─────────────────────────────────── */}
+      <div>
+        <Label htmlFor="name">Name</Label>
+        <Input id="name" name="name" required placeholder="Jane Smith" className="mt-1" />
       </div>
       <div>
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" required placeholder="you@example.com" />
+        <Input id="email" name="email" type="email" required placeholder="you@example.com" className="mt-1" />
       </div>
+      <div>
+        <Label htmlFor="phone">Phone</Label>
+        <Input id="phone" name="phone" type="tel" placeholder={CONTACT.phoneFub} className="mt-1" />
+      </div>
+
+      {/* ── Primary CTA ───────────────────────────────────────────────────── */}
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? 'Setting up your search…' : 'Start my listing alerts'}
       </Button>
+
+      {/* ── Compliance disclosure (required, always visible) ──────────────── */}
       <SmsConsentDisclosure />
-      <p className="text-center text-xs text-muted-foreground">
-        Add details below to sharpen your matches. All optional.
-      </p>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="budgetMin">Budget min ($)</Label>
-          <Input id="budgetMin" name="budgetMin" type="number" min="0" placeholder="400000" />
-        </div>
-        <div>
-          <Label htmlFor="budgetMax">Budget max ($)</Label>
-          <Input id="budgetMax" name="budgetMax" type="number" min="0" placeholder="600000" />
-        </div>
-      </div>
-      <div>
-        <Label>Where are you looking? (pick any)</Label>
-        <div className="mt-2 grid max-h-44 grid-cols-1 gap-2 overflow-y-auto rounded-lg border border-border p-2 sm:grid-cols-2">
-          {SEARCH_AREAS.map((a) => (
-            <Label
-              key={a.slug}
-              htmlFor={`area-${a.slug}`}
-              className="flex cursor-pointer items-center gap-2 text-sm font-normal"
-            >
-              <Checkbox
-                id={`area-${a.slug}`}
-                checked={areas.includes(a.slug)}
-                onCheckedChange={() => toggleArea(a.slug)}
-              />
-              {a.label}
-            </Label>
-          ))}
-        </div>
-      </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="bedsMin">Beds min</Label>
-          <Select name="bedsMin">
-            <SelectTrigger>
-              <SelectValue placeholder="Any" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">1+</SelectItem>
-              <SelectItem value="2">2+</SelectItem>
-              <SelectItem value="3">3+</SelectItem>
-              <SelectItem value="4">4+</SelectItem>
-              <SelectItem value="5">5+</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="timeline">Timing</Label>
-          <Select name="timeline">
-            <SelectTrigger>
-              <SelectValue placeholder="When are you looking to buy?" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ready-now">Ready now (0 to 3 months)</SelectItem>
-              <SelectItem value="next-3-6">3 to 6 months</SelectItem>
-              <SelectItem value="next-6-12">6 to 12 months</SelectItem>
-              <SelectItem value="exploring">Just exploring</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      <div>
-        <Label htmlFor="notes">Anything specific?</Label>
-        <Textarea id="notes" name="notes" rows={3} placeholder="Must-haves, deal-breakers, anything I should know" />
-      </div>
+
+      {/* ── Optional detail fields — collapsed by default ─────────────────── */}
+      <Accordion type="single" collapsible>
+        <AccordionItem value="details" className="border-border">
+          <AccordionTrigger className="py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:no-underline">
+            Sharpen your matches (optional)
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="space-y-4 pt-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="budgetMin">Budget min ($)</Label>
+                  <Input id="budgetMin" name="budgetMin" type="number" min="0" placeholder="400000" className="mt-1" />
+                </div>
+                <div>
+                  <Label htmlFor="budgetMax">Budget max ($)</Label>
+                  <Input id="budgetMax" name="budgetMax" type="number" min="0" placeholder="600000" className="mt-1" />
+                </div>
+              </div>
+
+              <div>
+                <Label>Where are you looking? (pick any)</Label>
+                <div className="mt-2 grid max-h-44 grid-cols-1 gap-2 overflow-y-auto rounded-lg border border-border p-2 sm:grid-cols-2">
+                  {SEARCH_AREAS.map((a) => (
+                    <Label
+                      key={a.slug}
+                      htmlFor={`area-${a.slug}`}
+                      className="flex cursor-pointer items-center gap-2 text-sm font-normal"
+                    >
+                      <Checkbox
+                        id={`area-${a.slug}`}
+                        checked={areas.includes(a.slug)}
+                        onCheckedChange={() => toggleArea(a.slug)}
+                      />
+                      {a.label}
+                    </Label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="bedsMin">Beds min</Label>
+                  <Select name="bedsMin">
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Any" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1+</SelectItem>
+                      <SelectItem value="2">2+</SelectItem>
+                      <SelectItem value="3">3+</SelectItem>
+                      <SelectItem value="4">4+</SelectItem>
+                      <SelectItem value="5">5+</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="timeline">Timing</Label>
+                  <Select name="timeline">
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="When are you looking to buy?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ready-now">Ready now (0 to 3 months)</SelectItem>
+                      <SelectItem value="next-3-6">3 to 6 months</SelectItem>
+                      <SelectItem value="next-6-12">6 to 12 months</SelectItem>
+                      <SelectItem value="exploring">Just exploring</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="notes">Anything specific?</Label>
+                <Textarea
+                  id="notes"
+                  name="notes"
+                  rows={3}
+                  placeholder="Must-haves, deal-breakers, anything I should know"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
       {result?.ok === false && (
         <p className="text-sm text-destructive">{result.msg}</p>
       )}
-      <Button type="submit" disabled={pending} variant="outline" className="w-full">
-        {pending ? 'Setting up your search…' : 'Save my details and start alerts'}
-      </Button>
-      <SmsConsentDisclosure />
     </form>
   )
 }

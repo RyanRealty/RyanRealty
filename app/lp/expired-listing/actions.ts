@@ -13,6 +13,7 @@ import {
   type FubEventPerson,
 } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { saveAnonymousPartialAddress } from '@/lib/data'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
@@ -60,6 +61,26 @@ async function assignExpiredLead(): Promise<BrokerAssignment> {
   const attributed = await readAttributedAgentServer()
   if (attributed) return { broker: attributed.broker, userId: attributed.userId }
   return { broker: 'matt', userId: FUB_USER_MATT }
+}
+
+/**
+ * Lightweight partial-address capture for the expired LP step-1 advance.
+ * Fires when the homeowner enters their prior listing address and clicks
+ * Continue — before they fill out contact info. Anonymous-safe: writes
+ * a visitor_event row keyed by sessionId via the DAL.
+ * Never throws. The UI step change must never wait on this.
+ */
+export async function saveExpiredPartialAddress(params: {
+  address: string
+  sessionId: string | undefined
+}): Promise<void> {
+  const rawAddress = params.address?.trim() ?? ''
+  if (!rawAddress) return
+  void saveAnonymousPartialAddress({
+    sessionId: params.sessionId,
+    address: rawAddress,
+    lpSurface: 'expired-lp',
+  }).catch(() => {/* swallowed */})
 }
 
 /**

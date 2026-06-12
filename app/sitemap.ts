@@ -75,6 +75,9 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     // valuation LP. Previously absent from the sitemap (orphaned from organic
     // discovery); now crawlable.
     { url: `${baseUrl}/lp/buyer-listing-alerts`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    // FSBO LP — free pricing-report capture for for-sale-by-owner sellers
+    // (approved Figma LP 3, built 2026-06-12).
+    { url: `${baseUrl}/lp/fsbo`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/lp/bend/`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: `${baseUrl}/lp/tetherow/heath/`, lastModified: now, changeFrequency: 'daily', priority: 0.7 },
     { url: `${baseUrl}/our-homes`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },

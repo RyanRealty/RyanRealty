@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { cn } from '@/lib/utils'
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
-import { submitSellerLPForm, type SellerLPTimeline } from './actions'
+import { submitSellerLPForm, saveSellerPartialLead, type SellerLPTimeline } from './actions'
 import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 
@@ -39,6 +39,13 @@ export type SellerLPFormProps = {
    * 'list-now'            — high-intent BOFU listing copy.
    */
   variant?: 'home-value' | 'list-now'
+  /**
+   * DOM id for the address-step form element. Defaults to 'get-value' (the
+   * anchor the sticky CTA + closing band link to). Pass a different id when
+   * rendering a SECOND instance on the same page (e.g. the closing navy band)
+   * so the document never carries duplicate ids.
+   */
+  formId?: string
 }
 
 type Step = 'address' | 'qualify' | 'success'
@@ -56,6 +63,7 @@ export default function SellerLPForm({
   prefillPhone,
   heroVariant = false,
   variant = 'home-value',
+  formId = 'get-value',
 }: SellerLPFormProps) {
   const isListNow = variant === 'list-now'
   const [step, setStep] = useState<Step>('address')
@@ -76,6 +84,12 @@ export default function SellerLPForm({
       setError('Please enter a complete property address.')
       return
     }
+    // Fire partial-lead capture non-blocking before advancing the step.
+    void saveSellerPartialLead({
+      address: v,
+      sessionId: readRrSessionId(),
+      source: isListNow ? 'list-now-lp' : 'seller-lp',
+    })
     // Known visitor with email already known: skip step 2 entirely.
     if (knownVisitor && (prefillEmail || email)) {
       submit({ skipQualify: true })
@@ -168,6 +182,9 @@ export default function SellerLPForm({
           {"We'll prepare a real comparative market analysis from recent local sales and send it your way."}
           {isHot ? ' Because your timeline is short, Matt will personally reach out shortly to walk through your number.' : ' Matt will follow up with your number and answer any questions.'}
         </p>
+        <p className="mt-3 text-base text-foreground/75">
+          Your report lands in your inbox within one business day.
+        </p>
         <p className="mt-3 text-base text-muted-foreground">
           Prefer to talk right now? Call Matt directly at{' '}
           <a href="tel:+15417033095" className="font-semibold text-primary underline underline-offset-2 tabular-nums">
@@ -184,17 +201,17 @@ export default function SellerLPForm({
   if (step === 'address' && heroVariant) {
     return (
       <form
-        id="get-value"
+        id={formId}
         onSubmit={advanceFromAddress}
         className="mx-auto w-full max-w-xl scroll-mt-24"
         aria-label="Get your Bend home value"
         noValidate
       >
-        <Label htmlFor="seller-lp-address" className="sr-only">
+        <Label htmlFor={`${formId}-seller-lp-address`} className="sr-only">
           Property address
         </Label>
         <AddressAutocomplete
-          id="seller-lp-address"
+          id={`${formId}-seller-lp-address`}
           value={address}
           onChange={setAddress}
           placeholder="Enter your home address"
@@ -228,21 +245,21 @@ export default function SellerLPForm({
   if (step === 'address') {
     return (
       <form
-        id="get-value"
+        id={formId}
         onSubmit={advanceFromAddress}
         className="scroll-mt-24 rounded-2xl border border-primary/15 bg-card p-6 text-left shadow-sm sm:p-8"
-        aria-labelledby="seller-lp-form-heading"
+        aria-labelledby={`${formId}-heading`}
         noValidate
       >
-        <h2 id="seller-lp-form-heading" className="font-display text-xl font-semibold leading-snug text-primary">
+        <h2 id={`${formId}-heading`} className="font-display text-xl font-semibold leading-snug text-primary">
           {knownVisitor ? 'Welcome back. See what your home is worth.' : 'See what your home is worth'}
         </h2>
         <div className="mt-5">
-          <Label htmlFor="seller-lp-address-card" className="sr-only">
+          <Label htmlFor={`${formId}-seller-lp-address-card`} className="sr-only">
             Property address
           </Label>
           <AddressAutocomplete
-            id="seller-lp-address-card"
+            id={`${formId}-seller-lp-address-card`}
             value={address}
             onChange={setAddress}
             placeholder="Enter your home address"
@@ -294,11 +311,14 @@ export default function SellerLPForm({
         ← Edit address
       </Button>
 
-      <h2 id="seller-lp-form-heading-2" className="font-display text-xl font-semibold text-primary">
+      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        Step 2 of 2. Almost done.
+      </p>
+      <h2 id="seller-lp-form-heading-2" className="mt-1 font-display text-xl font-semibold text-primary">
         {isListNow ? 'How should we reach you?' : 'Where should we send it?'}
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Two quick fields and it’s on its way. Phone is optional, and we promise not to call during dinner.
+        Two quick fields and it's on its way. Phone is optional, and we promise not to call during dinner.
       </p>
 
       <div className="mt-5 grid gap-4">
