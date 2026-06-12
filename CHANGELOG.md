@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.494.2 (2026-06-12)
+
+### Bug Fixes
+- fix(crm): website-sessions count read a nonexistent id column — always showed 0
+
+---
+
+
 ## v1.494.1 (2026-06-12)
 
 ### Maintenance
