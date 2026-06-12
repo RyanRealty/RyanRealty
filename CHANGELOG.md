@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.501.0 (2026-06-12)
+
+### Features
+- feat(crm): OAuth profile photos on contacts + broker attribution on every outbound site link + Twilio status link
+
+---
+
+
 ## v1.500.1 (2026-06-12)
 
 ### Bug Fixes
