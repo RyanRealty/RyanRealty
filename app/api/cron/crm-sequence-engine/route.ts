@@ -8,7 +8,7 @@
  *    deliberate human/agent action — nothing auto-fires after deploy.
  *  - Every email step passes the suppression chokepoint (fail-closed).
  *  - stop_on_reply: any inbound timeline entry after enrollment pauses the drip.
- *  - SMS steps are skipped-with-log until Twilio is upgraded + A2P approved.
+ *  - SMS steps send via Twilio messaging service when A2P campaign is VERIFIED.
  *  - Send window 07:00–19:00 America/Los_Angeles; outside it, steps reschedule.
  *
  * Step schema (native): { channel: 'email'|'sms'|'task'|'tag', delayDays?,
@@ -20,10 +20,10 @@
 
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { sendCrmEmail } from '@/lib/crm/gmail'
+import { sendCrmEmail, CRM_MAILBOXES } from '@/lib/crm/gmail'
 import { isSuppressed } from '@/lib/crm/suppressions'
-import { CRM_MAILBOXES } from '@/lib/crm/gmail'
-import { renderCrmMerge } from '@/lib/crm/merge'
+import { renderCrmMerge, referencesCmaLink } from '@/lib/crm/merge'
+import { sendSmsViaMessagingService, getA2pCampaignStatus } from '@/lib/crm/twilio'
 import { addPersonTags, replacePersonTags } from '@/lib/followupboss'
 
 export const runtime = 'nodejs'
@@ -42,6 +42,11 @@ function isAuthorized(request: Request): boolean {
 
 function laHour(): number {
   return Number(new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone: 'America/Los_Angeles' }).format(new Date()))
+}
+
+function inSmsQuietHours(): boolean {
+  const h = laHour()
+  return h < 8 || h >= 21
 }
 
 function nextSendWindow(): Date {
@@ -85,7 +90,12 @@ export async function GET(request: Request) {
     .limit(BATCH)
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
 
-  let executed = 0, paused = 0, completed = 0, skippedSms = 0, skippedDupEmail = 0, suppressed = 0, errored = 0
+  let executed = 0, paused = 0, completed = 0, skippedSms = 0, skippedDupEmail = 0, suppressed = 0, errored = 0, queuedSms = 0
+
+  // A2P campaign status — one Twilio call per run. Until VERIFIED, SMS steps
+  // queue visibly (timeline row with the rendered text) instead of erroring,
+  // and fire automatically on the first run after approval.
+  const a2pStatus = await getA2pCampaignStatus().catch(() => null)
 
   for (const en of due ?? []) {
     const seq = en.crm_sequences as unknown as { name: string; stop_on_reply: boolean; steps: Step[] }
@@ -121,7 +131,7 @@ export async function GET(request: Request) {
 
       const { data: person } = await sb
         .from('crm_people')
-        .select('id,fub_legacy_id,first_name,name,emails,tags,custom,assigned_broker')
+        .select('id,fub_legacy_id,first_name,name,emails,phones,tags,custom,assigned_broker')
         .eq('id', en.person_id)
         .single()
       if (!person) { await finish({ status: 'stopped' }); errored++; continue }
@@ -194,8 +204,92 @@ export async function GET(request: Request) {
           broker: mailbox.slug, source: 'sequence', dedupe_key: `gmail:${sent.gmailId}:p${person.id}`,
         })
       } else if (step.channel === 'sms') {
-        await log(`Sequence "${seq.name}" SMS step skipped — Twilio not yet live`)
-        skippedSms++
+        if (inSmsQuietHours()) {
+          await finish({ next_run_at: nextSendWindow().toISOString() })
+          continue
+        }
+        const gate = await isSuppressed(person.id, 'sms')
+        if (gate.suppressed) {
+          await finish({ status: 'suppressed' })
+          await log(`Sequence "${seq.name}" halted — suppressed (${gate.reasons.join(', ')})`)
+          suppressed++
+          continue
+        }
+        let toPhone =
+          (person.phones as Array<{ value?: string; isPrimary?: number | boolean }> | null)
+            ?.sort((a, b) => Number(!!b.isPrimary) - Number(!!a.isPrimary))[0]?.value ?? ''
+        if (!toPhone) {
+          const { data: pt } = await sb.from('crm_contact_points').select('value').eq('person_id', person.id).eq('kind', 'phone').limit(1).maybeSingle()
+          toPhone = pt?.value ?? ''
+        }
+        if (!toPhone) {
+          await finish({ status: 'stopped' })
+          await log(`Sequence "${seq.name}" stopped — no phone on file`)
+          errored++
+          continue
+        }
+        let body = step.body ?? ''
+        if (step.templateKey) {
+          const { data: tpl } = await sb.from('crm_templates').select('body').eq('key', step.templateKey).maybeSingle()
+          if (tpl?.body) body = tpl.body
+        }
+        if (!body.trim()) {
+          await finish({ status: 'stopped' })
+          await log(`Sequence "${seq.name}" stopped — empty SMS step`)
+          errored++
+          continue
+        }
+
+        // Hold until the CMA the text links to actually exists (the expired
+        // opening text merges %cma_link%; never send a dead or empty link).
+        const custom = (person.custom as Record<string, unknown> | null) ?? {}
+        if (referencesCmaLink(body) && !custom.cmaLink) {
+          await sb.from('crm_timeline').upsert(
+            {
+              person_id: person.id, kind: 'system',
+              title: 'Text holding — waiting for the CMA to be built',
+              body: `Step ${en.step_index} of "${seq.name}" links the property CMA. It sends once the CMA link is on the contact.`,
+              source: 'sequence', dedupe_key: `sms-hold-cma:e${en.id}:s${en.step_index}`,
+            },
+            { onConflict: 'dedupe_key', ignoreDuplicates: true },
+          )
+          await finish({ next_run_at: new Date(Date.now() + 4 * 3600e3).toISOString() })
+          queuedSms++
+          continue
+        }
+
+        body = renderMerge(body, person)
+
+        // A2P gate: queue (visible, with the exact text) instead of erroring.
+        if (a2pStatus !== 'VERIFIED') {
+          await sb.from('crm_timeline').upsert(
+            {
+              person_id: person.id, kind: 'system',
+              title: 'Text queued — sends when A2P campaign is approved',
+              body,
+              payload: { sequence: seq.name, step: en.step_index, to: toPhone, a2pStatus: a2pStatus ?? 'UNKNOWN', queued: true },
+              source: 'sequence', dedupe_key: `sms-queued-a2p:e${en.id}:s${en.step_index}`,
+            },
+            { onConflict: 'dedupe_key', ignoreDuplicates: true },
+          )
+          await finish({ next_run_at: new Date(Date.now() + 4 * 3600e3).toISOString() })
+          queuedSms++
+          continue
+        }
+
+        const sent = await sendSmsViaMessagingService({ to: toPhone, body })
+        if (!sent.ok) {
+          await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() })
+          await log(`Sequence SMS send failed, retrying in 30m`, sent.error)
+          errored++
+          continue
+        }
+        const mailbox = CRM_MAILBOXES.find((m) => m.slug === person.assigned_broker) ?? CRM_MAILBOXES[0]
+        await sb.from('crm_timeline').insert({
+          person_id: person.id, kind: 'sms_out', title: 'Text sent', body,
+          payload: { twilioSid: sent.sid, sequence: seq.name, step: en.step_index, templateKey: step.templateKey ?? null, to: toPhone },
+          broker: mailbox.slug, source: 'sequence', dedupe_key: `twilio:${sent.sid}:p${person.id}`,
+        })
       } else if (step.channel === 'task') {
         await sb.from('crm_tasks').insert({
           person_id: person.id, name: renderMerge(step.taskName ?? 'Follow up', person),
@@ -238,7 +332,7 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    ok: true, due: (due ?? []).length, executed, paused, completed, skippedSms, skippedDupEmail, suppressed, errored,
+    ok: true, due: (due ?? []).length, executed, paused, completed, skippedSms, skippedDupEmail, suppressed, errored, queuedSms, a2pStatus,
     duration_ms: Date.now() - startMs,
   })
 }

@@ -12,8 +12,11 @@ import {
   completeCrmTaskAction,
   getCrmEmailTemplates,
   getCrmPersonFull,
+  getCrmSmsTemplates,
+  getTwilioSmsStatus,
   removeCrmTagAction,
   sendCrmEmailAction,
+  sendCrmSmsAction,
   updateCrmStageAction,
 } from '@/app/actions/crm'
 import { timelineEmailBody } from '@/lib/crm/email-body'
@@ -70,6 +73,11 @@ async function sendEmailForm(formData: FormData): Promise<void> {
   const r = await sendCrmEmailAction(formData)
   if (!r.ok) console.error('[crm] sendEmail failed:', r.error)
 }
+async function sendSmsForm(formData: FormData): Promise<void> {
+  'use server'
+  const r = await sendCrmSmsAction(formData)
+  if (!r.ok) console.error('[crm] sendSms failed:', r.error)
+}
 
 const KIND_ICON: Record<string, string> = {
   note: '📝', email_in: '📥', email_out: '📤', sms_in: '💬', sms_out: '📲',
@@ -95,7 +103,7 @@ function fmtPhoneDisplay(tenDigits: string): string {
   return `${tenDigits.slice(0, 3)}.${tenDigits.slice(3, 6)}.${tenDigits.slice(6)}`
 }
 
-export default async function CrmPersonPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tpl?: string }> }) {
+export default async function CrmPersonPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tpl?: string; smsTpl?: string }> }) {
   const session = await getSession()
   const adminRole = await getAdminRoleForEmail(session?.user?.email ?? null)
   if (!adminRole) redirect('/admin/access-denied')
@@ -104,13 +112,19 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
   const id = Number(idRaw)
   if (!Number.isFinite(id) || id <= 0) notFound()
 
-  const { tpl } = await searchParams
+  const { tpl, smsTpl } = await searchParams
   const full = await getCrmPersonFull(id)
   const person = full.person
   if (!person) notFound()
-  const templates = await getCrmEmailTemplates()
+  const [templates, smsTemplates, twilioStatus] = await Promise.all([
+    getCrmEmailTemplates(),
+    getCrmSmsTemplates(),
+    getTwilioSmsStatus(),
+  ])
   const activeTpl = tpl ? templates.find((t) => t.key === tpl) ?? null : null
+  const activeSmsTpl = smsTpl ? smsTemplates.find((t) => t.key === smsTpl) ?? null : null
   const primaryEmail = full.contactPoints.find((c) => c.kind === 'email')?.value ?? null
+  const primaryPhone = full.contactPoints.find((c) => c.kind === 'phone')?.value ?? null
 
   const customEntries = Object.entries(person.custom ?? {}).filter(
     ([, v]) => v !== null && v !== '' && v !== undefined,
@@ -372,6 +386,49 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">No email address on file.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* SMS composer */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">
+                Send text {primaryPhone ? <span className="font-normal text-muted-foreground">to {fmtPhoneDisplay(primaryPhone)}</span> : null}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {!twilioStatus.canSend ? (
+                <Alert>
+                  <AlertTitle>Outbound texting not live yet</AlertTitle>
+                  <AlertDescription>
+                    Twilio A2P campaign status is {twilioStatus.a2p ?? 'unknown'}. Carriers block delivery until status is VERIFIED.
+                    You can compose messages here, but sends will fail until approval completes.
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+              {primaryPhone ? (
+                <>
+                  <form method="GET" className="flex items-center gap-2">
+                    <input type="hidden" name="tpl" value={tpl ?? ''} />
+                    <select name="smsTpl" defaultValue={smsTpl ?? ''} className="h-8 max-w-[360px] flex-1 rounded-md border border-input bg-background px-2 text-sm text-foreground">
+                      <option value="">Blank text</option>
+                      {smsTemplates.map((t) => (
+                        <option key={t.key} value={t.key}>{t.name}</option>
+                      ))}
+                    </select>
+                    <Button type="submit" size="sm" variant="outline">Load template</Button>
+                  </form>
+                  <form action={sendSmsForm} className="space-y-2">
+                    <input type="hidden" name="personId" value={person.id} />
+                    <Textarea name="body" rows={4} placeholder="Message — sends from Ryan Realty via Twilio" defaultValue={activeSmsTpl?.body ?? ''} />
+                    <div className="flex justify-end">
+                      <Button type="submit" size="sm">Send text</Button>
+                    </div>
+                  </form>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">No phone number on file.</p>
               )}
             </CardContent>
           </Card>

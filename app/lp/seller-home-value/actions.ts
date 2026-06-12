@@ -461,6 +461,17 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     //     15-page HTML, renders the PDF, and ships it via /api/cma/[slug]/email.
     // Broker gets a notification email immediately; lead gets a confirmation
     // so they know we received their request and the CMA is in flight.
+
+    // Instant CRM mirror + auto-enroll (kills the 30-min delta-cron lag).
+    // Runs BEFORE createCmaRequest so the CMA link can stamp onto the CRM
+    // person for sequence merge fields.
+    if (fubPersonId) {
+      const { autoEnrollByFubId } = await import('@/lib/crm/enroll')
+      await autoEnrollByFubId(fubPersonId).catch((e: unknown) =>
+        console.warn('[seller-lp] instant auto-enroll failed:', e),
+      )
+    }
+
     if (email) {
       const created = await createCmaRequest({
         rawAddress: parsed.full,

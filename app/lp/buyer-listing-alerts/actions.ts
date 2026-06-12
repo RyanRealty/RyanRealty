@@ -254,6 +254,11 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
         source: 'buyer-lp',
       })
 
+      // Instant CRM mirror + auto-enroll (kills the 30-min delta-cron lag).
+      void import('@/lib/crm/enroll')
+        .then(({ autoEnrollByFubId }) => autoEnrollByFubId(fubPersonId))
+        .catch((e) => console.warn('[buyer-lp] instant auto-enroll failed:', e))
+
       // ─── Lead origin note ──────────────────────────────────────────────────
       // The prominent FUB timeline note telling the broker WHY this lead came in.
       // No-op-safe: postLeadOriginNote guards the id, skips header-only notes,

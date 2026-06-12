@@ -455,6 +455,67 @@ export async function getCrmEmailTemplates(): Promise<Array<{ key: string; name:
   return (data ?? []) as Array<{ key: string; name: string; subject: string | null; body: string }>
 }
 
+export async function getCrmSmsTemplates(): Promise<Array<{ key: string; name: string; body: string }>> {
+  const sb = createServiceClient()
+  const { data } = await sb
+    .from('crm_templates')
+    .select('key,name,body')
+    .eq('channel', 'sms')
+    .order('name')
+  return (data ?? []) as Array<{ key: string; name: string; body: string }>
+}
+
+export async function getTwilioSmsStatus(): Promise<{ a2p: string | null; canSend: boolean }> {
+  const { getA2pCampaignStatus } = await import('@/lib/crm/twilio')
+  const a2p = await getA2pCampaignStatus()
+  return { a2p, canSend: a2p === 'VERIFIED' }
+}
+
+/** Send a 1:1 SMS from the broker line via Twilio messaging service. Suppression-checked. */
+export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionResult> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  const personId = Number(formData.get('personId'))
+  const body = String(formData.get('body') ?? '').trim()
+  if (!personId || !body) return { ok: false, error: 'Message body required' }
+
+  const sb = createServiceClient()
+  const { data: person } = await sb
+    .from('crm_people')
+    .select('id,phones,assigned_broker,name,first_name,custom')
+    .eq('id', personId)
+    .maybeSingle()
+  if (!person) return { ok: false, error: 'Person not found' }
+
+  let to =
+    (person.phones as Array<{ value?: string; isPrimary?: number | boolean }> | null)
+      ?.sort((a, b) => Number(!!b.isPrimary) - Number(!!a.isPrimary))[0]?.value ?? ''
+  if (!to) {
+    const { data: pt } = await sb.from('crm_contact_points').select('value').eq('person_id', personId).eq('kind', 'phone').limit(1).maybeSingle()
+    to = pt?.value ?? ''
+  }
+  if (!to) return { ok: false, error: 'No phone number on file' }
+
+  const { isSuppressed } = await import('@/lib/crm/suppressions')
+  const gate = await isSuppressed(personId, 'sms')
+  if (gate.suppressed) return { ok: false, error: `Blocked by suppression (${gate.reasons.join(', ')})` }
+
+  const { renderCrmMerge } = await import('@/lib/crm/merge')
+  const mergedBody = renderCrmMerge(body, person)
+  const { sendSmsViaMessagingService } = await import('@/lib/crm/twilio')
+  const sent = await sendSmsViaMessagingService({ to, body: mergedBody })
+  if (!sent.ok) return { ok: false, error: sent.error }
+
+  const actingSlug = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
+  await sb.from('crm_timeline').insert({
+    person_id: personId, kind: 'sms_out', title: 'Text sent', body: mergedBody,
+    payload: { twilioSid: sent.sid, to },
+    broker: actingSlug, source: 'app', dedupe_key: `twilio:${sent.sid}:p${personId}`,
+  })
+  revalidateCrm(personId)
+  return { ok: true }
+}
+
 export type CrmSequenceRow = {
   id: number
   name: string

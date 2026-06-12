@@ -6,6 +6,7 @@ export function renderCrmMerge(
   const address = String(
     person.custom?.customSellerPropertyAddress ?? person.custom?.customPropertyAddress ?? '',
   )
+  const cmaLink = String(person.custom?.cmaLink ?? '')
   return text
     .replaceAll('%contact_first_name%', first)
     .replaceAll('%first%', first)
@@ -15,4 +16,11 @@ export function renderCrmMerge(
     .replaceAll('%customPropertyAddress%', address)
     .replaceAll('%address%', address)
     .replaceAll('{{address}}', address)
+    .replaceAll('%cma_link%', cmaLink)
+    .replaceAll('{{cma_link}}', cmaLink)
+}
+
+/** True when the template references the CMA link merge token. */
+export function referencesCmaLink(text: string): boolean {
+  return text.includes('%cma_link%') || text.includes('{{cma_link}}')
 }

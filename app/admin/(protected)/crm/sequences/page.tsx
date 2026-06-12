@@ -18,7 +18,7 @@ async function setStatusForm(formData: FormData): Promise<void> {
 function stepLabel(s: { channel: string; templateKey?: string; taskName?: string; addTags?: string[]; removeTags?: string[] }): string {
   if (s.channel === 'email') return `Email · ${(s.templateKey ?? '').replace(/^email-/, '').replace(/-\d+$/, '')}`
   if (s.channel === 'task') return `Task · ${s.taskName ?? ''}`
-  if (s.channel === 'sms') return 'SMS (waits on A2P)'
+  if (s.channel === 'sms') return 'SMS'
   if (s.channel === 'tag') return `Tags · ${[...(s.removeTags ?? []).map((t) => `-${t}`), ...(s.addTags ?? []).map((t) => `+${t}`)].join(' ')}`
   return s.channel
 }

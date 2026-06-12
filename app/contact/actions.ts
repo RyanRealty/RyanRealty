@@ -71,6 +71,11 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
             ...(message ? { want: message } : {}),
           },
         })
+        // Instant CRM mirror + auto-enroll (kills the 30-min delta-cron lag).
+        const { autoEnrollByFubId } = await import('@/lib/crm/enroll')
+        await autoEnrollByFubId(found.id).catch((e: unknown) =>
+          console.warn('[contact-form] instant auto-enroll failed:', e),
+        )
         // Stitch this visitor's prior anonymous browsing history to the FUB
         // person. Idempotent; only replays when a real session id came through.
         if (sessionId && UUID_V4_RE.test(sessionId)) {

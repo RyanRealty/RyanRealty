@@ -191,6 +191,11 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
         customSellerPropertyAddress: address || 'unspecified',
       })
 
+      // Instant CRM mirror + auto-enroll (kills the 30-min delta-cron lag).
+      void import('@/lib/crm/enroll')
+        .then(({ autoEnrollByFubId }) => autoEnrollByFubId(fubPersonId))
+        .catch((e) => console.warn('[expired-lp] instant auto-enroll failed:', e))
+
       // Mirror the canonical assignment ledger row used by the gold-standard
       // seller LP. Dashboards (Conversions broker split, Funnel step 6) read
       // from marketing_assignments — without this row the lead never shows

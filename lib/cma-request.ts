@@ -29,12 +29,25 @@ export type CreateCmaRequestInput = {
   parsedCity: string | null
   parsedState: string | null
   parsedPostalCode: string | null
-  leadEmail: string
+  /** Null for cron-originated requests (e.g. expired-listing detection) where
+   *  the owner may be phone-only. No lead confirmation email is sent then. */
+  leadEmail: string | null
   leadName?: string | null
   leadPhone?: string | null
   leadTimeline?: string | null
   leadClassification?: string | null
   fubPersonId?: number | null
+  /** Where the request came from. Default 'seller-lp'. */
+  requestSource?: 'seller-lp' | 'expired-listing-cron'
+  /** Send the "we received your request" email to the lead. Default true.
+   *  MUST be false for outbound-originated requests (expired) — the owner
+   *  never asked us for anything. */
+  notifyLead?: boolean
+}
+
+/** Public URL where the finished CMA is served once the producer builds it. */
+export function cmaPublicUrl(slug: string): string {
+  return `${SITE_URL}/cmas/${slug}/cma.html`
 }
 
 export type CreateCmaRequestResult =
@@ -92,8 +105,10 @@ export async function createCmaRequest(
     const sb = createServiceClient()
     const rawAddress = input.rawAddress.trim()
     const slug = slugifyAddress(rawAddress)
-    const leadEmail = input.leadEmail.toLowerCase().trim()
+    const leadEmail = input.leadEmail?.toLowerCase().trim() || null
     const leadName = input.leadName?.trim() || null
+    const requestSource = input.requestSource ?? 'seller-lp'
+    const sourceLabel = requestSource === 'expired-listing-cron' ? 'Expired-listing detection' : 'Seller LP submission'
     const broker = await resolveBrokerSlug(input.fubPersonId ?? null)
 
     // Resolve broker uuid so the cmas row has a valid FK if the cmas.broker_id
@@ -125,7 +140,7 @@ export async function createCmaRequest(
       broker_slug: broker.slug,
       status: 'draft',
       html_path: `public/drafts/${slug}/cma.html`,
-      generation_reason: `Seller LP submission from ${leadEmail}${
+      generation_reason: `${sourceLabel} from ${leadEmail ?? input.leadPhone ?? 'unknown contact'}${
         input.leadTimeline ? ` (${input.leadTimeline})` : ''
       }`,
     })
@@ -158,11 +173,14 @@ export async function createCmaRequest(
             : null,
         },
         data_evidence: {
-          request_source: 'lead-form',
+          request_source: requestSource === 'expired-listing-cron' ? 'expired-listing-cron' : 'lead-form',
           client_relationship: 'cold-lead',
           fub_person_id: input.fubPersonId ?? null,
         },
-        generation_reason: `Seller LP submission — ${leadName ?? leadEmail} requested a CMA for ${rawAddress}`,
+        generation_reason:
+          requestSource === 'expired-listing-cron'
+            ? `Expired-listing detection — CMA for ${rawAddress} to open outreach to ${leadName ?? 'the owner'}`
+            : `Seller LP submission — ${leadName ?? leadEmail} requested a CMA for ${rawAddress}`,
         status: 'pending',
         // Legacy NOT-NULL fields inherited from the content_briefs view shape.
         // For CMA action rows these are best-effort descriptive labels — the
@@ -197,7 +215,7 @@ export async function createCmaRequest(
       eventName: 'valuation_requested',
       eventParams: {
         cma_slug: slug,
-        lp_variant: 'seller-home-value',
+        lp_variant: requestSource === 'expired-listing-cron' ? 'expired-listing-cron' : 'seller-home-value',
         broker_slug: broker.slug,
         lead_classification: input.leadClassification ?? undefined,
         lead_type: 'seller',
@@ -218,17 +236,35 @@ export async function createCmaRequest(
       cmaSlug: slug,
       subjectAddress: rawAddress,
       leadName,
-      leadEmail,
+      leadEmail: leadEmail ?? 'no email on file',
       leadPhone: input.leadPhone?.trim() || null,
       leadTimeline: input.leadTimeline ?? null,
     }).catch((e) => console.warn('[cma-request] broker notify failed:', e))
 
-    void sendLeadConfirmation({
-      leadEmail,
-      leadName,
-      subjectAddress: rawAddress,
-      brokerName: broker.displayName,
-    }).catch((e) => console.warn('[cma-request] lead confirmation failed:', e))
+    if (leadEmail && (input.notifyLead ?? true)) {
+      void sendLeadConfirmation({
+        leadEmail,
+        leadName,
+        subjectAddress: rawAddress,
+        brokerName: broker.displayName,
+      }).catch((e) => console.warn('[cma-request] lead confirmation failed:', e))
+    }
+
+    // Stamp the CMA link onto the CRM mirror so sequence templates can merge
+    // %cma_link% into outbound touches (e.g. the expired-listing opening text).
+    if (input.fubPersonId) {
+      void (async () => {
+        const { data: mirror } = await sb
+          .from('crm_people')
+          .select('id,custom')
+          .eq('fub_legacy_id', input.fubPersonId)
+          .maybeSingle()
+        if (mirror) {
+          const custom = { ...((mirror.custom as Record<string, unknown>) ?? {}), cmaLink: cmaPublicUrl(slug), cmaSlug: slug }
+          await sb.from('crm_people').update({ custom, updated_at: new Date().toISOString() }).eq('id', mirror.id)
+        }
+      })().catch((e) => console.warn('[cma-request] cmaLink stamp failed:', e))
+    }
 
     return {
       ok: true,

@@ -10,6 +10,8 @@ import crypto from 'node:crypto'
 import { createServiceClient } from '@/lib/supabase/service'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
 
+export type A2pCampaignStatus = 'VERIFIED' | 'IN_PROGRESS' | 'FAILED' | 'PENDING' | 'NONE' | null
+
 const API = 'https://api.twilio.com/2010-04-01'
 
 function creds(): { sid: string; token: string } | null {
@@ -85,18 +87,102 @@ export async function lookupPersonByPhone(phone: string): Promise<{ personId: nu
   return { personId: person.id, name: person.name, broker: (person.assigned_broker as CrmBrokerSlug | null) ?? null }
 }
 
-export async function sendSms(params: { from: string; to: string; body: string }): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
+export function toE164(phone: string | null | undefined): string | null {
+  const ten = normalizeTo10(phone)
+  if (!ten) return null
+  return `+1${ten}`
+}
+
+export function brokerTwilioNumber(slug: CrmBrokerSlug): string | null {
+  const map: Record<CrmBrokerSlug, string | undefined> = {
+    matt: process.env.TWILIO_NUMBER_MATT,
+    rebecca: process.env.TWILIO_NUMBER_REBECCA,
+    paul: process.env.TWILIO_NUMBER_PAUL,
+  }
+  return map[slug]?.trim() ?? null
+}
+
+/** Live A2P 10DLC campaign status for the messaging service (outbound blocked until VERIFIED). */
+export async function getA2pCampaignStatus(): Promise<A2pCampaignStatus> {
+  const c = creds()
+  const ms = process.env.TWILIO_MESSAGING_SERVICE_SID?.trim()
+  if (!c || !ms) return null
+  const res = await fetch(`https://messaging.twilio.com/v1/Services/${ms}/Compliance/Usa2p`, {
+    headers: { Authorization: authHeader(c) },
+  })
+  if (!res.ok) return null
+  const data = (await res.json()) as { compliance?: Array<{ campaign_status?: string; status?: string }>; us_app_to_person?: Array<{ campaign_status?: string; status?: string }> }
+  const row = (data.compliance ?? data.us_app_to_person ?? [])[0]
+  if (!row) return 'NONE'
+  const st = row.campaign_status ?? row.status
+  if (st === 'VERIFIED' || st === 'IN_PROGRESS' || st === 'FAILED' || st === 'PENDING') return st
+  return st as A2pCampaignStatus
+}
+
+export function formatTwilioSendError(code: number | string | null | undefined, message: string | null | undefined, a2p: A2pCampaignStatus): string {
+  const c = Number(code)
+  if (c === 30034 || a2p === 'IN_PROGRESS' || a2p === 'PENDING') {
+    return `Outbound SMS is blocked until the Twilio A2P campaign is VERIFIED (current: ${a2p ?? 'unknown'}). Carriers reject texts with error 30034 until carrier approval finishes.`
+  }
+  if (c === 21610) return 'This number has opted out (STOP). Remove the sms suppression before texting again.'
+  return message?.trim() || `Twilio send failed (${code ?? 'unknown'})`
+}
+
+async function postMessage(form: URLSearchParams): Promise<{ ok: true; sid: string } | { ok: false; error: string; errorCode?: number }> {
   const c = creds()
   if (!c) return { ok: false, error: 'Twilio not configured' }
-  const form = new URLSearchParams({ From: params.from, To: params.to, Body: params.body })
   const res = await fetch(`${API}/Accounts/${c.sid}/Messages.json`, {
     method: 'POST',
     headers: { Authorization: authHeader(c), 'Content-Type': 'application/x-www-form-urlencoded' },
     body: form,
   })
-  const data = (await res.json()) as { sid?: string; message?: string }
-  if (!res.ok || !data.sid) return { ok: false, error: data.message ?? `HTTP ${res.status}` }
+  const data = (await res.json()) as { sid?: string; message?: string; error_code?: number; status?: string }
+  if (!res.ok || !data.sid) {
+    const a2p = await getA2pCampaignStatus()
+    return { ok: false, error: formatTwilioSendError(data.error_code, data.message, a2p), errorCode: data.error_code }
+  }
+  // Twilio accepts then marks undelivered when A2P blocks — poll once for 30034
+  if (data.status === 'undelivered' || data.status === 'failed') {
+    const a2p = await getA2pCampaignStatus()
+    return { ok: false, error: formatTwilioSendError(data.error_code, data.message, a2p), errorCode: data.error_code }
+  }
+  const detail = await fetch(`${API}/Accounts/${c.sid}/Messages/${data.sid}.json`, { headers: { Authorization: authHeader(c) } })
+  if (detail.ok) {
+    const msg = (await detail.json()) as { status?: string; error_code?: number; error_message?: string | null }
+    if (msg.status === 'undelivered' || msg.status === 'failed') {
+      const a2p = await getA2pCampaignStatus()
+      return { ok: false, error: formatTwilioSendError(msg.error_code, msg.error_message, a2p), errorCode: msg.error_code }
+    }
+  }
   return { ok: true, sid: data.sid }
+}
+
+/** Send from a specific broker line (direct From number). */
+export async function sendSms(params: { from: string; to: string; body: string }): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
+  const to = toE164(params.to)
+  if (!to) return { ok: false, error: 'Invalid phone number' }
+  const a2p = await getA2pCampaignStatus()
+  if (a2p && a2p !== 'VERIFIED') {
+    return { ok: false, error: formatTwilioSendError(30034, null, a2p) }
+  }
+  const form = new URLSearchParams({ From: params.from, To: to, Body: params.body })
+  const r = await postMessage(form)
+  return r.ok ? r : { ok: false, error: r.error }
+}
+
+/** Preferred outbound path — uses the A2P-registered messaging service. */
+export async function sendSmsViaMessagingService(params: { to: string; body: string }): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
+  const ms = process.env.TWILIO_MESSAGING_SERVICE_SID?.trim()
+  if (!ms) return { ok: false, error: 'TWILIO_MESSAGING_SERVICE_SID not configured' }
+  const to = toE164(params.to)
+  if (!to) return { ok: false, error: 'Invalid phone number' }
+  const a2p = await getA2pCampaignStatus()
+  if (a2p && a2p !== 'VERIFIED') {
+    return { ok: false, error: formatTwilioSendError(30034, null, a2p) }
+  }
+  const form = new URLSearchParams({ MessagingServiceSid: ms, To: to, Body: params.body })
+  const r = await postMessage(form)
+  return r.ok ? r : { ok: false, error: r.error }
 }
 
 export async function getAccountType(): Promise<'Trial' | 'Full' | null> {

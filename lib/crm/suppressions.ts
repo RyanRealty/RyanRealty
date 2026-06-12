@@ -32,8 +32,9 @@ export async function isSuppressed(personId: number, channel: SendChannel): Prom
   // tags are an equally authoritative source (set at lead creation by
   // owner-resolution / BatchData flags, before any suppression row exists)
   const tags = ((person.data?.tags as string[] | undefined) ?? [])
+  const tagsLower = new Set(tags.map((t) => t.toLowerCase()))
   for (const m of TAG_CHANNEL) {
-    if (tags.includes(m.tag) && (m.channels.includes('all') || m.channels.includes(channel))) {
+    if (tagsLower.has(m.tag.toLowerCase()) && (m.channels.includes('all') || m.channels.includes(channel))) {
       reasons.push(`tag:${m.tag}`)
     }
   }

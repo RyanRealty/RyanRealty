@@ -50,6 +50,8 @@ import {
   hasReachableOwnerContact,
   type OwnerLookupResult,
 } from '@/lib/expired-owner-lookup'
+import { mirrorPersonFromFub } from '@/lib/crm/mirror'
+import { autoEnrollByFubId } from '@/lib/crm/enroll'
 
 /**
  * FUB Action Plan id for the Expired Recovery (auto) plan. The 7-touch
@@ -111,6 +113,7 @@ export interface ProcessExpiredStats {
   notes_added: number
   tasks_created: number
   plans_enrolled: number
+  cmas_queued: number
   alert_emails_sent: number
   errors: number
   sample: Array<{
@@ -135,6 +138,7 @@ function emptyStats(): ProcessExpiredStats {
     notes_added: 0,
     tasks_created: 0,
     plans_enrolled: 0,
+    cmas_queued: 0,
     alert_emails_sent: 0,
     errors: 0,
     sample: [],
@@ -426,6 +430,53 @@ export async function processNewExpiredListings(
           dueInMinutes: 60,
         })
         if (taskOk) stats.tasks_created++
+
+        // Mirror BEFORE the CMA request so createCmaRequest can stamp the
+        // CMA link onto crm_people.custom (the expired sequence's opening
+        // text merges %cma_link%; the engine holds the text until it exists).
+        await mirrorPersonFromFub(fubPersonId).catch((e) =>
+          console.warn('[expired-listing-processor] CRM mirror failed:', e),
+        )
+        void autoEnrollByFubId(fubPersonId)
+          .then((r) => {
+            if (r.enrolled) console.log(`[expired-listing-processor] auto-enrolled FUB ${fubPersonId} → ${r.sequence}`)
+          })
+          .catch((e) => console.warn('[expired-listing-processor] auto-enroll failed:', e))
+
+        // Auto-CMA (Matt directive 2026-06-11): every detected expired listing
+        // gets a CMA queued for the property, link attached to the opening
+        // outreach. notifyLead=false — the owner never asked us for anything.
+        if (hasContact) {
+          try {
+            const { createCmaRequest, cmaPublicUrl } = await import('@/lib/cma-request')
+            const cmaRes = await createCmaRequest({
+              rawAddress: fullAddress,
+              parsedStreet: streetAddress || null,
+              parsedCity: l.City ?? null,
+              parsedState: 'OR',
+              parsedPostalCode: l.PostalCode ?? null,
+              leadEmail: owner.ownerEmail ?? null,
+              leadName: owner.ownerName ?? null,
+              leadPhone: owner.ownerPhone ?? null,
+              leadTimeline: 'ready-now',
+              leadClassification: 'hot',
+              fubPersonId,
+              requestSource: 'expired-listing-cron',
+              notifyLead: false,
+            })
+            if (cmaRes.ok) {
+              stats.cmas_queued++
+              await addPersonNote(
+                fubPersonId,
+                `CMA queued for ${fullAddress}. Producer builds the 15-page deliverable (SLA 1 business day). Link for outreach once built: ${cmaPublicUrl(cmaRes.slug)} — the opening text in the Expired Recovery sequence carries this link and stays queued until the CMA exists and A2P is approved.`,
+              )
+            } else {
+              console.warn('[expired-listing-processor] CMA request failed:', cmaRes.error)
+            }
+          } catch (e) {
+            console.warn('[expired-listing-processor] CMA request threw:', e)
+          }
+        }
       }
 
       const alertRes = await sendExpiredAlertEmail({
