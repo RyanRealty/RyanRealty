@@ -225,10 +225,31 @@ export async function syncMailboxWindow(params: {
         }
       }
       if (rows.length) {
+        // Sends from the app (sequence engine, manual 1:1) already logged the
+        // send keyed gmail:<gmailId>:p<person>. The sync re-encounters the same
+        // message in SENT under its Message-ID key, which would land a
+        // near-twin row — drop any outbound row whose gmailId-keyed twin
+        // already exists (near-twin audit 2026-06-12).
+        const altKeyOf = (r: Record<string, unknown>) =>
+          r.kind === 'email_out'
+            ? `gmail:${(r.payload as { gmailId?: string | null }).gmailId}:p${r.person_id}`
+            : null
+        const altKeys = rows.map(altKeyOf).filter((k): k is string => !!k)
+        let appLogged = new Set<string>()
+        if (altKeys.length) {
+          const { data: twins } = await sb.from('crm_timeline').select('dedupe_key').in('dedupe_key', altKeys)
+          appLogged = new Set((twins ?? []).map((t) => t.dedupe_key as string))
+        }
         const seen = new Map<string, Record<string, unknown>>()
-        for (const r of rows) seen.set(r.dedupe_key as string, r)
-        const { error } = await sb.from('crm_timeline').upsert([...seen.values()], { onConflict: 'dedupe_key' })
-        if (error) throw new Error('timeline upsert: ' + error.message)
+        for (const r of rows) {
+          const alt = altKeyOf(r)
+          if (alt && appLogged.has(alt)) continue
+          seen.set(r.dedupe_key as string, r)
+        }
+        if (seen.size) {
+          const { error } = await sb.from('crm_timeline').upsert([...seen.values()], { onConflict: 'dedupe_key' })
+          if (error) throw new Error('timeline upsert: ' + error.message)
+        }
       }
       pageToken = list.data.nextPageToken ?? undefined
       if (!pageToken) { done = true; break }
