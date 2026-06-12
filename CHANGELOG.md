@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.489.2 (2026-06-12)
+
+### Bug Fixes
+- fix(expired-listings): stop placeholder FUB leads and run skip trace first
+
+---
+
+
 ## v1.489.1 (2026-06-11)
 
 ### Bug Fixes
