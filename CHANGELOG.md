@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.493.1 (2026-06-12)
+
+### Bug Fixes
+- fix(crm): stop gmail sync from near-twinning app-sent emails
+
+---
+
+
 ## v1.493.0 (2026-06-12)
 
 ### Features
