@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.492.0 (2026-06-12)
+
+### Features
+- feat(crm): broker-approval gate on workflow first touches + approvals queue + workflow board
+
+---
+
+
 ## v1.491.0 (2026-06-12)
 
 ### Features
