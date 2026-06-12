@@ -1484,6 +1484,14 @@ export async function trackReturnVisit(params: {
     dueInMinutes: 10,
     taskName: 'Lead returned to website. Follow up now.',
   })
+  // Instant broker text with the CRM deep link — catch the lead while they
+  // are still on the site (once per person per day).
+  try {
+    const { queueReturnVisitAlert } = await import('@/lib/crm/broker-alerts')
+    await queueReturnVisitAlert({ fubPersonId: personId, who, pageUrl: params.pageUrl, pageTitle: params.pageTitle })
+  } catch (err) {
+    console.warn('[fub] return-visit alert queue failed:', err)
+  }
 }
 
 /**

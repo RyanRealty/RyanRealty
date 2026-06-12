@@ -184,11 +184,44 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
 
   const webEvents = full.timeline.filter((t) => t.kind === 'web_event').slice(0, 8)
 
+  // Live right now — most recent web event inside 30 minutes.
+  const latestWeb = webEvents[0] ?? null
+  const liveAgeMin = latestWeb ? Math.round((Date.now() - new Date(latestWeb.ts).getTime()) / 60000) : null
+  const isLiveNow = liveAgeMin !== null && liveAgeMin >= 0 && liveAgeMin <= 30
+
   return (
     <main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6">
       <div className="mb-4 text-sm text-muted-foreground">
         <Link href="/admin/crm" className="hover:text-foreground">← Back to CRM</Link>
       </div>
+
+      {isLiveNow && latestWeb ? (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-primary p-5 text-primary-foreground">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-success" />
+              </span>
+              On the site {liveAgeMin === 0 ? 'right now' : `${liveAgeMin} min ago`}
+            </div>
+            <div className="mt-0.5 truncate text-sm opacity-90">{latestWeb.title ?? 'Browsing'}</div>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            {primaryPhone ? (
+              <Button asChild size="sm" variant="secondary">
+                <a href={`tel:+1${primaryPhone.replace(/\D/g, '').slice(-10)}`}>Call</a>
+              </Button>
+            ) : null}
+            {primaryPhone ? (
+              <Button asChild size="sm" variant="secondary"><a href="#send-text">Text</a></Button>
+            ) : null}
+            {primaryEmail ? (
+              <Button asChild size="sm" variant="secondary"><a href="#send-email">Email</a></Button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       {full.suppressions.length > 0 ? (
         <Alert variant="destructive" className="mb-6">
@@ -511,7 +544,7 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
           </Card>
 
           {/* Email composer */}
-          <Card>
+          <Card id="send-email" className="scroll-mt-20">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">
                 Send email {primaryEmail ? <span className="font-normal text-muted-foreground">to {primaryEmail}</span> : null}
@@ -544,7 +577,7 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
           </Card>
 
           {/* SMS composer */}
-          <Card>
+          <Card id="send-text" className="scroll-mt-20">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">
                 Send text {primaryPhone ? <span className="font-normal text-muted-foreground">to {fmtPhoneDisplay(primaryPhone)}</span> : null}

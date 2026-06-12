@@ -236,9 +236,9 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
             const email = primaryContact(p.emails)
             const phone = primaryContact(p.phones)
             return (
-              <Link key={p.id} href={`/admin/crm/${p.id}`} className="block">
-                <Card className="transition-colors hover:bg-muted/50">
-                  <CardContent className="p-4">
+              <Card key={p.id} className="transition-colors hover:bg-muted/50">
+                <CardContent className="flex items-center gap-3 p-4">
+                  <Link href={`/admin/crm/${p.id}`} className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate text-sm font-semibold text-foreground">{p.name ?? `Contact #${p.id}`}</span>
                       <Badge variant="secondary" className="shrink-0">{p.stage}</Badge>
@@ -250,9 +250,14 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
                       <span className="truncate">{p.source ?? ''}</span>
                       <span className="shrink-0 tabular-nums">{fmtDate(p.last_activity_at)}</span>
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
+                  </Link>
+                  {phone ? (
+                    <Button asChild size="sm" variant="outline" className="shrink-0">
+                      <a href={`tel:+1${phone.replace(/\D/g, '').slice(-10)}`} aria-label={`Call ${p.name ?? 'contact'}`}>Call</a>
+                    </Button>
+                  ) : null}
+                </CardContent>
+              </Card>
             )
           })
         )}
