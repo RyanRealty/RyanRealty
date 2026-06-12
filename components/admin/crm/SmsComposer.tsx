@@ -5,7 +5,8 @@
  * Merge tokens are resolved server-side before the initial body lands here,
  * so the bubble shows the final text with real values.
  */
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -24,6 +25,7 @@ export function SmsComposer(props: {
 }) {
   const [body, setBody] = useState(props.initialBody)
   const { chars, segments } = segmentInfo(body)
+  const unresolved = useMemo(() => findUnresolvedMergeTokens(body), [body])
 
   return (
     <form action={props.sendAction} className="space-y-2">
@@ -46,6 +48,11 @@ export function SmsComposer(props: {
             {chars} characters · {segments} {segments === 1 ? 'segment' : 'segments'}
           </div>
         </div>
+      ) : null}
+      {unresolved.length > 0 ? (
+        <p className="text-xs font-medium text-warning">
+          Unfilled merge fields, this contact has no value for: {unresolved.join(', ')}. Edit before sending.
+        </p>
       ) : null}
       <div className="flex justify-end">
         <Button type="submit" size="sm">Send text</Button>

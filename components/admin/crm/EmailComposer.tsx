@@ -11,6 +11,7 @@
  */
 import { useMemo, useState } from 'react'
 import { buildEmailPreviewDoc } from '@/lib/crm/email-body'
+import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -29,6 +30,7 @@ export function EmailComposer(props: {
     () => buildEmailPreviewDoc(body, props.signatureHtml),
     [body, props.signatureHtml],
   )
+  const unresolved = useMemo(() => findUnresolvedMergeTokens(subject + ' ' + body), [subject, body])
 
   return (
     <form action={props.sendAction} className="space-y-2">
@@ -57,6 +59,11 @@ export function EmailComposer(props: {
           srcDoc={previewDoc}
           className="h-96 w-full rounded-xl border border-border bg-card"
         />
+      ) : null}
+      {unresolved.length > 0 ? (
+        <p className="text-xs font-medium text-warning">
+          Unfilled merge fields, this contact has no value for: {unresolved.join(', ')}. Edit before sending.
+        </p>
       ) : null}
       <div className="flex items-center justify-between gap-4">
         <span className="text-xs text-muted-foreground">Your signature and the Oregon agency disclosure link are added to every send.</span>
