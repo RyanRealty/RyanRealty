@@ -39,9 +39,18 @@ export default function AdminNavList({ sections, onNavigate }: AdminNavListProps
     setHydrated(true)
   }, [])
 
+  // Longest-match-wins: only the most specific item highlights, so /admin
+  // (which prefixes everything) and /admin/analytics (which prefixes its
+  // sub-pages) stay quiet when a deeper destination is the real location.
+  const matches = (base: string) => pathname === base || pathname?.startsWith(base + '/')
+  const bestMatch = sections
+    .flatMap((s) => s.items)
+    .map((i) => i.href.split('?')[0])
+    .filter(matches)
+    .sort((a, b) => b.length - a.length)[0]
   const isItemActive = (href: string) => {
     const base = href.split('?')[0]
-    return pathname === base || pathname?.startsWith(base + '/')
+    return base === bestMatch
   }
 
   const toggle = (label: string, fallback: boolean) => {
