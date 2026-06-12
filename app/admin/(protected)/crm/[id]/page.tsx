@@ -240,11 +240,21 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  {person.picture_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={person.picture_url} alt="" className="h-12 w-12 shrink-0 rounded-full border border-border object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted text-lg font-semibold text-muted-foreground">
+                      {(person.name ?? '?').charAt(0).toUpperCase()}
+                    </span>
+                  )}
                 <div>
                   <CardTitle className="text-xl">{person.name ?? `Contact #${person.id}`}</CardTitle>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {person.source ?? 'Unknown source'} · created {fmtDateTime(person.fub_created_at)}
                   </p>
+                </div>
                 </div>
                 {person.fub_legacy_id ? (
                   <a
@@ -606,7 +616,15 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
                   <AlertTitle>Outbound texting not live yet</AlertTitle>
                   <AlertDescription>
                     Twilio A2P campaign status is {twilioStatus.a2p ?? 'unknown'}. Carriers block delivery until status is VERIFIED.
-                    You can compose messages here, but sends will fail until approval completes.
+                    You can compose messages here, but sends will fail until approval completes.{' '}
+                    <a
+                      href="https://console.twilio.com/us1/develop/sms/regulatory-compliance/campaigns"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline"
+                    >
+                      Check live status in Twilio ↗
+                    </a>
                   </AlertDescription>
                 </Alert>
               ) : null}

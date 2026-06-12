@@ -54,6 +54,7 @@ export type CrmPersonRow = {
   fub_legacy_id: number | null
   name: string | null
   first_name: string | null
+  picture_url: string | null
   last_name: string | null
   stage: string
   source: string | null
@@ -124,7 +125,7 @@ export async function listCrmPeople(filters: CrmListFilters): Promise<{
   let query = sb
     .from('crm_people')
     .select(
-      'id,fub_legacy_id,name,first_name,last_name,stage,source,assigned_broker,tags,emails,phones,last_activity_at,fub_created_at',
+      'id,fub_legacy_id,name,first_name,last_name,stage,source,assigned_broker,tags,emails,phones,last_activity_at,fub_created_at,picture_url',
       { count: 'exact' },
     )
 
@@ -377,12 +378,13 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
 
   // Merge tokens like the SMS path does — a template body with %first% must
   // never reach a client literally.
-  const { renderCrmMerge } = await import('@/lib/crm/merge')
+  const { renderCrmMerge, attributeSiteLinks } = await import('@/lib/crm/merge')
+  const actingSlugForLinks = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
   const mergedSubject = renderCrmMerge(subject, person)
-  const mergedBody = renderCrmMerge(body, person)
+  const mergedBody = attributeSiteLinks(renderCrmMerge(body, person), actingSlugForLinks)
 
   const { CRM_MAILBOXES, sendCrmEmail } = await import('@/lib/crm/gmail')
-  const actingSlug = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
+  const actingSlug = actingSlugForLinks
   const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
   const sent = await sendCrmEmail({ fromMailbox: mailbox.email, to, subject: mergedSubject, bodyText: mergedBody, withSignature: true })
   if (!sent.ok) return { ok: false, error: sent.error }
@@ -517,8 +519,9 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   const gate = await isSuppressed(personId, 'sms')
   if (gate.suppressed) return { ok: false, error: `Blocked by suppression (${gate.reasons.join(', ')})` }
 
-  const { renderCrmMerge } = await import('@/lib/crm/merge')
-  const mergedBody = renderCrmMerge(body, person)
+  const { renderCrmMerge, attributeSiteLinks } = await import('@/lib/crm/merge')
+  const smsBrokerSlug = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
+  const mergedBody = attributeSiteLinks(renderCrmMerge(body, person), smsBrokerSlug)
   const { sendSmsViaMessagingService } = await import('@/lib/crm/twilio')
   const sent = await sendSmsViaMessagingService({ to, body: mergedBody })
   if (!sent.ok) return { ok: false, error: sent.error }

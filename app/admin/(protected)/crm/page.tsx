@@ -238,6 +238,14 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
             return (
               <Card key={p.id} className="transition-colors hover:bg-muted/50">
                 <CardContent className="flex items-center gap-3 p-4">
+                  {p.picture_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={p.picture_url} alt="" className="h-10 w-10 shrink-0 rounded-full border border-border object-cover" referrerPolicy="no-referrer" loading="lazy" />
+                  ) : (
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
+                      {(p.name ?? '?').charAt(0).toUpperCase()}
+                    </span>
+                  )}
                   <Link href={`/admin/crm/${p.id}`} className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate text-sm font-semibold text-foreground">{p.name ?? `Contact #${p.id}`}</span>

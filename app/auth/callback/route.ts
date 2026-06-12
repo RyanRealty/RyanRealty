@@ -95,6 +95,13 @@ export async function GET(request: Request) {
       }).catch((err) => {
         Sentry.captureException(err)
       })
+      // Capture the Google/Facebook profile photo onto the CRM person.
+      const avatar = data.user.user_metadata?.avatar_url ?? data.user.user_metadata?.picture
+      if (typeof avatar === 'string' && avatar) {
+        import('@/lib/crm/mirror')
+          .then(({ saveOauthAvatarByEmail }) => saveOauthAvatarByEmail(data.user.email, avatar))
+          .catch(() => {})
+      }
       const redirectUrl = safeNext.includes('?') ? `${base}${safeNext}&signed_up=1` : `${base}${safeNext}?signed_up=1`
       const res = NextResponse.redirect(redirectUrl)
       res.cookies.delete(AUTH_NEXT_COOKIE)

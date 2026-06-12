@@ -22,7 +22,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendCrmEmail, CRM_MAILBOXES } from '@/lib/crm/gmail'
 import { isSuppressed } from '@/lib/crm/suppressions'
-import { renderCrmMerge, referencesCmaLink } from '@/lib/crm/merge'
+import { attributeSiteLinks, renderCrmMerge, referencesCmaLink } from '@/lib/crm/merge'
 import { sendSmsViaMessagingService, getA2pCampaignStatus } from '@/lib/crm/twilio'
 import { addPersonTags, replacePersonTags } from '@/lib/followupboss'
 
@@ -72,8 +72,10 @@ type Step = {
   removeTags?: string[]
 }
 
-function renderMerge(text: string, person: { first_name?: string | null; name?: string | null; custom?: Record<string, unknown> }): string {
-  return renderCrmMerge(text, person)
+function renderMerge(text: string, person: { first_name?: string | null; name?: string | null; custom?: Record<string, unknown>; assigned_broker?: string | null }): string {
+  // Every site link in an automated send carries the assigned broker so the
+  // site features them when the lead clicks through.
+  return attributeSiteLinks(renderCrmMerge(text, person), person.assigned_broker ?? 'matt')
 }
 
 export async function GET(request: Request) {

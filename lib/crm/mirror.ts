@@ -86,7 +86,9 @@ export function mapFubPersonToCrm(p: FubPersonRecord) {
     custom,
     background: p.background ?? null,
     price: typeof p.price === 'number' ? p.price : null,
-    picture_url: p.picture?.small ?? null,
+    // Only set when FUB actually has a photo — a null here would clobber the
+    // OAuth profile photo saved by saveOauthAvatarByEmail on every delta sync.
+    ...(p.picture?.small ? { picture_url: p.picture.small } : {}),
     last_activity_at: p.lastActivity ?? null,
     raw: p as Record<string, unknown>,
     updated_at: new Date().toISOString(),
@@ -143,6 +145,31 @@ export async function mirrorPersonFromFub(fubPersonId: number): Promise<void> {
 }
 
 /** Resolve a FUB person by email, then mirror. Used after sendEvent (which returns no id). */
+/**
+ * Save the OAuth profile photo (Google/Facebook sign-in) onto the CRM person.
+ * The real face beats whatever FUB has — set unconditionally; the FUB mirror
+ * only writes picture_url when FUB itself has a photo.
+ */
+export async function saveOauthAvatarByEmail(email: string | null | undefined, avatarUrl: string | null | undefined): Promise<void> {
+  const cleanedEmail = String(email ?? '').trim().toLowerCase()
+  const url = String(avatarUrl ?? '').trim()
+  if (!cleanedEmail || !/^https:\/\//.test(url)) return
+  try {
+    const sb = createServiceClient()
+    const { data: pt } = await sb
+      .from('crm_contact_points')
+      .select('person_id')
+      .eq('kind', 'email')
+      .eq('value', cleanedEmail)
+      .limit(1)
+      .maybeSingle()
+    if (!pt?.person_id) return
+    await sb.from('crm_people').update({ picture_url: url.slice(0, 1024), updated_at: new Date().toISOString() }).eq('id', pt.person_id)
+  } catch (err) {
+    console.warn('[crm-mirror] saveOauthAvatarByEmail error:', err)
+  }
+}
+
 export async function mirrorPersonByEmail(email: string | null | undefined): Promise<void> {
   if (!mirrorEnabled()) return
   const cleaned = String(email ?? '').trim().toLowerCase()

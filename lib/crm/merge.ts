@@ -30,6 +30,22 @@ export function renderCrmMerge(
     .replace(/\{\{(custom[A-Za-z0-9_]+)\}\}/g, (m, k: string) => custom(k) ?? m)
 }
 
+/**
+ * Stamp the assigned broker onto every public ryan-realty.com link in an
+ * outbound message. The ?agent= param sets the 90-day rr_agent_attribution
+ * cookie (AgentAttributionBridge), so the site features THAT broker in lead
+ * routing and broker-facing CTAs when the lead clicks through from CRM
+ * comms. Admin links and links that already carry an agent are untouched.
+ */
+export function attributeSiteLinks(text: string, brokerSlug: string | null | undefined): string {
+  const slug = (brokerSlug ?? '').trim()
+  if (!slug) return text
+  return text.replace(/https:\/\/(?:www\.)?ryan-realty\.com[^\s"'<)\]]*/g, (url) => {
+    if (url.includes('/admin') || /[?&]agent=/.test(url)) return url
+    return url + (url.includes('?') ? '&' : '?') + 'agent=' + encodeURIComponent(slug)
+  })
+}
+
 /** Merge tokens still present after rendering — surfaced as a composer warning. */
 export function findUnresolvedMergeTokens(text: string): string[] {
   const hits = new Set<string>()
