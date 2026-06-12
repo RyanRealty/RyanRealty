@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.505.0 (2026-06-12)
+
+### Features
+- feat(crm): Contacts title + search-as-you-type on the contacts list
+
+---
+
+
 ## v1.504.0 (2026-06-12)
 
 ### Features
