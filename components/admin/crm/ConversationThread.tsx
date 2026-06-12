@@ -39,7 +39,7 @@ export default function ConversationThread({ events, personName }: { events: Con
   // events arrive newest-first; flex-col-reverse renders them oldest-on-top
   // while the DOM order keeps the latest message adjacent to the scroll end.
   return (
-    <div className="flex max-h-[60vh] flex-col-reverse gap-3 overflow-y-auto pr-1">
+    <div className="flex max-h-96 flex-col-reverse gap-3 overflow-y-auto pr-1 sm:max-h-160">
       {events.map((e) => {
         const out = e.kind.endsWith('_out')
         const isEmail = e.kind.startsWith('email')
@@ -55,7 +55,7 @@ export default function ConversationThread({ events, personName }: { events: Con
         return (
           <div key={e.id} className={`flex flex-col ${out ? 'items-end' : 'items-start'}`}>
             <div
-              className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm leading-relaxed sm:max-w-md ${
+              className={`max-w-xs whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm leading-relaxed sm:max-w-md ${
                 out
                   ? 'rounded-br-sm bg-primary text-primary-foreground'
                   : 'rounded-bl-sm bg-muted text-foreground'
