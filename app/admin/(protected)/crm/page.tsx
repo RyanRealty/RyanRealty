@@ -260,7 +260,15 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
                 return (
                   <TableRow key={p.id}>
                     <TableCell className="text-sm font-medium text-foreground">
-                      <Link href={`/admin/crm/${p.id}`} className="hover:underline">
+                      <Link href={`/admin/crm/${p.id}`} className="flex items-center gap-2.5 hover:underline">
+                        {p.picture_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={p.picture_url} alt="" className="h-8 w-8 shrink-0 rounded-full border border-border object-cover" referrerPolicy="no-referrer" loading="lazy" />
+                        ) : (
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
+                            {(p.name ?? '?').charAt(0).toUpperCase()}
+                          </span>
+                        )}
                         {p.name ?? `Contact #${p.id}`}
                       </Link>
                     </TableCell>
