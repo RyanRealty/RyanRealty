@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.502.2 (2026-06-12)
+
+### Bug Fixes
+- fix(crm): person page phone formatting — timeline collapsed past 15, tag wall behind a toggle, tighter mobile spacing
+
+---
+
+
 ## v1.502.1 (2026-06-12)
 
 ### Bug Fixes
