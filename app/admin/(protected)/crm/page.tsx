@@ -21,6 +21,12 @@ function fmtDate(iso: string | null): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+function fmtPhone(raw: string): string {
+  const d = raw.replace(/\D/g, '').slice(-10)
+  if (d.length !== 10) return raw
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`
+}
+
 function primaryContact(items: Array<{ value?: string; isPrimary?: number | boolean }>): string | null {
   if (!items?.length) return null
   const primary = items.find((i) => i.isPrimary)
@@ -88,7 +94,9 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
             {overview.lastDeltaSync ? ` · last sync ${fmtDate(overview.lastDeltaSync)}` : ''}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <Link href="/admin/crm/new"><Button size="sm">New contact</Button></Link>
+          <Link href="/admin/crm/tasks"><Button variant="outline" size="sm">Tasks</Button></Link>
           <Link href="/admin/crm/inbox"><Button variant="outline" size="sm">Inbox</Button></Link>
           <Link href="/admin/crm/deals"><Button variant="outline" size="sm">Pipeline</Button></Link>
           <Link href="/admin/crm/sequences"><Button variant="outline" size="sm">Sequences</Button></Link>
@@ -217,8 +225,41 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         ) : null}
       </form>
 
-      {/* People table */}
-      <div className="mt-4 overflow-hidden rounded-lg border border-border bg-card">
+      {/* People cards — phones (one thumb-tap per contact) */}
+      <div className="mt-4 space-y-2 md:hidden">
+        {rows.length === 0 ? (
+          <Card>
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">No contacts match this filter.</CardContent>
+          </Card>
+        ) : (
+          rows.map((p) => {
+            const email = primaryContact(p.emails)
+            const phone = primaryContact(p.phones)
+            return (
+              <Link key={p.id} href={`/admin/crm/${p.id}`} className="block">
+                <Card className="transition-colors hover:bg-muted/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-sm font-semibold text-foreground">{p.name ?? `Contact #${p.id}`}</span>
+                      <Badge variant="secondary" className="shrink-0">{p.stage}</Badge>
+                    </div>
+                    <div className="mt-1 truncate text-xs text-muted-foreground">
+                      {[email, phone ? fmtPhone(phone) : null].filter(Boolean).join(' · ') || 'No contact info'}
+                    </div>
+                    <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                      <span className="truncate">{p.source ?? ''}</span>
+                      <span className="shrink-0 tabular-nums">{fmtDate(p.last_activity_at)}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            )
+          })
+        )}
+      </div>
+
+      {/* People table — desktop */}
+      <div className="mt-4 hidden overflow-hidden rounded-lg border border-border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow>

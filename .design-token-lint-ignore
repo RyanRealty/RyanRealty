@@ -171,3 +171,7 @@ components/site/HomepageTrustBand.tsx
 # locked-ladder step for viewport-minus-header heights (same exception class
 # as the admin report/chart pages above).
 app/components/admin/AdminSidebar.tsx
+# Mobile bottom tab bar: iOS safe-area inset requires pb-[env(safe-area-inset-bottom)]
+# — no locked-ladder step can express env() (same exception class as the
+# sticky-header calc heights above).
+app/components/admin/AdminMobileTabBar.tsx

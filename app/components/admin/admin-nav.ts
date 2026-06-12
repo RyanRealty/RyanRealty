@@ -2,7 +2,7 @@ import type { AdminRoleType } from '@/app/actions/admin-roles'
 
 /** Icon names resolved to lucide components in AdminNavIcons.tsx (client). */
 export type AdminIconName =
-  | 'dashboard' | 'inbox' | 'flame' | 'clipboard-check' | 'pen-line'
+  | 'dashboard' | 'inbox' | 'flame' | 'clipboard-check' | 'pen-line' | 'list-todo' | 'user-plus'
   | 'users' | 'layers' | 'mail' | 'gauge'
   | 'handshake' | 'dollar' | 'wallet' | 'file-text'
   | 'home' | 'clock' | 'file-search' | 'search'
@@ -39,6 +39,7 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
   const today: AdminNavItem[] = [
     item('/admin', 'Dashboard', 'dashboard'),
     item('/admin/crm/inbox', 'Inbox', 'inbox'),
+    item('/admin/crm/tasks', 'Tasks', 'list-todo'),
   ]
   if (canBrokers) today.push(item('/admin/analytics/action-required', 'Hot leads', 'flame'))
   today.push(item('/admin/crm/approvals', 'Approvals', 'clipboard-check'))
@@ -47,6 +48,7 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
   // ── People: leads and clients ──
   const people: AdminNavItem[] = [
     item('/admin/crm', 'Contacts', 'users'),
+    item('/admin/crm/new', 'New contact', 'user-plus'),
     item('/admin/crm/deals', 'Pipeline', 'layers'),
     item('/admin/email/compose', 'Compose email', 'mail'),
   ]

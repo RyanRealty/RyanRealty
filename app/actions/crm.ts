@@ -744,6 +744,105 @@ export async function addCrmTaskAction(formData: FormData): Promise<CrmActionRes
   return { ok: true }
 }
 
+export type CrmOpenTask = {
+  id: number
+  name: string
+  type: string | null
+  due_at: string | null
+  assigned_broker: string | null
+  person_id: number | null
+  person: { name: string | null; stage: string } | null
+}
+
+/** All open tasks across the book — the global Tasks page. */
+export async function listCrmOpenTasks(broker?: string): Promise<CrmOpenTask[]> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return []
+  const sb = createServiceClient()
+  let q = sb
+    .from('crm_tasks')
+    .select('id,name,type,due_at,assigned_broker,person_id,crm_people(name,stage)')
+    .is('completed_at', null)
+    .order('due_at', { ascending: true, nullsFirst: false })
+    .limit(300)
+  if (broker) q = q.eq('assigned_broker', broker)
+  const { data } = await q
+  return (data ?? []).map((r) => ({
+    id: r.id as number,
+    name: r.name as string,
+    type: (r.type ?? null) as string | null,
+    due_at: (r.due_at ?? null) as string | null,
+    assigned_broker: (r.assigned_broker ?? null) as string | null,
+    person_id: (r.person_id ?? null) as number | null,
+    person: (r as unknown as { crm_people: { name: string | null; stage: string } | null }).crm_people ?? null,
+  }))
+}
+
+/**
+ * Manual contact creation. Routes through the FUB events API (sendEvent) so
+ * dedupe-by-email/phone and the standard enrollment pipeline behave exactly
+ * like a site lead, then mirrors the person locally and returns the CRM id.
+ */
+export async function createCrmContactAction(formData: FormData): Promise<CrmActionResult & { personId?: number }> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  const firstName = String(formData.get('firstName') ?? '').trim()
+  const lastName = String(formData.get('lastName') ?? '').trim()
+  const email = String(formData.get('email') ?? '').trim().toLowerCase()
+  const phone = String(formData.get('phone') ?? '').trim()
+  const note = String(formData.get('note') ?? '').trim()
+  const broker = String(formData.get('broker') ?? '').trim() || (access.access.brokerSlug ?? 'matt')
+  if (!firstName) return { ok: false, error: 'First name required' }
+  if (!email && !phone) return { ok: false, error: 'An email or a phone number is required' }
+
+  const { sendEvent } = await import('@/lib/followupboss')
+  const sent = await sendEvent({
+    type: 'General Inquiry',
+    source: 'Manual entry',
+    system: 'RyanRealtyPlatform',
+    person: {
+      firstName,
+      lastName: lastName || undefined,
+      emails: email ? [{ value: email }] : undefined,
+      phones: phone ? [{ value: phone }] : undefined,
+    },
+    message: note || `Added manually in the CRM by ${access.access.email}`,
+    brokerAttribution: { brokerSlug: broker },
+  })
+  if (!sent.ok) return { ok: false, error: `FUB create failed: ${'error' in sent ? sent.error : sent.status}` }
+
+  // Mirror into the local CRM and resolve the new local id.
+  const sb = createServiceClient()
+  let personId: number | undefined
+  if (email) {
+    const { mirrorPersonByEmail } = await import('@/lib/crm/mirror')
+    await mirrorPersonByEmail(email)
+    const { data: pt } = await sb
+      .from('crm_contact_points')
+      .select('person_id')
+      .eq('kind', 'email')
+      .eq('value', email)
+      .order('person_id', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    personId = (pt?.person_id as number | undefined) ?? undefined
+  }
+  if (!personId && phone) {
+    const digits = phone.replace(/\D/g, '').slice(-10)
+    const { data: pt } = await sb
+      .from('crm_contact_points')
+      .select('person_id,value')
+      .eq('kind', 'phone')
+      .ilike('value', `%${digits}`)
+      .order('person_id', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    personId = (pt?.person_id as number | undefined) ?? undefined
+  }
+  revalidateCrm(personId)
+  return { ok: true, personId }
+}
+
 export async function completeCrmTaskAction(formData: FormData): Promise<CrmActionResult> {
   const access = await requireCrmAccess()
   if (!access.ok) return access

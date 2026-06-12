@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import AdminHeader from '@/app/components/admin/AdminHeader'
+import AdminMobileTabBar from '@/app/components/admin/AdminMobileTabBar'
 import AdminSidebar from '@/app/components/admin/AdminSidebar'
 
 /**
@@ -38,10 +39,12 @@ export default async function AdminProtectedLayout({
       />
       <div className="flex">
         <AdminSidebar role={adminRole.role} brokerId={adminRole.brokerId} />
-        <main className="min-w-0 flex-1 p-4 sm:p-6">
+        {/* pb-20 on phones keeps content clear of the fixed bottom tab bar */}
+        <main className="min-w-0 flex-1 p-4 pb-20 sm:p-6 lg:pb-6">
           {children}
         </main>
       </div>
+      <AdminMobileTabBar role={adminRole.role} />
     </div>
   )
 }
