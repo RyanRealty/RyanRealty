@@ -371,6 +371,28 @@ export async function POST(request: NextRequest) {
   // under essential) and bounded so the page load never waits on the FUB API.
   const fubPersonId =
     !minimalOnly && session && typeof session.fub_person_id === 'number' ? session.fub_person_id : null
+  if (fubPersonId && (eventType === 'listing_view' || eventType === 'page_view')) {
+    // Live-visit broker text with the CRM deep link — server-side so it fires
+    // on every identified page view (the old client-side return detector was
+    // unreliable). queueReturnVisitAlert dedupes to one text per person per
+    // day and skips broker self-visits. Never blocks the response.
+    try {
+      const { queueReturnVisitAlert } = await import('@/lib/crm/broker-alerts')
+      await withTimeoutFallback(
+        queueReturnVisitAlert({
+          fubPersonId,
+          who: 'A lead',
+          pageUrl,
+          pageTitle: body.pageTitle ?? null,
+        }),
+        false,
+        2000,
+        'crm:return-visit-alert',
+      )
+    } catch (err) {
+      console.warn('[visitors/track] return-visit alert failed:', err)
+    }
+  }
   if (fubPersonId && (eventType === 'listing_view' || eventType === 'page_view' || eventType === 'search')) {
     try {
       if (eventType === 'listing_view' && listing) {

@@ -29,6 +29,8 @@ const ALERT_PHONE_BY_BROKER: Record<string, string | undefined> = {
  * contact them in the moment. Throttled to one text per person per day via
  * the date-stamped dedupe kind.
  */
+const BROKER_MAILBOXES = new Set(['matt@ryan-realty.com', 'rebeccapeterson@ryan-realty.com', 'paul@ryan-realty.com'])
+
 export async function queueReturnVisitAlert(params: {
   fubPersonId: number
   who: string
@@ -43,6 +45,13 @@ export async function queueReturnVisitAlert(params: {
       .eq('fub_legacy_id', params.fubPersonId)
       .maybeSingle()
     if (!person) return false
+    // Brokers browsing their own site are not leads — no self-texts.
+    const { data: emails } = await sb
+      .from('crm_contact_points')
+      .select('value')
+      .eq('person_id', person.id as number)
+      .eq('kind', 'email')
+    if ((emails ?? []).some((e) => BROKER_MAILBOXES.has(String(e.value).toLowerCase()))) return false
     const day = new Date().toISOString().slice(0, 10)
     const name = (person.name as string | null) ?? params.who
     const title = params.pageTitle?.trim() ? ` (${params.pageTitle.trim().slice(0, 60)})` : ''
