@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.499.0 (2026-06-12)
+
+### Features
+- feat(crm): live-visit broker alerts with deep link + on-site-now banner + tap-to-call
+
+---
+
+
 ## v1.498.0 (2026-06-12)
 
 ### Features
