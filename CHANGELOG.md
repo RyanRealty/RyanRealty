@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.494.1 (2026-06-12)
+
+### Maintenance
+- test(crm): battery check — A2P CTA pages must stay reachable to HTTP-library UAs
+
+---
+
+
 ## v1.494.0 (2026-06-12)
 
 ### Features
