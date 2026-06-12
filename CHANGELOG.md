@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.505.1 (2026-06-12)
+
+### Bug Fixes
+- fix(crm): profile photos in the desktop contacts table (they were phone-cards only)
+
+---
+
+
 ## v1.505.0 (2026-06-12)
 
 ### Features
