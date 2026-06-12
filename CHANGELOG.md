@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.497.1 (2026-06-12)
+
+### Bug Fixes
+- fix(admin): CommandDialog was missing the cmdk Command root — palette crashed on open
+
+---
+
+
 ## v1.497.0 (2026-06-12)
 
 ### Features
