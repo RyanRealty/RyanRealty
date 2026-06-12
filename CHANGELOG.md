@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.503.0 (2026-06-12)
+
+### Features
+- feat(admin): home dashboard rebuilt around the broker and their lead funnel
+
+---
+
+
 ## v1.502.2 (2026-06-12)
 
 ### Bug Fixes
