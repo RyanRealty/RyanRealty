@@ -46,7 +46,7 @@ const CTA_URLS = [
 ];
 
 const MESSAGE_FLOW =
-  `End users opt in to SMS by submitting a lead form on ryan-realty.com. Every lead form that collects a phone number displays this consent disclosure directly below the submit button: "${CONSENT_TEXT}" The disclosure links to the privacy policy at https://ryan-realty.com/privacy. The disclosure can be verified live on these pages: ${CTA_URLS.join(', ')}. End users can also opt in by texting our business number first. Opt-out (STOP) and HELP keywords are honored automatically.`;
+  `End users opt in to SMS by submitting a lead form on ryan-realty.com. Every lead form that collects a phone number displays this consent disclosure directly below the submit button: "${CONSENT_TEXT}" The disclosure links to the privacy policy at https://ryan-realty.com/privacy, which carries the full SMS terms in the section "SMS and text messaging", including the statement that no mobile information is shared with third parties or affiliates for marketing or promotional purposes. The disclosure can be verified live on these pages: ${CTA_URLS.join(', ')}. End users can also opt in by texting our business number first. Opt-out (STOP) and HELP keywords are honored automatically.`;
 
 const CAMPAIGN = {
   UsAppToPersonUsecase: 'LOW_VOLUME',
@@ -79,13 +79,30 @@ async function api(method, url, form) {
 
 (async () => {
   // 0. Verify the on-page CTA is actually live before (re)submitting anything.
-  const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36';
+  // Carrier CTA reviewers fetch with HTTP-library user agents — the 2026-06-11
+  // rejection round 2 happened because middleware.ts bad-ua screening 403'd
+  // exactly those UAs on every cited URL. So every URL must pass BOTH a real
+  // browser UA and an HTTP-library UA, and /privacy must carry the
+  // carrier-required mobile-data-sharing clause.
+  const UAS = {
+    chrome: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+    httplib: 'python-requests/2.31.0',
+  };
   for (const url of CTA_URLS) {
-    const res = await fetch(url, { headers: { 'User-Agent': UA }, redirect: 'follow' });
+    for (const [label, ua] of Object.entries(UAS)) {
+      const res = await fetch(url, { headers: { 'User-Agent': ua }, redirect: 'follow' });
+      const html = await res.text();
+      const ok = res.ok && html.includes('you agree to receive calls and texts from Ryan Realty');
+      console.log(`${ok ? 'OK ' : 'FAIL'} ${res.status} [${label}] ${url}`);
+      if (!ok) throw new Error(`CTA not verifiable at ${url} via ${label} UA — fix the page (or middleware bot screen) before resubmitting`);
+    }
+  }
+  for (const [label, ua] of Object.entries(UAS)) {
+    const res = await fetch('https://ryan-realty.com/privacy', { headers: { 'User-Agent': ua }, redirect: 'follow' });
     const html = await res.text();
-    const ok = res.ok && html.includes('you agree to receive calls and texts from Ryan Realty');
-    console.log(`${ok ? 'OK ' : 'FAIL'} ${res.status} ${url}`);
-    if (!ok) throw new Error(`CTA not verifiable at ${url} — fix the page before resubmitting`);
+    const ok = res.ok && html.includes('No mobile information will be shared with third parties');
+    console.log(`${ok ? 'OK ' : 'FAIL'} ${res.status} [${label}] /privacy mobile-data clause`);
+    if (!ok) throw new Error(`privacy policy missing carrier-required SMS clause (via ${label} UA)`);
   }
 
   // 1. Current campaign state.

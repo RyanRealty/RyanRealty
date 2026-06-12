@@ -125,6 +125,22 @@ function parseBlockedCountries(): Set<string> {
 }
 const BLOCKED_COUNTRIES = parseBlockedCountries()
 
+// Pages cited in compliance filings (A2P 10DLC campaign message_flow, carrier
+// CTA verification) must be loadable by reviewer tooling, which often presents
+// an HTTP-library User-Agent. Twilio error 30909 hit us twice (2026-06-11)
+// because the bad-ua screen 403'd these exact URLs. Keep this list in sync
+// with CTA_URLS in scripts/crm-a2p-resubmit.mjs.
+const COMPLIANCE_VERIFICATION_PATHS = new Set([
+  '/privacy',
+  '/terms',
+  '/contact',
+  '/sell/valuation',
+  '/lp/seller-home-value',
+  '/lp/sell-your-home',
+  '/lp/buyer-listing-alerts',
+  '/lp/expired-listing',
+])
+
 /**
  * Decide whether to block a page request. Returns a short reason string when the
  * request should be 403'd, or null to let it through. Never screens /api/*.
@@ -132,6 +148,7 @@ const BLOCKED_COUNTRIES = parseBlockedCountries()
 function screenBotRequest(request: NextRequest, pathname: string): string | null {
   if (process.env.BOT_SCREEN_DISABLED === '1') return null
   if (pathname.startsWith('/api/')) return null
+  if (COMPLIANCE_VERIFICATION_PATHS.has(pathname.replace(/\/$/, '') || '/')) return null
 
   const ua = request.headers.get('user-agent') ?? ''
 

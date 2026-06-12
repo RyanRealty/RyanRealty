@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { H1 } from '@/components/site/primitives'
+import { CONTACT } from '@/lib/brand/contact'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -60,6 +61,16 @@ export default function PrivacyPage() {
         </ul>
         <p className={P_CLASS}>
           Each has its own privacy policy. We do not sell your personal information.
+        </p>
+      </section>
+
+      <section id="sms" className={SECTION_CLASS}>
+        <h2 className={H2_CLASS}>SMS and text messaging</h2>
+        <p className={P_CLASS}>
+          If you provide your phone number on one of our forms, or text our business number first, you consent to receive calls and text messages from Ryan Realty about your request. Message frequency varies. Message and data rates may apply. Reply STOP at any time to opt out, or HELP for help. You can also reach us at {CONTACT.phoneDirect}.
+        </p>
+        <p className={P_CLASS}>
+          No mobile information will be shared with third parties or affiliates for marketing or promotional purposes. Text messaging originator opt-in data and consent are not shared with any third parties.
         </p>
       </section>
 
