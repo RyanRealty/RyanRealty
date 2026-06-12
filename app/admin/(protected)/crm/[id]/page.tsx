@@ -113,6 +113,34 @@ function fmtPhoneDisplay(tenDigits: string): string {
   return `${tenDigits.slice(0, 3)}.${tenDigits.slice(3, 6)}.${tenDigits.slice(6)}`
 }
 
+function TimelineEntry({ e }: { e: { id: number; ts: string; kind: string; title: string | null; body: string | null; broker: string | null; payload: unknown } }) {
+  return (
+    <div className="flex gap-3">
+      <div className="w-6 shrink-0 text-center text-base leading-6">{KIND_ICON[e.kind] ?? '•'}</div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-baseline gap-x-2">
+          <span className="text-sm font-medium text-foreground">{e.title ?? e.kind.replace('_', ' ')}</span>
+          <span className="text-xs tabular-nums text-muted-foreground">{fmtDateTime(e.ts)}</span>
+          {e.broker ? <Badge variant="outline" className="text-xs">{e.broker}</Badge> : null}
+        </div>
+        {e.body ? (
+          <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-muted-foreground">
+            {stripHtml(e.body).slice(0, 1200)}
+          </p>
+        ) : null}
+        {(e.payload as { recordingSid?: string })?.recordingSid ? (
+          <audio
+            controls
+            preload="none"
+            className="mt-1.5 h-9 w-full max-w-md"
+            src={`/api/admin/crm/recording/${(e.payload as { recordingSid: string }).recordingSid}`}
+          />
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
 export default async function CrmPersonPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tpl?: string; smsTpl?: string }> }) {
   const { id: idRaw } = await params
   const id = Number(idRaw)
@@ -192,7 +220,7 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
   const isLiveNow = liveAgeMin !== null && liveAgeMin >= 0 && liveAgeMin <= 30
 
   return (
-    <main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6">
+    <main className="mx-auto max-w-[1600px] px-2 py-4 sm:px-6 sm:py-8">
       <div className="mb-4 text-sm text-muted-foreground">
         <Link href="/admin/crm" className="hover:text-foreground">← Back to CRM</Link>
       </div>
@@ -234,9 +262,9 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
         </Alert>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-[420px_1fr]">
         {/* ── Left: identity (second on phones — comms come first) ── */}
-        <div className="order-2 space-y-6 lg:order-none">
+        <div className="order-2 space-y-4 sm:space-y-6 lg:order-none">
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-3">
@@ -325,15 +353,17 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
 
               <Separator />
 
-              {/* Tags */}
-              <div>
-                <div className="mb-2 text-xs font-medium uppercase text-muted-foreground">Tags</div>
-                <div className="flex flex-wrap gap-1.5">
+              {/* Tags — collapsed by default; the 20-badge wall buried the page */}
+              <details className="group">
+                <summary className="cursor-pointer text-xs font-medium uppercase text-muted-foreground hover:text-foreground">
+                  Tags ({person.tags.length}) <span className="normal-case text-muted-foreground/70 group-open:hidden">· tap to manage</span>
+                </summary>
+                <div className="mt-2 flex flex-wrap gap-1.5">
                   {person.tags.map((t) => (
                     <form key={t} action={removeTagForm} className="inline-flex">
                       <input type="hidden" name="personId" value={person.id} />
                       <input type="hidden" name="tag" value={t} />
-                      <Badge variant="outline" className="gap-1 pr-1 text-[11px]">
+                      <Badge variant="outline" className="gap-1 pr-1 text-xs">
                         {t}
                         <button type="submit" aria-label={`Remove ${t}`} className="rounded px-1 text-muted-foreground hover:bg-muted hover:text-foreground">×</button>
                       </Badge>
@@ -345,7 +375,7 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
                   <Input name="tag" placeholder="add-tag" className="h-8 text-sm" />
                   <Button type="submit" size="sm" variant="outline">Add</Button>
                 </form>
-              </div>
+              </details>
             </CardContent>
           </Card>
 
@@ -512,7 +542,7 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
         </div>
 
         {/* ── Right: conversation + tasks + timeline (first on phones) ── */}
-        <div className="order-1 space-y-6 lg:order-none">
+        <div className="order-1 space-y-4 sm:space-y-6 lg:order-none">
           {/* Conversation — texts and emails only, chat style */}
           <Card>
             <CardHeader className="pb-3">
@@ -674,37 +704,29 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {full.timeline.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No activity yet.</p>
-                ) : (
-                  full.timeline.map((e) => (
-                    <div key={e.id} className="flex gap-3">
-                      <div className="w-6 shrink-0 text-center text-base leading-6">{KIND_ICON[e.kind] ?? '•'}</div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-baseline gap-x-2">
-                          <span className="text-sm font-medium text-foreground">{e.title ?? e.kind.replace('_', ' ')}</span>
-                          <span className="text-xs tabular-nums text-muted-foreground">{fmtDateTime(e.ts)}</span>
-                          {e.broker ? <Badge variant="outline" className="text-[10px]">{e.broker}</Badge> : null}
-                        </div>
-                        {e.body ? (
-                          <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-muted-foreground">
-                            {stripHtml(e.body).slice(0, 1200)}
-                          </p>
-                        ) : null}
-                        {(e.payload as { recordingSid?: string })?.recordingSid ? (
-                          <audio
-                            controls
-                            preload="none"
-                            className="mt-1.5 h-9 w-full max-w-md"
-                            src={`/api/admin/crm/recording/${(e.payload as { recordingSid: string }).recordingSid}`}
-                          />
-                        ) : null}
+              {full.timeline.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No activity yet.</p>
+              ) : (
+                <>
+                  <div className="space-y-4">
+                    {full.timeline.slice(0, 15).map((e) => (
+                      <TimelineEntry key={e.id} e={e} />
+                    ))}
+                  </div>
+                  {full.timeline.length > 15 ? (
+                    <details className="mt-4">
+                      <summary className="cursor-pointer text-sm font-medium text-primary">
+                        Show older activity ({full.timeline.length - 15} more)
+                      </summary>
+                      <div className="mt-4 space-y-4">
+                        {full.timeline.slice(15).map((e) => (
+                          <TimelineEntry key={e.id} e={e} />
+                        ))}
                       </div>
-                    </div>
-                  ))
-                )}
-              </div>
+                    </details>
+                  ) : null}
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
