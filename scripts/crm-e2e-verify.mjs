@@ -309,7 +309,7 @@ await tryCheck('data.timeline-dupes', async () => {
 
 // ── 8a4. SYNTHETIC TEST ARTIFACTS (hard rule: clean up in-iteration) ───────
 await tryCheck('data.synthetic-artifacts', async () => {
-  const { data } = await sb.from('crm_people').select('id,name').or('name.ilike.%smoketest%,name.ilike.%deleteme%,name.ilike.%test-artifact%');
+  const { data } = await sb.from('crm_people').select('id,name').or('name.ilike.%smoketest%,name.ilike.%deleteme%,name.ilike.%delete-me%,name.ilike.%test-artifact%,name.ilike.%importtest%,name.ilike.smoke test%,name.ilike.test lead%,name.ilike.%funnel test%');
   const n = (data ?? []).length;
   check('data.synthetic-artifacts', n === 0 ? 'PASS' : 'WARN', n === 0 ? 'no synthetic people in book' : `${n} synthetic test people present: ${(data ?? []).map((p) => `#${p.id} ${p.name}`).join(', ')}`);
 });
