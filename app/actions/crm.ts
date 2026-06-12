@@ -363,7 +363,7 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   const sb = createServiceClient()
   const { data: person } = await sb
     .from('crm_people')
-    .select('id,emails,assigned_broker,name')
+    .select('id,emails,assigned_broker,name,first_name,custom')
     .eq('id', personId)
     .maybeSingle()
   if (!person) return { ok: false, error: 'Person not found' }
@@ -375,14 +375,20 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   const gate = await isSuppressed(personId, 'email')
   if (gate.suppressed) return { ok: false, error: `Blocked by suppression (${gate.reasons.join(', ')})` }
 
+  // Merge tokens like the SMS path does — a template body with %first% must
+  // never reach a client literally.
+  const { renderCrmMerge } = await import('@/lib/crm/merge')
+  const mergedSubject = renderCrmMerge(subject, person)
+  const mergedBody = renderCrmMerge(body, person)
+
   const { CRM_MAILBOXES, sendCrmEmail } = await import('@/lib/crm/gmail')
   const actingSlug = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
   const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
-  const sent = await sendCrmEmail({ fromMailbox: mailbox.email, to, subject, bodyText: body })
+  const sent = await sendCrmEmail({ fromMailbox: mailbox.email, to, subject: mergedSubject, bodyText: mergedBody, withSignature: true })
   if (!sent.ok) return { ok: false, error: sent.error }
 
   await sb.from('crm_timeline').insert({
-    person_id: personId, kind: 'email_out', title: subject, body: sent.plainBody,
+    person_id: personId, kind: 'email_out', title: mergedSubject, body: sent.plainBody,
     payload: { gmailId: sent.gmailId, to, mailbox: mailbox.email },
     broker: mailbox.slug, source: 'app', dedupe_key: `gmail:${sent.gmailId}:p${personId}`,
   })

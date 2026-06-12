@@ -10,6 +10,7 @@ import {
   addCrmTaskAction,
   assignCrmBrokerAction,
   completeCrmTaskAction,
+  getCrmAccess,
   getCrmEmailTemplates,
   getCrmPersonFull,
   getCrmSmsTemplates,
@@ -20,8 +21,13 @@ import {
   updateCrmStageAction,
 } from '@/app/actions/crm'
 import { timelineEmailBody } from '@/lib/crm/email-body'
+import { renderCrmMerge } from '@/lib/crm/merge'
+import { getSignatureForMailbox } from '@/lib/crm/email-signature'
+import { CRM_MAILBOXES } from '@/lib/crm/gmail'
 import { getOwnedHomeMatches, type OwnedHomeMatch } from '@/lib/data'
 import { getOwnedHomeMedia } from '@/lib/crm/owned-home-media'
+import { EmailComposer } from '@/components/admin/crm/EmailComposer'
+import { SmsComposer } from '@/components/admin/crm/SmsComposer'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -70,13 +76,15 @@ async function assignBrokerForm(formData: FormData): Promise<void> {
   const r = await assignCrmBrokerAction(formData)
   if (!r.ok) console.error('[crm] assignBroker failed:', r.error)
 }
-async function sendEmailForm(formData: FormData): Promise<void> {
+async function sendEmailForm(personId: number, formData: FormData): Promise<void> {
   'use server'
+  formData.set('personId', String(personId))
   const r = await sendCrmEmailAction(formData)
   if (!r.ok) console.error('[crm] sendEmail failed:', r.error)
 }
-async function sendSmsForm(formData: FormData): Promise<void> {
+async function sendSmsForm(personId: number, formData: FormData): Promise<void> {
   'use server'
+  formData.set('personId', String(personId))
   const r = await sendCrmSmsAction(formData)
   if (!r.ok) console.error('[crm] sendSms failed:', r.error)
 }
@@ -118,13 +126,24 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
   const full = await getCrmPersonFull(id)
   const person = full.person
   if (!person) notFound()
-  const [templates, smsTemplates, twilioStatus] = await Promise.all([
+  const [templates, smsTemplates, twilioStatus, crmAccess] = await Promise.all([
     getCrmEmailTemplates(),
     getCrmSmsTemplates(),
     getTwilioSmsStatus(),
+    getCrmAccess(),
   ])
   const activeTpl = tpl ? templates.find((t) => t.key === tpl) ?? null : null
   const activeSmsTpl = smsTpl ? smsTemplates.find((t) => t.key === smsTpl) ?? null : null
+
+  // Acting broker — same resolution as the send actions, so the signature and
+  // merged preview show exactly what the send will produce.
+  const personLike = person as unknown as { first_name?: string | null; name?: string | null; custom?: Record<string, unknown>; assigned_broker?: string | null }
+  const actingSlug = crmAccess?.brokerSlug ?? personLike.assigned_broker ?? 'matt'
+  const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
+  const signature = await getSignatureForMailbox(mailbox.email)
+  const emailInitialSubject = activeTpl?.subject ? renderCrmMerge(activeTpl.subject, personLike) : ''
+  const emailInitialBody = activeTpl?.body ? renderCrmMerge(activeTpl.body, personLike) : ''
+  const smsInitialBody = activeSmsTpl?.body ? renderCrmMerge(activeSmsTpl.body, personLike) : ''
   const primaryEmail = full.contactPoints.find((c) => c.kind === 'email')?.value ?? null
   const primaryPhone = full.contactPoints.find((c) => c.kind === 'phone')?.value ?? null
 
@@ -513,14 +532,13 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
                     </select>
                     <Button type="submit" size="sm" variant="outline">Load template</Button>
                   </form>
-                  <form action={sendEmailForm} className="space-y-2">
-                    <input type="hidden" name="personId" value={person.id} />
-                    <Input name="subject" placeholder="Subject" defaultValue={activeTpl?.subject ?? ''} />
-                    <Textarea name="body" rows={5} placeholder="Message — sends from the signed-in broker's own mailbox" defaultValue={activeTpl?.body ?? ''} />
-                    <div className="flex justify-end">
-                      <Button type="submit" size="sm">Send email</Button>
-                    </div>
-                  </form>
+                  <EmailComposer
+                    key={tpl ?? 'blank'}
+                    initialSubject={emailInitialSubject}
+                    initialBody={emailInitialBody}
+                    signatureHtml={signature?.html ?? null}
+                    sendAction={sendEmailForm.bind(null, person.id)}
+                  />
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">No email address on file.</p>
@@ -557,13 +575,11 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
                     </select>
                     <Button type="submit" size="sm" variant="outline">Load template</Button>
                   </form>
-                  <form action={sendSmsForm} className="space-y-2">
-                    <input type="hidden" name="personId" value={person.id} />
-                    <Textarea name="body" rows={4} placeholder="Message — sends from Ryan Realty via Twilio" defaultValue={activeSmsTpl?.body ?? ''} />
-                    <div className="flex justify-end">
-                      <Button type="submit" size="sm">Send text</Button>
-                    </div>
-                  </form>
+                  <SmsComposer
+                    key={smsTpl ?? 'blank'}
+                    initialBody={smsInitialBody}
+                    sendAction={sendSmsForm.bind(null, person.id)}
+                  />
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">No phone number on file.</p>

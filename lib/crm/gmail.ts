@@ -19,7 +19,7 @@ import { createHash } from 'node:crypto'
 import { google, type gmail_v1 } from 'googleapis'
 import { createServiceClient } from '@/lib/supabase/service'
 import { CRM_BROKER_BY_EMAIL, type CrmBrokerSlug } from '@/lib/crm/constants'
-import { prepareOutboundEmailBody } from '@/lib/crm/email-body'
+import { composeOutboundHtml, prepareOutboundEmailBody } from '@/lib/crm/email-body'
 
 // System/notification senders that must never create timeline entries — their
 // mail is platform noise (FUB missed-call alerts, surveys, port updates), not
@@ -293,12 +293,26 @@ export async function sendCrmEmail(params: {
   subject: string
   bodyText: string
   bodyHtml?: string | null
+  /** Append the sending broker's HTML signature (client-facing sends only —
+   *  internal alerts to broker mailboxes stay signature-free). */
+  withSignature?: boolean
 }): Promise<{ ok: true; gmailId: string; plainBody: string } | { ok: false; error: string }> {
   const gmail = getGmailFor(params.fromMailbox, SEND)
   if (!gmail) return { ok: false, error: 'service account not configured' }
 
   const source = params.bodyHtml?.trim() || params.bodyText
-  const { html, plain } = prepareOutboundEmailBody(source)
+  let { html, plain } = prepareOutboundEmailBody(source)
+
+  if (params.withSignature) {
+    const { getSignatureForMailbox } = await import('@/lib/crm/email-signature')
+    const sig = await getSignatureForMailbox(params.fromMailbox)
+    if (sig) {
+      // Same composition as the composer preview (lib/crm/email-body.ts) —
+      // plain-text bodies get wrapped so the HTML signature renders always.
+      html = composeOutboundHtml(source, sig.html)
+      plain = plain + '\n' + sig.plain
+    }
+  }
 
   let mime: string
   if (html) {
