@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.494.0 (2026-06-12)
+
+### Features
+- feat(crm): owned-home card (map + street view + MLS history) and website-activity card on person page
+
+---
+
+
 ## v1.493.1 (2026-06-12)
 
 ### Bug Fixes
