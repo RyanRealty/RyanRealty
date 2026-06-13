@@ -1,6 +1,7 @@
 // @no-parity — internal broker command surface
 import Link from 'next/link'
 import { getBrokerCommandCenterData } from '@/app/actions/broker-command-center'
+import { getBrokerActionQueue } from '@/app/actions/crm'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -58,7 +59,10 @@ export default async function BrokerCommandCenterPage({
 }: {
   searchParams: Promise<{ tab?: string }>
 }) {
-  const data = await getBrokerCommandCenterData()
+  const [data, actionQueue] = await Promise.all([
+    getBrokerCommandCenterData(),
+    getBrokerActionQueue(),
+  ])
   const { tab: activeTab } = await searchParams
 
   if (!data) {
@@ -137,6 +141,37 @@ export default async function BrokerCommandCenterPage({
           </Button>
         </div>
       </div>
+
+      {/* ── Needs your action (recommended next steps) ── */}
+      {actionQueue.length > 0 ? (
+        <Card className="border-l-4 border-l-primary">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Needs your action · {actionQueue.length}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {actionQueue.map((a) => {
+              const tone =
+                a.channel === 'email' ? 'bg-blue-100 text-blue-800 border-blue-200'
+                : a.channel === 'sms' ? 'bg-green-100 text-green-800 border-green-200'
+                : 'bg-amber-100 text-amber-800 border-amber-200'
+              const verb = a.channel === 'email' ? 'Send email' : a.channel === 'sms' ? 'Send text' : 'Do this'
+              return (
+                <Link
+                  key={a.personId}
+                  href={`/admin/crm/${a.personId}`}
+                  className="flex items-start gap-3 rounded-lg border border-border p-3 hover:bg-muted/50"
+                >
+                  <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${tone}`}>{verb}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium text-foreground">{a.personName} · {a.sequenceName}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{a.holdReason ? `Holds: ${a.holdReason}` : a.preview}</span>
+                  </span>
+                </Link>
+              )
+            })}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* ── Attention strip ── */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4">

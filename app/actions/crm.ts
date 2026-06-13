@@ -1127,6 +1127,49 @@ export async function getNextRecommendation(personId: number): Promise<CrmNextRe
   }
 }
 
+export type BrokerActionItem = {
+  personId: number
+  personName: string
+  sequenceName: string
+  channel: string
+  preview: string
+  holdReason: string | null
+}
+
+/** Every lead with a broker-confirmed step waiting, scoped to the signed-in
+ *  broker — the "what needs you" queue for the dashboard. Color-coded by channel. */
+export async function getBrokerActionQueue(): Promise<BrokerActionItem[]> {
+  const access = await getCrmAccess()
+  if (!access) return []
+  const sb = createServiceClient()
+  let q = sb
+    .from('crm_sequence_enrollments')
+    .select('person_id,step_index,crm_people!inner(name,first_name,custom,assigned_broker),crm_sequences!inner(name,steps)')
+    .eq('status', 'awaiting_broker_next')
+    .order('updated_at', { ascending: true })
+    .limit(100)
+  if (access.brokerSlug) q = q.eq('crm_people.assigned_broker', access.brokerSlug)
+  const { data } = await q
+  const { renderCrmMerge, referencesCmaLink } = await import('@/lib/crm/merge')
+  const out: BrokerActionItem[] = []
+  for (const r of data ?? []) {
+    const person = r.crm_people as unknown as { name?: string | null; first_name?: string | null; custom?: Record<string, unknown> }
+    const seq = r.crm_sequences as unknown as { name: string; steps: Array<Record<string, unknown>> }
+    const step = (seq.steps ?? [])[r.step_index as number] as Record<string, unknown> | undefined
+    if (!step) continue
+    const raw = String(step.body ?? step.taskName ?? '')
+    out.push({
+      personId: r.person_id as number,
+      personName: person.name ?? 'Unknown',
+      sequenceName: seq.name,
+      channel: String(step.channel ?? 'step'),
+      preview: renderCrmMerge(raw, person).slice(0, 140),
+      holdReason: referencesCmaLink(raw) && !((person.custom ?? {}) as Record<string, unknown>).cmaLink ? 'CMA building' : null,
+    })
+  }
+  return out
+}
+
 /** Broker confirms the recommended next step — engine sends it on the next run. */
 export async function confirmNextStepAction(enrollmentId: number) {
   const access = await getCrmAccess()
