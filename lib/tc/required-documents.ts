@@ -132,9 +132,10 @@ export const DOC_RULES: DocRule[] = [
     id: 'buyer-rep',
     label: 'Buyer Representation Agreement',
     orefForm: '050',
-    severity: 'conditional',
-    citation: 'Written buyer agency (OREF 050/052) — verify current OREA posture',
-    matchAny: ['buyer representation', 'buyers rep', 'buyer rep', '050'],
+    severity: 'required',
+    citation:
+      'MANDATORY when representing a buyer (sole buyer agency or the buyer side of disclosed limited/dual agency): a written buyer representation agreement is required for a 1-4 unit residential transaction, entered into before or as soon as reasonably practical after brokerage services begin. HB 4058 (2024 Or. Laws ch. 3, eff. 2025-01-01) + OAR 863-015-0133 (8 required contents incl. license #, supervising PB, dated term capped at 24 months, duties, search criteria + price range, compensation, termination, exclusive vs non-exclusive). Exception: commercial or 5+ residential units. Verified 2026-06-13. OREF 050 (exclusive) / 052 (non-exclusive).',
+    matchAny: ['buyer representation', 'buyers rep', 'buyer rep', '050', '052'],
     applies: (role) => role === 'buyer' || role === 'dual',
   },
   {

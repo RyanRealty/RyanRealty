@@ -37,7 +37,7 @@ change.
 | Broker role | Required | OREF # | Citation + why |
 |---|---|---|---|
 | **Listing side** (seller's agent) | Exclusive listing agreement; seller completes the SPDS | 015, 020 | Listing employment contract is the engagement instrument; SPDS is the seller's statutory duty (ORS 105.464). |
-| **Buyer side** (buyer's agent) | Buyer representation agreement before showing/representing | 050 (exclusive) / 052 (nonexclusive) | Written buyer-agency engagement (post-2024 NAR practice changes; OREF 050/052 are the OR instruments). Verify current OREA guidance before treating as a hard statutory gate. |
+| **Buyer side** (buyer's agent) OR **buyer side of disclosed dual/limited agency** | Written buyer representation agreement — **MANDATORY**, entered into before or as soon as reasonably practical after brokerage services begin | 050 (exclusive) / 052 (nonexclusive) | **HB 4058 (2024 Or. Laws ch. 3, eff. 2025-01-01) + OAR 863-015-0133** — a licensee representing a buyer in a 1–4 unit residential transaction MUST act under a written buyer representation agreement. 8 required contents: license #, supervising principal broker name + contact, dated term (**max 24 months**), description of the buyer's-agent duties, buyer search criteria + price range, compensation explanation, termination provisions, exclusive vs non-exclusive. Exception: commercial or 5+ residential units. Applies when representing the buyer solely or as the buyer side of disclosed limited (dual) agency (Matt directive 2026-06-13). Verified 2026-06-13. [OAR 863-015-0133](https://secure.sos.state.or.us/oard/view.action?ruleNumber=863-015-0133) · [OREA overview](https://www.oregon.gov/rea/newsroom/pages/2024-oren-j/buyer-agreements-listing-agreements-law-rule-overview.aspx) |
 | **Disclosed dual / limited agency** (same firm both sides) | Disclosed Limited Agency Agreement(s) | 040 (sellers) / 041 (buyers) | **ORS 696.815 / 696.820** agency framework + OAR 863-015 — disclosed limited agency must be in writing and acknowledged when one firm represents both. [ORS ch. 696 agency](https://www.oregonlegislature.gov/bills_laws/ors/ors696.html) |
 | Compensation arrangement / co-op | Compensation advisory + notice of real estate compensation | 047, 091 | Post-2024 compensation-transparency practice; OREF 047 advisory + 091 notice. Verify current requirement vs. advisory status. |
 
@@ -72,7 +72,7 @@ change.
 
 ## Open items to verify before hard-gating (flagged, not yet encoded as mandatory)
 
-- Buyer-representation-agreement timing as a statutory (vs. practice) gate — confirm current OREA / NAR-settlement posture for Oregon.
+- ~~Buyer-representation-agreement timing as a statutory gate~~ — RESOLVED 2026-06-13: mandatory under HB 4058 + OAR 863-015-0133 when representing a buyer (sole or disclosed dual agency). Encoded as `required` in `lib/tc/required-documents.ts`.
 - Condo resale disclosure exact timing (ORS 100.480) and the planned-community resale packet (ORS 94.665).
 - Septic evaluation triggers by county (Deschutes DIAL vs. statewide DEQ).
 - Compensation advisory (047) vs. notice (091) — which is mandatory vs. recommended now.
