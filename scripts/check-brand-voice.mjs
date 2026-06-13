@@ -41,6 +41,19 @@ const FILE_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx'])
 // not here. The full canonical reference is CLAUDE.md §3.
 const BANNED_WORDS = VOCAB.BANNED_WORD_STRINGS
 
+// SCOPE — our language only (VOICE.md): the laws bind Ryan Realty's own
+// authored marketing copy. Reviews/testimonials and broker-written listing
+// remarks render from DATA (variables), never literals, so they are never
+// scanned and never rewritten. The gate sees only sentences we typed in.
+// VOICE.md "banned moves" — regex patterns for the law-breaking sentences that
+// contain no banned word (self-virtue, warmth filler, category self-naming).
+// Compiled once; run case-insensitively against each user-facing literal.
+const BANNED_PATTERNS = (VOCAB.BANNED_PATTERNS ?? []).map((p) => ({
+  law: p.law,
+  label: p.label,
+  re: new RegExp(p.source, 'i'),
+}))
+
 function normalize(p) {
   return p.split(sep).join('/')
 }
@@ -146,9 +159,34 @@ const MECHANICAL_LITERALS = new Set([
   'force-no-store',
 ])
 
+// PUBLIC-FACING ONLY (Matt directive 2026-06-13: "I'm only looking at content
+// that's public facing. If it's within the code, I'm not concerned — it's
+// really what the public sees that should make sense"). The voice laws govern
+// what a visitor reads, not internal code strings. Skip non-rendered / internal
+// surfaces entirely: server actions (AI prompts, generation logic), API routes,
+// admin UI (staff-facing), and metadata files (sitemap/robots). The remaining
+// app/ pages + components/ are the public marketing surfaces.
+const EXCLUDED_PATH_PREFIXES = [
+  'app/api/',
+  'app/actions/',
+  'app/admin/',
+  'components/admin/',
+]
+const EXCLUDED_EXACT_FILES = new Set([
+  'app/sitemap.ts',
+  'app/robots.ts',
+])
+function isInternal(relPath) {
+  return (
+    EXCLUDED_EXACT_FILES.has(relPath) ||
+    EXCLUDED_PATH_PREFIXES.some((p) => relPath.startsWith(p))
+  )
+}
+
 function scanFile(absPath) {
   const relPath = normalize(relative(ROOT, absPath))
   if (LEXICON_FILES.has(relPath)) return null
+  if (isInternal(relPath)) return null // public-facing surfaces only
   let content
   try {
     content = readFileSync(absPath, 'utf8')
@@ -171,6 +209,12 @@ function scanFile(absPath) {
       const re = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
       if (re.test(lower)) {
         violations.push({ word, line: lineNum, snippet: lit.value.slice(0, 80) })
+      }
+    }
+    // VOICE.md banned moves — law-breaking sentences with no banned word.
+    for (const pat of BANNED_PATTERNS) {
+      if (pat.re.test(lit.value)) {
+        violations.push({ word: `Law ${pat.law}: ${pat.label}`, line: lineNum, snippet: lit.value.slice(0, 80) })
       }
     }
   }
