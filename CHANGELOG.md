@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.513.0 (2026-06-13)
+
+### Features
+- feat(tc): buyer representation agreement now REQUIRED when representing a buyer (OAR 863-015-0133)
+
+---
+
+
 ## v1.512.1 (2026-06-13)
 
 ### Maintenance
