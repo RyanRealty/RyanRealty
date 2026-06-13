@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.513.2 (2026-06-13)
+
+### Maintenance
+- docs(tc): add form-version freshness detection to the build spec (T2.1b)
+
+---
+
+
 ## v1.513.1 (2026-06-13)
 
 ### Maintenance
