@@ -18,6 +18,7 @@ import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { Container } from '@/components/site/primitives'
 import LandingPageTracker from '@/components/LandingPageTracker'
 import HeathCmaForm from './_components/HeathCmaForm'
+import HeathPerformanceCharts from './_components/HeathPerformanceCharts.client'
 import { CONTACT } from '@/lib/brand/contact'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -360,6 +361,29 @@ export default async function HeathAtTetherowPage() {
   ])
 
   const monthYear = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+
+  // Chart props — all from the verified data above (CLAUDE.md §0). No modeling.
+  const num = (v: string | number | null | undefined): number | null => {
+    if (v == null) return null
+    const n = typeof v === 'string' ? Number.parseFloat(v) : v
+    return Number.isFinite(n) ? n : null
+  }
+  const perfSales = recentCloses.map((c) => ({
+    closeDate: c.CloseDate,
+    closePrice: num(c.ClosePrice),
+    listPrice: num(c.ListPrice),
+    sqft: num(c.TotalLivingAreaSqFt),
+    streetName: c.StreetName,
+  }))
+  const rawStl = num(marketStats?.avg_sale_to_list_ratio)
+  const perfStats = {
+    medianSalePrice: num(marketStats?.median_sale_price),
+    medianPpsf: num(marketStats?.median_ppsf),
+    medianDom: num(marketStats?.median_dom),
+    saleToListPct: rawStl == null ? null : rawStl > 1.5 ? rawStl : rawStl * 100,
+    soldCount: marketStats?.sold_count ?? null,
+    activeCount: activeListings.length || (marketStats?.end_of_period_inventory ?? null),
+  }
 
   return (
     <div className="bg-background text-foreground">
@@ -715,6 +739,25 @@ export default async function HeathAtTetherowPage() {
               Cache computed {new Date(marketStats.computed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · methodology {marketStats.methodology_version ?? '—'} · period {marketStats.period_start} to {marketStats.period_end}.
             </p>
           )}
+        </div>
+      </section>
+
+      {/* ── Investment performance (verified MLS charts) ───────────────── */}
+      <section className="py-16 sm:py-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="mb-8 max-w-3xl">
+            <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">The performance picture</div>
+            <h2 className="mt-2 font-display text-3xl font-semibold text-primary sm:text-4xl">What Heath does as an asset</h2>
+            <p className="mt-3 text-base text-muted-foreground">
+              Whether you are buying to hold or deciding when to sell, these are the numbers that matter. Every figure below traces to closed MLS sales, not estimates.
+            </p>
+          </div>
+          <HeathPerformanceCharts sales={perfSales} stats={perfStats} />
+          <p className="mt-6 text-xs text-muted-foreground">
+            HOA dues for Heath are {' '}
+            <span className="font-medium text-foreground">$2,244 per year</span>. Tetherow golf membership tiers and current Deschutes County property tax figures vary by home and year. {' '}
+            <Link href="#cma" className="text-primary underline">Ask us for the current numbers on a specific property.</Link>
+          </p>
         </div>
       </section>
 

@@ -175,3 +175,6 @@ app/components/admin/AdminSidebar.tsx
 # — no locked-ladder step can express env() (same exception class as the
 # sticky-header calc heights above).
 app/components/admin/AdminMobileTabBar.tsx
+# Recharts LP performance charts need literal SVG fill/stroke colors (navy + mid-navy),
+# same exception class as the rental EquityProjectionChart.
+app/lp/tetherow/heath/_components/HeathPerformanceCharts.client.tsx
