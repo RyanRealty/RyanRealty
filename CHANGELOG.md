@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.523.0 (2026-06-13)
+
+### Features
+- feat(crm): broker dashboard "needs your action" queue (color-coded by channel)
+
+---
+
+
 ## v1.522.0 (2026-06-13)
 
 ### Features
