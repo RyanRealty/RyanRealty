@@ -1,3 +1,5 @@
+import { EMAIL_FONT_STACK } from '@/lib/email/brand'
+
 /** Detect FUB-style HTML email templates vs plain-text composer bodies. */
 export function looksLikeHtml(body: string): boolean {
   const t = body.trim()
@@ -36,7 +38,7 @@ export function prepareOutboundEmailBody(body: string): { html: string | null; p
 /** Plain composer text → the exact HTML wrapper the send path uses. Pure — safe in client bundles. */
 export function wrapPlainTextHtml(text: string): string {
   const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  return `<div style="font-family:Geist,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.6;white-space:pre-wrap">${escaped}</div>`
+  return `<div style="font-family:${EMAIL_FONT_STACK};font-size:14px;color:#1a1a1a;line-height:1.6;white-space:pre-wrap">${escaped}</div>`
 }
 
 /**
