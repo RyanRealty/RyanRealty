@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.526.0 (2026-06-13)
+
+### Features
+- feat(tc): forms-loader foundation — schema, field-map translation, ingest endpoint, loader
+
+---
+
+
 ## v1.525.0 (2026-06-13)
 
 ### Features
