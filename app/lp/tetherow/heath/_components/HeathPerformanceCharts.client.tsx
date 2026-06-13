@@ -9,6 +9,7 @@
  * chart what actually traded. Golf dues / property taxes are intentionally NOT
  * shown here (no verified source wired yet).
  */
+import { useEffect, useState } from 'react'
 import {
   Area,
   Bar,
@@ -65,6 +66,12 @@ function shortLabel(s: HeathSale, i: number): string {
 }
 
 export default function HeathPerformanceCharts({ sales, stats }: { sales: HeathSale[]; stats: HeathStats }) {
+  // recharts ResponsiveContainer measures 0×0 during SSR / first hydration in
+  // the App Router and never repaints — gate it behind mount so it measures a
+  // real DOM box on the client.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
   // Oldest → newest so the chart reads left-to-right in time.
   const ordered = [...sales]
     .filter((s) => (s.closePrice ?? 0) > 0)
@@ -99,7 +106,8 @@ export default function HeathPerformanceCharts({ sales, stats }: { sales: HeathS
             <span className="text-xs text-muted-foreground">Each bar is a verified MLS closing · last 12 months</span>
           </div>
           <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
+            {mounted ? (
+            <ResponsiveContainer width="100%" height={288}>
               <ComposedChart data={data} margin={{ top: 16, right: 12, left: 4, bottom: 4 }}>
                 <defs>
                   <linearGradient id="heathPrice" x1="0" y1="0" x2="0" y2="1">
@@ -129,6 +137,9 @@ export default function HeathPerformanceCharts({ sales, stats }: { sales: HeathS
                 <Line yAxisId="ppsf" type="monotone" dataKey="ppsf" stroke={ACCENT} strokeWidth={2.5} dot={{ r: 3, fill: ACCENT }} connectNulls />
               </ComposedChart>
             </ResponsiveContainer>
+            ) : (
+              <div className="h-full w-full animate-pulse rounded-xl bg-muted/40" />
+            )}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: NAVY }} /> Sale price</span>
