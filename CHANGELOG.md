@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.518.1 (2026-06-13)
+
+### Maintenance
+- docs(handoff): full system audit 2026-06-13 — all systems, funnels, gates, prune list, forward plan
+
+---
+
+
 ## v1.518.0 (2026-06-13)
 
 ### Features
