@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.519.0 (2026-06-13)
+
+### Features
+- feat(cma): G47 single-path routing gate + skill canonical-slug rule
+
+---
+
+
 ## v1.518.2 (2026-06-13)
 
 ### Maintenance
