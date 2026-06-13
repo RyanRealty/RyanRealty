@@ -72,9 +72,13 @@ const CURATED = {
   // sell funnel
   '/free-home-valuation': '/home-valuation',
   '/sell-your-bend-oregon-home': '/sell',
-  '/seller-plans': '/sell',
-  '/seller-plans-new': '/sell',
-  '/signature-seller-plans': '/sell',
+  // Live FUB drip emails + texts still link prospects to /seller-plans/ and
+  // reference "the plans" / "the marketing plan". Deep-link them to the
+  // marketing-plan section on /sell so they land on the substance the message
+  // promised, not the top of the page. (middleware splits the #anchor off.)
+  '/seller-plans': '/sell#marketing-plan',
+  '/seller-plans-new': '/sell#marketing-plan',
+  '/signature-seller-plans': '/sell#marketing-plan',
   '/selling-fsbo-bend': '/sell',
   '/the-definitive-home-selling-guide': '/sell',
   '/the-definitive-guide-on-how-to-upsize-into-a-new-home': '/guides',

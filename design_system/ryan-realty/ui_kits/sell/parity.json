@@ -15,6 +15,11 @@
       "blocking": true
     },
     {
+      "name": "SellMarketingPlan",
+      "section": "the marketing plan — 'What happens to your home, and when': three-phase deliverable schedule (process stated as fact + clocks) plus the two MOAT centerpieces (see-every-comp pricing, weekly written report). The /seller-plans legacy redirect deep-links here (#marketing-plan). Capabilities shown via the listing page, never claimed as adjective copy.",
+      "blocking": true
+    },
+    {
       "name": "ContentSection",
       "section": "'How it works' — four verified steps from valuation to close",
       "blocking": true

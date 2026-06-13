@@ -1,109 +1,240 @@
-import type { Metadata } from 'next'
-import Link from 'next/link'
-import ContentPageHero from '@/components/layout/ContentPageHero'
-import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
-import { DisplayHeading, H2 } from '@/components/site/primitives'
+/**
+ * Join page (/join) — broker recruiting. Site-v2 rebuild.
+ *
+ * Replaces the legacy components/layout/ContentPageHero + hand-rolled sections
+ * with @/components/site/* blocks + @/lib/data DAL, matching /sell and /about.
+ *
+ * VOICE (voice_system_v2.md): the recruit is an intelligent professional, not
+ * someone to flatter. No smallness positioning (no "small/boutique brokerage",
+ * no headcount), no pandering ("we'd love to talk"), no self-described virtues
+ * ("integrity", "culture"). The pitch is what the brokerage actually operates:
+ * the marketing system every listing gets, the direct-broker model, a principal
+ * broker supervising every transaction, and the live-data tooling. Commission
+ * split is stated honestly as a conversation, never an invented number.
+ *
+ * DATA ACCURACY (CLAUDE.md §0): no closing counts, no agent count, no invented
+ * split percentage, no production figures. The only specifics are process facts
+ * the brokerage operates (48-hour photography, weekly reporting) already stated
+ * on /sell, and verifiable named entities (the principal broker, the service
+ * area, @ryanrealtybend, ryan-realty.com).
+ */
+
+import { getSurfaceImage } from '@/lib/data'
+import { pageMetadata } from '@/lib/site/page-metadata'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-const ogImage = `${siteUrl}/api/og?type=default`
+import { HeroBlock } from '@/components/site/HeroBlock'
+import { ContentSection } from '@/components/site/ContentSection'
+import { FAQBlock } from '@/components/site/FAQBlock'
+import { CTABar } from '@/components/site/CTABar'
+import { CONTACT } from '@/lib/brand/contact'
+import {
+  Body,
+  Container,
+  Eyebrow,
+  Grid,
+  H2,
+  Section,
+  Stack,
+  TextLink,
+} from '@/components/site/primitives'
 
-export const metadata: Metadata = {
-  title: 'Join Our Team | Careers at Ryan Realty | Ryan Realty',
+export const revalidate = 3600
+
+export const metadata = pageMetadata({
+  title: 'Join Ryan Realty · brokers, Central Oregon',
   description:
-    'Grow your real estate career with Ryan Realty. Join a Bend brokerage focused on community, craft, and results in Central Oregon.',
-  alternates: { canonical: `${siteUrl}/join` },
-  openGraph: {
-    title: 'Join Our Team | Ryan Realty',
-    url: `${siteUrl}/join`,
-    type: 'website',
-    images: [{ url: ogImage, width: 1200, height: 630 }],
-  },
-  twitter: { card: 'summary_large_image', images: [ogImage] },
-}
+    'Bring your listings to a Bend brokerage that markets every one of them: a listing film, a 3D walkthrough, live-data pricing, and a written report every week. You keep your client from first call to closing.',
+  path: '/join',
+  ogImage: '/brand/hero/hero-old-mill-master-4k.jpg',
+  keywords: [
+    'real estate broker jobs Bend Oregon',
+    'join brokerage Central Oregon',
+    'Bend real estate careers',
+    'Ryan Realty broker',
+  ],
+})
 
-export default function JoinPage() {
+const OLD_MILL_HERO = '/brand/hero/hero-old-mill-master-4k.jpg'
+
+const LISTING_SUPPORT = [
+  {
+    title: 'Production handled for you',
+    body: 'A listing film, a 3D walkthrough, and professional photography within 48 hours of a signed agreement. Produced by the brokerage, on every listing, at every price point. Not a cost you carry.',
+  },
+  {
+    title: 'Pricing built from live data',
+    body: 'A written CMA with three closed comps, three active comps, and the four levers that move the price, built from live MLS data running on ryan-realty.com. Your seller sees every number.',
+  },
+  {
+    title: 'Its own page and full distribution',
+    body: 'Every listing gets its own page on ryan-realty.com, full MLS syndication across Central Oregon, and native posts on @ryanrealtybend across Instagram, Facebook, TikTok, and YouTube.',
+  },
+  {
+    title: 'A written report every week',
+    body: 'Each week a listing is on the market, the seller gets a written update: showings, online traffic, where the views came from, and feedback. Your clients see the work, in writing.',
+  },
+]
+
+const FAQ_ITEMS = [
+  {
+    question: 'Do you take newly licensed brokers?',
+    answer:
+      'Yes. A new license or twenty years in the business, the first conversation is the same: what you want to build and how the brokerage helps you build it. A principal broker supervises every transaction either way.',
+  },
+  {
+    question: 'What happens to my current clients and pipeline?',
+    answer:
+      'They come with you. You keep the relationship from the first call to the closing table. Nothing in the model puts a call center or another broker between you and your client.',
+  },
+  {
+    question: 'What is the commission split?',
+    answer:
+      'It is set with you, based on your business. There is no single published split because there is not one. The first conversation covers the numbers directly.',
+  },
+  {
+    question: 'Do I have to produce my own listing marketing?',
+    answer:
+      'No. The listing film, the 3D walkthrough, the photography, the listing page, the social posts, and the weekly seller report are produced by the brokerage, on every listing.',
+  },
+  {
+    question: 'Where does Ryan Realty work?',
+    answer:
+      'Central Oregon only: Bend, Redmond, Sisters, Sunriver, La Pine, Tumalo, Prineville, Terrebonne, and the resort communities.',
+  },
+  {
+    question: 'How do I start?',
+    answer:
+      'Send a note through the contact form or call. The first conversation is with a broker, not a recruiter, and there is no script.',
+  },
+] as const
+
+export default async function JoinPage() {
+  const heroSrc = await getSurfaceImage('hero', {
+    geoTags: ['central-oregon'],
+    seed: '/join',
+    fallback: OLD_MILL_HERO,
+  })
+
   return (
     <main className="min-h-screen bg-background">
-      <PageBreadcrumb trail={[{ label: 'Join our team' }]} />
-      <ContentPageHero
-        title="Grow Your Career With Us"
-        subtitle="A Central Oregon brokerage built on community, craft, and straight talk. Licensed or thinking about it, we'd love to talk."
-        imageUrl={CONTENT_HERO_IMAGES.join}
-        ctas={[
-          { label: 'Get in Touch', href: '/contact?inquiry=Join%20Our%20Team', primary: true },
-          { label: 'Meet the Team', href: '/team', primary: false },
+      <MetadataBlock
+        schemas={[
+          {
+            type: 'webPage',
+            name: 'Join Ryan Realty',
+            description:
+              'Broker recruiting for Ryan Realty, a Bend, Oregon brokerage that markets every listing and keeps each broker with their client from first call to closing.',
+            url: '/join',
+          },
+          {
+            type: 'breadcrumb',
+            items: [
+              { name: 'Home', url: '/' },
+              { name: 'Join the team', url: '/join' },
+            ],
+          },
         ]}
       />
 
-      <section className="border-b border-border bg-card px-4 py-16 sm:px-6 sm:py-20" aria-labelledby="why-heading">
-        <div className="mx-auto max-w-4xl">
-          <DisplayHeading
-            as="h2"
-            id="why-heading"
-            className="text-center text-3xl text-primary sm:text-4xl"
-          >
-            Why Ryan Realty?
-          </DisplayHeading>
-          <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
-            We combine local market expertise with a culture that values transparency, collaboration,
-            and putting clients first.
-          </p>
-          <ul className="mt-12 grid gap-6 sm:grid-cols-2">
-            {[
-              {
-                title: 'Local focus',
-                body: 'Central Oregon is our only market. We know the neighborhoods, the buyers, and the trends that matter.',
-              },
-              {
-                title: 'Support & tools',
-                body: 'Marketing support, listing tools, and a team that has your back so you can focus on your clients.',
-              },
-              {
-                title: 'Culture',
-                body: 'A brokerage that values integrity, communication, and long-term relationships over volume for volume\'s sake.',
-              },
-              {
-                title: 'Growth',
-                body: 'Whether you\'re new to real estate or a seasoned agent, we invest in our people and their success.',
-              },
-            ].map((item) => (
-              <li
-                key={item.title}
-                className="rounded-xl border border-border bg-muted p-6 shadow-sm"
-              >
-                <h3 className="text-lg font-semibold text-primary">{item.title}</h3>
-                <p className="mt-2 text-muted-foreground">{item.body}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+      <PageBreadcrumb trail={[{ label: 'Join the team' }]} />
 
-      <section className="bg-muted px-4 py-16 sm:px-6 sm:py-20" aria-labelledby="next-heading">
-        <div className="mx-auto max-w-2xl text-center">
-          <H2 id="next-heading" className="text-2xl text-primary sm:text-3xl">
-            Ready to start the conversation?
-          </H2>
-          <p className="mt-4 text-muted-foreground">
-            Tell us a bit about yourself and your goals. We&apos;ll follow up to discuss fit,
-            support, and next steps. No pressure, just a real conversation.
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Link
-              href="/contact?inquiry=Join%20Our%20Team"
-              className="rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              Contact us
-            </Link>
-            <Link
-              href="/team"
-              className="rounded-lg border-2 border-primary px-6 py-3 font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
-            >
-              Meet the team
-            </Link>
-          </div>
+      <HeroBlock
+        headline="Every listing you bring gets the full marketing plan."
+        lede="A listing film, a 3D walkthrough, a price built from live MLS data, and a written report every week. Not only on the top of the market. On all of them. You keep your client from the first call to the closing table."
+        photo={{
+          src: heroSrc ?? OLD_MILL_HERO,
+          alt: 'Central Oregon high desert and Cascade mountains around Bend.',
+          priority: true,
+        }}
+        minHeight={500}
+        chips={[
+          { label: 'Start the conversation', href: '/contact?inquiry=Join%20the%20team' },
+          { label: 'See how we market listings', href: '/sell#marketing-plan' },
+          { label: 'Meet the brokers', href: '/team' },
+        ]}
+      />
+
+      <Section padding="default" tone="default" divider>
+        <Container>
+          <Stack gap="tight" className="mb-10 max-w-2xl">
+            <Eyebrow>What your listings get</Eyebrow>
+            <H2>The brokerage markets the listing. You work the client.</H2>
+            <Body size="large" tone="muted" className="mt-1 leading-[1.6]">
+              The same plan runs on every listing, the one a seller can read on
+              the sell page. It is produced for you, so the marketing is not a
+              line item you cover or a weekend you lose.
+            </Body>
+          </Stack>
+          <Grid cols={2} gap="loose">
+            {LISTING_SUPPORT.map((item) => (
+              <div
+                key={item.title}
+                className="rounded-[14px] border border-border bg-card p-6 shadow-sm"
+              >
+                <h3 className="text-[19px] font-bold leading-snug tracking-[-0.01em] text-foreground">
+                  {item.title}
+                </h3>
+                <Body size="default" tone="muted" className="mt-2 leading-[1.65]">
+                  {item.body}
+                </Body>
+              </div>
+            ))}
+          </Grid>
+        </Container>
+      </Section>
+
+      <ContentSection
+        eyebrow="How the brokerage works"
+        title="One broker on the deal. A principal broker on call."
+        tone="muted"
+        divider
+        width="wide"
+      >
+        <div className="space-y-4">
+          <Body size="default" tone="muted">
+            <strong className="text-foreground font-semibold">You keep your client, start to finish.</strong>{' '}
+            No call center, no shared lead pool you compete inside, no hand-off
+            to a closing coordinator the client never met. The broker who takes
+            the call is the broker at the table.
+          </Body>
+          <Body size="default" tone="muted">
+            <strong className="text-foreground font-semibold">A principal broker supervises every transaction.</strong>{' '}
+            Matt Ryan is the principal broker. A question on a contingency, a
+            contract, or a difficult close gets answered by a licensed principal
+            broker, not a queue.
+          </Body>
+          <Body size="default" tone="muted">
+            <strong className="text-foreground font-semibold">Central Oregon is the whole map.</strong>{' '}
+            Bend, Redmond, Sisters, Sunriver, La Pine, Tumalo, Prineville,
+            Terrebonne, and the resort communities. The market data on{' '}
+            <TextLink href="/housing-market" tone="primary">ryan-realty.com</TextLink>{' '}
+            updates from the MLS daily, and it is the same data you price from.
+          </Body>
+          <Body size="default" tone="muted">
+            <strong className="text-foreground font-semibold">The split is a conversation, not a banner.</strong>{' '}
+            It is set with you, based on the business you bring and the business
+            you want to build. The first conversation covers the numbers
+            directly.
+          </Body>
         </div>
-      </section>
+      </ContentSection>
+
+      <CTABar
+        eyebrow="Thinking about a move?"
+        title="Start the conversation."
+        body="Send a note or call. The first conversation is with a broker, not a recruiter, and there is no script."
+        primary={{ href: '/contact?inquiry=Join%20the%20team', label: 'Get in touch' }}
+        secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: `Call ${CONTACT.phoneDirect}` }}
+        tone="navy"
+      />
+
+      <FAQBlock
+        eyebrow="Common questions"
+        title="Joining Ryan Realty"
+        items={FAQ_ITEMS}
+        tone="muted"
+      />
     </main>
   )
 }

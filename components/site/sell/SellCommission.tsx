@@ -22,15 +22,15 @@ export function SellCommission() {
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-16 lg:items-start">
           <Stack gap="loose">
             <Stack gap="tight">
-              <Eyebrow>What it costs</Eyebrow>
-              <H2>A straight commission conversation.</H2>
+              <Eyebrow>How the fee works</Eyebrow>
+              <H2>3% to list. No add-ons.</H2>
             </Stack>
             <Stack gap="default">
               <Body size="default" tone="muted" className="leading-[1.65]">
-                We charge a total commission split between the listing brokerage and the buyer&apos;s brokerage. That covers professional photography, the MLS listing, all marketing, every showing, and full transaction management from contract to close.
+                The 3% listing fee covers professional photography, the MLS listing, every piece of the marketing plan above, every showing, and full transaction management from contract to close. Nothing is billed on the side.
               </Body>
               <Body size="default" tone="muted" className="leading-[1.65]">
-                The commission structure changed in 2025. We work under the new model and can walk you through the exact breakdown, the buyer-agency agreement we use, and realistic concession math for your price point. No surprises at the table.
+                Buyer-agent compensation is a separate number, negotiated per offer under the current commission rules. We show you the exact ALTA breakdown, the buyer-agency agreement we use, and the realistic concession math for your price point before you sign.
               </Body>
               <Body size="default" tone="muted" className="leading-[1.65]">
                 We are not a high-pressure shop. If after reading the CMA you decide not to list, we do not follow up beyond two emails.
@@ -44,12 +44,12 @@ export function SellCommission() {
           <div className="flex flex-col gap-4">
             {[
               {
-                heading: 'Photography and marketing included',
-                body: 'Professional photos, MLS listing, all showings, and full transaction management are included in the commission. No add-on fees.',
+                heading: 'Everything is in the 3%',
+                body: 'Photography, the MLS listing, the full marketing plan, every showing, and complete transaction management. No tiers, no add-on fees.',
               },
               {
-                heading: 'New commission model, fully explained',
-                body: 'We can show you the exact ALTA breakdown and the buyer-agency agreement we use before you sign anything.',
+                heading: 'Buyer-agent compensation, explained',
+                body: 'A separate number, negotiated per offer. We show you the exact ALTA breakdown and the buyer-agency agreement we use before you sign anything.',
               },
               {
                 heading: 'No contract to get the CMA',

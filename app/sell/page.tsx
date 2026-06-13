@@ -24,6 +24,7 @@ import { FAQBlock } from '@/components/site/FAQBlock'
 import { CTABar } from '@/components/site/CTABar'
 import { SellValueProps } from '@/components/site/sell/SellValueProps'
 import { SellProcess } from '@/components/site/sell/SellProcess'
+import { SellMarketingPlan } from '@/components/site/sell/SellMarketingPlan'
 import { SellCommission } from '@/components/site/sell/SellCommission'
 import { SellValuationCTA } from '@/components/site/sell/SellValuationCTA'
 import { CONTACT } from '@/lib/brand/contact'
@@ -51,6 +52,11 @@ const FAQ_ITEMS = [
     question: 'Do I need to sign a listing agreement to get the CMA?',
     answer:
       'No. The comparative market analysis is free and requires no contract. If you decide to list with us after reading it, that is a separate signed agreement.',
+  },
+  {
+    question: 'What does it cost to list with you?',
+    answer:
+      'One plan at 3% of the sale price, with no add-on fees. That covers photography, the MLS listing, the full marketing plan, every showing, and transaction management through close. Buyer-agent compensation is a separate number, negotiated per offer under the current rules. Commission is negotiable and every listing agreement is its own conversation.',
   },
   {
     question: 'How do you decide on a list price?',
@@ -107,13 +113,15 @@ export default async function SellPage() {
         chips={[
           { label: 'Free home valuation', href: '/lp/seller-home-value' },
           { label: 'Talk to a broker', href: '/contact?inquiry=Selling' },
-          { label: 'How we price', href: '#our-process' },
+          { label: 'See the marketing plan', href: '#marketing-plan' },
         ]}
       />
 
       <SellValueProps />
 
       <SellProcess />
+
+      <SellMarketingPlan />
 
       <SellCommission />
 

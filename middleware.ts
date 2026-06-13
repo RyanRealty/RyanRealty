@@ -282,8 +282,13 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     const legacyDest = resolveLegacyRedirect(pathname)
     if (legacyDest) {
       const redirectUrl = url.clone()
-      redirectUrl.pathname = legacyDest
+      // A legacy dest may carry an anchor (e.g. "/sell#marketing-plan") so a
+      // deep-linked legacy URL lands the visitor on the right section. Split it
+      // off the pathname so the "#" is not URL-encoded into the path.
+      const hashIdx = legacyDest.indexOf('#')
+      redirectUrl.pathname = hashIdx === -1 ? legacyDest : legacyDest.slice(0, hashIdx)
       redirectUrl.search = ''
+      redirectUrl.hash = hashIdx === -1 ? '' : legacyDest.slice(hashIdx)
       return NextResponse.redirect(redirectUrl, 301)
     }
   }
