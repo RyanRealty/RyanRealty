@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.517.1 (2026-06-13)
+
+### Maintenance
+- docs(handoff): CMA + valuation-form + Twilio SMS threads (2026-06-13)
+
+---
+
+
 ## v1.517.0 (2026-06-13)
 
 ### Features
