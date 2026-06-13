@@ -59,6 +59,7 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
   if (canBrokers) {
     transactions.push(
       item('/admin/deals', 'Transactions', 'handshake'),
+      item('/admin/signing', 'Signing', 'pen-line'),
       item('/admin/commissions', 'Commissions', 'dollar'),
       item('/admin/financials', 'Financials', 'wallet'),
       item('/admin/forms', 'Forms', 'file-text'),

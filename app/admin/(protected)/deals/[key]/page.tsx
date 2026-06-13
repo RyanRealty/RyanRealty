@@ -28,6 +28,8 @@ import { DocumentUpload } from './DocumentUpload'
 import { CommissionEdit } from './CommissionControls'
 import { ChecklistStatusControl } from './ChecklistControls'
 import { DealContacts } from './DealContacts'
+import { DealEnvelopes, type DealEnvelopesCycle } from './DealEnvelopes'
+import { getEnvelopesForCycle } from '@/app/actions/tc-envelopes'
 
 export const dynamic = 'force-dynamic'
 
@@ -361,6 +363,15 @@ export default async function TcDealPage({ params, searchParams }: Props) {
     )
   )
 
+  const envelopeCycles: DealEnvelopesCycle[] = await Promise.all(
+    deal.cycles.map(async (c) => ({
+      cycleId: c.id,
+      label: c.kind === 'listing' ? 'Listing folder' : `Sale cycle${c.status ? ` · ${c.status}` : ''}`,
+      documents: c.documents.filter((doc) => !doc.archived).map((doc) => ({ id: doc.id, name: doc.name })),
+      envelopes: await getEnvelopesForCycle(c.id),
+    }))
+  )
+
   const stageLabel: Record<string, string> = {
     pending: 'Under contract',
     active_listing: 'Active listing',
@@ -428,18 +439,8 @@ export default async function TcDealPage({ params, searchParams }: Props) {
       {/* Deal team & contacts (co-agents + lender/title/escrow/appraiser/TC) */}
       <DealContacts dealId={deal.id} contacts={contacts} />
 
-      {/* Forms & signing placeholder (Phase 2b) */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Forms & signing</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-xs text-muted-foreground">
-            Envelope composer (OREF / ODS / OR form fill, signature fields, signer assignment) ships in
-            Phase 2b — schema is in place. See docs/TC_SYSTEM.md.
-          </p>
-        </CardContent>
-      </Card>
+      {/* Envelopes & signing (Phase 2b) */}
+      <DealEnvelopes cycles={envelopeCycles} />
 
       {/* Audit trail */}
       <Card>

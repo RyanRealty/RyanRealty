@@ -24,6 +24,10 @@ export default function HideOnLP({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   if (pathname?.startsWith("/lp/")) return null
   if (pathname === "/admin" || pathname?.startsWith("/admin/")) return null
+  // /sign/* is a focused, distraction-free e-signature surface for clients —
+  // no marketing nav, no "Sign in" prompt, no footer. It carries its own
+  // minimal Ryan Realty branding (see components/tc/pdf-sign/SignFlow.tsx).
+  if (pathname?.startsWith("/sign/")) return null
   return <>{children}</>
 }
 
