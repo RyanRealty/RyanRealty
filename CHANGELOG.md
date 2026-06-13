@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.524.0 (2026-06-13)
+
+### Features
+- feat(gate): ci:admin-responsive — ratchet admin pages mobile-first (no regression)
+
+---
+
+
 ## v1.523.0 (2026-06-13)
 
 ### Features
