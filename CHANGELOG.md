@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.522.0 (2026-06-13)
+
+### Features
+- feat(crm): color-coded recommended next-step card + exact-rendered preview on contact
+
+---
+
+
 ## v1.521.0 (2026-06-13)
 
 ### Features
