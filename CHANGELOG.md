@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.519.2 (2026-06-13)
+
+### Bug Fixes
+- fix(crm): stamp CMA link at finalize, not request — kills empty/dead %cma_link% in lead messages
+
+---
+
+
 ## v1.519.1 (2026-06-13)
 
 ### Bug Fixes
