@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.509.0 (2026-06-13)
+
+### Features
+- feat(sell+join): one-plan 3% marketing-package surface, recruiting rebuild, fix /seller-plans destination
+
+---
+
+
 ## v1.508.0 (2026-06-13)
 
 ### Features
