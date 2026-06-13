@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.511.0 (2026-06-13)
+
+### Features
+- feat(lp): investment-performance charts on the Heath at Tetherow LP
+
+---
+
+
 ## v1.510.1 (2026-06-13)
 
 ### Bug Fixes
