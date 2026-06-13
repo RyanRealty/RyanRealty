@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.508.0 (2026-06-13)
+
+### Features
+- feat(leads): close two funnel-consistency gaps — Meta seller geocoding + expired-LP CMA
+
+---
+
+
 ## v1.507.0 (2026-06-13)
 
 ### Features
