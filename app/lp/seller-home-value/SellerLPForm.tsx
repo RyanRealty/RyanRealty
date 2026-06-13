@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
 import { submitSellerLPForm, saveSellerPartialLead, type SellerLPTimeline } from './actions'
@@ -75,6 +77,16 @@ export default function SellerLPForm({
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [resultClassification, setResultClassification] = useState<'hot' | 'warm' | 'nurture' | 'unknown' | null>(null)
+  // Optional "About your home" detail section (collapsed by default to protect conversion).
+  const [showDetails, setShowDetails] = useState(false)
+  const [beds, setBeds] = useState('')
+  const [baths, setBaths] = useState('')
+  const [roofAge, setRoofAge] = useState('')
+  const [furnaceAge, setFurnaceAge] = useState('')
+  const [acAge, setAcAge] = useState('')
+  const [improvements, setImprovements] = useState('')
+  const [improvementsSpend, setImprovementsSpend] = useState('')
+  const [condition, setCondition] = useState('')
 
   function advanceFromAddress(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -87,7 +99,7 @@ export default function SellerLPForm({
     // Fire partial-lead capture non-blocking before advancing the step.
     void saveSellerPartialLead({
       address: v,
-      sessionId: readRrSessionId(),
+      sessionId: readRrSessionId(), // hydration-safe (event-handler body, not render)
       source: isListNow ? 'list-now-lp' : 'seller-lp',
     })
     // Known visitor with email already known: skip step 2 entirely.
@@ -107,8 +119,20 @@ export default function SellerLPForm({
         email: opts.skipQualify ? prefillEmail ?? email.trim() : email.trim(),
         phone: opts.skipQualify ? prefillPhone ?? phone.trim() : phone.trim(),
         timeline: (timeline || undefined) as SellerLPTimeline | undefined,
-        sessionId: readRrSessionId(),
+        sessionId: readRrSessionId(), // hydration-safe (event-handler body, not render)
         source: isListNow ? 'list-now-lp' : 'seller-lp',
+        homeDetails: opts.skipQualify
+          ? undefined
+          : {
+              bedrooms: beds.trim() || undefined,
+              bathrooms: baths.trim() || undefined,
+              roofAge: roofAge.trim() || undefined,
+              furnaceAge: furnaceAge.trim() || undefined,
+              acAge: acAge.trim() || undefined,
+              improvements: improvements.trim() || undefined,
+              improvementsSpend: improvementsSpend.trim() || undefined,
+              condition: condition || undefined,
+            },
       })
       if (!result.success) {
         setError(result.error)
@@ -400,6 +424,104 @@ export default function SellerLPForm({
             ))}
           </RadioGroup>
         </fieldset>
+
+        {/* Optional "About your home" — collapsed by default so the core form stays short.
+            Feeds the CMA valuation logic (effective age, value-add, condition, beds/baths). */}
+        <div className="mt-1 border-t border-border/60 pt-5">
+          {showDetails ? (
+            <div>
+              <p className="text-base font-medium text-foreground">
+                About your home <span className="text-sm font-normal text-muted-foreground">(optional)</span>
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Public records miss recent work. Anything you share makes your number more accurate.
+              </p>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="hd-beds" className="text-sm font-medium text-foreground">Bedrooms</Label>
+                  <Input
+                    id="hd-beds" type="number" inputMode="numeric" min="0" value={beds}
+                    onChange={(e) => setBeds(e.target.value)} placeholder="3"
+                    className="mt-1.5 h-12 rounded-xl border-2 border-border px-4 text-base focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="hd-baths" className="text-sm font-medium text-foreground">Bathrooms</Label>
+                  <Input
+                    id="hd-baths" type="number" inputMode="decimal" min="0" step="0.5" value={baths}
+                    onChange={(e) => setBaths(e.target.value)} placeholder="2"
+                    className="mt-1.5 h-12 rounded-xl border-2 border-border px-4 text-base focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+              </div>
+
+              <p className="mt-4 text-sm font-medium text-foreground">
+                Age of major systems <span className="font-normal text-muted-foreground">(year installed or rough age)</span>
+              </p>
+              <div className="mt-1.5 grid grid-cols-3 gap-3">
+                <div>
+                  <Label htmlFor="hd-roof" className="text-xs text-muted-foreground">Roof</Label>
+                  <Input id="hd-roof" value={roofAge} onChange={(e) => setRoofAge(e.target.value)} placeholder="2018"
+                    className="mt-1 h-12 rounded-xl border-2 border-border px-3 text-base focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <Label htmlFor="hd-furnace" className="text-xs text-muted-foreground">Furnace</Label>
+                  <Input id="hd-furnace" value={furnaceAge} onChange={(e) => setFurnaceAge(e.target.value)} placeholder="1995"
+                    className="mt-1 h-12 rounded-xl border-2 border-border px-3 text-base focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <Label htmlFor="hd-ac" className="text-xs text-muted-foreground">AC</Label>
+                  <Input id="hd-ac" value={acAge} onChange={(e) => setAcAge(e.target.value)} placeholder="none"
+                    className="mt-1 h-12 rounded-xl border-2 border-border px-3 text-base focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <Label htmlFor="hd-improvements" className="text-sm font-medium text-foreground">
+                  Major improvements or updates
+                </Label>
+                <Textarea
+                  id="hd-improvements" rows={3} value={improvements}
+                  onChange={(e) => setImprovements(e.target.value)}
+                  placeholder="Kitchen remodel 2021, new windows, well pump 2023, 1,200 sqft shop, fresh interior paint..."
+                  className="mt-1.5 rounded-xl border-2 border-border px-4 py-3 text-base focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="hd-spend" className="text-sm font-medium text-foreground">Approx. invested</Label>
+                  <Input id="hd-spend" inputMode="numeric" value={improvementsSpend}
+                    onChange={(e) => setImprovementsSpend(e.target.value)} placeholder="$ optional"
+                    className="mt-1.5 h-12 rounded-xl border-2 border-border px-4 text-base focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <Label htmlFor="hd-condition" className="text-sm font-medium text-foreground">Overall condition</Label>
+                  <Select value={condition} onValueChange={setCondition}>
+                    <SelectTrigger id="hd-condition" className="mt-1.5 h-12 rounded-xl border-2 border-border px-4 text-base focus:border-primary focus:ring-2 focus:ring-primary/20">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="excellent">Excellent, renovated / move-in</SelectItem>
+                      <SelectItem value="good">Good, well maintained</SelectItem>
+                      <SelectItem value="average">Average, dated but functional</SelectItem>
+                      <SelectItem value="needs-work">Needs some work</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowDetails(true)}
+              className="text-left text-sm font-medium text-primary underline underline-offset-2 hover:text-primary/80"
+            >
+              + Add home details to sharpen your estimate (optional)
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Carrier-required SMS consent disclosure — exact text quoted in the A2P campaign */}

@@ -37,6 +37,18 @@ export type CreateCmaRequestInput = {
   leadTimeline?: string | null
   leadClassification?: string | null
   fubPersonId?: number | null
+  /** Optional "About your home" details the seller added on the LP form.
+   *  Compiled into the CMA payload (home_details + seller_improvements). */
+  sellerHomeDetails?: {
+    bedrooms?: string
+    bathrooms?: string
+    roofAge?: string
+    furnaceAge?: string
+    acAge?: string
+    improvements?: string
+    improvementsSpend?: string
+    condition?: string
+  } | null
   /** Where the request came from. Default 'seller-lp'. */
   requestSource?: 'seller-lp' | 'expired-listing-cron' | 'fsbo-lp'
   /** Send the "we received your request" email to the lead. Default true.
@@ -126,6 +138,53 @@ export async function createCmaRequest(
       .limit(1)
     const brokerId = (brokerRow as Array<{ id: string }> | null)?.[0]?.id ?? null
 
+    // Compile optional seller-supplied home details into the structured
+    // home_details object + a human-readable seller_improvements string the CMA
+    // producer consumes (effective age, Method 2 value-add, condition, beds/baths).
+    const hd = input.sellerHomeDetails ?? null
+    const conditionLabel: Record<string, string> = {
+      excellent: 'Excellent (renovated / move-in)',
+      good: 'Good (well maintained)',
+      average: 'Average (dated but functional)',
+      'needs-work': 'Needs some work',
+    }
+    let homeDetails: Record<string, string> | null = null
+    let sellerImprovementsText: string | null = null
+    let sellerImprovementsTotal: number | null = null
+    if (hd) {
+      const d: Record<string, string> = {}
+      if (hd.bedrooms?.trim()) d.bedrooms = hd.bedrooms.trim()
+      if (hd.bathrooms?.trim()) d.bathrooms = hd.bathrooms.trim()
+      if (hd.roofAge?.trim()) d.roof_age = hd.roofAge.trim()
+      if (hd.furnaceAge?.trim()) d.furnace_age = hd.furnaceAge.trim()
+      if (hd.acAge?.trim()) d.ac_age = hd.acAge.trim()
+      if (hd.condition?.trim()) d.condition = conditionLabel[hd.condition] ?? hd.condition
+      homeDetails = Object.keys(d).length > 0 ? d : null
+
+      const parts: string[] = []
+      if (hd.bedrooms?.trim() || hd.bathrooms?.trim()) {
+        parts.push(`Beds/baths (seller-reported): ${hd.bedrooms?.trim() || '?'} / ${hd.bathrooms?.trim() || '?'}`)
+      }
+      const sys: string[] = []
+      if (hd.roofAge?.trim()) sys.push(`roof ${hd.roofAge.trim()}`)
+      if (hd.furnaceAge?.trim()) sys.push(`furnace ${hd.furnaceAge.trim()}`)
+      if (hd.acAge?.trim()) sys.push(`AC ${hd.acAge.trim()}`)
+      if (sys.length) parts.push(`Systems: ${sys.join(', ')}`)
+      if (hd.improvements?.trim()) parts.push(`Improvements: ${hd.improvements.trim()}`)
+      if (hd.condition?.trim()) parts.push(`Condition: ${conditionLabel[hd.condition] ?? hd.condition}`)
+      sellerImprovementsText = parts.length ? parts.join('. ') : null
+
+      if (hd.improvementsSpend?.trim()) {
+        const n = Number(hd.improvementsSpend.replace(/[^0-9.]/g, ''))
+        if (Number.isFinite(n) && n > 0) sellerImprovementsTotal = Math.round(n)
+      }
+    }
+
+    const baseNotes = input.leadTimeline
+      ? `Lead timeline: ${input.leadTimeline}${input.leadClassification ? ` · classification: ${input.leadClassification}` : ''}`
+      : null
+    const clientNotesFull = [baseNotes, sellerImprovementsText].filter(Boolean).join(' · ') || null
+
     // Step 1: create the cmas draft row. ON CONFLICT (slug) preserves any
     // existing in-progress CMA for the same address — we update the client
     // info but don't blow away the broker's draft work.
@@ -138,9 +197,7 @@ export async function createCmaRequest(
       client_name: leadName,
       client_email: leadEmail,
       client_phone: input.leadPhone?.trim() || null,
-      client_notes: input.leadTimeline
-        ? `Lead timeline: ${input.leadTimeline}${input.leadClassification ? ` · classification: ${input.leadClassification}` : ''}`
-        : null,
+      client_notes: clientNotesFull,
       broker_id: brokerId,
       broker_slug: broker.slug,
       status: 'draft',
@@ -173,9 +230,10 @@ export async function createCmaRequest(
           client_phone: input.leadPhone?.trim() || null,
           broker_email: broker.email,
           broker_slug: broker.slug,
-          client_notes: input.leadTimeline
-            ? `Lead timeline: ${input.leadTimeline}`
-            : null,
+          client_notes: clientNotesFull,
+          seller_improvements: sellerImprovementsText,
+          seller_improvements_total: sellerImprovementsTotal,
+          home_details: homeDetails,
         },
         data_evidence: {
           request_source: requestSource === 'expired-listing-cron' ? 'expired-listing-cron' : 'lead-form',

@@ -57,6 +57,21 @@ export type SellerLPSubmission = {
    * 'list-now-lp' — sell-your-home BOFU LP (high listing intent)
    */
   source?: 'seller-lp' | 'list-now-lp'
+  /** Optional "About your home" details the seller can add to sharpen the CMA. */
+  homeDetails?: SellerHomeDetails
+}
+
+/** Optional seller-supplied home detail, all free-form strings from the form.
+ *  Flows into the CMA payload (home_details + compiled seller_improvements). */
+export type SellerHomeDetails = {
+  bedrooms?: string
+  bathrooms?: string
+  roofAge?: string
+  furnaceAge?: string
+  acAge?: string
+  improvements?: string
+  improvementsSpend?: string
+  condition?: string
 }
 
 export type SellerLPResult =
@@ -539,6 +554,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         leadTimeline: timeline ?? null,
         leadClassification: classification,
         fubPersonId,
+        sellerHomeDetails: submission.homeDetails ?? null,
       })
       if (!created.ok) {
         console.warn('[seller-lp] createCmaRequest failed:', created.error)

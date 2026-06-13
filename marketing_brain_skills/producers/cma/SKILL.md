@@ -108,10 +108,32 @@ interface CMAPayload {
                                    // what they've done since last MLS listing
   seller_improvements_total?: number  // total invested capital (USD)
 
+  // Structured seller-reported details from the LP "About your home" section
+  // (locked 2026-06-13). Optional. When present, USE THEM in the recipe:
+  //  - bedrooms / bathrooms      → fill the subject profile when DIAL lacks them
+  //                                (label "seller-reported, confirm at listing")
+  //  - roof_age / furnace_age /  → effective-age read + Method 2 value-add
+  //    ac_age                      (Remodeling Magazine recovery rates, Step 9)
+  //  - condition                 → governs the High-End tier (Step 9 high-end check)
+  home_details?: {
+    bedrooms?: string
+    bathrooms?: string
+    roof_age?: string
+    furnace_age?: string
+    ac_age?: string
+    condition?: string
+  }
+
   // Optional notes from Matt:
   client_notes?: string
 }
 ```
+
+**Using `home_details` + `seller_improvements` (locked 2026-06-13, Matt directive).** The seller LP form has an optional "About your home" section. When the action row's `payload.home_details` or `payload.seller_improvements` is populated, the producer MUST use it:
+- **Beds/baths:** if DIAL/MLS does not expose the subject's bedroom/bathroom count, use the seller-reported values from `home_details` and label them "seller-reported, confirm at listing". Do not leave the subject as unknown when the seller told us.
+- **System ages (roof / furnace / AC):** factor into the subject's effective-age read and the Method 2 value-add. A recent roof or HVAC is documented capital to credit; aging systems temper the High End.
+- **Condition:** the seller-reported condition is a direct input to the Step 9 High-End check. "Excellent / renovated" supports the ceiling. "Needs work" pulls the recommended and high tiers in. State the basis ("seller-reported condition") in the pricing rationale.
+- Still verify everything verifiable against records (§0). Seller-reported facts are an input, not a substitute for the authoritative record where one exists. Label seller-reported values as such.
 
 ---
 
@@ -184,6 +206,15 @@ Zoning is a top-three value driver for land and the MLS zoning field is routinel
 
 (Matt directive 2026-06-04: the first 18705 Tumalo Reservoir draft mislabeled an EFU/LM/WA parcel as "RR10" and called it freely buildable. This step exists so that never ships.)
 
+**Step 3.6.  Resolve water + sewer (well / septic) from the authoritative record (MANDATORY for any property not on municipal water/sewer.  locked 2026-06-13, Matt directive)**
+
+Every CMA states the property's water source and waste system, verified from records, never assumed. Rural and acreage homes in Central Oregon are almost always on a private well + onsite septic, and buyers and lenders ask. Resolve both and state them plainly:
+
+- **Septic:** Deschutes County DIAL Permits (`dial.deschutes.org/Real/Permits/<account>`). Distinguish a **finaled installed system** (a finaled onsite-wastewater construction permit, e.g. `247-S#####`) from a **site evaluation / feasibility only** (soil test passed, nothing built.  buyer still installs ~$15-30k). State which.
+- **Well:** Oregon OWRD well-log GIS (`https://arcgis.wrd.state.or.us/arcgis/rest/services/dynamic/wl_well_logs_qry_WGS84/MapServer/0/query`). Spatial-query an envelope around the subject lat/lng (and the taxlot polygon when available) for the on-parcel domestic well log.  capture well number, completion date, completed depth, first-water depth, static water level, use. If the subject's own log does not surface by coordinate/address (older wells are logged by TRS or owner and often do not geocode onto the parcel), state the area-confirmed context (neighboring domestic well logs with depths + dates) and flag the seller to provide the OWRD well log + a recent flow test for the listing packet. Never assert a specific well you have not located.
+- **Adjustment:** well + septic are typically NEUTRAL between an improved subject and improved acreage comps (all share well + septic), so there is no relative $ adjustment.  but STATE them as confirmed facts because a finaled installed septic removes buyer uncertainty. If the subject lacks one (septic only site-evaluated, or no well) where comps have it, that IS a downward adjustment.  apply it.
+- Record both in citations.json with source URL + fetched date. Municipal-water/sewer properties: state "city water / city sewer" and skip the lookup.
+
 **Step 4.  Pull subdivision comps**
 
 Default filter (matches the 21042 Robin exemplar):
@@ -224,7 +255,9 @@ This context drives three things: (1) the per-comp market-conditions (time) adju
 
 For each `ListingKey`, call `GET /api/listings/<key>/photos` (this is the Spark `_expand=Photos` endpoint added 2026-05-14). Cache the primary URL + 5 supplementary URLs per comp. If `PhotoURL` is null in Supabase but the listing has photos via this endpoint, use what Spark returns.
 
-If the subject has no MLS photos (never listed) or has only stale photos, note it explicitly on the subject flyer ("Most recent MLS listing photo · pre-renovation.  updated photos pending") and surface to Matt that pro photography is required before list.
+**If the subject has no MLS photos (never listed) or only stale photos: use an AERIAL VIEW of the property, never a blank or branded placeholder panel (locked 2026-06-13, Matt directive).** Generate a Google Static Maps satellite/hybrid image centered on the subject lat/lng with an `S` marker (`maptype=satellite` or `hybrid`, zoom 15-16, key `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`) and save it to the draft `assets/` folder. Use it as the cover hero AND the subject-flyer hero, captioned "Aerial view · subject parcel". Note on the flyer that no MLS photos exist and pro photography is recommended before list. The old navy "no photo" panel is retired.
+
+**Photo-card quality (locked 2026-06-13, Matt directive): every card that shows a photo must show it well.** Comp-summary cards display the photo at a usable height (~90-100 px, not a 58 px sliver), `object-fit: cover`. Pull thumbnails at the next Spark CDN tier up from the floor (`640x480`, not `320x240`) so cards and flyer photo grids render crisp.  the floor tier looks degraded in PDF. Heroes stay `800x600`. Re-check the 25 MB PDF cap after bumping tiers and drop back only if over.
 
 **Step 6.  Resolve broker from `public.brokers`**
 
@@ -465,7 +498,7 @@ The subject row at the top of the comp summary table should populate List with t
 - Per-comp adjustment grid: each line (market-conditions/time, size, beds-baths, lot/garage/condition) is shown and defensible, and the math foots to the adjusted price. The market-conditions adjustment uses the verified YoY rate from Step 4.5, never an estimate
 - Three-method convergence: Methods 1, 2, and 3 land within ±5%, or the divergence is explained on the pricing page and confidence is lowered accordingly. The stated confidence (High / Moderate / Supportable-only) matches the comp count, dispersion, recency, and distance per Step 9
 - Brand voice check: banned words from CLAUDE.md §"Voice + content" (`stunning`, `nestled`, `breathtaking`, `must-see`, etc.) must not appear in CMA narrative.  they're fine in MLS-pulled `public_remarks` (those are quoted text)
-- Days to Offer must be displayed alongside any DOM number.  see §10
+- **DOM is ALWAYS shown (locked 2026-06-13, Matt directive).** Every comp carries DOM on the comp-summary table (a `DOM (DTO)` column) AND on its own comp flyer (a "Days on Market" line). Display Days to Offer (active days = `pending_timestamp - OnMarketDate`) alongside the Spark DOM. A same-day off-market sale (DOM 0) gets a footnote. Never omit DOM. See §10.
 - Map renders successfully (hit `/api/maps/cma-<slug>` and confirm 200)
 - All flyer hero photos load (HEAD-check each Spark CDN URL)
 - Page numbers in footers correct (no `X of Y` mismatches)
