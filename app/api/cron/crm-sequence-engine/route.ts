@@ -70,6 +70,13 @@ type Step = {
   taskType?: string
   addTags?: string[]
   removeTags?: string[]
+  /** When true, this step is a broker-confirmed "recommended next step" — the
+   *  engine parks the enrollment (awaiting_broker_next) instead of auto-sending. */
+  confirm?: boolean
+  /** For sms steps: the email to send instead when texting is unavailable
+   *  (A2P not live and no iMessage relay) — "optional email or text". */
+  fallbackEmailSubject?: string
+  fallbackEmailBody?: string
 }
 
 function renderMerge(text: string, person: { first_name?: string | null; name?: string | null; custom?: Record<string, unknown>; assigned_broker?: string | null }): string {
@@ -266,8 +273,56 @@ export async function GET(request: Request) {
 
         body = renderMerge(body, person)
 
-        // A2P gate: queue (visible, with the exact text) instead of erroring.
-        if (a2pStatus !== 'VERIFIED') {
+        // ── Channel decision (Matt 2026-06-13): text via Twilio if A2P is live;
+        // else the Mac iMessage relay as backup; else the step's email fallback
+        // ("optional email or text"); else hold + queue visibly until A2P clears.
+        const mailbox = CRM_MAILBOXES.find((m) => m.slug === person.assigned_broker) ?? CRM_MAILBOXES[0]
+        if (a2pStatus === 'VERIFIED') {
+          // Quiet hours gate the actual Twilio send only (8 AM to 9 PM PT).
+          if (inSmsQuietHours()) { await finish({ next_run_at: nextSendWindow().toISOString() }); continue }
+          const sent = await sendSmsViaMessagingService({ to: toPhone, body })
+          if (!sent.ok) {
+            await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() })
+            await log(`Sequence SMS send failed, retrying in 30m`, sent.error)
+            errored++
+            continue
+          }
+          await sb.from('crm_timeline').insert({
+            person_id: person.id, kind: 'sms_out', title: 'Text sent', body,
+            payload: { twilioSid: sent.sid, sequence: seq.name, step: en.step_index, templateKey: step.templateKey ?? null, to: toPhone },
+            broker: mailbox.slug, source: 'sequence', dedupe_key: `twilio:${sent.sid}:p${person.id}`,
+          })
+        } else if (process.env.LEAD_SMS_IMESSAGE_FALLBACK === 'true') {
+          // A2P not live — route the lead text through the Mac Messages relay
+          // (scripts/crm-alert-relay.mjs drains crm_broker_alerts → iMessage).
+          await sb.from('crm_broker_alerts').insert({
+            broker: person.assigned_broker ?? 'matt', to_phone: toPhone, body,
+            person_id: person.id, status: 'pending', channel: 'imessage',
+          })
+          await sb.from('crm_timeline').insert({
+            person_id: person.id, kind: 'sms_out', title: 'Text sent via Messages (A2P pending)', body,
+            payload: { via: 'imessage-relay', sequence: seq.name, step: en.step_index, to: toPhone },
+            broker: mailbox.slug, source: 'sequence',
+          })
+        } else if (step.fallbackEmailBody) {
+          // Texting unavailable and no relay — fall back to email so the touch
+          // still lands. Reuses the email suppression + send path.
+          const fbTo = (person.emails as Array<{ value?: string }>)?.[0]?.value
+          if (fbTo && !(await isSuppressed(person.id, 'email')).suppressed) {
+            const fbSubject = renderMerge(step.fallbackEmailSubject ?? 'A quick note from Ryan Realty', person)
+            const fbBody = renderMerge(step.fallbackEmailBody, person)
+            const sent = await sendCrmEmail({ fromMailbox: mailbox.email, to: fbTo, subject: fbSubject, bodyText: fbBody, withSignature: true })
+            if (!sent.ok) { await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log('Fallback email send failed, retrying in 30m', sent.error); errored++; continue }
+            await sb.from('crm_timeline').insert({
+              person_id: person.id, kind: 'email_out', title: fbSubject, body: sent.plainBody,
+              payload: { gmailId: sent.gmailId, sequence: seq.name, step: en.step_index, via: 'sms-email-fallback', to: fbTo },
+              broker: mailbox.slug, source: 'sequence', dedupe_key: `gmail:${sent.gmailId}:p${person.id}`,
+            })
+          } else {
+            await finish({ next_run_at: new Date(Date.now() + 4 * 3600e3).toISOString() }); queuedSms++; continue
+          }
+        } else {
+          // No live text channel and no email fallback — queue visibly.
           await sb.from('crm_timeline').upsert(
             {
               person_id: person.id, kind: 'system',
@@ -282,26 +337,6 @@ export async function GET(request: Request) {
           queuedSms++
           continue
         }
-
-        // Quiet hours gate the actual send only (8 AM to 9 PM PT).
-        if (inSmsQuietHours()) {
-          await finish({ next_run_at: nextSendWindow().toISOString() })
-          continue
-        }
-
-        const sent = await sendSmsViaMessagingService({ to: toPhone, body })
-        if (!sent.ok) {
-          await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() })
-          await log(`Sequence SMS send failed, retrying in 30m`, sent.error)
-          errored++
-          continue
-        }
-        const mailbox = CRM_MAILBOXES.find((m) => m.slug === person.assigned_broker) ?? CRM_MAILBOXES[0]
-        await sb.from('crm_timeline').insert({
-          person_id: person.id, kind: 'sms_out', title: 'Text sent', body,
-          payload: { twilioSid: sent.sid, sequence: seq.name, step: en.step_index, templateKey: step.templateKey ?? null, to: toPhone },
-          broker: mailbox.slug, source: 'sequence', dedupe_key: `twilio:${sent.sid}:p${person.id}`,
-        })
       } else if (step.channel === 'task') {
         await sb.from('crm_tasks').insert({
           person_id: person.id, name: renderMerge(step.taskName ?? 'Follow up', person),
@@ -331,6 +366,11 @@ export async function GET(request: Request) {
         await finish({ status: 'completed', step_index: nextIndex })
         await log(`Sequence "${seq.name}" completed`)
         completed++
+      } else if (nextStep.confirm) {
+        // Later steps are broker-confirmed, not auto-sent. Park as a recommended
+        // next step; the contact page / dashboard surfaces it for one-click send.
+        await finish({ step_index: nextIndex, status: 'awaiting_broker_next', next_run_at: null })
+        await log(`Next step ready for "${seq.name}" — waiting on broker confirmation`)
       } else {
         const delayMs = ((nextStep.delayDays ?? 0) * 86400 + (nextStep.delayMinutes ?? 0) * 60) * 1000
         await finish({ step_index: nextIndex, next_run_at: new Date(Date.now() + Math.max(delayMs, 60000)).toISOString() })
