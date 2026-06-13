@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.511.1 (2026-06-13)
+
+### Bug Fixes
+- fix(lp): Heath performance chart now plots Tetherow-parent closings (Heath had 0)
+
+---
+
+
 ## v1.511.0 (2026-06-13)
 
 ### Features
