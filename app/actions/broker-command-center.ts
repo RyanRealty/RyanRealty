@@ -257,9 +257,9 @@ export async function getBrokerCommandCenterData(): Promise<BrokerCommandCenterD
     tags: Array.isArray(c.tags) ? (c.tags as string[]) : [],
   }))
 
-  // 4. Google Calendar events
-  const { connected: gcalConnected, events: gcalEvents } = broker.id
-    ? await getGcalEvents(broker.id).catch(() => ({ connected: false, events: [] }))
+  // 4. Google Calendar events (DWD — auto-connected via service account impersonation)
+  const { connected: gcalConnected, events: gcalEvents } = broker.email
+    ? await getGcalEvents(broker.email).catch(() => ({ connected: false, events: [] }))
     : { connected: false, events: [] }
 
   // 5. Build calendar strip (TC dates + tasks + GCal events)
