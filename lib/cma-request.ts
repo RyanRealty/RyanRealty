@@ -313,20 +313,26 @@ export async function createCmaRequest(
       }).catch((e) => console.warn('[cma-request] lead confirmation failed:', e))
     }
 
-    // Stamp the CMA link onto the CRM mirror so sequence templates can merge
-    // %cma_link% into outbound touches (e.g. the expired-listing opening text).
+    // Stamp the CMA SLUG (not the link) onto the CRM mirror — awaited, so it
+    // lands before any enroll/sequence step runs. We deliberately do NOT stamp
+    // cmaLink here: the CMA HTML isn't built yet, so the link would 404. cmaLink
+    // is stamped at finalize (lib/cma-deliver.ts) once the page actually exists,
+    // and that is what releases the sequence engine's %cma_link% hold-gate — so a
+    // lead never receives an empty or dead CMA link.
     if (input.fubPersonId) {
-      void (async () => {
+      try {
         const { data: mirror } = await sb
           .from('crm_people')
           .select('id,custom')
           .eq('fub_legacy_id', input.fubPersonId)
           .maybeSingle()
         if (mirror) {
-          const custom = { ...((mirror.custom as Record<string, unknown>) ?? {}), cmaLink: cmaPublicUrl(slug), cmaSlug: slug }
+          const custom = { ...((mirror.custom as Record<string, unknown>) ?? {}), cmaSlug: slug }
           await sb.from('crm_people').update({ custom, updated_at: new Date().toISOString() }).eq('id', mirror.id)
         }
-      })().catch((e) => console.warn('[cma-request] cmaLink stamp failed:', e))
+      } catch (e) {
+        console.warn('[cma-request] cmaSlug stamp failed:', e instanceof Error ? e.message : String(e))
+      }
     }
 
     return {

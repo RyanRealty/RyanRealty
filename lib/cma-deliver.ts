@@ -248,6 +248,36 @@ export async function finalizeAndDeliverCma(
     }
   }
 
+  // ── 3b. Stamp the now-LIVE CMA link onto the CRM person ───────────────────
+  // The page exists at public/cmas/<slug>/cma.html only when finalized === true.
+  // Stamping cmaLink here (not at request time) is what releases the sequence
+  // engine's %cma_link% hold-gate, so the CMA-link touch sends a real, working
+  // URL — never the empty placeholder it used to merge. Best-effort; never fatal.
+  if (finalized && leadEmail) {
+    try {
+      const sb = createServiceClient()
+      const { data: people } = await sb
+        .from('crm_people')
+        .select('id,custom')
+        .contains('emails', [{ value: leadEmail }])
+        .limit(1)
+      const person = people?.[0]
+      if (person) {
+        const custom = {
+          ...((person.custom as Record<string, unknown>) ?? {}),
+          cmaLink: `${SITE_URL}/cmas/${safeSlug}/cma.html`,
+          cmaSlug: safeSlug,
+        }
+        await sb
+          .from('crm_people')
+          .update({ custom, updated_at: new Date().toISOString() })
+          .eq('id', person.id)
+      }
+    } catch (e) {
+      warnings.push(`cmaLink finalize-stamp failed: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+
   // ── 4. Build the lead email body ──────────────────────────────────────────
   const emailSubject = `Your home value for ${subjectAddress}`
   const { html: bodyHtml, text: bodyText } = buildLeadEmailBody({
