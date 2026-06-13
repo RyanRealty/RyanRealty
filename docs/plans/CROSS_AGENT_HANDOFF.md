@@ -77,7 +77,7 @@ One line per system. Counts: ~58 LIVE-HEALTHY · ~22 LIVE-DEGRADED · ~13 BLOCKE
 - 11 marketing-snapshot crons — UNUSED; all on disk, none scheduled.
 
 ### AI / Producers
-- **Anthropic API — BLOCKED**; credits EXHAUSTED, blocks 4 queued expired CMAs + producer-runtime (stale since 2026-05-24) + market-report blog publish.
+- **Anthropic API — NOT an operational blocker.** Real content is produced in-session by the live desktop/Claude Code agent on Matt's *subscription* tokens — not the metered API. The `sk-ant-api03` key wired into the Vercel crons is out of credits, but that only halts the headless autonomous layer (producer-runtime, audit-classifier, inbox-parser), which is frozen (G45) and has shipped zero posts. The 4 queued CMAs + market-report blog can be built in-session without refilling. Refill is needed ONLY to run those crons unattended (Vercel crons can't use desktop subscription tokens — the SDK needs an API key).
 - Producer registry + freeze (G45) — LIVE-HEALTHY; frozen 2026-06-09, maintenance-only.
 - ElevenLabs / OpenAI / xAI / Replicate — LIVE-HEALTHY. Fal.ai — UNUSED (balance exhausted). Synthesia — LIVE-DEGRADED (never called).
 - CMA producer + skill — LIVE-HEALTHY (locked 2026-06-13).
@@ -197,7 +197,7 @@ Working tree = 44+ files across three feature threads + two locked-system doc ov
 ## 7. EXTERNAL BLOCKERS
 
 - **Twilio A2P 10DLC** — campaign `CMb1d8153a...` IN_PROGRESS under carrier review (~2-3 weeks; brand APPROVED; error 30034 on all outbound; ticket #27497858; expected clear ~2026-06-26 to 07-03). Auto-unblocks all SMS on VERIFIED. The only lever is the support ticket. The number to port/operate is **541.703.3095** (FUB-tracked bio number).
-- **Anthropic API credits** — EXHAUSTED. Blocks producer-runtime (stale since 2026-05-24), 4 queued expired CMAs, and the market-report blog publish. Resolves when Matt adds credits at console.anthropic.com.
+- **Anthropic API credits** — the metered `sk-ant-api03` key in the Vercel crons is exhausted, but this is NOT how Ryan Realty produces content. Real production runs through the live desktop/Claude Code agent on Matt's subscription tokens (no metered API). The exhausted key only stops the headless autonomous producer layer, which is frozen (G45) and unused. Refilling is OPTIONAL — the 4 queued CMAs + market-report blog get built in-session instead. The autonomous cron path stays dormant until credits are added or the crons are retired.
 - **Apify** — currently under the **$200 cap**; graceful-degrades if hit. Cap resets ~the 18th; monitor.
 
 ---
