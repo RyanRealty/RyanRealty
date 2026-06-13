@@ -235,6 +235,32 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
           console.warn('[expired-lp] marketing_assignments insert failed:', insertError.message)
         }
       }
+
+      // Queue a CMA for the property — same as the seller + FSBO LP and the
+      // expired-detection cron. Stamps custom.cmaLink, which the Expired
+      // Recovery sequence's CMA text links to. notifyLead=false: the owner
+      // never asked us for a report.
+      if (address) {
+        void import('@/lib/cma-request')
+          .then(({ createCmaRequest }) =>
+            createCmaRequest({
+              rawAddress: address,
+              parsedStreet: null,
+              parsedCity: null,
+              parsedState: 'OR',
+              parsedPostalCode: null,
+              leadEmail: email || null,
+              leadName: name || null,
+              leadPhone: phone || null,
+              leadTimeline: 'ready-now',
+              leadClassification: 'hot',
+              fubPersonId,
+              requestSource: 'expired-listing-cron',
+              notifyLead: false,
+            }),
+          )
+          .catch((e) => console.warn('[expired-lp] CMA request failed:', e))
+      }
     }
 
     // ─── 5-min realtime task for ALL expired LP leads (hot category) ──────

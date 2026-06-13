@@ -608,6 +608,19 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
     }
   }
 
+  // Geocode + geo-tag seller property addresses, same as the website LP path.
+  // Without this, paid Meta seller leads carry audience/source tags but no
+  // city:* / neighborhood:* / subdivision:* tags, so they are invisible to the
+  // geo-filtered FUB smart lists brokers route follow-up from until the 30-min
+  // delta cron eventually picks them up.
+  if (parsed.audience === 'seller' && parsed.propertyAddress && !parsed.possibleRealtor) {
+    void import('@/lib/lead-geocode')
+      .then(({ geocodeAndTagLead }) =>
+        geocodeAndTagLead({ fubPersonId: personId, address: parsed.propertyAddress as string, sourceType: 'property' }),
+      )
+      .catch((e) => console.warn('[lead-webhook] geocode failed (non-blocking):', e))
+  }
+
   // Fire 5-min realtime task for hot leads (skip realtors)
   if (parsed.intent === 'hot' && !parsed.possibleRealtor) {
     const who = [parsed.firstName, parsed.lastName].filter(Boolean).join(' ') || parsed.email || 'unknown'
