@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.516.2 (2026-06-13)
+
+### Maintenance
+- docs(tc): forms-loading handoff runbook (SkySlope → tc_form_versions, proven live)
+
+---
+
+
 ## v1.516.1 (2026-06-13)
 
 ### Maintenance
