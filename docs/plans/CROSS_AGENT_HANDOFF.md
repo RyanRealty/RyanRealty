@@ -1,5 +1,19 @@
 # Cross-Agent Handoff — Current
 
+> **⮕ ACTIVE THREAD (2026-06-13): Homepage rebuild + Brand Voice rework.**
+> See [`HANDOFF-homepage-voice-2026-06-13.md`](./HANDOFF-homepage-voice-2026-06-13.md).
+> Brand voice was fully reworked into The Five Laws + hard-coded into the CI gate
+> (DONE, staged). Homepage is UNRESOLVED — Matt rejected v3/Linear/cinematic, the
+> 3D tiles are OUT. Everything staged, draft-first, nothing committed. Read that
+> doc before touching the homepage or any public copy.
+
+> **⮕ ACTIVE THREAD (2026-06-13): CMA for Laurie McAdam + valuation-form upgrade + Twilio SMS block.**
+> See [`HANDOFF-cma-form-twilio-2026-06-13.md`](./HANDOFF-cma-form-twilio-2026-06-13.md).
+> Laurie's CMA (62285 Deer Trail) is a DRAFT awaiting Matt's "ship it" (action row
+> `72c4ee55` = ready). Seller valuation form got an optional "About your home" section
+> wired into CMA logic (staged, tested). Twilio outbound SMS is BLOCKED on A2P review
+> (~2-3 wk, ticket #27497858) — see memory `reference_twilio_a2p_status`. Nothing committed.
+
 **Written:** 2026-06-11 by Cursor (Matt switching off `/loop`, wants a manual starting point). **Branch:** `main`, synced with `origin/main`. **HEAD:** `3a95af7`. **Production:** READY (`npm run deploy:verify` 2026-06-11).
 
 *Convention: the other agent can't read the chat — anything not in `git` + this file + `task-registry.json` + `.auto-memory/` + `~/.claude/projects/-Users-matthewryan-RyanRealty/memory/MEMORY.md` is invisible. Keep this "Current" block accurate; delete stale bullets.*
