@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.516.0 (2026-06-13)
+
+### Features
+- feat(broker-dashboard): Google Calendar via DWD service account — no per-broker OAuth
+
+### Maintenance
+- docs(handoff): START HERE pointer for the next session — prioritized pickup, shared-tree warning, health check
+- chore(gcal): remove per-broker OAuth routes — DWD handles calendar access
+
+---
+
+
 ## v1.515.1 (2026-06-13)
 
 ### Maintenance
