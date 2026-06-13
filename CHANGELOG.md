@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.517.0 (2026-06-13)
+
+### Features
+- feat(lp): optional 'About your home' section on seller valuation form -> CMA logic
+
+---
+
+
 ## v1.516.2 (2026-06-13)
 
 ### Maintenance
