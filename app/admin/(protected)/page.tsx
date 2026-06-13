@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSetupComplete } from '@/app/actions/admin-setup'
 import { getCrmAccess, getCrmHomeDashboard } from '@/app/actions/crm'
+import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { getSession } from '@/app/actions/auth'
 import { CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import StageBadge from '@/components/admin/crm/StageBadge'
 import { Button } from '@/components/ui/button'
@@ -23,6 +25,14 @@ function fmtDate(iso: string | null): string {
 export default async function AdminHomePage({ searchParams }: { searchParams: Promise<{ broker?: string }> }) {
   const setupComplete = await getSetupComplete()
   if (!setupComplete) redirect('/admin/setup')
+
+  // Broker-role users land on their command center, not the CRM lead funnel
+  const session = await getSession()
+  const email = session?.user?.email?.trim()
+  if (email) {
+    const role = await getAdminRoleForEmail(email)
+    if (role?.role === 'broker') redirect('/admin/broker-dashboard')
+  }
 
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
