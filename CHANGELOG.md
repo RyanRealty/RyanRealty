@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.520.0 (2026-06-13)
+
+### Features
+- feat(crm): sequence engine email/text fallback + iMessage relay + broker-confirmed steps
+
+---
+
+
 ## v1.519.2 (2026-06-13)
 
 ### Bug Fixes
