@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.506.0 (2026-06-13)
+
+### Features
+- feat(crm): large profile photo on the lead detail header when one exists
+
+---
+
+
 ## v1.505.1 (2026-06-12)
 
 ### Bug Fixes
