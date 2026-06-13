@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.519.1 (2026-06-13)
+
+### Bug Fixes
+- fix(cma): remove duplicate 62285 Deer Trail analysis + its path
+
+---
+
+
 ## v1.519.0 (2026-06-13)
 
 ### Features
