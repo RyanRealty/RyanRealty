@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-12T17:50:26.682Z
+**Generated:** 2026-06-13T14:43:24.246Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -299,7 +299,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 591,047**
+### `listing_tile_mv` · **rows ≈ 589,078**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -343,7 +343,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 75,414**
+### `similar_listings_mv` · **rows ≈ 75,946**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 
@@ -412,7 +412,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 13,078**
+### `market_stats_cache` · **rows ≈ 13,506**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -576,7 +576,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 6**
+### `cmas` · **rows ≈ 11**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -647,7 +647,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `asset_library_refs` | ARRAY | yes |  |
 | `pulled_at` | timestamp with time zone | yes |  |
 
-### `expired_listings` · **rows ≈ 16**
+### `expired_listings` · **rows ≈ 17**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -691,7 +691,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `owner_lookup_attempts` | integer | yes | 0 |
 | `last_owner_lookup_at` | timestamp with time zone | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 64**
+### `marketing_brain_actions` · **rows ≈ 70**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -2967,6 +2967,24 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `created_at` | timestamp with time zone | no | now() |
 | `updated_at` | timestamp with time zone | no | now() |
 
+### `tc_principal_reviews`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `deal_id` | uuid | yes |  |
+| `cycle_id` | uuid | yes |  |
+| `item_id` | uuid | yes |  |
+| `item_name` | text | yes |  |
+| `document_ids` | jsonb | no | '[]'::jsonb |
+| `reviewer_email` | text | no |  |
+| `reviewer_name` | text | no |  |
+| `reviewed_at` | timestamp with time zone | no | now() |
+| `decision` | text | no |  |
+| `note` | text | yes |  |
+| `rule_basis` | text | no | 'OAR 863-015-0140'::text |
+| `created_at` | timestamp with time zone | no | now() |
+
 ### `tc_sessions`
 
 | Column | Type | Nullable | Default |
@@ -3007,6 +3025,40 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `expires_at` | timestamp with time zone | no |  |
 | `updated_at` | timestamp with time zone | no | now() |
 | `open_id` | text | yes |  |
+
+### `trails`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `slug` | text | no |  |
+| `name` | text | no |  |
+| `activity_types` | ARRAY | no | '{}'::text[] |
+| `allows_horse` | boolean | no | false |
+| `geom` | USER-DEFINED | no |  |
+| `length_m` | integer | no |  |
+| `length_mi` | numeric | no |  |
+| `difficulty` | text | yes |  |
+| `surface` | text | yes |  |
+| `sac_scale` | text | yes |  |
+| `mtb_scale` | text | yes |  |
+| `nearest_town` | text | yes |  |
+| `nearest_town_dist_m` | integer | yes |  |
+| `operator` | text | yes |  |
+| `segment_count` | integer | no | 1 |
+| `elev_min_m` | numeric | yes |  |
+| `elev_max_m` | numeric | yes |  |
+| `elev_gain_m` | numeric | yes |  |
+| `elev_loss_m` | numeric | yes |  |
+| `elevation_profile` | jsonb | yes |  |
+| `elevation_source` | text | yes |  |
+| `elevation_at` | timestamp with time zone | yes |  |
+| `osm_ids` | ARRAY | no | '{}'::text[] |
+| `source` | text | no |  |
+| `source_url` | text | yes |  |
+| `fetched_at` | timestamp with time zone | no |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
 
 ### `trending_scores`
 

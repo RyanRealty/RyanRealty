@@ -1,15 +1,21 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { reviewDeadline, type ReviewDeadline } from '@/lib/tc/banking-days'
 
 /**
- * Principal-broker sign-off queue. As the principal broker, Matt must review
- * and sign off on every transaction's documents as they complete (his OAR
- * 863-015 supervisory duty). Items a broker has submitted (status 'in_review')
- * on LIVE-pipeline deals land here, across all brokers' deals, in one place.
- * Sign-off (→ completed) / send-back (→ required) reuse setTcChecklistStatus.
+ * Principal-broker document review queue + review record (OAR 863-015-0140).
+ *
+ * Oregon law requires the (managing) principal broker to review each document
+ * of agreement within SEVEN BANKING DAYS of its acceptance/rejection/withdrawal,
+ * and to keep "an electronic record of the review showing the name of the
+ * reviewer and the date of the review." Items a broker submits (status
+ * 'in_review') on LIVE deals land here, across all brokers, with the 7-banking-
+ * day deadline surfaced. recordPrincipalReview writes the immutable named+dated
+ * review record (tc_principal_reviews) and transitions the item.
  */
 
 function getServiceSupabase() {
@@ -28,6 +34,8 @@ export type SignOffItem = {
   itemId: string
   name: string
   docs: Array<{ id: string; name: string; thumbUrl: string | null }>
+  /** OAR 863-015-0140 7-banking-day deadline (from the cycle's acceptance date). */
+  deadline: ReviewDeadline | null
 }
 
 export type SignOffDeal = {
@@ -43,30 +51,32 @@ export type SignOffQueue = {
   authorized: boolean
   deals: SignOffDeal[]
   totalItems: number
+  overdueItems: number
 }
 
 export async function getPrincipalSignOffQueue(): Promise<SignOffQueue> {
   const session = await getSession()
   const role = await getAdminRoleForEmail(session?.user?.email ?? null)
   // The principal's queue — superuser only.
-  if (role?.role !== 'superuser') return { authorized: false, deals: [], totalItems: 0 }
+  if (role?.role !== 'superuser') return { authorized: false, deals: [], totalItems: 0, overdueItems: 0 }
 
   const supabase = getServiceSupabase()
+  const now = new Date()
 
   const { data: deals } = await supabase
     .from('tc_deals')
     .select('id, property_key, address, broker_name, stage')
     .in('stage', LIVE_STAGES)
-  if (!deals?.length) return { authorized: true, deals: [], totalItems: 0 }
+  if (!deals?.length) return { authorized: true, deals: [], totalItems: 0, overdueItems: 0 }
 
   const dealById = new Map((deals as DbRow[]).map((d) => [d.id, d]))
   const { data: cycles } = await supabase
     .from('tc_cycles')
-    .select('id, deal_id, kind')
+    .select('id, deal_id, kind, contract_acceptance_date')
     .in('deal_id', Array.from(dealById.keys()))
   const cycleById = new Map((cycles ?? []).map((c: DbRow) => [c.id, c]))
   const cycleIds = (cycles ?? []).map((c: DbRow) => c.id)
-  if (!cycleIds.length) return { authorized: true, deals: [], totalItems: 0 }
+  if (!cycleIds.length) return { authorized: true, deals: [], totalItems: 0, overdueItems: 0 }
 
   const { data: items } = await supabase
     .from('tc_checklist_items')
@@ -74,7 +84,7 @@ export async function getPrincipalSignOffQueue(): Promise<SignOffQueue> {
     .in('cycle_id', cycleIds)
     .eq('status', 'in_review')
     .order('sort_order', { ascending: true })
-  if (!items?.length) return { authorized: true, deals: [], totalItems: 0 }
+  if (!items?.length) return { authorized: true, deals: [], totalItems: 0, overdueItems: 0 }
 
   const itemIds = (items as DbRow[]).map((i) => i.id)
   const { data: assignments } = await supabase
@@ -125,13 +135,114 @@ export async function getPrincipalSignOffQueue(): Promise<SignOffQueue> {
       itemId: it.id,
       name: it.name,
       docs: docsByItem.get(it.id) ?? [],
+      // OAR 863-015-0140: 7 banking days from the agreement's acceptance date.
+      deadline: reviewDeadline(cyc.contract_acceptance_date ?? null, now),
     })
   }
 
-  const dealsOut = Array.from(byDeal.values()).sort((a, b) => a.address.localeCompare(b.address))
-  return {
-    authorized: true,
-    deals: dealsOut,
-    totalItems: dealsOut.reduce((s, d) => s + d.items.length, 0),
-  }
+  const dealsOut = Array.from(byDeal.values())
+    .map((d) => ({
+      ...d,
+      // soonest deadline (most overdue) first within each deal
+      items: d.items.sort(
+        (a, b) => (a.deadline?.bankingDaysRemaining ?? 9999) - (b.deadline?.bankingDaysRemaining ?? 9999)
+      ),
+    }))
+    .sort((a, b) => {
+      const am = Math.min(...a.items.map((i) => i.deadline?.bankingDaysRemaining ?? 9999))
+      const bm = Math.min(...b.items.map((i) => i.deadline?.bankingDaysRemaining ?? 9999))
+      return am - bm
+    })
+  const totalItems = dealsOut.reduce((s, d) => s + d.items.length, 0)
+  const overdueItems = dealsOut.reduce(
+    (s, d) => s + d.items.filter((i) => i.deadline?.overdue).length,
+    0
+  )
+  return { authorized: true, deals: dealsOut, totalItems, overdueItems }
+}
+
+// ---------------------------------------------------------------------------
+// The review action — writes the OAR 863-015-0140 named + dated review record.
+// ---------------------------------------------------------------------------
+
+export type PrincipalReviewResult = { ok: boolean; error?: string }
+
+/**
+ * Record a principal-broker review of a checklist item (document of agreement)
+ * and transition it. 'approved' → completed; 'sent_back' → required. Writes an
+ * immutable tc_principal_reviews row (reviewer name + date) + a tc_events row.
+ * Superuser (principal broker) only.
+ */
+export async function recordPrincipalReview(
+  itemId: string,
+  decision: 'approved' | 'sent_back',
+  note?: string
+): Promise<PrincipalReviewResult> {
+  const session = await getSession()
+  const email = session?.user?.email ?? null
+  const role = await getAdminRoleForEmail(email)
+  if (role?.role !== 'superuser' || !email) return { ok: false, error: 'Principal broker only' }
+  if (decision !== 'approved' && decision !== 'sent_back') return { ok: false, error: 'Invalid decision' }
+
+  const supabase = getServiceSupabase()
+  const { data: item } = await supabase
+    .from('tc_checklist_items')
+    .select('id, name, cycle_id, status, tc_cycles(deal_id)')
+    .eq('id', itemId)
+    .maybeSingle()
+  if (!item) return { ok: false, error: 'Item not found' }
+  if ((item as DbRow).status !== 'in_review') return { ok: false, error: 'Item is not awaiting review' }
+
+  const dealId = (item as DbRow).tc_cycles?.deal_id ?? null
+  // The documents under this item at review time (the record's subject).
+  const { data: assignments } = await supabase
+    .from('tc_checklist_assignments')
+    .select('document_id')
+    .eq('item_id', itemId)
+  const documentIds = (assignments ?? []).map((a: DbRow) => a.document_id)
+
+  // reviewer name = the rule's "name of the reviewer"
+  const meta = session?.user?.user_metadata as { full_name?: string; name?: string } | undefined
+  const reviewerName = meta?.full_name || meta?.name || email
+  const reviewedAt = new Date().toISOString()
+
+  const { error: recErr } = await supabase.from('tc_principal_reviews').insert({
+    deal_id: dealId,
+    cycle_id: (item as DbRow).cycle_id,
+    item_id: itemId,
+    item_name: (item as DbRow).name,
+    document_ids: documentIds,
+    reviewer_email: email,
+    reviewer_name: reviewerName,
+    reviewed_at: reviewedAt,
+    decision,
+    note: note?.trim() || null,
+  })
+  if (recErr) return { ok: false, error: recErr.message }
+
+  const newStatus = decision === 'approved' ? 'completed' : 'required'
+  const { error: upErr } = await supabase
+    .from('tc_checklist_items')
+    .update({ status: newStatus })
+    .eq('id', itemId)
+  if (upErr) return { ok: false, error: upErr.message }
+
+  await supabase.from('tc_events').insert({
+    deal_id: dealId,
+    cycle_id: (item as DbRow).cycle_id,
+    actor: email,
+    action: 'principal_broker_review',
+    detail: {
+      item: (item as DbRow).name,
+      decision,
+      reviewer: reviewerName,
+      reviewed_at: reviewedAt,
+      rule: 'OAR 863-015-0140',
+      note: note?.trim() || null,
+    },
+  })
+
+  revalidatePath('/admin/sign-off')
+  revalidatePath('/admin/deals')
+  return { ok: true }
 }

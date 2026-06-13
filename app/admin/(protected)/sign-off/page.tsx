@@ -4,7 +4,28 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { getPrincipalSignOffQueue } from '@/app/actions/tc-signoff'
+import type { ReviewDeadline } from '@/lib/tc/banking-days'
 import { SignOffControls } from './SignOffControls'
+
+function DeadlinePill({ deadline }: { deadline: ReviewDeadline | null }) {
+  if (!deadline) {
+    return <Badge variant="outline" className="text-[11px] text-muted-foreground">no acceptance date</Badge>
+  }
+  const n = deadline.bankingDaysRemaining
+  if (deadline.overdue) {
+    return (
+      <Badge className="bg-destructive/15 text-[11px] text-destructive">
+        {Math.abs(n)} banking day{Math.abs(n) === 1 ? '' : 's'} overdue
+      </Badge>
+    )
+  }
+  const tone = n <= 2 ? 'bg-warning/20 text-warning-foreground' : 'bg-muted text-muted-foreground'
+  return (
+    <Badge className={`text-[11px] ${tone}`}>
+      due in {n} banking day{n === 1 ? '' : 's'}
+    </Badge>
+  )
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -33,8 +54,14 @@ export default async function SignOffPage() {
       <header className="space-y-1">
         <h1 className="text-2xl font-bold text-foreground">Sign-off queue</h1>
         <p className="text-sm text-muted-foreground">
-          Documents submitted for your sign-off across all brokers&apos; live deals. Reviewing here is
-          your supervisory record (OAR 863-015). {queue.totalItems} item{queue.totalItems === 1 ? '' : 's'} pending.
+          Documents submitted for principal-broker review across all brokers&apos; live deals.
+          Oregon requires you to review each document of agreement within 7 banking days
+          (OAR 863-015-0140); signing off here records your name and the review date.{' '}
+          {queue.totalItems} item{queue.totalItems === 1 ? '' : 's'} pending
+          {queue.overdueItems > 0 ? (
+            <span className="font-semibold text-destructive">, {queue.overdueItems} past the 7-day deadline</span>
+          ) : null}
+          .
         </p>
       </header>
 
@@ -61,7 +88,10 @@ export default async function SignOffPage() {
                   {deal.items.map((item) => (
                     <li key={item.itemId} className="flex items-start justify-between gap-3 py-2.5">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground">{item.name}</p>
+                        <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
+                          {item.name}
+                          <DeadlinePill deadline={item.deadline} />
+                        </p>
                         {item.docs.length ? (
                           <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1">
                             {item.docs.map((doc) =>
