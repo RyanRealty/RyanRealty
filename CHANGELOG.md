@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.507.0 (2026-06-13)
+
+### Features
+- feat(crm): expired-outreach backfill — queue the 2-text opening for the last N expired leads
+
+---
+
+
 ## v1.506.0 (2026-06-13)
 
 ### Features
