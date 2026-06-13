@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.514.0 (2026-06-13)
+
+### Features
+- feat(lp): rebuild Heath asset section as repeat-sales appreciation (home performance over time)
+
+---
+
+
 ## v1.513.2 (2026-06-13)
 
 ### Maintenance
