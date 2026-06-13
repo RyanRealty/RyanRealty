@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.511.2 (2026-06-13)
+
+### Bug Fixes
+- fix(lp): Heath performance chart now actually paints (recharts mount gate)
+
+---
+
+
 ## v1.511.1 (2026-06-13)
 
 ### Bug Fixes
