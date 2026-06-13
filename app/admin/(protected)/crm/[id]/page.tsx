@@ -268,10 +268,10 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-4">
                   {person.picture_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={person.picture_url} alt="" className="h-12 w-12 shrink-0 rounded-full border border-border object-cover" referrerPolicy="no-referrer" />
+                    <img src={person.picture_url} alt="" className="h-24 w-24 shrink-0 rounded-xl border border-border object-cover shadow-sm" referrerPolicy="no-referrer" />
                   ) : (
                     <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted text-lg font-semibold text-muted-foreground">
                       {(person.name ?? '?').charAt(0).toUpperCase()}
