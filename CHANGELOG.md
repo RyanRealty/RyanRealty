@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.515.1 (2026-06-13)
+
+### Maintenance
+- docs(handoff): Heath LP home-as-an-asset rebuild — done state, methodology, open items, shared-tree gotchas
+
+---
+
+
 ## v1.515.0 (2026-06-13)
 
 ### Features
