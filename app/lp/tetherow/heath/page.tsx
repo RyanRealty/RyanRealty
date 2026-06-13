@@ -18,7 +18,7 @@ import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { Container } from '@/components/site/primitives'
 import LandingPageTracker from '@/components/LandingPageTracker'
 import HeathCmaForm from './_components/HeathCmaForm'
-import HeathPerformanceCharts from './_components/HeathPerformanceCharts.client'
+import HeathAssetPerformance from './_components/HeathAssetPerformance'
 import { CONTACT } from '@/lib/brand/contact'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -226,38 +226,6 @@ async function fetchRecentHeathClosings(): Promise<RecentClose[]> {
   }
 }
 
-// Recent closings at the Tetherow PARENT level — Heath is a phase of Tetherow
-// and the MLS does not tag it separately, so Heath alone has ~0 recent sales.
-// The performance chart and the market ribbon both read at the Tetherow level
-// (consistent with the CMA copy "anchored to Tetherow closings"). 'Tetherow'
-// is the subdivision value carrying the bulk of recent closings.
-async function fetchRecentTetherowClosings(): Promise<RecentClose[]> {
-  try {
-    const { getListingTiles } = await import('@/lib/data')
-    const since = new Date()
-    since.setDate(since.getDate() - 365)
-    const tiles = await getListingTiles({
-      subdivision: 'Tetherow',
-      propertyType: 'A',
-      status: 'closed',
-      closedFromDate: since.toISOString(),
-      sort: 'close-newest',
-      limit: 14,
-    })
-    return tiles.map((t) => ({
-      CloseDate: t.closeDate ?? '',
-      ClosePrice: t.closePrice ?? 0,
-      ListPrice: t.listPrice ?? 0,
-      OriginalListPrice: null,
-      BedroomsTotal: t.beds ?? 0,
-      BathroomsTotal: t.baths ?? 0,
-      TotalLivingAreaSqFt: t.sqft ?? 0,
-      StreetName: t.streetName ?? '',
-    })) as unknown as RecentClose[]
-  } catch {
-    return []
-  }
-}
 
 // ──────────────────────────────────────────────────────────────────────────
 // Formatters — tabular numerals, currency to nearest $1k, days as integers.
@@ -387,40 +355,22 @@ function buildJsonLd() {
 // PAGE
 // ──────────────────────────────────────────────────────────────────────────
 export default async function HeathAtTetherowPage() {
-  const [marketStats, activeListings, recentCloses, tetherowCloses] = await Promise.all([
+  const { getRepeatSalesAppreciation } = await import('@/lib/data')
+  const [marketStats, activeListings, recentCloses, appreciation] = await Promise.all([
     fetchTetherowMarketStats(),
     fetchActiveHeathInventory(),
     fetchRecentHeathClosings(),
-    fetchRecentTetherowClosings(),
+    getRepeatSalesAppreciation('%tetherow%'),
   ])
 
   const monthYear = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
-  // Chart props — all from the verified data above (CLAUDE.md §0). No modeling.
   const num = (v: string | number | null | undefined): number | null => {
     if (v == null) return null
     const n = typeof v === 'string' ? Number.parseFloat(v) : v
     return Number.isFinite(n) ? n : null
   }
-  // Chart on Tetherow-parent closings (Heath alone is too thin); fall back to
-  // Heath-tagged sales if the parent query ever returns nothing.
-  const chartCloses = tetherowCloses.length >= 2 ? tetherowCloses : recentCloses
-  const perfSales = chartCloses.map((c) => ({
-    closeDate: c.CloseDate,
-    closePrice: num(c.ClosePrice),
-    listPrice: num(c.ListPrice),
-    sqft: num(c.TotalLivingAreaSqFt),
-    streetName: c.StreetName,
-  }))
-  const rawStl = num(marketStats?.avg_sale_to_list_ratio)
-  const perfStats = {
-    medianSalePrice: num(marketStats?.median_sale_price),
-    medianPpsf: num(marketStats?.median_ppsf),
-    medianDom: num(marketStats?.median_dom),
-    saleToListPct: rawStl == null ? null : rawStl > 1.5 ? rawStl : rawStl * 100,
-    soldCount: marketStats?.sold_count ?? null,
-    activeCount: activeListings.length || (marketStats?.end_of_period_inventory ?? null),
-  }
+  const currentMedianSale = num(marketStats?.median_sale_price)
 
   return (
     <div className="bg-background text-foreground">
@@ -779,17 +729,17 @@ export default async function HeathAtTetherowPage() {
         </div>
       </section>
 
-      {/* ── Investment performance (verified MLS charts) ───────────────── */}
+      {/* ── How homes here perform as an asset (repeat-sales appreciation) ─ */}
       <section className="py-16 sm:py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mb-8 max-w-3xl">
-            <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">The performance picture</div>
-            <h2 className="mt-2 font-display text-3xl font-semibold text-primary sm:text-4xl">What Heath does as an asset</h2>
+            <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">A long-term asset</div>
+            <h2 className="mt-2 font-display text-3xl font-semibold text-primary sm:text-4xl">How homes here have performed over time</h2>
             <p className="mt-3 text-base text-muted-foreground">
-              Whether you are buying to hold or deciding when to sell, these are the numbers that matter. Every figure below traces to closed MLS sales, not estimates.
+              The clearest way to judge a place as an investment is what the same home did when it sold again years later. These are real Tetherow homes, bought and later resold, matched as the same structure so the return reflects appreciation, not a remodel.
             </p>
           </div>
-          <HeathPerformanceCharts sales={perfSales} stats={perfStats} />
+          <HeathAssetPerformance data={appreciation} currentMedianSale={currentMedianSale} />
           <p className="mt-6 text-xs text-muted-foreground">
             HOA dues for Heath are {' '}
             <span className="font-medium text-foreground">$2,244 per year</span>. Tetherow golf membership tiers and current Deschutes County property tax figures vary by home and year. {' '}
