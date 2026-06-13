@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.515.0 (2026-06-13)
+
+### Features
+- feat(broker): broker command center — deals, calendar, clients, marketing launchpad
+
+---
+
+
 ## v1.514.0 (2026-06-13)
 
 ### Features
