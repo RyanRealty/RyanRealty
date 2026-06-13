@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.510.0 (2026-06-13)
+
+### Features
+- feat(tc): complete envelope + e-signature system (compose, sign-from-email, seal, notify) + clean signer surface
+
+---
+
+
 ## v1.509.0 (2026-06-13)
 
 ### Features
