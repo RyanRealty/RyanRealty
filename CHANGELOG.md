@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.512.0 (2026-06-13)
+
+### Features
+- feat(tc): principal-broker document review per OAR 863-015-0140 + SkySlope parity map
+
+---
+
+
 ## v1.511.2 (2026-06-13)
 
 ### Bug Fixes
