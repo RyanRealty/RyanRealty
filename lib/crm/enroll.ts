@@ -74,14 +74,15 @@ export async function autoEnrollPerson(personId: number): Promise<AutoEnrollResu
     .limit(1)
   if (existing?.length) return { enrolled: false, reason: 'already enrolled in a master sequence' }
 
-  // Broker-approval gate (Matt directive 2026-06-12): the workflow does NOT
-  // start until the assigned broker approves the prepared first touch. The
-  // sequence engine only processes status='running', so this row waits.
+  // Auto-fire the first touches (Matt directive 2026-06-13): touch 1 + 2 send
+  // automatically (email-first, so a touch lands even with SMS A2P blocked).
+  // Later steps are confirm:true and park as awaiting_broker_next for the broker
+  // to confirm. The engine processes status='running' from next_run_at.
   const { error } = await sb.from('crm_sequence_enrollments').insert({
     person_id: personId,
     sequence_id: seq.id,
-    status: 'awaiting_broker',
-    next_run_at: null,
+    status: 'running',
+    next_run_at: new Date().toISOString(),
     enrolled_by: 'auto-rule',
   })
   if (error) return { enrolled: false, reason: error.message }
@@ -89,7 +90,7 @@ export async function autoEnrollPerson(personId: number): Promise<AutoEnrollResu
   await sb.from('crm_timeline').insert({
     person_id: personId,
     kind: 'system',
-    title: `Enrolled in "${seq.name}" — waiting on broker approval of the first touch`,
+    title: `Enrolled in "${seq.name}" — first touch sending automatically`,
     source: 'auto-enroll',
   })
   return { enrolled: true, sequence: seq.name }
@@ -164,10 +165,9 @@ export async function autoEnrollByFubId(fubPersonId: number): Promise<AutoEnroll
         body = [
           `New ${leadType} lead: ${p.name ?? 'Unknown'}${p.source ? ` (${p.source})` : ''}`,
           preview
-            ? `Prepared first ${preview.channel === 'sms' ? 'text' : 'email'}: "${preview.body}"`
-            : `Enrolled in "${result.sequence}".`,
-          'Want me to send it and start the workflow?',
-          `Approve or edit: ryan-realty.com/admin/crm/approvals`,
+            ? `First ${preview.channel === 'sms' ? 'text' : 'email'} sending now: "${preview.body}"`
+            : `Enrolled in "${result.sequence}" — first touch sending now.`,
+          `Open the lead: ryan-realty.com/admin/crm/${p.id}`,
         ].join('\n')
       } else {
         body = newLeadAlertBody({
