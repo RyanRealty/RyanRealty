@@ -226,6 +226,39 @@ async function fetchRecentHeathClosings(): Promise<RecentClose[]> {
   }
 }
 
+// Recent closings at the Tetherow PARENT level — Heath is a phase of Tetherow
+// and the MLS does not tag it separately, so Heath alone has ~0 recent sales.
+// The performance chart and the market ribbon both read at the Tetherow level
+// (consistent with the CMA copy "anchored to Tetherow closings"). 'Tetherow'
+// is the subdivision value carrying the bulk of recent closings.
+async function fetchRecentTetherowClosings(): Promise<RecentClose[]> {
+  try {
+    const { getListingTiles } = await import('@/lib/data')
+    const since = new Date()
+    since.setDate(since.getDate() - 365)
+    const tiles = await getListingTiles({
+      subdivision: 'Tetherow',
+      propertyType: 'A',
+      status: 'closed',
+      closedFromDate: since.toISOString(),
+      sort: 'close-newest',
+      limit: 14,
+    })
+    return tiles.map((t) => ({
+      CloseDate: t.closeDate ?? '',
+      ClosePrice: t.closePrice ?? 0,
+      ListPrice: t.listPrice ?? 0,
+      OriginalListPrice: null,
+      BedroomsTotal: t.beds ?? 0,
+      BathroomsTotal: t.baths ?? 0,
+      TotalLivingAreaSqFt: t.sqft ?? 0,
+      StreetName: t.streetName ?? '',
+    })) as unknown as RecentClose[]
+  } catch {
+    return []
+  }
+}
+
 // ──────────────────────────────────────────────────────────────────────────
 // Formatters — tabular numerals, currency to nearest $1k, days as integers.
 // ──────────────────────────────────────────────────────────────────────────
@@ -354,10 +387,11 @@ function buildJsonLd() {
 // PAGE
 // ──────────────────────────────────────────────────────────────────────────
 export default async function HeathAtTetherowPage() {
-  const [marketStats, activeListings, recentCloses] = await Promise.all([
+  const [marketStats, activeListings, recentCloses, tetherowCloses] = await Promise.all([
     fetchTetherowMarketStats(),
     fetchActiveHeathInventory(),
     fetchRecentHeathClosings(),
+    fetchRecentTetherowClosings(),
   ])
 
   const monthYear = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
@@ -368,7 +402,10 @@ export default async function HeathAtTetherowPage() {
     const n = typeof v === 'string' ? Number.parseFloat(v) : v
     return Number.isFinite(n) ? n : null
   }
-  const perfSales = recentCloses.map((c) => ({
+  // Chart on Tetherow-parent closings (Heath alone is too thin); fall back to
+  // Heath-tagged sales if the parent query ever returns nothing.
+  const chartCloses = tetherowCloses.length >= 2 ? tetherowCloses : recentCloses
+  const perfSales = chartCloses.map((c) => ({
     closeDate: c.CloseDate,
     closePrice: num(c.ClosePrice),
     listPrice: num(c.ListPrice),

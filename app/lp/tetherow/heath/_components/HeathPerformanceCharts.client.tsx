@@ -95,7 +95,7 @@ export default function HeathPerformanceCharts({ sales, stats }: { sales: HeathS
       {data.length >= 2 ? (
         <div className="rounded-2xl border border-primary/10 bg-card p-4 shadow-sm sm:p-6">
           <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
-            <h3 className="font-display text-lg font-semibold text-primary">What is trading in Heath</h3>
+            <h3 className="font-display text-lg font-semibold text-primary">Recent Tetherow sales</h3>
             <span className="text-xs text-muted-foreground">Each bar is a verified MLS closing · last 12 months</span>
           </div>
           <div className="h-72 w-full">
@@ -139,7 +139,7 @@ export default function HeathPerformanceCharts({ sales, stats }: { sales: HeathS
 
       {/* Liquidity */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4">
-        <Stat label="Active now" value={stats.activeCount != null ? `${stats.activeCount}` : '—'} sub="homes for sale in Heath" />
+        <Stat label="Active now" value={stats.activeCount != null ? `${stats.activeCount}` : '—'} sub="active in Heath now" />
         <Stat label="Sold (12 mo)" value={stats.soldCount != null ? `${stats.soldCount}` : '—'} sub="Tetherow closings" />
       </div>
     </div>
