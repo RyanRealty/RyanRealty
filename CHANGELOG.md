@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.513.1 (2026-06-13)
+
+### Maintenance
+- docs(tc): comprehensive TC build spec for handoff to the implementing session
+
+---
+
+
 ## v1.513.0 (2026-06-13)
 
 ### Features
