@@ -1519,7 +1519,7 @@
 
   <h3 class="subhead">What the data means for this listing</h3>
   <ul class="note-list">
-    <li>Bend's "Warm" market (58/100 health score) means well-priced homes sell. The anchor comp at 62315 Deer Trail was gone in 12 days at 98.97% of ask — that is the behavior of a correctly priced, well-presented property.</li>
+    <li>Bend's "Warm" market (58/100 health score) means well-priced homes sell. The anchor comp at 62315 Deer Trail was gone in 12 days at 98.97% of ask. That is the behavior of a correctly priced, well-presented property.</li>
     <li>The 97.3% sale-to-list ratio across Bend tells buyers they do not need to overbid. Overpriced listings receive low offers and sit. The Eagle Road comp's 120+ days at 90.8% S/L is the cautionary example.</li>
     <li>Rural acreage buyers are a specific audience. They are not in a hurry, they do due diligence on COID rights and outbuilding condition, and they will walk if the price exceeds their independent research. A $1,025,000 recommended list is designed to attract this buyer within 30 to 45 days.</li>
     <li>Months of supply is not available from the current cache run. This figure will be pulled at the listing appointment from a fresh data pull if needed.</li>
@@ -1543,7 +1543,7 @@
   <h2 class="section">Three Pricing Methods</h2>
 
   <div class="method-block">
-    <div class="mb-hd">Method 1 · Price per sqft — indicative only (sqft unconfirmed)</div>
+    <div class="mb-hd">Method 1 · Price per sqft (indicative only, sqft unconfirmed)</div>
     <p>Time-adjusted $/sqft for the 1970s-era rural acreage comps (excluding the Bear Creek floor outlier at $315/sqft):</p>
     <ul class="note-list" style="margin-top:4px;">
       <li>62315 Deer Trail: $949,300 ÷ 1,844 sqft = <strong>$514.81/sqft</strong></li>
@@ -1558,7 +1558,7 @@
 
   <div class="method-block">
     <div class="mb-hd">Method 2 · Anchor baseline + value-add credits</div>
-    <p>Anchor baseline: <strong>$949,300</strong> (time-adjusted 62315 Deer Trail — 13 months at −1.5%/yr)</p>
+    <p>Anchor baseline: <strong>$949,300</strong> (time-adjusted 62315 Deer Trail, 13 months at −1.5%/yr)</p>
     <ul class="note-list" style="margin-top:4px;">
       <li>Extra bathroom (3BA vs. 2BA on anchor): +$18,000</li>
       <li>COID 3-acre irrigation water rights: +$35,000</li>
@@ -1583,7 +1583,7 @@
       <li>62540 Eagle (area, recent, 4BR/2BA): 18% × $937,000 = $168,660</li>
       <li>63566 Dickens (vintage, smaller lot adjusted): 15% × $969,000 = $145,350</li>
       <li>20640 Kandi (mid-acreage, fully adjusted): 12% × $882,000 = $105,840</li>
-      <li>22820 Bear Creek (floor anchor — 5%): 5% × $806,000 = $40,300</li>
+      <li>22820 Bear Creek (floor anchor, 5%): 5% × $806,000 = $40,300</li>
     </ul>
     <p><strong>Method 3 result: $965,040 → $965,000.</strong></p>
   </div>
@@ -1621,7 +1621,7 @@
   </header>
 
   <h2 class="section">Full Adjustment Grid <span class="conf-badge">Confidence: Moderate</span></h2>
-  <p style="margin-bottom:8px;">Time-adjustment rate: −1.5%/yr (from Bend rolling 365-day YoY of −1.57%, conservative). All adjustments to reconcile each comp to the subject. Subject has no A/C (−$8K) and carpet wear (−$4K). Subject has: 3 baths vs. comp 2 baths (+$18K); COID 3-acre rights assumed absent from comps (+$35K); horse barn 576 sqft (+$22K); sheds 256 sqft (+$6K); above-ground pool (+$14K). Lot adjustments at $8,000/acre for full acres over comp. Subject sqft unknown — no size adjustment applied.</p>
+  <p style="margin-bottom:8px;">Time-adjustment rate: −1.5%/yr (from Bend rolling 365-day YoY of −1.57%, conservative). All adjustments to reconcile each comp to the subject. Subject has no A/C (−$8K) and carpet wear (−$4K). Subject has: 3 baths vs. comp 2 baths (+$18K); COID 3-acre rights assumed absent from comps (+$35K); horse barn 576 sqft (+$22K); sheds 256 sqft (+$6K); above-ground pool (+$14K). Lot adjustments at $8,000/acre for full acres over comp. Subject sqft unknown. No size adjustment applied.</p>
 
   <table class="adj" style="margin-bottom:10px;">
     <thead>
@@ -1726,10 +1726,10 @@
     </tbody>
   </table>
 
-  <p style="margin-bottom:6px;"><strong>Why Methods 2 and 3 diverge (8.9%):</strong> Method 2 stacks all value-add credits individually over the time-adjusted anchor. Method 3 weights 6 comps and averages out the outlier influence from Bear Creek. The 8.9% divergence exceeds the 5% convergence threshold — this is expected given (a) the floor outlier's unexplained $315/sqft and (b) the subject's unknown sqft preventing a size-based crosscheck. Confidence is rated <strong>Moderate</strong>, not High.</p>
+  <p style="margin-bottom:6px;"><strong>Why Methods 2 and 3 diverge (8.9%):</strong> Method 2 stacks all value-add credits individually over the time-adjusted anchor. Method 3 weights 6 comps and averages out the outlier influence from Bear Creek. The 8.9% divergence exceeds the 5% convergence threshold. This is expected given (a) the floor outlier's unexplained $315/sqft and (b) the subject's unknown sqft preventing a size-based crosscheck. Confidence is rated <strong>Moderate</strong>, not High.</p>
 
   <div class="trace">
-    <div class="t-hd">Verification trace — one line per figure</div>
+    <div class="t-hd">Verification trace, one line per figure</div>
     Comp 1 · 62315 Deer Trail · <code>ClosePrice $965,000</code> · Supabase listings, PostalCode='97701', StreetNumber='62315', StandardStatus='Closed', CloseDate=2025-05-21<br/>
     Comp 2 · 62540 Eagle Rd · <code>ClosePrice $858,000</code> · Supabase listings, PostalCode='97701', StreetNumber='62540', StandardStatus='Closed', CloseDate=2026-02-25<br/>
     Comp 3 · 62118 Cody Jr Rd · <code>ClosePrice $885,000</code> · Supabase listings, PostalCode='97701', StreetNumber='62118', StandardStatus='Closed', CloseDate=2026-02-24<br/>
@@ -1763,7 +1763,7 @@
   </div>
 
   <div class="disclosure-box">
-    <div class="db-hd">Subject property data limitations — read carefully</div>
+    <div class="db-hd">Subject property data limitations</div>
     <p>The subject property at 62285 Deer Trail Rd has never appeared on the Oregon Data Share MLS. No prior sale is recorded. The following key data points are based solely on seller-reported information and have not been independently verified:</p>
     <ul class="note-list">
       <li><strong>Bedrooms and bathrooms:</strong> 4 bedrooms, 3 full bathrooms — seller-reported, confirm at listing.</li>
