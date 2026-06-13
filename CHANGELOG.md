@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.521.0 (2026-06-13)
+
+### Features
+- feat(crm): activate email-first auto first-touch + approved copy (applied to prod)
+
+---
+
+
 ## v1.520.0 (2026-06-13)
 
 ### Features
