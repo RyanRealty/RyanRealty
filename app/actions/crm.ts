@@ -1071,6 +1071,100 @@ export async function advanceEnrollmentNowAction(enrollmentId: number) {
   )
 }
 
+export type CrmNextRec = {
+  enrollmentId: number
+  sequenceName: string
+  stepIndex: number
+  channel: string
+  subjectPreview: string | null
+  bodyPreview: string
+  unresolved: string[]
+  holdReason: string | null
+} | null
+
+/** The broker-confirmed "recommended next step" for a contact, fully rendered
+ *  exactly as the lead would receive it. Drives the color-coded next-step card
+ *  + the in-app message preview. Returns null when nothing is waiting. */
+export async function getNextRecommendation(personId: number): Promise<CrmNextRec> {
+  const access = await getCrmAccess()
+  if (!access) return null
+  const sb = createServiceClient()
+  const { data: en } = await sb
+    .from('crm_sequence_enrollments')
+    .select('id,step_index,status,crm_sequences!inner(name,steps)')
+    .eq('person_id', personId)
+    .eq('status', 'awaiting_broker_next')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (!en) return null
+  const seq = en.crm_sequences as unknown as { name: string; steps: Array<Record<string, unknown>> }
+  const step = (seq.steps ?? [])[en.step_index as number] as Record<string, unknown> | undefined
+  if (!step) return null
+  const { data: person } = await sb
+    .from('crm_people')
+    .select('first_name,name,custom')
+    .eq('id', personId)
+    .maybeSingle()
+  const { renderCrmMerge, findUnresolvedMergeTokens, referencesCmaLink } = await import('@/lib/crm/merge')
+  const p = (person ?? {}) as { first_name?: string | null; name?: string | null; custom?: Record<string, unknown> }
+  const rawBody = String(step.body ?? step.taskName ?? '')
+  const bodyPreview = renderCrmMerge(rawBody, p)
+  const subjectPreview = step.subject ? renderCrmMerge(String(step.subject), p) : null
+  const holdReason =
+    referencesCmaLink(rawBody) && !((p.custom ?? {}) as Record<string, unknown>).cmaLink
+      ? 'Holds until the CMA is built (the link is stamped at finalize)'
+      : null
+  return {
+    enrollmentId: en.id as number,
+    sequenceName: seq.name,
+    stepIndex: en.step_index as number,
+    channel: String(step.channel ?? 'step'),
+    subjectPreview,
+    bodyPreview,
+    unresolved: findUnresolvedMergeTokens(`${subjectPreview ?? ''} ${bodyPreview}`),
+    holdReason,
+  }
+}
+
+/** Broker confirms the recommended next step — engine sends it on the next run. */
+export async function confirmNextStepAction(enrollmentId: number) {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false as const, error: 'not authorized' }
+  return setEnrollment(
+    enrollmentId,
+    { status: 'running', next_run_at: new Date().toISOString(), approved_by: access.email, approved_at: new Date().toISOString() },
+    'Recommended next step confirmed by broker — sending',
+  )
+}
+
+/** Broker skips the recommended step — advance to the next, re-park if it is
+ *  also broker-confirmed, complete if there are no more steps. */
+export async function skipNextStepAction(enrollmentId: number) {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false as const, error: 'not authorized' }
+  const sb = createServiceClient()
+  const { data: en } = await sb
+    .from('crm_sequence_enrollments')
+    .select('step_index,crm_sequences!inner(steps)')
+    .eq('id', enrollmentId)
+    .maybeSingle()
+  if (!en) return { ok: false as const, error: 'enrollment not found' }
+  const steps = ((en.crm_sequences as unknown as { steps: unknown[] }).steps) ?? []
+  const nextIdx = (en.step_index as number) + 1
+  if (nextIdx >= steps.length) {
+    return setEnrollment(enrollmentId, { status: 'completed', step_index: nextIdx }, 'Recommended step skipped — sequence complete')
+  }
+  const nextStep = steps[nextIdx] as { confirm?: boolean }
+  return setEnrollment(
+    enrollmentId,
+    nextStep?.confirm
+      ? { step_index: nextIdx, status: 'awaiting_broker_next', next_run_at: null }
+      : { step_index: nextIdx, status: 'running', next_run_at: new Date().toISOString() },
+    'Recommended step skipped by broker',
+  )
+}
+
 export type WorkflowBoardSequence = {
   sequenceId: number
   sequenceName: string

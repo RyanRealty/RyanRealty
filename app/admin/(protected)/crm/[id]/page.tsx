@@ -11,6 +11,9 @@ import {
   getCrmAccess,
   getCrmEmailTemplates,
   getCrmPersonFull,
+  getNextRecommendation,
+  confirmNextStepAction,
+  skipNextStepAction,
   getCrmSmsTemplates,
   getTwilioSmsStatus,
   removeCrmTagAction,
@@ -88,6 +91,16 @@ async function sendSmsForm(personId: number, formData: FormData): Promise<void> 
   const r = await sendCrmSmsAction(formData)
   if (!r.ok) console.error('[crm] sendSms failed:', r.error)
 }
+async function confirmNextForm(formData: FormData): Promise<void> {
+  'use server'
+  const r = await confirmNextStepAction(Number(formData.get('enrollmentId')))
+  if (!r.ok) console.error('[crm] confirmNext failed:', r.error)
+}
+async function skipNextForm(formData: FormData): Promise<void> {
+  'use server'
+  const r = await skipNextStepAction(Number(formData.get('enrollmentId')))
+  if (!r.ok) console.error('[crm] skipNext failed:', r.error)
+}
 
 const KIND_ICON: Record<string, string> = {
   note: '📝', email_in: '📥', email_out: '📤', sms_in: '💬', sms_out: '📲',
@@ -149,12 +162,13 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
 
   // One parallel wave — getCrmAccess carries the auth gate (session + role),
   // so the old sequential session → role → data chain is gone.
-  const [crmAccess, full, templates, smsTemplates, twilioStatus] = await Promise.all([
+  const [crmAccess, full, templates, smsTemplates, twilioStatus, rec] = await Promise.all([
     getCrmAccess(),
     getCrmPersonFull(id),
     getCrmEmailTemplates(),
     getCrmSmsTemplates(),
     getTwilioSmsStatus(),
+    getNextRecommendation(id),
   ])
   if (!crmAccess) redirect('/admin/access-denied')
   const person = full.person
@@ -260,6 +274,35 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
             {full.suppressions.map((s) => `${s.channel}: ${s.reason}`).join(' · ')}. Automated outreach is blocked for the listed channels.
           </AlertDescription>
         </Alert>
+      ) : null}
+
+      {rec ? (
+        <div className="mb-6 rounded-xl border border-accent border-l-4 bg-accent/10 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-accent-foreground">
+              Next step
+            </span>
+            <span className="text-sm font-semibold text-foreground">
+              {rec.channel === 'sms' ? 'Send text' : rec.channel === 'email' ? 'Send email' : rec.channel === 'task' ? 'Do this' : 'Next'} · {rec.sequenceName}
+            </span>
+          </div>
+          {rec.subjectPreview ? <div className="mt-3 text-sm font-medium text-foreground">{rec.subjectPreview}</div> : null}
+          <div className="mt-1 whitespace-pre-wrap rounded-lg border border-border bg-card p-3 text-sm text-foreground">{rec.bodyPreview}</div>
+          {rec.unresolved.length ? (
+            <div className="mt-2 text-xs font-medium text-destructive">Unresolved fields: {rec.unresolved.join(', ')}</div>
+          ) : null}
+          {rec.holdReason ? <div className="mt-2 text-xs text-muted-foreground">{rec.holdReason}</div> : null}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <form action={confirmNextForm}>
+              <input type="hidden" name="enrollmentId" value={rec.enrollmentId} />
+              <Button type="submit" size="sm" disabled={!!rec.holdReason}>Confirm &amp; send</Button>
+            </form>
+            <form action={skipNextForm}>
+              <input type="hidden" name="enrollmentId" value={rec.enrollmentId} />
+              <Button type="submit" size="sm" variant="outline">Skip</Button>
+            </form>
+          </div>
+        </div>
       ) : null}
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-[420px_1fr]">
