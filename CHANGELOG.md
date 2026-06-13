@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.512.1 (2026-06-13)
+
+### Maintenance
+- docs(handoff): comprehensive CRM + lead-funnel + LP session handoff (2026-06-12)
+
+---
+
+
 ## v1.512.0 (2026-06-13)
 
 ### Features
