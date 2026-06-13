@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.510.1 (2026-06-13)
+
+### Bug Fixes
+- fix(crm): use canonical EMAIL_FONT_STACK in the outbound email wrapper
+
+---
+
+
 ## v1.510.0 (2026-06-13)
 
 ### Features
