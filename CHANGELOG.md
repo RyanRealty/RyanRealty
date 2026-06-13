@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.518.2 (2026-06-13)
+
+### Maintenance
+- docs(handoff): correct Anthropic framing — content runs on desktop subscription tokens, not metered API (non-blocker)
+
+---
+
+
 ## v1.518.1 (2026-06-13)
 
 ### Maintenance
