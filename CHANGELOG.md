@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.525.0 (2026-06-13)
+
+### Features
+- feat(gate): ci:lp-conversion — grade every landing page on conversion-readiness
+
+---
+
+
 ## v1.524.0 (2026-06-13)
 
 ### Features
