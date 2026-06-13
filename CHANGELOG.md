@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.518.0 (2026-06-13)
+
+### Features
+- feat(cma): 62285 Deer Trail Rd CMA for Laurie McAdam
+
+---
+
+
 ## v1.517.1 (2026-06-13)
 
 ### Maintenance
