@@ -56,6 +56,15 @@ const CMA_MAPS: Record<string, CmaMapPoint[]> = {
     { label: '7', color: COMP_COLOR, lat: 44.09211, lng: -121.250704 }, // 3820 Eagle Rd, new interior
     { label: '8', color: COMP_COLOR, lat: 44.091867, lng: -121.250461 }, // 3812 Eagle Rd, new interior
   ],
+  'cma-62285-deer-usa': [
+    { label: 'S', color: SUBJECT_COLOR, lat: 44.0685, lng: -121.4185 }, // 62285 Deer Trail Rd — estimated from corridor pattern
+    { label: '1', color: COMP_COLOR, lat: 44.069, lng: -121.418 }, // 62315 Deer Trail Rd — same street anchor
+    { label: '2', color: COMP_COLOR, lat: 44.068, lng: -121.415 }, // 62540 Eagle Rd
+    { label: '3', color: COMP_COLOR, lat: 44.065, lng: -121.418 }, // 62118 Cody Jr Rd
+    { label: '4', color: COMP_COLOR, lat: 44.075, lng: -121.405 }, // 63566 Dickens Rd
+    { label: '5', color: COMP_COLOR, lat: 44.055, lng: -121.418 }, // 22820 Bear Creek Rd
+    { label: '6', color: COMP_COLOR, lat: 44.082, lng: -121.408 }, // 20640 Kandi Rd
+  ],
   'cma-18705-tumalo-reservoir': [
     { label: 'S', color: SUBJECT_COLOR, lat: 44.132914, lng: -121.391158 }, // 18705 Tumalo Reservoir Rd, subject
     { label: '1', color: '0x1a6b3c',    lat: 44.132947, lng: -121.386319 }, // 18715 Tumalo Reservoir Rd, twin/anchor (0.2 mi, green)
