@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.516.1 (2026-06-13)
+
+### Maintenance
+- docs(tc): lock the SkySlope forms-loading mechanism into the spec (proven live)
+
+---
+
+
 ## v1.516.0 (2026-06-13)
 
 ### Features
