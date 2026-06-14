@@ -864,8 +864,10 @@
 }
 
 @media (max-width: 960px) {
-  .v6-hero { min-height: calc(100svh - 72px); }
-  .v6-hero-stack { left: 24px; right: 24px; bottom: 32px; }
+  /* Shorter hero on small screens so the 16:9 drone video reads as a composed
+     shot instead of a heavily-cropped vertical strip (Matt 2026-06-14). */
+  .v6-hero { min-height: 70svh; }
+  .v6-hero-stack { left: 24px; right: 24px; bottom: 28px; }
   .v6-coords { display: none; }
   .v6-attribution { left: 24px; }
   .v6-deal-flow { padding: 16px 24px; }
