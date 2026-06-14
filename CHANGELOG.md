@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.539.0 (2026-06-14)
+
+### Features
+- feat(account): finish Option A — fold /dashboard consumer features into /account
+
+---
+
+
 ## v1.538.2 (2026-06-14)
 
 ### Bug Fixes
