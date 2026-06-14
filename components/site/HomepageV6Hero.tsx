@@ -16,7 +16,6 @@
  */
 
 import Image from 'next/image'
-import { DisplayHeading } from '@/components/site/primitives'
 import HomepageV6AskBar from './HomepageV6AskBar.client'
 import HomepageV6CityTiles from './HomepageV6CityTiles.client'
 
@@ -110,9 +109,7 @@ export default function HomepageV6Hero({ activeCount, medianListPrice, freshness
             <span className="v6-label">Live · {chipParts.join(' · ')}</span>
           </div>
         )}
-        <DisplayHeading as="h1" className="v6-h1">
-          This is Bend, right now.
-        </DisplayHeading>
+        <h1 className="sr-only">Homes for sale in Bend and Central Oregon</h1>
         <HomepageV6AskBar />
       </div>
     </section>
