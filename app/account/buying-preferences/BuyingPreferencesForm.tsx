@@ -49,19 +49,19 @@ export default function BuyingPreferencesForm({ initial }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 max-w-md space-y-6 rounded-lg border border-border bg-card p-6 shadow-sm">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <Label className="block">
-        <span className="text-sm font-medium text-muted-foreground">Down payment (%)</span>
-        <Input type="number" min={0} max={100} step={1} value={down} onChange={(e) => setDown(Number(e.target.value) || 0)} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-foreground" />
+        <span className="text-sm font-medium text-foreground">Down payment (%)</span>
+        <Input type="number" min={0} max={100} step={1} value={down} onChange={(e) => setDown(Number(e.target.value) || 0)} className="mt-1.5 w-full tabular-nums" />
       </Label>
       <Label className="block">
-        <span className="text-sm font-medium text-muted-foreground">Interest rate (%)</span>
-        <Input type="number" min={0} max={20} step={0.25} value={rate} onChange={(e) => setRate(Number(e.target.value) || 0)} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-foreground" />
+        <span className="text-sm font-medium text-foreground">Interest rate (%)</span>
+        <Input type="number" min={0} max={20} step={0.25} value={rate} onChange={(e) => setRate(Number(e.target.value) || 0)} className="mt-1.5 w-full tabular-nums" />
       </Label>
       <Label className="block">
-        <span className="text-sm font-medium text-muted-foreground">Loan term (years)</span>
+        <span className="text-sm font-medium text-foreground">Loan term (years)</span>
         <Select value={String(term)} onValueChange={(e) => setTerm(Number(e))}>
-          <SelectTrigger className="mt-1">
+          <SelectTrigger className="mt-1.5 w-full tabular-nums">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -72,21 +72,27 @@ export default function BuyingPreferencesForm({ initial }: Props) {
           </SelectContent>
         </Select>
       </Label>
-      <p className="text-sm text-muted-foreground">Optional: used to curate &quot;Homes for You&quot; on the home page.</p>
-      <Label className="block">
-        <span className="text-sm font-medium text-muted-foreground">Max price (optional)</span>
-        <Input type="text" inputMode="numeric" placeholder="e.g. 600000" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value.replace(/\D/g, ''))} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-foreground" />
-      </Label>
-      <Label className="block">
-        <span className="text-sm font-medium text-muted-foreground">Min beds (optional)</span>
-        <Input type="number" min={0} placeholder="e.g. 2" value={minBeds || ''} onChange={(e) => setMinBeds(e.target.value)} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-foreground" />
-      </Label>
-      <Label className="block">
-        <span className="text-sm font-medium text-muted-foreground">Min baths (optional)</span>
-        <Input type="number" min={0} step={0.5} placeholder="e.g. 2" value={minBaths || ''} onChange={(e) => setMinBaths(e.target.value)} className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-foreground" />
-      </Label>
-      <div className="flex items-center gap-4">
-        <Button type="submit" disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
+
+      <div className="border-t border-border pt-6">
+        <p className="text-sm text-muted-foreground">Optional. Used to curate &quot;Homes for You&quot; on the home page.</p>
+        <div className="mt-4 space-y-6">
+          <Label className="block">
+            <span className="text-sm font-medium text-foreground">Max price (optional)</span>
+            <Input type="text" inputMode="numeric" placeholder="e.g. 600000" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value.replace(/\D/g, ''))} className="mt-1.5 w-full tabular-nums" />
+          </Label>
+          <Label className="block">
+            <span className="text-sm font-medium text-foreground">Min beds (optional)</span>
+            <Input type="number" min={0} placeholder="e.g. 2" value={minBeds || ''} onChange={(e) => setMinBeds(e.target.value)} className="mt-1.5 w-full tabular-nums" />
+          </Label>
+          <Label className="block">
+            <span className="text-sm font-medium text-foreground">Min baths (optional)</span>
+            <Input type="number" min={0} step={0.5} placeholder="e.g. 2" value={minBaths || ''} onChange={(e) => setMinBaths(e.target.value)} className="mt-1.5 w-full tabular-nums" />
+          </Label>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-4">
+        <Button type="submit" disabled={saving}>
           {saving ? 'Saving…' : 'Save preferences'}
         </Button>
         {msg === 'saved' && <span className="text-sm text-success">Saved.</span>}

@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getSavedSearches } from '@/app/actions/saved-searches'
 import SavedSearchesList from './SavedSearchesList'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { listingsBrowsePath } from '@/lib/slug'
 
 export const metadata: Metadata = {
@@ -18,35 +20,42 @@ export default async function SavedSearchesPage() {
   const searches = await getSavedSearches()
 
   return (
-    <>
-      <h1 className="text-2xl font-bold tracking-tight text-foreground">My saved searches</h1>
-      <p className="mt-1 text-muted-foreground">
-        Quick links to your saved searches. Create a search with our advanced filters (city, price, beds, status, and more), then save it here.
-      </p>
-      <div className="mt-4">
-        <Link
-          href={listingsBrowsePath()}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          Create &amp; save a search
-        </Link>
-        <p className="mt-1.5 text-xs text-muted-foreground">
-          Use the search page to set filters, then click &ldquo;Save this search&rdquo; to add it to this list.
-        </p>
-      </div>
-      {searches.length === 0 ? (
-        <div className="mt-8 rounded-lg border border-border bg-muted p-8 text-center">
-          <p className="text-muted-foreground">You haven&apos;t saved any searches yet.</p>
-          <Link
-            href={listingsBrowsePath()}
-            className="mt-4 inline-block rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted"
-          >
-            Go to search
-          </Link>
+    <div className="space-y-8">
+      {/* ── Header ── */}
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Saved searches</h1>
+          <p className="mt-1 text-sm text-muted-foreground">We watch these for new and updated listings that match.</p>
         </div>
-      ) : (
-        <SavedSearchesList searches={searches} />
-      )}
-    </>
+        <Button asChild size="sm">
+          <Link href={listingsBrowsePath()}>Start a search</Link>
+        </Button>
+      </header>
+
+      {/* ── Saved searches ── */}
+      <section>
+        <div className="mb-3 flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">Your searches</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Set filters on the search page, then tap &ldquo;Save this search&rdquo; to add it here.
+            </p>
+          </div>
+        </div>
+        {searches.length === 0 ? (
+          <Card className="flex flex-col items-center gap-3 px-4 py-10 text-center">
+            <p className="text-sm font-medium text-foreground">No saved searches yet.</p>
+            <p className="max-w-sm text-sm text-muted-foreground">
+              Save any search to get notified when matching homes hit the market.
+            </p>
+            <Button asChild size="sm">
+              <Link href={listingsBrowsePath()}>Start a search</Link>
+            </Button>
+          </Card>
+        ) : (
+          <SavedSearchesList searches={searches} />
+        )}
+      </section>
+    </div>
   )
 }

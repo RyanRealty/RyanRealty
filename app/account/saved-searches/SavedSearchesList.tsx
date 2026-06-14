@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { homesForSalePath, listingsBrowsePath } from '@/lib/slug'
 import { deleteSavedSearch } from '@/app/actions/saved-searches'
 import type { SavedSearchRow } from '@/app/actions/saved-searches'
-import { Button } from "@/components/ui/button"
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 type Props = { searches: SavedSearchRow[] }
 
@@ -38,27 +39,36 @@ export default function SavedSearchesList({ searches }: Props) {
   }
 
   return (
-    <ul className="mt-6 space-y-3">
+    <Card className="divide-y divide-border overflow-hidden p-0">
       {searches.map((s) => (
-        <li
+        <div
           key={s.id}
-          className="flex items-center justify-between gap-4 rounded-lg border border-border bg-card p-4 shadow-sm"
+          className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/40"
         >
           <Link
             href={buildSearchUrl(s.filters)}
-            className="font-medium text-foreground hover:underline"
+            className="flex min-h-11 min-w-0 flex-1 flex-col justify-center"
           >
-            {s.name}
+            <span className="block break-words text-sm font-medium text-foreground">{s.name || 'Untitled search'}</span>
+            <span className="block text-xs text-muted-foreground">
+              {typeof s.result_count === 'number' ? (
+                <span className="tabular-nums">{s.result_count} matches</span>
+              ) : (
+                'Tap to view results'
+              )}
+            </span>
           </Link>
           <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => handleDelete(s.id)}
-            className="text-sm text-muted-foreground hover:text-destructive"
+            className="shrink-0 text-muted-foreground hover:text-destructive"
           >
             Remove
           </Button>
-        </li>
+        </div>
       ))}
-    </ul>
+    </Card>
   )
 }

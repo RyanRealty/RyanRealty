@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getSavedCitySlugs } from '@/app/actions/saved-cities'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import RemoveSavedCityButton from './RemoveSavedCityButton'
 
 export const metadata: Metadata = {
@@ -24,44 +26,59 @@ export default async function SavedCitiesPage() {
   const savedSlugs = await getSavedCitySlugs()
 
   return (
-    <>
-      <h1 className="text-2xl font-bold tracking-tight text-foreground">Saved cities</h1>
-      <p className="mt-1 text-muted-foreground">
-        Your favorite cities. Remove any from here or from the city tile.
-      </p>
-      {savedSlugs.length === 0 ? (
-        <div className="mt-8 rounded-lg border border-border bg-muted p-8 text-center">
-          <p className="text-muted-foreground">You haven’t saved any cities yet.</p>
-          <Link
-            href="/cities"
-            className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Browse cities
-          </Link>
+    <div className="space-y-8">
+      {/* ── Header ── */}
+      <header className="min-w-0">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Saved cities</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          The places you follow. Remove any from here or from the city tile.
+        </p>
+      </header>
+
+      {/* ── Saved cities ── */}
+      <section>
+        <div className="mb-3 flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">Cities you follow</h2>
+            {savedSlugs.length > 0 ? (
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                {savedSlugs.length} {savedSlugs.length === 1 ? 'city' : 'cities'} saved.
+              </p>
+            ) : null}
+          </div>
         </div>
-      ) : (
-        <ul className="mt-8 space-y-3">
-          {savedSlugs.map((slug) => (
-            <li
-              key={slug}
-              className="flex items-center justify-between gap-4 rounded-lg border border-border bg-card px-4 py-3 shadow-sm"
-            >
-              <Link href={`/cities/${slug}`} className="font-medium text-foreground hover:text-muted-foreground">
-                {slugToName(slug)}
-              </Link>
-              <div className="flex items-center gap-2">
+
+        {savedSlugs.length === 0 ? (
+          <Card className="flex flex-col items-center gap-3 px-4 py-10 text-center">
+            <p className="text-sm font-medium text-foreground">No saved cities yet.</p>
+            <p className="max-w-sm text-sm text-muted-foreground">
+              Follow a city to keep it here and jump back to its homes and market data.
+            </p>
+            <Button asChild size="sm">
+              <Link href="/cities">Browse cities</Link>
+            </Button>
+          </Card>
+        ) : (
+          <Card className="divide-y divide-border overflow-hidden p-0">
+            {savedSlugs.map((slug) => (
+              <div key={slug} className="flex min-h-14 items-center justify-between gap-3 px-4 py-3">
                 <Link
                   href={`/cities/${slug}`}
-                  className="text-sm font-medium text-muted-foreground hover:text-muted-foreground"
+                  className="min-w-0 flex-1 break-words text-sm font-medium text-foreground transition-colors hover:text-primary"
                 >
-                  View →
+                  {slugToName(slug)}
                 </Link>
-                <RemoveSavedCityButton citySlug={slug} />
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button asChild variant="ghost" size="sm">
+                    <Link href={`/cities/${slug}`}>View</Link>
+                  </Button>
+                  <RemoveSavedCityButton citySlug={slug} />
+                </div>
               </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </>
+            ))}
+          </Card>
+        )}
+      </section>
+    </div>
   )
 }
