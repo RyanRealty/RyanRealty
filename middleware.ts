@@ -3,6 +3,8 @@ import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 import legacyRedirects from '@/data/legacy-redirects.json'
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
+import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCommunitySlug } from '@/lib/central-oregon'
+import resortCommunitiesRegistry from '@/data/resort-communities.json'
 
 /**
  * Next.js Edge Middleware.
@@ -195,6 +197,49 @@ function resolveLegacyRedirect(pathname: string): string | null {
   return dest && dest !== p ? dest : null
 }
 
+// ─── Geo-slug validation (soft-404 elimination) ────────────────────────────
+// /cities/[slug] and /communities/[slug] use generateStaticParams=[] +
+// dynamicParams=true, so an unknown slug renders the page, hits notFound() deep
+// in an async server component, and Next ships a HOLLOW 200 (soft-404). Google
+// files thousands of those under "crawled, not indexed", which suppresses the
+// whole site. Validate the slug HERE, before render, against the authoritative
+// STATIC sets and emit a REAL 404. Edge-safe (no DB): cities use the service-area
+// set; communities use the city-prefixed check + the resort registry. Valid but
+// dynamic city-prefixed subdivision slugs pass through to the page's own guard.
+const RESORT_COMMUNITY_SLUGS: Set<string> = new Set(
+  (Array.isArray(resortCommunitiesRegistry)
+    ? (resortCommunitiesRegistry as Array<{ slug?: string }>)
+    : ((resortCommunitiesRegistry as { communities?: Array<{ slug?: string }> }).communities ?? [])
+  )
+    .map((c) => c.slug)
+    .filter((s): s is string => typeof s === 'string')
+    .map((s) => s.toLowerCase()),
+)
+
+function isInvalidGeoSlug(pathname: string): boolean {
+  const cityMatch = pathname.match(/^\/cities\/([^/]+)\/?$/)
+  if (cityMatch) {
+    let slug = cityMatch[1]
+    try { slug = decodeURIComponent(slug) } catch { /* raw */ }
+    return !CENTRAL_OREGON_CITY_SLUGS.has(slug.toLowerCase())
+  }
+  const commMatch = pathname.match(/^\/communities\/([^/]+)\/?$/)
+  if (commMatch) {
+    let slug = commMatch[1]
+    try { slug = decodeURIComponent(slug) } catch { /* raw */ }
+    slug = slug.toLowerCase()
+    return !(isCentralOregonCommunitySlug(slug) || RESORT_COMMUNITY_SLUGS.has(slug))
+  }
+  return false
+}
+
+const GEO_NOT_FOUND_HTML =
+  '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Page not found · Ryan Realty</title></head>' +
+  '<body style="font-family:Geist,system-ui,sans-serif;background:#102742;color:#faf8f4;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center">' +
+  '<div style="max-width:32rem;padding:2rem"><h1 style="font-size:2rem;margin:0 0 .75rem">Page not found</h1>' +
+  '<p style="opacity:.8;line-height:1.6;margin:0 0 1.5rem">That place is not in our Central Oregon coverage. Search every active listing instead.</p>' +
+  '<a href="/homes-for-sale" style="color:#faf8f4;text-decoration:underline">Browse homes for sale</a></div></body></html>'
+
 // ─── Canonical production host ──────────────────────────────────────────────
 // The site answers on BOTH the custom domain (ryan-realty.com) and the Vercel
 // deployment alias (ryanrealty.vercel.app). Two equal public hosts silently
@@ -321,6 +366,16 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         return NextResponse.redirect(redirectUrl, 308)
       }
     }
+  }
+
+  // ─── (0c) Invalid geo slug → REAL 404 (kills soft-404 sprawl) ──────────
+  // Unknown /cities/* and /communities/* slugs would otherwise render a hollow
+  // 200 (soft-404). Emit a hard 404 with a noindex body so Google drops them.
+  if (!pathname.startsWith('/api/') && isInvalidGeoSlug(pathname)) {
+    return new NextResponse(GEO_NOT_FOUND_HTML, {
+      status: 404,
+      headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
+    })
   }
 
   // ─── (0b) Bot / geo screening for page routes (never /api/*) ───────────
