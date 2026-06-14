@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.539.7 (2026-06-14)
+
+### Bug Fixes
+- fix(team): normalize broker phone to brand dotted format on detail pages
+
+---
+
+
 ## v1.539.6 (2026-06-14)
 
 ### Bug Fixes
