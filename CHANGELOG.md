@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.534.9 (2026-06-14)
+
+### Maintenance
+- docs: log shipped fixes + remaining plan (2026-06-14 site overhaul)
+
+---
+
+
 ## v1.534.8 (2026-06-14)
 
 ### Bug Fixes
