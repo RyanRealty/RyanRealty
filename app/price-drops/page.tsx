@@ -391,7 +391,7 @@ export default async function PriceDropsRegionPage() {
                       </Badge>
                     )}
                     {featured.lastDropAmount && featured.lastDropPct && (
-                      <Badge className="bg-warning text-warning-foreground font-mono tabular-nums text-sm">
+                      <Badge className="bg-primary text-primary-foreground font-mono tabular-nums text-sm">
                         -{fmtK(featured.lastDropAmount)} ({featured.lastDropPct.toFixed(1)}%)
                       </Badge>
                     )}

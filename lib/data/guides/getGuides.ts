@@ -45,33 +45,44 @@ type CityStatRow = {
 function slugToTitle(slug: string): string {
   return slug
     .trim()
-    .split('-')
+    .split(/[-_\s]+/)
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ')
 }
 
 function buildGuideHtmlFromStats(city: string, stats: CityStatRow): string {
+  // Round currency to the nearest $1,000 per brand voice.
   const median =
     stats.median_sale_price != null && Number.isFinite(Number(stats.median_sale_price))
-      ? `$${Math.round(Number(stats.median_sale_price)).toLocaleString()}`
-      : 'Data unavailable'
+      ? `$${(Math.round(Number(stats.median_sale_price) / 1000) * 1000).toLocaleString()}`
+      : null
   const dom =
     stats.median_dom != null && Number.isFinite(Number(stats.median_dom))
       ? `${Math.round(Number(stats.median_dom))} days`
-      : 'Data unavailable'
+      : null
   const soldCount =
     stats.sold_count != null && Number.isFinite(Number(stats.sold_count))
       ? Math.round(Number(stats.sold_count)).toLocaleString()
-      : 'Data unavailable'
+      : null
   const period = stats.period_end
     ? new Date(stats.period_end).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : 'the latest cycle'
 
+  // Only surface stats we actually have. An empty/placeholder figure on a public
+  // page reads as broken, so unavailable rows are dropped rather than printed.
+  const snapshotRows = [
+    median != null ? `<li>Median sale price: ${median}</li>` : '',
+    dom != null ? `<li>Median days on market: ${dom}</li>` : '',
+    soldCount != null ? `<li>Closed sales in period: ${soldCount}</li>` : '',
+  ].filter(Boolean).join('')
+  const snapshot = snapshotRows
+    ? ['<h2>Market snapshot</h2>', `<ul>${snapshotRows}</ul>`]
+    : []
+
   return [
     `<p>${city} remains one of Central Oregon's most competitive markets. This guide is based on local listing and sold data from ${period} and is designed to help buyers and sellers make practical decisions.</p>`,
-    '<h2>Market snapshot</h2>',
-    `<ul><li>Median sale price: ${median}</li><li>Median days on market: ${dom}</li><li>Closed sales in period: ${soldCount}</li></ul>`,
+    ...snapshot,
     '<h2>What buyers should do now</h2>',
     `<p>In ${city}, homes that are priced correctly still move quickly in the most active ranges. Buyers should lock financing early, track new inventory daily, and write offers that match current demand in the exact neighborhood they target.</p>`,
     '<h2>What sellers should do now</h2>',

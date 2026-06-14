@@ -17,12 +17,12 @@ import { getSchools, getSchoolsCount } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
+import ContentPageHero from '@/components/layout/ContentPageHero'
+import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import {
   BadgePill,
-  Body,
   Container,
   Eyebrow,
-  H1,
   H2,
   H3,
   Section,
@@ -76,19 +76,15 @@ export default function SchoolsIndexPage() {
 
       <PageBreadcrumb trail={[{ label: 'Schools' }]} includeJsonLd={false} />
 
-      <Section padding="default">
-        <Container>
-          <Stack gap="default" className="max-w-prose">
-            <Eyebrow>Central Oregon</Eyebrow>
-            <H1>Central Oregon schools</H1>
-            <Body tone="muted">
-              {total} schools across {districts.length} districts, from Bend to Madras. Pick a
-              school to see the active homes for sale that feed it, on a map and as listings, with
-              district context.
-            </Body>
-          </Stack>
-        </Container>
-      </Section>
+      <ContentPageHero
+        title="Central Oregon schools"
+        subtitle={`${total} schools across ${districts.length} districts, from Bend to Madras. Pick a school to see the active homes for sale that feed it, on a map and as listings, with district context.`}
+        imageUrl={CONTENT_HERO_IMAGES.schools}
+        ctas={[
+          { label: 'Search homes', href: '/search', primary: true },
+          { label: 'Explore cities', href: '/cities', primary: false },
+        ]}
+      />
 
       {districts.map((district, i) => (
         <Section

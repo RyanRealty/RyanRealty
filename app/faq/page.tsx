@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { H2, Eyebrow } from '@/components/site/primitives'
+import { FaqAccordion } from './FaqAccordion'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const faqOgImage = `${siteUrl}/api/og?type=default`
@@ -139,16 +140,6 @@ function faqJsonLd() {
   }
 }
 
-function FAQItemBlock({ item }: { item: FAQItem }) {
-  return (
-    <section id={item.id} className="border-b border-border py-8">
-      <H2 className="mb-3 scroll-mt-24 text-2xl">
-        {item.question}
-      </H2>
-      <p className="text-base leading-relaxed text-muted-foreground">{item.answer}</p>
-    </section>
-  )
-}
 
 export default async function FAQPage() {
   try {
@@ -221,11 +212,7 @@ export default async function FAQPage() {
             <Eyebrow as="h2" className="mb-4 block text-sm tracking-wider text-muted-foreground">
               {g.cat}
             </Eyebrow>
-            <div>
-              {g.items.map((item) => (
-                <FAQItemBlock key={item.id} item={item} />
-              ))}
-            </div>
+            <FaqAccordion items={g.items} />
           </section>
         ))}
 

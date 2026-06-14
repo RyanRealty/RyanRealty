@@ -192,8 +192,8 @@ export default function OpenHousesClient({ initialOpenHouses, initialFilters }: 
 
       {viewMode === 'list' && initialOpenHouses.length > 0 && (
         <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {initialOpenHouses.map((oh) => (
-            <li key={oh.id}>
+          {initialOpenHouses.map((oh, i) => (
+            <li key={`${oh.id}-${oh.event_date}-${oh.start_time}-${i}`}>
               <Link
                 href={listingDetailPath(oh.listing_key, {
                   streetNumber: oh.street_number,
@@ -210,7 +210,7 @@ export default function OpenHousesClient({ initialOpenHouses, initialFilters }: 
                   ) : (
                     <div className="flex h-full items-center justify-center text-muted-foreground">No photo</div>
                   )}
-                  <span className="absolute left-2 top-2 rounded-md bg-destructive px-2 py-1 text-xs font-semibold text-destructive-foreground">
+                  <span className="absolute left-2 top-2 rounded-md bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground">
                     {formatDate(oh.event_date)} · {formatTime(oh.start_time)} - {formatTime(oh.end_time)}
                   </span>
                 </div>
@@ -235,8 +235,8 @@ export default function OpenHousesClient({ initialOpenHouses, initialFilters }: 
           <div className="min-w-[600px] rounded-lg border border-border bg-card p-4">
             <p className="mb-4 font-semibold text-primary">Upcoming by date</p>
             <ul className="space-y-2">
-              {initialOpenHouses.map((oh) => (
-                <li key={oh.id}>
+              {initialOpenHouses.map((oh, i) => (
+                <li key={`${oh.id}-${oh.event_date}-${oh.start_time}-${i}`}>
                   <Link
                     href={listingDetailPath(oh.listing_key, {
                       streetNumber: oh.street_number,

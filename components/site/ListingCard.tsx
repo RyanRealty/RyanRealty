@@ -42,8 +42,8 @@ function formatInt(n: number | null): string {
 
 const BADGE_CLASS: Record<ListingBadge, string> = {
   hot: 'bg-primary text-primary-foreground',
-  new: 'bg-success text-success-foreground',
-  drop: 'bg-warning text-warning-foreground',
+  new: 'bg-card text-primary border border-border',
+  drop: 'bg-primary text-primary-foreground',
   open: 'bg-card text-foreground border border-border',
   sold: 'bg-primary text-primary-foreground',
   video: 'bg-card/95 text-primary border border-border',

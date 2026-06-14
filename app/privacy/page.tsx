@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 }
 
 const SECTION_CLASS = 'mt-8'
-const H2_CLASS = 'text-lg font-semibold text-primary'
+const H2_CLASS = 'text-lg font-display text-primary'
 const P_CLASS = 'mt-2 text-sm text-muted-foreground'
 const UL_CLASS = 'mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground'
 

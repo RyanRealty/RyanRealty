@@ -66,10 +66,10 @@ export default function ContentPageHero({ title, subtitle, imageUrl, ctas }: Con
           )}
           {ctas && ctas.length > 0 && (
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4 sm:mt-10">
-              {ctas.map((cta) =>
+              {ctas.map((cta, i) =>
                 cta.primary ? (
                   <Link
-                    key={cta.href}
+                    key={`${cta.href}-${i}`}
                     href={cta.href}
                     onClick={() =>
                       trackCtaClick({
@@ -85,7 +85,7 @@ export default function ContentPageHero({ title, subtitle, imageUrl, ctas }: Con
                   </Link>
                 ) : (
                   <Link
-                    key={cta.href}
+                    key={`${cta.href}-${i}`}
                     href={cta.href}
                     onClick={() =>
                       trackCtaClick({

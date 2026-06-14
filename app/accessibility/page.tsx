@@ -4,7 +4,7 @@ import { H1, H2 } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
-const contactEmail = process.env.NEXT_PUBLIC_SITE_OWNER_EMAIL ?? 'info@ryanrealty.com'
+const contactEmail = process.env.NEXT_PUBLIC_SITE_OWNER_EMAIL ?? 'info@ryan-realty.com'
 
 export const metadata: Metadata = {
   title: 'Accessibility',
@@ -51,7 +51,7 @@ export default function AccessibilityPage() {
             If you have trouble accessing any part of this site or have suggestions for improvement, please contact us:
           </p>
           <p className="mt-2">
-            <a href={`mailto:${contactEmail}`} className="text-accent underline hover:no-underline">{contactEmail}</a>
+            <a href={`mailto:${contactEmail}`} className="text-primary underline hover:no-underline">{contactEmail}</a>
           </p>
           <p className="mt-2">
             We will respond and work to address the issue where feasible.

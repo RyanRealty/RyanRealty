@@ -43,8 +43,8 @@ export default function SiteFooter() {
               tone="on-photo"
               className="max-w-[40ch] text-white/72"
             >
-              Your local team for Central Oregon real estate. Bend, Redmond, Sisters,
-              Sunriver, and surrounding communities.
+              Central Oregon real estate with direct-broker accountability. Bend,
+              Redmond, Sisters, Sunriver, and the surrounding communities.
             </Body>
 
             {/* MLS data-source attribution logos. On a light pill so the
@@ -89,6 +89,7 @@ export default function SiteFooter() {
                   weight="normal"
                   underline="never"
                   external
+                  className="whitespace-nowrap"
                 >
                   {BRAND.domain}
                 </TextLink>

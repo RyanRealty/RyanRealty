@@ -100,8 +100,8 @@ export default async function TeamPage() {
       <PageBreadcrumb trail={[{ label: 'Team' }]} />
 
       <HeroBlock
-        headline="The marketing your home deserves."
-        lede="Every Ryan Realty listing gets cinematic video, a 3D walkthrough, and a price built from live Central Oregon market data. You work directly with the broker who does it, from the first call to the closing table."
+        headline="The broker you call is the broker you get."
+        lede="No hand-offs, no transaction desk, no junior agent learning on your deal. Meet the brokers who represent Ryan Realty clients across Bend, Redmond, Sisters, and Central Oregon."
         photo={{
           src: heroSrc ?? OLD_MILL_HERO,
           alt: 'Central Oregon high desert and Cascade mountains around Bend.',

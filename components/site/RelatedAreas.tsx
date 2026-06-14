@@ -102,28 +102,39 @@ function AreaPhotoTile({ item }: { item: RelatedAreaItem }) {
       className="group relative block aspect-[4/3] overflow-hidden rounded-xl border border-border shadow-sm hover:shadow-md transition"
     >
       {item.imageUrl ? (
-        <Image
-          src={item.imageUrl}
-          alt={item.name}
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          className="object-cover transition duration-500 group-hover:scale-105"
-        />
-      ) : (
-        <div className="absolute inset-0 bg-primary" aria-hidden />
-      )}
-      <div
-        className="absolute inset-0 bg-gradient-to-t from-primary via-primary/30 to-transparent"
-        aria-hidden
-      />
-      <div className="absolute inset-x-0 bottom-0 p-4">
-        <div className="text-sm font-bold tracking-tight text-white drop-shadow">{item.name}</div>
-        {typeof item.activeCount === 'number' ? (
-          <div className="text-xs text-white/85 mt-0.5">
-            <TabularNumber value={item.activeCount} /> active
+        <>
+          <Image
+            src={item.imageUrl}
+            alt={item.name}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="object-cover transition duration-500 group-hover:scale-105"
+          />
+          <div
+            className="absolute inset-0 bg-gradient-to-t from-primary via-primary/30 to-transparent"
+            aria-hidden
+          />
+          <div className="absolute inset-x-0 bottom-0 p-4">
+            <div className="text-sm font-bold tracking-tight text-white drop-shadow">{item.name}</div>
+            {typeof item.activeCount === 'number' ? (
+              <div className="text-xs text-white/85 mt-0.5">
+                <TabularNumber value={item.activeCount} /> active
+              </div>
+            ) : null}
           </div>
-        ) : null}
-      </div>
+        </>
+      ) : (
+        // No photo: a designed navy nameplate (centered display type) instead of
+        // a stark empty block, so photoless cards read as intentional.
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-primary to-[rgba(16,39,66,0.85)] px-4 text-center">
+          <div className="font-display text-lg leading-tight text-white drop-shadow">{item.name}</div>
+          {typeof item.activeCount === 'number' ? (
+            <div className="mt-1.5 text-xs text-white/75">
+              <TabularNumber value={item.activeCount} /> active
+            </div>
+          ) : null}
+        </div>
+      )}
     </Link>
   )
 }

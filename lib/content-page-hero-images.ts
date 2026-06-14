@@ -31,6 +31,12 @@ export const CONTENT_HERO_IMAGES = {
   areaGuides: '/images/hero/hero-old-mill-master-4k.jpg',
   /** Videos: canonical brand hero */
   videos: '/images/hero/hero-old-mill-master-4k.jpg',
+  /** Schools index: canonical brand hero */
+  schools: '/images/hero/hero-old-mill-master-4k.jpg',
+  /** Parks index: canonical brand hero */
+  parks: '/images/hero/hero-old-mill-master-4k.jpg',
+  /** Trails index: canonical brand hero */
+  trails: '/images/hero/hero-old-mill-master-4k.jpg',
 } as const
 
 export type ContentHeroKey = keyof typeof CONTENT_HERO_IMAGES

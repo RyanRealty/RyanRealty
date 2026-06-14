@@ -30,7 +30,7 @@ export default function ReviewsPage() {
       <PageBreadcrumb trail={[{ label: 'Reviews' }]} />
       <section className="bg-primary px-4 py-16 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-widest text-accent-foreground">
+          <p className="text-sm font-semibold uppercase tracking-widest text-primary-foreground/75">
             Read Our Reviews
           </p>
           <DisplayHeading

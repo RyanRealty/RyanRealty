@@ -104,7 +104,7 @@ export function NeighborhoodMarketContext({
         <H3>{geoName} market right now</H3>
         {freshnessLabel ? (
           <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
-            Updated {freshnessLabel} · market_pulse_live
+            Updated {freshnessLabel} · Oregon Data Share
           </div>
         ) : null}
       </Stack>

@@ -332,7 +332,7 @@ export default async function BendCityPage() {
         @media (max-width: 560px) { .community-grid { grid-template-columns: 1fr; } }
         .community-card { background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; text-decoration: none; color: inherit; }
         .community-card:hover { transform: translateY(-3px); box-shadow: 0 1px 2px rgba(16,39,66,0.04), 0 14px 32px rgba(16,39,66,0.12); }
-        .community-photo { aspect-ratio: 16/10; background: rgba(16,39,66,0.06); background-size: cover; background-position: center; }
+        .community-photo { aspect-ratio: 16/10; background: linear-gradient(150deg, #102742 0%, rgba(16,39,66,0.82) 100%); background-size: cover; background-position: center; }
         .community-body { padding: 18px 22px 22px; }
         .community-name { font-family: var(--font-amboqia), ui-serif, Georgia, serif; font-size: 22px; margin: 0 0 6px; font-weight: 500; }
         .community-stats { display: flex; gap: 14px; font-size: 12.5px; color: rgba(16,39,66,0.62); flex-wrap: wrap; }

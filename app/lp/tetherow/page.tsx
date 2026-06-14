@@ -436,7 +436,7 @@ export default async function TetherowLandingPage() {
           />
           <KpiCard label="Sale-to-list ratio" value={formatRatioPct(saleToList)} sub="Average across all closes" />
           <KpiCard label="Median $/sqft (closed)" value={formatPpsf(medianPpsf)} sub="Trailing 12 months" />
-          <KpiCard label="Methodology" value={methodologyVersion} sub={`Pulled ${methodologyDate}`} />
+          <KpiCard label="Data updated" value={methodologyDate} sub="Live MLS close data" />
         </div>
       </Section>
 

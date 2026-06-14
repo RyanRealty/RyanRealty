@@ -47,8 +47,13 @@ export default async function AreaGuidesPage() {
     imageUrl: c.heroImageUrl,
   }))
 
+  // Some community names arrive all-lowercase from the data ("vandevert ranch").
+  // Title-case only those — leave intentional casing ("NorthWest Crossing") alone.
+  const fixCase = (s: string) =>
+    /[A-Z]/.test(s) ? s : s.replace(/\b\w/g, (ch) => ch.toUpperCase())
+
   const communityItems: RelatedAreaItem[] = communities.map((c) => ({
-    name: c.subdivision,
+    name: fixCase(c.subdivision),
     href: `/communities/${c.slug}`,
     activeCount: c.activeCount,
     imageUrl: c.heroImageUrl,

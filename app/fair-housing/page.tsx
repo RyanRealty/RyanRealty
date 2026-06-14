@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import EqualHousing from '@/components/legal/EqualHousing'
-import { H2 } from '@/components/site/primitives'
+import { H1, H2 } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -24,6 +24,7 @@ export default function FairHousingPage() {
     <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
       <div className="flex flex-col items-center text-center">
         <EqualHousing size="large" className="text-primary" />
+        <H1 className="mt-6 text-3xl text-primary">Fair housing</H1>
       </div>
 
       <section className="mt-10 space-y-6 text-sm text-primary">

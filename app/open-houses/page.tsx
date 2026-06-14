@@ -84,7 +84,7 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
         imageUrl={CONTENT_HERO_IMAGES.openHouses}
         ctas={[
           { label: 'View All Listings', href: listingsBrowsePath(), primary: true },
-          { label: 'Search on Map', href: '/homes-for-sale', primary: false },
+          { label: 'Search on Map', href: '/search', primary: false },
         ]}
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />

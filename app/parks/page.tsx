@@ -16,12 +16,12 @@ import { getParks, getParksCount } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
+import ContentPageHero from '@/components/layout/ContentPageHero'
+import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import {
   BadgePill,
-  Body,
   Container,
   Eyebrow,
-  H1,
   H2,
   Section,
   Stack,
@@ -72,20 +72,15 @@ export default function ParksIndexPage() {
 
       <PageBreadcrumb trail={[{ label: 'Parks' }]} includeJsonLd={false} />
 
-      <Section padding="default">
-        <Container>
-          <Stack gap="default" className="max-w-prose">
-            <Eyebrow>Central Oregon</Eyebrow>
-            <H1>Central Oregon parks</H1>
-            <Body tone="muted">
-              {total} notable parks from Bend to Prineville, including the state parks at Smith
-              Rock, Tumalo, and Lake Billy Chinook. Pick a park to see its boundary on a map, the
-              active homes for sale nearby, and what is there, from trails and river access to dog
-              areas and ball fields.
-            </Body>
-          </Stack>
-        </Container>
-      </Section>
+      <ContentPageHero
+        title="Central Oregon parks"
+        subtitle={`${total} notable parks from Bend to Prineville, including the state parks at Smith Rock, Tumalo, and Lake Billy Chinook. Pick a park to see its boundary on a map, the active homes nearby, and what is there.`}
+        imageUrl={CONTENT_HERO_IMAGES.parks}
+        ctas={[
+          { label: 'Search homes', href: '/search', primary: true },
+          { label: 'Explore cities', href: '/cities', primary: false },
+        ]}
+      />
 
       {cities.map((group, i) => (
         <Section
