@@ -12,6 +12,7 @@
  */
 import { Container, Eyebrow, H2, Body, Section, Grid, Stack } from '@/components/site/primitives'
 import { Card, CardContent } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 import type { ReviewsSummary } from '@/lib/data'
 
 type Props = {
@@ -31,10 +32,14 @@ function clampQuote(text: string, max = 320): string {
 }
 
 function Stars({ rating, className }: { rating: number; className?: string }) {
-  const full = Math.round(rating)
+  // Render all five glyphs so a partial rating reads clearly: filled stars in
+  // brand navy (visible on cream — the prior `text-accent` was near-white and
+  // invisible), the remainder muted. tracking-wide keeps them from touching.
+  const full = Math.max(0, Math.min(5, Math.round(rating)))
   return (
-    <span aria-label={`${rating} out of 5 stars`} className={className}>
-      <span aria-hidden className="text-accent tracking-wide">{'★★★★★'.slice(0, full)}</span>
+    <span aria-label={`${rating} out of 5 stars`} className={cn('tracking-wide', className)}>
+      <span aria-hidden className="text-primary">{'★'.repeat(full)}</span>
+      <span aria-hidden className="text-muted-foreground/30">{'★'.repeat(5 - full)}</span>
     </span>
   )
 }

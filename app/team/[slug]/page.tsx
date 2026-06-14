@@ -21,7 +21,8 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import { getAgentBySlug } from '@/app/actions/agents'
 import { getBrokerageSettings } from '@/app/actions/brokerage'
-import { getBrokerageListingTiles, getReviews } from '@/lib/data'
+import { getBrokerageListingTiles, getReviews, getBrokerSales } from '@/lib/data'
+import type { BrokerSaleTile } from '@/lib/data'
 import type { PriceDropTile } from '@/lib/data/listings/getPriceDropTiles'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
 import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
@@ -114,6 +115,49 @@ function toBrokerageSoldCard(tile: PriceDropTile): ListingCardData | null {
   }
 }
 
+/** The three broker first names, lowercased — used to keep a review that names
+ *  one broker off another broker's page. */
+const BROKER_FIRST_NAMES = ['matt', 'rebecca', 'paul'] as const
+
+/** Word-boundary, case-insensitive test for a first name inside review text. */
+function namesBroker(text: string, firstName: string): boolean {
+  const fn = firstName.trim().toLowerCase()
+  if (!fn) return false
+  return new RegExp(`\\b${fn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(text.toLowerCase())
+}
+
+/**
+ * Brokerage Google reviews are not split per broker (broker_id is unset) and
+ * most name Matt by name. A review that names a DIFFERENT broker reads as
+ * misattributed on this page, so keep only reviews that name THIS broker or name
+ * no broker at all (CLAUDE.md §0 — never imply a client praised the wrong broker).
+ */
+function reviewBelongsOnPage(text: string, firstName: string): boolean {
+  if (namesBroker(text, firstName)) return true
+  const me = firstName.trim().toLowerCase()
+  return !BROKER_FIRST_NAMES.some((n) => n !== me && namesBroker(text, n))
+}
+
+/** Five star glyphs; `filledClass` colors the filled set, the rest inherit at 30%. */
+function Stars({ count = 5, filledClass, className }: { count?: number; filledClass: string; className?: string }) {
+  const full = Math.max(0, Math.min(5, Math.round(count)))
+  return (
+    <span aria-label={`${full} out of 5 stars`} className={`tracking-wide ${className ?? ''}`}>
+      <span aria-hidden className={filledClass}>{'★'.repeat(full)}</span>
+      <span aria-hidden className="text-current opacity-30">{'★'.repeat(5 - full)}</span>
+    </span>
+  )
+}
+
+/** Map a broker closed-sale tile to a ListingCard with a side-aware badge. */
+function toBrokerSaleCard(tile: BrokerSaleTile): ListingCardData | null {
+  const base = toBrokerageSoldCard(tile)
+  if (!base) return null
+  const when = soldBadgeLabel(tile.CloseDate).replace(/^Sold/, '').trim()
+  const verb = tile.saleSide === 'listed' ? 'Sold' : 'Bought'
+  return { ...base, badge: { kind: 'sold', label: when ? `${verb} ${when}` : verb } }
+}
+
 function factualFallbackBio(displayName: string): string {
   return `${displayName} is a real estate broker at Ryan Realty, based in Bend, Oregon. Ryan Realty serves buyers and sellers across Central Oregon, including Bend, Redmond, Sisters, Sunriver, and surrounding communities. ${displayName} works directly with clients from first contact through closing.`
 }
@@ -136,12 +180,23 @@ export default async function TeamMemberPage({ params }: Props) {
   const firstName = broker.display_name.split(' ')[0] ?? broker.display_name
   const canonicalUrl = `${siteUrl}/team/${slug}`
 
-  const [reviews, brokerageTiles] = await Promise.all([
-    getReviews(6),
+  const [reviews, brokerageTiles, brokerSales] = await Promise.all([
+    // Pull the full review pool (count/average are computed across all rows) so
+    // the per-broker attribution filter has everything to choose from.
+    getReviews(24),
     getBrokerageListingTiles({ officeName: OFFICE_NAME, limit: 60 }),
+    getBrokerSales({ email: broker.email, mlsId: broker.mls_id, limit: 9 }),
   ])
 
+  // This broker's own closings — both sides, newest first. Verified keys only
+  // (list_agent_email + buyer_agent_mls_id); each price is the recorded close.
+  const brokerSaleCards: ListingCardData[] = brokerSales
+    .map(toBrokerSaleCard)
+    .filter((c): c is ListingCardData => c !== null)
+  const hasOwnSales = brokerSaleCards.length > 0
+
   // Brokerage recent sales — closed listings across Ryan Realty, newest first.
+  // Shown as the track record for a broker who has no own closings yet.
   const soldCards: ListingCardData[] = brokerageTiles
     .filter((t) => t.ClosePrice != null && (t.CloseDate != null || /clos|sold/i.test(t.StandardStatus ?? '')))
     .sort((a, b) => new Date(b.CloseDate ?? 0).getTime() - new Date(a.CloseDate ?? 0).getTime())
@@ -155,8 +210,18 @@ export default async function TeamMemberPage({ params }: Props) {
   const smsHref = broker.phone ? `sms:${broker.phone.replace(/[^\d]/g, '')}` : null
   const mailHref = broker.email ? `mailto:${broker.email}` : null
 
-  // The single strongest review for the social-proof band near the top.
-  const featured = reviews.reviews.find((r) => r.rating >= 5 && r.text.length > 80) ?? reviews.reviews[0] ?? null
+  // Reviews that belong on THIS broker's page (name them, or name nobody),
+  // with the ones that name this broker first.
+  const relevantReviews = reviews.reviews
+    .filter((r) => reviewBelongsOnPage(r.text, firstName))
+    .sort((a, b) => Number(namesBroker(b.text, firstName)) - Number(namesBroker(a.text, firstName)))
+
+  // The single strongest relevant review for the social-proof band near the top.
+  const featured =
+    relevantReviews.find((r) => namesBroker(r.text, firstName) && r.rating >= 5 && r.text.length > 80) ??
+    relevantReviews.find((r) => r.rating >= 5 && r.text.length > 80) ??
+    relevantReviews[0] ??
+    null
 
   const canonicalSlug: BrokerSlug | null =
     normalizeAgentSlug(slug) ??
@@ -181,20 +246,22 @@ export default async function TeamMemberPage({ params }: Props) {
             email: broker.email ?? undefined,
             url: canonicalUrl,
             areaServed: { '@type': 'Place', name: 'Central Oregon' },
-            ...(reviews.count > 0
-              ? {
-                  aggregateRating: {
-                    '@type': 'AggregateRating',
-                    ratingValue: reviews.averageRating,
-                    reviewCount: reviews.count,
-                    bestRating: 5,
-                  },
-                }
-              : {}),
+            // The Google rating is the BROKERAGE's (reviews are not split per
+            // broker), so it sits on the firm node, not the individual agent.
             worksFor: {
               '@type': ['LocalBusiness', 'RealEstateAgent'],
               name: siteName,
               url: siteUrl,
+              ...(reviews.count > 0
+                ? {
+                    aggregateRating: {
+                      '@type': 'AggregateRating',
+                      ratingValue: reviews.averageRating,
+                      reviewCount: reviews.count,
+                      bestRating: 5,
+                    },
+                  }
+                : {}),
             },
           }),
         }}
@@ -234,8 +301,8 @@ export default async function TeamMemberPage({ params }: Props) {
             {/* Trust strip — Google rating + license, real values only */}
             <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
               {reviews.count > 0 ? (
-                <div className="flex items-center gap-2.5">
-                  <span aria-hidden className="text-xl leading-none text-accent">★★★★★</span>
+                <div className="flex items-center gap-2.5 text-primary-foreground">
+                  <Stars count={reviews.averageRating} filledClass="text-primary-foreground" className="text-xl leading-none" />
                   <span className="text-base font-medium text-primary-foreground/90">
                     <TabularNumber value={reviews.averageRating} /> on Google ·{' '}
                     <TabularNumber value={reviews.count} /> reviews
@@ -302,7 +369,10 @@ export default async function TeamMemberPage({ params }: Props) {
               “
             </span>
             <Eyebrow className="relative">Clients on Ryan Realty</Eyebrow>
-            <blockquote className="relative mt-6">
+            <div className="relative mt-4 flex justify-center text-foreground">
+              <Stars count={featured.rating} filledClass="text-primary" className="text-2xl leading-none" />
+            </div>
+            <blockquote className="relative mt-5">
               <DisplayHeading as="p" className="text-2xl leading-snug text-foreground sm:text-3xl">
                 {featured.text.length > 240 ? `${featured.text.slice(0, 237).trimEnd()}…` : featured.text}
               </DisplayHeading>
@@ -324,8 +394,29 @@ export default async function TeamMemberPage({ params }: Props) {
         </Section>
       ) : null}
 
-      {/* ───────── Ryan Realty track record (brokerage sales, not per-broker) ───────── */}
-      {soldCards.length > 0 ? (
+      {/* ───────── Track record ─────────
+          This broker's own closings when they have them (both sides, with a
+          Sold / Bought badge); otherwise the brokerage record so a newer broker
+          still shows proof. Both are recorded MLS closings — never invented. */}
+      {hasOwnSales ? (
+        <Section padding="default" tone="muted" divider>
+          <Container>
+            <Stack gap="tight" className="mb-8 max-w-2xl">
+              <Eyebrow>Track record</Eyebrow>
+              <H2>{firstName}&apos;s recent sales</H2>
+              <Body size="default" tone="muted">
+                Homes {firstName} has sold for sellers and bought for buyers, pulled directly from
+                the Oregon Data Share MLS. Each price is the recorded closing price.
+              </Body>
+            </Stack>
+            <Grid cols={3} gap="default">
+              {brokerSaleCards.map((card) => (
+                <ListingCard key={card.listingKey} listing={card} />
+              ))}
+            </Grid>
+          </Container>
+        </Section>
+      ) : soldCards.length > 0 ? (
         <Section padding="default" tone="muted" divider>
           <Container>
             <Stack gap="tight" className="mb-8 max-w-2xl">
@@ -379,11 +470,14 @@ export default async function TeamMemberPage({ params }: Props) {
         </Container>
       </Section>
 
-      {/* ───────── Full reviews grid ───────── */}
+      {/* ───────── Full reviews grid ─────────
+          Brokerage Google rating (count + average across all rows) with the
+          review cards filtered to this broker so no other broker's named review
+          shows here. */}
       <ReviewsBlock
-        data={reviews}
+        data={{ ...reviews, reviews: relevantReviews }}
         eyebrow="Client reviews"
-        title="What clients say"
+        title="What clients say about Ryan Realty"
         tone="muted"
         max={6}
       />

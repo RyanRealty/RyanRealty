@@ -309,6 +309,8 @@ export {
 } from '@/lib/data/brokers/getBrokers'
 export { resolveListingAgent } from '@/lib/data/brokers/resolveListingAgent'
 export type { ListingAgentInput } from '@/lib/data/brokers/resolveListingAgent'
+export { getBrokerSales } from '@/lib/data/brokers/getBrokerSales'
+export type { BrokerSaleTile, BrokerSaleSide } from '@/lib/data/brokers/getBrokerSales'
 
 // Reviews (verified Google Business Profile reviews — on-site social proof)
 export { getReviews } from '@/lib/data/reviews/getReviews'
