@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.527.0 (2026-06-14)
+
+### Features
+- feat(tc): createEnvelopeFromTemplate + form-version freshness (Steps 5-6)
+
+---
+
+
 ## v1.526.1 (2026-06-14)
 
 ### Bug Fixes
