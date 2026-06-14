@@ -314,7 +314,11 @@ export default async function BrokerCommandCenterPage({
           <StatPill label="Overdue tasks" value={data.attention.tasksOverdue} href="/admin/crm/tasks" urgent={data.attention.tasksOverdue > 0} />
           <StatPill label="Due today" value={data.attention.tasksToday} href="/admin/crm/tasks" urgent={false} />
           <StatPill label="Active deals" value={data.attention.activeDeals} href="/admin/deals" urgent={false} />
-          <StatPill label="Docs to sign" value={data.attention.docsNeedingSignoff} href="/admin/sign-off" urgent={data.attention.docsNeedingSignoff > 0} />
+          {/* Sign-off queue is principal-only (and counted globally); only the
+              superuser can act on it, so don't show a dead pill to brokers. */}
+          {data.isSuperuser ? (
+            <StatPill label="Docs to sign" value={data.attention.docsNeedingSignoff} href="/admin/sign-off" urgent={data.attention.docsNeedingSignoff > 0} />
+          ) : null}
         </div>
       </section>
 

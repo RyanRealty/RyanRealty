@@ -20,7 +20,7 @@ type Props = { searchParams: Promise<{ next?: string }> }
 
 export default async function LoginPage({ searchParams }: Props) {
   const { next } = await searchParams
-  const nextPath = next && next.startsWith('/') ? next : '/dashboard'
+  const nextPath = next && next.startsWith('/') ? next : '/account'
 
   return (
     <main className="mx-auto flex min-h-[60vh] max-w-md flex-col justify-center px-4 py-16">
@@ -37,7 +37,7 @@ export default async function LoginPage({ searchParams }: Props) {
         <LoginForm next={nextPath} />
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{' '}
-          <Link href={`/signup${nextPath !== '/dashboard' ? `?next=${encodeURIComponent(nextPath)}` : ''}`} className="font-medium text-accent-foreground hover:underline">
+          <Link href={`/signup${nextPath !== '/account' ? `?next=${encodeURIComponent(nextPath)}` : ''}`} className="font-medium text-accent-foreground hover:underline">
             Sign up
           </Link>
         </p>

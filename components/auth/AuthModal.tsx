@@ -22,7 +22,7 @@ type Props = {
   next?: string
 }
 
-export default function AuthModal({ open, onClose, onSuccess, next = '/dashboard' }: Props) {
+export default function AuthModal({ open, onClose, onSuccess, next = '/account' }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<'signin' | 'signup'>('signin')
   const [loading, setLoading] = useState<string | null>(null)

@@ -42,7 +42,7 @@ export default function LoginForm({ next }: Props) {
     if (result.ok) {
       router.refresh()
       if (result.next && result.next !== '/') window.location.href = result.next
-      else router.push('/dashboard')
+      else router.push('/account')
       return
     }
     setError(result.error)

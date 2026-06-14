@@ -83,13 +83,16 @@ async function sendEmailForm(personId: number, formData: FormData): Promise<void
   'use server'
   formData.set('personId', String(personId))
   const r = await sendCrmEmailAction(formData)
-  if (!r.ok) console.error('[crm] sendEmail failed:', r.error)
+  // Surface the failure (suppression / no email / Gmail error) instead of
+  // silently re-rendering as if it sent. Success revalidates + clears the form.
+  if (!r.ok) redirect(`/admin/crm/${personId}?error=${encodeURIComponent(`Email not sent — ${r.error ?? 'unknown error'}`)}`)
 }
 async function sendSmsForm(personId: number, formData: FormData): Promise<void> {
   'use server'
   formData.set('personId', String(personId))
   const r = await sendCrmSmsAction(formData)
-  if (!r.ok) console.error('[crm] sendSms failed:', r.error)
+  // SMS is the highest-risk silent failure (A2P blocks all sends until VERIFIED).
+  if (!r.ok) redirect(`/admin/crm/${personId}?error=${encodeURIComponent(`Text not sent — ${r.error ?? 'unknown error'}`)}`)
 }
 async function confirmNextForm(formData: FormData): Promise<void> {
   'use server'
@@ -154,11 +157,11 @@ function TimelineEntry({ e }: { e: { id: number; ts: string; kind: string; title
   )
 }
 
-export default async function CrmPersonPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tpl?: string; smsTpl?: string }> }) {
+export default async function CrmPersonPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tpl?: string; smsTpl?: string; error?: string }> }) {
   const { id: idRaw } = await params
   const id = Number(idRaw)
   if (!Number.isFinite(id) || id <= 0) notFound()
-  const { tpl, smsTpl } = await searchParams
+  const { tpl, smsTpl, error: sendError } = await searchParams
 
   // One parallel wave — getCrmAccess carries the auth gate (session + role),
   // so the old sequential session → role → data chain is gone.
@@ -259,6 +262,13 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
       <div className="mb-4 text-sm text-muted-foreground">
         <Link href="/admin/crm" className="inline-flex min-h-[40px] items-center hover:text-foreground">← Back to CRM</Link>
       </div>
+
+      {sendError ? (
+        <Alert variant="destructive" className="mb-6">
+          <AlertTitle>Couldn&apos;t send</AlertTitle>
+          <AlertDescription>{sendError}</AlertDescription>
+        </Alert>
+      ) : null}
 
       {isLiveNow && latestWeb ? (
         <div className="mb-6 flex flex-col gap-3 rounded-xl bg-primary p-4 text-primary-foreground sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:p-5">

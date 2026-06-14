@@ -23,7 +23,7 @@ export async function isCommunitySaved(entityKey: string): Promise<boolean> {
     .from('saved_communities')
     .select('id')
     .eq('user_id', user.id)
-    .eq('entity_key', entityKey.trim())
+    .eq('entity_key', entityKey.trim().toLowerCase())
     .maybeSingle()
   return !!data
 }
