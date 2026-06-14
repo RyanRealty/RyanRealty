@@ -51,6 +51,12 @@ type Props = {
   viewAllLabel?: string
   communityName: string
   totalCount?: number
+  /**
+   * stacked = homes full-width on top, map full-width below (Matt directive:
+   * "homes for sale span full width, not in a column shared with the map").
+   * Default false keeps the legacy split-scroll spine.
+   */
+  stacked?: boolean
 }
 
 export function CommunityMapLedgerPane({
@@ -63,6 +69,7 @@ export function CommunityMapLedgerPane({
   viewAllLabel,
   communityName,
   totalCount,
+  stacked = false,
 }: Props) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null)
 
@@ -71,6 +78,42 @@ export function CommunityMapLedgerPane({
   }, [])
 
   const hasMap = polygons.length > 0 || mapListings.length > 0
+
+  // Stacked: full-width listings, then a full-width map section. No columns.
+  if (stacked) {
+    return (
+      <div className="flex flex-col gap-10 md:gap-12">
+        {listings.length > 0 ? (
+          <div>
+            <ListingLedger
+              listings={listings}
+              featuredFirst={listings.length >= 2}
+              viewAllHref={viewAllHref}
+              viewAllLabel={viewAllLabel}
+              hoveredKey={hoveredKey}
+              onRowHover={handleRowHover}
+              sectionId="listing-ledger"
+            />
+          </div>
+        ) : null}
+        {hasMap ? (
+          <div aria-label={`Map of ${communityName}`}>
+            <div
+              className="w-full rounded-xl overflow-hidden border border-border shadow-sm"
+              style={{ height: `${mapHeight}px` }}
+            >
+              <NeighborhoodMapClient
+                polygons={polygons}
+                listings={mapListings}
+                zoom={zoom}
+                height={mapHeight}
+              />
+            </div>
+          </div>
+        ) : null}
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col lg:flex-row gap-0 lg:gap-8 xl:gap-12">

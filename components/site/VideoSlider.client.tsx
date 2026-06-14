@@ -69,8 +69,10 @@ export function VideoSlider({
         </div>
       </Container>
 
-      {/* Edge-to-edge rail so cards bleed off the right edge as a scroll cue. */}
-      <div className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:px-6 lg:px-8">
+      {/* Rail aligned to the container on the left (first card lines up under the
+          heading) and bleeding off the right edge as a scroll cue. */}
+      <Container>
+        <div className="no-scrollbar -mr-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 pr-4 sm:-mr-6 sm:pr-6 lg:-mr-8 lg:pr-8">
         {items.map((item) => (
           <Link
             key={item.listingKey}
@@ -117,7 +119,8 @@ export function VideoSlider({
           <span className="text-sm font-semibold text-foreground">Watch the feed</span>
           <span className="text-xs text-muted-foreground">Keep watching tours</span>
         </Link>
-      </div>
+        </div>
+      </Container>
     </section>
   )
 }

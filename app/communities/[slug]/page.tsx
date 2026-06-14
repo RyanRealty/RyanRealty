@@ -44,6 +44,7 @@ import {
 import type { AmenityBlogPost } from '@/lib/data'
 import type { CommunitySubdivision } from '@/lib/data'
 import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
+import boundarySanityBaseline from '@/data/boundary-sanity-baseline.json' assert { type: 'json' }
 import { communityImage, pickGeoImage } from '@/lib/geo-images'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
@@ -53,7 +54,6 @@ import { VideoTourRail } from '@/components/site/VideoTourRail'
 import {
   FlyoverHero,
   LiveMarketBand,
-  SectionNav,
   InlineValuationHook,
   PriceHistoryScrubber,
   PaymentSlider,
@@ -62,7 +62,6 @@ import {
 import PriceRangeTiles from '@/components/site/PriceRangeTiles'
 import OpenHousesGrid from '@/components/site/OpenHousesGrid'
 import MotivatedListings from '@/components/site/MotivatedListings'
-import VideoHomesSection from '@/components/site/VideoHomesSection'
 import { RelatedAreas, type RelatedAreaItem } from '@/components/site/RelatedAreas'
 import ActivityFeed from '@/components/site/ActivityFeed'
 import { ArticleGrid } from '@/components/site/ArticleGrid'
@@ -136,6 +135,16 @@ function tileToCardData(tile: Awaited<ReturnType<typeof getListingTiles>>[number
   }
 }
 
+// Boundaries listed in the sanity baseline are oversized / un-corrected (broken-top
+// is 11,496 acres vs ~450 real), so anything keyed off the polygon — the in-boundary
+// listings, the "view all N" count, the drawn shape — is wrong (it swallows Tetherow
+// and west Bend). For those, fall back to the MLS subdivision-name listings (the same
+// source the hero's "9 active" comes from) and draw only the real homes' pins.
+const UNRELIABLE_BOUNDARY_SLUGS = new Set(boundarySanityBaseline.allowed as string[])
+function isBoundaryReliable(slug: string): boolean {
+  return !UNRELIABLE_BOUNDARY_SLUGS.has(slug)
+}
+
 function resolveVerdict(mos: number | null): 'seller' | 'balanced' | 'buyer' | null {
   if (mos == null) return null
   if (mos <= 4) return 'seller'
@@ -181,25 +190,47 @@ export default async function CommunityDetailPage({ params }: Props) {
 
   const registryEntry = getResortCommunityBySlug(slug)
 
+  const boundaryReliable = isBoundaryReliable(slug)
   const boundaryListingKeys = boundaryMapData.pins.map((p) => p.listingKey)
+  // Reliable boundary -> the in-polygon homes are correct. Oversized boundary ->
+  // the polygon over-matches, so use the MLS subdivision-name listings instead.
   let communityListingTiles =
-    boundaryListingKeys.length > 0
+    boundaryReliable && boundaryListingKeys.length > 0
       ? await withTimeoutFallback(
           getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', limit: 24 }),
           [],
           4500,
           'comm:tiles',
         )
-      : []
-  if (communityListingTiles.length === 0) {
+      : await withTimeoutFallback(
+          getCommunityListings(community.name, { limit: 24 }),
+          [],
+          4500,
+          'comm:listings',
+        )
+  if (communityListingTiles.length === 0 && boundaryListingKeys.length > 0) {
     communityListingTiles = await withTimeoutFallback(
-      getCommunityListings(community.name, { limit: 24 }),
+      getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', limit: 24 }),
       [],
       4500,
-      'comm:listings',
+      'comm:tiles-fallback',
     )
   }
   const communityListingCards: ListingCardData[] = communityListingTiles.map(tileToCardData)
+
+  // Map pins: reliable boundary -> all in-polygon pins. Oversized boundary -> only
+  // the pins for the real subdivision homes (intersect by key), so the map shows the
+  // correct cluster instead of every home across the bloated polygon.
+  const correctListingKeys = new Set(communityListingTiles.map((t) => t.listingKey))
+  const reliablePins = boundaryReliable
+    ? boundaryMapData.pins
+    : boundaryMapData.pins.filter((p) => correctListingKeys.has(p.listingKey))
+  // Honest total for the "view all" link: real boundary count when reliable, else
+  // the count of the subdivision homes we actually resolved (community.activeCount
+  // is itself boundary-derived and bloated for oversized polygons, so never use it).
+  const totalHomes = boundaryReliable
+    ? boundaryMapData.pins.length
+    : communityListingCards.length
 
   const activeCount = pulse?.activeCount ?? community.activeCount
   const medianListPrice = pulse?.medianListPrice ?? community.medianPrice
@@ -314,8 +345,9 @@ export default async function CommunityDetailPage({ params }: Props) {
 
   // SectionNav items (only show sections that will actually render)
   const hasListings = communityListingCards.length > 0
-  const hasMap = !!(resortBoundary || boundaryMapData.polygon)
-  const hasPriceHistory = priceHistory.length >= 2
+  // A near-flat 2-point series reads as a broken chart on small communities. Only
+  // show the scrubber with a real run of months to scrub.
+  const hasPriceHistory = priceHistory.length >= 6
 
   // The subdivision list is only trustworthy when the community boundary is the
   // authoritative plat. Several community boundaries are oversized (broken-top is
@@ -327,19 +359,12 @@ export default async function CommunityDetailPage({ params }: Props) {
   const reliableSubdivisions =
     communitySubdivisions.length <= SUBDIVISION_SANITY_MAX ? communitySubdivisions : []
 
-  const navItems = [
-    { id: 'market', label: 'Market' },
-    { id: 'about', label: 'About' },
-    ...(hasSubNeighborhoods ? [{ id: 'neighborhoods', label: 'Neighborhoods' }] : []),
-    ...(hasListings ? [{ id: 'listings', label: 'Homes for sale' }] : []),
-    ...(reliableSubdivisions.length > 0 ? [{ id: 'subdivisions', label: 'Subdivisions' }] : []),
-    { id: 'open-houses', label: 'Open houses' },
-    { id: 'communities', label: 'Communities' },
-    { id: 'faq', label: 'FAQ' },
-  ]
-
-  // Map polygons for the split-scroll pane
-  const mapPolygons = resortBoundary
+  // Map polygons. Never draw an oversized/un-corrected boundary (it renders the
+  // wrong shape — broken-top drew Tetherow). Reliable -> resort boundary or
+  // subdivision plats or the boundary polygon; unreliable -> no polygon, pins only.
+  const mapPolygons = !boundaryReliable
+    ? []
+    : resortBoundary
     ? [{ slug, name: community.name, geometry: resortBoundary }]
     : reliableSubdivisions.length > 0
     ? reliableSubdivisions.map((s) => ({
@@ -352,7 +377,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     ? [{ slug, name: community.name, geometry: boundaryMapData.polygon }]
     : []
 
-  const mapListings = boundaryMapData.pins.map((p) => ({
+  const mapListings = reliablePins.map((p) => ({
     lat: p.lat,
     lng: p.lng,
     href: listingTileHref({
@@ -373,6 +398,10 @@ export default async function CommunityDetailPage({ params }: Props) {
     sqft: p.sqft,
   }))
 
+  const hasMap = mapPolygons.length > 0 || mapListings.length > 0
+  const showViewAll = totalHomes > communityListingCards.length
+  const viewAllHref = `/search?subdivision=${encodeURIComponent(community.name)}&city=${encodeURIComponent(cityName)}`
+
   return (
     <main className="min-h-screen bg-background">
 
@@ -391,13 +420,14 @@ export default async function CommunityDetailPage({ params }: Props) {
 
       {/* Geo archetype hero: video flyover + Amboqia live stat overlay + count-up */}
       <div id="hero">
+        {/* Stats live in the navy LiveMarketBand just below, so the hero stays a
+            clean photo + headline — no duplicate stat trio crashing into the band. */}
         <FlyoverHero
           slug={slug}
           headline={`Homes for Sale in ${community.name}`}
-          activeCount={activeCount > 0 ? activeCount : null}
-          medianPrice={medianListPrice}
-          medianDays={medianDays}
-          daysLabel={daysLabel}
+          activeCount={null}
+          medianPrice={null}
+          medianDays={null}
           photoSrc={heroPhotoSrc ?? undefined}
           photoAlt={`${community.name} in ${cityName}, Oregon`}
           sectionId="hero"
@@ -421,9 +451,6 @@ export default async function CommunityDetailPage({ params }: Props) {
         />
       </div>
 
-      {/* Sticky in-page anchor rail */}
-      <SectionNav items={navItems} />
-
       {/* Rich verified content (overview + amenities + drive times + golf/HOA + builders) */}
       <div id="about">
         <CommunityRichContent content={content} name={community.name} postsBySlug={postsBySlug} />
@@ -433,7 +460,7 @@ export default async function CommunityDetailPage({ params }: Props) {
       {(hasPriceHistory || medianListPrice != null) ? (
         <section className="border-t border-border bg-secondary/30 py-10 md:py-14">
           <Container>
-            <div className="grid gap-10 md:gap-12 lg:grid-cols-2 lg:gap-16">
+            <div className="space-y-12 md:space-y-14">
               {hasPriceHistory ? (
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
@@ -554,69 +581,43 @@ export default async function CommunityDetailPage({ params }: Props) {
         </section>
       ) : null}
 
-      {/* Split-scroll spine: map sticky right, listing ledger scrolls left.
-          This section replaces the old separate map + card-grid sections. */}
-      {hasListings ? (
+      {/* Homes for sale FULL WIDTH, then the map as its own full-width section
+          (Matt: "homes for sale span full width, not in a column shared with the
+          map"). The map draws only the real community pins (correct cluster). */}
+      {hasListings || hasMap ? (
         <section id="listings" className="border-t border-border bg-background py-10 md:py-14">
           <Container>
             <div className="mb-8 flex items-end justify-between gap-4">
               <div>
                 <Eyebrow className="mb-1">{community.name}</Eyebrow>
                 <H2 className="text-2xl text-foreground">
-                  Homes for sale
+                  {hasListings ? 'Homes for sale' : 'Community map'}
                 </H2>
               </div>
-              {boundaryMapData.pins.length > communityListingCards.length ? (
+              {hasListings && showViewAll ? (
                 <a
-                  href={`/search?subdivision=${encodeURIComponent(community.name)}&city=${encodeURIComponent(cityName)}`}
+                  href={viewAllHref}
                   className="shrink-0 text-sm font-medium text-primary underline-offset-2 hover:underline"
                 >
-                  View all {boundaryMapData.pins.length}
+                  View all {totalHomes}
                 </a>
               ) : null}
             </div>
 
             <CommunityMapLedgerPane
+              stacked
               listings={communityListingCards}
               polygons={mapPolygons}
               mapListings={mapListings}
               zoom={14}
-              mapHeight={600}
-              viewAllHref={
-                boundaryMapData.pins.length > communityListingCards.length
-                  ? `/search?subdivision=${encodeURIComponent(community.name)}&city=${encodeURIComponent(cityName)}`
-                  : undefined
-              }
-              viewAllLabel={
-                boundaryMapData.pins.length > communityListingCards.length
-                  ? `View all ${boundaryMapData.pins.length} homes`
-                  : undefined
-              }
+              mapHeight={520}
+              viewAllHref={hasListings && showViewAll ? viewAllHref : undefined}
+              viewAllLabel={showViewAll ? `View all ${totalHomes} homes` : undefined}
               communityName={community.name}
-              totalCount={boundaryMapData.pins.length}
+              totalCount={totalHomes}
             />
           </Container>
         </section>
-      ) : hasMap ? (
-        /* No listings but we have a boundary -- show the map standalone */
-        <div id="map" className="border-t border-border bg-background py-10 md:py-14">
-          <Container>
-            <Eyebrow className="mb-1">{community.name}</Eyebrow>
-            <H2 className="text-2xl text-foreground mb-6">Community map</H2>
-            <div className="rounded-xl overflow-hidden border border-border shadow-sm">
-              {/* NeighborhoodMap server wrapper handles dynamic import */}
-              {/* Inline import to avoid a circular reference */}
-              <CommunityMapLedgerPane
-                listings={[]}
-                polygons={mapPolygons}
-                mapListings={mapListings}
-                zoom={14}
-                mapHeight={520}
-                communityName={community.name}
-              />
-            </div>
-          </Container>
-        </div>
       ) : null}
 
       {/* Subdivisions within the community (editorial index rows) */}
@@ -655,13 +656,6 @@ export default async function CommunityDetailPage({ params }: Props) {
 
       {/* Motivated sellers in this city */}
       <MotivatedListings city={cityName} />
-
-      {/* Homes with video tours in this community */}
-      <VideoHomesSection
-        scope={{ kind: 'community', subdivision: community.name }}
-        heading={`Video tours in ${community.name}`}
-        tone="muted"
-      />
 
       {/* Browse by price range */}
       <PriceRangeTiles />

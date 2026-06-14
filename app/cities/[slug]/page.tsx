@@ -66,7 +66,6 @@ import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import {
   FlyoverHero,
   LiveMarketBand,
-  SectionNav,
   InlineValuationHook,
   PriceHistoryScrubber,
   PaymentSlider,
@@ -443,18 +442,6 @@ export default async function CityDetailPage({ params }: Props) {
     })
   }
 
-  // SectionNav items — conditional on available content
-  const navItems = [
-    { id: 'market', label: 'Market' },
-    ...(aboutParagraphs.length > 0 ? [{ id: 'about', label: 'About' }] : []),
-    ...(hasListings || hasMap ? [{ id: 'listings', label: 'Homes for sale' }] : []),
-    ...(hasPriceHistory ? [{ id: 'price-history', label: 'Price history' }] : []),
-    ...(bendNeighborhoodItems.length > 0 ? [{ id: 'neighborhoods', label: 'Neighborhoods' }] : []),
-    ...(golfCommunityItems.length > 0 ? [{ id: 'communities', label: 'Communities' }] : []),
-    { id: 'open-houses', label: 'Open houses' },
-    ...(faqs.length > 0 ? [{ id: 'faq', label: 'Questions' }] : []),
-  ]
-
   return (
     <main className="min-h-screen bg-background">
 
@@ -501,9 +488,6 @@ export default async function CityDetailPage({ params }: Props) {
           sectionId="market"
         />
       </div>
-
-      {/* Sticky in-page anchor rail */}
-      <SectionNav items={navItems} />
 
       {/* Honest editorial intro — asymmetric split: prose + quick-facts ledger */}
       {aboutParagraphs.length > 0 ? (
