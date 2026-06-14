@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.541.2 (2026-06-14)
+
+### Bug Fixes
+- fix(geo): map info windows show photo + address; community breadcrumb city; guard wrong subdivisions
+
+---
+
+
 ## v1.541.1 (2026-06-14)
 
 ### Bug Fixes
