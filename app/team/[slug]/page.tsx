@@ -149,7 +149,7 @@ function toSoldCardData(
  * Sentence-case, no banned words, no invented claims.
  */
 function factualFallbackBio(displayName: string, title: string): string {
-  return `${displayName} is a licensed Oregon real estate broker at Ryan Realty, a small independent brokerage based in Bend, Oregon. Ryan Realty serves buyers and sellers across Central Oregon, including Bend, Redmond, Sisters, Sunriver, and surrounding communities. ${displayName} works directly with clients from first contact through closing.`
+  return `${displayName} is a real estate broker at Ryan Realty, based in Bend, Oregon. Ryan Realty serves buyers and sellers across Central Oregon, including Bend, Redmond, Sisters, Sunriver, and surrounding communities. ${displayName} works directly with clients from first contact through closing.`
 }
 
 export default async function TeamMemberPage({ params }: Props) {

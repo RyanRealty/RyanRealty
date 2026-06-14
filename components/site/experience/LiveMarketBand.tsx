@@ -43,8 +43,9 @@ type Props = {
   /** The ONE giant living number (canonical: active listing count). */
   heroStat: number | null
   heroLabel?: string
-  /** Up to 3 quieter supporting stats. */
-  auxStats?: [AuxStat, AuxStat, AuxStat]
+  /** Up to 3 quieter supporting stats. Pass ONLY verified values — a shorter
+   *  array is rendered as-is rather than padded with null/`—` (data-accuracy). */
+  auxStats?: AuxStat[]
   marketVerdict?: 'seller' | 'balanced' | 'buyer' | null
   reportHref?: string
   reportLabel?: string
@@ -87,7 +88,7 @@ export function LiveMarketBand({
 
   // Resolve hero + aux from either the new API or the legacy 4-stat array
   let heroStat: number | null = heroStatProp ?? null
-  let auxStats: [AuxStat, AuxStat, AuxStat] | undefined = auxStatsProp
+  let auxStats: AuxStat[] | undefined = auxStatsProp
 
   if (stats && !auxStatsProp) {
     // Legacy: derive heroStat from stats[0].value (numeric)
@@ -97,7 +98,7 @@ export function LiveMarketBand({
       const parsed = Number(raw.replace(/[^0-9.]/g, ''))
       if (!Number.isNaN(parsed)) heroStat = parsed
     }
-    auxStats = [stats[1], stats[2], stats[3]] as [AuxStat, AuxStat, AuxStat]
+    auxStats = [stats[1], stats[2], stats[3]]
   }
 
   // Count-up animation on the hero stat

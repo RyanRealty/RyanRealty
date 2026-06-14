@@ -69,6 +69,10 @@ type Props = {
   activeCount?: number | null
   medianPrice?: number | null
   medianDays?: number | null
+  /** Honest label for the days stat. Cities = "Days to pending" (pulse), but
+   *  neighborhoods source days-on-market from market_stats_cache — pass the
+   *  matching label so the number is never mislabeled (§0). */
+  daysLabel?: string
   videoSrc?: string | null
   posterSrc?: string | null
   photoSrc?: string | null
@@ -85,6 +89,7 @@ export function FlyoverHero({
   activeCount = null,
   medianPrice = null,
   medianDays = null,
+  daysLabel = 'Days to pending',
   videoSrc,
   posterSrc,
   photoSrc,
@@ -335,7 +340,7 @@ export function FlyoverHero({
                     {fmtDays(medianDays)}
                   </span>
                   <span className="text-[11px] font-medium uppercase tracking-[0.09em] text-white/58">
-                    Days to pending
+                    {daysLabel}
                   </span>
                 </div>
               </>

@@ -28,6 +28,7 @@ import type { Metadata } from 'next'
 import { getCommunityBySlug } from '@/app/actions/communities'
 import {
   getMarketPulse,
+  getMarketStats,
   getRecentBlogPosts,
   getGeoTileImages,
   getGeoBoundaryMapData,
@@ -151,9 +152,13 @@ export default async function CommunityDetailPage({ params }: Props) {
 
   // Every fetch is timeout-guarded so a slow Supabase query degrades that one
   // section instead of hanging the whole page.
-  const [pulse, blogPosts, geoImages, boundaryMapData, allCitySnapshots, communitySubdivisions, resortBoundary, priceHistory] =
+  const [pulse, stats, blogPosts, geoImages, boundaryMapData, allCitySnapshots, communitySubdivisions, resortBoundary, priceHistory] =
     await Promise.all([
       withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: slug }), null, 3500, 'comm:pulse'),
+      // Neighborhood closed-sale stats from market_stats_cache (market_pulse_live
+      // has no neighborhood rows) — the verified source for days-on-market +
+      // median sold when the pulse band would otherwise show dashes.
+      withTimeoutFallback(getMarketStats({ geoType: 'neighborhood', geoSlug: slug, periodType: 'rolling_365d' }), null, 3500, 'comm:stats'),
       withTimeoutFallback(getRecentBlogPosts({ cityName, limit: 3 }), [], 3000, 'comm:blog'),
       withTimeoutFallback(getGeoTileImages([citySlug, slug, 'central-oregon']), {} as Record<string, string[]>, 3000, 'comm:images'),
       withTimeoutFallback(getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: slug }), { polygon: null, pins: [] }, 4500, 'comm:boundary'),
@@ -197,7 +202,10 @@ export default async function CommunityDetailPage({ params }: Props) {
 
   const activeCount = pulse?.activeCount ?? community.activeCount
   const medianListPrice = pulse?.medianListPrice ?? community.medianPrice
-  const medianDays = pulse?.medianDaysToPending ?? null
+  // Days: pulse (days-to-pending) for cities; market_stats_cache (days-on-market)
+  // for neighborhoods where pulse has no row. Track the source for an honest label.
+  const medianDays = pulse?.medianDaysToPending ?? stats?.medianDaysOnMarket ?? null
+  const daysLabel = pulse?.medianDaysToPending != null ? 'Days to pending' : 'Days on market'
   const monthsOfSupply = pulse?.monthsOfSupply ?? null
   const marketVerdict = resolveVerdict(monthsOfSupply)
 
@@ -209,16 +217,17 @@ export default async function CommunityDetailPage({ params }: Props) {
     ? `$${(Math.round(medianListPrice / 1000) * 1000).toLocaleString()}`
     : null
 
-  // LiveMarketBand v2: heroStat = activeCount (big), auxStats = [median, days, supply]
-  const auxStats: [
-    { label: string; value: string; unit?: string },
-    { label: string; value: string; unit?: string },
-    { label: string; value: string; unit?: string },
-  ] = [
-    { label: 'Median list', value: medianPriceK ?? '—' },
-    { label: 'Days to pending', value: medianDays != null ? `${Math.round(medianDays)}` : '—', unit: medianDays != null ? 'days' : undefined },
-    { label: 'Supply', value: mosFmt ?? '—' },
-  ]
+  // Data-accuracy rule (§0): render ONLY verified stats — never a dash. Build the
+  // band from real values in priority order and let LiveMarketBand show however
+  // many exist (months-of-supply is unavailable at neighborhood level, so the
+  // third slot falls back to verified closed-sale data instead of showing "—").
+  type Aux = { label: string; value: string; unit?: string }
+  const auxStats: Aux[] = []
+  if (medianPriceK) auxStats.push({ label: 'Median list', value: medianPriceK })
+  if (medianDays != null) auxStats.push({ label: daysLabel, value: `${Math.round(medianDays)}`, unit: 'days' })
+  if (mosFmt) auxStats.push({ label: 'Months of supply', value: mosFmt })
+  else if (stats?.medianSalePrice != null) auxStats.push({ label: 'Median sold', value: `$${(Math.round(stats.medianSalePrice / 1000) * 1000).toLocaleString()}` })
+  else if (stats?.soldCount != null) auxStats.push({ label: 'Sold, 1 yr', value: `${stats.soldCount}` })
 
   // FlyoverHero: video by convention at /videos/flyovers/<slug>/hero.mp4
   const heroPhotoSrc =
@@ -356,6 +365,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           activeCount={activeCount > 0 ? activeCount : null}
           medianPrice={medianListPrice}
           medianDays={medianDays}
+          daysLabel={daysLabel}
           photoSrc={heroPhotoSrc ?? undefined}
           photoAlt={`${community.name} in ${cityName}, Oregon`}
           sectionId="hero"

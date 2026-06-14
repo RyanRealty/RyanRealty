@@ -33,7 +33,7 @@ export const revalidate = 300
 export const metadata = pageMetadata({
   title: 'Buy a home in Central Oregon · Ryan Realty',
   description:
-    'Search homes for sale across Bend, Redmond, Sisters, Sunriver, and surrounding communities. Local licensed brokers, live MLS data, and one broker from first search to closing.',
+    'Search homes for sale across Bend, Redmond, Sisters, Sunriver, and surrounding communities. Live MLS data, and one broker from your first search to closing.',
   path: '/buy',
   ogImage: '/brand/hero/hero-old-mill-master-4k.jpg',
   keywords: [
@@ -104,7 +104,7 @@ export default async function BuyPage() {
             type: 'webPage',
             name: 'Buy a home in Central Oregon · Ryan Realty',
             description:
-              'Search homes for sale across Bend, Redmond, Sisters, Sunriver, and surrounding communities. Local licensed brokers, live MLS data, and one broker from first search to closing.',
+              'Search homes for sale across Bend, Redmond, Sisters, Sunriver, and surrounding communities. Live MLS data, and one broker from your first search to closing.',
             url: '/buy',
           },
           {
@@ -118,7 +118,7 @@ export default async function BuyPage() {
 
       <HeroBlock
         headline="Buy a home in Central Oregon."
-        lede="Three licensed brokers. Live MLS data. One broker from your first search to the closing table. We cover Bend, Redmond, Sisters, Sunriver, and the surrounding communities."
+        lede="Live MLS data, updated continuously. One broker from your first search to the closing table, so you always know who is accountable. We cover Bend, Redmond, Sisters, Sunriver, and the surrounding communities."
         photo={{
           src: heroSrc ?? OLD_MILL_HERO,
           alt: 'Old Mill District drone view with the American flag, the Deschutes River, and the Cascade mountains.',

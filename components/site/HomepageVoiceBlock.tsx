@@ -1,8 +1,9 @@
-// brand-voice:exempt
 /**
  * HomepageVoiceBlock — editorial brokerage statement.
  *
  * Facts-only. No banned words, no marketing slop, no overt category claims.
+ * Position on the standard, the data, and direct-broker accountability — never
+ * headcount/smallness or a baseline credential. Gate-enforced (NOT exempt).
  * Brand voice: direct, specific, kind, honest.
  *
  * Left column: pull quote + body copy + fact trio.
@@ -28,15 +29,14 @@ export default function HomepageVoiceBlock() {
             <Eyebrow className="mb-6">Bend-based, locally owned</Eyebrow>
 
             <DisplayHeading as="h2" className="mb-8 text-foreground" style={{ maxWidth: '440px' }}>
-              Three licensed brokers. One focus: Central Oregon.
+              One standard on every listing, across Central Oregon.
             </DisplayHeading>
 
             <p className="text-base leading-[1.75] text-foreground/62 mb-8" style={{ maxWidth: '48ch' }}>
-              Ryan Realty is a small, independent brokerage in Bend. We cover the
-              full Central Oregon market: Bend, Redmond, Sisters, Sunriver, La Pine,
-              and the resort communities in between. We tell you what the inspection
-              found. We tell you when a listing has been sitting. We tell you what
-              we do not know.
+              We cover the full Central Oregon market: Bend, Redmond, Sisters,
+              Sunriver, La Pine, and the resort communities in between. We tell you
+              what the inspection found. We tell you when a listing has been sitting.
+              We tell you what we do not know.
             </p>
 
             {/* Fact trio */}
@@ -65,11 +65,11 @@ export default function HomepageVoiceBlock() {
                   className="font-display tabular-nums text-foreground leading-none flex-shrink-0"
                   style={{ fontSize: '1.75rem', minWidth: '60px' }}
                 >
-                  541
+                  1
                 </span>
                 <span className="text-sm leading-[1.5] text-foreground/60 pt-0.5">
-                  <strong className="text-foreground font-semibold">Oregon license numbers</strong>{' '}
-                  on file. Matt Ryan PB 201206613. Paul Stevenson 201259123. Rebecca Peterson 201254727.
+                  <strong className="text-foreground font-semibold">broker on your deal</strong>{' '}
+                  from your first call to closing. You always know exactly who is accountable.
                 </span>
               </div>
 
