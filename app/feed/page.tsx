@@ -14,6 +14,13 @@ function cleanAddress(raw: string | null): string {
   return cleaned || 'View this home'
 }
 
+/** Empty out an MLS field that is just a placeholder ("N/A", "-", blank). */
+function cleanToken(raw: string | null): string {
+  const t = (raw ?? '').trim()
+  if (!t || /^n\/?a$/i.test(t) || t === '-') return ''
+  return t
+}
+
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const defaultOgImage = `${siteUrl}/api/og?type=default`
 
@@ -63,7 +70,7 @@ export default async function FeedPage({
       posterUrl: r.photo_url ?? null,
       price: r.list_price ?? null,
       addressLine: cleanAddress(r.unparsed_address),
-      cityLine: [r.subdivision_name, r.city].filter(Boolean).join(' · '),
+      cityLine: [cleanToken(r.subdivision_name), cleanToken(r.city)].filter(Boolean).join(' · '),
       detailHref: listingDetailPath(
         r.listing_key,
         null,
