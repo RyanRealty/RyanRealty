@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.536.0 (2026-06-14)
+
+### Features
+- feat(home): ship V6 homepage — drone-flyover hero + live market sections
+
+---
+
+
 ## v1.535.7 (2026-06-14)
 
 ### Bug Fixes
