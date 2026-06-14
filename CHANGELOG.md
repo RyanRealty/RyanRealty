@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.530.0 (2026-06-14)
+
+### Features
+- feat(admin): design standard + curated broker dashboard + full-admin scanner
+
+---
+
+
 ## v1.529.1 (2026-06-14)
 
 ### Bug Fixes
