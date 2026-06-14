@@ -59,7 +59,7 @@ export default async function SavedCommunitiesPage() {
             {savedKeys.map((entityKey) => {
               const { city, subdivision } = parseEntityKey(entityKey)
               const slug = entityKey.replace(':', '/')
-              const href = `/search/${slug}`
+              const href = `/homes-for-sale/${slug}`
               return (
                 <div
                   key={entityKey}

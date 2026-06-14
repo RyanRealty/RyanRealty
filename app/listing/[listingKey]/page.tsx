@@ -166,6 +166,16 @@ function buildLifestyleLine(listing: { city: string | null }): string | null {
   return CITY_LIFESTYLE_LINE[key] ?? null
 }
 
+// Save/unsave a listing from the price strip. Returns needsAuth for a signed-out
+// visitor so the client routes them to sign-in (the save -> account capture path).
+async function saveListingFromStrip(key: string): Promise<{ saved: boolean; needsAuth?: boolean }> {
+  'use server'
+  const { toggleSavedListing } = await import('@/app/actions/saved-listings')
+  const r = await toggleSavedListing(key)
+  if (r.error === 'Not signed in') return { saved: false, needsAuth: true }
+  return { saved: r.saved }
+}
+
 export default async function ListingDetailPage({ params }: PageProps) {
   const { listingKey } = await params
   const listing = await getListingDetail(listingKey)
@@ -249,6 +259,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
     ])
 
   const listingWithPhotos = { ...listing, photos }
+  const { isListingSaved } = await import('@/app/actions/saved-listings')
+  const initialSaved = await isListingSaved(listing.listingKey).catch(() => false)
   // Resolve the fallback contact broker by the STABLE principal flag, not a slug
   // string: the slug was renamed 'matt-ryan' -> 'matthew-ryan' (commit 6cb0202),
   // which silently nulled `matt` and made the whole sticky CTA sidebar disappear.
@@ -291,7 +303,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const main = (
     <>
-      <PriceCtaStrip listing={listingWithPhotos} />
+      <PriceCtaStrip listing={listingWithPhotos} onSave={saveListingFromStrip} initialSaved={initialSaved} />
       <PropertySpecs listing={listingWithPhotos} />
       {virtualTours.length > 0 ? <ListingVideoEmbed videos={virtualTours} variant="tour" /> : null}
       <ListingAttribution
@@ -351,7 +363,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           broker (CRM link / ad attribution) the card shows THAT broker's
           contact; otherwise the default principal. It never changes shape and
           never says "your broker". */}
-      <ListingBrokerCTA defaultBroker={ctaBroker} brokers={brokers} listingKey={listingKey} />
+      <ListingBrokerCTA defaultBroker={ctaBroker} brokers={brokers} listingKey={listingKey} lockToDefault={listingAgent != null} />
       <ListingAgentCard broker={listingAgent} listing={listing} />
     </>
   ) : null

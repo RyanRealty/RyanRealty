@@ -250,7 +250,7 @@ export default async function AccountPage() {
             {savedCitySlugs.slice(0, 8).map((slug) => (
               <Link
                 key={`c-${slug}`}
-                href={`/${slug}`}
+                href={`/cities/${slug}`}
                 className="rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
               >
                 {humanize(slug)}
@@ -259,7 +259,7 @@ export default async function AccountPage() {
             {savedCommunityKeys.slice(0, 8).map((entityKey) => (
               <Link
                 key={`k-${entityKey}`}
-                href="/account/saved-communities"
+                href={`/homes-for-sale/${entityKey.replace(':', '/')}`}
                 className="rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
               >
                 {humanize(entityKey)}

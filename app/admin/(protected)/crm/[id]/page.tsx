@@ -316,7 +316,7 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
           <div className="mt-3 flex flex-wrap gap-2">
             <form action={confirmNextForm}>
               <input type="hidden" name="enrollmentId" value={rec.enrollmentId} />
-              <Button type="submit" size="sm" disabled={!!rec.holdReason} className="min-h-[40px] sm:min-h-0">Confirm &amp; send</Button>
+              <Button type="submit" size="sm" disabled={!!rec.holdReason || rec.unresolved.length > 0} className="min-h-[40px] sm:min-h-0">Confirm &amp; send</Button>
             </form>
             <form action={skipNextForm}>
               <input type="hidden" name="enrollmentId" value={rec.enrollmentId} />

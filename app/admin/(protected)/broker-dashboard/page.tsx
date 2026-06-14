@@ -514,7 +514,10 @@ export default async function BrokerCommandCenterPage({
         </section>
       </div>
 
-      {/* ── 5. Marketing launchpad ── */}
+      {/* ── 5. Marketing launchpad (superuser only — its listing/asset actions
+            route to /admin/listings/[key] + /admin/media, which redirect
+            non-principal brokers to access-denied) ── */}
+      {data.isSuperuser ? (
       <section>
         <SectionLabel>Marketing launchpad</SectionLabel>
         <GroupCard className="p-4">
@@ -679,6 +682,7 @@ export default async function BrokerCommandCenterPage({
           ) : null}
         </GroupCard>
       </section>
+      ) : null}
 
     </div>
   )

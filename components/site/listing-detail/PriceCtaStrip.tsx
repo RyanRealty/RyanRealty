@@ -51,8 +51,9 @@ type Props = {
     | 'originalListPrice'
     | 'priceDropCount'
   >
-  /** Save handler — caller wires to saved_listings table (or local store). */
-  onSave?: (listingKey: string) => Promise<{ saved: boolean }>
+  /** Save handler — caller wires to saved_listings table. Returns needsAuth=true
+   *  for a signed-out visitor so the strip can route them to sign-in. */
+  onSave?: (listingKey: string) => Promise<{ saved: boolean; needsAuth?: boolean }>
   /** Initial saved state, hydrated by the server. */
   initialSaved?: boolean
   /** Share handler — caller wires to Web Share API or fallback toast. */
@@ -124,8 +125,14 @@ export function PriceCtaStrip({
     if (!onSave || saveState === 'saving') return
     setSaveState('saving')
     try {
-      const { saved } = await onSave(listing.listingKey)
-      setSaveState(saved ? 'saved' : 'idle')
+      const res = await onSave(listing.listingKey)
+      if (res.needsAuth) {
+        // Signed-out: send them to sign in (and back), the save→account capture path.
+        const back = typeof window !== 'undefined' ? window.location.pathname : '/'
+        window.location.href = `/account?signin=1&returnUrl=${encodeURIComponent(back)}`
+        return
+      }
+      setSaveState(res.saved ? 'saved' : 'idle')
     } catch {
       setSaveState('idle')
     }

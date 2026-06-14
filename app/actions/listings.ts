@@ -2338,19 +2338,24 @@ export async function getListingsAtAddress(options: ListingsAtAddressOptions): P
  * Fetch listing tile rows by listing keys (e.g. for saved homes). Preserves order of keys where possible.
  */
 export async function getListingsByKeys(keys: string[]): Promise<ListingTileRow[]> {
-  if (keys.length === 0) return []
+  const trimmed = keys.map((k) => k.trim()).filter(Boolean)
+  if (trimmed.length === 0) return []
   void LISTING_TILE_SELECT
   const { getListingTiles } = await import('@/lib/data')
-  const tiles = await getListingTiles({
-    listingKeys: keys.map((k) => k.trim()).filter(Boolean).slice(0, 5000),
-    status: 'all',
-    sort: 'newest',
-    limit: 500,
-  })
-  const byKey = new Map(
-    tiles.map((t) => [t.listingKey || t.listNumber || '', tileToListingTileRow(t)])
-  )
-  return keys.map((k) => byKey.get(k)).filter(Boolean) as ListingTileRow[]
+  // Keys may be a ListingKey OR an MLS ListNumber (listing URLs carry the
+  // ListNumber, and some saves persist that). Query both + map each tile under
+  // both forms so a saved/liked home resolves regardless of which was stored.
+  const [byListingKeyTiles, byListNumberTiles] = await Promise.all([
+    getListingTiles({ listingKeys: trimmed.slice(0, 5000), status: 'all', sort: 'newest', limit: 500 }),
+    getListingTiles({ listNumbers: trimmed.slice(0, 5000), status: 'all', sort: 'newest', limit: 500 }),
+  ])
+  const byKey = new Map<string, ListingTileRow>()
+  for (const t of [...byListingKeyTiles, ...byListNumberTiles]) {
+    const row = tileToListingTileRow(t)
+    if (t.listingKey && !byKey.has(t.listingKey)) byKey.set(t.listingKey, row)
+    if (t.listNumber && !byKey.has(t.listNumber)) byKey.set(t.listNumber, row)
+  }
+  return trimmed.map((k) => byKey.get(k)).filter(Boolean) as ListingTileRow[]
 }
 
 /**

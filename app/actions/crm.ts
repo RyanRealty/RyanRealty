@@ -461,7 +461,13 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   const { CRM_MAILBOXES, sendCrmEmail } = await import('@/lib/crm/gmail')
   const actingSlug = actingSlugForLinks
   const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
-  const sent = await sendCrmEmail({ fromMailbox: mailbox.email, to, subject: mergedSubject, bodyText: mergedBody, withSignature: true })
+  const sent = await sendCrmEmail({
+    fromMailbox: mailbox.email, to, subject: mergedSubject, bodyText: mergedBody, withSignature: true,
+    // Instrument open/click like the sequence engine so the conversation
+    // engagement panel ("Opened N×") works for manually-composed emails too.
+    // label MUST equal the subject — the panel keys engagement on the email title.
+    track: { personId, emailKey: `manual:${personId}:${Date.now()}`, label: mergedSubject },
+  })
   if (!sent.ok) return { ok: false, error: sent.error }
 
   await sb.from('crm_timeline').insert({

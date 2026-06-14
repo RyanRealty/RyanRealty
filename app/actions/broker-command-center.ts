@@ -3,6 +3,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { getGcalEvents, type GcalEvent } from '@/lib/google-calendar'
 
 function sb() {
@@ -115,6 +116,12 @@ export async function getBrokerCommandCenterData(): Promise<BrokerCommandCenterD
     ? { id: brokerRow.id, slug: brokerRow.slug, displayName: brokerRow.display_name, photoUrl: brokerRow.photo_url, email: brokerRow.email }
     : { id: '', slug: 'matt', displayName: 'Matt', photoUrl: null, email }
 
+  // crm_tasks + crm_people store the SHORT CRM slug (matt/rebecca/paul); the
+  // brokers table uses long slugs (matthew-ryan/...). Scope by the short slug
+  // resolved from email (same source as getCrmAccess) — using brokerRow.slug
+  // matched zero rows, so Paul/Rebecca saw empty Tasks + Active clients.
+  const crmSlug = email ? (CRM_BROKER_BY_EMAIL[email.toLowerCase()] ?? null) : null
+
   // 1. Active TC deals (stage != closed)
   const dealsQuery = sb()
     .from('tc_deals')
@@ -215,8 +222,8 @@ export async function getBrokerCommandCenterData(): Promise<BrokerCommandCenterD
     .order('due_at', { ascending: true })
     .limit(30)
 
-  if (!isSuperuser && brokerDisplayName) {
-    tasksQuery.eq('assigned_broker', isSuperuser ? 'matt' : (role.role === 'broker' ? (brokerRow?.slug ?? '') : ''))
+  if (!isSuperuser && crmSlug) {
+    tasksQuery.eq('assigned_broker', crmSlug)
   }
 
   const { data: tasksRaw } = await tasksQuery
@@ -241,8 +248,8 @@ export async function getBrokerCommandCenterData(): Promise<BrokerCommandCenterD
     .order('last_activity_at', { ascending: true, nullsFirst: true })
     .limit(20)
 
-  if (!isSuperuser && brokerRow?.slug) {
-    clientsQuery.eq('assigned_broker', brokerRow.slug)
+  if (!isSuperuser && crmSlug) {
+    clientsQuery.eq('assigned_broker', crmSlug)
   }
 
   const { data: clientsRaw } = await clientsQuery

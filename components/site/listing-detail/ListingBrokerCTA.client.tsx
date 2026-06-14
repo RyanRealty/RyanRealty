@@ -72,11 +72,15 @@ export default function ListingBrokerCTA({
   brokers,
   listingKey,
   className,
+  lockToDefault = false,
 }: {
   defaultBroker: Broker
   brokers: Broker[]
   listingKey: string
   className?: string
+  /** True when defaultBroker is the resolved Ryan Realty listing agent for THIS
+   *  home — keep them as the contact; never random-reassign over them. */
+  lockToDefault?: boolean
 }) {
   const [broker, setBroker] = useState<Broker>(defaultBroker)
 
@@ -88,15 +92,16 @@ export default function ListingBrokerCTA({
       return
     }
     // No broker assigned to this lead. Don't clobber an inbound ?agent= link
-    // (BrokerAttributionSetter handles that). Otherwise assign a RANDOM broker
-    // and make it sticky, so unassigned leads distribute across the brokers
-    // instead of always landing on the principal.
+    // (BrokerAttributionSetter handles that), and never random-reassign when this
+    // home's actual Ryan Realty listing agent is the default (lockToDefault) —
+    // that flipped a listing's own agent to a random broker. Otherwise assign a
+    // RANDOM broker (sticky) so unassigned third-party listings distribute.
     const hasAgentParam = new URLSearchParams(window.location.search).has('agent')
-    if (hasAgentParam || brokers.length === 0) return
+    if (hasAgentParam || brokers.length === 0 || lockToDefault) return
     const chosen = brokers[Math.floor(Math.random() * brokers.length)]
     writeAttribution(chosen.slug)
     setBroker(chosen)
-  }, [brokers, defaultBroker])
+  }, [brokers, defaultBroker, lockToDefault])
 
   return <TextMattCTA broker={broker} listingKey={listingKey} className={className} />
 }
