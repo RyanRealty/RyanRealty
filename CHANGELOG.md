@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.544.2 (2026-06-14)
+
+### Bug Fixes
+- fix(team): broker-page reviews attribution, visible stars, per-broker buy+sell sales
+
+---
+
+
 ## v1.544.1 (2026-06-14)
 
 ### Bug Fixes
