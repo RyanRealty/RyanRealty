@@ -71,33 +71,17 @@ const CITY_LINKS: NavLink[] = [
  */
 export const PRIMARY_NAV: NavGroup[] = [
   {
-    // "Homes" renders as a stylized mega-menu on desktop (SiteHeader) driven by
-    // lib/popular-searches.ts, and as this accordion section on mobile
-    // (MobileNav). The children below are the mobile fallback — browse links
-    // plus an "All [City] homes" link per city so every city hub is reachable
-    // on one thumb. Per-city popular searches live in the desktop mega-menu.
+    // "Homes" is the merged Homes + Explore panel. Children include every city
+    // and community href so the reachability gate passes and mobile accordion
+    // exposes all destinations under one section.
     label: 'Homes',
     href: '/homes-for-sale',
     children: [
       { href: '/homes-for-sale', label: 'All homes for sale' },
       { href: '/search', label: 'Map search' },
       { href: '/open-houses', label: 'Open houses' },
-      { href: '/compare', label: 'Compare properties' },
-      { href: '/homes-for-sale/bend', label: 'All Bend homes' },
-      { href: '/homes-for-sale/redmond', label: 'All Redmond homes' },
-      { href: '/homes-for-sale/sisters', label: 'All Sisters homes' },
-      { href: '/homes-for-sale/sunriver', label: 'All Sunriver homes' },
-      { href: '/homes-for-sale/la-pine', label: 'All La Pine homes' },
-      { href: '/homes-for-sale/prineville', label: 'All Prineville homes' },
-    ],
-  },
-  {
-    // Explore = the merged Communities + Cities parent (Matt directive 2026-06-04).
-    // Keeps every city + community href reachable so the reachability gate passes;
-    // the desktop mega-menu groups them into columns (see lib/site-menu.ts).
-    label: 'Explore',
-    href: '/communities',
-    children: [
+      { href: '/price-drops', label: 'Price drops' },
+      { href: '/lp/buyer-listing-alerts', label: 'Get listing alerts' },
       { href: '/cities', label: 'All cities' },
       ...CITY_LINKS,
       { href: '/communities', label: 'All communities' },
@@ -125,18 +109,7 @@ export const PRIMARY_NAV: NavGroup[] = [
     ],
   },
   {
-    label: 'Company',
-    href: '/about',
-    children: [
-      { href: '/team', label: 'Meet the team' },
-      { href: '/about', label: 'About Ryan Realty' },
-      { href: '/contact', label: 'Contact us' },
-      { href: '/reviews', label: 'Client reviews' },
-      { href: '/join', label: 'Join the team' },
-    ],
-  },
-  {
-    label: 'Learn',
+    label: 'Guides',
     href: '/guides',
     children: [
       { href: '/blog', label: 'Blog' },
@@ -146,6 +119,17 @@ export const PRIMARY_NAV: NavGroup[] = [
       { href: '/videos', label: 'Video tours' },
       { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
       { href: '/tools/appreciation', label: 'Appreciation tool' },
+    ],
+  },
+  {
+    label: 'About',
+    href: '/about',
+    children: [
+      { href: '/team', label: 'Meet the team' },
+      { href: '/about', label: 'About Ryan Realty' },
+      { href: '/contact', label: 'Contact us' },
+      { href: '/reviews', label: 'Client reviews' },
+      { href: '/join', label: 'Join the team' },
     ],
   },
 ]

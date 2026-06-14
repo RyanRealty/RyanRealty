@@ -4,7 +4,6 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ChevronDownIcon } from '@heroicons/react/20/solid'
-import { MapPinIcon } from '@heroicons/react/24/outline'
 import {
   Eyebrow,
   CTAButton,
@@ -15,20 +14,19 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { trackEvent } from '@/lib/tracking'
-import type { MenuEntry, NavData, AreaPulseRow } from '@/lib/site-menu'
+import type { MenuEntry, NavData } from '@/lib/site-menu'
 
 /**
  * MegaMenu — the EDITORIAL mega-menu (Experience System 2026-06-09 directive).
  *
- * Panels SHOW the data advantage instead of listing links.
+ * Top-level nav: Homes · Sell · Market · Guides · About
  *
- * - Homes: browse links with live drop count badge + editorial biggest-drop strip
- * - Explore (the showpiece): two-column editorial area index with live
- *   median price + active count per row (city data from getMarketPulseCitySnapshots)
+ * - Homes: merged browse/cities/communities/price/lifestyle columns with live
+ *   drop count badge + editorial biggest-drop strip on the right
  * - Market: link columns + mini live region band (median/active/drops)
  * - Sell: valuation CTA prominent — the money path
- * - Company: three transparent-PNG broker headshots, floating over cream
- * - Learn: clean editorial columns
+ * - About: three transparent-PNG broker headshots, floating over cream
+ * - Guides: clean editorial columns
  *
  * DATA: navData fetched once server-side in SiteHeader (wrapped in try/catch).
  * Every live-data slot falls back gracefully — the header never breaks.
@@ -214,14 +212,12 @@ function EditorialPanel({
   let inner: React.ReactNode
   if (panelLabel === 'Homes') {
     inner = <HomesPanel entry={entry} navData={navData} onLinkClick={onLinkClick} />
-  } else if (panelLabel === 'Explore') {
-    inner = <AreasPanel entry={entry} navData={navData} onLinkClick={onLinkClick} />
   } else if (panelLabel === 'Market') {
     inner = <MarketPanel entry={entry} navData={navData} onLinkClick={onLinkClick} />
   } else if (panelLabel === 'Sell') {
     inner = <SellPanel entry={entry} onLinkClick={onLinkClick} />
-  } else if (panelLabel === 'Company') {
-    inner = <CompanyPanel entry={entry} onLinkClick={onLinkClick} />
+  } else if (panelLabel === 'About') {
+    inner = <AboutPanel entry={entry} onLinkClick={onLinkClick} />
   } else {
     inner = <DefaultPanel entry={entry} onLinkClick={onLinkClick} />
   }
@@ -254,12 +250,15 @@ function LinkColumn({
   panel,
   onLinkClick,
   className,
+  dropCount,
 }: {
   heading: string
   links: { label: string; href: string }[]
   panel: string
   onLinkClick: (panel: string, label: string) => void
   className?: string
+  /** When provided, attaches a live badge to the "Price drops" link. */
+  dropCount?: number
 }) {
   return (
     <div className={cn('min-w-[144px]', className)}>
@@ -273,13 +272,19 @@ function LinkColumn({
               href={link.href}
               onClick={() => onLinkClick(panel, link.label)}
               className={cn(
-                'block py-1.5 text-[15px] text-foreground/90 transition-colors',
+                'flex items-center justify-between gap-2 py-1.5 text-[15px] text-foreground/90 transition-colors',
                 'hover:text-primary hover:underline underline-offset-4',
                 'focus-visible:outline-none focus-visible:text-primary focus-visible:underline',
                 'motion-reduce:transition-none',
               )}
             >
-              {link.label}
+              <span>{link.label}</span>
+              {/* Live price-drop count badge on the "Price drops" link */}
+              {link.label === 'Price drops' && dropCount != null && dropCount > 0 && (
+                <Badge variant="default" className="tabular-nums text-[11px]">
+                  {dropCount}
+                </Badge>
+              )}
             </Link>
           </li>
         ))}
@@ -288,8 +293,9 @@ function LinkColumn({
   )
 }
 
-// ─── Homes panel ─────────────────────────────────────────────────────────────
-// Left: curated browse links with live drop count. Right: editorial biggest-drop strip.
+// ─── Homes panel ──────────────────────────────────────────────────────────────
+// Merged Homes + Explore. All 5 link columns rendered left-to-right, then
+// the live price-drop strip on the right.
 
 function HomesPanel({
   entry,
@@ -303,63 +309,20 @@ function HomesPanel({
   const { topDrop, dropCount } = navData
   const panel = 'Homes'
 
-  const browseCol = entry.columns[0]
-  const priceCol = entry.columns[2]
-  const lifestyleCol = entry.columns[3]
-
   return (
     <div className="flex gap-10 lg:gap-14">
-      {/* Left: editorial link columns */}
+      {/* Left: all editorial link columns */}
       <div className="flex flex-1 flex-wrap gap-x-8 gap-y-6">
-        {browseCol && (
-          <div className="min-w-[152px]">
-            <Eyebrow as="h3" className="mb-2.5 font-semibold text-foreground/60">
-              {browseCol.heading}
-            </Eyebrow>
-            <ul className="flex flex-col gap-0.5">
-              {browseCol.links.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    onClick={() => onLinkClick(panel, link.label)}
-                    className={cn(
-                      'flex items-center justify-between gap-2 py-1.5 text-[15px]',
-                      'text-foreground/90 transition-colors',
-                      'hover:text-primary hover:underline underline-offset-4',
-                      'focus-visible:outline-none focus-visible:text-primary focus-visible:underline',
-                    )}
-                  >
-                    <span>{link.label}</span>
-                    {/* Live price-drop count badge */}
-                    {link.label === 'Price drops' && dropCount > 0 && (
-                      <Badge variant="default" className="tabular-nums text-[11px]">
-                        {dropCount}
-                      </Badge>
-                    )}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {priceCol && (
+        {entry.columns.map((col) => (
           <LinkColumn
-            heading={priceCol.heading}
-            links={priceCol.links}
+            key={col.heading}
+            heading={col.heading}
+            links={col.links}
             panel={panel}
             onLinkClick={onLinkClick}
+            dropCount={dropCount}
           />
-        )}
-
-        {lifestyleCol && (
-          <LinkColumn
-            heading={lifestyleCol.heading}
-            links={lifestyleCol.links}
-            panel={panel}
-            onLinkClick={onLinkClick}
-          />
-        )}
+        ))}
       </div>
 
       {/* Right: editorial price-drop strip */}
@@ -420,185 +383,6 @@ function HomesPanel({
             </CTAButton>
           </div>
         )}
-      </div>
-    </div>
-  )
-}
-
-// ─── Areas panel (the showpiece) ──────────────────────────────────────────────
-// Two-column editorial index: name + live median + active count.
-// Nobody else does this in their nav — the data advantage made visible.
-
-function AreaRow({
-  row,
-  panel,
-  onLinkClick,
-}: {
-  row: AreaPulseRow
-  panel: string
-  onLinkClick: (panel: string, label: string) => void
-}) {
-  return (
-    <li>
-      <Link
-        href={row.href}
-        onClick={() => onLinkClick(panel, row.label)}
-        className={cn(
-          'flex items-center justify-between gap-3 rounded-md px-2 py-2',
-          'text-[14px] text-foreground/90 transition-colors',
-          'hover:bg-secondary/60 hover:text-foreground',
-          'focus-visible:outline-none focus-visible:bg-secondary/60',
-        )}
-      >
-        <span className="font-medium truncate">{row.label}</span>
-        <span className="flex items-center gap-3 shrink-0 tabular-nums text-[13px] text-muted-foreground">
-          {row.medianListPrice != null && (
-            <span>
-              <Price value={row.medianListPrice} compact />
-            </span>
-          )}
-          {row.activeCount != null && (
-            <span className="text-muted-foreground/70">
-              <TabularNumber value={row.activeCount} /> active
-            </span>
-          )}
-        </span>
-      </Link>
-    </li>
-  )
-}
-
-// Static fallback rows used when live data is unavailable
-const FALLBACK_CITY_ROWS: AreaPulseRow[] = [
-  { slug: 'bend', label: 'Bend', href: '/cities/bend', activeCount: null, medianListPrice: null },
-  { slug: 'redmond', label: 'Redmond', href: '/cities/redmond', activeCount: null, medianListPrice: null },
-  { slug: 'sisters', label: 'Sisters', href: '/cities/sisters', activeCount: null, medianListPrice: null },
-  { slug: 'sunriver', label: 'Sunriver', href: '/cities/sunriver', activeCount: null, medianListPrice: null },
-  { slug: 'la-pine', label: 'La Pine', href: '/cities/la-pine', activeCount: null, medianListPrice: null },
-  { slug: 'prineville', label: 'Prineville', href: '/cities/prineville', activeCount: null, medianListPrice: null },
-  { slug: 'terrebonne', label: 'Terrebonne', href: '/cities/terrebonne', activeCount: null, medianListPrice: null },
-  { slug: 'powell-butte', label: 'Powell Butte', href: '/cities/powell-butte', activeCount: null, medianListPrice: null },
-]
-
-function AreasPanel({
-  navData,
-  onLinkClick,
-}: {
-  entry: MenuEntry
-  navData: NavData
-  onLinkClick: (panel: string, label: string) => void
-}) {
-  const panel = 'Explore'
-  const { cityRows, communityRows } = navData
-
-  const displayCityRows = cityRows.length > 0 ? cityRows : FALLBACK_CITY_ROWS
-
-  const golfCommunities = communityRows.filter((r) =>
-    ['tetherow', 'pronghorn', 'broken-top', 'widgi-creek', 'awbrey-glen'].includes(r.slug)
-  )
-  const resortCommunities = communityRows.filter((r) =>
-    ['eagle-crest', 'brasada-ranch', 'black-butte-ranch', 'sunriver', 'caldera-springs', 'crosswater'].includes(r.slug)
-  )
-  const bendNeighborhoods = communityRows.filter((r) =>
-    ['northwest-crossing', 'bend-awbrey-butte', 'bend-old-bend', 'bend-old-mill-district'].includes(r.slug)
-  )
-
-  const hasLiveData = cityRows.some((r) => r.activeCount != null || r.medianListPrice != null)
-
-  return (
-    <div className="flex gap-8 lg:gap-12">
-      {/* Left column: cities editorial index */}
-      <div className="min-w-[240px] flex-1 max-w-[280px]">
-        <div className="flex items-center justify-between mb-3">
-          <Eyebrow as="h3" className="font-semibold text-foreground/60">
-            Cities
-          </Eyebrow>
-          {/* Column headers for the tabular data */}
-          {hasLiveData && (
-            <span className="flex items-center gap-3 text-[11px] uppercase tracking-wider text-muted-foreground/60 tabular-nums pr-2">
-              <span className="w-12 text-right">median</span>
-              <span className="w-14 text-right">active</span>
-            </span>
-          )}
-        </div>
-        <ul className="space-y-px">
-          {displayCityRows.map((row) => (
-            <AreaRow key={row.slug} row={row} panel={panel} onLinkClick={onLinkClick} />
-          ))}
-          <li className="pt-1">
-            <Link
-              href="/cities"
-              onClick={() => onLinkClick(panel, 'See all cities')}
-              className="block px-2 py-1.5 text-[13px] font-medium text-primary hover:underline underline-offset-4 transition-colors"
-            >
-              See all cities →
-            </Link>
-          </li>
-        </ul>
-      </div>
-
-      {/* Middle column: communities */}
-      <div className="flex flex-col gap-5 min-w-[180px]">
-        {golfCommunities.length > 0 && (
-          <div>
-            <Eyebrow as="h3" className="mb-2.5 font-semibold text-foreground/60">
-              Golf communities
-            </Eyebrow>
-            <ul className="space-y-px">
-              {golfCommunities.map((row) => (
-                <AreaRow key={row.slug} row={row} panel={panel} onLinkClick={onLinkClick} />
-              ))}
-            </ul>
-          </div>
-        )}
-        {resortCommunities.length > 0 && (
-          <div>
-            <Eyebrow as="h3" className="mb-2.5 font-semibold text-foreground/60">
-              Resort communities
-            </Eyebrow>
-            <ul className="space-y-px">
-              {resortCommunities.map((row) => (
-                <AreaRow key={row.slug} row={row} panel={panel} onLinkClick={onLinkClick} />
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-
-      {/* Right column: Bend neighborhoods + explore CTA */}
-      <div className="flex flex-col gap-5 min-w-[160px]">
-        {bendNeighborhoods.length > 0 && (
-          <div>
-            <Eyebrow as="h3" className="mb-2.5 font-semibold text-foreground/60">
-              Bend neighborhoods
-            </Eyebrow>
-            <ul className="space-y-px">
-              {bendNeighborhoods.map((row) => (
-                <AreaRow key={row.slug} row={row} panel={panel} onLinkClick={onLinkClick} />
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Explore CTA card */}
-        <div className="rounded-xl border border-border bg-secondary/30 p-4 mt-auto">
-          <div className="flex items-start gap-2 mb-2">
-            <MapPinIcon className="h-4 w-4 text-primary mt-0.5 shrink-0" aria-hidden />
-            <p className="text-[13px] font-medium text-foreground">
-              Central Oregon, end to end
-            </p>
-          </div>
-          <p className="text-[12px] text-muted-foreground leading-relaxed mb-3">
-            Cities, golf resorts, and Bend neighborhoods.
-          </p>
-          <Link
-            href="/communities"
-            onClick={() => onLinkClick(panel, 'Browse all communities')}
-            className="block text-[13px] font-medium text-primary hover:underline underline-offset-4"
-          >
-            Browse all communities →
-          </Link>
-        </div>
       </div>
     </div>
   )
@@ -730,17 +514,17 @@ function SellPanel({
   )
 }
 
-// ─── Company panel ────────────────────────────────────────────────────────────
+// ─── About panel ──────────────────────────────────────────────────────────────
 // Broker headshots (transparent PNGs floating over cream) + links.
 
-function CompanyPanel({
+function AboutPanel({
   entry,
   onLinkClick,
 }: {
   entry: MenuEntry
   onLinkClick: (panel: string, label: string) => void
 }) {
-  const panel = 'Company'
+  const panel = 'About'
 
   const brokers = [
     { name: 'Matt Ryan', role: 'Principal Broker', src: '/images/brokers/ryan-matt.png' },
@@ -803,7 +587,7 @@ function CompanyPanel({
   )
 }
 
-// ─── Default panel (Learn + any future parent) ────────────────────────────────
+// ─── Default panel (Guides + any future parent) ───────────────────────────────
 
 function DefaultPanel({
   entry,

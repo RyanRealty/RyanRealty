@@ -103,7 +103,7 @@ export default async function SiteHeader() {
             Get listing alerts
           </CTAButton>
           <CTAButton href="/lp/seller-home-value" tone="on-navy" size="md" className="hidden sm:inline-flex whitespace-nowrap">
-            List your home
+            What’s my home worth?
           </CTAButton>
           <MobileNav menu={MENU} navData={navData} />
         </div>
