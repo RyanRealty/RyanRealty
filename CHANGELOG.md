@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.541.3 (2026-06-14)
+
+### Bug Fixes
+- fix(audit): 2 blockers + 6 highs from the experience audit
+
+---
+
+
 ## v1.541.2 (2026-06-14)
 
 ### Bug Fixes
