@@ -115,12 +115,46 @@ else {
 
 if (process.env.DIAG) {
   await page.goto(`${BASE}${process.env.DIAG}`, { waitUntil: 'load' }); await page.waitForTimeout(900)
-  const offenders = await page.evaluate(() => {
-    const W = document.documentElement.clientWidth; const out = []
-    for (const el of document.querySelectorAll('*')) { const r = el.getBoundingClientRect(); if (r.right > W + 1 && r.width > 0 && el.children.length <= 3) out.push({ tag: el.tagName, cls: String(el.className || '').slice(0, 90), right: Math.round(r.right), w: Math.round(r.width) }) }
-    return out.sort((a, b) => b.right - a.right).slice(0, 12)
+  const diag = await page.evaluate(() => {
+    const W = document.documentElement.clientWidth
+    const overflow = document.documentElement.scrollWidth - W
+    // An element only ADDS to the document's horizontal scroll if it extends past
+    // the viewport AND no ancestor clips it (overflow-x hidden/auto/scroll/clip).
+    // A fixed/sticky element is positioned against the viewport, not the scroll
+    // area, so it's a symptom, not a cause — flag it separately.
+    const clipped = (el) => {
+      let p = el.parentElement
+      while (p && p !== document.documentElement) {
+        const ox = getComputedStyle(p).overflowX
+        if (ox === 'hidden' || ox === 'auto' || ox === 'scroll' || ox === 'clip') return true
+        p = p.parentElement
+      }
+      return false
+    }
+    const all = []
+    for (const el of document.querySelectorAll('*')) {
+      const r = el.getBoundingClientRect()
+      if (r.right > W + 0.5 && r.width > 0) {
+        const cs = getComputedStyle(el)
+        all.push({
+          tag: el.tagName,
+          cls: String(el.className || '').slice(0, 120),
+          right: Math.round(r.right), w: Math.round(r.width),
+          pos: cs.position,
+          fixedOrSticky: cs.position === 'fixed' || cs.position === 'sticky',
+          clipped: clipped(el),
+          kids: el.children.length,
+        })
+      }
+    }
+    // Real causes: extend past viewport, not clipped by an ancestor, and laid out
+    // in normal/absolute flow (fixed/sticky are positioned vs the viewport).
+    const contributors = all
+      .filter((e) => !e.clipped && !e.fixedOrSticky)
+      .sort((a, b) => b.right - a.right)
+    return { overflow, contributors: contributors.slice(0, 15), flagged: all.sort((a, b) => b.right - a.right).slice(0, 15) }
   })
-  console.log(JSON.stringify(offenders, null, 2)); await browser.close(); process.exit(0)
+  console.log(JSON.stringify(diag, null, 2)); await browser.close(); process.exit(0)
 }
 
 const THROTTLE = Number(process.env.THROTTLE ?? 3500)

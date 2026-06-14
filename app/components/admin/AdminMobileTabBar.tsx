@@ -31,14 +31,14 @@ export default function AdminMobileTabBar({ role }: { role: AdminRoleType }) {
       className="fixed inset-x-0 bottom-0 z-30 overflow-hidden border-t border-border bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"
       aria-label="Quick navigation"
     >
-      <div className="grid auto-cols-fr grid-flow-col">
+      <div className="flex">
         {tabs.map(({ href, label, icon: Icon }) => {
           const active = href === best
           return (
             <Link
               key={href}
               href={href}
-              className={`flex min-w-0 flex-col items-center gap-0.5 px-1 py-2 text-[11px] font-medium ${
+              className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-2 text-[11px] font-medium ${
                 active ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
