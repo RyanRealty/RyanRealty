@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.534.1 (2026-06-14)
+
+### Bug Fixes
+- fix(admin): route superusers to the redesigned dashboard on login (not the old funnel)
+
+---
+
+
 ## v1.534.0 (2026-06-14)
 
 ### Features
