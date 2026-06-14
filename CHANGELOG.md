@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.533.1 (2026-06-14)
+
+### Bug Fixes
+- fix(seo): redirect 152 dead AgentFire ranking URLs to real new-site pages
+
+---
+
+
 ## v1.533.0 (2026-06-14)
 
 ### Features
