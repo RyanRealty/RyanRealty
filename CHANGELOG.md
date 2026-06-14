@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.534.8 (2026-06-14)
+
+### Bug Fixes
+- fix(market): housing-market hero uses city photo, not the Bend Old Mill default
+
+---
+
+
 ## v1.534.7 (2026-06-14)
 
 ### Bug Fixes
