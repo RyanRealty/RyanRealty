@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.526.1 (2026-06-14)
+
+### Bug Fixes
+- fix(gate): lp-conversion credits delegated shared forms + anchor CTAs
+
+---
+
+
 ## v1.526.0 (2026-06-13)
 
 ### Features
