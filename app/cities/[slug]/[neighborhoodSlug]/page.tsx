@@ -311,9 +311,23 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           listings={boundaryMapData.pins.map((p) => ({
             lat: p.lat,
             lng: p.lng,
-            href: listingTileHref({ listingKey: p.listingKey }),
+            href: listingTileHref({
+              listingKey: p.listingKey,
+              streetNumber: p.streetNumber,
+              streetName: p.streetName,
+              city: p.city,
+            }),
             price: p.price,
             subdivisionName: subdivisionByKey.get(p.listingKey) ?? null,
+            photoURL: p.photoUrl,
+            streetNumber: p.streetNumber,
+            streetName: p.streetName,
+            city: p.city,
+            state: 'OR',
+            postalCode: p.postalCode,
+            bedroomsTotal: p.beds,
+            bathroomsTotal: p.baths,
+            sqft: p.sqft,
           }))}
           zoom={13}
           height={480}

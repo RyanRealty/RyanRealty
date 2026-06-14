@@ -37,6 +37,16 @@ export type BoundaryMapPin = {
   lat: number
   lng: number
   price: number | null
+  // Enriched from the listing tiles so the map info window can show a photo,
+  // address, and beds/baths/sqft (the RPC itself only returns lat/lng/price).
+  photoUrl: string | null
+  streetNumber: string | null
+  streetName: string | null
+  city: string | null
+  postalCode: string | null
+  beds: number | null
+  baths: number | null
+  sqft: number | null
 }
 
 export type GeoBoundaryMapData = {
@@ -81,7 +91,47 @@ async function fetchPins(
     lat: row.lat,
     lng: row.lng,
     price: row.list_price ?? null,
+    photoUrl: null,
+    streetNumber: null,
+    streetName: null,
+    city: null,
+    postalCode: null,
+    beds: null,
+    baths: null,
+    sqft: null,
   }))
+}
+
+/** Enrich the bare boundary pins (lat/lng/price) with the listing tile fields the
+ *  map info window needs: photo, address, beds/baths/sqft. One batch query by
+ *  listing key, inside the same cache window as the rest of the map data. */
+async function enrichPins(pins: BoundaryMapPin[]): Promise<BoundaryMapPin[]> {
+  const keys = pins.map((p) => p.listingKey).filter(Boolean)
+  if (keys.length === 0) return pins
+  try {
+    const { getListingTiles } = await import('@/lib/data/listings/getListingTiles')
+    const tiles = await getListingTiles({ listingKeys: keys, limit: keys.length })
+    const byKey = new Map(tiles.map((t) => [t.listingKey, t]))
+    return pins.map((p) => {
+      const t = byKey.get(p.listingKey)
+      if (!t) return p
+      return {
+        ...p,
+        photoUrl: t.photoUrl ?? null,
+        streetNumber: t.streetNumber ?? null,
+        streetName: t.streetName ?? null,
+        city: t.city ?? null,
+        postalCode: t.postalCode ?? null,
+        beds: t.beds ?? null,
+        baths: t.baths ?? null,
+        sqft: t.sqft ?? null,
+      }
+    })
+  } catch {
+    // Enrichment is best-effort: a failure here still leaves a working map with
+    // price-only pins rather than throwing away the whole map.
+    return pins
+  }
 }
 
 function cacheTTL(geoType: GeoType): number {
@@ -109,7 +159,8 @@ async function fetchGeoBoundaryMapData(
 
   // fetchPins throws on a transient RPC error for the same no-poison reason.
   const pins = await fetchPins(geoType, geoSlug)
-  return { polygon, pins }
+  const enriched = await enrichPins(pins)
+  return { polygon, pins: enriched }
 }
 
 /**

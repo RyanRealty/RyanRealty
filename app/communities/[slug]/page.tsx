@@ -316,12 +316,23 @@ export default async function CommunityDetailPage({ params }: Props) {
   const hasListings = communityListingCards.length > 0
   const hasMap = !!(resortBoundary || boundaryMapData.polygon)
   const hasPriceHistory = priceHistory.length >= 2
+
+  // The subdivision list is only trustworthy when the community boundary is the
+  // authoritative plat. Several community boundaries are oversized (broken-top is
+  // 11,496 acres vs ~450 real), so the centroid-in-polygon RPC over-matches
+  // (broken-top returns 684 subdivisions). Until those boundaries are corrected
+  // to authoritative county plats, suppress an implausibly long list rather than
+  // show wrong data. A real community has a handful of subdivisions.
+  const SUBDIVISION_SANITY_MAX = 30
+  const reliableSubdivisions =
+    communitySubdivisions.length <= SUBDIVISION_SANITY_MAX ? communitySubdivisions : []
+
   const navItems = [
     { id: 'market', label: 'Market' },
     { id: 'about', label: 'About' },
     ...(hasSubNeighborhoods ? [{ id: 'neighborhoods', label: 'Neighborhoods' }] : []),
     ...(hasListings ? [{ id: 'listings', label: 'Homes for sale' }] : []),
-    ...(communitySubdivisions.length > 0 ? [{ id: 'subdivisions', label: 'Subdivisions' }] : []),
+    ...(reliableSubdivisions.length > 0 ? [{ id: 'subdivisions', label: 'Subdivisions' }] : []),
     { id: 'open-houses', label: 'Open houses' },
     { id: 'communities', label: 'Communities' },
     { id: 'faq', label: 'FAQ' },
@@ -330,8 +341,8 @@ export default async function CommunityDetailPage({ params }: Props) {
   // Map polygons for the split-scroll pane
   const mapPolygons = resortBoundary
     ? [{ slug, name: community.name, geometry: resortBoundary }]
-    : communitySubdivisions.length > 0
-    ? communitySubdivisions.map((s) => ({
+    : reliableSubdivisions.length > 0
+    ? reliableSubdivisions.map((s) => ({
         slug: s.slug,
         name: s.label,
         geometry: s.geometry,
@@ -344,8 +355,22 @@ export default async function CommunityDetailPage({ params }: Props) {
   const mapListings = boundaryMapData.pins.map((p) => ({
     lat: p.lat,
     lng: p.lng,
-    href: listingTileHref({ listingKey: p.listingKey }),
+    href: listingTileHref({
+      listingKey: p.listingKey,
+      streetNumber: p.streetNumber,
+      streetName: p.streetName,
+      city: p.city,
+    }),
     price: p.price,
+    photoURL: p.photoUrl,
+    streetNumber: p.streetNumber,
+    streetName: p.streetName,
+    city: p.city,
+    state: 'OR',
+    postalCode: p.postalCode,
+    bedroomsTotal: p.beds,
+    bathroomsTotal: p.baths,
+    sqft: p.sqft,
   }))
 
   return (
@@ -355,8 +380,14 @@ export default async function CommunityDetailPage({ params }: Props) {
       <MetadataBlock schemas={communitySchemas} />
 
       {/* Breadcrumb */}
-      <PageBreadcrumb trail={[{ label: 'Communities', href: '/communities' },
-            { label: community.name }]} includeJsonLd={false} />
+      <PageBreadcrumb
+        trail={[
+          { label: 'Communities', href: '/communities' },
+          ...(cityName ? [{ label: cityName, href: citySlug ? `/cities/${citySlug}` : '/cities' }] : []),
+          { label: community.name },
+        ]}
+        includeJsonLd={false}
+      />
 
       {/* Geo archetype hero: video flyover + Amboqia live stat overlay + count-up */}
       <div id="hero">
@@ -589,7 +620,7 @@ export default async function CommunityDetailPage({ params }: Props) {
       ) : null}
 
       {/* Subdivisions within the community (editorial index rows) */}
-      {communitySubdivisions.length > 0 ? (
+      {reliableSubdivisions.length > 0 ? (
         <section id="subdivisions" className="border-t border-border bg-secondary/40 py-10 md:py-14">
           <Container>
             <div className="mb-6">
@@ -600,7 +631,7 @@ export default async function CommunityDetailPage({ params }: Props) {
             </div>
             {/* Two-column editorial index rows */}
             <div className="divide-y divide-border max-w-2xl">
-              {communitySubdivisions.map((sub) => (
+              {reliableSubdivisions.map((sub) => (
                 <a
                   key={sub.slug}
                   href={`/subdivisions/${sub.slug}`}

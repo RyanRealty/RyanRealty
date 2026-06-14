@@ -146,8 +146,22 @@ export default async function SubdivisionPage({ params }: Props) {
         listings={boundary.pins.map((p) => ({
           lat: p.lat,
           lng: p.lng,
-          href: listingTileHref({ listingKey: p.listingKey }),
+          href: listingTileHref({
+            listingKey: p.listingKey,
+            streetNumber: p.streetNumber,
+            streetName: p.streetName,
+            city: p.city,
+          }),
           price: p.price,
+          photoURL: p.photoUrl,
+          streetNumber: p.streetNumber,
+          streetName: p.streetName,
+          city: p.city,
+          state: 'OR',
+          postalCode: p.postalCode,
+          bedroomsTotal: p.beds,
+          bathroomsTotal: p.baths,
+          sqft: p.sqft,
         }))}
         zoom={15}
         height={460}
