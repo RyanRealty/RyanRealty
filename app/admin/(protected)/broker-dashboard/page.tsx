@@ -116,6 +116,11 @@ export default async function BrokerCommandCenterPage({
 
   const marketingTab = activeTab ?? 'ideas'
 
+  // Top-of-dashboard priority (Matt 2026-06-13): leads + tasks that need the
+  // broker to DO something now — shown first, before deal status and the rest.
+  const overdueTasks = data.tasksDue.filter((t) => t.isOverdue)
+  const needsActionCount = actionQueue.length + overdueTasks.length
+
   return (
     <main className="mx-auto max-w-7xl space-y-6 px-2 py-4 sm:px-6 sm:py-8">
 
@@ -142,77 +147,53 @@ export default async function BrokerCommandCenterPage({
         </div>
       </div>
 
-      {/* ── Needs your action (recommended next steps) ── */}
-      {actionQueue.length > 0 ? (
-        <Card className="border-l-4 border-l-primary">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Needs your action · {actionQueue.length}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {actionQueue.map((a) => {
-              const tone =
-                a.channel === 'email' ? 'bg-blue-100 text-blue-800 border-blue-200'
-                : a.channel === 'sms' ? 'bg-green-100 text-green-800 border-green-200'
-                : 'bg-amber-100 text-amber-800 border-amber-200'
-              const verb = a.channel === 'email' ? 'Send email' : a.channel === 'sms' ? 'Send text' : 'Do this'
-              return (
+      {/* ── 1. NEEDS YOUR ACTION — leads + tasks to act on now (top priority) ── */}
+      <Card className="border-l-4 border-l-primary">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Needs your action{needsActionCount > 0 ? ` · ${needsActionCount}` : ''}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {needsActionCount === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">You are all caught up. No leads or tasks need action right now.</p>
+          ) : (
+            <>
+              {actionQueue.map((a) => {
+                const tone =
+                  a.channel === 'email' ? 'bg-blue-100 text-blue-800 border-blue-200'
+                  : a.channel === 'sms' ? 'bg-green-100 text-green-800 border-green-200'
+                  : 'bg-amber-100 text-amber-800 border-amber-200'
+                const verb = a.channel === 'email' ? 'Send email' : a.channel === 'sms' ? 'Send text' : 'Do this'
+                return (
+                  <Link
+                    key={`a-${a.personId}`}
+                    href={`/admin/crm/${a.personId}`}
+                    className="flex items-start gap-3 rounded-lg border border-border p-3 hover:bg-muted/50"
+                  >
+                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${tone}`}>{verb}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium text-foreground">{a.personName} · {a.sequenceName}</span>
+                      <span className="block truncate text-xs text-muted-foreground">{a.holdReason ? `Holds: ${a.holdReason}` : a.preview}</span>
+                    </span>
+                  </Link>
+                )
+              })}
+              {overdueTasks.map((t) => (
                 <Link
-                  key={a.personId}
-                  href={`/admin/crm/${a.personId}`}
+                  key={`t-${t.id}`}
+                  href={t.personId ? `/admin/crm/${t.personId}` : '/admin/crm/tasks'}
                   className="flex items-start gap-3 rounded-lg border border-border p-3 hover:bg-muted/50"
                 >
-                  <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${tone}`}>{verb}</span>
+                  <span className="shrink-0 rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive">Overdue task</span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-medium text-foreground">{a.personName} · {a.sequenceName}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{a.holdReason ? `Holds: ${a.holdReason}` : a.preview}</span>
+                    <span className="block text-sm font-medium text-foreground">{t.name}{t.personName ? ` · ${t.personName}` : ''}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{t.dueAt ? `Due ${fmtDate(t.dueAt)}` : 'No due date'}{t.type ? ` · ${t.type}` : ''}</span>
                   </span>
                 </Link>
-              )
-            })}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {/* ── Attention strip ── */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4">
-        {[
-          {
-            label: 'Overdue tasks',
-            value: data.attention.tasksOverdue,
-            href: '/admin/crm/tasks',
-            urgent: data.attention.tasksOverdue > 0,
-          },
-          {
-            label: 'Due today',
-            value: data.attention.tasksToday,
-            href: '/admin/crm/tasks',
-            urgent: false,
-          },
-          {
-            label: 'Active deals',
-            value: data.attention.activeDeals,
-            href: '/admin/deals',
-            urgent: false,
-          },
-          {
-            label: 'Docs awaiting sig',
-            value: data.attention.docsNeedingSignoff,
-            href: '/admin/sign-off',
-            urgent: data.attention.docsNeedingSignoff > 0,
-          },
-        ].map((a) => (
-          <Link key={a.label} href={a.href}>
-            <Card className={`transition-colors hover:bg-muted/40 ${a.urgent ? 'border-destructive' : ''}`}>
-              <CardContent className="p-4">
-                <div className={`text-3xl font-bold tabular-nums ${a.urgent ? 'text-destructive' : 'text-foreground'}`}>
-                  {a.value}
-                </div>
-                <div className="mt-1 text-xs text-muted-foreground">{a.label}</div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+              ))}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* ── Main 2-col: Deals + Calendar ── */}
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-[3fr_2fr]">
@@ -343,6 +324,27 @@ export default async function BrokerCommandCenterPage({
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* ── 3. At a glance (counts) ── */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4">
+        {[
+          { label: 'Overdue tasks', value: data.attention.tasksOverdue, href: '/admin/crm/tasks', urgent: data.attention.tasksOverdue > 0 },
+          { label: 'Due today', value: data.attention.tasksToday, href: '/admin/crm/tasks', urgent: false },
+          { label: 'Active deals', value: data.attention.activeDeals, href: '/admin/deals', urgent: false },
+          { label: 'Docs awaiting sig', value: data.attention.docsNeedingSignoff, href: '/admin/sign-off', urgent: data.attention.docsNeedingSignoff > 0 },
+        ].map((a) => (
+          <Link key={a.label} href={a.href}>
+            <Card className={`transition-colors hover:bg-muted/40 ${a.urgent ? 'border-destructive' : ''}`}>
+              <CardContent className="p-4">
+                <div className={`text-3xl font-bold tabular-nums ${a.urgent ? 'text-destructive' : 'text-foreground'}`}>
+                  {a.value}
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">{a.label}</div>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
       </div>
 
       {/* ── Tasks + Clients ── */}
