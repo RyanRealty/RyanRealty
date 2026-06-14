@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.534.4 (2026-06-14)
+
+### Bug Fixes
+- fix(geo+voice): verified stats on community pages + brand-voice cleanup
+
+---
+
+
 ## v1.534.3 (2026-06-14)
 
 ### Bug Fixes
