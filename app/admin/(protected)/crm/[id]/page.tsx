@@ -287,7 +287,7 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
             </span>
           </div>
           {rec.subjectPreview ? <div className="mt-3 text-sm font-medium text-foreground">{rec.subjectPreview}</div> : null}
-          <div className="mt-1 whitespace-pre-wrap rounded-lg border border-border bg-card p-3 text-sm text-foreground">{rec.bodyPreview}</div>
+          <div className="mt-1 whitespace-pre-wrap break-words [overflow-wrap:anywhere] rounded-lg border border-border bg-card p-3 text-sm text-foreground">{rec.bodyPreview}</div>
           {rec.unresolved.length ? (
             <div className="mt-2 text-xs font-medium text-destructive">Unresolved fields: {rec.unresolved.join(', ')}</div>
           ) : null}

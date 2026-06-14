@@ -26,9 +26,9 @@ export default function DashboardSummaryStrip({ stats }: { stats: SummaryStat[] 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
       {stats.map((stat) => (
-        <Card key={stat.label} size="sm">
-          <CardContent className="flex flex-col gap-1">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <Card key={stat.label} size="sm" className="min-w-0">
+          <CardContent className="flex min-w-0 flex-col gap-1">
+            <p className="break-words text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {stat.label}
             </p>
             <p
