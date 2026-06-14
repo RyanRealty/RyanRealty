@@ -109,7 +109,7 @@ export default async function AccountPage() {
     { label: 'Saved homes', value: homes.length, href: '/account/saved-homes' },
     { label: 'Saved searches', value: savedSearches.length, href: '/account/saved-searches' },
     { label: 'Places followed', value: placesCount, href: '/account/saved-cities' },
-    { label: 'Recently viewed', value: recentViews.length, href: '/dashboard/history' },
+    { label: 'Recently viewed', value: recentViews.length, href: '/account/history' },
   ]
 
   return (
@@ -206,7 +206,7 @@ export default async function AccountPage() {
       {/* ── Recently viewed ── */}
       {recentViews.length > 0 ? (
         <section>
-          <SectionHeader title="Recently viewed" action={{ href: '/dashboard/history', label: 'Full history' }} />
+          <SectionHeader title="Recently viewed" action={{ href: '/account/history', label: 'Full history' }} />
           <Card className="divide-y divide-border overflow-hidden p-0">
             {recentViews.slice(0, 5).map((view) => {
               const listing = viewedMap.get(view.entity_id)
@@ -298,8 +298,8 @@ export default async function AccountPage() {
           {[
             { href: '/account/buying-preferences', title: 'Buying preferences', desc: prefs ? `${prefs.downPaymentPercent}% down · ${prefs.interestRate}% · ${prefs.loanTermYears} yr` : 'Set down payment, rate, and term for payment estimates' },
             { href: '/account/profile', title: 'Profile', desc: 'Name, phone, and email' },
-            { href: '/dashboard/notifications', title: 'Notifications', desc: 'Email alerts and how often we reach out' },
-            { href: '/dashboard/collections', title: 'Collections', desc: 'Group saved homes into named lists' },
+            { href: '/account/notifications', title: 'Notifications', desc: 'Email alerts and how often we reach out' },
+            { href: '/account/collections', title: 'Collections', desc: 'Group saved homes into named lists' },
           ].map((item) => (
             <Link key={item.href} href={item.href}>
               <Card className="flex h-full flex-col p-4 transition-colors hover:bg-muted/40">

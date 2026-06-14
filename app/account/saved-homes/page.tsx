@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getSavedListingKeys } from '@/app/actions/saved-listings'
 import { getListingsByKeys } from '@/app/actions/listings'
+import { getDashboardLikesData } from '@/app/actions/dashboard-likes'
 import { getBuyingPreferences } from '@/app/actions/buying-preferences'
 import ListingTile from '@/components/ListingTile'
 import RemoveSavedButton from './RemoveSavedButton'
@@ -17,15 +18,28 @@ export const metadata: Metadata = {
   description: 'Your saved favorite listings at Ryan Realty.',
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function SavedHomesPage() {
   const session = await getSession()
   if (!session?.user) redirect('/')
 
-  const [savedKeys, prefs] = await Promise.all([
+  // One home for everything you care about: merge the two systems — saved_listings
+  // (the save button) and likes (the heart) — deduped by listing key. This is also
+  // where /dashboard/likes and /dashboard/saved now redirect.
+  const [savedKeys, likesData, prefs] = await Promise.all([
     getSavedListingKeys(),
+    getDashboardLikesData(),
     getBuyingPreferences(),
   ])
-  const listings = savedKeys.length > 0 ? await getListingsByKeys(savedKeys) : []
+  const savedListings = savedKeys.length > 0 ? await getListingsByKeys(savedKeys) : []
+  const map = new Map<string, (typeof savedListings)[number]>()
+  for (const l of [...savedListings, ...likesData.listings]) {
+    const k = (l.ListNumber ?? l.ListingKey ?? '').toString().trim()
+    if (k && !map.has(k)) map.set(k, l)
+  }
+  const listings = [...map.values()]
+  const displayPrefs = prefs ?? { downPaymentPercent: DEFAULT_DISPLAY_DOWN_PCT, interestRate: DEFAULT_DISPLAY_RATE, loanTermYears: DEFAULT_DISPLAY_TERM_YEARS }
 
   return (
     <div className="space-y-8">
@@ -34,7 +48,7 @@ export default async function SavedHomesPage() {
         <div className="min-w-0">
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Saved homes</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Your favorite listings. Remove any from here or from the listing page.
+            Everything you&apos;ve saved or liked. Remove any from here or from the listing page.
           </p>
         </div>
         <Button asChild size="sm">
@@ -42,10 +56,10 @@ export default async function SavedHomesPage() {
         </Button>
       </header>
 
-      {/* ── Saved listings grid ── */}
+      {/* ── Saved + liked listings grid ── */}
       <section>
         <h2 className="mb-3 text-lg font-semibold tracking-tight text-foreground">
-          {listings.length > 0 ? `${listings.length} saved` : 'Saved'}
+          {listings.length > 0 ? `${listings.length} home${listings.length === 1 ? '' : 's'}` : 'Saved'}
         </h2>
         {listings.length === 0 ? (
           <Card className="flex flex-col items-center gap-3 px-4 py-10 text-center">
@@ -62,7 +76,6 @@ export default async function SavedHomesPage() {
             {listings.map((listing) => {
               const key = (listing.ListNumber ?? listing.ListingKey ?? '').toString().trim()
               const price = Number(listing.ListPrice ?? 0)
-              const displayPrefs = prefs ?? { downPaymentPercent: DEFAULT_DISPLAY_DOWN_PCT, interestRate: DEFAULT_DISPLAY_RATE, loanTermYears: DEFAULT_DISPLAY_TERM_YEARS }
               const monthly = price > 0 ? estimatedMonthlyPayment(price, displayPrefs.downPaymentPercent, displayPrefs.interestRate, displayPrefs.loanTermYears) : null
               return (
                 <div key={key} className="relative">

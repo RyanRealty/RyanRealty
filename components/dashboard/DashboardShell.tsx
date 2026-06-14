@@ -21,9 +21,9 @@ const navItems: { href: string; label: string; icon: string }[] = [
   { href: '/dashboard', label: 'Overview', icon: '◉' },
   { href: '/dashboard/likes', label: 'Things I Like', icon: '♥' },
   { href: '/dashboard/searches', label: 'Saved Searches', icon: '🔍' },
-  { href: '/dashboard/collections', label: 'My Collections', icon: '📁' },
+  { href: '/account/collections', label: 'My Collections', icon: '📁' },
   { href: '/dashboard/history', label: 'Viewing History', icon: '🕐' },
-  { href: '/dashboard/notifications', label: 'Notifications', icon: '🔔' },
+  { href: '/account/notifications', label: 'Notifications', icon: '🔔' },
   { href: '/dashboard/settings', label: 'Settings & Preferences', icon: '⚙' },
 ]
 
@@ -50,7 +50,7 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
         </div>
         <div className="flex items-center gap-2">
           <Link
-            href="/dashboard/notifications"
+            href="/account/notifications"
             className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
             aria-label="Notifications"
           >
