@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.539.10 (2026-06-14)
+
+### Bug Fixes
+- fix(admin/crm): timeline is the non-message activity log (kills the giant page)
+
+---
+
+
 ## v1.539.9 (2026-06-14)
 
 ### Maintenance
