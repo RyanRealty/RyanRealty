@@ -4,6 +4,24 @@ Exhaustive go-through of every menu, every public + authenticated page, and ever
 interactive feature, verified against production (`ryan-realty.com`) and the code.
 Then the plan to fix it comprehensively (by class, behind gates), not page by page.
 
+## Progress log (2026-06-14, shipped to `main`)
+
+- ✅ **Traffic / Class A** — `b1d0d347` 152 dead AgentFire URLs → real 301s (the cutover collapse).
+- ✅ **Class B (stats)** — `c5339c3a` community/neighborhood stat bands render verified `market_stats_cache` data (days-on-market, median sold), never `—`. LiveMarketBand renders only verified aux stats; FlyoverHero `daysLabel` prop.
+- ✅ **Class E (overlap)** — `2da653dd` section-nav no longer overlaps the header (shared `HEADER_HEIGHT_PX` + no-wrap header buttons). Verified by screenshot.
+- ✅ **Class A (soft-404)** — `5a890f09` middleware returns a real 404 for invalid `/cities/*` + `/communities/*` slugs (kills the bulk of the 2,992 "crawled, not indexed"). Residual: city-prefixed fakes (`bend-<fake>`) still page-guarded.
+- ✅ **Class H (voice)** — `c5339c3a` + `3fe62a89` 17 voice violations fixed across 15 surfaces; homepage block un-exempted from the gate. Working tree 0 violations.
+- ✅ **Class C (partial)** — `4598388b` housing-market hero uses city photo, not the Bend Old Mill on every city.
+- ✅ **Search Console** — verified live: redirect deployed, sitemap healthy, 21,837 not-indexed is the real lever (soft-404 fix attacks 2,992 of them). No SC action was missing.
+
+### Remaining (in priority order)
+1. **Nav rebuild (Class D)** — merge Homes + Explore, kill "Central Oregon, end to end", fix hidden columns / duplicate cities / "List your home" label / dead badge code / header CTA count.
+2. **Geo sweep (Class B/C/E, Phase 2)** — convert neighborhood (`/cities/[slug]/[hood]`) + zip pages to the canonical archetype (they still use HeroBlock + bespoke stat cards + no SectionNav).
+3. **Class F (SSR)** — `/feed`, `/activity`, market reports, `/guides`, `/videos`, `/our-homes` ship little/no SSR content.
+4. **Class C (photos)** — per-neighborhood + per-city hero photography sourcing.
+5. **Class G (features)** — mortgage-calc lead capture, CMA auto-delivery, Ask Bar (real or rename), AI Compare, RSVP/favorites guest paths, OAuth cleanup.
+6. **Class A residual** — city-prefixed fake community slugs; lock the brand-voice baseline to 0 once the tree is clean.
+
 ## Headline numbers
 - **Navigation:** ~110 distinct links audited across mega-menu, header, footer, mobile. 0 hard-404s, but 10 structural problems (hidden columns, duplicate cities, label/destination mismatches, dead code).
 - **Public pages:** 86 routes audited. Most GOOD. ~12 BROKEN/SOFT-404, ~10 THIN/client-only.
