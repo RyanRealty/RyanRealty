@@ -36,7 +36,7 @@ export const revalidate = 300
 export const metadata = pageMetadata({
   title: 'Sell your home · Ryan Realty, Central Oregon',
   description:
-    'List your Central Oregon home with Ryan Realty. Pricing from live market data, marketing from a local licensed broker, and one broker from valuation to close. Request a free home valuation.',
+    'List your Central Oregon home with Ryan Realty. Pricing from live market data, professional marketing, and one broker from valuation to close. Request a free home valuation.',
   path: '/sell',
   ogImage: '/brand/hero/hero-old-mill-master-4k.jpg',
   keywords: [

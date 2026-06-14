@@ -74,7 +74,7 @@ const FAQ_ITEMS = [
   {
     question: 'How does a buyer broker get paid?',
     answer:
-      'In most transactions the seller offers a buyer-agent commission in the MLS. If the seller offers nothing, the buyer-broker fee is discussed and agreed in your buyer-broker agreement before we tour. We are transparent about the number before you sign anything.',
+      'In most transactions the seller offers a buyer-agent commission in the MLS. If the seller offers nothing, the buyer-broker fee is discussed and agreed in your buyer-broker agreement before we tour. The number is on the table before you sign anything.',
   },
 ] as const
 
@@ -146,7 +146,7 @@ export default async function BuyPage() {
           {[
             {
               heading: 'Local market knowledge',
-              body: 'Brokers who live and work in Central Oregon. We know Bend, Redmond, Sisters, Sunriver, and every neighborhood in between. You get honest guidance on schools, commute, and resale.',
+              body: 'Brokers who live and work in Central Oregon. We know Bend, Redmond, Sisters, Sunriver, and every neighborhood in between. The people showing you homes are the same people who can tell you where water pressure is unreliable and which streets flood in spring.',
             },
             {
               heading: 'Live MLS listings',

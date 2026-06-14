@@ -66,7 +66,7 @@ const HERO_VARIANTS: Record<string, HeroVariant> = {
     img: '/images/lp/hero-pond.jpg',
     alt: 'A neighborhood pond and homes in Bend, Oregon',
     h1: 'No Pressure. Just the Real Number.',
-    sub: 'Honest guidance for your Bend home, whenever you are ready to think about selling.',
+    sub: 'A real number from a local broker, whenever you are ready to think about selling.',
   },
 }
 const DEFAULT_HERO: HeroVariant = {

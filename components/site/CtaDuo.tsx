@@ -93,7 +93,7 @@ export default function CtaDuo() {
           <CtaCard
             icon={<PinIcon />}
             title="Considering a sale?"
-            body="Get a free home valuation from a broker who knows your neighborhood. Local insight, not a national algorithm."
+            body="Get a free home valuation from a broker who tracks your neighborhood. Based on closed sales, not a national algorithm."
             primary={{ href: '/lp/seller-home-value', label: 'Get a valuation' }}
             secondary={{ href: '/team', label: 'Meet the team' }}
           />

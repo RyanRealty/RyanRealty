@@ -65,7 +65,7 @@ export default async function JsonLd() {
     name: BRAND.name,
     legalName: BRAND.legalName,
     description:
-      'Independent real estate brokerage serving Bend, Redmond, Sisters, Sunriver, and Central Oregon. Browse homes for sale, search by city and neighborhood, and see live market data.',
+      'Ryan Realty covers Bend, Redmond, Sisters, Sunriver, and Central Oregon. Browse homes for sale, search by city and neighborhood, and see live market data.',
     url: baseUrl,
     telephone: CONTACT.phoneDirectTel,
     email: CONTACT.email.primary,

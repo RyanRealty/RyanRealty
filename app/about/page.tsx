@@ -104,7 +104,7 @@ export default async function AboutPage() {
             aboutOrganization: true,
             name: 'About Ryan Realty',
             description:
-              'Independent real estate brokerage in Bend, Oregon serving Central Oregon buyers and sellers.',
+              'Ryan Realty is based in Bend, Oregon. We cover Bend, Redmond, Sisters, Sunriver, and the surrounding Central Oregon communities.',
             url: '/about',
           },
           {

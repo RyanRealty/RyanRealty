@@ -78,9 +78,9 @@ const LISTING_SUPPORT = [
 
 const FAQ_ITEMS = [
   {
-    question: 'Do you take newly licensed brokers?',
+    question: 'Do you work with brokers who are new to the industry?',
     answer:
-      'Yes. A new license or twenty years in the business, the first conversation is the same: what you want to build and how the brokerage helps you build it. A principal broker supervises every transaction either way.',
+      'Yes. Whether you have a new license or twenty years in the business, the first conversation is the same: what you want to build and how the brokerage helps you build it. A principal broker supervises every transaction either way.',
   },
   {
     question: 'What happens to my current clients and pipeline?',

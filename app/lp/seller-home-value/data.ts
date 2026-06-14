@@ -518,11 +518,11 @@ export type SoldStory = {
 
 const PULL_OVERRIDES: Record<string, string> = {
   'Audra Hedberg':
-    'Even in a tough market, he sold our home faster than we expected. Truly the best.',
+    'Even in a tough market, he sold our home faster than we expected. The best.',
   'Doug Millard':
     'Selling a house is an emotional roller coaster — Matt managed the downs and predicted the ups.',
   'Gary Timms':
-    'His marketing was professional and thorough. Patient, low pressure, expert guidance.',
+    'His marketing was professional and thorough. Patient, low pressure, and always straight with us.',
   'SwankHQ':
     'He went the extra mile to help us sell our house while we were out of the country.',
   'Helen Luna Fess':

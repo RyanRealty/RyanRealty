@@ -77,7 +77,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
       <PageBreadcrumb trail={[{ label: 'Contact' }]} includeJsonLd={false} />
       <ContentPageHero
         title={contactTitle}
-        subtitle="Questions about buying, selling, or just exploring? We're here to help. Reach out and we'll get back to you quickly."
+        subtitle="Questions about buying, selling, or just exploring? Reach out and we'll get back to you quickly."
         imageUrl={CONTENT_HERO_IMAGES.contact}
         ctas={[
           { label: 'Meet the Team', href: '/team', primary: false },

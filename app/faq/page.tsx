@@ -85,7 +85,7 @@ const FAQ: FAQItem[] = [
     category: 'Buying',
     question: 'Can you help with relocations from out of state?',
     answer:
-      'Yes. A large share of our business is relocations into Central Oregon from California, Washington, Colorado, and the Midwest. We do virtual tours, custom market reports for the neighborhoods you are considering, and we coordinate with lenders and title teams to make a long-distance close work smoothly. We are honest about what life in Bend is and is not so you arrive with realistic expectations.',
+      'Yes. A large share of our business is relocations into Central Oregon from California, Washington, Colorado, and the Midwest. We do virtual tours, custom market reports for the neighborhoods you are considering, and we coordinate with lenders and title teams to make a long-distance close work smoothly. The conversation about what Bend is actually like, traffic, snow, wildfire risk, cost of living, happens before you make an offer, not after.',
   },
   {
     id: 'expired-listing',

@@ -29,7 +29,7 @@ function getScoreColor(score: number): string {
 }
 
 function getScoreLabel(score: number): string {
-  if (score >= 90) return 'Exceptional'
+  if (score >= 90) return 'Outstanding'
   if (score >= 80) return 'Excellent'
   if (score >= 70) return 'Very Good'
   if (score >= 60) return 'Good'

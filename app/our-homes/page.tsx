@@ -74,7 +74,7 @@ export default async function OurHomesPage() {
 
       <HeroBlock
         headline="Homes Listed by Ryan Realty"
-        lede="Browse homes for sale across Bend, Redmond, Sisters, Sunriver, and Central Oregon. Professional presentation, targeted outreach, and local expertise from listing to closing."
+        lede="Browse homes for sale across Bend, Redmond, Sisters, Sunriver, and Central Oregon. Professional presentation, targeted outreach, and one broker accountable from listing to closing."
         photo={{
           src: '/brand/hero/hero-old-mill-master-4k.jpg',
           alt: 'Old Mill District drone view with the American flag, the Deschutes River, and the Cascade mountains.',
