@@ -430,7 +430,7 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
             </CardHeader>
             <CardContent>
               <ConversationThread
-                events={full.timeline.filter((t) => isConversationEvent(t.kind)).map((t) => ({
+                events={full.timeline.filter((t) => isConversationEvent(t.kind)).slice(0, 60).map((t) => ({
                   id: t.id, ts: t.ts, kind: t.kind, title: t.title, body: t.body, broker: t.broker,
                 }))}
                 personName={person.first_name ?? person.name ?? 'this contact'}
