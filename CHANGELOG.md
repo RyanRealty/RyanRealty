@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.541.1 (2026-06-14)
+
+### Bug Fixes
+- fix(crm): sequence email tracking key uses seq.name (Step type has no id)
+
+---
+
+
 ## v1.541.0 (2026-06-14)
 
 ### Features
