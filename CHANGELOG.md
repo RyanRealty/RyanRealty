@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.542.0 (2026-06-14)
+
+### Features
+- feat(gate): G47 ci:boundary-sanity — enforce community boundary plausibility
+
+---
+
+
 ## v1.541.3 (2026-06-14)
 
 ### Bug Fixes
