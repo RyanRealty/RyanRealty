@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.534.2 (2026-06-14)
+
+### Bug Fixes
+- fix(admin/crm): clamp the contact-detail mobile grid track (crm 146px overflow)
+
+---
+
+
 ## v1.534.1 (2026-06-14)
 
 ### Bug Fixes
