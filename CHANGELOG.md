@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.529.1 (2026-06-14)
+
+### Bug Fixes
+- fix(admin-mobile): tab bar + tabs fit phone width; add live mobile verifier
+
+---
+
+
 ## v1.529.0 (2026-06-14)
 
 ### Features
