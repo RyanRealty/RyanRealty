@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.540.0 (2026-06-14)
+
+### Features
+- feat(listing): random broker assignment for unassigned leads
+- feat(team): landing-page redesign of broker pages + index
+
+---
+
+
 ## v1.539.11 (2026-06-14)
 
 ### Bug Fixes
