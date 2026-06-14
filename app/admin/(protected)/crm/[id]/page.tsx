@@ -422,6 +422,22 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
             </CardContent>
           </Card>
 
+          {/* Conversation — texts and emails only, chat style. Sits right under
+              the identity card so it's pfp + info, then the conversation. */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Conversation</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ConversationThread
+                events={full.timeline.filter((t) => isConversationEvent(t.kind)).map((t) => ({
+                  id: t.id, ts: t.ts, kind: t.kind, title: t.title, body: t.body, broker: t.broker,
+                }))}
+                personName={person.first_name ?? person.name ?? 'this contact'}
+              />
+            </CardContent>
+          </Card>
+
           {/* Linked intel — the stuff FUB can't show */}
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-base">Platform intel</CardTitle></CardHeader>
@@ -586,21 +602,6 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
 
         {/* ── Right: conversation + actions (after lead info on phones) ── */}
         <div className="order-2 space-y-4 sm:space-y-6 lg:order-none">
-          {/* Conversation — texts and emails only, chat style */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Conversation</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ConversationThread
-                events={full.timeline.filter((t) => isConversationEvent(t.kind)).map((t) => ({
-                  id: t.id, ts: t.ts, kind: t.kind, title: t.title, body: t.body, broker: t.broker,
-                }))}
-                personName={person.first_name ?? person.name ?? 'this contact'}
-              />
-            </CardContent>
-          </Card>
-
           {/* Tasks */}
           <Card>
             <CardHeader className="pb-3">
