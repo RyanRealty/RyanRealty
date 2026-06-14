@@ -93,16 +93,16 @@ export default async function SiteHeader() {
         <MegaMenu menu={MENU} navData={navData} />
 
         <div className="flex items-center gap-2.5">
-          <CTAButton href="/login" tone="on-navy-ghost" size="md" className="hidden sm:inline-flex">
+          <CTAButton href="/login" tone="on-navy-ghost" size="md" className="hidden sm:inline-flex whitespace-nowrap">
             Sign in
           </CTAButton>
           {/* Buyer CTA — drives listing-alerts LP so buyers have a one-click capture
               path alongside the seller CTA. Ghost (secondary); lg+ only so the
               header never crowds — smaller screens reach it via the Homes menu. */}
-          <CTAButton href="/lp/buyer-listing-alerts" tone="on-navy-ghost" size="md" className="hidden lg:inline-flex">
+          <CTAButton href="/lp/buyer-listing-alerts" tone="on-navy-ghost" size="md" className="hidden lg:inline-flex whitespace-nowrap">
             Get listing alerts
           </CTAButton>
-          <CTAButton href="/lp/seller-home-value" tone="on-navy" size="md" className="hidden sm:inline-flex">
+          <CTAButton href="/lp/seller-home-value" tone="on-navy" size="md" className="hidden sm:inline-flex whitespace-nowrap">
             List your home
           </CTAButton>
           <MobileNav menu={MENU} navData={navData} />

@@ -21,6 +21,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { HEADER_HEIGHT_PX } from '@/lib/site/layout-constants'
 
 type NavItem = {
   id: string
@@ -34,7 +35,7 @@ type Props = {
   className?: string
 }
 
-export function SectionNav({ items, topOffset = 72, className }: Props) {
+export function SectionNav({ items, topOffset = HEADER_HEIGHT_PX, className }: Props) {
   const [visible, setVisible] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -92,7 +93,7 @@ export function SectionNav({ items, topOffset = 72, className }: Props) {
       <nav
         aria-label="Page sections"
         className={cn(
-          'fixed top-0 left-0 right-0 z-40 bg-primary/95 backdrop-blur-md border-b border-white/8',
+          'fixed left-0 right-0 z-40 bg-primary/95 backdrop-blur-md border-b border-white/8',
           'transition-transform duration-300 ease-out',
           visible ? 'translate-y-0' : '-translate-y-full',
           className,
