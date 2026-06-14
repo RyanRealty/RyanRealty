@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.535.7 (2026-06-14)
+
+### Bug Fixes
+- fix(admin): mobile tab bar clamps to viewport (the real /admin/operations 15px overflow)
+
+---
+
+
 ## v1.535.6 (2026-06-14)
 
 ### Bug Fixes
