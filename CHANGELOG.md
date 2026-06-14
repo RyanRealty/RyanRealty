@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.544.0 (2026-06-14)
+
+### Features
+- feat(feed): Reels-style continuous video feed + robust MLS embed extraction
+
+---
+
+
 ## v1.543.1 (2026-06-14)
 
 ### Bug Fixes
