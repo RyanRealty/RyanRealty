@@ -16,7 +16,6 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { getBrokers } from '@/lib/data/brokers/getBrokers'
 import { getSurfaceImage, getReviews } from '@/lib/data'
 import { ReviewsBlock } from '@/components/site/ReviewsBlock'
-import { MarketingStandardBlock } from '@/components/site/MarketingStandardBlock'
 import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import { BrokerProfileRow } from '@/components/site/BrokerProfileRow'
@@ -75,6 +74,13 @@ export default async function TeamPage() {
     getReviews(6),
   ])
 
+  // Display order locked to Matt, Rebecca, Paul (Matt directive). Rank by first
+  // name so it holds regardless of the DB sort_order.
+  const RANK: Record<string, number> = { matt: 0, matthew: 0, rebecca: 1, paul: 2 }
+  const orderedBrokers = [...brokers].sort(
+    (a, b) => (RANK[a.slug.split('-')[0]] ?? 9) - (RANK[b.slug.split('-')[0]] ?? 9),
+  )
+
   return (
     <main className="min-h-screen bg-background">
       <MetadataBlock
@@ -110,7 +116,8 @@ export default async function TeamPage() {
         minHeight={440}
       />
 
-      <MarketingStandardBlock tone="default" />
+      {/* Social proof up top — the brokerage rating backs every broker */}
+      <ReviewsBlock data={reviews} eyebrow="Client reviews" title="What clients say" tone="default" max={6} />
 
       <Section padding="default" tone="muted" divider>
         <Container>
@@ -127,15 +134,13 @@ export default async function TeamPage() {
           {/* Large broker profiles — verified bio, specialties, license, and
               direct contact for each broker, straight from public.brokers. */}
           <div className="flex flex-col gap-12 md:gap-16">
-            {brokers.map((broker) => (
+            {orderedBrokers.map((broker) => (
               <BrokerProfileRow key={broker.slug} broker={broker} />
             ))}
           </div>
 
         </Container>
       </Section>
-
-      <ReviewsBlock data={reviews} eyebrow="Client reviews" title="What our clients say" tone="muted" max={6} />
 
       <FAQBlock
         eyebrow="Choosing a broker"

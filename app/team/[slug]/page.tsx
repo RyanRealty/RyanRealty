@@ -1,53 +1,53 @@
 /**
- * Broker detail page (/team/[slug]) — Wave 3 site-v2 rebuild.
+ * Broker landing page (/team/[slug]) — conversion-oriented redesign.
  *
- * Substantial trust-building agent page: large headshot, full contact info
- * including Oregon license number (from data only, never invented), bio,
- * active listings, and a clear call/email CTA.
+ * Visual thesis: lead with the person and the firm's proof. An oversized
+ * editorial portrait against a navy field, the Google rating and Ryan Realty's
+ * track record stated immediately, one direct way to start. The broker is the
+ * face; Ryan Realty's results are the backing, so a newer broker never looks
+ * thin on volume.
  *
- * DATA ACCURACY (CLAUDE.md §0): all broker fields come from getBrokerBySlug
- * via getAgentBySlug — name, title, license_number, bio, phone, email. No
- * stats or review numbers are fabricated. License numbers show only when
- * present in the database row. If the per-broker license is null the firm
- * license (Principal Broker 201206613) is noted as context only for Matt.
+ * DATA ACCURACY (CLAUDE.md §0): broker identity from getAgentBySlug; the rating
+ * and review count from getReviews (public.reviews); the "recent sales" grid is
+ * Ryan Realty BROKERAGE closings (getBrokerageListingTiles, by ListOfficeName),
+ * NOT per-broker volume — newer brokers are backed by the firm's record. Every
+ * price is the recorded MLS closing price. No invented stats, ever.
  *
- * Uses @/components/site/* + @/components/ui/* only. No legacy broker/*
- * components.
+ * Uses @/components/site/* + @/components/ui/* only.
  */
 
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Image from 'next/image'
-import { getAgentBySlug, getAgentActiveListings, getAgentSoldListings } from '@/app/actions/agents'
+import { getAgentBySlug } from '@/app/actions/agents'
 import { getBrokerageSettings } from '@/app/actions/brokerage'
+import { getBrokerageListingTiles, getReviews } from '@/lib/data'
+import type { PriceDropTile } from '@/lib/data/listings/getPriceDropTiles'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
 import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-import { BrokerContactCard } from '@/components/site/BrokerContactCard'
+import { CTAButton } from '@/components/site/primitives'
 import { CTABar } from '@/components/site/CTABar'
 import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
 import { ReviewsBlock } from '@/components/site/ReviewsBlock'
 import BrokerAttributionSetter from '@/components/BrokerAttributionSetter'
 import { submitBrokerSellerLead } from '@/app/team/actions'
-import { getReviews } from '@/lib/data'
 import { normalizeAgentSlug, BROKER_EMAIL_BY_SLUG, type BrokerSlug } from '@/lib/agent-attribution'
-import { Separator } from '@/components/ui/separator'
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
 import { listingTileHref } from '@/lib/slug'
 import {
   Body,
-  Caption,
   Container,
   DisplayHeading,
   Eyebrow,
   Grid,
   H2,
-  H3,
   Section,
   Stack,
-  TextLink,
+  TabularNumber,
 } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const OFFICE_NAME = 'Ryan Realty'
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -80,27 +80,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export const revalidate = 60
 
-/** Map a HomeTileRow from getAgentActiveListings to the ListingCardData shape. */
-function toListingCardData(tile: {
-  ListingKey?: string | null
-  ListPrice?: number | null
-  StreetNumber?: string | null
-  StreetName?: string | null
-  City?: string | null
-  PostalCode?: string | null
-  SubdivisionName?: string | null
-  PhotoURL?: string | null
-  BedroomsTotal?: number | null
-  BathroomsTotal?: number | null
-  TotalLivingAreaSqFt?: number | null
-}): ListingCardData | null {
-  const key = tile.ListingKey
-  if (!key) return null
+/** "Sold Mon YYYY" badge label from a close date. */
+function soldBadgeLabel(closeDate: string | null | undefined): string {
+  if (!closeDate) return 'Sold'
+  const d = new Date(closeDate)
+  if (Number.isNaN(d.getTime())) return 'Sold'
+  return `Sold ${d.toLocaleString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })}`
+}
+
+/** Map a brokerage closing tile to a SOLD ListingCard (price = recorded MLS close). */
+function toBrokerageSoldCard(tile: PriceDropTile): ListingCardData | null {
+  if (!tile.ListingKey) return null
   const addressLine = [tile.StreetNumber, tile.StreetName].filter(Boolean).join(' ') || 'Address unavailable'
   const cityParts = [tile.City, tile.PostalCode].filter(Boolean).join(' ')
   const cityLine = [cityParts, tile.SubdivisionName].filter(Boolean).join(' · ')
   return {
-    listingKey: key,
+    listingKey: tile.ListingKey,
     href: listingTileHref({
       listingKey: tile.ListingKey,
       streetNumber: tile.StreetNumber,
@@ -109,47 +104,26 @@ function toListingCardData(tile: {
       subdivisionName: tile.SubdivisionName,
     }),
     photoUrl: tile.PhotoURL ?? null,
-    price: tile.ListPrice ?? null,
+    price: tile.ClosePrice ?? tile.ListPrice ?? null,
     addressLine,
     cityLine,
     beds: tile.BedroomsTotal ?? null,
     baths: tile.BathroomsTotal ?? null,
     sqft: tile.TotalLivingAreaSqFt ?? null,
-  }
-}
-
-/** Format a close date (ISO or YYYY-MM-DD) to "Sold Mon YYYY" for the SOLD badge. */
-function soldBadgeLabel(closeDate: string | null | undefined): string {
-  if (!closeDate) return 'Sold'
-  const d = new Date(closeDate)
-  if (Number.isNaN(d.getTime())) return 'Sold'
-  return `Sold ${d.toLocaleString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })}`
-}
-
-/**
- * Map a sold tile (from getAgentSoldListings) to a ListingCardData. The card
- * price is the recorded MLS closing price (CLAUDE.md §0: a verified figure
- * straight from the listing row, not a derived stat), with a SOLD badge carrying
- * the close month + year.
- */
-function toSoldCardData(
-  tile: Parameters<typeof toListingCardData>[0] & { ClosePrice?: number | null; CloseDate?: string | null },
-): ListingCardData | null {
-  const base = toListingCardData(tile)
-  if (!base) return null
-  return {
-    ...base,
-    price: tile.ClosePrice ?? base.price,
     badge: { kind: 'sold', label: soldBadgeLabel(tile.CloseDate) },
   }
 }
 
-/**
- * Factual fallback bio when the broker has no bio in the database.
- * Sentence-case, no banned words, no invented claims.
- */
-function factualFallbackBio(displayName: string, title: string): string {
+function factualFallbackBio(displayName: string): string {
   return `${displayName} is a real estate broker at Ryan Realty, based in Bend, Oregon. Ryan Realty serves buyers and sellers across Central Oregon, including Bend, Redmond, Sisters, Sunriver, and surrounding communities. ${displayName} works directly with clients from first contact through closing.`
+}
+
+const HEADSHOT: Record<string, string> = {
+  'matthew-ryan': '/images/brokers/ryan-matt.png',
+  'matt-ryan': '/images/brokers/ryan-matt.png',
+  'paul-stevenson': '/images/brokers/stevenson-paul.png',
+  'rebecca-peterson': '/images/brokers/peterson-rebecca.png',
+  'rebecca-ryser-peterson': '/images/brokers/peterson-rebecca.png',
 }
 
 export default async function TeamMemberPage({ params }: Props) {
@@ -160,67 +134,40 @@ export default async function TeamMemberPage({ params }: Props) {
   const brokerage = await getBrokerageSettings()
   const siteName = brokerage?.name ?? 'Ryan Realty'
   const firstName = broker.display_name.split(' ')[0] ?? broker.display_name
-  const hasLicense = Boolean(broker.license_number?.trim())
   const canonicalUrl = `${siteUrl}/team/${slug}`
 
-  // Active + recently-sold listings — only fetch when the broker has a license or
-  // email to match against. Resolution runs through listings.list_agent_email
-  // (the populated, indexed source) so our own brokers actually resolve.
-  const canMatch = hasLicense || !!broker.email
-  const [activeListings, soldListings] = canMatch
-    ? await Promise.all([
-        getAgentActiveListings(broker.license_number ?? null, 6, broker.email),
-        getAgentSoldListings(broker.license_number ?? null, 9, broker.email),
-      ])
-    : [[], []]
-  const listingCards: ListingCardData[] = activeListings
-    .map(toListingCardData)
+  const [reviews, brokerageTiles] = await Promise.all([
+    getReviews(6),
+    getBrokerageListingTiles({ officeName: OFFICE_NAME, limit: 60 }),
+  ])
+
+  // Brokerage recent sales — closed listings across Ryan Realty, newest first.
+  const soldCards: ListingCardData[] = brokerageTiles
+    .filter((t) => t.ClosePrice != null && (t.CloseDate != null || /clos|sold/i.test(t.StandardStatus ?? '')))
+    .sort((a, b) => new Date(b.CloseDate ?? 0).getTime() - new Date(a.CloseDate ?? 0).getTime())
+    .map(toBrokerageSoldCard)
     .filter((c): c is ListingCardData => c !== null)
     .slice(0, 6)
-  const soldCards: ListingCardData[] = soldListings
-    .map(toSoldCardData)
-    .filter((c): c is ListingCardData => c !== null)
-    .slice(0, 9)
 
-  // Bio — use data row value if present; else a factual fallback sentence
-  const bioText: string = broker.bio?.trim()
-    ? broker.bio.trim()
-    : factualFallbackBio(broker.display_name, broker.title ?? 'Broker')
-
-  // Headshot: map display_name → known public headshot paths
-  // The photo_url column stores a remote URL; use the local PNG as the canonical headshot
-  const HEADSHOT: Record<string, string> = {
-    'matthew-ryan': '/images/brokers/ryan-matt.png',
-    'matt-ryan': '/images/brokers/ryan-matt.png',
-    'paul-stevenson': '/images/brokers/stevenson-paul.png',
-    'rebecca-peterson': '/images/brokers/peterson-rebecca.png',
-    'rebecca-ryser-peterson': '/images/brokers/peterson-rebecca.png',
-  }
+  const bioText = broker.bio?.trim() ? broker.bio.trim() : factualFallbackBio(broker.display_name)
   const headshotSrc = HEADSHOT[broker.slug] ?? broker.photo_url ?? '/images/brokers/ryan-matt.png'
-
-  const telHref = broker.phone ? `tel:${broker.phone.replace(/\./g, '').replace(/[^\d]/g, '')}` : null
+  const telHref = broker.phone ? `tel:${broker.phone.replace(/[^\d]/g, '')}` : null
+  const smsHref = broker.phone ? `sms:${broker.phone.replace(/[^\d]/g, '')}` : null
   const mailHref = broker.email ? `mailto:${broker.email}` : null
 
-  const trustLine = broker.license_number
-    ? `Oregon real estate license #${broker.license_number}`
-    : 'Licensed real estate broker · Ryan Realty, Bend Oregon'
+  // The single strongest review for the social-proof band near the top.
+  const featured = reviews.reviews.find((r) => r.rating >= 5 && r.text.length > 80) ?? reviews.reviews[0] ?? null
 
-  // Canonical broker slug for FUB attribution. The URL slug normalizes for Paul
-  // and Rebecca; Matt's 'matthew-ryan' does not, so fall back to an email match.
   const canonicalSlug: BrokerSlug | null =
     normalizeAgentSlug(slug) ??
     ((Object.entries(BROKER_EMAIL_BY_SLUG).find(
       ([, email]) => email.toLowerCase() === (broker.email ?? '').toLowerCase(),
     )?.[0] as BrokerSlug | undefined) ?? null)
 
-  const reviews = await getReviews(6)
-
   return (
     <main className="min-h-screen bg-background">
-      {/* Route any lead from this page to this broker in FUB. */}
       <BrokerAttributionSetter slug={canonicalSlug} />
 
-      {/* Structured data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -234,6 +181,16 @@ export default async function TeamMemberPage({ params }: Props) {
             email: broker.email ?? undefined,
             url: canonicalUrl,
             areaServed: { '@type': 'Place', name: 'Central Oregon' },
+            ...(reviews.count > 0
+              ? {
+                  aggregateRating: {
+                    '@type': 'AggregateRating',
+                    ratingValue: reviews.averageRating,
+                    reviewCount: reviews.count,
+                    bestRating: 5,
+                  },
+                }
+              : {}),
             worksFor: {
               '@type': ['LocalBusiness', 'RealEstateAgent'],
               name: siteName,
@@ -250,205 +207,134 @@ export default async function TeamMemberPage({ params }: Props) {
               { name: 'Home', url: siteUrl },
               { name: 'Team', url: `${siteUrl}/team` },
               { name: broker.display_name, url: canonicalUrl },
-            ])
+            ]),
           ),
         }}
       />
-      {/* AEO: the broker's recently-sold homes as a structured ItemList, so an
-          answer engine can surface "homes <broker> has sold". Sale prices are the
-          recorded MLS closing prices (verified from the listing row). */}
-      {soldCards.length > 0 ? (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'ItemList',
-              name: `Homes ${broker.display_name} recently sold`,
-              description: `Closed sales from the last two years where ${broker.display_name} represented the seller, from the Oregon Data Share MLS.`,
-              numberOfItems: soldCards.length,
-              itemListElement: soldCards.map((c, i) => ({
-                '@type': 'ListItem',
-                position: i + 1,
-                item: {
-                  '@type': 'SingleFamilyResidence',
-                  name: c.addressLine,
-                  address: c.cityLine,
-                  ...(c.price
-                    ? {
-                        offers: {
-                          '@type': 'Offer',
-                          price: c.price,
-                          priceCurrency: 'USD',
-                          availability: 'https://schema.org/SoldOut',
-                        },
-                      }
-                    : {}),
-                },
-              })),
-            }),
-          }}
-        />
-      ) : null}
 
-      {/* Breadcrumb */}
-      <PageBreadcrumb trail={[{ label: 'Team', href: '/team' },
-              { label: broker.display_name }]} />
+      <PageBreadcrumb trail={[{ label: 'Team', href: '/team' }, { label: broker.display_name }]} />
 
-      {/* Hero section — large headshot + identity + contact */}
-      <Section padding="loose" tone="default">
-        <Container>
-          <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_360px] lg:gap-16 items-start">
+      {/* ───────── Hero — navy field, oversized portrait, identity, rating, CTA ───────── */}
+      <section className="relative overflow-hidden bg-primary text-primary-foreground">
+        <Container className="grid items-end gap-8 py-12 sm:py-16 lg:grid-cols-[1.15fr_0.85fr] lg:gap-10 lg:py-20">
+          {/* Identity + proof + CTA */}
+          <div className="order-2 lg:order-1 lg:pb-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
+            <Eyebrow className="text-primary-foreground/70">Ryan Realty · Bend, Oregon</Eyebrow>
+            <DisplayHeading as="h1" className="mt-3 text-5xl text-primary-foreground sm:text-6xl">
+              {broker.display_name}
+            </DisplayHeading>
+            <p className="mt-2 text-lg font-medium text-primary-foreground/80">
+              {broker.title ?? 'Real Estate Broker'}
+            </p>
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-primary-foreground/85">
+              The broker you call is the broker you get. No hand-offs, no transaction desk, from the
+              first conversation to the closing table.
+            </p>
 
-            {/* Left — identity + bio + trust signals */}
-            <div>
-              {/* Mobile headshot (visible below md, hidden at lg) */}
-              <div className="flex justify-center mb-8 lg:hidden">
-                <Image
-                  src={headshotSrc}
-                  alt={broker.display_name}
-                  width={200}
-                  height={300}
-                  className="select-none w-40 h-auto"
-                  priority
-                />
-              </div>
-
-              <Stack gap="tight">
-                <Eyebrow>Ryan Realty · Bend, Oregon</Eyebrow>
-                <DisplayHeading as="h1" className="text-4xl text-foreground sm:text-5xl">
-                  {broker.display_name}
-                </DisplayHeading>
-                <div className="text-lg font-semibold text-muted-foreground">
-                  {broker.title ?? 'Real Estate Broker'}
+            {/* Trust strip — Google rating + license, real values only */}
+            <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
+              {reviews.count > 0 ? (
+                <div className="flex items-center gap-2.5">
+                  <span aria-hidden className="text-xl leading-none text-accent">★★★★★</span>
+                  <span className="text-base font-medium text-primary-foreground/90">
+                    <TabularNumber value={reviews.averageRating} /> on Google ·{' '}
+                    <TabularNumber value={reviews.count} /> reviews
+                  </span>
                 </div>
-
-                {/* License + state credential */}
-                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
-                  {broker.license_number ? (
-                    <Caption tone="muted" className="tabular-nums">
-                      Oregon license #{broker.license_number}
-                    </Caption>
-                  ) : null}
-                  <Caption tone="muted">Licensed in the State of Oregon</Caption>
-                </div>
-              </Stack>
-
-              <Separator className="my-6" />
-
-              {/* Direct contact links */}
-              <Stack gap="tight">
-                <Caption tone="muted">Direct contact</Caption>
-                {broker.phone ? (
-                  <div className="flex items-center gap-2">
-                    <TextLink
-                      href={telHref!}
-                      underline="never"
-                      weight="semibold"
-                      className="tabular-nums text-lg"
-                    >
-                      {broker.phone}
-                    </TextLink>
-                    <Caption tone="muted">(call or text)</Caption>
-                  </div>
-                ) : null}
-                {broker.email ? (
-                  <TextLink
-                    href={mailHref!}
-                    underline="on-hover"
-                    weight="normal"
-                    className="text-base break-all"
-                  >
-                    {broker.email}
-                  </TextLink>
-                ) : null}
-              </Stack>
-
-              <Separator className="my-6" />
-
-              {/* Bio */}
-              <Stack gap="tight">
-                <H3>{firstName}&apos;s background</H3>
-                <Body size="default" tone="muted" className="leading-relaxed max-w-prose">
-                  {bioText}
-                </Body>
-              </Stack>
-
-              {/* What they do */}
-              <div className="mt-8 bg-muted rounded-xl p-6">
-                <Stack gap="tight">
-                  <H3>The standard your home gets</H3>
-                  <ul className="mt-2 space-y-2.5 text-sm text-muted-foreground leading-relaxed">
-                    <li>Cinematic video and a 3D walkthrough on your listing, the showcase treatment buyers expect at the high end</li>
-                    <li>A price built from live Central Oregon market data, with the comparable sales that support it</li>
-                    <li>A marketing plan shaped to your home and the buyer most likely to want it</li>
-                    <li>{firstName} from the first call to the closing table, on a direct line the whole way</li>
-                  </ul>
-                </Stack>
-              </div>
+              ) : null}
+              {broker.license_number ? (
+                <span className="text-sm text-primary-foreground/65 tabular-nums">
+                  Oregon license #{broker.license_number}
+                </span>
+              ) : null}
             </div>
 
-            {/* Right sidebar — contact card (hidden on mobile, shown at lg) */}
-            <div className="hidden lg:block sticky top-6">
-              <BrokerContactCard
-                name={broker.display_name}
-                title={broker.title ?? 'Real Estate Broker'}
-                licenseNumber={broker.license_number}
-                phone={broker.phone}
-                email={broker.email}
-                headshotSrc={headshotSrc}
-                headshotAlt={broker.display_name}
-                trustLine={trustLine}
-                ctaHref={broker.phone ? telHref! : (broker.email ? mailHref! : '/contact')}
-                firstName={firstName}
-                variant="card"
-              />
+            {/* Primary CTAs */}
+            <div className="mt-8 flex flex-wrap gap-3">
+              {telHref ? (
+                <CTAButton href={telHref} tone="on-navy" size="lg">
+                  Call {firstName}
+                </CTAButton>
+              ) : null}
+              {smsHref ? (
+                <CTAButton href={smsHref} tone="on-navy-ghost" size="lg" external>
+                  Text {firstName}
+                </CTAButton>
+              ) : mailHref ? (
+                <CTAButton href={mailHref} tone="on-navy-ghost" size="lg">
+                  Email {firstName}
+                </CTAButton>
+              ) : null}
             </div>
+            {broker.phone ? (
+              <p className="mt-3 text-sm tabular-nums text-primary-foreground/65">{broker.phone}</p>
+            ) : null}
+          </div>
+
+          {/* Oversized transparent portrait, bottom-anchored into the navy field.
+              A soft cream halo behind it anchors the figure so the light shirt
+              does not dissolve into the navy. */}
+          <div className="relative order-1 flex justify-center self-end lg:order-2 lg:justify-end">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute bottom-0 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-primary-foreground/5 blur-2xl sm:h-72 sm:w-72 lg:h-96 lg:w-96"
+            />
+            <Image
+              src={headshotSrc}
+              alt={broker.display_name}
+              width={520}
+              height={780}
+              priority
+              className="relative h-auto w-64 select-none drop-shadow-2xl sm:w-72 lg:w-full lg:max-w-md"
+            />
           </div>
         </Container>
-      </Section>
+      </section>
 
-      {/* Lead capture — the broker's primary conversion, routed to them in FUB */}
-      <LeadCaptureBlock
-        variant="seller"
-        onSubmit={submitBrokerSellerLead}
-        eyebrow="What's your home worth"
-        title={`Get a valuation from ${firstName}`}
-        intro={`Tell ${firstName} about your home and you will get a comparative market analysis, with the comparable sales behind the number. No automated estimate, no obligation.`}
-        submitLabel="Request my valuation"
-        tone="muted"
-      />
-
-      {/* Active listings */}
-      {listingCards.length > 0 ? (
-        <Section padding="default" tone="muted" divider>
-          <Container>
-            <Stack gap="tight" className="mb-8">
-              <Eyebrow>Active listings</Eyebrow>
-              <H2>{firstName}&apos;s current listings</H2>
-              <Body size="default" tone="muted">
-                Active listings where {firstName} is the listing broker, pulled directly from the Oregon Data Share MLS.
-              </Body>
-            </Stack>
-            <Grid cols={3} gap="default">
-              {listingCards.map((card) => (
-                <ListingCard key={card.listingKey} listing={card} />
-              ))}
-            </Grid>
+      {/* ───────── Social proof — designed cream band directly under the hero ───────── */}
+      {featured ? (
+        <Section padding="loose" tone="muted">
+          <Container className="relative max-w-3xl text-center">
+            <span
+              aria-hidden
+              className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 select-none font-display text-9xl leading-none text-primary/10"
+            >
+              “
+            </span>
+            <Eyebrow className="relative">Clients on Ryan Realty</Eyebrow>
+            <blockquote className="relative mt-6">
+              <DisplayHeading as="p" className="text-2xl leading-snug text-foreground sm:text-3xl">
+                {featured.text.length > 240 ? `${featured.text.slice(0, 237).trimEnd()}…` : featured.text}
+              </DisplayHeading>
+              <footer className="mt-7 flex flex-col items-center gap-1">
+                <span className="text-base font-semibold text-foreground">
+                  {featured.reviewerName ?? 'Verified Ryan Realty client'}
+                </span>
+                {reviews.count > 0 ? (
+                  <span className="text-sm text-muted-foreground">
+                    Google review · <TabularNumber value={reviews.averageRating} />/5 across{' '}
+                    <TabularNumber value={reviews.count} /> reviews
+                  </span>
+                ) : (
+                  <span className="text-sm text-muted-foreground">Verified Google review</span>
+                )}
+              </footer>
+            </blockquote>
           </Container>
         </Section>
       ) : null}
 
-      {/* Recently sold — closed sales where this broker represented the seller */}
+      {/* ───────── Ryan Realty track record (brokerage sales, not per-broker) ───────── */}
       {soldCards.length > 0 ? (
-        <Section padding="default" tone="default" divider>
+        <Section padding="default" tone="muted" divider>
           <Container>
-            <Stack gap="tight" className="mb-8">
-              <Eyebrow>Recently sold</Eyebrow>
-              <H2>Homes {firstName} recently sold</H2>
+            <Stack gap="tight" className="mb-8 max-w-2xl">
+              <Eyebrow>The Ryan Realty record</Eyebrow>
+              <H2>Recent Ryan Realty sales across Central Oregon</H2>
               <Body size="default" tone="muted">
-                Closed sales from the last two years where {firstName} represented the seller, pulled directly from
-                the Oregon Data Share MLS. Each price is the recorded closing price.
+                When you work with {firstName}, the whole brokerage is behind you. These are recent
+                Ryan Realty closings, pulled directly from the Oregon Data Share MLS. Each price is
+                the recorded closing price.
               </Body>
             </Stack>
             <Grid cols={3} gap="default">
@@ -460,28 +346,60 @@ export default async function TeamMemberPage({ params }: Props) {
         </Section>
       ) : null}
 
-      {/* Brokerage social proof — the firm's reputation backs every broker */}
+      {/* ───────── Meet the broker — editorial bio, no repeated portrait ───────── */}
+      <Section padding="default" tone="default" divider>
+        <Container>
+          <div className="grid gap-8 lg:grid-cols-[2fr_3fr] lg:gap-16">
+            <div className="lg:pt-1">
+              <Eyebrow>Meet your broker</Eyebrow>
+              <H2 className="mt-2">{firstName}</H2>
+              <p className="mt-2 text-base font-medium text-muted-foreground">
+                {broker.title ?? 'Real Estate Broker'}
+              </p>
+              <div aria-hidden className="mt-5 h-1 w-12 rounded-full bg-primary" />
+            </div>
+            <div>
+              <Body size="default" tone="muted" className="max-w-prose leading-relaxed">
+                {bioText}
+              </Body>
+              <div className="mt-7 flex flex-wrap gap-3">
+                {telHref ? (
+                  <CTAButton href={telHref} tone="primary" size="md">
+                    Call {firstName}
+                  </CTAButton>
+                ) : null}
+                {mailHref ? (
+                  <CTAButton href={mailHref} tone="outline" size="md">
+                    Email {firstName}
+                  </CTAButton>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </Container>
+      </Section>
+
+      {/* ───────── Full reviews grid ───────── */}
       <ReviewsBlock
         data={reviews}
         eyebrow="Client reviews"
-        title="What clients say about Ryan Realty"
+        title="What clients say"
         tone="muted"
         max={6}
       />
 
-      {/* Mobile CTA band */}
-      <div className="lg:hidden">
-        <CTABar
-          eyebrow={`Work with ${firstName}`}
-          title="Ready to get started?"
-          body="Call or email directly. No scripts, no waiting on a call queue."
-          primary={broker.phone ? { href: telHref!, label: broker.phone } : { href: '/contact', label: 'Get in touch' }}
-          secondary={broker.email ? { href: mailHref!, label: 'Send an email' } : undefined}
-          tone="navy"
-        />
-      </div>
+      {/* ───────── Lead capture — routed to this broker in FUB ───────── */}
+      <LeadCaptureBlock
+        variant="seller"
+        onSubmit={submitBrokerSellerLead}
+        eyebrow="What's your home worth"
+        title={`Get a valuation from ${firstName}`}
+        intro={`Tell ${firstName} about your home and you will get a comparative market analysis, with the comparable sales behind the number. No automated estimate, no obligation.`}
+        submitLabel="Request my valuation"
+        tone="default"
+      />
 
-      {/* Bottom CTA — schedule */}
+      {/* ───────── Bottom CTA ───────── */}
       <CTABar
         eyebrow="Ready to talk"
         title={`Work with ${firstName} on your next move.`}
