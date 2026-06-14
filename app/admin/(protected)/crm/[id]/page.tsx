@@ -230,7 +230,24 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
   // The activity log is the NON-message timeline (notes, calls, web visits, stage
   // changes, tasks, system). Emails + texts live in the Conversation box above, so
   // don't duplicate them here — that duplication made the page enormous.
-  const activityLog = full.timeline.filter((t) => !isConversationEvent(t.kind))
+  const activityLog = full.timeline.filter(
+    (t) => !isConversationEvent(t.kind) && t.kind !== 'email_open' && t.kind !== 'email_click',
+  )
+  // Email engagement (opens/clicks) keyed by subject, shown on each email bubble.
+  const emailEngagement: Record<string, { opens: number; lastOpen: string | null; clicks: number }> = {}
+  for (const t of full.timeline) {
+    if (t.kind !== 'email_open' && t.kind !== 'email_click') continue
+    const pl = (t.payload ?? {}) as { label?: string }
+    const key = (pl.label ?? t.title ?? '').trim()
+    if (!key) continue
+    const e = (emailEngagement[key] ??= { opens: 0, lastOpen: null, clicks: 0 })
+    if (t.kind === 'email_open') {
+      e.opens++
+      if (!e.lastOpen || t.ts > e.lastOpen) e.lastOpen = t.ts
+    } else {
+      e.clicks++
+    }
+  }
 
   // Live right now — most recent web event inside 30 minutes.
   const latestWeb = webEvents[0] ?? null
@@ -437,6 +454,7 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
                 events={full.timeline.filter((t) => isConversationEvent(t.kind)).slice(0, 60).map((t) => ({
                   id: t.id, ts: t.ts, kind: t.kind, title: t.title, body: t.body, broker: t.broker,
                 }))}
+                engagement={emailEngagement}
                 personName={person.first_name ?? person.name ?? 'this contact'}
               />
             </CardContent>

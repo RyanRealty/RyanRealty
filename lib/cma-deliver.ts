@@ -26,6 +26,7 @@
 
 import { renderCmaPdfBuffer, CmaNotFoundError } from '@/lib/cma-pdf'
 import { createGmailDraft } from '@/lib/gmail-draft'
+import { instrumentEmailHtml } from '@/lib/email-tracking'
 import { sendEmail } from '@/lib/resend'
 import { createServiceClient } from '@/lib/supabase/service'
 
@@ -253,6 +254,7 @@ export async function finalizeAndDeliverCma(
   // Stamping cmaLink here (not at request time) is what releases the sequence
   // engine's %cma_link% hold-gate, so the CMA-link touch sends a real, working
   // URL — never the empty placeholder it used to merge. Best-effort; never fatal.
+  let recipientPersonId: number | null = null
   if (finalized && leadEmail) {
     try {
       const sb = createServiceClient()
@@ -263,6 +265,7 @@ export async function finalizeAndDeliverCma(
         .limit(1)
       const person = people?.[0]
       if (person) {
+        recipientPersonId = person.id as number
         const custom = {
           ...((person.custom as Record<string, unknown>) ?? {}),
           cmaLink: `${SITE_URL}/cmas/${safeSlug}/cma.html`,
@@ -280,7 +283,7 @@ export async function finalizeAndDeliverCma(
 
   // ── 4. Build the lead email body ──────────────────────────────────────────
   const emailSubject = `Your home value for ${subjectAddress}`
-  const { html: bodyHtml, text: bodyText } = buildLeadEmailBody({
+  const built = buildLeadEmailBody({
     firstName,
     subjectAddress,
     signOff,
@@ -288,6 +291,17 @@ export async function finalizeAndDeliverCma(
     valueHigh: cma?.value_high ?? null,
     recommendedList: cma?.recommended_list ?? null,
   })
+  const bodyText = built.text
+  // Instrument with the open pixel + click-tracked links so the comms chain
+  // records opens/clicks no matter how this is sent (Gmail draft or Resend).
+  let bodyHtml = built.html
+  if (recipientPersonId) {
+    bodyHtml = instrumentEmailHtml(bodyHtml, {
+      personId: recipientPersonId,
+      emailKey: `cma:${safeSlug}`,
+      label: emailSubject,
+    })
+  }
 
   // ── 5. Gmail draft (primary path) ─────────────────────────────────────────
   let gmailDraftId: string | undefined

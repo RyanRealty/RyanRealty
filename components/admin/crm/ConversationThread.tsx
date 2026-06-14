@@ -28,7 +28,17 @@ function fmtTs(iso: string): string {
   })
 }
 
-export default function ConversationThread({ events, personName }: { events: ConversationEvent[]; personName: string }) {
+export type EmailEngagement = { opens: number; lastOpen: string | null; clicks: number }
+
+export default function ConversationThread({
+  events,
+  personName,
+  engagement,
+}: {
+  events: ConversationEvent[]
+  personName: string
+  engagement?: Record<string, EmailEngagement>
+}) {
   if (events.length === 0) {
     return (
       <p className="py-10 text-center text-sm text-muted-foreground">
@@ -68,6 +78,19 @@ export default function ConversationThread({ events, personName }: { events: Con
             <div className="mt-0.5 text-xs text-muted-foreground">
               {out ? (e.broker ?? 'us') : personName} · {fmtTs(e.ts)}
             </div>
+            {(() => {
+              if (!out || !isEmail || !e.title) return null
+              const eng = engagement?.[e.title.trim()]
+              if (!eng || (eng.opens === 0 && eng.clicks === 0)) {
+                return <div className="mt-0.5 text-xs text-muted-foreground">Not opened yet</div>
+              }
+              return (
+                <div className="mt-0.5 text-xs font-medium text-emerald-600">
+                  {eng.opens > 0 ? `👁 Opened ${eng.opens}×${eng.lastOpen ? ` · last ${fmtTs(eng.lastOpen)}` : ''}` : 'Not opened yet'}
+                  {eng.clicks > 0 ? ` · 🔗 clicked ${eng.clicks} link${eng.clicks > 1 ? 's' : ''}` : ''}
+                </div>
+              )
+            })()}
           </div>
         )
       })}

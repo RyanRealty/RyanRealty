@@ -296,6 +296,9 @@ export async function sendCrmEmail(params: {
   /** Append the sending broker's HTML signature (client-facing sends only —
    *  internal alerts to broker mailboxes stay signature-free). */
   withSignature?: boolean
+  /** When set, instrument the HTML with an open pixel + click-tracked links so
+   *  opens/clicks log to the comms chain. Omit for internal/broker emails. */
+  track?: { personId: number; emailKey: string; label?: string }
 }): Promise<{ ok: true; gmailId: string; plainBody: string } | { ok: false; error: string }> {
   const gmail = getGmailFor(params.fromMailbox, SEND)
   if (!gmail) return { ok: false, error: 'service account not configured' }
@@ -312,6 +315,11 @@ export async function sendCrmEmail(params: {
       html = composeOutboundHtml(source, sig.html)
       plain = plain + '\n' + sig.plain
     }
+  }
+
+  if (params.track && html) {
+    const { instrumentEmailHtml } = await import('@/lib/email-tracking')
+    html = instrumentEmailHtml(html, params.track)
   }
 
   let mime: string

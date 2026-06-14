@@ -232,7 +232,10 @@ export async function GET(request: Request) {
         }
 
         const mailbox = CRM_MAILBOXES.find((m) => m.slug === person.assigned_broker) ?? CRM_MAILBOXES[0]
-        const sent = await sendCrmEmail({ fromMailbox: mailbox.email, to, subject, bodyText: body, withSignature: true })
+        const sent = await sendCrmEmail({
+          fromMailbox: mailbox.email, to, subject, bodyText: body, withSignature: true,
+          track: { personId: person.id, emailKey: `seq:${seq.id}:${en.step_index}`, label: subject },
+        })
         if (!sent.ok) { await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log(`Sequence email send failed, retrying in 30m`, sent.error); errored++; continue }
         await sb.from('crm_timeline').insert({
           person_id: person.id, kind: 'email_out', title: subject, body: sent.plainBody,
