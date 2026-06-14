@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.539.2 (2026-06-14)
+
+### Bug Fixes
+- fix(home): remove the 'This is Bend, right now.' hero headline
+
+---
+
+
 ## v1.539.1 (2026-06-14)
 
 ### Bug Fixes
