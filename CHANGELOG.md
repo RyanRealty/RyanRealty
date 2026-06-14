@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.545.1 (2026-06-14)
+
+### Bug Fixes
+- fix(team): broker buy-side sales timed out (unindexed seq-scan) -> empty section
+
+---
+
+
 ## v1.545.0 (2026-06-14)
 
 ### Features
