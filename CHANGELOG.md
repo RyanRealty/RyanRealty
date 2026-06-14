@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.544.3 (2026-06-14)
+
+### Bug Fixes
+- fix(geo+feed): kill the sub-menu, de-column the community page, fix oversized-boundary data, social-style the video feed
+
+---
+
+
 ## v1.544.2 (2026-06-14)
 
 ### Bug Fixes
