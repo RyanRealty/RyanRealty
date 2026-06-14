@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.531.1 (2026-06-14)
+
+### Bug Fixes
+- fix(admin): kill last two overflows (contact CMA-link preview, operations KPI tiles)
+
+---
+
+
 ## v1.531.0 (2026-06-14)
 
 ### Features
