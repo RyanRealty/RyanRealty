@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.539.1 (2026-06-14)
+
+### Bug Fixes
+- fix(home): rebuild homepage from reusable site components; working search
+
+---
+
+
 ## v1.539.0 (2026-06-14)
 
 ### Features
