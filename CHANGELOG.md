@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.528.0 (2026-06-14)
+
+### Features
+- feat(crm): label bare site sign-ins as low-intent in new-lead alerts
+
+---
+
+
 ## v1.527.1 (2026-06-14)
 
 ### Bug Fixes
