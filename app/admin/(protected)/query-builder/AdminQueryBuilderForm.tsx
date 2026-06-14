@@ -7,9 +7,20 @@ import { listingDetailPath } from '@/lib/slug'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Card, CardContent } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 const MAX_ROWS = 500
+const PREVIEW_ROWS = 6
 
 function toCsv(listings: ListingTileRow[]): string {
   const headers = ['ListingKey', 'ListNumber', 'ListPrice', 'StreetNumber', 'StreetName', 'City', 'State', 'PostalCode', 'SubdivisionName', 'BedroomsTotal', 'BathroomsTotal', 'PropertyType', 'StandardStatus']
@@ -32,6 +43,26 @@ function downloadCsv(listings: ListingTileRow[], filename: string) {
   a.download = filename
   a.click()
   URL.revokeObjectURL(url)
+}
+
+function rowAddress(row: ListingTileRow): string {
+  return [row.StreetNumber, row.StreetName].filter(Boolean).join(' ') || '—'
+}
+
+function rowKey(row: ListingTileRow): string {
+  return (row.ListingKey ?? row.ListNumber ?? '').toString()
+}
+
+function rowHref(row: ListingTileRow): string {
+  return listingDetailPath(
+    rowKey(row),
+    { streetNumber: row.StreetNumber ?? null, streetName: row.StreetName ?? null, city: row.City ?? null, state: row.State ?? null, postalCode: row.PostalCode ?? null },
+    { city: row.City ?? null, subdivision: row.SubdivisionName ?? null }
+  )
+}
+
+function formatPrice(p: ListingTileRow['ListPrice']): string {
+  return p != null ? `$${Number(p).toLocaleString()}` : '—'
 }
 
 export default function AdminQueryBuilderForm() {
@@ -70,138 +101,236 @@ export default function AdminQueryBuilderForm() {
     }
   }
 
+  const preview = result?.listings.slice(0, PREVIEW_ROWS) ?? []
+  const remaining = result ? Math.max(0, result.listings.length - PREVIEW_ROWS) : 0
+
   return (
-    <>
-      <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-4 rounded-lg border border-border bg-card p-4">
-        <Label className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-muted-foreground">City</span>
-          <Input
-            type="text"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            placeholder="e.g. Bend"
-            className="rounded border border-border px-3 py-2 text-sm"
-          />
-        </Label>
-        <Label className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-muted-foreground">Min price</span>
-          <Input
-            type="number"
-            value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value)}
-            placeholder="Optional"
-            className="w-28 rounded border border-border px-3 py-2 text-sm"
-          />
-        </Label>
-        <Label className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-muted-foreground">Max price</span>
-          <Input
-            type="number"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
-            placeholder="Optional"
-            className="w-28 rounded border border-border px-3 py-2 text-sm"
-          />
-        </Label>
-        <Label className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-muted-foreground">Min beds</span>
-          <Input
-            type="number"
-            min={0}
-            value={beds}
-            onChange={(e) => setBeds(e.target.value)}
-            className="w-20 rounded border border-border px-3 py-2 text-sm"
-          />
-        </Label>
-        <Label className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-muted-foreground">Min baths</span>
-          <Input
-            type="number"
-            min={0}
-            value={baths}
-            onChange={(e) => setBaths(e.target.value)}
-            className="w-20 rounded border border-border px-3 py-2 text-sm"
-          />
-        </Label>
-        <Label className="flex items-center gap-2">
-          <Input type="checkbox" checked={hasPool} onChange={(e) => setHasPool(e.target.checked)} className="rounded" />
-          <span className="text-sm text-muted-foreground">Pool</span>
-        </Label>
-        <Label className="flex items-center gap-2">
-          <Input type="checkbox" checked={hasView} onChange={(e) => setHasView(e.target.checked)} className="rounded" />
-          <span className="text-sm text-muted-foreground">View</span>
-        </Label>
-        <Button
-          type="submit"
-          disabled={loading}
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
-        >
-          {loading ? 'Running…' : 'Run query'}
-        </Button>
-      </form>
+    <div className="space-y-5">
+      {/* Filter card */}
+      <Card>
+        <CardContent className="p-4 sm:p-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-1">
+                <Label htmlFor="qb-city">City</Label>
+                <Input
+                  id="qb-city"
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="e.g. Bend"
+                  className="h-11"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="qb-min-price">Min price</Label>
+                <Input
+                  id="qb-min-price"
+                  type="number"
+                  inputMode="numeric"
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  placeholder="Optional"
+                  className="h-11 tabular-nums"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="qb-max-price">Max price</Label>
+                <Input
+                  id="qb-max-price"
+                  type="number"
+                  inputMode="numeric"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  placeholder="Optional"
+                  className="h-11 tabular-nums"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="qb-beds">Min beds</Label>
+                <Input
+                  id="qb-beds"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  value={beds}
+                  onChange={(e) => setBeds(e.target.value)}
+                  placeholder="Any"
+                  className="h-11 tabular-nums"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="qb-baths">Min baths</Label>
+                <Input
+                  id="qb-baths"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  value={baths}
+                  onChange={(e) => setBaths(e.target.value)}
+                  placeholder="Any"
+                  className="h-11 tabular-nums"
+                />
+              </div>
+            </div>
 
-      {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
+            <div className="flex flex-wrap gap-x-6 gap-y-3">
+              <Label htmlFor="qb-pool" className="flex min-h-11 cursor-pointer items-center gap-2.5">
+                <Checkbox
+                  id="qb-pool"
+                  checked={hasPool}
+                  onCheckedChange={(v) => setHasPool(v === true)}
+                />
+                <span className="text-sm text-foreground">Pool</span>
+              </Label>
+              <Label htmlFor="qb-view" className="flex min-h-11 cursor-pointer items-center gap-2.5">
+                <Checkbox
+                  id="qb-view"
+                  checked={hasView}
+                  onCheckedChange={(v) => setHasView(v === true)}
+                />
+                <span className="text-sm text-foreground">View</span>
+              </Label>
+            </div>
 
-      {result && (
-        <div className="mt-6">
-          <p className="text-sm text-muted-foreground">
-            Showing {result.listings.length} of {result.totalCount} (max {MAX_ROWS}).{' '}
+            <Button type="submit" disabled={loading} className="h-11 w-full sm:w-auto">
+              {loading ? 'Running query…' : 'Run query'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Error state */}
+      {error && (
+        <Card>
+          <CardContent className="flex flex-col gap-1 p-4">
+            <p className="text-sm font-medium text-destructive">Query failed</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Loading state */}
+      {loading && (
+        <Card>
+          <CardContent className="space-y-3 p-4">
+            <Skeleton className="h-5 w-40" />
+            {Array.from({ length: PREVIEW_ROWS }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Empty result state */}
+      {!loading && result && result.listings.length === 0 && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center gap-2 px-6 py-14 text-center">
+            <p className="text-base font-medium text-foreground">No listings matched</p>
+            <p className="max-w-sm text-sm text-muted-foreground">
+              Nothing fits these filters. Widen the price range, lower the bed or bath minimums, or clear the amenity toggles, then run the query again.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Results */}
+      {!loading && result && result.listings.length > 0 && (
+        <div className="space-y-4">
+          {/* Glanceable summary + export */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-semibold tabular-nums text-foreground">{result.listings.length}</span>
+              {' '}of{' '}
+              <span className="tabular-nums">{result.totalCount}</span>
+              {' '}matching listings
+              {result.totalCount > MAX_ROWS ? <span className="text-xs"> (capped at {MAX_ROWS})</span> : null}
+            </p>
             <Button
               type="button"
+              variant="outline"
+              className="h-11 w-full sm:w-auto"
               onClick={() => downloadCsv(result.listings, `query-builder-${Date.now()}.csv`)}
-              className="font-medium text-foreground underline hover:no-underline"
             >
               Download CSV
             </Button>
-          </p>
-          <div className="mt-4 overflow-x-auto rounded-lg border border-border">
-            <Table className="min-w-full text-left text-sm">
+          </div>
+
+          {/* Mobile: stacked result cards */}
+          <ul className="space-y-3 md:hidden">
+            {preview.map((row) => (
+              <li key={rowKey(row)}>
+                <Card size="sm">
+                  <CardContent className="flex flex-col gap-1.5 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-sm font-medium text-foreground">{rowAddress(row)}</span>
+                      <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
+                        {formatPrice(row.ListPrice)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span>{row.City ?? '—'}</span>
+                      <span className="tabular-nums">{row.BedroomsTotal ?? '—'} bd</span>
+                      <span className="tabular-nums">{row.BathroomsTotal ?? '—'} ba</span>
+                    </div>
+                    <a
+                      href={rowHref(row)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-flex min-h-11 items-center text-sm font-medium text-foreground underline-offset-4 hover:underline"
+                    >
+                      View listing →
+                    </a>
+                  </CardContent>
+                </Card>
+              </li>
+            ))}
+          </ul>
+
+          {/* Desktop: table */}
+          <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
+            <Table>
               <TableHeader>
-                <TableRow className="border-b border-border bg-muted">
-                  <TableHead className="px-4 py-2 font-medium text-foreground">Address</TableHead>
-                  <TableHead className="px-4 py-2 font-medium text-foreground">City</TableHead>
-                  <TableHead className="px-4 py-2 font-medium text-foreground">Price</TableHead>
-                  <TableHead className="px-4 py-2 font-medium text-foreground">Beds</TableHead>
-                  <TableHead className="px-4 py-2 font-medium text-foreground">Baths</TableHead>
-                  <TableHead className="px-4 py-2 font-medium text-foreground">Key</TableHead>
+                <TableRow className="bg-muted">
+                  <TableHead className="text-foreground">Address</TableHead>
+                  <TableHead className="text-foreground">City</TableHead>
+                  <TableHead className="text-foreground">Price</TableHead>
+                  <TableHead className="text-foreground">Beds</TableHead>
+                  <TableHead className="text-foreground">Baths</TableHead>
+                  <TableHead className="text-foreground">Listing</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {result.listings.slice(0, 50).map((row) => {
-                  const key = (row.ListingKey ?? row.ListNumber ?? '').toString()
-                  const addr = [row.StreetNumber, row.StreetName].filter(Boolean).join(' ')
-                  return (
-                    <TableRow key={key} className="border-b border-border">
-                      <TableCell className="px-4 py-2">{addr || '—'}</TableCell>
-                      <TableCell className="px-4 py-2">{row.City ?? '—'}</TableCell>
-                      <TableCell className="px-4 py-2">{row.ListPrice != null ? `$${Number(row.ListPrice).toLocaleString()}` : '—'}</TableCell>
-                      <TableCell className="px-4 py-2">{row.BedroomsTotal ?? '—'}</TableCell>
-                      <TableCell className="px-4 py-2">{row.BathroomsTotal ?? '—'}</TableCell>
-                      <TableCell className="px-4 py-2">
-                        <a
-                          href={listingDetailPath(
-                            key,
-                            { streetNumber: row.StreetNumber ?? null, streetName: row.StreetName ?? null, city: row.City ?? null, state: row.State ?? null, postalCode: row.PostalCode ?? null },
-                            { city: row.City ?? null, subdivision: row.SubdivisionName ?? null }
-                          )}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground underline hover:no-underline"
-                        >
-                          {key}
-                        </a>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
+                {preview.map((row) => (
+                  <TableRow key={rowKey(row)}>
+                    <TableCell className="font-medium text-foreground">{rowAddress(row)}</TableCell>
+                    <TableCell className="text-muted-foreground">{row.City ?? '—'}</TableCell>
+                    <TableCell className="tabular-nums text-foreground">{formatPrice(row.ListPrice)}</TableCell>
+                    <TableCell className="tabular-nums text-muted-foreground">{row.BedroomsTotal ?? '—'}</TableCell>
+                    <TableCell className="tabular-nums text-muted-foreground">{row.BathroomsTotal ?? '—'}</TableCell>
+                    <TableCell>
+                      <a
+                        href={rowHref(row)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-foreground underline-offset-4 hover:underline"
+                      >
+                        View →
+                      </a>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
-            {result.listings.length > 50 && (
-              <p className="px-4 py-2 text-xs text-muted-foreground">Showing first 50 rows. Use Download CSV for full set.</p>
-            )}
           </div>
+
+          {remaining > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Showing the first {PREVIEW_ROWS} of {result.listings.length}. Download the CSV for the full set.
+            </p>
+          )}
         </div>
       )}
-    </>
+    </div>
   )
 }

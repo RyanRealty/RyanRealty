@@ -21,9 +21,10 @@ export default function SeedResortButton() {
   return (
     <Button
       type="button"
+      variant="outline"
       onClick={handleClick}
       disabled={pending}
-      className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
+      className="h-11 shrink-0"
     >
       {pending ? 'Seeding…' : 'Seed from default list'}
     </Button>

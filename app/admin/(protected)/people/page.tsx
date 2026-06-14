@@ -23,6 +23,8 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { UserMultipleIcon, SearchRemoveIcon } from '@hugeicons/core-free-icons'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
@@ -30,6 +32,19 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
+
+// How many people we show per page on the people index. The merge/sort/filter
+// pipeline below stays untouched — this is a presentational cap so the screen
+// never renders an unbounded wall of rows (admin design standard, Law 1).
+const PAGE_SIZE = 25
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -107,17 +122,31 @@ function normalizeParams(sp: SearchParams): Record<string, string | undefined> {
   return out
 }
 
-// Build the query string that toggles a single filter on/off.
+// Build the query string that toggles a single filter on/off. Changing any
+// filter resets pagination back to page 1.
 function toggleParam(current: Record<string, string | undefined>, key: string, value: string): string {
   const next = { ...current }
   if (next[key] === value) delete next[key]
   else next[key] = value
+  delete next.page
   const params = new URLSearchParams()
   for (const [k, v] of Object.entries(next)) {
     if (v) params.set(k, v)
   }
   const qs = params.toString()
   return qs ? `?${qs}` : ''
+}
+
+// Build the query string for a pagination link — keeps every active filter,
+// just swaps the page number.
+function pageHref(current: Record<string, string | undefined>, page: number): string {
+  const params = new URLSearchParams()
+  for (const [k, v] of Object.entries(current)) {
+    if (v && k !== 'page') params.set(k, v)
+  }
+  if (page > 1) params.set('page', String(page))
+  const qs = params.toString()
+  return `/admin/people${qs ? `?${qs}` : ''}`
 }
 
 // ─── Content ──────────────────────────────────────────────────────────────
@@ -252,6 +281,18 @@ async function PeopleIndexContent({ params }: { params: Record<string, string | 
   const totalHot = people.filter((p) => p.hotFiredAt).length
   const totalActiveNow = Array.from(merged.values()).filter((p) => p.lastSeenAt && Date.now() - new Date(p.lastSeenAt).getTime() <= 30 * 60 * 1000).length
 
+  // 7. Paginate the (already filtered + sorted) set so the screen never renders
+  //    an unbounded wall of rows. Pure presentational slicing — the data
+  //    pipeline above is unchanged.
+  const matchCount = people.length
+  const totalPages = Math.max(1, Math.ceil(matchCount / PAGE_SIZE))
+  const currentPage = Math.min(Math.max(1, parseInt(params.page ?? '1', 10) || 1), totalPages)
+  const pageStart = (currentPage - 1) * PAGE_SIZE
+  const pagePeople = people.slice(pageStart, pageStart + PAGE_SIZE)
+  const filtersActive = Boolean(
+    params.q || params.audience || params.broker || params.tier || params.source || params.activity,
+  )
+
   const errorBanner = assignmentsError ? (
     <Card>
       <CardContent className="p-4 text-sm text-destructive">Failed to load assignments: {assignmentsError.message}</CardContent>
@@ -289,9 +330,10 @@ async function PeopleIndexContent({ params }: { params: Record<string, string | 
         </CardHeader>
         <CardContent className="space-y-4">
           <form className="flex flex-wrap items-end gap-2" method="get">
-            {/* Preserve every non-q param when submitting the search form. */}
+            {/* Preserve every active filter when submitting the search form,
+                but reset pagination (a new search starts on page 1). */}
             {Object.entries(params)
-              .filter(([k]) => k !== 'q')
+              .filter(([k]) => k !== 'q' && k !== 'page')
               .filter(([, v]) => Boolean(v))
               .map(([k, v]) => (
                 <Input key={k} type="hidden" name={k} value={v!} readOnly />
@@ -319,23 +361,44 @@ async function PeopleIndexContent({ params }: { params: Record<string, string | 
       {/* People table */}
       <Card>
         <CardHeader>
-          <CardTitle>People ({formatInt(people.length)})</CardTitle>
+          <CardTitle>People ({formatInt(matchCount)})</CardTitle>
           <p className="text-xs text-muted-foreground">
-            Hot leads first, then most-recent activity. Click any row for the full person profile.
+            {matchCount === 0
+              ? 'Hot leads first, then most-recent activity. Tap any person for the full profile.'
+              : `Showing ${formatInt(pageStart + 1)}–${formatInt(pageStart + pagePeople.length)}. Hot leads first, then most-recent activity. Tap any person for the full profile.`}
           </p>
         </CardHeader>
         <CardContent>
-          {people.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No people match these filters. Clear filters or widen the search.</p>
+          {matchCount === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                <HugeiconsIcon icon={filtersActive ? SearchRemoveIcon : UserMultipleIcon} size={24} strokeWidth={1.5} />
+              </span>
+              <div className="space-y-1">
+                <p className="text-base font-medium text-foreground">
+                  {filtersActive ? 'No people match these filters' : 'No people yet'}
+                </p>
+                <p className="mx-auto max-w-xs text-sm text-muted-foreground">
+                  {filtersActive
+                    ? 'Try a broader search or clear a filter to widen the results.'
+                    : 'People appear here once they are assigned to a broker or identified on the site in the last 90 days.'}
+                </p>
+              </div>
+              {filtersActive ? (
+                <Button asChild variant="outline" className="min-h-11">
+                  <Link href="/admin/people">Clear all filters</Link>
+                </Button>
+              ) : null}
+            </div>
           ) : (
             <>
               {/* People cards — phones (one thumb-tap per person) */}
               <div className="space-y-2 md:hidden">
-                {people.map((p) => (
+                {pagePeople.map((p) => (
                   <Link
                     key={p.fubPersonId}
                     href={`/admin/people/${p.fubPersonId}`}
-                    className="block rounded-lg border border-border bg-card p-3 transition-colors hover:bg-muted/50"
+                    className="block min-h-11 rounded-lg border border-border bg-card p-3 transition-colors hover:bg-muted/50"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex min-w-0 items-center gap-2">
@@ -376,7 +439,7 @@ async function PeopleIndexContent({ params }: { params: Record<string, string | 
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {people.map((p) => (
+                    {pagePeople.map((p) => (
                       <TableRow key={p.fubPersonId}>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -403,12 +466,57 @@ async function PeopleIndexContent({ params }: { params: Record<string, string | 
                   </TableBody>
                 </Table>
               </div>
+
+              {totalPages > 1 ? (
+                <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
+                  <p className="text-xs text-muted-foreground tabular-nums">
+                    Page {currentPage} of {totalPages}
+                  </p>
+                  <Pagination className="mx-0 w-auto">
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          href={pageHref(params, Math.max(1, currentPage - 1))}
+                          aria-disabled={currentPage <= 1}
+                          className={currentPage <= 1 ? 'pointer-events-none opacity-50' : undefined}
+                        />
+                      </PaginationItem>
+                      {pageWindow(currentPage, totalPages).map((p) => (
+                        <PaginationItem key={p} className="hidden sm:list-item">
+                          <PaginationLink href={pageHref(params, p)} isActive={p === currentPage}>
+                            {p}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext
+                          href={pageHref(params, Math.min(totalPages, currentPage + 1))}
+                          aria-disabled={currentPage >= totalPages}
+                          className={currentPage >= totalPages ? 'pointer-events-none opacity-50' : undefined}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              ) : null}
             </>
           )}
         </CardContent>
       </Card>
     </div>
   )
+}
+
+// A compact window of page numbers around the current page (max 5), so the
+// pagination control stays inside 390px without wrapping.
+function pageWindow(current: number, total: number): number[] {
+  const span = 5
+  let start = Math.max(1, current - Math.floor(span / 2))
+  const end = Math.min(total, start + span - 1)
+  start = Math.max(1, end - span + 1)
+  const out: number[] = []
+  for (let p = start; p <= end; p++) out.push(p)
+  return out
 }
 
 function FacetRow({
@@ -426,23 +534,23 @@ function FacetRow({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="w-20 text-xs font-medium text-muted-foreground">{label}</span>
-      <div className="flex flex-wrap gap-1">
+      <span className="w-20 shrink-0 text-xs font-medium text-muted-foreground">{label}</span>
+      <div className="flex flex-wrap gap-1.5">
         {options.map((opt) => {
           const active = current === opt
           const href = `/admin/people${toggleParam(allParams, paramKey, opt)}`
           return (
-            <Link
+            <Button
               key={opt}
-              href={href}
-              className={
-                active
-                  ? 'inline-flex items-center rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground'
-                  : 'inline-flex items-center rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-foreground hover:bg-muted'
-              }
+              asChild
+              size="sm"
+              variant={active ? 'default' : 'outline'}
+              className="h-8 rounded-full px-3 text-xs"
             >
-              {opt}
-            </Link>
+              <Link href={href} aria-pressed={active}>
+                {opt}
+              </Link>
+            </Button>
           )
         })}
       </div>

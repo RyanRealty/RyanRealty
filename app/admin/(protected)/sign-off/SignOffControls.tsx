@@ -25,11 +25,20 @@ export function SignOffControls({ itemId }: { itemId: string }) {
   }
 
   return (
-    <div className="flex shrink-0 gap-2">
-      <Button size="sm" disabled={pending} onClick={signOff} className="bg-success text-success-foreground hover:bg-success/90">
-        {pending ? '…' : 'Review & sign off'}
+    <div className="flex w-full shrink-0 gap-2 sm:w-auto">
+      <Button
+        disabled={pending}
+        onClick={signOff}
+        className="h-11 flex-1 bg-success text-success-foreground hover:bg-success/90 sm:h-8 sm:flex-none"
+      >
+        {pending ? '…' : 'Sign off'}
       </Button>
-      <Button size="sm" variant="outline" disabled={pending} onClick={sendBack}>
+      <Button
+        variant="outline"
+        disabled={pending}
+        onClick={sendBack}
+        className="h-11 flex-1 sm:h-8 sm:flex-none"
+      >
         Send back
       </Button>
     </div>

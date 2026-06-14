@@ -18,7 +18,7 @@ export default async function AdminUsersPage() {
     <main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6">
       <h1 className="text-2xl font-bold text-foreground">Users</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Manage who can access the admin and their role. Sign in is via Google. Add a user by email and assign a role; they must sign in with that Google account to access.
+        Manage admin access by role, and review registered site users. Sign in is via Google.
       </p>
       <AdminUsersList initialRoles={initialRoles} brokers={brokers} users={users} />
     </main>

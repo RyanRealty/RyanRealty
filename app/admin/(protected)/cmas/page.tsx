@@ -1,14 +1,51 @@
+/**
+ * /admin/cmas — index of every Comparative Market Analysis the shop has built.
+ *
+ * Filters via URL search params (each is a single tap in the facets card):
+ *   ?status=draft|finalized|delivered|archived
+ *   ?q=<address / client / subdivision substring>
+ *   ?page=<n>
+ *
+ * The data pipeline (listCmasForAdmin) is untouched. Status filtering, search,
+ * and pagination are pure presentational slicing in the page so the screen
+ * never renders an unbounded wall of rows (admin design standard, Law 1).
+ */
+
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Files01Icon, SearchRemoveIcon } from '@hugeicons/core-free-icons'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import { createServiceClient } from '@/lib/supabase/service'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
 
 export const dynamic = 'force-dynamic'
+
+// How many CMAs we show per page. Presentational cap so the screen never
+// renders an unbounded wall of rows (admin design standard, Law 1).
+const PAGE_SIZE = 20
+
+// Upper bound on the recent window we pull from the DAL. Wide enough to cover
+// every CMA the shop has realistically produced, bounded so the page never
+// fetches the whole table into the DOM.
+const WINDOW = 500
+
+const STATUS_OPTIONS = ['draft', 'finalized', 'delivered', 'archived'] as const
 
 interface CmaRow {
   id: string
@@ -26,6 +63,12 @@ interface CmaRow {
   finalized_at: string | null
   html_path: string
   asset_available: boolean
+}
+
+type SearchParams = Record<string, string | string[] | undefined>
+
+function formatInt(n: number): string {
+  return new Intl.NumberFormat('en-US').format(n)
 }
 
 function formatPrice(n: number | null): string {
@@ -52,147 +95,218 @@ function statusVariant(status: CmaRow['status']) {
   }
 }
 
-export default async function AdminCmasPage() {
-  const session = await getSession()
-  const adminRole = await getAdminRoleForEmail(session?.user?.email ?? null)
-  if (!adminRole) redirect('/admin/access-denied')
-  if (adminRole.role === 'report_viewer') redirect('/admin/access-denied')
+function normalizeParams(sp: SearchParams): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = {}
+  for (const [k, v] of Object.entries(sp)) {
+    out[k] = Array.isArray(v) ? v[0] : v
+  }
+  return out
+}
 
-  void createServiceClient
+// Toggle a single facet on/off; changing a facet resets pagination to page 1.
+function toggleParam(current: Record<string, string | undefined>, key: string, value: string): string {
+  const next = { ...current }
+  if (next[key] === value) delete next[key]
+  else next[key] = value
+  delete next.page
+  const params = new URLSearchParams()
+  for (const [k, v] of Object.entries(next)) {
+    if (v) params.set(k, v)
+  }
+  const qs = params.toString()
+  return qs ? `?${qs}` : ''
+}
+
+// Pagination link — keeps every active filter, swaps the page number.
+function pageHref(current: Record<string, string | undefined>, page: number): string {
+  const params = new URLSearchParams()
+  for (const [k, v] of Object.entries(current)) {
+    if (v && k !== 'page') params.set(k, v)
+  }
+  if (page > 1) params.set('page', String(page))
+  const qs = params.toString()
+  return `/admin/cmas${qs ? `?${qs}` : ''}`
+}
+
+// A compact window of page numbers around the current page (max 5), so the
+// pagination control stays inside 390px without wrapping.
+function pageWindow(current: number, total: number): number[] {
+  const span = 5
+  let start = Math.max(1, current - Math.floor(span / 2))
+  const end = Math.min(total, start + span - 1)
+  start = Math.max(1, end - span + 1)
+  const out: number[] = []
+  for (let p = start; p <= end; p++) out.push(p)
+  return out
+}
+
+async function CmasContent({ params }: { params: Record<string, string | undefined> }) {
   const { listCmasForAdmin } = await import('@/lib/data')
-  const { rows: rawRows } = await listCmasForAdmin({ limit: 5000, offset: 0 })
-  const rows = rawRows as unknown as CmaRow[]
-  const error: { message: string } | null = null
+  const { rows: rawRows, total } = await listCmasForAdmin({ limit: WINDOW, offset: 0 })
+  const allRows = rawRows as unknown as CmaRow[]
+
+  // Summary counts (across the full window, before status/search filtering).
+  const counts = {
+    total,
+    draft: allRows.filter((r) => r.status === 'draft').length,
+    finalized: allRows.filter((r) => r.status === 'finalized').length,
+    delivered: allRows.filter((r) => r.status === 'delivered').length,
+  }
+
+  // Status facet + free-text search (presentational, DAL untouched).
+  const q = (params.q ?? '').trim().toLowerCase()
+  let rows = allRows
+  if (params.status) rows = rows.filter((r) => r.status === params.status)
+  if (q) {
+    rows = rows.filter((r) =>
+      [r.subject_address, r.subject_subdivision, r.client_name, r.broker_slug]
+        .filter((v): v is string => Boolean(v))
+        .some((v) => v.toLowerCase().includes(q)),
+    )
+  }
+
+  const matchCount = rows.length
+  const totalPages = Math.max(1, Math.ceil(matchCount / PAGE_SIZE))
+  const currentPage = Math.min(Math.max(1, parseInt(params.page ?? '1', 10) || 1), totalPages)
+  const pageStart = (currentPage - 1) * PAGE_SIZE
+  const pageRows = rows.slice(pageStart, pageStart + PAGE_SIZE)
+  const filtersActive = Boolean(params.q || params.status)
 
   return (
-    <main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-foreground">Comparative Market Analyses</h1>
-      </div>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Every CMA we&apos;ve built — drafts in progress and finalized deliverables. Click a row to open the PDF.
-        New CMAs are created by the brain producer at <code className="rounded bg-muted px-1.5 py-0.5 text-xs">marketing_brain_skills/producers/cma/</code>.
-      </p>
-
-      {error ? (
-        <div className="mt-6 rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
-          Failed to load CMAs
-        </div>
-      ) : null}
-
-      {/* CMA cards — phones (one thumb-tap per CMA) */}
-      <div className="mt-6 space-y-2 md:hidden">
-        {rows.length === 0 ? (
-          <Card>
-            <CardContent className="py-10 text-center text-sm text-muted-foreground">No CMAs yet.</CardContent>
-          </Card>
-        ) : (
-          rows.map((cma) => (
-            <Card key={cma.id} className="transition-colors hover:bg-muted/50">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold text-foreground">{cma.subject_address}</div>
-                    {cma.subject_subdivision ? (
-                      <div className="truncate text-xs text-muted-foreground">{cma.subject_subdivision}</div>
-                    ) : null}
-                  </div>
-                  <Badge variant={statusVariant(cma.status)} className="shrink-0">{cma.status}</Badge>
-                </div>
-                <div className="mt-2 flex items-baseline justify-between gap-2 text-sm">
-                  <span className="text-muted-foreground">Rec. list</span>
-                  <span className="font-semibold tabular-nums text-foreground">{formatPrice(cma.recommended_list)}</span>
-                </div>
-                <div className="mt-1 flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
-                  <span>Range</span>
-                  <span className="tabular-nums">{formatPrice(cma.value_low)} – {formatPrice(cma.value_high)}</span>
-                </div>
-                <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                  <span className="truncate">{cma.client_name ?? '—'}{cma.broker_slug ? ` · ${cma.broker_slug}` : ''}</span>
-                  <span className="shrink-0 tabular-nums">{formatDate(cma.created_at)}</span>
-                </div>
-                {cma.asset_available ? (
-                  <div className="mt-3 flex gap-2">
-                    <Button asChild size="sm" variant="outline" className="h-10 flex-1">
-                      <Link href={`/api/cma/${cma.slug}/pdf`} target="_blank" rel="noopener noreferrer">
-                        PDF
-                      </Link>
-                    </Button>
-                    <Button asChild size="sm" variant="ghost" className="h-10 flex-1">
-                      <Link
-                        href={cma.status === 'finalized' ? `/cmas/${cma.slug}/cma.html` : `/drafts/${cma.slug}/cma.html`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        HTML
-                      </Link>
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="mt-3 text-xs text-muted-foreground">Document not available</div>
-                )}
-              </CardContent>
-            </Card>
-          ))
-        )}
+    <div className="space-y-6">
+      {/* Glanceable summary */}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <StatCard label="Total CMAs" value={counts.total} hint="all time" />
+        <StatCard label="Drafts" value={counts.draft} hint="in progress" />
+        <StatCard label="Finalized" value={counts.finalized} hint="ready to send" tone="text-primary" />
+        <StatCard label="Delivered" value={counts.delivered} hint="sent to client" />
       </div>
 
-      {/* CMA table — desktop */}
-      <div className="mt-6 hidden overflow-hidden rounded-lg border border-border bg-card md:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Subject</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead>Broker</TableHead>
-              <TableHead className="text-right">Rec. List</TableHead>
-              <TableHead className="text-right">Range</TableHead>
-              <TableHead className="text-right">Comps</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead>Finalized</TableHead>
-              <TableHead className="text-right">Open</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={10} className="text-center text-sm text-muted-foreground">
-                  No CMAs yet.
-                </TableCell>
-              </TableRow>
-            ) : (
-              rows.map((cma) => (
-                <TableRow key={cma.id}>
-                  <TableCell>
-                    <div className="font-medium">{cma.subject_address}</div>
-                    {cma.subject_subdivision ? (
-                      <div className="text-xs text-muted-foreground">{cma.subject_subdivision}</div>
-                    ) : null}
-                  </TableCell>
-                  <TableCell className="text-sm">{cma.client_name ?? '—'}</TableCell>
-                  <TableCell className="text-sm">{cma.broker_slug ?? '—'}</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatPrice(cma.recommended_list)}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums text-xs text-muted-foreground">
-                    {formatPrice(cma.value_low)} – {formatPrice(cma.value_high)}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{cma.comps_count ?? '—'}</TableCell>
-                  <TableCell>
-                    <Badge variant={statusVariant(cma.status)}>{cma.status}</Badge>
-                  </TableCell>
-                  <TableCell className="text-sm">{formatDate(cma.created_at)}</TableCell>
-                  <TableCell className="text-sm">{formatDate(cma.finalized_at)}</TableCell>
-                  <TableCell className="text-right">
+      {/* Search + status facets */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <form className="flex flex-wrap items-end gap-2" method="get">
+            {Object.entries(params)
+              .filter(([k]) => k !== 'q' && k !== 'page')
+              .filter(([, v]) => Boolean(v))
+              .map(([k, v]) => (
+                <Input key={k} type="hidden" name={k} value={v!} readOnly />
+              ))}
+            <div className="min-w-[200px] flex-1">
+              <Label htmlFor="q" className="text-xs font-medium text-muted-foreground">
+                Address, client, or subdivision
+              </Label>
+              <Input id="q" name="q" defaultValue={params.q ?? ''} placeholder="20889 SE Caldera Dr" />
+            </div>
+            <Button type="submit" className="min-h-11">Search</Button>
+            {filtersActive ? (
+              <Button asChild variant="outline" className="min-h-11">
+                <Link href="/admin/cmas">Clear all</Link>
+              </Button>
+            ) : null}
+          </form>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="w-16 shrink-0 text-xs font-medium text-muted-foreground">Status</span>
+            <div className="flex flex-wrap gap-1.5">
+              {STATUS_OPTIONS.map((opt) => {
+                const active = params.status === opt
+                return (
+                  <Button
+                    key={opt}
+                    asChild
+                    size="sm"
+                    variant={active ? 'default' : 'outline'}
+                    className="h-8 rounded-full px-3 text-xs capitalize"
+                  >
+                    <Link href={`/admin/cmas${toggleParam(params, 'status', opt)}`} aria-pressed={active}>
+                      {opt}
+                    </Link>
+                  </Button>
+                )
+              })}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* CMA list */}
+      <Card>
+        <CardHeader>
+          <CardTitle>CMAs ({formatInt(matchCount)})</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            {matchCount === 0
+              ? 'Newest first. Tap a CMA to open its PDF or HTML.'
+              : `Showing ${formatInt(pageStart + 1)}–${formatInt(pageStart + pageRows.length)}. Newest first. Tap a CMA to open its PDF or HTML.`}
+          </p>
+        </CardHeader>
+        <CardContent>
+          {matchCount === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                <HugeiconsIcon icon={filtersActive ? SearchRemoveIcon : Files01Icon} size={24} strokeWidth={1.5} />
+              </span>
+              <div className="space-y-1">
+                <p className="text-base font-medium text-foreground">
+                  {filtersActive ? 'No CMAs match these filters' : 'No CMAs yet'}
+                </p>
+                <p className="mx-auto max-w-xs text-sm text-muted-foreground">
+                  {filtersActive
+                    ? 'Try a broader search or clear a filter to widen the results.'
+                    : 'CMAs appear here once the brain producer builds one. Ask for a CMA on any property to get started.'}
+                </p>
+              </div>
+              {filtersActive ? (
+                <Button asChild variant="outline" className="min-h-11">
+                  <Link href="/admin/cmas">Clear all filters</Link>
+                </Button>
+              ) : null}
+            </div>
+          ) : (
+            <>
+              {/* CMA cards — phones (one thumb-tap per CMA) */}
+              <div className="space-y-2 md:hidden">
+                {pageRows.map((cma) => (
+                  <div key={cma.id} className="rounded-lg border border-border bg-card p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold text-foreground">{cma.subject_address}</div>
+                        {cma.subject_subdivision ? (
+                          <div className="truncate text-xs text-muted-foreground">{cma.subject_subdivision}</div>
+                        ) : null}
+                      </div>
+                      <Badge variant={statusVariant(cma.status)} className="shrink-0 capitalize">
+                        {cma.status}
+                      </Badge>
+                    </div>
+                    <div className="mt-3 flex items-baseline justify-between gap-2 text-sm">
+                      <span className="text-muted-foreground">Rec. list</span>
+                      <span className="font-semibold tabular-nums text-foreground">{formatPrice(cma.recommended_list)}</span>
+                    </div>
+                    <div className="mt-1 flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
+                      <span>Range</span>
+                      <span className="tabular-nums">
+                        {formatPrice(cma.value_low)} – {formatPrice(cma.value_high)}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                      <span className="truncate">
+                        {cma.client_name ?? '—'}
+                        {cma.broker_slug ? ` · ${cma.broker_slug}` : ''}
+                      </span>
+                      <span className="shrink-0 tabular-nums">{formatDate(cma.created_at)}</span>
+                    </div>
                     {cma.asset_available ? (
-                      <div className="flex justify-end gap-2">
-                        <Button asChild size="sm" variant="outline">
+                      <div className="mt-3 flex gap-2">
+                        <Button asChild size="sm" variant="outline" className="h-11 flex-1">
                           <Link href={`/api/cma/${cma.slug}/pdf`} target="_blank" rel="noopener noreferrer">
                             PDF
                           </Link>
                         </Button>
-                        <Button asChild size="sm" variant="ghost">
+                        <Button asChild size="sm" variant="ghost" className="h-11 flex-1">
                           <Link
                             href={cma.status === 'finalized' ? `/cmas/${cma.slug}/cma.html` : `/drafts/${cma.slug}/cma.html`}
                             target="_blank"
@@ -203,15 +317,165 @@ export default async function AdminCmasPage() {
                         </Button>
                       </div>
                     ) : (
-                      <span className="text-xs text-muted-foreground">Not available</span>
+                      <div className="mt-3 text-xs text-muted-foreground">Document not available</div>
                     )}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-    </main>
+                  </div>
+                ))}
+              </div>
+
+              {/* CMA table — desktop */}
+              <div className="hidden overflow-hidden rounded-lg border border-border md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Broker</TableHead>
+                      <TableHead className="text-right">Rec. List</TableHead>
+                      <TableHead className="text-right">Range</TableHead>
+                      <TableHead className="text-right">Comps</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead>Finalized</TableHead>
+                      <TableHead className="text-right">Open</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pageRows.map((cma) => (
+                      <TableRow key={cma.id}>
+                        <TableCell>
+                          <div className="font-medium">{cma.subject_address}</div>
+                          {cma.subject_subdivision ? (
+                            <div className="text-xs text-muted-foreground">{cma.subject_subdivision}</div>
+                          ) : null}
+                        </TableCell>
+                        <TableCell className="text-sm">{cma.client_name ?? '—'}</TableCell>
+                        <TableCell className="text-sm">{cma.broker_slug ?? '—'}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatPrice(cma.recommended_list)}</TableCell>
+                        <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
+                          {formatPrice(cma.value_low)} – {formatPrice(cma.value_high)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">{cma.comps_count ?? '—'}</TableCell>
+                        <TableCell>
+                          <Badge variant={statusVariant(cma.status)} className="capitalize">
+                            {cma.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">{formatDate(cma.created_at)}</TableCell>
+                        <TableCell className="text-sm">{formatDate(cma.finalized_at)}</TableCell>
+                        <TableCell className="text-right">
+                          {cma.asset_available ? (
+                            <div className="flex justify-end gap-2">
+                              <Button asChild size="sm" variant="outline">
+                                <Link href={`/api/cma/${cma.slug}/pdf`} target="_blank" rel="noopener noreferrer">
+                                  PDF
+                                </Link>
+                              </Button>
+                              <Button asChild size="sm" variant="ghost">
+                                <Link
+                                  href={cma.status === 'finalized' ? `/cmas/${cma.slug}/cma.html` : `/drafts/${cma.slug}/cma.html`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  HTML
+                                </Link>
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Not available</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {totalPages > 1 ? (
+                <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
+                  <p className="text-xs tabular-nums text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </p>
+                  <Pagination className="mx-0 w-auto">
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          href={pageHref(params, Math.max(1, currentPage - 1))}
+                          aria-disabled={currentPage <= 1}
+                          className={currentPage <= 1 ? 'pointer-events-none opacity-50' : undefined}
+                        />
+                      </PaginationItem>
+                      {pageWindow(currentPage, totalPages).map((p) => (
+                        <PaginationItem key={p} className="hidden sm:list-item">
+                          <PaginationLink href={pageHref(params, p)} isActive={p === currentPage}>
+                            {p}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext
+                          href={pageHref(params, Math.min(totalPages, currentPage + 1))}
+                          aria-disabled={currentPage >= totalPages}
+                          className={currentPage >= totalPages ? 'pointer-events-none opacity-50' : undefined}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              ) : null}
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function StatCard({
+  label,
+  value,
+  hint,
+  tone,
+}: {
+  label: string
+  value: number
+  hint: string
+  tone?: string
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className={`text-3xl font-semibold tabular-nums ${tone ?? 'text-foreground'}`}>{formatInt(value)}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+export default async function AdminCmasPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const session = await getSession()
+  const adminRole = await getAdminRoleForEmail(session?.user?.email ?? null)
+  if (!adminRole) redirect('/admin/access-denied')
+  if (adminRole.role === 'report_viewer') redirect('/admin/access-denied')
+
+  const sp = await searchParams
+  const params = normalizeParams(sp)
+
+  return (
+    <div className="space-y-6">
+      <header className="space-y-2">
+        <h1 className="text-2xl font-semibold text-foreground">Comparative Market Analyses</h1>
+        <p className="text-sm text-muted-foreground">
+          Every CMA the shop has built, drafts in progress and finalized deliverables. Tap a CMA to open its PDF or HTML.
+        </p>
+      </header>
+
+      <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+        <CmasContent params={params} />
+      </Suspense>
+    </div>
   )
 }

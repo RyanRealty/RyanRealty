@@ -1,6 +1,5 @@
 // @no-parity — internal admin tool (brokerage P&L, TC rung 12)
 import Link from 'next/link'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -10,29 +9,57 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import DashboardSummaryStrip, { type SummaryStat } from '@/components/admin/DashboardSummaryStrip'
 import { getTcFinancials } from '@/app/actions/tc-financials'
 import { TC_EXPENSE_CATEGORIES } from '@/lib/tc/expense-categories'
-import { AddExpense, ArchiveExpense } from './ExpenseControls'
+import { AddExpense } from './ExpenseControls'
+import { ExpenseLedger } from './ExpenseLedger'
 
 export const dynamic = 'force-dynamic'
 
 const money = (v: number | null | undefined) =>
   v == null ? '—' : `$${Math.round(v).toLocaleString('en-US')}`
-const d10 = (v: string | null | undefined) => (v ? String(v).slice(0, 10) : '—')
 const CATEGORY_LABEL = Object.fromEntries(TC_EXPENSE_CATEGORIES.map((c) => [c.value, c.label]))
 
 export default async function FinancialsPage() {
   const { years, expenses } = await getTcFinancials()
   const liveExpenses = expenses.filter((e) => !e.archived)
+  const current = years[0] // years come pre-sorted newest-first
+
+  const summary: SummaryStat[] = current
+    ? [
+        {
+          label: `Net · ${current.year}`,
+          value: money(current.net),
+          caption: 'brokerage retained minus expenses',
+          tone: current.net >= 0 ? 'success' : 'warning',
+        },
+        {
+          label: 'Brokerage retained',
+          value: money(current.brokerageRetained),
+          caption: `${current.closings} closing${current.closings === 1 ? '' : 's'}`,
+        },
+        {
+          label: 'Commission income',
+          value: money(current.gci),
+          caption: `agents ${money(current.agentShare)}`,
+        },
+        {
+          label: 'Expenses',
+          value: money(current.totalExpenses),
+          caption: `ads ${money(current.adsSpend)} · other ${money(current.manualExpenses)}`,
+        },
+      ]
+    : []
 
   return (
     <main className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-foreground">Financials</h1>
-          <p className="text-sm text-muted-foreground">
-            Revenue from settlement-verified commissions, expenses from the brokerage ledger, ad spend
-            pulled automatically from the ads ledger. Net = brokerage retained minus expenses.
+          <p className="max-w-prose text-sm text-muted-foreground">
+            Settlement-verified commissions and the brokerage expense ledger. Ad spend pulls live from
+            the ads ledger. Net = brokerage retained minus expenses.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -46,163 +73,96 @@ export default async function FinancialsPage() {
         </div>
       </header>
 
+      {/* Glanceable summary — the bottom-line numbers for the current year, no scroll */}
+      {summary.length ? <DashboardSummaryStrip stats={summary} /> : null}
+
       {/* P&L by year */}
-      <div className="rounded-lg border border-border bg-card">
-        <div className="px-4 py-2">
-          <p className="text-sm font-medium text-foreground">Profit & loss by year</p>
-        </div>
-        <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-20">Year</TableHead>
-                <TableHead className="w-24 text-right">Closings</TableHead>
-                <TableHead className="whitespace-nowrap text-right">Commission income</TableHead>
-                <TableHead className="whitespace-nowrap text-right">Agent share</TableHead>
-                <TableHead className="whitespace-nowrap text-right">Brokerage retained</TableHead>
-                <TableHead className="whitespace-nowrap text-right">Ad spend (auto)</TableHead>
-                <TableHead className="whitespace-nowrap text-right">Other expenses</TableHead>
-                <TableHead className="text-right">Net</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {years.map((y) => (
-                <TableRow key={y.year}>
-                  <TableCell className="font-medium tabular-nums">{y.year}</TableCell>
-                  <TableCell className="text-right tabular-nums">{y.closings}</TableCell>
-                  <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.gci)}</TableCell>
-                  <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.agentShare)}</TableCell>
-                  <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.brokerageRetained)}</TableCell>
-                  <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.adsSpend)}</TableCell>
-                  <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.manualExpenses)}</TableCell>
-                  <TableCell className="whitespace-nowrap text-right font-medium tabular-nums">{money(y.net)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        <p className="px-4 pb-3 text-xs text-muted-foreground">
-          Agent share includes owner compensation (Matt at 100% split). Ad spend reads live from the
-          marketing ads ledger so it is never double-entered here. Projected deals are excluded everywhere.
-        </p>
-      </div>
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium text-foreground">Profit &amp; loss by year</h2>
 
-      {/* Expense breakdown per year */}
-      {years.some((y) => y.manualExpenses > 0) ? (
-        <div className="grid gap-3 md:grid-cols-2">
-          {years
-            .filter((y) => y.manualExpenses > 0)
-            .map((y) => (
-              <Card key={y.year}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">{y.year} expenses by category</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-1">
-                  {Object.entries(y.expensesByCategory)
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([cat, amt]) => (
-                      <p key={cat} className="flex justify-between text-sm tabular-nums">
-                        <span className="text-muted-foreground">{CATEGORY_LABEL[cat] ?? cat}</span>
-                        <span className="text-foreground">{money(amt)}</span>
-                      </p>
-                    ))}
-                </CardContent>
-              </Card>
-            ))}
-        </div>
-      ) : null}
-
-      {/* Expense ledger */}
-      <div className="rounded-lg border border-border bg-card">
-        <div className="px-4 py-2">
-          <p className="text-sm font-medium text-foreground">
-            Expense ledger <span className="tabular-nums text-muted-foreground">({liveExpenses.length})</span>
-          </p>
-        </div>
-        {liveExpenses.length === 0 ? (
-          <p className="px-4 pb-4 text-sm text-muted-foreground">
-            No expenses recorded yet. Use &ldquo;Add expense&rdquo; to start the ledger — deal-scoped costs
-            (photography, signage, staging) or brokerage overhead (E&O, MLS dues, software).
-          </p>
+        {years.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center text-sm text-muted-foreground">
+              No closed deals on record yet. Verified commissions land here as transactions settle.
+            </CardContent>
+          </Card>
         ) : (
           <>
-            {/* Expense cards — phones (one tap per expense, key facts mirrored) */}
-            <div className="space-y-2 p-3 md:hidden">
-              {liveExpenses.map((e) => (
-                <div key={e.id} className="rounded-lg border border-border bg-background p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground" title={e.description}>
-                        {e.description}
-                      </p>
-                      <p className="mt-1 text-xs tabular-nums text-muted-foreground">{d10(e.incurred_on)}</p>
-                    </div>
-                    <span className="shrink-0 text-sm font-medium tabular-nums text-foreground">{money(e.amount)}</span>
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <Badge variant="secondary">{CATEGORY_LABEL[e.category] ?? e.category}</Badge>
-                    {e.deal_property_key ? (
-                      <Link
-                        href={`/admin/deals/${encodeURIComponent(e.deal_property_key)}`}
-                        className="truncate text-xs text-foreground underline-offset-2 hover:underline"
-                        title={e.deal_address ?? undefined}
+            {/* Per-year cards — phones (the wide table won't fit; lead with the bottom line) */}
+            <div className="space-y-3 md:hidden">
+              {years.map((y) => (
+                <Card key={y.year} size="sm">
+                  <CardHeader className="flex flex-row items-baseline justify-between gap-2 pb-2">
+                    <CardTitle className="text-base tabular-nums">{y.year}</CardTitle>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {y.closings} closing{y.closings === 1 ? '' : 's'}
+                    </span>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground">Net</span>
+                      <span
+                        className={
+                          'text-xl font-semibold tabular-nums ' +
+                          (y.net >= 0 ? 'text-success' : 'text-warning')
+                        }
                       >
-                        {e.deal_address ?? e.deal_property_key}
-                      </Link>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Overhead</span>
-                    )}
-                    {e.vendor ? <span className="truncate text-xs text-muted-foreground">{e.vendor}</span> : null}
-                  </div>
-                  <div className="mt-2 flex justify-end">
-                    <ArchiveExpense id={e.id} description={e.description} />
-                  </div>
-                </div>
+                        {money(y.net)}
+                      </span>
+                    </div>
+                    <dl className="space-y-1 border-t border-border pt-2 text-sm tabular-nums">
+                      <div className="flex justify-between gap-2">
+                        <dt className="text-muted-foreground">Commission income</dt>
+                        <dd className="text-foreground">{money(y.gci)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <dt className="text-muted-foreground">Agent share</dt>
+                        <dd className="text-foreground">{money(y.agentShare)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <dt className="text-muted-foreground">Brokerage retained</dt>
+                        <dd className="text-foreground">{money(y.brokerageRetained)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <dt className="text-muted-foreground">Ad spend (auto)</dt>
+                        <dd className="text-foreground">{money(y.adsSpend)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <dt className="text-muted-foreground">Other expenses</dt>
+                        <dd className="text-foreground">{money(y.manualExpenses)}</dd>
+                      </div>
+                    </dl>
+                  </CardContent>
+                </Card>
               ))}
             </div>
 
-            {/* Expense table — desktop */}
-            <div className="hidden md:block">
+            {/* Full P&L table — desktop (unchanged) */}
+            <div className="hidden rounded-lg border border-border bg-card md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-28">Date</TableHead>
-                    <TableHead className="w-44">Category</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="w-44">Deal</TableHead>
-                    <TableHead className="w-32">Vendor</TableHead>
-                    <TableHead className="w-24 text-right">Amount</TableHead>
-                    <TableHead className="w-24 text-right">Actions</TableHead>
+                    <TableHead className="w-20">Year</TableHead>
+                    <TableHead className="w-24 text-right">Closings</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Commission income</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Agent share</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Brokerage retained</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Ad spend (auto)</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Other expenses</TableHead>
+                    <TableHead className="text-right">Net</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {liveExpenses.map((e) => (
-                    <TableRow key={e.id}>
-                      <TableCell className="tabular-nums">{d10(e.incurred_on)}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{CATEGORY_LABEL[e.category] ?? e.category}</Badge>
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate" title={e.description}>
-                        {e.description}
-                      </TableCell>
-                      <TableCell className="max-w-[11rem] truncate">
-                        {e.deal_property_key ? (
-                          <Link
-                            href={`/admin/deals/${encodeURIComponent(e.deal_property_key)}`}
-                            className="text-foreground underline-offset-2 hover:underline"
-                            title={e.deal_address ?? undefined}
-                          >
-                            {e.deal_address ?? e.deal_property_key}
-                          </Link>
-                        ) : (
-                          <span className="text-muted-foreground">Overhead</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="truncate">{e.vendor ?? '—'}</TableCell>
-                      <TableCell className="text-right tabular-nums">{money(e.amount)}</TableCell>
-                      <TableCell className="text-right">
-                        <ArchiveExpense id={e.id} description={e.description} />
-                      </TableCell>
+                  {years.map((y) => (
+                    <TableRow key={y.year}>
+                      <TableCell className="font-medium tabular-nums">{y.year}</TableCell>
+                      <TableCell className="text-right tabular-nums">{y.closings}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.gci)}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.agentShare)}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.brokerageRetained)}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.adsSpend)}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.manualExpenses)}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right font-medium tabular-nums">{money(y.net)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -210,7 +170,54 @@ export default async function FinancialsPage() {
             </div>
           </>
         )}
-      </div>
+
+        <p className="max-w-prose text-xs text-muted-foreground">
+          Agent share includes owner compensation (Matt at 100% split). Ad spend reads live from the
+          marketing ads ledger so it is never double-entered here. Projected deals are excluded everywhere.
+        </p>
+      </section>
+
+      {/* Expense breakdown per year */}
+      {years.some((y) => y.manualExpenses > 0) ? (
+        <section className="space-y-3">
+          <h2 className="text-sm font-medium text-foreground">Expenses by category</h2>
+          <div className="grid gap-3 md:grid-cols-2">
+            {years
+              .filter((y) => y.manualExpenses > 0)
+              .map((y) => (
+                <Card key={y.year} size="sm">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">{y.year}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-1">
+                    {Object.entries(y.expensesByCategory)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([cat, amt]) => (
+                        <p key={cat} className="flex justify-between gap-2 text-sm tabular-nums">
+                          <span className="text-muted-foreground">{CATEGORY_LABEL[cat] ?? cat}</span>
+                          <span className="text-foreground">{money(amt)}</span>
+                        </p>
+                      ))}
+                  </CardContent>
+                </Card>
+              ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/* Expense ledger — capped, with "See all" */}
+      <ExpenseLedger
+        expenses={liveExpenses.map((e) => ({
+          id: e.id,
+          description: e.description,
+          incurredOn: e.incurred_on,
+          amount: e.amount,
+          categoryLabel: CATEGORY_LABEL[e.category] ?? e.category,
+          dealPropertyKey: e.deal_property_key,
+          dealAddress: e.deal_address,
+          vendor: e.vendor,
+        }))}
+      />
     </main>
   )
 }

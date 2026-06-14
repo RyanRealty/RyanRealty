@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -23,6 +24,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+
+const PAGE_SIZE = 6
 
 const SCOPE_LABELS: Record<AdminMediaScope, string> = {
   branding: 'Branding',
@@ -38,6 +41,13 @@ function formatFileSize(sizeBytes: number | null) {
   if (sizeBytes < 1024) return `${sizeBytes} B`
   if (sizeBytes < 1024 * 1024) return `${(sizeBytes / 1024).toFixed(1)} KB`
   return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function formatTotalSize(sizeBytes: number) {
+  if (sizeBytes <= 0) return '0 MB'
+  if (sizeBytes < 1024 * 1024) return `${(sizeBytes / 1024).toFixed(0)} KB`
+  if (sizeBytes < 1024 * 1024 * 1024) return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`
+  return `${(sizeBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
 }
 
 function formatDate(value: string | null) {
@@ -56,9 +66,22 @@ export default function AdminMediaManager() {
   const [message, setMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
   const [uploadPathPrefix, setUploadPathPrefix] = useState('')
   const [forceUnlinkOnDelete, setForceUnlinkOnDelete] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [isMutating, startTransition] = useTransition()
 
-  const scopedCountLabel = useMemo(() => `${assets.length.toLocaleString()} file(s)`, [assets.length])
+  const summary = useMemo(() => {
+    const total = assets.length
+    let linked = 0
+    let totalBytes = 0
+    for (const asset of assets) {
+      if (asset.usages.length > 0) linked += 1
+      if (asset.sizeBytes && asset.sizeBytes > 0) totalBytes += asset.sizeBytes
+    }
+    return { total, linked, unused: total - linked, totalBytes }
+  }, [assets])
+
+  const visibleAssets = useMemo(() => assets.slice(0, visibleCount), [assets, visibleCount])
+  const hasMore = assets.length > visibleAssets.length
 
   async function refreshData(activeScope: AdminMediaScope, activeSearch: string) {
     setLoading(true)
@@ -74,6 +97,7 @@ export default function AdminMediaManager() {
 
   useEffect(() => {
     let cancelled = false
+    setVisibleCount(PAGE_SIZE)
     listAdminMedia(scope, search).then((result) => {
       if (cancelled) return
       setLoading(false)
@@ -145,25 +169,62 @@ export default function AdminMediaManager() {
             </TabsList>
           </Tabs>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="md:col-span-2">
-              <Label htmlFor="media-search">Search in {SCOPE_LABELS[scope]}</Label>
-              <Input
-                id="media-search"
-                type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search by file path or usage label"
-                className="mt-2"
-              />
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-xl border border-border bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground">Files</p>
+              {loading ? (
+                <Skeleton className="mt-1 h-7 w-10" />
+              ) : (
+                <p className="text-2xl font-semibold tabular-nums text-foreground">{summary.total.toLocaleString()}</p>
+              )}
             </div>
-            <div>
-              <Label>Bucket</Label>
-              <div className="mt-2">
-                <Badge variant="secondary">{bucket || '—'}</Badge>
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">{scopedCountLabel}</p>
+            <div className="rounded-xl border border-border bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground">Linked</p>
+              {loading ? (
+                <Skeleton className="mt-1 h-7 w-10" />
+              ) : (
+                <p className="text-2xl font-semibold tabular-nums text-foreground">{summary.linked.toLocaleString()}</p>
+              )}
             </div>
+            <div className="rounded-xl border border-border bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground">Unused</p>
+              {loading ? (
+                <Skeleton className="mt-1 h-7 w-10" />
+              ) : (
+                <p
+                  className={
+                    summary.unused > 0
+                      ? 'text-2xl font-semibold tabular-nums text-warning'
+                      : 'text-2xl font-semibold tabular-nums text-foreground'
+                  }
+                >
+                  {summary.unused.toLocaleString()}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span>Bucket</span>
+            <Badge variant="secondary">{bucket || '—'}</Badge>
+            {!loading && summary.totalBytes > 0 && (
+              <>
+                <span aria-hidden>•</span>
+                <span className="tabular-nums">{formatTotalSize(summary.totalBytes)} total</span>
+              </>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="media-search">Search in {SCOPE_LABELS[scope]}</Label>
+            <Input
+              id="media-search"
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search by file path or usage label"
+              className="mt-2"
+            />
           </div>
 
           <form action={handleUpload} className="grid gap-3 rounded-lg border border-border p-4">
@@ -222,142 +283,186 @@ export default function AdminMediaManager() {
         <CardHeader>
           <CardTitle>Assets</CardTitle>
           <CardDescription>
-            {loading ? 'Loading assets…' : `${assets.length.toLocaleString()} result(s)`}
+            {loading
+              ? 'Loading assets…'
+              : assets.length === 0
+                ? `No files in ${SCOPE_LABELS[scope]}`
+                : hasMore
+                  ? `Showing ${visibleAssets.length} of ${assets.length.toLocaleString()}`
+                  : `${assets.length.toLocaleString()} file${assets.length === 1 ? '' : 's'}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Loading state */}
+          {loading && (
+            <div className="space-y-2">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="rounded-lg border border-border p-4">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="mt-2 h-3 w-1/2" />
+                  <div className="mt-3 flex gap-2">
+                    <Skeleton className="h-11 flex-1" />
+                    <Skeleton className="h-11 flex-1" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!loading && assets.length === 0 && (
+            <div className="flex flex-col items-center rounded-lg border border-dashed border-border px-6 py-10 text-center">
+              <p className="text-sm font-medium text-foreground">
+                {search ? 'No matches found' : `No media in ${SCOPE_LABELS[scope]} yet`}
+              </p>
+              <p className="mt-1 max-w-xs text-sm text-muted-foreground">
+                {search
+                  ? 'Try a different file path or usage label.'
+                  : 'Use the upload form above to add the first file to this bucket.'}
+              </p>
+            </div>
+          )}
+
           {/* Asset cards — phones (one tap-target per file) */}
-          <div className="space-y-2 md:hidden">
-            {!loading && assets.length === 0 && (
-              <p className="py-6 text-center text-sm text-muted-foreground">No media found for this scope.</p>
-            )}
-            {assets.map((asset) => (
-              <div
-                key={`${asset.bucket}:${asset.path}`}
-                className="rounded-lg border border-border bg-card p-4"
-              >
-                <div className="min-w-0 space-y-1">
-                  <p className="truncate text-sm font-medium text-foreground">{asset.name}</p>
-                  <p className="truncate text-xs text-muted-foreground">{asset.path}</p>
+          {!loading && assets.length > 0 && (
+            <div className="space-y-2 md:hidden">
+              {visibleAssets.map((asset) => (
+                <div
+                  key={`${asset.bucket}:${asset.path}`}
+                  className="rounded-lg border border-border bg-card p-4"
+                >
+                  <div className="min-w-0 space-y-1">
+                    <p className="truncate text-sm font-medium text-foreground">{asset.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">{asset.path}</p>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span className="tabular-nums">{formatFileSize(asset.sizeBytes)}</span>
+                    <span aria-hidden>•</span>
+                    <span className="tabular-nums">{formatDate(asset.updatedAt)}</span>
+                  </div>
+                  <div className="mt-2">
+                    {asset.usages.length === 0 ? (
+                      <Badge variant="outline">Unused</Badge>
+                    ) : (
+                      <div className="space-y-1">
+                        <Badge variant="secondary">{asset.usages.length} linked</Badge>
+                        <p className="text-xs text-muted-foreground">
+                          {asset.usages.slice(0, 2).map((usage) => usage.label).join(' • ')}
+                          {asset.usages.length > 2 ? ' • …' : ''}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-11 flex-1"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(asset.publicUrl)
+                        setMessage({ type: 'ok', text: 'Copied asset URL.' })
+                      }}
+                    >
+                      Copy URL
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="h-11 flex-1"
+                      onClick={() => handleDelete(asset)}
+                      disabled={isMutating}
+                    >
+                      Delete
+                    </Button>
+                  </div>
                 </div>
-                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span>{formatFileSize(asset.sizeBytes)}</span>
-                  <span aria-hidden>•</span>
-                  <span>{formatDate(asset.updatedAt)}</span>
-                </div>
-                <div className="mt-2">
-                  {asset.usages.length === 0 ? (
-                    <Badge variant="outline">Unused</Badge>
-                  ) : (
-                    <div className="space-y-1">
-                      <Badge variant="secondary">{asset.usages.length} linked</Badge>
-                      <p className="text-xs text-muted-foreground">
-                        {asset.usages.slice(0, 2).map((usage) => usage.label).join(' • ')}
-                        {asset.usages.length > 2 ? ' • …' : ''}
-                      </p>
-                    </div>
-                  )}
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-10 flex-1"
-                    onClick={async () => {
-                      await navigator.clipboard.writeText(asset.publicUrl)
-                      setMessage({ type: 'ok', text: 'Copied asset URL.' })
-                    }}
-                  >
-                    Copy URL
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="h-10 flex-1"
-                    onClick={() => handleDelete(asset)}
-                    disabled={isMutating}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Asset table — desktop */}
-          <div className="hidden overflow-hidden rounded-lg border border-border md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>File</TableHead>
-                  <TableHead>Size</TableHead>
-                  <TableHead>Updated</TableHead>
-                  <TableHead>Usage</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {!loading && assets.length === 0 && (
+          {!loading && assets.length > 0 && (
+            <div className="hidden overflow-hidden rounded-lg border border-border md:block">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={5} className="text-muted-foreground">
-                      No media found for this scope.
-                    </TableCell>
+                    <TableHead>File</TableHead>
+                    <TableHead>Size</TableHead>
+                    <TableHead>Updated</TableHead>
+                    <TableHead>Usage</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                )}
-                {assets.map((asset) => (
-                  <TableRow key={`${asset.bucket}:${asset.path}`}>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-foreground">{asset.name}</p>
-                        <p className="text-xs text-muted-foreground">{asset.path}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{formatFileSize(asset.sizeBytes)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{formatDate(asset.updatedAt)}</TableCell>
-                    <TableCell>
-                      {asset.usages.length === 0 ? (
-                        <Badge variant="outline">Unused</Badge>
-                      ) : (
+                </TableHeader>
+                <TableBody>
+                  {visibleAssets.map((asset) => (
+                    <TableRow key={`${asset.bucket}:${asset.path}`}>
+                      <TableCell>
                         <div className="space-y-1">
-                          <Badge variant="secondary">{asset.usages.length} linked</Badge>
-                          <p className="text-xs text-muted-foreground">
-                            {asset.usages.slice(0, 2).map((usage) => usage.label).join(' • ')}
-                            {asset.usages.length > 2 ? ' • …' : ''}
-                          </p>
+                          <p className="text-sm font-medium text-foreground">{asset.name}</p>
+                          <p className="text-xs text-muted-foreground">{asset.path}</p>
                         </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={async () => {
-                            await navigator.clipboard.writeText(asset.publicUrl)
-                            setMessage({ type: 'ok', text: 'Copied asset URL.' })
-                          }}
-                        >
-                          Copy URL
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDelete(asset)}
-                          disabled={isMutating}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                      </TableCell>
+                      <TableCell className="text-sm tabular-nums text-muted-foreground">{formatFileSize(asset.sizeBytes)}</TableCell>
+                      <TableCell className="text-sm tabular-nums text-muted-foreground">{formatDate(asset.updatedAt)}</TableCell>
+                      <TableCell>
+                        {asset.usages.length === 0 ? (
+                          <Badge variant="outline">Unused</Badge>
+                        ) : (
+                          <div className="space-y-1">
+                            <Badge variant="secondary">{asset.usages.length} linked</Badge>
+                            <p className="text-xs text-muted-foreground">
+                              {asset.usages.slice(0, 2).map((usage) => usage.label).join(' • ')}
+                              {asset.usages.length > 2 ? ' • …' : ''}
+                            </p>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              await navigator.clipboard.writeText(asset.publicUrl)
+                              setMessage({ type: 'ok', text: 'Copied asset URL.' })
+                            }}
+                          >
+                            Copy URL
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDelete(asset)}
+                            disabled={isMutating}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          {/* Show more — keeps the list from dumping every row at once */}
+          {!loading && hasMore && (
+            <div className="mt-4 flex justify-center">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 w-full sm:w-auto"
+                onClick={() => setVisibleCount((current) => current + PAGE_SIZE)}
+              >
+                Show more ({(assets.length - visibleAssets.length).toLocaleString()} more)
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -301,6 +301,9 @@ function statusFor(actual: number | null, target: number | null, inverted: boole
   return 'below_target'
 }
 
+// A single metric line. Mobile: label wraps on its own row, the value/trend/
+// target/status cluster wraps below it — never overflows 390px. md+: collapses
+// to one tidy row so the desktop reading stays unchanged.
 function Row({
   label, value, m, fmt, target, inverted = false, unit = '', note,
 }: {
@@ -316,21 +319,23 @@ function Row({
   const t = m ? trend(m, inverted) : null
   const status = target !== undefined ? statusFor(value, target ?? null, inverted) : 'no_target'
   return (
-    <div className="flex items-center justify-between gap-3 py-2">
-      <span className="min-w-0 flex-1 text-sm text-foreground">
+    <div className="flex flex-col gap-1 border-b border-border/60 py-2.5 last:border-b-0 md:flex-row md:items-center md:justify-between md:gap-3">
+      <span className="min-w-0 text-sm text-foreground md:flex-1">
         {label}
-        {note && <span className="ml-2 text-xs text-muted-foreground">{note}</span>}
+        {note && <span className="ml-2 block text-xs text-muted-foreground md:inline">{note}</span>}
       </span>
-      <div className="flex items-center gap-3 font-mono text-sm tabular-nums">
-        <span className="w-24 text-right font-medium">{value != null ? `${fmt(value)}${unit}` : '—'}</span>
-        <span className={`w-16 text-right text-xs ${t?.cls ?? 'text-muted-foreground'}`}>
+      <div className="flex shrink-0 items-center gap-3 font-mono text-sm tabular-nums">
+        <span className="min-w-[4.5rem] text-left font-semibold md:text-right">
+          {value != null ? `${fmt(value)}${unit}` : '—'}
+        </span>
+        <span className={`min-w-[3.5rem] text-left text-xs md:text-right ${t?.cls ?? 'text-muted-foreground'}`}>
           {t ? `${t.arrow} ${t.pct}` : ''}
         </span>
-        <span className="w-20 text-right text-xs text-muted-foreground">
+        <span className="hidden min-w-[4.5rem] text-right text-xs text-muted-foreground sm:inline">
           {target != null ? `tgt ${fmt(target)}${unit}` : ''}
         </span>
         {target !== undefined && (
-          <Badge variant={statusVariant(status)} className="w-20 justify-center">
+          <Badge variant={statusVariant(status)} className="ml-auto w-[4.5rem] shrink-0 justify-center md:ml-0">
             {statusLabel(status)}
           </Badge>
         )}
@@ -339,17 +344,63 @@ function Row({
   )
 }
 
+// One funnel stage. The numbered prefix in the title is rendered as a quiet
+// step chip so the funnel reads as an ordered flow, not eleven equal cards.
 function Panel({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+  const stepMatch = title.match(/^(\d+)\s*·\s*(.+)$/)
+  const step = stepMatch?.[1]
+  const heading = stepMatch?.[2] ?? title
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex items-baseline justify-between gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground">{title}</h2>
+    <Card className="overflow-hidden">
+      <CardHeader className="gap-1 pb-2">
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          {step && (
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-secondary text-[0.625rem] font-semibold text-secondary-foreground tabular-nums">
+              {step}
+            </span>
+          )}
+          <h2 className="text-sm font-semibold tracking-tight text-foreground">{heading}</h2>
           {subtitle && <span className="text-xs text-muted-foreground">{subtitle}</span>}
         </div>
-        <Separator className="mt-2" />
+        <Separator className="mt-1.5" />
       </CardHeader>
       <CardContent className="pt-0">{children}</CardContent>
+    </Card>
+  )
+}
+
+// Glanceable headline KPI — the few numbers a broker reads first. Stacks two-up
+// on mobile, four-up on desktop. Never overflows 390px.
+function HeadlineStat({
+  label, value, fmt, m, target, inverted = false, primary = false,
+}: {
+  label: string
+  value: number | null
+  fmt: (v: number) => string
+  m?: Series2
+  target?: number | null
+  inverted?: boolean
+  primary?: boolean
+}) {
+  const t = m ? trend(m, inverted) : null
+  const status = target != null ? statusFor(value, target, inverted) : null
+  return (
+    <Card className={primary ? 'border-primary/40 bg-primary/[0.03]' : undefined}>
+      <CardContent className="flex min-w-0 flex-col gap-1 p-3 sm:p-4">
+        <p className="truncate text-xs font-medium text-muted-foreground">{label}</p>
+        <p className={`font-mono font-bold tabular-nums tracking-tight text-foreground ${primary ? 'text-3xl' : 'text-2xl'}`}>
+          {value != null ? fmt(value) : '—'}
+        </p>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+          {t && <span className={`font-mono tabular-nums ${t.cls}`}>{t.arrow} {t.pct}</span>}
+          {target != null && <span className="text-muted-foreground">tgt {fmt(target)}</span>}
+          {status && (
+            <Badge variant={statusVariant(status)} className="ml-auto shrink-0">
+              {statusLabel(status)}
+            </Badge>
+          )}
+        </div>
+      </CardContent>
     </Card>
   )
 }
@@ -369,24 +420,46 @@ export default async function ResultsScoreboardPage() {
   const buyerStale = !buyerLatest || buyerLatest.date < D30
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Results scoreboard</h1>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold tracking-tight text-foreground">Results scoreboard</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Last 30 days vs prior 30 days{data?.quarter ? ` · targets from ${data.quarter} strategy` : ''}.
-            The honest funnel: get found → traffic → convert → leads → pipeline → close.
+            Last 30 days vs prior 30{data?.quarter ? ` · targets from ${data.quarter}` : ''}.
           </p>
         </div>
-        <div className="text-right text-xs text-muted-foreground font-mono">{TODAY}</div>
+        <div className="shrink-0 text-right font-mono text-xs text-muted-foreground tabular-nums">{TODAY}</div>
       </div>
 
       {fetchError && (
-        <div className="rounded-lg border border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive">{fetchError}</div>
+        <div className="rounded-xl border border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {fetchError}
+        </div>
       )}
 
       {data && (
-        <div className="space-y-4">
+        <div className="space-y-4 sm:space-y-6">
+          {/* Glanceable summary — the headline funnel numbers a broker reads first. */}
+          <section className="space-y-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">At a glance</h2>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <HeadlineStat
+                label="Qualified seller leads (30d)"
+                value={data.metrics.sellerLeads.cur}
+                m={data.metrics.sellerLeads}
+                fmt={fmtInt}
+                target={data.targets.northStar}
+                primary
+              />
+              <HeadlineStat label="Sessions (30d)" value={data.metrics.sessions.cur} m={data.metrics.sessions} fmt={fmtInt} />
+              <HeadlineStat label="Lead events (30d)" value={data.metrics.leadEvents.cur} m={data.metrics.leadEvents} fmt={fmtInt} />
+              <HeadlineStat label="Pipeline value" value={data.metrics.pipelineValue?.value ?? null} fmt={fmtUsd} />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              The honest funnel: get found → traffic → convert → leads → pipeline → close. Full detail below.
+            </p>
+          </section>
+
           <Panel title="North star — seller leads" subtitle="the number that matters">
             <Row
               label="Qualified seller leads (30d)"
@@ -426,9 +499,17 @@ export default async function ResultsScoreboardPage() {
                 captured forward from today (GA4&apos;s own AI channel has no backfill).
               </p>
             ) : (
-              data.metrics.aiEngines.map((e) => (
-                <Row key={e.engine} label={e.engine} value={e.sessions} fmt={fmtInt} />
-              ))
+              <>
+                {data.metrics.aiEngines.slice(0, 5).map((e) => (
+                  <Row key={e.engine} label={e.engine} value={e.sessions} fmt={fmtInt} />
+                ))}
+                {data.metrics.aiEngines.length > 5 && (
+                  <p className="pt-1 text-xs text-muted-foreground tabular-nums">
+                    +{data.metrics.aiEngines.length - 5} more engines (
+                    {fmtInt(data.metrics.aiEngines.slice(5).reduce((s, e) => s + e.sessions, 0))} sessions)
+                  </p>
+                )}
+              </>
             )}
           </Panel>
 

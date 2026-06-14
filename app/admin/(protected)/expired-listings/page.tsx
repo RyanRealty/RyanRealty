@@ -1,14 +1,18 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { listExpiredListings } from '@/app/actions/expired-listings'
 import { ExpiredListingsClient } from './ExpiredListingsClient'
-import { ExpiredListingRow } from './ExpiredListingRow'
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { ExpiredListingCard, ExpiredListingTableRow } from './ExpiredListingRow'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 export const dynamic = 'force-dynamic'
+
+const PAGE_SIZE = 25
 
 export default async function ExpiredListingsPage({
   searchParams,
@@ -23,92 +27,160 @@ export default async function ExpiredListingsPage({
 
   const { page, city } = await searchParams
   const pageNum = Math.max(0, parseInt(String(page), 10) || 0)
-  const pageSize = 50
   const { rows, total } = await listExpiredListings({
-    limit: pageSize,
-    offset: pageNum * pageSize,
+    limit: PAGE_SIZE,
+    offset: pageNum * PAGE_SIZE,
     city: city?.trim() || undefined,
   })
-  const totalPages = Math.ceil(total / pageSize)
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const withContact = rows.filter(
+    (r) => r.contact_phone || r.contact_email || r.contact_source,
+  ).length
+
+  const pageHref = (n: number) =>
+    `?page=${n}${city ? `&city=${encodeURIComponent(city)}` : ''}`
 
   return (
-    <main className="mx-auto max-w-[1600px]">
-      <h1 className="text-2xl font-bold text-foreground">Expired listings</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        All expired/withdrawn listings for prospecting. Use owner name (or list agent) + address to search online or on Facebook for phone and email, then save contact info below.
-      </p>
+    <main className="space-y-4 sm:space-y-6">
+      <header className="space-y-1">
+        <h1 className="text-2xl font-bold text-foreground">Expired listings</h1>
+        <p className="text-sm text-muted-foreground">
+          Expired and withdrawn listings for prospecting. Use the owner or list-agent name plus the
+          address to search online, then save the phone and email you find.
+        </p>
+      </header>
 
-      <div className="mt-4">
-        <ExpiredListingsClient />
+      {/* Glanceable summary — summary before detail */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <Card>
+          <CardContent className="space-y-0.5 p-4 tabular-nums">
+            <p className="text-2xl font-bold text-foreground">{total}</p>
+            <p className="text-xs text-muted-foreground">
+              {city ? `in ${city}` : 'total expired'}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="space-y-0.5 p-4 tabular-nums">
+            <p className="text-2xl font-bold text-success">{withContact}</p>
+            <p className="text-xs text-muted-foreground">contact found (this page)</p>
+          </CardContent>
+        </Card>
+        <Card className="col-span-2 sm:col-span-1">
+          <CardContent className="space-y-0.5 p-4 tabular-nums">
+            <p className="text-2xl font-bold text-foreground">
+              {pageNum + 1}
+              <span className="text-base font-normal text-muted-foreground"> / {totalPages}</span>
+            </p>
+            <p className="text-xs text-muted-foreground">page</p>
+          </CardContent>
+        </Card>
       </div>
 
-      <form method="get" className="mt-4 flex flex-wrap gap-2">
+      {/* Data refresh actions */}
+      <Card>
+        <CardContent className="p-4">
+          <ExpiredListingsClient />
+        </CardContent>
+      </Card>
+
+      {/* Filter */}
+      <form method="get" className="flex flex-col gap-2 sm:flex-row sm:max-w-md">
         <Input
           type="text"
           name="city"
           defaultValue={city}
           placeholder="Filter by city"
+          aria-label="Filter by city"
+          className="h-11"
         />
-        <Button type="submit" variant="outline">
+        <Button type="submit" variant="secondary" className="h-11 px-5">
           Filter
         </Button>
       </form>
 
-      <p className="mt-2 text-sm text-muted-foreground">
-        {total} total. Page {pageNum + 1} of {totalPages || 1}.
-      </p>
+      {rows.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-2 p-10 text-center">
+            <p className="text-base font-medium text-foreground">
+              {city ? `No expired listings in ${city}` : 'No expired listings yet'}
+            </p>
+            <p className="max-w-sm text-sm text-muted-foreground">
+              {city
+                ? 'Try a different city, or clear the filter to see every market.'
+                : 'Run “Backfill last 6 months from Spark” above to load historical data.'}
+            </p>
+            {city ? (
+              <Button asChild variant="secondary" className="mt-1 h-11 px-5">
+                <Link href="?">Clear filter</Link>
+              </Button>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Cards — phones */}
+          <div className="space-y-3 md:hidden">
+            {rows.map((row) => (
+              <ExpiredListingCard key={row.id} row={row} />
+            ))}
+          </div>
 
-      <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted">
-              <TableHead className="text-muted-foreground">Address</TableHead>
-              <TableHead className="text-muted-foreground">City</TableHead>
-              <TableHead className="text-muted-foreground">Owner name</TableHead>
-              <TableHead className="text-muted-foreground">List agent</TableHead>
-              <TableHead className="text-muted-foreground">List office</TableHead>
-              <TableHead className="text-muted-foreground">List price</TableHead>
-              <TableHead className="text-muted-foreground">DOM</TableHead>
-              <TableHead className="text-muted-foreground">Expired</TableHead>
-              <TableHead className="text-muted-foreground">Status</TableHead>
-              <TableHead className="text-muted-foreground">Contact / notes</TableHead>
-              <TableHead className="text-muted-foreground">Search / Edit</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={11} className="text-center text-muted-foreground py-6">
-                  No expired listings yet. Run &quot;Backfill last 6 months from Spark&quot; to load historical data.
-                </TableCell>
-              </TableRow>
-            ) : (
-              rows.map((row) => <ExpiredListingRow key={row.id} row={row} />)
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {totalPages > 1 && (
-        <nav className="mt-4 flex gap-2">
-          {pageNum > 0 && (
-            <a
-              href={`?page=${pageNum - 1}${city ? `&city=${encodeURIComponent(city)}` : ''}`}
-              className="rounded bg-border px-3 py-1 text-sm text-foreground hover:bg-border"
-            >
-              Previous
-            </a>
-          )}
-          {pageNum < totalPages - 1 && (
-            <a
-              href={`?page=${pageNum + 1}${city ? `&city=${encodeURIComponent(city)}` : ''}`}
-              className="rounded bg-border px-3 py-1 text-sm text-foreground hover:bg-border"
-            >
-              Next
-            </a>
-          )}
-        </nav>
+          {/* Table — desktop (unchanged dense view) */}
+          <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted">
+                  <TableHead className="text-muted-foreground">Address</TableHead>
+                  <TableHead className="text-muted-foreground">City</TableHead>
+                  <TableHead className="text-muted-foreground">Owner name</TableHead>
+                  <TableHead className="text-muted-foreground">List agent</TableHead>
+                  <TableHead className="text-muted-foreground">List office</TableHead>
+                  <TableHead className="text-muted-foreground">List price</TableHead>
+                  <TableHead className="text-muted-foreground">DOM</TableHead>
+                  <TableHead className="text-muted-foreground">Expired</TableHead>
+                  <TableHead className="text-muted-foreground">Status</TableHead>
+                  <TableHead className="text-muted-foreground">Contact / notes</TableHead>
+                  <TableHead className="text-muted-foreground">Search / Edit</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((row) => (
+                  <ExpiredListingTableRow key={row.id} row={row} />
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
+
+      {totalPages > 1 ? (
+        <nav className="flex items-center justify-between gap-3" aria-label="Pagination">
+          <Button
+            asChild={pageNum > 0}
+            variant="outline"
+            className="h-11 flex-1 sm:flex-none sm:px-6"
+            disabled={pageNum === 0}
+          >
+            {pageNum > 0 ? <Link href={pageHref(pageNum - 1)}>Previous</Link> : <span>Previous</span>}
+          </Button>
+          <p className="shrink-0 text-sm tabular-nums text-muted-foreground">
+            Page {pageNum + 1} of {totalPages}
+          </p>
+          <Button
+            asChild={pageNum < totalPages - 1}
+            variant="outline"
+            className="h-11 flex-1 sm:flex-none sm:px-6"
+            disabled={pageNum >= totalPages - 1}
+          >
+            {pageNum < totalPages - 1 ? (
+              <Link href={pageHref(pageNum + 1)}>Next</Link>
+            ) : (
+              <span>Next</span>
+            )}
+          </Button>
+        </nav>
+      ) : null}
     </main>
   )
 }

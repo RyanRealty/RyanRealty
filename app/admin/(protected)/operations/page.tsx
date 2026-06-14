@@ -18,8 +18,11 @@ import DashboardSitePerformancePanel from '@/components/admin/DashboardSitePerfo
 import DashboardRevenuePanel from '@/components/admin/DashboardRevenuePanel'
 import DashboardContentStatusPanel from '@/components/admin/DashboardContentStatusPanel'
 import DashboardMarketingCommandCenterPanel from '@/components/admin/DashboardMarketingCommandCenterPanel'
+import DashboardSummaryStrip, { type SummaryStat } from '@/components/admin/DashboardSummaryStrip'
 
 export const dynamic = 'force-dynamic'
+
+const nf = new Intl.NumberFormat('en-US')
 
 // The five dashboard fetchers hit live third-party APIs (GA4, Meta Graph, FUB
 // fallback) and exact-count scans — 30-45s uncached per render, which read as
@@ -45,14 +48,62 @@ export default async function AdminDashboardPage() {
 
   const [syncData, leadData, dataQuality, contentStatus, marketingData] = await getDashboardData()
 
+  // Glanceable summary — the six operations numbers worth a glance, derived
+  // entirely from data already fetched above. No new queries. A null value
+  // renders a muted em-dash rather than leaving a hole.
+  const identifiedRate =
+    leadData.totalVisits > 0
+      ? `${((leadData.visitsWithUser / leadData.totalVisits) * 100).toFixed(1)}%`
+      : null
+  const summaryStats: SummaryStat[] = [
+    {
+      label: 'Active listings',
+      value: nf.format(syncData.counts.activeCount),
+      caption: `${nf.format(syncData.counts.totalListings)} total`,
+      tone: 'success',
+    },
+    {
+      label: 'Sessions 30d',
+      value: marketingData.ga4.ok ? nf.format(marketingData.ga4.sessions) : null,
+      caption: marketingData.ga4.ok ? `${nf.format(marketingData.ga4.socialSessions)} social` : 'GA4 offline',
+    },
+    {
+      label: 'Lead events 30d',
+      value: marketingData.ga4.ok ? nf.format(marketingData.ga4.facebookLeadEvents) : null,
+      caption: 'from Facebook',
+    },
+    {
+      label: 'Valuation reqs',
+      value: nf.format(marketingData.website.valuationRequests30d),
+      caption: '30 days',
+    },
+    {
+      label: 'Identified',
+      value: identifiedRate,
+      caption: `${nf.format(leadData.visitsWithUser)} of ${nf.format(leadData.totalVisits)}`,
+    },
+    {
+      label: 'Photos missing',
+      value: nf.format(dataQuality.missingPrimaryPhoto),
+      caption: 'active, no primary',
+      tone: dataQuality.missingPrimaryPhoto > 0 ? 'warning' : 'default',
+    },
+  ]
+
   return (
     <main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6">
-      <h1 className="text-2xl font-bold text-foreground">Operations command center</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Single view of system health, sync, leads, and observability. Panel state is saved in your browser.
-      </p>
+      <header>
+        <h1 className="text-2xl font-bold text-foreground">Operations command center</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          System health, sync, leads, and growth at a glance. Open a section for the detail.
+        </p>
+      </header>
 
-      <div className="mt-8 space-y-6">
+      <section aria-label="Key metrics" className="mt-6">
+        <DashboardSummaryStrip stats={summaryStats} />
+      </section>
+
+      <div className="mt-8 space-y-4 sm:space-y-6">
         <DashboardPanel id="sync" title="Sync operations and database health" defaultOpen={true}>
           <DashboardSyncPanel
             history={syncData.history}
@@ -64,24 +115,24 @@ export default async function AdminDashboardPage() {
           />
         </DashboardPanel>
 
-        <DashboardPanel id="ga4" title="Google Analytics (GA4) deep integration" defaultOpen={true}>
-          <DashboardGA4Panel />
-        </DashboardPanel>
-
-        <DashboardPanel id="marketing" title="Marketing command center (Meta + GA4 + FUB)" defaultOpen={true}>
+        <DashboardPanel id="marketing" title="Marketing command center (Meta + GA4 + FUB)" defaultOpen={false}>
           <DashboardMarketingCommandCenterPanel data={marketingData} />
         </DashboardPanel>
 
-        <DashboardPanel id="lead" title="Lead and contact intelligence" defaultOpen={true}>
+        <DashboardPanel id="ga4" title="Google Analytics (GA4) deep integration" defaultOpen={false}>
+          <DashboardGA4Panel />
+        </DashboardPanel>
+
+        <DashboardPanel id="lead" title="Lead and contact intelligence" defaultOpen={false}>
           <DashboardLeadPanel data={leadData} />
+        </DashboardPanel>
+
+        <DashboardPanel id="content" title="Content status" defaultOpen={false}>
+          <DashboardContentStatusPanel data={contentStatus.data} error={contentStatus.error} />
         </DashboardPanel>
 
         <DashboardPanel id="notifications" title="Notification and alert center" defaultOpen={false}>
           <DashboardNotificationsPanel />
-        </DashboardPanel>
-
-        <DashboardPanel id="content" title="Content Status" defaultOpen={false}>
-          <DashboardContentStatusPanel data={contentStatus.data} error={contentStatus.error} />
         </DashboardPanel>
 
         <DashboardPanel id="siteperf" title="Site performance and technical health" defaultOpen={false}>

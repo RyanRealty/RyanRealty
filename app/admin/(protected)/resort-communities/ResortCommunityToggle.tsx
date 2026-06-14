@@ -1,11 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { setSubdivisionResort } from '@/app/actions/subdivision-flags'
 import { useRouter } from 'next/navigation'
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 
 type Props = { entityKey: string; initialResort: boolean }
 
@@ -31,17 +30,18 @@ export default function ResortCommunityToggle({ entityKey, initialResort }: Prop
   }
 
   return (
-    <Label className="inline-flex cursor-pointer items-center gap-2">
-      <Input
-        type="checkbox"
+    <Label className="min-h-11 cursor-pointer gap-3">
+      <Switch
         checked={checked}
         disabled={pending}
-        onChange={(e) => handleChange(e.target.checked)}
-        className="h-4 w-4 rounded border-border text-success focus:ring-accent"
-        aria-label={checked ? 'Remove resort & master plan' : 'Mark as resort & master plan community'}
+        onCheckedChange={handleChange}
+        aria-label={
+          checked ? 'Remove resort & master plan' : 'Mark as resort & master plan community'
+        }
       />
-      {checked && <span className="text-xs font-medium text-success">Resort & master plan</span>}
-      {pending && <span className="text-xs text-muted-foreground">Saving…</span>}
+      <span className="font-normal text-muted-foreground">
+        {pending ? 'Saving…' : checked ? 'Resort & master plan' : 'Off'}
+      </span>
     </Label>
   )
 }

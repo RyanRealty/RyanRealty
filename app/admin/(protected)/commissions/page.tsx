@@ -68,6 +68,23 @@ export default async function CommissionsPage() {
 
   const sorted = [...rows].sort((a, b) => (b.closing_date ?? '').localeCompare(a.closing_date ?? ''))
 
+  const LEDGER_PREVIEW = 6
+  const ledgerPreview = sorted.slice(0, LEDGER_PREVIEW)
+  const ledgerMore = Math.max(0, sorted.length - LEDGER_PREVIEW)
+
+  const PROJECTED_PREVIEW = 3
+  const projectedSorted = [...projected].sort(
+    (a, b) => (a.closing_date ?? '').localeCompare(b.closing_date ?? ''),
+  )
+  const projectedPreview = projectedSorted.slice(0, PROJECTED_PREVIEW)
+  const projectedMore = Math.max(0, projectedSorted.length - PROJECTED_PREVIEW)
+  const projectedGci = projected.reduce((s, r) => s + (r.gci ?? 0), 0)
+
+  const BROKER_PREVIEW = 6
+  const brokerEntries = [...byBroker.entries()].sort((a, b) => b[1].all.agent - a[1].all.agent)
+  const brokerPreview = brokerEntries.slice(0, BROKER_PREVIEW)
+  const brokerMore = Math.max(0, brokerEntries.length - BROKER_PREVIEW)
+
   return (
     <main className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
@@ -79,162 +96,243 @@ export default async function CommissionsPage() {
         </div>
         <Link
           href="/admin/financials"
-          className="text-sm font-medium text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground"
+          className="inline-flex min-h-11 items-center text-sm font-medium text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground"
         >
           Financials →
         </Link>
       </header>
 
-      {/* Office + per-broker summary */}
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      {rows.length === 0 ? (
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Office · {thisYear} YTD</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-0.5 tabular-nums">
-            <p className="text-2xl font-bold text-foreground">{money(officeYtd.gci)}</p>
-            <p className="text-xs text-muted-foreground">
-              {officeYtd.n} closings · agents {money(officeYtd.agent)} · brokerage {money(officeYtd.brokerage)}
+          <CardContent className="flex flex-col items-center gap-2 px-6 py-12 text-center">
+            <p className="text-sm font-medium text-foreground">No commissions on record yet</p>
+            <p className="max-w-sm text-sm text-muted-foreground">
+              Commission rows appear here once a deal cycle has a settlement statement entered.
             </p>
+            <Link
+              href="/admin/deals"
+              className="mt-2 inline-flex min-h-11 items-center text-sm font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Go to deals →
+            </Link>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Office · all time on record</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-0.5 tabular-nums">
-            <p className="text-2xl font-bold text-foreground">{money(officeAll.gci)}</p>
-            <p className="text-xs text-muted-foreground">
-              {officeAll.n} closings · agents {money(officeAll.agent)} · brokerage {money(officeAll.brokerage)}
-            </p>
-          </CardContent>
-        </Card>
-        {[...byBroker.entries()].map(([name, e]) => (
-          <Card key={name}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">{name}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-0.5 tabular-nums">
-              <p className="text-2xl font-bold text-foreground">{money(e.all.agent)}</p>
-              <p className="text-xs text-muted-foreground">
-                net all time · {e.all.n} closings · YTD {money(e.ytd.agent)}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {projected.length ? (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">In escrow (projected)</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            {projected.map((r) => (
-              <p key={r.id} className="text-sm tabular-nums text-muted-foreground">
-                <Link
-                  href={`/admin/deals/${encodeURIComponent(r.property_key ?? '')}`}
-                  className="text-foreground underline-offset-2 hover:underline"
-                >
-                  {r.address ?? r.cycle_id.slice(0, 8)}
-                </Link>
-                {' · '}
-                {r.broker_name} · gross {money(r.gci)} · closes {d10(r.closing_date)}
-              </p>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {/* Per-deal ledger */}
-      <div>
-        <div className="px-4 py-2">
-          <p className="text-sm font-medium text-foreground">
-            Ledger <span className="tabular-nums text-muted-foreground">({rows.length} rows)</span>
-          </p>
-        </div>
-
-        {/* Deal cards — phones (one tap per deal, key money facts mirrored) */}
-        <div className="space-y-2 md:hidden">
-          {sorted.map((r) => {
-            const st = STATUS_BADGE[r.status] ?? STATUS_BADGE.projected
-            return (
-              <Card key={r.id}>
-                <CardContent className="space-y-2 p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <Link
-                      href={`/admin/deals/${encodeURIComponent(r.property_key ?? '')}`}
-                      className="min-w-0 flex-1 truncate font-medium text-foreground underline-offset-2 hover:underline"
-                      title={r.address ?? undefined}
-                    >
-                      {r.address ?? r.cycle_id.slice(0, 8)}
-                    </Link>
-                    <Badge className={`${st.className} shrink-0`}>{st.label}</Badge>
-                  </div>
-                  <div className="flex items-baseline justify-between gap-2 tabular-nums">
-                    <span className="text-lg font-bold text-foreground">{money(r.brokerage_net)}</span>
-                    <span className="text-xs text-muted-foreground">brokerage net</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {r.broker_name} · {SIDE_LABEL[r.side]} · agent <span className="tabular-nums">{money(r.agent_net)}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 text-xs tabular-nums text-muted-foreground">
-                    <span>gross {money(r.gci)}</span>
-                    <span>closed {d10(r.closing_date)}</span>
-                  </div>
+      ) : (
+        <>
+          {/* Office summary — the glanceable lead */}
+          <section className="space-y-3">
+            <div className="grid gap-3 md:grid-cols-2">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Office · {thisYear} YTD</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-0.5 tabular-nums">
+                  <p className="text-2xl font-bold text-foreground">{money(officeYtd.gci)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {officeYtd.n} closings · agents {money(officeYtd.agent)} · brokerage {money(officeYtd.brokerage)}
+                  </p>
                 </CardContent>
               </Card>
-            )
-          })}
-        </div>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Office · all time on record</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-0.5 tabular-nums">
+                  <p className="text-2xl font-bold text-foreground">{money(officeAll.gci)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {officeAll.n} closings · agents {money(officeAll.agent)} · brokerage {money(officeAll.brokerage)}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </section>
 
-        {/* Ledger table — desktop */}
-        <div className="hidden overflow-hidden rounded-lg border border-border bg-card md:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Deal</TableHead>
-              <TableHead className="w-36">Broker</TableHead>
-              <TableHead className="w-20">Side</TableHead>
-              <TableHead className="w-28 text-right">Sale price</TableHead>
-              <TableHead className="w-24 text-right">Gross</TableHead>
-              <TableHead className="w-24 text-right">Agent net</TableHead>
-              <TableHead className="w-28 text-right">Brokerage net</TableHead>
-              <TableHead className="w-28">Closed</TableHead>
-              <TableHead className="w-28">Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sorted.map((r) => {
-              const st = STATUS_BADGE[r.status] ?? STATUS_BADGE.projected
-              return (
-                <TableRow key={r.id}>
-                  <TableCell className="max-w-xs">
-                    <Link
-                      href={`/admin/deals/${encodeURIComponent(r.property_key ?? '')}`}
-                      className="block truncate font-medium text-foreground underline-offset-2 hover:underline"
-                      title={r.address ?? undefined}
-                    >
-                      {r.address ?? r.cycle_id.slice(0, 8)}
-                    </Link>
-                  </TableCell>
-                  <TableCell>{r.broker_name}</TableCell>
-                  <TableCell>{SIDE_LABEL[r.side]}</TableCell>
-                  <TableCell className="text-right tabular-nums">{money(r.sale_price)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{money(r.gci)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{money(r.agent_net)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{money(r.brokerage_net)}</TableCell>
-                  <TableCell className="tabular-nums">{d10(r.closing_date)}</TableCell>
-                  <TableCell>
-                    <Badge className={st.className}>{st.label}</Badge>
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-        </div>
-      </div>
+          {/* Per-broker net — top earners, capped */}
+          <section className="space-y-3">
+            <h2 className="text-sm font-medium text-foreground">By broker</h2>
+            {brokerPreview.length ? (
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {brokerPreview.map(([name, e]) => (
+                  <Card key={name}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">{name}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-0.5 tabular-nums">
+                      <p className="text-2xl font-bold text-foreground">{money(e.all.agent)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        net all time · {e.all.n} closings · YTD {money(e.ytd.agent)}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="px-6 py-8 text-center text-sm text-muted-foreground">
+                  No settled commissions to attribute yet.
+                </CardContent>
+              </Card>
+            )}
+            {brokerMore > 0 ? (
+              <Link
+                href="/admin/financials"
+                className="inline-flex min-h-11 items-center text-sm font-medium text-primary underline-offset-4 hover:underline"
+              >
+                See all {brokerEntries.length} brokers →
+              </Link>
+            ) : null}
+          </section>
+
+          {/* In escrow — projected, capped */}
+          <section className="space-y-3">
+            <div className="flex items-baseline justify-between gap-2">
+              <h2 className="text-sm font-medium text-foreground">In escrow (projected)</h2>
+              {projected.length ? (
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  gross {money(projectedGci)}
+                </span>
+              ) : null}
+            </div>
+            <Card>
+              <CardContent className="p-0">
+                {projectedPreview.length ? (
+                  <ul className="divide-y divide-border">
+                    {projectedPreview.map((r) => (
+                      <li key={r.id} className="px-4 py-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <Link
+                            href={`/admin/deals/${encodeURIComponent(r.property_key ?? '')}`}
+                            className="min-w-0 flex-1 truncate text-sm font-medium text-foreground underline-offset-2 hover:underline"
+                            title={r.address ?? undefined}
+                          >
+                            {r.address ?? r.cycle_id.slice(0, 8)}
+                          </Link>
+                          <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
+                            {money(r.gci)}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                          {r.broker_name} · closes {d10(r.closing_date)}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="px-6 py-8 text-center text-sm text-muted-foreground">
+                    Nothing in escrow right now.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+            {projectedMore > 0 ? (
+              <Link
+                href="/admin/deals"
+                className="inline-flex min-h-11 items-center text-sm font-medium text-primary underline-offset-4 hover:underline"
+              >
+                See all {projected.length} in escrow →
+              </Link>
+            ) : null}
+          </section>
+
+          {/* Recent ledger — capped preview, links to the full ledger */}
+          <section className="space-y-3">
+            <div className="flex items-baseline justify-between gap-2">
+              <h2 className="text-sm font-medium text-foreground">Recent ledger</h2>
+              <span className="text-xs tabular-nums text-muted-foreground">{rows.length} total</span>
+            </div>
+
+            {/* Deal cards — phones (one tap per deal, key money facts mirrored) */}
+            <div className="space-y-2 md:hidden">
+              {ledgerPreview.map((r) => {
+                const st = STATUS_BADGE[r.status] ?? STATUS_BADGE.projected
+                return (
+                  <Card key={r.id}>
+                    <CardContent className="space-y-2 p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <Link
+                          href={`/admin/deals/${encodeURIComponent(r.property_key ?? '')}`}
+                          className="min-w-0 flex-1 truncate font-medium text-foreground underline-offset-2 hover:underline"
+                          title={r.address ?? undefined}
+                        >
+                          {r.address ?? r.cycle_id.slice(0, 8)}
+                        </Link>
+                        <Badge className={`${st.className} shrink-0`}>{st.label}</Badge>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-2 tabular-nums">
+                        <span className="text-lg font-bold text-foreground">{money(r.brokerage_net)}</span>
+                        <span className="text-xs text-muted-foreground">brokerage net</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {r.broker_name} · {SIDE_LABEL[r.side]} · agent <span className="tabular-nums">{money(r.agent_net)}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 text-xs tabular-nums text-muted-foreground">
+                        <span>gross {money(r.gci)}</span>
+                        <span>closed {d10(r.closing_date)}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+
+            {/* Ledger table — desktop */}
+            <div className="hidden overflow-hidden rounded-lg border border-border bg-card md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Deal</TableHead>
+                    <TableHead className="w-36">Broker</TableHead>
+                    <TableHead className="w-20">Side</TableHead>
+                    <TableHead className="w-28 text-right">Sale price</TableHead>
+                    <TableHead className="w-24 text-right">Gross</TableHead>
+                    <TableHead className="w-24 text-right">Agent net</TableHead>
+                    <TableHead className="w-28 text-right">Brokerage net</TableHead>
+                    <TableHead className="w-28">Closed</TableHead>
+                    <TableHead className="w-28">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {ledgerPreview.map((r) => {
+                    const st = STATUS_BADGE[r.status] ?? STATUS_BADGE.projected
+                    return (
+                      <TableRow key={r.id}>
+                        <TableCell className="max-w-xs">
+                          <Link
+                            href={`/admin/deals/${encodeURIComponent(r.property_key ?? '')}`}
+                            className="block truncate font-medium text-foreground underline-offset-2 hover:underline"
+                            title={r.address ?? undefined}
+                          >
+                            {r.address ?? r.cycle_id.slice(0, 8)}
+                          </Link>
+                        </TableCell>
+                        <TableCell>{r.broker_name}</TableCell>
+                        <TableCell>{SIDE_LABEL[r.side]}</TableCell>
+                        <TableCell className="text-right tabular-nums">{money(r.sale_price)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{money(r.gci)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{money(r.agent_net)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{money(r.brokerage_net)}</TableCell>
+                        <TableCell className="tabular-nums">{d10(r.closing_date)}</TableCell>
+                        <TableCell>
+                          <Badge className={st.className}>{st.label}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+
+            {ledgerMore > 0 ? (
+              <Link
+                href="/admin/financials"
+                className="inline-flex min-h-11 items-center text-sm font-medium text-primary underline-offset-4 hover:underline"
+              >
+                See all {rows.length} ledger rows →
+              </Link>
+            ) : null}
+          </section>
+        </>
+      )}
     </main>
   )
 }

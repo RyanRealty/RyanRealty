@@ -49,11 +49,12 @@ export function ExpiredListingsClient() {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         <Button
           type="button"
           onClick={runBackfill}
           disabled={!!loading}
+          className="h-11"
         >
           {loading === 'backfill' ? 'Fetching…' : 'Backfill last 6 months from Spark'}
         </Button>
@@ -62,6 +63,7 @@ export function ExpiredListingsClient() {
           onClick={runRecent}
           disabled={!!loading}
           variant="outline"
+          className="h-11"
         >
           {loading === 'recent' ? 'Fetching…' : 'Fetch last 30 days (ongoing)'}
         </Button>

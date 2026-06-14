@@ -99,6 +99,39 @@ function ComplianceBadge({ state }: { state: DealProperty['rollup']['complianceS
   return <Badge className="bg-warning/20 text-foreground hover:bg-warning/20">Action needed</Badge>
 }
 
+function ClosedCard({ p }: { p: DealProperty }) {
+  const h = p.headline
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-2">
+          <Link
+            href={`/admin/deals/${encodeURIComponent(p.key)}`}
+            className="min-w-0 text-sm font-medium text-foreground hover:underline"
+          >
+            {p.address}
+          </Link>
+          <ComplianceBadge state={p.rollup.complianceState} />
+        </div>
+        {p.zombie ? (
+          <p className="mt-1 text-xs text-warning" title={p.zombie}>
+            ⚠ zombie folder
+          </p>
+        ) : null}
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums text-foreground">
+          <span>{money(h.salePrice)}</span>
+          <span className="text-muted-foreground">gross {money(h.officeGross)}</span>
+          <span className="text-muted-foreground">closed {d10(h.actualClosingDate)}</span>
+        </div>
+        <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span className="truncate">{p.broker ?? '—'}</span>
+          <BnBadge state={h.brokerNotesState} />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 function BnBadge({ state }: { state: DealCycle['brokerNotesState'] }) {
   if (state === 'ok') return <Badge className="bg-success/15 text-success hover:bg-success/15">BN ✓</Badge>
   if (state === 'needs_regeneration') return <Badge variant="destructive">BN regen</Badge>
@@ -132,8 +165,22 @@ export default async function DealsPage() {
   const { properties, totals } = data
 
   const live = properties.filter((p) => ['pending', 'active_listing', 'pre_contract'].includes(p.stage))
-  const closed = properties.filter((p) => p.stage === 'closed')
+  const closed = properties
+    .filter((p) => p.stage === 'closed')
+    .sort((a, b) =>
+      (b.headline.actualClosingDate ?? '').localeCompare(a.headline.actualClosingDate ?? '')
+    )
   const dead = properties.filter((p) => p.stage === 'dead')
+
+  // Curate, never dump: phones show the most-recent few, then disclose the rest.
+  const CLOSED_PREVIEW = 6
+  const ACTION_PREVIEW = 5
+  const closedPreview = closed.slice(0, CLOSED_PREVIEW)
+  const closedRest = closed.slice(CLOSED_PREVIEW)
+
+  const actionProps = properties.filter((p) => p.rollup.complianceState !== 'clean' || p.zombie)
+  const actionPreview = actionProps.slice(0, ACTION_PREVIEW)
+  const actionRest = actionProps.slice(ACTION_PREVIEW)
 
   const pendingProps = properties.filter((p) => p.stage === 'pending')
   const pendingVolume = pendingProps.reduce((s, p) => s + (p.headline?.salePrice ?? 0), 0)
@@ -330,47 +377,37 @@ export default async function DealsPage() {
             {money(Object.values(totals.byYear ?? {}).reduce((s, y) => s + y.volume, 0))} lifetime volume
           </p>
         </div>
-        {/* Closed cards — phones */}
+        {/* Closed cards — phones: most recent few, rest behind a disclosure */}
         <div className="space-y-2 md:hidden">
           {closed.length === 0 ? (
             <Card>
-              <CardContent className="py-10 text-center text-sm text-muted-foreground">
-                No closed transactions.
+              <CardContent className="space-y-1 py-10 text-center">
+                <p className="text-sm font-medium text-foreground">No closed transactions yet</p>
+                <p className="text-sm text-muted-foreground">
+                  Closed files appear here once a deal settles in SkySlope.
+                </p>
               </CardContent>
             </Card>
           ) : (
-            closed.map((p) => {
-              const h = p.headline
-              return (
-                <Card key={p.key}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <Link
-                        href={`/admin/deals/${encodeURIComponent(p.key)}`}
-                        className="min-w-0 text-sm font-medium text-foreground hover:underline"
-                      >
-                        {p.address}
-                      </Link>
-                      <ComplianceBadge state={p.rollup.complianceState} />
-                    </div>
-                    {p.zombie ? (
-                      <p className="mt-1 text-xs text-warning" title={p.zombie}>
-                        ⚠ zombie folder
-                      </p>
-                    ) : null}
-                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums text-foreground">
-                      <span>{money(h.salePrice)}</span>
-                      <span className="text-muted-foreground">gross {money(h.officeGross)}</span>
-                      <span className="text-muted-foreground">closed {d10(h.actualClosingDate)}</span>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                      <span className="truncate">{p.broker ?? '—'}</span>
-                      <BnBadge state={h.brokerNotesState} />
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })
+            <>
+              {closedPreview.map((p) => (
+                <ClosedCard key={p.key} p={p} />
+              ))}
+              {closedRest.length > 0 ? (
+                <Accordion type="single" collapsible>
+                  <AccordionItem value="closed-rest" className="border-0">
+                    <AccordionTrigger className="min-h-11 justify-center gap-2 text-sm font-medium text-foreground hover:no-underline">
+                      See all {closed.length} closed
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-2 pt-1">
+                      {closedRest.map((p) => (
+                        <ClosedCard key={p.key} p={p} />
+                      ))}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              ) : null}
+            </>
           )}
         </div>
 
@@ -430,23 +467,63 @@ export default async function DealsPage() {
               <CardTitle className="text-sm">Per-deal items</CardTitle>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-3 text-sm">
-                {properties
-                  .filter((p) => p.rollup.complianceState !== 'clean' || p.zombie)
-                  .map((p) => (
-                    <li key={p.key}>
-                      <p className="font-medium text-foreground">{p.address}</p>
-                      <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
-                        {actionItems(p).map((it) => (
-                          <li key={it} className="flex gap-2">
-                            <span aria-hidden>•</span>
-                            <span>{it}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </li>
-                  ))}
-              </ul>
+              {actionProps.length === 0 ? (
+                <p className="text-sm text-success">All clear — no deals need attention.</p>
+              ) : (
+                <>
+                  <ul className="space-y-3 text-sm">
+                    {actionPreview.map((p) => (
+                      <li key={p.key}>
+                        <Link
+                          href={`/admin/deals/${encodeURIComponent(p.key)}`}
+                          className="font-medium text-foreground hover:underline"
+                        >
+                          {p.address}
+                        </Link>
+                        <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
+                          {actionItems(p).map((it) => (
+                            <li key={it} className="flex gap-2">
+                              <span aria-hidden>•</span>
+                              <span>{it}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </li>
+                    ))}
+                  </ul>
+                  {actionRest.length > 0 ? (
+                    <Accordion type="single" collapsible className="mt-2">
+                      <AccordionItem value="action-rest" className="border-0">
+                        <AccordionTrigger className="min-h-11 justify-center gap-2 text-sm font-medium text-foreground hover:no-underline">
+                          See all {actionProps.length} deals needing attention
+                        </AccordionTrigger>
+                        <AccordionContent className="pt-1">
+                          <ul className="space-y-3 text-sm">
+                            {actionRest.map((p) => (
+                              <li key={p.key}>
+                                <Link
+                                  href={`/admin/deals/${encodeURIComponent(p.key)}`}
+                                  className="font-medium text-foreground hover:underline"
+                                >
+                                  {p.address}
+                                </Link>
+                                <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
+                                  {actionItems(p).map((it) => (
+                                    <li key={it} className="flex gap-2">
+                                      <span aria-hidden>•</span>
+                                      <span>{it}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </li>
+                            ))}
+                          </ul>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  ) : null}
+                </>
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -454,6 +531,9 @@ export default async function DealsPage() {
               <CardTitle className="text-sm">System findings</CardTitle>
             </CardHeader>
             <CardContent>
+              {data.systemFindings.length === 0 && !data.bnReview ? (
+                <p className="text-sm text-muted-foreground">No system findings.</p>
+              ) : null}
               <ul className="space-y-2 text-xs text-muted-foreground">
                 {data.systemFindings.map((f) => (
                   <li key={f} className="flex gap-2">
