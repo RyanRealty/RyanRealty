@@ -127,23 +127,93 @@ async function VisitorTable({ filter }: { filter: 'all' | 'anonymous' | 'identif
     )
   }
   return (
-    <Card>
-      <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Session</TableHead>
-              <TableHead>Source</TableHead>
-              <TableHead>Geo</TableHead>
-              <TableHead className="text-right tabular-nums">Score</TableHead>
-              <TableHead>Intent</TableHead>
-              <TableHead className="text-right tabular-nums">Events</TableHead>
-              <TableHead>Identified</TableHead>
-              <TableHead>Last seen</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((s) => (
+    <>
+      {/* Session cards — phones (one thumb-tap per session) */}
+      <div className="space-y-2 md:hidden">
+        {rows.map((s) => (
+          <Card key={s.session_id} className="transition-colors hover:bg-muted/50">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-2">
+                <Link
+                  href={`/admin/visitors/${encodeURIComponent(s.session_id)}`}
+                  className="min-w-0 flex-1 hover:underline"
+                  title={s.session_id}
+                >
+                  <div className="font-mono text-xs text-foreground">{shortSession(s.session_id)}</div>
+                  <div className="text-[10px] text-muted-foreground">{s.source_domain}</div>
+                </Link>
+                <Badge variant={scoreBadgeVariant(s.engagement_score)} className="shrink-0 tabular-nums">
+                  {s.engagement_score} · {scoreLabel(s.engagement_score)}
+                </Badge>
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                <div className="min-w-0">
+                  <span className="text-muted-foreground">Source </span>
+                  <span className="text-foreground">{formatSource(s)}</span>
+                  {s.utm_campaign && <div className="text-[10px] text-muted-foreground">{s.utm_campaign}</div>}
+                </div>
+                <div className="min-w-0">
+                  <span className="text-muted-foreground">Geo </span>
+                  <span className="text-foreground">{formatGeo(s)}</span>
+                </div>
+                <div className="tabular-nums">
+                  <span className="text-muted-foreground">Events </span>
+                  <span className="text-foreground">{s.event_count}</span>
+                </div>
+                <div className="whitespace-nowrap">
+                  <span className="text-muted-foreground">Last seen </span>
+                  <span className="text-foreground">{formatRelative(s.last_seen_at)}</span>
+                </div>
+              </div>
+              {s.intent_tags.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {s.intent_tags.map((t) => (
+                    <Badge key={t} variant="outline" className="text-[10px]">
+                      {t.replace(/_/g, ' ')}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <div className="mt-2 text-xs">
+                {s.fub_person_id ? (
+                  <a
+                    href={`https://app.followupboss.com/2/people/view/${s.fub_person_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    {s.identified_email ?? `FUB #${s.fub_person_id}`}
+                  </a>
+                ) : (
+                  <span className="text-muted-foreground">anonymous</span>
+                )}
+                {s.identified_via && (
+                  <span className="text-[10px] text-muted-foreground"> · via {s.identified_via}</span>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Session table — desktop */}
+      <Card className="hidden md:block">
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Session</TableHead>
+                <TableHead>Source</TableHead>
+                <TableHead>Geo</TableHead>
+                <TableHead className="text-right tabular-nums">Score</TableHead>
+                <TableHead>Intent</TableHead>
+                <TableHead className="text-right tabular-nums">Events</TableHead>
+                <TableHead>Identified</TableHead>
+                <TableHead>Last seen</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((s) => (
               <TableRow key={s.session_id}>
                 <TableCell className="font-mono text-xs">
                   <Link
@@ -198,11 +268,12 @@ async function VisitorTable({ filter }: { filter: 'all' | 'anonymous' | 'identif
                 </TableCell>
                 <TableCell className="text-xs whitespace-nowrap">{formatRelative(s.last_seen_at)}</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </>
   )
 }
 

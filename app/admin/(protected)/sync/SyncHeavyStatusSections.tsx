@@ -78,7 +78,7 @@ export default function SyncHeavyStatusSections({ totalListings, syncStatus, run
     <>
       <section className="mt-6 rounded-lg border border-border bg-card p-5 shadow-sm" aria-labelledby="spark-db-heading">
         <h2 id="spark-db-heading" className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Spark API vs database</h2>
-        <div className="mt-3 grid grid-cols-3 gap-4 text-center sm:text-left">
+        <div className="mt-3 grid grid-cols-1 gap-4 text-center sm:grid-cols-3 sm:text-left">
           <div>
             <p className="text-xs text-muted-foreground">Spark (source)</p>
             <p className="mt-0.5 font-mono text-lg font-semibold text-foreground">

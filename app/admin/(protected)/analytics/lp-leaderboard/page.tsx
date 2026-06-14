@@ -139,41 +139,43 @@ async function LpLeaderboard() {
           </p>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>LP variant</TableHead>
-                <TableHead className="text-right tabular-nums">Visits</TableHead>
-                <TableHead className="text-right tabular-nums">Identified</TableHead>
-                <TableHead className="text-right tabular-nums">Identify rate</TableHead>
-                <TableHead className="text-right tabular-nums">Hot leads</TableHead>
-                <TableHead className="text-right tabular-nums">Hot rate</TableHead>
-                <TableHead className="text-right tabular-nums">Avg score</TableHead>
-                <TableHead>Top source</TableHead>
-                <TableHead>Top city</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((r, i) => (
-                <TableRow key={r.variant}>
-                  <TableCell>
-                    <div className="font-medium">{r.variant}</div>
-                    <Badge variant={i === 0 ? 'default' : i === rows.length - 1 && rows.length > 2 ? 'destructive' : 'outline'} className="text-[10px]">
-                      {i === 0 ? 'best' : i === rows.length - 1 && rows.length > 2 ? 'worst' : `#${i + 1}`}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInt(r.visits)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInt(r.identified)}</TableCell>
-                  <TableCell className="text-right tabular-nums font-semibold">{(r.identifyRate * 100).toFixed(1)}%</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInt(r.hot)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{(r.hotRate * 100).toFixed(1)}%</TableCell>
-                  <TableCell className="text-right tabular-nums">{r.avgScore.toFixed(1)}</TableCell>
-                  <TableCell className="text-xs">{r.topSource}</TableCell>
-                  <TableCell className="text-xs">{r.topCity}</TableCell>
+          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="whitespace-nowrap">LP variant</TableHead>
+                  <TableHead className="text-right tabular-nums whitespace-nowrap">Visits</TableHead>
+                  <TableHead className="text-right tabular-nums whitespace-nowrap">Identified</TableHead>
+                  <TableHead className="text-right tabular-nums whitespace-nowrap">Identify rate</TableHead>
+                  <TableHead className="text-right tabular-nums whitespace-nowrap">Hot leads</TableHead>
+                  <TableHead className="text-right tabular-nums whitespace-nowrap">Hot rate</TableHead>
+                  <TableHead className="text-right tabular-nums whitespace-nowrap">Avg score</TableHead>
+                  <TableHead className="whitespace-nowrap">Top source</TableHead>
+                  <TableHead className="whitespace-nowrap">Top city</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {rows.map((r, i) => (
+                  <TableRow key={r.variant}>
+                    <TableCell className="whitespace-nowrap">
+                      <div className="font-medium">{r.variant}</div>
+                      <Badge variant={i === 0 ? 'default' : i === rows.length - 1 && rows.length > 2 ? 'destructive' : 'outline'} className="text-[10px]">
+                        {i === 0 ? 'best' : i === rows.length - 1 && rows.length > 2 ? 'worst' : `#${i + 1}`}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(r.visits)}</TableCell>
+                    <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(r.identified)}</TableCell>
+                    <TableCell className="text-right tabular-nums font-semibold whitespace-nowrap">{(r.identifyRate * 100).toFixed(1)}%</TableCell>
+                    <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(r.hot)}</TableCell>
+                    <TableCell className="text-right tabular-nums whitespace-nowrap">{(r.hotRate * 100).toFixed(1)}%</TableCell>
+                    <TableCell className="text-right tabular-nums whitespace-nowrap">{r.avgScore.toFixed(1)}</TableCell>
+                    <TableCell className="text-xs whitespace-nowrap">{r.topSource}</TableCell>
+                    <TableCell className="text-xs whitespace-nowrap">{r.topCity}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

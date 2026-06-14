@@ -1,7 +1,4 @@
 {
-  "total": 2,
-  "files": {
-    "app/admin/(protected)/analytics/page.tsx": 1,
-    "app/admin/(protected)/sync/SyncHeavyStatusSections.tsx": 1
-  }
+  "total": 0,
+  "files": {}
 }

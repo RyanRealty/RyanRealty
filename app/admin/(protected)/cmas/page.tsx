@@ -5,6 +5,7 @@ import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { createServiceClient } from '@/lib/supabase/service'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 export const dynamic = 'force-dynamic'
@@ -78,7 +79,61 @@ export default async function AdminCmasPage() {
         </div>
       ) : null}
 
-      <div className="mt-6 overflow-hidden rounded-lg border border-border bg-card">
+      {/* CMA cards — phones (one thumb-tap per CMA) */}
+      <div className="mt-6 space-y-2 md:hidden">
+        {rows.length === 0 ? (
+          <Card>
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">No CMAs yet.</CardContent>
+          </Card>
+        ) : (
+          rows.map((cma) => (
+            <Card key={cma.id} className="transition-colors hover:bg-muted/50">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-foreground">{cma.subject_address}</div>
+                    {cma.subject_subdivision ? (
+                      <div className="truncate text-xs text-muted-foreground">{cma.subject_subdivision}</div>
+                    ) : null}
+                  </div>
+                  <Badge variant={statusVariant(cma.status)} className="shrink-0">{cma.status}</Badge>
+                </div>
+                <div className="mt-2 flex items-baseline justify-between gap-2 text-sm">
+                  <span className="text-muted-foreground">Rec. list</span>
+                  <span className="font-semibold tabular-nums text-foreground">{formatPrice(cma.recommended_list)}</span>
+                </div>
+                <div className="mt-1 flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
+                  <span>Range</span>
+                  <span className="tabular-nums">{formatPrice(cma.value_low)} – {formatPrice(cma.value_high)}</span>
+                </div>
+                <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span className="truncate">{cma.client_name ?? '—'}{cma.broker_slug ? ` · ${cma.broker_slug}` : ''}</span>
+                  <span className="shrink-0 tabular-nums">{formatDate(cma.created_at)}</span>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <Button asChild size="sm" variant="outline" className="h-10 flex-1">
+                    <Link href={`/api/cma/${cma.slug}/pdf`} target="_blank" rel="noopener noreferrer">
+                      PDF
+                    </Link>
+                  </Button>
+                  <Button asChild size="sm" variant="ghost" className="h-10 flex-1">
+                    <Link
+                      href={cma.status === 'finalized' ? `/cmas/${cma.slug}/cma.html` : `/drafts/${cma.slug}/cma.html`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      HTML
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* CMA table — desktop */}
+      <div className="mt-6 hidden overflow-hidden rounded-lg border border-border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow>

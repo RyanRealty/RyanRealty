@@ -51,34 +51,36 @@ export default async function FinancialsPage() {
         <div className="px-4 py-2">
           <p className="text-sm font-medium text-foreground">Profit & loss by year</p>
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-20">Year</TableHead>
-              <TableHead className="w-24 text-right">Closings</TableHead>
-              <TableHead className="text-right">Commission income</TableHead>
-              <TableHead className="text-right">Agent share</TableHead>
-              <TableHead className="text-right">Brokerage retained</TableHead>
-              <TableHead className="text-right">Ad spend (auto)</TableHead>
-              <TableHead className="text-right">Other expenses</TableHead>
-              <TableHead className="text-right">Net</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {years.map((y) => (
-              <TableRow key={y.year}>
-                <TableCell className="font-medium tabular-nums">{y.year}</TableCell>
-                <TableCell className="text-right tabular-nums">{y.closings}</TableCell>
-                <TableCell className="text-right tabular-nums">{money(y.gci)}</TableCell>
-                <TableCell className="text-right tabular-nums">{money(y.agentShare)}</TableCell>
-                <TableCell className="text-right tabular-nums">{money(y.brokerageRetained)}</TableCell>
-                <TableCell className="text-right tabular-nums">{money(y.adsSpend)}</TableCell>
-                <TableCell className="text-right tabular-nums">{money(y.manualExpenses)}</TableCell>
-                <TableCell className="text-right font-medium tabular-nums">{money(y.net)}</TableCell>
+        <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-20">Year</TableHead>
+                <TableHead className="w-24 text-right">Closings</TableHead>
+                <TableHead className="whitespace-nowrap text-right">Commission income</TableHead>
+                <TableHead className="whitespace-nowrap text-right">Agent share</TableHead>
+                <TableHead className="whitespace-nowrap text-right">Brokerage retained</TableHead>
+                <TableHead className="whitespace-nowrap text-right">Ad spend (auto)</TableHead>
+                <TableHead className="whitespace-nowrap text-right">Other expenses</TableHead>
+                <TableHead className="text-right">Net</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {years.map((y) => (
+                <TableRow key={y.year}>
+                  <TableCell className="font-medium tabular-nums">{y.year}</TableCell>
+                  <TableCell className="text-right tabular-nums">{y.closings}</TableCell>
+                  <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.gci)}</TableCell>
+                  <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.agentShare)}</TableCell>
+                  <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.brokerageRetained)}</TableCell>
+                  <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.adsSpend)}</TableCell>
+                  <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.manualExpenses)}</TableCell>
+                  <TableCell className="whitespace-nowrap text-right font-medium tabular-nums">{money(y.net)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
         <p className="px-4 pb-3 text-xs text-muted-foreground">
           Agent share includes owner compensation (Matt at 100% split). Ad spend reads live from the
           marketing ads ledger so it is never double-entered here. Projected deals are excluded everywhere.
@@ -123,50 +125,90 @@ export default async function FinancialsPage() {
             (photography, signage, staging) or brokerage overhead (E&O, MLS dues, software).
           </p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-28">Date</TableHead>
-                <TableHead className="w-44">Category</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="w-44">Deal</TableHead>
-                <TableHead className="w-32">Vendor</TableHead>
-                <TableHead className="w-24 text-right">Amount</TableHead>
-                <TableHead className="w-24 text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <>
+            {/* Expense cards — phones (one tap per expense, key facts mirrored) */}
+            <div className="space-y-2 p-3 md:hidden">
               {liveExpenses.map((e) => (
-                <TableRow key={e.id}>
-                  <TableCell className="tabular-nums">{d10(e.incurred_on)}</TableCell>
-                  <TableCell>
+                <div key={e.id} className="rounded-lg border border-border bg-background p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-foreground" title={e.description}>
+                        {e.description}
+                      </p>
+                      <p className="mt-1 text-xs tabular-nums text-muted-foreground">{d10(e.incurred_on)}</p>
+                    </div>
+                    <span className="shrink-0 text-sm font-medium tabular-nums text-foreground">{money(e.amount)}</span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
                     <Badge variant="secondary">{CATEGORY_LABEL[e.category] ?? e.category}</Badge>
-                  </TableCell>
-                  <TableCell className="max-w-xs truncate" title={e.description}>
-                    {e.description}
-                  </TableCell>
-                  <TableCell className="max-w-[11rem] truncate">
                     {e.deal_property_key ? (
                       <Link
                         href={`/admin/deals/${encodeURIComponent(e.deal_property_key)}`}
-                        className="text-foreground underline-offset-2 hover:underline"
+                        className="truncate text-xs text-foreground underline-offset-2 hover:underline"
                         title={e.deal_address ?? undefined}
                       >
                         {e.deal_address ?? e.deal_property_key}
                       </Link>
                     ) : (
-                      <span className="text-muted-foreground">Overhead</span>
+                      <span className="text-xs text-muted-foreground">Overhead</span>
                     )}
-                  </TableCell>
-                  <TableCell className="truncate">{e.vendor ?? '—'}</TableCell>
-                  <TableCell className="text-right tabular-nums">{money(e.amount)}</TableCell>
-                  <TableCell className="text-right">
+                    {e.vendor ? <span className="truncate text-xs text-muted-foreground">{e.vendor}</span> : null}
+                  </div>
+                  <div className="mt-2 flex justify-end">
                     <ArchiveExpense id={e.id} description={e.description} />
-                  </TableCell>
-                </TableRow>
+                  </div>
+                </div>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+
+            {/* Expense table — desktop */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-28">Date</TableHead>
+                    <TableHead className="w-44">Category</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="w-44">Deal</TableHead>
+                    <TableHead className="w-32">Vendor</TableHead>
+                    <TableHead className="w-24 text-right">Amount</TableHead>
+                    <TableHead className="w-24 text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {liveExpenses.map((e) => (
+                    <TableRow key={e.id}>
+                      <TableCell className="tabular-nums">{d10(e.incurred_on)}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{CATEGORY_LABEL[e.category] ?? e.category}</Badge>
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate" title={e.description}>
+                        {e.description}
+                      </TableCell>
+                      <TableCell className="max-w-[11rem] truncate">
+                        {e.deal_property_key ? (
+                          <Link
+                            href={`/admin/deals/${encodeURIComponent(e.deal_property_key)}`}
+                            className="text-foreground underline-offset-2 hover:underline"
+                            title={e.deal_address ?? undefined}
+                          >
+                            {e.deal_address ?? e.deal_property_key}
+                          </Link>
+                        ) : (
+                          <span className="text-muted-foreground">Overhead</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="truncate">{e.vendor ?? '—'}</TableCell>
+                      <TableCell className="text-right tabular-nums">{money(e.amount)}</TableCell>
+                      <TableCell className="text-right">
+                        <ArchiveExpense id={e.id} description={e.description} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </div>
     </main>

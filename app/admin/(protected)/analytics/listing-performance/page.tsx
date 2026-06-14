@@ -145,42 +145,44 @@ async function ListingLeaderboard() {
         </p>
       </CardHeader>
       <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Listing</TableHead>
-              <TableHead>City</TableHead>
-              <TableHead className="text-right tabular-nums">Price</TableHead>
-              <TableHead className="text-right tabular-nums">Views</TableHead>
-              <TableHead className="text-right tabular-nums">Unique</TableHead>
-              <TableHead className="text-right tabular-nums">Identified</TableHead>
-              <TableHead className="text-right tabular-nums">ID rate</TableHead>
-              <TableHead className="text-right tabular-nums">Hot</TableHead>
-              <TableHead>Top source</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.slice(0, 50).map((r, i) => (
-              <TableRow key={r.mls}>
-                <TableCell>
-                  <a href={r.pageUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
-                    MLS {r.mls}
-                  </a>
-                  <div className="text-[10px] text-muted-foreground">{r.address}</div>
-                  {i < 3 && <Badge variant="default" className="mt-1 text-[10px]">top {i + 1}</Badge>}
-                </TableCell>
-                <TableCell className="text-xs">{r.city}</TableCell>
-                <TableCell className="text-right tabular-nums">{fmtUsd(r.price)}</TableCell>
-                <TableCell className="text-right tabular-nums font-semibold">{fmtInt(r.views)}</TableCell>
-                <TableCell className="text-right tabular-nums">{fmtInt(r.uniqueVisitors)}</TableCell>
-                <TableCell className="text-right tabular-nums">{fmtInt(r.identified)}</TableCell>
-                <TableCell className="text-right tabular-nums">{(r.identifyRate * 100).toFixed(1)}%</TableCell>
-                <TableCell className="text-right tabular-nums">{fmtInt(r.hot)}</TableCell>
-                <TableCell className="text-xs">{r.topSource}</TableCell>
+        <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="whitespace-nowrap">Listing</TableHead>
+                <TableHead className="whitespace-nowrap">City</TableHead>
+                <TableHead className="text-right tabular-nums whitespace-nowrap">Price</TableHead>
+                <TableHead className="text-right tabular-nums whitespace-nowrap">Views</TableHead>
+                <TableHead className="text-right tabular-nums whitespace-nowrap">Unique</TableHead>
+                <TableHead className="text-right tabular-nums whitespace-nowrap">Identified</TableHead>
+                <TableHead className="text-right tabular-nums whitespace-nowrap">ID rate</TableHead>
+                <TableHead className="text-right tabular-nums whitespace-nowrap">Hot</TableHead>
+                <TableHead className="whitespace-nowrap">Top source</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {rows.slice(0, 50).map((r, i) => (
+                <TableRow key={r.mls}>
+                  <TableCell className="whitespace-nowrap">
+                    <a href={r.pageUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
+                      MLS {r.mls}
+                    </a>
+                    <div className="text-[10px] text-muted-foreground">{r.address}</div>
+                    {i < 3 && <Badge variant="default" className="mt-1 text-[10px]">top {i + 1}</Badge>}
+                  </TableCell>
+                  <TableCell className="text-xs whitespace-nowrap">{r.city}</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{fmtUsd(r.price)}</TableCell>
+                  <TableCell className="text-right tabular-nums font-semibold whitespace-nowrap">{fmtInt(r.views)}</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{fmtInt(r.uniqueVisitors)}</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{fmtInt(r.identified)}</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{(r.identifyRate * 100).toFixed(1)}%</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{fmtInt(r.hot)}</TableCell>
+                  <TableCell className="text-xs whitespace-nowrap">{r.topSource}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
         <p className="px-4 pb-4 pt-2 text-xs text-muted-foreground">
           Top 50 only. If a listing is repeatedly getting many views but a low identify rate, the listing detail page is hooking attention without converting. Worth reviewing the photo gallery, description, or video tour for that listing.
         </p>

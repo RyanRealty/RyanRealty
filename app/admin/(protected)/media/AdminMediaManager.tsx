@@ -226,75 +226,138 @@ export default function AdminMediaManager() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>File</TableHead>
-                <TableHead>Size</TableHead>
-                <TableHead>Updated</TableHead>
-                <TableHead>Usage</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {!loading && assets.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-muted-foreground">
-                    No media found for this scope.
-                  </TableCell>
-                </TableRow>
-              )}
-              {assets.map((asset) => (
-                <TableRow key={`${asset.bucket}:${asset.path}`}>
-                  <TableCell>
+          {/* Asset cards — phones (one tap-target per file) */}
+          <div className="space-y-2 md:hidden">
+            {!loading && assets.length === 0 && (
+              <p className="py-6 text-center text-sm text-muted-foreground">No media found for this scope.</p>
+            )}
+            {assets.map((asset) => (
+              <div
+                key={`${asset.bucket}:${asset.path}`}
+                className="rounded-lg border border-border bg-card p-4"
+              >
+                <div className="min-w-0 space-y-1">
+                  <p className="truncate text-sm font-medium text-foreground">{asset.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{asset.path}</p>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <span>{formatFileSize(asset.sizeBytes)}</span>
+                  <span aria-hidden>•</span>
+                  <span>{formatDate(asset.updatedAt)}</span>
+                </div>
+                <div className="mt-2">
+                  {asset.usages.length === 0 ? (
+                    <Badge variant="outline">Unused</Badge>
+                  ) : (
                     <div className="space-y-1">
-                      <p className="text-sm font-medium text-foreground">{asset.name}</p>
-                      <p className="text-xs text-muted-foreground">{asset.path}</p>
+                      <Badge variant="secondary">{asset.usages.length} linked</Badge>
+                      <p className="text-xs text-muted-foreground">
+                        {asset.usages.slice(0, 2).map((usage) => usage.label).join(' • ')}
+                        {asset.usages.length > 2 ? ' • …' : ''}
+                      </p>
                     </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{formatFileSize(asset.sizeBytes)}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{formatDate(asset.updatedAt)}</TableCell>
-                  <TableCell>
-                    {asset.usages.length === 0 ? (
-                      <Badge variant="outline">Unused</Badge>
-                    ) : (
-                      <div className="space-y-1">
-                        <Badge variant="secondary">{asset.usages.length} linked</Badge>
-                        <p className="text-xs text-muted-foreground">
-                          {asset.usages.slice(0, 2).map((usage) => usage.label).join(' • ')}
-                          {asset.usages.length > 2 ? ' • …' : ''}
-                        </p>
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={async () => {
-                          await navigator.clipboard.writeText(asset.publicUrl)
-                          setMessage({ type: 'ok', text: 'Copied asset URL.' })
-                        }}
-                      >
-                        Copy URL
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDelete(asset)}
-                        disabled={isMutating}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </TableCell>
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-10 flex-1"
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(asset.publicUrl)
+                      setMessage({ type: 'ok', text: 'Copied asset URL.' })
+                    }}
+                  >
+                    Copy URL
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="h-10 flex-1"
+                    onClick={() => handleDelete(asset)}
+                    disabled={isMutating}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Asset table — desktop */}
+          <div className="hidden overflow-hidden rounded-lg border border-border md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>File</TableHead>
+                  <TableHead>Size</TableHead>
+                  <TableHead>Updated</TableHead>
+                  <TableHead>Usage</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {!loading && assets.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-muted-foreground">
+                      No media found for this scope.
+                    </TableCell>
+                  </TableRow>
+                )}
+                {assets.map((asset) => (
+                  <TableRow key={`${asset.bucket}:${asset.path}`}>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-foreground">{asset.name}</p>
+                        <p className="text-xs text-muted-foreground">{asset.path}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{formatFileSize(asset.sizeBytes)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{formatDate(asset.updatedAt)}</TableCell>
+                    <TableCell>
+                      {asset.usages.length === 0 ? (
+                        <Badge variant="outline">Unused</Badge>
+                      ) : (
+                        <div className="space-y-1">
+                          <Badge variant="secondary">{asset.usages.length} linked</Badge>
+                          <p className="text-xs text-muted-foreground">
+                            {asset.usages.slice(0, 2).map((usage) => usage.label).join(' • ')}
+                            {asset.usages.length > 2 ? ' • …' : ''}
+                          </p>
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            await navigator.clipboard.writeText(asset.publicUrl)
+                            setMessage({ type: 'ok', text: 'Copied asset URL.' })
+                          }}
+                        >
+                          Copy URL
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(asset)}
+                          disabled={isMutating}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

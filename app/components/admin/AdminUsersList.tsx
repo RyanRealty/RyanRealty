@@ -8,6 +8,7 @@ import { upsertAdminRole, removeAdminRole } from '@/app/actions/admin-roles'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 type Props = {
@@ -134,7 +135,47 @@ export default function AdminUsersList({ initialRoles = [], brokers = [], users 
           {message.text}
         </p>
       )}
-      <div className="overflow-hidden rounded-lg border border-border bg-card">
+      {/* Admin roles cards — phones */}
+      <div className="space-y-2 md:hidden">
+        {initialRoles.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center text-sm text-muted-foreground">
+              No users yet. Add an email and role above.
+            </CardContent>
+          </Card>
+        ) : (
+          initialRoles.map((r) => (
+            <Card key={r.id}>
+              <CardContent className="flex items-start justify-between gap-3 p-4">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold text-foreground">{r.email}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {r.role}
+                    {r.broker_id
+                      ? ` · ${brokers.find((b) => b.id === r.broker_id)?.display_name ?? '—'}`
+                      : ''}
+                  </div>
+                </div>
+                {r.role !== 'superuser' && (
+                  <Button
+                    type="button"
+                    onClick={() => handleRemove(r.email)}
+                    disabled={loading}
+                    variant="ghost"
+                    size="sm"
+                    className="h-10 shrink-0 px-4"
+                  >
+                    Remove
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Admin roles table — desktop */}
+      <div className="hidden overflow-hidden rounded-lg border border-border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -190,7 +231,40 @@ export default function AdminUsersList({ initialRoles = [], brokers = [], users 
             className="w-full sm:w-80"
           />
         </div>
-        <div className="overflow-hidden rounded-lg border border-border">
+        {/* Registered users cards — phones */}
+        <div className="space-y-2 md:hidden">
+          {filteredUsers.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                No matching users.
+              </CardContent>
+            </Card>
+          ) : (
+            filteredUsers.map((user) => (
+              <Card key={user.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
+                      {user.display_name || [user.first_name, user.last_name].filter(Boolean).join(' ') || '—'}
+                    </span>
+                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                      {new Date(user.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="mt-1 truncate text-xs text-muted-foreground">{user.email ?? '—'}</div>
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span>Saved <span className="tabular-nums text-foreground">{user.saved_listings_count}</span></span>
+                    <span>Searches <span className="tabular-nums text-foreground">{user.saved_searches_count}</span></span>
+                    <span>Activity <span className="tabular-nums text-foreground">{user.activities_count}</span></span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+
+        {/* Registered users table — desktop */}
+        <div className="hidden overflow-hidden rounded-lg border border-border md:block">
           <Table>
             <TableHeader>
               <TableRow>

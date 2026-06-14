@@ -393,42 +393,74 @@ async function PersonContent({ fubPersonId }: { fubPersonId: number }) {
           {sessions.length === 0 ? (
             <p className="text-sm text-muted-foreground">No browser sessions on file. This person may have arrived only via Meta Lead Ads webhook (server-to-server, no site session).</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>First seen</TableHead>
-                  <TableHead>Last activity</TableHead>
-                  <TableHead className="text-right tabular-nums">Score</TableHead>
-                  <TableHead className="text-right tabular-nums">Peak</TableHead>
-                  <TableHead>Source</TableHead>
-                  <TableHead>City</TableHead>
-                  <TableHead>Intent</TableHead>
-                  <TableHead className="text-right">Journey</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Sessions — stacked cards on phones */}
+              <div className="space-y-2 md:hidden">
                 {sessions.map((s) => (
-                  <TableRow key={s.session_id}>
-                    <TableCell className="text-xs text-muted-foreground">{formatRelative(s.first_seen_at)}</TableCell>
-                    <TableCell className="text-xs">{formatRelative(s.last_seen_at)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(s.engagement_score)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(s.peak_score)}</TableCell>
-                    <TableCell className="text-xs">{s.utm_source || s.source_domain || '—'}</TableCell>
-                    <TableCell className="text-xs">{s.ip_city || s.ip_region || '—'}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
+                  <Link
+                    key={s.session_id}
+                    href={`/admin/visitors/${encodeURIComponent(s.session_id)}`}
+                    className="block rounded-lg border border-border bg-card p-3 transition-colors hover:bg-muted/50"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-sm font-medium text-foreground">{s.utm_source || s.source_domain || '—'}</span>
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{formatRelative(s.last_seen_at)}</span>
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <span className="tabular-nums">Score {formatInt(s.engagement_score)}</span>
+                      <span className="tabular-nums">Peak {formatInt(s.peak_score)}</span>
+                      <span>{s.ip_city || s.ip_region || '—'}</span>
+                    </div>
+                    {(s.intent_tags ?? []).length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
                         {(s.intent_tags ?? []).slice(0, 3).map((t) => (
                           <Badge key={t} variant="outline" className="text-[10px]">{t.replace(/_/g, ' ')}</Badge>
                         ))}
                       </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Link href={`/admin/visitors/${encodeURIComponent(s.session_id)}`} className="text-xs text-primary hover:underline">journey →</Link>
-                    </TableCell>
-                  </TableRow>
+                    )}
+                  </Link>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+              {/* Sessions — table on desktop */}
+              <div className="hidden overflow-hidden rounded-lg border border-border md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>First seen</TableHead>
+                      <TableHead>Last activity</TableHead>
+                      <TableHead className="text-right tabular-nums">Score</TableHead>
+                      <TableHead className="text-right tabular-nums">Peak</TableHead>
+                      <TableHead>Source</TableHead>
+                      <TableHead>City</TableHead>
+                      <TableHead>Intent</TableHead>
+                      <TableHead className="text-right">Journey</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sessions.map((s) => (
+                      <TableRow key={s.session_id}>
+                        <TableCell className="text-xs text-muted-foreground">{formatRelative(s.first_seen_at)}</TableCell>
+                        <TableCell className="text-xs">{formatRelative(s.last_seen_at)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatInt(s.engagement_score)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatInt(s.peak_score)}</TableCell>
+                        <TableCell className="text-xs">{s.utm_source || s.source_domain || '—'}</TableCell>
+                        <TableCell className="text-xs">{s.ip_city || s.ip_region || '—'}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {(s.intent_tags ?? []).slice(0, 3).map((t) => (
+                              <Badge key={t} variant="outline" className="text-[10px]">{t.replace(/_/g, ' ')}</Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Link href={`/admin/visitors/${encodeURIComponent(s.session_id)}`} className="text-xs text-primary hover:underline">journey →</Link>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -445,28 +477,23 @@ async function PersonContent({ fubPersonId }: { fubPersonId: number }) {
           {events.length === 0 ? (
             <p className="text-sm text-muted-foreground">No tracked events yet. Visitor tracking writes events from the moment a session starts; if a person was created via Meta Lead Ad without ever visiting the site, this stays empty.</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-32">When</TableHead>
-                  <TableHead>Event</TableHead>
-                  <TableHead>Page / Listing</TableHead>
-                  <TableHead className="text-right tabular-nums">+Score</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Events — stacked cards on phones */}
+              <div className="space-y-2 md:hidden">
                 {events.map((e) => (
-                  <TableRow key={e.id}>
-                    <TableCell className="text-xs text-muted-foreground">{formatRelative(e.event_at)}</TableCell>
-                    <TableCell>
-                      <Badge variant={e.event_type === 'listing_view' ? 'default' : e.event_type === 'cta_click' ? 'secondary' : 'outline'} className="text-[10px]">
-                        {e.event_type.replace(/_/g, ' ')}
-                      </Badge>
-                      {e.page_category && (
-                        <span className="ml-2 text-[10px] uppercase tracking-wider text-muted-foreground">{e.page_category}</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="max-w-md truncate text-xs">
+                  <div key={e.id} className="rounded-lg border border-border bg-card p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant={e.event_type === 'listing_view' ? 'default' : e.event_type === 'cta_click' ? 'secondary' : 'outline'} className="text-[10px]">
+                          {e.event_type.replace(/_/g, ' ')}
+                        </Badge>
+                        {e.page_category && (
+                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{e.page_category}</span>
+                        )}
+                      </div>
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{formatRelative(e.event_at)}</span>
+                    </div>
+                    <div className="mt-1 truncate text-xs">
                       {e.listing_mls ? (
                         <span>
                           <span className="font-medium">MLS {e.listing_mls}</span>
@@ -475,12 +502,53 @@ async function PersonContent({ fubPersonId }: { fubPersonId: number }) {
                       ) : (
                         <span className="text-muted-foreground">{e.page_title || e.page_url}</span>
                       )}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums text-muted-foreground">{e.score_delta > 0 ? `+${e.score_delta}` : '—'}</TableCell>
-                  </TableRow>
+                    </div>
+                    {e.score_delta > 0 && (
+                      <div className="mt-1 text-xs tabular-nums text-muted-foreground">+{e.score_delta} score</div>
+                    )}
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+              {/* Events — table on desktop */}
+              <div className="hidden overflow-hidden rounded-lg border border-border md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-32">When</TableHead>
+                      <TableHead>Event</TableHead>
+                      <TableHead>Page / Listing</TableHead>
+                      <TableHead className="text-right tabular-nums">+Score</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {events.map((e) => (
+                      <TableRow key={e.id}>
+                        <TableCell className="text-xs text-muted-foreground">{formatRelative(e.event_at)}</TableCell>
+                        <TableCell>
+                          <Badge variant={e.event_type === 'listing_view' ? 'default' : e.event_type === 'cta_click' ? 'secondary' : 'outline'} className="text-[10px]">
+                            {e.event_type.replace(/_/g, ' ')}
+                          </Badge>
+                          {e.page_category && (
+                            <span className="ml-2 text-[10px] uppercase tracking-wider text-muted-foreground">{e.page_category}</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="max-w-md truncate text-xs">
+                          {e.listing_mls ? (
+                            <span>
+                              <span className="font-medium">MLS {e.listing_mls}</span>
+                              {e.listing_street && <span className="text-muted-foreground"> · {e.listing_street}{e.listing_city ? `, ${e.listing_city}` : ''}</span>}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">{e.page_title || e.page_url}</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums text-muted-foreground">{e.score_delta > 0 ? `+${e.score_delta}` : '—'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -569,28 +637,49 @@ async function PersonContent({ fubPersonId }: { fubPersonId: number }) {
               </AlertDescription>
             </Alert>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>When</TableHead>
-                  <TableHead>Audience</TableHead>
-                  <TableHead>Broker</TableHead>
-                  <TableHead>Source</TableHead>
-                  <TableHead>Tier</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Assignments — stacked cards on phones */}
+              <div className="space-y-2 md:hidden">
                 {assignments.map((a) => (
-                  <TableRow key={a.id}>
-                    <TableCell className="text-xs text-muted-foreground">{formatDateTime(a.assigned_at)}</TableCell>
-                    <TableCell><Badge variant="secondary" className="capitalize">{a.audience}</Badge></TableCell>
-                    <TableCell className="font-medium capitalize">{a.broker}</TableCell>
-                    <TableCell className="text-xs">{a.source || '—'}</TableCell>
-                    <TableCell className="text-xs">{a.tier || '—'}</TableCell>
-                  </TableRow>
+                  <div key={a.id} className="rounded-lg border border-border bg-card p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-sm font-medium capitalize text-foreground">{a.broker}</span>
+                      <Badge variant="secondary" className="shrink-0 capitalize">{a.audience}</Badge>
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">{formatDateTime(a.assigned_at)}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <span>Source: {a.source || '—'}</span>
+                      <span>Tier: {a.tier || '—'}</span>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+              {/* Assignments — table on desktop */}
+              <div className="hidden overflow-hidden rounded-lg border border-border md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>When</TableHead>
+                      <TableHead>Audience</TableHead>
+                      <TableHead>Broker</TableHead>
+                      <TableHead>Source</TableHead>
+                      <TableHead>Tier</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {assignments.map((a) => (
+                      <TableRow key={a.id}>
+                        <TableCell className="text-xs text-muted-foreground">{formatDateTime(a.assigned_at)}</TableCell>
+                        <TableCell><Badge variant="secondary" className="capitalize">{a.audience}</Badge></TableCell>
+                        <TableCell className="font-medium capitalize">{a.broker}</TableCell>
+                        <TableCell className="text-xs">{a.source || '—'}</TableCell>
+                        <TableCell className="text-xs">{a.tier || '—'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -59,65 +59,108 @@ export default async function TcFormsPage({ searchParams }: Props) {
               ) : null}
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-24">Form #</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead className="w-20">Pages</TableHead>
-                    <TableHead className="w-32">Fields</TableHead>
-                    <TableHead className="w-28">Signers</TableHead>
-                    <TableHead className="w-32">Status</TableHead>
-                    <TableHead className="w-28 text-right">Blank</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lib.forms.map((f) => (
-                    <TableRow key={f.id}>
-                      <TableCell className="font-medium tabular-nums text-foreground">
-                        {f.form_number ?? '—'}
-                      </TableCell>
-                      <TableCell className="max-w-md">
-                        <p className="truncate" title={f.name}>
+              {/* Form cards — phones (one tap to open the blank) */}
+              <div className="space-y-2 md:hidden">
+                {lib.forms.map((f) => (
+                  <div key={f.id} className="rounded-lg border border-border bg-card p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-medium tabular-nums text-foreground">{f.form_number ?? '—'}</div>
+                        <p className="truncate text-sm text-muted-foreground" title={f.name}>
                           {f.name.replace(/\s*\(SAMPLE.*\)$/i, '')}
                         </p>
-                      </TableCell>
-                      <TableCell className="tabular-nums">{f.page_count ?? '—'}</TableCell>
-                      <TableCell className="tabular-nums">
-                        {f.fieldCount > 0 ? `${f.fieldCount} (${f.signatureFieldCount} sig)` : 'not mapped yet'}
-                      </TableCell>
-                      <TableCell>
-                        {f.signer_profile ? (
-                          <Badge variant="outline">{f.signer_profile === 'single_party' ? 'One side' : 'Both sides'}</Badge>
-                        ) : (
-                          '—'
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {f.isSample ? (
-                          <Badge className="bg-warning/20 text-foreground hover:bg-warning/20">Sample</Badge>
-                        ) : (
-                          <Badge className="bg-success/15 text-success hover:bg-success/15">Production</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {f.blankUrl ? (
-                          <a
-                            href={f.blankUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm underline underline-offset-2"
-                          >
-                            Open
-                          </a>
-                        ) : (
-                          '—'
-                        )}
-                      </TableCell>
+                      </div>
+                      {f.isSample ? (
+                        <Badge className="shrink-0 bg-warning/20 text-foreground hover:bg-warning/20">Sample</Badge>
+                      ) : (
+                        <Badge className="shrink-0 bg-success/15 text-success hover:bg-success/15">Production</Badge>
+                      )}
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <span className="tabular-nums">{f.page_count ?? '—'} pages</span>
+                      <span className="tabular-nums">
+                        {f.fieldCount > 0 ? `${f.fieldCount} fields (${f.signatureFieldCount} sig)` : 'not mapped yet'}
+                      </span>
+                      {f.signer_profile ? (
+                        <Badge variant="outline">{f.signer_profile === 'single_party' ? 'One side' : 'Both sides'}</Badge>
+                      ) : null}
+                    </div>
+                    {f.blankUrl ? (
+                      <a
+                        href={f.blankUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-block text-sm underline underline-offset-2"
+                      >
+                        Open blank
+                      </a>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+
+              {/* Form table — desktop */}
+              <div className="hidden overflow-hidden rounded-lg border border-border md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-24">Form #</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead className="w-20">Pages</TableHead>
+                      <TableHead className="w-32">Fields</TableHead>
+                      <TableHead className="w-28">Signers</TableHead>
+                      <TableHead className="w-32">Status</TableHead>
+                      <TableHead className="w-28 text-right">Blank</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {lib.forms.map((f) => (
+                      <TableRow key={f.id}>
+                        <TableCell className="font-medium tabular-nums text-foreground">
+                          {f.form_number ?? '—'}
+                        </TableCell>
+                        <TableCell className="max-w-md">
+                          <p className="truncate" title={f.name}>
+                            {f.name.replace(/\s*\(SAMPLE.*\)$/i, '')}
+                          </p>
+                        </TableCell>
+                        <TableCell className="tabular-nums">{f.page_count ?? '—'}</TableCell>
+                        <TableCell className="tabular-nums">
+                          {f.fieldCount > 0 ? `${f.fieldCount} (${f.signatureFieldCount} sig)` : 'not mapped yet'}
+                        </TableCell>
+                        <TableCell>
+                          {f.signer_profile ? (
+                            <Badge variant="outline">{f.signer_profile === 'single_party' ? 'One side' : 'Both sides'}</Badge>
+                          ) : (
+                            '—'
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {f.isSample ? (
+                            <Badge className="bg-warning/20 text-foreground hover:bg-warning/20">Sample</Badge>
+                          ) : (
+                            <Badge className="bg-success/15 text-success hover:bg-success/15">Production</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {f.blankUrl ? (
+                            <a
+                              href={f.blankUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm underline underline-offset-2"
+                            >
+                              Open
+                            </a>
+                          ) : (
+                            '—'
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         ))}

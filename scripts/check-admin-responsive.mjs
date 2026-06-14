@@ -1,27 +1,24 @@
 #!/usr/bin/env node
 /**
- * check-admin-responsive.mjs — the entire admin site stays mobile-first.
+ * check-admin-responsive.mjs — the ENTIRE admin site stays mobile-first.
  *
- * The shell is locked by check-admin-mobile-shell.mjs. This gate locks the
- * PAGES: it ratchets the count of mobile-hostile patterns inside admin
- * surfaces so new ones can never land (Matt directive 2026-06-13: "the entire
- * admin site responsive, no shortcuts, doesn't regress").
+ * Matt directive 2026-06-13 (said more than once): every /admin surface must be
+ * mobile-first, no shortcuts, and it must not regress. The shell is locked by
+ * check-admin-mobile-shell.mjs; this gate locks the PAGES + admin components.
  *
- * Ratchet model (same as design-tokens): the current count is the baseline in
- * scripts/admin-responsive-baseline.json. The gate FAILS if the count rises.
- * Burn the baseline DOWN as pages are fixed; regenerate with --update (requires
- * the count to be <= the stored baseline).
+ * Detects the real phone-break patterns:
+ *   1. table-no-mobile-fallback — a <table>/<Table> in a file with NO mobile
+ *      alternative (md:hidden card list, hidden md:block table, or overflow-x-auto).
+ *      This is the #1 unusable-on-phone failure.
+ *   2. grid-cols-no-breakpoint — base grid-cols-N (N>=3) with no sm/md/lg variant
+ *      (3+ columns crammed on a 375px screen).
+ *   3. fixed-width-NNN — w-[>=480px] / min-w-[>=480px] with no responsive reset
+ *      (blows past a phone viewport).
  *
- * High-signal patterns flagged (low false-positive):
- *   1. <table> not wrapped in an overflow-x-auto/scroll/auto container nearby
- *      (the #1 phone-break — a wide table with no horizontal scroll).
- *   2. base grid-cols-N with N>=3 and NO responsive prefix anywhere in the
- *      class string (3+ columns crammed onto a phone).
- *   3. fixed widths >= 700px (w-[NNNpx] / min-w-[NNNpx]) with no responsive
- *      reset (blows past a phone viewport).
- *
- * Usage:  node scripts/check-admin-responsive.mjs            # check (CI)
- *         node scripts/check-admin-responsive.mjs --update   # lower the baseline
+ * Ratchet vs scripts/admin-responsive-baseline.json. Fails on increase.
+ *   node scripts/check-admin-responsive.mjs           # CI (compare to baseline)
+ *   node scripts/check-admin-responsive.mjs --report   # print offenders, no gate
+ *   node scripts/check-admin-responsive.mjs --update    # lower the baseline
  */
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
@@ -42,33 +39,29 @@ function walk(dir) {
   return out
 }
 
-const BREAKPOINT = /(sm|md|lg|xl|2xl):/
-
 function violationsIn(src) {
   const hits = []
 
-  // 1. Unwrapped tables — a <table within 280 chars of an overflow wrapper is OK.
-  for (const m of src.matchAll(/<table[\s>]/g)) {
-    const before = src.slice(Math.max(0, m.index - 280), m.index)
-    if (!/overflow-x-auto|overflow-auto|overflow-x-scroll/.test(before)) {
-      hits.push('table-no-overflow')
+  // 1. A table with no mobile treatment anywhere in the file.
+  if (/<table[\s>]|<Table[\s>]/.test(src)) {
+    const hasMobileFallback = /md:hidden|sm:hidden|hidden\s+md:block|hidden\s+sm:block|overflow-x-auto|overflow-auto/.test(src)
+    if (!hasMobileFallback) hits.push('table-no-mobile-fallback')
+  }
+
+  // 2. base grid-cols-N (N>=3) with no responsive grid-cols in the same class.
+  for (const m of src.matchAll(/className=("|'|`)([^"'`]*)\1/g)) {
+    const cls = m[2]
+    if (/(?:^|\s)grid-cols-([3-9]|1[0-2])(?:\s|$)/.test(cls) && !/(sm|md|lg|xl|2xl):grid-cols-/.test(cls)) {
+      hits.push('grid-cols-no-breakpoint')
     }
   }
 
-  // 2. base grid-cols-N (N>=3) with no responsive grid-cols anywhere in the class.
-  for (const m of src.matchAll(/className=("|'|`)([^"'`]*)\1/g)) {
-    const cls = m[2]
-    const baseMulti = /(?:^|\s)grid-cols-([3-9]|1[0-2])(?:\s|$)/.test(cls)
-    const hasResponsiveGrid = /(sm|md|lg|xl|2xl):grid-cols-/.test(cls)
-    if (baseMulti && !hasResponsiveGrid) hits.push('grid-cols-no-breakpoint')
-  }
-
-  // 3. fixed widths >= 700px with no responsive reset on the same element.
-  for (const m of src.matchAll(/(?:^|[\s"'`])((?:min-)?w)-\[(\d{3,})px\]/g)) {
+  // 3. forced widths past a phone with no responsive reset nearby.
+  for (const m of src.matchAll(/(?:^|[\s"'`])(min-w|w)-\[(\d{3,})px\]/g)) {
     const px = Number(m[2])
     const idx = m.index ?? 0
-    const ctx = src.slice(Math.max(0, idx - 60), idx + 60)
-    if (px >= 700 && !BREAKPOINT.test(ctx)) hits.push(`fixed-width-${px}`)
+    const ctx = src.slice(Math.max(0, idx - 70), idx + 70)
+    if (px >= 480 && !/(sm|md|lg|xl|2xl):/.test(ctx)) hits.push(`fixed-width-${px}`)
   }
 
   return hits
@@ -79,16 +72,29 @@ let total = 0
 const byFile = {}
 for (const f of files) {
   const hits = violationsIn(readFileSync(f, 'utf8'))
-  if (hits.length) { byFile[f] = hits.length; total += hits.length }
+  if (hits.length) { byFile[f] = hits; total += hits.length }
 }
 
+function printBreakdown() {
+  const sorted = Object.entries(byFile).sort((a, b) => b[1].length - a[1].length)
+  for (const [f, hits] of sorted) console.error(`   ${String(hits.length).padStart(2)}  ${f}  [${[...new Set(hits)].join(', ')}]`)
+}
+
+const report = process.argv.includes('--report')
 const update = process.argv.includes('--update')
 let baseline = { total: Infinity }
 try { baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8')) } catch { /* first run */ }
 
+if (report) {
+  console.error(`admin-responsive: ${total} mobile-hostile patterns across ${Object.keys(byFile).length} files`)
+  printBreakdown()
+  process.exit(0)
+}
+
 if (update) {
   if (Number.isFinite(baseline.total) && total > baseline.total) {
-    console.error(`✗ refusing to raise baseline (${baseline.total} → ${total}). Fix pages first.`)
+    console.error(`✗ refusing to raise baseline (${baseline.total} → ${total}). Fix the pages first:`)
+    printBreakdown()
     process.exit(1)
   }
   writeFileSync(BASELINE_PATH, JSON.stringify({ total, files: byFile }, null, 2) + '\n')
@@ -98,9 +104,8 @@ if (update) {
 
 if (total > baseline.total) {
   console.error(`✗ admin-responsive REGRESSION: ${total} mobile-hostile patterns vs baseline ${baseline.total}.`)
-  const worst = Object.entries(byFile).sort((a, b) => b[1] - a[1]).slice(0, 12)
-  for (const [f, n] of worst) console.error(`   ${n}  ${f}`)
-  console.error('   Wrap tables in overflow-x-auto, add sm:/lg: to base multi-col grids, drop fixed >=700px widths.')
+  printBreakdown()
+  console.error('   Wrap tables with a md:hidden card list (+ hidden md:block table), add sm:/lg: to base grid-cols>=3, drop fixed >=480px widths.')
   process.exit(1)
 }
 

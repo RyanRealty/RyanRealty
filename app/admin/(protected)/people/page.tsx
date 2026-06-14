@@ -328,47 +328,82 @@ async function PeopleIndexContent({ params }: { params: Record<string, string | 
           {people.length === 0 ? (
             <p className="text-sm text-muted-foreground">No people match these filters. Clear filters or widen the search.</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Person</TableHead>
-                  <TableHead>Audience</TableHead>
-                  <TableHead>Broker</TableHead>
-                  <TableHead>Tier</TableHead>
-                  <TableHead>Source</TableHead>
-                  <TableHead className="text-right tabular-nums">Score</TableHead>
-                  <TableHead>City</TableHead>
-                  <TableHead>Last seen</TableHead>
-                  <TableHead>Assigned</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* People cards — phones (one thumb-tap per person) */}
+              <div className="space-y-2 md:hidden">
                 {people.map((p) => (
-                  <TableRow key={p.fubPersonId}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {p.hotFiredAt && <span className="inline-block h-2 w-2 rounded-full bg-destructive" title="Hot lead — score crossed 100" />}
-                        <Link href={`/admin/people/${p.fubPersonId}`} className="font-medium text-primary hover:underline">
+                  <Link
+                    key={p.fubPersonId}
+                    href={`/admin/people/${p.fubPersonId}`}
+                    className="block rounded-lg border border-border bg-card p-3 transition-colors hover:bg-muted/50"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex min-w-0 items-center gap-2">
+                        {p.hotFiredAt && <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-destructive" title="Hot lead — score crossed 100" />}
+                        <span className="truncate text-sm font-medium text-primary">
                           {p.identifiedEmail ?? `FUB #${p.fubPersonId}`}
-                        </Link>
+                        </span>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      {p.audience ? <Badge variant="secondary" className="capitalize">{p.audience}</Badge> : <span className="text-xs text-muted-foreground">—</span>}
-                    </TableCell>
-                    <TableCell className="text-xs capitalize">{p.broker ?? '—'}</TableCell>
-                    <TableCell>
-                      {p.tier ? <Badge variant={p.tier === 'hot' ? 'destructive' : p.tier === 'warm' ? 'default' : 'outline'} className="capitalize">{p.tier}</Badge> : <span className="text-xs text-muted-foreground">—</span>}
-                    </TableCell>
-                    <TableCell className="text-xs">{p.source ?? '—'}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(p.peakScore)}</TableCell>
-                    <TableCell className="text-xs">{p.city ?? '—'}</TableCell>
-                    <TableCell className="text-xs">{formatRelative(p.lastSeenAt)}</TableCell>
-                    <TableCell className="text-xs">{formatRelative(p.assignedAt)}</TableCell>
-                  </TableRow>
+                      <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">{formatInt(p.peakScore)}</span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      {p.audience ? <Badge variant="secondary" className="capitalize">{p.audience}</Badge> : null}
+                      {p.tier ? <Badge variant={p.tier === 'hot' ? 'destructive' : p.tier === 'warm' ? 'default' : 'outline'} className="capitalize">{p.tier}</Badge> : null}
+                      {p.broker ? <span className="text-xs capitalize text-muted-foreground">{p.broker}</span> : null}
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                      <span className="truncate">{p.city ?? '—'}</span>
+                      <span className="shrink-0 tabular-nums">{formatRelative(p.lastSeenAt)}</span>
+                    </div>
+                  </Link>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              {/* People table — desktop */}
+              <div className="hidden overflow-hidden rounded-lg border border-border md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Person</TableHead>
+                      <TableHead>Audience</TableHead>
+                      <TableHead>Broker</TableHead>
+                      <TableHead>Tier</TableHead>
+                      <TableHead>Source</TableHead>
+                      <TableHead className="text-right tabular-nums">Score</TableHead>
+                      <TableHead>City</TableHead>
+                      <TableHead>Last seen</TableHead>
+                      <TableHead>Assigned</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {people.map((p) => (
+                      <TableRow key={p.fubPersonId}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {p.hotFiredAt && <span className="inline-block h-2 w-2 rounded-full bg-destructive" title="Hot lead — score crossed 100" />}
+                            <Link href={`/admin/people/${p.fubPersonId}`} className="font-medium text-primary hover:underline">
+                              {p.identifiedEmail ?? `FUB #${p.fubPersonId}`}
+                            </Link>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {p.audience ? <Badge variant="secondary" className="capitalize">{p.audience}</Badge> : <span className="text-xs text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell className="text-xs capitalize">{p.broker ?? '—'}</TableCell>
+                        <TableCell>
+                          {p.tier ? <Badge variant={p.tier === 'hot' ? 'destructive' : p.tier === 'warm' ? 'default' : 'outline'} className="capitalize">{p.tier}</Badge> : <span className="text-xs text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell className="text-xs">{p.source ?? '—'}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatInt(p.peakScore)}</TableCell>
+                        <TableCell className="text-xs">{p.city ?? '—'}</TableCell>
+                        <TableCell className="text-xs">{formatRelative(p.lastSeenAt)}</TableCell>
+                        <TableCell className="text-xs">{formatRelative(p.assignedAt)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

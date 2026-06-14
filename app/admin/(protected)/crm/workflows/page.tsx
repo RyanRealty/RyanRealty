@@ -219,7 +219,7 @@ export default async function CrmWorkflowsPage() {
         <p className="text-sm text-muted-foreground">
           Across {sequences.length} active {sequences.length === 1 ? 'sequence' : 'sequences'}:
         </p>
-        <div className="mt-2 grid grid-cols-3 gap-2 sm:mt-2 sm:flex sm:flex-wrap sm:items-center sm:gap-4">
+        <div className="mt-2 grid grid-cols-3 gap-2 sm:mt-2 sm:grid-cols-none sm:flex sm:flex-wrap sm:items-center sm:gap-4">
           <span className="text-sm tabular-nums text-foreground">
             <span className="font-semibold">{counts.awaiting_broker}</span>{' '}
             <span className="block text-muted-foreground sm:inline">waiting on approval</span>

@@ -275,6 +275,85 @@ export default function AdminListingEditor({ initialData }: Props) {
             Add photo
           </Button>
 
+          {/* Photo cards — phones (stacked, thumb-friendly actions) */}
+          <div className="space-y-2 md:hidden">
+            {photos.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                  No listing photos found.
+                </CardContent>
+              </Card>
+            ) : (
+              photos.map((photo, index) => (
+                <Card key={photo.id}>
+                  <CardContent className="space-y-3 p-3">
+                    <div className="flex items-start gap-3">
+                      <a
+                        href={photo.cdn_url || photo.photo_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="shrink-0"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={photo.cdn_url || photo.photo_url}
+                          alt="Listing photo"
+                          className="h-16 w-24 rounded object-cover"
+                        />
+                      </a>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm text-foreground">{photo.caption ?? '—'}</p>
+                        <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                          Order {index + 1} · {heroPhotoId === photo.id ? 'Hero' : 'Not hero'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => movePhoto(photo.id, 'up')}
+                        disabled={index === 0 || isPending}
+                      >
+                        Up
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => movePhoto(photo.id, 'down')}
+                        disabled={index === photos.length - 1 || isPending}
+                      >
+                        Down
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setHero(photo.id)}
+                        disabled={photo.is_hero || isPending}
+                      >
+                        Set hero
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => deletePhoto(photo.id)}
+                        disabled={isPending}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+
+          {/* Photo table — desktop */}
+          <div className="hidden overflow-hidden rounded-lg border border-border md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -354,6 +433,7 @@ export default function AdminListingEditor({ initialData }: Props) {
               ))}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

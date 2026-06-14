@@ -165,22 +165,24 @@ async function OverviewTab({ range }: { range: { startDate: string; endDate: str
             {d.topSources.length === 0 ? (
               <p className="text-sm text-muted-foreground">No source data in this range.</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Source / Medium</TableHead>
-                    <TableHead className="text-right">Sessions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {d.topSources.map((s) => (
-                    <TableRow key={s.sourceMedium}>
-                      <TableCell className="font-medium">{s.sourceMedium}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatInt(s.sessions)}</TableCell>
+              <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Source / Medium</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Sessions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {d.topSources.map((s) => (
+                      <TableRow key={s.sourceMedium}>
+                        <TableCell className="font-medium whitespace-nowrap">{s.sourceMedium}</TableCell>
+                        <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(s.sessions)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -192,22 +194,24 @@ async function OverviewTab({ range }: { range: { startDate: string; endDate: str
             {d.topLandingPages.length === 0 ? (
               <p className="text-sm text-muted-foreground">No page data in this range.</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Page</TableHead>
-                    <TableHead className="text-right">Views</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {d.topLandingPages.map((p) => (
-                    <TableRow key={p.pagePath}>
-                      <TableCell className="font-medium">{p.pagePath}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatInt(p.sessions)}</TableCell>
+              <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Page</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Views</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {d.topLandingPages.map((p) => (
+                      <TableRow key={p.pagePath}>
+                        <TableCell className="font-medium whitespace-nowrap">{p.pagePath}</TableCell>
+                        <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(p.sessions)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -259,30 +263,32 @@ async function AcquisitionTab({ range }: { range: { startDate: string; endDate: 
           {d.sources.length === 0 ? (
             <p className="text-sm text-muted-foreground">No source data in this range.</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Source / Medium</TableHead>
-                  <TableHead className="text-right">Sessions</TableHead>
-                  <TableHead className="text-right">Users</TableHead>
-                  <TableHead className="text-right">Engaged sessions</TableHead>
-                  <TableHead className="text-right">Leads</TableHead>
-                  <TableHead className="text-right">Conversion rate</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {d.sources.map((s) => (
-                  <TableRow key={s.sourceMedium}>
-                    <TableCell className="font-medium">{s.sourceMedium}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(s.sessions)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(s.users)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(s.engagedSessions)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(s.leadEvents)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatPct(s.conversionRate, 2)}</TableCell>
+            <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Source / Medium</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Sessions</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Users</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Engaged sessions</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Leads</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Conversion rate</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {d.sources.map((s) => (
+                    <TableRow key={s.sourceMedium}>
+                      <TableCell className="font-medium whitespace-nowrap">{s.sourceMedium}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(s.sessions)}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(s.users)}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(s.engagedSessions)}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(s.leadEvents)}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatPct(s.conversionRate, 2)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -293,26 +299,28 @@ async function AcquisitionTab({ range }: { range: { startDate: string; endDate: 
             <CardTitle className="text-base">Social channel sessions</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Channel</TableHead>
-                  <TableHead className="text-right">Sessions</TableHead>
-                  <TableHead className="text-right">Users</TableHead>
-                  <TableHead className="text-right">Engagement rate</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {d.channels.map((c) => (
-                  <TableRow key={c.channel}>
-                    <TableCell className="font-medium">{c.channel}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(c.sessions)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(c.users)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatPct(c.engagementRate)}</TableCell>
+            <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Channel</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Sessions</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Users</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Engagement rate</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {d.channels.map((c) => (
+                    <TableRow key={c.channel}>
+                      <TableCell className="font-medium whitespace-nowrap">{c.channel}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(c.sessions)}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(c.users)}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatPct(c.engagementRate)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -337,28 +345,30 @@ async function BehaviorTab({ range }: { range: { startDate: string; endDate: str
           {d.pages.length === 0 ? (
             <p className="text-sm text-muted-foreground">No page data in this range.</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Page</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead className="text-right">Views</TableHead>
-                  <TableHead className="text-right">Users</TableHead>
-                  <TableHead className="text-right">Avg. engagement</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {d.pages.map((p) => (
-                  <TableRow key={`${p.pagePath}|${p.pageTitle}`}>
-                    <TableCell className="font-medium text-foreground max-w-md truncate" title={p.pagePath}>{p.pagePath}</TableCell>
-                    <TableCell className="text-muted-foreground max-w-md truncate" title={p.pageTitle}>{p.pageTitle}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(p.views)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(p.users)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatDuration(p.avgEngagementTimeSeconds)}</TableCell>
+            <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Page</TableHead>
+                    <TableHead className="whitespace-nowrap">Title</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Views</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Users</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Avg. engagement</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {d.pages.map((p) => (
+                    <TableRow key={`${p.pagePath}|${p.pageTitle}`}>
+                      <TableCell className="font-medium text-foreground max-w-md truncate" title={p.pagePath}>{p.pagePath}</TableCell>
+                      <TableCell className="text-muted-foreground max-w-md truncate" title={p.pageTitle}>{p.pageTitle}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(p.views)}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(p.users)}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatDuration(p.avgEngagementTimeSeconds)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -374,22 +384,24 @@ async function BehaviorTab({ range }: { range: { startDate: string; endDate: str
           {d.scrollDepths.every((s) => s.eventCount === 0) ? (
             <p className="text-sm text-muted-foreground">No scroll_depth events in this range.</p>
           ) : (
+            <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Milestone</TableHead>
-                  <TableHead className="text-right">Events (est.)</TableHead>
+                  <TableHead className="whitespace-nowrap">Milestone</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">Events (est.)</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {d.scrollDepths.map((s) => (
                   <TableRow key={s.milestone}>
-                    <TableCell className="font-medium">{s.milestone}%</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(s.eventCount)}</TableCell>
+                    <TableCell className="font-medium whitespace-nowrap">{s.milestone}%</TableCell>
+                    <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(s.eventCount)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -421,9 +433,9 @@ async function FunnelTab({ range, lpVariant }: { range: { startDate: string; end
             {d.steps.map((step, i) => {
               const widthPct = (step.count / max) * 100
               return (
-                <div key={step.label} className="grid grid-cols-12 gap-3 items-center">
-                  <div className="col-span-4 text-sm font-medium text-foreground">{i + 1}. {step.label}</div>
-                  <div className="col-span-6">
+                <div key={step.label} className="grid grid-cols-1 gap-2 sm:grid-cols-12 sm:gap-3 sm:items-center">
+                  <div className="sm:col-span-4 text-sm font-medium text-foreground">{i + 1}. {step.label}</div>
+                  <div className="sm:col-span-6">
                     <div className="h-6 w-full overflow-hidden rounded-md bg-muted">
                       <div
                         className="h-full bg-primary transition-all"
@@ -431,7 +443,7 @@ async function FunnelTab({ range, lpVariant }: { range: { startDate: string; end
                       />
                     </div>
                   </div>
-                  <div className="col-span-2 text-right text-sm">
+                  <div className="sm:col-span-2 text-left sm:text-right text-sm">
                     <div className="font-semibold text-foreground tabular-nums">{formatInt(step.count)}</div>
                     {step.dropOffPct !== null ? (
                       <div className="text-xs text-muted-foreground tabular-nums">
@@ -488,24 +500,26 @@ async function ConversionsTab({ range }: { range: { startDate: string; endDate: 
             {d.leadsBySource.length === 0 ? (
               <p className="text-sm text-muted-foreground">No attributed lead sources in this range.</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Source / Medium</TableHead>
-                    <TableHead className="text-right">Lead events</TableHead>
-                    <TableHead className="text-right">Users</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {d.leadsBySource.map((s) => (
-                    <TableRow key={s.sourceMedium}>
-                      <TableCell className="font-medium">{s.sourceMedium}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatInt(s.leadEvents)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatInt(s.users)}</TableCell>
+              <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Source / Medium</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Lead events</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Users</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {d.leadsBySource.map((s) => (
+                      <TableRow key={s.sourceMedium}>
+                        <TableCell className="font-medium whitespace-nowrap">{s.sourceMedium}</TableCell>
+                        <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(s.leadEvents)}</TableCell>
+                        <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(s.users)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

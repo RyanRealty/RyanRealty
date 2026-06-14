@@ -187,17 +187,18 @@ async function ChannelBreakdown() {
     <Card>
       <CardHeader><CardTitle>Per-channel breakdown (last 7 days, from visitor_sessions)</CardTitle></CardHeader>
       <CardContent className="p-0">
+        <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Channel</TableHead>
-              <TableHead className="text-right tabular-nums">Sessions</TableHead>
-              <TableHead className="text-right tabular-nums">Identified</TableHead>
-              <TableHead className="text-right tabular-nums">Identify rate</TableHead>
-              <TableHead className="text-right tabular-nums">Hot leads</TableHead>
-              <TableHead className="text-right tabular-nums">Avg score</TableHead>
-              <TableHead className="text-right tabular-nums">Campaigns</TableHead>
-              <TableHead>Top city</TableHead>
+              <TableHead className="whitespace-nowrap">Channel</TableHead>
+              <TableHead className="text-right tabular-nums whitespace-nowrap">Sessions</TableHead>
+              <TableHead className="text-right tabular-nums whitespace-nowrap">Identified</TableHead>
+              <TableHead className="text-right tabular-nums whitespace-nowrap">Identify rate</TableHead>
+              <TableHead className="text-right tabular-nums whitespace-nowrap">Hot leads</TableHead>
+              <TableHead className="text-right tabular-nums whitespace-nowrap">Avg score</TableHead>
+              <TableHead className="text-right tabular-nums whitespace-nowrap">Campaigns</TableHead>
+              <TableHead className="whitespace-nowrap">Top city</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -210,11 +211,12 @@ async function ChannelBreakdown() {
                 <TableCell className="text-right tabular-nums">{formatInt(r.hot)}</TableCell>
                 <TableCell className="text-right tabular-nums">{r.avgScore.toFixed(1)}</TableCell>
                 <TableCell className="text-right tabular-nums text-muted-foreground">{r.campaignCount}</TableCell>
-                <TableCell className="text-xs text-muted-foreground">{r.topCity || '—'}</TableCell>
+                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{r.topCity || '—'}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
+        </div>
       </CardContent>
     </Card>
   )
@@ -243,16 +245,17 @@ async function LiveSocialFeed() {
     <Card>
       <CardHeader><CardTitle>Right now from social (last 30 min)</CardTitle></CardHeader>
       <CardContent className="p-0">
+        <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Channel</TableHead>
-              <TableHead>Campaign</TableHead>
-              <TableHead>City</TableHead>
-              <TableHead className="text-right tabular-nums">Score</TableHead>
-              <TableHead>Intent</TableHead>
-              <TableHead>Identified</TableHead>
-              <TableHead>Last seen</TableHead>
+              <TableHead className="whitespace-nowrap">Channel</TableHead>
+              <TableHead className="whitespace-nowrap">Campaign</TableHead>
+              <TableHead className="whitespace-nowrap">City</TableHead>
+              <TableHead className="text-right tabular-nums whitespace-nowrap">Score</TableHead>
+              <TableHead className="whitespace-nowrap">Intent</TableHead>
+              <TableHead className="whitespace-nowrap">Identified</TableHead>
+              <TableHead className="whitespace-nowrap">Last seen</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -285,6 +288,7 @@ async function LiveSocialFeed() {
             })}
           </TableBody>
         </Table>
+        </div>
       </CardContent>
     </Card>
   )
@@ -317,23 +321,24 @@ async function Ga4SocialSources({ startDate, endDate }: { startDate: string; end
         {social.length === 0 ? (
           <p className="p-6 text-sm text-muted-foreground">No social sources surfaced by GA4 in this window.</p>
         ) : (
+          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Channel</TableHead>
-                <TableHead>Source / Medium</TableHead>
-                <TableHead className="text-right tabular-nums">Sessions</TableHead>
-                <TableHead className="text-right tabular-nums">Users</TableHead>
-                <TableHead className="text-right tabular-nums">Engaged</TableHead>
-                <TableHead className="text-right tabular-nums">Leads</TableHead>
-                <TableHead className="text-right tabular-nums">Conv rate</TableHead>
+                <TableHead className="whitespace-nowrap">Channel</TableHead>
+                <TableHead className="whitespace-nowrap">Source / Medium</TableHead>
+                <TableHead className="text-right tabular-nums whitespace-nowrap">Sessions</TableHead>
+                <TableHead className="text-right tabular-nums whitespace-nowrap">Users</TableHead>
+                <TableHead className="text-right tabular-nums whitespace-nowrap">Engaged</TableHead>
+                <TableHead className="text-right tabular-nums whitespace-nowrap">Leads</TableHead>
+                <TableHead className="text-right tabular-nums whitespace-nowrap">Conv rate</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {social.map((r) => (
                 <TableRow key={r.source}>
                   <TableCell><Badge variant="outline" className={CHANNEL_COLOR[r.channel] ?? ''}>{r.channel}</Badge></TableCell>
-                  <TableCell className="font-mono text-xs">{r.source}</TableCell>
+                  <TableCell className="font-mono text-xs whitespace-nowrap">{r.source}</TableCell>
                   <TableCell className="text-right tabular-nums">{formatInt(r.sessions)}</TableCell>
                   <TableCell className="text-right tabular-nums">{formatInt(r.users)}</TableCell>
                   <TableCell className="text-right tabular-nums">{formatInt(r.engaged)}</TableCell>
@@ -343,6 +348,7 @@ async function Ga4SocialSources({ startDate, endDate }: { startDate: string; end
               ))}
             </TableBody>
           </Table>
+          </div>
         )}
       </CardContent>
     </Card>

@@ -330,7 +330,52 @@ export default async function DealsPage() {
             {money(Object.values(totals.byYear ?? {}).reduce((s, y) => s + y.volume, 0))} lifetime volume
           </p>
         </div>
-        <div className="rounded-lg border border-border bg-card">
+        {/* Closed cards — phones */}
+        <div className="space-y-2 md:hidden">
+          {closed.length === 0 ? (
+            <Card>
+              <CardContent className="py-10 text-center text-sm text-muted-foreground">
+                No closed transactions.
+              </CardContent>
+            </Card>
+          ) : (
+            closed.map((p) => {
+              const h = p.headline
+              return (
+                <Card key={p.key}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <Link
+                        href={`/admin/deals/${encodeURIComponent(p.key)}`}
+                        className="min-w-0 text-sm font-medium text-foreground hover:underline"
+                      >
+                        {p.address}
+                      </Link>
+                      <ComplianceBadge state={p.rollup.complianceState} />
+                    </div>
+                    {p.zombie ? (
+                      <p className="mt-1 text-xs text-warning" title={p.zombie}>
+                        ⚠ zombie folder
+                      </p>
+                    ) : null}
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums text-foreground">
+                      <span>{money(h.salePrice)}</span>
+                      <span className="text-muted-foreground">gross {money(h.officeGross)}</span>
+                      <span className="text-muted-foreground">closed {d10(h.actualClosingDate)}</span>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                      <span className="truncate">{p.broker ?? '—'}</span>
+                      <BnBadge state={h.brokerNotesState} />
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })
+          )}
+        </div>
+
+        {/* Closed table — desktop */}
+        <div className="hidden overflow-hidden rounded-lg border border-border bg-card md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -439,7 +484,40 @@ export default async function DealsPage() {
               Canceled / dead files ({dead.length})
             </AccordionTrigger>
             <AccordionContent>
-              <div className="rounded-lg border border-border bg-card">
+              {/* Dead cards — phones */}
+              <div className="space-y-2 md:hidden">
+                {dead.map((p) => {
+                  const lastDead = p.cycles
+                    .map((c) => c.deadDate)
+                    .filter(Boolean)
+                    .sort()
+                    .at(-1)
+                  const docs = p.cycles.reduce((s, c) => s + c.docs.live, 0)
+                  const term = p.cycles.some((c) =>
+                    (c.checklist.activities ?? []).some(
+                      (a) => /termination/i.test(a.name) && a.docCount > 0
+                    )
+                  )
+                  return (
+                    <Card key={p.key}>
+                      <CardContent className="p-4">
+                        <p className="text-sm font-medium text-foreground">{p.address}</p>
+                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs tabular-nums text-muted-foreground">
+                          <span>{p.cycles.length} folders</span>
+                          <span>dead {lastDead ?? '—'}</span>
+                          <span>{docs} docs</span>
+                        </div>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          {actionItems(p).slice(0, 2).join(' · ') || (term ? 'termination on file' : '—')}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+
+              {/* Dead table — desktop */}
+              <div className="hidden overflow-hidden rounded-lg border border-border bg-card md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>

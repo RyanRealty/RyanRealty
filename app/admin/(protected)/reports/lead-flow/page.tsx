@@ -375,48 +375,50 @@ async function LeadFlowContent() {
           </p>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Stage</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead className="text-right tabular-nums">Count</TableHead>
-                <TableHead className="text-right tabular-nums">vs sessions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">Sessions</TableCell>
-                <TableCell className="text-xs text-muted-foreground">GA4</TableCell>
-                <TableCell className="text-right tabular-nums">{formatInt(ga4Sessions)}</TableCell>
-                <TableCell className="text-right tabular-nums text-muted-foreground">100%</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Form submits</TableCell>
-                <TableCell className="text-xs text-muted-foreground">valuation_requests + listing_inquiries</TableCell>
-                <TableCell className="text-right tabular-nums">{formatInt(totalInquiries)}</TableCell>
-                <TableCell className="text-right tabular-nums text-muted-foreground">{formatPct(totalInquiries, ga4Sessions)}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Lead events fired</TableCell>
-                <TableCell className="text-xs text-muted-foreground">GA4 generate_lead</TableCell>
-                <TableCell className="text-right tabular-nums">{formatInt(ga4LeadEvents)}</TableCell>
-                <TableCell className="text-right tabular-nums text-muted-foreground">{formatPct(ga4LeadEvents, ga4Sessions)}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Broker assignments</TableCell>
-                <TableCell className="text-xs text-muted-foreground">marketing_assignments</TableCell>
-                <TableCell className="text-right tabular-nums">{formatInt(totalAssignments)}</TableCell>
-                <TableCell className="text-right tabular-nums text-muted-foreground">{formatPct(totalAssignments, ga4Sessions)}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">CMAs created</TableCell>
-                <TableCell className="text-xs text-muted-foreground">cmas</TableCell>
-                <TableCell className="text-right tabular-nums">{formatInt(cmaCount)}</TableCell>
-                <TableCell className="text-right tabular-nums text-muted-foreground">{formatPct(cmaCount, ga4Sessions)}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="whitespace-nowrap">Stage</TableHead>
+                  <TableHead className="whitespace-nowrap">Source</TableHead>
+                  <TableHead className="whitespace-nowrap text-right tabular-nums">Count</TableHead>
+                  <TableHead className="whitespace-nowrap text-right tabular-nums">vs sessions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="whitespace-nowrap font-medium">Sessions</TableCell>
+                  <TableCell className="whitespace-nowrap text-xs text-muted-foreground">GA4</TableCell>
+                  <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(ga4Sessions)}</TableCell>
+                  <TableCell className="whitespace-nowrap text-right tabular-nums text-muted-foreground">100%</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="whitespace-nowrap font-medium">Form submits</TableCell>
+                  <TableCell className="whitespace-nowrap text-xs text-muted-foreground">valuation_requests + listing_inquiries</TableCell>
+                  <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(totalInquiries)}</TableCell>
+                  <TableCell className="whitespace-nowrap text-right tabular-nums text-muted-foreground">{formatPct(totalInquiries, ga4Sessions)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="whitespace-nowrap font-medium">Lead events fired</TableCell>
+                  <TableCell className="whitespace-nowrap text-xs text-muted-foreground">GA4 generate_lead</TableCell>
+                  <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(ga4LeadEvents)}</TableCell>
+                  <TableCell className="whitespace-nowrap text-right tabular-nums text-muted-foreground">{formatPct(ga4LeadEvents, ga4Sessions)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="whitespace-nowrap font-medium">Broker assignments</TableCell>
+                  <TableCell className="whitespace-nowrap text-xs text-muted-foreground">marketing_assignments</TableCell>
+                  <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(totalAssignments)}</TableCell>
+                  <TableCell className="whitespace-nowrap text-right tabular-nums text-muted-foreground">{formatPct(totalAssignments, ga4Sessions)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="whitespace-nowrap font-medium">CMAs created</TableCell>
+                  <TableCell className="whitespace-nowrap text-xs text-muted-foreground">cmas</TableCell>
+                  <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(cmaCount)}</TableCell>
+                  <TableCell className="whitespace-nowrap text-right tabular-nums text-muted-foreground">{formatPct(cmaCount, ga4Sessions)}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
           <p className="mt-3 text-xs text-muted-foreground">
             Sessions-to-assignment conversion rate: <span className="font-medium text-foreground">{formatPct(totalAssignments, ga4Sessions)}</span>. Industry benchmark for real-estate sites with mixed paid + organic traffic is 0.5%–2%; below 0.3% usually means wiring gaps or page-friction issues, not traffic quality.
           </p>
@@ -432,32 +434,64 @@ async function LeadFlowContent() {
           </p>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Surface</TableHead>
-                <TableHead className="text-right tabular-nums">Sessions</TableHead>
-                <TableHead className="text-right tabular-nums">GA4 events</TableHead>
-                <TableHead className="text-right tabular-nums">Assignments</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-xs">Notes</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {wiringRows.map((row) => (
-                <TableRow key={row.surface.lp_variant}>
-                  <TableCell className="font-medium">{row.surface.label}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInt(row.sessions)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInt(row.ga4_events)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInt(row.assignments)}</TableCell>
-                  <TableCell>
-                    <Badge variant={statusBadgeVariant(row.status)}>{statusLabel(row.status)}</Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{row.surface.notes ?? ''}</TableCell>
+          {/* Surface cards — phones (each surface is an entity to scan + act on) */}
+          <div className="space-y-2 md:hidden">
+            {wiringRows.map((row) => (
+              <div key={row.surface.lp_variant} className="rounded-lg border border-border bg-card p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="min-w-0 text-sm font-medium text-foreground">{row.surface.label}</span>
+                  <Badge variant={statusBadgeVariant(row.status)} className="shrink-0">{statusLabel(row.status)}</Badge>
+                </div>
+                <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-muted-foreground sm:grid-cols-3">
+                  <div>
+                    <div className="uppercase tracking-wide">Sessions</div>
+                    <div className="tabular-nums text-foreground">{formatInt(row.sessions)}</div>
+                  </div>
+                  <div>
+                    <div className="uppercase tracking-wide">GA4 events</div>
+                    <div className="tabular-nums text-foreground">{formatInt(row.ga4_events)}</div>
+                  </div>
+                  <div>
+                    <div className="uppercase tracking-wide">Assignments</div>
+                    <div className="tabular-nums text-foreground">{formatInt(row.assignments)}</div>
+                  </div>
+                </div>
+                {row.surface.notes ? (
+                  <p className="mt-2 text-xs text-muted-foreground">{row.surface.notes}</p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+
+          {/* Surface table — desktop */}
+          <div className="hidden overflow-hidden rounded-lg border border-border md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Surface</TableHead>
+                  <TableHead className="text-right tabular-nums">Sessions</TableHead>
+                  <TableHead className="text-right tabular-nums">GA4 events</TableHead>
+                  <TableHead className="text-right tabular-nums">Assignments</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-xs">Notes</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {wiringRows.map((row) => (
+                  <TableRow key={row.surface.lp_variant}>
+                    <TableCell className="font-medium">{row.surface.label}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatInt(row.sessions)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatInt(row.ga4_events)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatInt(row.assignments)}</TableCell>
+                    <TableCell>
+                      <Badge variant={statusBadgeVariant(row.status)}>{statusLabel(row.status)}</Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{row.surface.notes ?? ''}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -471,24 +505,26 @@ async function LeadFlowContent() {
             </p>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Source / Medium</TableHead>
-                  <TableHead className="text-right tabular-nums">Lead events</TableHead>
-                  <TableHead className="text-right tabular-nums">Users</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ga4.leadSources.slice(0, 10).map((src) => (
-                  <TableRow key={src.sourceMedium}>
-                    <TableCell className="text-xs">{src.sourceMedium}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(src.leadEvents)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(src.users)}</TableCell>
+            <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Source / Medium</TableHead>
+                    <TableHead className="whitespace-nowrap text-right tabular-nums">Lead events</TableHead>
+                    <TableHead className="whitespace-nowrap text-right tabular-nums">Users</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {ga4.leadSources.slice(0, 10).map((src) => (
+                    <TableRow key={src.sourceMedium}>
+                      <TableCell className="whitespace-nowrap text-xs">{src.sourceMedium}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(src.leadEvents)}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(src.users)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -503,26 +539,28 @@ async function LeadFlowContent() {
             {brokerSplit.size === 0 ? (
               <p className="text-sm text-muted-foreground">No assignments in window.</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Broker</TableHead>
-                    <TableHead className="text-right tabular-nums">Count</TableHead>
-                    <TableHead className="text-right tabular-nums">Share</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Array.from(brokerSplit.entries())
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([broker, count]) => (
-                      <TableRow key={broker}>
-                        <TableCell className="font-medium capitalize">{broker}</TableCell>
-                        <TableCell className="text-right tabular-nums">{formatInt(count)}</TableCell>
-                        <TableCell className="text-right tabular-nums text-muted-foreground">{formatPct(count, totalAssignments)}</TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
+              <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Broker</TableHead>
+                      <TableHead className="whitespace-nowrap text-right tabular-nums">Count</TableHead>
+                      <TableHead className="whitespace-nowrap text-right tabular-nums">Share</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Array.from(brokerSplit.entries())
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([broker, count]) => (
+                        <TableRow key={broker}>
+                          <TableCell className="whitespace-nowrap font-medium capitalize">{broker}</TableCell>
+                          <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(count)}</TableCell>
+                          <TableCell className="whitespace-nowrap text-right tabular-nums text-muted-foreground">{formatPct(count, totalAssignments)}</TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -535,26 +573,28 @@ async function LeadFlowContent() {
             {audienceSplit.size === 0 ? (
               <p className="text-sm text-muted-foreground">No assignments in window.</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Audience</TableHead>
-                    <TableHead className="text-right tabular-nums">Count</TableHead>
-                    <TableHead className="text-right tabular-nums">Share</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Array.from(audienceSplit.entries())
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([audience, count]) => (
-                      <TableRow key={audience}>
-                        <TableCell className="font-medium capitalize">{audience}</TableCell>
-                        <TableCell className="text-right tabular-nums">{formatInt(count)}</TableCell>
-                        <TableCell className="text-right tabular-nums text-muted-foreground">{formatPct(count, totalAssignments)}</TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
+              <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Audience</TableHead>
+                      <TableHead className="whitespace-nowrap text-right tabular-nums">Count</TableHead>
+                      <TableHead className="whitespace-nowrap text-right tabular-nums">Share</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Array.from(audienceSplit.entries())
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([audience, count]) => (
+                        <TableRow key={audience}>
+                          <TableCell className="whitespace-nowrap font-medium capitalize">{audience}</TableCell>
+                          <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(count)}</TableCell>
+                          <TableCell className="whitespace-nowrap text-right tabular-nums text-muted-foreground">{formatPct(count, totalAssignments)}</TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -594,24 +634,26 @@ async function LeadFlowContent() {
             </p>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Event name</TableHead>
-                  <TableHead className="text-right tabular-nums">Count</TableHead>
-                  <TableHead className="text-right tabular-nums">Users</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ga4.topLeadEvents.map((ev) => (
-                  <TableRow key={ev.eventName}>
-                    <TableCell className="text-xs">{ev.eventName}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(ev.eventCount)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(ev.users)}</TableCell>
+            <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Event name</TableHead>
+                    <TableHead className="whitespace-nowrap text-right tabular-nums">Count</TableHead>
+                    <TableHead className="whitespace-nowrap text-right tabular-nums">Users</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {ga4.topLeadEvents.map((ev) => (
+                    <TableRow key={ev.eventName}>
+                      <TableCell className="whitespace-nowrap text-xs">{ev.eventName}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(ev.eventCount)}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(ev.users)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}

@@ -94,18 +94,20 @@ async function TopQueries() {
         {top.length === 0 ? (
           <p className="p-6 text-sm text-muted-foreground">No GSC query data in the last 30 days.</p>
         ) : (
-          <Table>
-            <TableHeader><TableRow><TableHead>Query</TableHead><TableHead className="text-right tabular-nums">Clicks</TableHead><TableHead className="text-right tabular-nums">Impressions</TableHead><TableHead className="text-right tabular-nums">CTR</TableHead><TableHead className="text-right tabular-nums">Position</TableHead></TableRow></TableHeader>
-            <TableBody>{top.map((r) => (
-              <TableRow key={r.key}>
-                <TableCell className="font-medium">{stripQ(r.key)}</TableCell>
-                <TableCell className="text-right tabular-nums font-semibold">{fmt(r.clicks)}</TableCell>
-                <TableCell className="text-right tabular-nums">{fmt(r.impressions)}</TableCell>
-                <TableCell className="text-right tabular-nums">{pct(r.ctr)}</TableCell>
-                <TableCell className="text-right tabular-nums"><Badge variant={r.position <= 10 ? 'default' : r.position <= 20 ? 'secondary' : 'outline'}>{pos(r.position)}</Badge></TableCell>
-              </TableRow>
-            ))}</TableBody>
-          </Table>
+          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+            <Table>
+              <TableHeader><TableRow><TableHead className="whitespace-nowrap">Query</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">Clicks</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">Impressions</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">CTR</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">Position</TableHead></TableRow></TableHeader>
+              <TableBody>{top.map((r) => (
+                <TableRow key={r.key}>
+                  <TableCell className="font-medium">{stripQ(r.key)}</TableCell>
+                  <TableCell className="text-right tabular-nums font-semibold whitespace-nowrap">{fmt(r.clicks)}</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{fmt(r.impressions)}</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{pct(r.ctr)}</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap"><Badge variant={r.position <= 10 ? 'default' : r.position <= 20 ? 'secondary' : 'outline'}>{pos(r.position)}</Badge></TableCell>
+                </TableRow>
+              ))}</TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -129,23 +131,25 @@ async function OpportunityQueries() {
         {opp.length === 0 ? (
           <p className="p-6 text-sm text-muted-foreground">No opportunity queries surfaced.</p>
         ) : (
-          <Table>
-            <TableHeader><TableRow><TableHead>Query</TableHead><TableHead className="text-right tabular-nums">Impressions</TableHead><TableHead className="text-right tabular-nums">CTR</TableHead><TableHead className="text-right tabular-nums">Position</TableHead><TableHead className="text-right tabular-nums">Potential clicks</TableHead></TableRow></TableHeader>
-            <TableBody>{opp.map((r) => {
-              // Industry CTR by position: pos 1 ~30%, pos 5 ~8%, pos 10 ~3%
-              const expectedCtr = r.position <= 3 ? 0.20 : r.position <= 5 ? 0.10 : r.position <= 10 ? 0.05 : 0.02
-              const potential = Math.round(r.impressions * expectedCtr)
-              return (
-                <TableRow key={r.key}>
-                  <TableCell className="font-medium">{stripQ(r.key)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{fmt(r.impressions)}</TableCell>
-                  <TableCell className="text-right tabular-nums text-destructive">{pct(r.ctr)}</TableCell>
-                  <TableCell className="text-right tabular-nums"><Badge variant={r.position <= 10 ? 'default' : 'secondary'}>{pos(r.position)}</Badge></TableCell>
-                  <TableCell className="text-right tabular-nums font-semibold text-green-600">+{fmt(Math.max(0, potential - r.clicks))}</TableCell>
-                </TableRow>
-              )
-            })}</TableBody>
-          </Table>
+          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+            <Table>
+              <TableHeader><TableRow><TableHead className="whitespace-nowrap">Query</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">Impressions</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">CTR</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">Position</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">Potential clicks</TableHead></TableRow></TableHeader>
+              <TableBody>{opp.map((r) => {
+                // Industry CTR by position: pos 1 ~30%, pos 5 ~8%, pos 10 ~3%
+                const expectedCtr = r.position <= 3 ? 0.20 : r.position <= 5 ? 0.10 : r.position <= 10 ? 0.05 : 0.02
+                const potential = Math.round(r.impressions * expectedCtr)
+                return (
+                  <TableRow key={r.key}>
+                    <TableCell className="font-medium">{stripQ(r.key)}</TableCell>
+                    <TableCell className="text-right tabular-nums whitespace-nowrap">{fmt(r.impressions)}</TableCell>
+                    <TableCell className="text-right tabular-nums text-destructive whitespace-nowrap">{pct(r.ctr)}</TableCell>
+                    <TableCell className="text-right tabular-nums whitespace-nowrap"><Badge variant={r.position <= 10 ? 'default' : 'secondary'}>{pos(r.position)}</Badge></TableCell>
+                    <TableCell className="text-right tabular-nums font-semibold text-green-600 whitespace-nowrap">+{fmt(Math.max(0, potential - r.clicks))}</TableCell>
+                  </TableRow>
+                )
+              })}</TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -166,18 +170,20 @@ async function TopPages() {
         {top.length === 0 ? (
           <p className="p-6 text-sm text-muted-foreground">No GSC page data in the last 30 days.</p>
         ) : (
-          <Table>
-            <TableHeader><TableRow><TableHead>Page</TableHead><TableHead className="text-right tabular-nums">Clicks</TableHead><TableHead className="text-right tabular-nums">Impressions</TableHead><TableHead className="text-right tabular-nums">CTR</TableHead><TableHead className="text-right tabular-nums">Position</TableHead></TableRow></TableHeader>
-            <TableBody>{top.map((r) => (
-              <TableRow key={r.key}>
-                <TableCell><a href={r.key} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-mono text-xs">{stripP(r.key)}</a></TableCell>
-                <TableCell className="text-right tabular-nums font-semibold">{fmt(r.clicks)}</TableCell>
-                <TableCell className="text-right tabular-nums">{fmt(r.impressions)}</TableCell>
-                <TableCell className="text-right tabular-nums">{pct(r.ctr)}</TableCell>
-                <TableCell className="text-right tabular-nums">{pos(r.position)}</TableCell>
-              </TableRow>
-            ))}</TableBody>
-          </Table>
+          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+            <Table>
+              <TableHeader><TableRow><TableHead className="whitespace-nowrap">Page</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">Clicks</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">Impressions</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">CTR</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">Position</TableHead></TableRow></TableHeader>
+              <TableBody>{top.map((r) => (
+                <TableRow key={r.key}>
+                  <TableCell><a href={r.key} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-mono text-xs whitespace-nowrap">{stripP(r.key)}</a></TableCell>
+                  <TableCell className="text-right tabular-nums font-semibold whitespace-nowrap">{fmt(r.clicks)}</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{fmt(r.impressions)}</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{pct(r.ctr)}</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{pos(r.position)}</TableCell>
+                </TableRow>
+              ))}</TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>

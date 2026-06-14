@@ -5,6 +5,7 @@ import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getBrokerById, getBrokersForAdmin } from '@/app/actions/brokers'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 export const dynamic = 'force-dynamic'
@@ -34,7 +35,48 @@ export default async function AdminBrokersPage() {
       <p className="mt-2 text-sm text-muted-foreground">
         Team members appear on the public <Link href="/team" className="text-success hover:underline">/team</Link> page. Required: display name, title, Oregon license number.
       </p>
-      <div className="mt-6 overflow-hidden rounded-lg border border-border bg-card">
+      {/* Broker cards — phones (one card per broker) */}
+      <div className="mt-6 space-y-2 md:hidden">
+        {brokers.length === 0 ? (
+          <Card>
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">
+              No brokers yet. Tap &quot;Add broker&quot; to create one (required: display name, slug, title, Oregon license number).
+            </CardContent>
+          </Card>
+        ) : (
+          brokers.map((b) => (
+            <Card key={b.id}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-foreground">{b.display_name}</div>
+                    <div className="mt-0.5 truncate text-xs text-muted-foreground">{b.title}</div>
+                    <div className="mt-0.5 truncate text-xs text-muted-foreground">{b.slug}</div>
+                  </div>
+                  {b.is_active ? (
+                    <Badge variant="secondary" className="shrink-0">Active</Badge>
+                  ) : (
+                    <Badge variant="outline" className="shrink-0">Inactive</Badge>
+                  )}
+                </div>
+                <div className="mt-3 flex items-center gap-4">
+                  <Link href={`/admin/brokers/edit?id=${encodeURIComponent(b.id)}`} className="text-sm font-medium text-success hover:underline">
+                    Edit
+                  </Link>
+                  {b.is_active && (
+                    <Link href={`/team/${b.slug}`} className="text-sm font-medium text-muted-foreground hover:text-foreground" target="_blank" rel="noopener">
+                      View profile
+                    </Link>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Broker table — desktop */}
+      <div className="mt-6 hidden overflow-hidden rounded-lg border border-border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow>

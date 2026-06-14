@@ -331,38 +331,40 @@ async function FunnelContent() {
           </p>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Intent</TableHead>
-                <TableHead className="text-right tabular-nums">Sessions</TableHead>
-                <TableHead className="text-right tabular-nums">Identified</TableHead>
-                <TableHead className="text-right tabular-nums">Identify rate</TableHead>
-                <TableHead className="text-right tabular-nums">Hot leads</TableHead>
-                <TableHead className="text-right tabular-nums">Hot rate</TableHead>
-                <TableHead>Top source</TableHead>
-                <TableHead>Top city</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {buckets.map((b) => (
-                <TableRow key={b.label}>
-                  <TableCell>
-                    <Badge variant={b.label === 'seller' ? 'default' : b.label === 'buyer' ? 'secondary' : 'outline'}>
-                      {b.label}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInt(b.count)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInt(b.identified)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatPct(b.identified, b.count)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInt(b.hot)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatPct(b.hot, b.count)}</TableCell>
-                  <TableCell className="text-xs">{b.topSource}</TableCell>
-                  <TableCell className="text-xs">{b.topCity}</TableCell>
+          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="whitespace-nowrap">Intent</TableHead>
+                  <TableHead className="text-right tabular-nums whitespace-nowrap">Sessions</TableHead>
+                  <TableHead className="text-right tabular-nums whitespace-nowrap">Identified</TableHead>
+                  <TableHead className="text-right tabular-nums whitespace-nowrap">Identify rate</TableHead>
+                  <TableHead className="text-right tabular-nums whitespace-nowrap">Hot leads</TableHead>
+                  <TableHead className="text-right tabular-nums whitespace-nowrap">Hot rate</TableHead>
+                  <TableHead className="whitespace-nowrap">Top source</TableHead>
+                  <TableHead className="whitespace-nowrap">Top city</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {buckets.map((b) => (
+                  <TableRow key={b.label}>
+                    <TableCell className="whitespace-nowrap">
+                      <Badge variant={b.label === 'seller' ? 'default' : b.label === 'buyer' ? 'secondary' : 'outline'}>
+                        {b.label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(b.count)}</TableCell>
+                    <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(b.identified)}</TableCell>
+                    <TableCell className="text-right tabular-nums whitespace-nowrap">{formatPct(b.identified, b.count)}</TableCell>
+                    <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(b.hot)}</TableCell>
+                    <TableCell className="text-right tabular-nums whitespace-nowrap">{formatPct(b.hot, b.count)}</TableCell>
+                    <TableCell className="text-xs whitespace-nowrap">{b.topSource}</TableCell>
+                    <TableCell className="text-xs whitespace-nowrap">{b.topCity}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -375,37 +377,39 @@ async function FunnelContent() {
           </p>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Source</TableHead>
-                <TableHead className="text-right tabular-nums">Landed</TableHead>
-                <TableHead className="text-right tabular-nums">Engaged</TableHead>
-                <TableHead className="text-right tabular-nums">Intent</TableHead>
-                <TableHead className="text-right tabular-nums">Identified</TableHead>
-                <TableHead className="text-right tabular-nums">Hot lead</TableHead>
-                <TableHead>Biggest drop</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {funnels.map((f) => (
-                <TableRow key={f.source}>
-                  <TableCell className="font-medium">{f.source}</TableCell>
-                  {f.stages.map((stage) => (
-                    <TableCell key={stage.label} className="text-right tabular-nums">
-                      <div>{formatInt(stage.count)}</div>
-                      <div className="text-[10px] text-muted-foreground">{stage.fromStart.toFixed(1)}%</div>
-                    </TableCell>
-                  ))}
-                  <TableCell className="text-xs">
-                    <Badge variant={f.biggestDropPct >= 80 ? 'destructive' : f.biggestDropPct >= 50 ? 'default' : 'outline'}>
-                      {f.biggestDropLabel || '—'} ({f.biggestDropPct.toFixed(0)}%)
-                    </Badge>
-                  </TableCell>
+          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="whitespace-nowrap">Source</TableHead>
+                  <TableHead className="text-right tabular-nums whitespace-nowrap">Landed</TableHead>
+                  <TableHead className="text-right tabular-nums whitespace-nowrap">Engaged</TableHead>
+                  <TableHead className="text-right tabular-nums whitespace-nowrap">Intent</TableHead>
+                  <TableHead className="text-right tabular-nums whitespace-nowrap">Identified</TableHead>
+                  <TableHead className="text-right tabular-nums whitespace-nowrap">Hot lead</TableHead>
+                  <TableHead className="whitespace-nowrap">Biggest drop</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {funnels.map((f) => (
+                  <TableRow key={f.source}>
+                    <TableCell className="font-medium whitespace-nowrap">{f.source}</TableCell>
+                    {f.stages.map((stage) => (
+                      <TableCell key={stage.label} className="text-right tabular-nums whitespace-nowrap">
+                        <div>{formatInt(stage.count)}</div>
+                        <div className="text-[10px] text-muted-foreground">{stage.fromStart.toFixed(1)}%</div>
+                      </TableCell>
+                    ))}
+                    <TableCell className="text-xs whitespace-nowrap">
+                      <Badge variant={f.biggestDropPct >= 80 ? 'destructive' : f.biggestDropPct >= 50 ? 'default' : 'outline'}>
+                        {f.biggestDropLabel || '—'} ({f.biggestDropPct.toFixed(0)}%)
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
           <p className="mt-3 text-xs text-muted-foreground">
             Stage rules: Engaged = score ≥ 20. Intent = visitor hit a seller_intent or buyer_intent page. Identified = signed in via One-Tap, FB, or form. Hot lead = score crossed 100 and the FUB hot-lead task fired.
           </p>

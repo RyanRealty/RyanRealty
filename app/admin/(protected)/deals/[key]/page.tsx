@@ -266,53 +266,94 @@ function CycleSection({
             checklistItems={cycle.checklist.map((it) => ({ id: it.id, name: it.name }))}
           />
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead className="w-20">Pages</TableHead>
-              <TableHead className="w-24">Size</TableHead>
-              <TableHead className="w-28">Uploaded</TableHead>
-              <TableHead className="w-40">State</TableHead>
-              <TableHead className="w-44 text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {docs.map((doc) => (
-              <TableRow key={doc.id} className={cn(doc.archived && 'opacity-60')}>
-                <TableCell className="max-w-md">
+        {/* Document cards — phones (each doc is one stacked card) */}
+        <div className="space-y-2 border-t border-border p-3 md:hidden">
+          {docs.map((doc) => (
+            <div
+              key={doc.id}
+              className={cn('rounded-md border border-border bg-muted/40 p-3', doc.archived && 'opacity-60')}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
                   <DocNameWithPreview doc={doc} />
                   {doc.archived && doc.archived_reason ? (
                     <p className="truncate text-xs text-muted-foreground" title={doc.archived_reason}>
                       {doc.archived_reason}
                     </p>
                   ) : null}
-                </TableCell>
-                <TableCell className="tabular-nums">{doc.page_count ?? '—'}</TableCell>
-                <TableCell className="tabular-nums">{kb(doc.bytes)}</TableCell>
-                <TableCell className="tabular-nums">{d10(doc.source_uploaded_at)}</TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {doc.is_broker_notes ? (
-                      <Badge className="bg-primary text-primary-foreground hover:bg-primary">Broker notes</Badge>
-                    ) : null}
-                    {doc.archived ? (
-                      <Badge variant="secondary">Archived</Badge>
-                    ) : (
-                      <Badge className="bg-success/15 text-success hover:bg-success/15">Live</Badge>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <DownloadButton documentId={doc.id} disabled={!doc.storage_path} />
-                    <ArchiveToggle documentId={doc.id} archived={doc.archived} docName={doc.name} />
-                  </div>
-                </TableCell>
+                </div>
+                <div className="flex shrink-0 flex-wrap justify-end gap-1">
+                  {doc.is_broker_notes ? (
+                    <Badge className="bg-primary text-primary-foreground hover:bg-primary">Broker notes</Badge>
+                  ) : null}
+                  {doc.archived ? (
+                    <Badge variant="secondary">Archived</Badge>
+                  ) : (
+                    <Badge className="bg-success/15 text-success hover:bg-success/15">Live</Badge>
+                  )}
+                </div>
+              </div>
+              <p className="mt-2 text-xs tabular-nums text-muted-foreground">
+                {doc.page_count ?? '—'} pages · {kb(doc.bytes)} · {d10(doc.source_uploaded_at)}
+              </p>
+              <div className="mt-3 flex justify-end gap-2">
+                <DownloadButton documentId={doc.id} disabled={!doc.storage_path} />
+                <ArchiveToggle documentId={doc.id} archived={doc.archived} docName={doc.name} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Document table — desktop */}
+        <div className="hidden md:block">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead className="w-20">Pages</TableHead>
+                <TableHead className="w-24">Size</TableHead>
+                <TableHead className="w-28">Uploaded</TableHead>
+                <TableHead className="w-40">State</TableHead>
+                <TableHead className="w-44 text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {docs.map((doc) => (
+                <TableRow key={doc.id} className={cn(doc.archived && 'opacity-60')}>
+                  <TableCell className="max-w-md">
+                    <DocNameWithPreview doc={doc} />
+                    {doc.archived && doc.archived_reason ? (
+                      <p className="truncate text-xs text-muted-foreground" title={doc.archived_reason}>
+                        {doc.archived_reason}
+                      </p>
+                    ) : null}
+                  </TableCell>
+                  <TableCell className="tabular-nums">{doc.page_count ?? '—'}</TableCell>
+                  <TableCell className="tabular-nums">{kb(doc.bytes)}</TableCell>
+                  <TableCell className="tabular-nums">{d10(doc.source_uploaded_at)}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {doc.is_broker_notes ? (
+                        <Badge className="bg-primary text-primary-foreground hover:bg-primary">Broker notes</Badge>
+                      ) : null}
+                      {doc.archived ? (
+                        <Badge variant="secondary">Archived</Badge>
+                      ) : (
+                        <Badge className="bg-success/15 text-success hover:bg-success/15">Live</Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <DownloadButton documentId={doc.id} disabled={!doc.storage_path} />
+                      <ArchiveToggle documentId={doc.id} archived={doc.archived} docName={doc.name} />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Checklist */}

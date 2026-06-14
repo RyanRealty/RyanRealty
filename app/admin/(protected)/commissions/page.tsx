@@ -147,12 +147,49 @@ export default async function CommissionsPage() {
       ) : null}
 
       {/* Per-deal ledger */}
-      <div className="rounded-lg border border-border bg-card">
+      <div>
         <div className="px-4 py-2">
           <p className="text-sm font-medium text-foreground">
             Ledger <span className="tabular-nums text-muted-foreground">({rows.length} rows)</span>
           </p>
         </div>
+
+        {/* Deal cards — phones (one tap per deal, key money facts mirrored) */}
+        <div className="space-y-2 md:hidden">
+          {sorted.map((r) => {
+            const st = STATUS_BADGE[r.status] ?? STATUS_BADGE.projected
+            return (
+              <Card key={r.id}>
+                <CardContent className="space-y-2 p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <Link
+                      href={`/admin/deals/${encodeURIComponent(r.property_key ?? '')}`}
+                      className="min-w-0 flex-1 truncate font-medium text-foreground underline-offset-2 hover:underline"
+                      title={r.address ?? undefined}
+                    >
+                      {r.address ?? r.cycle_id.slice(0, 8)}
+                    </Link>
+                    <Badge className={`${st.className} shrink-0`}>{st.label}</Badge>
+                  </div>
+                  <div className="flex items-baseline justify-between gap-2 tabular-nums">
+                    <span className="text-lg font-bold text-foreground">{money(r.brokerage_net)}</span>
+                    <span className="text-xs text-muted-foreground">brokerage net</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {r.broker_name} · {SIDE_LABEL[r.side]} · agent <span className="tabular-nums">{money(r.agent_net)}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-xs tabular-nums text-muted-foreground">
+                    <span>gross {money(r.gci)}</span>
+                    <span>closed {d10(r.closing_date)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+
+        {/* Ledger table — desktop */}
+        <div className="hidden overflow-hidden rounded-lg border border-border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -196,6 +233,7 @@ export default async function CommissionsPage() {
             })}
           </TableBody>
         </Table>
+        </div>
       </div>
     </main>
   )

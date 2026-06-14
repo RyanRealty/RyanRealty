@@ -40,26 +40,41 @@ export default function DashboardLeadPanel({ data }: Props) {
         {data.recentVisits.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">No visits yet.</p>
         ) : (
-          <div className="mt-2 max-h-64 overflow-y-auto">
-            <Table className="min-w-full border-collapse text-sm">
-              <TableHeader className="sticky top-0 bg-muted">
-                <TableRow className="border-b border-border">
-                  <TableHead className="py-1.5 pr-3 text-left font-medium text-muted-foreground">Time</TableHead>
-                  <TableHead className="py-1.5 pr-3 text-left font-medium text-muted-foreground">Path</TableHead>
-                  <TableHead className="py-1.5 pl-3 text-left font-medium text-muted-foreground">User</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.recentVisits.map((v) => (
-                  <TableRow key={v.visit_id + v.created_at} className="border-b border-border">
-                    <TableCell className="py-1.5 pr-3 text-muted-foreground whitespace-nowrap">{formatTime(v.created_at)}</TableCell>
-                    <TableCell className="py-1.5 pr-3 font-mono text-foreground truncate max-w-[200px]" title={v.path}>{v.path}</TableCell>
-                    <TableCell className="py-1.5 pl-3 text-muted-foreground">{v.user_id ? 'Yes' : '—'}</TableCell>
+          <>
+            {/* Visit cards — phones */}
+            <div className="mt-2 max-h-64 space-y-2 overflow-y-auto md:hidden">
+              {data.recentVisits.map((v) => (
+                <div key={v.visit_id + v.created_at} className="rounded-lg border border-border bg-card p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate font-mono text-sm text-foreground" title={v.path}>{v.path}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">{v.user_id ? 'Identified' : '—'}</span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{formatTime(v.created_at)}</p>
+                </div>
+              ))}
+            </div>
+            {/* Visit table — desktop */}
+            <div className="mt-2 hidden max-h-64 overflow-y-auto md:block">
+              <Table className="min-w-full border-collapse text-sm">
+                <TableHeader className="sticky top-0 bg-muted">
+                  <TableRow className="border-b border-border">
+                    <TableHead className="py-1.5 pr-3 text-left font-medium text-muted-foreground">Time</TableHead>
+                    <TableHead className="py-1.5 pr-3 text-left font-medium text-muted-foreground">Path</TableHead>
+                    <TableHead className="py-1.5 pl-3 text-left font-medium text-muted-foreground">User</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {data.recentVisits.map((v) => (
+                    <TableRow key={v.visit_id + v.created_at} className="border-b border-border">
+                      <TableCell className="py-1.5 pr-3 text-muted-foreground whitespace-nowrap">{formatTime(v.created_at)}</TableCell>
+                      <TableCell className="py-1.5 pr-3 font-mono text-foreground truncate max-w-[200px]" title={v.path}>{v.path}</TableCell>
+                      <TableCell className="py-1.5 pl-3 text-muted-foreground">{v.user_id ? 'Yes' : '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </div>
       <p className="text-sm text-muted-foreground">Hot leads and engagement scoring require FUB API or a contacts table. GA4 panel will show acquisition and conversion funnel.</p>

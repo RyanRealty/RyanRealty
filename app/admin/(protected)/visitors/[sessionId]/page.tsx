@@ -86,10 +86,38 @@ function shortenUrl(url: string): string {
   try { return new URL(url).pathname + new URL(url).search } catch { return url.slice(0, 80) }
 }
 
-function EventRow({ ev }: { ev: SessionEvent }) {
-  const listingLabel = ev.listing_mls
+function listingLabelFor(ev: SessionEvent): string | null {
+  return ev.listing_mls
     ? `MLS ${ev.listing_mls}${ev.listing_city ? ` · ${ev.listing_city}` : ''}${ev.listing_price ? ` · $${ev.listing_price.toLocaleString()}` : ''}`
     : null
+}
+
+function EventCard({ ev }: { ev: SessionEvent }) {
+  const listingLabel = listingLabelFor(ev)
+  return (
+    <div className="rounded-lg border border-border bg-card p-3">
+      <div className="flex items-center justify-between gap-2">
+        <Badge variant={eventBadgeVariant(ev.event_type)} className="text-[10px]">{ev.event_type.replace(/_/g, ' ')}</Badge>
+        <span className="tabular-nums text-sm font-semibold">
+          {ev.score_delta > 0 ? `+${ev.score_delta}` : ev.score_delta}
+        </span>
+      </div>
+      <p className="mt-2 break-all font-mono text-xs text-foreground">{shortenUrl(ev.page_url)}</p>
+      {listingLabel && <p className="mt-0.5 text-[10px] text-muted-foreground">{listingLabel}</p>}
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+        <span className="whitespace-nowrap">{fmtDateTime(ev.event_at)}</span>
+        {ev.page_category && <span>{ev.page_category}</span>}
+        {ev.scroll_depth_pct != null && <span className="tabular-nums">scroll {ev.scroll_depth_pct}%</span>}
+        {ev.pushed_to_fub_at
+          ? <Badge variant="default" className="text-[10px]">FUB synced</Badge>
+          : <Badge variant="outline" className="text-[10px]">local</Badge>}
+      </div>
+    </div>
+  )
+}
+
+function EventRow({ ev }: { ev: SessionEvent }) {
+  const listingLabel = listingLabelFor(ev)
   return (
     <TableRow>
       <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{fmtDateTime(ev.event_at)}</TableCell>
@@ -189,22 +217,32 @@ export default async function VisitorSessionPage({
           {events.length === 0 ? (
             <p className="p-8 text-center text-sm text-muted-foreground">No events recorded for this session.</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Time (PT)</TableHead>
-                  <TableHead>Event</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Page</TableHead>
-                  <TableHead className="text-right">Scroll</TableHead>
-                  <TableHead className="text-right">Score &Delta;</TableHead>
-                  <TableHead>FUB</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {eventsWithRunning.map((ev) => <EventRow key={ev.id} ev={ev} />)}
-              </TableBody>
-            </Table>
+            <>
+              {/* Event cards — phones (one stacked card per event) */}
+              <div className="space-y-2 p-3 md:hidden">
+                {eventsWithRunning.map((ev) => <EventCard key={ev.id} ev={ev} />)}
+              </div>
+
+              {/* Event table — desktop */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Time (PT)</TableHead>
+                      <TableHead>Event</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Page</TableHead>
+                      <TableHead className="text-right">Scroll</TableHead>
+                      <TableHead className="text-right">Score &Delta;</TableHead>
+                      <TableHead>FUB</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {eventsWithRunning.map((ev) => <EventRow key={ev.id} ev={ev} />)}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

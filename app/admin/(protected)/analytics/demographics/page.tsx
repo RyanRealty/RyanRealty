@@ -126,26 +126,28 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
       <Card>
         <CardHeader><CardTitle>Age brackets (all visitors)</CardTitle></CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Age</TableHead>
-                <TableHead className="text-right tabular-nums">Users</TableHead>
-                <TableHead className="text-right tabular-nums">Sessions</TableHead>
-                <TableHead className="text-right tabular-nums">Share</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {ageBuckets.map((b) => (
-                <TableRow key={b.ageBracket}>
-                  <TableCell><Badge variant={ageBracketBadgeVariant(b.ageBracket)}>{b.ageBracket}</Badge></TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInt(b.users)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInt(b.sessions)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatPct(b.users, ageTotal)}</TableCell>
+          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Age</TableHead>
+                  <TableHead className="text-right tabular-nums">Users</TableHead>
+                  <TableHead className="text-right tabular-nums">Sessions</TableHead>
+                  <TableHead className="text-right tabular-nums">Share</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {ageBuckets.map((b) => (
+                  <TableRow key={b.ageBracket}>
+                    <TableCell><Badge variant={ageBracketBadgeVariant(b.ageBracket)}>{b.ageBracket}</Badge></TableCell>
+                    <TableCell className="text-right tabular-nums">{formatInt(b.users)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatInt(b.sessions)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatPct(b.users, ageTotal)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
           <p className="mt-3 text-xs text-muted-foreground">
             Google Signals samples demographic data from signed-in Google users. Coverage is typically 30-60% of total traffic. Unknowns are excluded from percentage math, so percentages sum to 100% across known buckets only.
           </p>
@@ -163,26 +165,28 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
             {sellerLpByAge.length === 0 ? (
               <p className="text-sm text-muted-foreground">No /lp/seller-home-value visitors with demographic data in this window. May need more traffic before Google Signals samples enough.</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Age</TableHead>
-                    <TableHead className="text-right tabular-nums">Users</TableHead>
-                    <TableHead className="text-right tabular-nums">Visits</TableHead>
-                    <TableHead className="text-right tabular-nums">Share</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sellerLpByAge.map((b) => (
-                    <TableRow key={b.ageBracket}>
-                      <TableCell><Badge variant={ageBracketBadgeVariant(b.ageBracket)}>{b.ageBracket}</Badge></TableCell>
-                      <TableCell className="text-right tabular-nums">{formatInt(b.users)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatInt(b.eventCount)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatPct(b.users, sellerLpUsersTotal)}</TableCell>
+              <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Age</TableHead>
+                      <TableHead className="text-right tabular-nums">Users</TableHead>
+                      <TableHead className="text-right tabular-nums">Visits</TableHead>
+                      <TableHead className="text-right tabular-nums">Share</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {sellerLpByAge.map((b) => (
+                      <TableRow key={b.ageBracket}>
+                        <TableCell><Badge variant={ageBracketBadgeVariant(b.ageBracket)}>{b.ageBracket}</Badge></TableCell>
+                        <TableCell className="text-right tabular-nums">{formatInt(b.users)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatInt(b.eventCount)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatPct(b.users, sellerLpUsersTotal)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -196,26 +200,28 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
             {data.sellerLpByCity.length === 0 ? (
               <p className="text-sm text-muted-foreground">No /lp/seller-home-value visitors with geo data in this window.</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>City</TableHead>
-                    <TableHead>Region</TableHead>
-                    <TableHead className="text-right tabular-nums">Users</TableHead>
-                    <TableHead className="text-right tabular-nums">Visits</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.sellerLpByCity.map((c, i) => (
-                    <TableRow key={`${c.city}-${i}`} className={BEND_METRO.has(c.city) ? 'bg-primary/5' : undefined}>
-                      <TableCell>{c.city}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{c.region}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatInt(c.users)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatInt(c.eventCount)}</TableCell>
+              <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>City</TableHead>
+                      <TableHead>Region</TableHead>
+                      <TableHead className="text-right tabular-nums">Users</TableHead>
+                      <TableHead className="text-right tabular-nums">Visits</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {data.sellerLpByCity.map((c, i) => (
+                      <TableRow key={`${c.city}-${i}`} className={BEND_METRO.has(c.city) ? 'bg-primary/5' : undefined}>
+                        <TableCell>{c.city}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{c.region}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatInt(c.users)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatInt(c.eventCount)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -225,26 +231,28 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
       <Card>
         <CardHeader><CardTitle>Gender split (all visitors)</CardTitle></CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Gender</TableHead>
-                <TableHead className="text-right tabular-nums">Users</TableHead>
-                <TableHead className="text-right tabular-nums">Sessions</TableHead>
-                <TableHead className="text-right tabular-nums">Share</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.genders.map((g) => (
-                <TableRow key={g.gender}>
-                  <TableCell>{g.gender}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInt(g.users)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInt(g.sessions)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatPct(g.users, genderTotal)}</TableCell>
+          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Gender</TableHead>
+                  <TableHead className="text-right tabular-nums">Users</TableHead>
+                  <TableHead className="text-right tabular-nums">Sessions</TableHead>
+                  <TableHead className="text-right tabular-nums">Share</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {data.genders.map((g) => (
+                  <TableRow key={g.gender}>
+                    <TableCell>{g.gender}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatInt(g.users)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatInt(g.sessions)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatPct(g.users, genderTotal)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -252,28 +260,30 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
       <Card>
         <CardHeader><CardTitle>Top 25 cities</CardTitle></CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>City</TableHead>
-                <TableHead>Region</TableHead>
-                <TableHead>Country</TableHead>
-                <TableHead className="text-right tabular-nums">Users</TableHead>
-                <TableHead className="text-right tabular-nums">Sessions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.topCities.map((c, i) => (
-                <TableRow key={`${c.city}-${i}`} className={BEND_METRO.has(c.city) ? 'bg-primary/5' : undefined}>
-                  <TableCell>{c.city}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{c.region}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{c.country}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInt(c.users)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInt(c.sessions)}</TableCell>
+          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>City</TableHead>
+                  <TableHead>Region</TableHead>
+                  <TableHead>Country</TableHead>
+                  <TableHead className="text-right tabular-nums">Users</TableHead>
+                  <TableHead className="text-right tabular-nums">Sessions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {data.topCities.map((c, i) => (
+                  <TableRow key={`${c.city}-${i}`} className={BEND_METRO.has(c.city) ? 'bg-primary/5' : undefined}>
+                    <TableCell>{c.city}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{c.region}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{c.country}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatInt(c.users)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatInt(c.sessions)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
           <p className="mt-3 text-xs text-muted-foreground">Rows highlighted blue are Bend metro cities (Bend, Redmond, Sisters, Sunriver, Tumalo, La Pine, Madras, Prineville).</p>
         </CardContent>
       </Card>
@@ -285,26 +295,28 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
           <p className="text-xs text-muted-foreground">Top combinations by sessions. Use this to see if FB ads are actually pulling the elderly Bend audience or if they are pulling 18-34.</p>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Age</TableHead>
-                <TableHead>Source / Medium</TableHead>
-                <TableHead className="text-right tabular-nums">Users</TableHead>
-                <TableHead className="text-right tabular-nums">Sessions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {ageBySource.slice(0, 30).map((r, i) => (
-                <TableRow key={`${r.ageBracket}-${r.sourceMedium}-${i}`}>
-                  <TableCell><Badge variant={ageBracketBadgeVariant(r.ageBracket)}>{r.ageBracket}</Badge></TableCell>
-                  <TableCell className="text-xs">{r.sourceMedium}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInt(r.users)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInt(r.sessions)}</TableCell>
+          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Age</TableHead>
+                  <TableHead>Source / Medium</TableHead>
+                  <TableHead className="text-right tabular-nums">Users</TableHead>
+                  <TableHead className="text-right tabular-nums">Sessions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {ageBySource.slice(0, 30).map((r, i) => (
+                  <TableRow key={`${r.ageBracket}-${r.sourceMedium}-${i}`}>
+                    <TableCell><Badge variant={ageBracketBadgeVariant(r.ageBracket)}>{r.ageBracket}</Badge></TableCell>
+                    <TableCell className="text-xs">{r.sourceMedium}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatInt(r.users)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatInt(r.sessions)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

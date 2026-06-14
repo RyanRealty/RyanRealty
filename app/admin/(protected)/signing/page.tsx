@@ -5,6 +5,7 @@ import { ENVELOPE_STATUS_LABEL, type EnvelopeStatus } from '@/lib/tc/signing'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -67,8 +68,35 @@ export default async function SigningDashboard() {
 
 function EnvelopeTable({ rows }: { rows: Awaited<ReturnType<typeof getEnvelopesOverview>> }) {
   return (
-    <div className="rounded-lg border border-border bg-card">
-      <Table>
+    <>
+      {/* Envelope cards — phones (one thumb-tap per envelope) */}
+      <div className="space-y-2 md:hidden">
+        {rows.map((e) => (
+          <Card key={e.id} className="transition-colors hover:bg-muted/50">
+            <CardContent className="p-4">
+              <Link href={`/admin/signing/${e.id}`} className="block">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">{e.name}</span>
+                  <Badge className={cn('shrink-0', STATUS_STYLE[e.status])}>{ENVELOPE_STATUS_LABEL[e.status]}</Badge>
+                </div>
+                <div className="mt-1 truncate text-xs text-muted-foreground">
+                  {e.dealKey ? e.dealAddress ?? e.dealKey : 'No deal'}
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span className="tabular-nums">
+                    Signed {e.signedCount}/{e.recipientCount}
+                  </span>
+                  <span className="shrink-0 tabular-nums">{e.sentAt ? e.sentAt.slice(0, 10) : '—'}</span>
+                </div>
+              </Link>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Envelope table — desktop */}
+      <div className="hidden overflow-hidden rounded-lg border border-border bg-card md:block">
+        <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Envelope</TableHead>
@@ -108,6 +136,7 @@ function EnvelopeTable({ rows }: { rows: Awaited<ReturnType<typeof getEnvelopesO
           ))}
         </TableBody>
       </Table>
-    </div>
+      </div>
+    </>
   )
 }

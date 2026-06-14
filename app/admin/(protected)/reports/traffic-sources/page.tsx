@@ -309,28 +309,30 @@ async function TrafficSourcesContent() {
             </p>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Source / Medium</TableHead>
-                  <TableHead className="text-right tabular-nums">Sessions</TableHead>
-                  <TableHead className="text-right tabular-nums">Users</TableHead>
-                  <TableHead className="text-right tabular-nums">Engaged</TableHead>
-                  <TableHead className="text-right tabular-nums">Engagement</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ga4.topSources.map((s) => (
-                  <TableRow key={s.sourceMedium}>
-                    <TableCell className="text-xs">{s.sourceMedium}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(s.sessions)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(s.users)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(s.engagedSessions)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{(s.engagementRate * 100).toFixed(0)}%</TableCell>
+            <div className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Source / Medium</TableHead>
+                    <TableHead className="whitespace-nowrap text-right tabular-nums">Sessions</TableHead>
+                    <TableHead className="whitespace-nowrap text-right tabular-nums">Users</TableHead>
+                    <TableHead className="whitespace-nowrap text-right tabular-nums">Engaged</TableHead>
+                    <TableHead className="whitespace-nowrap text-right tabular-nums">Engagement</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {ga4.topSources.map((s) => (
+                    <TableRow key={s.sourceMedium}>
+                      <TableCell className="whitespace-nowrap text-xs">{s.sourceMedium}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(s.sessions)}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(s.users)}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(s.engagedSessions)}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums">{(s.engagementRate * 100).toFixed(0)}%</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -347,26 +349,28 @@ async function TrafficSourcesContent() {
           {topUtms.length === 0 ? (
             <p className="text-sm text-muted-foreground">No first-touch sessions in the last 30 days. The WordPress + Next.js tracking snippet has to fire for these to populate.</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Source</TableHead>
-                  <TableHead>Medium</TableHead>
-                  <TableHead>Campaign</TableHead>
-                  <TableHead className="text-right tabular-nums">Sessions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {topUtms.map((r) => (
-                  <TableRow key={`${r.source}|${r.medium}|${r.campaign}`}>
-                    <TableCell className="text-xs">{r.source}</TableCell>
-                    <TableCell className="text-xs">{r.medium}</TableCell>
-                    <TableCell className="text-xs">{r.campaign}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(r.count)}</TableCell>
+            <div className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Source</TableHead>
+                    <TableHead className="whitespace-nowrap">Medium</TableHead>
+                    <TableHead className="whitespace-nowrap">Campaign</TableHead>
+                    <TableHead className="whitespace-nowrap text-right tabular-nums">Sessions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {topUtms.map((r) => (
+                    <TableRow key={`${r.source}|${r.medium}|${r.campaign}`}>
+                      <TableCell className="whitespace-nowrap text-xs">{r.source}</TableCell>
+                      <TableCell className="whitespace-nowrap text-xs">{r.medium}</TableCell>
+                      <TableCell className="whitespace-nowrap text-xs">{r.campaign}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(r.count)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -383,26 +387,28 @@ async function TrafficSourcesContent() {
           {topReferrers.length === 0 ? (
             <p className="text-sm text-muted-foreground">No visits in the last 30 days.</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Platform</TableHead>
-                  <TableHead>Referrer</TableHead>
-                  <TableHead className="text-right tabular-nums">Visits</TableHead>
-                  <TableHead className="text-right tabular-nums">Share</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {topReferrers.map((r) => (
-                  <TableRow key={`${r.bucket}|${r.referrer}`}>
-                    <TableCell><Badge variant={r.bucket === '(direct)' || r.bucket === '(internal)' ? 'outline' : 'secondary'} className="text-[10px]">{r.bucket}</Badge></TableCell>
-                    <TableCell className="max-w-md truncate text-xs">{r.referrer}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(r.count)}</TableCell>
-                    <TableCell className="text-right tabular-nums text-muted-foreground">{formatPct(r.count, visitsCount)}</TableCell>
+            <div className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Platform</TableHead>
+                    <TableHead className="whitespace-nowrap">Referrer</TableHead>
+                    <TableHead className="whitespace-nowrap text-right tabular-nums">Visits</TableHead>
+                    <TableHead className="whitespace-nowrap text-right tabular-nums">Share</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {topReferrers.map((r) => (
+                    <TableRow key={`${r.bucket}|${r.referrer}`}>
+                      <TableCell className="whitespace-nowrap"><Badge variant={r.bucket === '(direct)' || r.bucket === '(internal)' ? 'outline' : 'secondary'} className="text-[10px]">{r.bucket}</Badge></TableCell>
+                      <TableCell className="max-w-md truncate text-xs">{r.referrer}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(r.count)}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums text-muted-foreground">{formatPct(r.count, visitsCount)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -419,22 +425,24 @@ async function TrafficSourcesContent() {
           {topLandings.length === 0 ? (
             <p className="text-sm text-muted-foreground">No landing-page data yet.</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Landing page</TableHead>
-                  <TableHead className="text-right tabular-nums">Sessions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {topLandings.map(([lp, count]) => (
-                  <TableRow key={lp}>
-                    <TableCell className="max-w-md truncate text-xs">{lp}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(count)}</TableCell>
+            <div className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Landing page</TableHead>
+                    <TableHead className="whitespace-nowrap text-right tabular-nums">Sessions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {topLandings.map(([lp, count]) => (
+                    <TableRow key={lp}>
+                      <TableCell className="max-w-md truncate text-xs">{lp}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(count)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -449,26 +457,28 @@ async function TrafficSourcesContent() {
             </p>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Platform</TableHead>
-                  <TableHead className="text-right tabular-nums">Untagged sessions</TableHead>
-                  <TableHead>Suggested UTM string</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {untaggedSorted.map(([platform, count]) => (
-                  <TableRow key={platform}>
-                    <TableCell><Badge variant="default" className="text-[10px]">{platform}</Badge></TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(count)}</TableCell>
-                    <TableCell className="font-mono text-[10px] text-muted-foreground">
-                      ?utm_source={platform}&amp;utm_medium=referral&amp;utm_campaign=organic
-                    </TableCell>
+            <div className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Platform</TableHead>
+                    <TableHead className="whitespace-nowrap text-right tabular-nums">Untagged sessions</TableHead>
+                    <TableHead className="whitespace-nowrap">Suggested UTM string</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {untaggedSorted.map(([platform, count]) => (
+                    <TableRow key={platform}>
+                      <TableCell className="whitespace-nowrap"><Badge variant="default" className="text-[10px]">{platform}</Badge></TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(count)}</TableCell>
+                      <TableCell className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
+                        ?utm_source={platform}&amp;utm_medium=referral&amp;utm_campaign=organic
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
             <p className="mt-3 text-xs text-muted-foreground">
               See <code className="rounded bg-muted px-1">docs/UTM_TRACKING_CONVENTION.md</code> for the recommended UTM string per channel (GBP, IG bio, email signature, YouTube descriptions, etc.).
             </p>

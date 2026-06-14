@@ -296,38 +296,40 @@ async function AdRoi() {
           {channelRows.length === 0 ? (
             <p className="p-6 text-sm text-muted-foreground">No site visitors recorded in the last {WINDOW_DAYS} days.</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Channel</TableHead>
-                  <TableHead className="text-right tabular-nums">Visitors</TableHead>
-                  <TableHead className="text-right tabular-nums">Matched to a name</TableHead>
-                  <TableHead className="text-right tabular-nums">Hot leads</TableHead>
-                  <TableHead>What this tells you</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {channelRows.map(([ch, agg]) => {
-                  const matchRate = agg.sessions > 0 ? agg.identified / agg.sessions : 0
-                  let note: string
-                  if (agg.identified === 0) note = isPaidChannel(ch) ? 'Paid traffic, but none matched to a name yet' : 'No names matched yet'
-                  else if (matchRate >= 0.2) note = 'Healthy match rate'
-                  else note = 'Some matched, room to improve'
-                  return (
-                    <TableRow key={ch}>
-                      <TableCell className="font-medium">
-                        {ch}
-                        {isPaidChannel(ch) && <Badge variant="secondary" className="ml-2">paid</Badge>}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">{formatInt(agg.sessions)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatInt(agg.identified)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatInt(agg.hot)}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{note}</TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
+            <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Channel</TableHead>
+                    <TableHead className="text-right tabular-nums whitespace-nowrap">Visitors</TableHead>
+                    <TableHead className="text-right tabular-nums whitespace-nowrap">Matched to a name</TableHead>
+                    <TableHead className="text-right tabular-nums whitespace-nowrap">Hot leads</TableHead>
+                    <TableHead className="whitespace-nowrap">What this tells you</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {channelRows.map(([ch, agg]) => {
+                    const matchRate = agg.sessions > 0 ? agg.identified / agg.sessions : 0
+                    let note: string
+                    if (agg.identified === 0) note = isPaidChannel(ch) ? 'Paid traffic, but none matched to a name yet' : 'No names matched yet'
+                    else if (matchRate >= 0.2) note = 'Healthy match rate'
+                    else note = 'Some matched, room to improve'
+                    return (
+                      <TableRow key={ch}>
+                        <TableCell className="font-medium whitespace-nowrap">
+                          {ch}
+                          {isPaidChannel(ch) && <Badge variant="secondary" className="ml-2">paid</Badge>}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(agg.sessions)}</TableCell>
+                        <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(agg.identified)}</TableCell>
+                        <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(agg.hot)}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{note}</TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           )}
           {earliestSession && (
             <p className="px-4 pb-4 pt-2 text-xs text-muted-foreground">
@@ -347,16 +349,18 @@ async function AdRoi() {
             {metaSpend === 0 ? (
               <p className="text-sm text-muted-foreground">No Meta ad spend synced in the last {WINDOW_DAYS} days.</p>
             ) : (
-              <Table>
-                <TableBody>
-                  <TableRow><TableCell className="text-muted-foreground">Spend</TableCell><TableCell className="text-right tabular-nums font-medium">{formatUsd(metaSpend)}</TableCell></TableRow>
-                  <TableRow><TableCell className="text-muted-foreground">Impressions</TableCell><TableCell className="text-right tabular-nums">{formatInt(metaImpressions)}</TableCell></TableRow>
-                  <TableRow><TableCell className="text-muted-foreground">Clicks</TableCell><TableCell className="text-right tabular-nums">{formatInt(metaClicks)}</TableCell></TableRow>
-                  <TableRow><TableCell className="text-muted-foreground">Cost per click</TableCell><TableCell className="text-right tabular-nums">{usdOrDash(metaCpc)}</TableCell></TableRow>
-                  <TableRow><TableCell className="text-muted-foreground">Click-through rate</TableCell><TableCell className="text-right tabular-nums">{metaCtr != null ? `${(metaCtr * 100).toFixed(2)}%` : '—'}</TableCell></TableRow>
-                  <TableRow><TableCell className="text-muted-foreground">Conversions (reported by Meta)</TableCell><TableCell className="text-right tabular-nums">{formatInt(metaConversions)}</TableCell></TableRow>
-                </TableBody>
-              </Table>
+              <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+                <Table>
+                  <TableBody>
+                    <TableRow><TableCell className="text-muted-foreground whitespace-nowrap">Spend</TableCell><TableCell className="text-right tabular-nums font-medium whitespace-nowrap">{formatUsd(metaSpend)}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-muted-foreground whitespace-nowrap">Impressions</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(metaImpressions)}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-muted-foreground whitespace-nowrap">Clicks</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(metaClicks)}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-muted-foreground whitespace-nowrap">Cost per click</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{usdOrDash(metaCpc)}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-muted-foreground whitespace-nowrap">Click-through rate</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{metaCtr != null ? `${(metaCtr * 100).toFixed(2)}%` : '—'}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-muted-foreground whitespace-nowrap">Conversions (reported by Meta)</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(metaConversions)}</TableCell></TableRow>
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -369,24 +373,26 @@ async function AdRoi() {
             {campaigns.length === 0 ? (
               <p className="p-6 text-sm text-muted-foreground">No per-campaign spend in the last {WINDOW_DAYS} days.</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Campaign</TableHead>
-                    <TableHead className="text-right tabular-nums">Spend</TableHead>
-                    <TableHead className="text-right tabular-nums">Share</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {campaigns.map(([name, spend]) => (
-                    <TableRow key={name}>
-                      <TableCell className="font-medium">{name}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatUsd(spend)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{metaSpend > 0 ? `${((spend / metaSpend) * 100).toFixed(0)}%` : '—'}</TableCell>
+              <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Campaign</TableHead>
+                      <TableHead className="text-right tabular-nums whitespace-nowrap">Spend</TableHead>
+                      <TableHead className="text-right tabular-nums whitespace-nowrap">Share</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {campaigns.map(([name, spend]) => (
+                      <TableRow key={name}>
+                        <TableCell className="font-medium">{name}</TableCell>
+                        <TableCell className="text-right tabular-nums whitespace-nowrap">{formatUsd(spend)}</TableCell>
+                        <TableCell className="text-right tabular-nums whitespace-nowrap">{metaSpend > 0 ? `${((spend / metaSpend) * 100).toFixed(0)}%` : '—'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -400,22 +406,24 @@ async function AdRoi() {
             <p className="text-xs text-muted-foreground">Each day the spend sync wrote a non-zero number. Gaps mean either no spend that day or the sync did not run.</p>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right tabular-nums">Spend</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {spendDays.slice(0, 14).map(([date, spend]) => (
-                  <TableRow key={date}>
-                    <TableCell className="font-medium tabular-nums">{date}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatUsd(spend)}</TableCell>
+            <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Date</TableHead>
+                    <TableHead className="text-right tabular-nums whitespace-nowrap">Spend</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {spendDays.slice(0, 14).map(([date, spend]) => (
+                    <TableRow key={date}>
+                      <TableCell className="font-medium tabular-nums whitespace-nowrap">{date}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatUsd(spend)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -427,47 +435,49 @@ async function AdRoi() {
           <p className="text-xs text-muted-foreground">The numbers above are only as good as these feeds. This is the honest status of each one.</p>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Feed</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>What it means</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">Meta ad spend sync</TableCell>
-                <TableCell><Badge variant={spendHealthy ? 'default' : 'destructive'}>{spendHealthy ? 'flowing' : 'needs a look'}</Badge></TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {latestSpendDate ? `Last spend recorded ${latestSpendDate}.` : 'No spend recorded.'} {spendHealthy ? 'Syncing daily.' : 'Check the marketing-snapshot-meta-ads cron.'}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Facebook lead forms</TableCell>
-                <TableCell><Badge variant={leadFormWorking ? 'default' : 'secondary'}>{leadFormWorking ? 'flowing' : 'no data'}</Badge></TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {leadFormWorking ? `${formatInt(leadFormCount)} captured.` : 'Zero captured. Expected if you do not run lead-form ads. If you do, the webhook is not delivering.'}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Identity matching (name to a number)</TableCell>
-                <TableCell><Badge variant={identityWorking ? 'default' : 'destructive'}>{identityWorking ? 'flowing' : 'not live yet'}</Badge></TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {identityWorking
-                    ? `${formatInt(totalIdentified)} visitors matched to a person.`
-                    : 'No visitor has been matched to a name yet. The session-to-person stitching is built but not deployed to the site. Once it ships, repeat and identified visitors start showing names here.'}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Closed-deal revenue</TableCell>
-                <TableCell><Badge variant="secondary">not wired</Badge></TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  Commission from closed deals is not connected to the lead that started it. Until it is, true return on ad spend (revenue ÷ spend) cannot be calculated. Cost per lead is the leading indicator we can show today.
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="whitespace-nowrap">Feed</TableHead>
+                  <TableHead className="whitespace-nowrap">Status</TableHead>
+                  <TableHead className="whitespace-nowrap">What it means</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium whitespace-nowrap">Meta ad spend sync</TableCell>
+                  <TableCell><Badge variant={spendHealthy ? 'default' : 'destructive'}>{spendHealthy ? 'flowing' : 'needs a look'}</Badge></TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {latestSpendDate ? `Last spend recorded ${latestSpendDate}.` : 'No spend recorded.'} {spendHealthy ? 'Syncing daily.' : 'Check the marketing-snapshot-meta-ads cron.'}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium whitespace-nowrap">Facebook lead forms</TableCell>
+                  <TableCell><Badge variant={leadFormWorking ? 'default' : 'secondary'}>{leadFormWorking ? 'flowing' : 'no data'}</Badge></TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {leadFormWorking ? `${formatInt(leadFormCount)} captured.` : 'Zero captured. Expected if you do not run lead-form ads. If you do, the webhook is not delivering.'}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium whitespace-nowrap">Identity matching (name to a number)</TableCell>
+                  <TableCell><Badge variant={identityWorking ? 'default' : 'destructive'}>{identityWorking ? 'flowing' : 'not live yet'}</Badge></TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {identityWorking
+                      ? `${formatInt(totalIdentified)} visitors matched to a person.`
+                      : 'No visitor has been matched to a name yet. The session-to-person stitching is built but not deployed to the site. Once it ships, repeat and identified visitors start showing names here.'}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium whitespace-nowrap">Closed-deal revenue</TableCell>
+                  <TableCell><Badge variant="secondary">not wired</Badge></TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    Commission from closed deals is not connected to the lead that started it. Until it is, true return on ad spend (revenue ÷ spend) cannot be calculated. Cost per lead is the leading indicator we can show today.
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
