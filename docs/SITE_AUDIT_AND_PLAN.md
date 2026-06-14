@@ -16,9 +16,14 @@ Then the plan to fix it comprehensively (by class, behind gates), not page by pa
 
 - ✅ **Nav rebuild (Class D)** — `852acf85` Homes+Explore merged into one panel (Browse/Cities/Communities/By price/Lifestyle), Explore removed, "Central Oregon, end to end" gone, hidden columns fixed, price-drop badge live, "List your home"→"What's my home worth?", Company→About, Learn→Guides. Verified in browser.
 
+- ✅ **Listing mobile + photos + badge** — `ea31e2ab` mobile gets one large 4:3 hero photo + view-all chip (was a cramped tile grid); "Active" pill is now a bright cream tag (was greyed navy on photos).
+
 ### Remaining (in priority order)
-1. **Listing page — mobile + photos + status badge (Matt 2026-06-14)** — (a) listing detail looks bad on mobile (layout), (b) the photo gallery/section needs a stronger treatment, (c) the "Active" status pill renders navy `#102742` so it reads greyed/muted instead of signaling *available* — needs a clear available-state treatment (and it's hardcoded hex = a token violation in `components/lp/ListingCard.tsx` statusPillStyle).
-2. **Geo sweep (Class B/C/E, Phase 2)** — convert neighborhood (`/cities/[slug]/[hood]`) + zip pages to the canonical archetype (they still use HeroBlock + bespoke stat cards + no SectionNav).
+1. **Geo sweep (Class B/C/E, Phase 2)** — convert neighborhood (`/cities/[slug]/[hood]`) + zip pages to the canonical archetype (they still use HeroBlock + bespoke stat cards + no SectionNav). Bigger rebuild.
+2. **V6 homepage decision** — built but UNCOMMITTED (prod still serves old V3). Needs Matt's eyes (and the Old Mill vs Tetherow hero call) before it can ship. This is the original "my homepage is garbage" item.
+3. **Class F (SSR)** — `/feed`, `/activity`, market reports, `/guides`, `/videos`, `/our-homes` ship little/no SSR content.
+4. **Class C (photos)** — per-neighborhood + per-city hero photography sourcing.
+5. **Class G (features)** — mortgage-calc lead capture, CMA auto-delivery, Ask Bar (real or rename), AI Compare, RSVP/favorites guest paths, OAuth cleanup.
 3. **Class F (SSR)** — `/feed`, `/activity`, market reports, `/guides`, `/videos`, `/our-homes` ship little/no SSR content.
 4. **Class C (photos)** — per-neighborhood + per-city hero photography sourcing.
 5. **Class G (features)** — mortgage-calc lead capture, CMA auto-delivery, Ask Bar (real or rename), AI Compare, RSVP/favorites guest paths, OAuth cleanup.
