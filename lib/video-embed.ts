@@ -32,6 +32,19 @@ function extractIframeSrcFromMarkup(raw: string): string | null {
 }
 
 /**
+ * Like extractIframeSrcFromMarkup but also accepts protocol-relative srcs
+ * (`//www.youtube.com/embed/...`), which MLS RETS feeds emit constantly. Returns
+ * the raw src (still protocol-relative if that is how it came) for the caller to
+ * normalize, or null when no usable src is present.
+ */
+function extractIframeSrcFromMarkupLoose(raw: string): string | null {
+  const m = raw.match(/<iframe[^>]+src=["']([^"']+)["']/i)
+  const s = m?.[1]?.trim()
+  if (!s) return null
+  return s.startsWith('http://') || s.startsWith('https://') || s.startsWith('//') ? s : null
+}
+
+/**
  * Resolve MLS video URL or ObjectHtml snippet to an embeddable iframe src for listing tiles.
  */
 export function parseListingVideoEmbedForTile(urlOrHtml: string): ListingTileVideoEmbed | null {
@@ -114,6 +127,16 @@ export function normalizeEmbed(
 ): { url: string; embedType: 'iframe' | 'video-tag' | 'link'; posterUrl?: string } | null {
   if (!raw) return null
   let url = raw.trim()
+  // MLS video fields frequently arrive as an <iframe ...> snippet (sometimes
+  // wrapped in a <div>, sometimes with a protocol-relative //host src). Pull the
+  // src out first so the host checks below see a real URL instead of bailing at
+  // the http(s) guard. (This is the #1 reason hosted embeds were silently
+  // dropping out of the video feed.)
+  if (url.includes('<iframe')) {
+    const inner = extractIframeSrcFromMarkupLoose(url)
+    if (inner) url = inner
+    else return null
+  }
   if (url.startsWith('//')) url = `https:${url}`
   if (!/^https?:\/\//i.test(url)) return null
   const low = url.toLowerCase()

@@ -26,6 +26,12 @@ export type VideoSlideItem = {
   cityLine: string
 }
 
+/** Deep-link a card into the continuous feed, starting on this listing. */
+function feedStartHref(feedHref: string, listingKey: string): string {
+  const sep = feedHref.includes('?') ? '&' : '?'
+  return `${feedHref}${sep}start=${encodeURIComponent(listingKey)}`
+}
+
 function fmtPrice(n: number | null): string {
   if (n == null) return ''
   return `$${(Math.round(n / 1000) * 1000).toLocaleString()}`
@@ -68,7 +74,7 @@ export function VideoSlider({
         {items.map((item) => (
           <Link
             key={item.listingKey}
-            href={feedHref}
+            href={feedStartHref(feedHref, item.listingKey)}
             className="group relative block w-64 shrink-0 snap-start overflow-hidden rounded-xl bg-muted shadow-sm ring-1 ring-foreground/10 transition hover:shadow-md sm:w-72"
             aria-label={`Watch video tours starting with ${item.addressLine}`}
           >

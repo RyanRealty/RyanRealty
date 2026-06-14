@@ -1,26 +1,29 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { getFeedListings } from '../actions/feed'
-import { getSession } from '../actions/auth'
-import { getSavedListingKeys } from '../actions/saved-listings'
-import { getLikedListingKeys } from '../actions/likes'
-import FeedInfiniteList from '@/components/FeedInfiniteList'
-import ShareButton from '@/components/ShareButton'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-import { H1, H2 } from '@/components/site/primitives'
-import { Button } from '@/components/ui/button'
-import { listingsBrowsePath } from '@/lib/slug'
+import { getCentralOregonVideosHubListings } from '../actions/videos'
+import { VideoFeedClient, type VideoFeedItem } from '@/components/site/VideoFeedClient'
+import { listingDetailPath } from '@/lib/slug'
+import { normalizeEmbed } from '@/lib/video-embed'
+
+/** Drop MLS placeholder tokens (N/A) and collapse whitespace in an address. */
+function cleanAddress(raw: string | null): string {
+  const cleaned = (raw ?? '')
+    .replace(/\bN\/A\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/\s+,/g, ',')
+    .trim()
+  return cleaned || 'View this home'
+}
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const defaultOgImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
-  title: 'Feed',
-  description: 'Browse the latest Central Oregon homes for sale. Infinite scroll feed.',
+  title: 'Video feed',
+  description: 'Watch video tours of Central Oregon homes for sale. One after another.',
   alternates: { canonical: `${siteUrl}/feed` },
   openGraph: {
-    title: 'Feed | Ryan Realty',
-    description: 'Browse the latest Central Oregon homes for sale.',
+    title: 'Video feed | Ryan Realty',
+    description: 'Watch video tours of Central Oregon homes for sale.',
     url: `${siteUrl}/feed`,
     type: 'website',
     siteName: 'Ryan Realty',
@@ -28,66 +31,66 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Feed | Ryan Realty',
-    description: 'Browse the latest Central Oregon homes for sale.',
+    title: 'Video feed | Ryan Realty',
+    description: 'Watch video tours of Central Oregon homes for sale.',
     images: [defaultOgImage],
   },
 }
 
-export default async function FeedPage() {
-  const [{ listings: initialListings, nextOffset: initialNextOffset }, session] = await Promise.all([
-    getFeedListings({ offset: 0 }),
-    getSession(),
-  ])
+type SearchParams = { [key: string]: string | string[] | undefined }
 
-  const [savedKeys, likedKeys] =
-    session?.user
-      ? await Promise.all([getSavedListingKeys(), getLikedListingKeys()])
-      : [[], [] as string[]]
+export default async function FeedPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>
+}) {
+  const startRaw = (await searchParams).start
+  const startKey = typeof startRaw === 'string' ? startRaw : null
+
+  const rows = await getCentralOregonVideosHubListings()
+
+  const items: VideoFeedItem[] = (rows ?? [])
+    .filter((r) => r.listing_key && (r.video_url ?? '').trim())
+    // Only keep videos that actually embed + play in the feed — a non-embeddable
+    // (frame-blocked) link would render a dead poster, defeating "just watch videos."
+    .filter((r) => {
+      const norm = normalizeEmbed(r.video_url)
+      return norm != null && norm.embedType !== 'link'
+    })
+    .map((r) => ({
+      listingKey: r.listing_key,
+      videoUrl: r.video_url,
+      posterUrl: r.photo_url ?? null,
+      price: r.list_price ?? null,
+      addressLine: cleanAddress(r.unparsed_address),
+      cityLine: [r.subdivision_name, r.city].filter(Boolean).join(' · '),
+      detailHref: listingDetailPath(
+        r.listing_key,
+        null,
+        { city: r.city, subdivision: r.subdivision_name },
+        { mlsNumber: r.list_number }
+      ),
+      beds: r.beds_total ?? null,
+      baths: r.baths_full ?? null,
+      sqft: r.living_area ?? null,
+    }))
+
+  if (items.length === 0) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-primary px-6 text-center text-primary-foreground">
+        <div>
+          <h1 className="font-display text-3xl">No video tours yet</h1>
+          <p className="mt-3 text-primary-foreground/80">
+            New walkthroughs land here as homes come to market across Central Oregon.
+          </p>
+        </div>
+      </main>
+    )
+  }
 
   return (
-    <main className="min-h-screen bg-background">
-      <PageBreadcrumb trail={[{ label: 'Feed' }]} />
-      <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
-        <div className="mx-auto max-w-7xl text-center">
-          <H1 className="text-primary-foreground">
-            Latest Listings
-          </H1>
-          <p className="mt-3 text-lg text-muted">
-            Browse the newest homes for sale across Central Oregon. Scroll for more.
-          </p>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
-            <Button asChild size="lg" className="bg-accent text-primary hover:bg-accent/90 shadow-md">
-              <Link href={listingsBrowsePath()}>View All Listings</Link>
-            </Button>
-            <Button asChild variant="outline" size="lg" className="border-primary-foreground/40 bg-card/10 text-primary-foreground backdrop-blur-sm hover:bg-card/20">
-              <Link href="/homes-for-sale">Search on Map</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <H2 className="text-2xl">Newest first</H2>
-        <ShareButton
-          url={`${siteUrl}/feed`}
-          title="Latest listings in Central Oregon"
-          text="Browse the newest listings across Bend, Redmond, Sisters, Sunriver and nearby areas."
-          trackContext="feed_page"
-          variant="compact"
-        />
-      </div>
-      <div className="mt-6">
-        <FeedInfiniteList
-          initialListings={initialListings}
-          initialNextOffset={initialNextOffset}
-          likedKeys={likedKeys}
-          savedKeys={savedKeys}
-          signedIn={!!session?.user}
-          userEmail={session?.user?.email ?? null}
-        />
-      </div>
-      </div>
+    <main className="bg-primary">
+      <VideoFeedClient items={items} startKey={startKey} />
     </main>
   )
 }
