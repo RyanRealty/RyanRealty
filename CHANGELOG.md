@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.544.4 (2026-06-14)
+
+### Bug Fixes
+- fix(community): amenities is a navy section, not a grid of white cards
+
+---
+
+
 ## v1.544.3 (2026-06-14)
 
 ### Bug Fixes
