@@ -20,9 +20,9 @@ export default async function CrmDealsPage() {
   const pipelines = [...new Set(deals.map((d) => d.pipeline ?? 'Other'))]
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+    <main className="mx-auto w-full max-w-7xl px-3 py-6 sm:px-6 sm:py-8">
       <div className="mb-1 text-sm text-muted-foreground">
-        <Link href="/admin/crm" className="hover:text-foreground">← Back to CRM</Link>
+        <Link href="/admin/crm" className="inline-flex min-h-[40px] items-center hover:text-foreground">← Back to CRM</Link>
       </div>
       <h1 className="text-2xl font-bold text-foreground">Pipeline</h1>
       <p className="mt-1 text-sm text-muted-foreground">
@@ -35,23 +35,35 @@ export default async function CrmDealsPage() {
         return (
           <section key={pipe} className="mt-8">
             <h2 className="text-lg font-semibold text-foreground">{pipe} <span className="font-normal text-muted-foreground">({rows.length})</span></h2>
-            <div className="mt-3 grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+            <div className="mt-3 grid gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
               {stages.map((stage) => (
                 <Card key={stage}>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm">{stage}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    {rows.filter((d) => (d.stage ?? 'No stage') === stage).map((d) => (
-                      <div key={d.id} className="rounded-md border border-border px-3 py-2">
-                        <div className="text-sm font-medium text-foreground">
-                          {d.person_id ? (
-                            <Link href={`/admin/crm/${d.person_id}`} className="hover:underline">{d.name ?? d.person?.name ?? `Deal #${d.id}`}</Link>
-                          ) : (d.name ?? `Deal #${d.id}`)}
+                    {rows.filter((d) => (d.stage ?? 'No stage') === stage).map((d) => {
+                      const label = d.name ?? d.person?.name ?? `Deal #${d.id}`
+                      const inner = (
+                        <div className="flex min-h-[40px] items-center justify-between gap-2">
+                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{label}</span>
+                          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{money(d.value)}</span>
                         </div>
-                        <div className="text-xs tabular-nums text-muted-foreground">{money(d.value)}</div>
-                      </div>
-                    ))}
+                      )
+                      return d.person_id ? (
+                        <Link
+                          key={d.id}
+                          href={`/admin/crm/${d.person_id}`}
+                          className="block rounded-md border border-border px-3 py-2 transition-colors hover:bg-muted/50"
+                        >
+                          {inner}
+                        </Link>
+                      ) : (
+                        <div key={d.id} className="rounded-md border border-border px-3 py-2">
+                          {inner}
+                        </div>
+                      )
+                    })}
                   </CardContent>
                 </Card>
               ))}

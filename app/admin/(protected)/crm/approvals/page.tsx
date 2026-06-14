@@ -62,7 +62,7 @@ export default async function CrmApprovalsPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <div className="mb-1 text-sm text-muted-foreground">
-        <Link href="/admin/crm" className="hover:text-foreground">Back to CRM</Link>
+        <Link href="/admin/crm" className="inline-flex min-h-10 items-center hover:text-foreground md:min-h-0">Back to CRM</Link>
       </div>
       <h1 className="text-2xl font-bold text-foreground">First-touch approvals</h1>
       <p className="mt-1 text-sm text-muted-foreground">
@@ -119,7 +119,7 @@ export default async function CrmApprovalsPage() {
                     href={item.cmaLink}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-block text-sm text-foreground underline hover:text-muted-foreground"
+                    className="inline-flex min-h-10 items-center text-sm text-foreground underline hover:text-muted-foreground md:min-h-0"
                   >
                     View CMA
                   </a>
@@ -127,26 +127,26 @@ export default async function CrmApprovalsPage() {
                   <p className="text-sm text-muted-foreground">CMA builds before the text can send.</p>
                 )}
 
-                {/* Primary actions */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <form action={approveForm}>
+                {/* Primary actions — stack full-width on phones, inline row from sm up */}
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                  <form action={approveForm} className="w-full sm:w-auto">
                     <input type="hidden" name="enrollmentId" value={item.enrollmentId} />
-                    <Button type="submit" size="sm">Send and start</Button>
+                    <Button type="submit" size="sm" className="h-10 w-full sm:h-7 sm:w-auto">Send and start</Button>
                   </form>
-                  <form action={skipForm}>
+                  <form action={skipForm} className="w-full sm:w-auto">
                     <input type="hidden" name="enrollmentId" value={item.enrollmentId} />
-                    <Button type="submit" size="sm" variant="outline">Skip first text</Button>
+                    <Button type="submit" size="sm" variant="outline" className="h-10 w-full sm:h-7 sm:w-auto">Skip first text</Button>
                   </form>
-                  <form action={dismissForm}>
+                  <form action={dismissForm} className="w-full sm:w-auto">
                     <input type="hidden" name="enrollmentId" value={item.enrollmentId} />
-                    <Button type="submit" size="sm" variant="outline">Dismiss</Button>
+                    <Button type="submit" size="sm" variant="outline" className="h-10 w-full sm:h-7 sm:w-auto">Dismiss</Button>
                   </form>
                 </div>
 
                 {/* Edit text disclosure */}
                 {item.preview ? (
                   <details className="rounded-md border border-border">
-                    <summary className="cursor-pointer px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
+                    <summary className="flex min-h-10 cursor-pointer items-center px-3 py-2 text-sm text-muted-foreground hover:text-foreground md:min-h-0">
                       Edit text before sending
                     </summary>
                     <div className="border-t border-border px-3 pb-3 pt-3">
@@ -156,10 +156,10 @@ export default async function CrmApprovalsPage() {
                           name="body"
                           rows={5}
                           defaultValue={item.preview.body.replace('[CMA link attaches when built]', '%cma_link%')}
-                          className="text-sm"
+                          className="w-full text-sm"
                         />
-                        <div className="flex justify-end">
-                          <Button type="submit" size="sm">Send edited text</Button>
+                        <div className="flex">
+                          <Button type="submit" size="sm" className="h-10 w-full sm:h-7 sm:w-auto sm:ml-auto">Send edited text</Button>
                         </div>
                       </form>
                     </div>

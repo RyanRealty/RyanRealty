@@ -55,18 +55,19 @@ export default async function CrmTasksPage({ searchParams }: { searchParams: Pro
   const groups = groupTasks(tasks)
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+    <main className="mx-auto w-full max-w-3xl px-3 py-6 sm:px-6 sm:py-8">
+      <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Tasks</h1>
           <p className="text-sm text-muted-foreground">{tasks.length} open across the book</p>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          <Button asChild size="sm" variant={!broker ? 'default' : 'outline'}>
+        {/* Broker filter — single horizontal-scroll strip on phones, wraps on desktop */}
+        <div className="-mx-3 flex gap-2 overflow-x-auto px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:gap-1.5 sm:overflow-visible sm:px-0">
+          <Button asChild size="sm" variant={!broker ? 'default' : 'outline'} className="h-10 shrink-0 sm:h-7">
             <Link href="/admin/crm/tasks">All</Link>
           </Button>
           {CRM_BROKERS.map((b) => (
-            <Button key={b} asChild size="sm" variant={broker === b ? 'default' : 'outline'}>
+            <Button key={b} asChild size="sm" variant={broker === b ? 'default' : 'outline'} className="h-10 shrink-0 sm:h-7">
               <Link href={`/admin/crm/tasks?broker=${b}`}>{CRM_BROKER_DISPLAY[b] ?? b}</Link>
             </Button>
           ))}
@@ -90,7 +91,7 @@ export default async function CrmTasksPage({ searchParams }: { searchParams: Pro
             <div className="space-y-2">
               {g.tasks.map((t) => (
                 <Card key={t.id}>
-                  <CardContent className="flex items-center justify-between gap-3 p-4">
+                  <CardContent className="flex items-center justify-between gap-3 p-3 sm:p-4">
                     <div className="min-w-0">
                       <div className="truncate text-sm font-medium text-foreground">{t.name}</div>
                       <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
@@ -105,7 +106,7 @@ export default async function CrmTasksPage({ searchParams }: { searchParams: Pro
                       </div>
                     </div>
                     <form action={completeTaskForm.bind(null, t.id, t.person_id)} className="shrink-0">
-                      <Button type="submit" size="sm" variant="outline">Done</Button>
+                      <Button type="submit" size="sm" variant="outline" className="h-10 px-4 sm:h-7 sm:px-2.5">Done</Button>
                     </form>
                   </CardContent>
                 </Card>

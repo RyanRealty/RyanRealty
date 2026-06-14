@@ -234,13 +234,13 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
   const isLiveNow = liveAgeMin !== null && liveAgeMin >= 0 && liveAgeMin <= 30
 
   return (
-    <main className="mx-auto max-w-[1600px] px-2 py-4 sm:px-6 sm:py-8">
+    <main className="mx-auto w-full max-w-[1600px] px-3 py-4 sm:px-6 sm:py-8">
       <div className="mb-4 text-sm text-muted-foreground">
-        <Link href="/admin/crm" className="hover:text-foreground">← Back to CRM</Link>
+        <Link href="/admin/crm" className="inline-flex min-h-[40px] items-center hover:text-foreground">← Back to CRM</Link>
       </div>
 
       {isLiveNow && latestWeb ? (
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-primary p-5 text-primary-foreground">
+        <div className="mb-6 flex flex-col gap-3 rounded-xl bg-primary p-4 text-primary-foreground sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:p-5">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-sm font-semibold">
               <span className="relative flex h-2.5 w-2.5">
@@ -253,15 +253,15 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
           </div>
           <div className="flex shrink-0 gap-2">
             {primaryPhone ? (
-              <Button asChild size="sm" variant="secondary">
+              <Button asChild size="sm" variant="secondary" className="min-h-[40px] flex-1 sm:flex-none">
                 <a href={`tel:+1${primaryPhone.replace(/\D/g, '').slice(-10)}`}>Call</a>
               </Button>
             ) : null}
             {primaryPhone ? (
-              <Button asChild size="sm" variant="secondary"><a href="#send-text">Text</a></Button>
+              <Button asChild size="sm" variant="secondary" className="min-h-[40px] flex-1 sm:flex-none"><a href="#send-text">Text</a></Button>
             ) : null}
             {primaryEmail ? (
-              <Button asChild size="sm" variant="secondary"><a href="#send-email">Email</a></Button>
+              <Button asChild size="sm" variant="secondary" className="min-h-[40px] flex-1 sm:flex-none"><a href="#send-email">Email</a></Button>
             ) : null}
           </div>
         </div>
@@ -295,11 +295,11 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
           <div className="mt-3 flex flex-wrap gap-2">
             <form action={confirmNextForm}>
               <input type="hidden" name="enrollmentId" value={rec.enrollmentId} />
-              <Button type="submit" size="sm" disabled={!!rec.holdReason}>Confirm &amp; send</Button>
+              <Button type="submit" size="sm" disabled={!!rec.holdReason} className="min-h-[40px] sm:min-h-0">Confirm &amp; send</Button>
             </form>
             <form action={skipNextForm}>
               <input type="hidden" name="enrollmentId" value={rec.enrollmentId} />
-              <Button type="submit" size="sm" variant="outline">Skip</Button>
+              <Button type="submit" size="sm" variant="outline" className="min-h-[40px] sm:min-h-0">Skip</Button>
             </form>
           </div>
         </div>
@@ -311,17 +311,17 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-4">
+                <div className="flex min-w-0 items-start gap-3 sm:gap-4">
                   {person.picture_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={person.picture_url} alt="" className="h-24 w-24 shrink-0 rounded-xl border border-border object-cover shadow-sm" referrerPolicy="no-referrer" />
+                    <img src={person.picture_url} alt="" className="h-16 w-16 shrink-0 rounded-xl border border-border object-cover shadow-sm sm:h-24 sm:w-24" referrerPolicy="no-referrer" />
                   ) : (
                     <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted text-lg font-semibold text-muted-foreground">
                       {(person.name ?? '?').charAt(0).toUpperCase()}
                     </span>
                   )}
-                <div>
-                  <CardTitle className="text-xl">{person.name ?? `Contact #${person.id}`}</CardTitle>
+                <div className="min-w-0">
+                  <CardTitle className="break-words text-lg sm:text-xl">{person.name ?? `Contact #${person.id}`}</CardTitle>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {person.source ?? 'Unknown source'} · created {fmtDateTime(person.fub_created_at)}
                   </p>
@@ -332,7 +332,7 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
                     href={`https://ryan-realty.followupboss.com/2/people/view/${person.fub_legacy_id}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs text-muted-foreground underline hover:text-foreground"
+                    className="shrink-0 text-xs text-muted-foreground underline hover:text-foreground"
                   >
                     Open in FUB ↗
                   </a>
@@ -346,29 +346,29 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
                 <select
                   name="stage"
                   defaultValue={person.stage}
-                  className="h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+                  className="h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm text-foreground sm:h-9"
                 >
                   {CRM_STAGES.map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
-                <Button type="submit" size="sm" variant="outline">Set stage</Button>
+                <Button type="submit" size="sm" variant="outline" className="min-h-[40px] shrink-0 sm:min-h-0">Set stage</Button>
               </form>
 
               <form action={assignBrokerForm} className="flex items-center gap-2 text-sm">
                 <input type="hidden" name="personId" value={person.id} />
-                <span className="text-muted-foreground">Broker:</span>
+                <span className="shrink-0 text-muted-foreground">Broker:</span>
                 <select
                   name="broker"
                   defaultValue={person.assigned_broker ?? ''}
-                  className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                  className="h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-sm text-foreground sm:h-8 sm:flex-none"
                 >
                   {!person.assigned_broker ? <option value="">unassigned</option> : null}
                   {CRM_BROKERS.map((b) => (
                     <option key={b} value={b}>{CRM_BROKER_DISPLAY[b]}</option>
                   ))}
                 </select>
-                <Button type="submit" size="sm" variant="outline">Assign</Button>
+                <Button type="submit" size="sm" variant="outline" className="min-h-[40px] shrink-0 sm:min-h-0">Assign</Button>
               </form>
 
               <Separator />
@@ -415,8 +415,8 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
                 </div>
                 <form action={addTagForm} className="mt-2 flex gap-2">
                   <input type="hidden" name="personId" value={person.id} />
-                  <Input name="tag" placeholder="add-tag" className="h-8 text-sm" />
-                  <Button type="submit" size="sm" variant="outline">Add</Button>
+                  <Input name="tag" placeholder="add-tag" className="h-10 min-w-0 flex-1 text-sm sm:h-8" />
+                  <Button type="submit" size="sm" variant="outline" className="min-h-[40px] shrink-0 sm:min-h-0">Add</Button>
                 </form>
               </details>
             </CardContent>
@@ -497,7 +497,7 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
                   </Alert>
                 ) : null}
                 {(homeMedia.streetViewUrl || homeMlsPhoto) ? (
-                  <div className={`grid gap-2 ${homeMedia.streetViewUrl && homeMlsPhoto ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                  <div className={`grid gap-2 ${homeMedia.streetViewUrl && homeMlsPhoto ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
                     {homeMedia.streetViewUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={homeMedia.streetViewUrl} alt={`Street view of ${homeAddress}`} className="aspect-[2/1] w-full rounded-md border border-border object-cover" loading="lazy" />
@@ -609,36 +609,38 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
             <CardContent className="space-y-3">
               {openTasks.map((t) => (
                 <div key={t.id} className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2">
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-sm font-medium text-foreground">{t.name}</div>
                     <div className="text-xs text-muted-foreground">
                       {t.type ?? 'Task'} · due {fmtDateTime(t.due_at)}
                     </div>
                   </div>
-                  <form action={completeTaskForm}>
+                  <form action={completeTaskForm} className="shrink-0">
                     <input type="hidden" name="taskId" value={t.id} />
                     <input type="hidden" name="personId" value={person.id} />
-                    <Button type="submit" size="sm" variant="outline">Done</Button>
+                    <Button type="submit" size="sm" variant="outline" className="min-h-[40px] sm:min-h-0">Done</Button>
                   </form>
                 </div>
               ))}
               {doneTasks.length > 0 ? (
                 <p className="text-xs text-muted-foreground">{doneTasks.length} completed</p>
               ) : null}
-              <form action={addTaskForm} className="flex flex-wrap items-center gap-2">
+              <form action={addTaskForm} className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                 <input type="hidden" name="personId" value={person.id} />
-                <Input name="name" placeholder="New task" className="h-8 w-56 text-sm" />
-                <select name="type" className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground" defaultValue="Follow Up">
-                  {['Follow Up', 'Call', 'Text', 'Email'].map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-                <select name="dueHours" className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground" defaultValue="24">
-                  <option value="1">in 1 hour</option>
-                  <option value="4">in 4 hours</option>
-                  <option value="24">tomorrow</option>
-                  <option value="72">in 3 days</option>
-                  <option value="168">in a week</option>
-                </select>
-                <Button type="submit" size="sm" variant="outline">Add task</Button>
+                <Input name="name" placeholder="New task" className="h-10 w-full text-sm sm:h-8 sm:w-56" />
+                <div className="flex gap-2">
+                  <select name="type" className="h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-sm text-foreground sm:h-8 sm:flex-none" defaultValue="Follow Up">
+                    {['Follow Up', 'Call', 'Text', 'Email'].map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <select name="dueHours" className="h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-sm text-foreground sm:h-8 sm:flex-none" defaultValue="24">
+                    <option value="1">in 1 hour</option>
+                    <option value="4">in 4 hours</option>
+                    <option value="24">tomorrow</option>
+                    <option value="72">in 3 days</option>
+                    <option value="168">in a week</option>
+                  </select>
+                </div>
+                <Button type="submit" size="sm" variant="outline" className="min-h-[40px] w-full sm:min-h-0 sm:w-auto">Add task</Button>
               </form>
             </CardContent>
           </Card>
@@ -654,13 +656,13 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
               {primaryEmail ? (
                 <>
                   <form method="GET" className="flex items-center gap-2">
-                    <select name="tpl" defaultValue={tpl ?? ''} className="h-8 max-w-[360px] flex-1 rounded-md border border-input bg-background px-2 text-sm text-foreground">
+                    <select name="tpl" defaultValue={tpl ?? ''} className="h-10 min-w-0 max-w-[360px] flex-1 rounded-md border border-input bg-background px-2 text-sm text-foreground sm:h-8">
                       <option value="">Blank email</option>
                       {templates.map((t) => (
                         <option key={t.key} value={t.key}>{t.name}</option>
                       ))}
                     </select>
-                    <Button type="submit" size="sm" variant="outline">Load template</Button>
+                    <Button type="submit" size="sm" variant="outline" className="min-h-[40px] shrink-0 sm:min-h-0">Load template</Button>
                   </form>
                   <EmailComposer
                     key={tpl ?? 'blank'}
@@ -705,13 +707,13 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
                 <>
                   <form method="GET" className="flex items-center gap-2">
                     <input type="hidden" name="tpl" value={tpl ?? ''} />
-                    <select name="smsTpl" defaultValue={smsTpl ?? ''} className="h-8 max-w-[360px] flex-1 rounded-md border border-input bg-background px-2 text-sm text-foreground">
+                    <select name="smsTpl" defaultValue={smsTpl ?? ''} className="h-10 min-w-0 max-w-[360px] flex-1 rounded-md border border-input bg-background px-2 text-sm text-foreground sm:h-8">
                       <option value="">Blank text</option>
                       {smsTemplates.map((t) => (
                         <option key={t.key} value={t.key}>{t.name}</option>
                       ))}
                     </select>
-                    <Button type="submit" size="sm" variant="outline">Load template</Button>
+                    <Button type="submit" size="sm" variant="outline" className="min-h-[40px] shrink-0 sm:min-h-0">Load template</Button>
                   </form>
                   <SmsComposer
                     key={smsTpl ?? 'blank'}
@@ -733,7 +735,7 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
                 <input type="hidden" name="personId" value={person.id} />
                 <Textarea name="body" placeholder="Note — writes to the CRM timeline and to FUB while the parallel run is on" rows={3} />
                 <div className="flex justify-end">
-                  <Button type="submit" size="sm">Save note</Button>
+                  <Button type="submit" size="sm" className="min-h-[40px] sm:min-h-0">Save note</Button>
                 </div>
               </form>
             </CardContent>

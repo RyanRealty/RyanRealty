@@ -87,8 +87,9 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
 
   return (
     <main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+      {/* Title + primary action — primary action stays prominent on phones */}
+      <div className="flex flex-wrap items-start justify-between gap-3 md:items-end">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-foreground">Contacts</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {isMyLeads ? `Showing your leads (${CRM_BROKER_DISPLAY[access.brokerSlug!]})` : 'Ryan Realty contact database'}
@@ -96,51 +97,59 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
             {overview.lastDeltaSync ? ` · last sync ${fmtDate(overview.lastDeltaSync)}` : ''}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Link href="/admin/crm/new"><Button size="sm">New contact</Button></Link>
-          <Link href="/admin/crm/tasks"><Button variant="outline" size="sm">Tasks</Button></Link>
-          <Link href="/admin/crm/inbox"><Button variant="outline" size="sm">Inbox</Button></Link>
-          <Link href="/admin/crm/deals"><Button variant="outline" size="sm">Pipeline</Button></Link>
-          <Link href="/admin/crm/sequences"><Button variant="outline" size="sm">Sequences</Button></Link>
-          <Link href="/admin/crm/approvals"><Button variant="outline" size="sm">Approvals</Button></Link>
-          <Link href="/admin/crm/workflows"><Button variant="outline" size="sm">Workflows</Button></Link>
-          {stats.map((s) => (
-            <Card key={s.label} className="min-w-[120px]">
-              <CardContent className="px-4 py-3">
-                <div className="text-lg font-semibold tabular-nums text-foreground">{s.value}</div>
-                <div className="text-xs text-muted-foreground">{s.label}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Link href="/admin/crm/new" className="shrink-0">
+          <Button size="sm" className="h-10 md:h-7">New contact</Button>
+        </Link>
+      </div>
+
+      {/* Secondary nav — single horizontal-scroll strip on phones (no ragged wrap) */}
+      <nav className="mt-4 -mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:px-0">
+        <Link href="/admin/crm/tasks" className="shrink-0"><Button variant="outline" size="sm" className="h-10 md:h-7">Tasks</Button></Link>
+        <Link href="/admin/crm/inbox" className="shrink-0"><Button variant="outline" size="sm" className="h-10 md:h-7">Inbox</Button></Link>
+        <Link href="/admin/crm/deals" className="shrink-0"><Button variant="outline" size="sm" className="h-10 md:h-7">Pipeline</Button></Link>
+        <Link href="/admin/crm/sequences" className="shrink-0"><Button variant="outline" size="sm" className="h-10 md:h-7">Sequences</Button></Link>
+        <Link href="/admin/crm/approvals" className="shrink-0"><Button variant="outline" size="sm" className="h-10 md:h-7">Approvals</Button></Link>
+        <Link href="/admin/crm/workflows" className="shrink-0"><Button variant="outline" size="sm" className="h-10 md:h-7">Workflows</Button></Link>
+      </nav>
+
+      {/* Stat / KPI cards — their own responsive grid, not mixed into the nav row */}
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        {stats.map((s) => (
+          <Card key={s.label}>
+            <CardContent className="px-4 py-3">
+              <div className="text-lg font-semibold tabular-nums text-foreground">{s.value}</div>
+              <div className="text-xs text-muted-foreground">{s.label}</div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
 
-      {/* Saved views */}
-      <div className="mt-6 flex flex-wrap gap-2">
+      {/* Saved views — horizontal-scroll strip on phones, wraps on desktop */}
+      <div className="mt-6 -mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:px-0">
         {access.brokerSlug ? (
           <>
-            <Link href="/admin/crm">
-              <Badge variant={isMyLeads && !sp.view && !sp.stage && !sp.tag && !sp.q ? 'default' : 'outline'} className="cursor-pointer px-3 py-1">
+            <Link href="/admin/crm" className="shrink-0">
+              <Badge variant={isMyLeads && !sp.view && !sp.stage && !sp.tag && !sp.q ? 'default' : 'outline'} className="cursor-pointer px-3 py-1.5">
                 My leads
               </Badge>
             </Link>
-            <Link href="/admin/crm?broker=all">
-              <Badge variant={sp.broker === 'all' && !sp.view && !sp.stage && !sp.tag && !sp.q ? 'default' : 'outline'} className="cursor-pointer px-3 py-1">
+            <Link href="/admin/crm?broker=all" className="shrink-0">
+              <Badge variant={sp.broker === 'all' && !sp.view && !sp.stage && !sp.tag && !sp.q ? 'default' : 'outline'} className="cursor-pointer px-3 py-1.5">
                 All contacts
               </Badge>
             </Link>
           </>
         ) : (
-          <Link href="/admin/crm">
-            <Badge variant={!sp.view && !sp.stage && !sp.tag && !sp.q ? 'default' : 'outline'} className="cursor-pointer px-3 py-1">
+          <Link href="/admin/crm" className="shrink-0">
+            <Badge variant={!sp.view && !sp.stage && !sp.tag && !sp.q ? 'default' : 'outline'} className="cursor-pointer px-3 py-1.5">
               All
             </Badge>
           </Link>
         )}
         {views.map((v) => (
-          <Link key={v.id} href={`/admin/crm?view=${v.id}`}>
-            <Badge variant={sp.view === String(v.id) ? 'default' : 'outline'} className="cursor-pointer px-3 py-1">
+          <Link key={v.id} href={`/admin/crm?view=${v.id}`} className="shrink-0">
+            <Badge variant={sp.view === String(v.id) ? 'default' : 'outline'} className="cursor-pointer px-3 py-1.5">
               {v.name}
             </Badge>
           </Link>
@@ -152,14 +161,14 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         <ContactsSearch initial={sp.q ?? ''} />
       </div>
 
-      {/* Filters */}
-      <form method="GET" action="/admin/crm" className="mt-2 flex flex-wrap items-center gap-2">
+      {/* Filters — full-width selects stack on phones, inline on desktop */}
+      <form method="GET" action="/admin/crm" className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         {sp.view ? <input type="hidden" name="view" value={sp.view} /> : null}
         {sp.q ? <input type="hidden" name="q" value={sp.q} /> : null}
         <select
           name="stage"
           defaultValue={sp.stage ?? ''}
-          className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground sm:h-9 sm:w-auto"
         >
           <option value="">All stages</option>
           {CRM_STAGES.map((s) => (
@@ -169,20 +178,22 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         <select
           name="broker"
           defaultValue={effectiveBroker ?? 'all'}
-          className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground sm:h-9 sm:w-auto"
         >
           <option value="all">All brokers</option>
           {CRM_BROKERS.map((b) => (
             <option key={b} value={b}>{CRM_BROKER_DISPLAY[b]}</option>
           ))}
         </select>
-        <Button type="submit" size="sm">Apply</Button>
-        <Link href="/admin/crm" className="text-sm text-muted-foreground hover:text-foreground">Clear</Link>
-        {appliedView ? (
-          <span className="text-sm text-muted-foreground">
-            View: <span className="font-medium text-foreground">{appliedView.name}</span>
-          </span>
-        ) : null}
+        <div className="flex items-center gap-3">
+          <Button type="submit" size="sm" className="h-10 sm:h-7">Apply</Button>
+          <Link href="/admin/crm" className="flex h-10 items-center text-sm text-muted-foreground hover:text-foreground sm:h-7">Clear</Link>
+          {appliedView ? (
+            <span className="text-sm text-muted-foreground">
+              View: <span className="font-medium text-foreground">{appliedView.name}</span>
+            </span>
+          ) : null}
+        </div>
       </form>
 
       {/* People cards — phones (one thumb-tap per contact) */}
@@ -220,7 +231,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
                     </div>
                   </Link>
                   {phone ? (
-                    <Button asChild size="sm" variant="outline" className="shrink-0">
+                    <Button asChild size="sm" variant="outline" className="h-10 shrink-0 px-4">
                       <a href={`tel:+1${phone.replace(/\D/g, '').slice(-10)}`} aria-label={`Call ${p.name ?? 'contact'}`}>Call</a>
                     </Button>
                   ) : null}
@@ -306,10 +317,10 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         </span>
         <div className="flex gap-2">
           {page > 1 ? (
-            <Link href={pageHref(page - 1)}><Button variant="outline" size="sm">Previous</Button></Link>
+            <Link href={pageHref(page - 1)}><Button variant="outline" size="sm" className="h-10 px-4 md:h-7 md:px-2.5">Previous</Button></Link>
           ) : null}
           {page < lastPage ? (
-            <Link href={pageHref(page + 1)}><Button variant="outline" size="sm">Next</Button></Link>
+            <Link href={pageHref(page + 1)}><Button variant="outline" size="sm" className="h-10 px-4 md:h-7 md:px-2.5">Next</Button></Link>
           ) : null}
         </div>
       </div>

@@ -24,9 +24,9 @@ export default async function CrmInboxPage() {
   const rows = await listCrmInbox(100)
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+    <main className="mx-auto w-full max-w-5xl px-3 py-8 sm:px-6">
       <div className="mb-1 text-sm text-muted-foreground">
-        <Link href="/admin/crm" className="hover:text-foreground">← Back to CRM</Link>
+        <Link href="/admin/crm" className="inline-flex min-h-10 items-center hover:text-foreground">← Back to CRM</Link>
       </div>
       <h1 className="text-2xl font-bold text-foreground">Inbox</h1>
       <p className="mt-1 text-sm text-muted-foreground">
@@ -39,8 +39,8 @@ export default async function CrmInboxPage() {
         ) : (
           rows.map((r) => (
             <Card key={r.id}>
-              <CardContent className="flex items-start gap-4 px-4 py-3">
-                <div className="w-24 shrink-0 text-sm">{KIND_LABEL[r.kind] ?? r.kind}</div>
+              <CardContent className="flex items-start gap-3 px-3 py-3 sm:gap-4 sm:px-4">
+                <div className="shrink-0 text-sm sm:w-24">{KIND_LABEL[r.kind] ?? r.kind}</div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-2">
                     <Link href={`/admin/crm/${r.person_id}`} className="text-sm font-medium text-foreground hover:underline">

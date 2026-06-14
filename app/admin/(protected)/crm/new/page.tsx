@@ -24,9 +24,14 @@ async function createContactForm(formData: FormData): Promise<void> {
 export default async function CrmNewContactPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams
   return (
-    <main className="mx-auto max-w-xl px-4 py-8 sm:px-6">
-      <div className="mb-4 text-sm text-muted-foreground">
-        <Link href="/admin/crm" className="hover:text-foreground">← Back to contacts</Link>
+    <main className="mx-auto w-full max-w-xl px-4 py-8 sm:px-6">
+      <div className="mb-2 text-sm text-muted-foreground">
+        <Link
+          href="/admin/crm"
+          className="inline-flex min-h-10 items-center hover:text-foreground md:min-h-0"
+        >
+          ← Back to contacts
+        </Link>
       </div>
       <Card>
         <CardHeader>
@@ -40,20 +45,20 @@ export default async function CrmNewContactPage({ searchParams }: { searchParams
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="firstName">First name</Label>
-                <Input id="firstName" name="firstName" required autoComplete="off" />
+                <Input id="firstName" name="firstName" required autoComplete="off" className="h-10 md:h-8" />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="lastName">Last name</Label>
-                <Input id="lastName" name="lastName" autoComplete="off" />
+                <Input id="lastName" name="lastName" autoComplete="off" className="h-10 md:h-8" />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" autoComplete="off" />
+              <Input id="email" name="email" type="email" autoComplete="off" className="h-10 md:h-8" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" name="phone" type="tel" autoComplete="off" />
+              <Input id="phone" name="phone" type="tel" autoComplete="off" className="h-10 md:h-8" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="broker">Broker</Label>
@@ -70,8 +75,8 @@ export default async function CrmNewContactPage({ searchParams }: { searchParams
             <p className="text-xs text-muted-foreground">
               An email or a phone number is required. If the person already exists, this updates them instead of creating a duplicate.
             </p>
-            <div className="flex justify-end">
-              <Button type="submit">Create contact</Button>
+            <div className="flex sm:justify-end">
+              <Button type="submit" className="h-11 w-full sm:h-8 sm:w-auto">Create contact</Button>
             </div>
           </form>
         </CardContent>
