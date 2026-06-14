@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.530.1 (2026-06-14)
+
+### Bug Fixes
+- fix(admin): resolve 8 real page failures (timeouts, 404s, overflow)
+
+---
+
+
 ## v1.530.0 (2026-06-14)
 
 ### Features
