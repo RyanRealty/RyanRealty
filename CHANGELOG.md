@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.532.3 (2026-06-14)
+
+### Bug Fixes
+- fix(broker-dashboard): clamp mobile grid tracks (306px overflow)
+
+---
+
+
 ## v1.532.2 (2026-06-14)
 
 ### Other
