@@ -1,3 +1,9 @@
+> **LAWS MOVED 2026-06-13 → [`VOICE.md`](./VOICE.md).** The voice (The Five
+> Laws + the two tests) lives in VOICE.md and is hard-coded into the
+> brand-voice CI gate. This file remains only as the mechanical-floor
+> reference (formatting, the Matt 1:1 phrase bank). For how Ryan Realty
+> SOUNDS, read VOICE.md, not this file.
+
 > **SUPERSEDED IN PART (2026-06-11): the governing voice system is now
 > [`voice_system_v2.md`](voice_system_v2.md) — the Four Laws, the proof hierarchy
 > (market > work product > process > NEVER our résumé), parity-claims ban, and

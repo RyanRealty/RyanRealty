@@ -8,5 +8,11 @@ set -eo pipefail
 # Runs against staged files only; no-op when no producer is staged.
 node scripts/check-producer-guard.mjs
 
+# Brand voice (VOICE.md — The Five Laws). Fails fast on any new public-facing
+# copy that brags, panders, or names the category. Same gate runs in CI; here it
+# forces EVERY session through the voice before a commit can land. Ratcheted —
+# violations may only decrease (scripts/brand-voice-baseline.json).
+npm run ci:brand-voice
+
 # Existing test suite (legacy step).
 npm test

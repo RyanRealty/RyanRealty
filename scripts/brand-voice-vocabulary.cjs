@@ -162,6 +162,55 @@ const BANNED_WORDS = [
 // grep-based scanner. Lowercase + de-duped.
 const BANNED_WORD_STRINGS = [...new Set(BANNED_WORDS.map((b) => b.word.toLowerCase()))].sort()
 
+// ─────────────────────────────────────────────────────────────────────────────
+// BANNED MOVES — the VOICE.md laws, hard-coded (added 2026-06-13).
+//
+// The word lists above police VOCABULARY. These regex patterns police the
+// MOVES vocabulary can't catch — a sentence that brags, panders, or names the
+// category breaks a law with zero banned words ("the standard every home gets,"
+// "we're honest," "independent brokerage serving Bend"). Each pattern is tied
+// to a VOICE.md law. `source` is a JS RegExp source string; the gate runs it
+// case-insensitively against each user-facing string literal.
+//
+// Precision over recall: patterns are deliberately specific to avoid false-
+// positive floods. The gate is baseline-ratcheted, so existing site copy that
+// trips a pattern is captured as the burn-down queue (allowed, must only
+// decrease); NEW violations fail the commit.
+// ─────────────────────────────────────────────────────────────────────────────
+const BANNED_PATTERNS = [
+  // Law 1 — Show it, don't say it. Self-applied virtue.
+  { law: 1, label: 'self-virtue ("we are <virtue>")',
+    source: "\\b(we(?:'re| are)|our team is|the team is)\\s+(?:a\\s+|the\\s+|your\\s+|most\\s+|very\\s+|truly\\s+)*(honest|trusted|trustworthy|experts?|dedicated|passionate|transparent|professional|knowledgeable|reliable|dependable|experienced|committed|caring)\\b" },
+  { law: 1, label: 'self-virtue (honest/trusted guidance)',
+    source: "\\b(honest|trusted|expert|local|personalized) (guidance|advice|service|expertise|insight)\\b" },
+  { law: 1, label: 'self-virtue (experts you can trust)',
+    source: "\\b(experts? you can trust|trusted (local|name|partner|advisor|broker|expert)s?|your trusted)\\b" },
+
+  // Law 2 — A number beats an adjective. Empty superlatives.
+  { law: 2, label: 'empty superlative',
+    source: "\\b(exceptional|world.?class|top.?notch|cutting.?edge|state.?of.?the.?art|unparalleled|best.?in.?class|second to none|unmatched)\\b" },
+
+  // Law 3 — Talk to a smart adult. Warmth/comfort filler + the obvious.
+  { law: 3, label: 'warmth filler',
+    source: "\\bwe(?:'re| are)\\s+(here (to help|for you)|happy to help|ready to help)\\b" },
+  { law: 3, label: 'warmth filler (we would love to)',
+    source: "\\bwe(?:'d| would|d)? love to (help|hear|learn|work)\\b" },
+  { law: 3, label: "warmth filler (don't hesitate / feel free)",
+    source: "\\b(don'?t hesitate|feel free) to (reach out|contact|call|ask)\\b" },
+  { law: 3, label: 'states the obvious',
+    source: "\\b(buying|selling) a home is (a big|one of the biggest|an important)\\b" },
+  { law: 3, label: 'talking down',
+    source: "\\b(let (us|me) (help|guide|explain|walk you)|we'?ll handle everything|we'?ll take care of everything|in simple terms)\\b" },
+
+  // Law 4 — The category is not a claim. Category / credential self-naming.
+  { law: 4, label: 'category self-naming',
+    source: "\\b(independent|boutique|full.?service|premier|leading|trusted) brokerage\\b" },
+  { law: 4, label: 'category self-naming (brokerage serving)',
+    source: "\\bbrokerage (serving|that serves|in bend)\\b" },
+  { law: 4, label: 'credential as position',
+    source: "\\blicensed (and active )?brokers?\\b" },
+]
+
 module.exports = {
   PUNCTUATION,
   CLICHES,
@@ -174,4 +223,5 @@ module.exports = {
   PANDERING,
   BANNED_WORDS,
   BANNED_WORD_STRINGS,
+  BANNED_PATTERNS,
 }

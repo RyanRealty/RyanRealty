@@ -89,7 +89,9 @@ If a deliverable could plausibly be the kind of thing Matt would want to review,
 
 **Every piece of text generated for Ryan Realty — whether it ships to a channel, lands in a file, or is pasted into chat for Matt to copy into his own email client — must comply with the brand voice rules below.** No exceptions. This rule outranks convenience, speed, and any prior chat context. Matt should never have to remind the agent to strip em-dashes or banned words from a draft.
 
-**Canonical source:** `marketing_brain_skills/brand-voice/voice_system_v2.md` (the Four Laws + proof hierarchy, APPROVED 2026-06-11 — governs all copy) with `voice_guidelines.md` for the mechanical floor and `SKILL.md` for workflow. Load the full guidelines doc when generating long-form (blog, listing description, video VO script, multi-paragraph email, ad copy). For short chat-drafted snippets (one-paragraph email, social caption, headline), the inline rules below are the floor.
+**Canonical source (single, READ IT):** `marketing_brain_skills/brand-voice/VOICE.md` — **The Five Laws** (1. Show it, don't say it. 2. A number beats an adjective. 3. Talk to a smart adult. 4. The category is not a claim. 5. Every number is live and true) + the two tests (competitor test, receipt test). LOCKED 2026-06-13; replaces the retired `voice_system_v2.md`. Every session that writes a word of Ryan Realty copy reads VOICE.md first and obeys it. `voice_guidelines.md` is now only the mechanical-floor reference; `SKILL.md` is workflow.
+
+**This is not advisory — it is gated.** The Five Laws are hard-coded as `BANNED_PATTERNS` in `scripts/brand-voice-vocabulary.cjs` and enforced by `scripts/check-brand-voice.mjs` (`ci:brand-voice`, in `ci:gates` and the local pre-commit hook). A sentence that brags, panders, or names the category **fails the commit**, ratcheted toward 0. Scope: public-facing copy only (`app/`, `components/`, excluding api/actions/admin); the laws never touch reviews, external quotes, or broker-written listing remarks (they render from data, not literals). The inline rules below remain the floor for short chat snippets.
 
 ## What triggers this rule
 
