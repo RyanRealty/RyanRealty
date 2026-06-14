@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.534.3 (2026-06-14)
+
+### Bug Fixes
+- fix(admin): redirect on brokerSlug, not admin_roles.brokerId (superuser had null brokerId)
+
+---
+
+
 ## v1.534.2 (2026-06-14)
 
 ### Bug Fixes
