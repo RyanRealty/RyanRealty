@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.543.1 (2026-06-14)
+
+### Bug Fixes
+- fix(audit): surface failed sends + remaining mediums/lows
+
+---
+
+
 ## v1.543.0 (2026-06-14)
 
 ### Features
