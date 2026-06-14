@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.539.3 (2026-06-14)
+
+### Bug Fixes
+- fix(home): clean hero headline + mobile video framing
+
+---
+
+
 ## v1.539.2 (2026-06-14)
 
 ### Bug Fixes
