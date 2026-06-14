@@ -227,6 +227,10 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
   const homeFacts = homeMatches.find((m) => m.beds || m.sqft) ?? null
 
   const webEvents = full.timeline.filter((t) => t.kind === 'web_event').slice(0, 8)
+  // The activity log is the NON-message timeline (notes, calls, web visits, stage
+  // changes, tasks, system). Emails + texts live in the Conversation box above, so
+  // don't duplicate them here — that duplication made the page enormous.
+  const activityLog = full.timeline.filter((t) => !isConversationEvent(t.kind))
 
   // Live right now — most recent web event inside 30 minutes.
   const latestWeb = webEvents[0] ?? null
@@ -751,26 +755,26 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">
-                Timeline <span className="font-normal text-muted-foreground">({full.timelineTotal.toLocaleString('en-US')} entries, latest 100)</span>
+                Activity <span className="font-normal text-muted-foreground">(notes, calls, visits, stage changes)</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {full.timeline.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No activity yet.</p>
+              {activityLog.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No non-message activity yet. Texts and emails are in the conversation above.</p>
               ) : (
                 <>
                   <div className="space-y-4">
-                    {full.timeline.slice(0, 15).map((e) => (
+                    {activityLog.slice(0, 12).map((e) => (
                       <TimelineEntry key={e.id} e={e} />
                     ))}
                   </div>
-                  {full.timeline.length > 15 ? (
+                  {activityLog.length > 12 ? (
                     <details className="mt-4">
                       <summary className="cursor-pointer text-sm font-medium text-primary">
-                        Show older activity ({full.timeline.length - 15} more)
+                        Show older activity ({activityLog.length - 12} more)
                       </summary>
                       <div className="mt-4 space-y-4">
-                        {full.timeline.slice(15).map((e) => (
+                        {activityLog.slice(12).map((e) => (
                           <TimelineEntry key={e.id} e={e} />
                         ))}
                       </div>
