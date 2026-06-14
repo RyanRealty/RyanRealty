@@ -13,6 +13,8 @@ import {
   type SignFieldType,
 } from '@/lib/tc/signing'
 import { sendSigningInvite } from '@/lib/tc/signing-emails'
+import { createHash } from 'node:crypto'
+import type { MappedField, SignerRole } from '@/lib/tc/skyslope-field-map'
 
 /**
  * TC envelope composer + lifecycle (Phase 2b). Build an envelope from PDF
@@ -302,6 +304,132 @@ export async function createEnvelopeFromDocuments(
     actor: auth.email,
     action: 'envelope_drafted',
     detail: { envelope: name, documents: pdfDocs.length, recipients: recipients.length },
+  })
+
+  revalidatePath('/admin/deals')
+  return { ok: true, envelopeId: env.id }
+}
+
+/**
+ * Instantiate a sign-ready envelope from licensed form templates (handoff
+ * docs/TC_FORMS_LOADING_HANDOFF.md §4 Step 5). For each tc_form_versions row:
+ * copy its blank from the tc-forms bucket into the deal's tc-documents, link it
+ * (form_version_id), and place its translated field_map — signature/initials/
+ * date fields auto-assigned to the right recipient by signer role; text fields
+ * left for the composer to fill from deal data. Hands off to the normal
+ * send -> sign -> seal flow (the envelope is a draft the broker reviews + sends).
+ */
+export async function createEnvelopeFromTemplate(
+  cycleId: string,
+  formVersionIds: string[],
+  envelopeName?: string,
+): Promise<{ ok: boolean; envelopeId?: string; error?: string }> {
+  const auth = await requireBroker()
+  if ('error' in auth) return { ok: false, error: auth.error }
+  if (!formVersionIds.length) return { ok: false, error: 'Pick at least one form' }
+
+  const supabase = getServiceSupabase()
+  const { data: cycle } = await supabase
+    .from('tc_cycles')
+    .select('id, deal_id, sellers, buyers, broker_name, tc_deals(address)')
+    .eq('id', cycleId)
+    .maybeSingle()
+  if (!cycle) return { ok: false, error: 'Cycle not found' }
+
+  const { data: forms } = await supabase
+    .from('tc_form_versions')
+    .select('id, name, blank_pdf_storage_path, field_map, page_count')
+    .in('id', formVersionIds)
+  if (!forms?.length) return { ok: false, error: 'No forms found' }
+
+  const address = (cycle as DbRow).tc_deals?.address ?? 'Deal'
+  const name = envelopeName?.trim() || `${address} — ${(forms as DbRow[]).map((f) => f.name).join(', ').slice(0, 80)}`
+
+  const { data: env, error: envErr } = await supabase
+    .from('tc_envelopes')
+    .insert({ cycle_id: cycleId, name, status: 'draft', created_by: auth.email })
+    .select('id')
+    .single()
+  if (envErr) return { ok: false, error: envErr.message }
+
+  // recipients from the cycle parties (emails completed in the composer)
+  const recipients: DbRow[] = []
+  ;((cycle.buyers ?? []) as string[]).forEach((n, i) =>
+    recipients.push({ envelope_id: env.id, role: `buyer${i + 1}`, name: n, email: '', signing_order: 1 }))
+  ;((cycle.sellers ?? []) as string[]).forEach((n, i) =>
+    recipients.push({ envelope_id: env.id, role: `seller${i + 1}`, name: n, email: '', signing_order: 2 }))
+  if (cycle.broker_name)
+    recipients.push({ envelope_id: env.id, role: 'listing_broker', name: cycle.broker_name, email: auth.email, signing_order: 3 })
+  let savedRecipients: DbRow[] = []
+  if (recipients.length) {
+    const { data: rs } = await supabase.from('tc_envelope_recipients').insert(recipients).select('id, role')
+    savedRecipients = (rs ?? []) as DbRow[]
+  }
+  const recipientByRole = (role: SignerRole): string | null => {
+    if (!role) return null
+    const want = role === 'seller' ? 'seller' : role === 'listing_agent' ? 'listing_broker' : 'buyer'
+    const match = savedRecipients.find((r) => String(r.role).startsWith(want))
+    return match ? (match.id as string) : null
+  }
+
+  let sortOrder = 0
+  const fieldRows: DbRow[] = []
+  for (const form of forms as DbRow[]) {
+    if (!form.blank_pdf_storage_path) continue
+    const { data: blob } = await supabase.storage.from('tc-forms').download(form.blank_pdf_storage_path as string)
+    if (!blob) return { ok: false, error: `blank PDF missing for ${form.name}` }
+    const bytes = Buffer.from(await blob.arrayBuffer())
+    const sha256 = createHash('sha256').update(bytes).digest('hex')
+    const slug = String(form.name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)
+    const path = `forms/${cycleId}/${form.id}__${slug}.pdf`
+    const up = await supabase.storage.from('tc-documents').upload(path, bytes, { contentType: 'application/pdf', upsert: true })
+    if (up.error) return { ok: false, error: `storage: ${up.error.message}` }
+
+    const { data: doc, error: docErr } = await supabase
+      .from('tc_documents')
+      .insert({
+        cycle_id: cycleId,
+        name: form.name,
+        storage_path: path,
+        sha256,
+        bytes: bytes.byteLength,
+        content_type: 'application/pdf',
+        page_count: form.page_count ?? null,
+        classification: { source: 'form_template', form_version_id: form.id },
+      })
+      .select('id')
+      .single()
+    if (docErr || !doc) return { ok: false, error: `document: ${docErr?.message ?? 'insert failed'}` }
+    await supabase
+      .from('tc_envelope_documents')
+      .insert({ envelope_id: env.id, document_id: doc.id, sort_order: sortOrder++, form_version_id: form.id })
+
+    for (const f of (form.field_map ?? []) as MappedField[]) {
+      fieldRows.push({
+        envelope_id: env.id,
+        document_id: doc.id,
+        recipient_id: recipientByRole(f.signerRole),
+        type: f.type,
+        page: Math.max(1, Math.round(f.page)),
+        x: clamp01(f.x),
+        y: clamp01(f.y),
+        w: clamp01(f.w),
+        h: clamp01(f.h),
+        required: !f.optional,
+      })
+    }
+  }
+  if (fieldRows.length) {
+    const { error: fErr } = await supabase.from('tc_envelope_fields').insert(fieldRows)
+    if (fErr) return { ok: false, error: `fields: ${fErr.message}` }
+  }
+
+  await supabase.from('tc_events').insert({
+    deal_id: cycle.deal_id,
+    cycle_id: cycleId,
+    actor: auth.email,
+    action: 'envelope_drafted',
+    detail: { envelope: name, forms: (forms as DbRow[]).length, fields: fieldRows.length, from_template: true },
   })
 
   revalidatePath('/admin/deals')

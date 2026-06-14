@@ -144,6 +144,17 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: `upsert: ${upsertErr?.message ?? 'failed'}` }, { status: 500, headers: CORS })
   }
 
+  // 6. Freshness (handoff §4 Step 6): a newer published version of this form
+  // just arrived — retire prior versions and point them at the new row, so the
+  // composer always offers the current published form.
+  if (body.sourceFormId) {
+    await sb
+      .from('tc_form_versions')
+      .update({ update_available: true, superseded_by: row.id, retired_at: new Date().toISOString().slice(0, 10) })
+      .eq('source_form_id', body.sourceFormId)
+      .neq('source_version_id', body.sourceVersionId)
+  }
+
   return NextResponse.json(
     { ok: true, formVersionId: row.id, sha256, fields: summarizeMap(fieldMap) },
     { headers: CORS },
