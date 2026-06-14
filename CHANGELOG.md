@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.535.1 (2026-06-14)
+
+### Maintenance
+- docs: nav merge shipped; add listing mobile+photos+status-badge to plan
+
+---
+
+
 ## v1.535.0 (2026-06-14)
 
 ### Features
