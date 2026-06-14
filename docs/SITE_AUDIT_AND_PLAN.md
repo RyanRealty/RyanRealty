@@ -14,8 +14,10 @@ Then the plan to fix it comprehensively (by class, behind gates), not page by pa
 - ✅ **Class C (partial)** — `4598388b` housing-market hero uses city photo, not the Bend Old Mill on every city.
 - ✅ **Search Console** — verified live: redirect deployed, sitemap healthy, 21,837 not-indexed is the real lever (soft-404 fix attacks 2,992 of them). No SC action was missing.
 
+- ✅ **Nav rebuild (Class D)** — `852acf85` Homes+Explore merged into one panel (Browse/Cities/Communities/By price/Lifestyle), Explore removed, "Central Oregon, end to end" gone, hidden columns fixed, price-drop badge live, "List your home"→"What's my home worth?", Company→About, Learn→Guides. Verified in browser.
+
 ### Remaining (in priority order)
-1. **Nav rebuild (Class D)** — merge Homes + Explore, kill "Central Oregon, end to end", fix hidden columns / duplicate cities / "List your home" label / dead badge code / header CTA count.
+1. **Listing page — mobile + photos + status badge (Matt 2026-06-14)** — (a) listing detail looks bad on mobile (layout), (b) the photo gallery/section needs a stronger treatment, (c) the "Active" status pill renders navy `#102742` so it reads greyed/muted instead of signaling *available* — needs a clear available-state treatment (and it's hardcoded hex = a token violation in `components/lp/ListingCard.tsx` statusPillStyle).
 2. **Geo sweep (Class B/C/E, Phase 2)** — convert neighborhood (`/cities/[slug]/[hood]`) + zip pages to the canonical archetype (they still use HeroBlock + bespoke stat cards + no SectionNav).
 3. **Class F (SSR)** — `/feed`, `/activity`, market reports, `/guides`, `/videos`, `/our-homes` ship little/no SSR content.
 4. **Class C (photos)** — per-neighborhood + per-city hero photography sourcing.
