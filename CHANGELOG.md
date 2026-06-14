@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.539.5 (2026-06-14)
+
+### Bug Fixes
+- fix(site): visual-review remediation — brand fidelity, dup-keys, empty states, heroes
+
+---
+
+
 ## v1.539.4 (2026-06-14)
 
 ### Bug Fixes
