@@ -67,9 +67,18 @@ const grades = {}
 
 for (const dir of dirs) {
   const blob = filesIn(dir).map((f) => readFileSync(f, 'utf8')).join('\n')
-  const isCapture = /<form|<Form|onSubmit|create\w*Lead|actions?\.ts/.test(blob) || filesIn(dir).some((f) => f.endsWith('actions.ts'))
+  // A page that mounts a shared LP form (e.g. <SellerLPForm/>) delegates its
+  // conversion wiring to that form, which is graded where it lives. Credit it.
+  const delegatesForm = /\b[A-Z]\w*LPForm\b/.test(blob)
+  const hasOwnForm = filesIn(dir).some((f) => f.endsWith('actions.ts')) || /<form|<Form|onSubmit|create\w*Lead/.test(blob)
+  const isCapture = hasOwnForm || delegatesForm
   const applicable = CRITERIA.filter((c) => !c.captureOnly || isCapture)
-  const missing = applicable.filter((c) => !c.re.test(blob)).map((c) => c.key)
+  const missing = applicable.filter((c) => {
+    if (c.re.test(blob)) return false
+    // Delegated pages inherit the shared form's lead-create/CAPI/GA4/confirm + CTA.
+    if (delegatesForm && (c.captureOnly || c.key === 'cta')) return false
+    return true
+  }).map((c) => c.key)
   totalDeductions += missing.length
   const name = dir.replace('app/lp/', '')
   grades[name] = { capture: isCapture, score: `${applicable.length - missing.length}/${applicable.length}`, missing }

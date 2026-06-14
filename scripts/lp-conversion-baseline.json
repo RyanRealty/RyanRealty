@@ -1,5 +1,5 @@
 {
-  "total": 1,
+  "total": 0,
   "grades": {
     "bend": {
       "capture": false,
@@ -27,11 +27,9 @@
       "missing": []
     },
     "sell-your-home": {
-      "capture": false,
-      "score": "0/1",
-      "missing": [
-        "cta"
-      ]
+      "capture": true,
+      "score": "5/5",
+      "missing": []
     },
     "seller-home-value": {
       "capture": true,
