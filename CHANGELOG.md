@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.532.1 (2026-06-14)
+
+### Other
+- admin: cap every uncapped data dump; ratchet ci:admin-curation baseline to 0
+
+---
+
+
 ## v1.532.0 (2026-06-14)
 
 ### Features
