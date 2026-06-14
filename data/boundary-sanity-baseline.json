@@ -1,0 +1,29 @@
+{
+  "note": "Communities allowed to exceed thresholdAcres in data/boundary-sanity.json — either an un-corrected oversized polygon awaiting authoritative-plat correction (see memory reference-oversized-community-boundaries) or a genuinely large rural community. Correct a boundary, refresh the snapshot, then remove its slug here. A NEW oversized boundary not listed fails ci:boundary-sanity.",
+  "allowed": [
+    "bend-awbrey-butte",
+    "bend-boyd-acres",
+    "bend-century-west",
+    "bend-larkspur",
+    "bend-mountain-view",
+    "bend-old-farm-district",
+    "bend-orchard-district",
+    "bend-river-west",
+    "bend-southeast-bend",
+    "bend-southern-crossing",
+    "bend-southwest-bend",
+    "bend-summit-west",
+    "black-butte-ranch",
+    "brasada-ranch",
+    "broken-top",
+    "caldera-springs",
+    "crosswater",
+    "eagle-crest",
+    "northwest-crossing",
+    "pronghorn",
+    "sunriver",
+    "three-rivers",
+    "vandevert-ranch",
+    "widgi-creek"
+  ]
+}
