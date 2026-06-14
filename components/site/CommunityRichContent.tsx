@@ -128,10 +128,13 @@ export function CommunityRichContent({
       </section>
 
       {content.amenities.length > 0 ? (
-        <section className="border-t border-border bg-secondary/40 py-10 md:py-14">
+        <section className="border-t border-border bg-primary py-12 text-primary-foreground md:py-16">
           <Container>
-            <H2 className="text-2xl text-foreground mb-6">
-              Amenities and lifestyle in {name}
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary-foreground/60">
+              {name}
+            </p>
+            <H2 className="mb-8 text-2xl text-primary-foreground">
+              Amenities and lifestyle
             </H2>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {content.amenities.map((a, i) => {
@@ -143,10 +146,10 @@ export function CommunityRichContent({
                     <Link
                       key={`${a.name}-${i}`}
                       href={`/blog/${post.slug}`}
-                      className="group rounded-xl border border-border bg-card shadow-sm overflow-hidden hover:border-primary/40 hover:shadow-md transition-shadow"
+                      className="group overflow-hidden rounded-xl border border-primary-foreground/15 bg-primary-foreground/5 transition hover:border-primary-foreground/40 hover:bg-primary-foreground/10"
                     >
                       {post.heroImageUrl ? (
-                        <div className="relative h-40 w-full bg-secondary">
+                        <div className="relative h-40 w-full bg-primary-foreground/10">
                           <Image
                             src={post.heroImageUrl}
                             alt={`${a.name} in ${name}`}
@@ -157,15 +160,15 @@ export function CommunityRichContent({
                         </div>
                       ) : null}
                       <div className="p-5">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-primary-foreground/60">
                           {a.category}
                         </p>
-                        <p className="text-base font-semibold text-foreground">{a.name}</p>
+                        <p className="text-base font-semibold text-primary-foreground">{a.name}</p>
                         {a.description ? (
-                          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{a.description}</p>
+                          <p className="mt-2 text-sm leading-relaxed text-primary-foreground/70">{a.description}</p>
                         ) : null}
-                        {a.access ? <p className="mt-3 text-xs text-muted-foreground">{a.access}</p> : null}
-                        <p className="mt-3 text-xs font-medium text-primary group-hover:underline underline-offset-2">
+                        {a.access ? <p className="mt-3 text-xs text-primary-foreground/55">{a.access}</p> : null}
+                        <p className="mt-3 text-xs font-medium text-primary-foreground group-hover:underline underline-offset-2">
                           Read more
                         </p>
                       </div>
@@ -174,15 +177,18 @@ export function CommunityRichContent({
                 }
                 // No published post: render the current static amenity card unchanged.
                 return (
-                  <div key={`${a.name}-${i}`} className="rounded-xl border border-border bg-card p-5 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
+                  <div
+                    key={`${a.name}-${i}`}
+                    className="rounded-xl border border-primary-foreground/15 bg-primary-foreground/5 p-5"
+                  >
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-primary-foreground/60">
                       {a.category}
                     </p>
-                    <p className="text-base font-semibold text-foreground">{a.name}</p>
+                    <p className="text-base font-semibold text-primary-foreground">{a.name}</p>
                     {a.description ? (
-                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{a.description}</p>
+                      <p className="mt-2 text-sm leading-relaxed text-primary-foreground/70">{a.description}</p>
                     ) : null}
-                    {a.access ? <p className="mt-3 text-xs text-muted-foreground">{a.access}</p> : null}
+                    {a.access ? <p className="mt-3 text-xs text-primary-foreground/55">{a.access}</p> : null}
                   </div>
                 )
               })}
