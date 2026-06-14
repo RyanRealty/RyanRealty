@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.535.5 (2026-06-14)
+
+### Maintenance
+- test(listing): reusable verifier for one-broker dedupe (cookie vs none)
+
+---
+
+
 ## v1.535.4 (2026-06-14)
 
 ### Bug Fixes
