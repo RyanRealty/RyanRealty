@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.543.0 (2026-06-14)
+
+### Features
+- feat(dev): /dev/components gallery — design-system atom picklist
+
+### Bug Fixes
+- fix(audit): contact form carries the listing context + survives serverless freeze
+
+---
+
+
 ## v1.542.0 (2026-06-14)
 
 ### Features
