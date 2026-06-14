@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.527.1 (2026-06-14)
+
+### Bug Fixes
+- fix(crm): mobile-first pass across all 9 CRM admin pages
+
+---
+
+
 ## v1.527.0 (2026-06-14)
 
 ### Features
