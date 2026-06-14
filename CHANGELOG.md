@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.541.0 (2026-06-14)
+
+### Features
+- feat(video): video-tour rail near the top of browse pages -> /feed
+- feat(crm): email open + click tracking on the communications chain
+- feat(voice): lock The Five Laws into the gate + force every session
+
+---
+
+
 ## v1.540.0 (2026-06-14)
 
 ### Features
