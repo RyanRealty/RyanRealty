@@ -31,11 +31,53 @@ const ALERT_PHONE_BY_BROKER: Record<string, string | undefined> = {
  */
 const BROKER_MAILBOXES = new Set(['matt@ryan-realty.com', 'rebeccapeterson@ryan-realty.com', 'paul@ryan-realty.com'])
 
+/** Plain-language "why are they here" from the page they are on. */
+function describeWhy(path: string, title?: string | null): string {
+  const p = path.toLowerCase()
+  const t = title?.trim() ? ` "${title.trim().slice(0, 60)}"` : ''
+  if (/\/listing|\/homes\/|\/property|\/mls/.test(p)) return `looking at a listing${t}`
+  if (/sell|home-valuation|home-value|whats-my-home|what-is-my-home/.test(p)) return `on a home-value / sell page, seller intent${t}`
+  if (/search|homes-for-sale|\/map/.test(p)) return `browsing the home search${t}`
+  if (/\/cmas?\/|\/drafts\/cma/.test(p)) return `viewing their CMA report${t}`
+  if (p === '/' || p === '') return `on your homepage${t}`
+  return `viewing ${path}${t}`
+}
+
+/** Plain-language "from where" they arrived — utm channel first, then referrer. */
+function describeFrom(referrer?: string | null, utmSource?: string | null, utmMedium?: string | null, utmCampaign?: string | null): string {
+  const camp = utmCampaign?.trim() ? ` (${utmCampaign.trim()})` : ''
+  const s = (utmSource ?? '').toLowerCase()
+  if (s) {
+    const med = (utmMedium ?? '').toLowerCase()
+    if (s.includes('facebook') || s.includes('instagram') || s === 'fb' || s === 'ig') return `a Facebook or Instagram ad${camp}`
+    if (s.includes('google') && (med.includes('cpc') || med.includes('paid'))) return `a Google ad${camp}`
+    if (med.includes('email') || s.includes('email') || s.includes('klaviyo') || s.includes('fub')) return `a link in one of your emails${camp}`
+    return `${utmSource}${camp}`
+  }
+  const r = (referrer ?? '').trim().toLowerCase()
+  if (!r) return `direct, they typed the address or used a saved bookmark`
+  try {
+    const host = new URL(r.startsWith('http') ? r : `https://${r}`).hostname.replace(/^www\./, '')
+    if (host.includes('google')) return `a Google search`
+    if (host.includes('bing')) return `a Bing search`
+    if (host.includes('facebook') || host.includes('instagram') || host.startsWith('fb.') || host.includes('l.facebook')) return `Facebook or Instagram`
+    if (host.includes('fub.direct') || host.includes('followupboss')) return `a link in one of your emails or texts`
+    if (host.endsWith('ryan-realty.com') || host.includes('ryanrealty')) return `another page on your own site`
+    return host
+  } catch {
+    return r.slice(0, 60)
+  }
+}
+
 export async function queueReturnVisitAlert(params: {
   fubPersonId: number
   who: string
   pageUrl: string
   pageTitle?: string | null
+  referrer?: string | null
+  utmSource?: string | null
+  utmMedium?: string | null
+  utmCampaign?: string | null
 }): Promise<boolean> {
   try {
     const sb = createServiceClient()
@@ -45,7 +87,7 @@ export async function queueReturnVisitAlert(params: {
       .eq('fub_legacy_id', params.fubPersonId)
       .maybeSingle()
     if (!person) return false
-    // Brokers browsing their own site are not leads — no self-texts.
+    // Brokers browsing their own site are not leads. No self-texts.
     const { data: emails } = await sb
       .from('crm_contact_points')
       .select('value')
@@ -54,13 +96,18 @@ export async function queueReturnVisitAlert(params: {
     if ((emails ?? []).some((e) => BROKER_MAILBOXES.has(String(e.value).toLowerCase()))) return false
     const day = new Date().toISOString().slice(0, 10)
     const name = (person.name as string | null) ?? params.who
-    const title = params.pageTitle?.trim() ? ` (${params.pageTitle.trim().slice(0, 60)})` : ''
     const path = params.pageUrl.replace(/^https?:\/\/[^/]+/, '') || '/'
+    const body = [
+      `${name} is back on your site right now.`,
+      `Why: ${describeWhy(path, params.pageTitle)}`,
+      `From: ${describeFrom(params.referrer, params.utmSource, params.utmMedium, params.utmCampaign)}`,
+      `Open the lead: https://ryan-realty.com/admin/crm/${person.id}`,
+    ].join('\n')
     return queueBrokerAlert({
       broker: person.assigned_broker as string | null,
       personId: person.id as number,
       kind: `return-visit:${day}`,
-      body: `${name} is on the site right now — viewing ${path}${title}. Open the lead: https://ryan-realty.com/admin/crm/${person.id}`,
+      body,
     })
   } catch (err) {
     console.warn('[broker-alerts] return-visit queue error:', err)
