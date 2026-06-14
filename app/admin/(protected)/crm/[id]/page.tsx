@@ -306,8 +306,8 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[420px_1fr]">
-        {/* ── Left: identity (second on phones — comms come first) ── */}
-        <div className="order-2 space-y-4 sm:space-y-6 lg:order-none">
+        {/* ── Left: pfp + lead info (FIRST on phones, per Matt) ── */}
+        <div className="order-1 space-y-4 sm:space-y-6 lg:order-none">
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-3">
@@ -584,8 +584,8 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
           ) : null}
         </div>
 
-        {/* ── Right: conversation + tasks + timeline (first on phones) ── */}
-        <div className="order-1 space-y-4 sm:space-y-6 lg:order-none">
+        {/* ── Right: conversation + actions (after lead info on phones) ── */}
+        <div className="order-2 space-y-4 sm:space-y-6 lg:order-none">
           {/* Conversation — texts and emails only, chat style */}
           <Card>
             <CardHeader className="pb-3">
