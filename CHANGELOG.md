@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.528.1 (2026-06-14)
+
+### Bug Fixes
+- fix(admin): entire admin site mobile-first + hardened anti-regression gate (baseline 0)
+
+---
+
+
 ## v1.528.0 (2026-06-14)
 
 ### Features
