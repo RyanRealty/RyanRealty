@@ -37,17 +37,22 @@ export default async function AdminHomePage({ searchParams }: { searchParams: Pr
   const setupComplete = await getSetupComplete()
   if (!setupComplete) redirect('/admin/setup')
 
-  // Broker-role users land on their command center, not the CRM lead funnel
+  const { broker: brokerParam } = await searchParams
+
+  // Anyone with a broker profile — including the principal/superuser — lands on
+  // the action-first command center by default (Matt 2026-06-14: the bare /admin
+  // was still showing the old "<broker>'s leads" funnel to superusers). The
+  // all-leads funnel stays one tap away via "All leads" (/admin?broker=all),
+  // which carries a broker param and so bypasses this redirect.
   const session = await getSession()
   const email = session?.user?.email?.trim()
-  if (email) {
+  if (email && !brokerParam) {
     const role = await getAdminRoleForEmail(email)
-    if (role?.role === 'broker') redirect('/admin/broker-dashboard')
+    if (role?.brokerId) redirect('/admin/broker-dashboard')
   }
 
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
-  const { broker: brokerParam } = await searchParams
   // Brokers default to their own book; Matt defaults to everyone.
   const broker = brokerParam === 'all' ? undefined : (brokerParam || access.brokerSlug || undefined)
   const d = await getCachedCrmHomeDashboard(broker)

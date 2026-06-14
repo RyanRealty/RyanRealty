@@ -212,9 +212,16 @@ export default async function BrokerCommandCenterPage({
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">{today}</p>
         </div>
-        <Button asChild size="sm">
-          <Link href="/admin/crm">Open CRM</Link>
-        </Button>
+        <div className="flex shrink-0 gap-2">
+          {data.isSuperuser ? (
+            <Button asChild variant="outline" size="sm">
+              <Link href="/admin?broker=all">All leads</Link>
+            </Button>
+          ) : null}
+          <Button asChild size="sm">
+            <Link href="/admin/crm">Open CRM</Link>
+          </Button>
+        </div>
       </header>
 
       {/* ── 1. FOCUS: what needs the broker to act now (the anchor) ── */}

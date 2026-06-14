@@ -47,7 +47,7 @@ export default function DashboardSyncPanel(props: Props) {
   const { history, cursor, counts, breakdown, historyTableStatus, dataQuality } = props
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <div className="rounded-lg bg-muted p-3">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Listings (total)</p>
           <p className="mt-1 text-xl font-semibold text-foreground">{counts.totalListings.toLocaleString()}</p>
@@ -80,7 +80,7 @@ export default function DashboardSyncPanel(props: Props) {
         {history.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">No sync runs recorded yet.</p>
         ) : (
-          <div className="mt-2 overflow-x-auto">
+          <div className="mt-2 min-w-0 overflow-x-auto no-scrollbar">
             <Table className="min-w-full border-collapse text-sm">
               <TableHeader>
                 <TableRow className="border-b border-border">
