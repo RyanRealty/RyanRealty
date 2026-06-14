@@ -4,8 +4,6 @@ import { redirect } from 'next/navigation'
 import { unstable_cache } from 'next/cache'
 import { getSetupComplete } from '@/app/actions/admin-setup'
 import { getCrmAccess, getCrmHomeDashboard } from '@/app/actions/crm'
-import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import { getSession } from '@/app/actions/auth'
 import { CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import StageBadge from '@/components/admin/crm/StageBadge'
 import { Button } from '@/components/ui/button'
@@ -39,20 +37,16 @@ export default async function AdminHomePage({ searchParams }: { searchParams: Pr
 
   const { broker: brokerParam } = await searchParams
 
-  // Anyone with a broker profile — including the principal/superuser — lands on
-  // the action-first command center by default (Matt 2026-06-14: the bare /admin
-  // was still showing the old "<broker>'s leads" funnel to superusers). The
-  // all-leads funnel stays one tap away via "All leads" (/admin?broker=all),
-  // which carries a broker param and so bypasses this redirect.
-  const session = await getSession()
-  const email = session?.user?.email?.trim()
-  if (email && !brokerParam) {
-    const role = await getAdminRoleForEmail(email)
-    if (role?.brokerId) redirect('/admin/broker-dashboard')
-  }
-
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
+
+  // Anyone with a broker profile — including the principal/superuser — lands on
+  // the action-first command center by default. brokerSlug (email->broker) is the
+  // SAME signal the dashboard's data depends on; a superuser's admin_roles.brokerId
+  // is null, which is why the earlier role-based redirect skipped Matt (the bare
+  // /admin still showed the old "<broker>'s leads" funnel). The all-leads funnel
+  // stays one tap away at /admin?broker=all (the param bypasses this redirect).
+  if (!brokerParam && access.brokerSlug) redirect('/admin/broker-dashboard')
   // Brokers default to their own book; Matt defaults to everyone.
   const broker = brokerParam === 'all' ? undefined : (brokerParam || access.brokerSlug || undefined)
   const d = await getCachedCrmHomeDashboard(broker)
