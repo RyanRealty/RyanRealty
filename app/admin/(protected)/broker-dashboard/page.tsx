@@ -157,7 +157,7 @@ export default async function BrokerCommandCenterPage({
             <p className="py-4 text-center text-sm text-muted-foreground">You are all caught up. No leads or tasks need action right now.</p>
           ) : (
             <>
-              {actionQueue.map((a) => {
+              {actionQueue.slice(0, 5).map((a) => {
                 const tone =
                   a.channel === 'email' ? 'bg-blue-100 text-blue-800 border-blue-200'
                   : a.channel === 'sms' ? 'bg-green-100 text-green-800 border-green-200'
@@ -177,7 +177,7 @@ export default async function BrokerCommandCenterPage({
                   </Link>
                 )
               })}
-              {overdueTasks.map((t) => (
+              {overdueTasks.slice(0, Math.max(0, 5 - actionQueue.length)).map((t) => (
                 <Link
                   key={`t-${t.id}`}
                   href={t.personId ? `/admin/crm/${t.personId}` : '/admin/crm/tasks'}
@@ -190,6 +190,11 @@ export default async function BrokerCommandCenterPage({
                   </span>
                 </Link>
               ))}
+              {needsActionCount > 5 ? (
+                <Link href="/admin/crm/tasks" className="block rounded-lg py-2 text-center text-sm font-medium text-primary hover:bg-muted/50">
+                  See all {needsActionCount} →
+                </Link>
+              ) : null}
             </>
           )}
         </CardContent>
@@ -212,7 +217,7 @@ export default async function BrokerCommandCenterPage({
             {data.activeDeals.length === 0 ? (
               <p className="px-6 py-8 text-center text-sm text-muted-foreground">No active transactions right now.</p>
             ) : (
-              data.activeDeals.map((deal) => {
+              data.activeDeals.slice(0, 3).map((deal) => {
                 const pct = deal.checklistTotal > 0
                   ? Math.round((deal.checklistComplete / deal.checklistTotal) * 100)
                   : 0
@@ -365,7 +370,7 @@ export default async function BrokerCommandCenterPage({
               <p className="px-6 py-6 text-center text-sm text-muted-foreground">All caught up. No tasks due.</p>
             ) : (
               <div className="divide-y divide-border">
-                {data.tasksDue.map((task) => (
+                {data.tasksDue.slice(0, 4).map((task) => (
                   <div key={task.id} className="flex items-center gap-3 px-6 py-2.5">
                     <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs ${task.isOverdue ? 'border-destructive text-destructive' : 'border-border text-muted-foreground'}`}>
                       ✓
@@ -408,7 +413,7 @@ export default async function BrokerCommandCenterPage({
               <p className="px-6 py-6 text-center text-sm text-muted-foreground">No active clients found.</p>
             ) : (
               <div className="divide-y divide-border">
-                {data.activeClients.map((client) => {
+                {data.activeClients.slice(0, 4).map((client) => {
                   const daysSince = client.lastActivityAt
                     ? Math.round((Date.now() - new Date(client.lastActivityAt).getTime()) / 86_400_000)
                     : null
