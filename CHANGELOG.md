@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.539.8 (2026-06-14)
+
+### Bug Fixes
+- fix(admin/crm): collapse the custom-fields wall behind a disclosure
+
+---
+
+
 ## v1.539.7 (2026-06-14)
 
 ### Bug Fixes
