@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.539.4 (2026-06-14)
+
+### Bug Fixes
+- fix(admin/crm): lead page leads with pfp + info, then conversation (mobile)
+
+---
+
+
 ## v1.539.3 (2026-06-14)
 
 ### Bug Fixes
