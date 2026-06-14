@@ -71,7 +71,10 @@ function statusPillStyle(label: string): { bg: string; text: string } {
   if (lower.includes('pending')) return { bg: '#b8860b', text: '#faf8f4' }
   if (lower.includes('contract')) return { bg: '#8b4513', text: '#faf8f4' }
   if (lower.includes('closed') || lower.includes('sold')) return { bg: '#5d6470', text: '#faf8f4' }
-  return { bg: '#102742', text: '#faf8f4' }
+  // Active / for-sale: a bright cream pill (navy text) reads as "available" and
+  // stays legible on any photo. The old solid navy pill blended into darker
+  // shots and read as greyed/inactive.
+  return { bg: '#faf8f4', text: '#102742' }
 }
 
 /**

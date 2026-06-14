@@ -236,15 +236,42 @@ function HeroPhotoGrid({
 }) {
   const five = photos.slice(0, 5)
   const remaining = Math.max(0, total - five.length)
+  const first = five[0]
 
   return (
-    <div
-      className="grid h-[420px] gap-2 sm:h-[520px] lg:h-[600px] xl:h-[680px]"
-      style={{
-        gridTemplateColumns: '2fr 1fr 1fr',
-        gridTemplateRows: 'repeat(2, 1fr)',
-      }}
-    >
+    <>
+      {/* Mobile: ONE large hero photo + view-all chip. The 5-cell grid below
+          is unreadable at phone width (tiles shrink to thumbnails), so phones
+          get a single tap-to-open hero instead. */}
+      {first ? (
+        <button
+          type="button"
+          onClick={() => onOpen(0)}
+          className="group relative block aspect-[4/3] w-full overflow-hidden rounded-xl bg-muted focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/40 sm:hidden"
+          aria-label={`Open photo 1 of ${total}`}
+        >
+          <Image
+            src={first.url}
+            alt={first.caption ?? `${altBase} 1 of ${total}`}
+            fill
+            sizes="100vw"
+            priority
+            className="object-cover transition group-hover:scale-[1.02]"
+          />
+          <span className="absolute bottom-3.5 right-3.5 inline-flex items-center gap-1.5 rounded-[10px] bg-white/95 px-3.5 py-2 text-[13px] font-semibold text-foreground shadow-sm">
+            <ViewAllIcon /> View all {total} photos
+          </span>
+        </button>
+      ) : null}
+
+      {/* Tablet / desktop: editorial 5-cell grid */}
+      <div
+        className="hidden h-[420px] gap-2 sm:grid sm:h-[520px] lg:h-[600px] xl:h-[680px]"
+        style={{
+          gridTemplateColumns: '2fr 1fr 1fr',
+          gridTemplateRows: 'repeat(2, 1fr)',
+        }}
+      >
       {five.map((p, i) => (
         <button
           key={`${i}-${p.url}`}
@@ -275,7 +302,8 @@ function HeroPhotoGrid({
           ) : null}
         </button>
       ))}
-    </div>
+      </div>
+    </>
   )
 }
 
