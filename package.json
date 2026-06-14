@@ -145,6 +145,7 @@
     "coverage:report": "npx tsx scripts/generate-test-stubs.ts report",
     "coverage:generate": "npx tsx scripts/generate-test-stubs.ts generate",
     "test:e2e": "npx playwright test --project=chromium",
+    "verify:admin-mobile": "node scripts/verify-admin-mobile.mjs",
     "test:e2e:all": "npx playwright test",
     "test:e2e:ui": "npx playwright test --ui",
     "test:e2e:update-snapshots": "npx playwright test --update-snapshots",
