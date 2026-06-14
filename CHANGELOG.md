@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.544.5 (2026-06-14)
+
+### Bug Fixes
+- fix(team): voice-compliant broker-page copy + show buy+sell sales reliably
+
+---
+
+
 ## v1.544.4 (2026-06-14)
 
 ### Bug Fixes
