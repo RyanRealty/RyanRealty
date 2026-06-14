@@ -28,7 +28,7 @@
  * Re-run any time the legacy sitemap changes; commit the JSON.
  */
 
-import { writeFileSync } from 'node:fs'
+import { writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 const LEGACY_ORIGIN = 'https://ryan-realty.com'
@@ -39,12 +39,40 @@ const CITY_HUBS = new Set([
   'bend', 'redmond', 'sisters', 'sunriver', 'la-pine', 'madras', 'prineville', 'terrebonne',
 ])
 
-// Communities verified present in the new-site registry (data/resort-community-*.json
-// + data/resort-communities.json) — safe specific targets that preserve equity.
-const KNOWN_COMMUNITY = new Set([
-  'caldera-springs', 'tetherow', 'broken-top', 'awbrey-glen', 'black-butte-ranch',
-  'brasada-ranch', 'northwest-crossing', 'old-bend', 'river-west', 'awbrey-butte',
-])
+// Community slugs that actually have a /communities/<slug> page with real content,
+// loaded from the registry so we never redirect to a soft-404 empty slug. NOTE the
+// real slug shape: resort communities are bare (`tetherow`, `northwest-crossing`)
+// while Bend neighborhoods are city-prefixed (`bend-awbrey-butte`, `bend-old-bend`).
+// `/communities/[slug]` returns HTTP 200 for ANY slug (soft-404), so set-membership
+// against this registry — NOT an HTTP probe — is the only safe validation.
+function loadCommunitySlugs() {
+  const slugs = new Set()
+  const dataDir = join(process.cwd(), 'data')
+  for (const f of readdirSync(dataDir)) {
+    const m = f.match(/^resort-community-(.+)\.json$/)
+    if (!m) continue
+    try {
+      const j = JSON.parse(readFileSync(join(dataDir, f), 'utf8'))
+      slugs.add((j.slug || m[1]).toLowerCase())
+    } catch { slugs.add(m[1].toLowerCase()) }
+  }
+  try {
+    const reg = JSON.parse(readFileSync(join(dataDir, 'resort-communities.json'), 'utf8'))
+    const arr = Array.isArray(reg) ? reg : (reg.communities || Object.values(reg))
+    for (const c of arr) if (c && c.slug) slugs.add(String(c.slug).toLowerCase())
+  } catch { /* registry optional */ }
+  return slugs
+}
+const KNOWN_COMMUNITY = loadCommunitySlugs()
+
+// Resolve a bare neighborhood/community name to its real /communities/<slug>, or null.
+// Tries the bare slug (resort communities) then the `bend-<name>` form (Bend hoods).
+function communityTarget(name) {
+  const n = String(name).toLowerCase().replace(/^\/+|\/+$/g, '')
+  if (KNOWN_COMMUNITY.has(n)) return `/communities/${n}`
+  if (KNOWN_COMMUNITY.has(`bend-${n}`)) return `/communities/bend-${n}`
+  return null
+}
 
 // Curated exact map for the high-value money / system / team / guide pages.
 // Every destination is a guaranteed-200 route on the new site (verified against
@@ -123,8 +151,8 @@ const CURATED = {
   // standalone neighborhood-ish pages → community / city hub
   '/bends-west-side': '/cities/bend',
   '/living-in-nw-crossing-bend-oregon': '/communities/northwest-crossing',
-  '/river-west-and-old-bend': '/communities/river-west',
-  '/river-west-and-old-bend-2': '/communities/river-west',
+  '/river-west-and-old-bend': '/communities/bend-river-west',
+  '/river-west-and-old-bend-2': '/communities/bend-river-west',
   '/southeast-bend': '/cities/bend',
   '/southwest-bend': '/cities/bend',
   '/tumalo': '/cities/bend',
@@ -143,6 +171,19 @@ const CURATED = {
   '/363-sw-bluff-drive-unit-208': '/homes-for-sale',
   '/56628-sunstone-loop-bend-or-97707': '/homes-for-sale',
   '/64350-old-bend-redmond-hwy': '/homes-for-sale',
+  // Legacy AgentFire money pages (root-level) that ranked and 404'd post-cutover.
+  '/about-ryan-realty': '/about',
+  '/bend-oregon-real-estate': '/cities/bend',
+  '/bend-oregon-housing-market': '/housing-market',
+  '/bend-neighborhoods-housing-market-reports': '/housing-market',
+  '/bend-oregon-relocation-guide': '/guides',
+  '/buy-bend-real-estate': '/buy',
+  '/buy-bend-real-estate/comprehensive-bend-oregon-home-buying-guide': '/buy',
+  '/featured-properties': '/our-homes',
+  '/fsbo': '/lp/fsbo',
+  '/matthew-ryan': '/team/matt-ryan',
+  '/rebecca-peterson': '/team/rebecca-peterson',
+  '/trust': '/about',
 }
 
 function normalize(pathname) {
@@ -153,25 +194,55 @@ function normalize(pathname) {
 }
 
 async function fetchSitemapLocs(url) {
-  const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (cutover-redirect-builder)' } })
-  if (!res.ok) throw new Error(`fetch ${url} → ${res.status}`)
-  const xml = await res.text()
-  const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1])
-  return locs
-    .map((u) => u.replace(LEGACY_ORIGIN, ''))
-    .map(normalize)
-    .filter((p) => p && p !== '/')
+  // Non-fatal: the legacy AgentFire host is GONE post-cutover (ryan-realty.com is
+  // now the new site), so its Yoast sitemaps 404. We keep the fetch for the case
+  // where a legacy mirror is reachable, but never let its absence wipe the map —
+  // the durable source of the legacy URLs is data/legacy-ranking-paths.json + the
+  // existing committed map (seeded in main()).
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (cutover-redirect-builder)' } })
+    if (!res.ok) { console.warn(`warn: ${url} → ${res.status} (skipping live sitemap)`); return [] }
+    const xml = await res.text()
+    const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1])
+    return locs
+      .map((u) => u.replace(LEGACY_ORIGIN, ''))
+      .map(normalize)
+      .filter((p) => p && p !== '/')
+  } catch (e) {
+    console.warn(`warn: ${url} unreachable (${e.message}) — using committed fixtures`)
+    return []
+  }
+}
+
+function cityTarget(city) {
+  const c = String(city).toLowerCase()
+  // Black Butte Ranch has a richer /communities page than its thin /cities page.
+  if (c === 'black-butte-ranch' && KNOWN_COMMUNITY.has('black-butte-ranch')) return '/communities/black-butte-ranch'
+  if (CITY_HUBS.has(c)) return `/cities/${c}`
+  return '/homes-for-sale'
 }
 
 function resolvePage(path) {
   if (CURATED[path]) return { dest: CURATED[path], confidence: 'high' }
   // /explore/<city>/<neighborhood...> or /explore/<city>
-  const m = path.match(/^\/explore\/([^/]+)(?:\/(.+))?$/)
+  let m = path.match(/^\/explore\/([^/]+)(?:\/(.+))?$/)
   if (m) {
     const city = m[1]
     if (CITY_HUBS.has(city)) return { dest: `/cities/${city}`, confidence: 'high' }
-    if (KNOWN_COMMUNITY.has(city)) return { dest: `/communities/${city}`, confidence: 'high' }
-    return { dest: '/communities', confidence: 'medium' }
+    return { dest: communityTarget(city) || '/communities', confidence: communityTarget(city) ? 'high' : 'medium' }
+  }
+  // Legacy AgentFire IDX families that carried the bulk of the local rankings and
+  // were 404'ing post-cutover (the #1 cause of the traffic cliff):
+  //   /listings/city|county|subdivision/<Name>[/<Type>]
+  //   /best-neighborhoods-bend-oregon/<n>-homes-for-sale[/<n>-home-value]
+  //   /bend-oregon-housing-market[/<n>-...-report]
+  if ((m = path.match(/^\/listings\/city\/([^/]+)(?:\/[^/]+)?$/))) return { dest: cityTarget(m[1]), confidence: 'high' }
+  if (path.match(/^\/listings\/county\/[^/]+(?:\/[^/]+)?$/)) return { dest: '/homes-for-sale', confidence: 'high' }
+  if ((m = path.match(/^\/listings\/subdivision\/([^/]+)(?:\/[^/]+)?$/))) return { dest: communityTarget(m[1]) || '/cities/bend', confidence: 'high' }
+  if ((m = path.match(/^\/best-neighborhoods-bend-oregon\/([^/]+?)-homes-for-sale(?:\/.*)?$/))) return { dest: communityTarget(m[1]) || '/cities/bend', confidence: 'high' }
+  if ((m = path.match(/^\/bend-oregon-housing-market\/(.+)$/))) {
+    const n = m[1].replace(/-housing-market-report$/, '').replace(/-market-report$/, '')
+    return { dest: communityTarget(n) || '/housing-market', confidence: 'high' }
   }
   // unmapped page → safe guaranteed-200 parent, flagged for review
   return { dest: '/', confidence: 'low' }
@@ -193,6 +264,25 @@ async function main() {
 
   const map = {}
   const lowConfidence = []
+
+  // Seed from the existing committed map so prior live-sitemap-derived entries
+  // (address slugs, /explore, blog posts) survive a re-run when the legacy host
+  // is gone. Curated + family resolution below overwrites with better targets.
+  if (existsSync(OUT)) {
+    try { Object.assign(map, JSON.parse(readFileSync(OUT, 'utf8'))) } catch { /* fresh build */ }
+  }
+
+  // The legacy ranking URLs that actually accumulated local SEO and 404'd at the
+  // cutover. Committed fixture because the live AgentFire sitemap no longer exists.
+  // Resolved through resolvePage so each lands on a real-content page.
+  const RANKING_FIXTURE = join(process.cwd(), 'data', 'legacy-ranking-paths.json')
+  const rankingPaths = existsSync(RANKING_FIXTURE)
+    ? JSON.parse(readFileSync(RANKING_FIXTURE, 'utf8')).map(normalize)
+    : []
+  for (const p of rankingPaths) {
+    const { dest } = resolvePage(p)
+    map[p] = dest
+  }
 
   for (const p of pages) {
     const { dest, confidence } = resolvePage(p)
