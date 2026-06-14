@@ -46,65 +46,100 @@ const SALE_PROJECTION = [
   'estimated_monthly_piti, price_drop_count, DaysOnMarket, total_price_change_pct',
 ].join(', ')
 
-async function fetchBrokerSales(
-  email: string,
-  mlsId: string,
-  limit: number,
-): Promise<BrokerSaleTile[]> {
+// SELL side — listings the broker listed. list_agent_email is indexed
+// (idx_listings_list_agent_email), so this is fast + reliable. THROW on error
+// so the resilient cache never stores a poisoned empty.
+async function fetchSellSide(emailLc: string): Promise<BrokerSaleTile[]> {
   const sb = supabaseAnon()
-  if (!sb || !email.trim()) return []
-  const emailLc = email.trim().toLowerCase()
-
-  // Resolve the broker's MLS agent id (buyer-side join key): caller-supplied ->
-  // verified map -> derive from the broker's own list-side rows.
-  let resolvedMlsId = mlsId.trim().toLowerCase() || (BROKER_MLS_ID_BY_EMAIL[emailLc] ?? '')
-  if (!resolvedMlsId) {
-    const { data: idRows, error: idErr } = await sb
-      .from('listings')
-      .select('list_agent_mls_id')
-      .eq('list_agent_email', emailLc)
-      .not('list_agent_mls_id', 'is', null)
-      .limit(1)
-    if (idErr) throw new Error(`[getBrokerSales id] ${idErr.message}`)
-    resolvedMlsId = (idRows?.[0]?.list_agent_mls_id ?? '').trim().toLowerCase()
-  }
-
-  // Pull a generous window of each side, then dedup + sort + cap in JS so a
-  // dual-side deal (broker on both ends) is counted once.
-  const sellQ = sb
+  if (!sb || !emailLc) return []
+  const { data, error } = await sb
     .from('listings')
     .select(SALE_PROJECTION)
     .eq('list_agent_email', emailLc)
     .not('ClosePrice', 'is', null)
     .order('CloseDate', { ascending: false, nullsFirst: false })
     .limit(100)
-  const buyQ = resolvedMlsId
-    ? sb
-        .from('listings')
-        .select(SALE_PROJECTION)
-        .ilike('buyer_agent_mls_id', resolvedMlsId)
-        .not('ClosePrice', 'is', null)
-        .not('PhotoURL', 'is', null)
-        .order('CloseDate', { ascending: false, nullsFirst: false })
-        .limit(100)
-    : Promise.resolve({ data: [] as unknown[], error: null })
+  if (error) throw new Error(`[getBrokerSales sell] ${error.message}`)
+  return ((data ?? []) as unknown as PriceDropTile[]).map((r) => ({ ...r, saleSide: 'listed' as const }))
+}
 
-  const [sellRes, buyRes] = await Promise.all([sellQ, buyQ])
-  // THROW on a transient DB error so makeResilientCached never caches []
-  // (poison-null). A genuine no-sales broker (Paul) still returns [] legitimately.
-  if (sellRes.error) throw new Error(`[getBrokerSales sell] ${sellRes.error.message}`)
-  if (buyRes.error) throw new Error(`[getBrokerSales buy] ${buyRes.error.message}`)
+// BUY side — listings where the broker represented the buyer. buyer_agent_mls_id
+// is NOT indexed, so this seq-scans the listings table and can hit the anon
+// statement_timeout (57014). Use EQ (not ILIKE) — values are stored lowercase
+// and the id is lowercased, so eq matches without a per-row lower() and is the
+// cheapest scan (also index-ready if one is ever added). Cached + queried
+// SEPARATELY from the sell side (see getBrokerSales) so a buy-side timeout
+// degrades to sell-only and never zeroes the section.
+async function fetchBuySide(mlsIdLc: string): Promise<BrokerSaleTile[]> {
+  const sb = supabaseAnon()
+  if (!sb || !mlsIdLc) return []
+  const { data, error } = await sb
+    .from('listings')
+    .select(SALE_PROJECTION)
+    .eq('buyer_agent_mls_id', mlsIdLc)
+    .not('ClosePrice', 'is', null)
+    .order('CloseDate', { ascending: false, nullsFirst: false })
+    .limit(100)
+  if (error) throw new Error(`[getBrokerSales buy] ${error.message}`)
+  return ((data ?? []) as unknown as PriceDropTile[]).map((r) => ({ ...r, saleSide: 'represented-buyer' as const }))
+}
 
+// Buyer-side join key: caller-supplied -> verified map -> derive from the
+// broker's own (indexed) list-side rows. brokers.mls_id is unpopulated.
+async function resolveMlsId(emailLc: string, supplied: string): Promise<string> {
+  const s = supplied.trim().toLowerCase()
+  if (s) return s
+  const mapped = BROKER_MLS_ID_BY_EMAIL[emailLc]
+  if (mapped) return mapped
+  const sb = supabaseAnon()
+  if (!sb) return ''
+  const { data } = await sb
+    .from('listings')
+    .select('list_agent_mls_id')
+    .eq('list_agent_email', emailLc)
+    .not('list_agent_mls_id', 'is', null)
+    .limit(1)
+  return (data?.[0]?.list_agent_mls_id ?? '').trim().toLowerCase()
+}
+
+const cacheOpts = { revalidate: CACHE_WINDOWS.brokers, tags: [cacheTag.brokers, cacheTag.listings] }
+const cachedSellSide = makeResilientCached(fetchSellSide, ['broker-sell-v1'], cacheOpts, [])
+const cachedBuySide = makeResilientCached(fetchBuySide, ['broker-buy-v1'], cacheOpts, [])
+
+/**
+ * A broker's recent closed sales, both sides, newest close first.
+ *
+ * Sell + buy are cached and fetched INDEPENDENTLY: the sell side is indexed and
+ * reliable; the buy side is unindexed and best-effort, so a buy-side timeout
+ * degrades to sell-only rather than hiding the whole section. makeResilientCached
+ * returns [] (uncached) on a persistent buy error, so the buy side self-heals
+ * and caches on its first success.
+ *
+ * @param email broker's email (sell-side key). @param mlsId buy-side key
+ * (optional, resolved if omitted). @param limit max cards (default 9, cap 24).
+ */
+export async function getBrokerSales(opts: {
+  email: string | null | undefined
+  mlsId?: string | null
+  limit?: number
+}): Promise<BrokerSaleTile[]> {
+  const email = (opts.email ?? '').trim()
+  if (!email) return []
+  const emailLc = email.toLowerCase()
+  const limit = Math.min(Math.max(opts.limit ?? 9, 1), 24)
+  const mlsId = await resolveMlsId(emailLc, opts.mlsId ?? '')
+  const [sell, buy] = await Promise.all([cachedSellSide(emailLc), cachedBuySide(mlsId)])
+
+  // Dedup by ListingKey, sell side wins (a dual-side deal counts once as listed).
   const byKey = new Map<string, BrokerSaleTile>()
-  for (const r of (sellRes.data ?? []) as unknown as PriceDropTile[]) {
+  for (const r of sell) {
     const k = (r.ListingKey ?? '').trim()
-    if (k) byKey.set(k, { ...r, saleSide: 'listed' })
+    if (k) byKey.set(k, r)
   }
-  for (const r of (buyRes.data ?? []) as unknown as PriceDropTile[]) {
+  for (const r of buy) {
     const k = (r.ListingKey ?? '').trim()
-    if (k && !byKey.has(k)) byKey.set(k, { ...r, saleSide: 'represented-buyer' })
+    if (k && !byKey.has(k)) byKey.set(k, r)
   }
-
   return [...byKey.values()]
     .sort((a, b) => {
       const ad = a.CloseDate ? new Date(a.CloseDate).getTime() : 0
@@ -112,29 +147,4 @@ async function fetchBrokerSales(
       return bd - ad
     })
     .slice(0, limit)
-}
-
-const cachedBrokerSales = makeResilientCached(
-  fetchBrokerSales,
-  ['broker-sales-v1'],
-  { revalidate: CACHE_WINDOWS.brokers, tags: [cacheTag.brokers, cacheTag.listings] },
-  [],
-)
-
-/**
- * A broker's recent closed sales, both sides, newest close first.
- * @param email   broker's email (sell-side key: listings.list_agent_email)
- * @param mlsId   broker's MLS agent id (buy-side key). Optional — derived from
- *                the broker's own list-side rows when omitted.
- * @param limit   max cards to return (default 9, capped 24).
- */
-export function getBrokerSales(opts: {
-  email: string | null | undefined
-  mlsId?: string | null
-  limit?: number
-}): Promise<BrokerSaleTile[]> {
-  const email = (opts.email ?? '').trim()
-  if (!email) return Promise.resolve([])
-  const limit = Math.min(Math.max(opts.limit ?? 9, 1), 24)
-  return cachedBrokerSales(email.toLowerCase(), (opts.mlsId ?? '').toLowerCase(), limit)
 }
