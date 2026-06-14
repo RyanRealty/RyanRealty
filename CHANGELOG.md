@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.535.4 (2026-06-14)
+
+### Bug Fixes
+- fix(listing): show ONE broker, not a conflicting 'your broker' + 'talk to a broker' pair
+
+---
+
+
 ## v1.535.3 (2026-06-14)
 
 ### Maintenance
