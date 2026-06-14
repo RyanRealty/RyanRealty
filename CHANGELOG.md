@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.535.6 (2026-06-14)
+
+### Bug Fixes
+- fix(admin/operations): sync history = mobile cards + desktop table (kills 15px overflow)
+
+---
+
+
 ## v1.535.5 (2026-06-14)
 
 ### Maintenance
