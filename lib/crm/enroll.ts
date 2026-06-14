@@ -144,8 +144,37 @@ export async function autoEnrollByFubId(fubPersonId: number): Promise<AutoEnroll
       // Approval ask (Matt directive 2026-06-12): the alert carries the
       // prepared first touch so the broker can approve and start the workflow.
       let body: string
-      if (result.enrolled) {
-        const tags = (p.tags ?? []) as string[]
+      const tags = (p.tags ?? []) as string[]
+      // High-intent signals a real inquiry leaves and a bare site sign-in does not:
+      // a phone number, or an inquiry/source/channel tag from a form submission.
+      const { data: phoneRows } = await sb
+        .from('crm_contact_points')
+        .select('id')
+        .eq('person_id', p.id)
+        .eq('kind', 'phone')
+        .limit(1)
+      const hasPhone = (phoneRows ?? []).length > 0
+      const sourceStr = (p.source ?? '').trim().toLowerCase()
+      const isSiteDomainSource = sourceStr === 'ryan-realty.com' || sourceStr.endsWith('.ryan-realty.com')
+      const highIntent = tags.some(
+        (t) =>
+          t.startsWith('audience:') ||
+          (t.startsWith('source:') && t.includes('-lp')) ||
+          t.startsWith('intent:') ||
+          t.startsWith('channel:fb-ads') ||
+          t.startsWith('source:fb-ads'),
+      )
+      // A bare website sign-in (Google / SSO): source is the site itself, no
+      // phone, and none of the inquiry tags a form submission applies. This is
+      // someone browsing, NOT a lead who asked for anything.
+      const isSiteSignin = isSiteDomainSource && !highIntent && !hasPhone
+      if (isSiteSignin) {
+        body = [
+          `Website sign-in (browsing), low intent.`,
+          `${p.name ?? 'Someone'} just signed in on ryan-realty.com. No phone, no message, no form submission. They are browsing, not an inquiry.`,
+          `Open the lead: ryan-realty.com/admin/crm/${p.id}`,
+        ].join('\n')
+      } else if (result.enrolled) {
         const leadType = tags.includes('intent:expired-listing')
           ? 'expired seller'
           : tags.includes('audience:seller')
@@ -166,7 +195,7 @@ export async function autoEnrollByFubId(fubPersonId: number): Promise<AutoEnroll
           `New ${leadType} lead: ${p.name ?? 'Unknown'}${p.source ? ` (${p.source})` : ''}`,
           preview
             ? `First ${preview.channel === 'sms' ? 'text' : 'email'} sending now: "${preview.body}"`
-            : `Enrolled in "${result.sequence}" — first touch sending now.`,
+            : `Enrolled in "${result.sequence}". First touch sending now.`,
           `Open the lead: ryan-realty.com/admin/crm/${p.id}`,
         ].join('\n')
       } else {
