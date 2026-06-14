@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.532.0 (2026-06-14)
+
+### Features
+- feat(gate): ci:admin-curation — block uncapped data dumps in admin (wired into ci:gates)
+
+---
+
+
 ## v1.531.1 (2026-06-14)
 
 ### Bug Fixes
