@@ -24,7 +24,7 @@ const INQUIRY_OPTIONS = [
   { value: 'Relocation', label: 'Relocation' },
 ]
 
-export default function ContactForm({ defaultInquiryType }: { defaultInquiryType?: string }) {
+export default function ContactForm({ defaultInquiryType, listingKey }: { defaultInquiryType?: string; listingKey?: string }) {
   const [state, setState] = useState<{ error?: string; success?: boolean }>({})
   const [loading, setLoading] = useState(false)
 
@@ -35,6 +35,9 @@ export default function ContactForm({ defaultInquiryType }: { defaultInquiryType
     const formData = new FormData(e.currentTarget)
     const rrSession = readRrSessionId()
     if (rrSession) formData.append('sessionId', rrSession)
+    // Carry the listing the visitor was asking about (tour/question CTA), so the
+    // broker knows which home and the lead is valued as a property inquiry.
+    if (listingKey) formData.append('listingKey', listingKey)
     const result = await submitContactForm(formData)
     setLoading(false)
     setState(result)
@@ -60,6 +63,11 @@ export default function ContactForm({ defaultInquiryType }: { defaultInquiryType
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {listingKey ? (
+        <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+          Your message will be linked to the home you were viewing.
+        </p>
+      ) : null}
       <div>
         <Label htmlFor="contact-name" className="block text-sm font-medium text-muted-foreground">
           Name

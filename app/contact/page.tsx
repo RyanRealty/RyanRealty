@@ -16,7 +16,7 @@ import { H2 } from '@/components/site/primitives'
 
 const contactOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')}/api/og?type=default`
 
-type PageProps = { searchParams: Promise<{ inquiry?: string }> }
+type PageProps = { searchParams: Promise<{ inquiry?: string; listingKey?: string; intent?: string }> }
 
 export const metadata: Metadata = {
   title: 'Contact Us | Ryan Realty',
@@ -44,7 +44,9 @@ export default async function ContactPage({ searchParams }: PageProps) {
   const pageUrl = `${getCanonicalSiteUrl()}/contact`
   const pageTitle = 'Contact Us | Ryan Realty'
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
-  const defaultInquiry = params.inquiry ?? undefined
+  // Listing tour/question CTAs land here with ?listingKey= (and intent=question).
+  // Default to a buyer/property inquiry and carry the listing through to FUB.
+  const defaultInquiry = params.inquiry ?? (params.listingKey ? 'Buying' : undefined)
   const contactTitle = pageContent?.title?.trim() || 'Contact Us'
   const baseUrl = getCanonicalSiteUrl()
   const jsonLd = {
@@ -90,7 +92,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
         <div className="grid gap-10 lg:grid-cols-2">
           <div>
-            <ContactForm defaultInquiryType={defaultInquiry} />
+            <ContactForm defaultInquiryType={defaultInquiry} listingKey={params.listingKey} />
           </div>
           <div>
             <H2 className="text-xl text-primary">Office</H2>

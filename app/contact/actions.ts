@@ -1,5 +1,6 @@
 'use server'
 
+import { after } from 'next/server'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { sendEvent, findPersonByEmail } from '@/lib/followupboss'
 import { sendContactNotification } from '@/lib/resend'
@@ -34,6 +35,27 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
 
   if (!email) return { error: 'Email is required' }
 
+  // Listing tour/question CTAs pass ?listingKey=. Resolve which home so the FUB
+  // lead names the property (a broker shouldn't have to guess which listing).
+  const listingKey = formData.get('listingKey')?.toString()?.trim() ?? ''
+  let listingLabel = ''
+  if (listingKey) {
+    try {
+      const { getListingsByKeys } = await import('@/app/actions/listings')
+      const [tile] = await getListingsByKeys([listingKey])
+      if (tile) {
+        const street = [tile.StreetNumber, tile.StreetName].filter(Boolean).join(' ').trim()
+        const where = [street, tile.City].filter(Boolean).join(', ')
+        listingLabel = (where || 'a listing') + (tile.ListNumber ? ` (MLS ${tile.ListNumber})` : '')
+      } else {
+        listingLabel = `listing ${listingKey}`
+      }
+    } catch {
+      listingLabel = `listing ${listingKey}`
+    }
+  }
+  const messageTag = listingLabel ? `${inquiryType} — ${listingLabel}` : inquiryType
+
   const res = await sendEvent({
     type: 'General Inquiry',
     person: {
@@ -44,7 +66,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
     },
     source,
     sourceUrl: typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_SITE_URL ? `${process.env.NEXT_PUBLIC_SITE_URL}/contact` : undefined,
-    message: `[${inquiryType}] ${message || '(no message)'}`,
+    message: `[${messageTag}] ${message || '(no message)'}`,
   })
 
   if (!res.ok) return { error: res.error ?? 'Failed to send' }
@@ -54,7 +76,10 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   // Canonical tagging — apply audience:* + source:* + broker:* + round-robin
   // assignment to whatever FUB person sendEvent just touched. Fire-and-forget
   // so it doesn't block the response. Per docs/FUB_OPTIMIZATION_AUDIT_2026-05-17.md §1.
-  void (async () => {
+  // after() keeps the serverless function alive until tagging/assignment/enroll/
+  // backfill finish — a bare fire-and-forget IIFE can be frozen on return, which
+  // dropped contact leads into FUB unassigned + un-enrolled.
+  after(async () => {
     try {
       const found = await findPersonByEmail(email)
       if (found?.id) {
@@ -90,7 +115,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
     } catch (err) {
       console.warn('[contact-form] canonical tagging failed (non-blocking):', err)
     }
-  })()
+  })
 
   // Send to Meta CAPI for deduplication with browser pixel.
   // Every Lead carries an estimated value so Meta's bid algorithm can
@@ -98,7 +123,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   // intent than general inquiries; fold that into the value tier.
   const eventId = generateEventId()
   const inquiryLower = inquiryType.toLowerCase()
-  const leadValue = inquiryLower.includes('property') || inquiryLower.includes('listing')
+  const leadValue = listingKey || inquiryLower.includes('property') || inquiryLower.includes('listing')
     ? 300
     : inquiryLower.includes('seller') || inquiryLower.includes('valuation')
       ? 500
@@ -126,7 +151,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
 
   // GA4 Measurement Protocol mirror — server-side generate_lead so the
   // conversion still lands when gtag is blocked (ad blockers, denied consent).
-  const leadType = inquiryLower.includes('property') || inquiryLower.includes('listing')
+  const leadType = listingKey || inquiryLower.includes('property') || inquiryLower.includes('listing')
     ? 'listing_inquiry'
     : inquiryLower.includes('seller') || inquiryLower.includes('valuation')
       ? 'seller'
