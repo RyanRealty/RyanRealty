@@ -1,11 +1,12 @@
 'use client'
 
 /**
- * HomepageV6AskBar — natural-language ask bar in the v6 hero.
+ * HomepageV6AskBar — keyword search bar in the v6 hero.
  *
- * Submits to the existing keyword search path (/search?keywords=) — the
- * same wiring HomepageHeroV3 used, so queries land on the live search
- * surface with the full filter UI available.
+ * Navigates directly to /homes-for-sale?keywords=<query>, which is the
+ * real search surface (app/search/page.tsx via the Next.js rewrite).
+ * Bypasses the /search → /homes-for-sale 308 redirect so the keywords
+ * param is never at risk of being dropped by a browser's redirect cache.
  */
 
 import { useState } from 'react'
@@ -24,19 +25,23 @@ export default function HomepageV6AskBar() {
       onSubmit={(e) => {
         e.preventDefault()
         const query = q.trim()
-        router.push(query ? `/search?keywords=${encodeURIComponent(query)}` : '/search')
+        router.push(
+          query
+            ? `/homes-for-sale?keywords=${encodeURIComponent(query)}`
+            : '/homes-for-sale',
+        )
       }}
     >
       <Input
         type="text"
         className="v6-ask-input"
-        placeholder="Which Tetherow streets back the fairway?"
+        placeholder="Search by city, neighborhood, or address"
         aria-label="Search Central Oregon real estate"
         value={q}
         onChange={(e) => setQ(e.target.value)}
       />
       <Button type="submit" className="v6-ask-btn">
-        Ask
+        Search
       </Button>
     </form>
   )

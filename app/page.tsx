@@ -1,39 +1,34 @@
 import type { Metadata } from 'next'
 
 import HomepageV6Hero from '@/components/site/HomepageV6Hero'
-import HomepageV6DealFlow, { type DealFlowCard } from '@/components/site/HomepageV6DealFlow'
-import HomepageV6Collection from '@/components/site/HomepageV6Collection'
-import HomepageV6Ledger from '@/components/site/HomepageV6Ledger'
-import HomepageV6Tools from '@/components/site/HomepageV6Tools'
-import HomepageV6Sell from '@/components/site/HomepageV6Sell'
-import HomepageV6Standard from '@/components/site/HomepageV6Standard'
-import HomepageV6Guides from '@/components/site/HomepageV6Guides'
-import HomepageV6Closer from '@/components/site/HomepageV6Closer'
+import CityGrid from '@/components/site/CityGrid'
+import { RelatedAreas, type RelatedAreaItem } from '@/components/site/RelatedAreas'
+import FeaturedListings from '@/components/site/FeaturedListings'
+import MarketSnapshot from '@/components/site/MarketSnapshot'
+import { ArticleGrid } from '@/components/site/ArticleGrid'
+import { CTABar } from '@/components/site/CTABar'
 
 import { getRegionPulse } from '@/lib/data'
-import { getBendNeighborhoodLedger } from '@/lib/data'
-import { getListingTiles } from '@/lib/data'
 import { getRecentBlogPosts } from '@/lib/data'
-import { getActivityFeed } from '@/app/actions/activity-feed'
-import type { ActivityFeedItem } from '@/app/actions/activity-feed-shared'
-import type { ListingTile } from '@/lib/data/types/listing'
+import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import type { BlogPostCard } from '@/lib/data/blog/getRecentBlogPosts'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
 
 /**
- * Homepage — "the city is the homepage." Linear finish on v6 bones
- * (LOCKED, Matt 2026-06-13: Linear spec, not cinematic). Live photoreal 3D
- * Bend hero (Google 3D Tiles over poster-first LCP) + ask bar + coords
- * readout, then a Linear-discipline section stack: live deal flow, top-of-
- * market collection, neighborhood ledger, working tools, instant home value,
- * the standard every home gets, market guides, seller closer. Hairline
- * borders, glass panels, micro-tracked labels, 150ms motion, one Amboqia
- * moment (hero H1). Every figure live from the DAL (§0).
+ * Homepage — drone-flyover hero + standard section stack that matches the
+ * rest of the site (cities, communities, buy, listings pages).
  *
- * ISR cache at 60s. Organization + WebSite JSON-LD emitted once by the root
- * layout (<JsonLd>); the homepage does not re-declare it.
+ * Hero: HomepageV6Hero (Matt-approved, locked).
+ * Below: CityGrid → RelatedAreas (communities) → FeaturedListings →
+ *        MarketSnapshot → ArticleGrid → CTABar.
+ *
+ * All standard components — the same ones that render /cities, /communities,
+ * /buy, and search pages. No bespoke data-terminal sections. Every figure
+ * live from the DAL (§0).
+ *
+ * ISR cache at 60s.
  */
 export const revalidate = 60
 
@@ -58,8 +53,6 @@ export const metadata: Metadata = {
   },
 }
 
-// ─── Converters ──────────────────────────────────────────────────────────────
-
 function timeSince(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
   const m = Math.floor(diff / 60000)
@@ -70,123 +63,99 @@ function timeSince(iso: string): string {
   return `${Math.floor(h / 24)}d ago`
 }
 
-function fmtPrice(n: number): string {
-  return `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}`
-}
-
-/** Most specific HUMAN-READABLE verified geo. Plat codes ("OWW1") fall back to city. */
-function placeFor(ev: ActivityFeedItem): string {
-  const sub = ev.NeighborhoodName ?? ev.SubdivisionName
-  if (sub && sub.length >= 4 && !/\d/.test(sub)) return sub
-  return ev.City ?? 'Central Oregon'
-}
-
-const MINUS = '−'
-
-/** Activity event → deal card. Null when the class's figure can't be verified (§0). */
-function toDealCard(ev: ActivityFeedItem): DealFlowCard | null {
-  const base = { key: ev.id, href: `/listing/${ev.listing_key}`, place: placeFor(ev) }
-  const when = timeSince(ev.event_at)
-  const payload = (ev.payload ?? {}) as Record<string, unknown>
-
-  switch (ev.event_type) {
-    case 'new_listing':
-    case 'back_on_market': {
-      if (ev.ListPrice == null) return null
-      return { ...base, type: 'New', meta: [fmtPrice(ev.ListPrice), when] }
-    }
-    case 'price_drop': {
-      const prev = typeof payload.previous_price === 'number' ? payload.previous_price : null
-      const next = typeof payload.new_price === 'number' ? payload.new_price : null
-      if (prev == null || next == null || next >= prev) return null
-      return { ...base, type: 'Price drop', meta: [fmtPrice(next), `${MINUS}${fmtPrice(prev - next)}`, when], posIndex: 1 }
-    }
-    case 'status_pending': {
-      if (ev.OnMarketDate) {
-        const days = Math.floor((new Date(ev.event_at).getTime() - new Date(ev.OnMarketDate).getTime()) / 86_400_000)
-        if (Number.isFinite(days) && days >= 0) return { ...base, type: 'Pending', meta: [`${days} days on market`, when] }
-      }
-      if (ev.ListPrice == null) return null
-      return { ...base, type: 'Pending', meta: [fmtPrice(ev.ListPrice), when] }
-    }
-    case 'status_closed': {
-      const close = typeof payload.ClosePrice === 'number' ? payload.ClosePrice : null
-      if (close == null) return null
-      return { ...base, type: 'Sold', meta: [fmtPrice(close), when] }
-    }
-    default:
-      return null
-  }
-}
-
-/** Up to 4 cards: one of each class first (variety), newest fill after. */
-function buildDealCards(events: ActivityFeedItem[]): DealFlowCard[] {
-  const all = events.map(toDealCard).filter((c): c is DealFlowCard => c !== null)
-  const picked: DealFlowCard[] = []
-  for (const type of ['New', 'Price drop', 'Pending', 'Sold'] as const) {
-    const hit = all.find((c) => c.type === type)
-    if (hit) picked.push(hit)
-  }
-  for (const c of all) {
-    if (picked.length >= 4) break
-    if (!picked.includes(c)) picked.push(c)
-  }
-  return picked.slice(0, 4)
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// Community slugs to feature on the homepage (highlight the most-searched
+// resort communities and Bend neighborhoods).
+const FEATURED_COMMUNITY_SLUGS = [
+  'tetherow',
+  'northwest-crossing',
+  'bend-awbrey-butte',
+  'broken-top',
+  'caldera-springs',
+  'black-butte-ranch',
+  'sunriver-resort',
+  'eagle-crest',
+]
 
 export default async function Home() {
-  const [pulse, ledgerRows, activity, topTiles, posts] = await Promise.all([
+  const [pulse, posts] = await Promise.all([
     getRegionPulse().catch(() => null),
-    getBendNeighborhoodLedger().catch(() => []),
-    getActivityFeed({
-      limit: 40,
-      eventTypes: ['new_listing', 'price_drop', 'status_pending', 'status_closed'],
-    }).catch(() => [] as ActivityFeedItem[]),
-    getListingTiles({
-      status: 'active',
-      sort: 'price-desc',
-      limit: 12,
-      propertyType: 'A',
-      cities: ['Bend', 'Sisters', 'Sunriver', 'Redmond', 'Tumalo'],
-    }).catch(() => [] as ListingTile[]),
     getRecentBlogPosts({ limit: 6 }).catch(() => [] as BlogPostCard[]),
   ])
 
-  const cards = buildDealCards(activity)
   const freshnessLabel = pulse?.updatedAt ? timeSince(pulse.updatedAt) : null
+
+  // Build community items from the registry (synchronous, zero Supabase cost).
+  // RelatedAreas shows text-tile rows when no imageUrl is supplied, which
+  // matches the design-system pattern and avoids an extra media fetch here.
+  const allCommunities = getAllResortCommunities()
+  const communityMap = new Map(allCommunities.map((c) => [c.slug, c]))
+  const communityItems: RelatedAreaItem[] = FEATURED_COMMUNITY_SLUGS
+    .map((slug) => {
+      const entry = communityMap.get(slug)
+      if (!entry) return null
+      return {
+        name: entry.label,
+        href: `/communities/${entry.slug}`,
+      } satisfies RelatedAreaItem
+    })
+    .filter((item): item is RelatedAreaItem => item !== null)
 
   return (
     <main className="min-h-screen bg-background">
-      {/* Site-wide Organization + WebSite JSON-LD is emitted once by the root
-          layout (<JsonLd>). The homepage does not re-declare it. */}
-
+      {/* 1. Hero — drone-flyover video + ask bar (Matt-approved, locked) */}
       <HomepageV6Hero
         activeCount={pulse?.activeCount ?? null}
         medianListPrice={pulse?.medianListPrice ?? null}
         freshnessLabel={freshnessLabel}
       />
 
-      <HomepageV6DealFlow cards={cards} />
-
-      <HomepageV6Collection tiles={topTiles} />
-
-      <HomepageV6Ledger rows={ledgerRows} />
-
-      <HomepageV6Tools />
-
-      <HomepageV6Sell
-        medianListPrice={pulse?.medianListPrice ?? null}
-        soldCount30d={pulse?.soldCount30d ?? null}
-        medianDaysToPending={pulse?.medianDaysToPending ?? null}
+      {/* 2. Browse by city — standard CityGrid used on /about and /cities */}
+      <CityGrid
+        eyebrow="Search by location"
+        title="Browse by city"
+        subtitle="Median prices refreshed daily from Oregon Data Share."
       />
 
-      <HomepageV6Standard />
+      {/* 3. Browse by neighborhood / community — standard RelatedAreas */}
+      <RelatedAreas
+        eyebrow="Communities"
+        title="Browse by neighborhood"
+        items={communityItems}
+        cols={4}
+        viewAllHref="/communities"
+        viewAllLabel="View all communities"
+        tone="default"
+      />
 
-      <HomepageV6Guides posts={posts} />
+      {/* 4. Featured listings — real active inventory, newest first */}
+      <FeaturedListings
+        title="Active Central Oregon homes"
+        viewAllHref="/homes-for-sale"
+        viewAllLabel="View all homes"
+        limit={8}
+      />
 
-      <HomepageV6Closer />
+      {/* 5. Market snapshot — region-level, live from market_pulse_live */}
+      <MarketSnapshot />
+
+      {/* 6. Guides from the blog */}
+      <ArticleGrid
+        items={posts}
+        eyebrow="Guides & insights"
+        heading="From the blog"
+        viewAllHref="/blog"
+        tone="muted"
+      />
+
+      {/* 7. Sell CTA */}
+      <CTABar
+        eyebrow="Thinking about selling?"
+        title="Find out what your home is worth."
+        body="Real numbers from brokers who work this market every day. No algorithms, no automated estimates."
+        primary={{ href: '/sell/valuation', label: "What's my home worth?" }}
+        secondary={{ href: 'tel:5412136706', label: '541.213.6706' }}
+        tone="navy"
+      />
     </main>
   )
 }

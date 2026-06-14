@@ -1,44 +1,36 @@
 {
   "route": "app/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/homepage-v6/index.html",
-  "status": "built-awaiting-matt-approval",
-  "note": "Homepage Linear (LOCKED Matt 2026-06-13: Linear spec, not cinematic). Live 3D Bend hero + ask bar + coords, deal flow, top-of-market collection, neighborhood ledger, tools, instant home value, the-standard, market guides, closer. Hairline/glass/micro-label/150ms, one Amboqia moment. Every figure live from the DAL.",
+  "status": "rebuilt-2026-06-14",
+  "note": "Homepage rebuilt to match site standard sections. Hero (drone flyover, locked) + CityGrid + RelatedAreas (communities) + FeaturedListings + MarketSnapshot + ArticleGrid + CTABar. All V6 bespoke terminal sections removed. Search fixed to /homes-for-sale?keywords=.",
   "requiredComponents": [
     {
       "name": "HomepageV6Hero",
-      "section": "live 3D Bend hero + poster LCP + ask bar + coords + live chip"
+      "section": "drone-flyover hero + ask bar + live chip"
     },
     {
-      "name": "HomepageV6DealFlow",
-      "section": "live market events (New/Price drop/Pending/Sold)"
+      "name": "CityGrid",
+      "section": "browse by city — 8 city photo cards"
     },
     {
-      "name": "HomepageV6Collection",
-      "section": "top-of-market live listing cards"
+      "name": "RelatedAreas",
+      "section": "browse by neighborhood / community"
     },
     {
-      "name": "HomepageV6Ledger",
-      "section": "neighborhood ledger with source line"
+      "name": "FeaturedListings",
+      "section": "active Central Oregon listings grid"
     },
     {
-      "name": "HomepageV6Tools",
-      "section": "mortgage/appreciation/rental calculators"
+      "name": "MarketSnapshot",
+      "section": "region-level 4-stat market band"
     },
     {
-      "name": "HomepageV6Sell",
-      "section": "instant home value + seller CTA"
+      "name": "ArticleGrid",
+      "section": "recent blog guides"
     },
     {
-      "name": "HomepageV6Standard",
-      "section": "the standard every home gets"
-    },
-    {
-      "name": "HomepageV6Guides",
-      "section": "recent market guides (blog)"
-    },
-    {
-      "name": "HomepageV6Closer",
-      "section": "closer + seller CTA + direct line"
+      "name": "CTABar",
+      "section": "seller CTA — what's my home worth?"
     }
   ]
 }
