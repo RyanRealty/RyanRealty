@@ -1,6 +1,7 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { unstable_cache } from 'next/cache'
 import { getSetupComplete } from '@/app/actions/admin-setup'
 import { getCrmAccess, getCrmHomeDashboard } from '@/app/actions/crm'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
@@ -11,6 +12,16 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export const dynamic = 'force-dynamic'
+
+// The ~13 live count queries behind the home dashboard are the slow part (an
+// uncached render measured 28-49s — reads as "down" on a phone). The page stays
+// dynamic for per-request auth/role, but the data bundle is cached per broker
+// for 60s. Keyed by broker arg, so one broker never sees another's counts.
+const getCachedCrmHomeDashboard = unstable_cache(
+  async (broker?: string) => getCrmHomeDashboard(broker),
+  ['admin-crm-home-dashboard'],
+  { revalidate: 60, tags: ['crm-home'] },
+)
 
 function fmtDate(iso: string | null): string {
   if (!iso) return '—'
@@ -39,7 +50,7 @@ export default async function AdminHomePage({ searchParams }: { searchParams: Pr
   const { broker: brokerParam } = await searchParams
   // Brokers default to their own book; Matt defaults to everyone.
   const broker = brokerParam === 'all' ? undefined : (brokerParam || access.brokerSlug || undefined)
-  const d = await getCrmHomeDashboard(broker)
+  const d = await getCachedCrmHomeDashboard(broker)
 
   const attention = [
     { label: 'Hot leads (48h)', value: d.attention.hotLeads48h, href: '/admin/analytics/action-required', urgent: d.attention.hotLeads48h > 0 },

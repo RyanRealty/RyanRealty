@@ -48,7 +48,7 @@ export default async function TcFormsPage({ searchParams }: Props) {
       </header>
 
       {/* Glanceable summary — summary before detail */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Card>
           <CardContent className="space-y-0.5 p-4 tabular-nums">
             <p className="text-2xl font-bold text-foreground">{total}</p>

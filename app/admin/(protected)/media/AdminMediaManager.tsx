@@ -169,7 +169,7 @@ export default function AdminMediaManager() {
             </TabsList>
           </Tabs>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="rounded-xl border border-border bg-muted/40 p-3">
               <p className="text-xs text-muted-foreground">Files</p>
               {loading ? (

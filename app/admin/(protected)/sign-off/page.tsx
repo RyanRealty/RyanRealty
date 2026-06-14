@@ -173,7 +173,7 @@ export default async function SignOffPage() {
         </p>
       </header>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Stat label="Items pending" value={queue.totalItems} />
         <Stat label="Past 7-day deadline" value={queue.overdueItems} tone="destructive" />
         <Stat label="Deals" value={queue.deals.length} />
