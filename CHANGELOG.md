@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.534.0 (2026-06-14)
+
+### Features
+- feat(account): rebuild the visitor home into one cohesive, designed hub
+
+---
+
+
 ## v1.533.1 (2026-06-14)
 
 ### Bug Fixes
