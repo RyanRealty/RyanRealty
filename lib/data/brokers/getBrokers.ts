@@ -170,6 +170,11 @@ export const getBrokerBySlug = unstable_cache(
     if (broker && !String(broker.license_number ?? '').trim() && CONFIRMED_LICENSES[String(broker.slug)]) {
       broker.license_number = CONFIRMED_LICENSES[String(broker.slug)]!
     }
+    // Normalize the stored phone to the brand-voice dotted format (541.703.3095)
+    // so the detail page never renders a parenthesized "(541) 703-3095".
+    if (broker && broker.phone) {
+      broker.phone = normalizePhone(broker.phone as string | null)
+    }
     return broker
   },
   ['broker-by-slug-v1'],

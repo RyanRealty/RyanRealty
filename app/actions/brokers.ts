@@ -132,6 +132,13 @@ export async function getBrokerBySlug(slug: string): Promise<BrokerRow | null> {
   if (broker && !broker.license_number?.trim() && CONFIRMED_LICENSES[broker.slug]) {
     broker.license_number = CONFIRMED_LICENSES[broker.slug]!
   }
+  // Normalize the stored phone to the brand-voice dotted format (541.703.3095)
+  // so the detail page never renders a parenthesized "(541) 703-3095".
+  if (broker?.phone) {
+    const digits = broker.phone.replace(/\D/g, '')
+    const ten = digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits
+    if (ten.length === 10) broker.phone = `${ten.slice(0, 3)}.${ten.slice(3, 6)}.${ten.slice(6)}`
+  }
   return broker
 }
 
