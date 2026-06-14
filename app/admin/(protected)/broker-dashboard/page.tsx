@@ -273,7 +273,7 @@ export default async function BrokerCommandCenterPage({
       </section>
 
       {/* ── 3. Deals + Schedule ── */}
-      <div className="grid gap-8 lg:grid-cols-[3fr_2fr]">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[3fr_2fr]">
 
         {/* Active deals */}
         <section>
@@ -381,7 +381,7 @@ export default async function BrokerCommandCenterPage({
       </div>
 
       {/* ── 4. Tasks + Clients ── */}
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
 
         {/* Tasks due */}
         <section>
@@ -496,7 +496,7 @@ export default async function BrokerCommandCenterPage({
 
           {/* Post ideas */}
           {marketingTab === 'ideas' ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {data.myListings.length > 0 && data.myListings.slice(0, 6).map((listing) => (
                 <div key={listing.listingKey} className="rounded-xl border border-border bg-card p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -540,7 +540,7 @@ export default async function BrokerCommandCenterPage({
               <p className="text-sm text-muted-foreground">
                 Send a branded newsletter to your clients with recent market data, your listings, and a personal note.
               </p>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {[
                   { label: 'Monthly market update newsletter', desc: `Send to your full ${data.activeClients.length} active clients with market stats + listings.`, href: '/admin/crm' },
                   { label: 'New listing announcement', desc: 'Alert your sphere when a new listing goes live.', href: '/admin/listings' },
@@ -567,7 +567,7 @@ export default async function BrokerCommandCenterPage({
               {data.myListings.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">No active or pending listings found for your account.</p>
               ) : (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {data.myListings.slice(0, 8).map((listing) => (
                     <div key={listing.listingKey} className="overflow-hidden rounded-xl border border-border bg-card">
                       {listing.photoUrl ? (
@@ -609,7 +609,7 @@ export default async function BrokerCommandCenterPage({
               <p className="text-sm text-muted-foreground">
                 Generate a market report for your farm area. Reports are data-verified against the live Supabase listings database.
               </p>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {[
                   { label: 'Bend market report', desc: 'SFR data for the City of Bend, all neighborhoods.', href: '/admin/reports/market?city=Bend' },
                   { label: 'Redmond market report', desc: 'SFR data for Redmond.', href: '/admin/reports/market?city=Redmond' },
