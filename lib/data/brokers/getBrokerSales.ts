@@ -26,6 +26,16 @@ import type { PriceDropTile } from '@/lib/data/listings/getPriceDropTiles'
 export type BrokerSaleSide = 'listed' | 'represented-buyer'
 export type BrokerSaleTile = PriceDropTile & { saleSide: BrokerSaleSide }
 
+// Verified MLS agent ids (listings.list_agent_mls_id / buyer_agent_mls_id),
+// confirmed 2026-06-14. brokers.mls_id is unpopulated and a broker's lone
+// list-side row can carry a null id, so a static verified map is the reliable
+// buy-side join key. Keyed by email (lowercase).
+const BROKER_MLS_ID_BY_EMAIL: Record<string, string> = {
+  'matt@ryan-realty.com': 'c10676',
+  'rebeccapeterson@ryan-realty.com': 'c13902',
+  'paul@ryan-realty.com': 'c13975',
+}
+
 const SALE_PROJECTION = [
   'ListingKey, ListNumber, ListPrice, OriginalListPrice, BedroomsTotal, BathroomsTotal',
   'TotalLivingAreaSqFt, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName',
@@ -45,9 +55,9 @@ async function fetchBrokerSales(
   if (!sb || !email.trim()) return []
   const emailLc = email.trim().toLowerCase()
 
-  // Resolve the broker's MLS agent id (buyer-side join key) when not supplied —
-  // derive from the broker's own list-side rows.
-  let resolvedMlsId = mlsId.trim().toLowerCase()
+  // Resolve the broker's MLS agent id (buyer-side join key): caller-supplied ->
+  // verified map -> derive from the broker's own list-side rows.
+  let resolvedMlsId = mlsId.trim().toLowerCase() || (BROKER_MLS_ID_BY_EMAIL[emailLc] ?? '')
   if (!resolvedMlsId) {
     const { data: idRows, error: idErr } = await sb
       .from('listings')
@@ -66,7 +76,6 @@ async function fetchBrokerSales(
     .select(SALE_PROJECTION)
     .eq('list_agent_email', emailLc)
     .not('ClosePrice', 'is', null)
-    .not('PhotoURL', 'is', null)
     .order('CloseDate', { ascending: false, nullsFirst: false })
     .limit(100)
   const buyQ = resolvedMlsId

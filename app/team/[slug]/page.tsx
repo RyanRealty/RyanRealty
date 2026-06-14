@@ -158,8 +158,21 @@ function toBrokerSaleCard(tile: BrokerSaleTile): ListingCardData | null {
   return { ...base, badge: { kind: 'sold', label: when ? `${verb} ${when}` : verb } }
 }
 
-function factualFallbackBio(displayName: string): string {
-  return `${displayName} is a real estate broker at Ryan Realty, based in Bend, Oregon. Ryan Realty serves buyers and sellers across Central Oregon, including Bend, Redmond, Sisters, Sunriver, and surrounding communities. ${displayName} works directly with clients from first contact through closing.`
+/** Fallback bio when a broker has no DB bio — leads with the receipt (the live
+ *  closings count) when there is one, never recited category geography. */
+function factualFallbackBio(opts: {
+  displayName: string
+  firstName: string
+  closings: number
+  phone: string | null
+}): string {
+  if (opts.closings > 0) {
+    return `${opts.firstName} has closed ${opts.closings} homes across Central Oregon, on both sides of the deal, from Bend to Redmond, Sisters, and Sunriver.`
+  }
+  if (opts.phone) {
+    return `Reach ${opts.displayName} directly at ${opts.phone}. The broker you reach is the broker who runs your transaction, in Bend, Redmond, Sisters, and Sunriver.`
+  }
+  return `${opts.displayName} represents buyers and sellers in Bend, Redmond, Sisters, and Sunriver.`
 }
 
 const HEADSHOT: Record<string, string> = {
@@ -185,7 +198,7 @@ export default async function TeamMemberPage({ params }: Props) {
     // the per-broker attribution filter has everything to choose from.
     getReviews(24),
     getBrokerageListingTiles({ officeName: OFFICE_NAME, limit: 60 }),
-    getBrokerSales({ email: broker.email, mlsId: broker.mls_id, limit: 9 }),
+    getBrokerSales({ email: broker.email, mlsId: broker.mls_id, limit: 24 }),
   ])
 
   // This broker's own closings — both sides, newest first. Verified keys only
@@ -193,7 +206,8 @@ export default async function TeamMemberPage({ params }: Props) {
   const brokerSaleCards: ListingCardData[] = brokerSales
     .map(toBrokerSaleCard)
     .filter((c): c is ListingCardData => c !== null)
-  const hasOwnSales = brokerSaleCards.length > 0
+  const closings = brokerSaleCards.length // true distinct count, both sides (≤24)
+  const hasOwnSales = closings > 0
 
   // Brokerage recent sales — closed listings across Ryan Realty, newest first.
   // Shown as the track record for a broker who has no own closings yet.
@@ -204,11 +218,24 @@ export default async function TeamMemberPage({ params }: Props) {
     .filter((c): c is ListingCardData => c !== null)
     .slice(0, 6)
 
-  const bioText = broker.bio?.trim() ? broker.bio.trim() : factualFallbackBio(broker.display_name)
+  const bioText = broker.bio?.trim()
+    ? broker.bio.trim()
+    : factualFallbackBio({ displayName: broker.display_name, firstName, closings, phone: broker.phone })
   const headshotSrc = HEADSHOT[broker.slug] ?? broker.photo_url ?? '/images/brokers/ryan-matt.png'
   const telHref = broker.phone ? `tel:${broker.phone.replace(/[^\d]/g, '')}` : null
   const smsHref = broker.phone ? `sms:${broker.phone.replace(/[^\d]/g, '')}` : null
   const mailHref = broker.email ? `mailto:${broker.email}` : null
+
+  // Bottom-CTA body, built from live contact info. The closing sentence is the
+  // one direct-broker accountability fact on the page (a transaction-desk shop
+  // cannot truthfully paste it — passes the competitor test).
+  const ctaContact = [
+    broker.phone ? `Call or text ${broker.phone}` : null,
+    broker.email ? `email ${broker.email}` : null,
+  ]
+    .filter(Boolean)
+    .join(', or ')
+  const ctaBody = `${ctaContact ? `${ctaContact}. ` : ''}The broker you reach is the broker who runs your transaction.`
 
   // Reviews that belong on THIS broker's page (name them, or name nobody),
   // with the ones that name this broker first.
@@ -294,8 +321,9 @@ export default async function TeamMemberPage({ params }: Props) {
               {broker.title ?? 'Real Estate Broker'}
             </p>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-primary-foreground/85">
-              The broker you call is the broker you get. No hand-offs, no transaction desk, from the
-              first conversation to the closing table.
+              {hasOwnSales
+                ? `${closings} homes closed across Central Oregon, with ${firstName} as the broker on every file.`
+                : `${firstName} lists and sells homes in Bend, Redmond, Sisters, Sunriver, and Prineville.`}
             </p>
 
             {/* Trust strip — Google rating + license, real values only */}
@@ -405,12 +433,12 @@ export default async function TeamMemberPage({ params }: Props) {
               <Eyebrow>Track record</Eyebrow>
               <H2>{firstName}&apos;s recent sales</H2>
               <Body size="default" tone="muted">
-                Homes {firstName} has sold for sellers and bought for buyers, pulled directly from
-                the Oregon Data Share MLS. Each price is the recorded closing price.
+                {closings} closings {firstName} represented, from the Oregon Data Share MLS. Each
+                figure is the recorded closing price.
               </Body>
             </Stack>
             <Grid cols={3} gap="default">
-              {brokerSaleCards.map((card) => (
+              {brokerSaleCards.slice(0, 9).map((card) => (
                 <ListingCard key={card.listingKey} listing={card} />
               ))}
             </Grid>
@@ -423,9 +451,8 @@ export default async function TeamMemberPage({ params }: Props) {
               <Eyebrow>The Ryan Realty record</Eyebrow>
               <H2>Recent Ryan Realty sales across Central Oregon</H2>
               <Body size="default" tone="muted">
-                When you work with {firstName}, the whole brokerage is behind you. These are recent
-                Ryan Realty closings, pulled directly from the Oregon Data Share MLS. Each price is
-                the recorded closing price.
+                {soldCards.length} recent Ryan Realty closings across Central Oregon, from the Oregon
+                Data Share MLS. Each figure is the recorded closing price.
               </Body>
             </Stack>
             <Grid cols={3} gap="default">
@@ -488,16 +515,16 @@ export default async function TeamMemberPage({ params }: Props) {
         onSubmit={submitBrokerSellerLead}
         eyebrow="What's your home worth"
         title={`Get a valuation from ${firstName}`}
-        intro={`Tell ${firstName} about your home and you will get a comparative market analysis, with the comparable sales behind the number. No automated estimate, no obligation.`}
+        intro={`Tell ${firstName} about your home and you'll get a comparative market analysis with the comparable sales behind the number, not an automated estimate.`}
         submitLabel="Request my valuation"
         tone="default"
       />
 
       {/* ───────── Bottom CTA ───────── */}
       <CTABar
-        eyebrow="Ready to talk"
-        title={`Work with ${firstName} on your next move.`}
-        body="Call, text, or email directly. No hand-offs. The broker you contact is the broker you work with."
+        eyebrow={`Talk to ${firstName} directly`}
+        title={`Work with ${firstName}.`}
+        body={ctaBody}
         primary={broker.phone ? { href: telHref!, label: `Call ${firstName}: ${broker.phone}` } : { href: '/contact', label: 'Get in touch' }}
         secondary={broker.email ? { href: mailHref!, label: 'Send an email' } : { href: '/team', label: 'Meet the team' }}
         tone="navy"
