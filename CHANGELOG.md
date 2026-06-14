@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.538.1 (2026-06-14)
+
+### Bug Fixes
+- fix(home): ship the V6 stylesheet (hero overlay + sections were unstyled on prod)
+
+---
+
+
 ## v1.538.0 (2026-06-14)
 
 ### Features
