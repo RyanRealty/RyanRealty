@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.534.7 (2026-06-14)
+
+### Bug Fixes
+- fix(voice): brand-voice cleanup across 12 site surfaces (Class H)
+
+---
+
+
 ## v1.534.6 (2026-06-14)
 
 ### Bug Fixes
