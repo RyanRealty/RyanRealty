@@ -32,9 +32,7 @@ import { ListingLocationMap } from '@/components/site/listing-detail/ListingLoca
 import { SimilarListings } from '@/components/site/listing-detail/SimilarListings'
 import VideoHomesSection, { type VideoHomesScope } from '@/components/site/VideoHomesSection'
 import { ListingAgentCard } from '@/components/site/listing-detail/ListingAgentCard'
-import { TextMattCTA } from '@/components/site/listing-detail/TextMattCTA'
-import AttributedBrokerCard from '@/components/site/AttributedBrokerCard.client'
-import HideIfAttributedElsewhere from '@/components/site/HideIfAttributedElsewhere.client'
+import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
 import { ClimateRiskBlock } from '@/components/site/listing-detail/ClimateRiskBlock'
 import { VacationRentalPotential } from '@/components/site/listing-detail/VacationRentalPotential'
 import { TransparentCMASummary } from '@/components/site/listing-detail/TransparentCMASummary'
@@ -349,12 +347,11 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const sidebar = ctaBroker ? (
     <>
-      {/* Lead steered here by their broker (CRM link / ad) sees THAT broker
-          first — generic CTAs stay for everyone else. */}
-      <AttributedBrokerCard hideForSlug={ctaBroker.slug} listingKey={listingKey} />
-      <HideIfAttributedElsewhere ctaSlug={ctaBroker.slug}>
-        <TextMattCTA broker={ctaBroker} listingKey={listingKey} />
-      </HideIfAttributedElsewhere>
+      {/* One CTA, one style, one location. If the lead has been assigned to a
+          broker (CRM link / ad attribution) the card shows THAT broker's
+          contact; otherwise the default principal. It never changes shape and
+          never says "your broker". */}
+      <ListingBrokerCTA defaultBroker={ctaBroker} brokers={brokers} listingKey={listingKey} />
       <ListingAgentCard broker={listingAgent} listing={listing} />
     </>
   ) : null
