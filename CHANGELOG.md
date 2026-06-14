@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.532.2 (2026-06-14)
+
+### Other
+- admin: redesign broker dashboard as a real mobile-first app surface; restore 2 gate regressions
+
+---
+
+
 ## v1.532.1 (2026-06-14)
 
 ### Other
