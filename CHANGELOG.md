@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.537.0 (2026-06-14)
+
+### Features
+- feat(account): redesign all six /account subpages to the hub design language
+
+---
+
+
 ## v1.536.0 (2026-06-14)
 
 ### Features
