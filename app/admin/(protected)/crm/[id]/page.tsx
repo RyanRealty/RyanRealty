@@ -286,7 +286,7 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
               {rec.channel === 'sms' ? 'Send text' : rec.channel === 'email' ? 'Send email' : rec.channel === 'task' ? 'Do this' : 'Next'} · {rec.sequenceName}
             </span>
           </div>
-          {rec.subjectPreview ? <div className="mt-3 text-sm font-medium text-foreground">{rec.subjectPreview}</div> : null}
+          {rec.subjectPreview ? <div className="mt-3 break-words text-sm font-medium text-foreground">{rec.subjectPreview}</div> : null}
           <div className="mt-1 whitespace-pre-wrap break-words [overflow-wrap:anywhere] rounded-lg border border-border bg-card p-3 text-sm text-foreground">{rec.bodyPreview}</div>
           {rec.unresolved.length ? (
             <div className="mt-2 text-xs font-medium text-destructive">Unresolved fields: {rec.unresolved.join(', ')}</div>
@@ -305,7 +305,7 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
         </div>
       ) : null}
 
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-[420px_1fr]">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[420px_1fr]">
         {/* ── Left: identity (second on phones — comms come first) ── */}
         <div className="order-2 space-y-4 sm:space-y-6 lg:order-none">
           <Card>
