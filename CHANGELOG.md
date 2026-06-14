@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.538.0 (2026-06-14)
+
+### Features
+- feat(account): redirect orphaned /dashboard root to the /account hub (Option A)
+
+---
+
+
 ## v1.537.0 (2026-06-14)
 
 ### Features
