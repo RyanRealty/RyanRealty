@@ -32,7 +32,7 @@ function readAttributedSlug(): Slug | null {
   }
 }
 
-export default function AttributedBrokerCard({ className, hideForSlug }: { className?: string; hideForSlug?: string | null }) {
+export default function AttributedBrokerCard({ className, hideForSlug, listingKey }: { className?: string; hideForSlug?: string | null; listingKey?: string }) {
   const [slug, setSlug] = useState<Slug | null>(null)
   useEffect(() => {
     setSlug(readAttributedSlug())
@@ -57,8 +57,13 @@ export default function AttributedBrokerCard({ className, hideForSlug }: { class
             <p className="text-sm tabular-nums text-muted-foreground">{b.phone}</p>
           </div>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <Button asChild size="sm"><a href={`tel:${tel}`}>Call {b.nameShort.split(' ')[0]}</a></Button>
+        {listingKey ? (
+          <Button asChild size="sm" className="mt-4 w-full">
+            <a href={`/contact?listingKey=${encodeURIComponent(listingKey)}`}>Schedule a tour</a>
+          </Button>
+        ) : null}
+        <div className={`grid grid-cols-2 gap-2 ${listingKey ? 'mt-2' : 'mt-4'}`}>
+          <Button asChild size="sm" variant={listingKey ? 'outline' : 'default'}><a href={`tel:${tel}`}>Call {b.nameShort.split(' ')[0]}</a></Button>
           <Button asChild size="sm" variant="outline"><a href={`sms:${tel}`}>Text</a></Button>
         </div>
       </CardContent>
