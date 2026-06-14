@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.544.1 (2026-06-14)
+
+### Bug Fixes
+- fix(feed): strip MLS "N/A" placeholder from the video-feed city line
+
+---
+
+
 ## v1.544.0 (2026-06-14)
 
 ### Features
