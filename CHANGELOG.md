@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.534.6 (2026-06-14)
+
+### Bug Fixes
+- fix(seo): real 404 for invalid city/community slugs (kills soft-404 sprawl)
+
+---
+
+
 ## v1.534.5 (2026-06-14)
 
 ### Bug Fixes
