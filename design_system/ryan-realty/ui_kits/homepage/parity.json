@@ -2,52 +2,7 @@
   "route": "app/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/homepage-v3/index.html",
   "competitiveTarget": "Lead with live local market data, Amboqia stat numerals, interactive neighborhood map, and editorial editorial editorial broker presence. Beat Cascade Hasson / Stellar Realty / Zillow Central Oregon by showing the real numbers first and keeping every stat traceable to the Supabase DAL.",
-  "note": "Homepage rebuilt to v3 design language (2026-06-10 Experience Rollout family 2). All v3 components imported by app/page.tsx. SiteHeader/SiteFooter render from app/layout.tsx and are intentionally omitted from requiredComponents. The gate checks the route file's imports.",
-  "requiredComponents": [
-    {
-      "name": "HomepageHeroV3",
-      "section": "hero — full-bleed Old Mill photo, live Amboqia stat trio (active SFR, median price, days to pending), search bar, seller CTA",
-      "blocking": true
-    },
-    {
-      "name": "HomepagePulseTicker",
-      "section": "CSS-marquee ribbon of real market events (sold, new, pending, price drop) from getActivityFeed",
-      "blocking": true
-    },
-    {
-      "name": "HomepageListingsMosaic",
-      "section": "asymmetric editorial mosaic — 1 dominant + 4 supporting cards, no arrows/dots, Amboqia price display",
-      "blocking": true
-    },
-    {
-      "name": "HomepageNeighborhoodMap",
-      "section": "interactive SVG boundary map for 7 westside Bend neighborhoods with live stat chips from getBendNeighborhoodStats",
-      "blocking": true
-    },
-    {
-      "name": "HomepageMarketBand",
-      "section": "navy band — 4 live region stats: active SFR, median list price, months of supply, closed 30d",
-      "blocking": true
-    },
-    {
-      "name": "HomepageVoiceBlock",
-      "section": "editorial brokerage statement — facts-only copy, heritage illustration-05.png, license numbers, founding year",
-      "blocking": true
-    },
-    {
-      "name": "HomepageToolsRow",
-      "section": "three quiet tool cards — mortgage calculator, rent vs buy, appreciation estimate",
-      "blocking": true
-    },
-    {
-      "name": "HomepageTrustBand",
-      "section": "three broker portraits floating on cream — transparent PNGs, license numbers, phone 541.213.6706",
-      "blocking": true
-    },
-    {
-      "name": "CtaDuo",
-      "section": "buyer + seller dual CTA band — find your home / list your home",
-      "blocking": true
-    }
-  ]
+  "note": "SUPERSEDED 2026-06-12: binding contract for app/page.tsx is ui_kits/homepage-v7-cinematic/parity.json (cinematic + live 3D). Kept for history.",
+  "requiredComponents": [],
+  "status": "superseded-by-homepage-v7-cinematic"
 }

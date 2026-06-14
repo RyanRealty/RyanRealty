@@ -1,33 +1,39 @@
 import type { Metadata } from 'next'
 
-import { Suspense } from 'react'
-import HomepageHeroV3 from '@/components/site/HomepageHeroV3'
-import HomepagePulseTicker from '@/components/site/HomepagePulseTicker'
-import HomepageListingsMosaic from '@/components/site/HomepageListingsMosaic'
-import HomepageNeighborhoodMap from '@/components/site/HomepageNeighborhoodMap'
-import HomepageMarketBand from '@/components/site/HomepageMarketBand'
-import HomepageVoiceBlock from '@/components/site/HomepageVoiceBlock'
-import HomepageToolsRow from '@/components/site/HomepageToolsRow'
-import HomepageTrustBand from '@/components/site/HomepageTrustBand'
-import CtaDuo from '@/components/site/CtaDuo'
+import HomepageV6Hero from '@/components/site/HomepageV6Hero'
+import HomepageV6DealFlow, { type DealFlowCard } from '@/components/site/HomepageV6DealFlow'
+import HomepageV6Collection from '@/components/site/HomepageV6Collection'
+import HomepageV6Ledger from '@/components/site/HomepageV6Ledger'
+import HomepageV6Tools from '@/components/site/HomepageV6Tools'
+import HomepageV6Sell from '@/components/site/HomepageV6Sell'
+import HomepageV6Standard from '@/components/site/HomepageV6Standard'
+import HomepageV6Guides from '@/components/site/HomepageV6Guides'
+import HomepageV6Closer from '@/components/site/HomepageV6Closer'
 
 import { getRegionPulse } from '@/lib/data'
-import { getBendNeighborhoodStats } from '@/lib/data'
+import { getBendNeighborhoodLedger } from '@/lib/data'
 import { getListingTiles } from '@/lib/data'
-import { getBrokers } from '@/lib/data'
+import { getRecentBlogPosts } from '@/lib/data'
 import { getActivityFeed } from '@/app/actions/activity-feed'
 import type { ActivityFeedItem } from '@/app/actions/activity-feed-shared'
 import type { ListingTile } from '@/lib/data/types/listing'
-import type { PulseChip } from '@/components/site/HomepagePulseTicker'
-import type { ListingCardShape } from '@/components/site/HomepageListingsMosaic'
+import type { BlogPostCard } from '@/lib/data/blog/getRecentBlogPosts'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
 
 /**
- * ISR cache at 60s. Parallel data fetches stream section-by-section.
- * Organization + WebSite JSON-LD is emitted once by the root layout (<JsonLd>).
- * The homepage does NOT re-declare them — duplicate entities confuse schema parsers.
+ * Homepage — "the city is the homepage." Linear finish on v6 bones
+ * (LOCKED, Matt 2026-06-13: Linear spec, not cinematic). Live photoreal 3D
+ * Bend hero (Google 3D Tiles over poster-first LCP) + ask bar + coords
+ * readout, then a Linear-discipline section stack: live deal flow, top-of-
+ * market collection, neighborhood ledger, working tools, instant home value,
+ * the standard every home gets, market guides, seller closer. Hairline
+ * borders, glass panels, micro-tracked labels, 150ms motion, one Amboqia
+ * moment (hero H1). Every figure live from the DAL (§0).
+ *
+ * ISR cache at 60s. Organization + WebSite JSON-LD emitted once by the root
+ * layout (<JsonLd>); the homepage does not re-declare it.
  */
 export const revalidate = 60
 
@@ -64,116 +70,123 @@ function timeSince(iso: string): string {
   return `${Math.floor(h / 24)}d ago`
 }
 
-function toPulseChip(ev: ActivityFeedItem): PulseChip | null {
-  const price = ev.ListPrice
-  if (!price) return null
-  const city = ev.City ?? ''
-  const street = [ev.StreetNumber, ev.StreetName].filter(Boolean).join(' ')
-  const location = [street, city].filter(Boolean).join(', ') || city || 'Central Oregon'
-  const tag: PulseChip['tag'] =
-    ev.event_type === 'status_closed'
-      ? 'Sold'
-      : ev.event_type === 'new_listing' || ev.event_type === 'back_on_market'
-        ? 'New'
-        : ev.event_type === 'status_pending'
-          ? 'Pending'
-          : ev.event_type === 'price_drop'
-            ? 'Price drop'
-            : null
-  if (!tag) return null
-  return { tag, price, location, timeAgo: timeSince(ev.event_at) }
+function fmtPrice(n: number): string {
+  return `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}`
 }
 
-function toCardShape(tile: ListingTile): ListingCardShape {
-  const address = [tile.streetNumber, tile.streetName].filter(Boolean).join(' ')
-  const cityLine = [tile.city, tile.postalCode].filter(Boolean).join(' ')
-  return {
-    listingKey: tile.listingKey,
-    href: `/listing/${tile.listingKey}`,
-    price: tile.listPrice ?? null,
-    address,
-    cityLine,
-    beds: tile.beds,
-    baths: tile.baths,
-    sqft: tile.sqft,
-    photoUrl: tile.photoUrl,
-    dom: tile.dom,
-    status: tile.status,
-    subdivisionName: tile.subdivisionName,
+/** Most specific HUMAN-READABLE verified geo. Plat codes ("OWW1") fall back to city. */
+function placeFor(ev: ActivityFeedItem): string {
+  const sub = ev.NeighborhoodName ?? ev.SubdivisionName
+  if (sub && sub.length >= 4 && !/\d/.test(sub)) return sub
+  return ev.City ?? 'Central Oregon'
+}
+
+const MINUS = '−'
+
+/** Activity event → deal card. Null when the class's figure can't be verified (§0). */
+function toDealCard(ev: ActivityFeedItem): DealFlowCard | null {
+  const base = { key: ev.id, href: `/listing/${ev.listing_key}`, place: placeFor(ev) }
+  const when = timeSince(ev.event_at)
+  const payload = (ev.payload ?? {}) as Record<string, unknown>
+
+  switch (ev.event_type) {
+    case 'new_listing':
+    case 'back_on_market': {
+      if (ev.ListPrice == null) return null
+      return { ...base, type: 'New', meta: [fmtPrice(ev.ListPrice), when] }
+    }
+    case 'price_drop': {
+      const prev = typeof payload.previous_price === 'number' ? payload.previous_price : null
+      const next = typeof payload.new_price === 'number' ? payload.new_price : null
+      if (prev == null || next == null || next >= prev) return null
+      return { ...base, type: 'Price drop', meta: [fmtPrice(next), `${MINUS}${fmtPrice(prev - next)}`, when], posIndex: 1 }
+    }
+    case 'status_pending': {
+      if (ev.OnMarketDate) {
+        const days = Math.floor((new Date(ev.event_at).getTime() - new Date(ev.OnMarketDate).getTime()) / 86_400_000)
+        if (Number.isFinite(days) && days >= 0) return { ...base, type: 'Pending', meta: [`${days} days on market`, when] }
+      }
+      if (ev.ListPrice == null) return null
+      return { ...base, type: 'Pending', meta: [fmtPrice(ev.ListPrice), when] }
+    }
+    case 'status_closed': {
+      const close = typeof payload.ClosePrice === 'number' ? payload.ClosePrice : null
+      if (close == null) return null
+      return { ...base, type: 'Sold', meta: [fmtPrice(close), when] }
+    }
+    default:
+      return null
   }
 }
 
-// ─── Skeletons ────────────────────────────────────────────────────────────────
-
-function SectionSkeleton({ minH = 'min-h-64' }: { minH?: string }) {
-  return <div className={`${minH} border-t border-border`} aria-hidden />
+/** Up to 4 cards: one of each class first (variety), newest fill after. */
+function buildDealCards(events: ActivityFeedItem[]): DealFlowCard[] {
+  const all = events.map(toDealCard).filter((c): c is DealFlowCard => c !== null)
+  const picked: DealFlowCard[] = []
+  for (const type of ['New', 'Price drop', 'Pending', 'Sold'] as const) {
+    const hit = all.find((c) => c.type === type)
+    if (hit) picked.push(hit)
+  }
+  for (const c of all) {
+    if (picked.length >= 4) break
+    if (!picked.includes(c)) picked.push(c)
+  }
+  return picked.slice(0, 4)
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function Home() {
-  // Parallel data fetches — all critical paths race; fallback on error.
-  const [pulse, neighborhoodStats, activity, tiles, brokers] = await Promise.all([
+  const [pulse, ledgerRows, activity, topTiles, posts] = await Promise.all([
     getRegionPulse().catch(() => null),
-    getBendNeighborhoodStats().catch(() => null),
-    getActivityFeed({ limit: 24 }).catch(() => [] as ActivityFeedItem[]),
-    getListingTiles({ status: 'active', sort: 'newest', limit: 5 }).catch(() => [] as ListingTile[]),
-    getBrokers().catch(() => []),
+    getBendNeighborhoodLedger().catch(() => []),
+    getActivityFeed({
+      limit: 40,
+      eventTypes: ['new_listing', 'price_drop', 'status_pending', 'status_closed'],
+    }).catch(() => [] as ActivityFeedItem[]),
+    getListingTiles({
+      status: 'active',
+      sort: 'price-desc',
+      limit: 12,
+      propertyType: 'A',
+      cities: ['Bend', 'Sisters', 'Sunriver', 'Redmond', 'Tumalo'],
+    }).catch(() => [] as ListingTile[]),
+    getRecentBlogPosts({ limit: 6 }).catch(() => [] as BlogPostCard[]),
   ])
 
-  // Convert activity events to pulse chips (filter out null results)
-  const chips: PulseChip[] = activity
-    .map(toPulseChip)
-    .filter((c): c is PulseChip => c !== null)
-
-  // Convert listing tiles to card shapes
-  const cards: ListingCardShape[] = tiles.map(toCardShape)
-
-  // Freshness label from region pulse
-  const freshnessLabel = pulse?.updatedAt
-    ? timeSince(pulse.updatedAt)
-    : null
+  const cards = buildDealCards(activity)
+  const freshnessLabel = pulse?.updatedAt ? timeSince(pulse.updatedAt) : null
 
   return (
     <main className="min-h-screen bg-background">
       {/* Site-wide Organization + WebSite JSON-LD is emitted once by the root
-          layout (<JsonLd>), with the canonical @id, sameAs, brokers, and NAP.
-          The homepage does NOT re-declare them — duplicate, thinner entities
-          confuse schema parsers (the #1 cause of markup being discarded). */}
+          layout (<JsonLd>). The homepage does not re-declare it. */}
 
-      <HomepageHeroV3
+      <HomepageV6Hero
         activeCount={pulse?.activeCount ?? null}
         medianListPrice={pulse?.medianListPrice ?? null}
-        medianDaysToPending={pulse?.medianDaysToPending ?? null}
         freshnessLabel={freshnessLabel}
       />
 
-      {chips.length > 0 && (
-        <HomepagePulseTicker chips={chips} />
-      )}
+      <HomepageV6DealFlow cards={cards} />
 
-      <Suspense fallback={<SectionSkeleton minH="min-h-96" />}>
-        <HomepageListingsMosaic listings={cards} />
-      </Suspense>
+      <HomepageV6Collection tiles={topTiles} />
 
-      <Suspense fallback={<SectionSkeleton minH="min-h-96" />}>
-        <HomepageNeighborhoodMap neighborhoodStats={neighborhoodStats ?? []} />
-      </Suspense>
+      <HomepageV6Ledger rows={ledgerRows} />
 
-      <HomepageMarketBand
-        activeCount={pulse?.activeCount ?? null}
+      <HomepageV6Tools />
+
+      <HomepageV6Sell
         medianListPrice={pulse?.medianListPrice ?? null}
-        monthsOfSupply={pulse?.monthsOfSupply ?? null}
         soldCount30d={pulse?.soldCount30d ?? null}
+        medianDaysToPending={pulse?.medianDaysToPending ?? null}
       />
 
-      <HomepageVoiceBlock />
+      <HomepageV6Standard />
 
-      <HomepageToolsRow />
+      <HomepageV6Guides posts={posts} />
 
-      <HomepageTrustBand brokers={brokers} />
-
-      <CtaDuo />
+      <HomepageV6Closer />
     </main>
   )
 }

@@ -1,18 +1,7 @@
 {
   "route": "app/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/homepage-v7-cinematic/CONCEPT.md",
-  "status": "built-awaiting-matt-approval",
-  "note": "Homepage v7 cinematic + live 3D (Matt 2026-06-12: bring the 3D tiles back, add the right sections, one-shot the competition). Live photoreal 3D Bend hero over poster-first LCP, live deal flow, place bands, luxury collection, market proof, instant home value, tools, the-standard, market guides, closer. Navy/cream, Amboqia + Geist. Every figure live from the DAL.",
-  "requiredComponents": [
-    { "name": "HomepageCineHero", "section": "live 3D Bend hero + poster LCP + live badge + ask bar" },
-    { "name": "HomepageCineDealFlow", "section": "live market events (New / Price drop / Pending / Sold)" },
-    { "name": "HomepageCinePlaces", "section": "Bend / Sisters / Tetherow parallax bands + resort strip" },
-    { "name": "HomepageCineCollection", "section": "top-of-market live listing cards" },
-    { "name": "HomepageCineProof", "section": "live region market numbers band" },
-    { "name": "HomepageCineSell", "section": "instant home value + seller CTA" },
-    { "name": "HomepageCineTools", "section": "mortgage / appreciation / rental calculators" },
-    { "name": "HomepageCineStandard", "section": "the standard every home gets (why Ryan Realty)" },
-    { "name": "HomepageCineGuides", "section": "recent market guides (blog)" },
-    { "name": "HomepageCineCloser", "section": "Smith Rock closer + seller CTA + direct line" }
-  ]
+  "status": "superseded-by-homepage-v6-linear",
+  "note": "SUPERSEDED 2026-06-13: Matt chose the Linear spec, not cinematic. Binding contract: ui_kits/homepage-v6/parity.json.",
+  "requiredComponents": []
 }
