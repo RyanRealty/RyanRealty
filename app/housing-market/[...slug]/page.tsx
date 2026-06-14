@@ -50,6 +50,7 @@ import type { MarketPulse } from '@/lib/data'
 
 import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { HeroBlock } from '@/components/site/HeroBlock'
+import { cityHero } from '@/lib/geo-images'
 import MarketSnapshot from '@/components/site/MarketSnapshot'
 import { PriceChart } from '@/components/site/PriceChart'
 import { PriceBandTable } from '@/components/site/PriceBandTable'
@@ -462,6 +463,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
       <HeroBlock
         headline={`${geoName} housing market`}
         lede={lede || `Single-family market data for ${geoName}, Oregon.`}
+        photo={{ src: cityHero(citySlug).src, alt: cityHero(citySlug).alt }}
         minHeight={480}
       />
 
