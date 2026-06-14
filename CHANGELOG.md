@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.545.0 (2026-06-14)
+
+### Features
+- feat(voice): enforce the voice as a gate (scan JSX children) + clear site-wide slogans
+
+---
+
+
 ## v1.544.5 (2026-06-14)
 
 ### Bug Fixes
