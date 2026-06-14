@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.529.0 (2026-06-14)
+
+### Features
+- feat(broker-dashboard): lead-action-first ordering on login
+- feat(crm): return-visit alert states why + from where, clearly
+
+---
+
+
 ## v1.528.1 (2026-06-14)
 
 ### Bug Fixes
