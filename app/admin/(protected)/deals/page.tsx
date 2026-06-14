@@ -182,6 +182,10 @@ export default async function DealsPage() {
   const actionPreview = actionProps.slice(0, ACTION_PREVIEW)
   const actionRest = actionProps.slice(ACTION_PREVIEW)
 
+  const FINDINGS_PREVIEW = 8
+  const findingsPreview = data.systemFindings.slice(0, FINDINGS_PREVIEW)
+  const findingsRest = data.systemFindings.slice(FINDINGS_PREVIEW)
+
   const pendingProps = properties.filter((p) => p.stage === 'pending')
   const pendingVolume = pendingProps.reduce((s, p) => s + (p.headline?.salePrice ?? 0), 0)
   const year = new Date().getFullYear().toString()
@@ -535,13 +539,32 @@ export default async function DealsPage() {
                 <p className="text-sm text-muted-foreground">No system findings.</p>
               ) : null}
               <ul className="space-y-2 text-xs text-muted-foreground">
-                {data.systemFindings.map((f) => (
+                {findingsPreview.map((f) => (
                   <li key={f} className="flex gap-2">
                     <span aria-hidden>•</span>
                     <span>{f}</span>
                   </li>
                 ))}
               </ul>
+              {findingsRest.length > 0 ? (
+                <Accordion type="single" collapsible className="mt-2">
+                  <AccordionItem value="findings-rest" className="border-0">
+                    <AccordionTrigger className="min-h-11 justify-center gap-2 text-sm font-medium text-foreground hover:no-underline">
+                      See all {data.systemFindings.length} findings
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-1">
+                      <ul className="space-y-2 text-xs text-muted-foreground">
+                        {findingsRest.map((f) => (
+                          <li key={f} className="flex gap-2">
+                            <span aria-hidden>•</span>
+                            <span>{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              ) : null}
               {data.bnReview ? (
                 <>
                   <Separator className="my-3" />

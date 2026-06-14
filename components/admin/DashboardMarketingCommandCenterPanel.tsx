@@ -266,7 +266,7 @@ export default function DashboardMarketingCommandCenterPanel({ data }: Props) {
       <div className="space-y-2">
         <p className="text-sm font-medium text-foreground">Next actions</p>
         <ul className="space-y-1">
-          {data.nextActions.map((action) => (
+          {data.nextActions.slice(0, 6).map((action) => (
             <li key={action} className="flex gap-2 text-sm text-muted-foreground">
               <span aria-hidden className="shrink-0 text-foreground">
                 •
@@ -275,6 +275,11 @@ export default function DashboardMarketingCommandCenterPanel({ data }: Props) {
             </li>
           ))}
         </ul>
+        {data.nextActions.length > 6 ? (
+          <p className="text-xs text-muted-foreground">
+            Showing top 6 of {data.nextActions.length} recommendations.
+          </p>
+        ) : null}
       </div>
 
       <div className="flex flex-wrap gap-4 text-sm">

@@ -498,7 +498,7 @@ export default async function BrokerCommandCenterPage({
           {/* Post ideas */}
           {marketingTab === 'ideas' && (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {data.myListings.length > 0 && data.myListings.map((listing) => (
+              {data.myListings.length > 0 && data.myListings.slice(0, 6).map((listing) => (
                 <div key={listing.listingKey} className="rounded-lg border border-border bg-card p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     {listing.status === 'Pending' ? '🔄 Pending' : '🏡 Active listing'}
@@ -570,7 +570,7 @@ export default async function BrokerCommandCenterPage({
                 <p className="py-6 text-center text-sm text-muted-foreground">No active or pending listings found for your account.</p>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {data.myListings.map((listing) => (
+                  {data.myListings.slice(0, 8).map((listing) => (
                     <div key={listing.listingKey} className="overflow-hidden rounded-lg border border-border bg-card">
                       {listing.photoUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -604,7 +604,9 @@ export default async function BrokerCommandCenterPage({
               )}
               <div className="mt-4">
                 <Button asChild variant="outline" size="sm">
-                  <Link href="/admin/listings">All listings</Link>
+                  <Link href="/admin/listings">
+                    {data.myListings.length > 8 ? `See all (${data.myListings.length}) →` : 'All listings'}
+                  </Link>
                 </Button>
               </div>
             </div>

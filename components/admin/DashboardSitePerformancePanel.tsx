@@ -43,6 +43,9 @@ export default async function DashboardSitePerformancePanel() {
   }
 
   const data = result.data
+  const TOP_N = 8
+  const topQueries = data.topQueries.slice(0, TOP_N)
+  const topPages = data.topPages.slice(0, TOP_N)
 
   return (
     <div className="space-y-4">
@@ -70,24 +73,44 @@ export default async function DashboardSitePerformancePanel() {
         <div className="rounded-lg border border-border p-4">
           <h3 className="text-sm font-semibold text-foreground">Top queries</h3>
           <ul className="mt-3 space-y-2">
-            {data.topQueries.map((row) => (
+            {topQueries.map((row) => (
               <li key={row.key} className="flex items-center justify-between gap-3 text-sm">
                 <span className="truncate text-foreground">{row.key}</span>
                 <span className="text-muted-foreground">{row.clicks.toLocaleString()} clicks</span>
               </li>
             ))}
           </ul>
+          {data.topQueries.length > TOP_N ? (
+            <Link
+              href="https://search.google.com/search-console/performance/search-analytics"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-block text-sm font-medium text-success hover:underline"
+            >
+              See all ({data.topQueries.length.toLocaleString()}) →
+            </Link>
+          ) : null}
         </div>
         <div className="rounded-lg border border-border p-4">
           <h3 className="text-sm font-semibold text-foreground">Top pages</h3>
           <ul className="mt-3 space-y-2">
-            {data.topPages.map((row) => (
+            {topPages.map((row) => (
               <li key={row.key} className="flex items-center justify-between gap-3 text-sm">
                 <span className="truncate text-foreground">{row.key.replace(/^https?:\/\/[^/]+/i, '') || row.key}</span>
                 <span className="text-muted-foreground">{row.clicks.toLocaleString()} clicks</span>
               </li>
             ))}
           </ul>
+          {data.topPages.length > TOP_N ? (
+            <Link
+              href="https://search.google.com/search-console/performance/search-analytics"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-block text-sm font-medium text-success hover:underline"
+            >
+              See all ({data.topPages.length.toLocaleString()}) →
+            </Link>
+          ) : null}
         </div>
       </div>
 

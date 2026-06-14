@@ -12,8 +12,13 @@ function formatTime(iso: string): string {
 
 type Props = { data: DashboardLeadData }
 
+// Overview panel — cap the recent-activity feed so the dashboard stays glanceable.
+// Full visit history lives on its own screen (/admin/visitors/live).
+const RECENT_VISITS_LIMIT = 25
+
 export default function DashboardLeadPanel({ data }: Props) {
   const rate = data.totalVisits > 0 ? ((data.visitsWithUser / data.totalVisits) * 100).toFixed(1) : '0'
+  const shownVisits = data.recentVisits.slice(0, RECENT_VISITS_LIMIT)
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -36,14 +41,23 @@ export default function DashboardLeadPanel({ data }: Props) {
         </div>
       </div>
       <div>
-        <h3 className="text-sm font-semibold text-muted-foreground">Recent activity (last 50)</h3>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-muted-foreground">
+            Recent activity{data.recentVisits.length > shownVisits.length ? ` (latest ${shownVisits.length})` : ''}
+          </h3>
+          {data.recentVisits.length > shownVisits.length ? (
+            <a href="/admin/visitors/live" className="shrink-0 text-xs font-medium text-primary hover:underline">
+              See all →
+            </a>
+          ) : null}
+        </div>
         {data.recentVisits.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">No visits yet.</p>
         ) : (
           <>
             {/* Visit cards — phones */}
             <div className="mt-2 max-h-64 space-y-2 overflow-y-auto md:hidden">
-              {data.recentVisits.map((v) => (
+              {shownVisits.map((v) => (
                 <div key={v.visit_id + v.created_at} className="rounded-lg border border-border bg-card p-3">
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate font-mono text-sm text-foreground" title={v.path}>{v.path}</span>
@@ -64,7 +78,7 @@ export default function DashboardLeadPanel({ data }: Props) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.recentVisits.map((v) => (
+                  {shownVisits.map((v) => (
                     <TableRow key={v.visit_id + v.created_at} className="border-b border-border">
                       <TableCell className="py-1.5 pr-3 text-muted-foreground whitespace-nowrap">{formatTime(v.created_at)}</TableCell>
                       <TableCell className="py-1.5 pr-3 font-mono text-foreground truncate max-w-[200px]" title={v.path}>{v.path}</TableCell>

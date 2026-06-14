@@ -173,7 +173,7 @@ function AnticipatedDocs({ data }: { data: AnticipatedDocsResult | null }) {
         </p>
       </div>
       <ul className="space-y-1.5">
-        {data.documents.map((d) => (
+        {data.documents.slice(0, 12).map((d) => (
           <li key={d.id} className="flex items-start gap-2 text-sm">
             <span
               className={cn(
@@ -201,6 +201,11 @@ function AnticipatedDocs({ data }: { data: AnticipatedDocsResult | null }) {
           </li>
         ))}
       </ul>
+      {data.documents.length > 12 ? (
+        <p className="mt-2 text-xs font-medium text-muted-foreground">
+          Showing 12 of {data.documents.length}
+        </p>
+      ) : null}
       {missing.length > 0 ? (
         <p className="mt-3 text-xs text-muted-foreground">
           {missing.length} not yet on file. {data.unknown.length > 0

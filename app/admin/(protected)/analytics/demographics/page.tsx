@@ -211,7 +211,7 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.sellerLpByCity.map((c, i) => (
+                    {data.sellerLpByCity.slice(0, 8).map((c, i) => (
                       <TableRow key={`${c.city}-${i}`} className={BEND_METRO.has(c.city) ? 'bg-primary/5' : undefined}>
                         <TableCell>{c.city}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{c.region}</TableCell>
@@ -221,6 +221,11 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
                     ))}
                   </TableBody>
                 </Table>
+                {data.sellerLpByCity.length > 8 ? (
+                  <p className="mt-3 text-xs text-muted-foreground tabular-nums">
+                    Showing top 8 of {formatInt(data.sellerLpByCity.length)} cities.
+                  </p>
+                ) : null}
               </div>
             )}
           </CardContent>
@@ -242,7 +247,7 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.genders.map((g) => (
+                {data.genders.slice(0, 12).map((g) => (
                   <TableRow key={g.gender}>
                     <TableCell>{g.gender}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatInt(g.users)}</TableCell>
@@ -272,7 +277,7 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.topCities.map((c, i) => (
+                {data.topCities.slice(0, 25).map((c, i) => (
                   <TableRow key={`${c.city}-${i}`} className={BEND_METRO.has(c.city) ? 'bg-primary/5' : undefined}>
                     <TableCell>{c.city}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{c.region}</TableCell>

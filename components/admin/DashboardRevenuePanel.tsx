@@ -41,14 +41,21 @@ export default async function DashboardRevenuePanel() {
           {data.leadsBySource.length === 0 ? (
             <p className="mt-2 text-sm text-muted-foreground">No partner referrals recorded yet.</p>
           ) : (
-            <ul className="mt-3 space-y-2">
-              {data.leadsBySource.map((row) => (
-                <li key={row.source} className="flex items-center justify-between text-sm">
-                  <span className="text-foreground">{row.source}</span>
-                  <span className="text-muted-foreground">{row.count.toLocaleString()}</span>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="mt-3 space-y-2">
+                {data.leadsBySource.slice(0, 6).map((row) => (
+                  <li key={row.source} className="flex items-center justify-between text-sm">
+                    <span className="text-foreground">{row.source}</span>
+                    <span className="text-muted-foreground">{row.count.toLocaleString()}</span>
+                  </li>
+                ))}
+              </ul>
+              {data.leadsBySource.length > 6 ? (
+                <p className="mt-3 text-xs font-medium text-muted-foreground">
+                  Showing top 6 of {data.leadsBySource.length.toLocaleString()} sources
+                </p>
+              ) : null}
+            </>
           )}
         </div>
 
@@ -57,14 +64,21 @@ export default async function DashboardRevenuePanel() {
           {data.revenueByPageCluster.length === 0 ? (
             <p className="mt-2 text-sm text-muted-foreground">No revenue events recorded yet.</p>
           ) : (
-            <ul className="mt-3 space-y-2">
-              {data.revenueByPageCluster.map((row) => (
-                <li key={row.pageCluster} className="flex items-center justify-between text-sm">
-                  <span className="text-foreground">{row.pageCluster}</span>
-                  <span className="text-muted-foreground">{formatCurrency(row.amount)}</span>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="mt-3 space-y-2">
+                {data.revenueByPageCluster.slice(0, 6).map((row) => (
+                  <li key={row.pageCluster} className="flex items-center justify-between text-sm">
+                    <span className="text-foreground">{row.pageCluster}</span>
+                    <span className="text-muted-foreground">{formatCurrency(row.amount)}</span>
+                  </li>
+                ))}
+              </ul>
+              {data.revenueByPageCluster.length > 6 ? (
+                <p className="mt-3 text-xs font-medium text-muted-foreground">
+                  Showing top 6 of {data.revenueByPageCluster.length.toLocaleString()} clusters
+                </p>
+              ) : null}
+            </>
           )}
         </div>
       </div>
