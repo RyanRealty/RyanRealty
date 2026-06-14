@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.533.0 (2026-06-14)
+
+### Features
+- feat(broker-dashboard): one-click 'do the next step' on each focus row + harden the send path
+
+---
+
+
 ## v1.532.3 (2026-06-14)
 
 ### Bug Fixes
