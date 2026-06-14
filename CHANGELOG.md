@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.531.0 (2026-06-14)
+
+### Features
+- feat(admin): design pass — curate 19 data-heavy pages to ADMIN_DESIGN_STANDARD
+
+---
+
+
 ## v1.530.1 (2026-06-14)
 
 ### Bug Fixes
