@@ -49,6 +49,7 @@ import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
+import { VideoTourRail } from '@/components/site/VideoTourRail'
 import {
   FlyoverHero,
   LiveMarketBand,
@@ -371,6 +372,9 @@ export default async function CommunityDetailPage({ params }: Props) {
           sectionId="hero"
         />
       </div>
+
+      {/* Video tours scoped to this community, near the top. Tap drops into /feed. */}
+      <VideoTourRail community={community.name} title={`Walk through homes in ${community.name}`} />
 
       {/* LiveMarketBand v2: one giant living number (activeCount) + quiet aux stats.
           Overlap moment: -mt-12 pulls the navy band up into the hero bottom edge. */}

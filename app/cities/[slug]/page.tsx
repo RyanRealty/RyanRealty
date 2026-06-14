@@ -81,6 +81,7 @@ import { ArticleGrid } from '@/components/site/ArticleGrid'
 import { Container, H2, Eyebrow, DisplayHeading } from '@/components/site/primitives'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { VideoTourRail } from '@/components/site/VideoTourRail'
 import MotivatedListings from '@/components/site/MotivatedListings'
 import VideoHomesSection from '@/components/site/VideoHomesSection'
 import { buildMarketFaq } from '@/lib/site/market-faq'
@@ -469,6 +470,9 @@ export default async function CityDetailPage({ params }: Props) {
           sectionId="hero"
         />
       </div>
+
+      {/* Video tours scoped to this city, near the top. Tap drops into /feed. */}
+      <VideoTourRail city={cityName} title={`Walk through homes in ${cityName}`} />
 
       {/* LiveMarketBand: one giant living number (activeCount) + quiet aux stats.
           Overlap moment: -mt-12 pulls the navy band up into the hero bottom edge. */}

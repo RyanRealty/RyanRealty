@@ -21,6 +21,7 @@ import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
+import { VideoTourRail } from '@/components/site/VideoTourRail'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import { CTABar } from '@/components/site/CTABar'
 import { NeighborhoodMap } from '@/components/site/NeighborhoodMap'
@@ -135,6 +136,9 @@ export default async function SubdivisionPage({ params }: Props) {
             { label: name }]} />
 
       <HeroBlock headline={`${name}, Oregon`} lede={lede} minHeight={420} />
+
+      {/* Video tours scoped to this subdivision, near the top. Tap drops into /feed. */}
+      <VideoTourRail community={name} title={`Walk through homes in ${name}`} />
 
       {/* Subdivision boundary + the homes physically inside it. */}
       <NeighborhoodMap

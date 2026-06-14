@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 
 import HomepageV6Hero from '@/components/site/HomepageV6Hero'
+import { VideoTourRail } from '@/components/site/VideoTourRail'
 import CityGrid from '@/components/site/CityGrid'
 import { RelatedAreas, type RelatedAreaItem } from '@/components/site/RelatedAreas'
 import FeaturedListings from '@/components/site/FeaturedListings'
@@ -107,6 +108,14 @@ export default async function Home() {
         activeCount={pulse?.activeCount ?? null}
         medianListPrice={pulse?.medianListPrice ?? null}
         freshnessLabel={freshnessLabel}
+      />
+
+      {/* 1b. Video tours — most expensive Central Oregon homes with a video,
+          near the top to pull visitors into watching. Tapping any card drops
+          them into the continuous /feed. */}
+      <VideoTourRail
+        eyebrow="Video tours"
+        title="Walk through Central Oregon homes"
       />
 
       {/* 2. Browse by city — standard CityGrid used on /about and /cities */}

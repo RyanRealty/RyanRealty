@@ -35,6 +35,7 @@ import { CommunityRichContent } from '@/components/site/CommunityRichContent'
 import VideoHomesSection from '@/components/site/VideoHomesSection'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { VideoTourRail } from '@/components/site/VideoTourRail'
 import { Container, Section, Grid, Stack, Eyebrow, H2 } from '@/components/site/primitives'
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
 import MotivatedListings from '@/components/site/MotivatedListings'
@@ -260,6 +261,9 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         }}
         minHeight={520}
       />
+
+      {/* Video tours scoped to this neighborhood, near the top. Tap drops into /feed. */}
+      <VideoTourRail community={neighborhood.name} title={`Walk through homes in ${neighborhood.name}`} />
 
       {/* 4. Stat band — 3-4 cards from the same neighborhood object.
              Zero / null stats are omitted entirely (data accuracy: never show
