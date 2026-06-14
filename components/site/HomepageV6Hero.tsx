@@ -69,8 +69,8 @@ export default function HomepageV6Hero({ activeCount, medianListPrice, freshness
     <section className="v6-hero">
       <div className="v6-hero-poster">
         <Image
-          src="/images/hero/bend-3d-poster.jpg"
-          alt="Aerial view of Bend, Oregon rendered from photoreal 3D map tiles"
+          src="/images/hero/hero-old-mill-master-4k.jpg"
+          alt="Old Mill District in Bend, Oregon, with the Deschutes River and the Cascade Range from above"
           fill
           priority
           fetchPriority="high"
@@ -89,7 +89,7 @@ export default function HomepageV6Hero({ activeCount, medianListPrice, freshness
           loop
           playsInline
           preload="metadata"
-          poster="/images/hero/bend-3d-poster.jpg"
+          poster="/images/hero/hero-old-mill-master-4k.jpg"
           aria-hidden="true"
         >
           <source src={HERO_VIDEO_SRC} type="video/mp4" />
