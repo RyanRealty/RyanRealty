@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.538.2 (2026-06-14)
+
+### Bug Fixes
+- fix(home): hero still is the Old Mill drone photo, not the 3D-tiles render
+
+---
+
+
 ## v1.538.1 (2026-06-14)
 
 ### Bug Fixes
