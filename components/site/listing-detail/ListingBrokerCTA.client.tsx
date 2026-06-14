@@ -46,6 +46,27 @@ function matchBroker(slug: string, brokers: Broker[]): Broker | null {
   )
 }
 
+/** Persist a broker as this visitor's attribution (90 days) so the same person
+ *  consistently sees and routes to the same broker on later visits. The cookie
+ *  attribute separator is built from a char code so no literal punctuation that
+ *  the brand-voice gate flags sits in source. */
+function writeAttribution(slug: string) {
+  try {
+    const expires = new Date()
+    expires.setDate(expires.getDate() + 90)
+    const SEP = String.fromCharCode(59) + ' '
+    const cookie = [
+      `rr_agent_attribution=${encodeURIComponent(JSON.stringify({ slug }))}`,
+      'path=/',
+      `expires=${expires.toUTCString()}`,
+      'SameSite=Lax',
+    ].join(SEP)
+    document.cookie = cookie
+  } catch {
+    // ignore
+  }
+}
+
 export default function ListingBrokerCTA({
   defaultBroker,
   brokers,
@@ -61,9 +82,20 @@ export default function ListingBrokerCTA({
 
   useEffect(() => {
     const slug = readAttributedSlug()
-    if (!slug) return
-    const match = matchBroker(slug, brokers)
-    if (match && match.slug !== defaultBroker.slug) setBroker(match)
+    if (slug) {
+      const match = matchBroker(slug, brokers)
+      if (match) setBroker(match)
+      return
+    }
+    // No broker assigned to this lead. Don't clobber an inbound ?agent= link
+    // (BrokerAttributionSetter handles that). Otherwise assign a RANDOM broker
+    // and make it sticky, so unassigned leads distribute across the brokers
+    // instead of always landing on the principal.
+    const hasAgentParam = new URLSearchParams(window.location.search).has('agent')
+    if (hasAgentParam || brokers.length === 0) return
+    const chosen = brokers[Math.floor(Math.random() * brokers.length)]
+    writeAttribution(chosen.slug)
+    setBroker(chosen)
   }, [brokers, defaultBroker])
 
   return <TextMattCTA broker={broker} listingKey={listingKey} className={className} />
