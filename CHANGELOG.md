@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.535.3 (2026-06-14)
+
+### Maintenance
+- docs: listing mobile/badge shipped; update remaining plan
+
+---
+
+
 ## v1.535.2 (2026-06-14)
 
 ### Bug Fixes
