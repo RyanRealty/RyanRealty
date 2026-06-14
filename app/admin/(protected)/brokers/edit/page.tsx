@@ -1,15 +1,29 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
+import { getSession } from '@/app/actions/auth'
+import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getBrokerById } from '@/app/actions/brokers'
 import { listBrokerGeneratedMedia } from '@/app/actions/broker-generated-media'
 import AdminBrokerForm from '@/app/components/admin/AdminBrokerForm'
 
-type PageProps = { params: Promise<{ id: string }> }
+type PageProps = { searchParams: Promise<{ id?: string }> }
 
 export const dynamic = 'force-dynamic'
 
-export default async function AdminBrokerEditPage({ params }: PageProps) {
-  const { id } = await params
+export default async function AdminBrokerEditPage({ searchParams }: PageProps) {
+  const session = await getSession()
+  const adminRole = await getAdminRoleForEmail(session?.user?.email ?? null)
+  if (!adminRole) redirect('/admin/access-denied')
+  if (adminRole.role === 'report_viewer') redirect('/admin/access-denied')
+
+  const { id } = await searchParams
+  if (!id) notFound()
+
+  // A broker may only edit their own profile; superusers/admins may edit any.
+  if (adminRole.role === 'broker' && adminRole.brokerId !== id) {
+    redirect('/admin/access-denied')
+  }
+
   const [broker, generatedMedia] = await Promise.all([
     getBrokerById(id),
     listBrokerGeneratedMedia(id),

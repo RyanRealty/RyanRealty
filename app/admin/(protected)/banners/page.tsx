@@ -1,12 +1,24 @@
 import Link from 'next/link'
+import { unstable_cache } from 'next/cache'
 import { listMissingBanners, generateAllMissingBanners } from '@/app/actions/banners'
 import GenerateBannersButton from './GenerateBannersButton'
 
 /** Avoid long-running work at build time (listMissingBanners can be slow). */
 export const dynamic = 'force-dynamic'
 
+// listMissingBanners scans listings per city to compute the missing-banner
+// set — slow enough to read as "admin is down" on a phone on a cold render.
+// It uses only the anon Supabase client + cached helpers (no cookies inside),
+// so the result is globally cacheable. unstable_cache serves stale while
+// revalidating: only a cold start ever pays the full scan.
+const getMissingBanners = unstable_cache(
+  async () => listMissingBanners(),
+  ['admin-missing-banners'],
+  { revalidate: 300, tags: ['admin-banners'] }
+)
+
 export default async function BannersPage() {
-  const missing = await listMissingBanners()
+  const missing = await getMissingBanners()
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
       <h1 className="text-2xl font-bold text-foreground">Banner images</h1>

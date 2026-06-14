@@ -265,13 +265,16 @@ export default function DashboardMarketingCommandCenterPanel({ data }: Props) {
 
       <div className="space-y-2">
         <p className="text-sm font-medium text-foreground">Next actions</p>
-        <div className="flex flex-wrap gap-2">
+        <ul className="space-y-1">
           {data.nextActions.map((action) => (
-            <Badge key={action} variant="secondary">
-              {action}
-            </Badge>
+            <li key={action} className="flex gap-2 text-sm text-muted-foreground">
+              <span aria-hidden className="shrink-0 text-foreground">
+                •
+              </span>
+              <span className="min-w-0 break-words">{action}</span>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
 
       <div className="flex flex-wrap gap-4 text-sm">

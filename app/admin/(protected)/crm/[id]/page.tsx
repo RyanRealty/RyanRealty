@@ -579,7 +579,7 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
           {person.background ? (
             <Card>
               <CardHeader className="pb-3"><CardTitle className="text-base">Background</CardTitle></CardHeader>
-              <CardContent><p className="whitespace-pre-wrap text-sm text-foreground">{person.background}</p></CardContent>
+              <CardContent><p className="whitespace-pre-wrap break-words text-sm text-foreground">{person.background}</p></CardContent>
             </Card>
           ) : null}
         </div>

@@ -283,14 +283,22 @@ export async function listMissingBanners(): Promise<BannerEntity[]> {
     existingSet.add(`${r.entity_type}:${r.entity_key}`)
   }
 
+  // Fetch every city's subdivisions in parallel. The previous serial
+  // `for (city) { await getSubdivisionsInCity(city) }` ran one full
+  // listings scan per city back-to-back — dozens of serialized heavy
+  // queries that blew past the 45s page budget. Promise.all collapses
+  // them into one wave.
+  const subsByCity = await Promise.all(
+    cities.map(async ({ City }) => ({ City, subs: await getSubdivisionsInCity(City) }))
+  )
+
   const missing: BannerEntity[] = []
 
-  for (const { City } of cities) {
+  for (const { City, subs } of subsByCity) {
     const key = cityEntityKey(City)
     if (!existingSet.has(`city:${key}`)) {
       missing.push({ entityType: 'city', entityKey: key, displayName: City })
     }
-    const subs = await getSubdivisionsInCity(City)
     for (const { subdivisionName } of subs) {
       const subKey = subdivisionEntityKey(City, subdivisionName)
       if (!existingSet.has(`subdivision:${subKey}`)) {

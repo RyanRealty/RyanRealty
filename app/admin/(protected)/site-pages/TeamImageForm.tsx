@@ -87,7 +87,7 @@ export default function TeamImageForm({ initialTeamImageUrl }: Props) {
               value={teamImageUrl}
               onChange={(e) => setTeamImageUrl(e.target.value)}
               placeholder="https://…/team.png"
-              className="min-w-[200px] flex-1"
+              className="w-full sm:w-auto sm:min-w-[200px] sm:flex-1"
             />
             <Button type="submit" disabled={saving}>
               {saving ? 'Saving…' : 'Save URL'}

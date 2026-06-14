@@ -40,10 +40,8 @@ export default async function AdminBrokerReportsPage() {
               const yearly = entry?.yearly as { total_volume?: number; transaction_count?: number; avg_sale_price?: number } | undefined
               return (
                 <TableRow key={bRow.id} className="border-b border-border">
-                  <TableCell className="px-4 py-2">
-                    <Link href={`/admin/brokers/edit?id=${encodeURIComponent(bRow.id)}`} className="text-primary hover:underline">
-                      {bRow.display_name}
-                    </Link>
+                  <TableCell className="px-4 py-2 font-medium text-foreground">
+                    {bRow.display_name}
                   </TableCell>
                   <TableCell className="px-4 py-2 text-right">
                     {yearly?.total_volume != null ? `$${Number(yearly.total_volume).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}

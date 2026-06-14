@@ -156,12 +156,12 @@ export default async function DashboardGA4Panel() {
         </div>
         <div className="rounded-lg border border-border bg-card p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Facebook ads attribution checklist</p>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 text-sm break-words text-muted-foreground">
             Keep UTM naming consistent in every ad URL so lead-source reporting is reliable:
-            <code className="ml-1 rounded bg-muted px-1">utm_source=facebook</code>,
-            <code className="ml-1 rounded bg-muted px-1">utm_medium=paid_social</code>,
-            <code className="ml-1 rounded bg-muted px-1">utm_campaign=&lt;campaign-name&gt;</code>,
-            <code className="ml-1 rounded bg-muted px-1">utm_content=&lt;ad-variant&gt;</code>.
+            <code className="ml-1 rounded bg-muted px-1 break-all">utm_source=facebook</code>,
+            <code className="ml-1 rounded bg-muted px-1 break-all">utm_medium=paid_social</code>,
+            <code className="ml-1 rounded bg-muted px-1 break-all">utm_campaign=&lt;campaign-name&gt;</code>,
+            <code className="ml-1 rounded bg-muted px-1 break-all">utm_content=&lt;ad-variant&gt;</code>.
           </p>
         </div>
         <p>

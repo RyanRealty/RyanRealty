@@ -25,6 +25,7 @@ interface CmaRow {
   created_at: string
   finalized_at: string | null
   html_path: string
+  asset_available: boolean
 }
 
 function formatPrice(n: number | null): string {
@@ -110,22 +111,26 @@ export default async function AdminCmasPage() {
                   <span className="truncate">{cma.client_name ?? '—'}{cma.broker_slug ? ` · ${cma.broker_slug}` : ''}</span>
                   <span className="shrink-0 tabular-nums">{formatDate(cma.created_at)}</span>
                 </div>
-                <div className="mt-3 flex gap-2">
-                  <Button asChild size="sm" variant="outline" className="h-10 flex-1">
-                    <Link href={`/api/cma/${cma.slug}/pdf`} target="_blank" rel="noopener noreferrer">
-                      PDF
-                    </Link>
-                  </Button>
-                  <Button asChild size="sm" variant="ghost" className="h-10 flex-1">
-                    <Link
-                      href={cma.status === 'finalized' ? `/cmas/${cma.slug}/cma.html` : `/drafts/${cma.slug}/cma.html`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      HTML
-                    </Link>
-                  </Button>
-                </div>
+                {cma.asset_available ? (
+                  <div className="mt-3 flex gap-2">
+                    <Button asChild size="sm" variant="outline" className="h-10 flex-1">
+                      <Link href={`/api/cma/${cma.slug}/pdf`} target="_blank" rel="noopener noreferrer">
+                        PDF
+                      </Link>
+                    </Button>
+                    <Button asChild size="sm" variant="ghost" className="h-10 flex-1">
+                      <Link
+                        href={cma.status === 'finalized' ? `/cmas/${cma.slug}/cma.html` : `/drafts/${cma.slug}/cma.html`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        HTML
+                      </Link>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="mt-3 text-xs text-muted-foreground">Document not available</div>
+                )}
               </CardContent>
             </Card>
           ))
@@ -180,22 +185,26 @@ export default async function AdminCmasPage() {
                   <TableCell className="text-sm">{formatDate(cma.created_at)}</TableCell>
                   <TableCell className="text-sm">{formatDate(cma.finalized_at)}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button asChild size="sm" variant="outline">
-                        <Link href={`/api/cma/${cma.slug}/pdf`} target="_blank" rel="noopener noreferrer">
-                          PDF
-                        </Link>
-                      </Button>
-                      <Button asChild size="sm" variant="ghost">
-                        <Link
-                          href={cma.status === 'finalized' ? `/cmas/${cma.slug}/cma.html` : `/drafts/${cma.slug}/cma.html`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          HTML
-                        </Link>
-                      </Button>
-                    </div>
+                    {cma.asset_available ? (
+                      <div className="flex justify-end gap-2">
+                        <Button asChild size="sm" variant="outline">
+                          <Link href={`/api/cma/${cma.slug}/pdf`} target="_blank" rel="noopener noreferrer">
+                            PDF
+                          </Link>
+                        </Button>
+                        <Button asChild size="sm" variant="ghost">
+                          <Link
+                            href={cma.status === 'finalized' ? `/cmas/${cma.slug}/cma.html` : `/drafts/${cma.slug}/cma.html`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            HTML
+                          </Link>
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Not available</span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))

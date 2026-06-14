@@ -1,8 +1,5 @@
 import Link from 'next/link'
-import {
-  listGeoPlaces,
-  ensureGeoPlacesFromListings,
-} from '@/app/actions/geo-places'
+import { listGeoPlaces } from '@/app/actions/geo-places'
 import EnsureGeoButton from './EnsureGeoButton'
 import NeighborhoodForm from './NeighborhoodForm'
 import AssignCommunity from './AssignCommunity'
@@ -16,10 +13,13 @@ export default async function AdminGeoPage({
 }) {
   const params = await searchParams
   const selectedCityId = params.city ?? null
-  const [oregonState, result] = await Promise.all([
-    listGeoPlaces({ type: 'state' }).then((rows) => rows.find((r) => r.slug === 'oregon') ?? null),
-    ensureGeoPlacesFromListings().catch(() => null),
-  ])
+  // Seeding (country/state/cities/communities from listings) is a heavy
+  // write-and-scan over the 589K-row listings table — dozens of full per-city
+  // subdivision scans plus per-row round-trips. It must NOT run on every render
+  // (that timed the page out). The "Ensure geo places from listings" button
+  // below triggers it explicitly, then refreshes. This page only LISTS geo data.
+  const oregonState =
+    (await listGeoPlaces({ type: 'state' })).find((r) => r.slug === 'oregon') ?? null
   const stateId = oregonState?.id ?? null
   const citiesFromGeo = stateId ? await listGeoPlaces({ type: 'city', parentId: stateId }) : await listGeoPlaces({ type: 'city' })
   const cityId = selectedCityId && citiesFromGeo.some((c) => c.id === selectedCityId) ? selectedCityId : citiesFromGeo[0]?.id ?? null
@@ -45,7 +45,6 @@ export default async function AdminGeoPage({
           Ensures country (US), state (Oregon), and cities from current listing cities.
         </p>
         <EnsureGeoButton />
-        {result?.ok && <p className="mt-2 text-sm text-success">Cities ensured: {result.citiesEnsured}</p>}
       </section>
 
       <section className="mt-8">

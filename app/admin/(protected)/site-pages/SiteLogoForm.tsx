@@ -91,7 +91,7 @@ export default function SiteLogoForm({ initialLogoUrl }: Props) {
               value={logoUrl}
               onChange={(e) => setLogoUrl(e.target.value)}
               placeholder={siteUrl ? `${siteUrl}/logo.png` : DEFAULT_LOGO_PATH}
-              className="min-w-[200px] flex-1 rounded-lg border border-primary/20 px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full sm:w-auto sm:min-w-[200px] sm:flex-1 rounded-lg border border-primary/20 px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             />
             <Button
               type="submit"
