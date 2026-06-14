@@ -22,7 +22,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendCrmEmail, CRM_MAILBOXES } from '@/lib/crm/gmail'
 import { isSuppressed } from '@/lib/crm/suppressions'
-import { attributeSiteLinks, renderCrmMerge, referencesCmaLink } from '@/lib/crm/merge'
+import { attributeSiteLinks, renderCrmMerge, referencesCmaLink, findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { sendSmsViaMessagingService, getA2pCampaignStatus } from '@/lib/crm/twilio'
 import { addPersonTags, replacePersonTags } from '@/lib/followupboss'
 
@@ -201,8 +201,35 @@ export async function GET(request: Request) {
           if (tpl) { subject = tpl.subject ?? subject; body = tpl.body ?? body }
         }
         if (!body) { await finish({ status: 'stopped' }); await log(`Sequence "${seq.name}" stopped — empty email step`); errored++; continue }
+
+        // CMA hold (parity with SMS): never email a dead/empty CMA link. Checked
+        // on the raw body (the %cma_link% token survives until renderMerge).
+        const emailCustom = (person.custom as Record<string, unknown> | null) ?? {}
+        if (referencesCmaLink(body) && !emailCustom.cmaLink) {
+          await sb.from('crm_timeline').upsert(
+            {
+              person_id: person.id, kind: 'system',
+              title: 'Email holding — waiting for the CMA to be built',
+              body: `Step ${en.step_index} of "${seq.name}" links the property CMA. It sends once the CMA link is on the contact.`,
+              source: 'sequence', dedupe_key: `email-hold-cma:e${en.id}:s${en.step_index}`,
+            },
+            { onConflict: 'dedupe_key', ignoreDuplicates: true },
+          )
+          await finish({ next_run_at: new Date(Date.now() + 4 * 3600e3).toISOString() })
+          continue
+        }
+
         subject = renderMerge(subject, person)
         body = renderMerge(body, person)
+
+        // Fail-closed: never deliver literal %token% / {{token}} text to a client.
+        const emailUnresolved = findUnresolvedMergeTokens(`${subject} ${body}`)
+        if (emailUnresolved.length) {
+          await finish({ status: 'stopped' })
+          await log(`Sequence "${seq.name}" stopped — unresolved merge tokens (${emailUnresolved.join(', ')})`)
+          errored++
+          continue
+        }
 
         const mailbox = CRM_MAILBOXES.find((m) => m.slug === person.assigned_broker) ?? CRM_MAILBOXES[0]
         const sent = await sendCrmEmail({ fromMailbox: mailbox.email, to, subject, bodyText: body, withSignature: true })
@@ -272,6 +299,15 @@ export async function GET(request: Request) {
         }
 
         body = renderMerge(body, person)
+
+        // Fail-closed: never text literal %token% / {{token}} content to a client.
+        const smsUnresolved = findUnresolvedMergeTokens(body)
+        if (smsUnresolved.length) {
+          await finish({ status: 'stopped' })
+          await log(`Sequence "${seq.name}" stopped — unresolved merge tokens (${smsUnresolved.join(', ')})`)
+          errored++
+          continue
+        }
 
         // ── Channel decision (Matt 2026-06-13): text via Twilio if A2P is live;
         // else the Mac iMessage relay as backup; else the step's email fallback

@@ -46,10 +46,15 @@ export function attributeSiteLinks(text: string, brokerSlug: string | null | und
   })
 }
 
-/** Merge tokens still present after rendering — surfaced as a composer warning. */
+/** Merge tokens still present after rendering — surfaced as a composer warning
+ *  and (since 2026-06-13) a hard fail-closed gate before any automated send.
+ *  Covers %x% / %word% (single char allowed — the {{}} arm always did), {{x}},
+ *  Mailchimp *|X|*, and ${x}. Bare [x] / {x} are intentionally NOT matched:
+ *  they collide with normal prose + markdown and would block legitimate copy. */
 export function findUnresolvedMergeTokens(text: string): string[] {
   const hits = new Set<string>()
-  for (const m of text.matchAll(/%[A-Za-z][A-Za-z0-9_]+%|\{\{[A-Za-z][A-Za-z0-9_]*\}\}/g)) hits.add(m[0])
+  const re = /%[A-Za-z][A-Za-z0-9_]*%|\{\{[A-Za-z][A-Za-z0-9_]*\}\}|\*\|[A-Za-z][A-Za-z0-9_]*\|\*|\$\{[A-Za-z][A-Za-z0-9_]*\}/g
+  for (const m of text.matchAll(re)) hits.add(m[0])
   return [...hits]
 }
 

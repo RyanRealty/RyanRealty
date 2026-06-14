@@ -928,8 +928,12 @@ export async function completeCrmTaskAction(formData: FormData): Promise<CrmActi
   const personId = Number(formData.get('personId')) || undefined
   if (!taskId) return { ok: false, error: 'Task id required' }
   const sb = createServiceClient()
-  const { data: task } = await sb.from('crm_tasks').select('id,fub_legacy_id').eq('id', taskId).maybeSingle()
+  const { data: task } = await sb.from('crm_tasks').select('id,fub_legacy_id,assigned_broker').eq('id', taskId).maybeSingle()
   if (!task) return { ok: false, error: 'Task not found' }
+  // Ownership: a non-superuser broker may only complete their own tasks.
+  if (access.access.role !== 'superuser' && access.access.brokerSlug && (task.assigned_broker ?? null) !== access.access.brokerSlug) {
+    return { ok: false, error: 'not authorized for this task' }
+  }
   const { error } = await sb.from('crm_tasks').update({
     completed_at: new Date().toISOString(), updated_at: new Date().toISOString(),
   }).eq('id', taskId)
@@ -996,6 +1000,17 @@ async function setEnrollment(
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'not authorized' }
   const sb = createServiceClient()
+  // Ownership: a non-superuser broker may only act on their own leads'
+  // enrollments (the queue scopes the READ; this scopes the WRITE).
+  if (access.role !== 'superuser' && access.brokerSlug) {
+    const { data: own } = await sb
+      .from('crm_sequence_enrollments')
+      .select('crm_people!inner(assigned_broker)')
+      .eq('id', enrollmentId)
+      .maybeSingle()
+    const owner = (own?.crm_people as unknown as { assigned_broker?: string | null } | null)?.assigned_broker ?? null
+    if (owner !== access.brokerSlug) return { ok: false, error: 'not authorized for this lead' }
+  }
   const { data: en, error } = await sb
     .from('crm_sequence_enrollments')
     .update({ ...patch, updated_at: new Date().toISOString() })
@@ -1082,6 +1097,27 @@ export type CrmNextRec = {
   holdReason: string | null
 } | null
 
+/** Resolve a step's subject/body for PREVIEW — mirrors the engine exactly: a
+ *  templateKey overrides inline subject/body from crm_templates. Without this the
+ *  preview (and every guard built on it) inspects an empty inline body while the
+ *  engine sends the template — a broker could one-click-send text never seen. */
+async function resolveStepContent(
+  sb: ReturnType<typeof createServiceClient>,
+  step: Record<string, unknown>,
+): Promise<{ subject: string | null; body: string }> {
+  let subject = step.subject != null ? String(step.subject) : null
+  let body = String(step.body ?? '')
+  const templateKey = step.templateKey != null ? String(step.templateKey) : ''
+  if (templateKey) {
+    const { data: tpl } = await sb.from('crm_templates').select('subject,body').eq('key', templateKey).maybeSingle()
+    if (tpl) {
+      if (tpl.subject != null) subject = tpl.subject
+      if (tpl.body != null) body = tpl.body
+    }
+  }
+  return { subject, body }
+}
+
 /** The broker-confirmed "recommended next step" for a contact, fully rendered
  *  exactly as the lead would receive it. Drives the color-coded next-step card
  *  + the in-app message preview. Returns null when nothing is waiting. */
@@ -1108,18 +1144,23 @@ export async function getNextRecommendation(personId: number): Promise<CrmNextRe
     .maybeSingle()
   const { renderCrmMerge, findUnresolvedMergeTokens, referencesCmaLink } = await import('@/lib/crm/merge')
   const p = (person ?? {}) as { first_name?: string | null; name?: string | null; custom?: Record<string, unknown> }
-  const rawBody = String(step.body ?? step.taskName ?? '')
+  const channel = String(step.channel ?? 'step')
+  const isMessage = channel === 'email' || channel === 'sms'
+  const resolved = await resolveStepContent(sb, step)
+  const rawBody = resolved.body || String(step.taskName ?? '')
   const bodyPreview = renderCrmMerge(rawBody, p)
-  const subjectPreview = step.subject ? renderCrmMerge(String(step.subject), p) : null
+  const subjectPreview = resolved.subject ? renderCrmMerge(resolved.subject, p) : null
   const holdReason =
     referencesCmaLink(rawBody) && !((p.custom ?? {}) as Record<string, unknown>).cmaLink
       ? 'Holds until the CMA is built (the link is stamped at finalize)'
-      : null
+      : isMessage && !rawBody.trim()
+        ? 'Message content is missing — check the template'
+        : null
   return {
     enrollmentId: en.id as number,
     sequenceName: seq.name,
     stepIndex: en.step_index as number,
-    channel: String(step.channel ?? 'step'),
+    channel,
     subjectPreview,
     bodyPreview,
     unresolved: findUnresolvedMergeTokens(`${subjectPreview ?? ''} ${bodyPreview}`),
@@ -1128,43 +1169,74 @@ export async function getNextRecommendation(personId: number): Promise<CrmNextRe
 }
 
 export type BrokerActionItem = {
+  enrollmentId: number
   personId: number
   personName: string
+  firstName: string | null
   sequenceName: string
   channel: string
+  subjectPreview: string | null
   preview: string
+  /** Merge tokens that did not resolve — the one-click send is blocked while any remain. */
+  unresolved: string[]
   holdReason: string | null
 }
 
 /** Every lead with a broker-confirmed step waiting, scoped to the signed-in
- *  broker — the "what needs you" queue for the dashboard. Color-coded by channel. */
+ *  broker — the "what needs you" queue for the dashboard. Each item carries the
+ *  enrollment id + a fully rendered preview so the dashboard can confirm-and-send
+ *  the exact message in one click (and refuse to when it would send broken text). */
 export async function getBrokerActionQueue(): Promise<BrokerActionItem[]> {
   const access = await getCrmAccess()
   if (!access) return []
   const sb = createServiceClient()
   let q = sb
     .from('crm_sequence_enrollments')
-    .select('person_id,step_index,crm_people!inner(name,first_name,custom,assigned_broker),crm_sequences!inner(name,steps)')
+    .select('id,person_id,step_index,crm_people!inner(name,first_name,custom,assigned_broker,emails),crm_sequences!inner(name,steps)')
     .eq('status', 'awaiting_broker_next')
     .order('updated_at', { ascending: true })
     .limit(100)
   if (access.brokerSlug) q = q.eq('crm_people.assigned_broker', access.brokerSlug)
   const { data } = await q
-  const { renderCrmMerge, referencesCmaLink } = await import('@/lib/crm/merge')
+  const { renderCrmMerge, referencesCmaLink, findUnresolvedMergeTokens } = await import('@/lib/crm/merge')
   const out: BrokerActionItem[] = []
   for (const r of data ?? []) {
-    const person = r.crm_people as unknown as { name?: string | null; first_name?: string | null; custom?: Record<string, unknown> }
+    const person = r.crm_people as unknown as {
+      name?: string | null; first_name?: string | null; custom?: Record<string, unknown>
+      emails?: Array<{ value?: string }> | null
+    }
     const seq = r.crm_sequences as unknown as { name: string; steps: Array<Record<string, unknown>> }
     const step = (seq.steps ?? [])[r.step_index as number] as Record<string, unknown> | undefined
     if (!step) continue
-    const raw = String(step.body ?? step.taskName ?? '')
+    const channel = String(step.channel ?? 'step')
+    const isMessage = channel === 'email' || channel === 'sms'
+    // Resolve templateKey so the preview + every guard match what the engine sends.
+    const resolved = await resolveStepContent(sb, step)
+    const rawBody = resolved.body || String(step.taskName ?? '')
+    const preview = renderCrmMerge(rawBody, person)
+    const subjectPreview = resolved.subject ? renderCrmMerge(resolved.subject, person) : null
+    const cmaPending = referencesCmaLink(rawBody) && !((person.custom ?? {}) as Record<string, unknown>).cmaLink
+    // email has NO contact-points fallback in the engine, so empty emails[] is a
+    // guaranteed non-delivery — surface it rather than show a Send that no-ops.
+    const noEmail = channel === 'email' && !(Array.isArray(person.emails) && person.emails.some((e) => e?.value))
+    const holdReason = cmaPending
+      ? 'Waiting on the CMA'
+      : isMessage && !rawBody.trim()
+        ? 'Message not ready — check the template'
+        : noEmail
+          ? 'No email on file'
+          : null
     out.push({
+      enrollmentId: r.id as number,
       personId: r.person_id as number,
       personName: person.name ?? 'Unknown',
+      firstName: person.first_name ?? null,
       sequenceName: seq.name,
-      channel: String(step.channel ?? 'step'),
-      preview: renderCrmMerge(raw, person).slice(0, 140),
-      holdReason: referencesCmaLink(raw) && !((person.custom ?? {}) as Record<string, unknown>).cmaLink ? 'CMA building' : null,
+      channel,
+      subjectPreview: subjectPreview ? subjectPreview.slice(0, 120) : null,
+      preview: preview.slice(0, 140),
+      unresolved: findUnresolvedMergeTokens(`${subjectPreview ?? ''} ${preview}`),
+      holdReason,
     })
   }
   return out

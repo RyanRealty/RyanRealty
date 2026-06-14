@@ -1,8 +1,10 @@
 // @no-parity — internal broker command surface
 import Link from 'next/link'
+import { revalidatePath } from 'next/cache'
 import { ChevronRight, CheckCircle2 } from 'lucide-react'
 import { getBrokerCommandCenterData } from '@/app/actions/broker-command-center'
-import { getBrokerActionQueue } from '@/app/actions/crm'
+import { getBrokerActionQueue, confirmNextStepAction, completeCrmTaskAction } from '@/app/actions/crm'
+import { ActionSubmitButton } from '@/components/admin/ActionSubmitButton'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -96,6 +98,31 @@ function StatPill({ label, value, href, urgent }: { label: string; value: number
 const CHANNEL_CHIP: Record<string, { label: string; cls: string }> = {
   email: { label: 'Email', cls: 'border-primary/20 bg-primary/10 text-primary' },
   sms: { label: 'Text', cls: 'border-success/30 bg-success/10 text-success' },
+}
+const CHANNEL_VERB: Record<string, string> = { email: 'Email', sms: 'Text' }
+
+// ── one-click actions ────────────────────────────────────
+// Each confirms/does the step then revalidates the dashboard so the row clears.
+// The mutations scope writes to the signed-in broker's own leads/tasks (a
+// superuser is unrestricted); the queue read is scoped the same way. The send
+// itself is guarded upstream: held / unresolved-token / no-channel rows never
+// render a Send button, and the engine re-checks fail-closed before delivery.
+
+// Args are .bind()-ed at the call site (Next server-action pattern) so the rows
+// need no hidden form fields. FormData is still passed last by the form.
+async function confirmStepFromDashboard(enrollmentId: number, _formData: FormData) {
+  'use server'
+  await confirmNextStepAction(enrollmentId)
+  revalidatePath('/admin/broker-dashboard')
+}
+
+async function completeTaskFromDashboard(taskId: number, personId: number | null, _formData: FormData) {
+  'use server'
+  const fd = new FormData()
+  fd.set('taskId', String(taskId))
+  if (personId != null) fd.set('personId', String(personId))
+  await completeCrmTaskAction(fd)
+  revalidatePath('/admin/broker-dashboard')
 }
 
 // ── component ────────────────────────────────────────────
@@ -218,43 +245,55 @@ export default async function BrokerCommandCenterPage({
           ) : (
             <div className="divide-y divide-border">
               {heroActions.map((a) => {
-                const chip = CHANNEL_CHIP[a.channel] ?? { label: 'Do this', cls: 'border-warning/30 bg-warning/10 text-warning' }
+                const chip = CHANNEL_CHIP[a.channel] ?? { label: 'Step', cls: 'border-warning/30 bg-warning/10 text-warning' }
+                const verb = CHANNEL_VERB[a.channel]
+                const title = verb ? `${verb} ${a.firstName ?? a.personName}` : a.personName
+                const blocked = Boolean(a.holdReason) || a.unresolved.length > 0
+                const detail = a.holdReason ?? (a.unresolved.length > 0 ? 'Open to add missing info before this can send' : (a.subjectPreview ?? a.preview))
                 return (
-                  <Link
-                    key={`a-${a.personId}`}
-                    href={`/admin/crm/${a.personId}`}
-                    className="flex min-h-14 items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50 active:bg-muted"
-                  >
+                  <div key={`a-${a.enrollmentId}`} className="flex min-h-14 items-center gap-3 px-4 py-2.5">
                     <span className={`shrink-0 rounded-md border px-2 py-1 text-xs font-semibold ${chip.cls}`}>{chip.label}</span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold text-foreground">{a.personName}</span>
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {a.holdReason ? `Holds: ${a.holdReason}` : `${a.sequenceName} · ${a.preview}`}
-                      </span>
-                    </span>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  </Link>
+                    <Link
+                      href={`/admin/crm/${a.personId}`}
+                      className="-my-2.5 min-w-0 flex-1 py-2.5 transition-opacity hover:opacity-70"
+                    >
+                      <span className="block truncate text-sm font-semibold text-foreground">{title}</span>
+                      <span className="block truncate text-xs text-muted-foreground">{detail}</span>
+                    </Link>
+                    {blocked ? (
+                      <Link href={`/admin/crm/${a.personId}`} className="flex shrink-0 items-center gap-0.5 text-xs font-medium text-muted-foreground hover:text-foreground">
+                        Open <ChevronRight className="h-4 w-4" />
+                      </Link>
+                    ) : (
+                      <form action={confirmStepFromDashboard.bind(null, a.enrollmentId)}>
+                        <ActionSubmitButton pendingLabel="Sending…" ariaLabel={`${verb ? 'Send' : 'Confirm'} step for ${a.personName}`}>
+                          {verb ? 'Send' : 'Confirm'}
+                        </ActionSubmitButton>
+                      </form>
+                    )}
+                  </div>
                 )
               })}
               {heroOverdue.map((t) => (
-                <Link
-                  key={`t-${t.id}`}
-                  href={t.personId ? `/admin/crm/${t.personId}` : '/admin/crm/tasks'}
-                  className="flex min-h-14 items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50 active:bg-muted"
-                >
+                <div key={`t-${t.id}`} className="flex min-h-14 items-center gap-3 px-4 py-2.5">
                   <span className="shrink-0 rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1 text-xs font-semibold text-destructive">
                     Overdue
                   </span>
-                  <span className="min-w-0 flex-1">
+                  <Link
+                    href={t.personId ? `/admin/crm/${t.personId}` : '/admin/crm/tasks'}
+                    className="-my-2.5 min-w-0 flex-1 py-2.5 transition-opacity hover:opacity-70"
+                  >
                     <span className="block truncate text-sm font-semibold text-foreground">
                       {t.name}{t.personName ? ` · ${t.personName}` : ''}
                     </span>
                     <span className="block truncate text-xs text-muted-foreground">
                       {t.dueAt ? `Due ${fmtDate(t.dueAt)}` : 'No due date'}{t.type ? ` · ${t.type}` : ''}
                     </span>
-                  </span>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                </Link>
+                  </Link>
+                  <form action={completeTaskFromDashboard.bind(null, t.id, t.personId)}>
+                    <ActionSubmitButton variant="outline" pendingLabel="…" ariaLabel={`Mark done: ${t.name}`}>Done</ActionSubmitButton>
+                  </form>
+                </div>
               ))}
             </div>
           )}
