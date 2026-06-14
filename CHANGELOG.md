@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.539.11 (2026-06-14)
+
+### Bug Fixes
+- fix(listing): unify broker CTA — same card whether or not a broker is assigned
+
+---
+
+
 ## v1.539.10 (2026-06-14)
 
 ### Bug Fixes
