@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.535.0 (2026-06-14)
+
+### Features
+- feat(nav): merge Homes + Explore into one menu; clean the mega-menu (Class D)
+
+---
+
+
 ## v1.534.9 (2026-06-14)
 
 ### Maintenance
