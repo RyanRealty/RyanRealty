@@ -1,0 +1,13 @@
+{
+  "total": 14,
+  "files": {
+    "app/admin/(protected)/analytics/demographics/page.tsx": 3,
+    "app/admin/(protected)/broker-dashboard/page.tsx": 2,
+    "app/admin/(protected)/deals/[key]/page.tsx": 1,
+    "app/admin/(protected)/deals/page.tsx": 1,
+    "components/admin/DashboardLeadPanel.tsx": 2,
+    "components/admin/DashboardMarketingCommandCenterPanel.tsx": 1,
+    "components/admin/DashboardRevenuePanel.tsx": 2,
+    "components/admin/DashboardSitePerformancePanel.tsx": 2
+  }
+}
