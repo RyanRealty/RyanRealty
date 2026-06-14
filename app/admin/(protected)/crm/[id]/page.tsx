@@ -578,16 +578,21 @@ export default async function CrmPersonPage({ params, searchParams }: { params: 
           {/* Custom fields */}
           {customEntries.length > 0 ? (
             <Card>
-              <CardHeader className="pb-3"><CardTitle className="text-base">Fields ({customEntries.length})</CardTitle></CardHeader>
-              <CardContent>
-                <dl className="space-y-1.5 text-sm">
-                  {customEntries.map(([k, v]) => (
-                    <div key={k} className="flex justify-between gap-3">
-                      <dt className="shrink-0 text-muted-foreground">{k.replace(/^custom/, '')}</dt>
-                      <dd className="truncate text-right text-foreground">{String(v)}</dd>
-                    </div>
-                  ))}
-                </dl>
+              <CardContent className="p-4">
+                <details className="group">
+                  <summary className="cursor-pointer text-base font-medium text-foreground">
+                    Fields ({customEntries.length}){' '}
+                    <span className="text-xs font-normal text-muted-foreground group-open:hidden">· tap to expand</span>
+                  </summary>
+                  <dl className="mt-3 space-y-1.5 text-sm">
+                    {customEntries.map(([k, v]) => (
+                      <div key={k} className="flex justify-between gap-3">
+                        <dt className="shrink-0 text-muted-foreground">{k.replace(/^custom/, '')}</dt>
+                        <dd className="truncate text-right text-foreground">{String(v)}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </details>
               </CardContent>
             </Card>
           ) : null}
