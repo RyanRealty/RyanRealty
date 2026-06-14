@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.539.9 (2026-06-14)
+
+### Maintenance
+- perf(admin/crm): cap conversation thread to the most recent 60 messages
+
+---
+
+
 ## v1.539.8 (2026-06-14)
 
 ### Bug Fixes
