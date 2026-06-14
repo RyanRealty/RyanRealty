@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.539.6 (2026-06-14)
+
+### Bug Fixes
+- fix(admin/crm): conversation sits directly under pfp + info on the lead page
+
+---
+
+
 ## v1.539.5 (2026-06-14)
 
 ### Bug Fixes
