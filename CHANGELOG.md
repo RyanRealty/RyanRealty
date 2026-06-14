@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.535.2 (2026-06-14)
+
+### Bug Fixes
+- fix(listing): mobile photo hero + 'Active' badge legibility
+
+---
+
+
 ## v1.535.1 (2026-06-14)
 
 ### Maintenance
