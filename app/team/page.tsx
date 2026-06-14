@@ -150,7 +150,7 @@ export default async function TeamPage() {
       />
 
       <CTABar
-        eyebrow="Ready to talk"
+        eyebrow="Talk to a broker"
         title="Have a question for the team?"
         body="Call any broker directly, or schedule a time to talk. No scripts, no hand-offs."
         primary={{ href: '/contact', label: 'Schedule a call' }}

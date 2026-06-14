@@ -1357,7 +1357,7 @@ export default async function TetherowLandingPage() {
           <div className="col-span-full mt-7 border-t border-[rgba(250,248,244,0.12)] pt-6 text-[12px] leading-[1.65] opacity-60">
             Ryan Realty LLC · Oregon Principal Broker #201206613 · Equal Housing Opportunity · Listing
             data courtesy of Oregon Datashare RMLS · Tetherow Resort and Golf Club is a registered
-            trademark of its respective owner. This page is independent brokerage analysis, not a
+            trademark of its respective owner. This page is independent market analysis, not a
             Tetherow Resort, Tetherow Owners Association, or Troon publication. No affiliation
             implied. Course photography © Tetherow Resort, used editorially with attribution. Active
             listing photos used under the IDX broker license.

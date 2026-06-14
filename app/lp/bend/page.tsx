@@ -585,10 +585,10 @@ export default async function BendCityPage() {
         </section>
       )}
 
-      {/* FEATURED HOMES — premier inventory + showing CTA per card */}
+      {/* FEATURED HOMES — active Bend listings + showing CTA per card */}
       <section id="listings" className="bend-section">
         <div className="bend-shell">
-          <div className="bend-eyebrow">Bend&rsquo;s premier inventory</div>
+          <div className="bend-eyebrow">Homes for sale in Bend</div>
           <h2 className="bend-h2 font-display">Featured homes for sale.</h2>
           <p className="bend-prose" style={{ maxWidth: 760 }}>
             A live look at top-of-market homes in Bend, sorted by price. Click any home for the

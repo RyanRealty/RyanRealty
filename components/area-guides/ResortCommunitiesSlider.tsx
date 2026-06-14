@@ -37,7 +37,7 @@ export default function ResortCommunitiesSlider({
   return (
     <TilesSlider
       title="Resort & master-planned communities"
-      subtitle="Sunriver, Tetherow, Pronghorn, Black Butte Ranch, and more. Explore golf, amenities, and lifestyle in Central Oregon's premier communities."
+      subtitle="Sunriver, Tetherow, Pronghorn, and Black Butte Ranch. Resort and master-planned communities across Central Oregon, with golf, trails, and shared amenities."
       titleId="communities-heading"
       className="bg-muted px-4 py-16 sm:px-6 sm:py-20"
     >

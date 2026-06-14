@@ -91,6 +91,7 @@ const MARKETING_SLOP = [
   'white glove',
   'luxury concierge',
   'premier brokerage',
+  'premier', // standalone editorial superlative (CLAUDE.md banned meta-tone): "premier communities/inventory"
   'boutique brokerage',
   'your real estate journey',
   'we are passionate about',
@@ -185,6 +186,12 @@ const BANNED_PATTERNS = [
     source: "\\b(honest|trusted|expert|local|personalized) (guidance|advice|service|expertise|insight)\\b" },
   { law: 1, label: 'self-virtue (experts you can trust)',
     source: "\\b(experts? you can trust|trusted (local|name|partner|advisor|broker|expert)s?|your trusted)\\b" },
+  { law: 1, label: 'self-virtue (trusted in <place>)',
+    source: "\\btrusted in\\b" },
+  { law: 1, label: 'self-virtue (why clients choose us)',
+    source: "\\b(see|find out|discover) why (clients|buyers|sellers|people|locals|homeowners) choose\\b" },
+  { law: 1, label: 'positioning (the brokerage is behind you)',
+    source: "\\b(whole |entire |the )?(brokerage|team|firm) is behind you\\b" },
 
   // Law 2 — A number beats an adjective. Empty superlatives.
   { law: 2, label: 'empty superlative',
@@ -201,6 +208,8 @@ const BANNED_PATTERNS = [
     source: "\\b(buying|selling) a home is (a big|one of the biggest|an important)\\b" },
   { law: 3, label: 'talking down',
     source: "\\b(let (us|me) (help|guide|explain|walk you)|we'?ll handle everything|we'?ll take care of everything|in simple terms)\\b" },
+  { law: 3, label: 'generic CTA filler (ready to talk / work with us)',
+    source: "\\bready to (talk|work with us)\\b" },
 
   // Law 4 — The category is not a claim. Category / credential self-naming.
   { law: 4, label: 'category self-naming',
@@ -209,6 +218,8 @@ const BANNED_PATTERNS = [
     source: "\\bbrokerage (serving|that serves|in bend)\\b" },
   { law: 4, label: 'credential as position',
     source: "\\blicensed (and active )?brokers?\\b" },
+  { law: 4, label: 'positioning filler (on your next move)',
+    source: "\\bon your next move\\b" },
 ]
 
 module.exports = {

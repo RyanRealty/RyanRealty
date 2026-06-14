@@ -96,10 +96,10 @@ export default function ReviewsPage() {
       <section className="bg-muted px-4 py-14 sm:px-6" aria-labelledby="cta-heading">
         <div className="mx-auto max-w-2xl text-center">
           <H2 id="cta-heading" className="text-2xl text-primary">
-            Ready to work with us?
+            Talk to a Ryan Realty broker.
           </H2>
           <p className="mt-3 text-muted-foreground">
-            See why clients choose Ryan Realty for buying and selling in Central Oregon.
+            Buy or sell in Central Oregon with a broker you reach directly.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-4">
             <Button asChild size="lg">

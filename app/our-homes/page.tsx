@@ -160,7 +160,8 @@ export default async function OurHomesPage() {
           <div className="mx-auto max-w-2xl text-center">
             <H2>Ready to list your home?</H2>
             <Body tone="muted" className="mt-3">
-              Get our full plan: pricing, marketing, and local expertise from day one.
+              Get the full plan: a CMA with the comps behind the price, professional photo and video,
+              and one broker from listing to close.
             </Body>
             <Link
               href="/sell"

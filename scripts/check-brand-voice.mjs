@@ -31,6 +31,7 @@ const BASELINE_PATH = join(ROOT, 'scripts/brand-voice-baseline.json')
 // scripts/__tests__/brand-voice-vocabulary.test.cjs verifies parity.
 const require = createRequire(import.meta.url)
 const VOCAB = require('./brand-voice-vocabulary.cjs')
+const ts = require('typescript')
 
 const SCAN_DIRS = ['app', 'components']
 const EXCLUDED_DIRS = new Set(['node_modules', '.next', 'out', 'build', 'dist', '__tests__'])
@@ -132,6 +133,32 @@ function extractStringLiterals(src) {
   return literals
 }
 
+// JSX TEXT CHILDREN — the slogan blind spot (added 2026-06-14). The literal
+// scanner above only sees quoted strings; copy written as element children
+// (<H2>Ready to work with us?</H2>, <Body>the whole brokerage is behind you</Body>)
+// is invisible to it, which let a whole class of slogans ship past the gate.
+// Parse with the TS compiler and collect JsxText nodes so banned words +
+// VOICE.md moves are caught in element children too. A parse failure falls back
+// to literal-only scanning (never throws the gate).
+function extractJsxText(content) {
+  const out = []
+  let sf
+  try {
+    sf = ts.createSourceFile('scan.tsx', content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  } catch {
+    return out
+  }
+  const visit = (node) => {
+    if (node.kind === ts.SyntaxKind.JsxText) {
+      const raw = node.getText(sf)
+      if (raw.trim().length > 1) out.push({ value: raw, startIndex: node.getStart(sf) })
+    }
+    node.forEachChild(visit)
+  }
+  visit(sf)
+  return out
+}
+
 // A string literal is a code-mechanical token when it appears as an
 // import path (`from '<...>'`) or as the argument to `require()` or
 // `import()`. Those are NOT user-facing prose and matching banned
@@ -215,6 +242,26 @@ function scanFile(absPath) {
     for (const pat of BANNED_PATTERNS) {
       if (pat.re.test(lit.value)) {
         violations.push({ word: `Law ${pat.law}: ${pat.label}`, line: lineNum, snippet: lit.value.slice(0, 80) })
+      }
+    }
+  }
+
+  // JSX text children — slogans written between tags, invisible to the literal
+  // scanner. Same banned-word + banned-move checks. (Import-line / mechanical-
+  // literal skips don't apply: JSX text is never an import path or config value.)
+  for (const frag of extractJsxText(content)) {
+    const lineNum = content.slice(0, frag.startIndex).split('\n').length
+    const snippet = frag.value.trim().slice(0, 80)
+    const lower = frag.value.toLowerCase()
+    for (const word of BANNED_WORDS) {
+      const re = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
+      if (re.test(lower)) {
+        violations.push({ word, line: lineNum, snippet })
+      }
+    }
+    for (const pat of BANNED_PATTERNS) {
+      if (pat.re.test(frag.value)) {
+        violations.push({ word: `Law ${pat.law}: ${pat.label}`, line: lineNum, snippet })
       }
     }
   }

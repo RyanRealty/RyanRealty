@@ -28,11 +28,10 @@ export default function TeamSection({ teamImageSrc }: { teamImageSrc?: string | 
             <Eyebrow>Meet the team</Eyebrow>
             <H2>Brokers who live and work across Central Oregon.</H2>
             <Body size="default" tone="muted" className="leading-[1.6] max-w-[52ch]">
-              Local knowledge and honest guidance from brokers who have lived,
-              worked, and closed deals across Bend, Redmond, Sisters, Sunriver, and
-              surrounding communities. We tell you what the inspection found. We
-              tell you when a listing has been sitting. We tell you what we
-              do not know.
+              Brokers who have lived, worked, and closed deals across Bend, Redmond,
+              Sisters, Sunriver, and surrounding communities. We tell you what the
+              inspection found. We tell you when a listing has been sitting. We tell
+              you what we do not know.
             </Body>
             <div className="flex gap-2.5 flex-wrap pt-2">
               <CTAButton href="/team" tone="primary" size="md">

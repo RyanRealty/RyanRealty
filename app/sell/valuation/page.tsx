@@ -39,7 +39,7 @@ export default function SellValuationPage() {
 
       <ContentPageHero
         title="What's your home worth?"
-        subtitle="Get a custom valuation from Bend's trusted experts. We use local comps and market trends to give you a clear picture of your home's value, and how to maximize it."
+        subtitle="A custom valuation built from recent comparable sales and current market trends in your neighborhood, with the comps behind the number."
         imageUrl="/images/hero/hero-old-mill-master-4k.jpg"
       />
 
