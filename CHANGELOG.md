@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.534.5 (2026-06-14)
+
+### Bug Fixes
+- fix(nav): section-nav no longer overlaps the header (Class E)
+
+---
+
+
 ## v1.534.4 (2026-06-14)
 
 ### Bug Fixes
