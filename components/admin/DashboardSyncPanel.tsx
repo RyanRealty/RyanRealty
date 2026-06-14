@@ -80,29 +80,48 @@ export default function DashboardSyncPanel(props: Props) {
         {history.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">No sync runs recorded yet.</p>
         ) : (
-          <div className="mt-2 min-w-0 overflow-x-auto no-scrollbar">
-            <Table className="min-w-full border-collapse text-sm">
-              <TableHeader>
-                <TableRow className="border-b border-border">
-                  <TableHead className="py-1.5 pr-3 text-left font-medium text-muted-foreground">Completed</TableHead>
-                  <TableHead className="py-1.5 pr-3 text-left font-medium text-muted-foreground">Type</TableHead>
-                  <TableHead className="py-1.5 pr-3 text-right font-medium text-muted-foreground">Duration</TableHead>
-                  <TableHead className="py-1.5 pr-3 text-right font-medium text-muted-foreground">Listings</TableHead>
-                  <TableHead className="py-1.5 pl-3 text-left font-medium text-muted-foreground">Error</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {history.slice(0, 10).map((row) => (
-                  <TableRow key={row.id} className={`border-b border-border ${row.error ? 'bg-destructive/10/50' : ''}`}>
-                    <TableCell className="py-1.5 pr-3 text-foreground">{formatDateTime(row.completed_at)}</TableCell>
-                    <TableCell className="py-1.5 pr-3 capitalize text-muted-foreground">{row.run_type}</TableCell>
-                    <TableCell className="py-1.5 pr-3 text-right font-mono text-muted-foreground">{formatDuration(row.duration_seconds)}</TableCell>
-                    <TableCell className="py-1.5 pr-3 text-right font-mono text-muted-foreground">{row.listings_upserted > 0 ? row.listings_upserted.toLocaleString() : '—'}</TableCell>
-                    <TableCell className="py-1.5 pl-3 text-xs text-destructive max-w-[180px] truncate" title={row.error ?? undefined}>{row.error ?? '—'}</TableCell>
+          <div className="mt-2">
+            {/* Phones: a card per run (no horizontally-scrolling 5-col table) */}
+            <div className="space-y-2 md:hidden">
+              {history.slice(0, 10).map((row) => (
+                <div key={row.id} className={`rounded-lg border border-border p-3 ${row.error ? 'bg-destructive/10' : 'bg-card'}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-foreground">{formatDateTime(row.completed_at)}</span>
+                    <span className="text-xs capitalize text-muted-foreground">{row.run_type}</span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 font-mono text-xs text-muted-foreground">
+                    <span>{formatDuration(row.duration_seconds)}</span>
+                    <span>{row.listings_upserted > 0 ? `${row.listings_upserted.toLocaleString()} listings` : 'no upserts'}</span>
+                  </div>
+                  {row.error ? <p className="mt-1 break-words text-xs text-destructive">{row.error}</p> : null}
+                </div>
+              ))}
+            </div>
+            {/* Desktop: full table */}
+            <div className="hidden min-w-0 overflow-x-auto no-scrollbar md:block">
+              <Table className="min-w-full border-collapse text-sm">
+                <TableHeader>
+                  <TableRow className="border-b border-border">
+                    <TableHead className="py-1.5 pr-3 text-left font-medium text-muted-foreground">Completed</TableHead>
+                    <TableHead className="py-1.5 pr-3 text-left font-medium text-muted-foreground">Type</TableHead>
+                    <TableHead className="py-1.5 pr-3 text-right font-medium text-muted-foreground">Duration</TableHead>
+                    <TableHead className="py-1.5 pr-3 text-right font-medium text-muted-foreground">Listings</TableHead>
+                    <TableHead className="py-1.5 pl-3 text-left font-medium text-muted-foreground">Error</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {history.slice(0, 10).map((row) => (
+                    <TableRow key={row.id} className={`border-b border-border ${row.error ? 'bg-destructive/10' : ''}`}>
+                      <TableCell className="py-1.5 pr-3 text-foreground">{formatDateTime(row.completed_at)}</TableCell>
+                      <TableCell className="py-1.5 pr-3 capitalize text-muted-foreground">{row.run_type}</TableCell>
+                      <TableCell className="py-1.5 pr-3 text-right font-mono text-muted-foreground">{formatDuration(row.duration_seconds)}</TableCell>
+                      <TableCell className="py-1.5 pr-3 text-right font-mono text-muted-foreground">{row.listings_upserted > 0 ? row.listings_upserted.toLocaleString() : '—'}</TableCell>
+                      <TableCell className="py-1.5 pl-3 text-xs text-destructive max-w-[180px] truncate" title={row.error ?? undefined}>{row.error ?? '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         )}
         <p className="mt-2">
