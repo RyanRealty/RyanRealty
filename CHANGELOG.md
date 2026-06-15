@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.560.0 (2026-06-15)
+
+### Features
+- feat(newsletter): public subscribe form + unsubscribe page
+
+---
+
+
 ## v1.559.0 (2026-06-15)
 
 ### Features
