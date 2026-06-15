@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.551.0 (2026-06-15)
+
+### Features
+- feat(admin): curate analytics cluster wave 1 to the bar
+
+---
+
+
 ## v1.550.0 (2026-06-15)
 
 ### Features
