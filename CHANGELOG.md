@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.548.0 (2026-06-15)
+
+### Features
+- feat(console): migrate the entire admin into the neutral console shell
+
+---
+
+
 ## v1.547.0 (2026-06-15)
 
 ### Features
