@@ -22,6 +22,8 @@ import {
   updateCrmStageAction,
 } from '@/app/actions/crm'
 import { autoEnrollPerson } from '@/lib/crm/enroll'
+import { getNewsletterMembershipForLead } from '@/lib/data'
+import { adminAssignCrmPersonAction, adminAssignSavedSearchAction } from '@/app/actions/newsletter'
 import { timelineEmailBody } from '@/lib/crm/email-body'
 import { renderCrmMerge } from '@/lib/crm/merge'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
@@ -109,6 +111,31 @@ async function autoEnrollForm(formData: FormData): Promise<void> {
   const personId = Number(formData.get('personId'))
   const r = await autoEnrollPerson(personId)
   const msg = r.enrolled ? `Enrolled in ${r.sequence}` : `Not enrolled — ${r.reason}`
+  redirect(`${BASE}/${personId}?flash=${encodeURIComponent(msg)}`)
+}
+async function assignNewsletterForm(formData: FormData): Promise<void> {
+  'use server'
+  const personId = Number(formData.get('personId'))
+  const r = await adminAssignCrmPersonAction(personId)
+  const msg = r.ok ? 'Added to the newsletter' : `Not added — ${r.error ?? 'unknown error'}`
+  redirect(`${BASE}/${personId}?flash=${encodeURIComponent(msg)}`)
+}
+async function assignSavedSearchForm(formData: FormData): Promise<void> {
+  'use server'
+  const personId = Number(formData.get('personId'))
+  // Build the filters JSON from the simple inline fields before handing off.
+  const filters: Record<string, unknown> = {}
+  const city = String(formData.get('city') ?? '').trim()
+  const minPrice = Number(formData.get('minPrice'))
+  const maxPrice = Number(formData.get('maxPrice'))
+  const minBeds = Number(formData.get('minBeds'))
+  if (city) filters.city = city
+  if (Number.isFinite(minPrice) && minPrice > 0) filters.minPrice = minPrice
+  if (Number.isFinite(maxPrice) && maxPrice > 0) filters.maxPrice = maxPrice
+  if (Number.isFinite(minBeds) && minBeds > 0) filters.beds = minBeds
+  formData.set('filters', JSON.stringify(filters))
+  const r = await adminAssignSavedSearchAction(formData)
+  const msg = r.ok ? 'Saved search assigned' : `Not assigned — ${r.error ?? 'unknown error'}`
   redirect(`${BASE}/${personId}?flash=${encodeURIComponent(msg)}`)
 }
 
@@ -208,10 +235,11 @@ export default async function ConsoleLeadPage({
   const primaryPhone = full.contactPoints.find((c) => c.kind === 'phone')?.value ?? null
   const personEmails = (person.emails ?? []).map((e) => e.value).filter((v): v is string => Boolean(v))
 
-  // What they're shopping for — saved searches + the homes they're watching (live MLS).
-  const [savedSearches, viewedListings] = await Promise.all([
+  // What they're shopping for — saved searches + the homes they're watching (live MLS) + newsletter status.
+  const [savedSearches, viewedListings, membership] = await Promise.all([
     getGuestSearchAlertsForLead({ fubPersonId: person.fub_legacy_id, emails: personEmails }),
     getViewedListingsForLead(person.fub_legacy_id),
+    getNewsletterMembershipForLead({ crmPersonId: person.id, emails: personEmails }),
   ])
 
   // Owned home.
@@ -328,6 +356,54 @@ export default async function ConsoleLeadPage({
                 <span className="ml-1 text-xs text-muted-foreground">{cp.is_primary ? 'primary' : cp.kind}</span>
               </a>
             ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Memberships: where this lead is plugged in, with one-click assign ── */}
+      <Card>
+        <CardContent className="p-4 sm:p-5">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Memberships</div>
+          <div className="mt-2.5 flex flex-wrap items-center gap-2.5">
+            {/* Newsletter */}
+            {membership.subscribed ? (
+              <StatusPill tone="success" label={`Newsletter${membership.segment ? ` · ${membership.segment}` : ''}`} />
+            ) : (
+              <form action={assignNewsletterForm} className="inline-flex">
+                <input type="hidden" name="personId" value={person.id} />
+                <button
+                  type="submit"
+                  disabled={!primaryEmail}
+                  title={primaryEmail ? undefined : 'No email on file'}
+                  className="inline-flex min-h-[32px] items-center gap-1 rounded-full border border-dashed border-border px-3 text-xs font-medium text-muted-foreground hover:border-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  + Add to newsletter
+                </button>
+              </form>
+            )}
+
+            {/* Workflow */}
+            {activeEnrollments.length > 0 ? (
+              <StatusPill tone="info" label={`In ${activeEnrollments[0].crm_sequences?.name ?? 'a workflow'}`} />
+            ) : (
+              <form action={autoEnrollForm} className="inline-flex">
+                <input type="hidden" name="personId" value={person.id} />
+                <button
+                  type="submit"
+                  className="inline-flex min-h-[32px] items-center gap-1 rounded-full border border-dashed border-border px-3 text-xs font-medium text-muted-foreground hover:border-foreground hover:text-foreground"
+                >
+                  + Enroll in workflow
+                </button>
+              </form>
+            )}
+
+            {/* Saved searches */}
+            <a
+              href="#saved-searches"
+              className="inline-flex min-h-[32px] items-center rounded-full border border-border bg-secondary px-3 text-xs font-medium text-secondary-foreground hover:border-foreground"
+            >
+              {savedSearches.length > 0 ? `${savedSearches.length} saved search${savedSearches.length === 1 ? '' : 'es'}` : 'No saved searches'}
+            </a>
           </div>
         </CardContent>
       </Card>
@@ -490,20 +566,51 @@ export default async function ConsoleLeadPage({
           </Card>
 
           {/* Saved searches */}
-          <Card>
+          <Card id="saved-searches" className="scroll-mt-20">
             <CardHeader className="pb-3"><CardTitle className="text-base">Saved searches <span className="font-normal text-muted-foreground">({savedSearches.length})</span></CardTitle></CardHeader>
             <CardContent className="space-y-2">
               {savedSearches.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No saved searches yet. When this lead saves a search on the site, it shows here.</p>
-              ) : savedSearches.slice(0, 6).map((s) => (
-                <div key={s.id} className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-medium" style={{ color: 'var(--console-info-strong)' }}>{describeSearch(s.filters)}</div>
-                    {s.name?.trim() ? <div className="truncate text-xs text-muted-foreground">{s.name.trim()}</div> : null}
+                <p className="text-sm text-muted-foreground">No saved searches yet. When this lead saves a search on the site, it shows here. You can also assign one below.</p>
+              ) : savedSearches.slice(0, 6).map((s) => {
+                const origin = s.origin ?? 'user'
+                const originTone = origin === 'broker' ? 'info' : origin === 'system' ? 'warning' : 'neutral'
+                return (
+                  <div key={s.id} className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="truncate text-sm font-medium" style={{ color: 'var(--console-info-strong)' }}>{describeSearch(s.filters)}</span>
+                        <StatusPill tone={originTone} label={origin} />
+                      </div>
+                      {s.name?.trim() ? <div className="truncate text-xs text-muted-foreground">{s.name.trim()}</div> : null}
+                    </div>
+                    <span className="shrink-0 text-xs text-muted-foreground">{s.is_active ? (s.notification_frequency ?? 'active') : 'paused'}</span>
                   </div>
-                  <span className="shrink-0 text-xs text-muted-foreground">{s.is_active ? (s.notification_frequency ?? 'active') : 'paused'}</span>
-                </div>
-              ))}
+                )
+              })}
+
+              {/* Quick-assign a broker-created saved search */}
+              {primaryEmail ? (
+                <details className="group rounded-lg border border-dashed border-border">
+                  <summary className="cursor-pointer px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground">+ Add saved search</summary>
+                  <form action={assignSavedSearchForm} className="space-y-2 border-t border-border p-3">
+                    <input type="hidden" name="personId" value={person.id} />
+                    <input type="hidden" name="email" value={primaryEmail} />
+                    <input type="hidden" name="fubPersonId" value={person.fub_legacy_id ?? ''} />
+                    <Input name="name" placeholder="Search name (e.g. Westside under 700k)" className="h-9 text-sm" />
+                    <Input name="city" placeholder="City (e.g. Bend)" className="h-9 text-sm" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input name="minPrice" type="number" inputMode="numeric" placeholder="Min price" className="h-9 text-sm" />
+                      <Input name="maxPrice" type="number" inputMode="numeric" placeholder="Max price" className="h-9 text-sm" />
+                    </div>
+                    <Input name="minBeds" type="number" inputMode="numeric" placeholder="Min beds" className="h-9 text-sm" />
+                    <div className="flex justify-end">
+                      <Button type="submit" size="sm" variant="outline" className="min-h-[40px] sm:min-h-0">Assign saved search</Button>
+                    </div>
+                  </form>
+                </details>
+              ) : (
+                <p className="text-xs text-muted-foreground">Add an email on file to assign a saved search.</p>
+              )}
             </CardContent>
           </Card>
 
