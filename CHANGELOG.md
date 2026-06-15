@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.545.3 (2026-06-15)
+
+### Bug Fixes
+- fix(team): plainer broker-page copy
+
+---
+
+
 ## v1.545.2 (2026-06-15)
 
 ### Bug Fixes
