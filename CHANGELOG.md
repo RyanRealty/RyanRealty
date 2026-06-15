@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.556.0 (2026-06-15)
+
+### Features
+- feat(newsletter): per-broker open/click/delivery tracking
+
+---
+
+
 ## v1.555.0 (2026-06-15)
 
 ### Features
