@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.550.0 (2026-06-15)
+
+### Features
+- feat(admin): cap the broker-facing list dumps (curate, never dump)
+- feat(admin): TableWithMobileCards keystone + curation roadmap
+
+---
+
+
 ## v1.549.0 (2026-06-15)
 
 ### Features
