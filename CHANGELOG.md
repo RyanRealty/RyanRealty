@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.562.0 (2026-06-15)
+
+### Features
+- feat(console): edit + remove broker-assigned saved searches on the lead page
+
+---
+
+
 ## v1.561.0 (2026-06-15)
 
 ### Features
