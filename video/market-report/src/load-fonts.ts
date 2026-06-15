@@ -10,6 +10,6 @@
  * Font file: video/market-report/public/Amboqia_Boriango.otf
  * (also present as Amboqia.otf for backward compat with fonts.ts reference)
  */
-import { loadAmboqia } from '../../../video_production_skills/captions/canonical/load-amboqia'
+import { loadAmboqia } from './captions/load-amboqia'
 
 loadAmboqia()

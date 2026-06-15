@@ -33,7 +33,7 @@
 
 import React from 'react'
 import { interpolate, useCurrentFrame, useVideoConfig } from 'remotion'
-import { CAPTION_PORTRAIT } from '../../safe-zones/canonical/safe-zones'
+import { CAPTION_PORTRAIT } from './safe-zones'
 
 /** Forced-alignment word entry from ElevenLabs /v1/forced-alignment. Time in seconds. */
 export type CaptionWord = {

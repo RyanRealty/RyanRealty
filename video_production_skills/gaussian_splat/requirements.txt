@@ -1,7 +1,0 @@
-# Orchestration dependencies for gaussian_flythrough.py
-# Heavy ML deps (colmap, nerfstudio, torch, tinycudann) installed separately — see SKILL.md
-
-pillow>=10.0
-numpy>=1.24
-opencv-python>=4.8
-tqdm>=4.66

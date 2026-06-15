@@ -125,20 +125,9 @@ These producers run analysis and surface findings; they do not publish.
 
 | capability | path | what it does |
 |---|---|---|
-| audio_sync | `video_production_skills/audio_sync/` | Beat detection from music bed; outputs beats.json for Remotion cut alignment |
-| brand_assets | `video_production_skills/brand_assets/` | Visual system reference: photo criteria, color tokens, font tiers, thumbnail architecture |
-| cinematic_transitions | `video_production_skills/cinematic_transitions/` | Five Remotion transition components for overlapping Sequence pairs |
-| content_pipeline | `video_production_skills/content_pipeline/` | Reference architecture for the 6-stage pipeline (Direct → Generate → Produce → Draft → Publish → Monitor) |
-| depth_parallax | `video_production_skills/depth_parallax/` | MiDaS depth estimation → 3-layer parallax → `<DepthParallaxBeat>` Remotion component |
-| depthflow_pipeline | `video_production_skills/depthflow_pipeline/` | Depth Anything V2 → DepthFlow 2.5D parallax video from a single still |
-| elevenlabs_voice | `video_production_skills/elevenlabs_voice/` | Canonical Victoria voice settings, IPA phoneme tags, previous_text chaining |
-| gaussian_splat | `video_production_skills/gaussian_splat/` | Gaussian splatting flythrough from listing photos; $1M+ listings only |
-| asset-library | `video_production_skills/asset-library/` | Single source of truth for all media assets; manifest at `data/asset-library/manifest.json` |
-| media-sourcing | `video_production_skills/media-sourcing/` | Decision routing for image, video, and audio sources |
-| ai_platforms | `video_production_skills/ai_platforms/` | Tool-selection reference for AI video/image generation (Kling, Veo, Runway, etc.) |
-| publisher | `video_production_skills/publisher/` | Post-approval publish; enforces gate.json before calling /api/social/publish |
-| quality_gate | `video_production_skills/quality_gate/` | 6-phase pre-ship gate: ANTI_SLOP_MANIFESTO, VIRAL_GUARDRAILS, data accuracy, caption rules, brand compliance |
 | platform-best-practices | `social_media_skills/platform-best-practices/` | 2026 platform rule layer for IG, TikTok, YouTube, FB, LinkedIn |
+
+> The 13 video/media capability skills (audio_sync, brand_assets, cinematic_transitions, content_pipeline, depth_parallax, depthflow_pipeline, elevenlabs_voice, gaussian_splat, asset-library, media-sourcing, ai_platforms, publisher, quality_gate) were **deleted 2026-06-15** with `video_production_skills/`. The `data/asset-library/manifest.json` data file remains.
 
 ---
 
@@ -172,13 +161,10 @@ Cron-driven infrastructure that is brain-adjacent but not directly brain-callabl
 | trend_trigger | `automation_skills/triggers/trend_trigger/` | Monday 5am; outputs 10 trend candidates for social_calendar | No — event trigger |
 | publish | `automation_skills/automation/publish/` | Post-approval publish skill; enforces gate.json | Capability |
 | post_scheduler | `automation_skills/automation/post_scheduler/` | Drains post_queue every 5 min; calls platform APIs | Capability |
-| repurpose_engine | `automation_skills/automation/repurpose_engine/` | Takes one master 9:16 video and renders 8 platform variants | Capability |
-| thumbnail_generator | `automation_skills/automation/thumbnail_generator/` | 4 thumbnail variants via Grok Imagine; A/B tested for CTR | Capability |
 | engagement_bot | `automation_skills/automation/engagement_bot/` | Triages comments/DMs; drafts replies for Matt's approval | Capability |
 | performance_loop | `automation_skills/automation/performance_loop/` | Sunday 6am; scores posts, shifts content mix toward winners | Capability |
-| ab_testing | `automation_skills/automation/ab_testing/` | Multi-variant epsilon-greedy testing for thumbnails, hooks, CTAs | Capability |
+| ab_testing | `automation_skills/automation/ab_testing/` | Multi-variant epsilon-greedy testing for hooks, CTAs | Capability |
 | qa_pass | `automation_skills/automation/qa_pass/` | Pre-review gate; auto-iterates up to 2 cycles on fixable failures | Capability |
-| storyboard_pass | `automation_skills/automation/storyboard_pass/` | Pre-render concept gate; drafts BEATS array, citations, scorecard prediction | Capability |
 | feedback_loop | `automation_skills/automation/feedback_loop/` | Captures Matt's rejections as permanent rules in originating skill's SKILL.md | Capability |
 
 ---
