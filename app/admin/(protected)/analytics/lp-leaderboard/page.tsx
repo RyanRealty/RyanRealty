@@ -12,8 +12,9 @@ import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
+import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
+import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -129,55 +130,78 @@ async function LpLeaderboard() {
   const worst = rows[rows.length - 1]
   const gap = best.identifyRate - worst.identifyRate
 
+  // Summary band totals
+  const totalVisits = rows.reduce((s, r) => s + r.visits, 0)
+  const totalIdentified = rows.reduce((s, r) => s + r.identified, 0)
+  const totalHot = rows.reduce((s, r) => s + r.hot, 0)
+
   return (
-    <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Landing-page conversion leaderboard (last 30 days)</CardTitle>
+    <div className="space-y-6">
+      <DashboardSummaryStrip
+        stats={[
+          { label: 'LP variants', value: formatInt(rows.length) },
+          { label: 'Visits (30d)', value: formatInt(totalVisits) },
+          { label: 'Identified', value: formatInt(totalIdentified), caption: formatPct(totalIdentified, totalVisits) + ' identify rate' },
+          { label: 'Hot leads', value: formatInt(totalHot), tone: totalHot > 0 ? 'success' : 'default' },
+          { label: 'Best LP', value: `${(best.identifyRate * 100).toFixed(1)}%`, caption: best.variant, tone: 'success' },
+        ]}
+      />
+
+      <section className="space-y-2">
+        <div className="space-y-1">
+          <h2 className="text-base font-semibold text-foreground">Landing-page conversion leaderboard (last 30 days)</h2>
           <p className="text-xs text-muted-foreground">
             Ranked by identify rate (visitors who signed in or submitted a form). Identify rate is what tells you whether the LP works. Hot rate is the broker-action signal — sessions that crossed score 100 and fired a FUB task.
           </p>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="whitespace-nowrap">LP variant</TableHead>
-                  <TableHead className="text-right tabular-nums whitespace-nowrap">Visits</TableHead>
-                  <TableHead className="text-right tabular-nums whitespace-nowrap">Identified</TableHead>
-                  <TableHead className="text-right tabular-nums whitespace-nowrap">Identify rate</TableHead>
-                  <TableHead className="text-right tabular-nums whitespace-nowrap">Hot leads</TableHead>
-                  <TableHead className="text-right tabular-nums whitespace-nowrap">Hot rate</TableHead>
-                  <TableHead className="text-right tabular-nums whitespace-nowrap">Avg score</TableHead>
-                  <TableHead className="whitespace-nowrap">Top source</TableHead>
-                  <TableHead className="whitespace-nowrap">Top city</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((r, i) => (
-                  <TableRow key={r.variant}>
-                    <TableCell className="whitespace-nowrap">
-                      <div className="font-medium">{r.variant}</div>
-                      <Badge variant={i === 0 ? 'default' : i === rows.length - 1 && rows.length > 2 ? 'destructive' : 'outline'} className="text-[10px]">
+        </div>
+        <TableWithMobileCards
+          rows={rows}
+          cap={10}
+          getRowKey={(r) => r.variant}
+          columns={[
+            { key: 'variant', header: 'LP variant', className: 'whitespace-nowrap', cell: (r) => {
+              const i = rows.indexOf(r)
+              return (
+                <>
+                  <div className="font-medium">{r.variant}</div>
+                  <Badge variant={i === 0 ? 'default' : i === rows.length - 1 && rows.length > 2 ? 'destructive' : 'outline'} className="text-[10px]">
+                    {i === 0 ? 'best' : i === rows.length - 1 && rows.length > 2 ? 'worst' : `#${i + 1}`}
+                  </Badge>
+                </>
+              )
+            } },
+            { key: 'visits', header: 'Visits', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => formatInt(r.visits) },
+            { key: 'identified', header: 'Identified', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => formatInt(r.identified) },
+            { key: 'idrate', header: 'Identify rate', className: 'text-right tabular-nums font-semibold whitespace-nowrap', cell: (r) => `${(r.identifyRate * 100).toFixed(1)}%` },
+            { key: 'hot', header: 'Hot leads', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => formatInt(r.hot) },
+            { key: 'hotrate', header: 'Hot rate', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => `${(r.hotRate * 100).toFixed(1)}%` },
+            { key: 'score', header: 'Avg score', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => r.avgScore.toFixed(1) },
+            { key: 'source', header: 'Top source', className: 'text-xs whitespace-nowrap', cell: (r) => r.topSource },
+            { key: 'city', header: 'Top city', className: 'text-xs whitespace-nowrap', cell: (r) => r.topCity },
+          ]}
+          renderCard={(r) => {
+            const i = rows.indexOf(r)
+            return (
+              <Card>
+                <CardContent className="space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium">
+                      {r.variant}
+                      <Badge variant={i === 0 ? 'default' : i === rows.length - 1 && rows.length > 2 ? 'destructive' : 'outline'} className="ml-2 text-xs">
                         {i === 0 ? 'best' : i === rows.length - 1 && rows.length > 2 ? 'worst' : `#${i + 1}`}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(r.visits)}</TableCell>
-                    <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(r.identified)}</TableCell>
-                    <TableCell className="text-right tabular-nums font-semibold whitespace-nowrap">{(r.identifyRate * 100).toFixed(1)}%</TableCell>
-                    <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(r.hot)}</TableCell>
-                    <TableCell className="text-right tabular-nums whitespace-nowrap">{(r.hotRate * 100).toFixed(1)}%</TableCell>
-                    <TableCell className="text-right tabular-nums whitespace-nowrap">{r.avgScore.toFixed(1)}</TableCell>
-                    <TableCell className="text-xs whitespace-nowrap">{r.topSource}</TableCell>
-                    <TableCell className="text-xs whitespace-nowrap">{r.topCity}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                    </span>
+                    <span className="text-sm font-semibold tabular-nums">{(r.identifyRate * 100).toFixed(1)}%</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground tabular-nums">{formatInt(r.visits)} visits · {formatInt(r.identified)} identified · {formatInt(r.hot)} hot · score {r.avgScore.toFixed(1)}</p>
+                  <p className="text-xs text-muted-foreground">{r.topSource} · {r.topCity}</p>
+                </CardContent>
+              </Card>
+            )
+          }}
+          empty={<>No LP sessions captured in the last 30 days yet. Once visitors arrive at any /lp/[variant] page and consent to tracking, the leaderboard fills in.</>}
+        />
+      </section>
 
       {rows.length >= 2 && best.visits >= 10 && worst.visits >= 10 && gap >= 0.05 && (
         <Card>
@@ -197,7 +221,7 @@ async function LpLeaderboard() {
           </CardContent>
         </Card>
       )}
-    </>
+    </div>
   )
 }
 

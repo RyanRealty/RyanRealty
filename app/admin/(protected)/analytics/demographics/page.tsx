@@ -12,10 +12,11 @@
  * combination converts on the seller funnel, and where do we lose them?"
  */
 import { Suspense } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
+import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
 import { getGA4DemographicsCached as getGA4Demographics } from '@/lib/ga4-cache'
 import { resolveDateRange } from '../_lib/queries'
 import { DateRangePicker } from '../_components/DateRangePicker'
@@ -84,246 +85,194 @@ async function DemographicsContent({ startDate, endDate }: { startDate: string; 
   const bendMetroCities = data.topCities.filter((c) => BEND_METRO.has(c.city))
   const bendMetroUsers = bendMetroCities.reduce((acc, c) => acc + c.users, 0)
 
+  const fiftyFivePlus = ageBuckets.filter((b) => b.ageBracket === '55-64' || b.ageBracket === '65+').reduce((acc, r) => acc + r.users, 0)
+
   return (
     <div className="space-y-6">
 
       {/* Headline KPIs */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Total users</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums">{formatInt(data.totalUsers)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Bend metro users</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums">{formatInt(bendMetroUsers)}</p>
-            <p className="text-xs text-muted-foreground tabular-nums">{formatPct(bendMetroUsers, data.totalUsers)} of all</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Seller LP visitors</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums">{formatInt(sellerLpUsersTotal)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Age 55+ share</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums">
-              {(() => {
-                const fiftyFivePlus = ageBuckets.filter((b) => b.ageBracket === '55-64' || b.ageBracket === '65+').reduce((acc, r) => acc + r.users, 0)
-                return formatPct(fiftyFivePlus, ageTotal)
-              })()}
-            </p>
-            <p className="text-xs text-muted-foreground">of all identified users</p>
-          </CardContent>
-        </Card>
-      </div>
+      <DashboardSummaryStrip
+        stats={[
+          { label: 'Total users', value: formatInt(data.totalUsers) },
+          { label: 'Bend metro users', value: formatInt(bendMetroUsers), caption: `${formatPct(bendMetroUsers, data.totalUsers)} of all` },
+          { label: 'Seller LP visitors', value: formatInt(sellerLpUsersTotal) },
+          { label: 'Age 55+ share', value: formatPct(fiftyFivePlus, ageTotal), caption: 'of identified users' },
+        ]}
+      />
 
       {/* 1. Age bracket distribution */}
-      <Card>
-        <CardHeader><CardTitle>Age brackets (all visitors)</CardTitle></CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Age</TableHead>
-                  <TableHead className="text-right tabular-nums">Users</TableHead>
-                  <TableHead className="text-right tabular-nums">Sessions</TableHead>
-                  <TableHead className="text-right tabular-nums">Share</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ageBuckets.map((b) => (
-                  <TableRow key={b.ageBracket}>
-                    <TableCell><Badge variant={ageBracketBadgeVariant(b.ageBracket)}>{b.ageBracket}</Badge></TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(b.users)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(b.sessions)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatPct(b.users, ageTotal)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">
-            Google Signals samples demographic data from signed-in Google users. Coverage is typically 30-60% of total traffic. Unknowns are excluded from percentage math, so percentages sum to 100% across known buckets only.
-          </p>
-        </CardContent>
-      </Card>
+      <section className="space-y-2">
+        <h2 className="text-base font-semibold text-foreground">Age brackets (all visitors)</h2>
+        <TableWithMobileCards
+          rows={ageBuckets}
+          cap={8}
+          getRowKey={(b) => b.ageBracket}
+          columns={[
+            { key: 'age', header: 'Age', cell: (b) => <Badge variant={ageBracketBadgeVariant(b.ageBracket)}>{b.ageBracket}</Badge> },
+            { key: 'users', header: 'Users', className: 'text-right tabular-nums', cell: (b) => formatInt(b.users) },
+            { key: 'sessions', header: 'Sessions', className: 'text-right tabular-nums', cell: (b) => formatInt(b.sessions) },
+            { key: 'share', header: 'Share', className: 'text-right tabular-nums', cell: (b) => formatPct(b.users, ageTotal) },
+          ]}
+          renderCard={(b) => (
+            <Card>
+              <CardContent className="flex items-center justify-between gap-2">
+                <Badge variant={ageBracketBadgeVariant(b.ageBracket)}>{b.ageBracket}</Badge>
+                <span className="text-xs text-muted-foreground tabular-nums">{formatInt(b.users)} users · {formatInt(b.sessions)} sess · {formatPct(b.users, ageTotal)}</span>
+              </CardContent>
+            </Card>
+          )}
+          empty={<>No age-bracket data in this window. Google Signals needs more signed-in-user traffic before it samples demographics.</>}
+        />
+        <p className="text-xs text-muted-foreground">
+          Google Signals samples demographic data from signed-in Google users. Coverage is typically 30-60% of total traffic. Unknowns are excluded from percentage math, so percentages sum to 100% across known buckets only.
+        </p>
+      </section>
 
       {/* 2. Seller LP age + geo — the HNW targeting report */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Seller LP visitors by age</CardTitle>
+        <section className="space-y-2">
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold text-foreground">Seller LP visitors by age</h2>
             <p className="text-xs text-muted-foreground">/lp/seller-home-value visitors only. Tells you whether your HNW elderly Bend targeting is reaching the right age bracket.</p>
-          </CardHeader>
-          <CardContent>
-            {sellerLpByAge.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No /lp/seller-home-value visitors with demographic data in this window. May need more traffic before Google Signals samples enough.</p>
-            ) : (
-              <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Age</TableHead>
-                      <TableHead className="text-right tabular-nums">Users</TableHead>
-                      <TableHead className="text-right tabular-nums">Visits</TableHead>
-                      <TableHead className="text-right tabular-nums">Share</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sellerLpByAge.map((b) => (
-                      <TableRow key={b.ageBracket}>
-                        <TableCell><Badge variant={ageBracketBadgeVariant(b.ageBracket)}>{b.ageBracket}</Badge></TableCell>
-                        <TableCell className="text-right tabular-nums">{formatInt(b.users)}</TableCell>
-                        <TableCell className="text-right tabular-nums">{formatInt(b.eventCount)}</TableCell>
-                        <TableCell className="text-right tabular-nums">{formatPct(b.users, sellerLpUsersTotal)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+          </div>
+          <TableWithMobileCards
+            rows={sellerLpByAge}
+            cap={8}
+            getRowKey={(b) => b.ageBracket}
+            columns={[
+              { key: 'age', header: 'Age', cell: (b) => <Badge variant={ageBracketBadgeVariant(b.ageBracket)}>{b.ageBracket}</Badge> },
+              { key: 'users', header: 'Users', className: 'text-right tabular-nums', cell: (b) => formatInt(b.users) },
+              { key: 'visits', header: 'Visits', className: 'text-right tabular-nums', cell: (b) => formatInt(b.eventCount) },
+              { key: 'share', header: 'Share', className: 'text-right tabular-nums', cell: (b) => formatPct(b.users, sellerLpUsersTotal) },
+            ]}
+            renderCard={(b) => (
+              <Card>
+                <CardContent className="flex items-center justify-between gap-2">
+                  <Badge variant={ageBracketBadgeVariant(b.ageBracket)}>{b.ageBracket}</Badge>
+                  <span className="text-xs text-muted-foreground tabular-nums">{formatInt(b.users)} users · {formatInt(b.eventCount)} visits · {formatPct(b.users, sellerLpUsersTotal)}</span>
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
+            empty={<>No /lp/seller-home-value visitors with demographic data in this window. May need more traffic before Google Signals samples enough.</>}
+          />
+        </section>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Seller LP visitors by city</CardTitle>
+        <section className="space-y-2">
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold text-foreground">Seller LP visitors by city</h2>
             <p className="text-xs text-muted-foreground">Where are they physically. If FB ads are targeted to Bend metro and most seller-LP traffic is elsewhere, the targeting is wrong.</p>
-          </CardHeader>
-          <CardContent>
-            {data.sellerLpByCity.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No /lp/seller-home-value visitors with geo data in this window.</p>
-            ) : (
-              <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>City</TableHead>
-                      <TableHead>Region</TableHead>
-                      <TableHead className="text-right tabular-nums">Users</TableHead>
-                      <TableHead className="text-right tabular-nums">Visits</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.sellerLpByCity.slice(0, 8).map((c, i) => (
-                      <TableRow key={`${c.city}-${i}`} className={BEND_METRO.has(c.city) ? 'bg-primary/5' : undefined}>
-                        <TableCell>{c.city}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{c.region}</TableCell>
-                        <TableCell className="text-right tabular-nums">{formatInt(c.users)}</TableCell>
-                        <TableCell className="text-right tabular-nums">{formatInt(c.eventCount)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {data.sellerLpByCity.length > 8 ? (
-                  <p className="mt-3 text-xs text-muted-foreground tabular-nums">
-                    Showing top 8 of {formatInt(data.sellerLpByCity.length)} cities.
-                  </p>
-                ) : null}
-              </div>
+          </div>
+          <TableWithMobileCards
+            rows={data.sellerLpByCity}
+            cap={8}
+            getRowKey={(c, i) => `${c.city}-${i}`}
+            columns={[
+              { key: 'city', header: 'City', cell: (c) => <span className={BEND_METRO.has(c.city) ? 'font-medium text-primary' : undefined}>{c.city}</span> },
+              { key: 'region', header: 'Region', className: 'text-xs text-muted-foreground', cell: (c) => c.region },
+              { key: 'users', header: 'Users', className: 'text-right tabular-nums', cell: (c) => formatInt(c.users) },
+              { key: 'visits', header: 'Visits', className: 'text-right tabular-nums', cell: (c) => formatInt(c.eventCount) },
+            ]}
+            renderCard={(c) => (
+              <Card>
+                <CardContent className="flex items-center justify-between gap-2">
+                  <span className="text-sm">
+                    <span className={BEND_METRO.has(c.city) ? 'font-medium text-primary' : 'font-medium'}>{c.city}</span>
+                    <span className="text-xs text-muted-foreground"> · {c.region}</span>
+                  </span>
+                  <span className="text-xs text-muted-foreground tabular-nums">{formatInt(c.users)} users · {formatInt(c.eventCount)} visits</span>
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
+            empty={<>No /lp/seller-home-value visitors with geo data in this window.</>}
+          />
+        </section>
       </div>
 
       {/* 3. Gender split */}
-      <Card>
-        <CardHeader><CardTitle>Gender split (all visitors)</CardTitle></CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Gender</TableHead>
-                  <TableHead className="text-right tabular-nums">Users</TableHead>
-                  <TableHead className="text-right tabular-nums">Sessions</TableHead>
-                  <TableHead className="text-right tabular-nums">Share</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.genders.slice(0, 12).map((g) => (
-                  <TableRow key={g.gender}>
-                    <TableCell>{g.gender}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(g.users)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(g.sessions)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatPct(g.users, genderTotal)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      <section className="space-y-2">
+        <h2 className="text-base font-semibold text-foreground">Gender split (all visitors)</h2>
+        <TableWithMobileCards
+          rows={data.genders}
+          cap={8}
+          getRowKey={(g) => g.gender}
+          columns={[
+            { key: 'gender', header: 'Gender', cell: (g) => g.gender },
+            { key: 'users', header: 'Users', className: 'text-right tabular-nums', cell: (g) => formatInt(g.users) },
+            { key: 'sessions', header: 'Sessions', className: 'text-right tabular-nums', cell: (g) => formatInt(g.sessions) },
+            { key: 'share', header: 'Share', className: 'text-right tabular-nums', cell: (g) => formatPct(g.users, genderTotal) },
+          ]}
+          renderCard={(g) => (
+            <Card>
+              <CardContent className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium">{g.gender}</span>
+                <span className="text-xs text-muted-foreground tabular-nums">{formatInt(g.users)} users · {formatPct(g.users, genderTotal)}</span>
+              </CardContent>
+            </Card>
+          )}
+          empty={<>No gender data sampled in this window.</>}
+        />
+      </section>
 
-      {/* 4. Geography (top 25 cities) */}
-      <Card>
-        <CardHeader><CardTitle>Top 25 cities</CardTitle></CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>City</TableHead>
-                  <TableHead>Region</TableHead>
-                  <TableHead>Country</TableHead>
-                  <TableHead className="text-right tabular-nums">Users</TableHead>
-                  <TableHead className="text-right tabular-nums">Sessions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.topCities.slice(0, 25).map((c, i) => (
-                  <TableRow key={`${c.city}-${i}`} className={BEND_METRO.has(c.city) ? 'bg-primary/5' : undefined}>
-                    <TableCell>{c.city}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{c.region}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{c.country}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(c.users)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(c.sessions)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">Rows highlighted blue are Bend metro cities (Bend, Redmond, Sisters, Sunriver, Tumalo, La Pine, Madras, Prineville).</p>
-        </CardContent>
-      </Card>
+      {/* 4. Geography (top cities) */}
+      <section className="space-y-2">
+        <h2 className="text-base font-semibold text-foreground">Top cities</h2>
+        <TableWithMobileCards
+          rows={data.topCities}
+          cap={10}
+          getRowKey={(c, i) => `${c.city}-${i}`}
+          columns={[
+            { key: 'city', header: 'City', cell: (c) => <span className={BEND_METRO.has(c.city) ? 'font-medium text-primary' : undefined}>{c.city}</span> },
+            { key: 'region', header: 'Region', className: 'text-xs text-muted-foreground', cell: (c) => c.region },
+            { key: 'country', header: 'Country', className: 'text-xs text-muted-foreground', cell: (c) => c.country },
+            { key: 'users', header: 'Users', className: 'text-right tabular-nums', cell: (c) => formatInt(c.users) },
+            { key: 'sessions', header: 'Sessions', className: 'text-right tabular-nums', cell: (c) => formatInt(c.sessions) },
+          ]}
+          renderCard={(c) => (
+            <Card>
+              <CardContent className="flex items-center justify-between gap-2">
+                <span className="text-sm">
+                  <span className={BEND_METRO.has(c.city) ? 'font-medium text-primary' : 'font-medium'}>{c.city}</span>
+                  <span className="text-xs text-muted-foreground"> · {c.region}, {c.country}</span>
+                </span>
+                <span className="text-xs text-muted-foreground tabular-nums">{formatInt(c.users)} users · {formatInt(c.sessions)} sess</span>
+              </CardContent>
+            </Card>
+          )}
+          empty={<>No city-level geo data in this window.</>}
+        />
+        <p className="text-xs text-muted-foreground">Bend metro cities (Bend, Redmond, Sisters, Sunriver, Tumalo, La Pine, Madras, Prineville) are highlighted.</p>
+      </section>
 
       {/* 5. Age x Source — which channel drives which age */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Age × source / medium</CardTitle>
+      <section className="space-y-2">
+        <div className="space-y-1">
+          <h2 className="text-base font-semibold text-foreground">Age × source / medium</h2>
           <p className="text-xs text-muted-foreground">Top combinations by sessions. Use this to see if FB ads are actually pulling the elderly Bend audience or if they are pulling 18-34.</p>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Age</TableHead>
-                  <TableHead>Source / Medium</TableHead>
-                  <TableHead className="text-right tabular-nums">Users</TableHead>
-                  <TableHead className="text-right tabular-nums">Sessions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ageBySource.slice(0, 30).map((r, i) => (
-                  <TableRow key={`${r.ageBracket}-${r.sourceMedium}-${i}`}>
-                    <TableCell><Badge variant={ageBracketBadgeVariant(r.ageBracket)}>{r.ageBracket}</Badge></TableCell>
-                    <TableCell className="text-xs">{r.sourceMedium}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(r.users)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInt(r.sessions)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+        <TableWithMobileCards
+          rows={ageBySource}
+          cap={10}
+          getRowKey={(r, i) => `${r.ageBracket}-${r.sourceMedium}-${i}`}
+          columns={[
+            { key: 'age', header: 'Age', cell: (r) => <Badge variant={ageBracketBadgeVariant(r.ageBracket)}>{r.ageBracket}</Badge> },
+            { key: 'source', header: 'Source / Medium', className: 'text-xs', cell: (r) => r.sourceMedium },
+            { key: 'users', header: 'Users', className: 'text-right tabular-nums', cell: (r) => formatInt(r.users) },
+            { key: 'sessions', header: 'Sessions', className: 'text-right tabular-nums', cell: (r) => formatInt(r.sessions) },
+          ]}
+          renderCard={(r) => (
+            <Card>
+              <CardContent className="space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <Badge variant={ageBracketBadgeVariant(r.ageBracket)}>{r.ageBracket}</Badge>
+                  <span className="text-sm font-semibold tabular-nums">{formatInt(r.sessions)} <span className="text-xs font-normal text-muted-foreground">sess</span></span>
+                </div>
+                <p className="text-xs text-muted-foreground">{r.sourceMedium} · {formatInt(r.users)} users</p>
+              </CardContent>
+            </Card>
+          )}
+          empty={<>No age × source combinations sampled in this window.</>}
+        />
+      </section>
     </div>
   )
 }

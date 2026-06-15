@@ -4,8 +4,9 @@ import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
+import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
+import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -71,46 +72,55 @@ async function HeadlineKpis() {
     pos: acc.posN > 0 ? acc.posSum / acc.posN : 0,
   }
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Clicks (30d)</p><p className="mt-1 text-2xl font-semibold tabular-nums">{fmt(c.clicks)}</p></CardContent></Card>
-      <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Impressions (30d)</p><p className="mt-1 text-2xl font-semibold tabular-nums">{fmt(c.impressions)}</p></CardContent></Card>
-      <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Avg CTR</p><p className="mt-1 text-2xl font-semibold tabular-nums">{pct(c.ctr)}</p></CardContent></Card>
-      <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Avg position</p><p className="mt-1 text-2xl font-semibold tabular-nums">{pos(c.pos)}</p></CardContent></Card>
-    </div>
+    <DashboardSummaryStrip
+      stats={[
+        { label: 'Clicks (30d)', value: fmt(c.clicks) },
+        { label: 'Impressions (30d)', value: fmt(c.impressions) },
+        { label: 'Avg CTR', value: pct(c.ctr) },
+        { label: 'Avg position', value: pos(c.pos) },
+      ]}
+    />
   )
 }
 
 async function TopQueries() {
   const since = new Date(Date.now() - 30 * 86400e3).toISOString().slice(0, 10)
   const rows = await aggBy('campaign', since)
-  const top = rows.sort((a, b) => b.clicks - a.clicks).slice(0, 30)
+  const top = rows.sort((a, b) => b.clicks - a.clicks)
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Top queries by clicks (30d)</CardTitle>
+    <section className="space-y-2">
+      <div className="space-y-1">
+        <h2 className="text-base font-semibold text-foreground">Top queries by clicks (30d)</h2>
         <p className="text-xs text-muted-foreground">What people typed in Google that brought them to ryan-realty.com. Average position 1-10 is page one; 11-20 is page two.</p>
-      </CardHeader>
-      <CardContent className="p-0">
-        {top.length === 0 ? (
-          <p className="p-6 text-sm text-muted-foreground">No GSC query data in the last 30 days.</p>
-        ) : (
-          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-            <Table>
-              <TableHeader><TableRow><TableHead className="whitespace-nowrap">Query</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">Clicks</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">Impressions</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">CTR</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">Position</TableHead></TableRow></TableHeader>
-              <TableBody>{top.map((r) => (
-                <TableRow key={r.key}>
-                  <TableCell className="font-medium">{stripQ(r.key)}</TableCell>
-                  <TableCell className="text-right tabular-nums font-semibold whitespace-nowrap">{fmt(r.clicks)}</TableCell>
-                  <TableCell className="text-right tabular-nums whitespace-nowrap">{fmt(r.impressions)}</TableCell>
-                  <TableCell className="text-right tabular-nums whitespace-nowrap">{pct(r.ctr)}</TableCell>
-                  <TableCell className="text-right tabular-nums whitespace-nowrap"><Badge variant={r.position <= 10 ? 'default' : r.position <= 20 ? 'secondary' : 'outline'}>{pos(r.position)}</Badge></TableCell>
-                </TableRow>
-              ))}</TableBody>
-            </Table>
-          </div>
+      </div>
+      <TableWithMobileCards
+        rows={top}
+        cap={10}
+        getRowKey={(r) => r.key}
+        columns={[
+          { key: 'query', header: 'Query', className: 'font-medium', cell: (r) => stripQ(r.key) },
+          { key: 'clicks', header: 'Clicks', className: 'text-right tabular-nums font-semibold whitespace-nowrap', cell: (r) => fmt(r.clicks) },
+          { key: 'impr', header: 'Impressions', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => fmt(r.impressions) },
+          { key: 'ctr', header: 'CTR', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => pct(r.ctr) },
+          { key: 'pos', header: 'Position', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => <Badge variant={r.position <= 10 ? 'default' : r.position <= 20 ? 'secondary' : 'outline'}>{pos(r.position)}</Badge> },
+        ]}
+        renderCard={(r) => (
+          <Card>
+            <CardContent className="space-y-1">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-medium">{stripQ(r.key)}</span>
+                <span className="text-sm font-semibold tabular-nums">{fmt(r.clicks)} <span className="text-xs font-normal text-muted-foreground">clicks</span></span>
+              </div>
+              <p className="flex items-center gap-2 text-xs text-muted-foreground tabular-nums">
+                {fmt(r.impressions)} impr · {pct(r.ctr)} CTR
+                <Badge variant={r.position <= 10 ? 'default' : r.position <= 20 ? 'secondary' : 'outline'} className="text-xs">pos {pos(r.position)}</Badge>
+              </p>
+            </CardContent>
+          </Card>
         )}
-      </CardContent>
-    </Card>
+        empty={<>No GSC query data in the last 30 days. The GSC snapshot cron has a 2-3 day processing lag, so very recent ranges can be empty.</>}
+      />
+    </section>
   )
 }
 
@@ -120,73 +130,85 @@ async function OpportunityQueries() {
   // High impressions, low CTR, decent rank (page 1 or 2). Easy SEO wins.
   const opp = rows
     .filter((r) => r.impressions >= 30 && r.ctr < 0.02 && r.position > 0 && r.position <= 20)
-    .sort((a, b) => b.impressions - a.impressions).slice(0, 20)
+    .sort((a, b) => b.impressions - a.impressions)
+    .map((r) => {
+      // Industry CTR by position: pos 1 ~30%, pos 5 ~8%, pos 10 ~3%
+      const expectedCtr = r.position <= 3 ? 0.20 : r.position <= 5 ? 0.10 : r.position <= 10 ? 0.05 : 0.02
+      const potential = Math.round(r.impressions * expectedCtr)
+      return { ...r, potential: Math.max(0, potential - r.clicks) }
+    })
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Opportunity queries (easy SEO wins)</CardTitle>
+    <section className="space-y-2">
+      <div className="space-y-1">
+        <h2 className="text-base font-semibold text-foreground">Opportunity queries (easy SEO wins)</h2>
         <p className="text-xs text-muted-foreground">Queries you already RANK for (position 1-20) and get IMPRESSIONS for (30+), but visitors are not clicking (CTR under 2%). Fix the page title and meta description and the clicks usually jump in days.</p>
-      </CardHeader>
-      <CardContent className="p-0">
-        {opp.length === 0 ? (
-          <p className="p-6 text-sm text-muted-foreground">No opportunity queries surfaced.</p>
-        ) : (
-          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-            <Table>
-              <TableHeader><TableRow><TableHead className="whitespace-nowrap">Query</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">Impressions</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">CTR</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">Position</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">Potential clicks</TableHead></TableRow></TableHeader>
-              <TableBody>{opp.map((r) => {
-                // Industry CTR by position: pos 1 ~30%, pos 5 ~8%, pos 10 ~3%
-                const expectedCtr = r.position <= 3 ? 0.20 : r.position <= 5 ? 0.10 : r.position <= 10 ? 0.05 : 0.02
-                const potential = Math.round(r.impressions * expectedCtr)
-                return (
-                  <TableRow key={r.key}>
-                    <TableCell className="font-medium">{stripQ(r.key)}</TableCell>
-                    <TableCell className="text-right tabular-nums whitespace-nowrap">{fmt(r.impressions)}</TableCell>
-                    <TableCell className="text-right tabular-nums text-destructive whitespace-nowrap">{pct(r.ctr)}</TableCell>
-                    <TableCell className="text-right tabular-nums whitespace-nowrap"><Badge variant={r.position <= 10 ? 'default' : 'secondary'}>{pos(r.position)}</Badge></TableCell>
-                    <TableCell className="text-right tabular-nums font-semibold text-green-600 whitespace-nowrap">+{fmt(Math.max(0, potential - r.clicks))}</TableCell>
-                  </TableRow>
-                )
-              })}</TableBody>
-            </Table>
-          </div>
+      </div>
+      <TableWithMobileCards
+        rows={opp}
+        cap={10}
+        getRowKey={(r) => r.key}
+        columns={[
+          { key: 'query', header: 'Query', className: 'font-medium', cell: (r) => stripQ(r.key) },
+          { key: 'impr', header: 'Impressions', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => fmt(r.impressions) },
+          { key: 'ctr', header: 'CTR', className: 'text-right tabular-nums text-destructive whitespace-nowrap', cell: (r) => pct(r.ctr) },
+          { key: 'pos', header: 'Position', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => <Badge variant={r.position <= 10 ? 'default' : 'secondary'}>{pos(r.position)}</Badge> },
+          { key: 'potential', header: 'Potential clicks', className: 'text-right tabular-nums font-semibold text-success whitespace-nowrap', cell: (r) => `+${fmt(r.potential)}` },
+        ]}
+        renderCard={(r) => (
+          <Card>
+            <CardContent className="space-y-1">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-medium">{stripQ(r.key)}</span>
+                <span className="text-sm font-semibold tabular-nums text-success">+{fmt(r.potential)} <span className="text-xs font-normal text-muted-foreground">clicks</span></span>
+              </div>
+              <p className="flex items-center gap-2 text-xs text-muted-foreground tabular-nums">
+                {fmt(r.impressions)} impr · <span className="text-destructive">{pct(r.ctr)} CTR</span>
+                <Badge variant={r.position <= 10 ? 'default' : 'secondary'} className="text-xs">pos {pos(r.position)}</Badge>
+              </p>
+            </CardContent>
+          </Card>
         )}
-      </CardContent>
-    </Card>
+        empty={<>No opportunity queries surfaced. Either nothing has a high-impression low-CTR gap right now, or GSC data has not synced for this range.</>}
+      />
+    </section>
   )
 }
 
 async function TopPages() {
   const since = new Date(Date.now() - 30 * 86400e3).toISOString().slice(0, 10)
   const rows = await aggBy('page', since)
-  const top = rows.sort((a, b) => b.clicks - a.clicks).slice(0, 20)
+  const top = rows.sort((a, b) => b.clicks - a.clicks)
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Top pages by clicks (30d)</CardTitle>
+    <section className="space-y-2">
+      <div className="space-y-1">
+        <h2 className="text-base font-semibold text-foreground">Top pages by clicks (30d)</h2>
         <p className="text-xs text-muted-foreground">Which pages on ryan-realty.com pulled the most organic traffic from Google.</p>
-      </CardHeader>
-      <CardContent className="p-0">
-        {top.length === 0 ? (
-          <p className="p-6 text-sm text-muted-foreground">No GSC page data in the last 30 days.</p>
-        ) : (
-          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-            <Table>
-              <TableHeader><TableRow><TableHead className="whitespace-nowrap">Page</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">Clicks</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">Impressions</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">CTR</TableHead><TableHead className="text-right tabular-nums whitespace-nowrap">Position</TableHead></TableRow></TableHeader>
-              <TableBody>{top.map((r) => (
-                <TableRow key={r.key}>
-                  <TableCell><a href={r.key} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-mono text-xs whitespace-nowrap">{stripP(r.key)}</a></TableCell>
-                  <TableCell className="text-right tabular-nums font-semibold whitespace-nowrap">{fmt(r.clicks)}</TableCell>
-                  <TableCell className="text-right tabular-nums whitespace-nowrap">{fmt(r.impressions)}</TableCell>
-                  <TableCell className="text-right tabular-nums whitespace-nowrap">{pct(r.ctr)}</TableCell>
-                  <TableCell className="text-right tabular-nums whitespace-nowrap">{pos(r.position)}</TableCell>
-                </TableRow>
-              ))}</TableBody>
-            </Table>
-          </div>
+      </div>
+      <TableWithMobileCards
+        rows={top}
+        cap={10}
+        getRowKey={(r) => r.key}
+        columns={[
+          { key: 'page', header: 'Page', className: 'whitespace-nowrap', cell: (r) => <a href={r.key} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-mono text-xs">{stripP(r.key)}</a> },
+          { key: 'clicks', header: 'Clicks', className: 'text-right tabular-nums font-semibold whitespace-nowrap', cell: (r) => fmt(r.clicks) },
+          { key: 'impr', header: 'Impressions', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => fmt(r.impressions) },
+          { key: 'ctr', header: 'CTR', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => pct(r.ctr) },
+          { key: 'pos', header: 'Position', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => pos(r.position) },
+        ]}
+        renderCard={(r) => (
+          <Card>
+            <CardContent className="space-y-1">
+              <div className="flex items-center justify-between gap-2">
+                <a href={r.key} target="_blank" rel="noopener noreferrer" className="truncate font-mono text-xs text-primary hover:underline">{stripP(r.key)}</a>
+                <span className="text-sm font-semibold tabular-nums">{fmt(r.clicks)} <span className="text-xs font-normal text-muted-foreground">clicks</span></span>
+              </div>
+              <p className="text-xs text-muted-foreground tabular-nums">{fmt(r.impressions)} impr · {pct(r.ctr)} CTR · pos {pos(r.position)}</p>
+            </CardContent>
+          </Card>
         )}
-      </CardContent>
-    </Card>
+        empty={<>No GSC page data in the last 30 days.</>}
+      />
+    </section>
   )
 }
 

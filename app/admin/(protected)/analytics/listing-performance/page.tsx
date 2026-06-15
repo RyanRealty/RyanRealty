@@ -8,10 +8,11 @@
  */
 import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
+import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
+import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -136,58 +137,78 @@ async function ListingLeaderboard() {
     pageUrl: a.pageUrl,
   })).sort((a, b) => b.views - a.views)
 
+  // Summary band totals
+  const totalViews = rows.reduce((s, r) => s + r.views, 0)
+  const totalIdentified = rows.reduce((s, r) => s + r.identified, 0)
+  const totalHot = rows.reduce((s, r) => s + r.hot, 0)
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Listing performance (last 30 days)</CardTitle>
-        <p className="text-xs text-muted-foreground">
-          Ranked by total views. Identify rate is the share of unique visitors who signed in or converted while viewing this listing. Hot column is sessions that crossed score 100 anywhere in the funnel and viewed this listing along the way.
-        </p>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="whitespace-nowrap">Listing</TableHead>
-                <TableHead className="whitespace-nowrap">City</TableHead>
-                <TableHead className="text-right tabular-nums whitespace-nowrap">Price</TableHead>
-                <TableHead className="text-right tabular-nums whitespace-nowrap">Views</TableHead>
-                <TableHead className="text-right tabular-nums whitespace-nowrap">Unique</TableHead>
-                <TableHead className="text-right tabular-nums whitespace-nowrap">Identified</TableHead>
-                <TableHead className="text-right tabular-nums whitespace-nowrap">ID rate</TableHead>
-                <TableHead className="text-right tabular-nums whitespace-nowrap">Hot</TableHead>
-                <TableHead className="whitespace-nowrap">Top source</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.slice(0, 50).map((r, i) => (
-                <TableRow key={r.mls}>
-                  <TableCell className="whitespace-nowrap">
-                    <a href={r.pageUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
-                      MLS {r.mls}
-                    </a>
-                    <div className="text-[10px] text-muted-foreground">{r.address}</div>
-                    {i < 3 && <Badge variant="default" className="mt-1 text-[10px]">top {i + 1}</Badge>}
-                  </TableCell>
-                  <TableCell className="text-xs whitespace-nowrap">{r.city}</TableCell>
-                  <TableCell className="text-right tabular-nums whitespace-nowrap">{fmtUsd(r.price)}</TableCell>
-                  <TableCell className="text-right tabular-nums font-semibold whitespace-nowrap">{fmtInt(r.views)}</TableCell>
-                  <TableCell className="text-right tabular-nums whitespace-nowrap">{fmtInt(r.uniqueVisitors)}</TableCell>
-                  <TableCell className="text-right tabular-nums whitespace-nowrap">{fmtInt(r.identified)}</TableCell>
-                  <TableCell className="text-right tabular-nums whitespace-nowrap">{(r.identifyRate * 100).toFixed(1)}%</TableCell>
-                  <TableCell className="text-right tabular-nums whitespace-nowrap">{fmtInt(r.hot)}</TableCell>
-                  <TableCell className="text-xs whitespace-nowrap">{r.topSource}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+    <div className="space-y-6">
+      <DashboardSummaryStrip
+        stats={[
+          { label: 'Listings viewed', value: fmtInt(rows.length) },
+          { label: 'Total views (30d)', value: fmtInt(totalViews) },
+          { label: 'Identified', value: fmtInt(totalIdentified) },
+          { label: 'Hot leads', value: fmtInt(totalHot), tone: totalHot > 0 ? 'success' : 'default' },
+        ]}
+      />
+
+      <section className="space-y-2">
+        <div className="space-y-1">
+          <h2 className="text-base font-semibold text-foreground">Listing performance (last 30 days)</h2>
+          <p className="text-xs text-muted-foreground">
+            Ranked by total views. Identify rate is the share of unique visitors who signed in or converted while viewing this listing. Hot column is sessions that crossed score 100 anywhere in the funnel and viewed this listing along the way.
+          </p>
         </div>
-        <p className="px-4 pb-4 pt-2 text-xs text-muted-foreground">
-          Top 50 only. If a listing is repeatedly getting many views but a low identify rate, the listing detail page is hooking attention without converting. Worth reviewing the photo gallery, description, or video tour for that listing.
+        <TableWithMobileCards
+          rows={rows}
+          cap={12}
+          getRowKey={(r) => r.mls}
+          columns={[
+            { key: 'listing', header: 'Listing', className: 'whitespace-nowrap', cell: (r) => {
+              const i = rows.indexOf(r)
+              return (
+                <>
+                  <a href={r.pageUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">MLS {r.mls}</a>
+                  <div className="text-[10px] text-muted-foreground">{r.address}</div>
+                  {i < 3 && <Badge variant="default" className="mt-1 text-[10px]">top {i + 1}</Badge>}
+                </>
+              )
+            } },
+            { key: 'city', header: 'City', className: 'text-xs whitespace-nowrap', cell: (r) => r.city },
+            { key: 'price', header: 'Price', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => fmtUsd(r.price) },
+            { key: 'views', header: 'Views', className: 'text-right tabular-nums font-semibold whitespace-nowrap', cell: (r) => fmtInt(r.views) },
+            { key: 'unique', header: 'Unique', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => fmtInt(r.uniqueVisitors) },
+            { key: 'identified', header: 'Identified', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => fmtInt(r.identified) },
+            { key: 'idrate', header: 'ID rate', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => `${(r.identifyRate * 100).toFixed(1)}%` },
+            { key: 'hot', header: 'Hot', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => fmtInt(r.hot) },
+            { key: 'source', header: 'Top source', className: 'text-xs whitespace-nowrap', cell: (r) => r.topSource },
+          ]}
+          renderCard={(r) => {
+            const i = rows.indexOf(r)
+            return (
+              <Card>
+                <CardContent className="space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium">
+                      <a href={r.pageUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">MLS {r.mls}</a>
+                      {i < 3 && <Badge variant="default" className="ml-2 text-xs">top {i + 1}</Badge>}
+                    </span>
+                    <span className="text-sm font-semibold tabular-nums">{fmtInt(r.views)} <span className="text-xs font-normal text-muted-foreground">views</span></span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{r.address}{r.city ? ` · ${r.city}` : ''} · {fmtUsd(r.price)}</p>
+                  <p className="text-xs text-muted-foreground tabular-nums">{fmtInt(r.uniqueVisitors)} unique · {fmtInt(r.identified)} identified ({(r.identifyRate * 100).toFixed(1)}%) · {fmtInt(r.hot)} hot · {r.topSource}</p>
+                </CardContent>
+              </Card>
+            )
+          }}
+          empty={<>No listing-detail page views captured in the last 30 days yet. Once visitors browse listings with consent granted, the leaderboard fills in.</>}
+        />
+        <p className="text-xs text-muted-foreground">
+          If a listing is repeatedly getting many views but a low identify rate, the listing detail page is hooking attention without converting. Worth reviewing the photo gallery, description, or video tour for that listing.
         </p>
-      </CardContent>
-    </Card>
+      </section>
+    </div>
   )
 }
 

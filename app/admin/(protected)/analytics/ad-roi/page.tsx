@@ -21,8 +21,8 @@ import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
+import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
 import { KpiCard } from '../_components/KpiCard'
 import { formatInt, formatUsd } from '../_lib/formatters'
 
@@ -285,201 +285,193 @@ async function AdRoi() {
       </div>
 
       {/* ── By channel: where visitors came from + how many got a name ────────── */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Where your visitors come from</CardTitle>
+      <section className="space-y-2">
+        <div className="space-y-1">
+          <h2 className="text-base font-semibold text-foreground">Where your visitors come from</h2>
           <p className="text-xs text-muted-foreground">
             Every site session in the last {WINDOW_DAYS} days, grouped by the channel that sent it. &quot;Matched to a name&quot; is the count we tied to a real person in Follow Up Boss. That column is the heart of putting a name to a number.
           </p>
-        </CardHeader>
-        <CardContent className="p-0">
-          {channelRows.length === 0 ? (
-            <p className="p-6 text-sm text-muted-foreground">No site visitors recorded in the last {WINDOW_DAYS} days.</p>
-          ) : (
-            <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">Channel</TableHead>
-                    <TableHead className="text-right tabular-nums whitespace-nowrap">Visitors</TableHead>
-                    <TableHead className="text-right tabular-nums whitespace-nowrap">Matched to a name</TableHead>
-                    <TableHead className="text-right tabular-nums whitespace-nowrap">Hot leads</TableHead>
-                    <TableHead className="whitespace-nowrap">What this tells you</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {channelRows.map(([ch, agg]) => {
-                    const matchRate = agg.sessions > 0 ? agg.identified / agg.sessions : 0
-                    let note: string
-                    if (agg.identified === 0) note = isPaidChannel(ch) ? 'Paid traffic, but none matched to a name yet' : 'No names matched yet'
-                    else if (matchRate >= 0.2) note = 'Healthy match rate'
-                    else note = 'Some matched, room to improve'
-                    return (
-                      <TableRow key={ch}>
-                        <TableCell className="font-medium whitespace-nowrap">
-                          {ch}
-                          {isPaidChannel(ch) && <Badge variant="secondary" className="ml-2">paid</Badge>}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(agg.sessions)}</TableCell>
-                        <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(agg.identified)}</TableCell>
-                        <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(agg.hot)}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{note}</TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+        </div>
+        <TableWithMobileCards
+          rows={channelRows.map(([ch, agg]) => {
+            const matchRate = agg.sessions > 0 ? agg.identified / agg.sessions : 0
+            let note: string
+            if (agg.identified === 0) note = isPaidChannel(ch) ? 'Paid traffic, but none matched to a name yet' : 'No names matched yet'
+            else if (matchRate >= 0.2) note = 'Healthy match rate'
+            else note = 'Some matched, room to improve'
+            return { ch, agg, paid: isPaidChannel(ch), note }
+          })}
+          cap={10}
+          getRowKey={(r) => r.ch}
+          columns={[
+            { key: 'ch', header: 'Channel', className: 'whitespace-nowrap', cell: (r) => <span className="font-medium">{r.ch}{r.paid && <Badge variant="secondary" className="ml-2">paid</Badge>}</span> },
+            { key: 'visitors', header: 'Visitors', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => formatInt(r.agg.sessions) },
+            { key: 'matched', header: 'Matched to a name', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => formatInt(r.agg.identified) },
+            { key: 'hot', header: 'Hot leads', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => formatInt(r.agg.hot) },
+            { key: 'note', header: 'What this tells you', className: 'text-xs text-muted-foreground', cell: (r) => r.note },
+          ]}
+          renderCard={(r) => (
+            <Card>
+              <CardContent className="space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium">{r.ch}{r.paid && <Badge variant="secondary" className="ml-2 text-xs">paid</Badge>}</span>
+                  <span className="text-sm font-semibold tabular-nums">{formatInt(r.agg.sessions)} <span className="text-xs font-normal text-muted-foreground">visitors</span></span>
+                </div>
+                <p className="text-xs text-muted-foreground tabular-nums">{formatInt(r.agg.identified)} matched · {formatInt(r.agg.hot)} hot · {r.note}</p>
+              </CardContent>
+            </Card>
           )}
-          {earliestSession && (
-            <p className="px-4 pb-4 pt-2 text-xs text-muted-foreground">
-              Visitor data on file spans {earliestSession} to {latestSession}.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+          empty={<>No site visitors recorded in the last {WINDOW_DAYS} days. Once the tracking snippet fires on the site, channels appear here.</>}
+        />
+        {earliestSession && (
+          <p className="text-xs text-muted-foreground">
+            Visitor data on file spans {earliestSession} to {latestSession}.
+          </p>
+        )}
+      </section>
 
       {/* ── Meta ad performance + campaign spend ─────────────────────────────── */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">What the Meta money bought</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {metaSpend === 0 ? (
-              <p className="text-sm text-muted-foreground">No Meta ad spend synced in the last {WINDOW_DAYS} days.</p>
-            ) : (
-              <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-                <Table>
-                  <TableBody>
-                    <TableRow><TableCell className="text-muted-foreground whitespace-nowrap">Spend</TableCell><TableCell className="text-right tabular-nums font-medium whitespace-nowrap">{formatUsd(metaSpend)}</TableCell></TableRow>
-                    <TableRow><TableCell className="text-muted-foreground whitespace-nowrap">Impressions</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(metaImpressions)}</TableCell></TableRow>
-                    <TableRow><TableCell className="text-muted-foreground whitespace-nowrap">Clicks</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(metaClicks)}</TableCell></TableRow>
-                    <TableRow><TableCell className="text-muted-foreground whitespace-nowrap">Cost per click</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{usdOrDash(metaCpc)}</TableCell></TableRow>
-                    <TableRow><TableCell className="text-muted-foreground whitespace-nowrap">Click-through rate</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{metaCtr != null ? `${(metaCtr * 100).toFixed(2)}%` : '—'}</TableCell></TableRow>
-                    <TableRow><TableCell className="text-muted-foreground whitespace-nowrap">Conversions (reported by Meta)</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(metaConversions)}</TableCell></TableRow>
-                  </TableBody>
-                </Table>
-              </div>
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">What the Meta money bought</h2>
+          <TableWithMobileCards
+            rows={metaSpend === 0 ? [] : [
+              { label: 'Spend', value: formatUsd(metaSpend), strong: true },
+              { label: 'Impressions', value: formatInt(metaImpressions), strong: false },
+              { label: 'Clicks', value: formatInt(metaClicks), strong: false },
+              { label: 'Cost per click', value: usdOrDash(metaCpc), strong: false },
+              { label: 'Click-through rate', value: metaCtr != null ? `${(metaCtr * 100).toFixed(2)}%` : '—', strong: false },
+              { label: 'Conversions (reported by Meta)', value: formatInt(metaConversions), strong: false },
+            ]}
+            cap={8}
+            getRowKey={(r) => r.label}
+            columns={[
+              { key: 'label', header: 'Metric', className: 'text-muted-foreground', cell: (r) => r.label },
+              { key: 'value', header: 'Value', className: 'text-right tabular-nums', cell: (r) => <span className={r.strong ? 'font-medium' : undefined}>{r.value}</span> },
+            ]}
+            renderCard={(r) => (
+              <Card>
+                <CardContent className="flex items-center justify-between gap-2">
+                  <span className="text-sm text-muted-foreground">{r.label}</span>
+                  <span className={`text-sm tabular-nums ${r.strong ? 'font-semibold' : 'font-medium'}`}>{r.value}</span>
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
+            empty={<>No Meta ad spend synced in the last {WINDOW_DAYS} days.</>}
+          />
+        </section>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Spend by campaign</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {campaigns.length === 0 ? (
-              <p className="p-6 text-sm text-muted-foreground">No per-campaign spend in the last {WINDOW_DAYS} days.</p>
-            ) : (
-              <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="whitespace-nowrap">Campaign</TableHead>
-                      <TableHead className="text-right tabular-nums whitespace-nowrap">Spend</TableHead>
-                      <TableHead className="text-right tabular-nums whitespace-nowrap">Share</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {campaigns.map(([name, spend]) => (
-                      <TableRow key={name}>
-                        <TableCell className="font-medium">{name}</TableCell>
-                        <TableCell className="text-right tabular-nums whitespace-nowrap">{formatUsd(spend)}</TableCell>
-                        <TableCell className="text-right tabular-nums whitespace-nowrap">{metaSpend > 0 ? `${((spend / metaSpend) * 100).toFixed(0)}%` : '—'}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">Spend by campaign</h2>
+          <TableWithMobileCards
+            rows={campaigns}
+            cap={8}
+            getRowKey={([name]) => name}
+            columns={[
+              { key: 'name', header: 'Campaign', className: 'font-medium', cell: ([name]) => name },
+              { key: 'spend', header: 'Spend', className: 'text-right tabular-nums whitespace-nowrap', cell: ([, spend]) => formatUsd(spend) },
+              { key: 'share', header: 'Share', className: 'text-right tabular-nums whitespace-nowrap', cell: ([, spend]) => metaSpend > 0 ? `${((spend / metaSpend) * 100).toFixed(0)}%` : '—' },
+            ]}
+            renderCard={([name, spend]) => (
+              <Card>
+                <CardContent className="space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium">{name}</span>
+                    <span className="text-sm font-semibold tabular-nums">{formatUsd(spend)}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground tabular-nums">{metaSpend > 0 ? `${((spend / metaSpend) * 100).toFixed(0)}% of Meta spend` : '—'}</p>
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
+            empty={<>No per-campaign spend in the last {WINDOW_DAYS} days. Campaign rows appear once the Meta spend sync writes campaign-scope data.</>}
+          />
+        </section>
       </div>
 
       {/* ── Daily spend timeline (what we actually have) ─────────────────────── */}
       {spendDays.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Days we recorded spend</CardTitle>
+        <section className="space-y-2">
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold text-foreground">Days we recorded spend</h2>
             <p className="text-xs text-muted-foreground">Each day the spend sync wrote a non-zero number. Gaps mean either no spend that day or the sync did not run.</p>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">Date</TableHead>
-                    <TableHead className="text-right tabular-nums whitespace-nowrap">Spend</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {spendDays.slice(0, 14).map(([date, spend]) => (
-                    <TableRow key={date}>
-                      <TableCell className="font-medium tabular-nums whitespace-nowrap">{date}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatUsd(spend)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+          <TableWithMobileCards
+            rows={spendDays}
+            cap={10}
+            getRowKey={([date]) => date}
+            columns={[
+              { key: 'date', header: 'Date', className: 'font-medium tabular-nums whitespace-nowrap', cell: ([date]) => date },
+              { key: 'spend', header: 'Spend', className: 'text-right tabular-nums whitespace-nowrap', cell: ([, spend]) => formatUsd(spend) },
+            ]}
+            renderCard={([date, spend]) => (
+              <Card>
+                <CardContent className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium tabular-nums">{date}</span>
+                  <span className="text-sm font-semibold tabular-nums">{formatUsd(spend)}</span>
+                </CardContent>
+              </Card>
+            )}
+            empty={<>No days with recorded spend in the last {WINDOW_DAYS} days.</>}
+          />
+        </section>
       )}
 
       {/* ── Data health: which pipes are flowing ─────────────────────────────── */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Data health: what is connected</CardTitle>
+      <section className="space-y-2">
+        <div className="space-y-1">
+          <h2 className="text-base font-semibold text-foreground">Data health: what is connected</h2>
           <p className="text-xs text-muted-foreground">The numbers above are only as good as these feeds. This is the honest status of each one.</p>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="whitespace-nowrap">Feed</TableHead>
-                  <TableHead className="whitespace-nowrap">Status</TableHead>
-                  <TableHead className="whitespace-nowrap">What it means</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="font-medium whitespace-nowrap">Meta ad spend sync</TableCell>
-                  <TableCell><Badge variant={spendHealthy ? 'default' : 'destructive'}>{spendHealthy ? 'flowing' : 'needs a look'}</Badge></TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {latestSpendDate ? `Last spend recorded ${latestSpendDate}.` : 'No spend recorded.'} {spendHealthy ? 'Syncing daily.' : 'Check the marketing-snapshot-meta-ads cron.'}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium whitespace-nowrap">Facebook lead forms</TableCell>
-                  <TableCell><Badge variant={leadFormWorking ? 'default' : 'secondary'}>{leadFormWorking ? 'flowing' : 'no data'}</Badge></TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {leadFormWorking ? `${formatInt(leadFormCount)} captured.` : 'Zero captured. Expected if you do not run lead-form ads. If you do, the webhook is not delivering.'}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium whitespace-nowrap">Identity matching (name to a number)</TableCell>
-                  <TableCell><Badge variant={identityWorking ? 'default' : 'destructive'}>{identityWorking ? 'flowing' : 'not live yet'}</Badge></TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {identityWorking
-                      ? `${formatInt(totalIdentified)} visitors matched to a person.`
-                      : 'No visitor has been matched to a name yet. The session-to-person stitching is built but not deployed to the site. Once it ships, repeat and identified visitors start showing names here.'}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium whitespace-nowrap">Closed-deal revenue</TableCell>
-                  <TableCell><Badge variant="secondary">not wired</Badge></TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    Commission from closed deals is not connected to the lead that started it. Until it is, true return on ad spend (revenue ÷ spend) cannot be calculated. Cost per lead is the leading indicator we can show today.
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+        <TableWithMobileCards
+          rows={[
+            {
+              feed: 'Meta ad spend sync',
+              status: spendHealthy ? 'flowing' : 'needs a look',
+              variant: (spendHealthy ? 'default' : 'destructive') as 'default' | 'destructive' | 'secondary',
+              meaning: `${latestSpendDate ? `Last spend recorded ${latestSpendDate}.` : 'No spend recorded.'} ${spendHealthy ? 'Syncing daily.' : 'Check the marketing-snapshot-meta-ads cron.'}`,
+            },
+            {
+              feed: 'Facebook lead forms',
+              status: leadFormWorking ? 'flowing' : 'no data',
+              variant: (leadFormWorking ? 'default' : 'secondary') as 'default' | 'destructive' | 'secondary',
+              meaning: leadFormWorking ? `${formatInt(leadFormCount)} captured.` : 'Zero captured. Expected if you do not run lead-form ads. If you do, the webhook is not delivering.',
+            },
+            {
+              feed: 'Identity matching (name to a number)',
+              status: identityWorking ? 'flowing' : 'not live yet',
+              variant: (identityWorking ? 'default' : 'destructive') as 'default' | 'destructive' | 'secondary',
+              meaning: identityWorking
+                ? `${formatInt(totalIdentified)} visitors matched to a person.`
+                : 'No visitor has been matched to a name yet. The session-to-person stitching is built but not deployed to the site. Once it ships, repeat and identified visitors start showing names here.',
+            },
+            {
+              feed: 'Closed-deal revenue',
+              status: 'not wired',
+              variant: 'secondary' as 'default' | 'destructive' | 'secondary',
+              meaning: 'Commission from closed deals is not connected to the lead that started it. Until it is, true return on ad spend (revenue ÷ spend) cannot be calculated. Cost per lead is the leading indicator we can show today.',
+            },
+          ]}
+          cap={8}
+          getRowKey={(r) => r.feed}
+          columns={[
+            { key: 'feed', header: 'Feed', className: 'font-medium whitespace-nowrap', cell: (r) => r.feed },
+            { key: 'status', header: 'Status', className: 'whitespace-nowrap', cell: (r) => <Badge variant={r.variant}>{r.status}</Badge> },
+            { key: 'meaning', header: 'What it means', className: 'text-xs text-muted-foreground', cell: (r) => r.meaning },
+          ]}
+          renderCard={(r) => (
+            <Card>
+              <CardContent className="space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium">{r.feed}</span>
+                  <Badge variant={r.variant}>{r.status}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">{r.meaning}</p>
+              </CardContent>
+            </Card>
+          )}
+          empty={<>No data feeds to report on.</>}
+        />
+      </section>
 
       {/* ── Honest note on true ROAS + where to dig deeper ───────────────────── */}
       <Card className="bg-muted/40">
