@@ -1,6 +1,15 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Card, CardContent } from '@/components/ui/card'
+import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
+import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
+
+function formatUsd(n: number | null | undefined): string {
+  return n != null ? `$${Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'
+}
+
+type Yearly = { total_volume?: number; transaction_count?: number; avg_sale_price?: number }
+type BrokerRow = { id: string; slug: string; display_name: string; yearly?: Yearly }
 
 export default async function AdminBrokerReportsPage() {
   const supabase = await createClient()
@@ -17,46 +26,59 @@ export default async function AdminBrokerReportsPage() {
     if (r.period_type === 'monthly') entry.monthly = r.metrics
     if (r.period_type === 'yearly') entry.yearly = r.metrics
   }
+
+  const rows: BrokerRow[] = (brokers ?? []).map((b: { id: string; slug: string; display_name: string }) => ({
+    ...b,
+    yearly: byBroker.get(b.id)?.yearly as Yearly | undefined,
+  }))
+
+  // 12-month team rollups for the KPI lead.
+  const teamVolume = rows.reduce((sum, b) => sum + (Number(b.yearly?.total_volume) || 0), 0)
+  const teamTransactions = rows.reduce((sum, b) => sum + (Number(b.yearly?.transaction_count) || 0), 0)
+  const teamAvgSale = teamTransactions > 0 ? teamVolume / teamTransactions : null
+
   return (
-    <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
-      <h1 className="text-2xl font-bold text-foreground">Broker Performance</h1>
-      <p className="mt-2 text-muted-foreground">
-        Pre-computed daily by reporting/compute-broker-stats. Match by listing agent email.
-      </p>
-      <div className="mt-6 overflow-x-auto">
-        <Table className="min-w-full border border-border">
-          <TableHeader>
-            <TableRow className="bg-muted">
-              <TableHead className="border-b border-border px-4 py-2 text-left text-sm font-semibold">Broker</TableHead>
-              <TableHead className="border-b border-border px-4 py-2 text-right text-sm font-semibold">Volume (12mo)</TableHead>
-              <TableHead className="border-b border-border px-4 py-2 text-right text-sm font-semibold">Transactions (12mo)</TableHead>
-              <TableHead className="border-b border-border px-4 py-2 text-right text-sm font-semibold">Avg Sale</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(brokers ?? []).map((b: { id: string; slug: string; display_name: string }) => {
-              const bRow = b
-              const entry = byBroker.get(bRow.id)
-              const yearly = entry?.yearly as { total_volume?: number; transaction_count?: number; avg_sale_price?: number } | undefined
-              return (
-                <TableRow key={bRow.id} className="border-b border-border">
-                  <TableCell className="px-4 py-2 font-medium text-foreground">
-                    {bRow.display_name}
-                  </TableCell>
-                  <TableCell className="px-4 py-2 text-right">
-                    {yearly?.total_volume != null ? `$${Number(yearly.total_volume).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}
-                  </TableCell>
-                  <TableCell className="px-4 py-2 text-right">{yearly?.transaction_count ?? '—'}</TableCell>
-                  <TableCell className="px-4 py-2 text-right">
-                    {yearly?.avg_sale_price != null ? `$${Number(yearly.avg_sale_price).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-      </div>
-      <p className="mt-8 text-sm text-muted-foreground">
+    <main className="mx-auto max-w-4xl space-y-6 px-4 py-10 sm:px-6">
+      <header className="space-y-2">
+        <h1 className="text-2xl font-semibold text-foreground">Broker performance</h1>
+        <p className="text-sm text-muted-foreground">
+          Pre-computed daily by reporting/compute-broker-stats. Matched by listing agent email.
+        </p>
+      </header>
+
+      <DashboardSummaryStrip
+        stats={[
+          { label: 'Active brokers', value: String(rows.length) },
+          { label: 'Team volume (12mo)', value: formatUsd(teamVolume) },
+          { label: 'Transactions (12mo)', value: String(teamTransactions) },
+          { label: 'Avg sale (12mo)', value: formatUsd(teamAvgSale) },
+        ]}
+      />
+
+      <TableWithMobileCards
+        rows={rows}
+        cap={12}
+        getRowKey={(b) => b.id}
+        columns={[
+          { key: 'broker', header: 'Broker', className: 'font-medium text-foreground', cell: (b) => b.display_name },
+          { key: 'volume', header: 'Volume (12mo)', className: 'text-right tabular-nums', cell: (b) => formatUsd(b.yearly?.total_volume) },
+          { key: 'tx', header: 'Transactions (12mo)', className: 'text-right tabular-nums', cell: (b) => b.yearly?.transaction_count ?? '—' },
+          { key: 'avg', header: 'Avg sale', className: 'text-right tabular-nums', cell: (b) => formatUsd(b.yearly?.avg_sale_price) },
+        ]}
+        renderCard={(b) => (
+          <Card>
+            <CardContent className="space-y-1">
+              <p className="text-sm font-medium text-foreground">{b.display_name}</p>
+              <p className="text-xs text-muted-foreground tabular-nums">
+                {formatUsd(b.yearly?.total_volume)} · {b.yearly?.transaction_count ?? '—'} tx · {formatUsd(b.yearly?.avg_sale_price)} avg
+              </p>
+            </CardContent>
+          </Card>
+        )}
+        empty={<>No active brokers found. Broker rows come from the brokers table where is_active is true.</>}
+      />
+
+      <p className="text-sm text-muted-foreground">
         <Link href="/admin/reports" className="underline hover:no-underline">Back to Reports</Link>
       </p>
     </main>

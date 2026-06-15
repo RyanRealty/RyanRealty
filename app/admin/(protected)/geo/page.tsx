@@ -1,10 +1,16 @@
 import Link from 'next/link'
 import { listGeoPlaces } from '@/app/actions/geo-places'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
 import EnsureGeoButton from './EnsureGeoButton'
 import NeighborhoodForm from './NeighborhoodForm'
 import AssignCommunity from './AssignCommunity'
 
 export const dynamic = 'force-dynamic'
+
+const CITY_CAP = 12
+const LIST_CAP = 12
 
 export default async function AdminGeoPage({
   searchParams,
@@ -27,53 +33,103 @@ export default async function AdminGeoPage({
   const communityParentIds = cityId ? [cityId, ...neighborhoods.map((n) => n.id)] : []
   const allCommunities = await listGeoPlaces({ type: 'community' })
   const communities = communityParentIds.length > 0 ? allCommunities.filter((c) => c.parent_id && communityParentIds.includes(c.parent_id)) : allCommunities
+
+  const selectedCityName = citiesFromGeo.find((c) => c.id === cityId)?.name
+
   return (
-    <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
-      <h1 className="text-2xl font-bold text-foreground">Geography &amp; Neighborhoods</h1>
-      <p className="mt-2 text-muted-foreground">
-        Country → State → City → Neighborhood (optional) → Community. Create neighborhoods and assign communities. No auto-inference from SPARK.
-      </p>
-      <p className="mt-2 text-sm text-muted-foreground">
-        <Link href="/admin" className="underline">← Admin</Link>
-        {' · '}
-        <Link href="/admin/geo/area-guide-upload" className="underline">Area Guide media upload</Link>
-      </p>
-
-      <section className="mt-8 rounded-lg border border-border bg-muted p-4">
-        <h2 className="font-semibold text-foreground">Seed from listings</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Ensures country (US), state (Oregon), and cities from current listing cities.
+    <main className="mx-auto max-w-4xl space-y-6 px-4 py-10 sm:px-6">
+      <header className="space-y-2">
+        <h1 className="text-2xl font-semibold text-foreground">Geography &amp; neighborhoods</h1>
+        <p className="text-sm text-muted-foreground">
+          Country → State → City → Neighborhood (optional) → Community. Create neighborhoods and assign communities. No auto-inference from SPARK.
         </p>
-        <EnsureGeoButton />
-      </section>
+        <p className="text-sm text-muted-foreground">
+          <Link href="/admin" className="underline hover:no-underline">← Admin</Link>
+          {' · '}
+          <Link href="/admin/geo/area-guide-upload" className="underline hover:no-underline">Area Guide media upload</Link>
+        </p>
+      </header>
 
-      <section className="mt-8">
-        <h2 className="font-semibold text-foreground">Cities</h2>
-        <ul className="mt-2 flex flex-wrap gap-2">
-          {citiesFromGeo.length === 0 && (
-            <li className="text-sm text-muted-foreground">No cities in geo_places. Run &quot;Ensure geo places from listings&quot; above.</li>
+      <DashboardSummaryStrip
+        stats={[
+          { label: 'Cities', value: String(citiesFromGeo.length) },
+          { label: `Neighborhoods${selectedCityName ? ` in ${selectedCityName}` : ''}`, value: cityId ? String(neighborhoods.length) : '—' },
+          { label: 'Communities (scope)', value: String(communities.length) },
+        ]}
+      />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Seed from listings</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Ensures country (US), state (Oregon), and cities from current listing cities.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <EnsureGeoButton />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Cities</CardTitle>
+          <p className="text-xs text-muted-foreground">Tap a city to scope neighborhoods and communities below.</p>
+        </CardHeader>
+        <CardContent>
+          {citiesFromGeo.length === 0 ? (
+            <div className="rounded-lg border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+              No cities in geo_places. Run &quot;Seed from listings&quot; above.
+            </div>
+          ) : (
+            <>
+              <ul className="flex flex-wrap gap-2">
+                {citiesFromGeo.slice(0, CITY_CAP).map((c) => (
+                  <li key={c.id}>
+                    <Link
+                      href={`/admin/geo?city=${encodeURIComponent(c.id)}`}
+                      className={`inline-flex min-h-10 items-center rounded-lg px-3 text-sm ${c.id === cityId ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-accent'}`}
+                    >
+                      {c.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              {citiesFromGeo.length > CITY_CAP ? (
+                <p className="mt-3 text-xs text-muted-foreground tabular-nums">Showing {CITY_CAP} of {citiesFromGeo.length} cities.</p>
+              ) : null}
+            </>
           )}
-          {citiesFromGeo.map((c) => (
-            <li key={c.id}>
-              <Link href={`/admin/geo?city=${encodeURIComponent(c.id)}`} className={`rounded px-3 py-1 text-sm ${c.id === cityId ? 'bg-primary text-primary-foreground' : 'bg-border hover:bg-border'}`}>
-                {c.name}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
+        </CardContent>
+      </Card>
 
       {cityId && (
         <>
-          <section className="mt-6">
-            <h2 className="font-semibold text-foreground">Neighborhoods in {citiesFromGeo.find((c) => c.id === cityId)?.name}</h2>
-            <ul className="mt-2 flex flex-wrap gap-2">
-              {neighborhoods.length === 0 && <li className="text-sm text-muted-foreground">None yet. Create one below.</li>}
-              {neighborhoods.map((n) => (
-                <li key={n.id} className="rounded bg-muted px-3 py-1 text-sm">{n.name}</li>
-              ))}
-            </ul>
-          </section>
+          <Card>
+            <CardHeader>
+              <CardTitle>Neighborhoods in {selectedCityName}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {neighborhoods.length === 0 ? (
+                <div className="rounded-lg border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+                  No neighborhoods yet. Create one below.
+                </div>
+              ) : (
+                <>
+                  <ul className="flex flex-wrap gap-2">
+                    {neighborhoods.slice(0, LIST_CAP).map((n) => (
+                      <li key={n.id}>
+                        <Badge variant="secondary">{n.name}</Badge>
+                      </li>
+                    ))}
+                  </ul>
+                  {neighborhoods.length > LIST_CAP ? (
+                    <p className="mt-3 text-xs text-muted-foreground tabular-nums">Showing {LIST_CAP} of {neighborhoods.length} neighborhoods.</p>
+                  ) : null}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
           <NeighborhoodForm cities={citiesFromGeo} selectedCityId={cityId} />
           <AssignCommunity cities={citiesFromGeo} neighborhoods={neighborhoods} communities={communities} />
         </>

@@ -21,11 +21,12 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
+import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
+import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -233,36 +234,14 @@ async function MetaHealthContent() {
   return (
     <div className="space-y-6">
       {/* Hero metrics */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Active campaigns</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold tabular-nums text-foreground">{formatInt(activeCampaigns.length)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{formatInt(campaigns.length)} total (including paused)</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Active lead forms</CardTitle></CardHeader>
-          <CardContent>
-            <p className={`text-3xl font-semibold tabular-nums ${activeForms.length === 0 ? 'text-destructive' : 'text-foreground'}`}>{formatInt(activeForms.length)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{formatInt(archivedForms.length)} archived</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Spend (30d)</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold tabular-nums text-foreground">${spendTotal.toFixed(2)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{formatInt(impressions)} impr · {formatInt(clicks)} clicks</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Leads captured</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold tabular-nums text-foreground">{formatInt(processedLeadsTotal)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">processed_meta_leads (lifetime)</p>
-          </CardContent>
-        </Card>
-      </div>
+      <DashboardSummaryStrip
+        stats={[
+          { label: 'Active campaigns', value: formatInt(activeCampaigns.length), caption: `${formatInt(campaigns.length)} total (incl. paused)` },
+          { label: 'Active lead forms', value: formatInt(activeForms.length), caption: `${formatInt(archivedForms.length)} archived`, tone: activeForms.length === 0 ? 'warning' : 'default' },
+          { label: 'Spend (30d)', value: `$${spendTotal.toFixed(2)}`, caption: `${formatInt(impressions)} impr · ${formatInt(clicks)} clicks` },
+          { label: 'Leads captured', value: formatInt(processedLeadsTotal), caption: 'processed_meta_leads (lifetime)' },
+        ]}
+      />
 
       {/* Action items */}
       <Card>
@@ -299,40 +278,36 @@ async function MetaHealthContent() {
           </p>
         </CardHeader>
         <CardContent>
-          {pixels.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No owned pixels found, or Business Manager API access denied.</p>
-          ) : (
-            <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Pixel ID</TableHead>
-                    <TableHead>Last fired</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pixels.map((p) => {
-                    const daysAgo = p.last_fired_time ? Math.floor((Date.now() - new Date(p.last_fired_time).getTime()) / 86400000) : null
-                    const leaking = !p.is_canonical && daysAgo !== null && daysAgo <= 30
-                    return (
-                      <TableRow key={p.id}>
-                        <TableCell className="font-medium whitespace-nowrap">{p.name}</TableCell>
-                        <TableCell className="font-mono text-xs whitespace-nowrap">{p.id}</TableCell>
-                        <TableCell className="text-xs whitespace-nowrap">{p.last_fired_time ? `${formatRelative(p.last_fired_time)} (${daysAgo}d)` : '(never)'}</TableCell>
-                        <TableCell>
-                          {p.is_canonical && <Badge variant="default">canonical</Badge>}
-                          {leaking && <Badge variant="destructive">leaking</Badge>}
-                          {!p.is_canonical && !leaking && <Badge variant="outline">dead</Badge>}
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+          <TableWithMobileCards
+            rows={pixels}
+            cap={10}
+            getRowKey={(p) => p.id}
+            columns={[
+              { key: 'name', header: 'Name', className: 'font-medium whitespace-nowrap', cell: (p) => p.name },
+              { key: 'id', header: 'Pixel ID', className: 'font-mono text-xs whitespace-nowrap', cell: (p) => p.id },
+              { key: 'fired', header: 'Last fired', className: 'text-xs whitespace-nowrap', cell: (p) => { const daysAgo = p.last_fired_time ? Math.floor((Date.now() - new Date(p.last_fired_time).getTime()) / 86400000) : null; return p.last_fired_time ? `${formatRelative(p.last_fired_time)} (${daysAgo}d)` : '(never)' } },
+              { key: 'status', header: 'Status', cell: (p) => { const daysAgo = p.last_fired_time ? Math.floor((Date.now() - new Date(p.last_fired_time).getTime()) / 86400000) : null; const leaking = !p.is_canonical && daysAgo !== null && daysAgo <= 30; return (<>{p.is_canonical && <Badge variant="default">canonical</Badge>}{leaking && <Badge variant="destructive">leaking</Badge>}{!p.is_canonical && !leaking && <Badge variant="outline">dead</Badge>}</>) } },
+            ]}
+            renderCard={(p) => {
+              const daysAgo = p.last_fired_time ? Math.floor((Date.now() - new Date(p.last_fired_time).getTime()) / 86400000) : null
+              const leaking = !p.is_canonical && daysAgo !== null && daysAgo <= 30
+              return (
+                <Card>
+                  <CardContent className="space-y-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="min-w-0 break-words text-sm font-medium text-foreground">{p.name}</span>
+                      {p.is_canonical ? <Badge variant="default" className="shrink-0">canonical</Badge> : leaking ? <Badge variant="destructive" className="shrink-0">leaking</Badge> : <Badge variant="outline" className="shrink-0">dead</Badge>}
+                    </div>
+                    <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                      <span className="truncate font-mono">{p.id}</span>
+                      <span className="shrink-0">{p.last_fired_time ? `${formatRelative(p.last_fired_time)}` : '(never)'}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            }}
+            empty={<>No owned pixels found, or Business Manager API access denied.</>}
+          />
         </CardContent>
       </Card>
 
@@ -345,51 +320,32 @@ async function MetaHealthContent() {
           </p>
         </CardHeader>
         <CardContent>
-          {forms.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No lead forms on this page.</p>
-          ) : (
-            <>
-              {/* Lead-form cards — phones */}
-              <div className="space-y-2 md:hidden">
-                {forms.map((f) => (
-                  <div key={f.id} className="rounded-lg border border-border p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="min-w-0 break-words text-sm font-medium text-foreground">{f.name}</span>
-                      <Badge variant={f.status === 'ACTIVE' ? 'default' : 'outline'} className="shrink-0">{f.status}</Badge>
-                    </div>
-                    <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                      <span className="truncate font-mono">{f.id}</span>
-                      <span className="shrink-0 tabular-nums">{formatInt(f.leads_count)} lifetime leads</span>
-                    </div>
+          <TableWithMobileCards
+            rows={forms}
+            cap={10}
+            getRowKey={(f) => f.id}
+            columns={[
+              { key: 'name', header: 'Name', className: 'font-medium', cell: (f) => f.name },
+              { key: 'id', header: 'Form ID', className: 'font-mono text-xs', cell: (f) => f.id },
+              { key: 'status', header: 'Status', cell: (f) => <Badge variant={f.status === 'ACTIVE' ? 'default' : 'outline'}>{f.status}</Badge> },
+              { key: 'leads', header: 'Lifetime leads', className: 'text-right tabular-nums', cell: (f) => formatInt(f.leads_count) },
+            ]}
+            renderCard={(f) => (
+              <Card>
+                <CardContent className="space-y-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="min-w-0 break-words text-sm font-medium text-foreground">{f.name}</span>
+                    <Badge variant={f.status === 'ACTIVE' ? 'default' : 'outline'} className="shrink-0">{f.status}</Badge>
                   </div>
-                ))}
-              </div>
-
-              {/* Lead-form table — desktop */}
-              <div className="hidden overflow-hidden rounded-lg border border-border md:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Form ID</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right tabular-nums">Lifetime leads</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {forms.map((f) => (
-                      <TableRow key={f.id}>
-                        <TableCell className="font-medium">{f.name}</TableCell>
-                        <TableCell className="font-mono text-xs">{f.id}</TableCell>
-                        <TableCell><Badge variant={f.status === 'ACTIVE' ? 'default' : 'outline'}>{f.status}</Badge></TableCell>
-                        <TableCell className="text-right tabular-nums">{formatInt(f.leads_count)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </>
-          )}
+                  <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span className="truncate font-mono">{f.id}</span>
+                    <span className="shrink-0 tabular-nums">{formatInt(f.leads_count)} lifetime leads</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            empty={<>No lead forms on this page.</>}
+          />
         </CardContent>
       </Card>
 
@@ -427,9 +383,9 @@ async function MetaHealthContent() {
                             <li key={i}>
                               &quot;{c.value}&quot; →{' '}
                               {c.classification ? (
-                                <Badge variant="outline" className="text-[10px]">{c.classification}</Badge>
+                                <Badge variant="outline" className="text-xs">{c.classification}</Badge>
                               ) : (
-                                <Badge variant="destructive" className="text-[10px]">unclassified (lead becomes nurture)</Badge>
+                                <Badge variant="destructive" className="text-xs">unclassified (lead becomes nurture)</Badge>
                               )}
                             </li>
                           ))}
@@ -458,35 +414,35 @@ async function MetaHealthContent() {
           </p>
         </CardHeader>
         <CardContent>
-          {subs.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No subscribed apps.</p>
-          ) : (
-            <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>App</TableHead>
-                    <TableHead>App ID</TableHead>
-                    <TableHead>Subscribed fields</TableHead>
-                    <TableHead>leadgen?</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {subs.map((s) => {
-                    const ok = (s.subscribed_fields ?? []).includes('leadgen')
-                    return (
-                      <TableRow key={s.id}>
-                        <TableCell className="font-medium whitespace-nowrap">{s.name}</TableCell>
-                        <TableCell className="font-mono text-xs whitespace-nowrap">{s.id}</TableCell>
-                        <TableCell className="text-xs">{(s.subscribed_fields ?? []).join(', ')}</TableCell>
-                        <TableCell>{ok ? <Badge variant="default">✓ subscribed</Badge> : <Badge variant="destructive">missing</Badge>}</TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+          <TableWithMobileCards
+            rows={subs}
+            cap={10}
+            getRowKey={(s) => s.id}
+            columns={[
+              { key: 'app', header: 'App', className: 'font-medium whitespace-nowrap', cell: (s) => s.name },
+              { key: 'id', header: 'App ID', className: 'font-mono text-xs whitespace-nowrap', cell: (s) => s.id },
+              { key: 'fields', header: 'Subscribed fields', className: 'text-xs', cell: (s) => (s.subscribed_fields ?? []).join(', ') },
+              { key: 'leadgen', header: 'leadgen?', cell: (s) => (s.subscribed_fields ?? []).includes('leadgen') ? <Badge variant="default">✓ subscribed</Badge> : <Badge variant="destructive">missing</Badge> },
+            ]}
+            renderCard={(s) => {
+              const ok = (s.subscribed_fields ?? []).includes('leadgen')
+              return (
+                <Card>
+                  <CardContent className="space-y-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="min-w-0 break-words text-sm font-medium text-foreground">{s.name}</span>
+                      {ok ? <Badge variant="default" className="shrink-0">✓ leadgen</Badge> : <Badge variant="destructive" className="shrink-0">no leadgen</Badge>}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      <span className="font-mono">{s.id}</span>
+                      {(s.subscribed_fields ?? []).length > 0 ? <span className="block break-words">{(s.subscribed_fields ?? []).join(', ')}</span> : null}
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            }}
+            empty={<>No subscribed apps.</>}
+          />
         </CardContent>
       </Card>
 
@@ -499,53 +455,32 @@ async function MetaHealthContent() {
           </p>
         </CardHeader>
         <CardContent>
-          {campaigns.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No campaigns in the account.</p>
-          ) : (
-            <>
-              {/* Campaign cards — phones */}
-              <div className="space-y-2 md:hidden">
-                {campaigns.map((c) => (
-                  <div key={c.id} className="rounded-lg border border-border p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="min-w-0 break-words text-sm font-medium text-foreground">{c.name}</span>
-                      <Badge variant={c.effective_status === 'ACTIVE' ? 'default' : 'outline'} className="shrink-0">{c.effective_status}</Badge>
-                    </div>
-                    <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                      <span className="truncate">{c.objective}</span>
-                      <span className="shrink-0">{formatRelative(c.created_time)}</span>
-                    </div>
+          <TableWithMobileCards
+            rows={campaigns}
+            cap={10}
+            getRowKey={(c) => c.id}
+            columns={[
+              { key: 'name', header: 'Name', className: 'font-medium', cell: (c) => c.name },
+              { key: 'objective', header: 'Objective', className: 'text-xs', cell: (c) => c.objective },
+              { key: 'status', header: 'Status', cell: (c) => <Badge variant={c.effective_status === 'ACTIVE' ? 'default' : 'outline'}>{c.effective_status}</Badge> },
+              { key: 'created', header: 'Created', className: 'text-xs', cell: (c) => formatRelative(c.created_time) },
+            ]}
+            renderCard={(c) => (
+              <Card>
+                <CardContent className="space-y-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="min-w-0 break-words text-sm font-medium text-foreground">{c.name}</span>
+                    <Badge variant={c.effective_status === 'ACTIVE' ? 'default' : 'outline'} className="shrink-0">{c.effective_status}</Badge>
                   </div>
-                ))}
-              </div>
-
-              {/* Campaign table — desktop */}
-              <div className="hidden overflow-hidden rounded-lg border border-border md:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Objective</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {campaigns.map((c) => (
-                      <TableRow key={c.id}>
-                        <TableCell className="font-medium">{c.name}</TableCell>
-                        <TableCell className="text-xs">{c.objective}</TableCell>
-                        <TableCell>
-                          <Badge variant={c.effective_status === 'ACTIVE' ? 'default' : 'outline'}>{c.effective_status}</Badge>
-                        </TableCell>
-                        <TableCell className="text-xs">{formatRelative(c.created_time)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </>
-          )}
+                  <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span className="truncate">{c.objective}</span>
+                    <span className="shrink-0">{formatRelative(c.created_time)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            empty={<>No campaigns in the account.</>}
+          />
         </CardContent>
       </Card>
 
@@ -558,60 +493,34 @@ async function MetaHealthContent() {
           </p>
         </CardHeader>
         <CardContent>
-          {processedLeads.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No leads processed yet. The webhook is wired correctly but no campaigns are live with an active lead form.</p>
-          ) : (
-            <>
-              {/* Lead cards — phones */}
-              <div className="space-y-2 md:hidden">
-                {processedLeads.map((r) => {
-                  const row = r as { id: string; created_at: string; status: string | null; campaign_name: string | null; audience: string | null; intent: string | null }
-                  return (
-                    <div key={row.id} className="rounded-lg border border-border p-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="min-w-0 break-words text-sm font-medium text-foreground">{row.campaign_name ?? '—'}</span>
-                        <Badge variant="outline" className="shrink-0">{row.status ?? '—'}</Badge>
-                      </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                        <span>{formatRelative(row.created_at)}</span>
-                        <span className="capitalize">· {row.audience ?? '—'}</span>
-                        <span className="capitalize">· {row.intent ?? '—'}</span>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Lead table — desktop */}
-              <div className="hidden overflow-hidden rounded-lg border border-border md:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>When</TableHead>
-                      <TableHead>Campaign</TableHead>
-                      <TableHead>Audience</TableHead>
-                      <TableHead>Intent</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {processedLeads.map((r) => {
-                      const row = r as { id: string; created_at: string; status: string | null; campaign_name: string | null; audience: string | null; intent: string | null }
-                      return (
-                        <TableRow key={row.id}>
-                          <TableCell className="text-xs">{formatRelative(row.created_at)}</TableCell>
-                          <TableCell className="text-xs">{row.campaign_name ?? '—'}</TableCell>
-                          <TableCell className="text-xs capitalize">{row.audience ?? '—'}</TableCell>
-                          <TableCell className="text-xs capitalize">{row.intent ?? '—'}</TableCell>
-                          <TableCell><Badge variant="outline">{row.status ?? '—'}</Badge></TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            </>
-          )}
+          <TableWithMobileCards
+            rows={processedLeads as Array<{ id: string; created_at: string; status: string | null; campaign_name: string | null; audience: string | null; intent: string | null }>}
+            cap={10}
+            getRowKey={(row) => row.id}
+            columns={[
+              { key: 'when', header: 'When', className: 'text-xs', cell: (row) => formatRelative(row.created_at) },
+              { key: 'campaign', header: 'Campaign', className: 'text-xs', cell: (row) => row.campaign_name ?? '—' },
+              { key: 'audience', header: 'Audience', className: 'text-xs capitalize', cell: (row) => row.audience ?? '—' },
+              { key: 'intent', header: 'Intent', className: 'text-xs capitalize', cell: (row) => row.intent ?? '—' },
+              { key: 'status', header: 'Status', cell: (row) => <Badge variant="outline">{row.status ?? '—'}</Badge> },
+            ]}
+            renderCard={(row) => (
+              <Card>
+                <CardContent className="space-y-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="min-w-0 break-words text-sm font-medium text-foreground">{row.campaign_name ?? '—'}</span>
+                    <Badge variant="outline" className="shrink-0">{row.status ?? '—'}</Badge>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                    <span>{formatRelative(row.created_at)}</span>
+                    <span className="capitalize">· {row.audience ?? '—'}</span>
+                    <span className="capitalize">· {row.intent ?? '—'}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            empty={<>No leads processed yet. The webhook is wired correctly but no campaigns are live with an active lead form.</>}
+          />
         </CardContent>
       </Card>
 
