@@ -167,12 +167,12 @@ function factualFallbackBio(opts: {
   phone: string | null
 }): string {
   if (opts.closings > 0) {
-    return `${opts.firstName} has closed ${opts.closings} homes across Central Oregon, on both sides of the deal, from Bend to Redmond, Sisters, and Sunriver.`
+    return `${opts.firstName} has closed ${opts.closings} homes across Central Oregon, for both buyers and sellers.`
   }
   if (opts.phone) {
-    return `Reach ${opts.displayName} directly at ${opts.phone}. The broker you reach is the broker who runs your transaction, in Bend, Redmond, Sisters, and Sunriver.`
+    return `${opts.displayName} works with buyers and sellers across Bend, Redmond, Sisters, and Sunriver. Call or text ${opts.phone}.`
   }
-  return `${opts.displayName} represents buyers and sellers in Bend, Redmond, Sisters, and Sunriver.`
+  return `${opts.displayName} works with buyers and sellers across Bend, Redmond, Sisters, and Sunriver.`
 }
 
 const HEADSHOT: Record<string, string> = {
@@ -235,7 +235,7 @@ export default async function TeamMemberPage({ params }: Props) {
   ]
     .filter(Boolean)
     .join(', or ')
-  const ctaBody = `${ctaContact ? `${ctaContact}. ` : ''}The broker you reach is the broker who runs your transaction.`
+  const ctaBody = `${ctaContact ? `${ctaContact}. ` : ''}You work with ${firstName} directly, from the first call to closing.`
 
   // Reviews that belong on THIS broker's page (name them, or name nobody),
   // with the ones that name this broker first.
@@ -322,8 +322,8 @@ export default async function TeamMemberPage({ params }: Props) {
             </p>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-primary-foreground/85">
               {hasOwnSales
-                ? `${closings} homes closed across Central Oregon, with ${firstName} as the broker on every file.`
-                : `${firstName} lists and sells homes in Bend, Redmond, Sisters, Sunriver, and Prineville.`}
+                ? `${closings} homes closed across Central Oregon, for buyers and sellers.`
+                : `${firstName} lists and sells homes across Bend, Redmond, Sisters, Sunriver, and Prineville.`}
             </p>
 
             {/* Trust strip — Google rating + license, real values only */}
@@ -433,8 +433,8 @@ export default async function TeamMemberPage({ params }: Props) {
               <Eyebrow>Track record</Eyebrow>
               <H2>{firstName}&apos;s recent sales</H2>
               <Body size="default" tone="muted">
-                {closings} closings {firstName} represented, from the Oregon Data Share MLS. Each
-                figure is the recorded closing price.
+                Homes {firstName} sold for sellers, and homes {firstName} bought for buyers. Each
+                price is the recorded closing price from the Oregon Data Share MLS.
               </Body>
             </Stack>
             <Grid cols={3} gap="default">
@@ -451,8 +451,8 @@ export default async function TeamMemberPage({ params }: Props) {
               <Eyebrow>The Ryan Realty record</Eyebrow>
               <H2>Recent Ryan Realty sales across Central Oregon</H2>
               <Body size="default" tone="muted">
-                {soldCards.length} recent Ryan Realty closings across Central Oregon, from the Oregon
-                Data Share MLS. Each figure is the recorded closing price.
+                Recent Ryan Realty closings across Central Oregon. Each price is the recorded closing
+                price from the Oregon Data Share MLS.
               </Body>
             </Stack>
             <Grid cols={3} gap="default">
