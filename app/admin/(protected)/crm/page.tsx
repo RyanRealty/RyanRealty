@@ -5,13 +5,9 @@ import { getCrmAccess, getCrmOverview, listBrokerLicenses, listCrmPeople, listCr
 import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import { Badge } from '@/components/ui/badge'
 import ContactsSearch from '@/components/admin/crm/ContactsSearch'
-import StageBadge from '@/components/admin/crm/StageBadge'
+import BulkAssignWrapper, { type BulkAssignRow } from '@/components/admin/crm/BulkAssignWrapper'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table'
 
 export const metadata = { title: 'Contacts | Admin' }
 export const dynamic = 'force-dynamic'
@@ -21,12 +17,6 @@ function fmtDate(iso: string | null): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return '—'
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
-
-function fmtPhone(raw: string): string {
-  const d = raw.replace(/\D/g, '').slice(-10)
-  if (d.length !== 10) return raw
-  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`
 }
 
 function primaryContact(items: Array<{ value?: string; isPrimary?: number | boolean }>): string | null {
@@ -76,6 +66,22 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
     const qs = params.toString()
     return qs ? `/admin/crm?${qs}` : '/admin/crm'
   }
+
+  // Flatten the fetched rows for the selectable client list (selection state
+  // lives in BulkAssignWrapper). Date/contact formatting stays on the server.
+  const bulkRows: BulkAssignRow[] = rows.map((p) => ({
+    id: p.id,
+    name: p.name,
+    stage: p.stage,
+    source: p.source,
+    picture_url: p.picture_url,
+    email: primaryContact(p.emails),
+    phone: primaryContact(p.phones),
+    tags: p.tags,
+    assigned_broker: p.assigned_broker,
+    last_activity_label: fmtDate(p.last_activity_at),
+    created_label: fmtDate(p.fub_created_at),
+  }))
 
   const stats: Array<{ label: string; value: string }> = [
     { label: 'Contacts', value: overview.total.toLocaleString('en-US') },
@@ -196,119 +202,8 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         </div>
       </form>
 
-      {/* People cards — phones (one thumb-tap per contact) */}
-      <div className="mt-4 space-y-2 md:hidden">
-        {rows.length === 0 ? (
-          <Card>
-            <CardContent className="py-10 text-center text-sm text-muted-foreground">No contacts match this filter.</CardContent>
-          </Card>
-        ) : (
-          rows.map((p) => {
-            const email = primaryContact(p.emails)
-            const phone = primaryContact(p.phones)
-            return (
-              <Card key={p.id} className="transition-colors hover:bg-muted/50">
-                <CardContent className="flex items-center gap-3 p-4">
-                  {p.picture_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.picture_url} alt="" className="h-10 w-10 shrink-0 rounded-full border border-border object-cover" referrerPolicy="no-referrer" loading="lazy" />
-                  ) : (
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
-                      {(p.name ?? '?').charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                  <Link href={`/admin/crm/${p.id}`} className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-semibold text-foreground">{p.name ?? `Contact #${p.id}`}</span>
-                      <StageBadge stage={p.stage} className="shrink-0" />
-                    </div>
-                    <div className="mt-1 truncate text-xs text-muted-foreground">
-                      {[email, phone ? fmtPhone(phone) : null].filter(Boolean).join(' · ') || 'No contact info'}
-                    </div>
-                    <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                      <span className="truncate">{p.source ?? ''}</span>
-                      <span className="shrink-0 tabular-nums">{fmtDate(p.last_activity_at)}</span>
-                    </div>
-                  </Link>
-                  {phone ? (
-                    <Button asChild size="sm" variant="outline" className="h-10 shrink-0 px-4">
-                      <a href={`tel:+1${phone.replace(/\D/g, '').slice(-10)}`} aria-label={`Call ${p.name ?? 'contact'}`}>Call</a>
-                    </Button>
-                  ) : null}
-                </CardContent>
-              </Card>
-            )
-          })
-        )}
-      </div>
-
-      {/* People table — desktop */}
-      <div className="mt-4 hidden overflow-hidden rounded-lg border border-border bg-card md:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-xs font-medium uppercase text-muted-foreground">Name</TableHead>
-              <TableHead className="text-xs font-medium uppercase text-muted-foreground">Stage</TableHead>
-              <TableHead className="text-xs font-medium uppercase text-muted-foreground">Tags</TableHead>
-              <TableHead className="text-xs font-medium uppercase text-muted-foreground">Broker</TableHead>
-              <TableHead className="text-xs font-medium uppercase text-muted-foreground">Contact</TableHead>
-              <TableHead className="text-xs font-medium uppercase text-muted-foreground">Source</TableHead>
-              <TableHead className="text-xs font-medium uppercase text-muted-foreground">Last activity</TableHead>
-              <TableHead className="text-xs font-medium uppercase text-muted-foreground">Created</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
-                  No contacts match this filter.
-                </TableCell>
-              </TableRow>
-            ) : (
-              rows.map((p) => {
-                const email = primaryContact(p.emails)
-                const phone = primaryContact(p.phones)
-                return (
-                  <TableRow key={p.id}>
-                    <TableCell className="text-sm font-medium text-foreground">
-                      <Link href={`/admin/crm/${p.id}`} className="flex items-center gap-2.5 hover:underline">
-                        {p.picture_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={p.picture_url} alt="" className="h-8 w-8 shrink-0 rounded-full border border-border object-cover" referrerPolicy="no-referrer" loading="lazy" />
-                        ) : (
-                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-                            {(p.name ?? '?').charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                        {p.name ?? `Contact #${p.id}`}
-                      </Link>
-                    </TableCell>
-                    <TableCell><StageBadge stage={p.stage} /></TableCell>
-                    <TableCell className="max-w-[260px]">
-                      <div className="flex flex-wrap gap-1">
-                        {p.tags.slice(0, 3).map((t) => (
-                          <Badge key={t} variant="outline" className="text-[11px]">{t}</Badge>
-                        ))}
-                        {p.tags.length > 3 ? (
-                          <span className="text-xs text-muted-foreground">+{p.tags.length - 3}</span>
-                        ) : null}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{p.assigned_broker ?? '—'}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      <div>{email ?? '—'}</div>
-                      <div>{phone ?? ''}</div>
-                    </TableCell>
-                    <TableCell className="max-w-[140px] truncate text-xs text-muted-foreground">{p.source ?? '—'}</TableCell>
-                    <TableCell className="text-xs tabular-nums text-muted-foreground">{fmtDate(p.last_activity_at)}</TableCell>
-                    <TableCell className="text-xs tabular-nums text-muted-foreground">{fmtDate(p.fub_created_at)}</TableCell>
-                  </TableRow>
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      {/* Selectable contacts list + sticky bulk-assign bar (client island) */}
+      <BulkAssignWrapper rows={bulkRows} />
 
       {/* Pagination */}
       <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
