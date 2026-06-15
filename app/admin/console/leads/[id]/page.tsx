@@ -233,6 +233,7 @@ export default async function ConsoleLeadPage({
   const openTasks = full.tasks.filter((t) => !t.completed_at)
   const doneTasks = full.tasks.filter((t) => t.completed_at)
   const activeEnrollments = full.enrollments.filter((e) => e.status === 'running' || e.status === 'paused')
+  const customEntries = Object.entries(person.custom ?? {}).filter(([, v]) => v !== null && v !== '' && v !== undefined)
 
   const emailEngagement: Record<string, { opens: number; lastOpen: string | null; clicks: number }> = {}
   for (const t of full.timeline) {
@@ -566,6 +567,29 @@ export default async function ConsoleLeadPage({
               </form>
             </CardContent>
           </Card>
+
+          {/* Details — background + FUB custom fields (collapsed) */}
+          {(person.background || customEntries.length > 0) ? (
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-base">Details</CardTitle></CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                {person.background ? <p className="whitespace-pre-wrap break-words text-foreground">{person.background}</p> : null}
+                {customEntries.length > 0 ? (
+                  <details className="group">
+                    <summary className="cursor-pointer text-xs font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground">Fields ({customEntries.length})</summary>
+                    <dl className="mt-2 space-y-1.5">
+                      {customEntries.map(([k, v]) => (
+                        <div key={k} className="flex justify-between gap-3">
+                          <dt className="shrink-0 text-muted-foreground">{k.replace(/^custom/, '')}</dt>
+                          <dd className="truncate text-right text-foreground">{String(v)}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </details>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
         </div>
       </div>
 
