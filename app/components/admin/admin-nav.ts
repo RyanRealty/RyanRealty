@@ -91,6 +91,7 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
       item('/admin/optimization', 'Optimization', 'gauge'),
     )
   }
+  if (canBrokers) marketing.push(item('/admin/newsletters', 'Newsletter', 'mail'))
   if (canBrokers) marketing.push(item('/admin/fub-attribution', 'FUB attribution', 'target'))
 
   // ── Content: site surfaces and media ──
