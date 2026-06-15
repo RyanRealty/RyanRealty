@@ -79,7 +79,7 @@ const COMPARISON_ROWS: Array<{ criterion: string; solo: string; withUs: string }
   {
     criterion: 'Oregon forms + disclosure liability',
     solo: 'You carry the paperwork and the liability',
-    withUs: 'State forms handled, disclosures reviewed by a licensed broker',
+    withUs: 'Every Oregon form completed and every disclosure reviewed before it goes out',
   },
   {
     criterion: 'Closing coordination',
