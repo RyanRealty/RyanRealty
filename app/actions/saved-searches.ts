@@ -99,6 +99,39 @@ export async function createSavedSearch(
   return { error: null }
 }
 
+/**
+ * Edit a user's own saved search — rename and/or change its parameters. Scoped
+ * to the signed-in user (RLS + user_id). When filters change, re-warm the cache
+ * so the result count + cached keys stay accurate.
+ */
+export async function updateSavedSearch(
+  id: string,
+  fields: { name?: string; filters?: SavedSearchFilters }
+): Promise<{ error: string | null }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not signed in' }
+  const patch: Record<string, unknown> = {}
+  if (fields.name !== undefined) patch.name = fields.name.trim() || 'Saved search'
+  if (fields.filters !== undefined) {
+    const normalizedFilters = normalizeSavedSearchFilters(fields.filters ?? {})
+    patch.filters = normalizedFilters
+    patch.filters_hash = getSavedSearchHash(normalizedFilters)
+    const warm = await prewarmSearchCache(normalizedFilters, 24)
+    patch.result_count = warm.totalCount
+    patch.cache_listing_keys = warm.listingKeys.slice(0, 24)
+    patch.cache_refreshed_at = new Date().toISOString()
+  }
+  if (Object.keys(patch).length === 0) return { error: null }
+  const { error } = await supabase
+    .from('saved_searches')
+    .update(patch)
+    .eq('id', id)
+    .eq('user_id', user.id)
+  if (error) return { error: error.message }
+  return { error: null }
+}
+
 export async function deleteSavedSearch(id: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
