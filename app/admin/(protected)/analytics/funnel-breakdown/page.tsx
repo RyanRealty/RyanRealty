@@ -18,10 +18,11 @@
 import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
+import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -301,9 +302,25 @@ async function FunnelContent() {
   const funnels  = buildSourceFunnels(rows)
   const insights = generateInsights(buckets, funnels)
   const totalSessions = rows.length
+  const totalIdentified = rows.filter((r) => r.identified_at).length
+  const totalHot = rows.filter((r) => r.hot_lead_fired_at).length
+  const sellerBucket = buckets.find((b) => b.label === 'seller')
+  const criticalCount = insights.filter((i) => i.severity === 'critical').length
 
   return (
     <div className="space-y-6">
+
+      {/* 0. Glanceable summary band */}
+      <DashboardSummaryStrip
+        stats={[
+          { label: 'Sessions (30d)', value: formatInt(totalSessions) },
+          { label: 'Identified', value: formatInt(totalIdentified), caption: formatPct(totalIdentified, totalSessions) },
+          { label: 'Hot leads', value: formatInt(totalHot), caption: formatPct(totalHot, totalSessions) },
+          { label: 'Seller intent', value: sellerBucket ? formatInt(sellerBucket.count) : '0' },
+          { label: 'Traffic sources', value: formatInt(funnels.length) },
+          { label: 'Critical flags', value: formatInt(criticalCount), tone: criticalCount > 0 ? 'warning' : 'default' },
+        ]}
+      />
 
       {/* 1. Insights — top of page so it cannot be missed */}
       <Card>
@@ -323,98 +340,85 @@ async function FunnelContent() {
       </Card>
 
       {/* 2. Intent split */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Intent split — who is looking to do what</CardTitle>
+      <section className="space-y-2">
+        <div className="space-y-1">
+          <h2 className="text-base font-semibold text-foreground">Intent split — who is looking to do what</h2>
           <p className="text-xs text-muted-foreground">
             Visitors classified by behavioral intent (which categories of pages they engaged with). Seller intent = visited /free-home-valuation or similar. Buyer intent = visited /buyers, /relocation, /explore. Browsing = viewed listings but did not signal seller/buyer. Total sessions: {formatInt(totalSessions)}.
           </p>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="whitespace-nowrap">Intent</TableHead>
-                  <TableHead className="text-right tabular-nums whitespace-nowrap">Sessions</TableHead>
-                  <TableHead className="text-right tabular-nums whitespace-nowrap">Identified</TableHead>
-                  <TableHead className="text-right tabular-nums whitespace-nowrap">Identify rate</TableHead>
-                  <TableHead className="text-right tabular-nums whitespace-nowrap">Hot leads</TableHead>
-                  <TableHead className="text-right tabular-nums whitespace-nowrap">Hot rate</TableHead>
-                  <TableHead className="whitespace-nowrap">Top source</TableHead>
-                  <TableHead className="whitespace-nowrap">Top city</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {buckets.map((b) => (
-                  <TableRow key={b.label}>
-                    <TableCell className="whitespace-nowrap">
-                      <Badge variant={b.label === 'seller' ? 'default' : b.label === 'buyer' ? 'secondary' : 'outline'}>
-                        {b.label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(b.count)}</TableCell>
-                    <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(b.identified)}</TableCell>
-                    <TableCell className="text-right tabular-nums whitespace-nowrap">{formatPct(b.identified, b.count)}</TableCell>
-                    <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(b.hot)}</TableCell>
-                    <TableCell className="text-right tabular-nums whitespace-nowrap">{formatPct(b.hot, b.count)}</TableCell>
-                    <TableCell className="text-xs whitespace-nowrap">{b.topSource}</TableCell>
-                    <TableCell className="text-xs whitespace-nowrap">{b.topCity}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+        <TableWithMobileCards
+          rows={buckets}
+          cap={8}
+          getRowKey={(b) => b.label}
+          columns={[
+            { key: 'intent', header: 'Intent', className: 'whitespace-nowrap', cell: (b) => <Badge variant={b.label === 'seller' ? 'default' : b.label === 'buyer' ? 'secondary' : 'outline'}>{b.label}</Badge> },
+            { key: 'sessions', header: 'Sessions', className: 'text-right tabular-nums whitespace-nowrap', cell: (b) => formatInt(b.count) },
+            { key: 'identified', header: 'Identified', className: 'text-right tabular-nums whitespace-nowrap', cell: (b) => formatInt(b.identified) },
+            { key: 'idRate', header: 'Identify rate', className: 'text-right tabular-nums whitespace-nowrap', cell: (b) => formatPct(b.identified, b.count) },
+            { key: 'hot', header: 'Hot leads', className: 'text-right tabular-nums whitespace-nowrap', cell: (b) => formatInt(b.hot) },
+            { key: 'hotRate', header: 'Hot rate', className: 'text-right tabular-nums whitespace-nowrap', cell: (b) => formatPct(b.hot, b.count) },
+            { key: 'topSource', header: 'Top source', className: 'text-xs whitespace-nowrap', cell: (b) => b.topSource },
+            { key: 'topCity', header: 'Top city', className: 'text-xs whitespace-nowrap', cell: (b) => b.topCity },
+          ]}
+          renderCard={(b) => (
+            <Card>
+              <CardContent className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Badge variant={b.label === 'seller' ? 'default' : b.label === 'buyer' ? 'secondary' : 'outline'}>{b.label}</Badge>
+                  <span className="text-lg font-semibold tabular-nums">{formatInt(b.count)} <span className="text-xs font-normal text-muted-foreground">sessions</span></span>
+                </div>
+                <p className="text-xs text-muted-foreground tabular-nums">{formatInt(b.identified)} identified ({formatPct(b.identified, b.count)}) · {formatInt(b.hot)} hot · {b.topSource} · {b.topCity}</p>
+              </CardContent>
+            </Card>
+          )}
+          empty={<>No intent-classified sessions in this window yet.</>}
+        />
+      </section>
 
       {/* 3. Funnel by source */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Funnel breakpoints by traffic source</CardTitle>
+      <section className="space-y-2">
+        <div className="space-y-1">
+          <h2 className="text-base font-semibold text-foreground">Funnel breakpoints by traffic source</h2>
           <p className="text-xs text-muted-foreground">
             Stage-by-stage drop-off. Bigger %s = more visitors keep going. Look at where the cliff is — that is what to fix first. Sources with fewer than 3 sessions are hidden.
           </p>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="whitespace-nowrap">Source</TableHead>
-                  <TableHead className="text-right tabular-nums whitespace-nowrap">Landed</TableHead>
-                  <TableHead className="text-right tabular-nums whitespace-nowrap">Engaged</TableHead>
-                  <TableHead className="text-right tabular-nums whitespace-nowrap">Intent</TableHead>
-                  <TableHead className="text-right tabular-nums whitespace-nowrap">Identified</TableHead>
-                  <TableHead className="text-right tabular-nums whitespace-nowrap">Hot lead</TableHead>
-                  <TableHead className="whitespace-nowrap">Biggest drop</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {funnels.map((f) => (
-                  <TableRow key={f.source}>
-                    <TableCell className="font-medium whitespace-nowrap">{f.source}</TableCell>
-                    {f.stages.map((stage) => (
-                      <TableCell key={stage.label} className="text-right tabular-nums whitespace-nowrap">
-                        <div>{formatInt(stage.count)}</div>
-                        <div className="text-[10px] text-muted-foreground">{stage.fromStart.toFixed(1)}%</div>
-                      </TableCell>
-                    ))}
-                    <TableCell className="text-xs whitespace-nowrap">
-                      <Badge variant={f.biggestDropPct >= 80 ? 'destructive' : f.biggestDropPct >= 50 ? 'default' : 'outline'}>
-                        {f.biggestDropLabel || '—'} ({f.biggestDropPct.toFixed(0)}%)
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">
-            Stage rules: Engaged = score ≥ 20. Intent = visitor hit a seller_intent or buyer_intent page. Identified = signed in via One-Tap, FB, or form. Hot lead = score crossed 100 and the FUB hot-lead task fired.
-          </p>
-        </CardContent>
-      </Card>
+        </div>
+        <TableWithMobileCards
+          rows={funnels}
+          cap={10}
+          getRowKey={(f) => f.source}
+          columns={[
+            { key: 'source', header: 'Source', className: 'font-medium whitespace-nowrap', cell: (f) => f.source },
+            { key: 'landed', header: 'Landed', className: 'text-right tabular-nums whitespace-nowrap', cell: (f) => <><div>{formatInt(f.stages[0].count)}</div><div className="text-[10px] text-muted-foreground">{f.stages[0].fromStart.toFixed(1)}%</div></> },
+            { key: 'engaged', header: 'Engaged', className: 'text-right tabular-nums whitespace-nowrap', cell: (f) => <><div>{formatInt(f.stages[1].count)}</div><div className="text-[10px] text-muted-foreground">{f.stages[1].fromStart.toFixed(1)}%</div></> },
+            { key: 'intent', header: 'Intent', className: 'text-right tabular-nums whitespace-nowrap', cell: (f) => <><div>{formatInt(f.stages[2].count)}</div><div className="text-[10px] text-muted-foreground">{f.stages[2].fromStart.toFixed(1)}%</div></> },
+            { key: 'identified', header: 'Identified', className: 'text-right tabular-nums whitespace-nowrap', cell: (f) => <><div>{formatInt(f.stages[3].count)}</div><div className="text-[10px] text-muted-foreground">{f.stages[3].fromStart.toFixed(1)}%</div></> },
+            { key: 'hot', header: 'Hot lead', className: 'text-right tabular-nums whitespace-nowrap', cell: (f) => <><div>{formatInt(f.stages[4].count)}</div><div className="text-[10px] text-muted-foreground">{f.stages[4].fromStart.toFixed(1)}%</div></> },
+            { key: 'drop', header: 'Biggest drop', className: 'text-xs whitespace-nowrap', cell: (f) => <Badge variant={f.biggestDropPct >= 80 ? 'destructive' : f.biggestDropPct >= 50 ? 'default' : 'outline'}>{f.biggestDropLabel || '—'} ({f.biggestDropPct.toFixed(0)}%)</Badge> },
+          ]}
+          renderCard={(f) => (
+            <Card>
+              <CardContent className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium">{f.source}</span>
+                  <span className="text-sm font-semibold tabular-nums">{formatInt(f.totalSessions)} <span className="text-xs font-normal text-muted-foreground">landed</span></span>
+                </div>
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  Engaged {f.stages[1].fromStart.toFixed(0)}% · Intent {f.stages[2].fromStart.toFixed(0)}% · Identified {f.stages[3].fromStart.toFixed(0)}% · Hot {f.stages[4].fromStart.toFixed(0)}%
+                </p>
+                <Badge variant={f.biggestDropPct >= 80 ? 'destructive' : f.biggestDropPct >= 50 ? 'default' : 'outline'}>
+                  {f.biggestDropLabel || '—'} ({f.biggestDropPct.toFixed(0)}%)
+                </Badge>
+              </CardContent>
+            </Card>
+          )}
+          empty={<>No traffic source has enough sessions (3+) to chart a funnel yet.</>}
+        />
+        <p className="text-xs text-muted-foreground">
+          Stage rules: Engaged = score ≥ 20. Intent = visitor hit a seller_intent or buyer_intent page. Identified = signed in via One-Tap, FB, or form. Hot lead = score crossed 100 and the FUB hot-lead task fired.
+        </p>
+      </section>
     </div>
   )
 }

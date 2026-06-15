@@ -43,12 +43,13 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { getGA4Summary, type GA4Summary } from '@/app/actions/ga4-report'
+import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
+import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -237,37 +238,15 @@ async function TrafficSourcesContent() {
         </Alert>
       )}
 
-      {/* 1. Hero metrics */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">GA4 sessions (30d)</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold tabular-nums text-foreground">{formatInt(ga4Sessions)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{formatInt(ga4Users)} unique users</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Visits captured</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold tabular-nums text-foreground">{formatInt(visitsCount)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">visits table (first-party)</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">First-touch sessions</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold tabular-nums text-foreground">{formatInt(sessions.length)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">visitor_sessions w/ attribution</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">GBP website clicks</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold tabular-nums text-foreground">{formatInt(gbpWebsiteClicks)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{formatInt(gbpCallClicks)} calls · {formatInt(gbpDirectionsClicks)} directions</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* 1. Hero metrics — glanceable KPI band */}
+      <DashboardSummaryStrip
+        stats={[
+          { label: 'GA4 sessions (30d)', value: formatInt(ga4Sessions), caption: `${formatInt(ga4Users)} unique users` },
+          { label: 'Visits captured', value: formatInt(visitsCount), caption: 'visits table (first-party)' },
+          { label: 'First-touch sessions', value: formatInt(sessions.length), caption: 'visitor_sessions w/ attribution' },
+          { label: 'GBP website clicks', value: formatInt(gbpWebsiteClicks), caption: `${formatInt(gbpCallClicks)} calls · ${formatInt(gbpDirectionsClicks)} directions` },
+        ]}
+      />
 
       {/* GBP attribution callout — the one place where you can spot the
           gap between what GBP reports as outbound clicks and what GA4 sees
@@ -299,191 +278,171 @@ async function TrafficSourcesContent() {
         </CardContent>
       </Card>
 
-      {/* 2. GA4 default channel group */}
+      {/* 2. GA4 source / medium */}
       {ga4 && ga4.socialChannels && (
-        <Card>
-          <CardHeader>
-            <CardTitle>GA4 source / medium (top 20)</CardTitle>
+        <section className="space-y-2">
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold text-foreground">GA4 source / medium</h2>
             <p className="text-xs text-muted-foreground">
               Aggregated by GA4&apos;s default attribution. Use this view for high-level channel-mix decisions.
             </p>
-          </CardHeader>
-          <CardContent>
-            <div className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">Source / Medium</TableHead>
-                    <TableHead className="whitespace-nowrap text-right tabular-nums">Sessions</TableHead>
-                    <TableHead className="whitespace-nowrap text-right tabular-nums">Users</TableHead>
-                    <TableHead className="whitespace-nowrap text-right tabular-nums">Engaged</TableHead>
-                    <TableHead className="whitespace-nowrap text-right tabular-nums">Engagement</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {ga4.topSources.map((s) => (
-                    <TableRow key={s.sourceMedium}>
-                      <TableCell className="whitespace-nowrap text-xs">{s.sourceMedium}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(s.sessions)}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(s.users)}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(s.engagedSessions)}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums">{(s.engagementRate * 100).toFixed(0)}%</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+          <TableWithMobileCards
+            rows={ga4.topSources}
+            cap={10}
+            getRowKey={(s) => s.sourceMedium}
+            columns={[
+              { key: 'source', header: 'Source / Medium', className: 'whitespace-nowrap text-xs', cell: (s) => s.sourceMedium },
+              { key: 'sessions', header: 'Sessions', className: 'whitespace-nowrap text-right tabular-nums', cell: (s) => formatInt(s.sessions) },
+              { key: 'users', header: 'Users', className: 'whitespace-nowrap text-right tabular-nums', cell: (s) => formatInt(s.users) },
+              { key: 'engaged', header: 'Engaged', className: 'whitespace-nowrap text-right tabular-nums', cell: (s) => formatInt(s.engagedSessions) },
+              { key: 'rate', header: 'Engagement', className: 'whitespace-nowrap text-right tabular-nums', cell: (s) => `${(s.engagementRate * 100).toFixed(0)}%` },
+            ]}
+            renderCard={(s) => (
+              <Card>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium">{s.sourceMedium}</span>
+                    <span className="text-sm font-semibold tabular-nums">{formatInt(s.sessions)} <span className="text-xs font-normal text-muted-foreground">sess</span></span>
+                  </div>
+                  <p className="text-xs text-muted-foreground tabular-nums">{formatInt(s.users)} users · {formatInt(s.engagedSessions)} engaged · {(s.engagementRate * 100).toFixed(0)}% rate</p>
+                </CardContent>
+              </Card>
+            )}
+            empty={<>No source rows from GA4 in the last 30 days. Confirm the GA4 Data API connection on the analytics overview.</>}
+          />
+        </section>
       )}
 
       {/* 3. Visitor_sessions UTM tally */}
-      <Card>
-        <CardHeader>
-          <CardTitle>First-touch UTM attribution (top 20)</CardTitle>
+      <section className="space-y-2">
+        <div className="space-y-1">
+          <h2 className="text-base font-semibold text-foreground">First-touch UTM attribution</h2>
           <p className="text-xs text-muted-foreground">
             Where each visitor came from on their FIRST visit (from <code className="rounded bg-muted px-1">visitor_sessions</code>). UTMs override referrer; <code className="rounded bg-muted px-1">(no utm)</code> means the channel didn&apos;t carry tags and was inferred from referrer instead.
           </p>
-        </CardHeader>
-        <CardContent>
-          {topUtms.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No first-touch sessions in the last 30 days. The WordPress + Next.js tracking snippet has to fire for these to populate.</p>
-          ) : (
-            <div className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">Source</TableHead>
-                    <TableHead className="whitespace-nowrap">Medium</TableHead>
-                    <TableHead className="whitespace-nowrap">Campaign</TableHead>
-                    <TableHead className="whitespace-nowrap text-right tabular-nums">Sessions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {topUtms.map((r) => (
-                    <TableRow key={`${r.source}|${r.medium}|${r.campaign}`}>
-                      <TableCell className="whitespace-nowrap text-xs">{r.source}</TableCell>
-                      <TableCell className="whitespace-nowrap text-xs">{r.medium}</TableCell>
-                      <TableCell className="whitespace-nowrap text-xs">{r.campaign}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(r.count)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+        </div>
+        <TableWithMobileCards
+          rows={topUtms}
+          cap={10}
+          getRowKey={(r) => `${r.source}|${r.medium}|${r.campaign}`}
+          columns={[
+            { key: 'source', header: 'Source', className: 'whitespace-nowrap text-xs', cell: (r) => r.source },
+            { key: 'medium', header: 'Medium', className: 'whitespace-nowrap text-xs', cell: (r) => r.medium },
+            { key: 'campaign', header: 'Campaign', className: 'whitespace-nowrap text-xs', cell: (r) => r.campaign },
+            { key: 'sessions', header: 'Sessions', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.count) },
+          ]}
+          renderCard={(r) => (
+            <Card>
+              <CardContent className="space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium">{r.source} / {r.medium}</span>
+                  <span className="text-sm font-semibold tabular-nums">{formatInt(r.count)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">{r.campaign}</p>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
+          empty={<>No first-touch sessions in the last 30 days. The WordPress + Next.js tracking snippet has to fire for these to populate.</>}
+        />
+      </section>
 
       {/* 4. Raw referrers from visits table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Raw referrers (top 30)</CardTitle>
+      <section className="space-y-2">
+        <div className="space-y-1">
+          <h2 className="text-base font-semibold text-foreground">Raw referrers</h2>
           <p className="text-xs text-muted-foreground">
             Every distinct referring URL recorded in <code className="rounded bg-muted px-1">visits.referrer</code>, classified into a coarse platform bucket. This is the rawest view — what the browser actually sent in the Referer header.
           </p>
-        </CardHeader>
-        <CardContent>
-          {topReferrers.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No visits in the last 30 days.</p>
-          ) : (
-            <div className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">Platform</TableHead>
-                    <TableHead className="whitespace-nowrap">Referrer</TableHead>
-                    <TableHead className="whitespace-nowrap text-right tabular-nums">Visits</TableHead>
-                    <TableHead className="whitespace-nowrap text-right tabular-nums">Share</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {topReferrers.map((r) => (
-                    <TableRow key={`${r.bucket}|${r.referrer}`}>
-                      <TableCell className="whitespace-nowrap"><Badge variant={r.bucket === '(direct)' || r.bucket === '(internal)' ? 'outline' : 'secondary'} className="text-[10px]">{r.bucket}</Badge></TableCell>
-                      <TableCell className="max-w-md truncate text-xs">{r.referrer}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(r.count)}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums text-muted-foreground">{formatPct(r.count, visitsCount)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+        </div>
+        <TableWithMobileCards
+          rows={topReferrers}
+          cap={10}
+          getRowKey={(r) => `${r.bucket}|${r.referrer}`}
+          columns={[
+            { key: 'platform', header: 'Platform', className: 'whitespace-nowrap', cell: (r) => <Badge variant={r.bucket === '(direct)' || r.bucket === '(internal)' ? 'outline' : 'secondary'} className="text-[10px]">{r.bucket}</Badge> },
+            { key: 'referrer', header: 'Referrer', className: 'max-w-md truncate text-xs', cell: (r) => r.referrer },
+            { key: 'visits', header: 'Visits', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.count) },
+            { key: 'share', header: 'Share', className: 'whitespace-nowrap text-right tabular-nums text-muted-foreground', cell: (r) => formatPct(r.count, visitsCount) },
+          ]}
+          renderCard={(r) => (
+            <Card>
+              <CardContent className="space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <Badge variant={r.bucket === '(direct)' || r.bucket === '(internal)' ? 'outline' : 'secondary'} className="text-[10px]">{r.bucket}</Badge>
+                  <span className="text-sm font-semibold tabular-nums">{formatInt(r.count)} <span className="text-xs font-normal text-muted-foreground">({formatPct(r.count, visitsCount)})</span></span>
+                </div>
+                <p className="truncate text-xs text-muted-foreground">{r.referrer}</p>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
+          empty={<>No visits in the last 30 days.</>}
+        />
+      </section>
 
       {/* 5. Top landing pages */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Top landing pages (first hit per session, top 20)</CardTitle>
+      <section className="space-y-2">
+        <div className="space-y-1">
+          <h2 className="text-base font-semibold text-foreground">Top landing pages (first hit per session)</h2>
           <p className="text-xs text-muted-foreground">
             Where each session began. High counts on <code className="rounded bg-muted px-1">/lp/&lt;variant&gt;</code> mean paid ads are sending traffic; high counts on <code className="rounded bg-muted px-1">/listings/...</code> mean organic SEO is working.
           </p>
-        </CardHeader>
-        <CardContent>
-          {topLandings.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No landing-page data yet.</p>
-          ) : (
-            <div className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">Landing page</TableHead>
-                    <TableHead className="whitespace-nowrap text-right tabular-nums">Sessions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {topLandings.map(([lp, count]) => (
-                    <TableRow key={lp}>
-                      <TableCell className="max-w-md truncate text-xs">{lp}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(count)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+        </div>
+        <TableWithMobileCards
+          rows={topLandings}
+          cap={10}
+          getRowKey={([lp]) => lp}
+          columns={[
+            { key: 'lp', header: 'Landing page', className: 'max-w-md truncate text-xs', cell: ([lp]) => lp },
+            { key: 'sessions', header: 'Sessions', className: 'whitespace-nowrap text-right tabular-nums', cell: ([, count]) => formatInt(count) },
+          ]}
+          renderCard={([lp, count]) => (
+            <Card>
+              <CardContent className="flex items-center justify-between gap-2">
+                <span className="truncate text-xs">{lp}</span>
+                <span className="text-sm font-semibold tabular-nums">{formatInt(count)}</span>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
+          empty={<>No landing-page data yet. Once the tracking snippet records session starts, top pages appear here.</>}
+        />
+      </section>
 
       {/* 6. Untagged-channel analysis — actionable list */}
       {untaggedSorted.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Channels you should tag with UTMs ({formatInt(untaggedSessions.length)} untagged sessions)</CardTitle>
+        <section className="space-y-2">
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold text-foreground">Channels you should tag with UTMs ({formatInt(untaggedSessions.length)} untagged sessions)</h2>
             <p className="text-xs text-muted-foreground">
               These platforms sent visitors to the site without a UTM tag, so they collapse into &ldquo;referral&rdquo; in GA4. Adding the canonical UTM string to your links on each platform makes their traffic separable in reports.
             </p>
-          </CardHeader>
-          <CardContent>
-            <div className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">Platform</TableHead>
-                    <TableHead className="whitespace-nowrap text-right tabular-nums">Untagged sessions</TableHead>
-                    <TableHead className="whitespace-nowrap">Suggested UTM string</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {untaggedSorted.map(([platform, count]) => (
-                    <TableRow key={platform}>
-                      <TableCell className="whitespace-nowrap"><Badge variant="default" className="text-[10px]">{platform}</Badge></TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(count)}</TableCell>
-                      <TableCell className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
-                        ?utm_source={platform}&amp;utm_medium=referral&amp;utm_campaign=organic
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            <p className="mt-3 text-xs text-muted-foreground">
-              See <code className="rounded bg-muted px-1">docs/UTM_TRACKING_CONVENTION.md</code> for the recommended UTM string per channel (GBP, IG bio, email signature, YouTube descriptions, etc.).
-            </p>
-          </CardContent>
-        </Card>
+          </div>
+          <TableWithMobileCards
+            rows={untaggedSorted}
+            cap={12}
+            getRowKey={([platform]) => platform}
+            columns={[
+              { key: 'platform', header: 'Platform', className: 'whitespace-nowrap', cell: ([platform]) => <Badge variant="default" className="text-[10px]">{platform}</Badge> },
+              { key: 'count', header: 'Untagged sessions', className: 'whitespace-nowrap text-right tabular-nums', cell: ([, count]) => formatInt(count) },
+              { key: 'utm', header: 'Suggested UTM string', className: 'whitespace-nowrap font-mono text-[10px] text-muted-foreground', cell: ([platform]) => <>?utm_source={platform}&amp;utm_medium=referral&amp;utm_campaign=organic</> },
+            ]}
+            renderCard={([platform, count]) => (
+              <Card>
+                <CardContent className="space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge variant="default" className="text-[10px]">{platform}</Badge>
+                    <span className="text-sm font-semibold tabular-nums">{formatInt(count)} <span className="text-xs font-normal text-muted-foreground">untagged</span></span>
+                  </div>
+                  <p className="font-mono text-[10px] text-muted-foreground">?utm_source={platform}&amp;utm_medium=referral&amp;utm_campaign=organic</p>
+                </CardContent>
+              </Card>
+            )}
+            empty={<>Every referring channel is carrying a UTM tag. Nothing to fix here.</>}
+          />
+          <p className="text-xs text-muted-foreground">
+            See <code className="rounded bg-muted px-1">docs/UTM_TRACKING_CONVENTION.md</code> for the recommended UTM string per channel (GBP, IG bio, email signature, YouTube descriptions, etc.).
+          </p>
+        </section>
       )}
 
       <Separator />

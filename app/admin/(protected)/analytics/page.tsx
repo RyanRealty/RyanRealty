@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
 import {
   resolveDateRange,
   fetchOverview,
@@ -165,7 +166,7 @@ async function OverviewTab({ range }: { range: { startDate: string; endDate: str
             {d.topSources.length === 0 ? (
               <p className="text-sm text-muted-foreground">No source data in this range.</p>
             ) : (
-              <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+              <div className="overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -194,7 +195,7 @@ async function OverviewTab({ range }: { range: { startDate: string; endDate: str
             {d.topLandingPages.length === 0 ? (
               <p className="text-sm text-muted-foreground">No page data in this range.</p>
             ) : (
-              <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+              <div className="overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -255,43 +256,34 @@ async function AcquisitionTab({ range }: { range: { startDate: string; endDate: 
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">All UTM combinations</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {d.sources.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No source data in this range.</p>
-          ) : (
-            <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">Source / Medium</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Sessions</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Users</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Engaged sessions</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Leads</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Conversion rate</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {d.sources.map((s) => (
-                    <TableRow key={s.sourceMedium}>
-                      <TableCell className="font-medium whitespace-nowrap">{s.sourceMedium}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(s.sessions)}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(s.users)}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(s.engagedSessions)}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(s.leadEvents)}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatPct(s.conversionRate, 2)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+      <section className="space-y-2">
+        <h3 className="text-base font-semibold text-foreground">Top UTM combinations</h3>
+        <TableWithMobileCards
+          rows={d.sources}
+          cap={10}
+          getRowKey={(s) => s.sourceMedium}
+          columns={[
+            { key: 'source', header: 'Source / Medium', className: 'font-medium whitespace-nowrap', cell: (s) => s.sourceMedium },
+            { key: 'sessions', header: 'Sessions', className: 'text-right tabular-nums whitespace-nowrap', cell: (s) => formatInt(s.sessions) },
+            { key: 'users', header: 'Users', className: 'text-right tabular-nums whitespace-nowrap', cell: (s) => formatInt(s.users) },
+            { key: 'engaged', header: 'Engaged sessions', className: 'text-right tabular-nums whitespace-nowrap', cell: (s) => formatInt(s.engagedSessions) },
+            { key: 'leads', header: 'Leads', className: 'text-right tabular-nums whitespace-nowrap', cell: (s) => formatInt(s.leadEvents) },
+            { key: 'conv', header: 'Conversion rate', className: 'text-right tabular-nums whitespace-nowrap', cell: (s) => formatPct(s.conversionRate, 2) },
+          ]}
+          renderCard={(s) => (
+            <Card>
+              <CardContent className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium">{s.sourceMedium}</span>
+                  <span className="text-sm font-semibold tabular-nums">{formatInt(s.sessions)} <span className="text-xs font-normal text-muted-foreground">sess</span></span>
+                </div>
+                <p className="text-xs text-muted-foreground tabular-nums">{formatInt(s.leadEvents)} leads · {formatPct(s.conversionRate, 2)} conv · {formatInt(s.users)} users</p>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
+          empty={<>No source data in this range. Widen the date range, or check that the GA4 cron is writing source rows.</>}
+        />
+      </section>
 
       {d.channels.length > 0 && (
         <Card>
@@ -299,7 +291,7 @@ async function AcquisitionTab({ range }: { range: { startDate: string; endDate: 
             <CardTitle className="text-base">Social channel sessions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+            <div className="overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -345,7 +337,7 @@ async function BehaviorTab({ range }: { range: { startDate: string; endDate: str
           {d.pages.length === 0 ? (
             <p className="text-sm text-muted-foreground">No page data in this range.</p>
           ) : (
-            <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+            <div className="overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -384,7 +376,7 @@ async function BehaviorTab({ range }: { range: { startDate: string; endDate: str
           {d.scrollDepths.every((s) => s.eventCount === 0) ? (
             <p className="text-sm text-muted-foreground">No scroll_depth events in this range.</p>
           ) : (
-            <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+            <div className="overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -500,7 +492,7 @@ async function ConversionsTab({ range }: { range: { startDate: string; endDate: 
             {d.leadsBySource.length === 0 ? (
               <p className="text-sm text-muted-foreground">No attributed lead sources in this range.</p>
             ) : (
-              <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+              <div className="overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
                 <Table>
                   <TableHeader>
                     <TableRow>

@@ -10,10 +10,11 @@
  */
 import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
+import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
+import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -167,127 +168,89 @@ async function CostPerLead() {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card><CardContent className="p-4">
-          <p className="text-xs text-muted-foreground">Paid spend this week</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">{formatUsd(last7Spend)}</p>
-          <p className="text-xs text-muted-foreground tabular-nums">Meta {formatUsd(weeks[0]?.[1].metaSpend ?? 0)} · Google {formatUsd(weeks[0]?.[1].googleSpend ?? 0)}</p>
-        </CardContent></Card>
-        <Card><CardContent className="p-4">
-          <p className="text-xs text-muted-foreground">Qualified leads this week</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">{formatInt(last7Qualified)}</p>
-        </CardContent></Card>
-        <Card><CardContent className="p-4">
-          <p className="text-xs text-muted-foreground">Cost per qualified lead (this week)</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">{last7Cpl == null ? '—' : formatUsd(last7Cpl)}</p>
-          {last4Cpl != null && <p className="text-xs text-muted-foreground tabular-nums">4-wk avg: {formatUsd(last4Cpl)}</p>}
-        </CardContent></Card>
-        <Card><CardContent className="p-4">
-          <p className="text-xs text-muted-foreground">FB identified visitors this week</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">{formatInt(last7FbIdentified)}</p>
-          {last7CplIdentified != null && <p className="text-xs text-muted-foreground tabular-nums">{formatUsd(last7CplIdentified)} per identification</p>}
-        </CardContent></Card>
-      </div>
+      <DashboardSummaryStrip
+        stats={[
+          { label: 'Cost / qualified lead (wk)', value: last7Cpl == null ? null : formatUsd(last7Cpl), caption: last4Cpl != null ? `4-wk avg ${formatUsd(last4Cpl)}` : undefined },
+          { label: 'Paid spend this week', value: formatUsd(last7Spend), caption: `Meta ${formatUsd(weeks[0]?.[1].metaSpend ?? 0)} · Google ${formatUsd(weeks[0]?.[1].googleSpend ?? 0)}` },
+          { label: 'Qualified leads (wk)', value: formatInt(last7Qualified) },
+          { label: 'FB identified (wk)', value: formatInt(last7FbIdentified), caption: last7CplIdentified != null ? `${formatUsd(last7CplIdentified)} / id` : undefined },
+          { label: 'Closed deals (90d)', value: formatInt(totals90.closedWon), caption: `${formatUsd(totals90.closedVolume)} volume` },
+          { label: 'Spend / closing (90d)', value: costPerClosed90 == null ? null : formatUsd(costPerClosed90), caption: 'blended, all sources' },
+        ]}
+      />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Card><CardContent className="p-4">
-          <p className="text-xs text-muted-foreground">Closed deals (90d)</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">{formatInt(totals90.closedWon)}</p>
-        </CardContent></Card>
-        <Card><CardContent className="p-4">
-          <p className="text-xs text-muted-foreground">Closed volume (90d)</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">{formatUsd(totals90.closedVolume)}</p>
-        </CardContent></Card>
-        <Card><CardContent className="p-4">
-          <p className="text-xs text-muted-foreground">Paid spend per closing (90d, blended)</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">{costPerClosed90 == null ? '—' : formatUsd(costPerClosed90)}</p>
-          <p className="text-xs text-muted-foreground">Total paid spend across all closings, every source. The by-source split builds in channel data as closings land.</p>
-        </CardContent></Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Weekly trend (last 12 weeks)</CardTitle>
+      <section className="space-y-2">
+        <div className="space-y-1">
+          <h2 className="text-base font-semibold text-foreground">Weekly trend</h2>
           <p className="text-xs text-muted-foreground">
             Combined paid spend (Meta + Google Ads, broken out per column) joined with FUB qualified seller leads. Cost-per-qualified-lead is the headline column. If you spent $400 last week and got 4 qualified seller leads, you paid $100 per. Compare week-over-week and against the 4-week average above.
           </p>
-        </CardHeader>
-        <CardContent className="p-0">
-          {weeks.length === 0 ? (
-            <p className="p-6 text-sm text-muted-foreground">No paid-ad spend or qualified lead data in the last 90 days.</p>
-          ) : (
-            <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">Week of</TableHead>
-                    <TableHead className="whitespace-nowrap text-right tabular-nums">Spend</TableHead>
-                    <TableHead className="whitespace-nowrap text-right tabular-nums">Qualified leads</TableHead>
-                    <TableHead className="whitespace-nowrap text-right tabular-nums">Cost / qualified lead</TableHead>
-                    <TableHead className="whitespace-nowrap text-right tabular-nums">Closed deals</TableHead>
-                    <TableHead className="whitespace-nowrap text-right tabular-nums">All new leads (FUB)</TableHead>
-                    <TableHead className="whitespace-nowrap text-right tabular-nums">FB sessions</TableHead>
-                    <TableHead className="whitespace-nowrap text-right tabular-nums">FB identified</TableHead>
-                    <TableHead className="whitespace-nowrap text-right tabular-nums">FB hot</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {weeks.slice(0, 12).map(([wk, b]) => {
-                    const cpl = b.qualifiedLeads > 0 ? b.spend / b.qualifiedLeads : null
-                    const cplVariant: 'default' | 'destructive' | 'secondary' | 'outline' = cpl == null ? 'outline' : cpl < 75 ? 'default' : cpl < 150 ? 'secondary' : 'destructive'
-                    return (
-                      <TableRow key={wk}>
-                        <TableCell className="whitespace-nowrap font-medium">{wk}</TableCell>
-                        <TableCell className="whitespace-nowrap text-right tabular-nums">{formatUsd(b.spend)}</TableCell>
-                        <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(b.qualifiedLeads)}</TableCell>
-                        <TableCell className="whitespace-nowrap text-right">
-                          <Badge variant={cplVariant} className="tabular-nums">{cpl == null ? '—' : formatUsd(cpl)}</Badge>
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(b.closedWon)}</TableCell>
-                        <TableCell className="whitespace-nowrap text-right tabular-nums text-muted-foreground">{formatInt(b.newLeads)}</TableCell>
-                        <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(b.fbSessions)}</TableCell>
-                        <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(b.fbIdentified)}</TableCell>
-                        <TableCell className="whitespace-nowrap text-right tabular-nums">{formatInt(b.fbHot)}</TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-          <p className="px-4 pb-4 pt-2 text-xs text-muted-foreground">
-            Cost-per-lead badge: green &lt; $75, amber $75-$150, red &gt;= $150. Industry HNW seller benchmarks land in the $80-$120 range; consistent reds mean creative + audience need a rebuild, not more spend.
-          </p>
-        </CardContent>
-      </Card>
+        </div>
+        <TableWithMobileCards
+          rows={weeks.map(([wk, b]) => ({ wk, b }))}
+          cap={12}
+          getRowKey={(r) => r.wk}
+          columns={[
+            { key: 'week', header: 'Week of', className: 'whitespace-nowrap font-medium', cell: (r) => r.wk },
+            { key: 'spend', header: 'Spend', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatUsd(r.b.spend) },
+            { key: 'qual', header: 'Qualified leads', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.b.qualifiedLeads) },
+            { key: 'cpl', header: 'Cost / qualified lead', className: 'whitespace-nowrap text-right', cell: (r) => { const cpl = r.b.qualifiedLeads > 0 ? r.b.spend / r.b.qualifiedLeads : null; const v: 'default' | 'destructive' | 'secondary' | 'outline' = cpl == null ? 'outline' : cpl < 75 ? 'default' : cpl < 150 ? 'secondary' : 'destructive'; return <Badge variant={v} className="tabular-nums">{cpl == null ? '—' : formatUsd(cpl)}</Badge> } },
+            { key: 'closed', header: 'Closed deals', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.b.closedWon) },
+            { key: 'newLeads', header: 'All new leads (FUB)', className: 'whitespace-nowrap text-right tabular-nums text-muted-foreground', cell: (r) => formatInt(r.b.newLeads) },
+            { key: 'fbSessions', header: 'FB sessions', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.b.fbSessions) },
+            { key: 'fbId', header: 'FB identified', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.b.fbIdentified) },
+            { key: 'fbHot', header: 'FB hot', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.b.fbHot) },
+          ]}
+          renderCard={(r) => {
+            const cpl = r.b.qualifiedLeads > 0 ? r.b.spend / r.b.qualifiedLeads : null
+            const v: 'default' | 'destructive' | 'secondary' | 'outline' = cpl == null ? 'outline' : cpl < 75 ? 'default' : cpl < 150 ? 'secondary' : 'destructive'
+            return (
+              <Card>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium tabular-nums">{r.wk}</span>
+                    <Badge variant={v} className="tabular-nums">{cpl == null ? '—' : `${formatUsd(cpl)} / lead`}</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground tabular-nums">{formatUsd(r.b.spend)} spend · {formatInt(r.b.qualifiedLeads)} qualified · {formatInt(r.b.closedWon)} closed · {formatInt(r.b.fbIdentified)} FB id</p>
+                </CardContent>
+              </Card>
+            )
+          }}
+          empty={<>No paid-ad spend or qualified lead data in the last 90 days. Once the Meta/Google spend cron and FUB lead snapshots populate, weekly cost-per-lead appears here.</>}
+        />
+        <p className="text-xs text-muted-foreground">
+          Cost-per-lead badge: green &lt; $75, amber $75-$150, red &gt;= $150. Industry HNW seller benchmarks land in the $80-$120 range; consistent reds mean creative + audience need a rebuild, not more spend.
+        </p>
+      </section>
 
-      {weeks[0] && weeks[0][1].campaigns.size > 0 && (
-        <Card>
-          <CardHeader><CardTitle>This week by campaign</CardTitle></CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Campaign</TableHead>
-                    <TableHead className="whitespace-nowrap text-right tabular-nums">Spend this week</TableHead>
-                    <TableHead className="whitespace-nowrap text-right tabular-nums">Share of week</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Array.from(weeks[0][1].campaigns.entries()).sort((a, b) => b[1] - a[1]).map(([name, spend]) => (
-                    <TableRow key={name}>
-                      <TableCell className="font-mono text-xs">{name}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatUsd(spend)}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums">{weeks[0][1].spend > 0 ? `${((spend / weeks[0][1].spend) * 100).toFixed(1)}%` : '—'}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {weeks[0] && weeks[0][1].campaigns.size > 0 && (() => {
+        const weekSpend = weeks[0][1].spend
+        const campaignRows = Array.from(weeks[0][1].campaigns.entries()).sort((a, b) => b[1] - a[1]).map(([name, spend]) => ({ name, spend }))
+        return (
+          <section className="space-y-2">
+            <h2 className="text-base font-semibold text-foreground">This week by campaign</h2>
+            <TableWithMobileCards
+              rows={campaignRows}
+              cap={10}
+              getRowKey={(r) => r.name}
+              columns={[
+                { key: 'name', header: 'Campaign', className: 'font-mono text-xs', cell: (r) => r.name },
+                { key: 'spend', header: 'Spend this week', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatUsd(r.spend) },
+                { key: 'share', header: 'Share of week', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => weekSpend > 0 ? `${((r.spend / weekSpend) * 100).toFixed(1)}%` : '—' },
+              ]}
+              renderCard={(r) => (
+                <Card>
+                  <CardContent className="space-y-1">
+                    <p className="font-mono text-xs">{r.name}</p>
+                    <p className="text-xs text-muted-foreground tabular-nums">{formatUsd(r.spend)} · {weekSpend > 0 ? `${((r.spend / weekSpend) * 100).toFixed(1)}% of week` : '—'}</p>
+                  </CardContent>
+                </Card>
+              )}
+              empty={<>No campaign-level spend recorded this week.</>}
+            />
+          </section>
+        )
+      })()}
     </>
   )
 }
