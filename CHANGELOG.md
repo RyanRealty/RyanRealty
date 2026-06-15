@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.561.0 (2026-06-15)
+
+### Features
+- feat(admin): bulk-assign leads to newsletter / saved search from the CRM list
+
+---
+
+
 ## v1.560.0 (2026-06-15)
 
 ### Features
