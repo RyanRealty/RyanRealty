@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.554.0 (2026-06-15)
+
+### Features
+- feat(admin): curate the final 3 pages — every admin page now at the bar
+
+---
+
+
 ## v1.553.0 (2026-06-15)
 
 ### Features
