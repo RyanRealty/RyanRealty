@@ -4,6 +4,7 @@ import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getCrmAccess } from '@/app/actions/crm'
 import { CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
+import { buildAdminNav } from '@/app/components/admin/admin-nav'
 import ConsoleShell from '@/components/console/ConsoleShell'
 
 /**
@@ -45,6 +46,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
             null,
         }}
         brokerLabel={brokerLabel}
+        navSections={buildAdminNav(adminRole.role, adminRole.brokerId)}
       >
         {children}
       </ConsoleShell>
