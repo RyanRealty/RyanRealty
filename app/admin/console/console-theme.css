@@ -1,0 +1,135 @@
+/*
+ * Console neutral theme — scoped reskin for the broker workspace.
+ *
+ * Matt directive 2026-06-15: the admin does NOT carry the Ryan Realty brand.
+ * It must be ultra-intuitive, not on-brand. Every shadcn/ui component reads its
+ * color from `var(--primary)`, `var(--muted-foreground)`, etc. (mapped through
+ * `@theme inline` in app/globals.css). Overriding those raw custom properties on
+ * the `.console-root` wrapper re-skins the ENTIRE component tree underneath it to
+ * a neutral dashboard palette (Linear / Notion register) without touching the
+ * public site and without tripping the design-token gate (we only ever write
+ * semantic token classes — `bg-card`, `text-muted-foreground`, `bg-primary` —
+ * never literal palette utilities or hex).
+ *
+ * Custom-property substitution resolves at the point of use, so this cascade
+ * reaches reused brand components (EmailComposer, SmsComposer, ConversationThread)
+ * automatically — they render neutral inside the console with no edits.
+ */
+
+.console-root {
+  /* Surfaces — soft neutral page, white cards. */
+  --background: oklch(0.985 0 0);
+  --foreground: oklch(0.205 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.205 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.205 0 0);
+
+  /* Primary action — confident near-black, not navy. */
+  --primary: oklch(0.255 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+
+  /* Secondary / muted / accent — neutral grays. */
+  --secondary: oklch(0.962 0 0);
+  --secondary-foreground: oklch(0.255 0 0);
+  --muted: oklch(0.968 0 0);
+  --muted-foreground: oklch(0.525 0 0);
+  --accent: oklch(0.95 0 0);
+  --accent-foreground: oklch(0.255 0 0);
+
+  /* Lines + inputs. */
+  --border: oklch(0.918 0 0);
+  --input: oklch(0.918 0 0);
+
+  /* Focus ring — a calm, legible blue (console is exempt from the warm-stone
+     brand ring rule). */
+  --ring: oklch(0.62 0.13 255);
+  --radius: 0.5rem;
+
+  /* Signals — kept vivid so status reads instantly. Success/warning/destructive
+     inherit from :root unchanged; re-stated here for clarity. */
+  --success: oklch(0.55 0.13 150);
+  --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.78 0.16 75);
+  --warning-foreground: oklch(0.24 0.02 75);
+  --destructive: oklch(0.585 0.2 25);
+
+  /* Sidebar — slightly raised neutral. */
+  --sidebar: oklch(0.978 0 0);
+  --sidebar-foreground: oklch(0.32 0 0);
+  --sidebar-primary: oklch(0.255 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.945 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.918 0 0);
+  --sidebar-ring: oklch(0.62 0.13 255);
+
+  /* Console-only info accent (priority highlights, links). Referenced by inline
+     style var() — never as a banned palette utility. */
+  --console-info: oklch(0.55 0.15 255);
+  --console-info-strong: oklch(0.42 0.14 255);
+  --console-info-soft: oklch(0.965 0.02 255);
+
+  /* Status pill tones — dot (base) + soft fill + strong text. Color is a SIGNAL,
+     always paired with a dot + a text label (never color alone, per WCAG). */
+  --console-neutral: oklch(0.55 0 0);
+  --console-neutral-soft: oklch(0.95 0 0);
+  --console-neutral-strong: oklch(0.4 0 0);
+  --console-success: oklch(0.55 0.13 150);
+  --console-success-soft: oklch(0.95 0.04 150);
+  --console-success-strong: oklch(0.4 0.12 150);
+  --console-warning: oklch(0.7 0.13 75);
+  --console-warning-soft: oklch(0.95 0.05 80);
+  --console-warning-strong: oklch(0.45 0.09 70);
+  --console-danger: oklch(0.58 0.2 25);
+  --console-danger-soft: oklch(0.96 0.03 25);
+  --console-danger-strong: oklch(0.47 0.18 27);
+}
+
+.dark .console-root {
+  --background: oklch(0.18 0 0);
+  --foreground: oklch(0.96 0 0);
+  --card: oklch(0.215 0 0);
+  --card-foreground: oklch(0.96 0 0);
+  --popover: oklch(0.215 0 0);
+  --popover-foreground: oklch(0.96 0 0);
+
+  --primary: oklch(0.92 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+
+  --secondary: oklch(0.27 0 0);
+  --secondary-foreground: oklch(0.96 0 0);
+  --muted: oklch(0.27 0 0);
+  --muted-foreground: oklch(0.7 0 0);
+  --accent: oklch(0.29 0 0);
+  --accent-foreground: oklch(0.96 0 0);
+
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.62 0.13 255);
+
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.82 0 0);
+  --sidebar-primary: oklch(0.92 0 0);
+  --sidebar-primary-foreground: oklch(0.205 0 0);
+  --sidebar-accent: oklch(0.27 0 0);
+  --sidebar-accent-foreground: oklch(0.96 0 0);
+  --sidebar-border: oklch(1 0 0 / 12%);
+
+  --console-info: oklch(0.7 0.13 255);
+  --console-info-strong: oklch(0.8 0.12 255);
+  --console-info-soft: oklch(0.26 0.04 255);
+
+  --console-neutral: oklch(0.7 0 0);
+  --console-neutral-soft: oklch(0.29 0 0);
+  --console-neutral-strong: oklch(0.82 0 0);
+  --console-success: oklch(0.65 0.13 150);
+  --console-success-soft: oklch(0.27 0.05 150);
+  --console-success-strong: oklch(0.82 0.12 150);
+  --console-warning: oklch(0.78 0.13 75);
+  --console-warning-soft: oklch(0.3 0.05 70);
+  --console-warning-strong: oklch(0.85 0.11 80);
+  --console-danger: oklch(0.65 0.19 25);
+  --console-danger-soft: oklch(0.3 0.07 25);
+  --console-danger-strong: oklch(0.82 0.15 25);
+}

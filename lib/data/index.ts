@@ -104,6 +104,8 @@ export type { ListingScope } from '@/lib/data/listings/service-area'
 // CRM — owned-home proximity match (person page)
 export { getOwnedHomeMatches } from '@/lib/data/crm/getOwnedHome'
 export type { OwnedHomeMatch } from '@/lib/data/crm/getOwnedHome'
+export { getViewedListingsForLead } from '@/lib/data/crm/getViewedListings'
+export type { ViewedListing } from '@/lib/data/crm/getViewedListings'
 
 // Listings — repeat-sales appreciation ("home as an asset over time")
 export { getRepeatSalesAppreciation } from '@/lib/data/listings/getRepeatSalesAppreciation'
@@ -547,6 +549,7 @@ export type { BrokerageTrackRecord } from '@/lib/data/track-record'
 export {
   upsertGuestSearchAlert,
   getActiveGuestSearchAlerts,
+  getGuestSearchAlertsForLead,
   markGuestAlertNotified,
   deactivateGuestAlertByToken,
 } from '@/lib/data/leads/guestSearchAlerts'

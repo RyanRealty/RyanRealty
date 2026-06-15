@@ -1,0 +1,608 @@
+// @no-parity — internal admin surface, no public mockup contract
+import Link from 'next/link'
+import { notFound, redirect } from 'next/navigation'
+import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
+import {
+  addCrmNoteAction,
+  addCrmTagAction,
+  addCrmTaskAction,
+  assignCrmBrokerAction,
+  completeCrmTaskAction,
+  getCrmAccess,
+  getCrmEmailTemplates,
+  getCrmPersonFull,
+  getNextRecommendation,
+  confirmNextStepAction,
+  skipNextStepAction,
+  getCrmSmsTemplates,
+  getTwilioSmsStatus,
+  removeCrmTagAction,
+  sendCrmEmailAction,
+  sendCrmSmsAction,
+  updateCrmStageAction,
+} from '@/app/actions/crm'
+import { autoEnrollPerson } from '@/lib/crm/enroll'
+import { timelineEmailBody } from '@/lib/crm/email-body'
+import { renderCrmMerge } from '@/lib/crm/merge'
+import { getSignatureForMailbox } from '@/lib/crm/email-signature'
+import { CRM_MAILBOXES } from '@/lib/crm/gmail'
+import { getOwnedHomeMatches, getGuestSearchAlertsForLead, getViewedListingsForLead, type OwnedHomeMatch } from '@/lib/data'
+import { getOwnedHomeMedia } from '@/lib/crm/owned-home-media'
+import { EmailComposer } from '@/components/admin/crm/EmailComposer'
+import { SmsComposer } from '@/components/admin/crm/SmsComposer'
+import ConversationThread, { isConversationEvent } from '@/components/admin/crm/ConversationThread'
+import { StagePill, ListingStatusPill, StatusPill } from '@/components/console/StatusPill'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
+export const metadata = { title: 'Lead · Console' }
+export const dynamic = 'force-dynamic'
+
+const BASE = '/admin/console/leads'
+
+// ── Server-action form wrappers (return to the console route) ────────────────
+async function addNoteForm(formData: FormData): Promise<void> {
+  'use server'
+  const r = await addCrmNoteAction(formData)
+  if (!r.ok) console.error('[console] addNote:', r.error)
+}
+async function updateStageForm(formData: FormData): Promise<void> {
+  'use server'
+  const r = await updateCrmStageAction(formData)
+  if (!r.ok) console.error('[console] updateStage:', r.error)
+}
+async function addTagForm(formData: FormData): Promise<void> {
+  'use server'
+  const r = await addCrmTagAction(formData)
+  if (!r.ok) console.error('[console] addTag:', r.error)
+}
+async function removeTagForm(formData: FormData): Promise<void> {
+  'use server'
+  const r = await removeCrmTagAction(formData)
+  if (!r.ok) console.error('[console] removeTag:', r.error)
+}
+async function addTaskForm(formData: FormData): Promise<void> {
+  'use server'
+  const r = await addCrmTaskAction(formData)
+  if (!r.ok) console.error('[console] addTask:', r.error)
+}
+async function completeTaskForm(formData: FormData): Promise<void> {
+  'use server'
+  const r = await completeCrmTaskAction(formData)
+  if (!r.ok) console.error('[console] completeTask:', r.error)
+}
+async function assignBrokerForm(formData: FormData): Promise<void> {
+  'use server'
+  const r = await assignCrmBrokerAction(formData)
+  if (!r.ok) console.error('[console] assignBroker:', r.error)
+}
+async function sendEmailForm(personId: number, formData: FormData): Promise<void> {
+  'use server'
+  formData.set('personId', String(personId))
+  const r = await sendCrmEmailAction(formData)
+  if (!r.ok) redirect(`${BASE}/${personId}?error=${encodeURIComponent(`Email not sent — ${r.error ?? 'unknown error'}`)}`)
+}
+async function sendSmsForm(personId: number, formData: FormData): Promise<void> {
+  'use server'
+  formData.set('personId', String(personId))
+  const r = await sendCrmSmsAction(formData)
+  if (!r.ok) redirect(`${BASE}/${personId}?error=${encodeURIComponent(`Text not sent — ${r.error ?? 'unknown error'}`)}`)
+}
+async function confirmNextForm(formData: FormData): Promise<void> {
+  'use server'
+  const r = await confirmNextStepAction(Number(formData.get('enrollmentId')))
+  if (!r.ok) console.error('[console] confirmNext:', r.error)
+}
+async function skipNextForm(formData: FormData): Promise<void> {
+  'use server'
+  const r = await skipNextStepAction(Number(formData.get('enrollmentId')))
+  if (!r.ok) console.error('[console] skipNext:', r.error)
+}
+async function autoEnrollForm(formData: FormData): Promise<void> {
+  'use server'
+  const personId = Number(formData.get('personId'))
+  const r = await autoEnrollPerson(personId)
+  const msg = r.enrolled ? `Enrolled in ${r.sequence}` : `Not enrolled — ${r.reason}`
+  redirect(`${BASE}/${personId}?flash=${encodeURIComponent(msg)}`)
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function fmtDateTime(iso: string | null): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
+}
+function fmtAgo(iso: string | null): string {
+  if (!iso) return '—'
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  if (mins < 1440) return `${Math.round(mins / 60)}h ago`
+  return `${Math.round(mins / 1440)}d ago`
+}
+function fmtPhone(d: string): string {
+  return d.length === 10 ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}` : d
+}
+function usd(n: number | null | undefined): string | null {
+  if (typeof n !== 'number' || !Number.isFinite(n)) return null
+  return `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}`
+}
+function describeSearch(filters: Record<string, unknown> | null): string {
+  if (!filters) return 'Saved search'
+  const f = filters as Record<string, unknown>
+  const num = (v: unknown) => (typeof v === 'number' ? v : typeof v === 'string' && v.trim() && !Number.isNaN(Number(v)) ? Number(v) : null)
+  const parts: string[] = []
+  const where = (f.city ?? f.neighborhood ?? f.subdivision ?? f.area ?? f.location) as string | undefined
+  if (where) parts.push(String(where))
+  const min = num(f.minPrice ?? f.priceMin ?? f.min_price)
+  const max = num(f.maxPrice ?? f.priceMax ?? f.max_price)
+  if (min && max) parts.push(`${usd(min)}–${usd(max)}`)
+  else if (max) parts.push(`up to ${usd(max)}`)
+  else if (min) parts.push(`${usd(min)}+`)
+  const beds = num(f.beds ?? f.minBeds ?? f.bedrooms)
+  if (beds) parts.push(`${beds}+ bd`)
+  const baths = num(f.baths ?? f.minBaths ?? f.bathrooms)
+  if (baths) parts.push(`${baths}+ ba`)
+  const type = (f.propertyType ?? f.type ?? f.homeType) as string | undefined
+  if (type) parts.push(String(type))
+  return parts.length ? parts.join(' · ') : 'All listings'
+}
+
+const KIND_ICON: Record<string, string> = {
+  note: '📝', email_in: '📥', email_out: '📤', sms_in: '💬', sms_out: '📲',
+  call: '📞', voicemail: '🎙', web_event: '🌐', task: '☑', stage_change: '🪜', system: '⚙',
+}
+
+function Kpi({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="rounded-lg border border-border bg-card px-3 py-2.5">
+      <div className="text-lg font-semibold tabular-nums text-foreground">{value}</div>
+      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+    </div>
+  )
+}
+
+export default async function ConsoleLeadPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ tpl?: string; smsTpl?: string; error?: string; flash?: string }>
+}) {
+  const { id: idRaw } = await params
+  const id = Number(idRaw)
+  if (!Number.isFinite(id) || id <= 0) notFound()
+  const { tpl, smsTpl, error: sendError, flash } = await searchParams
+
+  const [crmAccess, full, templates, smsTemplates, twilioStatus, rec] = await Promise.all([
+    getCrmAccess(),
+    getCrmPersonFull(id),
+    getCrmEmailTemplates(),
+    getCrmSmsTemplates(),
+    getTwilioSmsStatus(),
+    getNextRecommendation(id),
+  ])
+  if (!crmAccess) redirect('/admin/access-denied')
+  const person = full.person
+  if (!person) notFound()
+
+  const personLike = person as unknown as { first_name?: string | null; name?: string | null; custom?: Record<string, unknown>; assigned_broker?: string | null }
+  const actingSlug = crmAccess?.brokerSlug ?? personLike.assigned_broker ?? 'matt'
+  const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
+  const signature = await getSignatureForMailbox(mailbox.email)
+
+  const activeTpl = tpl ? templates.find((t) => t.key === tpl) ?? null : null
+  const activeSmsTpl = smsTpl ? smsTemplates.find((t) => t.key === smsTpl) ?? null : null
+  const emailInitialSubject = activeTpl?.subject ? renderCrmMerge(activeTpl.subject, personLike) : ''
+  const emailInitialBody = activeTpl?.body ? renderCrmMerge(activeTpl.body, personLike) : ''
+  const smsInitialBody = activeSmsTpl?.body ? renderCrmMerge(activeSmsTpl.body, personLike) : ''
+
+  const primaryEmail = full.contactPoints.find((c) => c.kind === 'email')?.value ?? null
+  const primaryPhone = full.contactPoints.find((c) => c.kind === 'phone')?.value ?? null
+  const personEmails = (person.emails ?? []).map((e) => e.value).filter((v): v is string => Boolean(v))
+
+  // What they're shopping for — saved searches + the homes they're watching (live MLS).
+  const [savedSearches, viewedListings] = await Promise.all([
+    getGuestSearchAlertsForLead({ fubPersonId: person.fub_legacy_id, emails: personEmails }),
+    getViewedListingsForLead(person.fub_legacy_id),
+  ])
+
+  // Owned home.
+  const geo = full.geo as { city?: string; neighborhood?: string; subdivision?: string; formatted_address?: string; source_address?: string; latitude?: number; longitude?: number; owner_type?: string } | null
+  const homeLat = typeof geo?.latitude === 'number' ? geo.latitude : null
+  const homeLng = typeof geo?.longitude === 'number' ? geo.longitude : null
+  const homeAddress = geo?.formatted_address ?? geo?.source_address ?? null
+  let homeMedia: Awaited<ReturnType<typeof getOwnedHomeMedia>> | null = null
+  let homeMatches: OwnedHomeMatch[] = []
+  if (homeLat !== null && homeLng !== null) {
+    ;[homeMedia, homeMatches] = await Promise.all([getOwnedHomeMedia(homeLat, homeLng), getOwnedHomeMatches(homeLat, homeLng)])
+  }
+  const homeMlsPhoto = homeMatches.find((m) => m.photoUrl)?.photoUrl ?? null
+  const homeActiveListing = homeMatches.find((m) => ['Active', 'Coming Soon', 'Active Under Contract', 'Pending'].includes(m.status ?? '')) ?? null
+  const homeFacts = homeMatches.find((m) => m.beds || m.sqft) ?? null
+
+  const webEvents = full.timeline.filter((t) => t.kind === 'web_event').slice(0, 6)
+  const activityLog = full.timeline.filter((t) => !isConversationEvent(t.kind) && t.kind !== 'email_open' && t.kind !== 'email_click')
+  const openTasks = full.tasks.filter((t) => !t.completed_at)
+  const doneTasks = full.tasks.filter((t) => t.completed_at)
+  const activeEnrollments = full.enrollments.filter((e) => e.status === 'running' || e.status === 'paused')
+
+  const emailEngagement: Record<string, { opens: number; lastOpen: string | null; clicks: number }> = {}
+  for (const t of full.timeline) {
+    if (t.kind !== 'email_open' && t.kind !== 'email_click') continue
+    const pl = (t.payload ?? {}) as { label?: string }
+    const key = (pl.label ?? t.title ?? '').trim()
+    if (!key) continue
+    const e = (emailEngagement[key] ??= { opens: 0, lastOpen: null, clicks: 0 })
+    if (t.kind === 'email_open') { e.opens++; if (!e.lastOpen || t.ts > e.lastOpen) e.lastOpen = t.ts }
+    else e.clicks++
+  }
+
+  const latestWeb = webEvents[0] ?? null
+  const liveAgeMin = latestWeb ? Math.round((Date.now() - new Date(latestWeb.ts).getTime()) / 60000) : null
+  const isLiveNow = liveAgeMin !== null && liveAgeMin >= 0 && liveAgeMin <= 30
+
+  return (
+    <div className="mx-auto w-full max-w-6xl space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <Link href={BASE} className="inline-flex min-h-[40px] items-center text-sm text-muted-foreground hover:text-foreground">← Leads</Link>
+        {person.fub_legacy_id ? (
+          <a href={`https://ryan-realty.followupboss.com/2/people/view/${person.fub_legacy_id}`} target="_blank" rel="noreferrer" className="text-xs text-muted-foreground underline hover:text-foreground">
+            Open in FUB ↗
+          </a>
+        ) : null}
+      </div>
+
+      {flash ? <Alert><AlertDescription>{flash}</AlertDescription></Alert> : null}
+      {sendError ? <Alert variant="destructive"><AlertTitle>Couldn&apos;t send</AlertTitle><AlertDescription>{sendError}</AlertDescription></Alert> : null}
+      {full.suppressions.length > 0 ? (
+        <Alert variant="destructive">
+          <AlertTitle>Contact restrictions active</AlertTitle>
+          <AlertDescription>{full.suppressions.map((s) => `${s.channel}: ${s.reason}`).join(' · ')}. Automated outreach is blocked.</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {/* ── Header: who, where from, the quick moves ── */}
+      <Card>
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+              {person.picture_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={person.picture_url} alt="" className="h-14 w-14 shrink-0 rounded-xl border border-border object-cover sm:h-16 sm:w-16" referrerPolicy="no-referrer" />
+              ) : (
+                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-secondary text-xl font-semibold text-secondary-foreground sm:h-16 sm:w-16">
+                  {(person.name ?? '?').charAt(0).toUpperCase()}
+                </span>
+              )}
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-xl font-semibold tracking-tight text-foreground">{person.name ?? `Contact #${person.id}`}</h1>
+                  <StagePill stage={person.stage} />
+                  {isLiveNow ? <StatusPill tone="success" label="On site now" pulse /> : null}
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  From <span className="font-medium text-foreground">{person.source ?? 'unknown source'}</span> · created {fmtDateTime(person.fub_created_at)}
+                </p>
+                {person.assigned_broker ? <p className="mt-0.5 text-xs text-muted-foreground">Owner: {CRM_BROKER_DISPLAY[person.assigned_broker as keyof typeof CRM_BROKER_DISPLAY] ?? person.assigned_broker}</p> : null}
+              </div>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              {primaryPhone ? <Button asChild size="sm" className="min-h-[40px]"><a href={`tel:+1${primaryPhone.replace(/\D/g, '').slice(-10)}`}>Call</a></Button> : null}
+              {primaryPhone ? <Button asChild size="sm" variant="outline" className="min-h-[40px]"><a href="#comms">Text</a></Button> : null}
+              {primaryEmail ? <Button asChild size="sm" variant="outline" className="min-h-[40px]"><a href="#comms">Email</a></Button> : null}
+            </div>
+          </div>
+
+          {/* Inline stage + broker + contact points */}
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <form action={updateStageForm} className="flex items-center gap-2">
+              <input type="hidden" name="personId" value={person.id} />
+              <Select name="stage" defaultValue={person.stage}>
+                <SelectTrigger className="h-10 flex-1"><SelectValue /></SelectTrigger>
+                <SelectContent>{CRM_STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              </Select>
+              <Button type="submit" size="sm" variant="outline" className="min-h-[40px] shrink-0">Set stage</Button>
+            </form>
+            <form action={assignBrokerForm} className="flex items-center gap-2">
+              <input type="hidden" name="personId" value={person.id} />
+              <Select name="broker" defaultValue={person.assigned_broker ?? undefined}>
+                <SelectTrigger className="h-10 flex-1"><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                <SelectContent>{CRM_BROKERS.map((b) => <SelectItem key={b} value={b}>{CRM_BROKER_DISPLAY[b]}</SelectItem>)}</SelectContent>
+              </Select>
+              <Button type="submit" size="sm" variant="outline" className="min-h-[40px] shrink-0">Assign</Button>
+            </form>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
+            {full.contactPoints.length === 0 ? <span className="text-muted-foreground">No contact info on file.</span> : full.contactPoints.slice(0, 4).map((cp) => (
+              <a key={cp.id} href={cp.kind === 'email' ? `mailto:${cp.value}` : `tel:+1${cp.value}`} className="text-foreground hover:underline">
+                {cp.kind === 'phone' ? fmtPhone(cp.value) : cp.value}
+                <span className="ml-1 text-xs text-muted-foreground">{cp.is_primary ? 'primary' : cp.kind}</span>
+              </a>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── The single most important thing: next step ── */}
+      {rec ? (
+        <Card style={{ borderLeft: '3px solid var(--console-info)' }}>
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary-foreground" style={{ backgroundColor: 'var(--console-info)' }}>Next step</span>
+              <span className="text-sm font-semibold text-foreground">
+                {rec.channel === 'sms' ? 'Send text' : rec.channel === 'email' ? 'Send email' : rec.channel === 'task' ? 'Do this' : 'Next'} · {rec.sequenceName}
+              </span>
+            </div>
+            {rec.subjectPreview ? <div className="mt-3 break-words text-sm font-medium text-foreground">{rec.subjectPreview}</div> : null}
+            <div className="mt-1 whitespace-pre-wrap break-words rounded-lg border border-border bg-muted/40 p-3 text-sm text-foreground [overflow-wrap:anywhere]">{rec.bodyPreview}</div>
+            {rec.unresolved.length ? <div className="mt-2 text-xs font-medium text-destructive">Unresolved fields: {rec.unresolved.join(', ')}</div> : null}
+            {rec.holdReason ? <div className="mt-2 text-xs text-muted-foreground">{rec.holdReason}</div> : null}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <form action={confirmNextForm}><input type="hidden" name="enrollmentId" value={rec.enrollmentId} /><Button type="submit" size="sm" disabled={!!rec.holdReason || rec.unresolved.length > 0} className="min-h-[40px]">Confirm &amp; send</Button></form>
+              <form action={skipNextForm}><input type="hidden" name="enrollmentId" value={rec.enrollmentId} /><Button type="submit" size="sm" variant="outline" className="min-h-[40px]">Skip</Button></form>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {/* ── At a glance ── */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        <Kpi label="Homes watched" value={viewedListings.length} />
+        <Kpi label="Saved searches" value={savedSearches.length} />
+        <Kpi label="Web sessions" value={full.visitorSessions} />
+        <Kpi label="Open tasks" value={openTasks.length} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        {/* ── Main column: act on the lead ── */}
+        <div className="space-y-4">
+          {/* Comms with preview */}
+          <Card id="comms" className="scroll-mt-20">
+            <CardHeader className="pb-3"><CardTitle className="text-base">Send a message</CardTitle></CardHeader>
+            <CardContent className="space-y-5">
+              {/* Email */}
+              <div className="space-y-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email {primaryEmail ? `· ${primaryEmail}` : ''}</div>
+                {primaryEmail ? (
+                  <>
+                    <form method="GET" className="flex items-center gap-2">
+                      <Select name="tpl" defaultValue={tpl ?? 'blank'}><SelectTrigger className="h-9 flex-1"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="blank">Blank email</SelectItem>{templates.map((t) => <SelectItem key={t.key} value={t.key}>{t.name}</SelectItem>)}</SelectContent></Select>
+                      <Button type="submit" size="sm" variant="outline" className="min-h-[40px] shrink-0 sm:min-h-0">Load</Button>
+                    </form>
+                    {(emailInitialSubject || emailInitialBody) ? (
+                      <div className="rounded-lg border border-border bg-muted/40 p-3">
+                        <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Preview · exactly what sends</div>
+                        {emailInitialSubject ? <div className="mt-1.5 text-sm font-semibold text-foreground">{emailInitialSubject}</div> : null}
+                        <div className="mt-1 whitespace-pre-wrap break-words text-sm text-foreground [overflow-wrap:anywhere]">{timelineEmailBody(emailInitialBody)}</div>
+                        {signature?.html ? <div className="mt-2 border-t border-border pt-2 text-xs text-muted-foreground" dangerouslySetInnerHTML={{ __html: signature.html }} /> : null}
+                      </div>
+                    ) : null}
+                    <EmailComposer key={tpl ?? 'blank'} initialSubject={emailInitialSubject} initialBody={emailInitialBody} signatureHtml={signature?.html ?? null} sendAction={sendEmailForm.bind(null, person.id)} />
+                  </>
+                ) : <p className="text-sm text-muted-foreground">No email address on file.</p>}
+              </div>
+
+              <Separator />
+
+              {/* SMS */}
+              <div className="space-y-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Text {primaryPhone ? `· ${fmtPhone(primaryPhone)}` : ''}</div>
+                {!twilioStatus.canSend ? (
+                  <Alert><AlertTitle className="text-sm">Texting not live yet</AlertTitle><AlertDescription className="text-sm">A2P status is {twilioStatus.a2p ?? 'unknown'}. Compose now, sends start working once verified.</AlertDescription></Alert>
+                ) : null}
+                {primaryPhone ? (
+                  <>
+                    <form method="GET" className="flex items-center gap-2">
+                      <input type="hidden" name="tpl" value={tpl ?? ''} />
+                      <Select name="smsTpl" defaultValue={smsTpl ?? 'blank'}><SelectTrigger className="h-9 flex-1"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="blank">Blank text</SelectItem>{smsTemplates.map((t) => <SelectItem key={t.key} value={t.key}>{t.name}</SelectItem>)}</SelectContent></Select>
+                      <Button type="submit" size="sm" variant="outline" className="min-h-[40px] shrink-0 sm:min-h-0">Load</Button>
+                    </form>
+                    {smsInitialBody ? (
+                      <div className="rounded-lg border border-border bg-muted/40 p-3">
+                        <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Preview · exactly what sends</div>
+                        <div className="mt-1 whitespace-pre-wrap break-words text-sm text-foreground">{smsInitialBody}</div>
+                      </div>
+                    ) : null}
+                    <SmsComposer key={smsTpl ?? 'blank'} initialBody={smsInitialBody} sendAction={sendSmsForm.bind(null, person.id)} />
+                  </>
+                ) : <p className="text-sm text-muted-foreground">No phone number on file.</p>}
+              </div>
+
+              <Separator />
+
+              {/* Note */}
+              <form action={addNoteForm} className="space-y-2">
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Add a note</div>
+                <input type="hidden" name="personId" value={person.id} />
+                <Textarea name="body" placeholder="Logs to the timeline" rows={2} />
+                <div className="flex justify-end"><Button type="submit" size="sm" className="min-h-[40px] sm:min-h-0">Save note</Button></div>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Tasks */}
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-base">Tasks <span className="font-normal text-muted-foreground">({openTasks.length} open)</span></CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              {openTasks.length === 0 ? <p className="text-sm text-muted-foreground">Nothing due. {doneTasks.length > 0 ? `${doneTasks.length} completed.` : ''}</p> : openTasks.slice(0, 6).map((t) => (
+                <div key={t.id} className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
+                  <div className="min-w-0"><div className="text-sm font-medium text-foreground">{t.name}</div><div className="text-xs text-muted-foreground">{t.type ?? 'Task'} · due {fmtDateTime(t.due_at)}</div></div>
+                  <form action={completeTaskForm} className="shrink-0"><input type="hidden" name="taskId" value={t.id} /><input type="hidden" name="personId" value={person.id} /><Button type="submit" size="sm" variant="outline" className="min-h-[40px] sm:min-h-0">Done</Button></form>
+                </div>
+              ))}
+              <form action={addTaskForm} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <input type="hidden" name="personId" value={person.id} />
+                <Input name="name" placeholder="New task" className="h-9 flex-1 text-sm" />
+                <div className="flex gap-2">
+                  <Select name="type" defaultValue="Follow Up"><SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger><SelectContent>{['Follow Up', 'Call', 'Text', 'Email'].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
+                  <Select name="dueHours" defaultValue="24"><SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="1">in 1 hour</SelectItem><SelectItem value="4">in 4 hours</SelectItem><SelectItem value="24">tomorrow</SelectItem><SelectItem value="72">in 3 days</SelectItem><SelectItem value="168">in a week</SelectItem></SelectContent></Select>
+                </div>
+                <Button type="submit" size="sm" variant="outline" className="min-h-[40px] sm:min-h-0">Add</Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ── Side column: what they want, what they own, their workflow ── */}
+        <div className="space-y-4">
+          {/* Watching — live homes from their site behavior */}
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-base">Watching <span className="font-normal text-muted-foreground">({viewedListings.length})</span></CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              {viewedListings.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No homes viewed yet. Listings this lead opens on the site show up here with live status.</p>
+              ) : viewedListings.slice(0, 6).map((l) => (
+                <div key={l.listingKey} className="flex items-center gap-3 rounded-lg border border-border p-2">
+                  {l.photoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={l.photoUrl} alt="" className="h-12 w-16 shrink-0 rounded-md border border-border object-cover" loading="lazy" />
+                  ) : (
+                    <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded-md border border-border bg-muted text-xs text-muted-foreground">—</div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      {l.listingKey ? (
+                        <Link href={`/listing/${l.listingKey}`} className="truncate text-sm font-medium text-foreground hover:underline">{l.address}</Link>
+                      ) : (
+                        <span className="truncate text-sm font-medium text-foreground">{l.address}</span>
+                      )}
+                      <ListingStatusPill status={l.status} />
+                    </div>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+                      <span className="tabular-nums">{usd(l.listPrice) ?? 'Price n/a'}</span>
+                      <span>·</span>
+                      <span className="tabular-nums">{l.views} view{l.views === 1 ? '' : 's'}</span>
+                      {l.saved ? <><span>·</span><span style={{ color: 'var(--console-info-strong)' }}>saved</span></> : null}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Saved searches */}
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-base">Saved searches <span className="font-normal text-muted-foreground">({savedSearches.length})</span></CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              {savedSearches.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No saved searches yet. When this lead saves a search on the site, it shows here.</p>
+              ) : savedSearches.slice(0, 6).map((s) => (
+                <div key={s.id} className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium" style={{ color: 'var(--console-info-strong)' }}>{describeSearch(s.filters)}</div>
+                    {s.name?.trim() ? <div className="truncate text-xs text-muted-foreground">{s.name.trim()}</div> : null}
+                  </div>
+                  <span className="shrink-0 text-xs text-muted-foreground">{s.is_active ? (s.notification_frequency ?? 'active') : 'paused'}</span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Workflow */}
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-base">Workflow</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              {activeEnrollments.length > 0 ? activeEnrollments.map((e) => (
+                <div key={e.id} className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+                  <span className="min-w-0 truncate text-sm font-medium text-foreground">{e.crm_sequences?.name ?? 'Sequence'}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{e.status} · step {e.step_index}</span>
+                </div>
+              )) : (
+                <p className="text-sm text-muted-foreground">Not in a workflow. Tags drive enrollment (audience:buyer, audience:seller, intent:expired-listing, intent:fsbo).</p>
+              )}
+              {activeEnrollments.length === 0 ? (
+                <form action={autoEnrollForm}>
+                  <input type="hidden" name="personId" value={person.id} />
+                  <Button type="submit" size="sm" variant="outline" className="min-h-[40px] sm:min-h-0">Enroll in the matching workflow</Button>
+                </form>
+              ) : null}
+            </CardContent>
+          </Card>
+
+          {/* Home they own */}
+          {homeAddress && homeMedia ? (
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="flex items-center justify-between text-base"><span>Home they own</span>{geo?.owner_type ? <Badge variant="outline" className="text-[11px]">{geo.owner_type}</Badge> : null}</CardTitle></CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <a href={homeMedia.googleMapsLink} target="_blank" rel="noopener noreferrer" className="block font-medium text-foreground hover:underline">{homeAddress}</a>
+                {homeFacts ? <div className="text-muted-foreground">{[homeFacts.beds ? `${homeFacts.beds} bed` : null, homeFacts.baths ? `${homeFacts.baths} bath` : null, homeFacts.sqft ? `${Math.round(homeFacts.sqft).toLocaleString('en-US')} sqft` : null, homeFacts.yearBuilt ? `built ${homeFacts.yearBuilt}` : null].filter(Boolean).join(' · ')}</div> : null}
+                {homeActiveListing ? (
+                  <Alert><AlertTitle className="text-sm">On the market right now</AlertTitle><AlertDescription className="text-sm">{homeActiveListing.status}{usd(homeActiveListing.listPrice) ? ` · ${usd(homeActiveListing.listPrice)}` : ''}{homeActiveListing.listingKey ? <> · <Link href={`/listing/${homeActiveListing.listingKey}`} className="underline">view</Link></> : null}</AlertDescription></Alert>
+                ) : null}
+                {(homeMedia.streetViewUrl || homeMlsPhoto) ? (
+                  <div className={`grid gap-2 ${homeMedia.streetViewUrl && homeMlsPhoto ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                    {homeMedia.streetViewUrl ? (/* eslint-disable-next-line @next/next/no-img-element */ <img src={homeMedia.streetViewUrl} alt="" className="aspect-[2/1] w-full rounded-md border border-border object-cover" loading="lazy" />) : null}
+                    {homeMlsPhoto ? (/* eslint-disable-next-line @next/next/no-img-element */ <img src={homeMlsPhoto} alt="" className="aspect-[2/1] w-full rounded-md border border-border object-cover" loading="lazy" />) : null}
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {/* Tags */}
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-base">Tags <span className="font-normal text-muted-foreground">({person.tags.length})</span></CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap gap-1.5">
+                {person.tags.length === 0 ? <span className="text-sm text-muted-foreground">No tags.</span> : person.tags.slice(0, 24).map((t) => (
+                  <form key={t} action={removeTagForm} className="inline-flex">
+                    <input type="hidden" name="personId" value={person.id} /><input type="hidden" name="tag" value={t} />
+                    <Badge variant="outline" className="gap-1 pr-1 text-xs">{t}<button type="submit" aria-label={`Remove ${t}`} className="rounded px-1 text-muted-foreground hover:bg-muted hover:text-foreground">×</button></Badge>
+                  </form>
+                ))}
+              </div>
+              <form action={addTagForm} className="flex gap-2">
+                <input type="hidden" name="personId" value={person.id} />
+                <Input name="tag" placeholder="add-tag" className="h-9 flex-1 text-sm" />
+                <Button type="submit" size="sm" variant="outline" className="min-h-[40px] sm:min-h-0">Add</Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* ── Full-width: conversation + activity ── */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="pb-3"><CardTitle className="text-base">Conversation</CardTitle></CardHeader>
+          <CardContent>
+            <ConversationThread
+              events={full.timeline.filter((t) => isConversationEvent(t.kind)).slice(0, 40).map((t) => ({ id: t.id, ts: t.ts, kind: t.kind, title: t.title, body: t.body, broker: t.broker }))}
+              engagement={emailEngagement}
+              personName={person.first_name ?? person.name ?? 'this contact'}
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3"><CardTitle className="text-base">Activity</CardTitle></CardHeader>
+          <CardContent>
+            {activityLog.length === 0 ? <p className="text-sm text-muted-foreground">No notes, calls, or visits yet.</p> : (
+              <div className="space-y-3.5">
+                {activityLog.slice(0, 10).map((e) => (
+                  <div key={e.id} className="flex gap-3">
+                    <div className="w-5 shrink-0 text-center text-sm leading-5">{KIND_ICON[e.kind] ?? '•'}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-baseline gap-x-2">
+                        <span className="text-sm font-medium text-foreground">{e.title ?? e.kind.replace('_', ' ')}</span>
+                        <span className="text-xs tabular-nums text-muted-foreground">{fmtAgo(e.ts)}</span>
+                      </div>
+                      {e.body ? <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-muted-foreground">{timelineEmailBody(e.body).slice(0, 400)}</p> : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}

@@ -23,6 +23,15 @@ const EXCLUDED_PATHS = [
   // Email templates — email clients don't support CSS variables:
   "lib/email-templates/",
   "lib/digest-email-templates.tsx",
+  // Console — the brand-free broker workspace (Matt directive 2026-06-15: "we do
+  // not need to enforce the styles from our brand in the admin, it just needs to
+  // be ultra intuitive"). The console gets its NEUTRAL look from the .console-root
+  // token scope (app/admin/console/console-theme.css), not the brand palette, so
+  // the brand design-token gate does not apply here. It still uses shadcn/ui
+  // components + semantic token classes by convention; it is simply exempt from
+  // the brand-enforcement primitives/color/hex checks.
+  "app/admin/console/",
+  "components/console/",
   "_style_backup/",
   "app/globals.css",
   "scripts/",

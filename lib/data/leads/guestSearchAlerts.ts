@@ -29,6 +29,42 @@ export type GuestSearchAlertRow = {
   last_notified_at: string | null
   unsubscribe_token: string
   fub_person_id: number | null
+  created_at?: string | null
+}
+
+/**
+ * Saved searches for ONE lead — matched by FUB person id OR any of the lead's
+ * emails (signups that predate identity-linking carry no fub_person_id, only
+ * the email). Used by the broker Lead Command Center to show what a lead is
+ * actively shopping for. Active rows first, newest first.
+ */
+export async function getGuestSearchAlertsForLead(args: {
+  fubPersonId?: number | null
+  emails?: string[]
+}): Promise<GuestSearchAlertRow[]> {
+  const supabase = createServiceClient()
+  const emails = (args.emails ?? [])
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean)
+  const ors: string[] = []
+  if (args.fubPersonId) ors.push(`fub_person_id.eq.${args.fubPersonId}`)
+  for (const e of emails) ors.push(`email.eq.${e}`)
+  if (ors.length === 0) return []
+
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select(
+      'id, email, filters, name, notification_frequency, is_active, last_notified_at, unsubscribe_token, fub_person_id, created_at',
+    )
+    .or(ors.join(','))
+    .order('is_active', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(25)
+  if (error) {
+    console.error('[getGuestSearchAlertsForLead]', error.message)
+    return []
+  }
+  return (data ?? []) as GuestSearchAlertRow[]
 }
 
 /**
