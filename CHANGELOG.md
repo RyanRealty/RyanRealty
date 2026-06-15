@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.555.0 (2026-06-15)
+
+### Features
+- feat(newsletter): backend foundation — subscribers + managed sends
+
+---
+
+
 ## v1.554.0 (2026-06-15)
 
 ### Features
