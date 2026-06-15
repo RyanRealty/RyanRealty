@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import DashboardSummaryStrip, { type SummaryStat } from '@/components/admin/DashboardSummaryStrip'
 
 /** Admin page — never pre-render; requires service role key at runtime. */
 export const dynamic = 'force-dynamic'
@@ -38,51 +40,77 @@ export default async function AdminLeadsReportPage() {
     tierMap.set(t, (tierMap.get(t) ?? 0) + 1)
   }
 
+  const funnelStats: SummaryStat[] = [
+    { label: 'Activities (all)', value: (visitorsCount ?? 0).toLocaleString('en-US'), caption: 'Last 7 days' },
+    { label: 'Registered', value: (registeredCount ?? 0).toLocaleString('en-US'), caption: 'All time' },
+    {
+      label: 'Hot / Very hot',
+      value: ((tierMap.get('hot') ?? 0) + (tierMap.get('very_hot') ?? 0)).toLocaleString('en-US'),
+      caption: 'High intent',
+      tone: 'warning',
+    },
+  ]
+
+  const scoringRows = (['cold', 'warm', 'hot', 'very_hot'] as const).map((tier) => ({
+    tier,
+    label: tier.replace('_', ' '),
+    count: tierMap.get(tier) ?? 0,
+  }))
+  const hasScoring = scoringRows.some((r) => r.count > 0)
+
+  const actionRows = [
+    { label: 'CMA downloads', count: (cmaCount ?? []).length },
+    { label: 'Tour requests', count: (tourCount ?? []).length },
+    { label: 'Open house RSVPs', count: (rsvpCount ?? []).length },
+  ]
+  const hasActions = actionRows.some((r) => r.count > 0)
+
   return (
-    <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
-      <h1 className="text-2xl font-bold text-foreground">Lead analytics</h1>
-      <p className="mt-2 text-muted-foreground">Funnel, scoring distribution, and high-intent actions (last 7 days).</p>
+    <main className="mx-auto max-w-4xl space-y-8 px-4 py-10 sm:px-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Lead analytics</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Funnel, scoring distribution, and high-intent actions (last 7 days).</p>
+      </div>
 
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold text-foreground">Lead funnel</h2>
-        <ul className="mt-4 flex flex-wrap gap-6">
-          <li>
-            <span className="text-3xl font-bold text-primary">{visitorsCount ?? 0}</span>
-            <span className="ml-2 text-muted-foreground">Activities (all)</span>
-          </li>
-          <li>
-            <span className="text-3xl font-bold text-primary">{registeredCount ?? 0}</span>
-            <span className="ml-2 text-muted-foreground">Registered</span>
-          </li>
-          <li>
-            <span className="text-3xl font-bold text-accent-foreground">{(tierMap.get('hot') ?? 0) + (tierMap.get('very_hot') ?? 0)}</span>
-            <span className="ml-2 text-muted-foreground">Hot / Very hot</span>
-          </li>
-        </ul>
-      </section>
+      <DashboardSummaryStrip stats={funnelStats} />
 
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold text-foreground">Lead scoring distribution</h2>
-        <div className="mt-4 flex flex-wrap gap-4">
-          {['cold', 'warm', 'hot', 'very_hot'].map((tier) => (
-            <div key={tier} className="rounded-lg border border-border bg-card px-4 py-3 shadow-sm">
-              <span className="font-medium capitalize text-foreground">{tier.replace('_', ' ')}</span>
-              <span className="ml-2 text-2xl font-bold text-primary">{tierMap.get(tier) ?? 0}</span>
-            </div>
-          ))}
-        </div>
-      </section>
+      <Card>
+        <CardHeader><CardTitle className="text-base">Lead scoring distribution</CardTitle></CardHeader>
+        <CardContent>
+          {hasScoring ? (
+            <ul className="space-y-2">
+              {scoringRows.map((r) => (
+                <li key={r.tier} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="capitalize text-muted-foreground">{r.label}</span>
+                  <span className="font-semibold tabular-nums text-foreground">{r.count.toLocaleString('en-US')}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="py-4 text-center text-sm text-muted-foreground">No scored leads yet. Tiers populate as leads engage.</p>
+          )}
+        </CardContent>
+      </Card>
 
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold text-foreground">High-intent actions (this week)</h2>
-        <ul className="mt-4 space-y-2">
-          <li>CMA downloads: <strong>{(cmaCount ?? []).length}</strong></li>
-          <li>Tour requests: <strong>{(tourCount ?? []).length}</strong></li>
-          <li>Open house RSVPs: <strong>{(rsvpCount ?? []).length}</strong></li>
-        </ul>
-      </section>
+      <Card>
+        <CardHeader><CardTitle className="text-base">High-intent actions (this week)</CardTitle></CardHeader>
+        <CardContent>
+          {hasActions ? (
+            <ul className="space-y-2">
+              {actionRows.map((r) => (
+                <li key={r.label} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-muted-foreground">{r.label}</span>
+                  <span className="font-semibold tabular-nums text-foreground">{r.count.toLocaleString('en-US')}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="py-4 text-center text-sm text-muted-foreground">No high-intent actions in the last 7 days.</p>
+          )}
+        </CardContent>
+      </Card>
 
-      <p className="mt-10 text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground">
         <Link href="/admin/reports" className="underline hover:no-underline">Back to Reports</Link>
       </p>
     </main>

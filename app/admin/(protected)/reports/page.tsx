@@ -1,35 +1,65 @@
 import Link from 'next/link'
+import { Card, CardContent } from '@/components/ui/card'
 import { getReportCities } from '@/app/actions/reports'
 import { generateWeeklyMarketReport } from '@/app/actions/generate-market-report'
 import GenerateReportButton from './GenerateReportButton'
 import CityReportSection from './CityReportSection'
 
+const REPORT_TILES = [
+  { href: '/admin/reports/custom', title: 'Custom report builder', desc: 'Any location, any date range — metrics, price bands, time series, pending and closed.' },
+  { href: '/admin/reports/market', title: 'Market report by area', desc: 'Pull a market snapshot for a city, neighborhood, or community.' },
+  { href: '/admin/reports/brokers', title: 'Broker performance', desc: 'Volume, units, and pipeline by broker.' },
+  { href: '/admin/reports/leads', title: 'Lead analytics', desc: 'Funnel, scoring distribution, and high-intent actions.' },
+  { href: '/admin/reports/lead-flow', title: 'Lead-flow report', desc: 'GA4 sessions to form submits to broker assignments to CMAs, with wiring health per LP.' },
+  { href: '/admin/reports/traffic-sources', title: 'Traffic sources', desc: 'Where every visitor came from. The GBP attribution gap and channels to tag.' },
+  { href: '/admin/analytics/action-required', title: 'Action required', desc: 'Hot leads to call now, warm prospects active, anonymous high-engagement for retargeting.' },
+  { href: '/admin/people', title: 'People index', desc: 'Every known FUB person seen on the site or assigned in the last 90 days.' },
+  { href: '/admin/analytics/meta-health', title: 'Meta health', desc: 'Pixel firing, lead-form inventory, webhook status, recent leads, action items.' },
+]
+
 export default async function AdminReportsPage() {
   const { cities } = await getReportCities()
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <h1 className="text-2xl font-bold text-foreground">Reports</h1>
-      <h2 className="mt-8 text-xl font-semibold text-foreground">Weekly market report</h2>
-      <p className="mt-2 text-muted-foreground">
-        Generate the weekly market report (last Sunday–Saturday). Lists homes that went pending and closed, by city. Report gets an AI-generated image and is shareable. Cron can call <code className="rounded bg-muted px-1">GET /api/cron/market-report</code> with <code className="rounded bg-muted px-1">Authorization: Bearer CRON_SECRET</code> (e.g. Saturday morning).
-      </p>
-      <div className="mt-6">
-        <GenerateReportButton generateAction={generateWeeklyMarketReport} />
+    <main className="mx-auto max-w-5xl space-y-8 px-4 py-10 sm:px-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Reports</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Market data, lead analytics, and traffic — one launchpad.</p>
       </div>
+
+      <Card>
+        <CardContent className="space-y-4 p-4 sm:p-5">
+          <div>
+            <h2 className="text-base font-semibold text-foreground">Weekly market report</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Generate the weekly report (last Sunday–Saturday). Lists homes that went pending and closed, by city, with an AI image and a shareable link. Cron can call <code className="rounded bg-muted px-1 text-xs">GET /api/cron/market-report</code> with <code className="rounded bg-muted px-1 text-xs">Authorization: Bearer CRON_SECRET</code>.
+            </p>
+          </div>
+          <GenerateReportButton generateAction={generateWeeklyMarketReport} />
+        </CardContent>
+      </Card>
+
       <CityReportSection cities={cities} />
-      <h2 className="mt-8 text-xl font-semibold text-foreground">Report generator</h2>
-      <ul className="mt-2 space-y-1">
-        <li><Link href="/admin/reports/custom" className="text-primary hover:underline">Custom report builder</Link> — Any location, any date range, all sales data (metrics, price bands, time series, pending/closed)</li>
-        <li><Link href="/admin/reports/market" className="text-primary hover:underline">Market report by area</Link></li>
-        <li><Link href="/admin/reports/brokers" className="text-primary hover:underline">Broker performance</Link></li>
-        <li><Link href="/admin/reports/leads" className="text-primary hover:underline">Lead analytics</Link></li>
-        <li><Link href="/admin/reports/lead-flow" className="text-primary hover:underline">Lead-flow report</Link> — End-to-end visibility: GA4 sessions → form submits → broker assignments → CMAs, with wiring health per LP</li>
-        <li><Link href="/admin/reports/traffic-sources" className="text-primary hover:underline">Traffic sources</Link> — Where every visitor came from. Joins GA4 with our visits + visitor_sessions tables. Highlights the GBP attribution gap + lists channels you should tag with canonical UTMs.</li>
-        <li><Link href="/admin/analytics/action-required" className="text-primary hover:underline">Action required</Link> — Hot leads to call right now, warm prospects active, anonymous high-engagement for retargeting. Click any person to open their full profile.</li>
-        <li><Link href="/admin/people" className="text-primary hover:underline">People index</Link> — Searchable list of every known FUB person seen on the site or assigned in the last 90 days. Filter by broker, audience, tier, source, activity window.</li>
-        <li><Link href="/admin/analytics/meta-health" className="text-primary hover:underline">Meta health</Link> — Live FB/IG infrastructure status: pixel firing recency, lead-form inventory, webhook subscription, recent leads, dead-pixel detection, auto-generated action items.</li>
-      </ul>
-      <p className="mt-10 text-sm text-muted-foreground">
+
+      <section className="space-y-4">
+        <h2 className="text-base font-semibold text-foreground">All reports</h2>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {REPORT_TILES.map((t) => (
+            <Link key={t.href} href={t.href} className="group block">
+              <Card className="h-full transition-colors group-hover:border-foreground/20 group-hover:bg-accent/40">
+                <CardContent className="flex items-center justify-between gap-3 p-4 sm:p-5">
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-foreground">{t.title}</div>
+                    <div className="mt-0.5 text-sm text-muted-foreground">{t.desc}</div>
+                  </div>
+                  <span className="shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden>→</span>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <p className="text-sm text-muted-foreground">
         <Link href="/admin/sync" className="underline hover:no-underline">Back to Sync</Link>
       </p>
     </main>

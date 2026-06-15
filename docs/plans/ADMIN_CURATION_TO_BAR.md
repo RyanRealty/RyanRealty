@@ -19,19 +19,31 @@ console/*. The gap is the analytics/reports cluster + a few quick caps.
 - Reuse existing `components/admin/DashboardSummaryStrip.tsx` as the KPI band on
   analytics pages that currently lead with a bare table.
 
-## Broker-facing quick caps (high priority — daily drivers)
-- [ ] `analytics/action-required` — cap each lead bucket to top 5 + "See all" (only broker-facing dump).
-- [ ] `deals` — cap the uncapped DESKTOP closed `<Table>` (mobile already curated).
-- [ ] `signing` — cap "All envelopes" + "See all" (mobile cards exist).
-- [ ] `crm/deals` kanban — cap each column to ~8 + "See all in stage".
+## PROGRESS (2026-06-15 — all shipped to production main)
+- [x] Keystone TableWithMobileCards
+- [x] Broker-facing quick caps: action-required, deals, signing, crm/deals
+- [x] Analytics wave 1: social, analytics(home), traffic-sources, cost-per-lead, funnel-breakdown
+- [x] Analytics wave 2: ad-roi, google-search, demographics, lp-leaderboard, listing-performance
+- [x] Analytics wave 3: meta-health, reports/lead-flow, reports/brokers, email/campaigns, geo
+- [x] Final minor pages: reports/page (link list -> card-tile grid), reports/leads
+  (funnel -> DashboardSummaryStrip), search (results in Cards + empty states).
+  EVERY admin page is now at the bar.
+- [ ] DAL hygiene (separate from the bar): move raw `supabase.from()` out of the
+  page into `lib/data` for: search, reports/leads, reports/lead-flow.
 
-## Analytics/reports cluster (adopt TableWithMobileCards + DashboardSummaryStrip + cap)
-Worst-first: analytics/social (5) · reports/lead-flow (5) · analytics/meta-health (5)
-· analytics/page (4) · reports/traffic-sources (4) · analytics/ad-roi (4)
-· analytics/cost-per-lead (4) · analytics/funnel-breakdown (4)
-· analytics/google-search (4) · analytics/demographics (3)
-· analytics/listing-performance (3) · analytics/lp-leaderboard (3)
-· reports/brokers (3) · email/campaigns (2) · geo (2) · search (2).
+## Broker-facing quick caps (high priority — daily drivers) — DONE
+- [x] `analytics/action-required` — buckets capped to top 5 + "See all".
+- [x] `deals` — desktop closed `<Table>` capped (matches mobile CLOSED_PREVIEW).
+- [x] `signing` — "All envelopes" capped + "See all".
+- [x] `crm/deals` kanban — each column capped to 8 + "See all in stage".
+
+## Analytics/reports cluster — DONE (waves 1-3)
+analytics/social · reports/lead-flow · analytics/meta-health · analytics/page
+· reports/traffic-sources · analytics/ad-roi · analytics/cost-per-lead
+· analytics/funnel-breakdown · analytics/google-search · analytics/demographics
+· analytics/listing-performance · analytics/lp-leaderboard · reports/brokers
+· email/campaigns · geo — all adopted TableWithMobileCards + DashboardSummaryStrip
++ caps + empty states. Remaining: search, reports/leads, reports/page (minor).
 
 ## DAL-boundary cleanups (G1) while touching these
 `reports/leads`, `search`, `reports/lead-flow` call `supabase.from()` directly in
