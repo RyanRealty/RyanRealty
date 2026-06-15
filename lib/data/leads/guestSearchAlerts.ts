@@ -30,6 +30,44 @@ export type GuestSearchAlertRow = {
   unsubscribe_token: string
   fub_person_id: number | null
   created_at?: string | null
+  origin?: 'user' | 'broker' | 'system'
+  assigned_by?: string | null
+}
+
+/**
+ * Create a saved search FOR a lead on the broker's behalf (origin='broker'), or
+ * a system-generated one. Same engine + table as a user's own saved search, so
+ * it shows up in the lead's list and the alert cron emails it like any other.
+ */
+export async function createSavedSearchForLead(input: {
+  email: string
+  fubPersonId?: number | null
+  name: string
+  filters: Record<string, unknown>
+  filtersHash: string
+  origin: 'broker' | 'system'
+  assignedBy?: string | null
+  frequency?: 'daily' | 'weekly'
+}): Promise<{ ok: boolean; error?: string }> {
+  const supabase = createServiceClient()
+  const { error } = await supabase.from(TABLE).upsert(
+    {
+      email: input.email.trim().toLowerCase(),
+      filters: input.filters,
+      filters_hash: input.filtersHash,
+      name: input.name,
+      fub_person_id: input.fubPersonId ?? null,
+      origin: input.origin,
+      assigned_by: input.assignedBy ?? null,
+      source: input.origin === 'broker' ? 'broker-assigned' : 'system',
+      notification_frequency: input.frequency ?? 'weekly',
+      is_active: true,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'email,filters_hash' },
+  )
+  if (error) { console.error('[createSavedSearchForLead]', error.message); return { ok: false, error: 'persist_failed' } }
+  return { ok: true }
 }
 
 /**
@@ -54,7 +92,7 @@ export async function getGuestSearchAlertsForLead(args: {
   const { data, error } = await supabase
     .from(TABLE)
     .select(
-      'id, email, filters, name, notification_frequency, is_active, last_notified_at, unsubscribe_token, fub_person_id, created_at',
+      'id, email, filters, name, notification_frequency, is_active, last_notified_at, unsubscribe_token, fub_person_id, created_at, origin, assigned_by',
     )
     .or(ors.join(','))
     .order('is_active', { ascending: false })

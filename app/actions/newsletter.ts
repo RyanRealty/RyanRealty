@@ -4,6 +4,7 @@ import { getCrmAccess } from '@/app/actions/crm'
 import { isSuppressed } from '@/lib/crm/suppressions'
 import { sendEmail } from '@/lib/resend'
 import { wrapNewsletterHtml, newsletterTextFooter } from '@/lib/email-templates/newsletter-shell'
+import { createSavedSearchForLead } from '@/lib/data'
 import {
   subscribeToNewsletter,
   setSubscriberStatus,
@@ -78,6 +79,57 @@ export async function adminSetSubscriberStatusAction(id: string, status: Subscri
   const gate = await requireAdmin()
   if (!gate.ok) return { ok: false }
   return setSubscriberStatus(id, status)
+}
+
+/** Bulk-assign many CRM people to the newsletter (resolves each email). */
+export async function adminBulkAssignNewsletterAction(personIds: number[], segment?: NewsletterSegment): Promise<{ ok: boolean; assigned: number; skipped: number; error?: string }> {
+  const gate = await requireAdmin()
+  if (!gate.ok) return { ok: false, assigned: 0, skipped: 0, error: 'unauthorized' }
+  let assigned = 0
+  let skipped = 0
+  for (const pid of personIds.slice(0, 2000)) {
+    const contact = await getCrmPersonContact(pid)
+    if (!contact) { skipped++; continue }
+    const r = await subscribeToNewsletter({ email: contact.email, name: contact.name, source: 'crm-assign', segment: segment ?? 'general', crmPersonId: pid })
+    if (r.ok) assigned++; else skipped++
+  }
+  return { ok: true, assigned, skipped }
+}
+
+// ── ADMIN: saved-search assignment (broker-created, origin='broker') ──────────
+
+function stableHash(filters: Record<string, unknown>): string {
+  const sorted = Object.keys(filters).sort().map((k) => `${k}=${JSON.stringify(filters[k])}`).join('&')
+  return `broker:${sorted}`
+}
+
+/** Assign ONE lead a broker-created saved search (origin='broker'). */
+export async function adminAssignSavedSearchAction(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+  const gate = await requireAdmin()
+  if (!gate.ok) return { ok: false, error: 'unauthorized' }
+  const email = String(formData.get('email') ?? '').trim().toLowerCase()
+  if (!email) return { ok: false, error: 'no_email' }
+  const fubPersonId = Number(formData.get('fubPersonId')) || null
+  const name = String(formData.get('name') ?? 'Saved search').trim() || 'Saved search'
+  let filters: Record<string, unknown> = {}
+  try { filters = JSON.parse(String(formData.get('filters') ?? '{}')) } catch { filters = {} }
+  return createSavedSearchForLead({ email, fubPersonId, name, filters, filtersHash: stableHash(filters), origin: 'broker', assignedBy: gate.email, frequency: 'weekly' })
+}
+
+/** Bulk-assign many CRM people the SAME broker-created saved search. */
+export async function adminBulkAssignSavedSearchAction(personIds: number[], name: string, filters: Record<string, unknown>): Promise<{ ok: boolean; assigned: number; skipped: number; error?: string }> {
+  const gate = await requireAdmin()
+  if (!gate.ok) return { ok: false, assigned: 0, skipped: 0, error: 'unauthorized' }
+  const hash = stableHash(filters)
+  let assigned = 0
+  let skipped = 0
+  for (const pid of personIds.slice(0, 2000)) {
+    const contact = await getCrmPersonContact(pid)
+    if (!contact) { skipped++; continue }
+    const r = await createSavedSearchForLead({ email: contact.email, fubPersonId: null, name, filters, filtersHash: hash, origin: 'broker', assignedBy: gate.email, frequency: 'weekly' })
+    if (r.ok) assigned++; else skipped++
+  }
+  return { ok: true, assigned, skipped }
 }
 
 // ── ADMIN: newsletter drafts ─────────────────────────────────────────────────

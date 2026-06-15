@@ -362,6 +362,19 @@ export async function getNewsletterRecipients(newsletterId: string, args?: { lim
   return (data ?? []) as NewsletterRecipient[]
 }
 
+/** Is this lead on the newsletter list? Matched by crm_person_id OR any email. */
+export async function getNewsletterMembershipForLead(args: { crmPersonId?: number | null; emails?: string[] }): Promise<{ subscribed: boolean; status: SubscriberStatus | null; segment: NewsletterSegment | null }> {
+  const sb = createServiceClient()
+  const emails = (args.emails ?? []).map((e) => e.trim().toLowerCase()).filter(Boolean)
+  const ors: string[] = []
+  if (args.crmPersonId) ors.push(`crm_person_id.eq.${args.crmPersonId}`)
+  for (const e of emails) ors.push(`email.eq.${e}`)
+  if (ors.length === 0) return { subscribed: false, status: null, segment: null }
+  const { data } = await sb.from(SUBS).select('status, segment').or(ors.join(',')).limit(1).maybeSingle()
+  if (!data) return { subscribed: false, status: null, segment: null }
+  return { subscribed: data.status === 'active', status: data.status as SubscriberStatus, segment: data.segment as NewsletterSegment }
+}
+
 /** Resolve a CRM person's primary email + name, for "assign to newsletter". */
 export async function getCrmPersonContact(personId: number): Promise<{ email: string; name: string | null } | null> {
   const sb = createServiceClient()

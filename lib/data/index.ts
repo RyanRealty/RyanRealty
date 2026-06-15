@@ -550,6 +550,7 @@ export {
   upsertGuestSearchAlert,
   getActiveGuestSearchAlerts,
   getGuestSearchAlertsForLead,
+  createSavedSearchForLead,
   markGuestAlertNotified,
   deactivateGuestAlertByToken,
 } from '@/lib/data/leads/guestSearchAlerts'
@@ -574,6 +575,7 @@ export {
   recordNewsletterEvent,
   getNewsletterStats,
   getNewsletterRecipients,
+  getNewsletterMembershipForLead,
 } from '@/lib/data/newsletter'
 export type { NewsletterSubscriber, NewsletterRow, NewsletterSegment, SubscriberStatus, NewsletterRecipient, NewsletterStats } from '@/lib/data/newsletter'
 
