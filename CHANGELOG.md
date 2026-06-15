@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.558.0 (2026-06-15)
+
+### Features
+- feat(console): lead membership badges + inline quick-assign
+
+---
+
+
 ## v1.557.0 (2026-06-15)
 
 ### Features
