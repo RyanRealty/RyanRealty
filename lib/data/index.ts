@@ -551,6 +551,8 @@ export {
   getActiveGuestSearchAlerts,
   getGuestSearchAlertsForLead,
   createSavedSearchForLead,
+  updateSavedSearch,
+  deleteSavedSearchById,
   markGuestAlertNotified,
   deactivateGuestAlertByToken,
 } from '@/lib/data/leads/guestSearchAlerts'

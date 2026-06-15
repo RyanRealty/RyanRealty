@@ -4,7 +4,7 @@ import { getCrmAccess } from '@/app/actions/crm'
 import { isSuppressed } from '@/lib/crm/suppressions'
 import { sendEmail } from '@/lib/resend'
 import { wrapNewsletterHtml, newsletterTextFooter } from '@/lib/email-templates/newsletter-shell'
-import { createSavedSearchForLead } from '@/lib/data'
+import { createSavedSearchForLead, updateSavedSearch, deleteSavedSearchById } from '@/lib/data'
 import {
   subscribeToNewsletter,
   setSubscriberStatus,
@@ -114,6 +114,25 @@ export async function adminAssignSavedSearchAction(formData: FormData): Promise<
   let filters: Record<string, unknown> = {}
   try { filters = JSON.parse(String(formData.get('filters') ?? '{}')) } catch { filters = {} }
   return createSavedSearchForLead({ email, fubPersonId, name, filters, filtersHash: stableHash(filters), origin: 'broker', assignedBy: gate.email, frequency: 'weekly' })
+}
+
+/** Edit a saved search (rename + change parameters) — used on the lead page. */
+export async function adminUpdateSavedSearchAction(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+  const gate = await requireAdmin()
+  if (!gate.ok) return { ok: false, error: 'unauthorized' }
+  const id = String(formData.get('id') ?? '').trim()
+  if (!id) return { ok: false, error: 'no_id' }
+  const name = String(formData.get('name') ?? 'Saved search').trim() || 'Saved search'
+  let filters: Record<string, unknown> = {}
+  try { filters = JSON.parse(String(formData.get('filters') ?? '{}')) } catch { filters = {} }
+  return updateSavedSearch(id, { name, filters, filtersHash: stableHash(filters) })
+}
+
+/** Remove a saved search by id. */
+export async function adminDeleteSavedSearchAction(id: string): Promise<{ ok: boolean }> {
+  const gate = await requireAdmin()
+  if (!gate.ok) return { ok: false }
+  return deleteSavedSearchById(id)
 }
 
 /** Bulk-assign many CRM people the SAME broker-created saved search. */

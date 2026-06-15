@@ -145,6 +145,26 @@ export async function getActiveGuestSearchAlerts(limit: number): Promise<GuestSe
   return (data ?? []) as GuestSearchAlertRow[]
 }
 
+/** Edit a saved search — rename and/or change its parameters. */
+export async function updateSavedSearch(id: string, fields: { name?: string; filters?: Record<string, unknown>; filtersHash?: string; frequency?: 'daily' | 'weekly' }): Promise<{ ok: boolean; error?: string }> {
+  const supabase = createServiceClient()
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (fields.name !== undefined) patch.name = fields.name
+  if (fields.filters !== undefined) patch.filters = fields.filters
+  if (fields.filtersHash !== undefined) patch.filters_hash = fields.filtersHash
+  if (fields.frequency !== undefined) patch.notification_frequency = fields.frequency
+  const { error } = await supabase.from(TABLE).update(patch).eq('id', id)
+  if (error) { console.error('[updateSavedSearch]', error.message); return { ok: false, error: 'persist_failed' } }
+  return { ok: true }
+}
+
+/** Remove a saved search by id. */
+export async function deleteSavedSearchById(id: string): Promise<{ ok: boolean }> {
+  const supabase = createServiceClient()
+  const { error } = await supabase.from(TABLE).delete().eq('id', id)
+  return { ok: !error }
+}
+
 /** Stamp last_notified_at after the cron sends an alert email. */
 export async function markGuestAlertNotified(id: string, isoTime: string): Promise<{ ok: boolean; error?: string }> {
   const supabase = createServiceClient()

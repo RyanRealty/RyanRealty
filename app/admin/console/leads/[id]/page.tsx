@@ -23,7 +23,7 @@ import {
 } from '@/app/actions/crm'
 import { autoEnrollPerson } from '@/lib/crm/enroll'
 import { getNewsletterMembershipForLead } from '@/lib/data'
-import { adminAssignCrmPersonAction, adminAssignSavedSearchAction } from '@/app/actions/newsletter'
+import { adminAssignCrmPersonAction, adminAssignSavedSearchAction, adminUpdateSavedSearchAction, adminDeleteSavedSearchAction } from '@/app/actions/newsletter'
 import { timelineEmailBody } from '@/lib/crm/email-body'
 import { renderCrmMerge } from '@/lib/crm/merge'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
@@ -137,6 +137,31 @@ async function assignSavedSearchForm(formData: FormData): Promise<void> {
   const r = await adminAssignSavedSearchAction(formData)
   const msg = r.ok ? 'Saved search assigned' : `Not assigned — ${r.error ?? 'unknown error'}`
   redirect(`${BASE}/${personId}?flash=${encodeURIComponent(msg)}`)
+}
+async function updateSavedSearchForm(formData: FormData): Promise<void> {
+  'use server'
+  const personId = Number(formData.get('personId'))
+  // Build the filters JSON the same way assignSavedSearchForm does.
+  const filters: Record<string, unknown> = {}
+  const city = String(formData.get('city') ?? '').trim()
+  const minPrice = Number(formData.get('minPrice'))
+  const maxPrice = Number(formData.get('maxPrice'))
+  const minBeds = Number(formData.get('minBeds'))
+  if (city) filters.city = city
+  if (Number.isFinite(minPrice) && minPrice > 0) filters.minPrice = minPrice
+  if (Number.isFinite(maxPrice) && maxPrice > 0) filters.maxPrice = maxPrice
+  if (Number.isFinite(minBeds) && minBeds > 0) filters.beds = minBeds
+  formData.set('filters', JSON.stringify(filters))
+  const r = await adminUpdateSavedSearchAction(formData)
+  const msg = r.ok ? 'Saved search updated' : `Not updated — ${r.error ?? 'unknown error'}`
+  redirect(`${BASE}/${personId}?flash=${encodeURIComponent(msg)}`)
+}
+async function deleteSavedSearchForm(formData: FormData): Promise<void> {
+  'use server'
+  const personId = Number(formData.get('personId'))
+  const id = String(formData.get('id') ?? '')
+  await adminDeleteSavedSearchAction(id)
+  redirect(`${BASE}/${personId}?flash=${encodeURIComponent('Saved search removed')}`)
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -574,16 +599,44 @@ export default async function ConsoleLeadPage({
               ) : savedSearches.slice(0, 6).map((s) => {
                 const origin = s.origin ?? 'user'
                 const originTone = origin === 'broker' ? 'info' : origin === 'system' ? 'warning' : 'neutral'
+                const f = (s.filters ?? {}) as Record<string, unknown>
+                const sv = (v: unknown) => (v === null || v === undefined ? '' : String(v))
                 return (
-                  <div key={s.id} className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="truncate text-sm font-medium" style={{ color: 'var(--console-info-strong)' }}>{describeSearch(s.filters)}</span>
-                        <StatusPill tone={originTone} label={origin} />
+                  <div key={s.id} className="rounded-lg border border-border px-3 py-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate text-sm font-medium" style={{ color: 'var(--console-info-strong)' }}>{describeSearch(s.filters)}</span>
+                          <StatusPill tone={originTone} label={origin} />
+                        </div>
+                        {s.name?.trim() ? <div className="truncate text-xs text-muted-foreground">{s.name.trim()}</div> : null}
                       </div>
-                      {s.name?.trim() ? <div className="truncate text-xs text-muted-foreground">{s.name.trim()}</div> : null}
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="text-xs text-muted-foreground">{s.is_active ? (s.notification_frequency ?? 'active') : 'paused'}</span>
+                        <form action={deleteSavedSearchForm}>
+                          <input type="hidden" name="personId" value={person.id} />
+                          <input type="hidden" name="id" value={s.id} />
+                          <button type="submit" className="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:text-destructive">Remove</button>
+                        </form>
+                      </div>
                     </div>
-                    <span className="shrink-0 text-xs text-muted-foreground">{s.is_active ? (s.notification_frequency ?? 'active') : 'paused'}</span>
+                    <details className="group mt-1.5">
+                      <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground">Edit</summary>
+                      <form action={updateSavedSearchForm} className="mt-2 space-y-2 border-t border-border pt-2">
+                        <input type="hidden" name="personId" value={person.id} />
+                        <input type="hidden" name="id" value={s.id} />
+                        <Input name="name" defaultValue={sv(s.name)} placeholder="Search name (e.g. Westside under 700k)" className="h-9 text-sm" />
+                        <Input name="city" defaultValue={sv(f.city)} placeholder="City (e.g. Bend)" className="h-9 text-sm" />
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input name="minPrice" type="number" inputMode="numeric" defaultValue={sv(f.minPrice)} placeholder="Min price" className="h-9 text-sm" />
+                          <Input name="maxPrice" type="number" inputMode="numeric" defaultValue={sv(f.maxPrice)} placeholder="Max price" className="h-9 text-sm" />
+                        </div>
+                        <Input name="minBeds" type="number" inputMode="numeric" defaultValue={sv(f.beds)} placeholder="Min beds" className="h-9 text-sm" />
+                        <div className="flex justify-end">
+                          <Button type="submit" size="sm" variant="outline" className="min-h-[40px] sm:min-h-0">Save changes</Button>
+                        </div>
+                      </form>
+                    </details>
                   </div>
                 )
               })}
