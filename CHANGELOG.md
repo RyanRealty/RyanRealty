@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.545.2 (2026-06-15)
+
+### Bug Fixes
+- fix(city+neighborhood): apply the community-page fixes site-wide
+
+---
+
+
 ## v1.545.1 (2026-06-14)
 
 ### Bug Fixes
