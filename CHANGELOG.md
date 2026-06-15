@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.549.0 (2026-06-15)
+
+### Features
+- feat(console): make the Lead Command Center the canonical contact detail
+
+---
+
+
 ## v1.548.0 (2026-06-15)
 
 ### Features
