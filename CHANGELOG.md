@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.546.0 (2026-06-15)
+
+### Features
+- feat(brain): decommission all video producers (Matt directive 2026-06-14)
+
+---
+
+
 ## v1.545.3 (2026-06-15)
 
 ### Bug Fixes
