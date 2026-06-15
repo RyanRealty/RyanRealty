@@ -2,9 +2,11 @@
 
 The brain reads this file at decision-time to know which producer handles which `action_type`. New producer? Add a row here and the brain immediately knows.
 
-**Last audited:** 2026-06-06.
+**Last audited:** 2026-06-14.
 **Canonical source for each producer:** the `SKILL.md` at the listed path.
 **Template for new producers:** `marketing_brain_skills/producers/TEMPLATE.md`.
+
+> **VIDEO PRODUCERS DECOMMISSIONED — 2026-06-14 (Matt directive).** Every producer whose deliverable is a video has been removed from this registry. Because the brain resolves producers ONLY through this file, video `content:*` action_types no longer resolve to any producer and can never be dispatched or attempted. Removed: listing-tour-video, listing_reveal, market-data-video, youtube-long-form-market-report, news-video, neighborhood_tour, area_guides, data_viz_video, avatar_market_update, meme_content (video), earth_zoom, google_maps_flyover, market_report_video, news_video (avatar), coming-soon-teaser, tiktok-listing-tour, youtube-long-form-walkthrough, map_route_video, school_district_overlay, walkability_overlay, market_pulse_short, clip_compilation, monthly-market-report-orchestrator, listing_launch. The Remotion code (`video/`, `listing_video_v4/`, `video_production_skills/`, `scripts/build_*_video*.py`) remains on disk but is no longer brain-callable. To re-enable, re-add the rows.
 
 ---
 
@@ -14,9 +16,7 @@ Compound producers that delegate to multiple sub-producers in parallel. The brai
 
 | producer_name | path | action_types | approval | est. run_time | notes |
 |---|---|---|---|---|---|
-| list-kit | `social_media_skills/list-kit/` | `content:list_kit` | matt-review-draft | 15–30 min | v3 — at-Active orchestrator. Delegates to listing-tour-video, flyer-design, instagram-carousel (Pattern A/B/C/D), ig-single-post. Locked 2026-05-14. Script: `scripts/build-list-kit-orchestrator.mjs` |
-| monthly-market-report-orchestrator | `video_production_skills/monthly-market-report-orchestrator/` | `content:monthly_market_report` | matt-review-draft | 20–45 min | Script: `scripts/build-monthly-market-report-orchestrator.mjs` |
-| listing_launch | `video_production_skills/listing_launch/` | `content:listing_launch` | matt-review-draft | 15–30 min | Script: `scripts/build-listing-launch-orchestrator.mjs` |
+| list-kit | `social_media_skills/list-kit/` | `content:list_kit` | matt-review-draft | 15–30 min | v3 — at-Active orchestrator. Delegates to flyer-design, instagram-carousel (Pattern A/B/C/D), ig-single-post. (listing-tour-video delegation removed 2026-06-14 — video decommissioned.) Locked 2026-05-14. Script: `scripts/build-list-kit-orchestrator.mjs` |
 | content_engine | `automation_skills/content_engine/` | internal router — all `content:*` actions execute through here; not emitted as an action_type itself | matt-review-draft | varies | No build script — internal routing bus, not a stand-alone producer |
 
 ---
@@ -27,31 +27,14 @@ Single-deliverable specialists. Each handles one or more `content:*` action_type
 
 | producer_name | path | action_types | approval | est. run_time | notes |
 |---|---|---|---|---|---|
-| listing-tour-video | `video_production_skills/listing-tour-video/` | `content:listing_video` | matt-review-draft | 10–20 min | |
-| listing_reveal | `video_production_skills/listing_reveal/` | `content:listing_reel` | matt-review-draft | 8–15 min |
-| market-data-video | `video_production_skills/market-data-video/` | `content:market_data_short`, `content:market_video` | matt-review-draft | 10–20 min |
-| youtube-long-form-market-report | `video_production_skills/youtube-long-form-market-report/` | `content:market_youtube_longform` | matt-review-draft | 20–40 min |
-| news-video | `video_production_skills/news-video/` | `content:news_clip`, `content:news_video` | matt-review-draft | 8–15 min |
-| neighborhood_tour | `video_production_skills/neighborhood_tour/` | `content:neighborhood_tour`, `content:area_guide_long` | matt-review-draft | 15–25 min |
-| area_guides | `video_production_skills/area_guides/` | `content:area_guide_short`, `content:neighborhood_reel` | matt-review-draft | 5–10 min |
-| data_viz_video | `video_production_skills/data_viz_video/` | `content:market_data_viz`, `content:stats_clip` | matt-review-draft | 8–15 min |
-| avatar_market_update | `video_production_skills/avatar_market_update/` | `content:avatar_market_update` | matt-review-draft | 10–20 min |
-| meme_content | `video_production_skills/meme_content/` | `content:meme_video` | matt-review-draft | 5–10 min |
-| earth_zoom | `video_production_skills/earth_zoom/` | `content:earth_zoom` | matt-review-draft | 10–20 min |
-| google_maps_flyover | `video_production_skills/google_maps_flyover/` | `content:aerial_flyover` | matt-review-draft | 15–25 min |
 | blog-post | `social_media_skills/blog-post/` | `content:blog_post`, `content:seo_blog` | matt-review-draft | 5–10 min |
 | facebook-lead-gen-ad | `social_media_skills/facebook-lead-gen-ad/` | `content:fb_lead_gen_ad`, `content:fb_ad` | matt-review-draft | 5–10 min | `scripts/build-fb-ad.mjs` builds ad-spec from market cache (partial — does not handle lead-form wiring). ⚠️ NO_SCRIPT — full lead-gen form producer script not yet built |
 | flyer-design | `social_media_skills/flyer-design/` | `content:flyer`, `content:just_listed_flyer`, `content:open_house_flyer`, `content:feature_sheet` | matt-review-draft | 3–8 min | Script: `scripts/build_flyer_design_wrapper.py` |
 | cma | `marketing_brain_skills/producers/cma/` | `content:cma` | matt-review-draft | 10–20 min (CMA build: subject + 6–10 comp flyers + branded map + 2-method pricing; signed by broker resolved from `public.brokers`) | Script: `scripts/build_cma_wrapper.py` |
 | instagram-carousel | `social_media_skills/instagram-carousel/` | `content:ig_carousel` | matt-review-draft | 5–10 min | ⚠️ NO_SCRIPT — skill-only, must be hand-built before brain dispatch can produce |
 | meme_lord | `social_media_skills/meme_lord/` | `content:image_meme` | matt-explicit (Matt writes punchline) | 3–8 min |
-| market_report_video (ffmpeg) | `video_production_skills/market_report_video/` | `content:market_stat_card_video` | matt-review-draft | 3–8 min |
-| news_video (avatar) | `video_production_skills/news_video/` | `content:avatar_video` | matt-review-draft | 10–20 min |
 | social_calendar | `video_production_skills/social_calendar/` | `content:social_calendar` | matt-review-draft | 3–5 min | ⚠️ NO_SCRIPT — skill-only, must be hand-built before brain dispatch can produce |
 | ig-single-post | `social_media_skills/ig-single-post/` | `content:ig_single_post` | matt-review-draft | 3–8 min | S1–S10 templates: Just Listed, Just Sold, Open House, Coming Soon, Price Improvement, Featured Listing, Agent Intro, Brag Stat, Press Feature, Market Data Card. Script: `scripts/build_ig_single_post_wrapper.py` |
-| coming-soon-teaser | `social_media_skills/coming-soon-teaser/` | `content:coming_soon_teaser` | matt-review-draft | 8–15 min | Pre-Active Reel + IG/FB Stories. Exterior-only, 10–15s |
-| tiktok-listing-tour | `video_production_skills/tiktok-listing-tour/` | `content:tiktok_listing_tour` | matt-review-draft | 10–20 min | TikTok-optimized with SEO-baked VO embedding long-tail geo query |
-| youtube-long-form-walkthrough | `video_production_skills/youtube-long-form-walkthrough/` | `content:yt_longform_walkthrough` | matt-review-draft | 20–40 min | 4–12 min, 1920×1080, $750K+ floor. Faceless, drone hook + price reveal first 10s. ⚠️ NO_SCRIPT — skill-only, must be hand-built before brain dispatch can produce (note: `build-youtube-long.mjs` is for market-report, NOT walkthrough) |
 | open-house-stories | `social_media_skills/open-house-stories/` | `content:open_house_stories` | matt-review-draft | 5–10 min | 5–7 frame Stories sequence with ManyChat keyword CTA |
 | under-contract-announcement | `social_media_skills/under-contract-announcement/` | `content:under_contract_announcement` | matt-review-draft | 3–8 min | 4:5 static, data-only caption, NO celebration language |
 | sold-deal-summary | `social_media_skills/sold-deal-summary/` | `content:sold_deal_summary` | matt-review-draft | 5–10 min | Dual deliverable: IG/FB static + LinkedIn native text (market-insight framing) |
@@ -61,11 +44,6 @@ Single-deliverable specialists. Each handles one or more `content:*` action_type
 | yard-sign-rider | `social_media_skills/yard-sign-rider/` | `content:yard_sign` | matt-review-draft | 5–10 min | 18×24 main sign + rider variants (just_listed / open_house / under_contract / sold) |
 | neighbor-outreach-note | `social_media_skills/neighbor-outreach-note/` | `content:neighbor_note` | matt-review-draft | 5–10 min | Handwritten-style card text + flyer enclosure + Avery label sheet for 20-40 nearest neighbors |
 | broker-contact-card | `social_media_skills/broker-contact-card/` | `content:broker_card` | matt-review-draft | 3–5 min | NEW REGISTERED 2026-05-16 (re-applied 2026-05-17). Per-broker contact / signature block used inside CMA, blog bylines, lead-gen ad footer, listing-tour-video end card. Resolves from `public.brokers` row by email or slug. |
-| map_route_video | `video_production_skills/map_route_video/` | `content:map_route` | matt-review-draft | 8–15 min | NEW 2026-05-16. Animated route from listing to St Charles / school / Mt Bachelor / downtown. Google Routes API + Remotion polyline. |
-| school_district_overlay | `video_production_skills/school_district_overlay/` | `content:school_overlay` | matt-review-draft | 5–10 min | NEW 2026-05-16. BLS school boundary overlay for a listing or neighborhood. Sources from `boundaries` table. |
-| walkability_overlay | `video_production_skills/walkability_overlay/` | `content:walkability_overlay` | matt-review-draft | 5–10 min | NEW 2026-05-16. WalkScore-style isochrone (5/10/15 min) via Mapbox or Routes matrix. |
-| market_pulse_short | `video_production_skills/market_pulse_short/` | `content:market_pulse_short` | matt-review-draft | 5–10 min | NEW 2026-05-16. 9-15s recurring weekly market data short. Pulls from `market_pulse_live` + `market_stats_cache`. Victoria VO. |
-| clip_compilation | `video_production_skills/clip_compilation/` | `content:clip_compilation` | matt-review-draft | 10–20 min | NEW 2026-05-16. Stitches multiple existing short clips from asset library into compilation. Pure repurpose. |
 | virtual_staging | `social_media_skills/virtual_staging/` | `content:virtual_staging` | matt-review-draft | 5–10 min (~$0.50–$2/img) | NEW 2026-05-16. AI virtual staging of empty rooms. Replicate model. Always discloses "virtually staged" per NAR ethics. |
 | floor_plan_render | `social_media_skills/floor_plan_render/` | `content:floor_plan_render` | matt-review-draft | 5–10 min | NEW 2026-05-16. Cleans/brands MLS floor plan or generates 2D plan from Matterport scan. PDF + PNG output. ⚠️ NO_SCRIPT — skill-only, must be hand-built before brain dispatch can produce |
 | comparable_grid | `social_media_skills/comparable_grid/` | `content:comparable_grid` | matt-review-draft | 5–10 min | NEW 2026-05-16. 3×2 or 3×3 image grid of comp sales for a listing or CMA. Delegated by `cma`. |
