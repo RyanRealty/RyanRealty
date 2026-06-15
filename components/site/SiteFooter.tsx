@@ -8,6 +8,7 @@ import {
   Stack,
   TextLink,
 } from '@/components/site/primitives'
+import { NewsletterSignup } from '@/components/site/NewsletterSignup'
 import { FOOTER_NAV, LEGAL_LINKS } from '@/lib/site-nav'
 import { BRAND, CONTACT, BROKERS } from '@/lib/brand/contact'
 
@@ -27,6 +28,11 @@ export default function SiteFooter() {
   return (
     <footer className="bg-primary text-white/85">
       <Container className="pt-14 pb-8">
+        {/* Newsletter signup band — above the nav grid */}
+        <div className="mb-10 border-b border-white/15 pb-10">
+          <NewsletterSignup source="site-footer" />
+        </div>
+
         {/* Main grid: brand col + nav columns */}
         <div className="grid gap-10 grid-cols-2 sm:grid-cols-3 lg:grid-cols-[1.4fr_repeat(4,1fr)_repeat(3,1fr)]">
 
