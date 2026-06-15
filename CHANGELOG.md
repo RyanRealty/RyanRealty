@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.546.1 (2026-06-15)
+
+### Maintenance
+- chore(skills): remove all video-production skills (Matt directive 2026-06-15)
+
+---
+
+
 ## v1.546.0 (2026-06-15)
 
 ### Features
