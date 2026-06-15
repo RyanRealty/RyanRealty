@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-15T15:00:32.491Z
+**Generated:** 2026-06-15T20:10:57.937Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -299,7 +299,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 593,497**
+### `listing_tile_mv` · **rows ≈ 593,189**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -576,7 +576,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 12**
+### `cmas` · **rows ≈ 13**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -691,7 +691,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `owner_lookup_attempts` | integer | yes | 0 |
 | `last_owner_lookup_at` | timestamp with time zone | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 73**
+### `marketing_brain_actions` · **rows ≈ 84**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -2109,6 +2109,43 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `boundary_source_url` | text | yes |  |
 | `boundary_fetched_at` | timestamp with time zone | yes |  |
 | `boundary_verified_by` | text | yes |  |
+
+### `newsletter_subscribers`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `email` | text | no |  |
+| `name` | text | yes |  |
+| `status` | text | no | 'active'::text |
+| `source` | text | yes |  |
+| `segment` | text | no | 'general'::text |
+| `crm_person_id` | bigint | yes |  |
+| `fub_person_id` | bigint | yes |  |
+| `unsubscribe_token` | uuid | no | gen_random_uuid() |
+| `last_sent_at` | timestamp with time zone | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
+### `newsletters`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `subject` | text | no |  |
+| `preview_text` | text | yes |  |
+| `body_html` | text | yes |  |
+| `body_text` | text | yes |  |
+| `status` | text | no | 'draft'::text |
+| `audience` | text | no | 'all'::text |
+| `recipient_count` | integer | no | 0 |
+| `sent_count` | integer | no | 0 |
+| `failed_count` | integer | no | 0 |
+| `created_by` | text | yes |  |
+| `scheduled_at` | timestamp with time zone | yes |  |
+| `sent_at` | timestamp with time zone | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
 
 ### `nextdoor_auth`
 

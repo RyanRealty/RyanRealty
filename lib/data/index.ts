@@ -555,6 +555,24 @@ export {
 } from '@/lib/data/leads/guestSearchAlerts'
 export type { GuestSearchAlertInput, GuestSearchAlertRow } from '@/lib/data/leads/guestSearchAlerts'
 
+// Newsletter feature — subscriber list + managed sends
+export {
+  subscribeToNewsletter,
+  unsubscribeNewsletterByToken,
+  setSubscriberStatus,
+  listNewsletterSubscribers,
+  newsletterSubscriberCounts,
+  getActiveSubscribersForSend,
+  markSubscribersSent,
+  createNewsletterDraft,
+  updateNewsletter,
+  listNewsletters,
+  getNewsletter,
+  deleteNewsletterDraft,
+  getCrmPersonContact,
+} from '@/lib/data/newsletter'
+export type { NewsletterSubscriber, NewsletterRow, NewsletterSegment, SubscriberStatus } from '@/lib/data/newsletter'
+
 // Anonymous partial-address capture — LP step-1 advance without cookie identity.
 export { saveAnonymousPartialAddress } from '@/lib/data/leads/saveAnonymousPartialAddress'
 export type { AnonymousPartialAddressInput } from '@/lib/data/leads/saveAnonymousPartialAddress'
