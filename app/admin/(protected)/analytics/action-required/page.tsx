@@ -69,42 +69,56 @@ async function HotLeadsCard() {
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">No hot leads in the last 48 hours. When score crosses 100 and the visitor is identified, they appear here.</p>
         ) : (
-          <ul className="space-y-3">
-            {rows.map((raw) => {
-              const r = raw as { session_id: string; identified_email: string | null; fub_person_id: number | null; hot_lead_fired_at: string; peak_score: number; intent_tags: string[]; utm_source: string | null; ip_city: string | null }
-              return (
-                <li key={r.session_id} className="flex items-start justify-between gap-3 rounded-lg border border-border p-3">
-                  <div className="flex-1">
-                    <div className="font-medium">
-                      {r.fub_person_id ? (
-                        <Link href={`/admin/people/${r.fub_person_id}`} className="text-primary hover:underline">
-                          {r.identified_email ?? `FUB #${r.fub_person_id}`}
-                        </Link>
-                      ) : (
-                        <span>{r.identified_email}</span>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Score {r.peak_score} · fired {fmtRel(r.hot_lead_fired_at)} · {r.utm_source || 'direct'} · {r.ip_city || 'unknown'}
-                    </div>
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {(r.intent_tags ?? []).map((t) => <Badge key={t} variant="secondary" className="text-[10px]">{t.replace(/_/g, ' ')}</Badge>)}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 whitespace-nowrap text-xs">
-                    {r.fub_person_id && (
-                      <a href={`https://app.followupboss.com/2/people/view/${r.fub_person_id}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary hover:underline">
-                        FUB ↗
-                      </a>
+          (() => {
+            type HotRow = { session_id: string; identified_email: string | null; fub_person_id: number | null; hot_lead_fired_at: string; peak_score: number; intent_tags: string[]; utm_source: string | null; ip_city: string | null }
+            const renderItem = (r: HotRow) => (
+              <li key={r.session_id} className="flex items-start justify-between gap-3 rounded-lg border border-border p-3">
+                <div className="flex-1">
+                  <div className="font-medium">
+                    {r.fub_person_id ? (
+                      <Link href={`/admin/people/${r.fub_person_id}`} className="text-primary hover:underline">
+                        {r.identified_email ?? `FUB #${r.fub_person_id}`}
+                      </Link>
+                    ) : (
+                      <span>{r.identified_email}</span>
                     )}
-                    <Link href={`/admin/visitors/${encodeURIComponent(r.session_id)}`} className="text-primary hover:underline">
-                      journey →
-                    </Link>
                   </div>
-                </li>
-              )
-            })}
-          </ul>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Score {r.peak_score} · fired {fmtRel(r.hot_lead_fired_at)} · {r.utm_source || 'direct'} · {r.ip_city || 'unknown'}
+                  </div>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {(r.intent_tags ?? []).map((t) => <Badge key={t} variant="secondary" className="text-[10px]">{t.replace(/_/g, ' ')}</Badge>)}
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1 whitespace-nowrap text-xs">
+                  {r.fub_person_id && (
+                    <a href={`https://app.followupboss.com/2/people/view/${r.fub_person_id}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary hover:underline">
+                      FUB ↗
+                    </a>
+                  )}
+                  <Link href={`/admin/visitors/${encodeURIComponent(r.session_id)}`} className="text-primary hover:underline">
+                    journey →
+                  </Link>
+                </div>
+              </li>
+            )
+            const all = rows as HotRow[]
+            const preview = all.slice(0, 5)
+            const rest = all.slice(5)
+            return (
+              <>
+                <ul className="space-y-3">{preview.map(renderItem)}</ul>
+                {rest.length > 0 ? (
+                  <details className="mt-3">
+                    <summary className="cursor-pointer list-none text-sm font-medium text-primary hover:underline">
+                      See all {all.length} →
+                    </summary>
+                    <ul className="space-y-3 mt-3">{rest.map(renderItem)}</ul>
+                  </details>
+                ) : null}
+              </>
+            )
+          })()
         )}
       </CardContent>
     </Card>
@@ -136,28 +150,42 @@ async function WarmActiveCard() {
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">No identified visitors with score 50+ in the last 30 minutes.</p>
         ) : (
-          <ul className="space-y-2">
-            {rows.map((raw) => {
-              const r = raw as { session_id: string; identified_email: string | null; fub_person_id: number | null; engagement_score: number; utm_source: string | null; ip_city: string | null; last_seen_at: string }
-              return (
-                <li key={r.session_id} className="flex items-center justify-between gap-3 text-sm">
-                  <div className="flex-1">
-                    {r.fub_person_id ? (
-                      <Link href={`/admin/people/${r.fub_person_id}`} className="text-primary hover:underline font-medium">
-                        {r.identified_email ?? `FUB #${r.fub_person_id}`}
-                      </Link>
-                    ) : (
-                      <span className="font-medium">{r.identified_email}</span>
-                    )}
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      score {r.engagement_score} · {r.utm_source || 'direct'} · {r.ip_city || '—'} · {fmtRel(r.last_seen_at)}
-                    </span>
-                  </div>
-                  <Link href={`/admin/visitors/${encodeURIComponent(r.session_id)}`} className="text-xs text-primary hover:underline whitespace-nowrap">journey →</Link>
-                </li>
-              )
-            })}
-          </ul>
+          (() => {
+            type WarmRow = { session_id: string; identified_email: string | null; fub_person_id: number | null; engagement_score: number; utm_source: string | null; ip_city: string | null; last_seen_at: string }
+            const renderItem = (r: WarmRow) => (
+              <li key={r.session_id} className="flex items-center justify-between gap-3 text-sm">
+                <div className="flex-1">
+                  {r.fub_person_id ? (
+                    <Link href={`/admin/people/${r.fub_person_id}`} className="text-primary hover:underline font-medium">
+                      {r.identified_email ?? `FUB #${r.fub_person_id}`}
+                    </Link>
+                  ) : (
+                    <span className="font-medium">{r.identified_email}</span>
+                  )}
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    score {r.engagement_score} · {r.utm_source || 'direct'} · {r.ip_city || '—'} · {fmtRel(r.last_seen_at)}
+                  </span>
+                </div>
+                <Link href={`/admin/visitors/${encodeURIComponent(r.session_id)}`} className="text-xs text-primary hover:underline whitespace-nowrap">journey →</Link>
+              </li>
+            )
+            const all = rows as WarmRow[]
+            const preview = all.slice(0, 5)
+            const rest = all.slice(5)
+            return (
+              <>
+                <ul className="space-y-2">{preview.map(renderItem)}</ul>
+                {rest.length > 0 ? (
+                  <details className="mt-3">
+                    <summary className="cursor-pointer list-none text-sm font-medium text-primary hover:underline">
+                      See all {all.length} →
+                    </summary>
+                    <ul className="space-y-2 mt-3">{rest.map(renderItem)}</ul>
+                  </details>
+                ) : null}
+              </>
+            )
+          })()
         )}
       </CardContent>
     </Card>
@@ -189,28 +217,40 @@ async function AnonymousHighEngagementCard() {
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">No anonymous visitors with score 80+ in the last 24 hours.</p>
         ) : (
-          <>
-            <p className="text-xs text-muted-foreground mb-3">These visitors browsed heavily but never signed in. Build a Meta Custom Audience around their cities and intent tags for retargeting.</p>
-            <ul className="space-y-2">
-              {rows.map((raw) => {
-                const r = raw as { session_id: string; engagement_score: number; intent_tags: string[]; utm_source: string | null; utm_campaign: string | null; ip_city: string | null; last_seen_at: string }
-                return (
-                  <li key={r.session_id} className="flex items-center justify-between gap-3 text-sm">
-                    <div className="flex-1">
-                      <span className="font-medium tabular-nums">score {r.engagement_score}</span>
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        {r.utm_source || 'direct'}{r.utm_campaign ? ` · ${r.utm_campaign}` : ''} · {r.ip_city || '—'} · {fmtRel(r.last_seen_at)}
-                      </span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {(r.intent_tags ?? []).map((t) => <Badge key={t} variant="outline" className="text-[10px]">{t.replace(/_/g, ' ')}</Badge>)}
-                      </div>
-                    </div>
-                    <Link href={`/admin/visitors/${encodeURIComponent(r.session_id)}`} className="text-xs text-primary hover:underline whitespace-nowrap">journey →</Link>
-                  </li>
-                )
-              })}
-            </ul>
-          </>
+          (() => {
+            type AnonRow = { session_id: string; engagement_score: number; intent_tags: string[]; utm_source: string | null; utm_campaign: string | null; ip_city: string | null; last_seen_at: string }
+            const renderItem = (r: AnonRow) => (
+              <li key={r.session_id} className="flex items-center justify-between gap-3 text-sm">
+                <div className="flex-1">
+                  <span className="font-medium tabular-nums">score {r.engagement_score}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    {r.utm_source || 'direct'}{r.utm_campaign ? ` · ${r.utm_campaign}` : ''} · {r.ip_city || '—'} · {fmtRel(r.last_seen_at)}
+                  </span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {(r.intent_tags ?? []).map((t) => <Badge key={t} variant="outline" className="text-[10px]">{t.replace(/_/g, ' ')}</Badge>)}
+                  </div>
+                </div>
+                <Link href={`/admin/visitors/${encodeURIComponent(r.session_id)}`} className="text-xs text-primary hover:underline whitespace-nowrap">journey →</Link>
+              </li>
+            )
+            const all = rows as AnonRow[]
+            const preview = all.slice(0, 5)
+            const rest = all.slice(5)
+            return (
+              <>
+                <p className="text-xs text-muted-foreground mb-3">These visitors browsed heavily but never signed in. Build a Meta Custom Audience around their cities and intent tags for retargeting.</p>
+                <ul className="space-y-2">{preview.map(renderItem)}</ul>
+                {rest.length > 0 ? (
+                  <details className="mt-3">
+                    <summary className="cursor-pointer list-none text-sm font-medium text-primary hover:underline">
+                      See all {all.length} →
+                    </summary>
+                    <ul className="space-y-2 mt-3">{rest.map(renderItem)}</ul>
+                  </details>
+                ) : null}
+              </>
+            )
+          })()
         )}
       </CardContent>
     </Card>

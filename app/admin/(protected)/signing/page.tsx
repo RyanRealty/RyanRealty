@@ -5,6 +5,12 @@ import { ENVELOPE_STATUS_LABEL, type EnvelopeStatus } from '@/lib/tc/signing'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -24,6 +30,9 @@ export default async function SigningDashboard() {
     return acc
   }, {})
   const active = envelopes.filter((e) => e.status === 'sent' || e.status === 'partially_signed')
+  const ALL_PREVIEW = 8
+  const allPreview = envelopes.slice(0, ALL_PREVIEW)
+  const allRest = envelopes.slice(ALL_PREVIEW)
 
   return (
     <main className="space-y-6">
@@ -55,7 +64,22 @@ export default async function SigningDashboard() {
       <section>
         <h2 className="mb-2 text-sm font-semibold text-foreground">All envelopes</h2>
         {envelopes.length ? (
-          <EnvelopeTable rows={envelopes} />
+          <>
+            {/* Curate, never dump: most recent few, rest behind a disclosure. */}
+            <EnvelopeTable rows={allPreview} />
+            {allRest.length > 0 ? (
+              <Accordion type="single" collapsible className="mt-2">
+                <AccordionItem value="all-envelopes-rest" className="border-0">
+                  <AccordionTrigger className="min-h-11 justify-center gap-2 text-sm font-medium text-foreground hover:no-underline">
+                    See all {envelopes.length} envelopes
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-1">
+                    <EnvelopeTable rows={allRest} />
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            ) : null}
+          </>
         ) : (
           <p className="text-sm text-muted-foreground">
             No envelopes yet. Open a deal and use “New envelope” on a document to start.

@@ -430,7 +430,7 @@ export default async function DealsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {closed.map((p) => {
+              {closedPreview.map((p) => {
                 const h = p.headline
                 return (
                   <TableRow key={p.key}>
@@ -459,6 +459,48 @@ export default async function DealsPage() {
               })}
             </TableBody>
           </Table>
+          {closedRest.length > 0 ? (
+            <Accordion type="single" collapsible>
+              <AccordionItem value="closed-table-rest" className="border-t border-border">
+                <AccordionTrigger className="min-h-11 justify-center gap-2 px-4 text-sm font-medium text-foreground hover:no-underline">
+                  See all {closed.length} closed
+                </AccordionTrigger>
+                <AccordionContent className="pt-0">
+                  <Table>
+                    <TableBody>
+                      {closedRest.map((p) => {
+                        const h = p.headline
+                        return (
+                          <TableRow key={p.key}>
+                            <TableCell className="font-medium text-foreground">
+                              <Link href={`/admin/deals/${encodeURIComponent(p.key)}`} className="hover:underline">
+                                {p.address}
+                              </Link>
+                              {p.zombie ? (
+                                <span className="ml-2 text-xs text-warning" title={p.zombie}>
+                                  ⚠ zombie folder
+                                </span>
+                              ) : null}
+                            </TableCell>
+                            <TableCell className="tabular-nums">{d10(h.actualClosingDate)}</TableCell>
+                            <TableCell className="text-right tabular-nums">{money(h.salePrice)}</TableCell>
+                            <TableCell className="text-right tabular-nums">{money(h.officeGross)}</TableCell>
+                            <TableCell>{p.broker ?? '—'}</TableCell>
+                            <TableCell>
+                              <BnBadge state={h.brokerNotesState} />
+                            </TableCell>
+                            <TableCell>
+                              <ComplianceBadge state={p.rollup.complianceState} />
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          ) : null}
         </div>
       </section>
 
