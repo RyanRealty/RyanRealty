@@ -570,8 +570,12 @@ export {
   getNewsletter,
   deleteNewsletterDraft,
   getCrmPersonContact,
+  recordRecipientSend,
+  recordNewsletterEvent,
+  getNewsletterStats,
+  getNewsletterRecipients,
 } from '@/lib/data/newsletter'
-export type { NewsletterSubscriber, NewsletterRow, NewsletterSegment, SubscriberStatus } from '@/lib/data/newsletter'
+export type { NewsletterSubscriber, NewsletterRow, NewsletterSegment, SubscriberStatus, NewsletterRecipient, NewsletterStats } from '@/lib/data/newsletter'
 
 // Anonymous partial-address capture — LP step-1 advance without cookie identity.
 export { saveAnonymousPartialAddress } from '@/lib/data/leads/saveAnonymousPartialAddress'

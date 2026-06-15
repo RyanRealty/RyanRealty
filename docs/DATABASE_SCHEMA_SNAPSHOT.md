@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-15T20:10:57.937Z
+**Generated:** 2026-06-15T20:22:38.985Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -299,7 +299,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 593,189**
+### `listing_tile_mv` · **rows ≈ 591,121**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -2110,6 +2110,25 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `boundary_fetched_at` | timestamp with time zone | yes |  |
 | `boundary_verified_by` | text | yes |  |
 
+### `newsletter_recipients`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `newsletter_id` | uuid | no |  |
+| `subscriber_id` | uuid | yes |  |
+| `email` | text | no |  |
+| `resend_message_id` | text | yes |  |
+| `status` | text | no | 'sent'::text |
+| `open_count` | integer | no | 0 |
+| `first_opened_at` | timestamp with time zone | yes |  |
+| `last_opened_at` | timestamp with time zone | yes |  |
+| `click_count` | integer | no | 0 |
+| `first_clicked_at` | timestamp with time zone | yes |  |
+| `last_clicked_at` | timestamp with time zone | yes |  |
+| `clicked_links` | jsonb | no | '[]'::jsonb |
+| `created_at` | timestamp with time zone | no | now() |
+
 ### `newsletter_subscribers`
 
 | Column | Type | Nullable | Default |
@@ -2146,6 +2165,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `sent_at` | timestamp with time zone | yes |  |
 | `created_at` | timestamp with time zone | no | now() |
 | `updated_at` | timestamp with time zone | no | now() |
+| `sent_by` | text | yes |  |
 
 ### `nextdoor_auth`
 

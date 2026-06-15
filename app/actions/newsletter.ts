@@ -14,6 +14,7 @@ import {
   updateNewsletter,
   deleteNewsletterDraft,
   getNewsletter,
+  recordRecipientSend,
   type NewsletterSegment,
   type SubscriberStatus,
 } from '@/lib/data'
@@ -136,7 +137,9 @@ export async function adminSendNewsletterAction(id: string): Promise<{ ok: boole
   const recipients = await getActiveSubscribersForSend({ segment })
   if (recipients.length === 0) return { ok: false, error: 'no_recipients' }
 
+  // Record who sent it (per-broker attribution) + lock the send.
   await updateNewsletter(id, { status: 'sending', recipient_count: recipients.length })
+  await updateNewsletter(id, { sent_by: gate.email })
 
   let sent = 0
   let skipped = 0
@@ -160,6 +163,9 @@ export async function adminSendNewsletterAction(id: string): Promise<{ ok: boole
       text,
       headers: { 'List-Unsubscribe': `<${u}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
     })
+    // One tracking row per recipient; the Resend message id ties webhook
+    // opens/clicks back to this person.
+    await recordRecipientSend({ newsletterId: id, subscriberId: r.id, email: r.email, resendMessageId: res.id ?? null, failed: Boolean(res.error) })
     if (res.error) { failed++ } else { sent++; sentIds.push(r.id) }
   }
 

@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { recordNewsletterEvent } from '@/lib/data'
 
 /**
  * Resend webhook: delivered, opened, clicked, bounced, complained, unsubscribed.
- * Verify signature and update email_campaigns / user preferences.
+ * Verify signature, then record newsletter open/click/delivery events against the
+ * matching newsletter_recipients row (by resend message id) — the data behind the
+ * per-broker delivery/open/click stats + who-clicked-what view.
  */
+const EVENT_MAP: Record<string, 'delivered' | 'opened' | 'clicked' | 'bounced' | 'complained'> = {
+  'email.delivered': 'delivered',
+  'email.opened': 'opened',
+  'email.clicked': 'clicked',
+  'email.bounced': 'bounced',
+  'email.complained': 'complained',
+}
+
 export async function POST(request: NextRequest) {
   const raw = await request.text()
   const sig = request.headers.get('svix-signature') ?? request.headers.get('resend-signature') ?? ''
@@ -21,22 +32,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
 
-  let body: { type?: string; data?: { email_id?: string; campaign_id?: string; created_at?: string } }
+  let body: { type?: string; created_at?: string; data?: { email_id?: string; created_at?: string; click?: { link?: string } } }
   try {
-    body = JSON.parse(raw) as { type?: string; data?: { email_id?: string; campaign_id?: string; created_at?: string } }
+    body = JSON.parse(raw)
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const type = body.type ?? ''
-  if (type === 'email.opened' || type === 'email.clicked') {
-    // When email_campaigns stores Resend email_id, update open_count/click_count here
-  }
-  if (type === 'email.bounced' || type === 'email.complained') {
-    // Could flag user email in profiles
-  }
-  if (type === 'email.unsubscribed') {
-    // Update user notification_preferences to all-off
+  const mapped = EVENT_MAP[body.type ?? '']
+  const emailId = body.data?.email_id
+  if (mapped && emailId) {
+    await recordNewsletterEvent({
+      resendMessageId: emailId,
+      type: mapped,
+      url: mapped === 'clicked' ? body.data?.click?.link ?? null : null,
+      isoTs: body.data?.created_at ?? body.created_at ?? null,
+    })
   }
 
   return NextResponse.json({ ok: true })
