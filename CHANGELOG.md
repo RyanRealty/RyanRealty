@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.557.0 (2026-06-15)
+
+### Features
+- feat(newsletter+search): bulk assign, broker saved searches, membership lookups
+
+---
+
+
 ## v1.556.0 (2026-06-15)
 
 ### Features
