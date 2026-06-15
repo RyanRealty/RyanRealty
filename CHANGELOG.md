@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.559.0 (2026-06-15)
+
+### Features
+- feat(admin): newsletter management UI — compose, send, per-broker stats
+
+---
+
+
 ## v1.558.0 (2026-06-15)
 
 ### Features
