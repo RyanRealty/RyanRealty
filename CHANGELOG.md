@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.547.0 (2026-06-15)
+
+### Features
+- feat(admin-auth): Google One Tap sign-in for admin, drop Facebook from admin
+- feat(console): neutral broker workspace + Lead Command Center
+
+### Bug Fixes
+- fix(lp): reword FSBO Oregon-forms line to show the work, not the credential
+
+---
+
+
 ## v1.546.1 (2026-06-15)
 
 ### Maintenance
