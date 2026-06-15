@@ -82,7 +82,6 @@ import { FAQBlock } from '@/components/site/FAQBlock'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { VideoTourRail } from '@/components/site/VideoTourRail'
 import MotivatedListings from '@/components/site/MotivatedListings'
-import VideoHomesSection from '@/components/site/VideoHomesSection'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import type { ListingCardData } from '@/components/site/ListingCard'
@@ -557,11 +556,12 @@ export default async function CityDetailPage({ params }: Props) {
             </div>
 
             <CommunityMapLedgerPane
+              stacked
               listings={cityListingCards}
               polygons={mapPolygons}
               mapListings={mapListings}
               zoom={12}
-              mapHeight={600}
+              mapHeight={520}
               viewAllHref={`/homes-for-sale/${slug}`}
               viewAllLabel={
                 boundaryMapData.pins.length > cityListingCards.length
@@ -582,7 +582,7 @@ export default async function CityDetailPage({ params }: Props) {
           className="border-t border-border bg-secondary/30 py-10 md:py-14"
         >
           <Container>
-            <div className="grid gap-10 md:gap-12 lg:grid-cols-2 lg:gap-16">
+            <div className="space-y-12 md:space-y-14">
               {hasPriceHistory ? (
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
@@ -724,14 +724,6 @@ export default async function CityDetailPage({ params }: Props) {
           </Container>
         </EngagedSection>
       ) : null}
-
-      {/* Homes with video tours in this city */}
-      <VideoHomesSection
-        scope={{ kind: 'city', city: cityName }}
-        heading={`Video tours in ${cityName}`}
-        viewAllHref={`/homes-for-sale/${slug}`}
-        tone="muted"
-      />
 
       {/* Open houses — next 14 days */}
       <div id="open-houses">
