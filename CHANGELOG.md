@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.563.0 (2026-06-15)
+
+### Features
+- feat(account): rename saved searches inline + updateSavedSearch action
+
+---
+
+
 ## v1.562.0 (2026-06-15)
 
 ### Features
