@@ -240,6 +240,9 @@ export async function getCrmHomeDashboard(broker?: string): Promise<CrmHomeDashb
   const dayAgo = new Date(now.getTime() - 24 * 3600e3).toISOString()
   const twoDaysAgo = new Date(now.getTime() - 48 * 3600e3).toISOString()
   const weekAgo = new Date(now.getTime() - 7 * 24 * 3600e3).toISOString()
+  // A task >31 days overdue is FUB import cruft, not real work — exclude from the
+  // overdue count so it matches the filtered action pile (Matt 2026-06-15).
+  const staleTaskFloor = new Date(now.getTime() - 31 * 24 * 3600e3).toISOString()
 
   const [stageCounts, approvals, overdue, today, inbound, hot, newLeads, newest] = await Promise.all([
     Promise.all(
@@ -249,7 +252,7 @@ export async function getCrmHomeDashboard(broker?: string): Promise<CrmHomeDashb
       }),
     ),
     sb.from('crm_sequence_enrollments').select('id', head).eq('status', 'awaiting_broker'),
-    withBroker(sb.from('crm_tasks').select('id', head).is('completed_at', null).lt('due_at', now.toISOString())),
+    withBroker(sb.from('crm_tasks').select('id', head).is('completed_at', null).lt('due_at', now.toISOString()).gte('due_at', staleTaskFloor)),
     withBroker(
       sb.from('crm_tasks').select('id', head).is('completed_at', null)
         .gte('due_at', now.toISOString()).lte('due_at', endOfToday.toISOString()),
@@ -843,10 +846,14 @@ export async function listCrmOpenTasks(broker?: string): Promise<CrmOpenTask[]> 
   const access = await requireCrmAccess()
   if (!access.ok) return []
   const sb = createServiceClient()
+  // Drop tasks >31 days overdue (FUB import cruft, not real work — Matt
+  // 2026-06-15) while keeping tasks with no due date.
+  const staleTaskFloor = new Date(Date.now() - 31 * 24 * 3600e3).toISOString()
   let q = sb
     .from('crm_tasks')
     .select('id,name,type,due_at,assigned_broker,person_id,crm_people(name,stage)')
     .is('completed_at', null)
+    .or(`due_at.is.null,due_at.gte.${staleTaskFloor}`)
     .order('due_at', { ascending: true, nullsFirst: false })
     .limit(300)
   if (broker) q = q.eq('assigned_broker', broker)

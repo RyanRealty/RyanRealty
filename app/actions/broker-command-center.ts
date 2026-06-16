@@ -211,14 +211,21 @@ export async function getBrokerCommandCenterData(): Promise<BrokerCommandCenterD
   }
 
   // 2. Tasks due (overdue + today)
+  // Stale floor: a task more than a month past due is almost never real — it is
+  // FUB import cruft (e.g. "add automation tag", due months ago). Hide it from
+  // the action pile AND the overdue count so the dashboard surfaces only tasks a
+  // broker would actually act on today. Matt directive 2026-06-15.
   const now = new Date()
   const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString()
+  const STALE_TASK_DAYS = 31
+  const staleFloor = new Date(now.getTime() - STALE_TASK_DAYS * 86_400_000).toISOString()
 
   const tasksQuery = sb()
     .from('crm_tasks')
     .select('id,name,type,due_at,assigned_broker,person_id,crm_people(name)')
     .is('completed_at', null)
     .lte('due_at', todayEnd)
+    .gte('due_at', staleFloor)
     .order('due_at', { ascending: true })
     .limit(30)
 
