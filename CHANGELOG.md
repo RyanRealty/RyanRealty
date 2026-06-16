@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.570.2 (2026-06-16)
+
+### Maintenance
+- refactor(admin): merge the two redundant lead timelines into one Activity
+
+---
+
+
 ## v1.570.1 (2026-06-16)
 
 ### Maintenance
