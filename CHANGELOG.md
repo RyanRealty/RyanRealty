@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.566.0 (2026-06-16)
+
+### Features
+- feat(admin): rebuild lead command center to the approved mockup + working enroll
+
+---
+
+
 ## v1.565.1 (2026-06-16)
 
 ### Bug Fixes
