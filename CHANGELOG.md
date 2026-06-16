@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.576.0 (2026-06-16)
+
+### Features
+- feat(crm-mobile): "Online now" live list in People All Lists (our edge over FUB)
+
+---
+
+
 ## v1.575.0 (2026-06-16)
 
 ### Features
