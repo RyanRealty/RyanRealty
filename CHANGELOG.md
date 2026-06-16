@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.571.3 (2026-06-16)
+
+### Bug Fixes
+- fix(crm): stop expired-listing sequence from texting homeowners via iMessage (incident 2026-06-16)
+
+---
+
+
 ## v1.571.2 (2026-06-16)
 
 ### Bug Fixes
