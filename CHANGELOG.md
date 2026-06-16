@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.570.3 (2026-06-16)
+
+### Maintenance
+- refactor(admin): one home — collapse three dashboards into the broker dashboard
+
+---
+
+
 ## v1.570.2 (2026-06-16)
 
 ### Maintenance
