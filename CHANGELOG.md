@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.570.1 (2026-06-16)
+
+### Maintenance
+- docs(console-kit): record 30-surface migration + remaining long tail
+
+---
+
+
 ## v1.570.0 (2026-06-16)
 
 ### Features
