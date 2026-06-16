@@ -63,8 +63,25 @@ Both run in `ci:gates`.
    flagship surfaces) add a `parity.json`.
 6. Screenshot the rendered page and show Matt before calling it done.
 
-## Status
+## Status (2026-06-16)
 
-- ✅ `app/admin/console/leads/[id]/page.tsx` — gated (parity + console-kit).
-- ⏳ Migrating the rest of the broker console surfaces to the kit, appending each
-  to the gate as it lands.
+**30 console surfaces migrated to the kit and locked by `ci:console-kit`** —
+see `REQUIRED_KIT_PAGES` in `scripts/check-console-kit.mjs`. Covers the
+broker-critical + previously data-dump pages: the lead command center; CRM
+(inbox, workflows, tasks, sequences, approvals, new, deals); comms (newsletters
+×4, email campaigns/compose); ops/data (approval-queue, expired-listings,
+spark-status, sync, reports, audit-log, operations, kpi-dashboard,
+fub-attribution, forms); transactions (deals, financials, commissions, cmas,
+sign-off, people). Each verified: tsc clean, design-tokens at baseline, renders
+unchanged in preview.
+
+**Already curated (own headed patterns, not the generic kit):** broker-dashboard
+(live "Right now" pulse + GroupCard/SectionLabel), console/leads list
+(engagement-first table), console/leads/[id] (the reference, parity-gated).
+
+**Long tail still to migrate** (lower-traffic system/config/analytics; do them to
+this same recipe + append to the gate): console home, analytics hub + sub-pages,
+brokers/*, listings/*, geo/*, media, photos, stock-photos, guides, blog, banners,
+query-builder, search, setup, users, optimization, producers, resort-communities,
+site-pages, signing/*, visitors/*. The gate guarantees none can ship off-standard
+when touched.
