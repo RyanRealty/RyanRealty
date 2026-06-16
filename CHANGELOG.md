@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.571.0 (2026-06-16)
+
+### Features
+- feat(crm-mobile): FUB-parity mobile CRM — tabbed lead detail, context-aware "+" FAB, segmented activity feed
+
+---
+
+
 ## v1.570.4 (2026-06-16)
 
 ### Maintenance
