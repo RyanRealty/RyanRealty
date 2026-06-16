@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.570.4 (2026-06-16)
+
+### Maintenance
+- docs: mobile CRM FUB-parity bar (match it, beat it with live intent + context-aware +)
+
+---
+
+
 ## v1.570.3 (2026-06-16)
 
 ### Maintenance
