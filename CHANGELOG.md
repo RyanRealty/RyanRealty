@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.578.1 (2026-06-16)
+
+### Maintenance
+- docs: handoff for the visitor-tracking policy + admin/mobile-CRM redesign
+
+---
+
+
 ## v1.578.0 (2026-06-16)
 
 ### Features
