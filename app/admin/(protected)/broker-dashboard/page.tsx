@@ -7,6 +7,7 @@ import { getBrokerActionQueue, confirmNextStepAction, completeCrmTaskAction, get
 import { fetchLiveSummary, fetchLiveVisitors } from '../visitors/_lib/queries'
 import { ActionSubmitButton } from '@/components/admin/ActionSubmitButton'
 import DashboardActivityFeed from '@/components/admin/DashboardActivityFeed'
+import MonthCalendar from '@/components/admin/MonthCalendar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -64,14 +65,6 @@ function stageToneClass(stage: string): string {
   if (s.includes('active') || s.includes('listing')) return 'border-success/30 bg-success/10 text-success'
   if (s.includes('contract')) return 'border-primary/20 bg-primary/10 text-primary'
   return 'border-border bg-muted text-muted-foreground'
-}
-
-function calTypeIcon(type: string): string {
-  if (type === 'closing') return '🔑'
-  if (type === 'contract') return '📋'
-  if (type === 'task') return '✓'
-  if (type === 'gcal') return '📅'
-  return '•'
 }
 
 // ── small presentational primitives (the shared visual language) ──────────
@@ -191,40 +184,8 @@ export default async function BrokerCommandCenterPage({
     weekday: 'long', month: 'long', day: 'numeric',
     timeZone: 'America/Los_Angeles',
   })
-
-  // Calendar: next 14 days window
-  const windowDays = 14
-  const calStart = new Date()
-  calStart.setHours(0, 0, 0, 0)
-  const calEnd = new Date(calStart.getTime() + windowDays * 86_400_000)
-
-  const calendarInWindow = data.calendar.filter((c) => {
-    const d = new Date(c.date)
-    return d >= calStart && d <= calEnd
-  })
-
-  // Group calendar by date
-  const calByDate: Record<string, typeof calendarInWindow> = {}
-  for (const item of calendarInWindow) {
-    if (!calByDate[item.date]) calByDate[item.date] = []
-    calByDate[item.date].push(item)
-  }
-
-  // Build 14-day array
-  const calDays: { date: string; label: string; items: typeof calendarInWindow }[] = []
-  for (let i = 0; i < windowDays; i++) {
-    const d = new Date(calStart.getTime() + i * 86_400_000)
-    const iso = d.toISOString().slice(0, 10)
-    const items = calByDate[iso] ?? []
-    if (items.length > 0 || i < 7) {
-      calDays.push({
-        date: iso,
-        label: d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }),
-        items,
-      })
-    }
-  }
-  const calDaysWithItems = calDays.filter((d) => d.items.length > 0)
+  // YYYY-MM-DD in LA for the month calendar (en-CA renders ISO order).
+  const todayIso = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' })
 
   const marketingTab = activeTab ?? 'ideas'
 
@@ -492,10 +453,10 @@ export default async function BrokerCommandCenterPage({
           </GroupCard>
         </section>
 
-        {/* Schedule */}
+        {/* Schedule — month calendar */}
         <section>
           <div className="mb-2 flex items-center justify-between gap-2 px-1">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Next {windowDays} days</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Calendar</h2>
             {data.gcalConnected ? (
               <span className="flex shrink-0 items-center gap-1 text-xs text-success">
                 <span className="h-1.5 w-1.5 rounded-full bg-success" />
@@ -503,33 +464,8 @@ export default async function BrokerCommandCenterPage({
               </span>
             ) : null}
           </div>
-          <GroupCard>
-            {calDaysWithItems.length === 0 ? (
-              <p className="px-4 py-10 text-center text-sm text-muted-foreground">Nothing scheduled in the next {windowDays} days.</p>
-            ) : (
-              <div className="divide-y divide-border">
-                {calDaysWithItems.map((day) => (
-                  <div key={day.date} className="px-4 py-2.5">
-                    <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{day.label}</div>
-                    <div className="space-y-1.5">
-                      {day.items.map((item, i) => (
-                        <div key={i} className="flex items-center gap-2 text-sm">
-                          <span className="text-base leading-none">{calTypeIcon(item.type)}</span>
-                          <span className="min-w-0 flex-1">
-                            {item.href ? (
-                              <Link href={item.href} className="font-medium text-foreground hover:underline">{item.label}</Link>
-                            ) : (
-                              <span className="font-medium text-foreground">{item.label}</span>
-                            )}
-                            {item.sublabel ? <span className="ml-1 text-xs text-muted-foreground">· {item.sublabel}</span> : null}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          <GroupCard className="p-3 sm:p-4">
+            <MonthCalendar items={data.calendar} todayIso={todayIso} />
           </GroupCard>
         </section>
       </div>
