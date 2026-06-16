@@ -1,65 +1,58 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { getCrmAccess, listCrmInbox } from '@/app/actions/crm'
+import { getCrmAccess, listCrmConversations } from '@/app/actions/crm'
 import { timelineEmailBody } from '@/lib/crm/email-body'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
+import InboxSegments, { type InboxItem } from '@/components/admin/InboxSegments'
 
 export const metadata = { title: 'Inbox | CRM | Admin' }
 export const dynamic = 'force-dynamic'
 
 const KIND_LABEL: Record<string, string> = {
   email_in: '📥 Email', sms_in: '💬 Text', call: '📞 Call', voicemail: '🎙 Voicemail',
-}
-
-function fmt(iso: string): string {
-  const d = new Date(iso)
-  return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
+  email_out: '📤 Email', sms_out: '📲 Text',
 }
 
 export default async function CrmInboxPage() {
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
-  const rows = await listCrmInbox(100)
+  const rows = await listCrmConversations(150)
+  const slug = access.brokerSlug
+
+  // Shape each row for the client segments view (body trimmed server-side so the
+  // client never imports the email-body util).
+  const disp = (r: (typeof rows)[number]): InboxItem => ({
+    id: r.id,
+    personId: r.person_id,
+    name: r.person?.name ?? `Contact #${r.person_id}`,
+    stage: r.person?.stage ?? '',
+    kindLabel: KIND_LABEL[r.kind] ?? r.kind,
+    title: r.title,
+    preview: r.body ? timelineEmailBody(r.body).slice(0, 300) : null,
+    ts: r.ts,
+  })
+  const inbox = rows.filter((r) => r.direction === 'in').map(disp)
+  // Assigned = inbound for the acting broker; a pure superuser (no slug) sees
+  // every assigned conversation.
+  const assigned = rows
+    .filter((r) => r.direction === 'in' && (slug ? r.assignedBroker === slug : r.assignedBroker != null))
+    .map(disp)
+  const sent = rows.filter((r) => r.direction === 'out').map(disp)
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-3 py-8 sm:px-6">
+    <div className="mx-auto w-full max-w-5xl px-3 py-8 sm:px-6">
       <div className="mb-1 text-sm text-muted-foreground">
         <Link href="/admin/crm" className="inline-flex min-h-10 items-center hover:text-foreground">← Back to CRM</Link>
       </div>
       <h1 className="text-2xl font-bold text-foreground">Inbox</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Latest inbound communications across every contact. Gmail sync runs every 15 minutes; texts and voicemail join once Twilio is live.
+        Conversations across every contact. Gmail sync runs every 15 minutes; texts and voicemail join once Twilio is live.
       </p>
 
-      <ConsoleSection title="Recent communications" count={rows.length > 0 ? `(${rows.length})` : undefined} className="mt-6">
-        {rows.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">No inbound communications yet.</p>
-        ) : (
-          <div className="space-y-3">
-            {rows.map((r) => (
-              <Card key={r.id}>
-                <CardContent className="flex items-start gap-3 px-3 py-3 sm:gap-4 sm:px-4">
-                  <div className="shrink-0 text-sm sm:w-24">{KIND_LABEL[r.kind] ?? r.kind}</div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-baseline gap-x-2">
-                      <Link href={`/admin/crm/${r.person_id}`} className="text-sm font-medium text-foreground hover:underline">
-                        {r.person?.name ?? `Contact #${r.person_id}`}
-                      </Link>
-                      <Badge variant="secondary" className="text-xs">{r.person?.stage}</Badge>
-                      <span className="text-xs tabular-nums text-muted-foreground">{fmt(r.ts)}</span>
-                    </div>
-                    {r.title ? <div className="mt-0.5 truncate text-sm text-foreground">{r.title}</div> : null}
-                    {r.body ? <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">{timelineEmailBody(r.body).slice(0, 300)}</p> : null}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+      <ConsoleSection title="Conversations" className="mt-6">
+        <InboxSegments inbox={inbox} assigned={assigned} sent={sent} />
       </ConsoleSection>
-    </main>
+    </div>
   )
 }

@@ -550,6 +550,56 @@ export async function getRecentNewLeads(limit = 12): Promise<RecentLead[]> {
   }))
 }
 
+export type CrmConversationRow = {
+  id: number
+  person_id: number
+  ts: string
+  kind: string
+  direction: 'in' | 'out'
+  title: string | null
+  body: string | null
+  broker: string | null
+  assignedBroker: string | null
+  person: { name: string | null; stage: string } | null
+}
+
+/**
+ * Conversations across inbound AND outbound channels for the segmented inbox
+ * (docs/MOBILE_CRM_FUB_PARITY.md #2 — Inbox / Assigned / Sent). The page splits
+ * the rows by direction + assignment; counts are derived there. Closed + an
+ * unread badge are intentionally absent — crm_timeline has no read/closed state
+ * to back them honestly (would need a conversation-status column).
+ */
+export async function listCrmConversations(perDirection = 80): Promise<CrmConversationRow[]> {
+  const sb = createServiceClient()
+  // Embed the person (name/stage/assigned_broker). person_id is NOT NULL with an
+  // FK, so a plain embed is equivalent to an inner join here. Fetch inbound and
+  // outbound SEPARATELY: outbound (automated email) is high-volume, so a single
+  // time-ordered limit would starve the Inbox segment of recent inbound.
+  const select = 'id,person_id,ts,kind,title,body,broker,crm_people(name,stage,assigned_broker)'
+  const [inbound, outbound] = await Promise.all([
+    sb.from('crm_timeline').select(select).in('kind', ['email_in', 'sms_in', 'call', 'voicemail']).order('ts', { ascending: false }).limit(perDirection),
+    sb.from('crm_timeline').select(select).in('kind', ['email_out', 'sms_out']).order('ts', { ascending: false }).limit(perDirection),
+  ])
+  const data = [...(inbound.data ?? []), ...(outbound.data ?? [])]
+  return data.map((r) => {
+    const p = (r as unknown as { crm_people: { name: string | null; stage: string; assigned_broker: string | null } | null }).crm_people ?? null
+    const kind = r.kind as string
+    return {
+      id: r.id as number,
+      person_id: r.person_id as number,
+      ts: r.ts as string,
+      kind,
+      direction: kind.endsWith('_out') ? ('out' as const) : ('in' as const),
+      title: (r.title ?? null) as string | null,
+      body: (r.body ?? null) as string | null,
+      broker: (r.broker ?? null) as string | null,
+      assignedBroker: p?.assigned_broker ?? null,
+      person: p ? { name: p.name, stage: p.stage } : null,
+    }
+  })
+}
+
 export type CrmDealRow = {
   id: number
   name: string | null
