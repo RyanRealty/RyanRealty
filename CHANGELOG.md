@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.565.0 (2026-06-16)
+
+### Features
+- feat(admin): engagement-first leads list + correct live-session links
+
+---
+
+
 ## v1.564.0 (2026-06-16)
 
 ### Features
