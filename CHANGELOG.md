@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.577.0 (2026-06-16)
+
+### Features
+- feat(crm-mobile): friendly, context-aware empty state on the leads list (FUB-parity #6)
+- feat(crm-mobile): month calendar on the broker dashboard (FUB-parity #6)
+
+### Maintenance
+- docs(crm-mobile): contract built — mark calendar + empty states shipped
+
+---
+
+
 ## v1.576.1 (2026-06-16)
 
 ### Bug Fixes
