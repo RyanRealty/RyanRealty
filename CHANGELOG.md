@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.573.0 (2026-06-16)
+
+### Features
+- feat(crm-mobile): live pipeline counts on the leads stage chips (FUB-parity Stages)
+
+### Maintenance
+- docs(crm-mobile): record shipped builds + the data-gap decisions in the parity contract
+
+---
+
+
 ## v1.572.0 (2026-06-16)
 
 ### Features
