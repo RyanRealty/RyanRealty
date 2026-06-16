@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.568.0 (2026-06-16)
+
+### Features
+- feat(gate): ci:console-kit — admin pages must use the shared console kit
+
+---
+
+
 ## v1.567.0 (2026-06-16)
 
 ### Features
