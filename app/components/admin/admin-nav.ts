@@ -37,7 +37,7 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
 
   // ── Today: the daily loop — what needs attention right now ──
   const today: AdminNavItem[] = [
-    item('/admin', 'Dashboard', 'dashboard'),
+    item('/admin/broker-dashboard', 'Dashboard', 'dashboard'),
     item('/admin/crm/inbox', 'Inbox', 'inbox'),
     item('/admin/crm/tasks', 'Tasks', 'list-todo'),
   ]
@@ -52,7 +52,6 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
     item('/admin/crm/deals', 'Pipeline', 'layers'),
     item('/admin/email/compose', 'Compose email', 'mail'),
   ]
-  if (canBrokers) people.push(item('/admin/broker-dashboard', 'Broker dashboard', 'gauge'))
 
   // ── Transactions: contract-to-close ──
   const transactions: AdminNavItem[] = []
