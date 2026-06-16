@@ -27,6 +27,7 @@ export default async function CrmInboxPage() {
     personId: r.person_id,
     name: r.person?.name ?? `Contact #${r.person_id}`,
     stage: r.person?.stage ?? '',
+    kind: r.kind,
     kindLabel: KIND_LABEL[r.kind] ?? r.kind,
     title: r.title,
     preview: r.body ? timelineEmailBody(r.body).slice(0, 300) : null,
