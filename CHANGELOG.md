@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.567.0 (2026-06-16)
+
+### Features
+- feat(admin): shared console kit + mockup-parity gate so pages can't drift
+
+---
+
+
 ## v1.566.0 (2026-06-16)
 
 ### Features
