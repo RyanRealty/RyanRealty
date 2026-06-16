@@ -60,6 +60,32 @@ FUB shows a flat list, we show who's hot right now.
 4. **People: All Lists / Stages** with live counts.
 5. Filters bottom-sheet, calendar, empty states.
 
+## Shipped (2026-06-16)
+
+- ✅ **#1 Tabbed mobile lead detail** — `LeadTabs` (Overview · Comms · Tasks ·
+  Watching · Workflow · Activity), single-scroll on desktop. Parity-gated
+  (`lead-command-center/parity.json` now requires `LeadTabs`).
+- ✅ **#2 Context-aware "+" FAB** — `ConsoleQuickAction` in `ConsoleShell`, on
+  every console + protected surface. Pre-targets the lead, surfaces the
+  recommended next action, adds Enroll-in-workflow + Start-a-CMA; deep-links
+  switch tabs.
+- ✅ **#3 Segmented activity feed** — `DashboardActivityFeed` on the broker
+  dashboard: New leads / Emails / Website, led by the live engagement score.
+- ✅ **Segmented inbox** — `InboxSegments` on `/admin/crm/inbox`: Inbox /
+  Assigned / Sent with live counts. **Closed + unread badge deliberately
+  omitted** — `crm_timeline` has no read/closed state; an always-empty tab is
+  worse than no tab. They land with a conversation-status column.
+- ✅ **People — Stages with live counts** — stage chips on the leads list now
+  show a per-stage count (FUB "Seller Prospect 7.5k") + the book total.
+
+Still open (need product/data input, not just build time):
+
+- **People — "All Lists"** (smart lists): needs a smart-list definition/store —
+  we don't have FUB-style saved smart lists yet. Stages half shipped above.
+- **Filters bottom-sheet** (Status, types, Apply) — the segments cover the main
+  cuts already; the sheet is the finer filter. Lower value until lists exist.
+- **Month calendar + friendlier empty states** — polish.
+
 ## How we keep it from drifting
 
 - This doc is the saved target (the FUB screenshots are the visual reference).
