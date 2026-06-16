@@ -1,5 +1,6 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
+import { Users } from 'lucide-react'
 import { listCrmPeople, getCrmAccess, getCrmStageCounts, getCrmSavedViewsWithCounts, type CrmPersonRow } from '@/app/actions/crm'
 import { fetchLiveVisitors } from '../../(protected)/visitors/_lib/queries'
 import { CRM_STAGES } from '@/lib/crm/constants'
@@ -186,9 +187,14 @@ export default async function ConsoleLeadsPage({
 
       {people.length === 0 ? (
         <Card>
-          <CardContent className="p-10 text-center">
-            <p className="text-sm font-medium text-foreground">No leads match.</p>
-            <p className="mt-1 text-sm text-muted-foreground">Try a different search or clear the stage filter.</p>
+          <CardContent className="flex flex-col items-center gap-2 p-10 text-center">
+            <Users className="h-8 w-8 text-muted-foreground/50" />
+            <p className="text-sm font-medium text-foreground">
+              {sp.q ? 'No leads match your search.' : listsMode ? 'This list is empty.' : sp.stage ? `No leads in ${sp.stage}.` : 'No leads here yet.'}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {sp.q ? 'Try a different name, email, or phone.' : listsMode ? 'Pick another list, or switch to Stages.' : 'Clear the filter to see your whole book.'}
+            </p>
           </CardContent>
         </Card>
       ) : (
