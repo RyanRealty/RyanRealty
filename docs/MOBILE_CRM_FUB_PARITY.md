@@ -84,13 +84,14 @@ FUB shows a flat list, we show who's hot right now.
   Calls type filter + active-count badge. (Status All/Unread omitted — no
   read-state on the timeline.)
 
+- ✅ **"Online now" live list** (our edge) — All Lists leads with a live
+  "Online now N" chip (identified people with an active session this moment),
+  linking to the live-visitor surface. The list FUB can't show.
+
 Still open (lower value / polish):
 
 - **Month calendar** — the dashboard already shows the next 14 days; a dedicated
   mobile month grid is net-new polish.
-- **Recent-online-activity smart list** — the live-intent list (our edge) needs
-  a session→person join, unlike the tag/stage `crm_saved_views`. Worth adding to
-  the saved-view store as a computed list.
 - **Friendlier empty states** across surfaces — polish.
 
 ## How we keep it from drifting

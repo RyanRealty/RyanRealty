@@ -103,6 +103,10 @@ export default async function ConsoleLeadsPage({
   const pulseFor = (p: CrmPersonRow): LeadPulse | null =>
     p.fub_legacy_id != null ? pulseByFubId.get(p.fub_legacy_id) ?? null : null
 
+  // Our edge over FUB: a live "recent online activity" list — identified people
+  // with an active session right now. Links to the live-visitor surface.
+  const onlineNow = new Set(liveSessions.filter((s) => s.fub_person_id).map((s) => s.fub_person_id)).size
+
   const qs = (over: Record<string, string | number | undefined>) => {
     const next = new URLSearchParams()
     const merged = { q: sp.q, stage: sp.stage, view: sp.view, lists: sp.lists, page, ...over }
@@ -145,12 +149,23 @@ export default async function ConsoleLeadsPage({
           {/* Chips: saved-view lists, or stage buckets, each with a live count */}
           <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5">
             {listsMode ? (
-              savedViews.map((v) => (
+              <>
+                {/* Live edge: people active on the site right now */}
+                <Link href="/admin/visitors/live" className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-3 py-1.5 text-xs font-medium text-success hover:bg-success/15">
+                  <span className="relative flex h-1.5 w-1.5">
+                    {onlineNow > 0 ? <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" /> : null}
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
+                  </span>
+                  Online now
+                  <span className="tabular-nums">{onlineNow}</span>
+                </Link>
+                {savedViews.map((v) => (
                 <Link key={v.id} href={qs({ view: String(v.id), stage: undefined, lists: undefined, page: 1 })} className={cn('inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium', activeViewId === v.id ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-accent')}>
                   {v.name}
                   <span className={cn('tabular-nums', activeViewId === v.id ? 'text-primary-foreground/80' : 'text-muted-foreground')}>{fmtCount(v.count)}</span>
                 </Link>
-              ))
+                ))}
+              </>
             ) : (
               <>
                 <Link href={qs({ stage: undefined, page: 1 })} className={cn('inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium', !sp.stage ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-accent')}>
