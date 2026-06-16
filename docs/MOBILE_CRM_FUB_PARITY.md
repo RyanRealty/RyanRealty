@@ -75,16 +75,23 @@ FUB shows a flat list, we show who's hot right now.
   Assigned / Sent with live counts. **Closed + unread badge deliberately
   omitted** — `crm_timeline` has no read/closed state; an always-empty tab is
   worse than no tab. They land with a conversation-status column.
-- ✅ **People — Stages with live counts** — stage chips on the leads list now
-  show a per-stage count (FUB "Seller Prospect 7.5k") + the book total.
+- ✅ **People — Stages + All Lists** — the leads list gains a Stages / All lists
+  toggle. Stages: per-stage counts (FUB "Seller Prospect 7.5k") + book total.
+  All lists: the existing `crm_saved_views` store (Leads, Hot Prospects, Sellers,
+  Buyers, Expired Pipeline, FSBO, Compliance Blocked, …) with a live broker-scoped
+  count each; a chip applies the view via `?view=<id>`.
+- ✅ **Filter bottom-sheet** — `InboxSegments` filter sheet: Emails / Texts /
+  Calls type filter + active-count badge. (Status All/Unread omitted — no
+  read-state on the timeline.)
 
-Still open (need product/data input, not just build time):
+Still open (lower value / polish):
 
-- **People — "All Lists"** (smart lists): needs a smart-list definition/store —
-  we don't have FUB-style saved smart lists yet. Stages half shipped above.
-- **Filters bottom-sheet** (Status, types, Apply) — the segments cover the main
-  cuts already; the sheet is the finer filter. Lower value until lists exist.
-- **Month calendar + friendlier empty states** — polish.
+- **Month calendar** — the dashboard already shows the next 14 days; a dedicated
+  mobile month grid is net-new polish.
+- **Recent-online-activity smart list** — the live-intent list (our edge) needs
+  a session→person join, unlike the tag/stage `crm_saved_views`. Worth adding to
+  the saved-view store as a computed list.
+- **Friendlier empty states** across surfaces — polish.
 
 ## How we keep it from drifting
 
