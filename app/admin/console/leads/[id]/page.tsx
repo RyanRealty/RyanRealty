@@ -35,6 +35,8 @@ import { EmailComposer } from '@/components/admin/crm/EmailComposer'
 import { SmsComposer } from '@/components/admin/crm/SmsComposer'
 import ConversationThread, { isConversationEvent } from '@/components/admin/crm/ConversationThread'
 import { StagePill, ListingStatusPill, StatusPill } from '@/components/console/StatusPill'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { KpiStrip } from '@/components/console/KpiStrip'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -215,14 +217,6 @@ const KIND_ICON: Record<string, string> = {
   call: '📞', voicemail: '🎙', web_event: '🌐', task: '☑', stage_change: '🪜', system: '⚙',
 }
 
-function Kpi({ label, value }: { label: string; value: number | string }) {
-  return (
-    <div className="rounded-lg bg-secondary px-3 py-2.5">
-      <div className="text-xl font-semibold tabular-nums text-foreground">{value}</div>
-      <div className="mt-0.5 text-xs text-muted-foreground">{label}</div>
-    </div>
-  )
-}
 
 export default async function ConsoleLeadPage({
   params,
@@ -457,13 +451,13 @@ export default async function ConsoleLeadPage({
         </CardContent>
       </Card>
 
-      {/* ── KPI strip (tight cells, per the picked mockup) ── */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-        <Kpi label="Homes viewed" value={viewedListings.length} />
-        <Kpi label="Saved searches" value={savedSearches.length} />
-        <Kpi label="Web sessions" value={full.visitorSessions} />
-        <Kpi label="Open tasks" value={openTasks.length} />
-      </div>
+      {/* ── KPI strip — shared console kit (per the picked mockup) ── */}
+      <KpiStrip items={[
+        { label: 'Homes viewed', value: viewedListings.length },
+        { label: 'Saved searches', value: savedSearches.length },
+        { label: 'Web sessions', value: full.visitorSessions },
+        { label: 'Open tasks', value: openTasks.length },
+      ]} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         {/* ── Main column: act on the lead ── */}
@@ -735,39 +729,33 @@ export default async function ConsoleLeadPage({
         </div>
       </div>
 
-      {/* ── Full-width: conversation + activity ── */}
+      {/* ── Full-width: conversation + activity (shared console kit) ── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base">Conversation</CardTitle></CardHeader>
-          <CardContent>
-            <ConversationThread
-              events={full.timeline.filter((t) => isConversationEvent(t.kind)).slice(0, 40).map((t) => ({ id: t.id, ts: t.ts, kind: t.kind, title: t.title, body: t.body, broker: t.broker }))}
-              engagement={emailEngagement}
-              personName={person.first_name ?? person.name ?? 'this contact'}
-            />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base">Activity</CardTitle></CardHeader>
-          <CardContent>
-            {activityLog.length === 0 ? <p className="text-sm text-muted-foreground">No notes, calls, or visits yet.</p> : (
-              <div className="space-y-3.5">
-                {activityLog.slice(0, 10).map((e) => (
-                  <div key={e.id} className="flex gap-3">
-                    <div className="w-5 shrink-0 text-center text-sm leading-5">{KIND_ICON[e.kind] ?? '•'}</div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-baseline gap-x-2">
-                        <span className="text-sm font-medium text-foreground">{e.title ?? e.kind.replace('_', ' ')}</span>
-                        <span className="text-xs tabular-nums text-muted-foreground">{fmtAgo(e.ts)}</span>
-                      </div>
-                      {e.body ? <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-muted-foreground">{timelineEmailBody(e.body).slice(0, 400)}</p> : null}
+        <ConsoleSection title="Conversation">
+          <ConversationThread
+            events={full.timeline.filter((t) => isConversationEvent(t.kind)).slice(0, 40).map((t) => ({ id: t.id, ts: t.ts, kind: t.kind, title: t.title, body: t.body, broker: t.broker }))}
+            engagement={emailEngagement}
+            personName={person.first_name ?? person.name ?? 'this contact'}
+          />
+        </ConsoleSection>
+        <ConsoleSection title="Activity">
+          {activityLog.length === 0 ? <p className="text-sm text-muted-foreground">No notes, calls, or visits yet.</p> : (
+            <div className="space-y-3.5">
+              {activityLog.slice(0, 10).map((e) => (
+                <div key={e.id} className="flex gap-3">
+                  <div className="w-5 shrink-0 text-center text-sm leading-5">{KIND_ICON[e.kind] ?? '•'}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="text-sm font-medium text-foreground">{e.title ?? e.kind.replace('_', ' ')}</span>
+                      <span className="text-xs tabular-nums text-muted-foreground">{fmtAgo(e.ts)}</span>
                     </div>
+                    {e.body ? <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-muted-foreground">{timelineEmailBody(e.body).slice(0, 400)}</p> : null}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </div>
+              ))}
+            </div>
+          )}
+        </ConsoleSection>
       </div>
     </div>
   )
