@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.571.1 (2026-06-16)
+
+### Bug Fixes
+- fix(ci): admin-mobile-shell gate locks the current ConsoleShell, not the retired AdminHeader/AdminSidebar
+
+---
+
+
 ## v1.571.0 (2026-06-16)
 
 ### Features
