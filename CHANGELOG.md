@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.578.0 (2026-06-16)
+
+### Features
+- feat(crm): name the anonymous — email-click identity stitch + named-people "Right now" feed
+
+---
+
+
 ## v1.577.1 (2026-06-16)
 
 ### Other
