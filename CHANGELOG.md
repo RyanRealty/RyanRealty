@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.570.0 (2026-06-16)
+
+### Features
+- feat(admin): migrate 12 more console surfaces to the shared kit
+
+---
+
+
 ## v1.569.0 (2026-06-16)
 
 ### Features
