@@ -79,10 +79,11 @@ type Step = {
   fallbackEmailBody?: string
 }
 
-function renderMerge(text: string, person: { first_name?: string | null; name?: string | null; custom?: Record<string, unknown>; assigned_broker?: string | null }): string {
-  // Every site link in an automated send carries the assigned broker so the
-  // site features them when the lead clicks through.
-  return attributeSiteLinks(renderCrmMerge(text, person), person.assigned_broker ?? 'matt')
+function renderMerge(text: string, person: { first_name?: string | null; name?: string | null; custom?: Record<string, unknown>; assigned_broker?: string | null; fub_legacy_id?: number | null }): string {
+  // Every site link in an automated send carries the assigned broker (routing)
+  // AND the recipient's FUB id (?_fuid=) — so a click identifies them, cookies
+  // the browser to the contact, and backfills their anonymous sessions.
+  return attributeSiteLinks(renderCrmMerge(text, person), person.assigned_broker ?? 'matt', person.fub_legacy_id ?? null)
 }
 
 export async function GET(request: Request) {

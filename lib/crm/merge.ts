@@ -37,12 +37,24 @@ export function renderCrmMerge(
  * routing and broker-facing CTAs when the lead clicks through from CRM
  * comms. Admin links and links that already carry an agent are untouched.
  */
-export function attributeSiteLinks(text: string, brokerSlug: string | null | undefined): string {
+export function attributeSiteLinks(
+  text: string,
+  brokerSlug: string | null | undefined,
+  fubPersonId?: number | null,
+): string {
   const slug = (brokerSlug ?? '').trim()
-  if (!slug) return text
+  const fuid = typeof fubPersonId === 'number' && Number.isInteger(fubPersonId) && fubPersonId > 0 ? String(fubPersonId) : ''
+  if (!slug && !fuid) return text
   return text.replace(/https:\/\/(?:www\.)?ryan-realty\.com[^\s"'<)\]]*/g, (url) => {
-    if (url.includes('/admin') || /[?&]agent=/.test(url)) return url
-    return url + (url.includes('?') ? '&' : '?') + 'agent=' + encodeURIComponent(slug)
+    if (url.includes('/admin')) return url
+    let out = url
+    // Agent attribution — routes the lead to the broker whose email this is.
+    if (slug && !/[?&]agent=/.test(out)) out += (out.includes('?') ? '&' : '?') + 'agent=' + encodeURIComponent(slug)
+    // Recipient identity — every click on a link WE sent stamps ?_fuid=<id>, so
+    // FubIdentityBridge cookies this browser to the contact and backfills their
+    // anonymous sessions. This is what turns "Anonymous · Portland" into a name.
+    if (fuid && !/[?&]_fuid=/.test(out)) out += (out.includes('?') ? '&' : '?') + '_fuid=' + fuid
+    return out
   })
 }
 

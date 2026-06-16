@@ -3,8 +3,8 @@ import Link from 'next/link'
 import { revalidatePath } from 'next/cache'
 import { ChevronRight, CheckCircle2 } from 'lucide-react'
 import { getBrokerCommandCenterData } from '@/app/actions/broker-command-center'
-import { getBrokerActionQueue, confirmNextStepAction, completeCrmTaskAction, getRecentNewLeads, listCrmInbox } from '@/app/actions/crm'
-import { fetchLiveSummary, fetchLiveVisitors } from '../visitors/_lib/queries'
+import { getBrokerActionQueue, confirmNextStepAction, completeCrmTaskAction, getRecentNewLeads, getRecentWebsiteVisitors, getRecentEmailPeople, getCrmAccess } from '@/app/actions/crm'
+import { fetchLiveSummary } from '../visitors/_lib/queries'
 import { ActionSubmitButton } from '@/components/admin/ActionSubmitButton'
 import DashboardActivityFeed from '@/components/admin/DashboardActivityFeed'
 import MonthCalendar from '@/components/admin/MonthCalendar'
@@ -53,10 +53,6 @@ function cleanTaskName(raw: string): string {
 }
 
 /** Title-cases a region/city pair into a readable place ("Bend, OR"). */
-function placeLabel(city: string | null, region: string | null): string {
-  const parts = [city, region].filter(Boolean)
-  return parts.length ? parts.join(', ') : 'Unknown'
-}
 
 /** Stage chips use semantic brand tokens only (navy primary + success/warning). */
 function stageToneClass(stage: string): string {
@@ -155,13 +151,15 @@ export default async function BrokerCommandCenterPage({
 }: {
   searchParams: Promise<{ tab?: string }>
 }) {
-  const [data, actionQueue, liveSummary, liveSessions, recentLeads, inbox] = await Promise.all([
+  const feedAccess = await getCrmAccess()
+  const feedSlug = feedAccess?.brokerSlug ?? null
+  const [data, actionQueue, liveSummary, websiteRows, emailRows, recentLeads] = await Promise.all([
     getBrokerCommandCenterData(),
     getBrokerActionQueue(),
     fetchLiveSummary().catch(() => null),
-    fetchLiveVisitors({}).catch(() => [] as Awaited<ReturnType<typeof fetchLiveVisitors>>),
+    getRecentWebsiteVisitors(feedSlug, 12).catch(() => []),
+    getRecentEmailPeople(feedSlug, 12).catch(() => []),
     getRecentNewLeads(12).catch(() => []),
-    listCrmInbox(40).catch(() => []),
   ])
   const { tab: activeTab } = await searchParams
 
@@ -196,47 +194,17 @@ export default async function BrokerCommandCenterPage({
   const heroActions = actionQueue.slice(0, 5)
   const heroOverdue = overdueTasks.slice(0, Math.max(0, 5 - actionQueue.length))
 
-  // Live pulse: the warmest sessions on the site right now — what a broker most
-  // wants to see the second they open the page. Rank by engagement, surface the
-  // top few that are either live (active) or scored hot.
   const liveActive = liveSummary?.totalActive ?? 0
 
-  // Segmented activity feed (New leads / Emails / Website) — FUB's home feed IA,
-  // with our live-engagement column as the edge. All three are shaped here so the
-  // client feed only switches tabs.
-  const websiteRows = [...(liveSessions ?? [])]
-    .filter((s) => s.engagement_score > 0)
-    .sort((a, b) => b.engagement_score - a.engagement_score)
-    .slice(0, 8)
-    .map((s) => ({
-      key: s.session_id,
-      score: s.engagement_score,
-      who: s.identified_email ?? `Anonymous · ${placeLabel(s.ip_city, s.ip_region)}`,
-      intent: s.intent_tags?.[0] ?? null,
-      href: `/admin/visitors/${encodeURIComponent(s.session_id)}`,
-      hot: Boolean(s.hot_lead_fired_at) || s.engagement_score >= 100,
-    }))
-  // Inbound comms — scoped to this broker unless superuser (the read itself is
-  // unscoped, so filter here to match the rest of the dashboard).
-  const emailRows = (inbox ?? [])
-    .filter((r) => data.isSuperuser || r.broker === data.broker.slug)
-    .slice(0, 12)
-    .map((r) => ({
-      key: `inbox-${r.id}`,
-      who: r.person?.name ?? 'Unknown',
-      kind: r.kind,
-      preview: r.title ?? (r.body ? r.body.slice(0, 80) : null),
-      href: `/admin/crm/${r.person_id}`,
-      ts: r.ts,
-    }))
+  // "Right now" feed — NAMED people, not anonymous session IDs (Matt 2026-06-16):
+  // who's the latest person on the site, who opened/sent email, newest leads.
+  // websiteRows + emailRows already arrive as {personId,name,pictureUrl,ts,label}.
   const leadRows = (recentLeads ?? []).map((l) => ({
-    key: `lead-${l.id}`,
-    who: l.name ?? `Contact #${l.id}`,
-    source: l.source,
-    stage: l.stage,
-    href: `/admin/crm/${l.id}`,
+    personId: l.id,
+    name: l.name ?? `Contact #${l.id}`,
     pictureUrl: l.pictureUrl,
     ts: l.createdAt,
+    label: l.source ? `New lead · via ${l.source}` : 'New lead',
   }))
 
   return (

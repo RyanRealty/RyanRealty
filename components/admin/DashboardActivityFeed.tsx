@@ -1,28 +1,25 @@
 'use client'
 
 /**
- * DashboardActivityFeed — the segmented "Right now" activity feed on the broker
- * dashboard (docs/MOBILE_CRM_FUB_PARITY.md #3).
+ * DashboardActivityFeed — the segmented "Right now" feed on the broker dashboard
+ * (docs/MOBILE_CRM_FUB_PARITY.md #3).
  *
- * FUB's home feed segments into New Leads / Emails / Website — a flat list per
- * tab. Ours matches that information architecture and beats it: the Website
- * segment leads with our live engagement score (the column FUB has no concept
- * of), so the warmest visitor on the site right now sits at the top. All three
- * segments are pre-shaped on the server; this component only switches between
- * them — no data fetching, every row links to a real route.
+ * Matt 2026-06-16: show WHO — the latest named person on the site, who opened or
+ * sent email, the newest leads — NOT a wall of anonymous session IDs and
+ * engagement scores. Every row is a real contact (resolved server-side from
+ * crm_timeline → crm_people) and links to that lead. Identity coverage grows as
+ * the email-click `_fuid` stitch (lib/crm/merge attributeSiteLinks) names more
+ * browsers.
  */
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { ChevronRight, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-export type WebsiteRow = { key: string; score: number; who: string; intent: string | null; href: string; hot: boolean }
-export type EmailRow = { key: string; who: string; kind: string; preview: string | null; href: string; ts: string }
-export type LeadRow = { key: string; who: string; source: string | null; stage: string; href: string; pictureUrl: string | null; ts: string }
+export type ActivityRow = { personId: number; name: string; pictureUrl: string | null; ts: string; label: string }
 
-type Segment = 'leads' | 'emails' | 'website'
+type Segment = 'website' | 'emails' | 'leads'
 
 function ago(iso: string): string {
   const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
@@ -32,30 +29,26 @@ function ago(iso: string): string {
   return `${Math.round(mins / 1440)}d`
 }
 
-const KIND_LABEL: Record<string, string> = { email_in: 'Email', sms_in: 'Text', call: 'Call', voicemail: 'Voicemail' }
-
 export default function DashboardActivityFeed({
   website,
   emails,
   newLeads,
 }: {
-  website: WebsiteRow[]
-  emails: EmailRow[]
-  newLeads: LeadRow[]
+  website: ActivityRow[]
+  emails: ActivityRow[]
+  newLeads: ActivityRow[]
 }) {
-  // Default to Website — the live-intent feed is our edge and the thing a broker
-  // most wants the second the page opens.
   const [seg, setSeg] = useState<Segment>('website')
-
+  const lists: Record<Segment, ActivityRow[]> = { website, emails, leads: newLeads }
   const tabs: { key: Segment; label: string; count: number }[] = [
+    { key: 'website', label: 'On the site', count: website.length },
+    { key: 'emails', label: 'Email', count: emails.length },
     { key: 'leads', label: 'New leads', count: newLeads.length },
-    { key: 'emails', label: 'Emails', count: emails.length },
-    { key: 'website', label: 'Website', count: website.length },
   ]
+  const rows = lists[seg]
 
   return (
     <div className="border-t border-border">
-      {/* Segment chips */}
       <div className="no-scrollbar flex gap-1 overflow-x-auto px-3 py-2.5" role="tablist" aria-label="Activity">
         {tabs.map((t) => (
           <Button
@@ -74,83 +67,31 @@ export default function DashboardActivityFeed({
         ))}
       </div>
 
-      {/* Website — engagement-ranked (our edge: the score column) */}
-      {seg === 'website' ? (
-        website.length === 0 ? (
-          <Empty>No site activity yet today. Live visitors show here, hottest first.</Empty>
-        ) : (
-          <ul className="divide-y divide-border border-t border-border">
-            {website.map((s) => (
-              <li key={s.key}>
-                <Link href={s.href} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/40">
-                  <span className={cn('shrink-0 rounded-md px-2 py-0.5 text-xs font-bold tabular-nums', s.hot ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground')}>{s.score}</span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{s.who}</span>
-                  {s.intent ? <span className="shrink-0 text-xs text-muted-foreground">{s.intent}</span> : null}
-                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )
-      ) : null}
-
-      {/* Emails — recent inbound conversations */}
-      {seg === 'emails' ? (
-        emails.length === 0 ? (
-          <Empty>No recent inbound emails, texts, or calls.</Empty>
-        ) : (
-          <ul className="divide-y divide-border border-t border-border">
-            {emails.map((e) => (
-              <li key={e.key}>
-                <Link href={e.href} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/40">
-                  <span className="shrink-0 rounded-md border border-primary/20 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">{KIND_LABEL[e.kind] ?? 'Msg'}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-foreground">{e.who}</span>
-                    {e.preview ? <span className="block truncate text-xs text-muted-foreground">{e.preview}</span> : null}
-                  </span>
-                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{ago(e.ts)}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )
-      ) : null}
-
-      {/* New leads — most recently added */}
-      {seg === 'leads' ? (
-        newLeads.length === 0 ? (
-          <Empty>No new leads yet.</Empty>
-        ) : (
-          <ul className="divide-y divide-border border-t border-border">
-            {newLeads.map((l) => (
-              <li key={l.key}>
-                <Link href={l.href} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/40">
-                  {l.pictureUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={l.pictureUrl} alt="" referrerPolicy="no-referrer" className="h-8 w-8 shrink-0 rounded-full border border-border object-cover" />
-                  ) : (
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">{(l.who ?? '?').charAt(0).toUpperCase()}</span>
-                  )}
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-foreground">{l.who}</span>
-                    {l.source ? <span className="block truncate text-xs text-muted-foreground">via {l.source}</span> : null}
-                  </span>
-                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{ago(l.ts)}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )
-      ) : null}
-    </div>
-  )
-}
-
-function Empty({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-2 border-t border-border px-4 py-6 text-sm text-muted-foreground">
-      <Eye className="h-4 w-4 shrink-0" />
-      <span>{children}</span>
+      {rows.length === 0 ? (
+        <p className="border-t border-border px-4 py-6 text-center text-sm text-muted-foreground">
+          {seg === 'website' ? 'No identified visitors yet. Named people show here as soon as a contact clicks a link in your email or text.' : seg === 'emails' ? 'No recent email activity from your contacts.' : 'No new leads yet.'}
+        </p>
+      ) : (
+        <ul className="divide-y divide-border border-t border-border">
+          {rows.map((r) => (
+            <li key={`${r.personId}-${r.ts}`}>
+              <Link href={`/admin/console/leads/${r.personId}`} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/40">
+                {r.pictureUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={r.pictureUrl} alt="" referrerPolicy="no-referrer" className="h-9 w-9 shrink-0 rounded-full border border-border object-cover" />
+                ) : (
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground">{(r.name ?? '?').charAt(0).toUpperCase()}</span>
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-foreground">{r.name}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{r.label}</span>
+                </span>
+                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{ago(r.ts)}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

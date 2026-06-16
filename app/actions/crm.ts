@@ -442,7 +442,7 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   const sb = createServiceClient()
   const { data: person } = await sb
     .from('crm_people')
-    .select('id,emails,assigned_broker,name,first_name,custom')
+    .select('id,fub_legacy_id,emails,assigned_broker,name,first_name,custom')
     .eq('id', personId)
     .maybeSingle()
   if (!person) return { ok: false, error: 'Person not found' }
@@ -459,7 +459,7 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   const { renderCrmMerge, attributeSiteLinks } = await import('@/lib/crm/merge')
   const actingSlugForLinks = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
   const mergedSubject = renderCrmMerge(subject, person)
-  const mergedBody = attributeSiteLinks(renderCrmMerge(body, person), actingSlugForLinks)
+  const mergedBody = attributeSiteLinks(renderCrmMerge(body, person), actingSlugForLinks, person.fub_legacy_id as number | null)
 
   const { CRM_MAILBOXES, sendCrmEmail } = await import('@/lib/crm/gmail')
   const actingSlug = actingSlugForLinks
@@ -562,6 +562,54 @@ export async function getCrmSavedViewsWithCounts(brokerSlug?: string | null): Pr
       return { id: v.id, name: v.name, description: v.description, count: count ?? 0 }
     }),
   )
+}
+
+export type ActivityPerson = { personId: number; name: string; pictureUrl: string | null; ts: string; label: string }
+
+/**
+ * Named-people activity for the broker dashboard "Right now" feed
+ * (docs/MOBILE_CRM_FUB_PARITY.md #3). Matt 2026-06-16: show WHO — the latest
+ * person on the site, who opened/sent email — not a wall of anonymous session
+ * IDs. Each row resolves crm_timeline events to a named crm_people row and links
+ * to that lead. Latest event per person, broker-scoped.
+ */
+async function recentActivityPeople(
+  kinds: string[],
+  labelFor: (kind: string) => string,
+  brokerSlug?: string | null,
+  limit = 12,
+): Promise<ActivityPerson[]> {
+  const sb = createServiceClient()
+  const { data } = await sb
+    .from('crm_timeline')
+    .select('person_id,ts,kind,crm_people(name,picture_url,assigned_broker,deleted)')
+    .in('kind', kinds)
+    .order('ts', { ascending: false })
+    .limit(300)
+  const seen = new Set<number>()
+  const out: ActivityPerson[] = []
+  type Joined = { person_id: number; ts: string; kind: string; crm_people: { name: string | null; picture_url: string | null; assigned_broker: string | null; deleted: boolean } | Array<{ name: string | null; picture_url: string | null; assigned_broker: string | null; deleted: boolean }> | null }
+  for (const r of (data ?? []) as unknown as Joined[]) {
+    const p = Array.isArray(r.crm_people) ? r.crm_people[0] : r.crm_people
+    if (!p || p.deleted || !p.name) continue
+    if (brokerSlug && p.assigned_broker !== brokerSlug) continue
+    if (seen.has(r.person_id)) continue
+    seen.add(r.person_id)
+    out.push({ personId: r.person_id, name: p.name, pictureUrl: p.picture_url, ts: r.ts, label: labelFor(r.kind) })
+    if (out.length >= limit) break
+  }
+  return out
+}
+
+/** Latest identified people who visited the website (named, newest first). */
+export async function getRecentWebsiteVisitors(brokerSlug?: string | null, limit = 12): Promise<ActivityPerson[]> {
+  return recentActivityPeople(['web_event'], () => 'Viewed the site', brokerSlug, limit)
+}
+
+/** Latest people with email activity — who opened your email or emailed you. */
+export async function getRecentEmailPeople(brokerSlug?: string | null, limit = 12): Promise<ActivityPerson[]> {
+  const label = (k: string) => (k === 'email_open' ? 'Opened your email' : k === 'email_in' ? 'Emailed you' : 'You emailed')
+  return recentActivityPeople(['email_open', 'email_in', 'email_out'], label, brokerSlug, limit)
 }
 
 export type RecentLead = {
@@ -721,7 +769,7 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   const sb = createServiceClient()
   const { data: person } = await sb
     .from('crm_people')
-    .select('id,phones,assigned_broker,name,first_name,custom')
+    .select('id,fub_legacy_id,phones,assigned_broker,name,first_name,custom')
     .eq('id', personId)
     .maybeSingle()
   if (!person) return { ok: false, error: 'Person not found' }
@@ -741,7 +789,7 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
 
   const { renderCrmMerge, attributeSiteLinks } = await import('@/lib/crm/merge')
   const smsBrokerSlug = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
-  const mergedBody = attributeSiteLinks(renderCrmMerge(body, person), smsBrokerSlug)
+  const mergedBody = attributeSiteLinks(renderCrmMerge(body, person), smsBrokerSlug, person.fub_legacy_id as number | null)
   const { sendSmsViaMessagingService } = await import('@/lib/crm/twilio')
   const sent = await sendSmsViaMessagingService({ to, body: mergedBody })
   if (!sent.ok) return { ok: false, error: sent.error }
