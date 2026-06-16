@@ -57,11 +57,32 @@ async function campaignVerified() {
   } catch { return false; }
 }
 
+// ── broker-phone whitelist (hard backstop) ──────────────────────────────────
+// This relay sends ONLY internal broker alerts (to Matt / Rebecca / Paul). It
+// must NEVER text a lead/homeowner — lead SMS goes through Twilio's A2P-
+// registered messaging service, never an agent's personal iMessage. Any queued
+// row whose to_phone is not a broker line is refused (status='skipped'). This
+// backstops the 2026-06-16 expired-listing iMessage incident where
+// LEAD_SMS_IMESSAGE_FALLBACK routed homeowner texts (incl. DNC contacts) here.
+// Upstream fix: app/api/cron/crm-sequence-engine.
+const last10 = (p) => String(p ?? '').replace(/\D/g, '').slice(-10);
+const BROKER_PHONES = new Set(
+  [env.TWILIO_FORWARD_MATT, env.TWILIO_FORWARD_REBECCA, env.TWILIO_FORWARD_PAUL]
+    .map(last10).filter(Boolean),
+);
+
 // ── 1. drain pending alerts ────────────────────────────────────────────────
 const { data: pending } = await sb.from('crm_broker_alerts').select('*').eq('status', 'pending').order('id').limit(20);
 if (pending?.length) {
   const useTwilio = env.CRM_SMS_ALERTS === 'twilio' && (await campaignVerified());
   for (const a of pending) {
+    if (!BROKER_PHONES.has(last10(a.to_phone))) {
+      await sb.from('crm_broker_alerts').update({
+        status: 'skipped', error: 'non-broker to_phone — lead SMS must use Twilio A2P, never iMessage',
+      }).eq('id', a.id);
+      console.warn(`skipped #${a.id}: non-broker to_phone ${a.to_phone}`);
+      continue;
+    }
     try {
       const to = a.to_phone.startsWith('+') ? a.to_phone : `+1${a.to_phone.replace(/\D/g, '').slice(-10)}`;
       if (useTwilio) await sendTwilioSms(to, a.body);

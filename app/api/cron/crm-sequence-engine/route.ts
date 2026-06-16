@@ -331,19 +331,10 @@ export async function GET(request: Request) {
             payload: { twilioSid: sent.sid, sequence: seq.name, step: en.step_index, templateKey: step.templateKey ?? null, to: toPhone },
             broker: mailbox.slug, source: 'sequence', dedupe_key: `twilio:${sent.sid}:p${person.id}`,
           })
-        } else if (process.env.LEAD_SMS_IMESSAGE_FALLBACK === 'true') {
-          // A2P not live — route the lead text through the Mac Messages relay
-          // (scripts/crm-alert-relay.mjs drains crm_broker_alerts → iMessage).
-          await sb.from('crm_broker_alerts').insert({
-            broker: person.assigned_broker ?? 'matt', to_phone: toPhone, body,
-            person_id: person.id, status: 'pending', channel: 'imessage',
-          })
-          await sb.from('crm_timeline').insert({
-            person_id: person.id, kind: 'sms_out', title: 'Text sent via Messages (A2P pending)', body,
-            payload: { via: 'imessage-relay', sequence: seq.name, step: en.step_index, to: toPhone },
-            broker: mailbox.slug, source: 'sequence',
-          })
         } else if (step.fallbackEmailBody) {
+          // A2P not live — NEVER route a lead text through a personal iMessage
+          // (incident 2026-06-16). Fall back to email so the touch still lands.
+          // Reuses the email suppression + send path.
           // Texting unavailable and no relay — fall back to email so the touch
           // still lands. Reuses the email suppression + send path.
           const fbTo = (person.emails as Array<{ value?: string }>)?.[0]?.value

@@ -11,7 +11,10 @@ export type SendChannel = 'email' | 'sms' | 'call'
 const TAG_CHANNEL: Array<{ tag: string; channels: Array<'all' | SendChannel> }> = [
   { tag: 'compliance:hard-stop', channels: ['all'] },
   { tag: 'contact:do-not-text', channels: ['sms'] },
-  { tag: 'contact:do-not-call', channels: ['call'] },
+  // TCPA: a text message is legally a "call". A do-not-call contact must be
+  // blocked from SMS as well as voice (incident 2026-06-16: do-not-call
+  // homeowners were texted because this mapped to 'call' only).
+  { tag: 'contact:do-not-call', channels: ['call', 'sms'] },
   { tag: 'do_not_email', channels: ['email'] },
   { tag: 'unsubscribed', channels: ['email'] },
   { tag: 'bounced', channels: ['email'] },
