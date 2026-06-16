@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.569.0 (2026-06-16)
+
+### Features
+- feat(admin): migrate 18 console surfaces to the shared kit (headed panels)
+
+---
+
+
 ## v1.568.0 (2026-06-16)
 
 ### Features
