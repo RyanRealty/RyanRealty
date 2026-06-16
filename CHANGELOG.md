@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.564.0 (2026-06-16)
+
+### Features
+- feat(admin): live "Right now" pulse hero on the broker dashboard
+
+---
+
+
 ## v1.563.1 (2026-06-16)
 
 ### Bug Fixes
