@@ -85,7 +85,7 @@ export default function ConversationThread({
                 return <div className="mt-0.5 text-xs text-muted-foreground">Not opened yet</div>
               }
               return (
-                <div className="mt-0.5 text-xs font-medium text-emerald-600">
+                <div className="mt-0.5 text-xs font-medium text-success">
                   {eng.opens > 0 ? `👁 Opened ${eng.opens}×${eng.lastOpen ? ` · last ${fmtTs(eng.lastOpen)}` : ''}` : 'Not opened yet'}
                   {eng.clicks > 0 ? ` · 🔗 clicked ${eng.clicks} link${eng.clicks > 1 ? 's' : ''}` : ''}
                 </div>

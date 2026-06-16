@@ -325,17 +325,17 @@ function Row({
         {note && <span className="ml-2 block text-xs text-muted-foreground md:inline">{note}</span>}
       </span>
       <div className="flex shrink-0 items-center gap-3 font-mono text-sm tabular-nums">
-        <span className="min-w-[4.5rem] text-left font-semibold md:text-right">
+        <span className="min-w-18 text-left font-semibold md:text-right">
           {value != null ? `${fmt(value)}${unit}` : '—'}
         </span>
-        <span className={`min-w-[3.5rem] text-left text-xs md:text-right ${t?.cls ?? 'text-muted-foreground'}`}>
+        <span className={`min-w-14 text-left text-xs md:text-right ${t?.cls ?? 'text-muted-foreground'}`}>
           {t ? `${t.arrow} ${t.pct}` : ''}
         </span>
-        <span className="hidden min-w-[4.5rem] text-right text-xs text-muted-foreground sm:inline">
+        <span className="hidden min-w-18 text-right text-xs text-muted-foreground sm:inline">
           {target != null ? `tgt ${fmt(target)}${unit}` : ''}
         </span>
         {target !== undefined && (
-          <Badge variant={statusVariant(status)} className="ml-auto w-[4.5rem] shrink-0 justify-center md:ml-0">
+          <Badge variant={statusVariant(status)} className="ml-auto w-18 shrink-0 justify-center md:ml-0">
             {statusLabel(status)}
           </Badge>
         )}
@@ -355,7 +355,7 @@ function Panel({ title, subtitle, children }: { title: string; subtitle?: string
       <CardHeader className="gap-1 pb-2">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           {step && (
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-secondary text-[0.625rem] font-semibold text-secondary-foreground tabular-nums">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground tabular-nums">
               {step}
             </span>
           )}

@@ -130,7 +130,7 @@ export function ExpenseLedger({ expenses }: { expenses: LedgerExpense[] }) {
                     <TableCell className="max-w-xs truncate" title={e.description}>
                       {e.description}
                     </TableCell>
-                    <TableCell className="max-w-[11rem] truncate">
+                    <TableCell className="max-w-44 truncate">
                       {e.dealPropertyKey ? (
                         <Link
                           href={`/admin/deals/${encodeURIComponent(e.dealPropertyKey)}`}

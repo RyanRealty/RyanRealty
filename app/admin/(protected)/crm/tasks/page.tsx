@@ -62,7 +62,7 @@ export default async function CrmTasksPage({ searchParams }: { searchParams: Pro
           <p className="text-sm text-muted-foreground">{tasks.length} open across the book</p>
         </div>
         {/* Broker filter — single horizontal-scroll strip on phones, wraps on desktop */}
-        <div className="-mx-3 flex gap-2 overflow-x-auto px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:gap-1.5 sm:overflow-visible sm:px-0">
+        <div className="-mx-3 flex gap-2 overflow-x-auto no-scrollbar px-3 sm:mx-0 sm:flex-wrap sm:gap-1.5 sm:overflow-visible sm:px-0">
           <Button asChild size="sm" variant={!broker ? 'default' : 'outline'} className="h-10 shrink-0 sm:h-7">
             <Link href="/admin/crm/tasks">All</Link>
           </Button>

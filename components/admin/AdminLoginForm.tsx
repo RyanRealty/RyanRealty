@@ -158,7 +158,7 @@ export default function AdminLoginForm({ googleClientId }: { googleClientId: str
       {googleClientId ? (
         <>
           {/* One Tap renders its personalized "Continue as <name>" button here */}
-          <div ref={buttonRef} className="flex min-h-[44px] justify-center" />
+          <div ref={buttonRef} className="flex min-h-11 justify-center" />
           {/* Secondary path when One Tap can't auto-detect the account */}
           <Button
             type="button"

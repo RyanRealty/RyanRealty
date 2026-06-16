@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import { createEnvelopeFromDocuments, type EnvelopeSummary } from '@/app/actions/tc-envelopes'
 import { ENVELOPE_STATUS_LABEL, type EnvelopeStatus } from '@/lib/tc/signing'
 
@@ -121,10 +122,10 @@ function NewEnvelopeDialog({ cycle }: { cycle: DealEnvelopesCycle }) {
           <div className="max-h-64 space-y-1.5 overflow-y-auto">
             {cycle.documents.length ? (
               cycle.documents.map((d) => (
-                <label key={d.id} className="flex items-start gap-2 rounded-md border border-border p-2 text-sm">
+                <Label key={d.id} className="flex items-start gap-2 rounded-md border border-border p-2 text-sm font-normal">
                   <Checkbox checked={picked.has(d.id)} onCheckedChange={() => toggle(d.id)} className="mt-0.5" />
                   <span className="min-w-0 break-words text-foreground">{d.name}</span>
-                </label>
+                </Label>
               ))
             ) : (
               <p className="text-xs text-muted-foreground">No documents on this cycle yet. Upload one first.</p>
