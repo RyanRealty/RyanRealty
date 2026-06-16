@@ -1,6 +1,6 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
-import { listCrmPeople, getCrmAccess, getCrmStageCounts, type CrmPersonRow } from '@/app/actions/crm'
+import { listCrmPeople, getCrmAccess, getCrmStageCounts, getCrmSavedViewsWithCounts, type CrmPersonRow } from '@/app/actions/crm'
 import { fetchLiveVisitors } from '../../(protected)/visitors/_lib/queries'
 import { CRM_STAGES } from '@/lib/crm/constants'
 import { Card, CardContent } from '@/components/ui/card'
@@ -62,7 +62,7 @@ function ActivityCell({ pulse, lastActivity }: { pulse: LeadPulse | null; lastAc
 export default async function ConsoleLeadsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; stage?: string; page?: string }>
+  searchParams: Promise<{ q?: string; stage?: string; page?: string; view?: string; lists?: string }>
 }) {
   const sp = await searchParams
   const access = await getCrmAccess()
@@ -70,13 +70,20 @@ export default async function ConsoleLeadsPage({
   const result = await listCrmPeople({
     q: sp.q,
     stage: sp.stage,
+    view: sp.view,
     broker: access?.brokerSlug ?? undefined,
     page,
   })
   const people = result.rows
   const totalPages = Math.max(1, Math.ceil(result.total / result.pageSize))
-  // Live pipeline counts for the stage chips (FUB-parity: "Seller Prospect 7.5k").
-  const stageCounts = await getCrmStageCounts(access?.brokerSlug)
+  // People segments: Stages (stage chips + counts) and All Lists (saved views +
+  // counts). FUB-parity #3. listsMode shows the saved-view chips.
+  const listsMode = Boolean(sp.lists || sp.view)
+  const [stageCounts, savedViews] = await Promise.all([
+    getCrmStageCounts(access?.brokerSlug),
+    getCrmSavedViewsWithCounts(access?.brokerSlug),
+  ])
+  const activeViewId = sp.view ? Number(sp.view) : null
 
   // Live engagement: join active visitor sessions to the leads on this page by
   // fub_person_id (which holds crm_people.fub_legacy_id, NOT crm_people.id), so
@@ -98,7 +105,7 @@ export default async function ConsoleLeadsPage({
 
   const qs = (over: Record<string, string | number | undefined>) => {
     const next = new URLSearchParams()
-    const merged = { q: sp.q, stage: sp.stage, page, ...over }
+    const merged = { q: sp.q, stage: sp.stage, view: sp.view, lists: sp.lists, page, ...over }
     for (const [k, v] of Object.entries(merged)) {
       if (v !== undefined && v !== '' && !(k === 'page' && v === 1)) next.set(k, String(v))
     }
@@ -125,17 +132,39 @@ export default async function ConsoleLeadsPage({
             <Input name="q" defaultValue={sp.q ?? ''} placeholder="Name, email, or phone" className="h-10 flex-1 text-sm" aria-label="Search leads" />
             <Button type="submit" variant="outline" className="h-10 sm:w-28">Search</Button>
           </form>
-          <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5">
-            <Link href={qs({ stage: undefined, page: 1 })} className={cn('inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium', !sp.stage ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-accent')}>
-              All
-              <span className={cn('tabular-nums', !sp.stage ? 'text-primary-foreground/80' : 'text-muted-foreground')}>{fmtCount(result.total)}</span>
+          {/* Segment toggle: Stages / All lists */}
+          <div className="flex gap-1.5">
+            <Link href={qs({ lists: undefined, view: undefined, stage: undefined, page: 1 })} className={cn('rounded-full px-3 py-1 text-xs font-semibold', !listsMode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}>
+              Stages
             </Link>
-            {CRM_STAGES.map((s) => (
-              <Link key={s} href={qs({ stage: s, page: 1 })} className={cn('inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium', sp.stage === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-accent')}>
-                {s}
-                {stageCounts[s] ? <span className={cn('tabular-nums', sp.stage === s ? 'text-primary-foreground/80' : 'text-muted-foreground')}>{fmtCount(stageCounts[s])}</span> : null}
-              </Link>
-            ))}
+            <Link href={qs({ lists: '1', view: undefined, stage: undefined, page: 1 })} className={cn('rounded-full px-3 py-1 text-xs font-semibold', listsMode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}>
+              All lists
+            </Link>
+          </div>
+
+          {/* Chips: saved-view lists, or stage buckets, each with a live count */}
+          <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5">
+            {listsMode ? (
+              savedViews.map((v) => (
+                <Link key={v.id} href={qs({ view: String(v.id), stage: undefined, lists: undefined, page: 1 })} className={cn('inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium', activeViewId === v.id ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-accent')}>
+                  {v.name}
+                  <span className={cn('tabular-nums', activeViewId === v.id ? 'text-primary-foreground/80' : 'text-muted-foreground')}>{fmtCount(v.count)}</span>
+                </Link>
+              ))
+            ) : (
+              <>
+                <Link href={qs({ stage: undefined, page: 1 })} className={cn('inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium', !sp.stage ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-accent')}>
+                  All
+                  <span className={cn('tabular-nums', !sp.stage ? 'text-primary-foreground/80' : 'text-muted-foreground')}>{fmtCount(result.total)}</span>
+                </Link>
+                {CRM_STAGES.map((s) => (
+                  <Link key={s} href={qs({ stage: s, page: 1 })} className={cn('inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium', sp.stage === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-accent')}>
+                    {s}
+                    {stageCounts[s] ? <span className={cn('tabular-nums', sp.stage === s ? 'text-primary-foreground/80' : 'text-muted-foreground')}>{fmtCount(stageCounts[s])}</span> : null}
+                  </Link>
+                ))}
+              </>
+            )}
           </div>
         </CardContent>
       </Card>

@@ -534,6 +534,36 @@ export async function getCrmStageCounts(brokerSlug?: string | null): Promise<Rec
   return Object.fromEntries(entries)
 }
 
+export type SavedViewCount = { id: number; name: string; description: string | null; count: number }
+
+/**
+ * Saved views (the smart-list store, crm_saved_views) with a live count each —
+ * the People "All Lists" segment (docs/MOBILE_CRM_FUB_PARITY.md #3, FUB: "All
+ * Expireds 657"). Each view's own filter (stage or tagsAny) drives the count,
+ * broker-scoped to match what opening the list will show. listCrmPeople already
+ * applies a view by id, so a chip just links to ?view=<id>.
+ */
+export async function getCrmSavedViewsWithCounts(brokerSlug?: string | null): Promise<SavedViewCount[]> {
+  const sb = createServiceClient()
+  const head = { count: 'exact' as const, head: true }
+  const { data: views } = await sb
+    .from('crm_saved_views')
+    .select('id,name,description,filter,position')
+    .order('position', { nullsFirst: false })
+    .order('id')
+  const list = (views ?? []) as Array<{ id: number; name: string; description: string | null; filter: { stage?: string; tagsAny?: string[] } | null }>
+  return Promise.all(
+    list.map(async (v) => {
+      let q = sb.from('crm_people').select('id', head).eq('deleted', false)
+      if (v.filter?.stage) q = q.eq('stage', v.filter.stage)
+      if (v.filter?.tagsAny?.length) q = q.overlaps('tags', v.filter.tagsAny)
+      if (brokerSlug) q = q.eq('assigned_broker', brokerSlug)
+      const { count } = await q
+      return { id: v.id, name: v.name, description: v.description, count: count ?? 0 }
+    }),
+  )
+}
+
 export type RecentLead = {
   id: number
   name: string | null
