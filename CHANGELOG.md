@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.574.0 (2026-06-16)
+
+### Features
+- feat(crm-mobile): People "All Lists" — saved views with live counts + Stages toggle
+
+---
+
+
 ## v1.573.0 (2026-06-16)
 
 ### Features
