@@ -87,12 +87,21 @@ FUB shows a flat list, we show who's hot right now.
 - ✅ **"Online now" live list** (our edge) — All Lists leads with a live
   "Online now N" chip (identified people with an active session this moment),
   linking to the live-visitor surface. The list FUB can't show.
+- ✅ **Month calendar** — `MonthCalendar` on the broker dashboard: a 7-col month
+  grid with item-dots, today highlighted, the selected day's items below
+  (defaults to today). Replaces the old 14-day list.
+- ✅ **Friendly empty states** — context-aware empties across the surfaces
+  (leads list reads search/list/stage/book; inbox per-segment + filter; calendar
+  per-day; watching / saved searches / tasks).
 
-Still open (lower value / polish):
+**The contract is built.** Every FUB mobile pattern matched, several beaten with
+live web-intent (Website segment leads by engagement, "Online now" list, the
+context-aware "+"). Remaining ideas are genuinely new scope, not parity:
 
-- **Month calendar** — the dashboard already shows the next 14 days; a dedicated
-  mobile month grid is net-new polish.
-- **Friendlier empty states** across surfaces — polish.
+- A `Closed` inbox tab + unread badge — needs a conversation read/closed state on
+  `crm_timeline` (a schema add), so they aren't faked.
+- A recent-online-activity *saved view* (vs the live chip) — needs a
+  session→person join baked into the saved-view store.
 
 ## How we keep it from drifting
 
