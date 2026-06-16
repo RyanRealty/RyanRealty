@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.576.1 (2026-06-16)
+
+### Bug Fixes
+- fix(video): add missing canonical caption infra + listing-reel renderer
+
+---
+
+
 ## v1.576.0 (2026-06-16)
 
 ### Features
