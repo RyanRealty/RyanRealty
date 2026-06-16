@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.565.1 (2026-06-16)
+
+### Bug Fixes
+- fix(admin): clear design-token violations on 7 admin surfaces → CI green
+
+---
+
+
 ## v1.565.0 (2026-06-16)
 
 ### Features
