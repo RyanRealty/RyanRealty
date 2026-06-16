@@ -1,6 +1,6 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
-import { listCrmPeople, getCrmAccess, type CrmPersonRow } from '@/app/actions/crm'
+import { listCrmPeople, getCrmAccess, getCrmStageCounts, type CrmPersonRow } from '@/app/actions/crm'
 import { fetchLiveVisitors } from '../../(protected)/visitors/_lib/queries'
 import { CRM_STAGES } from '@/lib/crm/constants'
 import { Card, CardContent } from '@/components/ui/card'
@@ -32,6 +32,12 @@ function fmtAgo(iso: string | null): string {
 
 function primaryEmail(p: CrmPersonRow): string | null {
   return p.emails?.find((e) => e.isPrimary)?.value ?? p.emails?.[0]?.value ?? null
+}
+
+/** Compact pipeline count for a stage chip: 7523 -> "7.5k", 850 -> "850". */
+function fmtCount(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k`
+  return String(n)
 }
 
 /** Live-engagement chip: a hot lead glows; a warm one shows its score; everyone
@@ -69,6 +75,8 @@ export default async function ConsoleLeadsPage({
   })
   const people = result.rows
   const totalPages = Math.max(1, Math.ceil(result.total / result.pageSize))
+  // Live pipeline counts for the stage chips (FUB-parity: "Seller Prospect 7.5k").
+  const stageCounts = await getCrmStageCounts(access?.brokerSlug)
 
   // Live engagement: join active visitor sessions to the leads on this page by
   // fub_person_id (which holds crm_people.fub_legacy_id, NOT crm_people.id), so
@@ -118,12 +126,14 @@ export default async function ConsoleLeadsPage({
             <Button type="submit" variant="outline" className="h-10 sm:w-28">Search</Button>
           </form>
           <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5">
-            <Link href={qs({ stage: undefined, page: 1 })} className={cn('shrink-0 rounded-full px-3 py-1.5 text-xs font-medium', !sp.stage ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-accent')}>
+            <Link href={qs({ stage: undefined, page: 1 })} className={cn('inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium', !sp.stage ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-accent')}>
               All
+              <span className={cn('tabular-nums', !sp.stage ? 'text-primary-foreground/80' : 'text-muted-foreground')}>{fmtCount(result.total)}</span>
             </Link>
             {CRM_STAGES.map((s) => (
-              <Link key={s} href={qs({ stage: s, page: 1 })} className={cn('shrink-0 rounded-full px-3 py-1.5 text-xs font-medium', sp.stage === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-accent')}>
+              <Link key={s} href={qs({ stage: s, page: 1 })} className={cn('inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium', sp.stage === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-accent')}>
                 {s}
+                {stageCounts[s] ? <span className={cn('tabular-nums', sp.stage === s ? 'text-primary-foreground/80' : 'text-muted-foreground')}>{fmtCount(stageCounts[s])}</span> : null}
               </Link>
             ))}
           </div>

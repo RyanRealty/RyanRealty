@@ -514,6 +514,26 @@ export async function listCrmInbox(limit = 100): Promise<CrmInboxRow[]> {
   }))
 }
 
+/**
+ * Live count per stage for the People "Stages" segment (the leads-list stage
+ * chips, docs/MOBILE_CRM_FUB_PARITY.md #3 — "Seller Prospect 7.5k"). Broker-
+ * scoped like every other dashboard read. One head-count per stage, run in
+ * parallel; no rows returned.
+ */
+export async function getCrmStageCounts(brokerSlug?: string | null): Promise<Record<string, number>> {
+  const sb = createServiceClient()
+  const head = { count: 'exact' as const, head: true }
+  const entries = await Promise.all(
+    CRM_STAGES.map(async (stage) => {
+      let q = sb.from('crm_people').select('id', head).eq('deleted', false).eq('stage', stage)
+      if (brokerSlug) q = q.eq('assigned_broker', brokerSlug)
+      const { count } = await q
+      return [stage, count ?? 0] as const
+    }),
+  )
+  return Object.fromEntries(entries)
+}
+
 export type RecentLead = {
   id: number
   name: string | null
