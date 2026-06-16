@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.577.1 (2026-06-16)
+
+### Other
+- redesign(crm-mobile): lead detail to match the FUB reference — dark identity header band
+
+---
+
+
 ## v1.577.0 (2026-06-16)
 
 ### Features
