@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.572.0 (2026-06-16)
+
+### Features
+- feat(crm-mobile): segmented CRM inbox — Inbox / Assigned / Sent with live counts
+
+---
+
+
 ## v1.571.3 (2026-06-16)
 
 ### Bug Fixes
