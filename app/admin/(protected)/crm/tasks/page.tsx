@@ -5,6 +5,7 @@ import { CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
 
 export const metadata = { title: 'Tasks | CRM | Admin' }
 export const dynamic = 'force-dynamic'
@@ -74,47 +75,47 @@ export default async function CrmTasksPage({ searchParams }: { searchParams: Pro
         </div>
       </div>
 
-      {groups.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-sm text-muted-foreground">
+      <ConsoleSection title="Open tasks" count={tasks.length > 0 ? `(${tasks.length})` : undefined}>
+        {groups.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
             Nothing open. New tasks land here the moment a lead acts or a follow-up comes due.
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <div className="space-y-6">
-        {groups.map((g) => (
-          <section key={g.label}>
-            <h2 className={`mb-2 text-sm font-semibold uppercase tracking-wide ${g.tone}`}>
-              {g.label} <span className="tabular-nums">({g.tasks.length})</span>
-            </h2>
-            <div className="space-y-2">
-              {g.tasks.map((t) => (
-                <Card key={t.id}>
-                  <CardContent className="flex items-center justify-between gap-3 p-3 sm:p-4">
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-medium text-foreground">{t.name}</div>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                        {t.person?.name && t.person_id ? (
-                          <Link href={`/admin/crm/${t.person_id}`} className="font-medium text-primary hover:underline">
-                            {t.person.name}
-                          </Link>
-                        ) : null}
-                        <span className="tabular-nums">{fmtDue(t.due_at)}</span>
-                        {t.type ? <Badge variant="outline" className="text-xs">{t.type}</Badge> : null}
-                        {t.assigned_broker ? <span>{CRM_BROKER_DISPLAY[t.assigned_broker as keyof typeof CRM_BROKER_DISPLAY] ?? t.assigned_broker}</span> : null}
-                      </div>
-                    </div>
-                    <form action={completeTaskForm.bind(null, t.id, t.person_id)} className="shrink-0">
-                      <Button type="submit" size="sm" variant="outline" className="h-10 px-4 sm:h-7 sm:px-2.5">Done</Button>
-                    </form>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
+          </p>
+        ) : (
+          <div className="space-y-6">
+            {groups.map((g) => (
+              <section key={g.label}>
+                <h2 className={`mb-2 text-sm font-semibold uppercase tracking-wide ${g.tone}`}>
+                  {g.label} <span className="tabular-nums">({g.tasks.length})</span>
+                </h2>
+                <div className="space-y-2">
+                  {g.tasks.map((t) => (
+                    <Card key={t.id}>
+                      <CardContent className="flex items-center justify-between gap-3 p-3 sm:p-4">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-medium text-foreground">{t.name}</div>
+                          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                            {t.person?.name && t.person_id ? (
+                              <Link href={`/admin/crm/${t.person_id}`} className="font-medium text-primary hover:underline">
+                                {t.person.name}
+                              </Link>
+                            ) : null}
+                            <span className="tabular-nums">{fmtDue(t.due_at)}</span>
+                            {t.type ? <Badge variant="outline" className="text-xs">{t.type}</Badge> : null}
+                            {t.assigned_broker ? <span>{CRM_BROKER_DISPLAY[t.assigned_broker as keyof typeof CRM_BROKER_DISPLAY] ?? t.assigned_broker}</span> : null}
+                          </div>
+                        </div>
+                        <form action={completeTaskForm.bind(null, t.id, t.person_id)} className="shrink-0">
+                          <Button type="submit" size="sm" variant="outline" className="h-10 px-4 sm:h-7 sm:px-2.5">Done</Button>
+                        </form>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+      </ConsoleSection>
     </main>
   )
 }

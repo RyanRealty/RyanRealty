@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import AdminEmailCompose from '@/components/admin/AdminEmailCompose'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
 
 export const metadata: Metadata = {
   title: 'Compose email',
@@ -15,7 +16,9 @@ export default function AdminEmailComposePage() {
       <p className="mt-1 text-sm text-muted-foreground">
         Send an email to a recipient. Configure Resend for delivery.
       </p>
-      <AdminEmailCompose className="mt-6" />
+      <ConsoleSection title="Compose email" className="mt-6">
+        <AdminEmailCompose />
+      </ConsoleSection>
     </main>
   )
 }

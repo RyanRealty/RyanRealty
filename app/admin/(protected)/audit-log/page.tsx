@@ -12,6 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { KpiStrip } from '@/components/console/KpiStrip'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,17 +52,6 @@ function actionVariant(
   if (a.includes('update') || a.includes('edit') || a.includes('change'))
     return 'default'
   return 'soft-neutral'
-}
-
-function SummaryStat({ label, value }: { label: string; value: number | string }) {
-  return (
-    <Card size="sm" className="shrink-0">
-      <CardContent className="px-4 py-3">
-        <div className="text-xl font-bold tabular-nums text-foreground">{value}</div>
-        <div className="text-xs text-muted-foreground">{label}</div>
-      </CardContent>
-    </Card>
-  )
 }
 
 function EmptyState({ filtered }: { filtered: boolean }) {
@@ -122,158 +113,164 @@ export default async function AdminAuditLogPage({
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <h1 className="text-2xl font-bold text-foreground">Audit log</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Recent admin actions across the team — create, update, and delete events.
-      </p>
+    <div className="mx-auto max-w-5xl space-y-5">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Audit log</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Recent admin actions across the team — create, update, and delete events.
+        </p>
+      </div>
 
       {/* Glanceable summary */}
       {rows.length > 0 && (
-        <div className="mt-5 flex gap-3 overflow-x-auto pb-1">
-          <SummaryStat label="On this page" value={rows.length} />
-          <SummaryStat label="Admins" value={distinctAdmins} />
-          <SummaryStat label="Creates / approvals" value={createCount} />
-          <SummaryStat label="Deletes / revokes" value={deleteCount} />
-        </div>
+        <ConsoleSection title="Page summary">
+          <KpiStrip
+            items={[
+              { label: 'On this page', value: rows.length },
+              { label: 'Admins', value: distinctAdmins },
+              { label: 'Creates / approvals', value: createCount },
+              { label: 'Deletes / revokes', value: deleteCount },
+            ]}
+          />
+        </ConsoleSection>
       )}
 
-      {/* Filter affordance */}
-      <form method="get" className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <Input
-          type="text"
-          name="admin"
-          defaultValue={adminEmail ?? ''}
-          placeholder="Filter by admin email"
-          aria-label="Filter by admin email"
-          className="h-11 sm:w-64"
-        />
-        <Input
-          type="text"
-          name="action"
-          defaultValue={actionType ?? ''}
-          placeholder="Filter by action type"
-          aria-label="Filter by action type"
-          className="h-11 sm:w-56"
-        />
-        <div className="flex gap-2">
-          <Button type="submit" variant="outline" className="h-11 flex-1 sm:flex-none">
-            Filter
-          </Button>
-          {filtered && (
-            <Button asChild variant="ghost" className="h-11 flex-1 sm:flex-none">
-              <Link href="/admin/audit-log">Clear</Link>
+      <ConsoleSection title="Action log" count={filtered ? '(filtered)' : undefined}>
+        {/* Filter affordance */}
+        <form method="get" className="mb-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Input
+            type="text"
+            name="admin"
+            defaultValue={adminEmail ?? ''}
+            placeholder="Filter by admin email"
+            aria-label="Filter by admin email"
+            className="h-11 sm:w-64"
+          />
+          <Input
+            type="text"
+            name="action"
+            defaultValue={actionType ?? ''}
+            placeholder="Filter by action type"
+            aria-label="Filter by action type"
+            className="h-11 sm:w-56"
+          />
+          <div className="flex gap-2">
+            <Button type="submit" variant="outline" className="h-11 flex-1 sm:flex-none">
+              Filter
             </Button>
-          )}
-        </div>
-      </form>
-
-      {rows.length === 0 ? (
-        <div className="mt-5">
-          <EmptyState filtered={filtered} />
-        </div>
-      ) : (
-        <>
-          {/* Mobile: stacked entry cards (no horizontal table on phones) */}
-          <ul className="mt-5 space-y-3 md:hidden">
-            {rows.map((row) => (
-              <li key={row.id}>
-                <Card size="sm">
-                  <CardContent className="flex flex-col gap-2 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <Badge variant={actionVariant(row.action_type)} className="max-w-full truncate">
-                        {row.action_type}
-                      </Badge>
-                      <time
-                        className="shrink-0 text-xs tabular-nums text-muted-foreground"
-                        dateTime={row.created_at}
-                        title={exactTime(row.created_at)}
-                      >
-                        {relativeTime(row.created_at)}
-                      </time>
-                    </div>
-                    <div className="text-sm font-medium text-foreground">
-                      {row.resource_type ?? 'Resource'}
-                      {row.resource_id ? (
-                        <span className="ml-1 font-normal text-muted-foreground">
-                          · {row.resource_id}
-                        </span>
-                      ) : null}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className="truncate">{row.admin_email}</span>
-                      {row.role ? (
-                        <Badge variant="soft-neutral" className="shrink-0">
-                          {row.role}
-                        </Badge>
-                      ) : null}
-                    </div>
-                  </CardContent>
-                </Card>
-              </li>
-            ))}
-          </ul>
-
-          {/* Desktop: full table (unchanged register) */}
-          <div className="mt-5 hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted">
-                  <TableHead className="text-foreground">Time</TableHead>
-                  <TableHead className="text-foreground">Admin</TableHead>
-                  <TableHead className="text-foreground">Role</TableHead>
-                  <TableHead className="text-foreground">Action</TableHead>
-                  <TableHead className="text-foreground">Resource</TableHead>
-                  <TableHead className="text-foreground">ID</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
-                      {exactTime(row.created_at)}
-                    </TableCell>
-                    <TableCell className="font-medium text-foreground">{row.admin_email}</TableCell>
-                    <TableCell className="text-muted-foreground">{row.role ?? '—'}</TableCell>
-                    <TableCell>
-                      <Badge variant={actionVariant(row.action_type)}>{row.action_type}</Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{row.resource_type ?? '—'}</TableCell>
-                    <TableCell className="text-muted-foreground">{row.resource_id ?? '—'}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            {filtered && (
+              <Button asChild variant="ghost" className="h-11 flex-1 sm:flex-none">
+                <Link href="/admin/audit-log">Clear</Link>
+              </Button>
+            )}
           </div>
+        </form>
 
-          {/* Pagination */}
-          <nav className="mt-5 flex items-center justify-between gap-3">
-            {pageNum > 0 ? (
-              <Button asChild variant="outline" className="h-11">
-                <Link href={`/admin/audit-log${filterQuery({ page: pageNum - 1 || undefined })}`}>
+        {rows.length === 0 ? (
+          <EmptyState filtered={filtered} />
+        ) : (
+          <>
+            {/* Mobile: stacked entry cards (no horizontal table on phones) */}
+            <ul className="space-y-3 md:hidden">
+              {rows.map((row) => (
+                <li key={row.id}>
+                  <Card>
+                    <CardContent className="flex flex-col gap-2 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <Badge variant={actionVariant(row.action_type)} className="max-w-full truncate">
+                          {row.action_type}
+                        </Badge>
+                        <time
+                          className="shrink-0 text-xs tabular-nums text-muted-foreground"
+                          dateTime={row.created_at}
+                          title={exactTime(row.created_at)}
+                        >
+                          {relativeTime(row.created_at)}
+                        </time>
+                      </div>
+                      <div className="text-sm font-medium text-foreground">
+                        {row.resource_type ?? 'Resource'}
+                        {row.resource_id ? (
+                          <span className="ml-1 font-normal text-muted-foreground">
+                            · {row.resource_id}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="truncate">{row.admin_email}</span>
+                        {row.role ? (
+                          <Badge variant="soft-neutral" className="shrink-0">
+                            {row.role}
+                          </Badge>
+                        ) : null}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </li>
+              ))}
+            </ul>
+
+            {/* Desktop: full table (unchanged register) */}
+            <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted">
+                    <TableHead className="text-foreground">Time</TableHead>
+                    <TableHead className="text-foreground">Admin</TableHead>
+                    <TableHead className="text-foreground">Role</TableHead>
+                    <TableHead className="text-foreground">Action</TableHead>
+                    <TableHead className="text-foreground">Resource</TableHead>
+                    <TableHead className="text-foreground">ID</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
+                        {exactTime(row.created_at)}
+                      </TableCell>
+                      <TableCell className="font-medium text-foreground">{row.admin_email}</TableCell>
+                      <TableCell className="text-muted-foreground">{row.role ?? '—'}</TableCell>
+                      <TableCell>
+                        <Badge variant={actionVariant(row.action_type)}>{row.action_type}</Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{row.resource_type ?? '—'}</TableCell>
+                      <TableCell className="text-muted-foreground">{row.resource_id ?? '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Pagination */}
+            <nav className="mt-5 flex items-center justify-between gap-3">
+              {pageNum > 0 ? (
+                <Button asChild variant="outline" className="h-11">
+                  <Link href={`/admin/audit-log${filterQuery({ page: pageNum - 1 || undefined })}`}>
+                    Previous
+                  </Link>
+                </Button>
+              ) : (
+                <Button variant="outline" className="h-11" disabled>
                   Previous
-                </Link>
-              </Button>
-            ) : (
-              <Button variant="outline" className="h-11" disabled>
-                Previous
-              </Button>
-            )}
-            <span className="text-sm tabular-nums text-muted-foreground">Page {pageNum + 1}</span>
-            {hasNext ? (
-              <Button asChild variant="outline" className="h-11">
-                <Link href={`/admin/audit-log${filterQuery({ page: pageNum + 1 })}`}>Next</Link>
-              </Button>
-            ) : (
-              <Button variant="outline" className="h-11" disabled>
-                Next
-              </Button>
-            )}
-          </nav>
-        </>
-      )}
+                </Button>
+              )}
+              <span className="text-sm tabular-nums text-muted-foreground">Page {pageNum + 1}</span>
+              {hasNext ? (
+                <Button asChild variant="outline" className="h-11">
+                  <Link href={`/admin/audit-log${filterQuery({ page: pageNum + 1 })}`}>Next</Link>
+                </Button>
+              ) : (
+                <Button variant="outline" className="h-11" disabled>
+                  Next
+                </Button>
+              )}
+            </nav>
+          </>
+        )}
+      </ConsoleSection>
 
-      <p className="mt-6 text-sm">
+      <p className="text-sm">
         <Link
           href="/admin"
           className="text-muted-foreground underline-offset-4 hover:underline"

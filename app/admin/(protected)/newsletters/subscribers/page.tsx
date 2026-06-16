@@ -8,9 +8,9 @@ import {
   type NewsletterSubscriber,
 } from '@/lib/data'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { StatusPill } from '@/components/console/StatusPill'
-import DashboardSummaryStrip, { type SummaryStat } from '@/components/admin/DashboardSummaryStrip'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { KpiStrip } from '@/components/console/KpiStrip'
 import { TableWithMobileCards, type TwmcColumn } from '@/components/admin/TableWithMobileCards'
 import { AddSubscriberForm, SubscriberStatusToggle } from '../SubscriberForms'
 
@@ -52,8 +52,8 @@ export default async function NewsletterSubscribersPage({
     listNewsletterSubscribers({ page, pageSize: PAGE_SIZE }),
   ])
 
-  const stats: SummaryStat[] = [
-    { label: 'Active', value: counts.active.toLocaleString('en-US'), tone: 'success' },
+  const kpiItems = [
+    { label: 'Active', value: counts.active.toLocaleString('en-US') },
     { label: 'Unsubscribed', value: counts.unsubscribed.toLocaleString('en-US') },
     { label: 'Total', value: counts.total.toLocaleString('en-US') },
   ]
@@ -80,64 +80,62 @@ export default async function NewsletterSubscribersPage({
       <p className="mt-1 text-sm text-muted-foreground">The newsletter list. Add subscribers, or remove and re-add them.</p>
 
       <div className="mt-6">
-        <DashboardSummaryStrip stats={stats} />
+        <KpiStrip items={kpiItems} />
       </div>
 
-      <Card className="mt-6">
-        <CardContent>
-          <h2 className="text-base font-semibold text-foreground">Add subscriber</h2>
-          <div className="mt-3">
-            <AddSubscriberForm />
-          </div>
-        </CardContent>
-      </Card>
+      <ConsoleSection title="Add subscriber" className="mt-6">
+        <AddSubscriberForm />
+      </ConsoleSection>
 
       <div className="mt-8">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-foreground">List</h2>
-          <p className="text-xs text-muted-foreground tabular-nums">
-            {list.total === 0 ? 'No subscribers' : `Showing ${from.toLocaleString('en-US')}–${to.toLocaleString('en-US')} of ${list.total.toLocaleString('en-US')}`}
-          </p>
-        </div>
-        <TableWithMobileCards
-          rows={list.rows}
-          columns={columns}
-          getRowKey={(r) => r.id}
-          cap={PAGE_SIZE}
-          renderCard={(r) => (
-            <div className="rounded-lg border border-border bg-card p-3">
-              <div className="flex items-start justify-between gap-2">
-                <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{r.email}</span>
-                {subscriberStatusPill(r.status)}
+        <ConsoleSection
+          title="Subscriber list"
+          action={
+            <p className="text-xs text-muted-foreground tabular-nums">
+              {list.total === 0 ? 'No subscribers' : `${from.toLocaleString('en-US')}–${to.toLocaleString('en-US')} of ${list.total.toLocaleString('en-US')}`}
+            </p>
+          }
+        >
+          <TableWithMobileCards
+            rows={list.rows}
+            columns={columns}
+            getRowKey={(r) => r.id}
+            cap={PAGE_SIZE}
+            renderCard={(r) => (
+              <div className="rounded-lg border border-border bg-muted/40 p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{r.email}</span>
+                  {subscriberStatusPill(r.status)}
+                </div>
+                <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                  <span>{r.name ?? 'No name'}</span>
+                  <span>{SEGMENT_LABELS[r.segment] ?? r.segment}</span>
+                  <span>{r.source ?? '—'}</span>
+                </div>
+                <div className="mt-2">
+                  <SubscriberStatusToggle id={r.id} status={r.status} />
+                </div>
               </div>
-              <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-                <span>{r.name ?? 'No name'}</span>
-                <span>{SEGMENT_LABELS[r.segment] ?? r.segment}</span>
-                <span>{r.source ?? '—'}</span>
-              </div>
-              <div className="mt-2">
-                <SubscriberStatusToggle id={r.id} status={r.status} />
-              </div>
-            </div>
-          )}
-          empty={<p>No subscribers yet. Add one above, or they arrive from the site signup form.</p>}
-        />
+            )}
+            empty={<p>No subscribers yet. Add one above, or they arrive from the site signup form.</p>}
+          />
 
-        {totalPages > 1 ? (
-          <div className="mt-4 flex items-center justify-between gap-3">
-            {page > 1 ? (
-              <Button asChild variant="outline" size="sm">
-                <Link href={`/admin/newsletters/subscribers?page=${page - 1}`}>← Previous</Link>
-              </Button>
-            ) : <span />}
-            <span className="text-xs text-muted-foreground tabular-nums">Page {page.toLocaleString('en-US')} of {totalPages.toLocaleString('en-US')}</span>
-            {page < totalPages ? (
-              <Button asChild variant="outline" size="sm">
-                <Link href={`/admin/newsletters/subscribers?page=${page + 1}`}>Next →</Link>
-              </Button>
-            ) : <span />}
-          </div>
-        ) : null}
+          {totalPages > 1 ? (
+            <div className="mt-4 flex items-center justify-between gap-3">
+              {page > 1 ? (
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/admin/newsletters/subscribers?page=${page - 1}`}>← Previous</Link>
+                </Button>
+              ) : <span />}
+              <span className="text-xs text-muted-foreground tabular-nums">Page {page.toLocaleString('en-US')} of {totalPages.toLocaleString('en-US')}</span>
+              {page < totalPages ? (
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/admin/newsletters/subscribers?page=${page + 1}`}>Next →</Link>
+                </Button>
+              ) : <span />}
+            </div>
+          ) : null}
+        </ConsoleSection>
       </div>
     </main>
   )

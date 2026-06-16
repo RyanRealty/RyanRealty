@@ -3,6 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { createServiceClient } from '@/lib/supabase/service'
 import { ActionCard, type BrainAction } from './_components/ActionCard'
 import { FilterSidebar } from './_components/FilterSidebar'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
 
 export const metadata = { title: 'Approval Queue | Admin' }
 export const dynamic = 'force-dynamic'
@@ -99,38 +100,38 @@ export default async function ApprovalQueuePage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Approval queue</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+      <ConsoleSection
+        title="Pending approvals"
+        count={`(${actions.length})`}
+      >
+        <p className="mb-4 text-sm text-muted-foreground">
           {actions.length} item{actions.length !== 1 ? 's' : ''} awaiting review. New rows
           appear in real time via Supabase Realtime (see{' '}
           <span className="font-medium">ApprovalQueueRealtime</span> below).
         </p>
-      </div>
+        <div className="flex gap-8">
+          {/* Filter sidebar */}
+          <Suspense fallback={<Skeleton className="h-64 w-52" />}>
+            <FilterSidebar
+              categories={categories}
+              actionTypePrefixes={actionTypePrefixes}
+            />
+          </Suspense>
 
-      <div className="flex gap-8">
-        {/* Filter sidebar */}
-        <Suspense fallback={<Skeleton className="h-64 w-52" />}>
-          <FilterSidebar
-            categories={categories}
-            actionTypePrefixes={actionTypePrefixes}
-          />
-        </Suspense>
-
-        {/* Action cards */}
-        <div className="min-w-0 flex-1 space-y-4">
-          {actions.length === 0 ? (
-            <div className="rounded-lg border border-border bg-card py-20 text-center text-muted-foreground">
-              Nothing pending. The queue is clear.
-            </div>
-          ) : (
-            actions.map((action) => (
-              <ActionCard key={action.id} action={action} />
-            ))
-          )}
+          {/* Action cards */}
+          <div className="min-w-0 flex-1 space-y-4">
+            {actions.length === 0 ? (
+              <div className="rounded-lg border border-border bg-card py-20 text-center text-muted-foreground">
+                Nothing pending. The queue is clear.
+              </div>
+            ) : (
+              actions.map((action) => (
+                <ActionCard key={action.id} action={action} />
+              ))
+            )}
+          </div>
         </div>
-      </div>
+      </ConsoleSection>
     </div>
   )
 }

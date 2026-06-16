@@ -10,7 +10,8 @@ import {
 } from '@/app/actions/crm'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
 import { Textarea } from '@/components/ui/textarea'
 
 export const metadata = { title: 'First-touch approvals | CRM | Admin' }
@@ -72,48 +73,47 @@ export default async function CrmApprovalsPage() {
 
       <div className="mt-6 space-y-5">
         {items.length === 0 ? (
-          <Card>
-            <CardContent className="py-10 text-center text-sm text-muted-foreground">
+          <ConsoleSection title="Pending approvals">
+            <p className="py-6 text-center text-sm text-muted-foreground">
               Nothing waiting on you. New leads land here with their first text prepared.
-            </CardContent>
-          </Card>
+            </p>
+          </ConsoleSection>
         ) : (
           items.map((item) => (
-            <Card key={item.enrollmentId}>
-              <CardHeader className="pb-3">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <CardTitle className="text-base">
-                      <Link
-                        href={`/admin/crm/${item.personId}`}
-                        className="hover:underline"
-                      >
-                        {item.personName ?? `Contact #${item.personId}`}
-                      </Link>
-                    </CardTitle>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <Badge variant="secondary" className="text-[11px]">{item.sequenceName}</Badge>
-                      {item.source ? <span>{item.source}</span> : null}
-                      {item.assignedBroker ? <span>{item.assignedBroker}</span> : null}
-                      <span className="tabular-nums">{fmtRelative(item.enrolledAt)}</span>
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Prepared message preview */}
-                {item.preview ? (
-                  <blockquote className="rounded-md border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
-                    <p className="whitespace-pre-wrap">{item.preview.body}</p>
-                    <p className="mt-2 text-xs text-muted-foreground">{item.preview.channel} channel</p>
-                  </blockquote>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    No message step first — task or email opens this workflow.
-                  </p>
-                )}
+            <ConsoleSection
+              key={item.enrollmentId}
+              title={item.personName ?? `Contact #${item.personId}`}
+              action={
+                <Link
+                  href={`/admin/crm/${item.personId}`}
+                  className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  View contact
+                </Link>
+              }
+            >
+              {/* Metadata */}
+              <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <Badge variant="secondary" className="text-[11px]">{item.sequenceName}</Badge>
+                {item.source ? <span>{item.source}</span> : null}
+                {item.assignedBroker ? <span>{item.assignedBroker}</span> : null}
+                <span className="tabular-nums">{fmtRelative(item.enrolledAt)}</span>
+              </div>
 
-                {/* CMA link */}
+              {/* Prepared message preview */}
+              {item.preview ? (
+                <blockquote className="rounded-md border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+                  <p className="whitespace-pre-wrap">{item.preview.body}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">{item.preview.channel} channel</p>
+                </blockquote>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No message step first — task or email opens this workflow.
+                </p>
+              )}
+
+              {/* CMA link */}
+              <div className="mt-3">
                 {item.cmaLink ? (
                   <a
                     href={item.cmaLink}
@@ -126,47 +126,47 @@ export default async function CrmApprovalsPage() {
                 ) : (
                   <p className="text-sm text-muted-foreground">CMA builds before the text can send.</p>
                 )}
+              </div>
 
-                {/* Primary actions — stack full-width on phones, inline row from sm up */}
-                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                  <form action={approveForm} className="w-full sm:w-auto">
-                    <input type="hidden" name="enrollmentId" value={item.enrollmentId} />
-                    <Button type="submit" size="sm" className="h-10 w-full sm:h-7 sm:w-auto">Send and start</Button>
-                  </form>
-                  <form action={skipForm} className="w-full sm:w-auto">
-                    <input type="hidden" name="enrollmentId" value={item.enrollmentId} />
-                    <Button type="submit" size="sm" variant="outline" className="h-10 w-full sm:h-7 sm:w-auto">Skip first text</Button>
-                  </form>
-                  <form action={dismissForm} className="w-full sm:w-auto">
-                    <input type="hidden" name="enrollmentId" value={item.enrollmentId} />
-                    <Button type="submit" size="sm" variant="outline" className="h-10 w-full sm:h-7 sm:w-auto">Dismiss</Button>
-                  </form>
-                </div>
+              {/* Primary actions — stack full-width on phones, inline row from sm up */}
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                <form action={approveForm} className="w-full sm:w-auto">
+                  <input type="hidden" name="enrollmentId" value={item.enrollmentId} />
+                  <Button type="submit" size="sm" className="h-10 w-full sm:h-7 sm:w-auto">Send and start</Button>
+                </form>
+                <form action={skipForm} className="w-full sm:w-auto">
+                  <input type="hidden" name="enrollmentId" value={item.enrollmentId} />
+                  <Button type="submit" size="sm" variant="outline" className="h-10 w-full sm:h-7 sm:w-auto">Skip first text</Button>
+                </form>
+                <form action={dismissForm} className="w-full sm:w-auto">
+                  <input type="hidden" name="enrollmentId" value={item.enrollmentId} />
+                  <Button type="submit" size="sm" variant="outline" className="h-10 w-full sm:h-7 sm:w-auto">Dismiss</Button>
+                </form>
+              </div>
 
-                {/* Edit text disclosure */}
-                {item.preview ? (
-                  <details className="rounded-md border border-border">
-                    <summary className="flex min-h-10 cursor-pointer items-center px-3 py-2 text-sm text-muted-foreground hover:text-foreground md:min-h-0">
-                      Edit text before sending
-                    </summary>
-                    <div className="border-t border-border px-3 pb-3 pt-3">
-                      <form action={approveEditedForm} className="space-y-2">
-                        <input type="hidden" name="enrollmentId" value={item.enrollmentId} />
-                        <Textarea
-                          name="body"
-                          rows={5}
-                          defaultValue={item.preview.body.replace('[CMA link attaches when built]', '%cma_link%')}
-                          className="w-full text-sm"
-                        />
-                        <div className="flex">
-                          <Button type="submit" size="sm" className="h-10 w-full sm:h-7 sm:w-auto sm:ml-auto">Send edited text</Button>
-                        </div>
-                      </form>
-                    </div>
-                  </details>
-                ) : null}
-              </CardContent>
-            </Card>
+              {/* Edit text disclosure */}
+              {item.preview ? (
+                <details className="mt-3 rounded-md border border-border">
+                  <summary className="flex min-h-10 cursor-pointer items-center px-3 py-2 text-sm text-muted-foreground hover:text-foreground md:min-h-0">
+                    Edit text before sending
+                  </summary>
+                  <div className="border-t border-border px-3 pb-3 pt-3">
+                    <form action={approveEditedForm} className="space-y-2">
+                      <input type="hidden" name="enrollmentId" value={item.enrollmentId} />
+                      <Textarea
+                        name="body"
+                        rows={5}
+                        defaultValue={item.preview.body.replace('[CMA link attaches when built]', '%cma_link%')}
+                        className="w-full text-sm"
+                      />
+                      <div className="flex">
+                        <Button type="submit" size="sm" className="h-10 w-full sm:h-7 sm:w-auto sm:ml-auto">Send edited text</Button>
+                      </div>
+                    </form>
+                  </div>
+                </details>
+              ) : null}
+            </ConsoleSection>
           ))
         )}
       </div>

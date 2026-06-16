@@ -8,9 +8,9 @@ import {
   getNewsletterRecipients,
   type NewsletterRecipient,
 } from '@/lib/data'
-import { Card, CardContent } from '@/components/ui/card'
 import { StatusPill } from '@/components/console/StatusPill'
-import DashboardSummaryStrip, { type SummaryStat } from '@/components/admin/DashboardSummaryStrip'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { KpiStrip } from '@/components/console/KpiStrip'
 import { TableWithMobileCards, type TwmcColumn } from '@/components/admin/TableWithMobileCards'
 import NewsletterComposeForm from '../NewsletterComposeForm'
 import NewsletterDraftActions from '../NewsletterDraftActions'
@@ -96,32 +96,27 @@ function DraftView({ id, letter }: { id: string; letter: Awaited<ReturnType<type
   if (!letter) return null
   return (
     <div className="mt-6 space-y-6">
-      <Card>
-        <CardContent>
-          <NewsletterComposeForm
-            id={id}
-            initial={{
-              subject: letter.subject,
-              preview_text: letter.preview_text,
-              audience: letter.audience,
-              body_html: letter.body_html,
-            }}
-          />
-        </CardContent>
-      </Card>
+      <ConsoleSection title="Compose">
+        <NewsletterComposeForm
+          id={id}
+          initial={{
+            subject: letter.subject,
+            preview_text: letter.preview_text,
+            audience: letter.audience,
+            body_html: letter.body_html,
+          }}
+        />
+      </ConsoleSection>
 
-      <Card>
-        <CardContent className="space-y-3">
-          <div>
-            <h2 className="text-base font-semibold text-foreground">Send</h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              Goes to active subscribers in <span className="font-medium text-foreground">{AUDIENCE_LABELS[letter.audience] ?? letter.audience}</span>.
-              Suppressed contacts are skipped automatically.
-            </p>
-          </div>
+      <ConsoleSection title="Send">
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Goes to active subscribers in <span className="font-medium text-foreground">{AUDIENCE_LABELS[letter.audience] ?? letter.audience}</span>.
+            Suppressed contacts are skipped automatically.
+          </p>
           <NewsletterDraftActions id={id} />
-        </CardContent>
-      </Card>
+        </div>
+      </ConsoleSection>
     </div>
   )
 }
@@ -132,8 +127,8 @@ async function StatsView({ id, sentBy, sentAt, status }: { id: string; sentBy: s
     getNewsletterRecipients(id, { limit: 500 }),
   ])
 
-  const stats: SummaryStat[] = [
-    { label: 'Delivery rate', value: pct(s.deliveryRate), tone: 'success' },
+  const kpiItems = [
+    { label: 'Delivery rate', value: pct(s.deliveryRate) },
     { label: 'Open rate', value: pct(s.openRate) },
     { label: 'Click rate', value: pct(s.clickRate) },
     { label: 'Sent', value: s.sent.toLocaleString('en-US') },
@@ -151,23 +146,24 @@ async function StatsView({ id, sentBy, sentAt, status }: { id: string; sentBy: s
 
   return (
     <div className="mt-6 space-y-6">
-      <div>
-        <DashboardSummaryStrip stats={stats} />
-        <p className="mt-3 text-sm text-muted-foreground">
-          {status === 'sending' ? 'Sending' : 'Sent'} by <span className="font-medium text-foreground">{sentBy ?? '—'}</span> on {fmtDateTime(sentAt)}.
-          {' '}{s.clicked.toLocaleString('en-US')} clicked.
-        </p>
-      </div>
+      <ConsoleSection title="Delivery stats">
+        <div className="space-y-3">
+          <KpiStrip items={kpiItems} />
+          <p className="text-sm text-muted-foreground">
+            {status === 'sending' ? 'Sending' : 'Sent'} by <span className="font-medium text-foreground">{sentBy ?? '—'}</span> on {fmtDateTime(sentAt)}.
+            {' '}{s.clicked.toLocaleString('en-US')} clicked.
+          </p>
+        </div>
+      </ConsoleSection>
 
-      <div>
-        <h2 className="mb-3 text-lg font-semibold text-foreground">Recipients</h2>
+      <ConsoleSection title="Recipients">
         <TableWithMobileCards
           rows={recipients}
           columns={columns}
           getRowKey={(r) => r.id}
           cap={50}
           renderCard={(r) => (
-            <div className="rounded-lg border border-border bg-card p-3">
+            <div className="rounded-lg border border-border bg-muted/40 p-3">
               <div className="flex items-start justify-between gap-2">
                 <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{r.email}</span>
                 {recipientStatusPill(r.status)}
@@ -185,7 +181,7 @@ async function StatsView({ id, sentBy, sentAt, status }: { id: string; sentBy: s
           )}
           empty={<p>No recipients recorded yet. Engagement appears here as opens and clicks arrive.</p>}
         />
-      </div>
+      </ConsoleSection>
     </div>
   )
 }

@@ -12,7 +12,8 @@ import {
 } from '@/app/actions/crm'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
 import { cn } from '@/lib/utils'
 
 export const metadata = { title: 'Workflows | CRM | Admin' }
@@ -214,8 +215,8 @@ export default async function CrmWorkflowsPage() {
         Active leads moving through automated sequences. Each column is a workflow step.
       </p>
 
-      {/* Summary — stat tiles on mobile, inline strip from sm+ */}
-      <div className="mt-4 rounded-lg border border-border bg-card px-4 py-3">
+      {/* Summary */}
+      <ConsoleSection title="Summary" className="mt-4">
         <p className="text-sm text-muted-foreground">
           Across {sequences.length} active {sequences.length === 1 ? 'sequence' : 'sequences'}:
         </p>
@@ -233,7 +234,7 @@ export default async function CrmWorkflowsPage() {
             <span className="block text-muted-foreground sm:inline">paused</span>
           </span>
         </div>
-      </div>
+      </ConsoleSection>
 
       {/* Per-sequence board */}
       <div className="mt-8 space-y-10">

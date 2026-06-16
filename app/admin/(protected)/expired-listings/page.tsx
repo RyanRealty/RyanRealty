@@ -7,8 +7,9 @@ import { ExpiredListingsClient } from './ExpiredListingsClient'
 import { ExpiredListingCard, ExpiredListingTableRow } from './ExpiredListingRow'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { KpiStrip } from '@/components/console/KpiStrip'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,39 +51,21 @@ export default async function ExpiredListingsPage({
         </p>
       </header>
 
-      {/* Glanceable summary — summary before detail */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Card>
-          <CardContent className="space-y-0.5 p-4 tabular-nums">
-            <p className="text-2xl font-bold text-foreground">{total}</p>
-            <p className="text-xs text-muted-foreground">
-              {city ? `in ${city}` : 'total expired'}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="space-y-0.5 p-4 tabular-nums">
-            <p className="text-2xl font-bold text-success">{withContact}</p>
-            <p className="text-xs text-muted-foreground">contact found (this page)</p>
-          </CardContent>
-        </Card>
-        <Card className="col-span-2 sm:col-span-1">
-          <CardContent className="space-y-0.5 p-4 tabular-nums">
-            <p className="text-2xl font-bold text-foreground">
-              {pageNum + 1}
-              <span className="text-base font-normal text-muted-foreground"> / {totalPages}</span>
-            </p>
-            <p className="text-xs text-muted-foreground">page</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Glanceable summary */}
+      <ConsoleSection title="Summary">
+        <KpiStrip
+          items={[
+            { label: city ? `in ${city}` : 'total expired', value: total },
+            { label: 'contact found (this page)', value: withContact },
+            { label: 'page', value: `${pageNum + 1} / ${totalPages}` },
+          ]}
+        />
+      </ConsoleSection>
 
       {/* Data refresh actions */}
-      <Card>
-        <CardContent className="p-4">
-          <ExpiredListingsClient />
-        </CardContent>
-      </Card>
+      <ConsoleSection title="Data refresh">
+        <ExpiredListingsClient />
+      </ConsoleSection>
 
       {/* Filter */}
       <form method="get" className="flex flex-col gap-2 sm:flex-row sm:max-w-md">
@@ -100,8 +83,8 @@ export default async function ExpiredListingsPage({
       </form>
 
       {rows.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-2 p-10 text-center">
+        <ConsoleSection title="Listings">
+          <div className="flex flex-col items-center gap-2 p-6 text-center">
             <p className="text-base font-medium text-foreground">
               {city ? `No expired listings in ${city}` : 'No expired listings yet'}
             </p>
@@ -115,10 +98,10 @@ export default async function ExpiredListingsPage({
                 <Link href="?">Clear filter</Link>
               </Button>
             ) : null}
-          </CardContent>
-        </Card>
+          </div>
+        </ConsoleSection>
       ) : (
-        <>
+        <ConsoleSection title="Listings" count={`(${rows.length})`}>
           {/* Cards — phones */}
           <div className="space-y-3 md:hidden">
             {rows.map((row) => (
@@ -151,7 +134,7 @@ export default async function ExpiredListingsPage({
               </TableBody>
             </Table>
           </div>
-        </>
+        </ConsoleSection>
       )}
 
       {totalPages > 1 ? (

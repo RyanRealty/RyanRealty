@@ -6,7 +6,8 @@ import { getSession } from '@/app/actions/auth'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { KpiStrip } from '@/components/console/KpiStrip'
 import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
 
 export const metadata: Metadata = {
@@ -53,54 +54,60 @@ export default async function AdminEmailCampaignsPage() {
 
   return (
     <main className="mx-auto max-w-4xl space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-foreground">Email campaigns</h1>
-          <p className="text-sm text-muted-foreground">
-            Sent campaigns. Stats updated via Resend webhooks.
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/admin/email/compose">Compose</Link>
-        </Button>
+      <header className="space-y-1">
+        <h1 className="text-2xl font-semibold text-foreground">Email campaigns</h1>
+        <p className="text-sm text-muted-foreground">
+          Sent campaigns. Stats updated via Resend webhooks.
+        </p>
       </header>
 
-      <DashboardSummaryStrip
-        stats={[
-          { label: 'Campaigns', value: String(campaigns.length), caption: 'last 50' },
+      <KpiStrip
+        items={[
+          { label: 'Campaigns', value: String(campaigns.length) },
           { label: 'Emails sent', value: totalSent.toLocaleString() },
-          { label: 'Opens', value: totalOpens.toLocaleString(), caption: `${openRate} open rate` },
+          { label: 'Opens', value: totalOpens.toLocaleString() },
           { label: 'Clicks', value: totalClicks.toLocaleString() },
         ]}
       />
 
-      <TableWithMobileCards
-        rows={campaigns}
-        cap={12}
-        getRowKey={(c) => c.id}
-        columns={[
-          { key: 'subject', header: 'Subject', className: 'font-medium text-foreground', cell: (c) => c.subject ?? '—' },
-          { key: 'type', header: 'Type', className: 'text-xs', cell: (c) => c.template_type ?? '—' },
-          { key: 'sent', header: 'Sent', className: 'text-right tabular-nums', cell: (c) => c.sent_count },
-          { key: 'opens', header: 'Opens', className: 'text-right tabular-nums', cell: (c) => c.open_count },
-          { key: 'clicks', header: 'Clicks', className: 'text-right tabular-nums', cell: (c) => c.click_count },
-          { key: 'date', header: 'Date', className: 'text-xs text-muted-foreground whitespace-nowrap', cell: (c) => c.sent_at ? new Date(c.sent_at).toLocaleDateString() : '—' },
-        ]}
-        renderCard={(c) => (
-          <Card>
-            <CardContent className="space-y-1">
-              <div className="flex items-start justify-between gap-2">
-                <span className="min-w-0 break-words text-sm font-medium text-foreground">{c.subject ?? '—'}</span>
-                <span className="shrink-0 text-xs text-muted-foreground whitespace-nowrap">{c.sent_at ? new Date(c.sent_at).toLocaleDateString() : '—'}</span>
-              </div>
-              <p className="text-xs text-muted-foreground tabular-nums">
-                {c.template_type ?? '—'} · {c.sent_count} sent · {c.open_count} opens · {c.click_count} clicks
-              </p>
-            </CardContent>
-          </Card>
-        )}
-        empty={<>No campaigns yet. Compose an email to send.</>}
-      />
+      <ConsoleSection
+        title="Campaigns"
+        count={`(last 50)`}
+        className="mt-6"
+        action={
+          <Button asChild size="sm">
+            <Link href="/admin/email/compose">Compose</Link>
+          </Button>
+        }
+      >
+        <TableWithMobileCards
+          rows={campaigns}
+          cap={12}
+          getRowKey={(c) => c.id}
+          columns={[
+            { key: 'subject', header: 'Subject', className: 'font-medium text-foreground', cell: (c) => c.subject ?? '—' },
+            { key: 'type', header: 'Type', className: 'text-xs', cell: (c) => c.template_type ?? '—' },
+            { key: 'sent', header: 'Sent', className: 'text-right tabular-nums', cell: (c) => c.sent_count },
+            { key: 'opens', header: 'Opens', className: 'text-right tabular-nums', cell: (c) => c.open_count },
+            { key: 'clicks', header: 'Clicks', className: 'text-right tabular-nums', cell: (c) => c.click_count },
+            { key: 'date', header: 'Date', className: 'text-xs text-muted-foreground whitespace-nowrap', cell: (c) => c.sent_at ? new Date(c.sent_at).toLocaleDateString() : '—' },
+          ]}
+          renderCard={(c) => (
+            <Card>
+              <CardContent className="space-y-1">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="min-w-0 break-words text-sm font-medium text-foreground">{c.subject ?? '—'}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground whitespace-nowrap">{c.sent_at ? new Date(c.sent_at).toLocaleDateString() : '—'}</span>
+                </div>
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {c.template_type ?? '—'} · {c.sent_count} sent · {c.open_count} opens · {c.click_count} clicks
+                </p>
+              </CardContent>
+            </Card>
+          )}
+          empty={<>No campaigns yet. Compose an email to send.</>}
+        />
+      </ConsoleSection>
     </main>
   )
 }

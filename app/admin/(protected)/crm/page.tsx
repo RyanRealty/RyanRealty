@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import ContactsSearch from '@/components/admin/crm/ContactsSearch'
 import BulkAssignWrapper, { type BulkAssignRow } from '@/components/admin/crm/BulkAssignWrapper'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { KpiStrip } from '@/components/console/KpiStrip'
 
 export const metadata = { title: 'Contacts | Admin' }
 export const dynamic = 'force-dynamic'
@@ -118,16 +118,9 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         <Link href="/admin/crm/workflows" className="shrink-0"><Button variant="outline" size="sm" className="h-10 md:h-7">Workflows</Button></Link>
       </nav>
 
-      {/* Stat / KPI cards — their own responsive grid, not mixed into the nav row */}
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-        {stats.map((s) => (
-          <Card key={s.label}>
-            <CardContent className="px-4 py-3">
-              <div className="text-lg font-semibold tabular-nums text-foreground">{s.value}</div>
-              <div className="text-xs text-muted-foreground">{s.label}</div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Stat / KPI strip */}
+      <div className="mt-4">
+        <KpiStrip items={stats} />
       </div>
 
 

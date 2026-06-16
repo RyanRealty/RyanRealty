@@ -31,6 +31,26 @@ const ROOT = resolve(new URL('.', import.meta.url).pathname, '..')
 // import fails CI.
 const REQUIRED_KIT_PAGES = [
   'app/admin/console/leads/[id]/page.tsx',
+  // CRM cluster
+  'app/admin/(protected)/crm/inbox/page.tsx',
+  'app/admin/(protected)/crm/workflows/page.tsx',
+  'app/admin/(protected)/crm/tasks/page.tsx',
+  'app/admin/(protected)/crm/sequences/page.tsx',
+  'app/admin/(protected)/crm/approvals/page.tsx',
+  // Comms cluster
+  'app/admin/(protected)/newsletters/page.tsx',
+  'app/admin/(protected)/newsletters/[id]/page.tsx',
+  'app/admin/(protected)/newsletters/new/page.tsx',
+  'app/admin/(protected)/newsletters/subscribers/page.tsx',
+  'app/admin/(protected)/email/campaigns/page.tsx',
+  'app/admin/(protected)/email/compose/page.tsx',
+  // Ops / data cluster
+  'app/admin/(protected)/approval-queue/page.tsx',
+  'app/admin/(protected)/expired-listings/page.tsx',
+  'app/admin/(protected)/spark-status/page.tsx',
+  'app/admin/(protected)/sync/page.tsx',
+  'app/admin/(protected)/reports/page.tsx',
+  'app/admin/(protected)/audit-log/page.tsx',
 ]
 
 const KIT_IMPORT = /@\/components\/console\/ConsoleSection/

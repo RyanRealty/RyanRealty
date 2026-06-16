@@ -5,7 +5,8 @@ import { getCrmAccess } from '@/app/actions/crm'
 import { listNewsletters, newsletterSubscriberCounts, type NewsletterRow } from '@/lib/data'
 import { Button } from '@/components/ui/button'
 import { StatusPill } from '@/components/console/StatusPill'
-import DashboardSummaryStrip, { type SummaryStat } from '@/components/admin/DashboardSummaryStrip'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { KpiStrip } from '@/components/console/KpiStrip'
 import { TableWithMobileCards, type TwmcColumn } from '@/components/admin/TableWithMobileCards'
 
 export const metadata = { title: 'Newsletter | Admin' }
@@ -38,8 +39,8 @@ export default async function NewslettersPage() {
   const [letters, counts] = await Promise.all([listNewsletters(50), newsletterSubscriberCounts()])
   const sentCount = letters.filter((l) => l.status === 'sent').length
 
-  const stats: SummaryStat[] = [
-    { label: 'Active subscribers', value: counts.active.toLocaleString('en-US'), tone: 'success' },
+  const kpiItems = [
+    { label: 'Active subscribers', value: counts.active.toLocaleString('en-US') },
     { label: 'Total subscribers', value: counts.total.toLocaleString('en-US') },
     { label: 'Newsletters sent', value: sentCount.toLocaleString('en-US') },
   ]
@@ -81,46 +82,49 @@ export default async function NewslettersPage() {
       </div>
 
       <div className="mt-6">
-        <DashboardSummaryStrip stats={stats} />
+        <KpiStrip items={kpiItems} />
       </div>
 
       <div className="mt-8">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-foreground">Newsletters</h2>
-          <Link href="/admin/newsletters/subscribers" className="text-sm font-medium text-foreground hover:underline">
-            Manage subscribers →
-          </Link>
-        </div>
-        <TableWithMobileCards
-          rows={letters}
-          columns={columns}
-          getRowKey={(r) => r.id}
-          cap={20}
-          renderCard={(r) => (
-            <Link
-              href={`/admin/newsletters/${r.id}`}
-              className="block rounded-lg border border-border bg-card p-3 transition-colors hover:bg-muted/50"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{r.subject || 'Untitled'}</span>
-                {statusPill(r.status)}
-              </div>
-              <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
-                <span>{audienceLabel(r.audience)}</span>
-                {r.status !== 'draft' ? <span>{r.sent_count.toLocaleString('en-US')} of {r.recipient_count.toLocaleString('en-US')} sent</span> : null}
-                <span>{fmtDate(r.sent_at)}</span>
-              </div>
+        <ConsoleSection
+          title="Newsletters"
+          action={
+            <Link href="/admin/newsletters/subscribers" className="text-sm font-medium text-foreground hover:underline">
+              Manage subscribers →
             </Link>
-          )}
-          empty={
-            <div className="space-y-2">
-              <p>No newsletters yet.</p>
-              <Button asChild size="sm">
-                <Link href="/admin/newsletters/new">Compose your first newsletter</Link>
-              </Button>
-            </div>
           }
-        />
+        >
+          <TableWithMobileCards
+            rows={letters}
+            columns={columns}
+            getRowKey={(r) => r.id}
+            cap={20}
+            renderCard={(r) => (
+              <Link
+                href={`/admin/newsletters/${r.id}`}
+                className="block rounded-lg border border-border bg-card p-3 transition-colors hover:bg-muted/50"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{r.subject || 'Untitled'}</span>
+                  {statusPill(r.status)}
+                </div>
+                <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
+                  <span>{audienceLabel(r.audience)}</span>
+                  {r.status !== 'draft' ? <span>{r.sent_count.toLocaleString('en-US')} of {r.recipient_count.toLocaleString('en-US')} sent</span> : null}
+                  <span>{fmtDate(r.sent_at)}</span>
+                </div>
+              </Link>
+            )}
+            empty={
+              <div className="space-y-2">
+                <p>No newsletters yet.</p>
+                <Button asChild size="sm">
+                  <Link href="/admin/newsletters/new">Compose your first newsletter</Link>
+                </Button>
+              </div>
+            }
+          />
+        </ConsoleSection>
       </div>
     </main>
   )

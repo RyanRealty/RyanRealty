@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
-import { Card, CardContent } from '@/components/ui/card'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
 import NewsletterComposeForm from '../NewsletterComposeForm'
 
 export const metadata = { title: 'Compose newsletter | Admin' }
@@ -22,11 +22,9 @@ export default async function NewNewsletterPage() {
         Saves a draft. You review and send it from the draft page.
       </p>
 
-      <Card className="mt-6">
-        <CardContent>
-          <NewsletterComposeForm />
-        </CardContent>
-      </Card>
+      <ConsoleSection title="Compose" className="mt-6">
+        <NewsletterComposeForm />
+      </ConsoleSection>
     </main>
   )
 }

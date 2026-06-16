@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation'
 import { getCrmAccess, listCrmSequences, setCrmSequenceStatusAction } from '@/app/actions/crm'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
 
 export const metadata = { title: 'Sequences | CRM | Admin' }
 export const dynamic = 'force-dynamic'
@@ -44,49 +45,43 @@ export default async function CrmSequencesPage() {
         {sequences.map((s) => {
           let day = 0
           return (
-            <Card key={s.id}>
-              <CardHeader className="pb-2">
-                <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center md:justify-between">
-                  <CardTitle className="text-base">
-                    {s.name}
-                    <Badge variant={s.status === 'active' ? 'default' : 'secondary'} className="ml-2 align-middle">
-                      {s.status}
-                    </Badge>
-                  </CardTitle>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs tabular-nums text-muted-foreground md:flex-nowrap">
-                    <span className="shrink-0">{s.counts.running} running</span>
-                    <span className="shrink-0">{s.counts.paused_reply} replied</span>
-                    <span className="shrink-0">{s.counts.completed} completed</span>
-                    <form action={setStatusForm} className="ml-auto md:ml-0">
-                      <input type="hidden" name="sequenceId" value={s.id} />
-                      <input type="hidden" name="status" value={s.status === 'active' ? 'paused' : 'active'} />
-                      <Button type="submit" size="sm" variant={s.status === 'active' ? 'outline' : 'default'} className="min-h-10 md:min-h-0">
-                        {s.status === 'active' ? 'Pause' : 'Activate'}
-                      </Button>
-                    </form>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {Array.isArray(s.steps) && s.steps.length > 0 && s.steps[0]?.channel ? (
-                  <ol className="space-y-1 text-sm">
-                    {s.steps.map((st, i) => {
-                      day += st.delayDays ?? 0
-                      return (
-                        <li key={i} className="flex gap-3">
-                          <span className="w-16 shrink-0 tabular-nums text-muted-foreground">Day {day}</span>
-                          <span className="min-w-0 break-words text-foreground">{stepLabel(st)}</span>
-                        </li>
-                      )
-                    })}
-                  </ol>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Steps not yet normalized for the engine (imported from FUB raw). Normalize before activating.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+            <ConsoleSection
+              key={s.id}
+              title={s.name}
+              count={s.status === 'active' ? '(active)' : '(paused)'}
+              action={
+                <form action={setStatusForm}>
+                  <input type="hidden" name="sequenceId" value={s.id} />
+                  <input type="hidden" name="status" value={s.status === 'active' ? 'paused' : 'active'} />
+                  <Button type="submit" size="sm" variant={s.status === 'active' ? 'outline' : 'default'} className="min-h-10 md:min-h-0">
+                    {s.status === 'active' ? 'Pause' : 'Activate'}
+                  </Button>
+                </form>
+              }
+            >
+              <div className="mb-3 flex flex-wrap gap-x-3 gap-y-1 text-xs tabular-nums text-muted-foreground">
+                <span>{s.counts.running} running</span>
+                <span>{s.counts.paused_reply} replied</span>
+                <span>{s.counts.completed} completed</span>
+              </div>
+              {Array.isArray(s.steps) && s.steps.length > 0 && s.steps[0]?.channel ? (
+                <ol className="space-y-1 text-sm">
+                  {s.steps.map((st, i) => {
+                    day += st.delayDays ?? 0
+                    return (
+                      <li key={i} className="flex gap-3">
+                        <span className="w-16 shrink-0 tabular-nums text-muted-foreground">Day {day}</span>
+                        <span className="min-w-0 break-words text-foreground">{stepLabel(st)}</span>
+                      </li>
+                    )
+                  })}
+                </ol>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Steps not yet normalized for the engine (imported from FUB raw). Normalize before activating.
+                </p>
+              )}
+            </ConsoleSection>
           )
         })}
       </div>

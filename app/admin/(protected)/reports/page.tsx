@@ -4,6 +4,7 @@ import { getReportCities } from '@/app/actions/reports'
 import { generateWeeklyMarketReport } from '@/app/actions/generate-market-report'
 import GenerateReportButton from './GenerateReportButton'
 import CityReportSection from './CityReportSection'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
 
 const REPORT_TILES = [
   { href: '/admin/reports/custom', title: 'Custom report builder', desc: 'Any location, any date range — metrics, price bands, time series, pending and closed.' },
@@ -26,22 +27,16 @@ export default async function AdminReportsPage() {
         <p className="mt-1 text-sm text-muted-foreground">Market data, lead analytics, and traffic — one launchpad.</p>
       </div>
 
-      <Card>
-        <CardContent className="space-y-4 p-4 sm:p-5">
-          <div>
-            <h2 className="text-base font-semibold text-foreground">Weekly market report</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Generate the weekly report (last Sunday–Saturday). Lists homes that went pending and closed, by city, with an AI image and a shareable link. Cron can call <code className="rounded bg-muted px-1 text-xs">GET /api/cron/market-report</code> with <code className="rounded bg-muted px-1 text-xs">Authorization: Bearer CRON_SECRET</code>.
-            </p>
-          </div>
-          <GenerateReportButton generateAction={generateWeeklyMarketReport} />
-        </CardContent>
-      </Card>
+      <ConsoleSection title="Weekly market report">
+        <p className="mb-4 text-sm text-muted-foreground">
+          Generate the weekly report (last Sunday–Saturday). Lists homes that went pending and closed, by city, with an AI image and a shareable link. Cron can call <code className="rounded bg-muted px-1 text-xs">GET /api/cron/market-report</code> with <code className="rounded bg-muted px-1 text-xs">Authorization: Bearer CRON_SECRET</code>.
+        </p>
+        <GenerateReportButton generateAction={generateWeeklyMarketReport} />
+      </ConsoleSection>
 
       <CityReportSection cities={cities} />
 
-      <section className="space-y-4">
-        <h2 className="text-base font-semibold text-foreground">All reports</h2>
+      <ConsoleSection title="All reports">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {REPORT_TILES.map((t) => (
             <Link key={t.href} href={t.href} className="group block">
@@ -57,7 +52,7 @@ export default async function AdminReportsPage() {
             </Link>
           ))}
         </div>
-      </section>
+      </ConsoleSection>
 
       <p className="text-sm text-muted-foreground">
         <Link href="/admin/sync" className="underline hover:no-underline">Back to Sync</Link>
