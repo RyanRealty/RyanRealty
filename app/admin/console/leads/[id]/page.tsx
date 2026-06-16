@@ -1,5 +1,6 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
+import { Zap } from 'lucide-react'
 import { notFound, redirect } from 'next/navigation'
 import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import {
@@ -21,7 +22,7 @@ import {
   sendCrmSmsAction,
   updateCrmStageAction,
 } from '@/app/actions/crm'
-import { autoEnrollPerson } from '@/lib/crm/enroll'
+import { manualEnrollPerson, listActiveSequences } from '@/lib/crm/enroll'
 import { getNewsletterMembershipForLead } from '@/lib/data'
 import { adminAssignCrmPersonAction, adminAssignSavedSearchAction, adminUpdateSavedSearchAction, adminDeleteSavedSearchAction } from '@/app/actions/newsletter'
 import { timelineEmailBody } from '@/lib/crm/email-body'
@@ -106,10 +107,12 @@ async function skipNextForm(formData: FormData): Promise<void> {
   const r = await skipNextStepAction(Number(formData.get('enrollmentId')))
   if (!r.ok) console.error('[console] skipNext:', r.error)
 }
-async function autoEnrollForm(formData: FormData): Promise<void> {
+async function manualEnrollForm(formData: FormData): Promise<void> {
   'use server'
   const personId = Number(formData.get('personId'))
-  const r = await autoEnrollPerson(personId)
+  const sequenceId = Number(formData.get('sequenceId'))
+  if (!sequenceId) redirect(`${BASE}/${personId}?flash=${encodeURIComponent('Pick a workflow first')}`)
+  const r = await manualEnrollPerson(personId, sequenceId)
   const msg = r.enrolled ? `Enrolled in ${r.sequence}` : `Not enrolled — ${r.reason}`
   redirect(`${BASE}/${personId}?flash=${encodeURIComponent(msg)}`)
 }
@@ -214,9 +217,9 @@ const KIND_ICON: Record<string, string> = {
 
 function Kpi({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="rounded-lg border border-border bg-card px-3 py-2.5">
-      <div className="text-lg font-semibold tabular-nums text-foreground">{value}</div>
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+    <div className="rounded-lg bg-secondary px-3 py-2.5">
+      <div className="text-xl font-semibold tabular-nums text-foreground">{value}</div>
+      <div className="mt-0.5 text-xs text-muted-foreground">{label}</div>
     </div>
   )
 }
@@ -261,10 +264,11 @@ export default async function ConsoleLeadPage({
   const personEmails = (person.emails ?? []).map((e) => e.value).filter((v): v is string => Boolean(v))
 
   // What they're shopping for — saved searches + the homes they're watching (live MLS) + newsletter status.
-  const [savedSearches, viewedListings, membership] = await Promise.all([
+  const [savedSearches, viewedListings, membership, activeSequences] = await Promise.all([
     getGuestSearchAlertsForLead({ fubPersonId: person.fub_legacy_id, emails: personEmails }),
     getViewedListingsForLead(person.fub_legacy_id),
     getNewsletterMembershipForLead({ crmPersonId: person.id, emails: personEmails }),
+    listActiveSequences(),
   ])
 
   // Owned home.
@@ -342,10 +346,7 @@ export default async function ConsoleLeadPage({
                   <StagePill stage={person.stage} />
                   {isLiveNow ? <StatusPill tone="success" label="On site now" pulse /> : null}
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  From <span className="font-medium text-foreground">{person.source ?? 'unknown source'}</span> · created {fmtDateTime(person.fub_created_at)}
-                </p>
-                {person.assigned_broker ? <p className="mt-0.5 text-xs text-muted-foreground">Owner: {CRM_BROKER_DISPLAY[person.assigned_broker as keyof typeof CRM_BROKER_DISPLAY] ?? person.assigned_broker}</p> : null}
+                {person.assigned_broker ? <p className="mt-1 text-xs text-muted-foreground">Owner: {CRM_BROKER_DISPLAY[person.assigned_broker as keyof typeof CRM_BROKER_DISPLAY] ?? person.assigned_broker}</p> : null}
               </div>
             </div>
             <div className="flex shrink-0 flex-wrap gap-2">
@@ -382,82 +383,83 @@ export default async function ConsoleLeadPage({
               </a>
             ))}
           </div>
-        </CardContent>
-      </Card>
 
-      {/* ── Memberships: where this lead is plugged in, with one-click assign ── */}
-      <Card>
-        <CardContent className="p-4 sm:p-5">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Memberships</div>
-          <div className="mt-2.5 flex flex-wrap items-center gap-2.5">
-            {/* Newsletter */}
-            {membership.subscribed ? (
-              <StatusPill tone="success" label={`Newsletter${membership.segment ? ` · ${membership.segment}` : ''}`} />
-            ) : (
-              <form action={assignNewsletterForm} className="inline-flex">
-                <input type="hidden" name="personId" value={person.id} />
-                <button
-                  type="submit"
-                  disabled={!primaryEmail}
-                  title={primaryEmail ? undefined : 'No email on file'}
-                  className="inline-flex min-h-[32px] items-center gap-1 rounded-full border border-dashed border-border px-3 text-xs font-medium text-muted-foreground hover:border-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  + Add to newsletter
-                </button>
-              </form>
-            )}
-
-            {/* Workflow */}
-            {activeEnrollments.length > 0 ? (
-              <StatusPill tone="info" label={`In ${activeEnrollments[0].crm_sequences?.name ?? 'a workflow'}`} />
-            ) : (
-              <form action={autoEnrollForm} className="inline-flex">
-                <input type="hidden" name="personId" value={person.id} />
-                <button
-                  type="submit"
-                  className="inline-flex min-h-[32px] items-center gap-1 rounded-full border border-dashed border-border px-3 text-xs font-medium text-muted-foreground hover:border-foreground hover:text-foreground"
-                >
-                  + Enroll in workflow
-                </button>
-              </form>
-            )}
-
-            {/* Saved searches */}
-            <a
-              href="#saved-searches"
-              className="inline-flex min-h-[32px] items-center rounded-full border border-border bg-secondary px-3 text-xs font-medium text-secondary-foreground hover:border-foreground"
-            >
-              {savedSearches.length > 0 ? `${savedSearches.length} saved search${savedSearches.length === 1 ? '' : 'es'}` : 'No saved searches'}
-            </a>
+          {/* Plugged in — newsletter / workflow / saved searches, folded into the identity panel */}
+          <div className="mt-4 border-t border-border pt-3">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Plugged in</div>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {membership.subscribed ? (
+                <StatusPill tone="success" label={`Newsletter${membership.segment ? ` · ${membership.segment}` : ''}`} />
+              ) : (
+                <form action={assignNewsletterForm} className="inline-flex">
+                  <input type="hidden" name="personId" value={person.id} />
+                  <button type="submit" disabled={!primaryEmail} title={primaryEmail ? undefined : 'No email on file'} className="inline-flex min-h-8 items-center gap-1 rounded-full border border-dashed border-border px-3 text-xs font-medium text-muted-foreground hover:border-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50">
+                    + Newsletter
+                  </button>
+                </form>
+              )}
+              {activeEnrollments.length > 0 ? (
+                <StatusPill tone="info" label={`In ${activeEnrollments[0].crm_sequences?.name ?? 'a workflow'}`} />
+              ) : (
+                <span className="inline-flex min-h-8 items-center rounded-full bg-secondary px-3 text-xs font-medium text-muted-foreground">No workflow</span>
+              )}
+              <a href="#saved-searches" className="inline-flex min-h-8 items-center rounded-full border border-border bg-secondary px-3 text-xs font-medium text-secondary-foreground hover:border-foreground">
+                {savedSearches.length > 0 ? `${savedSearches.length} saved search${savedSearches.length === 1 ? '' : 'es'}` : 'No saved searches'}
+              </a>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* ── The single most important thing: next step ── */}
-      {rec ? (
-        <Card style={{ borderLeft: '3px solid var(--console-info)' }}>
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary-foreground" style={{ backgroundColor: 'var(--console-info)' }}>Next step</span>
-              <span className="text-sm font-semibold text-foreground">
-                {rec.channel === 'sms' ? 'Send text' : rec.channel === 'email' ? 'Send email' : rec.channel === 'task' ? 'Do this' : 'Next'} · {rec.sequenceName}
-              </span>
-            </div>
-            {rec.subjectPreview ? <div className="mt-3 break-words text-sm font-medium text-foreground">{rec.subjectPreview}</div> : null}
-            <div className="mt-1 whitespace-pre-wrap break-words rounded-lg border border-border bg-muted/40 p-3 text-sm text-foreground [overflow-wrap:anywhere]">{rec.bodyPreview}</div>
-            {rec.unresolved.length ? <div className="mt-2 text-xs font-medium text-destructive">Unresolved fields: {rec.unresolved.join(', ')}</div> : null}
-            {rec.holdReason ? <div className="mt-2 text-xs text-muted-foreground">{rec.holdReason}</div> : null}
-            <div className="mt-3 flex flex-wrap gap-2">
-              <form action={confirmNextForm}><input type="hidden" name="enrollmentId" value={rec.enrollmentId} /><Button type="submit" size="sm" disabled={!!rec.holdReason || rec.unresolved.length > 0} className="min-h-[40px]">Confirm &amp; send</Button></form>
-              <form action={skipNextForm}><input type="hidden" name="enrollmentId" value={rec.enrollmentId} /><Button type="submit" size="sm" variant="outline" className="min-h-[40px]">Skip</Button></form>
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
+      {/* ── Next best action (the mockup hero) — always present ── */}
+      <Card style={{ backgroundColor: 'var(--console-info-soft)', borderColor: 'var(--console-info)' }}>
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4" style={{ color: 'var(--console-info-strong)' }} />
+            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--console-info-strong)' }}>Next best action</span>
+          </div>
 
-      {/* ── At a glance ── */}
+          {rec ? (
+            <>
+              <div className="mt-2 text-[15px] font-semibold text-foreground">
+                {rec.channel === 'sms' ? 'Send a text' : rec.channel === 'email' ? 'Send an email' : rec.channel === 'task' ? 'Do this' : 'Next step'} · {rec.sequenceName}
+              </div>
+              {rec.subjectPreview ? <div className="mt-2 break-words text-sm font-medium text-foreground">{rec.subjectPreview}</div> : null}
+              <div className="mt-1.5 whitespace-pre-wrap break-words rounded-lg border border-border bg-card p-3 text-sm text-muted-foreground [overflow-wrap:anywhere]">{rec.bodyPreview}</div>
+              {rec.unresolved.length ? <div className="mt-2 text-xs font-medium text-destructive">Unresolved fields: {rec.unresolved.join(', ')}</div> : null}
+              {rec.holdReason ? <div className="mt-2 text-xs text-muted-foreground">{rec.holdReason}</div> : null}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <form action={confirmNextForm}><input type="hidden" name="enrollmentId" value={rec.enrollmentId} /><Button type="submit" size="sm" disabled={!!rec.holdReason || rec.unresolved.length > 0} className="min-h-10">Confirm &amp; send</Button></form>
+                <form action={skipNextForm}><input type="hidden" name="enrollmentId" value={rec.enrollmentId} /><Button type="submit" size="sm" variant="outline" className="min-h-10">Skip</Button></form>
+              </div>
+            </>
+          ) : activeEnrollments.length > 0 ? (
+            <>
+              <div className="mt-2 text-[15px] font-semibold text-foreground">In {activeEnrollments[0].crm_sequences?.name ?? 'a workflow'} — next touch is scheduled</div>
+              <div className="mt-1 text-sm text-muted-foreground">The engine sends the next step automatically. Nothing to confirm right now.</div>
+            </>
+          ) : (
+            <>
+              <div className="mt-2 text-[15px] font-semibold text-foreground">Put {person.first_name ?? 'this lead'} into a workflow</div>
+              <div className="mt-1 text-sm text-muted-foreground">Pick a workflow and the first touch sends automatically.</div>
+              {activeSequences.length > 0 ? (
+                <form action={manualEnrollForm} className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <input type="hidden" name="personId" value={person.id} />
+                  <Select name="sequenceId">
+                    <SelectTrigger className="h-10 flex-1 bg-card"><SelectValue placeholder="Choose a workflow…" /></SelectTrigger>
+                    <SelectContent>{activeSequences.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Button type="submit" size="sm" className="min-h-10 shrink-0">Enroll</Button>
+                </form>
+              ) : <div className="mt-2 text-xs text-muted-foreground">No active workflows configured.</div>}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── KPI strip (tight cells, per the picked mockup) ── */}
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-        <Kpi label="Homes watched" value={viewedListings.length} />
+        <Kpi label="Homes viewed" value={viewedListings.length} />
         <Kpi label="Saved searches" value={savedSearches.length} />
         <Kpi label="Web sessions" value={full.visitorSessions} />
         <Kpi label="Open tasks" value={openTasks.length} />
@@ -667,26 +669,6 @@ export default async function ConsoleLeadPage({
             </CardContent>
           </Card>
 
-          {/* Workflow */}
-          <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-base">Workflow</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              {activeEnrollments.length > 0 ? activeEnrollments.map((e) => (
-                <div key={e.id} className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
-                  <span className="min-w-0 truncate text-sm font-medium text-foreground">{e.crm_sequences?.name ?? 'Sequence'}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">{e.status} · step {e.step_index}</span>
-                </div>
-              )) : (
-                <p className="text-sm text-muted-foreground">Not in a workflow. Tags drive enrollment (audience:buyer, audience:seller, intent:expired-listing, intent:fsbo).</p>
-              )}
-              {activeEnrollments.length === 0 ? (
-                <form action={autoEnrollForm}>
-                  <input type="hidden" name="personId" value={person.id} />
-                  <Button type="submit" size="sm" variant="outline" className="min-h-[40px] sm:min-h-0">Enroll in the matching workflow</Button>
-                </form>
-              ) : null}
-            </CardContent>
-          </Card>
 
           {/* Home they own */}
           {homeAddress && homeMedia ? (

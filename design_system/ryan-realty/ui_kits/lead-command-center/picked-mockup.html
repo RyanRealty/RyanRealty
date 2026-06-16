@@ -1,0 +1,90 @@
+<h2 class="sr-only">Concept mockup of a broker Lead Command Center: a sticky identity band with status and quick actions, a next-best-action card, a KPI strip, an activity timeline, a "what they're watching" panel with saved searches, and a message preview.</h2>
+
+<div style="background: var(--color-background-tertiary); border-radius: var(--border-radius-lg); padding: 14px;">
+
+  <div style="background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 14px 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
+    <div style="display: flex; gap: 12px; min-width: 0;">
+      <div style="width: 46px; height: 46px; border-radius: 50%; background: var(--color-background-info); display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 15px; color: var(--color-text-info); flex-shrink: 0;">JA</div>
+      <div style="min-width: 0;">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span style="font-size: 17px; font-weight: 500;">Jordan Avery</span>
+          <span style="display: inline-flex; align-items: center; gap: 4px; background: var(--color-background-danger); color: var(--color-text-danger); font-size: 12px; padding: 2px 8px; border-radius: 999px;"><i class="ti ti-flame" style="font-size:13px" aria-hidden="true"></i>Hot</span>
+          <span style="display: inline-flex; align-items: center; gap: 4px; background: var(--color-background-success); color: var(--color-text-success); font-size: 12px; padding: 2px 8px; border-radius: 999px;"><span style="width:6px;height:6px;border-radius:50%;background:var(--color-text-success)"></span>On site now</span>
+        </div>
+        <div style="font-size: 13px; color: var(--color-text-secondary); margin-top: 3px;">Buyer · from <span style="color: var(--color-text-primary);">Listing inquiry · Tetherow</span> · owner Rebecca</div>
+      </div>
+    </div>
+    <div style="display: flex; gap: 6px; flex-shrink: 0;">
+      <button style="display:inline-flex;align-items:center;gap:5px;font-size:13px;"><i class="ti ti-phone" style="font-size:15px" aria-hidden="true"></i>Call</button>
+      <button style="display:inline-flex;align-items:center;gap:5px;font-size:13px;"><i class="ti ti-message" style="font-size:15px" aria-hidden="true"></i>Text</button>
+      <button style="display:inline-flex;align-items:center;gap:5px;font-size:13px;"><i class="ti ti-mail" style="font-size:15px" aria-hidden="true"></i>Email</button>
+    </div>
+  </div>
+
+  <div style="background: var(--color-background-info); border: 0.5px solid var(--color-border-info); border-radius: var(--border-radius-lg); padding: 12px 16px; margin-top: 12px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <i class="ti ti-bolt" style="font-size:16px;color:var(--color-text-info)" aria-hidden="true"></i>
+      <span style="font-size:12px;font-weight:500;color:var(--color-text-info);letter-spacing:0.04em;text-transform:uppercase;">Next best action</span>
+    </div>
+    <div style="font-size:15px;font-weight:500;margin-top:6px;">Text Jordan back — saved 3 Tetherow homes today</div>
+    <div style="font-size:13px;color:var(--color-text-secondary);background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:8px 10px;margin-top:8px;">"Hi Jordan, saw you're loving Tetherow. Want me to set up private tours for the three you saved this weekend?"</div>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button style="font-size:13px;background:var(--color-text-info);color:var(--color-background-primary);border-color:transparent;display:inline-flex;align-items:center;gap:5px;"><i class="ti ti-send" style="font-size:14px" aria-hidden="true"></i>Confirm &amp; send</button>
+      <button style="font-size:13px;">Skip</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px;">
+    <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px;"><div style="font-size:20px;font-weight:500;">14</div><div style="font-size:12px;color:var(--color-text-secondary);">Homes viewed</div></div>
+    <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px;"><div style="font-size:20px;font-weight:500;">3</div><div style="font-size:12px;color:var(--color-text-secondary);">Saved searches</div></div>
+    <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px;"><div style="font-size:20px;font-weight:500;">7</div><div style="font-size:12px;color:var(--color-text-secondary);">Web sessions</div></div>
+    <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px;"><div style="font-size:20px;font-weight:500;">2</div><div style="font-size:12px;color:var(--color-text-secondary);">Open tasks</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:12px;margin-top:12px;">
+
+    <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px 14px;">
+      <div style="font-size:14px;font-weight:500;margin-bottom:10px;">Activity</div>
+      <div style="display:flex;flex-direction:column;gap:11px;">
+        <div style="display:flex;gap:9px;"><i class="ti ti-heart" style="font-size:15px;color:var(--color-text-secondary);margin-top:1px" aria-hidden="true"></i><div><div style="font-size:13px;">Saved <span style="font-weight:500;">61480 Tetherow Dr</span></div><div style="font-size:12px;color:var(--color-text-tertiary);">12m ago</div></div></div>
+        <div style="display:flex;gap:9px;"><i class="ti ti-eye" style="font-size:15px;color:var(--color-text-secondary);margin-top:1px" aria-hidden="true"></i><div><div style="font-size:13px;">Viewed 4 homes in Tetherow</div><div style="font-size:12px;color:var(--color-text-tertiary);">28m ago</div></div></div>
+        <div style="display:flex;gap:9px;"><i class="ti ti-mail-opened" style="font-size:15px;color:var(--color-text-secondary);margin-top:1px" aria-hidden="true"></i><div><div style="font-size:13px;">Opened "New in Tetherow" · 3 clicks</div><div style="font-size:12px;color:var(--color-text-tertiary);">Yesterday</div></div></div>
+        <div style="display:flex;gap:9px;"><i class="ti ti-phone" style="font-size:15px;color:var(--color-text-secondary);margin-top:1px" aria-hidden="true"></i><div><div style="font-size:13px;">Call · 4 min · left voicemail</div><div style="font-size:12px;color:var(--color-text-tertiary);">Tue</div></div></div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px 14px;">
+        <div style="font-size:14px;font-weight:500;margin-bottom:10px;">Watching</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:7px 9px;">
+            <div style="min-width:0;"><div style="font-size:13px;font-weight:500;">61480 Tetherow Dr</div><div style="font-size:12px;color:var(--color-text-secondary);">$1,295,000</div></div>
+            <span style="font-size:11px;background:var(--color-background-success);color:var(--color-text-success);padding:2px 7px;border-radius:999px;flex-shrink:0;">Active</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:7px 9px;">
+            <div style="min-width:0;"><div style="font-size:13px;font-weight:500;">19420 Mt Bachelor Dr</div><div style="font-size:12px;color:var(--color-text-secondary);">$985,000</div></div>
+            <span style="font-size:11px;background:var(--color-background-warning);color:var(--color-text-warning);padding:2px 7px;border-radius:999px;flex-shrink:0;">Pending</span>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px 14px;">
+        <div style="font-size:14px;font-weight:500;margin-bottom:10px;">Saved searches</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><span style="font-size:13px;color:var(--color-text-info);">Tetherow · $900k–1.3M · 3+ bd</span><span style="font-size:11px;color:var(--color-text-tertiary);">Daily</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><span style="font-size:13px;color:var(--color-text-info);">Bend · under $1M · 4+ bd</span><span style="font-size:11px;color:var(--color-text-tertiary);">Weekly</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px 14px;margin-top:12px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
+      <span style="font-size:14px;font-weight:500;">Send a message</span>
+      <select style="width:auto;height:30px;font-size:12px;"><option>Tour invite template</option><option>Just listed template</option></select>
+    </div>
+    <div style="font-size:11px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:0.04em;">Preview · exactly what sends</div>
+    <div style="font-size:13px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:9px 11px;margin-top:6px;line-height:1.6;">Hi Jordan — three Tetherow homes just hit your saved search. Want me to line up private tours this weekend? — Rebecca, Ryan Realty</div>
+    <div style="display:flex;justify-content:flex-end;margin-top:10px;"><button style="font-size:13px;background:var(--color-text-primary);color:var(--color-background-primary);border-color:transparent;display:inline-flex;align-items:center;gap:5px;"><i class="ti ti-send" style="font-size:14px" aria-hidden="true"></i>Send</button></div>
+  </div>
+
+</div>

@@ -96,6 +96,73 @@ export async function autoEnrollPerson(personId: number): Promise<AutoEnrollResu
   return { enrolled: true, sequence: seq.name }
 }
 
+/**
+ * Broker-driven enrollment: the broker explicitly picks a workflow from the
+ * lead page. Unlike the auto-rule path this does NOT require a matching tag or
+ * a post-epoch contact — the broker is deliberately choosing. Still fail-closed
+ * on hard-stop, and never double-enrolls a still-live sequence.
+ */
+export async function manualEnrollPerson(personId: number, sequenceId: number, enrolledBy = 'broker'): Promise<AutoEnrollResult> {
+  const sb = createServiceClient()
+  if (!Number.isFinite(personId) || personId <= 0 || !Number.isFinite(sequenceId) || sequenceId <= 0) {
+    return { enrolled: false, reason: 'invalid input' }
+  }
+
+  const { data: seq } = await sb
+    .from('crm_sequences')
+    .select('id,name,status')
+    .eq('id', sequenceId)
+    .maybeSingle()
+  if (!seq) return { enrolled: false, reason: 'workflow not found' }
+  if (seq.status !== 'active') return { enrolled: false, reason: 'that workflow is not active' }
+
+  const { data: hardStop } = await sb
+    .from('crm_suppressions')
+    .select('id')
+    .eq('person_id', personId)
+    .eq('channel', 'all')
+    .limit(1)
+  if (hardStop?.length) return { enrolled: false, reason: 'contact is hard-stopped' }
+
+  // Never double-enroll into the SAME sequence while it is still live.
+  const { data: existing } = await sb
+    .from('crm_sequence_enrollments')
+    .select('id')
+    .eq('person_id', personId)
+    .eq('sequence_id', sequenceId)
+    .in('status', ['running', 'paused', 'awaiting_broker_next'])
+    .limit(1)
+  if (existing?.length) return { enrolled: false, reason: `already in ${seq.name}` }
+
+  const { error } = await sb.from('crm_sequence_enrollments').insert({
+    person_id: personId,
+    sequence_id: sequenceId,
+    status: 'running',
+    next_run_at: new Date().toISOString(),
+    enrolled_by: enrolledBy,
+  })
+  if (error) return { enrolled: false, reason: error.message }
+
+  await sb.from('crm_timeline').insert({
+    person_id: personId,
+    kind: 'system',
+    title: `Enrolled in "${seq.name}" by ${enrolledBy}`,
+    source: 'manual-enroll',
+  })
+  return { enrolled: true, sequence: seq.name }
+}
+
+/** Active workflows a broker can hand-pick from the lead page. */
+export async function listActiveSequences(): Promise<Array<{ id: number; name: string }>> {
+  const sb = createServiceClient()
+  const { data } = await sb
+    .from('crm_sequences')
+    .select('id,name')
+    .eq('status', 'active')
+    .order('name')
+  return (data ?? []).map((s) => ({ id: s.id as number, name: s.name as string }))
+}
+
 /** Render the prepared first touch of a sequence for a person (for the broker
  *  approval ask). Returns null when step 0 is not a message step. */
 export async function renderFirstTouchPreview(
