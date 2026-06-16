@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { ChevronRight, CheckCircle2 } from 'lucide-react'
 import { getBrokerCommandCenterData } from '@/app/actions/broker-command-center'
 import { getBrokerActionQueue, confirmNextStepAction, completeCrmTaskAction } from '@/app/actions/crm'
+import { fetchLiveSummary, fetchLiveVisitors } from '../visitors/_lib/queries'
 import { ActionSubmitButton } from '@/components/admin/ActionSubmitButton'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -38,6 +39,21 @@ function greet(): string {
   if (h < 12) return 'Good morning'
   if (h < 17) return 'Good afternoon'
   return 'Good evening'
+}
+
+/** Strip FUB import noise from a task name: bracketed listing keys
+ *  [20230223...] and trailing legal-entity tails (· GROVE NWX PHASE 2 LLC). */
+function cleanTaskName(raw: string): string {
+  return raw
+    .replace(/\s*\[[0-9]{10,}\]/g, '')
+    .replace(/\s*·\s*[A-Z0-9 ]+\b(LLC|INC|TRUST|LP|LLP)\b.*$/i, '')
+    .trim()
+}
+
+/** Title-cases a region/city pair into a readable place ("Bend, OR"). */
+function placeLabel(city: string | null, region: string | null): string {
+  const parts = [city, region].filter(Boolean)
+  return parts.length ? parts.join(', ') : 'Unknown'
 }
 
 /** Stage chips use semantic brand tokens only (navy primary + success/warning). */
@@ -95,6 +111,19 @@ function StatPill({ label, value, href, urgent }: { label: string; value: number
   )
 }
 
+/** Live-pulse tile: big number, quiet label, optional success accent when the
+ *  metric is "live" (people on site / hot right now). Part of the hero. */
+function LiveTile({ label, value, href, accent }: { label: string; value: number; href: string; accent?: boolean }) {
+  return (
+    <Link href={href} className="flex flex-col gap-0.5 px-4 py-3.5 transition-colors hover:bg-muted/40">
+      <span className={cn('text-2xl font-bold leading-none tabular-nums', accent ? 'text-success' : 'text-foreground')}>
+        {value}
+      </span>
+      <span className="truncate text-xs text-muted-foreground">{label}</span>
+    </Link>
+  )
+}
+
 const CHANNEL_CHIP: Record<string, { label: string; cls: string }> = {
   email: { label: 'Email', cls: 'border-primary/20 bg-primary/10 text-primary' },
   sms: { label: 'Text', cls: 'border-success/30 bg-success/10 text-success' },
@@ -132,9 +161,11 @@ export default async function BrokerCommandCenterPage({
 }: {
   searchParams: Promise<{ tab?: string }>
 }) {
-  const [data, actionQueue] = await Promise.all([
+  const [data, actionQueue, liveSummary, liveSessions] = await Promise.all([
     getBrokerCommandCenterData(),
     getBrokerActionQueue(),
+    fetchLiveSummary().catch(() => null),
+    fetchLiveVisitors({}).catch(() => [] as Awaited<ReturnType<typeof fetchLiveVisitors>>),
   ])
   const { tab: activeTab } = await searchParams
 
@@ -201,6 +232,15 @@ export default async function BrokerCommandCenterPage({
   const heroActions = actionQueue.slice(0, 5)
   const heroOverdue = overdueTasks.slice(0, Math.max(0, 5 - actionQueue.length))
 
+  // Live pulse: the warmest sessions on the site right now — what a broker most
+  // wants to see the second they open the page. Rank by engagement, surface the
+  // top few that are either live (active) or scored hot.
+  const liveActive = liveSummary?.totalActive ?? 0
+  const hottestLive = [...(liveSessions ?? [])]
+    .filter((s) => s.engagement_score > 0)
+    .sort((a, b) => b.engagement_score - a.engagement_score)
+    .slice(0, 3)
+
   return (
     <div className="mx-auto max-w-5xl space-y-8">
 
@@ -223,6 +263,57 @@ export default async function BrokerCommandCenterPage({
           </Button>
         </div>
       </header>
+
+      {/* ── 0. RIGHT NOW: live pulse — who is on the site this moment ── */}
+      <section>
+        <div className="mb-2 flex items-center justify-between gap-2 px-1">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              {liveActive > 0 ? (
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+              ) : null}
+              <span className={cn('relative inline-flex h-2 w-2 rounded-full', liveActive > 0 ? 'bg-success' : 'bg-muted-foreground/40')} />
+            </span>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Right now</h2>
+          </div>
+          <Link href="/admin/visitors/live" className="shrink-0 text-xs font-medium text-primary hover:underline">
+            Live activity →
+          </Link>
+        </div>
+        <GroupCard>
+          <div className="grid grid-cols-2 divide-x divide-y divide-border sm:grid-cols-4 sm:divide-y-0">
+            <LiveTile label="On site now" value={liveActive} accent={liveActive > 0} href="/admin/visitors/live" />
+            <LiveTile label="Hot today" value={liveSummary?.hotLeadsToday ?? 0} accent={(liveSummary?.hotLeadsToday ?? 0) > 0} href="/admin/visitors/live" />
+            <LiveTile label="Identified today" value={liveSummary?.identifiedToday ?? 0} href="/admin/visitors/live" />
+            <LiveTile label="Sessions today" value={liveSummary?.totalToday ?? 0} href="/admin/visitors/live" />
+          </div>
+          {hottestLive.length > 0 ? (
+            <div className="divide-y divide-border border-t border-border">
+              {hottestLive.map((s) => {
+                const who = s.identified_email ?? `Anonymous · ${placeLabel(s.ip_city, s.ip_region)}`
+                const intent = s.intent_tags?.[0] ?? null
+                const href = s.fub_person_id ? `/admin/crm/${s.fub_person_id}` : '/admin/visitors/live'
+                const hot = Boolean(s.hot_lead_fired_at) || s.engagement_score >= 100
+                return (
+                  <Link key={s.session_id} href={href} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/40">
+                    <span
+                      className={cn(
+                        'shrink-0 rounded-md px-2 py-0.5 text-xs font-bold tabular-nums',
+                        hot ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground',
+                      )}
+                    >
+                      {s.engagement_score}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{who}</span>
+                    {intent ? <span className="shrink-0 text-xs text-muted-foreground">{intent}</span> : null}
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </Link>
+                )
+              })}
+            </div>
+          ) : null}
+        </GroupCard>
+      </section>
 
       {/* ── 1. FOCUS: what needs the broker to act now (the anchor) ── */}
       <section>
@@ -291,7 +382,7 @@ export default async function BrokerCommandCenterPage({
                     className="-my-2.5 min-w-0 flex-1 py-2.5 transition-opacity hover:opacity-70"
                   >
                     <span className="block truncate text-sm font-semibold text-foreground">
-                      {t.name}{t.personName ? ` · ${t.personName}` : ''}
+                      {cleanTaskName(t.name)}{t.personName ? ` · ${t.personName}` : ''}
                     </span>
                     <span className="block truncate text-xs text-muted-foreground">
                       {t.dueAt ? `Due ${fmtDate(t.dueAt)}` : 'No due date'}{t.type ? ` · ${t.type}` : ''}
