@@ -15,6 +15,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { ChevronRight, Eye } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export type WebsiteRow = { key: string; score: number; who: string; intent: string | null; href: string; hot: boolean }
@@ -55,22 +56,21 @@ export default function DashboardActivityFeed({
   return (
     <div className="border-t border-border">
       {/* Segment chips */}
-      <div className="flex gap-1 overflow-x-auto px-3 py-2.5" role="tablist" aria-label="Activity">
+      <div className="no-scrollbar flex gap-1 overflow-x-auto px-3 py-2.5" role="tablist" aria-label="Activity">
         {tabs.map((t) => (
-          <button
+          <Button
             key={t.key}
             type="button"
             role="tab"
             aria-selected={seg === t.key}
+            variant={seg === t.key ? 'default' : 'secondary'}
+            size="sm"
             onClick={() => setSeg(t.key)}
-            className={cn(
-              'flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
-              seg === t.key ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground',
-            )}
+            className="shrink-0 gap-1.5 whitespace-nowrap rounded-full"
           >
             {t.label}
             <span className={cn('tabular-nums', seg === t.key ? 'text-primary-foreground/80' : 'text-muted-foreground/70')}>{t.count}</span>
-          </button>
+          </Button>
         ))}
       </div>
 
