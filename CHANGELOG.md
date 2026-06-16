@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.571.2 (2026-06-16)
+
+### Bug Fixes
+- fix(crm-mobile): DashboardActivityFeed uses <Button> chips + no-scrollbar (design-token gate)
+
+---
+
+
 ## v1.571.1 (2026-06-16)
 
 ### Bug Fixes
