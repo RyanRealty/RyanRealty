@@ -1,6 +1,7 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
 import { listCrmPeople, getCrmAccess, type CrmPersonRow } from '@/app/actions/crm'
+import { fetchLiveVisitors } from '../../(protected)/visitors/_lib/queries'
 import { CRM_STAGES } from '@/lib/crm/constants'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -8,6 +9,9 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { StagePill } from '@/components/console/StatusPill'
 import { cn } from '@/lib/utils'
+
+/** Live engagement for one lead, resolved from active visitor sessions. */
+type LeadPulse = { score: number; intent: string | null; hot: boolean }
 
 export const metadata = { title: 'Leads · Console' }
 export const dynamic = 'force-dynamic'
@@ -30,6 +34,25 @@ function primaryEmail(p: CrmPersonRow): string | null {
   return p.emails?.find((e) => e.isPrimary)?.value ?? p.emails?.[0]?.value ?? null
 }
 
+/** Live-engagement chip: a hot lead glows; a warm one shows its score; everyone
+ *  else falls back to the quiet "last activity" timestamp. */
+function ActivityCell({ pulse, lastActivity }: { pulse: LeadPulse | null; lastActivity: string }) {
+  if (!pulse) return <span className="tabular-nums text-muted-foreground">{lastActivity}</span>
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span
+        className={cn(
+          'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums',
+          pulse.hot ? 'bg-destructive/10 text-destructive' : 'bg-accent text-accent-foreground',
+        )}
+      >
+        {pulse.hot ? 'Hot' : 'Active'} · {pulse.score}
+      </span>
+      {pulse.intent ? <span className="hidden text-xs text-muted-foreground lg:inline">{pulse.intent}</span> : null}
+    </span>
+  )
+}
+
 export default async function ConsoleLeadsPage({
   searchParams,
 }: {
@@ -46,6 +69,24 @@ export default async function ConsoleLeadsPage({
   })
   const people = result.rows
   const totalPages = Math.max(1, Math.ceil(result.total / result.pageSize))
+
+  // Live engagement: join active visitor sessions to the leads on this page by
+  // fub_person_id (which holds crm_people.fub_legacy_id, NOT crm_people.id), so
+  // a broker sees who is hot right now instead of a uniform "Last activity".
+  const liveSessions = await fetchLiveVisitors({}).catch(() => [])
+  const pulseByFubId = new Map<number, LeadPulse>()
+  for (const s of liveSessions) {
+    if (!s.fub_person_id) continue
+    const prev = pulseByFubId.get(s.fub_person_id)
+    if (prev && prev.score >= s.engagement_score) continue
+    pulseByFubId.set(s.fub_person_id, {
+      score: s.engagement_score,
+      intent: s.intent_tags?.[0] ?? null,
+      hot: Boolean(s.hot_lead_fired_at) || s.engagement_score >= 100,
+    })
+  }
+  const pulseFor = (p: CrmPersonRow): LeadPulse | null =>
+    p.fub_legacy_id != null ? pulseByFubId.get(p.fub_legacy_id) ?? null : null
 
   const qs = (over: Record<string, string | number | undefined>) => {
     const next = new URLSearchParams()
@@ -110,7 +151,7 @@ export default async function ConsoleLeadsPage({
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1">
                       <StagePill stage={p.stage} />
-                      <span className="text-[11px] tabular-nums text-muted-foreground">{fmtAgo(p.last_activity_at)}</span>
+                      <span className="text-[11px]"><ActivityCell pulse={pulseFor(p)} lastActivity={fmtAgo(p.last_activity_at)} /></span>
                     </div>
                   </CardContent>
                 </Card>
@@ -140,7 +181,7 @@ export default async function ConsoleLeadsPage({
                     </TableCell>
                     <TableCell><StagePill stage={p.stage} /></TableCell>
                     <TableCell className="text-muted-foreground">{p.source ?? '—'}</TableCell>
-                    <TableCell className="tabular-nums text-muted-foreground">{fmtAgo(p.last_activity_at)}</TableCell>
+                    <TableCell><ActivityCell pulse={pulseFor(p)} lastActivity={fmtAgo(p.last_activity_at)} /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>

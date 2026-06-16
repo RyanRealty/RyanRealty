@@ -292,7 +292,10 @@ export default async function BrokerCommandCenterPage({
               {hottestLive.map((s) => {
                 const who = s.identified_email ?? `Anonymous · ${placeLabel(s.ip_city, s.ip_region)}`
                 const intent = s.intent_tags?.[0] ?? null
-                const href = s.fub_person_id ? `/admin/crm/${s.fub_person_id}` : '/admin/visitors/live'
+                // The session timeline resolves identity + the FUB link; the
+                // session_id is always valid (fub_person_id is the FUB id, not
+                // our crm_people.id, so it can't key the lead route directly).
+                const href = `/admin/visitors/${encodeURIComponent(s.session_id)}`
                 const hot = Boolean(s.hot_lead_fired_at) || s.engagement_score >= 100
                 return (
                   <Link key={s.session_id} href={href} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/40">
