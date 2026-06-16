@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.575.0 (2026-06-16)
+
+### Features
+- feat(crm-mobile): inbox filter bottom-sheet — type filter (Emails / Texts / Calls)
+
+### Maintenance
+- docs(crm-mobile): mark All Lists + filter sheet shipped; calendar/recent-online remain
+
+---
+
+
 ## v1.574.0 (2026-06-16)
 
 ### Features
