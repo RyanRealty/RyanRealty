@@ -34,7 +34,7 @@ import { getOwnedHomeMedia } from '@/lib/crm/owned-home-media'
 import { EmailComposer } from '@/components/admin/crm/EmailComposer'
 import { SmsComposer } from '@/components/admin/crm/SmsComposer'
 import ConversationThread, { isConversationEvent } from '@/components/admin/crm/ConversationThread'
-import { StagePill, ListingStatusPill, StatusPill } from '@/components/console/StatusPill'
+import { ListingStatusPill, StatusPill } from '@/components/console/StatusPill'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 import { KpiStrip } from '@/components/console/KpiStrip'
 import { LeadTabs } from '@/components/console/LeadTabs'
@@ -302,58 +302,41 @@ export default async function ConsoleLeadPage({
   const liveAgeMin = latestWeb ? Math.round((Date.now() - new Date(latestWeb.ts).getTime()) / 60000) : null
   const isLiveNow = liveAgeMin !== null && liveAgeMin >= 0 && liveAgeMin <= 30
 
-  return (
-    <div className="mx-auto w-full max-w-6xl">
-      <div className="mb-4 flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        <Link href={BASE} className="inline-flex min-h-[40px] items-center text-sm text-muted-foreground hover:text-foreground">← Leads</Link>
-        {person.fub_legacy_id ? (
-          <a href={`https://ryan-realty.followupboss.com/2/people/view/${person.fub_legacy_id}`} target="_blank" rel="noreferrer" className="text-xs text-muted-foreground underline hover:text-foreground">
-            Open in FUB ↗
-          </a>
-        ) : null}
-      </div>
+  const hasAlerts = Boolean(flash || sendError || full.suppressions.length > 0)
 
-      {flash ? <Alert><AlertDescription>{flash}</AlertDescription></Alert> : null}
-      {sendError ? <Alert variant="destructive"><AlertTitle>Couldn&apos;t send</AlertTitle><AlertDescription>{sendError}</AlertDescription></Alert> : null}
-      {full.suppressions.length > 0 ? (
-        <Alert variant="destructive">
-          <AlertTitle>Contact restrictions active</AlertTitle>
-          <AlertDescription>{full.suppressions.map((s) => `${s.channel}: ${s.reason}`).join(' · ')}. Automated outreach is blocked.</AlertDescription>
-        </Alert>
+  return (
+    <>
+      {hasAlerts ? (
+        <div className="mx-auto mb-4 w-full max-w-6xl space-y-3">
+          {flash ? <Alert><AlertDescription>{flash}</AlertDescription></Alert> : null}
+          {sendError ? <Alert variant="destructive"><AlertTitle>Couldn&apos;t send</AlertTitle><AlertDescription>{sendError}</AlertDescription></Alert> : null}
+          {full.suppressions.length > 0 ? (
+            <Alert variant="destructive">
+              <AlertTitle>Contact restrictions active</AlertTitle>
+              <AlertDescription>{full.suppressions.map((s) => `${s.channel}: ${s.reason}`).join(' · ')}. Automated outreach is blocked.</AlertDescription>
+            </Alert>
+          ) : null}
+        </div>
       ) : null}
-      </div>
 
       <LeadTabs
+        name={person.name ?? `Contact #${person.id}`}
+        pictureUrl={person.picture_url}
+        stage={person.stage}
+        live={isLiveNow}
+        ownerName={person.assigned_broker ? (CRM_BROKER_DISPLAY[person.assigned_broker as keyof typeof CRM_BROKER_DISPLAY] ?? person.assigned_broker) : null}
+        backHref={BASE}
+        fubHref={person.fub_legacy_id ? `https://ryan-realty.followupboss.com/2/people/view/${person.fub_legacy_id}` : null}
+        flushTop={!hasAlerts}
         overview={
           <>
-      {/* ── Header: who, where from, the quick moves ── */}
+      {/* ── Quick actions + stage/owner + contacts ── */}
       <Card>
         <CardContent className="p-4 sm:p-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex min-w-0 items-start gap-3 sm:gap-4">
-              {person.picture_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={person.picture_url} alt="" className="h-14 w-14 shrink-0 rounded-xl border border-border object-cover sm:h-16 sm:w-16" referrerPolicy="no-referrer" />
-              ) : (
-                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-secondary text-xl font-semibold text-secondary-foreground sm:h-16 sm:w-16">
-                  {(person.name ?? '?').charAt(0).toUpperCase()}
-                </span>
-              )}
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-xl font-semibold tracking-tight text-foreground">{person.name ?? `Contact #${person.id}`}</h1>
-                  <StagePill stage={person.stage} />
-                  {isLiveNow ? <StatusPill tone="success" label="On site now" pulse /> : null}
-                </div>
-                {person.assigned_broker ? <p className="mt-1 text-xs text-muted-foreground">Owner: {CRM_BROKER_DISPLAY[person.assigned_broker as keyof typeof CRM_BROKER_DISPLAY] ?? person.assigned_broker}</p> : null}
-              </div>
-            </div>
-            <div className="flex shrink-0 flex-wrap gap-2">
-              {primaryPhone ? <Button asChild size="sm" className="min-h-[40px]"><a href={`tel:+1${primaryPhone.replace(/\D/g, '').slice(-10)}`}>Call</a></Button> : null}
-              {primaryPhone ? <Button asChild size="sm" variant="outline" className="min-h-[40px]"><a href="#comms">Text</a></Button> : null}
-              {primaryEmail ? <Button asChild size="sm" variant="outline" className="min-h-[40px]"><a href="#comms">Email</a></Button> : null}
-            </div>
+          <div className="flex gap-2">
+            {primaryPhone ? <Button asChild className="min-h-11 flex-1"><a href={`tel:+1${primaryPhone.replace(/\D/g, '').slice(-10)}`}>Call</a></Button> : null}
+            {primaryPhone ? <Button asChild variant="outline" className="min-h-11 flex-1"><a href="#comms">Text</a></Button> : null}
+            {primaryEmail ? <Button asChild variant="outline" className="min-h-11 flex-1"><a href="#comms">Email</a></Button> : null}
           </div>
 
           {/* Inline stage + broker + contact points */}
@@ -777,6 +760,6 @@ export default async function ConsoleLeadPage({
           </ConsoleSection>
         }
       />
-    </div>
+    </>
   )
 }
