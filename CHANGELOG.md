@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.563.1 (2026-06-16)
+
+### Bug Fixes
+- fix(admin): hide tasks >31 days overdue (FUB import cruft, not real)
+
+---
+
+
 ## v1.563.0 (2026-06-15)
 
 ### Features
