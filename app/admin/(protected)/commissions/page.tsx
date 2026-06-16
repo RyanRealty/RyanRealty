@@ -2,6 +2,8 @@
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { KpiStrip } from '@/components/console/KpiStrip'
 import {
   Table,
   TableBody,
@@ -120,36 +122,13 @@ export default async function CommissionsPage() {
       ) : (
         <>
           {/* Office summary — the glanceable lead */}
-          <section className="space-y-3">
-            <div className="grid gap-3 md:grid-cols-2">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Office · {thisYear} YTD</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-0.5 tabular-nums">
-                  <p className="text-2xl font-bold text-foreground">{money(officeYtd.gci)}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {officeYtd.n} closings · agents {money(officeYtd.agent)} · brokerage {money(officeYtd.brokerage)}
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Office · all time on record</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-0.5 tabular-nums">
-                  <p className="text-2xl font-bold text-foreground">{money(officeAll.gci)}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {officeAll.n} closings · agents {money(officeAll.agent)} · brokerage {money(officeAll.brokerage)}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </section>
+          <KpiStrip items={[
+            { label: `Office · ${thisYear} YTD`, value: money(officeYtd.gci) },
+            { label: 'Office · all time', value: money(officeAll.gci) },
+          ]} />
 
           {/* Per-broker net — top earners, capped */}
-          <section className="space-y-3">
-            <h2 className="text-sm font-medium text-foreground">By broker</h2>
+          <ConsoleSection title="By broker">
             {brokerPreview.length ? (
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {brokerPreview.map(([name, e]) => (
@@ -181,18 +160,16 @@ export default async function CommissionsPage() {
                 See all {brokerEntries.length} brokers →
               </Link>
             ) : null}
-          </section>
+          </ConsoleSection>
 
           {/* In escrow — projected, capped */}
-          <section className="space-y-3">
-            <div className="flex items-baseline justify-between gap-2">
-              <h2 className="text-sm font-medium text-foreground">In escrow (projected)</h2>
-              {projected.length ? (
-                <span className="text-xs tabular-nums text-muted-foreground">
-                  gross {money(projectedGci)}
-                </span>
-              ) : null}
-            </div>
+          <ConsoleSection title="In escrow (projected)" action={
+            projected.length ? (
+              <span className="text-xs tabular-nums text-muted-foreground">
+                gross {money(projectedGci)}
+              </span>
+            ) : undefined
+          }>
             <Card>
               <CardContent className="p-0">
                 {projectedPreview.length ? (
@@ -232,14 +209,10 @@ export default async function CommissionsPage() {
                 See all {projected.length} in escrow →
               </Link>
             ) : null}
-          </section>
+          </ConsoleSection>
 
           {/* Recent ledger — capped preview, links to the full ledger */}
-          <section className="space-y-3">
-            <div className="flex items-baseline justify-between gap-2">
-              <h2 className="text-sm font-medium text-foreground">Recent ledger</h2>
-              <span className="text-xs tabular-nums text-muted-foreground">{rows.length} total</span>
-            </div>
+          <ConsoleSection title="Recent ledger" count={`(${rows.length})`}>
 
             {/* Deal cards — phones (one tap per deal, key money facts mirrored) */}
             <div className="space-y-2 md:hidden">
@@ -330,7 +303,7 @@ export default async function CommissionsPage() {
                 See all {rows.length} ledger rows →
               </Link>
             ) : null}
-          </section>
+          </ConsoleSection>
         </>
       )}
     </main>

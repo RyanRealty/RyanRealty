@@ -19,6 +19,7 @@ import DashboardRevenuePanel from '@/components/admin/DashboardRevenuePanel'
 import DashboardContentStatusPanel from '@/components/admin/DashboardContentStatusPanel'
 import DashboardMarketingCommandCenterPanel from '@/components/admin/DashboardMarketingCommandCenterPanel'
 import DashboardSummaryStrip, { type SummaryStat } from '@/components/admin/DashboardSummaryStrip'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
 
 export const dynamic = 'force-dynamic'
 
@@ -144,9 +145,8 @@ export default async function AdminDashboardPage() {
         </DashboardPanel>
       </div>
 
-      <div className="mt-10 rounded-lg border border-border bg-muted p-4">
-        <h2 className="text-sm font-semibold text-muted-foreground">Quick links</h2>
-        <ul className="mt-2 flex flex-wrap gap-4 text-sm">
+      <ConsoleSection title="Quick links" className="mt-10">
+        <ul className="flex flex-wrap gap-4 text-sm">
           <li><Link href="/admin/sync" className="text-success hover:underline">Sync & history</Link></li>
           <li><Link href="/admin/geo" className="text-success hover:underline">Geo hierarchy</Link></li>
           <li><Link href="/admin/resort-communities" className="text-success hover:underline">Resort communities</Link></li>
@@ -154,7 +154,7 @@ export default async function AdminDashboardPage() {
           <li><Link href="/admin/reports" className="text-success hover:underline">Reports</Link></li>
           <li><Link href="/admin/spark-status" className="text-success hover:underline">Spark API status</Link></li>
         </ul>
-      </div>
+      </ConsoleSection>
     </main>
   )
 }

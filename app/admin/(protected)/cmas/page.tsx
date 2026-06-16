@@ -20,7 +20,8 @@ import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { KpiStrip } from '@/components/console/KpiStrip'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -175,19 +176,16 @@ async function CmasContent({ params }: { params: Record<string, string | undefin
   return (
     <div className="space-y-6">
       {/* Glanceable summary */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard label="Total CMAs" value={counts.total} hint="all time" />
-        <StatCard label="Drafts" value={counts.draft} hint="in progress" />
-        <StatCard label="Finalized" value={counts.finalized} hint="ready to send" tone="text-primary" />
-        <StatCard label="Delivered" value={counts.delivered} hint="sent to client" />
-      </div>
+      <KpiStrip items={[
+        { label: 'Total CMAs', value: formatInt(counts.total) },
+        { label: 'Drafts', value: formatInt(counts.draft) },
+        { label: 'Finalized', value: formatInt(counts.finalized) },
+        { label: 'Delivered', value: formatInt(counts.delivered) },
+      ]} />
 
       {/* Search + status facets */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <ConsoleSection title="Filters">
+        <div className="space-y-4">
           <form className="flex flex-wrap items-end gap-2" method="get">
             {Object.entries(params)
               .filter(([k]) => k !== 'q' && k !== 'page')
@@ -230,20 +228,16 @@ async function CmasContent({ params }: { params: Record<string, string | undefin
               })}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </ConsoleSection>
 
       {/* CMA list */}
-      <Card>
-        <CardHeader>
-          <CardTitle>CMAs ({formatInt(matchCount)})</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            {matchCount === 0
-              ? 'Newest first. Tap a CMA to open its PDF or HTML.'
-              : `Showing ${formatInt(pageStart + 1)}–${formatInt(pageStart + pageRows.length)}. Newest first. Tap a CMA to open its PDF or HTML.`}
-          </p>
-        </CardHeader>
-        <CardContent>
+      <ConsoleSection title="CMAs" count={`(${formatInt(matchCount)})`}>
+        <p className="mb-4 text-xs text-muted-foreground">
+          {matchCount === 0
+            ? 'Newest first. Tap a CMA to open its PDF or HTML.'
+            : `Showing ${formatInt(pageStart + 1)}–${formatInt(pageStart + pageRows.length)}. Newest first. Tap a CMA to open its PDF or HTML.`}
+        </p>
           {matchCount === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
@@ -425,35 +419,11 @@ async function CmasContent({ params }: { params: Record<string, string | undefin
               ) : null}
             </>
           )}
-        </CardContent>
-      </Card>
+      </ConsoleSection>
     </div>
   )
 }
 
-function StatCard({
-  label,
-  value,
-  hint,
-  tone,
-}: {
-  label: string
-  value: number
-  hint: string
-  tone?: string
-}) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className={`text-3xl font-semibold tabular-nums ${tone ?? 'text-foreground'}`}>{formatInt(value)}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
-      </CardContent>
-    </Card>
-  )
-}
 
 export default async function AdminCmasPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const session = await getSession()

@@ -51,6 +51,20 @@ const REQUIRED_KIT_PAGES = [
   'app/admin/(protected)/sync/page.tsx',
   'app/admin/(protected)/reports/page.tsx',
   'app/admin/(protected)/audit-log/page.tsx',
+  // People / transactions cluster
+  'app/admin/(protected)/people/page.tsx',
+  'app/admin/(protected)/deals/page.tsx',
+  'app/admin/(protected)/financials/page.tsx',
+  'app/admin/(protected)/commissions/page.tsx',
+  'app/admin/(protected)/cmas/page.tsx',
+  'app/admin/(protected)/sign-off/page.tsx',
+  // Ops / home cluster
+  'app/admin/(protected)/operations/page.tsx',
+  'app/admin/(protected)/kpi-dashboard/page.tsx',
+  'app/admin/(protected)/crm/new/page.tsx',
+  'app/admin/(protected)/crm/deals/page.tsx',
+  'app/admin/(protected)/forms/page.tsx',
+  'app/admin/(protected)/fub-attribution/page.tsx',
 ]
 
 const KIT_IMPORT = /@\/components\/console\/ConsoleSection/

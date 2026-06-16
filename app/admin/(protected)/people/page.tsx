@@ -25,7 +25,9 @@ import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserMultipleIcon, SearchRemoveIcon } from '@hugeicons/core-free-icons'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { KpiStrip } from '@/components/console/KpiStrip'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -304,31 +306,16 @@ async function PeopleIndexContent({ params }: { params: Record<string, string | 
       {errorBanner}
 
       {/* Quick stats */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">People (90d)</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-semibold tabular-nums text-foreground">{formatInt(totalPeople)}</p><p className="mt-1 text-xs text-muted-foreground">unique FUB persons</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Hot (fired)</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-semibold tabular-nums text-destructive">{formatInt(totalHot)}</p><p className="mt-1 text-xs text-muted-foreground">crossed score 100</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Active now</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-semibold tabular-nums text-foreground">{formatInt(totalActiveNow)}</p><p className="mt-1 text-xs text-muted-foreground">seen in last 30 min</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Shown</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-semibold tabular-nums text-foreground">{formatInt(people.length)}</p><p className="mt-1 text-xs text-muted-foreground">after filters</p></CardContent>
-        </Card>
-      </div>
+      <KpiStrip items={[
+        { label: 'People (90d)', value: formatInt(totalPeople) },
+        { label: 'Hot (fired)', value: formatInt(totalHot) },
+        { label: 'Active now', value: formatInt(totalActiveNow) },
+        { label: 'Shown', value: formatInt(people.length) },
+      ]} />
 
       {/* Search + filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <ConsoleSection title="Filters">
+        <div className="space-y-4">
           <form className="flex flex-wrap items-end gap-2" method="get">
             {/* Preserve every active filter when submitting the search form,
                 but reset pagination (a new search starts on page 1). */}
@@ -355,20 +342,16 @@ async function PeopleIndexContent({ params }: { params: Record<string, string | 
           <FacetRow label="Tier" current={params.tier} options={['hot', 'warm', 'nurture']} paramKey="tier" allParams={params} />
           <FacetRow label="Source" current={params.source} options={['seller-lp', 'buyer-lp', 'expired-lp', 'contact-form', 'cma-request', 'showings-request', 'fb-ads-seller', 'fb-ads-buyer']} paramKey="source" allParams={params} />
           <FacetRow label="Activity" current={params.activity} options={['hot', 'active-30m', 'recent-24h', 'recent-7d']} paramKey="activity" allParams={params} />
-        </CardContent>
-      </Card>
+        </div>
+      </ConsoleSection>
 
       {/* People table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>People ({formatInt(matchCount)})</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            {matchCount === 0
-              ? 'Hot leads first, then most-recent activity. Tap any person for the full profile.'
-              : `Showing ${formatInt(pageStart + 1)}–${formatInt(pageStart + pagePeople.length)}. Hot leads first, then most-recent activity. Tap any person for the full profile.`}
-          </p>
-        </CardHeader>
-        <CardContent>
+      <ConsoleSection title="People" count={`(${formatInt(matchCount)})`}>
+        <p className="mb-4 text-xs text-muted-foreground">
+          {matchCount === 0
+            ? 'Hot leads first, then most-recent activity. Tap any person for the full profile.'
+            : `Showing ${formatInt(pageStart + 1)}–${formatInt(pageStart + pagePeople.length)}. Hot leads first, then most-recent activity. Tap any person for the full profile.`}
+        </p>
           {matchCount === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
@@ -501,8 +484,7 @@ async function PeopleIndexContent({ params }: { params: Record<string, string | 
               ) : null}
             </>
           )}
-        </CardContent>
-      </Card>
+      </ConsoleSection>
     </div>
   )
 }

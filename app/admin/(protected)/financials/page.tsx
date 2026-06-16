@@ -1,6 +1,7 @@
 // @no-parity — internal admin tool (brokerage P&L, TC rung 12)
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
 import {
   Table,
   TableBody,
@@ -77,8 +78,7 @@ export default async function FinancialsPage() {
       {summary.length ? <DashboardSummaryStrip stats={summary} /> : null}
 
       {/* P&L by year */}
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium text-foreground">Profit &amp; loss by year</h2>
+      <ConsoleSection title="Profit and loss by year">
 
         {years.length === 0 ? (
           <Card>
@@ -175,12 +175,11 @@ export default async function FinancialsPage() {
           Agent share includes owner compensation (Matt at 100% split). Ad spend reads live from the
           marketing ads ledger so it is never double-entered here. Projected deals are excluded everywhere.
         </p>
-      </section>
+      </ConsoleSection>
 
       {/* Expense breakdown per year */}
       {years.some((y) => y.manualExpenses > 0) ? (
-        <section className="space-y-3">
-          <h2 className="text-sm font-medium text-foreground">Expenses by category</h2>
+        <ConsoleSection title="Expenses by category">
           <div className="grid gap-3 md:grid-cols-2">
             {years
               .filter((y) => y.manualExpenses > 0)
@@ -202,7 +201,7 @@ export default async function FinancialsPage() {
                 </Card>
               ))}
           </div>
-        </section>
+        </ConsoleSection>
       ) : null}
 
       {/* Expense ledger — capped, with "See all" */}

@@ -2,6 +2,8 @@
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { KpiStrip } from '@/components/console/KpiStrip'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { getPrincipalSignOffQueue, type SignOffDeal } from '@/app/actions/tc-signoff'
 import type { ReviewDeadline } from '@/lib/tc/banking-days'
@@ -50,23 +52,6 @@ function soonestRank(deal: SignOffDeal): number {
   return Math.min(...deal.items.map((i) => deadlineRank(i.deadline)))
 }
 
-function Stat({ label, value, tone }: { label: string; value: number; tone?: 'destructive' }) {
-  return (
-    <Card>
-      <CardContent className="pt-4">
-        <p
-          className={cn(
-            'text-2xl font-bold tabular-nums',
-            tone === 'destructive' && value > 0 ? 'text-destructive' : 'text-foreground',
-          )}
-        >
-          {value}
-        </p>
-        <p className="text-xs text-muted-foreground">{label}</p>
-      </CardContent>
-    </Card>
-  )
-}
 
 function DealCard({ deal }: { deal: SignOffDeal }) {
   const overdue = dealHasOverdue(deal)
@@ -173,11 +158,11 @@ export default async function SignOffPage() {
         </p>
       </header>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Stat label="Items pending" value={queue.totalItems} />
-        <Stat label="Past 7-day deadline" value={queue.overdueItems} tone="destructive" />
-        <Stat label="Deals" value={queue.deals.length} />
-      </div>
+      <KpiStrip items={[
+        { label: 'Items pending', value: String(queue.totalItems) },
+        { label: 'Past 7-day deadline', value: String(queue.overdueItems) },
+        { label: 'Deals', value: String(queue.deals.length) },
+      ]} />
 
       {queue.deals.length === 0 ? (
         <Card>
@@ -187,15 +172,10 @@ export default async function SignOffPage() {
           </CardContent>
         </Card>
       ) : (
-        <section className="space-y-4">
-          <div className="flex items-baseline justify-between gap-2">
-            <h2 className="text-sm font-semibold text-foreground">
-              {queue.overdueItems > 0 ? 'Most urgent first' : 'Awaiting review'}
-            </h2>
-            <Link href="/admin/deals" className="text-xs font-medium text-primary hover:underline">
-              All deals →
-            </Link>
-          </div>
+        <ConsoleSection
+          title={queue.overdueItems > 0 ? 'Most urgent first' : 'Awaiting review'}
+          action={<Link href="/admin/deals" className="text-xs font-medium text-primary hover:underline">All deals →</Link>}
+        >
 
           {visibleDeals.map((deal) => (
             <DealCard key={deal.propertyKey} deal={deal} />
@@ -209,7 +189,7 @@ export default async function SignOffPage() {
               See all {sortedDeals.length} deals →
             </Link>
           ) : null}
-        </section>
+        </ConsoleSection>
       )}
 
       <p className="text-xs text-muted-foreground">

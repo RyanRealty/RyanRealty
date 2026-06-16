@@ -2,8 +2,9 @@
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { KpiStrip } from '@/components/console/KpiStrip'
 import {
   Table,
   TableBody,
@@ -48,26 +49,11 @@ export default async function TcFormsPage({ searchParams }: Props) {
       </header>
 
       {/* Glanceable summary — summary before detail */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Card>
-          <CardContent className="space-y-0.5 p-4 tabular-nums">
-            <p className="text-2xl font-bold text-foreground">{total}</p>
-            <p className="text-xs text-muted-foreground">form versions</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="space-y-0.5 p-4 tabular-nums">
-            <p className="text-2xl font-bold text-success">{productionCount}</p>
-            <p className="text-xs text-muted-foreground">production</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="space-y-0.5 p-4 tabular-nums">
-            <p className="text-2xl font-bold text-foreground">{sampleCount}</p>
-            <p className="text-xs text-muted-foreground">OREF samples</p>
-          </CardContent>
-        </Card>
-      </div>
+      <KpiStrip items={[
+        { label: 'form versions', value: total },
+        { label: 'production', value: productionCount },
+        { label: 'OREF samples', value: sampleCount },
+      ]} />
 
       <form method="GET" className="flex max-w-md gap-2">
         <Input
@@ -83,8 +69,8 @@ export default async function TcFormsPage({ searchParams }: Props) {
       </form>
 
       {populated.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-2 p-10 text-center">
+        <ConsoleSection title="Forms">
+          <div className="flex flex-col items-center gap-2 py-6 text-center">
             <p className="text-base font-medium text-foreground">
               {q ? 'No forms match that search' : 'No forms loaded yet'}
             </p>
@@ -98,8 +84,8 @@ export default async function TcFormsPage({ searchParams }: Props) {
                 <Link href="/admin/forms">Clear search</Link>
               </Button>
             ) : null}
-          </CardContent>
-        </Card>
+          </div>
+        </ConsoleSection>
       ) : (
         populated.map((library) => {
           const isExpanded = expanded === library.code
@@ -107,24 +93,18 @@ export default async function TcFormsPage({ searchParams }: Props) {
           const hiddenCount = library.forms.length - visible.length
 
           return (
-            <Card key={library.id}>
-              <CardHeader className="pb-2">
-                <CardTitle className="flex flex-wrap items-baseline gap-2 text-base">
-                  {library.code}
-                  <span className="text-sm font-normal text-muted-foreground">
-                    {library.name} ·{' '}
-                    <span className="tabular-nums">{library.forms.length}</span> forms
-                  </span>
-                </CardTitle>
-                {library.license_note ? (
-                  <p className="text-xs text-muted-foreground">{library.license_note}</p>
-                ) : null}
-              </CardHeader>
-              <CardContent>
+            <ConsoleSection
+              key={library.id}
+              title={library.code}
+              count={`${library.name} · ${library.forms.length} forms`}
+            >
+              {library.license_note ? (
+                <p className="mb-3 text-xs text-muted-foreground">{library.license_note}</p>
+              ) : null}
                 {/* Form cards — phones (one tap to open the blank) */}
                 <div className="space-y-2 md:hidden">
                   {visible.map((f) => (
-                    <div key={f.id} className="rounded-lg border border-border bg-card p-3">
+                    <div key={f.id} className="rounded-lg border border-border bg-muted/40 p-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <div className="font-medium tabular-nums text-foreground">
@@ -266,8 +246,7 @@ export default async function TcFormsPage({ searchParams }: Props) {
                     </div>
                   ) : null}
                 </div>
-              </CardContent>
-            </Card>
+            </ConsoleSection>
           )
         })
       )}

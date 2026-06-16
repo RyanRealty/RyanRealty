@@ -5,8 +5,8 @@ import { createCrmContactAction } from '@/app/actions/crm'
 import { CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import BrokerSelect from '@/app/components/admin/BrokerSelect'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -33,54 +33,49 @@ export default async function CrmNewContactPage({ searchParams }: { searchParams
           ← Back to contacts
         </Link>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">New contact</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {error ? (
-            <p className="mb-3 text-sm font-medium text-destructive">{error}</p>
-          ) : null}
-          <form action={createContactForm} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="firstName">First name</Label>
-                <Input id="firstName" name="firstName" required autoComplete="off" className="h-10 md:h-8" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="lastName">Last name</Label>
-                <Input id="lastName" name="lastName" autoComplete="off" className="h-10 md:h-8" />
-              </div>
+      <ConsoleSection title="New contact">
+        {error ? (
+          <p className="mb-3 text-sm font-medium text-destructive">{error}</p>
+        ) : null}
+        <form action={createContactForm} className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="firstName">First name</Label>
+              <Input id="firstName" name="firstName" required autoComplete="off" className="h-10 md:h-8" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" autoComplete="off" className="h-10 md:h-8" />
+              <Label htmlFor="lastName">Last name</Label>
+              <Input id="lastName" name="lastName" autoComplete="off" className="h-10 md:h-8" />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" name="phone" type="tel" autoComplete="off" className="h-10 md:h-8" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="broker">Broker</Label>
-              <BrokerSelect
-                name="broker"
-                placeholder="Assign to me"
-                options={CRM_BROKERS.map((b) => ({ value: b, label: CRM_BROKER_DISPLAY[b] ?? b }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="note">Note</Label>
-              <Textarea id="note" name="note" rows={3} placeholder="Where you met them, what they need" />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              An email or a phone number is required. If the person already exists, this updates them instead of creating a duplicate.
-            </p>
-            <div className="flex sm:justify-end">
-              <Button type="submit" className="h-11 w-full sm:h-8 sm:w-auto">Create contact</Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" name="email" type="email" autoComplete="off" className="h-10 md:h-8" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="phone">Phone</Label>
+            <Input id="phone" name="phone" type="tel" autoComplete="off" className="h-10 md:h-8" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="broker">Broker</Label>
+            <BrokerSelect
+              name="broker"
+              placeholder="Assign to me"
+              options={CRM_BROKERS.map((b) => ({ value: b, label: CRM_BROKER_DISPLAY[b] ?? b }))}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="note">Note</Label>
+            <Textarea id="note" name="note" rows={3} placeholder="Where you met them, what they need" />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            An email or a phone number is required. If the person already exists, this updates them instead of creating a duplicate.
+          </p>
+          <div className="flex sm:justify-end">
+            <Button type="submit" className="h-11 w-full sm:h-8 sm:w-auto">Create contact</Button>
+          </div>
+        </form>
+      </ConsoleSection>
     </main>
   )
 }

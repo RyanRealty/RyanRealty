@@ -1,6 +1,8 @@
 // @no-parity — internal admin tool (deal pipeline dashboard), no public mockup contract
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { KpiStrip } from '@/components/console/KpiStrip'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
@@ -232,59 +234,15 @@ export default async function DealsPage() {
       </header>
 
       {/* KPI row */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Under contract</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold tabular-nums text-foreground">{pendingProps.length}</p>
-            <p className="text-xs tabular-nums text-muted-foreground">{money(pendingVolume)} in escrow</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active listings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold tabular-nums text-foreground">
-              {properties.filter((p) => p.stage === 'active_listing').length}
-            </p>
-            <p className="text-xs text-muted-foreground">on market</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Closed {year}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold tabular-nums text-foreground">{ytd.count}</p>
-            <p className="text-xs tabular-nums text-muted-foreground">
-              {money(ytd.volume)} volume · {money(ytd.gross)} gross
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Open action items</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p
-              className={cn(
-                'text-2xl font-semibold tabular-nums',
-                openItems > 0 ? 'text-destructive' : 'text-success'
-              )}
-            >
-              {openItems}
-            </p>
-            <p className="text-xs text-muted-foreground">flags, gaps + notes to fix</p>
-          </CardContent>
-        </Card>
-      </div>
+      <KpiStrip items={[
+        { label: 'Under contract', value: String(pendingProps.length) },
+        { label: 'Active listings', value: String(properties.filter((p) => p.stage === 'active_listing').length) },
+        { label: `Closed ${year}`, value: String(ytd.count) },
+        { label: 'Open action items', value: String(openItems) },
+      ]} />
 
       {/* Live pipeline */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-foreground">Live pipeline</h2>
+      <ConsoleSection title="Live pipeline">
         {live.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nothing in flight.</p>
         ) : (
@@ -370,17 +328,15 @@ export default async function DealsPage() {
             })}
           </div>
         )}
-      </section>
+      </ConsoleSection>
 
       {/* Closed compliance */}
-      <section className="space-y-4">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-lg font-semibold text-foreground">Closed transactions</h2>
-          <p className="text-xs tabular-nums text-muted-foreground">
-            {totals.closedDeals} deals ·{' '}
-            {money(Object.values(totals.byYear ?? {}).reduce((s, y) => s + y.volume, 0))} lifetime volume
-          </p>
-        </div>
+      <ConsoleSection title="Closed transactions" action={
+        <p className="text-xs tabular-nums text-muted-foreground">
+          {totals.closedDeals} deals ·{' '}
+          {money(Object.values(totals.byYear ?? {}).reduce((s, y) => s + y.volume, 0))} lifetime volume
+        </p>
+      }>
         {/* Closed cards — phones: most recent few, rest behind a disclosure */}
         <div className="space-y-2 md:hidden">
           {closed.length === 0 ? (
@@ -502,17 +458,12 @@ export default async function DealsPage() {
             </Accordion>
           ) : null}
         </div>
-      </section>
+      </ConsoleSection>
 
       {/* Action items */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-foreground">Action items</h2>
+      <ConsoleSection title="Action items">
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Per-deal items</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <ConsoleSection title="Per-deal items">
               {actionProps.length === 0 ? (
                 <p className="text-sm text-success">All clear — no deals need attention.</p>
               ) : (
@@ -570,13 +521,8 @@ export default async function DealsPage() {
                   ) : null}
                 </>
               )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">System findings</CardTitle>
-            </CardHeader>
-            <CardContent>
+          </ConsoleSection>
+          <ConsoleSection title="System findings">
               {data.systemFindings.length === 0 && !data.bnReview ? (
                 <p className="text-sm text-muted-foreground">No system findings.</p>
               ) : null}
@@ -616,19 +562,13 @@ export default async function DealsPage() {
                   </p>
                 </>
               ) : null}
-            </CardContent>
-          </Card>
+          </ConsoleSection>
         </div>
-      </section>
+      </ConsoleSection>
 
       {/* Canceled / dead */}
-      <section>
-        <Accordion type="single" collapsible>
-          <AccordionItem value="dead">
-            <AccordionTrigger className="text-sm font-semibold text-foreground">
-              Canceled / dead files ({dead.length})
-            </AccordionTrigger>
-            <AccordionContent>
+      <ConsoleSection title={`Canceled / dead files (${dead.length})`}>
+        <div>
               {/* Dead cards — phones */}
               <div className="space-y-2 md:hidden">
                 {dead.map((p) => {
@@ -701,10 +641,8 @@ export default async function DealsPage() {
                   </TableBody>
                 </Table>
               </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </section>
+        </div>
+      </ConsoleSection>
 
       <p className="text-xs text-muted-foreground">
         Source: SkySlope Files API snapshot · metadata settlement-verified per{' '}

@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess, listCrmDeals } from '@/app/actions/crm'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
 
 export const metadata = { title: 'Pipeline | CRM | Admin' }
 export const dynamic = 'force-dynamic'
@@ -37,11 +37,8 @@ export default async function CrmDealsPage() {
             <h2 className="text-lg font-semibold text-foreground">{pipe} <span className="font-normal text-muted-foreground">({rows.length})</span></h2>
             <div className="mt-3 grid gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
               {stages.map((stage) => (
-                <Card key={stage}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">{stage}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
+                <ConsoleSection key={stage} title={stage}>
+                  <div className="space-y-2">
                     {(() => {
                       const stageRows = rows.filter((d) => (d.stage ?? 'No stage') === stage)
                       const STAGE_PREVIEW = 8
@@ -83,15 +80,17 @@ export default async function CrmDealsPage() {
                         </>
                       )
                     })()}
-                  </CardContent>
-                </Card>
+                  </div>
+                </ConsoleSection>
               ))}
             </div>
           </section>
         )
       })}
       {deals.length === 0 ? (
-        <Card className="mt-6"><CardContent className="py-10 text-center text-sm text-muted-foreground">No deals yet.</CardContent></Card>
+        <ConsoleSection title="Pipeline" className="mt-6">
+          <p className="py-6 text-center text-sm text-muted-foreground">No deals yet.</p>
+        </ConsoleSection>
       ) : null}
     </main>
   )

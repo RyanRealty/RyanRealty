@@ -21,9 +21,9 @@
  *
  * Server component, force-dynamic. Auth via app/admin/(protected)/layout.tsx.
  */
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
+import { Card, CardContent } from '@/components/ui/card'
 import { createServiceClient } from '@/lib/supabase/service'
 
 export const metadata = { title: 'Results scoreboard | Admin' }
@@ -344,28 +344,14 @@ function Row({
   )
 }
 
-// One funnel stage. The numbered prefix in the title is rendered as a quiet
-// step chip so the funnel reads as an ordered flow, not eleven equal cards.
+// One funnel stage. Rendered as a ConsoleSection; the numbered step prefix and
+// subtitle are appended to the title for display continuity.
 function Panel({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
-  const stepMatch = title.match(/^(\d+)\s*·\s*(.+)$/)
-  const step = stepMatch?.[1]
-  const heading = stepMatch?.[2] ?? title
+  const displayTitle = subtitle ? `${title} — ${subtitle}` : title
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="gap-1 pb-2">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          {step && (
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground tabular-nums">
-              {step}
-            </span>
-          )}
-          <h2 className="text-sm font-semibold tracking-tight text-foreground">{heading}</h2>
-          {subtitle && <span className="text-xs text-muted-foreground">{subtitle}</span>}
-        </div>
-        <Separator className="mt-1.5" />
-      </CardHeader>
-      <CardContent className="pt-0">{children}</CardContent>
-    </Card>
+    <ConsoleSection title={displayTitle}>
+      {children}
+    </ConsoleSection>
   )
 }
 
@@ -385,7 +371,7 @@ function HeadlineStat({
   const t = m ? trend(m, inverted) : null
   const status = target != null ? statusFor(value, target, inverted) : null
   return (
-    <Card className={primary ? 'border-primary/40 bg-primary/[0.03]' : undefined}>
+    <Card className={primary ? 'border-primary/40 bg-primary/5' : undefined}>
       <CardContent className="flex min-w-0 flex-col gap-1 p-3 sm:p-4">
         <p className="truncate text-xs font-medium text-muted-foreground">{label}</p>
         <p className={`font-mono font-bold tabular-nums tracking-tight text-foreground ${primary ? 'text-3xl' : 'text-2xl'}`}>
@@ -440,8 +426,7 @@ export default async function ResultsScoreboardPage() {
       {data && (
         <div className="space-y-4 sm:space-y-6">
           {/* Glanceable summary — the headline funnel numbers a broker reads first. */}
-          <section className="space-y-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">At a glance</h2>
+          <ConsoleSection title="At a glance">
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <HeadlineStat
                 label="Qualified seller leads (30d)"
@@ -455,10 +440,10 @@ export default async function ResultsScoreboardPage() {
               <HeadlineStat label="Lead events (30d)" value={data.metrics.leadEvents.cur} m={data.metrics.leadEvents} fmt={fmtInt} />
               <HeadlineStat label="Pipeline value" value={data.metrics.pipelineValue?.value ?? null} fmt={fmtUsd} />
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="mt-2 text-xs text-muted-foreground">
               The honest funnel: get found → traffic → convert → leads → pipeline → close. Full detail below.
             </p>
-          </section>
+          </ConsoleSection>
 
           <Panel title="North star — seller leads" subtitle="the number that matters">
             <Row
