@@ -3,9 +3,10 @@ import Link from 'next/link'
 import { revalidatePath } from 'next/cache'
 import { ChevronRight, CheckCircle2 } from 'lucide-react'
 import { getBrokerCommandCenterData } from '@/app/actions/broker-command-center'
-import { getBrokerActionQueue, confirmNextStepAction, completeCrmTaskAction } from '@/app/actions/crm'
+import { getBrokerActionQueue, confirmNextStepAction, completeCrmTaskAction, getRecentNewLeads, listCrmInbox } from '@/app/actions/crm'
 import { fetchLiveSummary, fetchLiveVisitors } from '../visitors/_lib/queries'
 import { ActionSubmitButton } from '@/components/admin/ActionSubmitButton'
+import DashboardActivityFeed from '@/components/admin/DashboardActivityFeed'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -161,11 +162,13 @@ export default async function BrokerCommandCenterPage({
 }: {
   searchParams: Promise<{ tab?: string }>
 }) {
-  const [data, actionQueue, liveSummary, liveSessions] = await Promise.all([
+  const [data, actionQueue, liveSummary, liveSessions, recentLeads, inbox] = await Promise.all([
     getBrokerCommandCenterData(),
     getBrokerActionQueue(),
     fetchLiveSummary().catch(() => null),
     fetchLiveVisitors({}).catch(() => [] as Awaited<ReturnType<typeof fetchLiveVisitors>>),
+    getRecentNewLeads(12).catch(() => []),
+    listCrmInbox(40).catch(() => []),
   ])
   const { tab: activeTab } = await searchParams
 
@@ -236,10 +239,44 @@ export default async function BrokerCommandCenterPage({
   // wants to see the second they open the page. Rank by engagement, surface the
   // top few that are either live (active) or scored hot.
   const liveActive = liveSummary?.totalActive ?? 0
-  const hottestLive = [...(liveSessions ?? [])]
+
+  // Segmented activity feed (New leads / Emails / Website) — FUB's home feed IA,
+  // with our live-engagement column as the edge. All three are shaped here so the
+  // client feed only switches tabs.
+  const websiteRows = [...(liveSessions ?? [])]
     .filter((s) => s.engagement_score > 0)
     .sort((a, b) => b.engagement_score - a.engagement_score)
-    .slice(0, 3)
+    .slice(0, 8)
+    .map((s) => ({
+      key: s.session_id,
+      score: s.engagement_score,
+      who: s.identified_email ?? `Anonymous · ${placeLabel(s.ip_city, s.ip_region)}`,
+      intent: s.intent_tags?.[0] ?? null,
+      href: `/admin/visitors/${encodeURIComponent(s.session_id)}`,
+      hot: Boolean(s.hot_lead_fired_at) || s.engagement_score >= 100,
+    }))
+  // Inbound comms — scoped to this broker unless superuser (the read itself is
+  // unscoped, so filter here to match the rest of the dashboard).
+  const emailRows = (inbox ?? [])
+    .filter((r) => data.isSuperuser || r.broker === data.broker.slug)
+    .slice(0, 12)
+    .map((r) => ({
+      key: `inbox-${r.id}`,
+      who: r.person?.name ?? 'Unknown',
+      kind: r.kind,
+      preview: r.title ?? (r.body ? r.body.slice(0, 80) : null),
+      href: `/admin/crm/${r.person_id}`,
+      ts: r.ts,
+    }))
+  const leadRows = (recentLeads ?? []).map((l) => ({
+    key: `lead-${l.id}`,
+    who: l.name ?? `Contact #${l.id}`,
+    source: l.source,
+    stage: l.stage,
+    href: `/admin/crm/${l.id}`,
+    pictureUrl: l.pictureUrl,
+    ts: l.createdAt,
+  }))
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
@@ -287,34 +324,7 @@ export default async function BrokerCommandCenterPage({
             <LiveTile label="Identified today" value={liveSummary?.identifiedToday ?? 0} href="/admin/visitors/live" />
             <LiveTile label="Sessions today" value={liveSummary?.totalToday ?? 0} href="/admin/visitors/live" />
           </div>
-          {hottestLive.length > 0 ? (
-            <div className="divide-y divide-border border-t border-border">
-              {hottestLive.map((s) => {
-                const who = s.identified_email ?? `Anonymous · ${placeLabel(s.ip_city, s.ip_region)}`
-                const intent = s.intent_tags?.[0] ?? null
-                // The session timeline resolves identity + the FUB link; the
-                // session_id is always valid (fub_person_id is the FUB id, not
-                // our crm_people.id, so it can't key the lead route directly).
-                const href = `/admin/visitors/${encodeURIComponent(s.session_id)}`
-                const hot = Boolean(s.hot_lead_fired_at) || s.engagement_score >= 100
-                return (
-                  <Link key={s.session_id} href={href} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/40">
-                    <span
-                      className={cn(
-                        'shrink-0 rounded-md px-2 py-0.5 text-xs font-bold tabular-nums',
-                        hot ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground',
-                      )}
-                    >
-                      {s.engagement_score}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{who}</span>
-                    {intent ? <span className="shrink-0 text-xs text-muted-foreground">{intent}</span> : null}
-                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  </Link>
-                )
-              })}
-            </div>
-          ) : null}
+          <DashboardActivityFeed website={websiteRows} emails={emailRows} newLeads={leadRows} />
         </GroupCard>
       </section>
 

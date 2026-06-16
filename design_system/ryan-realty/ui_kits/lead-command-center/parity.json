@@ -1,9 +1,10 @@
 {
   "route": "app/admin/console/leads/[id]/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/lead-command-center/picked-mockup.html",
-  "note": "The lead command center MUST be assembled from the shared console kit so it cannot drift from the approved mockup. Matt directive 2026-06-15 — pages build to a saved mockup, enforced here.",
+  "note": "The lead command center MUST be assembled from the shared console kit so it cannot drift from the approved mockup. Matt directive 2026-06-15 — pages build to a saved mockup, enforced here. Mobile (2026-06-16, docs/MOBILE_CRM_FUB_PARITY.md #1): the panels are reorganized into tabs on phones (< lg) via LeadTabs and kept as one scroll on desktop — presentation only, every server action/form/query preserved.",
   "requiredComponents": [
     { "name": "ConsoleSection", "section": "every panel is a headed console section (Activity, Conversation, Send a message, Tasks, …)" },
-    { "name": "KpiStrip", "section": "tight 4-cell at-a-glance metric strip" }
+    { "name": "KpiStrip", "section": "tight 4-cell at-a-glance metric strip" },
+    { "name": "LeadTabs", "section": "mobile tab bar — Overview · Comms · Tasks · Watching · Workflow · Activity (< lg); desktop stays single-scroll" }
   ]
 }

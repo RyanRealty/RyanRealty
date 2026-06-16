@@ -514,6 +514,42 @@ export async function listCrmInbox(limit = 100): Promise<CrmInboxRow[]> {
   }))
 }
 
+export type RecentLead = {
+  id: number
+  name: string | null
+  stage: string
+  source: string | null
+  pictureUrl: string | null
+  createdAt: string
+}
+
+/**
+ * Recently-added leads for the broker dashboard "New leads" activity segment
+ * (docs/MOBILE_CRM_FUB_PARITY.md #3). Broker-scoped the same way the rest of the
+ * dashboard reads are — a slug sees only their own, a superuser sees everyone.
+ */
+export async function getRecentNewLeads(limit = 12): Promise<RecentLead[]> {
+  const access = await getCrmAccess()
+  if (!access) return []
+  const sb = createServiceClient()
+  let q = sb
+    .from('crm_people')
+    .select('id,name,stage,source,picture_url,created_at,assigned_broker')
+    .eq('deleted', false)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (access.brokerSlug) q = q.eq('assigned_broker', access.brokerSlug)
+  const { data } = await q
+  return (data ?? []).map((r) => ({
+    id: r.id as number,
+    name: (r.name ?? null) as string | null,
+    stage: (r.stage ?? 'Lead') as string,
+    source: (r.source ?? null) as string | null,
+    pictureUrl: (r.picture_url ?? null) as string | null,
+    createdAt: r.created_at as string,
+  }))
+}
+
 export type CrmDealRow = {
   id: number
   name: string | null

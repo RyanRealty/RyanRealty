@@ -37,6 +37,7 @@ import ConversationThread, { isConversationEvent } from '@/components/admin/crm/
 import { StagePill, ListingStatusPill, StatusPill } from '@/components/console/StatusPill'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 import { KpiStrip } from '@/components/console/KpiStrip'
+import { LeadTabs } from '@/components/console/LeadTabs'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -302,7 +303,8 @@ export default async function ConsoleLeadPage({
   const isLiveNow = liveAgeMin !== null && liveAgeMin >= 0 && liveAgeMin <= 30
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-4">
+    <div className="mx-auto w-full max-w-6xl">
+      <div className="mb-4 flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <Link href={BASE} className="inline-flex min-h-[40px] items-center text-sm text-muted-foreground hover:text-foreground">← Leads</Link>
         {person.fub_legacy_id ? (
@@ -320,7 +322,11 @@ export default async function ConsoleLeadPage({
           <AlertDescription>{full.suppressions.map((s) => `${s.channel}: ${s.reason}`).join(' · ')}. Automated outreach is blocked.</AlertDescription>
         </Alert>
       ) : null}
+      </div>
 
+      <LeadTabs
+        overview={
+          <>
       {/* ── Header: who, where from, the quick moves ── */}
       <Card>
         <CardContent className="p-4 sm:p-5">
@@ -458,10 +464,10 @@ export default async function ConsoleLeadPage({
         { label: 'Web sessions', value: full.visitorSessions },
         { label: 'Open tasks', value: openTasks.length },
       ]} />
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-        {/* ── Main column: act on the lead ── */}
-        <div className="space-y-4">
+          </>
+        }
+        comms={
+          <>
           {/* Comms with preview */}
           <Card id="comms" className="scroll-mt-20">
             <CardHeader className="pb-3"><CardTitle className="text-base">Send a message</CardTitle></CardHeader>
@@ -525,7 +531,10 @@ export default async function ConsoleLeadPage({
               </form>
             </CardContent>
           </Card>
-
+          </>
+        }
+        tasks={
+          <>
           {/* Tasks */}
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-base">Tasks <span className="font-normal text-muted-foreground">({openTasks.length} open)</span></CardTitle></CardHeader>
@@ -547,10 +556,10 @@ export default async function ConsoleLeadPage({
               </form>
             </CardContent>
           </Card>
-        </div>
-
-        {/* ── Side column: what they want, what they own, their workflow ── */}
-        <div className="space-y-4">
+          </>
+        }
+        watching={
+          <>
           {/* Watching — live homes from their site behavior */}
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-base">Watching <span className="font-normal text-muted-foreground">({viewedListings.length})</span></CardTitle></CardHeader>
@@ -683,7 +692,10 @@ export default async function ConsoleLeadPage({
               </CardContent>
             </Card>
           ) : null}
-
+          </>
+        }
+        workflow={
+          <>
           {/* Tags */}
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-base">Tags <span className="font-normal text-muted-foreground">({person.tags.length})</span></CardTitle></CardHeader>
@@ -726,11 +738,10 @@ export default async function ConsoleLeadPage({
               </CardContent>
             </Card>
           ) : null}
-        </div>
-      </div>
-
-      {/* ── One unified Activity feed (conversation + site/system) ── */}
-      <ConsoleSection title="Activity">
+          </>
+        }
+        activity={
+          <ConsoleSection title="Activity">
         {(() => {
           const convo = full.timeline.filter((t) => isConversationEvent(t.kind)).slice(0, 40).map((t) => ({ id: t.id, ts: t.ts, kind: t.kind, title: t.title, body: t.body, broker: t.broker }))
           const hasConvo = convo.length > 0
@@ -763,7 +774,9 @@ export default async function ConsoleLeadPage({
             </>
           )
         })()}
-      </ConsoleSection>
+          </ConsoleSection>
+        }
+      />
     </div>
   )
 }

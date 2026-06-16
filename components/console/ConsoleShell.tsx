@@ -19,6 +19,7 @@ import AdminNavList from '@/app/components/admin/AdminNavList'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import ConsoleCommandPalette from '@/components/console/ConsoleCommandPalette'
+import ConsoleQuickAction from '@/components/console/ConsoleQuickAction'
 
 function MenuIcon() {
   return (
@@ -110,6 +111,9 @@ export default function ConsoleShell({
 
         <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 sm:py-7">{children}</main>
       </div>
+
+      {/* Global "+" quick-action FAB — rides every console surface, context-aware on a lead */}
+      <ConsoleQuickAction />
 
       {/* Mobile sheet */}
       <Sheet open={open} onOpenChange={setOpen}>
