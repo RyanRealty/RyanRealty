@@ -8,13 +8,18 @@
  * third-party API calls (GA4 / Meta / FUB / GSC) ran uncached per render
  * (28-49s — reads as "down" on a phone).
  *
- * This gate locks the structural half of the fix:
- *   1. AdminSidebar is hidden below lg (phones get the sheet instead).
- *   2. AdminHeader renders AdminMobileNav (the phone hamburger + sheet).
- *   3. Desktop sidebar and mobile sheet both render from buildAdminNav
- *      (single nav source — the two can never drift).
- *   4. HideOnLP suppresses public chrome on /admin routes.
- *   5. The admin dashboard page keeps its unstable_cache wrapper.
+ * Updated 2026-06-16: the whole admin migrated to the neutral ConsoleShell
+ * (Matt directive "migrate all pages"); the brand AdminHeader/AdminSidebar/
+ * AdminMobileNav were retired from the layout, and the three dashboards
+ * collapsed into /admin/broker-dashboard (the admin home is now a thin redirect).
+ * The gate now locks the CURRENT shell so it can't regress:
+ *   1. ConsoleShell hides the desktop rail below lg and ships a mobile Sheet +
+ *      the shared AdminNavList (one nav source for rail and sheet).
+ *   2+3. Both admin layouts (protected + console) render ConsoleShell from the
+ *      single buildAdminNav source — the two can never drift.
+ *   4. HideOnLP suppresses public chrome on /admin routes (no double chrome).
+ *   5. The admin home stays a thin redirect — it must NOT reintroduce a slow,
+ *      uncached per-render data bundle on the landing route.
  *
  * Usage: node scripts/check-admin-mobile-shell.mjs
  */
@@ -22,19 +27,19 @@ import { readFileSync } from 'node:fs'
 
 const checks = [
   {
-    file: 'app/components/admin/AdminSidebar.tsx',
-    must: [/hidden[^"']*lg:flex|lg:flex[^"']*hidden/, /buildAdminNav/],
-    why: 'desktop sidebar must be hidden below lg and built from buildAdminNav',
+    file: 'components/console/ConsoleShell.tsx',
+    must: [/hidden[^"']*lg:flex|lg:flex[^"']*hidden/, /AdminNavList/, /SheetContent/],
+    why: 'console shell must hide the rail below lg, render the shared nav, and provide a mobile Sheet',
   },
   {
-    file: 'app/components/admin/AdminHeader.tsx',
-    must: [/AdminMobileNav/],
-    why: 'admin header must mount the mobile nav (hamburger + sheet)',
+    file: 'app/admin/(protected)/layout.tsx',
+    must: [/ConsoleShell/, /buildAdminNav/],
+    why: 'protected admin layout must render ConsoleShell from the single buildAdminNav source',
   },
   {
-    file: 'app/components/admin/AdminMobileNav.tsx',
-    must: [/buildAdminNav/, /SheetContent/],
-    why: 'mobile nav must render the shared nav sections inside a Sheet',
+    file: 'app/admin/console/layout.tsx',
+    must: [/ConsoleShell/, /buildAdminNav/],
+    why: 'console layout must render ConsoleShell from the single buildAdminNav source',
   },
   {
     file: 'components/layout/HideOnLP.tsx',
@@ -43,8 +48,8 @@ const checks = [
   },
   {
     file: 'app/admin/(protected)/page.tsx',
-    must: [/unstable_cache/],
-    why: 'dashboard data bundle must stay cached (uncached live APIs rendered in 28-49s)',
+    must: [/redirect\(/],
+    why: 'admin home stays a thin redirect to the single dashboard (no reintroduced slow per-render data bundle)',
   },
 ]
 
@@ -68,4 +73,4 @@ if (fails.length) {
   for (const f of fails) console.error(`FAIL: ${f}`)
   process.exit(1)
 }
-console.log(`All ${checks.length} shell contracts hold (responsive sidebar, mobile sheet, single nav source, no public chrome on /admin, cached dashboard).`)
+console.log(`All ${checks.length} shell contracts hold (ConsoleShell responsive rail + mobile sheet, single nav source across both admin layouts, no public chrome on /admin, thin-redirect home).`)
