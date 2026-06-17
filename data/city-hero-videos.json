@@ -1,0 +1,22 @@
+{
+  "_doc": "City/neighborhood hero-video curation worksheet for scripts/sync-city-videos.mjs. Each entry maps a geo slug to a CLEAN Drive B-roll clip. geo_tags come from the Drive folder/city. Run: node --env-file=.env.local scripts/sync-city-videos.mjs --only <slug>. driveFileId=null means awaiting a clean clip. NOTE: the snowdrift 'Area Guide' clips are finished marketing videos with text/voiceover overlays — not ideal as silent looping heroes; review before using.",
+  "videos": [
+    {
+      "scope": "cities",
+      "slug": "bend",
+      "driveFileId": null,
+      "geo_tags": ["bend", "central-oregon"],
+      "label": "Bend — uses the homepage Old Mill drone hero (public/videos/hero-optimized.mp4); raw 'Bend 4K Video.mov' (drive:1BJMbifxTiSaVs7xsOJlPpzGLdYb5JCvw, 4.3GB) is a heavier alt.",
+      "note": "covered by homepage hero"
+    },
+    { "scope": "cities", "slug": "redmond", "driveFileId": null, "geo_tags": ["redmond"], "note": "only 9x16 social Area Guide in Drive (drive:1iVk9URiXNVBcCYEkt1bT_WjhEtT4AgRN) — portrait, not a landscape hero. Awaiting clean landscape B-roll, else use a city photo." },
+    { "scope": "cities", "slug": "sisters", "driveFileId": null, "geo_tags": ["sisters"], "note": "only 9x16 social Area Guide (drive:1nuQcGf8f7Jubp60I40aVbuSrTHB1YMBK). Awaiting clean landscape B-roll." },
+    { "scope": "cities", "slug": "terrebonne", "driveFileId": null, "geo_tags": ["terrebonne"], "note": "only 9x16 social Area Guide (drive:17V6PGYQbKkPPFdlkPrFghJqcj9hkMSBE). Awaiting clean landscape B-roll." },
+    { "scope": "cities", "slug": "la-pine", "driveFileId": null, "geo_tags": ["la-pine"], "note": "awaiting clean landscape B-roll" },
+    { "scope": "cities", "slug": "sunriver", "driveFileId": null, "geo_tags": ["sunriver"], "note": "service-account folder is photos only; awaiting clean landscape B-roll" },
+
+    { "scope": "neighborhoods", "slug": "northwest-crossing", "driveFileId": "1XISgPlYHFBpcy4c5RFJyQGn4FPKNXdtC", "geo_tags": ["bend", "northwest-crossing"], "label": "NW Crossing Area Guide 16x9 4K", "note": "REVIEW: finished area-guide, has text/VO overlays" },
+    { "scope": "neighborhoods", "slug": "discovery-west", "driveFileId": "18C1spJ45IXe3rBx21FlhCTUuHKpAKzrx", "geo_tags": ["bend", "discovery-west"], "label": "Discovery West Area Guide 16x9 4K", "note": "REVIEW: finished area-guide, has overlays" },
+    { "scope": "neighborhoods", "slug": "tree-farm", "driveFileId": "1YUP0LV1OZluxuwl4FQwyUnaUsqEhsP8Q", "geo_tags": ["bend", "tree-farm"], "label": "Tree Farm Area Guide 16x9 4K", "note": "REVIEW: finished area-guide, has overlays" }
+  ]
+}
