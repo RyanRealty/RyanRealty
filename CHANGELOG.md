@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.1 (2026-06-17)
+
+### Bug Fixes
+- fix(home): featured tiles show photo, switch to video on focus (hover/keyboard), no play button
+
+---
+
+
 ## v1.594.0 (2026-06-17)
 
 ### Features
