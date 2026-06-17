@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.582.0 (2026-06-17)
+
+### Features
+- feat(consent): Meta CAPI honors Limited Data Use server-side for opted-out visitors
+
+---
+
+
 ## v1.581.0 (2026-06-17)
 
 ### Features
