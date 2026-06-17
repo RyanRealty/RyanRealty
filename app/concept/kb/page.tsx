@@ -8,9 +8,13 @@ import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
 import { KbCommunities } from '@/components/site/kb/KbCommunities.client'
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
+import { KbTicker } from '@/components/site/kb/KbTicker.client'
+import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
 import { KbTeam } from '@/components/site/kb/KbTeam.client'
+import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import type { KbTownItem, KbCommunityItem } from '@/components/site/kb/types'
+import type { KbTownItem, KbCommunityItem, KbTickerItem } from '@/components/site/kb/types'
+import { TESTIMONIALS } from '@/lib/testimonials'
 import '@/components/site/kb/kb.css'
 
 /**
@@ -81,6 +85,12 @@ export default async function KbHomePreview() {
     }))
   const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
 
+  const tickerItems: KbTickerItem[] = tiles.slice(0, 6).map((t) => ({
+    price: t.listPrice,
+    address: [t.streetNumber, t.streetName].filter(Boolean).join(' '),
+    town: t.city ?? '',
+  }))
+
   return (
     <main className="kb-root">
       <SmoothScrollProvider>
@@ -94,7 +104,16 @@ export default async function KbHomePreview() {
         <KbExploreTowns towns={towns} />
         <KbCommunities communities={communityItems} />
         <KbListingMap geojson={mapGeo} totalActive={pulse?.activeCount ?? mapFeatures.length} />
+        <KbTicker items={tickerItems} />
+        <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
         <KbTeam />
+        <KbSell
+          data={{
+            medianListPrice: pulse?.medianListPrice ?? null,
+            medianDaysToPending: pulse?.medianDaysToPending ?? null,
+            soldCount30d: pulse?.soldCount30d ?? null,
+          }}
+        />
         <KbFooter towns={towns} />
       </SmoothScrollProvider>
     </main>

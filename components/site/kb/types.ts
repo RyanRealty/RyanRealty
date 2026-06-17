@@ -24,6 +24,23 @@ export interface KbCommunityItem {
   img: string
 }
 
+export interface KbSellData {
+  medianListPrice: number | null
+  medianDaysToPending: number | null
+  soldCount30d: number | null
+}
+
+export interface KbReview {
+  quote: string
+  author: string
+}
+
+export interface KbTickerItem {
+  price: number | null
+  address: string
+  town: string
+}
+
 /** Formats a price to the nearest thousand: 740123 -> "$740,000". */
 export function kbMoney(n: number | null | undefined): string | null {
   if (n == null || !Number.isFinite(n)) return null
