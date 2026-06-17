@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.579.1 (2026-06-17)
+
+### Bug Fixes
+- fix(crm): Terms link in SMS consent + lock A2P consent surface (+ shadcn burndown gate)
+
+---
+
+
 ## v1.579.0 (2026-06-17)
 
 ### Features
