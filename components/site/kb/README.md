@@ -19,8 +19,8 @@ uses the section, so we never go through the build process twice.
 | `KbNav` | — | Transparent-over-hero top bar + full-screen menu (real site routes) | Same nav everywhere. Wrap in `.kb-root`. |
 | `KbHero` | `data`, `eyebrow?`, `titleTop?`, `titleBottom?`, `lead?`, `videoSrc?`, `posterSrc?` | Full-bleed video/photo hero, Amboqia H1, voice + plain-language search, live stat row | **Fully parameterized** — pass a city's name/photo/stats to reuse. Defaults = homepage. `videoSrc=null` → poster image only. |
 | `KbExploreTowns` | `towns: KbTownItem[]` | Stat-ledger town rows | Pass any geo set. |
-| `KbCommunities` | `communities: KbCommunityItem[]` | Featured community cards | |
-| `KbFeatured` | `items: KbFeaturedItem[]` | Poster grid, autoplaying silent video tours (video homes first) | Pass any listing set + per-item `video`. |
+| `KbCommunities` | `communities: KbCommunityItem[]` | Featured community cards, photo → silent Area Guide clip on focus | Pass per-item `video` (hosted by `sync-city-videos.mjs`). Viewport-autoplay + hover. |
+| `KbFeatured` | `items: KbFeaturedItem[]` | Poster grid, silent video tours play on focus (video homes first) | Pass any listing set + per-item `video`. Viewport-autoplay + hover. |
 | `KbListingMap` | `geojson`, `totalActive` | MapLibre listing map | Pass any GeoJSON + count. |
 | `KbTicker` | `items: KbTickerItem[]` | Scrolling price/address ticker | |
 | `KbTestimonials` | `reviews: KbReview[]` | Review wall | |
@@ -31,6 +31,14 @@ uses the section, so we never go through the build process twice.
 
 Data shapes live in [`types.ts`](./types.ts). The scoped styles live in
 [`kb.css`](./kb.css) (every rule under `.kb-root`).
+
+## Shared primitives (reuse, don't re-implement)
+
+- **`useInViewAutoplay()`** ([`use-in-view-autoplay.ts`](./use-in-view-autoplay.ts)) — feed-style "the video plays when it scrolls into focus" (IG/TikTok/FB). Tracks every registered card's intersection ratio and returns the single most-in-view card's key. Consumers pair it with hover/focus state: `const active = hovered ?? inViewKey`, so pointer devices get hover and touch devices (no hover) get scroll-into-view autoplay. One video plays at a time. SSR-safe; disabled under `prefers-reduced-motion`. Used by `KbFeatured` + `KbCommunities` — change behavior here, it changes everywhere.
+
+## City / community video pipeline
+
+Section cards (and city/community heroes) play **silent, graded Area Guide clips** pulled from Drive. Curate in [`data/city-hero-videos.json`](../../../data/city-hero-videos.json) — one entry per slug with `driveFileId`, `geo_tags` (carry **both** the community **and** its parent city, e.g. `caldera-springs` → `["sunriver","caldera-springs"]`), `scope`, optional `startSec`/`durationSec`. Run `node --env-file=.env.local scripts/sync-city-videos.mjs` to download → grade (same look as the homepage hero) → encode (web h.264, ~3MB) → poster, writing `public/videos/<scope>/<slug>.mp4` + the resolved manifest [`data/city-hero-videos.resolved.json`](../../../data/city-hero-videos.resolved.json) that the page reads. Use the `1080p - h.265.mov` Drive variant (landscape 16:9); the service account reads the copies in Matt's own folder, not the snowdrift-owned originals.
 
 ## Reusing on a new page (the city-rebuild recipe)
 

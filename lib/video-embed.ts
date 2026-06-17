@@ -224,3 +224,47 @@ export function toBackgroundEmbed(url: string): string {
     return url
   }
 }
+
+/**
+ * Given a normalized embed, return a SILENT background-video version (autoplay,
+ * muted, loop, NO controls / NO play button) for a self-playing listing/community
+ * tile — or `null` when the host CANNOT be rendered chrome-less. Only direct video
+ * files, Vimeo (`background=1`), YouTube (`controls=0`), and Cloudflare Stream
+ * (`controls=false`) can be guaranteed play-button-free. Aryeo, Google Drive
+ * `/preview`, Matterport, Zillow 3D and unknown hosts keep a native play button, so
+ * we return null and the tile stays photo-only (Matt directive: no play button on
+ * tiles). Pure + client-safe.
+ */
+export function toTileBackgroundVideo(embed: {
+  url: string
+  embedType: 'iframe' | 'video-tag' | 'link'
+}): { url: string; embedType: 'iframe' | 'video-tag' } | null {
+  if (embed.embedType === 'video-tag') return { url: embed.url, embedType: 'video-tag' }
+  if (embed.embedType !== 'iframe') return null
+  let host = ''
+  try {
+    host = new URL(embed.url).hostname.toLowerCase()
+  } catch {
+    return null
+  }
+  if (
+    host.includes('vimeo.com') ||
+    host.includes('youtube.com') ||
+    host.includes('youtube-nocookie.com')
+  ) {
+    return { url: toBackgroundEmbed(embed.url), embedType: 'iframe' }
+  }
+  if (host.includes('cloudflarestream.com') || host.includes('videodelivery.net')) {
+    try {
+      const u = new URL(embed.url)
+      u.searchParams.set('autoplay', 'true')
+      u.searchParams.set('muted', 'true')
+      u.searchParams.set('loop', 'true')
+      u.searchParams.set('controls', 'false')
+      return { url: u.toString(), embedType: 'iframe' }
+    } catch {
+      return null
+    }
+  }
+  return null
+}

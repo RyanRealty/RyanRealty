@@ -1,0 +1,46 @@
+{
+  "tetherow": {
+    "scope": "communities",
+    "video": "/videos/communities/tetherow.mp4",
+    "poster": "/videos/communities/tetherow.jpg",
+    "geo_tags": [
+      "bend",
+      "tetherow"
+    ],
+    "source": "drive:1ayrMcue9xOuMoSJ8ahlZCdoQCsjIfirJ",
+    "label": "Tetherow Area Guide (landscape)"
+  },
+  "caldera-springs": {
+    "scope": "communities",
+    "video": "/videos/communities/caldera-springs.mp4",
+    "poster": "/videos/communities/caldera-springs.jpg",
+    "geo_tags": [
+      "sunriver",
+      "caldera-springs"
+    ],
+    "source": "drive:1d4THmV85P6FIpxfMLMZ7yjF5E-NgsWGw",
+    "label": "Caldera Springs Area Guide (landscape) — the Sunriver-area community"
+  },
+  "broken-top": {
+    "scope": "communities",
+    "video": "/videos/communities/broken-top.mp4",
+    "poster": "/videos/communities/broken-top.jpg",
+    "geo_tags": [
+      "bend",
+      "broken-top"
+    ],
+    "source": "drive:1cwOiepvRBR7o8pctl653vuwvjBMTDxdj",
+    "label": "Broken Top Area Guide (landscape)"
+  },
+  "northwest-crossing": {
+    "scope": "communities",
+    "video": "/videos/communities/northwest-crossing.mp4",
+    "poster": "/videos/communities/northwest-crossing.jpg",
+    "geo_tags": [
+      "bend",
+      "northwest-crossing"
+    ],
+    "source": "drive:1bkUBY6J11r6nApimLSiTo0F0Nky7K4HM",
+    "label": "NorthWest Crossing Area Guide (landscape)"
+  }
+}

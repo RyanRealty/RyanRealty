@@ -22,6 +22,10 @@ export interface KbCommunityItem {
   town: string
   href: string
   img: string
+  /** Community Area Guide clip (silent, graded, hosted from Drive via
+   *  scripts/sync-city-videos.mjs). Plays as a muted background loop when the
+   *  card is the in-focus card on screen or on hover, same as a listing tile. */
+  video?: { url: string; embedType: 'iframe' | 'video-tag' } | null
 }
 
 export interface KbSellData {

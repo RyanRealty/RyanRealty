@@ -1,17 +1,24 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import type { KbCommunityItem } from './types'
+import { useInViewAutoplay } from './use-in-view-autoplay'
 
 /**
  * KB Communities (02) — horizontal drag/swipe rail of marquee resort/golf
- * communities with live active counts. Routes to /communities/[slug].
+ * communities with live active counts. Each card shows its photo by default and
+ * plays its silent Area Guide clip (muted background loop, no controls / no play
+ * button) when it becomes the in-focus card on screen or on hover — same model
+ * as a listing tile. Routes to /communities/[slug].
  */
 export function KbCommunities({ communities }: { communities: KbCommunityItem[] }) {
   const root = useRef<HTMLElement>(null)
   const track = useRef<HTMLDivElement>(null)
+  const { inViewKey, register } = useInViewAutoplay()
+  const [hovered, setHovered] = useState<string | null>(null)
+  const activeHref = hovered ?? inViewKey
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger)
@@ -84,17 +91,44 @@ export function KbCommunities({ communities }: { communities: KbCommunityItem[] 
       </div>
       <div className="comm-viewport">
         <div className="comm-track" ref={track}>
-          {communities.map((c) => (
-            <a key={c.href} className="comm-card" href={c.href}>
-              <img className="comm-img" src={c.img} alt={`${c.name}, ${c.town}`} loading="lazy" />
-              <div className="comm-body">
-                <div className="comm-name">{c.name}</div>
-                <div className="comm-sub">
-                  <span className="ct mono-num">{c.activeCount}</span> active · {c.town}
+          {communities.map((c) => {
+            const playing = activeHref === c.href && !!c.video
+            return (
+              <a
+                key={c.href}
+                ref={register(c.href)}
+                className={`comm-card${playing ? ' playing' : ''}`}
+                href={c.href}
+                onMouseEnter={() => setHovered(c.href)}
+                onMouseLeave={() => setHovered((p) => (p === c.href ? null : p))}
+                onFocus={() => setHovered(c.href)}
+                onBlur={() => setHovered((p) => (p === c.href ? null : p))}
+              >
+                <div className="comm-media">
+                  <img className="comm-img" src={c.img} alt={`${c.name}, ${c.town}`} loading="lazy" />
+                  {playing && c.video ? (
+                    c.video.embedType === 'video-tag' ? (
+                      <video className="comm-video" src={c.video.url} autoPlay muted loop playsInline poster={c.img} />
+                    ) : (
+                      <iframe
+                        className="comm-video"
+                        src={c.video.url}
+                        title={`${c.name} area guide`}
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        loading="lazy"
+                      />
+                    )
+                  ) : null}
                 </div>
-              </div>
-            </a>
-          ))}
+                <div className="comm-body">
+                  <div className="comm-name">{c.name}</div>
+                  <div className="comm-sub">
+                    <span className="ct mono-num">{c.activeCount}</span> active · {c.town}
+                  </div>
+                </div>
+              </a>
+            )
+          })}
         </div>
       </div>
       <div className="comm-hint">

@@ -7,7 +7,7 @@ import { listingDetailPath } from '@/lib/slug'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
-import { toBackgroundEmbed } from '@/lib/video-embed'
+import { toTileBackgroundVideo } from '@/lib/video-embed'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbHero } from '@/components/site/kb/KbHero.client'
@@ -23,6 +23,7 @@ import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import type { KbTownItem, KbCommunityItem, KbTickerItem, KbFeaturedItem, KbMarketData } from '@/components/site/kb/types'
 import { TESTIMONIALS } from '@/lib/testimonials'
+import communityVideoManifest from '@/data/city-hero-videos.resolved.json'
 import '@/components/site/kb/kb.css'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -65,16 +66,20 @@ const TOWN_IMG: Record<string, string> = {
   bend: '/images/kb/bend-drake-park-aerial.jpg',
   'la-pine': '/images/kb/vandevert-ranch.jpg',
   redmond: '/images/kb/redmond-downtown-aerial.jpg',
-  sunriver: '/images/kb/caldera-springs.jpg',
+  sunriver: '/images/kb/sunriver-deschutes-river.jpg',
   sisters: '/images/kb/sisters-downtown-three-peaks.jpg',
   terrebonne: '/images/kb/smith-rock-terrebonne.jpg',
 }
 
+// Each featured community resolves its silent Area Guide clip (graded + hosted
+// by scripts/sync-city-videos.mjs) via `videoSlug` → data/city-hero-videos.resolved.json.
+// Caldera Springs IS the Sunriver-area community, so the Sunriver card plays the
+// real Caldera Springs guide (a Sunriver-area video) — not a mismatched still.
 const COMM_FEATURED = [
-  { match: 'tetherow', town: 'Bend', img: '/images/kb/tetherow-golf-aerial.jpg' },
-  { match: 'caldera', town: 'Sunriver', img: '/images/kb/caldera-springs.jpg' },
-  { match: 'broken top', town: 'Bend', img: '/images/kb/broken-top.jpg' },
-  { match: 'crossing', town: 'Bend', img: '/images/kb/northwest-crossing.jpg' },
+  { match: 'tetherow', town: 'Bend', img: '/images/kb/tetherow-golf-aerial.jpg', videoSlug: 'tetherow' },
+  { match: 'caldera', town: 'Sunriver', img: '/images/kb/caldera-springs.jpg', videoSlug: 'caldera-springs' },
+  { match: 'broken top', town: 'Bend', img: '/images/kb/broken-top.jpg', videoSlug: 'broken-top' },
+  { match: 'northwest crossing', town: 'Bend', img: '/images/kb/northwest-crossing.jpg', videoSlug: 'northwest-crossing' },
 ]
 
 const monthLabel = (iso?: string) =>
@@ -98,10 +103,19 @@ export default async function Home() {
     return { name: c.name, activeCount: c.activeCount, medianPrice: c.medianPrice, href: `/cities/${slug}`, img: TOWN_IMG[slug] }
   }).filter((t): t is KbTownItem => t !== null)
 
-  const communityItems: KbCommunityItem[] = COMM_FEATURED.map((f) => {
+  const communityVideos = communityVideoManifest as Record<string, { video?: string } | undefined>
+  const communityItems: KbCommunityItem[] = COMM_FEATURED.map((f): KbCommunityItem | null => {
     const c = communities.find((x) => x.subdivision.toLowerCase().includes(f.match))
     if (!c) return null
-    return { name: c.subdivision, activeCount: c.activeCount, town: f.town, href: `/communities/${c.slug}`, img: f.img }
+    const cv = communityVideos[f.videoSlug]
+    return {
+      name: c.subdivision,
+      activeCount: c.activeCount,
+      town: f.town,
+      href: `/communities/${c.slug}`,
+      img: f.img,
+      video: cv?.video ? { url: cv.video, embedType: 'video-tag' as const } : null,
+    }
   }).filter((x): x is KbCommunityItem => x !== null)
 
   const mapFeatures = tiles
@@ -129,21 +143,28 @@ export default async function Home() {
   }))
 
   // Featured homes: fetch each top candidate's MLS listing video tour (cached,
-  // failure-safe), then surface video-having homes FIRST so the slider plays
-  // muted background loops on hover (like the demo). Photo-only homes fill the
-  // remaining slots. 'link'-type videos (host blocks framing) are treated as no
-  // video so the card stays photo-only.
+  // failure-safe), keep only the FIRST that can render as a silent, chrome-less
+  // background loop (no play button — Matt directive). Hosts we can't strip to a
+  // clean background (Aryeo, Google Drive preview, Matterport, Zillow 3D) are
+  // skipped so the tile stays photo-only instead of showing a play button.
+  // Background-video homes sort FIRST so the grid leads with motion.
   const featuredCandidates = featured.filter((t) => t.photoUrl).slice(0, 12)
   const featuredVideos = await Promise.all(
     featuredCandidates.map((t) =>
       getListingVideos(t.listingKey)
-        .then((vids) => vids.find((v) => v.embedType !== 'link') ?? null)
+        .then((vids) => {
+          for (const v of vids) {
+            const bg = toTileBackgroundVideo(v)
+            if (bg) return bg
+          }
+          return null
+        })
         .catch(() => null),
     ),
   )
   const featuredRanked = featuredCandidates
     .map((t, i) => ({ t, v: featuredVideos[i] }))
-    .sort((a, b) => (a.v ? 0 : 1) - (b.v ? 0 : 1)) // video-having first (stable sort)
+    .sort((a, b) => (a.v ? 0 : 1) - (b.v ? 0 : 1)) // background-video homes first (stable sort)
     .slice(0, 6)
   const featuredItems: KbFeaturedItem[] = featuredRanked.map(({ t, v }) => ({
     price: t.listPrice,
@@ -160,14 +181,7 @@ export default async function Home() {
       { city: t.city, subdivision: t.subdivisionName },
       { mlsNumber: t.listNumber },
     ),
-    video: v
-      ? {
-          // iframe embeds → silent background mode (autoplay, loop, no controls /
-          // no play button); direct mp4 already has no controls.
-          url: v.embedType === 'iframe' ? toBackgroundEmbed(v.url) : v.url,
-          embedType: v.embedType as 'iframe' | 'video-tag',
-        }
-      : null,
+    video: v, // already a clean silent background embed (or null → photo-only)
   }))
 
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null

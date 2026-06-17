@@ -52,6 +52,7 @@ async function main() {
   }
   const cfg = JSON.parse(readFileSync(CONFIG, 'utf8'))
   const out = {}
+  const failures = []
 
   for (const item of cfg.videos || []) {
     if (only && item.slug !== only) continue
@@ -59,6 +60,7 @@ async function main() {
       console.log(`SKIP ${item.slug}: no driveFileId yet (${item.note || 'awaiting clean B-roll'})`)
       continue
     }
+    try {
     const scope = item.scope || 'cities'
     const relMp4 = `videos/${scope}/${item.slug}.mp4`
     const relJpg = `videos/${scope}/${item.slug}.jpg`
@@ -91,7 +93,13 @@ async function main() {
       source: `drive:${item.driveFileId}`,
       label: item.label || null,
     }
+    } catch (e) {
+      console.error(`FAIL ${item.slug}: ${String((e && e.message) || e).split('\n')[0]}`)
+      failures.push(item.slug)
+    }
   }
+
+  if (failures.length) console.log(`\n${failures.length} failed: ${failures.join(', ')}`)
 
   if (!dry && Object.keys(out).length) {
     const manifest = resolve(ROOT, 'data/city-hero-videos.resolved.json')

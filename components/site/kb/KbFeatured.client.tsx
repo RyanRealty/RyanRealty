@@ -4,22 +4,24 @@ import { useEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { kbMoneyFull, type KbFeaturedItem } from './types'
+import { useInViewAutoplay } from './use-in-view-autoplay'
 
 /**
  * KB Featured homes (04) — asymmetric poster grid of the highest-value active
- * listings, video-tour homes first. Default state is the LISTING PHOTO. When a
- * tile gains focus (hover OR keyboard focus) and the home has an MLS video tour,
- * the tile switches to the video — a muted background loop with NO controls /
- * play button (the embed URL is pre-set to background mode) — and switches back
- * to the photo on blur. Only the focused tile mounts its video.
+ * listings, video-tour homes first. Default state is the LISTING PHOTO. The tile
+ * switches to its MLS video tour — a muted background loop with NO controls / no
+ * play button (the embed URL is pre-set to background mode) — when it becomes the
+ * in-focus card on screen (viewport autoplay, like a social feed) OR on pointer
+ * hover / keyboard focus, and reverts to the photo otherwise. One video plays at
+ * a time. Only the active tile mounts its video.
  */
 export function KbFeatured({ items }: { items: KbFeaturedItem[] }) {
   const root = useRef<HTMLElement>(null)
-  const [active, setActive] = useState<string | null>(null)
-  const enter = (it: KbFeaturedItem) => {
-    if (it.video) setActive(it.href)
-  }
-  const leave = (href: string) => setActive((p) => (p === href ? null : p))
+  const { inViewKey, register } = useInViewAutoplay()
+  const [hovered, setHovered] = useState<string | null>(null)
+  const activeHref = hovered ?? inViewKey
+  const enter = (href: string) => setHovered(href)
+  const leave = (href: string) => setHovered((p) => (p === href ? null : p))
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger)
@@ -55,15 +57,16 @@ export function KbFeatured({ items }: { items: KbFeaturedItem[] }) {
         </div>
         <div className="lst-grid">
           {items.map((it) => {
-            const playing = active === it.href && !!it.video
+            const playing = activeHref === it.href && !!it.video
             return (
               <a
                 key={it.href}
+                ref={register(it.href)}
                 className={`lst-card${playing ? ' playing' : ''}`}
                 href={it.href}
-                onMouseEnter={() => enter(it)}
+                onMouseEnter={() => enter(it.href)}
                 onMouseLeave={() => leave(it.href)}
-                onFocus={() => enter(it)}
+                onFocus={() => enter(it.href)}
                 onBlur={() => leave(it.href)}
               >
                 <div className="lst-media">

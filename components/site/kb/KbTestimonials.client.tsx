@@ -20,7 +20,12 @@ export function KbTestimonials({ reviews }: { reviews: KbReview[] }) {
   const [paused, setPaused] = useState(false)
 
   useEffect(() => {
-    if (paused || reviews.length < 2) return
+    // No auto-advance under reduced-motion (WCAG 2.2.2 — content that moves /
+    // auto-updates must be pausable; we simply do not start the timer). Hover
+    // still switches reviews on demand.
+    const reduce =
+      typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (paused || reduce || reviews.length < 2) return
     const t = setInterval(() => setActive((i) => (i + 1) % reviews.length), 6500)
     return () => clearInterval(t)
   }, [paused, reviews.length])
