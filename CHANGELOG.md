@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.586.0 (2026-06-17)
+
+### Features
+- feat(crm): stamp FUB campaign object from UTMs on the FSBO LP lead (CRM_INTEGRATION #2)
+
+---
+
+
 ## v1.585.0 (2026-06-17)
 
 ### Features
