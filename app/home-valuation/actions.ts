@@ -11,6 +11,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { CMAPdfDocument } from '@/lib/pdf/cma-pdf'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { headers } from 'next/headers'
 
 const source = (process.env.NEXT_PUBLIC_SITE_URL ?? 'ryan-realty.com').replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase()
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -95,6 +96,22 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
   if (!insertRes.ok) return { error: insertRes.error ?? 'insert failed' }
 
   const fullAddress = [street, city, state, postalCode].filter(Boolean).join(', ')
+
+  let originUtmSource: string | undefined
+  let originUtmMedium: string | undefined
+  let originUtmCampaign: string | undefined
+  let originUtmContent: string | undefined
+  try {
+    const referer = (await headers()).get('referer') ?? ''
+    if (referer) {
+      const refUrl = new URL(referer)
+      originUtmSource = refUrl.searchParams.get('utm_source') ?? undefined
+      originUtmMedium = refUrl.searchParams.get('utm_medium') ?? undefined
+      originUtmCampaign = refUrl.searchParams.get('utm_campaign') ?? undefined
+      originUtmContent = refUrl.searchParams.get('utm_content') ?? undefined
+    }
+  } catch {}
+
   const fubRes = await sendEvent({
     type: 'Seller Inquiry',
     person: {
@@ -112,6 +129,14 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
       state: state || undefined,
       code: postalCode || undefined,
     },
+    campaign: originUtmSource
+      ? {
+          source: originUtmSource,
+          ...(originUtmMedium && { medium: originUtmMedium }),
+          ...(originUtmCampaign && { campaign: originUtmCampaign }),
+          ...(originUtmContent && { content: originUtmContent }),
+        }
+      : undefined,
   })
   if (!fubRes.ok) {
     // Lead is saved; log but don't fail

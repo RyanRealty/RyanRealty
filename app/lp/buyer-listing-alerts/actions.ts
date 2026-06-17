@@ -17,7 +17,7 @@ import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
@@ -185,6 +185,22 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
       : 'unspecified'
     const areasStr = searchAreasArr.length ? searchAreasArr.join(', ') : 'unspecified'
 
+    // ─── Inbound attribution UTMs (hoisted so sendEvent can use them) ──────
+    let originUtmSource: string | undefined
+    let originUtmMedium: string | undefined
+    let originUtmCampaign: string | undefined
+    let originUtmContent: string | undefined
+    try {
+      const referer = (await headers()).get('referer') ?? ''
+      if (referer) {
+        const refUrl = new URL(referer)
+        originUtmSource = refUrl.searchParams.get('utm_source') ?? undefined
+        originUtmMedium = refUrl.searchParams.get('utm_medium') ?? undefined
+        originUtmCampaign = refUrl.searchParams.get('utm_campaign') ?? undefined
+        originUtmContent = refUrl.searchParams.get('utm_content') ?? undefined
+      }
+    } catch {}
+
     const eventResult = await sendEvent({
       type: 'Property Inquiry',
       person,
@@ -192,6 +208,14 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
       sourceUrl: `${siteUrl}/lp/buyer-listing-alerts`,
       pageTitle: 'Buyer LP — Listing Alerts',
       message: `Buyer LP submission. Budget: ${budgetStr}. Areas: ${areasStr}. Beds min: ${bedsMin ?? 'unspecified'}. Timeline: ${timeline ?? 'unspecified'}. Tier: ${classification}. Assigned: ${assignment.broker}. ${notes ? `Notes: ${notes}` : ''}`,
+      campaign: originUtmSource
+        ? {
+            source: originUtmSource,
+            ...(originUtmMedium && { medium: originUtmMedium }),
+            ...(originUtmCampaign && { campaign: originUtmCampaign }),
+            ...(originUtmContent && { content: originUtmContent }),
+          }
+        : undefined,
     })
 
     if (!eventResult.ok) {

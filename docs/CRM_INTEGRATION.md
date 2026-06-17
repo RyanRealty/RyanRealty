@@ -54,12 +54,14 @@ ad / organic / form ──► POST /v1/events (sendEvent)  ─┬─ dedup (emai
    lost. **Verify the first live Meta lead post-deploy** (events 204 + person resolution timing).
    REMAINING polish: set the FUB pipeline on the events path too (currently only the fallback
    sets it); confirm `customBuySellIntent` / `customFbCampaignName` custom fields exist in FUB.
-2. **Stamp the `campaign` object on form events.** ✅ **Seller LP done 2026-06-17** —
-   `app/lp/seller-home-value/actions.ts` now sends the structured `campaign` object
-   (source/medium/campaign/content) from the captured origin UTMs on the full submission.
-   REMAINING: do the same on the other lead actions (contact, home-valuation, buyer-listing-alerts,
-   fsbo, expired-listing, listing inquiry, page CTA, rental, broker contact) — each already
-   has UTM access via the referer; add the same conditional `campaign` block to their sendEvent calls.
+2. **Stamp the `campaign` object on form events.** ✅ **DONE 2026-06-17 across the public
+   lead forms** — seller-home-value, fsbo, contact, home-valuation, expired-listing,
+   buyer-listing-alerts, and tetherow/heath all now capture origin UTMs from the referer and
+   send the structured FUB `campaign` object (source/medium/campaign/content), gated on
+   utm_source. lead-landing already had a richer always-attribute campaign (kept). The
+   remaining sendEvent callers either take `campaign` via a `CampaignInput` param
+   (lead-capture: page-CTA / rental / tetherow / exit-intent) or are internal/admin paths
+   (crm, agents, home, cma, crons) — not public ad-lead forms, so out of scope.
 3. **FUB webhooks + offline-conversion upload (closed-loop ROAS).** No FUB webhook handler
    exists today. Add one for `dealsUpdated` (close/won) that **decouples**: persist the
    event (resourceId + uri only — FUB payloads are thin) to a queue table, then a separate

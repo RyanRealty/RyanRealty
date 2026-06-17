@@ -12,7 +12,7 @@ import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 
 /**
  * Heath at Tetherow CMA form server action.
@@ -106,6 +106,22 @@ export async function submitHeathCmaForm(
   }
 
   try {
+    // ─── Inbound attribution UTMs (hoisted so sendEvent can use them) ──────
+    let originUtmSource: string | undefined
+    let originUtmMedium: string | undefined
+    let originUtmCampaign: string | undefined
+    let originUtmContent: string | undefined
+    try {
+      const referer = (await headers()).get('referer') ?? ''
+      if (referer) {
+        const refUrl = new URL(referer)
+        originUtmSource = refUrl.searchParams.get('utm_source') ?? undefined
+        originUtmMedium = refUrl.searchParams.get('utm_medium') ?? undefined
+        originUtmCampaign = refUrl.searchParams.get('utm_campaign') ?? undefined
+        originUtmContent = refUrl.searchParams.get('utm_content') ?? undefined
+      }
+    } catch {}
+
     // Send to FUB. Use sendEvent so a new lead is created if not already
     // known; existing leads are deduped by email match.
     await sendEvent({
@@ -122,6 +138,14 @@ export async function submitHeathCmaForm(
         .filter(Boolean)
         .join('\n'),
       person,
+      campaign: originUtmSource
+        ? {
+            source: originUtmSource,
+            ...(originUtmMedium && { medium: originUtmMedium }),
+            ...(originUtmCampaign && { campaign: originUtmCampaign }),
+            ...(originUtmContent && { content: originUtmContent }),
+          }
+        : undefined,
     })
 
     // Re-look-up + tag + assign + open a task for the broker.

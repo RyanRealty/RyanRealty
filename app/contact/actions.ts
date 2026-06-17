@@ -1,6 +1,7 @@
 'use server'
 
 import { after } from 'next/server'
+import { headers } from 'next/headers'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { sendEvent, findPersonByEmail } from '@/lib/followupboss'
 import { sendContactNotification } from '@/lib/resend'
@@ -56,6 +57,24 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   }
   const messageTag = listingLabel ? `${inquiryType} — ${listingLabel}` : inquiryType
 
+  // Inbound attribution UTMs (so sendEvent can carry campaign attribution)
+  let originUtmSource: string | undefined
+  let originUtmMedium: string | undefined
+  let originUtmCampaign: string | undefined
+  let originUtmContent: string | undefined
+  try {
+    const referer = (await headers()).get('referer') ?? ''
+    if (referer) {
+      const refUrl = new URL(referer)
+      originUtmSource = refUrl.searchParams.get('utm_source') ?? undefined
+      originUtmMedium = refUrl.searchParams.get('utm_medium') ?? undefined
+      originUtmCampaign = refUrl.searchParams.get('utm_campaign') ?? undefined
+      originUtmContent = refUrl.searchParams.get('utm_content') ?? undefined
+    }
+  } catch {
+    // malformed referer — no UTMs
+  }
+
   const res = await sendEvent({
     type: 'General Inquiry',
     person: {
@@ -67,6 +86,14 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
     source,
     sourceUrl: typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_SITE_URL ? `${process.env.NEXT_PUBLIC_SITE_URL}/contact` : undefined,
     message: `[${messageTag}] ${message || '(no message)'}`,
+    campaign: originUtmSource
+      ? {
+          source: originUtmSource,
+          ...(originUtmMedium && { medium: originUtmMedium }),
+          ...(originUtmCampaign && { campaign: originUtmCampaign }),
+          ...(originUtmContent && { content: originUtmContent }),
+        }
+      : undefined,
   })
 
   if (!res.ok) return { error: res.error ?? 'Failed to send' }
