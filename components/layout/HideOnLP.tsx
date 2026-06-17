@@ -34,6 +34,26 @@ export default function HideOnLP({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+/**
+ * HideChrome — like HideOnLP, but ALSO hides on the homepage "/". The homepage
+ * is the kinetic-brutalist design and carries its own chrome (KbNav + the KB
+ * footer section), so the default SiteHeader / SiteFooter would double up.
+ *
+ * Use this ONLY for the header + footer. Everything else the layout wraps in
+ * HideOnLP (the site-wide JSON-LD, VisitTracker, auth bridges, skip-link) MUST
+ * keep running on the homepage — it is the highest-traffic page — so those stay
+ * on plain HideOnLP, which does NOT hide "/".
+ */
+export function HideChrome({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  if (pathname === "/") return null
+  if (pathname?.startsWith("/lp/")) return null
+  if (pathname === "/admin" || pathname?.startsWith("/admin/")) return null
+  if (pathname?.startsWith("/sign/")) return null
+  if (pathname?.startsWith("/concept/")) return null
+  return <>{children}</>
+}
+
 /** Inverse: show only on /lp/* routes. */
 export function OnLPOnly({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()

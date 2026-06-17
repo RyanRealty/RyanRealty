@@ -7,7 +7,7 @@ import SiteFooter from "../components/site/SiteFooter";
 import { RootProvider } from "../components/site/providers";
 import SignInPromptWithSession from "../components/layout/SignInPromptWithSession";
 import VisitTrackerWithSession from "../components/layout/VisitTrackerWithSession";
-import HideOnLP from "../components/layout/HideOnLP";
+import HideOnLP, { HideChrome } from "../components/layout/HideOnLP";
 import JsonLd from "../components/JsonLd";
 import GTMHead from "../components/GTMHead";
 import GlobalIntentTracker from "../components/GlobalIntentTracker";
@@ -123,14 +123,17 @@ export default function RootLayout({
           <HideOnLP>
             <JsonLd />
           </HideOnLP>
-          {/* Static site v2 chrome. HideOnLP unmounts on /lp/* after hydration. */}
-          <HideOnLP>
+          {/* Static site v2 chrome. HideChrome unmounts header+footer on /lp/*,
+              /admin, /sign/*, and the "/" homepage (which carries its own KbNav +
+              KB footer). The site-wide JSON-LD + VisitTracker + auth bridges below
+              stay on plain HideOnLP so they keep running on the homepage. */}
+          <HideChrome>
             <SiteHeader />
-          </HideOnLP>
+          </HideChrome>
           <div id="main-content" tabIndex={-1} className="min-h-[calc(100vh-64px)]">{children}</div>
-          <HideOnLP>
+          <HideChrome>
             <SiteFooter />
-          </HideOnLP>
+          </HideChrome>
           <HideOnLP>
             <SignInPromptWithSession />
           </HideOnLP>

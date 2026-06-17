@@ -8,13 +8,17 @@ const LINKS = [
   { href: '#listings', label: 'Listings' },
   { href: '#sell', label: 'Sell' },
 ]
+// The full-screen menu is the homepage's path to the rest of the site, so these
+// are real routes (not in-page anchors). The always-visible top-bar LINKS above
+// stay as anchors for quick in-page scrolling.
 const MENU = [
-  { href: '#market-report', label: 'Market' },
-  { href: '#towns', label: 'Towns' },
-  { href: '#communities', label: 'Communities' },
-  { href: '#listings', label: 'Listings' },
-  { href: '#sell', label: 'Sell' },
-  { href: '#team', label: 'Team' },
+  { href: '/homes-for-sale', label: 'Search homes' },
+  { href: '/communities', label: 'Communities' },
+  { href: '/cities', label: 'Towns' },
+  { href: '/sell/valuation', label: 'Sell your home' },
+  { href: '/about', label: 'About' },
+  { href: '/team', label: 'Our team' },
+  { href: '/contact', label: 'Contact' },
 ]
 
 /**
