@@ -7,15 +7,19 @@ import { kbMoneyFull, type KbFeaturedItem } from './types'
 
 /**
  * KB Featured homes (04) — asymmetric poster grid of the highest-value active
- * listings, video-tour homes first. Each home with an MLS video tour AUTOPLAYS
- * it as a muted background loop over the poster (no hover, no play-button icon).
- * Iframe embeds use native lazy-loading so off-screen tours don't load until the
- * tile scrolls into view; the video fades in over the poster once it has loaded.
+ * listings, video-tour homes first. Default state is the LISTING PHOTO. When a
+ * tile gains focus (hover OR keyboard focus) and the home has an MLS video tour,
+ * the tile switches to the video — a muted background loop with NO controls /
+ * play button (the embed URL is pre-set to background mode) — and switches back
+ * to the photo on blur. Only the focused tile mounts its video.
  */
 export function KbFeatured({ items }: { items: KbFeaturedItem[] }) {
   const root = useRef<HTMLElement>(null)
-  const [loaded, setLoaded] = useState<Record<string, boolean>>({})
-  const markLoaded = (href: string) => setLoaded((p) => (p[href] ? p : { ...p, [href]: true }))
+  const [active, setActive] = useState<string | null>(null)
+  const enter = (it: KbFeaturedItem) => {
+    if (it.video) setActive(it.href)
+  }
+  const leave = (href: string) => setActive((p) => (p === href ? null : p))
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger)
@@ -51,12 +55,20 @@ export function KbFeatured({ items }: { items: KbFeaturedItem[] }) {
         </div>
         <div className="lst-grid">
           {items.map((it) => {
-            const playing = !!it.video && !!loaded[it.href]
+            const playing = active === it.href && !!it.video
             return (
-              <a key={it.href} className={`lst-card${playing ? ' playing' : ''}`} href={it.href}>
+              <a
+                key={it.href}
+                className={`lst-card${playing ? ' playing' : ''}`}
+                href={it.href}
+                onMouseEnter={() => enter(it)}
+                onMouseLeave={() => leave(it.href)}
+                onFocus={() => enter(it)}
+                onBlur={() => leave(it.href)}
+              >
                 <div className="lst-media">
                   <img className="lst-img" src={it.img} alt={it.address} loading="lazy" />
-                  {it.video ? (
+                  {playing && it.video ? (
                     it.video.embedType === 'video-tag' ? (
                       <video
                         className="lst-video"
@@ -66,7 +78,6 @@ export function KbFeatured({ items }: { items: KbFeaturedItem[] }) {
                         loop
                         playsInline
                         poster={it.img}
-                        onLoadedData={() => markLoaded(it.href)}
                       />
                     ) : (
                       <iframe
@@ -76,7 +87,6 @@ export function KbFeatured({ items }: { items: KbFeaturedItem[] }) {
                         allow="autoplay; fullscreen; picture-in-picture"
                         loading="lazy"
                         style={{ border: 0 }}
-                        onLoad={() => markLoaded(it.href)}
                       />
                     )
                   ) : null}
