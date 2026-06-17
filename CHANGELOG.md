@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.5 (2026-06-17)
+
+### Other
+- kb: rebuild market section (informative + brutalist) + map zoom + Tour badges
+
+---
+
+
 ## v1.594.4 (2026-06-17)
 
 ### Maintenance
