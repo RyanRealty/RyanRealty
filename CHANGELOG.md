@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.6 (2026-06-17)
+
+### Other
+- kb(city): rebuild the whole city page on KB sections (Phase 9 wave 1)
+
+---
+
+
 ## v1.594.5 (2026-06-17)
 
 ### Other
