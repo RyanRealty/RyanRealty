@@ -171,16 +171,22 @@ function isExcludedPath(relativePath) {
 
 function loadIgnoredFiles() {
   const ignorePath = path.join(ROOT, IGNORE_FILE);
-  if (!fs.existsSync(ignorePath)) return new Set();
+  if (!fs.existsSync(ignorePath)) return { has: () => false };
 
+  // Exact file paths, plus directory prefixes (entries ending in "/") that
+  // exempt a whole sanctioned-bespoke surface in one line (e.g. the KB design
+  // system, which carries its own token layer and is not the shadcn system
+  // this gate enforces). Returns an object with .has() so call sites are unchanged.
   const raw = fs.readFileSync(ignorePath, "utf8");
-  const entries = raw
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith("#"))
-    .map((line) => normalizePath(line));
-
-  return new Set(entries);
+  const files = new Set();
+  const prefixes = [];
+  for (const line of raw.split(/\r?\n/)) {
+    const t = line.trim();
+    if (!t || t.startsWith("#")) continue;
+    if (t.endsWith("/")) prefixes.push(normalizePath(t.replace(/\/$/, "")) + "/");
+    else files.add(normalizePath(t));
+  }
+  return { has: (p) => files.has(p) || prefixes.some((pre) => p.startsWith(pre)) };
 }
 
 function walkDirectory(startPath, files = []) {

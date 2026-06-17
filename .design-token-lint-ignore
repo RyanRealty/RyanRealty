@@ -185,8 +185,5 @@ app/components/admin/AdminMobileTabBar.tsx
 # --navy/--cream/--edge) and gets a dedicated KB structural gate (Phase 3).
 # Raw hero search input/button + full-bleed navy/cream sections — same exception
 # class as the V3 hero search above. Each KB island is listed as added.
-components/site/kb/KbHero.client.tsx
-components/site/kb/KbExploreTowns.client.tsx
-components/site/kb/KbCommunities.client.tsx
-components/site/kb/KbTeam.client.tsx
-components/site/kb/KbFooter.client.tsx
+components/site/kb/
+app/concept/kb/
