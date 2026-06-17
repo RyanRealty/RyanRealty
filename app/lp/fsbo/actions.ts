@@ -149,6 +149,24 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
 
     const assignment = await assignFsboLead()
 
+    // ─── Inbound attribution UTMs (hoisted so sendEvent can use them) ──────
+    let originUtmSource: string | undefined
+    let originUtmMedium: string | undefined
+    let originUtmCampaign: string | undefined
+    let originUtmContent: string | undefined
+    try {
+      const referer = (await headers()).get('referer') ?? ''
+      if (referer) {
+        const refUrl = new URL(referer)
+        originUtmSource = refUrl.searchParams.get('utm_source') ?? undefined
+        originUtmMedium = refUrl.searchParams.get('utm_medium') ?? undefined
+        originUtmCampaign = refUrl.searchParams.get('utm_campaign') ?? undefined
+        originUtmContent = refUrl.searchParams.get('utm_content') ?? undefined
+      }
+    } catch {
+      // malformed referer — no UTMs to capture
+    }
+
     const firstName = name.split(/\s+/)[0] || undefined
     const lastName = name.split(/\s+/).slice(1).join(' ') || undefined
 
@@ -175,6 +193,14 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
         state: parsed.state ?? undefined,
         code: parsed.postalCode ?? undefined,
       },
+      campaign: originUtmSource
+        ? {
+            source: originUtmSource,
+            ...(originUtmMedium && { medium: originUtmMedium }),
+            ...(originUtmCampaign && { campaign: originUtmCampaign }),
+            ...(originUtmContent && { content: originUtmContent }),
+          }
+        : undefined,
     })
     if (!eventResult.ok) {
       console.warn('[fsbo-lp] FUB sendEvent failed:', eventResult.error)
