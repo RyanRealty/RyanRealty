@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.0 (2026-06-17)
+
+### Features
+- feat(video): city/neighborhood hero-video pipeline (Drive service-account -> grade -> host)
+
+---
+
+
 ## v1.593.0 (2026-06-17)
 
 ### Features
