@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.2 (2026-06-17)
+
+### Bug Fixes
+- fix(home): hide KB menu overlay when closed (kills giant CONTACT + tablet break) + testimonials switch on name hover
+
+---
+
+
 ## v1.594.1 (2026-06-17)
 
 ### Bug Fixes
