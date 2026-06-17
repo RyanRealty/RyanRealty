@@ -1612,3 +1612,12 @@
   .v6-cards, .v6-tiles, .v6-grid3 { grid-template-columns: 1fr; gap: 20px; }
   .v6-sell-grid { grid-template-columns: 1fr; gap: 28px; }
 }
+
+/* KB pages render their own chrome (KbNav + the KB footer). The default
+   SiteHeader/SiteFooter ([data-default-chrome]) are wrapped in HideChrome, but
+   usePathname() is null during static prerender so they ship in the SSR HTML and
+   would flash a second, CONFLICTING menu on any page that has a .kb-root section
+   (homepage, migrated geo pages). Hide them via CSS — SSR-safe, no flash, works
+   on every current + future KB page. HideChrome still removes them from the DOM
+   after hydration. */
+body:has(.kb-root) [data-default-chrome] { display: none !important; }

@@ -84,7 +84,7 @@ export default async function SiteHeader() {
   const navData = await fetchNavData()
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-primary text-white">
+    <header data-default-chrome className="sticky top-0 z-40 border-b border-white/10 bg-primary text-white">
       <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link href="/" aria-label="Ryan Realty home" className="shrink-0">
           <RyanRealtyMark variant="horizontal" tone="white" width={140} priority className="h-8 w-auto" />

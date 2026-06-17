@@ -26,7 +26,7 @@ import { BRAND, CONTACT, BROKERS } from '@/lib/brand/contact'
 
 export default function SiteFooter() {
   return (
-    <footer className="bg-primary text-white/85">
+    <footer data-default-chrome className="bg-primary text-white/85">
       <Container className="pt-14 pb-8">
         {/* Newsletter signup band — above the nav grid */}
         <div className="mb-10 border-b border-white/15 pb-10">
