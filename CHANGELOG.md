@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.4 (2026-06-17)
+
+### Maintenance
+- docs: lock the KB-convergence roadmap (plan of record)
+
+---
+
+
 ## v1.594.3 (2026-06-17)
 
 ### Other
