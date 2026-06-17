@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.590.0 (2026-06-17)
+
+### Features
+- feat(city): KB nav on the city detail page (sitewide KB migration, step 1)
+
+---
+
+
 ## v1.589.0 (2026-06-17)
 
 ### Features
