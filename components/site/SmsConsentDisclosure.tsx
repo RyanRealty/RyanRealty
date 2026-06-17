@@ -21,6 +21,12 @@ export function SmsConsentDisclosure({
   /** 'on-dark' for navy/photo surfaces (cream text). */
   tone?: 'default' | 'on-dark'
 }) {
+  // A2P error 30917 requires the consent disclosure to link BOTH the privacy
+  // policy and the terms of service. Keep both links on every lead form.
+  const linkClass = cn(
+    'underline underline-offset-2',
+    tone === 'on-dark' ? 'text-primary-foreground/90' : 'text-primary',
+  )
   return (
     <p
       data-sms-consent="true"
@@ -31,14 +37,12 @@ export function SmsConsentDisclosure({
       )}
     >
       {SMS_CONSENT_TEXT}{' '}
-      <a
-        href="/privacy"
-        className={cn(
-          'underline underline-offset-2',
-          tone === 'on-dark' ? 'text-primary-foreground/90' : 'text-primary',
-        )}
-      >
+      <a href="/privacy" className={linkClass}>
         Privacy policy
+      </a>
+      {' · '}
+      <a href="/terms" className={linkClass}>
+        Terms
       </a>
     </p>
   )
