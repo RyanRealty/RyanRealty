@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { submitHeathCmaForm, type HeathCmaTimeline } from '../actions'
 import { trackEvent } from '@/lib/tracking'
 import { CONTACT } from '@/lib/brand/contact'
+import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 
 /**
  * Heath at Tetherow CMA form. Three-step (address + sub-plat context,
@@ -247,6 +248,8 @@ export default function HeathCmaForm() {
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
+
+          <SmsConsentDisclosure />
 
           <div className="flex gap-3">
             <Button type="button" variant="outline" onClick={() => setStep('address')} disabled={pending}>

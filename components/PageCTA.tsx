@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { trackCtaClick } from '@/lib/cta-tracking'
 import { H2 } from '@/components/site/primitives'
+import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 
 type Props = {
   /** Main heading (e.g., "Get notified about new listings in Bend") */
@@ -130,6 +131,7 @@ export default function PageCTA({
               disabled={isPending}
             />
           </div>
+          <SmsConsentDisclosure />
           <Button type="submit" className="w-full" disabled={isPending}>
             {isPending ? 'Sending...' : buttonLabel}
           </Button>

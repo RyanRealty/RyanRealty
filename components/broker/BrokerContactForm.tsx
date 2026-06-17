@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { H2 } from '@/components/site/primitives'
+import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 
 type Props = {
   brokerId: string
@@ -142,6 +143,7 @@ export default function BrokerContactForm({
               Something went wrong. Please try again or email directly.
             </p>
           )}
+          <SmsConsentDisclosure />
           <Button
             type="submit"
             disabled={status === 'sending'}

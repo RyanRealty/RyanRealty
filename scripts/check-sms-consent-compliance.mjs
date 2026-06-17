@@ -19,10 +19,12 @@
  *
  * Usage: node scripts/check-sms-consent-compliance.mjs
  */
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
+import { join } from 'node:path'
 
 const CONSENT = 'components/site/SmsConsentDisclosure.tsx'
 const PRIVACY = 'app/privacy/page.tsx'
+const ROOT = process.cwd()
 
 const fails = []
 const read = (p) => {
@@ -68,10 +70,53 @@ for (const r of required) {
   }
 }
 
+// ── 3. coverage — every PUBLIC phone-collecting form must render the disclosure ──
+// The checks above lock the shared component + privacy policy. This locks that
+// every public form which COLLECTS a phone number actually renders
+// <SmsConsentDisclosure>, so a new lead form cannot silently collect phones
+// without TCPA/A2P consent. Admin, logged-in-account, and broker-self-service
+// surfaces are exempt — the person entering the phone there is not a public lead
+// opting in to be contacted.
+const SCAN_DIRS = ['app', 'components']
+const PHONE_INPUT = /type=["']tel["']|autoComplete=["']tel["']|name=["']phone["']/
+const EXEMPT_PREFIXES = [
+  'app/admin/',
+  'app/components/admin/',
+  'components/admin/',
+  'app/account/',
+  'app/dashboard/',
+  'components/dashboard/',
+]
+const EXEMPT_FILES = new Set([
+  'app/team/[slug]/edit/page.tsx', // broker self-service profile edit (auth-gated)
+  'components/site/SmsConsentDisclosure.tsx', // the disclosure component itself
+])
+function walkTsx(dir, out = []) {
+  const abs = join(ROOT, dir)
+  if (!existsSync(abs)) return out
+  for (const name of readdirSync(abs)) {
+    if (name === 'node_modules' || name === '.next') continue
+    const rel = `${dir}/${name}`
+    if (statSync(join(ROOT, rel)).isDirectory()) walkTsx(rel, out)
+    else if (name.endsWith('.tsx')) out.push(rel)
+  }
+  return out
+}
+for (const rel of SCAN_DIRS.flatMap((d) => walkTsx(d))) {
+  if (EXEMPT_FILES.has(rel)) continue
+  if (EXEMPT_PREFIXES.some((p) => rel.startsWith(p))) continue
+  const src = readFileSync(join(ROOT, rel), 'utf8')
+  if (!PHONE_INPUT.test(src)) continue // not a phone-collecting form
+  if (/SmsConsentDisclosure/.test(src)) continue // already renders the disclosure
+  fails.push(
+    `${rel}: collects a phone number but does not render <SmsConsentDisclosure />. Every public lead form that collects a phone must show the TCPA/A2P consent disclosure. Add it (import from '@/components/site/SmsConsentDisclosure'), or if this is an admin/account/self-service surface, add it to EXEMPT in this gate.`,
+  )
+}
+
 if (fails.length) {
   console.error('✗ sms-consent-compliance FAILED — this breaks the Twilio A2P campaign:\n')
   for (const f of fails) console.error('  • ' + f + '\n')
   console.error('  See docs/HANDOFF-a2p-sms-consent.md before changing the consent surface.')
   process.exit(1)
 }
-console.log('✓ sms-consent-compliance: consent sentence intact; privacy + terms linked; privacy SMS terms + no-sharing clause present.')
+console.log('✓ sms-consent-compliance: consent sentence intact; privacy + terms linked; privacy SMS terms + no-sharing clause present; every public phone-collecting form renders the disclosure.')

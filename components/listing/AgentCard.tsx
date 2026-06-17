@@ -16,6 +16,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
+import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 
 type Props = {
   agent: ListingDetailAgent | null
@@ -146,6 +147,7 @@ function ContactModal({
               <Textarea name="message" id="contact-message" rows={3} defaultValue={`I'm interested in ${address}`} className="mt-1" />
             </Label>
             {errorMsg && <p className="text-sm text-destructive">{errorMsg}</p>}
+            <SmsConsentDisclosure />
             <DialogFooter>
               <Button type="submit" disabled={status === 'sending'}>{status === 'sending' ? 'Sending…' : 'Send'}</Button>
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>

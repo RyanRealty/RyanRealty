@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 
 /**
  * Rental-calculator lead capture. A visitor running the numbers asks a Ryan
@@ -98,6 +99,7 @@ export default function RentalLeadForm({
             <Input id="rental-lead-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1" autoComplete="tel" />
           </div>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          <SmsConsentDisclosure />
           <div className="flex items-center gap-2">
             <Button type="button" onClick={handleSubmit} disabled={pending}>
               {pending ? 'Sending…' : 'Send to a broker'}

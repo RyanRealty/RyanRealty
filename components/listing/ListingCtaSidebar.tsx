@@ -19,6 +19,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
+import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 
 type Props = {
   address: string
@@ -288,6 +289,7 @@ export default function ListingCtaSidebar({
                 </div>
               )}
               {submitError && <p className="text-sm text-destructive">{submitError}</p>}
+              <SmsConsentDisclosure />
               <DialogFooter>
                 <Button type="submit" disabled={submitStatus === 'sending'}>
                   {submitStatus === 'sending' ? 'Sending…' : 'Submit'}
