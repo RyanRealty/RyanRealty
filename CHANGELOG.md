@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.593.0 (2026-06-17)
+
+### Features
+- feat(hero): regrade + re-encode homepage hero video (flat 476kbps -> 2Mbps + color grade)
+
+---
+
+
 ## v1.592.1 (2026-06-17)
 
 ### Bug Fixes
