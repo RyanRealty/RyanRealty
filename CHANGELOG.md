@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.592.0 (2026-06-17)
+
+### Features
+- feat(kb): lock KB sections as reusable single source of truth (G50) + parameterize KbHero
+
+---
+
+
 ## v1.591.1 (2026-06-17)
 
 ### Bug Fixes
