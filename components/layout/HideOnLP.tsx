@@ -28,6 +28,9 @@ export default function HideOnLP({ children }: { children: React.ReactNode }) {
   // no marketing nav, no "Sign in" prompt, no footer. It carries its own
   // minimal Ryan Realty branding (see components/tc/pdf-sign/SignFlow.tsx).
   if (pathname?.startsWith("/sign/")) return null
+  // /concept/* — KB design-preview surfaces carry their own KB chrome (KbNav +
+  // the KB footer section); the default site header/footer would double up.
+  if (pathname?.startsWith("/concept/")) return null
   return <>{children}</>
 }
 

@@ -7,6 +7,7 @@ import { listingDetailPath } from '@/lib/slug'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
 import { KbCommunities } from '@/components/site/kb/KbCommunities.client'
@@ -142,6 +143,7 @@ export default async function KbHomePreview() {
 
   return (
     <main className="kb-root">
+      <KbNav />
       <SmoothScrollProvider>
         <KbHero
           data={{
