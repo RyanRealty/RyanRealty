@@ -26,9 +26,13 @@ import { join } from 'node:path'
 const ROOT = process.cwd()
 const BT = String.fromCharCode(96) // backtick — endpoint template-literal close
 
-// Pre-existing, tracked violations. Migrate to /events, then remove from here.
+// Files that legitimately contain a /people POST. The Meta Lead Ads webhook is
+// now EVENTS-FIRST (creates leads via POST /v1/events through sendEvent, so they
+// get dedup + action plans + the speed-to-lead auto-text). Its /v1/people POST
+// remains ONLY as a fallback when the events path fails, so a paid lead is never
+// lost — an intentional safety net, not a lead-creation path. (events-first 2026-06-17)
 const KNOWN_PEOPLE_POST = new Set([
-  'app/api/meta/lead-webhook/route.ts', // FIXME(G49): Meta Lead Ads -> migrate POST /people to sendEvent (/events) so paid leads get dedup + action plans + speed-to-lead auto-text. CRM_INTEGRATION backlog #1.
+  'app/api/meta/lead-webhook/route.ts',
 ])
 
 const SCAN = ['lib', 'app']
@@ -90,5 +94,5 @@ if (fails.length) {
 const tracked = KNOWN_PEOPLE_POST.size
 console.log(
   `✓ crm-lead-integrity: leads use POST /v1/events (not /people), textMessages is log-only, source is required.` +
-    (tracked ? ` ${tracked} tracked /people violation pending /events migration (CRM_INTEGRATION #1).` : ''),
+    (tracked ? ` ${tracked} file keeps a documented /people fallback (events-first path is primary; CRM_INTEGRATION #1).` : ''),
 )

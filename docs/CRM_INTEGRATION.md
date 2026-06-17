@@ -44,14 +44,16 @@ ad / organic / form ──► POST /v1/events (sendEvent)  ─┬─ dedup (emai
 
 ## Backlog — ship on a careful, live-verified pass
 
-1. **Meta Lead Ads webhook → `/v1/events` (HIGHEST VALUE).** `app/api/meta/lead-webhook/route.ts`
-   currently `POST`s `/v1/people`, so **paid Meta leads bypass dedup + action plans +
-   the speed-to-lead auto-text** — the most expensive leads get the worst handling.
-   Migrate to `sendEvent` (type by audience: Seller/Property/General Inquiry; person
-   with email+phone; source `Facebook Lead Ad — <campaign>`; campaign object), then
-   resolve the person id (email lookup) and re-apply the existing tags/stage/customFields/
-   assignment via the PUT helpers. Needs live FUB verification (events 204 + person
-   resolution) before it replaces a live paid-lead path. Tracked in G49's `KNOWN_PEOPLE_POST`.
+1. ~~**Meta Lead Ads webhook → `/v1/events`.**~~ ✅ **DONE 2026-06-17 (events-first, fallback-safe).**
+   `app/api/meta/lead-webhook/route.ts` `createFubContact` now creates leads via `sendEvent`
+   (POST `/v1/events`, type Seller/General Inquiry by audience, person with email+phone+tags,
+   source `Facebook Lead Ad — <campaign>`, campaign object), resolves the person id via
+   `findPersonByEmail`/`findPersonByPhone`, then sets custom fields + stage `Lead` + mirrors.
+   Paid Meta leads now get dedup + action plans + the speed-to-lead auto-text. The original
+   `/people` POST is preserved as a **fallback** if the events path fails, so a lead is never
+   lost. **Verify the first live Meta lead post-deploy** (events 204 + person resolution timing).
+   REMAINING polish: set the FUB pipeline on the events path too (currently only the fallback
+   sets it); confirm `customBuySellIntent` / `customFbCampaignName` custom fields exist in FUB.
 2. **Stamp the `campaign` object on form events.** ✅ **Seller LP done 2026-06-17** —
    `app/lp/seller-home-value/actions.ts` now sends the structured `campaign` object
    (source/medium/campaign/content) from the captured origin UTMs on the full submission.

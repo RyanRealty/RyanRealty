@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
-import { assignPersonToUser, createRealtimeTask } from '@/lib/followupboss'
+import {
+  assignPersonToUser,
+  createRealtimeTask,
+  sendEvent,
+  findPersonByEmail,
+  findPersonByPhone,
+  setPersonCustomFields,
+  updatePersonAutomationState,
+} from '@/lib/followupboss'
 import { createCmaRequest } from '@/lib/cma-request'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
 
@@ -398,6 +406,10 @@ function fubHeaders(apiKey: string): Record<string, string> {
 async function createFubContact(lead: ParsedLead): Promise<number | null> {
   const { apiKey, pipelineId } = getFubConfig()
 
+  // ---------------------------------------------------------------------------
+  // Shared: compute source, tags, and intent values (identical for both paths)
+  // ---------------------------------------------------------------------------
+
   const source = lead.campaignName
     ? `Facebook Lead Ad — ${lead.campaignName}`
     : 'Facebook Lead Ad — Market Report'
@@ -429,6 +441,91 @@ async function createFubContact(lead: ParsedLead): Promise<number | null> {
   // Source attribution in canonical schema (in addition to FUB-native source
   // field which carries the campaign name)
   tags.push(lead.audience === 'buyer' ? 'source:fb-ads-buyer' : 'source:fb-ads-seller')
+
+  // ---------------------------------------------------------------------------
+  // PRIMARY PATH: POST /v1/events (fires action plans + speed-to-lead auto-text)
+  // ---------------------------------------------------------------------------
+
+  const eventType = lead.audience === 'seller' ? 'Seller Inquiry' : 'General Inquiry'
+  const campaignAttribution = lead.campaignName
+    ? {
+        source: 'Facebook',
+        campaign: lead.campaignName,
+        ...(lead.adSetName && { content: lead.adSetName }),
+      }
+    : { source: 'Facebook' }
+
+  const messageParts = [
+    lead.campaignName ? `Campaign: ${lead.campaignName}` : 'Facebook Lead Ad',
+    lead.audience !== 'unknown' ? `Audience: ${lead.audience}` : null,
+    lead.buySellIntent ? `Intent: ${lead.buySellIntent}` : null,
+  ].filter(Boolean)
+
+  const eventResult = await sendEvent({
+    type: eventType,
+    source,
+    system: 'Facebook Lead Ad',
+    person: {
+      ...(lead.firstName && { firstName: lead.firstName }),
+      ...(lead.lastName && { lastName: lead.lastName }),
+      ...(lead.email && { emails: [{ value: lead.email }] }),
+      ...(lead.phone && { phones: [{ value: lead.phone }] }),
+      tags,
+    },
+    message: messageParts.join(' | '),
+    campaign: campaignAttribution,
+  })
+
+  if (eventResult.ok) {
+    // Resolve the personId created/matched by /events
+    let personId: number | null = null
+    if (lead.email) {
+      const found = await findPersonByEmail(lead.email)
+      if (found?.id) personId = found.id
+    }
+    if (!personId && lead.phone) {
+      const found = await findPersonByPhone(lead.phone)
+      if (found?.id) personId = found.id
+    }
+
+    if (personId) {
+      // Apply custom fields (/events cannot set these inline).
+      // Only pass keys that start with 'custom' — setPersonCustomFields enforces this.
+      const customFields: Record<string, string | null> = {}
+      if (lead.buySellIntent) customFields.customBuySellIntent = lead.buySellIntent
+      if (lead.campaignName) customFields.customFbCampaignName = lead.campaignName
+      if (Object.keys(customFields).length > 0) {
+        void setPersonCustomFields(personId, customFields)
+      }
+
+      // Set stage 'Lead' and pipeline (if configured) via updatePersonAutomationState.
+      // Pipeline is a non-standard field for this helper, so we set stage here and
+      // use updatePersonProfile for pipeline below if pipelineId is present.
+      await updatePersonAutomationState({ personId, stage: 'Lead' })
+
+      // Mirror the new/matched person into crm_people
+      const { mirrorPersonFromFub } = await import('@/lib/crm/mirror')
+      void mirrorPersonFromFub(personId)
+
+      return personId
+    }
+
+    // /events succeeded but we could not resolve a personId — fall through to
+    // the /people fallback so the lead is never lost.
+    console.warn(
+      '[lead-webhook] /events succeeded but personId could not be resolved ' +
+      `(email=${lead.email ?? 'none'}, phone=${lead.phone ?? 'none'}) — falling back to /people`,
+    )
+  } else {
+    console.warn(
+      `[lead-webhook] /events path failed (status=${eventResult.status ?? 'n/a'}, ` +
+      `error=${eventResult.error ?? 'unknown'}) — falling back to /people`,
+    )
+  }
+
+  // ---------------------------------------------------------------------------
+  // FALLBACK PATH: POST /v1/people (original path — preserved verbatim)
+  // ---------------------------------------------------------------------------
 
   const body: Record<string, unknown> = {
     source,
