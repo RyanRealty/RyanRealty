@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.592.1 (2026-06-17)
+
+### Bug Fixes
+- fix(home/city): kill the conflicting second menu — hide default chrome on KB pages via CSS
+
+---
+
+
 ## v1.592.0 (2026-06-17)
 
 ### Features
