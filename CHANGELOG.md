@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.587.0 (2026-06-17)
+
+### Features
+- feat(crm): Meta Lead Ads webhook is events-first — paid leads now get FUB automations + speed-to-lead auto-text
+
+---
+
+
 ## v1.586.0 (2026-06-17)
 
 ### Features
