@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.589.0 (2026-06-17)
+
+### Features
+- feat(home): video tours play on featured-home cards (hover-play, video homes first)
+
+---
+
+
 ## v1.588.1 (2026-06-17)
 
 ### Bug Fixes
