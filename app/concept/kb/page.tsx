@@ -35,12 +35,13 @@ const TOWN_IMG: Record<string, string> = {
   terrebonne: '/images/kb/smith-rock-terrebonne.jpg',
 }
 
-// Marquee communities, curated photography. Live count joins by slug.
+// Marquee communities, curated photography. Live count joins by subdivision
+// name (slug formats vary in the MV); the real slug drives the link.
 const COMM_FEATURED = [
-  { slug: 'tetherow', town: 'Bend', img: '/images/kb/tetherow-golf-aerial.jpg' },
-  { slug: 'caldera-springs', town: 'Sunriver', img: '/images/kb/caldera-springs.jpg' },
-  { slug: 'broken-top', town: 'Bend', img: '/images/kb/broken-top.jpg' },
-  { slug: 'northwest-crossing', town: 'Bend', img: '/images/kb/northwest-crossing.jpg' },
+  { match: 'tetherow', town: 'Bend', img: '/images/kb/tetherow-golf-aerial.jpg' },
+  { match: 'caldera', town: 'Sunriver', img: '/images/kb/caldera-springs.jpg' },
+  { match: 'broken top', town: 'Bend', img: '/images/kb/broken-top.jpg' },
+  { match: 'crossing', town: 'Bend', img: '/images/kb/northwest-crossing.jpg' },
 ]
 
 export default async function KbHomePreview() {
@@ -63,15 +64,14 @@ export default async function KbHomePreview() {
     }
   }).filter((t): t is KbTownItem => t !== null)
 
-  const commBySlug = new Map(communities.map((c) => [c.slug, c]))
   const communityItems: KbCommunityItem[] = COMM_FEATURED.map((f) => {
-    const c = commBySlug.get(f.slug)
+    const c = communities.find((x) => x.subdivision.toLowerCase().includes(f.match))
     if (!c) return null
     return {
       name: c.subdivision,
       activeCount: c.activeCount,
       town: f.town,
-      href: `/communities/${f.slug}`,
+      href: `/communities/${c.slug}`,
       img: f.img,
     }
   }).filter((x): x is KbCommunityItem => x !== null)
