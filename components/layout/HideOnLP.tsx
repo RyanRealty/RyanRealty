@@ -51,6 +51,9 @@ export function HideChrome({ children }: { children: React.ReactNode }) {
   if (pathname === "/admin" || pathname?.startsWith("/admin/")) return null
   if (pathname?.startsWith("/sign/")) return null
   if (pathname?.startsWith("/concept/")) return null
+  // KB migration (Phase 9): the city DETAIL page (/cities/<slug>, NOT the
+  // /cities index or /cities/<slug>/<neighborhood>) carries its own KbNav.
+  if (pathname && /^\/cities\/[^/]+$/.test(pathname)) return null
   return <>{children}</>
 }
 

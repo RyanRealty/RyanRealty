@@ -85,6 +85,8 @@ import MotivatedListings from '@/components/site/MotivatedListings'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import type { ListingCardData } from '@/components/site/ListingCard'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import '@/components/site/kb/kb.css'
 
 // ---------------------------------------------------------------------------
 // Static params
@@ -443,6 +445,12 @@ export default async function CityDetailPage({ params }: Props) {
 
   return (
     <main className="min-h-screen bg-background">
+      {/* KB migration (Phase 9): the homepage nav on the city page — transparent
+          over the hero, flips navy on scroll. Default SiteHeader is hidden on the
+          city-detail route via HideChrome. Scoped in .kb-root so kb.css applies. */}
+      <div className="kb-root">
+        <KbNav />
+      </div>
 
       {/* AI-citability structured data: full breadcrumb + City entity + market Dataset. */}
       <MetadataBlock schemas={citySchemas} />
