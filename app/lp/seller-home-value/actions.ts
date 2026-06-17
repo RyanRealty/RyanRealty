@@ -370,6 +370,17 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         state: parsed.state ?? undefined,
         code: parsed.postalCode ?? undefined,
       },
+      // Stamp the structured FUB campaign object from the captured origin UTMs so
+      // marketing attribution lands on the event (CRM_INTEGRATION #2). FUB requires
+      // the campaign.source subfield, so only send when utm_source is present.
+      campaign: originUtmSource
+        ? {
+            source: originUtmSource,
+            ...(originUtmMedium && { medium: originUtmMedium }),
+            ...(originUtmCampaign && { campaign: originUtmCampaign }),
+            ...(originUtmContent && { content: originUtmContent }),
+          }
+        : undefined,
     })
 
     if (!eventResult.ok) {

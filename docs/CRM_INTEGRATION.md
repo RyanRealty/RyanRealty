@@ -52,10 +52,12 @@ ad / organic / form ──► POST /v1/events (sendEvent)  ─┬─ dedup (emai
    resolve the person id (email lookup) and re-apply the existing tags/stage/customFields/
    assignment via the PUT helpers. Needs live FUB verification (events 204 + person
    resolution) before it replaces a live paid-lead path. Tracked in G49's `KNOWN_PEOPLE_POST`.
-2. **Stamp the `campaign` object on form events.** `SendEventParams.campaign` exists but
-   no form populates it from the session UTMs (utm_source/medium/campaign). The sourceUrl
-   carries UTMs, but the structured campaign object improves the FUB marketing report.
-   Thread `visitor_sessions` UTMs into the `campaign` field on submit.
+2. **Stamp the `campaign` object on form events.** ✅ **Seller LP done 2026-06-17** —
+   `app/lp/seller-home-value/actions.ts` now sends the structured `campaign` object
+   (source/medium/campaign/content) from the captured origin UTMs on the full submission.
+   REMAINING: do the same on the other lead actions (contact, home-valuation, buyer-listing-alerts,
+   fsbo, expired-listing, listing inquiry, page CTA, rental, broker contact) — each already
+   has UTM access via the referer; add the same conditional `campaign` block to their sendEvent calls.
 3. **FUB webhooks + offline-conversion upload (closed-loop ROAS).** No FUB webhook handler
    exists today. Add one for `dealsUpdated` (close/won) that **decouples**: persist the
    event (resourceId + uri only — FUB payloads are thin) to a queue table, then a separate
