@@ -4,6 +4,8 @@ import { getRegionPulse, getListingTiles } from '@/lib/data'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { listingDetailPath } from '@/lib/slug'
+import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
+import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
@@ -14,8 +16,9 @@ import { KbTicker } from '@/components/site/kb/KbTicker.client'
 import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
 import { KbTeam } from '@/components/site/kb/KbTeam.client'
 import { KbSell } from '@/components/site/kb/KbSell.client'
+import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import type { KbTownItem, KbCommunityItem, KbTickerItem, KbFeaturedItem } from '@/components/site/kb/types'
+import type { KbTownItem, KbCommunityItem, KbTickerItem, KbFeaturedItem, KbMarketData } from '@/components/site/kb/types'
 import { TESTIMONIALS } from '@/lib/testimonials'
 import '@/components/site/kb/kb.css'
 
@@ -48,13 +51,18 @@ const COMM_FEATURED = [
   { match: 'crossing', town: 'Bend', img: '/images/kb/northwest-crossing.jpg' },
 ]
 
+const monthLabel = (iso?: string) =>
+  iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }) : ''
+
 export default async function KbHomePreview() {
-  const [pulse, cities, communities, tiles, featured] = await Promise.all([
+  const [pulse, cities, communities, tiles, featured, mktStats, priceHist] = await Promise.all([
     getRegionPulse().catch(() => null),
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
     getListingTiles({ status: 'active', propertyType: 'A', limit: 3000 }).catch(() => []),
     getListingTiles({ status: 'active', propertyType: 'A', sort: 'price-desc', limit: 6 }).catch(() => []),
+    getMarketStatsCacheRowForGeo({ geoSlug: 'central-oregon' }).catch(() => null),
+    getPriceHistory('region', 'central-oregon', 'monthly', 13).catch(() => []),
   ])
 
   const cityBySlug = new Map(cities.map((c) => [c.slug, c]))
@@ -114,6 +122,24 @@ export default async function KbHomePreview() {
       ),
     }))
 
+  const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
+  const marketData: KbMarketData = {
+    active: pulse?.activeCount ?? null,
+    closed30: pulse?.soldCount30d ?? null,
+    new30: pulse?.newCount30d ?? null,
+    medianList: pulse?.medianListPrice ?? null,
+    saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
+    daysToPending: pulse?.medianDaysToPending ?? null,
+    monthsSupply: pulse?.monthsOfSupply ?? null,
+    trend: priceHist
+      .filter((p) => p.medianSalePrice != null)
+      .map((p) => ({ label: monthLabel(p.periodStart), value: p.medianSalePrice as number })),
+    byTown: towns
+      .filter((t) => t.medianPrice != null)
+      .map((t) => ({ name: t.name, median: t.medianPrice as number })),
+    countyMedian: pulse?.medianListPrice ?? null,
+  }
+
   return (
     <main className="kb-root">
       <SmoothScrollProvider>
@@ -131,6 +157,7 @@ export default async function KbHomePreview() {
         <KbTicker items={tickerItems} />
         <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
         <KbTeam />
+        <KbMarketHud data={marketData} />
         <KbSell
           data={{
             medianListPrice: pulse?.medianListPrice ?? null,

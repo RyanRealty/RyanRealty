@@ -53,6 +53,23 @@ export interface KbFeaturedItem {
   href: string
 }
 
+// Market HUD — every figure traces to a cached DAL source (§0):
+// counts/medianList/daysToPending/monthsSupply -> getRegionPulse;
+// saleToList -> getMarketStatsCacheRowForGeo(region).avg_sale_to_list_ratio;
+// trend -> getPriceHistory(region, monthly, 13); byTown -> getCitiesForIndex.
+export interface KbMarketData {
+  active: number | null
+  closed30: number | null
+  new30: number | null
+  medianList: number | null
+  saleToList: number | null
+  daysToPending: number | null
+  monthsSupply: number | null
+  trend: { label: string; value: number }[]
+  byTown: { name: string; median: number }[]
+  countyMedian: number | null
+}
+
 /** Formats a price to the nearest thousand: 740123 -> "$740,000". */
 export function kbMoney(n: number | null | undefined): string | null {
   if (n == null || !Number.isFinite(n)) return null
