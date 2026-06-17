@@ -61,9 +61,9 @@ export function KbTestimonials({ reviews }: { reviews: KbReview[] }) {
                   key={rv.author + i}
                   type="button"
                   className={`pl-item${i === active ? ' active' : ''}`}
-                  onMouseEnter={() => setPaused(true)}
+                  onMouseEnter={() => { setActive(i); setPaused(true) }}
                   onMouseLeave={() => setPaused(false)}
-                  onFocus={() => setPaused(true)}
+                  onFocus={() => { setActive(i); setPaused(true) }}
                   onBlur={() => setPaused(false)}
                   onClick={() => setActive(i)}
                 >

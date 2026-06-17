@@ -401,11 +401,17 @@ html.lenis, html.lenis body{height:auto;}
   position:fixed;inset:0;z-index:200;
   background:var(--navy);color:var(--cream);
   transform:translateY(-100%);
-  transition:transform .55s cubic-bezier(.7,0,.2,1);
+  /* Hide via visibility+opacity too, NOT just the transform: a transformed
+     ancestor (Lenis smooth-scroll wrapper) breaks position:fixed, so the
+     off-screen transform alone left the giant 98px menu links rendering inline
+     (the "giant CONTACT" + broken tablet layout). visibility/opacity/pointer-
+     events hide it regardless of the containing block. */
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:transform .55s cubic-bezier(.7,0,.2,1),opacity .4s ease,visibility 0s linear .55s;
   display:flex;flex-direction:column;
   padding:18px;
 }
-.kb-root .menu-overlay.open{transform:translateY(0);}
+.kb-root .menu-overlay.open{transform:translateY(0);opacity:1;visibility:visible;pointer-events:auto;transition:transform .55s cubic-bezier(.7,0,.2,1),opacity .4s ease;}
 .kb-root .menu-top{display:flex;align-items:center;justify-content:space-between;}
 .kb-root .menu-top .logo-img{height:24px;}
 .kb-root .menu-close{background:none;border:0;color:var(--cream);font-size:.78rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;font-family:inherit;}
