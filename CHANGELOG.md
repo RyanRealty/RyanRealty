@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.588.0 (2026-06-17)
+
+### Features
+- feat(crm): campaign stamping across all public lead forms (contact, home-valuation, expired, buyer-alerts, tetherow-heath)
+
+---
+
+
 ## v1.587.0 (2026-06-17)
 
 ### Features
