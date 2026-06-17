@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.8 (2026-06-17)
+
+### Other
+- kb(tracking): hardcode section + scroll tracking on every KB page + gate it
+
+---
+
+
 ## v1.594.7 (2026-06-17)
 
 ### Other
