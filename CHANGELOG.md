@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.590.1 (2026-06-17)
+
+### Bug Fixes
+- fix(city): KB footer on city detail page (HideChrome hides the default footer there)
+
+---
+
+
 ## v1.590.0 (2026-06-17)
 
 ### Features
