@@ -77,10 +77,12 @@ if (pending?.length) {
   const useTwilio = env.CRM_SMS_ALERTS === 'twilio' && (await campaignVerified());
   for (const a of pending) {
     if (!BROKER_PHONES.has(last10(a.to_phone))) {
-      await sb.from('crm_broker_alerts').update({
-        status: 'skipped', error: 'non-broker to_phone — lead SMS must use Twilio A2P, never iMessage',
+      // Terminal 'failed' (an allowed status) so the row clears from pending.
+      // The error text records WHY: this is a policy skip, not a send failure.
+      const { error: upErr } = await sb.from('crm_broker_alerts').update({
+        status: 'failed', error: 'skipped: non-broker to_phone, lead SMS must use Twilio A2P not a personal iMessage',
       }).eq('id', a.id);
-      console.warn(`skipped #${a.id}: non-broker to_phone ${a.to_phone}`);
+      console.warn(`skipped #${a.id}: non-broker to_phone ${a.to_phone}${upErr ? ` (update err: ${upErr.message})` : ''}`);
       continue;
     }
     try {
