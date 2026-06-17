@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.580.0 (2026-06-17)
+
+### Features
+- feat(gate): G48 tracking-policy crash-guard + TRACKING_POLICY.md
+
+---
+
+
 ## v1.579.2 (2026-06-17)
 
 ### Bug Fixes
