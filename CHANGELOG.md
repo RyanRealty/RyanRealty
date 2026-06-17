@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.7 (2026-06-17)
+
+### Other
+- kb(map): draw neighborhood boundary polygons on the city map
+
+---
+
+
 ## v1.594.6 (2026-06-17)
 
 ### Other
