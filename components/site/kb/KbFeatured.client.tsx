@@ -93,6 +93,7 @@ export function KbFeatured({ items }: { items: KbFeaturedItem[] }) {
                       />
                     )
                   ) : null}
+                  {it.tour && !playing ? <span className="lst-tour">▶ Tour</span> : null}
                 </div>
                 <div className="lst-info">
                   <div>

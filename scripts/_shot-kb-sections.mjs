@@ -30,6 +30,7 @@ async function shot(sel, name) {
 }
 
 await shot('#towns', 'towns')
+await shot('#map', 'map')
 await shot('#communities', 'communities')
 await shot('#listings', 'featured')
 await ctx.close()

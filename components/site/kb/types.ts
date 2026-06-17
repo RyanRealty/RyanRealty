@@ -59,6 +59,10 @@ export interface KbFeaturedItem {
    *  background loop on hover (iframe embed or direct mp4). `link`-type
    *  videos (host blocks framing) are omitted so the card stays photo-only. */
   video?: { url: string; embedType: 'iframe' | 'video-tag' } | null
+  /** The home has a video/3D tour that CANNOT autoplay chrome-less in the tile
+   *  (Aryeo watch page, Zillow 3D, Matterport, iGuide). The tile stays photo but
+   *  shows a "Tour" badge that opens the listing where the tour plays. */
+  tour?: boolean
 }
 
 // Market HUD — every figure traces to a cached DAL source (§0):

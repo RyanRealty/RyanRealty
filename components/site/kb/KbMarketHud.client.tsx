@@ -5,24 +5,30 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { kbMoneyFull, type KbMarketData } from './types'
 
-function Bullet({ val, suf, lbl }: { val: string; suf: string; lbl: string }) {
+/** Months-of-supply → market verdict (CLAUDE.md §0 thresholds: ≤4 seller, 4–6 balanced, ≥6 buyer). */
+function verdictOf(mos: number | null): { key: 'seller' | 'balanced' | 'buyer'; label: string } | null {
+  if (mos == null) return null
+  if (mos <= 4) return { key: 'seller', label: "Seller's market" }
+  if (mos >= 6) return { key: 'buyer', label: "Buyer's market" }
+  return { key: 'balanced', label: 'Balanced market' }
+}
+
+function Kpi({ val, lbl }: { val: string | null; lbl: string }) {
   return (
-    <div className="bull">
-      <div className="bull-fig">
-        <span className="bull-val">{val}</span>
-        <span className="bull-suf">{suf}</span>
-      </div>
-      <div className="bull-body">
-        <span className="bull-lbl">{lbl}</span>
-      </div>
+    <div className="mkt-kpi">
+      <span className="mkt-kpi-val">{val ?? '—'}</span>
+      <span className="mkt-kpi-lbl">{lbl}</span>
     </div>
   )
 }
 
 /**
  * KB Market HUD (05) — the data-credibility centerpiece. MLS desk chrome + live
- * clock, count strip, KPI bullets, a 13-month median-close chart, and a by-town
- * price ladder. Every number is live and traced to a cached DAL source (§0).
+ * clock, a market VERDICT stamp (seller/balanced/buyer) next to the median with
+ * its period change, a six-stat KPI grid, a drawn median-close chart with the
+ * latest value called out, and a by-area price ladder. Every number is live and
+ * traced to a cached DAL source (§0). Reused on the homepage (region) and every
+ * city page (city scope) via props — never forked.
  */
 export function KbMarketHud({ data }: { data: KbMarketData }) {
   const root = useRef<HTMLElement>(null)
@@ -43,6 +49,7 @@ export function KbMarketHud({ data }: { data: KbMarketData }) {
       const fills = gsap.utils.toArray<HTMLElement>('.mkt-bar .bfill')
       if (reduce) {
         fills.forEach((f) => (f.style.width = f.dataset.w || '0%'))
+        if (line.current) gsap.set(line.current, { strokeDashoffset: 0 })
         return
       }
       if (line.current) {
@@ -59,20 +66,30 @@ export function KbMarketHud({ data }: { data: KbMarketData }) {
         gsap.fromTo(
           f,
           { width: '0%' },
-          { width: f.dataset.w || '0%', duration: 1.1, ease: 'power2.out', scrollTrigger: { trigger: f, start: 'top 90%', once: true } },
+          { width: f.dataset.w || '0%', duration: 1.1, ease: 'power2.out', scrollTrigger: { trigger: f, start: 'top 92%', once: true } },
         ),
       )
     }, root)
     return () => ctx.revert()
   }, [])
 
-  // 13-month chart geometry
+  // ── derived, live figures ────────────────────────────────────────────────
+  const verdict = verdictOf(data.monthsSupply)
   const trend = data.trend
+  const yoy =
+    trend.length > 1 && trend[0]!.value > 0
+      ? { pct: ((trend[trend.length - 1]!.value - trend[0]!.value) / trend[0]!.value) * 100, months: trend.length - 1 }
+      : null
+
+  // 13-month chart geometry
   const W = 1000
-  const H = 320
-  const pad = 14
+  const H = 300
+  const pad = 16
   let area = ''
   let path = ''
+  let lastPt: [number, number] | null = null
+  let hi: { x: number; y: number; v: number } | null = null
+  let lo: { x: number; y: number; v: number } | null = null
   if (trend.length > 1) {
     const vals = trend.map((t) => t.value)
     const min = Math.min(...vals)
@@ -81,11 +98,18 @@ export function KbMarketHud({ data }: { data: KbMarketData }) {
     const pts = trend.map((t, i) => {
       const x = (i / (trend.length - 1)) * W
       const y = H - ((t.value - min) / span) * (H - 2 * pad) - pad
-      return [x, y]
+      return [x, y] as [number, number]
     })
     path = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ')
     area = `${path} L${W},${H} L0,${H} Z`
+    lastPt = pts[pts.length - 1]!
+    const hiI = vals.indexOf(max)
+    const loI = vals.indexOf(min)
+    hi = { x: (pts[hiI]![0] / W) * 100, y: (pts[hiI]![1] / H) * 100, v: max }
+    lo = { x: (pts[loI]![0] / W) * 100, y: (pts[loI]![1] / H) * 100, v: min }
   }
+  const lastPct = lastPt ? { x: (lastPt[0] / W) * 100, y: (lastPt[1] / H) * 100 } : null
+  const lastMedian = trend.length ? trend[trend.length - 1]!.value : null
 
   const maxMed = Math.max(1, ...data.byTown.map((t) => t.median))
 
@@ -94,7 +118,7 @@ export function KbMarketHud({ data }: { data: KbMarketData }) {
       <div className="mkt-scan" />
       <div className="wrap">
         <div className="mkt-chrome">
-          <span className="mono-lab">Central Oregon · MLS Desk</span>
+          <span className="mono-lab">{data.byTown.length ? 'Market desk' : 'Central Oregon · MLS Desk'}</span>
           <span className="mkt-chrome-right">
             <span className="mkt-live">
               <span className="dot" />
@@ -112,76 +136,97 @@ export function KbMarketHud({ data }: { data: KbMarketData }) {
           </h2>
         </div>
 
-        <div className="mkt-counts">
-          {data.active != null ? (
-            <div className="c">
-              <b>{data.active.toLocaleString('en-US')}</b>
-              <span>Active</span>
-            </div>
-          ) : null}
-          {data.closed30 != null ? (
-            <div className="c">
-              <b>{data.closed30.toLocaleString('en-US')}</b>
-              <span>Closed · 30d</span>
-            </div>
-          ) : null}
-          {data.new30 != null ? (
-            <div className="c">
-              <b>{data.new30.toLocaleString('en-US')}</b>
-              <span>New · 30d</span>
+        {/* Verdict stamp + median headline with period change */}
+        <div className="mkt-verdict-row">
+          {verdict ? (
+            <div className={`mkt-verdict v-${verdict.key}`}>
+              <span className="mkt-verdict-stamp">{verdict.label}</span>
+              {data.monthsSupply != null ? (
+                <span className="mkt-verdict-sub mono-num">{data.monthsSupply.toFixed(1)} months of supply</span>
+              ) : null}
             </div>
           ) : null}
           {kbMoneyFull(data.medianList) ? (
-            <div className="c">
-              <b>{kbMoneyFull(data.medianList)}</b>
-              <span>Median list</span>
+            <div className="mkt-headline">
+              <span className="mkt-headline-val">{kbMoneyFull(data.medianList)}</span>
+              <span className="mkt-headline-meta">
+                <span className="mkt-headline-lbl">Median list price</span>
+                {yoy ? (
+                  <span className={`mkt-headline-delta ${yoy.pct >= 0 ? 'up' : 'down'}`}>
+                    {yoy.pct >= 0 ? '↑' : '↓'} {Math.abs(yoy.pct).toFixed(1)}% · {yoy.months} mo
+                  </span>
+                ) : null}
+              </span>
             </div>
           ) : null}
         </div>
 
-        <div className="mkt-bullets">
-          {data.saleToList != null ? <Bullet val={data.saleToList.toFixed(1)} suf="%" lbl="Median sale to list" /> : null}
-          {data.daysToPending != null ? <Bullet val={String(data.daysToPending)} suf=" days" lbl="Median to pending" /> : null}
-          {data.monthsSupply != null ? <Bullet val={data.monthsSupply.toFixed(1)} suf=" mo" lbl="Months of supply" /> : null}
+        {/* Six-stat KPI grid */}
+        <div className="mkt-kpis">
+          <Kpi val={data.active != null ? data.active.toLocaleString('en-US') : null} lbl="Active homes" />
+          <Kpi val={data.closed30 != null ? data.closed30.toLocaleString('en-US') : null} lbl="Closed · 30 days" />
+          <Kpi val={data.new30 != null ? data.new30.toLocaleString('en-US') : null} lbl="New · 30 days" />
+          <Kpi val={data.saleToList != null ? `${data.saleToList.toFixed(1)}%` : null} lbl="Sale to list" />
+          <Kpi val={data.daysToPending != null ? `${Math.round(data.daysToPending)} days` : null} lbl="Median to pending" />
+          <Kpi val={data.monthsSupply != null ? `${data.monthsSupply.toFixed(1)} mo` : null} lbl="Months of supply" />
         </div>
 
         {trend.length > 1 ? (
           <div className="mkt-panel">
             <div className="mkt-phead">
               <span className="mono-lab">▸ Median close · single-family · {trend.length} mo</span>
+              {kbMoneyFull(lastMedian) ? <span className="mkt-phead-now mono-num">{kbMoneyFull(lastMedian)}</span> : null}
             </div>
             <div className="mkt-chart">
-              <svg viewBox="0 0 1000 320" preserveAspectRatio="none">
+              <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+                {[0.25, 0.5, 0.75].map((g) => (
+                  <line key={g} className="mkt-grid-line" x1="0" x2={W} y1={H * g} y2={H * g} />
+                ))}
                 <path className="mkt-area" d={area} />
                 <path className="mkt-line" ref={line} d={path} />
               </svg>
+              {hi ? (
+                <span className="mkt-anno" style={{ left: `${hi.x}%`, top: `${hi.y}%` }}>
+                  High <b>{kbMoneyFull(hi.v)}</b>
+                </span>
+              ) : null}
+              {lo ? (
+                <span className="mkt-anno below" style={{ left: `${lo.x}%`, top: `${lo.y}%` }}>
+                  Low <b>{kbMoneyFull(lo.v)}</b>
+                </span>
+              ) : null}
+              {lastPct ? <span className="mkt-end" style={{ left: `${lastPct.x}%`, top: `${lastPct.y}%` }} /> : null}
             </div>
             <div className="mkt-xlabels">
-              {trend.filter((_, i) => i % 4 === 0 || i === trend.length - 1).map((t, i) => (
-                <span key={i}>{t.label}</span>
-              ))}
+              {trend
+                .filter((_, i) => i % 4 === 0 || i === trend.length - 1)
+                .map((t, i) => (
+                  <span key={i}>{t.label}</span>
+                ))}
             </div>
           </div>
         ) : null}
 
-        <div className="mkt-panel">
-          <div className="mkt-phead">
-            <span className="mono-lab">▸ Median list · by town</span>
-          </div>
-          <div className="mkt-bars">
-            {data.byTown.map((t) => (
-              <div className="mkt-bar" key={t.name}>
-                <div className="bhd">
-                  <span>{t.name}</span>
-                  <b>{kbMoneyFull(t.median)}</b>
+        {data.byTown.length > 0 ? (
+          <div className="mkt-panel">
+            <div className="mkt-phead">
+              <span className="mono-lab">▸ Median {data.byTown.length > 6 ? 'list · by neighborhood' : 'list · by town'}</span>
+            </div>
+            <div className="mkt-bars">
+              {data.byTown.map((t) => (
+                <div className="mkt-bar" key={t.name}>
+                  <div className="bhd">
+                    <span>{t.name}</span>
+                    <b>{kbMoneyFull(t.median)}</b>
+                  </div>
+                  <div className="btrack">
+                    <div className="bfill" data-w={`${Math.round((t.median / maxMed) * 100)}%`} style={{ width: 0 }} />
+                  </div>
                 </div>
-                <div className="btrack">
-                  <div className="bfill" data-w={`${Math.round((t.median / maxMed) * 100)}%`} style={{ width: 0 }} />
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
 
         <div className="sec-cta">
           <a href="/housing-market" className="btn">
@@ -189,7 +234,7 @@ export function KbMarketHud({ data }: { data: KbMarketData }) {
           </a>
         </div>
         <p className="mkt-fine">
-          Closed single-family sales across Bend, Redmond, Sisters, Sunriver, La Pine and Terrebonne. Pulled from the MLS.
+          Live single-family figures from the regional MLS. Months of supply = active ÷ (homes closed in the last 6 months ÷ 6); ≤ 4 a seller&rsquo;s market, 4&ndash;6 balanced, ≥ 6 a buyer&rsquo;s market.
         </p>
       </div>
     </section>

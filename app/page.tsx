@@ -3,11 +3,9 @@ import type { Metadata } from 'next'
 import { getRegionPulse, getListingTiles } from '@/lib/data'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
-import { listingDetailPath } from '@/lib/slug'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
-import { getListingVideos } from '@/lib/data/videos/getListingVideos'
-import { toTileBackgroundVideo } from '@/lib/video-embed'
+import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbHero } from '@/components/site/kb/KbHero.client'
@@ -142,47 +140,9 @@ export default async function Home() {
     town: t.city ?? '',
   }))
 
-  // Featured homes: fetch each top candidate's MLS listing video tour (cached,
-  // failure-safe), keep only the FIRST that can render as a silent, chrome-less
-  // background loop (no play button — Matt directive). Hosts we can't strip to a
-  // clean background (Aryeo, Google Drive preview, Matterport, Zillow 3D) are
-  // skipped so the tile stays photo-only instead of showing a play button.
-  // Background-video homes sort FIRST so the grid leads with motion.
-  const featuredCandidates = featured.filter((t) => t.photoUrl).slice(0, 12)
-  const featuredVideos = await Promise.all(
-    featuredCandidates.map((t) =>
-      getListingVideos(t.listingKey)
-        .then((vids) => {
-          for (const v of vids) {
-            const bg = toTileBackgroundVideo(v)
-            if (bg) return bg
-          }
-          return null
-        })
-        .catch(() => null),
-    ),
-  )
-  const featuredRanked = featuredCandidates
-    .map((t, i) => ({ t, v: featuredVideos[i] }))
-    .sort((a, b) => (a.v ? 0 : 1) - (b.v ? 0 : 1)) // background-video homes first (stable sort)
-    .slice(0, 6)
-  const featuredItems: KbFeaturedItem[] = featuredRanked.map(({ t, v }) => ({
-    price: t.listPrice,
-    address: [t.streetNumber, t.streetName].filter(Boolean).join(' '),
-    sub: t.subdivisionName ?? '',
-    city: t.city ?? '',
-    beds: t.beds,
-    baths: t.baths,
-    sqft: t.sqft,
-    img: t.photoUrl ?? '',
-    href: listingDetailPath(
-      t.listingKey,
-      { streetNumber: t.streetNumber, streetName: t.streetName, city: t.city, postalCode: t.postalCode },
-      { city: t.city, subdivision: t.subdivisionName },
-      { mlsNumber: t.listNumber },
-    ),
-    video: v, // already a clean silent background embed (or null → photo-only)
-  }))
+  // Featured homes — shared resolver classifies each home's MLS media into a
+  // clean autoplay background video or a "Tour" badge (see resolve-featured-items).
+  const featuredItems: KbFeaturedItem[] = await resolveFeaturedItems(featured)
 
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
   const marketData: KbMarketData = {

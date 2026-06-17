@@ -42,7 +42,43 @@ function money(n: number | null): string {
  * production basemap migrates to self-hosted Protomaps PMTiles later). SSR-safe:
  * maplibre is dynamically imported inside the effect.
  */
-export function KbListingMap({ geojson, totalActive }: { geojson: KbMapGeo; totalActive: number }) {
+const REGION_BOUNDS: [[number, number], [number, number]] = [[-121.98, 43.5], [-120.9, 44.52]]
+
+/** Bounding box of the point features, padded ~10%, for city-scoped zoom. */
+function featureBounds(g: KbMapGeo): [[number, number], [number, number]] | null {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+  for (const f of g.features) {
+    const [x, y] = f.geometry.coordinates
+    if (x < minX) minX = x
+    if (y < minY) minY = y
+    if (x > maxX) maxX = x
+    if (y > maxY) maxY = y
+  }
+  if (!isFinite(minX)) return null
+  const px = (maxX - minX) * 0.1 || 0.03
+  const py = (maxY - minY) * 0.1 || 0.03
+  return [[minX - px, minY - py], [maxX + px, maxY + py]]
+}
+
+export function KbListingMap({
+  geojson,
+  totalActive,
+  fitToFeatures = false,
+  showRegionMarkers = true,
+  eyebrow = 'Central Oregon',
+  title = 'Every home\nfor sale',
+  subtitle = 'Every active listing across the six towns, on the real terrain. Click any dot for the price, the beds, and the street.',
+}: {
+  geojson: KbMapGeo
+  totalActive: number
+  /** Zoom to the listing cluster's bounding box (city scope) instead of the region. */
+  fitToFeatures?: boolean
+  /** Show the named-town + Cascade-peak markers (region scope). */
+  showRegionMarkers?: boolean
+  eyebrow?: string
+  title?: string
+  subtitle?: string
+}) {
   const el = useRef<HTMLDivElement>(null)
   const countEl = useRef<HTMLElement>(null)
 
@@ -73,12 +109,13 @@ export function KbListingMap({ geojson, totalActive }: { geojson: KbMapGeo; tota
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any
 
+      const initialBounds = (fitToFeatures ? featureBounds(geojson) : null) ?? REGION_BOUNDS
       map = new maplibregl.Map({
         container: el.current,
         style,
         attributionControl: false,
-        bounds: [[-121.98, 43.5], [-120.9, 44.52]],
-        fitBoundsOptions: { padding: 38 },
+        bounds: initialBounds,
+        fitBoundsOptions: { padding: fitToFeatures ? 56 : 38, maxZoom: fitToFeatures ? 13.5 : 15 },
         scrollZoom: false,
         dragRotate: false,
         pitchWithRotate: false,
@@ -99,18 +136,20 @@ export function KbListingMap({ geojson, totalActive }: { geojson: KbMapGeo; tota
         map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'listings', filter: ['has', 'point_count'], layout: { 'text-field': ['get', 'point_count_abbreviated'], 'text-font': ['Noto Sans Bold'], 'text-size': 13 }, paint: { 'text-color': CREAM } })
         map.addLayer({ id: 'pts', type: 'circle', source: 'listings', filter: ['!', ['has', 'point_count']], paint: { 'circle-color': NAVY, 'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 3.2, 13, 6], 'circle-stroke-width': 1.4, 'circle-stroke-color': CREAM } })
 
-        TOWNS.forEach((t) => {
-          const d = document.createElement('div')
-          d.className = 'kb-town'
-          d.innerHTML = `<div class="ring"></div><div class="lbl">${t.n}</div>`
-          new maplibregl.Marker({ element: d, anchor: 'top' }).setLngLat(t.c).addTo(map)
-        })
-        PEAKS.forEach((t) => {
-          const d = document.createElement('div')
-          d.className = 'kb-peak'
-          d.innerHTML = `<div class="pk-mark">▲</div><div class="pk-lbl">${t.n}</div>`
-          new maplibregl.Marker({ element: d, anchor: 'top' }).setLngLat(t.c).addTo(map)
-        })
+        if (showRegionMarkers) {
+          TOWNS.forEach((t) => {
+            const d = document.createElement('div')
+            d.className = 'kb-town'
+            d.innerHTML = `<div class="ring"></div><div class="lbl">${t.n}</div>`
+            new maplibregl.Marker({ element: d, anchor: 'top' }).setLngLat(t.c).addTo(map)
+          })
+          PEAKS.forEach((t) => {
+            const d = document.createElement('div')
+            d.className = 'kb-peak'
+            d.innerHTML = `<div class="pk-mark">▲</div><div class="pk-lbl">${t.n}</div>`
+            new maplibregl.Marker({ element: d, anchor: 'top' }).setLngLat(t.c).addTo(map)
+          })
+        }
 
         map.on('click', 'clusters', (e: { point: unknown }) => {
           const f = map.queryRenderedFeatures(e.point, { layers: ['clusters'] })[0]
@@ -161,22 +200,23 @@ export function KbListingMap({ geojson, totalActive }: { geojson: KbMapGeo; tota
       cancelled = true
       if (map) map.remove()
     }
-  }, [geojson, totalActive])
+  }, [geojson, totalActive, fitToFeatures, showRegionMarkers])
 
   return (
     <section className="section neigh" id="map">
       <div className="wrap">
         <div className="sec-head">
-          <span className="sec-index">Central Oregon</span>
+          <span className="sec-index">{eyebrow}</span>
           <h2 className="sec-title display">
-            Every home
-            <br />
-            for sale
+            {title.split('\n').map((ln, i) => (
+              <span key={i}>
+                {i > 0 ? <br /> : null}
+                {ln}
+              </span>
+            ))}
           </h2>
         </div>
-        <p className="neigh-sub">
-          Every active listing across the six towns, on the real terrain. Click any dot for the price, the beds, and the street.
-        </p>
+        <p className="neigh-sub">{subtitle}</p>
         <div className="neigh-map" id="neighMap">
           <div id="kbMap" ref={el} role="application" aria-label="Interactive map of active Central Oregon single-family listings" />
           <div className="neigh-legend">

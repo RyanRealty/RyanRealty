@@ -332,6 +332,8 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .lst-media::after{z-index:2;}
 .kb-root .lst-reel{position:absolute;top:14px;right:14px;z-index:4;font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--navy);background:var(--cream);padding:5px 9px;border-radius:2px;display:inline-flex;align-items:center;gap:6px;}
 .kb-root .lst-card.playing .lst-reel{background:var(--navy);color:var(--cream);}
+.kb-root .lst-tour{position:absolute;top:14px;right:14px;z-index:4;font-size:.58rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--navy);background:var(--cream);padding:5px 9px;border-radius:2px;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(11,28,48,.28);}
+.kb-root .lst-card:hover .lst-tour{background:var(--navy);color:var(--cream);}
 .kb-root .lst-price{font-family:var(--font-amboqia),serif;font-size:clamp(1.7rem,6vw,2.9rem);line-height:.9;}
 .kb-root .lst-addr{font-size:.82rem;font-weight:600;margin-top:7px;letter-spacing:.01em;}
 .kb-root .lst-addr .sub{display:block;font-weight:500;color:var(--cream-70);font-size:.74rem;margin-top:3px;letter-spacing:.04em;}
@@ -435,9 +437,28 @@ html.lenis, html.lenis body{height:auto;}
   background-size:46px 46px;}
 .kb-root .mkt .wrap{position:relative;z-index:1;}
 .kb-root .mono-lab{font-family:var(--font-sans),sans-serif;font-size:.66rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:rgba(250,248,244,.62);}
-.kb-root .mkt-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:rgba(250,248,244,.22);border:1px solid rgba(250,248,244,.22);margin:34px 0 26px;}
-@media(min-width:760px){.kb-root .mkt-kpis{grid-template-columns:repeat(4,1fr);}}
-.kb-root .mkt-kpi{background:var(--navy);padding:22px 20px;}
+.kb-root .mkt-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:rgba(250,248,244,.22);border:1px solid rgba(250,248,244,.22);margin:30px 0 26px;}
+@media(min-width:760px){.kb-root .mkt-kpis{grid-template-columns:repeat(3,1fr);}}
+.kb-root .mkt-kpi{background:var(--navy);padding:20px 18px;display:flex;flex-direction:column;gap:7px;}
+.kb-root .mkt-kpi-val{font-family:var(--font-amboqia),serif;font-weight:400;font-size:clamp(1.7rem,4.4vw,2.3rem);line-height:.92;color:var(--cream);font-variant-numeric:tabular-nums;}
+.kb-root .mkt-kpi-lbl{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--cream-40);}
+
+/* Verdict stamp + median headline */
+.kb-root .mkt-verdict-row{display:grid;grid-template-columns:1fr;gap:1px;background:rgba(250,248,244,.22);border:1px solid rgba(250,248,244,.22);margin-top:30px;}
+@media(min-width:720px){.kb-root .mkt-verdict-row{grid-template-columns:1.05fr 1fr;}}
+.kb-root .mkt-verdict{background:var(--cream);color:var(--navy);padding:24px 24px;display:flex;flex-direction:column;gap:9px;justify-content:center;}
+.kb-root .mkt-verdict.v-buyer{background:#0b1c30;color:var(--cream);}
+.kb-root .mkt-verdict.v-balanced{background:rgba(250,248,244,.92);color:var(--navy);}
+.kb-root .mkt-verdict-stamp{font-family:var(--font-amboqia),serif;font-weight:400;font-size:clamp(2rem,6.5vw,3.1rem);line-height:.88;letter-spacing:-.01em;}
+.kb-root .mkt-verdict-sub{font-size:.7rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;opacity:.66;}
+.kb-root .mkt-headline{background:var(--navy);padding:24px 24px;display:flex;flex-direction:column;gap:10px;justify-content:center;}
+.kb-root .mkt-headline-val{font-family:var(--font-amboqia),serif;font-weight:400;font-size:clamp(2.4rem,8vw,3.8rem);line-height:.86;color:var(--cream);font-variant-numeric:tabular-nums;}
+.kb-root .mkt-headline-meta{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.kb-root .mkt-headline-lbl{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--cream-40);}
+.kb-root .mkt-headline-delta{font-size:.72rem;font-weight:700;letter-spacing:.04em;font-variant-numeric:tabular-nums;padding:4px 10px;border:1px solid var(--cream-12);border-radius:3px;}
+.kb-root .mkt-headline-delta.up{color:#7fe3b0;border-color:rgba(127,227,176,.35);}
+.kb-root .mkt-headline-delta.down{color:#f0a6a0;border-color:rgba(240,166,160,.35);}
+.kb-root .mkt-phead-now{font-family:var(--font-amboqia),serif;font-size:1.25rem;color:var(--cream);}
 .kb-root .k-val{font-family:var(--font-amboqia),serif;font-size:clamp(2.3rem,7vw,3.4rem);line-height:1;font-variant-numeric:tabular-nums;}
 .kb-root .k-lbl{margin-top:10px;font-size:.62rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(250,248,244,.6);}
 .kb-root .mkt-panel{border:1px solid rgba(250,248,244,.22);padding:22px 22px 18px;margin-bottom:16px;position:relative;}

@@ -17,6 +17,39 @@ Last reconciled: 2026-06-17 (HEAD on `main` after the homepage polish wave).
 
 ---
 
+## THE PAGE CONTRACT — hardcoded, non-negotiable on every page we build (Matt directive 2026-06-17)
+
+Every page in the migration ships with ALL THREE baked in. None is optional; each
+becomes a gate (prose is not enough — "this cannot be prose, it must be enforced").
+
+1. **Design — KB brutalist, no slop.** Reuse the `Kb*` sections (no forks, G50). New
+   sections match the kinetic-brutalist language we researched (navy/cream, Amboqia
+   display, mono data, hard rules, scan-lines, kinetic reveals). A section that reads
+   like a generic dashboard is a regression — redesign it, don't ship it. Sections
+   must be **informative**: surface the real numbers and a verdict, not a thin strip.
+
+2. **SEO for Google AND LLMs — hardcoded.** Every page renders: `pageMetadata()`
+   (title/desc/canonical/OG), and the JSON-LD set via `MetadataBlock` —
+   BreadcrumbList + the page's primary entity (City/Place, RealEstateListing,
+   Neighborhood, Dataset for market stats) + FAQPage where Q&A exists. Headings are a
+   real h1→h2 outline. Content is AI-citable: named facts, verified stats, dated. Gate:
+   a per-page SEO/JSON-LD presence check (Phase 3).
+
+3. **Tracking — hardcoded, dual-sink (GA4/Pixel + our internal store).** Every page
+   fires a page-type view; every SECTION fires a view event when it enters the
+   viewport; every key INTERACTION is recorded — view a home, open a calculator, play a
+   video, map interaction, CTA click, scroll depth, save, share. Use the existing
+   `lib/tracking.ts` `trackEvent()` taxonomy (GA4/GTM + Meta CAPI) AND post to the
+   internal `/api/visitors/track` (session-stitched via `rr_session_id`). A reusable
+   KB section/interaction tracker carries this so every section inherits it. Gate: a
+   per-KB-page tracking-instrumentation check (Phase 5/3).
+
+Phases 3 (gates), 5 (tracking), 6 (attribution) are therefore not "later" — their
+per-page slice ships WITH each page in Phase 9. The roadmap below still tracks the
+deeper platform work (identity graph, offline conversions) separately.
+
+---
+
 ## Phase ledger (reconciled to what is actually shipped)
 
 | # | Phase | Goal | Status | Remaining work · gate |
