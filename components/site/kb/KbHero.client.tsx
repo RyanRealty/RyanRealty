@@ -8,11 +8,36 @@ import { searchHrefForQuery } from '@/lib/parse-search-query'
 import VoiceSearchButton from '@/components/VoiceSearchButton'
 
 /**
- * KB hero — full-bleed Old Mill drone video over the brand poster, masked
- * line-reveal H1 in Amboqia, a plain-language search that routes to
- * /homes-for-sale?keywords=, and a live-number sub row. Voice-locked copy.
+ * KB hero — REUSABLE across page classes (homepage, city, community, …). All
+ * copy + media are props with homepage defaults, so a geo page reuses this exact
+ * component with its own eyebrow / title / lead / photo. Full-bleed video-or-photo
+ * over the brand poster, masked line-reveal H1 in Amboqia, the plain-language +
+ * voice search, and a live-number sub row. Single source of truth — never fork.
  */
-export function KbHero({ data }: { data: KbHeroData }) {
+type KbHeroProps = {
+  data: KbHeroData
+  /** Eyebrow line over the H1. */
+  eyebrow?: string
+  /** Two H1 lines (the second is indented). */
+  titleTop?: string
+  titleBottom?: string
+  /** The sentence after "<n> homes for sale". */
+  lead?: string
+  /** Background video (mp4). If omitted, the poster image renders instead. */
+  videoSrc?: string | null
+  /** Poster / fallback still. */
+  posterSrc?: string
+}
+
+export function KbHero({
+  data,
+  eyebrow = 'Central Oregon Real Estate',
+  titleTop = 'Welcome to the',
+  titleBottom = 'High Desert',
+  lead = 'across six towns, from the Deschutes to Smith Rock.',
+  videoSrc = '/videos/hero-optimized.mp4',
+  posterSrc = '/images/hero/hero-old-mill-master-4k.jpg',
+}: KbHeroProps) {
   const root = useRef<HTMLElement>(null)
   const router = useRouter()
   const [q, setQ] = useState('')
@@ -47,24 +72,29 @@ export function KbHero({ data }: { data: KbHeroData }) {
   return (
     <section className="hero" id="top" ref={root}>
       <div className="hero-photo" data-parallax>
-        <video
-          className="hero-video"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          poster="/images/hero/hero-old-mill-master-4k.jpg"
-        >
-          <source src="/videos/hero-optimized.mp4" type="video/mp4" />
-        </video>
+        {videoSrc ? (
+          <video
+            className="hero-video"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            poster={posterSrc}
+          >
+            <source src={videoSrc} type="video/mp4" />
+          </video>
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className="hero-video" src={posterSrc} alt="" />
+        )}
       </div>
       <div className="hero-grid-overlay" />
       <div className="hero-inner">
-        <div className="hero-tag eyebrow"><span className="dot" /> Central Oregon Real Estate</div>
+        <div className="hero-tag eyebrow"><span className="dot" /> {eyebrow}</div>
         <h1 className="hero-h display">
-          <span className="reveal-mask"><span className="ln reveal-inner">Welcome to the</span></span>
-          <span className="reveal-mask"><span className="ln indent reveal-inner">High Desert</span></span>
+          <span className="reveal-mask"><span className="ln reveal-inner">{titleTop}</span></span>
+          <span className="reveal-mask"><span className="ln indent reveal-inner">{titleBottom}</span></span>
         </h1>
         <div className="hero-search-wrap">
           <form className="hero-search" role="search" onSubmit={submit}>
@@ -93,7 +123,7 @@ export function KbHero({ data }: { data: KbHeroData }) {
         </div>
         <div className="hero-sub-row">
           <p className="hero-sub">
-            {data.activeCount != null ? <><b>{data.activeCount.toLocaleString('en-US')} homes</b> for sale</> : 'Homes for sale'} across six towns, from the Deschutes to Smith Rock.
+            {data.activeCount != null ? <><b>{data.activeCount.toLocaleString('en-US')} homes</b> for sale</> : 'Homes for sale'} {lead}
             {median ? <> Median list <b>{median}</b>.</> : null}
             {data.medianDaysToPending != null ? <> Pending in <b>{data.medianDaysToPending} days</b>.</> : null}
           </p>
