@@ -60,11 +60,33 @@ function featureBounds(g: KbMapGeo): [[number, number], [number, number]] | null
   return [[minX - px, minY - py], [maxX + px, maxY + py]]
 }
 
+/** Bounding box of polygon geometries (the neighborhood extent = the city core). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function polygonBounds(p: { features: Array<{ geometry: any }> }): [[number, number], [number, number]] | null {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+  for (const f of p.features) {
+    const g = f.geometry
+    if (!g) continue
+    const polys = g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates]
+    for (const poly of polys) for (const ring of poly) for (const [x, y] of ring) {
+      if (x < minX) minX = x
+      if (y < minY) minY = y
+      if (x > maxX) maxX = x
+      if (y > maxY) maxY = y
+    }
+  }
+  if (!isFinite(minX)) return null
+  const px = (maxX - minX) * 0.06 || 0.02
+  const py = (maxY - minY) * 0.06 || 0.02
+  return [[minX - px, minY - py], [maxX + px, maxY + py]]
+}
+
 export function KbListingMap({
   geojson,
   totalActive,
   fitToFeatures = false,
   showRegionMarkers = true,
+  polygons,
   eyebrow = 'Central Oregon',
   title = 'Every home\nfor sale',
   subtitle = 'Every active listing across the six cities, on the real terrain. Click any dot for the price, the beds, and the street.',
@@ -75,6 +97,8 @@ export function KbListingMap({
   fitToFeatures?: boolean
   /** Show the named-town + Cascade-peak markers (region scope). */
   showRegionMarkers?: boolean
+  /** Neighborhood boundary polygons drawn under the listings (city scope). */
+  polygons?: { type: 'FeatureCollection'; features: Array<{ type: 'Feature'; geometry: unknown; properties: { name: string } }> }
   eyebrow?: string
   title?: string
   subtitle?: string
@@ -109,7 +133,12 @@ export function KbListingMap({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any
 
-      const initialBounds = (fitToFeatures ? featureBounds(geojson) : null) ?? REGION_BOUNDS
+      const initialBounds =
+        (fitToFeatures
+          ? polygons && polygons.features.length
+            ? polygonBounds(polygons)
+            : featureBounds(geojson)
+          : null) ?? REGION_BOUNDS
       map = new maplibregl.Map({
         container: el.current,
         style,
@@ -131,6 +160,13 @@ export function KbListingMap({
       let pop: any = null
 
       map.on('load', () => {
+        if (polygons && polygons.features.length) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          map.addSource('nbhd', { type: 'geojson', data: polygons as any })
+          map.addLayer({ id: 'nbhd-fill', type: 'fill', source: 'nbhd', paint: { 'fill-color': NAVY, 'fill-opacity': 0.07 } })
+          map.addLayer({ id: 'nbhd-line', type: 'line', source: 'nbhd', paint: { 'line-color': 'rgba(16,39,66,0.62)', 'line-width': 1.5 } })
+          map.addLayer({ id: 'nbhd-label', type: 'symbol', source: 'nbhd', minzoom: 10, layout: { 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Bold'], 'text-size': 11, 'text-transform': 'uppercase', 'text-letter-spacing': 0.08, 'text-max-width': 7, 'symbol-placement': 'point' }, paint: { 'text-color': NAVY, 'text-halo-color': CREAM, 'text-halo-width': 2 } })
+        }
         map.addSource('listings', { type: 'geojson', data: geojson, cluster: true, clusterRadius: 48, clusterMaxZoom: 13 })
         map.addLayer({ id: 'clusters', type: 'circle', source: 'listings', filter: ['has', 'point_count'], paint: { 'circle-color': NAVY, 'circle-radius': ['interpolate', ['linear'], ['get', 'point_count'], 2, 15, 25, 22, 100, 30, 400, 42], 'circle-stroke-width': 2, 'circle-stroke-color': 'rgba(250,248,244,0.9)' } })
         map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'listings', filter: ['has', 'point_count'], layout: { 'text-field': ['get', 'point_count_abbreviated'], 'text-font': ['Noto Sans Bold'], 'text-size': 13 }, paint: { 'text-color': CREAM } })
@@ -200,7 +236,7 @@ export function KbListingMap({
       cancelled = true
       if (map) map.remove()
     }
-  }, [geojson, totalActive, fitToFeatures, showRegionMarkers])
+  }, [geojson, totalActive, fitToFeatures, showRegionMarkers, polygons])
 
   return (
     <section className="section neigh" id="map">

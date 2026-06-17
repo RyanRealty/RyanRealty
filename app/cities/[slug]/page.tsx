@@ -230,6 +230,18 @@ export default async function CityDetailPage({ params }: Props) {
       },
     }))
   const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
+  // Neighborhood boundary polygons drawn on the city map (Bend has them).
+  const neighborhoodPolygons =
+    slug === 'bend'
+      ? {
+          type: 'FeatureCollection' as const,
+          features: (bendNeighborhoodPolygons.communities as Array<{ name: string; geometry: unknown }>).map((c) => ({
+            type: 'Feature' as const,
+            geometry: c.geometry,
+            properties: { name: c.name },
+          })),
+        }
+      : undefined
   const tickerItems: KbTickerItem[] = mapTiles.slice(0, 6).map((t) => ({
     price: t.listPrice,
     address: [t.streetNumber, t.streetName].filter(Boolean).join(' '),
@@ -433,6 +445,7 @@ export default async function CityDetailPage({ params }: Props) {
           totalActive={pulse?.activeCount ?? mapFeatures.length}
           fitToFeatures
           showRegionMarkers={false}
+          polygons={neighborhoodPolygons}
           eyebrow={cityName}
           title={`Homes in\n${cityName}`}
           subtitle={`Every active single-family listing in ${cityName}, on the real terrain. Click any dot for the price, the beds, and the street.`}

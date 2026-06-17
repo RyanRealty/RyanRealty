@@ -29,6 +29,7 @@ async function shot(sel, name) {
   console.log(`OK /tmp/kb-${name}.png`)
 }
 
+await shot('#map', 'map')
 await shot('#about', 'about')
 await shot('#open-houses', 'openhouses')
 await shot('#activity', 'activity')
