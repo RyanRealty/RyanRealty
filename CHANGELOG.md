@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.584.0 (2026-06-17)
+
+### Features
+- feat(crm): stamp FUB campaign object from origin UTMs on seller LP (CRM_INTEGRATION #2)
+
+---
+
+
 ## v1.583.0 (2026-06-17)
 
 ### Features
