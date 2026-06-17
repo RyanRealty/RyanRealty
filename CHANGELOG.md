@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.581.0 (2026-06-17)
+
+### Features
+- feat(consent): Meta Limited Data Use (LDU) for CCPA/CPRA opt-out + lock in G48
+
+---
+
+
 ## v1.580.1 (2026-06-17)
 
 ### Bug Fixes
