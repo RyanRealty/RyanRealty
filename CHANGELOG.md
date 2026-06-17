@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.585.0 (2026-06-17)
+
+### Features
+- feat(home): promote kinetic-brutalist homepage to live / (replaces V6, retires /concept/kb)
+
+---
+
+
 ## v1.584.0 (2026-06-17)
 
 ### Features
