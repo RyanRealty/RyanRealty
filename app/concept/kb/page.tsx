@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
 
-import { getRegionPulse } from '@/lib/data'
+import { getRegionPulse, getListingTiles } from '@/lib/data'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
 import { KbCommunities } from '@/components/site/kb/KbCommunities.client'
+import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { KbTeam } from '@/components/site/kb/KbTeam.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import type { KbTownItem, KbCommunityItem } from '@/components/site/kb/types'
@@ -24,7 +25,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-// The six service towns, in the locked prototype order, with curated photography.
 const TOWN_ORDER = ['bend', 'la-pine', 'redmond', 'sunriver', 'sisters', 'terrebonne']
 const TOWN_IMG: Record<string, string> = {
   bend: '/images/kb/bend-drake-park-aerial.jpg',
@@ -35,8 +35,6 @@ const TOWN_IMG: Record<string, string> = {
   terrebonne: '/images/kb/smith-rock-terrebonne.jpg',
 }
 
-// Marquee communities, curated photography. Live count joins by subdivision
-// name (slug formats vary in the MV); the real slug drives the link.
 const COMM_FEATURED = [
   { match: 'tetherow', town: 'Bend', img: '/images/kb/tetherow-golf-aerial.jpg' },
   { match: 'caldera', town: 'Sunriver', img: '/images/kb/caldera-springs.jpg' },
@@ -45,36 +43,43 @@ const COMM_FEATURED = [
 ]
 
 export default async function KbHomePreview() {
-  const [pulse, cities, communities] = await Promise.all([
+  const [pulse, cities, communities, tiles] = await Promise.all([
     getRegionPulse().catch(() => null),
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
+    getListingTiles({ status: 'active', propertyType: 'A', limit: 3000 }).catch(() => []),
   ])
 
   const cityBySlug = new Map(cities.map((c) => [c.slug, c]))
   const towns: KbTownItem[] = TOWN_ORDER.map((slug) => {
     const c = cityBySlug.get(slug)
     if (!c) return null
-    return {
-      name: c.name,
-      activeCount: c.activeCount,
-      medianPrice: c.medianPrice,
-      href: `/cities/${slug}`,
-      img: TOWN_IMG[slug],
-    }
+    return { name: c.name, activeCount: c.activeCount, medianPrice: c.medianPrice, href: `/cities/${slug}`, img: TOWN_IMG[slug] }
   }).filter((t): t is KbTownItem => t !== null)
 
   const communityItems: KbCommunityItem[] = COMM_FEATURED.map((f) => {
     const c = communities.find((x) => x.subdivision.toLowerCase().includes(f.match))
     if (!c) return null
-    return {
-      name: c.subdivision,
-      activeCount: c.activeCount,
-      town: f.town,
-      href: `/communities/${c.slug}`,
-      img: f.img,
-    }
+    return { name: c.subdivision, activeCount: c.activeCount, town: f.town, href: `/communities/${c.slug}`, img: f.img }
   }).filter((x): x is KbCommunityItem => x !== null)
+
+  const mapFeatures = tiles
+    .filter((t) => t.lat != null && t.lng != null)
+    .map((t) => ({
+      type: 'Feature' as const,
+      geometry: { type: 'Point' as const, coordinates: [Number(t.lng), Number(t.lat)] as [number, number] },
+      properties: {
+        p: t.listPrice,
+        bd: t.beds,
+        ba: t.baths,
+        sf: t.sqft,
+        a: [t.streetNumber, t.streetName].filter(Boolean).join(' '),
+        sub: t.subdivisionName ?? '',
+        city: t.city ?? '',
+        img: t.photoUrl ?? '',
+      },
+    }))
+  const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
 
   return (
     <main className="kb-root">
@@ -88,6 +93,7 @@ export default async function KbHomePreview() {
         />
         <KbExploreTowns towns={towns} />
         <KbCommunities communities={communityItems} />
+        <KbListingMap geojson={mapGeo} totalActive={pulse?.activeCount ?? mapFeatures.length} />
         <KbTeam />
         <KbFooter towns={towns} />
       </SmoothScrollProvider>
