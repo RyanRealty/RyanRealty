@@ -7,6 +7,7 @@ import { listingDetailPath } from '@/lib/slug'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
+import { toBackgroundEmbed } from '@/lib/video-embed'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbHero } from '@/components/site/kb/KbHero.client'
@@ -159,7 +160,14 @@ export default async function Home() {
       { city: t.city, subdivision: t.subdivisionName },
       { mlsNumber: t.listNumber },
     ),
-    video: v ? { url: v.url, embedType: v.embedType as 'iframe' | 'video-tag' } : null,
+    video: v
+      ? {
+          // iframe embeds → silent background mode (autoplay, loop, no controls /
+          // no play button); direct mp4 already has no controls.
+          url: v.embedType === 'iframe' ? toBackgroundEmbed(v.url) : v.url,
+          embedType: v.embedType as 'iframe' | 'video-tag',
+        }
+      : null,
   }))
 
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null

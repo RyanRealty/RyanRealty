@@ -188,3 +188,39 @@ export function normalizeEmbed(
   // Anything unrecognized: frame-blocked → watch link, never a broken iframe.
   return { url, embedType: 'link' }
 }
+
+/**
+ * Rewrite an embed URL into a silent BACKGROUND-video URL: autoplay, muted, loop,
+ * and NO player chrome / play button — for tiles where the video plays itself.
+ * Vimeo `background=1` is true no-UI mode (the cleanest); YouTube `controls=0` +
+ * loop(playlist) is the closest equivalent. Non-vimeo/youtube embeds (Matterport,
+ * etc.) are returned unchanged. Pure + client-safe.
+ */
+export function toBackgroundEmbed(url: string): string {
+  try {
+    const u = new URL(url)
+    const host = u.hostname.toLowerCase()
+    if (host.includes('vimeo.com')) {
+      u.searchParams.set('background', '1')
+      u.searchParams.set('autoplay', '1')
+      u.searchParams.set('muted', '1')
+      u.searchParams.set('loop', '1')
+      return u.toString()
+    }
+    if (host.includes('youtube.com') || host.includes('youtube-nocookie.com')) {
+      const id = u.pathname.split('/embed/')[1]?.split('/')[0]
+      u.searchParams.set('autoplay', '1')
+      u.searchParams.set('mute', '1')
+      u.searchParams.set('controls', '0')
+      u.searchParams.set('loop', '1')
+      if (id) u.searchParams.set('playlist', id) // YouTube loop requires playlist=<id>
+      u.searchParams.set('modestbranding', '1')
+      u.searchParams.set('playsinline', '1')
+      u.searchParams.set('rel', '0')
+      return u.toString()
+    }
+    return url
+  } catch {
+    return url
+  }
+}
