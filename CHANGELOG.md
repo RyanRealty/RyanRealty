@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.583.0 (2026-06-17)
+
+### Features
+- feat(gate): G49 crm-lead-integrity (events-not-people) + CRM_INTEGRATION.md
+
+---
+
+
 ## v1.582.0 (2026-06-17)
 
 ### Features
