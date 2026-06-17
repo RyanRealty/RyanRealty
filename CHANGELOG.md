@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.591.0 (2026-06-17)
+
+### Features
+- feat(home): voice + natural-language search (speak plainly) + autoplay video tiles
+
+---
+
+
 ## v1.590.1 (2026-06-17)
 
 ### Bug Fixes
