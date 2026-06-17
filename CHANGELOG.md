@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.579.0 (2026-06-17)
+
+### Features
+- feat(kb): KB nav + hide default chrome on /concept (homepage chrome complete)
+- feat(kb): homepage market HUD (05) — homepage complete, 11/11
+- feat(kb): homepage featured listings (04)
+- feat(kb): homepage sections — sell, testimonials, ticker + map count fix
+- feat(kb): homepage map section — live MapLibre listings map
+- feat(kb): homepage sections — towns, communities, team, footer
+- feat(kb): homepage preview scaffold + base gate unblocks
+
+### Bug Fixes
+- fix(kb): communities live-count join by subdivision name
+- fix(base): stabilize gate-red base inherited from parallel sessions
+
+### Maintenance
+- chore(gates): directory-prefix exemptions in design-tokens gate
+
+---
+
+
 ## v1.578.1 (2026-06-16)
 
 ### Maintenance
