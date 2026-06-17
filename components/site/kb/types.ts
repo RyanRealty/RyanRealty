@@ -8,6 +8,22 @@ export interface KbHeroData {
   medianDaysToPending: number | null
 }
 
+export interface KbTownItem {
+  name: string
+  activeCount: number
+  medianPrice: number | null
+  href: string
+  img: string
+}
+
+export interface KbCommunityItem {
+  name: string
+  activeCount: number
+  town: string
+  href: string
+  img: string
+}
+
 /** Formats a price to the nearest thousand: 740123 -> "$740,000". */
 export function kbMoney(n: number | null | undefined): string | null {
   if (n == null || !Number.isFinite(n)) return null
