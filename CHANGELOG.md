@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.3 (2026-06-17)
+
+### Other
+- homepage: viewport autoplay + community Area Guide videos + screenshots.pdf fixes
+
+---
+
+
 ## v1.594.2 (2026-06-17)
 
 ### Bug Fixes
