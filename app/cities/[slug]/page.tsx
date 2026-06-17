@@ -86,6 +86,7 @@ import { buildMarketFaq } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import type { ListingCardData } from '@/components/site/ListingCard'
 import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import '@/components/site/kb/kb.css'
 
 // ---------------------------------------------------------------------------
@@ -839,6 +840,13 @@ export default async function CityDetailPage({ params }: Props) {
         communityName={cityName}
         sectionId="valuation-hook"
       />
+
+      {/* KB footer (Phase 9 migration). The default SiteFooter is hidden on the
+          city-detail route via HideChrome, so the page carries the KB footer.
+          towns=[] keeps the per-town fine-print line off (city scope, not region). */}
+      <div className="kb-root">
+        <KbFooter towns={[]} />
+      </div>
 
     </main>
   )
