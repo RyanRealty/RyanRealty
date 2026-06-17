@@ -67,6 +67,7 @@ import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import CityPageTracker from '@/components/city/CityPageTracker'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import type {
   KbTownItem,
   KbCommunityItem,
@@ -419,6 +420,7 @@ export default async function CityDetailPage({ params }: Props) {
         medianPrice={pulse?.medianListPrice ?? null}
         communityCount={communitySnapshots.length}
       />
+      <KbSectionTracker pageType="city" />
       <MetadataBlock schemas={citySchemas} />
       <KbBreadcrumb trail={[{ label: 'Cities', href: '/cities' }, { label: cityName }]} />
       <SmoothScrollProvider>

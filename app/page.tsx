@@ -8,6 +8,7 @@ import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
 import { KbCommunities } from '@/components/site/kb/KbCommunities.client'
@@ -165,6 +166,7 @@ export default async function Home() {
   return (
     <main className="kb-root">
       <KbNav />
+      <KbSectionTracker pageType="homepage" />
       <SmoothScrollProvider>
         <KbHero
           data={{

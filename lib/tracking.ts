@@ -52,6 +52,7 @@ export type EventName =
   | 'view_market_report'
   | 'download_report'
   | 'scroll_depth'
+  | 'section_view'
   | 'click_cta'
   | 'calculator_used'
   | 'calculator_interact'
