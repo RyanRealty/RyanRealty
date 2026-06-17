@@ -3,17 +3,19 @@ import type { Metadata } from 'next'
 import { getRegionPulse, getListingTiles } from '@/lib/data'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
+import { listingDetailPath } from '@/lib/slug'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
 import { KbCommunities } from '@/components/site/kb/KbCommunities.client'
+import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { KbTicker } from '@/components/site/kb/KbTicker.client'
 import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
 import { KbTeam } from '@/components/site/kb/KbTeam.client'
 import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import type { KbTownItem, KbCommunityItem, KbTickerItem } from '@/components/site/kb/types'
+import type { KbTownItem, KbCommunityItem, KbTickerItem, KbFeaturedItem } from '@/components/site/kb/types'
 import { TESTIMONIALS } from '@/lib/testimonials'
 import '@/components/site/kb/kb.css'
 
@@ -47,11 +49,12 @@ const COMM_FEATURED = [
 ]
 
 export default async function KbHomePreview() {
-  const [pulse, cities, communities, tiles] = await Promise.all([
+  const [pulse, cities, communities, tiles, featured] = await Promise.all([
     getRegionPulse().catch(() => null),
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
     getListingTiles({ status: 'active', propertyType: 'A', limit: 3000 }).catch(() => []),
+    getListingTiles({ status: 'active', propertyType: 'A', sort: 'price-desc', limit: 6 }).catch(() => []),
   ])
 
   const cityBySlug = new Map(cities.map((c) => [c.slug, c]))
@@ -91,6 +94,26 @@ export default async function KbHomePreview() {
     town: t.city ?? '',
   }))
 
+  const featuredItems: KbFeaturedItem[] = featured
+    .filter((t) => t.photoUrl)
+    .slice(0, 5)
+    .map((t) => ({
+      price: t.listPrice,
+      address: [t.streetNumber, t.streetName].filter(Boolean).join(' '),
+      sub: t.subdivisionName ?? '',
+      city: t.city ?? '',
+      beds: t.beds,
+      baths: t.baths,
+      sqft: t.sqft,
+      img: t.photoUrl ?? '',
+      href: listingDetailPath(
+        t.listingKey,
+        { streetNumber: t.streetNumber, streetName: t.streetName, city: t.city, postalCode: t.postalCode },
+        { city: t.city, subdivision: t.subdivisionName },
+        { mlsNumber: t.listNumber },
+      ),
+    }))
+
   return (
     <main className="kb-root">
       <SmoothScrollProvider>
@@ -103,6 +126,7 @@ export default async function KbHomePreview() {
         />
         <KbExploreTowns towns={towns} />
         <KbCommunities communities={communityItems} />
+        <KbFeatured items={featuredItems} />
         <KbListingMap geojson={mapGeo} totalActive={pulse?.activeCount ?? mapFeatures.length} />
         <KbTicker items={tickerItems} />
         <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />

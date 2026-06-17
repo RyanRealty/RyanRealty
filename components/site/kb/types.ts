@@ -41,6 +41,18 @@ export interface KbTickerItem {
   town: string
 }
 
+export interface KbFeaturedItem {
+  price: number | null
+  address: string
+  sub: string
+  city: string
+  beds: number | null
+  baths: number | null
+  sqft: number | null
+  img: string
+  href: string
+}
+
 /** Formats a price to the nearest thousand: 740123 -> "$740,000". */
 export function kbMoney(n: number | null | undefined): string | null {
   if (n == null || !Number.isFinite(n)) return null
