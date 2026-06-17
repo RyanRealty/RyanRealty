@@ -48,7 +48,7 @@ async function requireBroker(): Promise<{ email: string } | { error: string }> {
 }
 
 function siteUrl(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL || 'https://ryanrealty.vercel.app').replace(/\/$/, '')
+  return (process.env.NEXT_PUBLIC_SITE_URL || 'https://ryan-realty.com').replace(/\/$/, '')
 }
 
 // ---------------------------------------------------------------------------

@@ -1,3 +1,4 @@
+// @data-free - auth'd account page; user-specific data via server actions, not the public cached DAL
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'

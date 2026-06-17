@@ -24,7 +24,7 @@ type DbRow = Record<string, any>
 type Sb = SupabaseClient<any, any, any>
 
 function siteUrl(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL || 'https://ryanrealty.vercel.app').replace(/\/$/, '')
+  return (process.env.NEXT_PUBLIC_SITE_URL || 'https://ryan-realty.com').replace(/\/$/, '')
 }
 
 /**

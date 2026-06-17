@@ -1,3 +1,4 @@
+// @data-free - static paid-traffic LP (testimonials from lib/testimonials, no DAL fetch); form posts via action
 // @no-parity - paid-traffic FSBO LP per the approved Figma LP 3 spec (tmp/figma-lp-build/BRIEF.md), no Wave 3 mockup contract
 import type { Metadata } from 'next'
 import Image from 'next/image'
