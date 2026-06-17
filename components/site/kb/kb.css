@@ -106,7 +106,7 @@ html.lenis, html.lenis body{height:auto;}
 }
 .kb-root .hero-tag .dot{width:7px;height:7px;border-radius:50%;background:var(--cream);}
 .kb-root .hero-h{
-  font-size:clamp(2.6rem,14vw,15rem);
+  font-size:clamp(2.4rem,8.5vw,7rem);
   margin:0 0 2px;
 }
 .kb-root .hero-h .ln{display:block;line-height:.96;}
@@ -626,4 +626,4 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .kb-pop-addr{font-size:.78rem;font-weight:600;margin-top:6px;letter-spacing:.01em;}
 .kb-root .kb-pop-addr .sub{display:block;font-weight:500;color:var(--cream-70);font-size:.7rem;margin-top:2px;}
 .kb-root .kb-pop-specs{margin-top:9px;font-size:.66rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--cream-70);display:flex;gap:12px;}
-@media(max-width:760px){.kb-root .wrap{padding:0 20px;}.kb-root .sec-title{font-size:12.5vw!important;line-height:.92;}.kb-root .hero-h{font-size:13vw!important;}.kb-root .stat-num{font-size:13vw!important;}.kb-root .town-row{grid-template-columns:1fr!important;gap:6px;padding:18px 0;}.kb-root .town-row .town-name{font-size:11vw!important;white-space:normal!important;overflow:visible!important;min-width:0;transform:none!important;}.kb-root .town-stats{text-align:left!important;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;}.kb-root .town-count{font-size:1.7rem!important;}.kb-root .town-count .lbl{display:inline!important;margin:0 0 0 6px;}.kb-root .town-price{margin-top:0!important;}.kb-root .comm-name{font-size:7.5vw!important;white-space:normal!important;}.kb-root .lst-price{font-size:8vw!important;}.kb-root .sell-h{font-size:11vw!important;}.kb-root .team-name{font-size:9vw!important;}.kb-root .foot-cta .display{font-size:13vw!important;}}
+@media(max-width:760px){.kb-root .wrap{padding:0 20px;}.kb-root .sec-title{font-size:12.5vw!important;line-height:.92;}.kb-root .hero-h{font-size:11vw!important;}.kb-root .stat-num{font-size:13vw!important;}.kb-root .town-row{grid-template-columns:1fr!important;gap:6px;padding:18px 0;}.kb-root .town-row .town-name{font-size:11vw!important;white-space:normal!important;overflow:visible!important;min-width:0;transform:none!important;}.kb-root .town-stats{text-align:left!important;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;}.kb-root .town-count{font-size:1.7rem!important;}.kb-root .town-count .lbl{display:inline!important;margin:0 0 0 6px;}.kb-root .town-price{margin-top:0!important;}.kb-root .comm-name{font-size:7.5vw!important;white-space:normal!important;}.kb-root .lst-price{font-size:8vw!important;}.kb-root .sell-h{font-size:11vw!important;}.kb-root .team-name{font-size:9vw!important;}.kb-root .foot-cta .display{font-size:13vw!important;}}

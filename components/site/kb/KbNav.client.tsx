@@ -2,15 +2,16 @@
 
 import { useEffect, useRef, useState } from 'react'
 
+// ONE coherent nav that navigates the whole site. The top bar shows the key
+// destinations; the overlay carries the full list. Both are REAL routes — the
+// old in-page anchors (#towns, #listings) created a second, conflicting menu
+// that only scrolled the homepage instead of navigating the site.
 const LINKS = [
-  { href: '#towns', label: 'Towns' },
-  { href: '#communities', label: 'Communities' },
-  { href: '#listings', label: 'Listings' },
-  { href: '#sell', label: 'Sell' },
+  { href: '/homes-for-sale', label: 'Search' },
+  { href: '/communities', label: 'Communities' },
+  { href: '/cities', label: 'Towns' },
+  { href: '/sell/valuation', label: 'Sell' },
 ]
-// The full-screen menu is the homepage's path to the rest of the site, so these
-// are real routes (not in-page anchors). The always-visible top-bar LINKS above
-// stay as anchors for quick in-page scrolling.
 const MENU = [
   { href: '/homes-for-sale', label: 'Search homes' },
   { href: '/communities', label: 'Communities' },
@@ -54,7 +55,7 @@ export function KbNav() {
   return (
     <>
       <header className="topbar" ref={bar}>
-        <a href="#top" aria-label="Ryan Realty home">
+        <a href="/" aria-label="Ryan Realty home">
           <img className="logo-img" src="/images/brand/logo-white.png" alt="Ryan Realty" />
         </a>
         <nav className="nav-right">

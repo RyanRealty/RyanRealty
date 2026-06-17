@@ -59,8 +59,8 @@ export function KbHero({ data }: { data: KbHeroData }) {
       <div className="hero-inner">
         <div className="hero-tag eyebrow"><span className="dot" /> Central Oregon Real Estate</div>
         <h1 className="hero-h display">
-          <span className="reveal-mask"><span className="ln reveal-inner">Bend and the</span></span>
-          <span className="reveal-mask"><span className="ln indent reveal-inner">high desert</span></span>
+          <span className="reveal-mask"><span className="ln reveal-inner">Welcome to the</span></span>
+          <span className="reveal-mask"><span className="ln indent reveal-inner">High Desert</span></span>
         </h1>
         <div className="hero-search-wrap">
           <form className="hero-search" role="search" onSubmit={submit}>
@@ -87,8 +87,8 @@ export function KbHero({ data }: { data: KbHeroData }) {
             {data.medianDaysToPending != null ? <> Pending in <b>{data.medianDaysToPending} days</b>.</> : null}
           </p>
           <div className="hero-cta-row">
-            <a href="#listings" className="btn">Browse <span className="arr">→</span></a>
-            <a href="#sell" className="btn ghost">Sell</a>
+            <a href="/homes-for-sale" className="btn">Browse <span className="arr">→</span></a>
+            <a href="/sell/valuation" className="btn ghost">Sell</a>
           </div>
         </div>
       </div>
