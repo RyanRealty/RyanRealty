@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.580.1 (2026-06-17)
+
+### Bug Fixes
+- fix(consent): render SmsConsentDisclosure on all 6 public phone forms + lock coverage in ci:sms-consent
+
+---
+
+
 ## v1.580.0 (2026-06-17)
 
 ### Features
