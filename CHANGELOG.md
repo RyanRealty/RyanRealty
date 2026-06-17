@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.591.1 (2026-06-17)
+
+### Bug Fixes
+- fix(home): featured-tile videos play silent + chromeless (no play button)
+
+---
+
+
 ## v1.591.0 (2026-06-17)
 
 ### Features
