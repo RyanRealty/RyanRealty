@@ -7,14 +7,15 @@ import { kbMoneyFull, type KbFeaturedItem } from './types'
 
 /**
  * KB Featured homes (04) — asymmetric poster grid of the highest-value active
- * listings, video-tour homes first. Each card routes to the listing detail and,
- * when the MLS feed has a video tour, plays it as a muted background loop on
- * hover (an iframe embed or a direct mp4) over the poster — like the demo. Only
- * the hovered card mounts its video, so the page never autoplays six at once.
+ * listings, video-tour homes first. Each home with an MLS video tour AUTOPLAYS
+ * it as a muted background loop over the poster (no hover, no play-button icon).
+ * Iframe embeds use native lazy-loading so off-screen tours don't load until the
+ * tile scrolls into view; the video fades in over the poster once it has loaded.
  */
 export function KbFeatured({ items }: { items: KbFeaturedItem[] }) {
   const root = useRef<HTMLElement>(null)
-  const [playing, setPlaying] = useState<string | null>(null)
+  const [loaded, setLoaded] = useState<Record<string, boolean>>({})
+  const markLoaded = (href: string) => setLoaded((p) => (p[href] ? p : { ...p, [href]: true }))
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger)
@@ -50,18 +51,12 @@ export function KbFeatured({ items }: { items: KbFeaturedItem[] }) {
         </div>
         <div className="lst-grid">
           {items.map((it) => {
-            const isPlaying = playing === it.href && !!it.video
+            const playing = !!it.video && !!loaded[it.href]
             return (
-              <a
-                key={it.href}
-                className={`lst-card${isPlaying ? ' playing' : ''}`}
-                href={it.href}
-                onMouseEnter={() => it.video && setPlaying(it.href)}
-                onMouseLeave={() => setPlaying((p) => (p === it.href ? null : p))}
-              >
+              <a key={it.href} className={`lst-card${playing ? ' playing' : ''}`} href={it.href}>
                 <div className="lst-media">
                   <img className="lst-img" src={it.img} alt={it.address} loading="lazy" />
-                  {isPlaying && it.video ? (
+                  {it.video ? (
                     it.video.embedType === 'video-tag' ? (
                       <video
                         className="lst-video"
@@ -71,6 +66,7 @@ export function KbFeatured({ items }: { items: KbFeaturedItem[] }) {
                         loop
                         playsInline
                         poster={it.img}
+                        onLoadedData={() => markLoaded(it.href)}
                       />
                     ) : (
                       <iframe
@@ -80,13 +76,9 @@ export function KbFeatured({ items }: { items: KbFeaturedItem[] }) {
                         allow="autoplay; fullscreen; picture-in-picture"
                         loading="lazy"
                         style={{ border: 0 }}
+                        onLoad={() => markLoaded(it.href)}
                       />
                     )
-                  ) : null}
-                  {it.video ? (
-                    <span className="lst-reel" aria-hidden="true">
-                      ▶ Tour
-                    </span>
                   ) : null}
                 </div>
                 <div className="lst-info">

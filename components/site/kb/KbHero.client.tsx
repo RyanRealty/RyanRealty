@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { gsap } from 'gsap'
 import { kbMoneyFull, type KbHeroData } from './types'
+import { searchHrefForQuery } from '@/lib/parse-search-query'
+import VoiceSearchButton from '@/components/VoiceSearchButton'
 
 /**
  * KB hero — full-bleed Old Mill drone video over the brand poster, masked
@@ -32,10 +34,12 @@ export function KbHero({ data }: { data: KbHeroData }) {
     return () => ctx.revert()
   }, [])
 
+  // Speak-plainly search: parse the typed-or-spoken query into structured
+  // filters (beds/price/city/features) and route to the existing search.
+  const routeFor = (raw: string) => router.push(searchHrefForQuery(raw))
   function submit(e: React.FormEvent) {
     e.preventDefault()
-    const v = q.trim()
-    router.push(v ? `/homes-for-sale?keywords=${encodeURIComponent(v)}` : '/homes-for-sale')
+    routeFor(q)
   }
 
   const median = kbMoneyFull(data.medianListPrice)
@@ -76,6 +80,13 @@ export function KbHero({ data }: { data: KbHeroData }) {
               placeholder="3 bed under $800k in Bend with a shop"
               value={q}
               onChange={(e) => setQ(e.target.value)}
+            />
+            <VoiceSearchButton
+              className="hs-mic"
+              onTranscript={(t) => {
+                setQ(t)
+                routeFor(t)
+              }}
             />
             <button type="submit" className="hs-go">Search</button>
           </form>
