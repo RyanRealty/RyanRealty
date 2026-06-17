@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.588.1 (2026-06-17)
+
+### Bug Fixes
+- fix(home): unify KB nav to real site routes + H1 'Welcome to the High Desert' (smaller)
+
+---
+
+
 ## v1.588.0 (2026-06-17)
 
 ### Features
