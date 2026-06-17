@@ -6,6 +6,7 @@ import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { listingDetailPath } from '@/lib/slug'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
+import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbHero } from '@/components/site/kb/KbHero.client'
@@ -84,7 +85,7 @@ export default async function Home() {
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
     getListingTiles({ status: 'active', propertyType: 'A', limit: 3000 }).catch(() => []),
-    getListingTiles({ status: 'active', propertyType: 'A', sort: 'price-desc', limit: 6 }).catch(() => []),
+    getListingTiles({ status: 'active', propertyType: 'A', sort: 'price-desc', limit: 14 }).catch(() => []),
     getMarketStatsCacheRowForGeo({ geoSlug: 'central-oregon' }).catch(() => null),
     getPriceHistory('region', 'central-oregon', 'monthly', 13).catch(() => []),
   ])
@@ -126,25 +127,40 @@ export default async function Home() {
     town: t.city ?? '',
   }))
 
-  const featuredItems: KbFeaturedItem[] = featured
-    .filter((t) => t.photoUrl)
-    .slice(0, 5)
-    .map((t) => ({
-      price: t.listPrice,
-      address: [t.streetNumber, t.streetName].filter(Boolean).join(' '),
-      sub: t.subdivisionName ?? '',
-      city: t.city ?? '',
-      beds: t.beds,
-      baths: t.baths,
-      sqft: t.sqft,
-      img: t.photoUrl ?? '',
-      href: listingDetailPath(
-        t.listingKey,
-        { streetNumber: t.streetNumber, streetName: t.streetName, city: t.city, postalCode: t.postalCode },
-        { city: t.city, subdivision: t.subdivisionName },
-        { mlsNumber: t.listNumber },
-      ),
-    }))
+  // Featured homes: fetch each top candidate's MLS listing video tour (cached,
+  // failure-safe), then surface video-having homes FIRST so the slider plays
+  // muted background loops on hover (like the demo). Photo-only homes fill the
+  // remaining slots. 'link'-type videos (host blocks framing) are treated as no
+  // video so the card stays photo-only.
+  const featuredCandidates = featured.filter((t) => t.photoUrl).slice(0, 12)
+  const featuredVideos = await Promise.all(
+    featuredCandidates.map((t) =>
+      getListingVideos(t.listingKey)
+        .then((vids) => vids.find((v) => v.embedType !== 'link') ?? null)
+        .catch(() => null),
+    ),
+  )
+  const featuredRanked = featuredCandidates
+    .map((t, i) => ({ t, v: featuredVideos[i] }))
+    .sort((a, b) => (a.v ? 0 : 1) - (b.v ? 0 : 1)) // video-having first (stable sort)
+    .slice(0, 6)
+  const featuredItems: KbFeaturedItem[] = featuredRanked.map(({ t, v }) => ({
+    price: t.listPrice,
+    address: [t.streetNumber, t.streetName].filter(Boolean).join(' '),
+    sub: t.subdivisionName ?? '',
+    city: t.city ?? '',
+    beds: t.beds,
+    baths: t.baths,
+    sqft: t.sqft,
+    img: t.photoUrl ?? '',
+    href: listingDetailPath(
+      t.listingKey,
+      { streetNumber: t.streetNumber, streetName: t.streetName, city: t.city, postalCode: t.postalCode },
+      { city: t.city, subdivision: t.subdivisionName },
+      { mlsNumber: t.listNumber },
+    ),
+    video: v ? { url: v.url, embedType: v.embedType as 'iframe' | 'video-tag' } : null,
+  }))
 
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
   const marketData: KbMarketData = {

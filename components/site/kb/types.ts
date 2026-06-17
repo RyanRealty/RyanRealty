@@ -51,6 +51,10 @@ export interface KbFeaturedItem {
   sqft: number | null
   img: string
   href: string
+  /** Listing video tour, when the MLS feed has one — played as a muted
+   *  background loop on hover (iframe embed or direct mp4). `link`-type
+   *  videos (host blocks framing) are omitted so the card stays photo-only. */
+  video?: { url: string; embedType: 'iframe' | 'video-tag' } | null
 }
 
 // Market HUD — every figure traces to a cached DAL source (§0):
