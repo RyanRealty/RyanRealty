@@ -78,6 +78,13 @@ for (const rel of ['components/GTMHead.tsx', 'components/FollowUpBossPixel.tsx']
   check(`${rel} gates on consent`, /hasAnalyticsConsent|hasMarketingConsent|hasTrackingConsent/.test(src),
     `${rel} must check a consent helper before loading its tag.`)
 }
+// The Meta pixel fires on all traffic by directive (2026-06-02), so CCPA/CPRA opt-out
+// is honored via Limited Data Use rather than suppression (research-verified pattern
+// for a US opt-out site). LDU must stay wired so opted-out visitors are excluded from
+// ad targeting/personalization while still being measured.
+const pixel = read('components/MetaPixel.tsx')
+check('Meta pixel wires Limited Data Use (LDU)', /dataProcessingOptions/.test(pixel),
+  'MetaPixel.tsx must call fbq("dataProcessingOptions", ...) so opted-out (essential-only / Do Not Sell) visitors are sent in LDU mode (CCPA/CPRA).')
 
 // ── 3. No unhashed PII to ad platforms (Meta CAPI) ───────────────────────────
 // research: PII MUST be SHA-256 hashed before transmission (3-0).

@@ -34,6 +34,19 @@ export default function MetaPixel() {
           t.src=v;s=b.getElementsByTagName(e)[0];
           if(s&&s.parentNode)s.parentNode.insertBefore(t,s);else b.head.appendChild(t);}(window, document,'script',
           'https://connect.facebook.net/en_US/fbevents.js');
+          // Limited Data Use (CCPA/CPRA): when the visitor has NOT granted marketing
+          // consent (essential-only / "Do Not Sell"), send events in LDU mode — Meta
+          // still measures the conversion but excludes it from ad targeting and
+          // personalization. A visitor arriving from an ad click (fbclid/gclid/utm)
+          // with no explicit choice is treated as marketing-OK, mirroring
+          // autoGrantConsentForAdTraffic so first-PageView attribution is preserved.
+          (function(){
+            var m=false;
+            var raw=(document.cookie.split('; ').find(function(r){return r.indexOf('ryan_realty_cookie_consent=')===0;})||'').split('=')[1];
+            if(raw){try{m=!!JSON.parse(decodeURIComponent(raw)).marketing;}catch(e){m=raw==='all';}}
+            else{m=/[?&](fbclid|gclid|msclkid|ttclid|utm_)/i.test(window.location.search||'');}
+            if(!m){fbq('dataProcessingOptions',['LDU'],0,0);}else{fbq('dataProcessingOptions',[]);}
+          })();
           fbq('init', '${PIXEL_ID.replace(/'/g, "\\'")}');
           fbq('track', 'PageView');
         `}

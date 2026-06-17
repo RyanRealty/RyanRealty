@@ -52,12 +52,14 @@ model. (Source: Google Analytics Help answer 17016975; corroborated, vote 2-1.)
 These change live ad/tracking behavior, so they are NOT auto-enforced. Each needs
 explicit approval before shipping (ops-explicit / Draft-First).
 
-1. **Meta Limited Data Use (LDU) for CCPA/CPRA opt-out.** This is a US opt-out
-   site, so the correct pattern for an opted-out visitor is LDU (`data_processing_options`)
-   / `ad_user_data=denied` — the event still reports but is excluded from targeting —
-   **not** suppressing the pixel. Today the pixel fires on all traffic (intentional,
-   Matt directive 2026-06-02) but never sets LDU when a visitor uses "Do Not Sell."
-   Wire LDU on the pixel + CAPI when consent/`donotsell` is set. (Verified 3-0.)
+1. ~~**Meta Limited Data Use (LDU) for CCPA/CPRA opt-out.**~~ ✅ **DONE 2026-06-17.**
+   `MetaPixel.tsx` now reads the consent cookie and sets `fbq('dataProcessingOptions',
+   ['LDU'],0,0)` when marketing consent is not granted (essential-only / "Do Not Sell"),
+   and `[]` (no LDU) when granted. Ad-click visitors (fbclid/gclid/utm) with no explicit
+   choice are treated as marketing-OK to preserve first-PageView attribution, mirroring
+   `autoGrantConsentForAdTraffic`. Locked by G48 (`ci:tracking-policy`). REMAINING for a
+   later pass: thread `data_processing_options` into the server CAPI payload too (the
+   pixel is the always-on surface; the offline-upload work below will touch CAPI).
 2. **Offline-conversion upload (closed-loop ROAS).** On FUB close/won, upload the
    conversion back to Meta (CAPI offline event) and Google (Enhanced Conversions for
    leads / Data Manager) keyed by the stored fbclid/gclid. Windows: **GCLID 90 days,
