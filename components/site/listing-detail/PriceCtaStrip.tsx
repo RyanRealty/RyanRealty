@@ -197,6 +197,7 @@ export function PriceCtaStrip({
             ? `Closed ${new Date(listing.closeDate).toLocaleDateString('en-US', {
                 month: 'short',
                 year: 'numeric',
+                timeZone: 'America/Los_Angeles',
               })}`
             : listing.status}
         </Pill>

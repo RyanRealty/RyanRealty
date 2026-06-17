@@ -96,6 +96,7 @@ Everything in `docs/plans/` is registered here. A new file in that directory wit
 | `RENTAL_CALCULATOR_BUILD_PROMPT.md` | executed (record) |
 | `SKYSLOPE_COMPLIANCE_HANDOFF_2026-05-28.md` | ops record (not site process) |
 | `CROSS_AGENT_HANDOFF.md`, `SESSION_HANDOFF_2026-06-01.md`, `SESSION_HANDOFF_2026-06-01_PARTB.md`, `task-handoff-template.md` | session-continuity records |
+| `ADMIN_CURATION_TO_BAR.md`, `HANDOFF-cma-form-twilio-2026-06-13.md`, `HANDOFF_CRM_SESSION_2026-06-12.md`, `HANDOFF_HEATH_LP_2026-06-13.md`, `NEXT_SESSION_START_HERE_2026-06-13.md` | parallel-session records (archive) |
 | `GLOBAL_SKILLS_REGISTRY.md` | tool index (live reference) |
 | `task-registry.json` | live registry (non-md, exempt) |
 
