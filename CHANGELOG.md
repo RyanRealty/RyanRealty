@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.579.2 (2026-06-17)
+
+### Bug Fixes
+- fix(crm): relay skip uses terminal 'failed' status so non-broker rows clear
+
+---
+
+
 ## v1.579.1 (2026-06-17)
 
 ### Bug Fixes
