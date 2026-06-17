@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
       fbc: bodyFbc,
       clientIp: bodyClientIp,
       clientUserAgent: bodyClientUserAgent,
+      ldu: bodyLdu,
     } = body as {
       eventName?: string
       email?: string
@@ -68,6 +69,7 @@ export async function POST(req: NextRequest) {
       fbc?: string
       clientIp?: string
       clientUserAgent?: string
+      ldu?: boolean
     }
 
     if (!eventName) {
@@ -114,13 +116,30 @@ export async function POST(req: NextRequest) {
     const userAgent = bodyClientUserAgent?.trim() || req.headers.get('user-agent') || undefined
     if (userAgent) userData.client_user_agent = userAgent
 
+    // Limited Data Use (CCPA/CPRA): honor the visitor's marketing-consent cookie
+    // (same-origin client calls carry it); server-to-server callers pass `ldu` in
+    // the body. When marketing consent is not granted, send the conversion in LDU
+    // mode — consistent with the always-on pixel (components/MetaPixel.tsx).
+    let ldu = false
+    const consentCookie = cookies.find((c) => c.name === 'ryan_realty_cookie_consent')
+    if (consentCookie) {
+      try {
+        ldu = !JSON.parse(decodeURIComponent(consentCookie.value)).marketing
+      } catch {
+        ldu = consentCookie.value !== 'all'
+      }
+    } else if (typeof bodyLdu === 'boolean') {
+      ldu = bodyLdu
+    }
+
     // Send to Meta CAPI
     const res = await sendServerEvent(
       eventName,
       userData,
       customData,
       eventId,
-      eventSourceUrl
+      eventSourceUrl,
+      ldu
     )
 
     if (!res.ok) {

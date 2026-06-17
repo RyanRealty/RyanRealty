@@ -27,7 +27,12 @@ export async function sendServerEvent(
   userData: MetaCapiUserData,
   customData?: MetaCapiCustomData,
   eventId?: string,
-  eventSourceUrl?: string
+  eventSourceUrl?: string,
+  // Limited Data Use (CCPA/CPRA): when the visitor has NOT granted marketing
+  // consent, send the conversion in LDU mode so Meta still measures it but
+  // excludes it from ad targeting/personalization. Mirrors the always-on
+  // pixel's LDU handling so the browser + server channels stay consistent.
+  ldu?: boolean
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!PIXEL_ID || !ACCESS_TOKEN) {
     return { ok: false, error: 'META_CAPI_ACCESS_TOKEN or NEXT_PUBLIC_META_PIXEL_ID not set' }
@@ -43,6 +48,9 @@ export async function sendServerEvent(
         ...(customData && Object.keys(customData).length > 0 ? { custom_data: customData } : {}),
         ...(eventSourceUrl ? { event_source_url: eventSourceUrl } : {}),
         action_source: 'website',
+        ...(ldu
+          ? { data_processing_options: ['LDU'], data_processing_options_country: 0, data_processing_options_state: 0 }
+          : {}),
       },
     ],
     access_token: ACCESS_TOKEN,

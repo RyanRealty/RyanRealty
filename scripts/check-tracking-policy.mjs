@@ -97,6 +97,10 @@ check('CAPI sends hashed em/ph keys', /\bem:/.test(capi) && /\bph:/.test(capi),
 const sendsRawEmailKey = /['"]?email['"]?\s*:\s*(email\b|`|['"]\$\{)/.test(capi)
 check('CAPI sends no raw "email" key', !sendsRawEmailKey,
   'app/api/meta-capi/route.ts appears to send a raw "email" key. Hash it (em: hashPII(email)).')
+// CAPI honors CCPA/CPRA opt-out via Limited Data Use, consistent with the pixel.
+const capiLib = read('lib/meta-capi.ts')
+check('CAPI supports Limited Data Use', /data_processing_options/.test(capiLib),
+  'lib/meta-capi.ts must include data_processing_options (LDU) so opted-out conversions are sent in limited mode; route.ts passes the ldu flag from the consent cookie.')
 
 // ── 4. Browser-pixel <-> CAPI dedup via one server-generated event_id ────────
 // research: dedup requires the SAME server-generated event_id on both paths (3-0).
