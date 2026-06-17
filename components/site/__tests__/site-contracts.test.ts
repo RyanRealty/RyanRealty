@@ -100,7 +100,8 @@ describe('design directive contracts', () => {
   it('D80 — city page surfaces a blog/guides section from real posts', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
     expect(src).toMatch(/getRecentBlogPosts/)
-    expect(src).toMatch(/ArticleGrid/)
+    // KB migration (Phase 9): the blog/guides section renders via KbArticles.
+    expect(src).toMatch(/KbArticles/)
   })
 
   it('D84 — city page has a separate "Explore other cities" section', () => {

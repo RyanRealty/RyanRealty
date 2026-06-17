@@ -27,6 +27,8 @@ type KbHeroProps = {
   videoSrc?: string | null
   /** Poster / fallback still. */
   posterSrc?: string
+  /** Honest label shown over the hero when the poster is a regional fallback, not a verified city photo. */
+  mediaCaption?: string
 }
 
 export function KbHero({
@@ -34,9 +36,10 @@ export function KbHero({
   eyebrow = 'Central Oregon Real Estate',
   titleTop = 'Welcome to the',
   titleBottom = 'High Desert',
-  lead = 'across six towns, from the Deschutes to Smith Rock.',
+  lead = 'across six cities, from the Deschutes to Smith Rock.',
   videoSrc = '/videos/hero-optimized.mp4',
   posterSrc = '/images/hero/hero-old-mill-master-4k.jpg',
+  mediaCaption,
 }: KbHeroProps) {
   const root = useRef<HTMLElement>(null)
   const router = useRouter()
@@ -88,6 +91,7 @@ export function KbHero({
           // eslint-disable-next-line @next/next/no-img-element
           <img className="hero-video" src={posterSrc} alt="" />
         )}
+        {mediaCaption ? <span className="hero-caption">{mediaCaption}</span> : null}
       </div>
       <div className="hero-grid-overlay" />
       <div className="hero-inner">

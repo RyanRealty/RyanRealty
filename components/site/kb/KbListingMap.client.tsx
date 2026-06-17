@@ -67,7 +67,7 @@ export function KbListingMap({
   showRegionMarkers = true,
   eyebrow = 'Central Oregon',
   title = 'Every home\nfor sale',
-  subtitle = 'Every active listing across the six towns, on the real terrain. Click any dot for the price, the beds, and the street.',
+  subtitle = 'Every active listing across the six cities, on the real terrain. Click any dot for the price, the beds, and the street.',
 }: {
   geojson: KbMapGeo
   totalActive: number

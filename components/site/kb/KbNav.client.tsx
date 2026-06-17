@@ -9,13 +9,13 @@ import { useEffect, useRef, useState } from 'react'
 const LINKS = [
   { href: '/homes-for-sale', label: 'Search' },
   { href: '/communities', label: 'Communities' },
-  { href: '/cities', label: 'Towns' },
+  { href: '/cities', label: 'Cities' },
   { href: '/sell/valuation', label: 'Sell' },
 ]
 const MENU = [
   { href: '/homes-for-sale', label: 'Search homes' },
   { href: '/communities', label: 'Communities' },
-  { href: '/cities', label: 'Towns' },
+  { href: '/cities', label: 'Cities' },
   { href: '/sell/valuation', label: 'Sell your home' },
   { href: '/about', label: 'About' },
   { href: '/team', label: 'Our team' },

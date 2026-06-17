@@ -1,103 +1,49 @@
 {
   "route": "app/cities/[slug]/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/city/index.html",
-  "competitiveTarget": "Beat Coldwell Banker / Windermere city pages — live neighborhood-level market data no competitor surfaces, plus the in-boundary listing map and scrubbable price history.",
-  "note": "Experience System Geo archetype v3.2 (Family 4 rework, 2026-06-10). v3.2 changes after Matt's changes-requested verdict: (1) VERIFIED city hero photography via cityHero() registry (lib/geo-images.ts, Family 4 asset-library curation; regional fallback is LABELED via FlyoverHero mediaCaption, never a wrong-city photo); (2) city name leads HUGE in Amboqia (FlyoverHero displayName treatment, SEO headline preserved in the same h1); (3) honest editorial About section (getCityContent / data-driven fallback) + quick-facts ledger; (4) tile walls removed — PriceRangeTiles cut, RelatedAreas tile grid replaced by editorial index rows with verified thumbnails; (5) Bend neighborhoods are stat-rich ledger rows (getBendNeighborhoodStats live median/count); (6) EngagedSection wraps every server-rendered section so engagement telemetry covers the whole page. All JSON-LD (City/Dataset/FAQPage/Breadcrumb) retained.",
+  "competitiveTarget": "Beat Coldwell Banker / Windermere city pages — the kinetic-brutalist homepage look applied at city scope: live single-family market data, the in-city listing map + zoom, per-city featured tours, neighborhoods, communities, open houses, and live activity no competitor surfaces.",
+  "note": "KB (kinetic-brutalist) design language — Phase 9 wave 1 (docs/KB_CONVERGENCE_ROADMAP.md). The city page reuses the SAME section library as the homepage (components/site/kb/*), fed city-scoped DAL data, never forked (ci:kb-single-source G50). KbNav + KbFooter carry chrome (default SiteHeader/SiteFooter hidden for ^/cities/[slug] via HideChrome). Body lives in main.kb-root + SmoothScrollProvider. THE PAGE CONTRACT: KB design + SEO for Google & LLMs (pageMetadata + MetadataBlock JSON-LD: Breadcrumb/City/Dataset/FAQPage) + tracking (CityPageTracker). Supersedes the Experience System Geo archetype v3.2; every former section was rebuilt in KB form.",
   "requiredComponents": [
-    {
-      "name": "PageBreadcrumb",
-      "section": "Home > Cities > {City}",
-      "blocking": true
-    },
-    {
-      "name": "FlyoverHero",
-      "section": "hero — FlyoverHero in POSTER mode (videoSrc=null, photoSrc=VERIFIED city hero via cityHero()). City name HUGE in Amboqia (displayName), live activeCount + medianPrice overlay + pulsing live-dot, count-up via useCountUp. Unverified-photo cities carry the honest mediaCaption label.",
-      "blocking": true
-    },
-    {
-      "name": "LiveMarketBand",
-      "section": "market band — navy band overlapping hero by -mt-12. One giant living activeCount (Amboqia ~6rem count-up) + 3 quiet aux stats (median, days, supply) + market verdict pill + report link.",
-      "blocking": true
-    },
-    {
-      "name": "SectionNav",
-      "section": "sticky anchor rail — appears on scroll past hero. Links: market, listings, price-history, neighborhoods (Bend only), communities, open-houses, faq.",
-      "blocking": true
-    },
-    {
-      "name": "CommunityMapLedgerPane",
-      "section": "listings + map — split-scroll spine: ListingLedger (top 8 newest active) on left, NeighborhoodMap pinned right (desktop). Hover sync between ledger rows and map price pills.",
-      "blocking": true
-    },
-    {
-      "name": "ListingLedger",
-      "section": "listings — 1 dominant featured listing + hairline ledger rows, Amboqia price, edge-bleed photo. Used inside CommunityMapLedgerPane.",
-      "blocking": true
-    },
-    {
-      "name": "PriceHistoryScrubber",
-      "section": "price-history — scrubbable recharts AreaChart for city median sale price (completed months only, >= 4 months gate).",
-      "blocking": true
-    },
-    {
-      "name": "PaymentSlider",
-      "section": "price-history — inline mortgage payment estimate around city median. Renders when medianListPrice is available.",
-      "blocking": true
-    },
-    {
-      "name": "OpenHousesGrid",
-      "section": "open-houses — next 14 days in this city. Renders nothing when none scheduled.",
-      "blocking": true
-    },
-    {
-      "name": "ArticleGrid",
-      "section": "guides — recent blog posts scoped to the city.",
-      "blocking": true
-    },
-    {
-      "name": "ActivityFeed",
-      "section": "activity — live new / price-drop / pending / sold rows, city-scoped.",
-      "blocking": true
-    },
-    {
-      "name": "FAQBlock",
-      "section": "faq — verified market Q&A + FAQPage JSON-LD. Renders when pulse data is available.",
-      "blocking": true
-    },
-    {
-      "name": "InlineValuationHook",
-      "section": "valuation-hook — navy CTA band replacing generic CTABar. What is your {City} home worth?",
-      "blocking": true
-    },
-    {
-      "name": "EngagedSection",
-      "section": "about / neighborhoods / communities / nearby — client engagement wrapper giving server-rendered sections section_view telemetry (docs/EXPERIENCE_SYSTEM.md section 4).",
-      "blocking": true
-    }
+    { "name": "KbNav", "section": "chrome — transparent-over-hero top bar + full-screen menu. Inside .kb-root.", "blocking": true },
+    { "name": "CityPageTracker", "section": "tracking — fires the city page-view + powers section/interaction analytics (page contract).", "blocking": true },
+    { "name": "MetadataBlock", "section": "AI-citability — Breadcrumb + City place + market Dataset JSON-LD.", "blocking": true },
+    { "name": "KbBreadcrumb", "section": "breadcrumb — KB-styled City > Neighborhood > Community/Subdivision > Listing hierarchy (visual; JSON-LD is in MetadataBlock).", "blocking": true },
+    { "name": "SmoothScrollProvider", "section": "KB shell — Lenis smooth scroll + GSAP wrapping the section stack.", "blocking": true },
+    { "name": "KbHero", "section": "hero — full-bleed video (Bend reuses the homepage drone) or VERIFIED cityHero photo with labeled regional fallback, city name in Amboqia, plain-language search, live stat row.", "blocking": true },
+    { "name": "KbAbout", "section": "about — editorial intro (getCityContent / data-driven) + quick-facts ledger.", "blocking": true },
+    { "name": "KbFeatured", "section": "featured homes — poster grid; silent tour autoplay on focus or a Tour badge.", "blocking": true },
+    { "name": "KbListingMap", "section": "map — MapLibre point map zoomed to the city's listings.", "blocking": true },
+    { "name": "KbTicker", "section": "ticker — scrolling price/address strip.", "blocking": true },
+    { "name": "KbMarketHud", "section": "market — verdict stamp, KPI grid, median-close chart, by-neighborhood ladder.", "blocking": true },
+    { "name": "KbExploreTowns", "section": "ledgers — reused for the Neighborhoods ledger, the Golf & master-planned communities ledger, and the Explore-other-cities list.", "blocking": true },
+    { "name": "KbCommunities", "section": "communities — marquee rail with silent Area Guide clips.", "blocking": true },
+    { "name": "KbOpenHouses", "section": "open houses — upcoming, this city.", "blocking": true },
+    { "name": "KbActivity", "section": "activity — live new / price-cut / pending / sold rows.", "blocking": true },
+    { "name": "KbArticles", "section": "guides — recent blog posts scoped to the city (getRecentBlogPosts).", "blocking": true },
+    { "name": "KbTestimonials", "section": "testimonials — verified Google reviews.", "blocking": true },
+    { "name": "KbTeam", "section": "team — the three brokers.", "blocking": true },
+    { "name": "KbSell", "section": "sell CTA — What is your {City} home worth?", "blocking": true },
+    { "name": "FAQBlock", "section": "faq — verified market Q&A + FAQPage JSON-LD.", "blocking": true },
+    { "name": "KbFooter", "section": "footer — dual-audience close + sitemap (towns=[]).", "blocking": true }
   ],
   "layoutComponents": [
-    {
-      "name": "SiteHeader",
-      "section": "site chrome — renders from app/layout.tsx.",
-      "note": "Not in requiredComponents because the gate checks the route file."
-    },
-    {
-      "name": "SiteFooter",
-      "section": "navy footer — renders from app/layout.tsx.",
-      "note": "Not in requiredComponents because the gate checks the route file."
-    }
+    { "name": "SiteHeader", "section": "hidden on ^/cities/[slug] via HideChrome — KbNav renders instead.", "note": "Gate checks the route file." },
+    { "name": "SiteFooter", "section": "hidden on ^/cities/[slug] via HideChrome — KbFooter renders instead.", "note": "Gate checks the route file." }
   ],
   "removedComponents": [
-    "HeroBlock (replaced by FlyoverHero)",
-    "MarketSnapshot (replaced by LiveMarketBand)",
-    "FeaturedListings (replaced by ListingLedger inside CommunityMapLedgerPane)",
-    "PriceChart (replaced by PriceHistoryScrubber)",
-    "NeighborhoodMap (still used inside CommunityMapLedgerPane)",
-    "CTABar (replaced by InlineValuationHook)",
-    "RelatedAreas for neighborhoods (replaced by editorial index rows)",
-    "RelatedAreas for golf communities (replaced by editorial index rows)",
-    "PriceRangeTiles (v3.2 — generic tile wall cut per the no-tile-walls calibration)",
-    "RelatedAreas for other cities (v3.2 — replaced by editorial index rows with verified thumbnails)",
-    "getSurfaceImage seeded-pool hero (v3.2 — replaced by the explicit verified cityHero() registry)"
+    "FlyoverHero (replaced by KbHero)",
+    "LiveMarketBand (replaced by KbMarketHud)",
+    "SectionNav (KB pages have no sticky anchor rail)",
+    "CommunityMapLedgerPane + ListingLedger (replaced by KbFeatured + KbListingMap)",
+    "PriceHistoryScrubber (folded into KbMarketHud)",
+    "PaymentSlider (removed; lives on tools/sell surfaces)",
+    "InlineValuationHook (replaced by KbSell)",
+    "EngagedSection (telemetry now via CityPageTracker + per-section events)",
+    "VideoTourRail + MotivatedListings (folded into KbFeatured)",
+    "OpenHousesGrid (replaced by KbOpenHouses)",
+    "ActivityFeed (replaced by KbActivity)",
+    "ArticleGrid (replaced by KbArticles)",
+    "RelatedAreas / editorial nearby rows (replaced by KbExploreTowns reuse)",
+    "PageBreadcrumb (replaced by KbBreadcrumb)"
   ]
 }

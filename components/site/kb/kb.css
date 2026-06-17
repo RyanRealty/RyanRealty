@@ -662,3 +662,209 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .kb-pop-addr .sub{display:block;font-weight:500;color:var(--cream-70);font-size:.7rem;margin-top:2px;}
 .kb-root .kb-pop-specs{margin-top:9px;font-size:.66rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--cream-70);display:flex;gap:12px;}
 @media(max-width:760px){.kb-root .wrap{padding:0 20px;}.kb-root .sec-title{font-size:12.5vw!important;line-height:.92;}.kb-root .hero-h{font-size:11vw!important;}.kb-root .stat-num{font-size:13vw!important;}.kb-root .town-row{grid-template-columns:1fr!important;gap:6px;padding:18px 0;}.kb-root .town-row .town-name{font-size:11vw!important;white-space:normal!important;overflow:visible!important;min-width:0;transform:none!important;}.kb-root .town-stats{text-align:left!important;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;}.kb-root .town-count{font-size:1.7rem!important;}.kb-root .town-count .lbl{display:inline!important;margin:0 0 0 6px;}.kb-root .town-price{margin-top:0!important;}.kb-root .comm-name{font-size:7.5vw!important;white-space:normal!important;}.kb-root .lst-price{font-size:8vw!important;}.kb-root .sell-h{font-size:11vw!important;}.kb-root .team-name{font-size:9vw!important;}.kb-root .foot-cta .display{font-size:13vw!important;}}
+
+/* ===== KB city-page sections (breadcrumb, about, open houses, activity, articles) ===== */
+/* --- KbBreadcrumb --- */
+.kb-root .kb-bc{
+  background:var(--cream);
+  color:var(--navy);
+  border-bottom:1px solid var(--navy-12);
+}
+.kb-root .kb-bc .wrap{padding-top:14px;padding-bottom:14px;}
+.kb-root .kb-bc-list{
+  list-style:none;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:7px 10px;
+  font-size:.68rem;
+  font-weight:600;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  line-height:1;
+}
+.kb-root .kb-bc-item{display:inline-flex;align-items:center;min-width:0;}
+.kb-root .kb-bc-link{
+  color:var(--navy-70);
+  white-space:nowrap;
+  transition:color .18s ease;
+}
+.kb-root .kb-bc-link:hover{color:var(--navy);}
+.kb-root .kb-bc-current{
+  color:var(--navy);
+  white-space:nowrap;
+}
+.kb-root .kb-bc-sep{
+  color:var(--navy-12);
+  font-weight:700;
+  user-select:none;
+  line-height:1;
+}
+/* Dark-context variant: drop .kb-bc.on-navy on a navy strip for cream-on-navy. */
+.kb-root .kb-bc.on-navy{
+  background:var(--navy);
+  color:var(--cream);
+  border-bottom-color:var(--cream-12);
+}
+.kb-root .kb-bc.on-navy .kb-bc-link{color:var(--cream-70);}
+.kb-root .kb-bc.on-navy .kb-bc-link:hover{color:var(--cream);}
+.kb-root .kb-bc.on-navy .kb-bc-current{color:var(--cream);}
+.kb-root .kb-bc.on-navy .kb-bc-sep{color:var(--cream-40);}
+@media(max-width:760px){
+  .kb-root .kb-bc-list{font-size:.62rem;letter-spacing:.14em;gap:6px 8px;}
+}
+/* --- KbAbout --- */
+/* About (editorial intro) — cream surface, navy text. Asymmetric split:
+   prose left at a readable measure, quick-facts ledger right as hairline rows. */
+.kb-root .about{background:var(--cream);color:var(--navy);padding-bottom:clamp(48px,7vw,72px);}
+.kb-root .about .sec-head{border-color:var(--navy);}
+.kb-root .about-grid{display:grid;grid-template-columns:1fr;gap:clamp(28px,4vw,52px);padding-top:clamp(30px,4vw,46px);}
+@media(min-width:920px){.kb-root .about-grid{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:clamp(40px,5vw,72px);align-items:start;}}
+.kb-root .about-prose{max-width:62ch;}
+.kb-root .about-p{font-size:clamp(1.02rem,1.7vw,1.3rem);line-height:1.5;font-weight:500;color:var(--navy-70);}
+.kb-root .about-p+.about-p{margin-top:clamp(14px,1.6vw,20px);}
+.kb-root .about-p:first-child{color:var(--navy);}
+/* Ledger sits in a hard-ruled column on wide screens so it reads as a record, not a card */
+.kb-root .about-ledger{position:relative;}
+@media(min-width:920px){.kb-root .about-ledger{border-top:var(--edge) solid var(--navy);padding-top:18px;}}
+.kb-root .about-ledger-cap{display:block;color:var(--navy-70);margin-bottom:8px;}
+.kb-root .about-facts{display:flex;flex-direction:column;border-top:1px solid var(--navy-12);}
+.kb-root .about-fact{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:14px;padding:15px 0;border-bottom:1px solid var(--navy-12);}
+.kb-root .about-fact:last-child{border-bottom:0;}
+.kb-root .about-fact-lbl{font-size:.7rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--navy-70);line-height:1.3;}
+.kb-root .about-fact-val{justify-self:end;text-align:right;font-family:var(--font-amboqia),serif;font-size:clamp(1.5rem,3.4vw,2.1rem);line-height:.95;letter-spacing:-.01em;color:var(--navy);}
+@media(max-width:760px){.kb-root .about-fact-val{font-size:1.7rem!important;}}
+/* --- KbOpenHouses --- */
+/* Open Houses chip accent. The .openhouses section, .oh-grid, .lst-badge.oh
+   chip, and the whole .lst-card family already exist in kb.css (lines 305-355)
+   and are reused as-is. The only addition is the hard cream square inside the
+   date/time chip for the brutalist stamp accent. */
+.kb-root .lst-badge.oh .oh-dot{width:6px;height:6px;background:var(--navy);flex-shrink:0;}
+/* --- KbActivity --- */
+/* KB Activity — live MLS activity feed (brutalist ledger / market ticker) */
+.kb-root .activity{background:var(--navy);color:var(--cream);padding-bottom:54px;position:relative;}
+.kb-root .activity .sec-head{border-color:var(--cream-40);}
+
+/* Live header strip — reuses .mkt-live (dot + mktBlink). Hard rule under it. */
+.kb-root .act-chrome{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:18px 0 0;}
+.kb-root .act-count{font-size:.66rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--cream-40);}
+
+/* The ledger — stacked hairline rows, hard 1px rules top + between */
+.kb-root .act-ledger{margin-top:18px;border-top:1px solid var(--cream-12);}
+.kb-root .act-row{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  grid-template-areas:"tag place price" "tag when when";
+  align-items:center;
+  column-gap:16px;row-gap:2px;
+  padding:16px 0;
+  border-bottom:1px solid var(--cream-12);
+  position:relative;
+  transition:background .2s ease,padding-left .25s ease;
+}
+.kb-root a.act-row{cursor:pointer;}
+@media(hover:hover){.kb-root a.act-row:hover{background:var(--cream-05);padding-left:12px;}}
+
+/* Kind tag — mono, boxed; intent shifts WEIGHT/OPACITY/border only (palette-locked) */
+.kb-root .act-tag{
+  grid-area:tag;align-self:start;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-family:var(--font-sans),sans-serif;
+  font-size:.58rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;
+  padding:6px 9px;min-width:78px;
+  border:1px solid var(--cream-12);
+  white-space:nowrap;
+}
+.kb-root .act-tag.is-new{background:var(--cream);color:var(--navy);border-color:var(--cream);}
+.kb-root .act-tag.is-cut{background:transparent;color:var(--cream);border-color:var(--cream);font-weight:700;}
+.kb-root .act-tag.is-pending{background:transparent;color:var(--cream-70);border-color:var(--cream-12);}
+.kb-root .act-tag.is-sold{background:rgba(250,248,244,.14);color:var(--cream-40);border-color:transparent;}
+
+/* Place column — address bold, cityLine mono sub */
+.kb-root .act-place{grid-area:place;min-width:0;}
+.kb-root .act-addr{display:block;font-size:.92rem;font-weight:600;letter-spacing:.01em;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.kb-root .act-city{display:block;margin-top:4px;font-size:.62rem;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--cream-40);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* Price — Amboqia display face, tabular, right aligned */
+.kb-root .act-price{grid-area:price;justify-self:end;text-align:right;font-size:clamp(1.3rem,4.4vw,1.85rem);line-height:1;color:var(--cream);white-space:nowrap;}
+
+/* Timestamp — mono, right aligned, muted */
+.kb-root .act-when{grid-area:when;justify-self:end;font-size:.62rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--cream-40);white-space:nowrap;}
+
+.kb-root .activity .btn.ghost{border-color:var(--cream);}
+
+/* Desktop — single row: tag / place / price / when on one line */
+@media(min-width:760px){
+  .kb-root .act-row{
+    grid-template-columns:96px minmax(0,1fr) auto 116px;
+    grid-template-areas:"tag place price when";
+    column-gap:24px;row-gap:0;
+    padding:18px 0;
+  }
+  .kb-root .act-tag{align-self:center;}
+  .kb-root .act-addr{font-size:1rem;}
+  .kb-root .act-price{font-size:clamp(1.5rem,2.4vw,2rem);}
+  .kb-root .act-when{justify-self:end;}
+}
+/* --- KbArticles --- */
+/* Articles / Guides (KbArticles) — brutalist editorial card set. Cream surface,
+   hard navy rules, navy media bg, Amboqia card-scale titles, mono date strip. */
+.kb-root .articles{background:var(--cream);color:var(--navy);padding-bottom:54px;}
+.kb-root .articles .sec-head{border-color:var(--navy);}
+.kb-root .art-sub{max-width:54ch;margin:18px 0 4px;color:var(--navy-70);font-size:clamp(.95rem,1.6vw,1.15rem);line-height:1.5;font-weight:500;}
+.kb-root .art-grid{display:grid;grid-template-columns:1fr;gap:0;border-top:0;padding-top:0;}
+@media(min-width:680px){.kb-root .art-grid{grid-template-columns:repeat(2,1fr);}}
+@media(min-width:1100px){.kb-root .art-grid{grid-template-columns:repeat(3,1fr);}}
+.kb-root .art-card{
+  position:relative;display:flex;flex-direction:column;
+  border-bottom:var(--edge) solid var(--navy);
+  padding:26px 0 28px;min-width:0;
+}
+@media(min-width:680px){.kb-root .art-card{
+  padding:30px 28px 32px;
+  border-right:var(--edge) solid var(--navy);
+}
+.kb-root .art-grid .art-card:nth-child(2n){border-right:0;}}
+@media(min-width:1100px){.kb-root .art-grid .art-card:nth-child(2n){border-right:var(--edge) solid var(--navy);}
+.kb-root .art-grid .art-card:nth-child(3n){border-right:0;}}
+.kb-root .art-media{
+  position:relative;overflow:hidden;aspect-ratio:16/10;
+  border:var(--edge) solid var(--navy);background:#0b1c30;margin-bottom:18px;
+}
+.kb-root .art-img{
+  width:100%;height:100%;object-fit:cover;
+  transition:transform .7s cubic-bezier(.2,.8,.2,1);will-change:transform;
+}
+.kb-root .art-card:hover .art-img{transform:scale(1.05);}
+.kb-root .art-noimg{
+  position:absolute;inset:0;
+  background:
+    linear-gradient(180deg,rgba(250,248,244,.06),transparent 60%),
+    repeating-linear-gradient(135deg,rgba(250,248,244,.05) 0 1px,transparent 1px 14px),
+    #0b1c30;
+}
+.kb-root .art-date{
+  position:absolute;left:0;bottom:0;z-index:2;
+  font-size:.62rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--cream);background:var(--navy);
+  padding:7px 13px;border-top:1px solid var(--cream-40);border-right:1px solid var(--cream-40);
+}
+.kb-root .art-body{display:flex;flex-direction:column;min-width:0;}
+.kb-root .art-title{
+  font-size:clamp(1.7rem,3.2vw,2.4rem);line-height:.92;letter-spacing:-.01em;
+  overflow:visible;
+}
+.kb-root .art-excerpt{
+  margin-top:12px;color:var(--navy-70);
+  font-size:clamp(.92rem,1.5vw,1.02rem);line-height:1.5;font-weight:500;
+}
+.kb-root .art-read{
+  display:inline-flex;align-items:center;gap:7px;margin-top:16px;
+  font-size:.74rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--navy);
+}
+.kb-root .art-read .arr{transition:transform .18s ease;}
+.kb-root .art-card:hover .art-read .arr{transform:translateX(4px);}
+@media(max-width:680px){.kb-root .art-title{font-size:8vw;}}
+
+.kb-root .hero-caption{position:absolute;right:14px;bottom:14px;z-index:3;font-size:.58rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cream-70);background:rgba(16,39,66,.55);padding:5px 10px;border-radius:2px;}

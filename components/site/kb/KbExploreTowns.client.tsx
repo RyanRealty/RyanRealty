@@ -6,11 +6,25 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { kbMoneyFull, type KbTownItem } from './types'
 
 /**
- * KB Explore / Towns (01) — the page leads with place. Editorial row-list of
- * the six service towns; hover reveals a full-bleed town photo. Live per-town
- * active count + median list. Each row routes to /cities/[slug].
+ * KB Explore ledger (01) — the page leads with place. Editorial row-list; hover
+ * reveals a full-bleed photo (when an item has one). Live per-row active count +
+ * median. The homepage uses it for the six cities; a city page reuses it (props,
+ * no fork) for its NEIGHBORHOODS ledger, its golf/master-planned COMMUNITIES
+ * ledger, and the "Explore other cities" nearby list. Renders null when empty.
  */
-export function KbExploreTowns({ towns }: { towns: KbTownItem[] }) {
+export function KbExploreTowns({
+  towns,
+  eyebrow = '01 / Explore',
+  title = 'Explore',
+  sectionId = 'towns',
+  cta = { href: '/homes-for-sale', label: 'Search homes in every town' },
+}: {
+  towns: KbTownItem[]
+  eyebrow?: string
+  title?: string
+  sectionId?: string
+  cta?: { href: string; label: string } | null
+}) {
   const root = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -34,23 +48,27 @@ export function KbExploreTowns({ towns }: { towns: KbTownItem[] }) {
     return () => ctx.revert()
   }, [])
 
+  if (towns.length === 0) return null
+
   return (
-    <section className="section towns" id="towns" ref={root}>
+    <section className="section towns" id={sectionId} ref={root}>
       <div className="wrap">
         <div className="sec-head">
-          <span className="sec-index">01 / Explore</span>
-          <h2 className="sec-title display">Explore</h2>
+          <span className="sec-index">{eyebrow}</span>
+          <h2 className="sec-title display">{title}</h2>
         </div>
         <div className="towns-grid">
           {towns.map((t) => (
             <a key={t.href} className="town-row" href={t.href} data-town>
-              <div className="town-fill" style={{ backgroundImage: `url('${t.img}')` }} />
+              {t.img ? <div className="town-fill" style={{ backgroundImage: `url('${t.img}')` }} /> : null}
               <span className="town-name">{t.name}</span>
               <span className="town-stats">
-                <span className="town-count mono-num">
-                  {t.activeCount.toLocaleString('en-US')}
-                  <span className="lbl">Active</span>
-                </span>
+                {t.activeCount > 0 ? (
+                  <span className="town-count mono-num">
+                    {t.activeCount.toLocaleString('en-US')}
+                    <span className="lbl">Active</span>
+                  </span>
+                ) : null}
                 {kbMoneyFull(t.medianPrice) ? (
                   <span className="town-price mono-num">{kbMoneyFull(t.medianPrice)} median</span>
                 ) : null}
@@ -58,11 +76,13 @@ export function KbExploreTowns({ towns }: { towns: KbTownItem[] }) {
             </a>
           ))}
         </div>
-        <div className="sec-cta">
-          <a href="/homes-for-sale" className="btn alt">
-            Search homes in every town <span className="arr">→</span>
-          </a>
-        </div>
+        {cta ? (
+          <div className="sec-cta">
+            <a href={cta.href} className="btn alt">
+              {cta.label} <span className="arr">→</span>
+            </a>
+          </div>
+        ) : null}
       </div>
     </section>
   )

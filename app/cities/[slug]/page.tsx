@@ -1,268 +1,197 @@
-// brand-voice:exempt
 /**
- * City landing page — Experience System Geo archetype v3.2 (Family 4 rework).
+ * City page — KB (kinetic-brutalist) design, Phase 9 wave 1 of the convergence
+ * program (docs/KB_CONVERGENCE_ROADMAP.md). Reuses the SAME section library as the
+ * homepage (components/site/kb/*), fed CITY-scoped DAL data, never forked
+ * (ci:kb-single-source G50). KbNav + KbFooter carry the chrome (default chrome
+ * hidden for ^/cities/[slug] via HideChrome). Bend reuses the homepage hero video;
+ * other cities use their VERIFIED cityHero photo with a labeled regional fallback.
  *
- * Matt's 2026-06-10 verdict on v3.1 drove three changes here:
- *   1. VERIFIED city photography — the hero resolves through cityHero(), the
- *      Family 4 curated registry (lib/geo-images.ts) backed by per-city
- *      geo_tags in the asset library. Every photo was visually verified to
- *      show the actual city. A city with no verified photo renders the
- *      labeled regional fallback (mediaCaption) — never a wrong-city photo.
- *   2. Layout iteration — the city NAME leads in Amboqia display (FlyoverHero
- *      displayName treatment), an honest editorial "about" section with quick
- *      facts replaces nothing-above-the-grids, stacked tile walls removed
- *      (PriceRangeTiles + RelatedAreas tile grid gone), neighborhoods render
- *      as stat-rich ledger rows, nearby cities as editorial index rows with
- *      verified thumbnails. Phone-first (Matt reviews at 390px).
- *   3. Engagement tracking on every section (EngagedSection wrapper for
- *      server-rendered sections; experience modules track themselves).
+ * THE PAGE CONTRACT (docs/KB_CONVERGENCE_ROADMAP.md): KB design + SEO for Google &
+ * LLMs (pageMetadata + MetadataBlock JSON-LD: Breadcrumb/City/Dataset/FAQPage) +
+ * tracking (CityPageTracker + section/interaction events). Every figure live (§0).
  *
- * Section stack:
- *   1. BreadcrumbNav
- *   2. FlyoverHero — verified hero photo, city name HUGE in Amboqia + live
- *      stat overlay (activeCount count-up, median, days) + pulsing live-dot.
- *   3. LiveMarketBand — navy band, -mt-12 overlap moment.
- *   4. SectionNav — sticky anchor rail.
- *   5. About — honest editorial intro (getCityContent / data-driven fallback)
- *      + quick-facts ledger rows.
- *   6. Listings split-scroll spine (CommunityMapLedgerPane: ledger + map).
- *   7. PriceHistoryScrubber + PaymentSlider.
- *   8. MotivatedListings (conditional).
- *   9. Bend neighborhoods — stat ledger rows (live median/count where cached).
- *  10. Golf & master-planned communities — ledger rows.
- *  11. VideoHomesSection (conditional).
- *  12. OpenHousesGrid. 13. ActivityFeed. 14. Nearby cities editorial rows.
- *  15. ArticleGrid. 16. FAQBlock (FAQPage JSON-LD). 17. InlineValuationHook.
+ * Section stack: breadcrumb · hero · about · featured · map · ticker · market ·
+ * neighborhoods · communities · golf/master-planned · open houses · activity ·
+ * explore-other-cities · guides(blog) · testimonials · team · sell · FAQ · footer.
  *
- * Data ONLY through @/lib/data. All JSON-LD (City/Dataset/FAQPage/Breadcrumb)
- * retained from v3.1.
- *
- * Parity contract: design_system/ryan-realty/ui_kits/city/parity.json
+ * Parity contract: design_system/ryan-realty/ui_kits/city/parity.json (KB set).
  */
 
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import {
   getGeoSnapshot,
-  getCityCommunitySnapshots,
-  getAllCitySnapshots,
   getMarketPulse,
+  getRegionPulse,
   getPriceHistory,
-  getRecentBlogPosts,
-  getGeoBoundaryMapData,
   getCityListings,
   getBendNeighborhoodStats,
+  getCityCommunitySnapshots,
+  getAllCitySnapshots,
+  getRecentBlogPosts,
 } from '@/lib/data'
-import bendNeighborhoodPolygons from '@/data/bend/bend-neighborhood-polygons.json'
-import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
-import { cityHero } from '@/lib/geo-images'
-import { listingTileHref } from '@/lib/slug'
+import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
+import { getCommunitiesForIndex } from '@/app/actions/communities'
+import { getOpenHousesWithListings } from '@/app/actions/open-houses'
+import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
 import { getCityMetadataByName } from '@/lib/data/cities/getCityMetadata'
 import { getCityContent, buildDataDrivenCityAbout } from '@/lib/city-content'
 import { CITY_QUICK_FACTS } from '@/lib/cities'
+import bendNeighborhoodPolygons from '@/data/bend/bend-neighborhood-polygons.json'
+import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
+import { cityHero } from '@/lib/geo-images'
+import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
+import { listingTileHref } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-import {
-  FlyoverHero,
-  LiveMarketBand,
-  InlineValuationHook,
-  PriceHistoryScrubber,
-  PaymentSlider,
-  CommunityMapLedgerPane,
-  ListingLedger,
-  EngagedSection,
-} from '@/components/site/experience'
-import Image from 'next/image'
-import OpenHousesGrid from '@/components/site/OpenHousesGrid'
-import ActivityFeed from '@/components/site/ActivityFeed'
-import { ArticleGrid } from '@/components/site/ArticleGrid'
-import { Container, H2, Eyebrow, DisplayHeading } from '@/components/site/primitives'
-import { FAQBlock } from '@/components/site/FAQBlock'
-import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { VideoTourRail } from '@/components/site/VideoTourRail'
-import MotivatedListings from '@/components/site/MotivatedListings'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import type { ListingCardData } from '@/components/site/ListingCard'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbHero } from '@/components/site/kb/KbHero.client'
+import { KbAbout } from '@/components/site/kb/KbAbout'
+import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
+import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
+import { KbTicker } from '@/components/site/kb/KbTicker.client'
+import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
+import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
+import { KbCommunities } from '@/components/site/kb/KbCommunities.client'
+import { KbOpenHouses } from '@/components/site/kb/KbOpenHouses.client'
+import { KbActivity } from '@/components/site/kb/KbActivity.client'
+import { KbArticles } from '@/components/site/kb/KbArticles'
+import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
+import { KbTeam } from '@/components/site/kb/KbTeam.client'
+import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { FAQBlock } from '@/components/site/FAQBlock'
+import CityPageTracker from '@/components/city/CityPageTracker'
+import type {
+  KbTownItem,
+  KbCommunityItem,
+  KbTickerItem,
+  KbFeaturedItem,
+  KbMarketData,
+} from '@/components/site/kb/types'
+import { TESTIMONIALS } from '@/lib/testimonials'
+import communityVideoManifest from '@/data/city-hero-videos.resolved.json'
 import '@/components/site/kb/kb.css'
-
-// ---------------------------------------------------------------------------
-// Static params
-// ---------------------------------------------------------------------------
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   return []
 }
-
 export const dynamicParams = true
 export const revalidate = 60
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function tileToCardData(
-  tile: Awaited<ReturnType<typeof getCityListings>>[number],
-): ListingCardData {
-  const streetNum = tile.streetNumber ?? ''
-  const streetName = tile.streetName ?? ''
-  const addressLine = [streetNum, streetName].filter(Boolean).join(' ') || 'Address on request'
-
-  const cityParts: string[] = []
-  if (tile.city) cityParts.push(tile.city + ', OR')
-  if (tile.postalCode) cityParts.push(tile.postalCode)
-  if (tile.subdivisionName) cityParts.push(tile.subdivisionName)
-  const cityLine = cityParts.join(' · ')
-
-  return {
-    listingKey: tile.listingKey,
-    href: listingTileHref(tile),
-    photoUrl: tile.photoUrl ?? null,
-    price: tile.listPrice ?? null,
-    addressLine,
-    cityLine,
-    beds: tile.beds,
-    baths: tile.baths,
-    sqft: tile.sqft,
-    badge:
-      tile.status === 'Coming Soon'
-        ? { kind: 'new' as const, label: 'Coming Soon' }
-        : tile.priceDropCount && tile.priceDropCount > 0
-        ? { kind: 'drop' as const, label: 'Price reduced' }
-        : undefined,
-  }
-}
-
-function resolveVerdict(mos: number | null): 'seller' | 'balanced' | 'buyer' | null {
-  if (mos == null) return null
-  if (mos <= 4) return 'seller'
-  if (mos >= 6) return 'buyer'
-  return 'balanced'
-}
-
-function fmtK(n: number | null): string | null {
-  return n != null ? `$${Math.round(n / 1000).toLocaleString()}K` : null
-}
-
-// ---------------------------------------------------------------------------
-// Metadata
-// ---------------------------------------------------------------------------
-
 type Props = { params: Promise<{ slug: string }> }
+
+// Bend reuses the homepage Old Mill drone video; other cities use their verified
+// cityHero photo (resolved below) with a labeled regional fallback.
+const CITY_HERO_VIDEO: Record<string, { videoSrc: string; posterSrc: string }> = {
+  bend: { videoSrc: '/videos/hero-optimized.mp4', posterSrc: '/images/hero/hero-old-mill-master-4k.jpg' },
+}
+
+// Curated marquee communities per city (img + Area Guide video), resolved against
+// live counts from getCommunitiesForIndex — same pattern as the homepage.
+const CITY_COMMUNITIES: Record<string, { match: string; img: string; videoSlug?: string }[]> = {
+  bend: [
+    { match: 'tetherow', img: '/images/kb/tetherow-golf-aerial.jpg', videoSlug: 'tetherow' },
+    { match: 'broken top', img: '/images/kb/broken-top.jpg', videoSlug: 'broken-top' },
+    { match: 'northwest crossing', img: '/images/kb/northwest-crossing.jpg', videoSlug: 'northwest-crossing' },
+  ],
+  sunriver: [{ match: 'caldera', img: '/images/kb/caldera-springs.jpg', videoSlug: 'caldera-springs' }],
+}
+
+const CENTRAL_OREGON_CITY_SLUGS = new Set([
+  'bend', 'redmond', 'sisters', 'la-pine', 'sunriver', 'madras',
+  'prineville', 'culver', 'terrebonne', 'tumalo', 'powell-butte',
+])
+
+const monthLabel = (iso?: string) =>
+  iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }) : ''
+const fmtK = (n: number | null): string | null => (n != null ? `$${Math.round(n / 1000).toLocaleString()}K` : null)
+
+function openHouseWhen(eventDate: string, start: string | null, end: string | null): string {
+  const day = new Date(eventDate + 'T12:00:00Z').toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
+  })
+  const t = (s: string | null) => {
+    if (!s) return ''
+    const [h, m] = s.split(':')
+    const hr = Number(h)
+    const ap = hr >= 12 ? 'pm' : 'am'
+    const h12 = hr % 12 === 0 ? 12 : hr % 12
+    return m && m !== '00' ? `${h12}:${m}${ap}` : `${h12}${ap}`
+  }
+  const range = start && end ? `${t(start)}-${t(end)}` : start ? t(start) : ''
+  return [day, range].filter(Boolean).join(' · ')
+}
+
+const ACTIVITY_KIND: Record<string, { kind: string; label: string }> = {
+  new_listing: { kind: 'new', label: 'New' },
+  price_drop: { kind: 'price_drop', label: 'Price cut' },
+  status_pending: { kind: 'pending', label: 'Pending' },
+  status_closed: { kind: 'sold', label: 'Sold' },
+  back_on_market: { kind: 'new', label: 'Back on market' },
+  status_expired: { kind: 'expired', label: 'Off market' },
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const snapshot = await getGeoSnapshot({ geoType: 'city', geoKey: slug })
   if (!snapshot) notFound()
-
   const cityName = snapshot.geoLabel
-  const desc = `Homes for sale in ${cityName}, Oregon. Live market stats, neighborhoods, resort communities, open houses, and recent activity from a local brokerage.`
-
   return pageMetadata({
     title: `Homes for Sale in ${cityName}, Oregon`,
-    description: desc,
+    description: `Search homes for sale in ${cityName}, Oregon with live single-family market data, neighborhoods, resort communities, open houses, and recent activity from a local brokerage.`,
     path: `/cities/${slug}`,
   })
 }
-
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 
 export default async function CityDetailPage({ params }: Props) {
   const { slug } = await params
 
   const snapshot = await getGeoSnapshot({ geoType: 'city', geoKey: slug })
   if (!snapshot) notFound()
-
   const cityName = snapshot.geoLabel
 
-  // Every fetch is timeout-guarded so a slow Supabase query degrades that
-  // section instead of hanging the whole page.
   const [
-    cityMeta,
-    communitySnapshots,
-    allCitySnapshots,
-    pulse,
-    priceHistory,
-    blogPosts,
-    boundaryMapData,
-    bendNeighborhoodStats,
+    pulse, regionPulse, mktStats, priceHist, communities, neighborhoodStats,
+    communitySnapshots, allCitySnapshots, blogPosts, openHouses, activity,
+    cityMeta, mapTiles, featuredTiles,
   ] = await Promise.all([
-    withTimeoutFallback(getCityMetadataByName(cityName), null, 3000, 'city:meta'),
+    withTimeoutFallback(getMarketPulse({ geoType: 'city', geoSlug: slug }), null, 3500, 'city:pulse'),
+    withTimeoutFallback(getRegionPulse(), null, 3000, 'city:regionPulse'),
+    withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoSlug: slug }), null, 3000, 'city:mktStats'),
+    withTimeoutFallback(getPriceHistory('city', slug, 'monthly', 13), [], 4000, 'city:priceHistory'),
+    withTimeoutFallback(getCommunitiesForIndex(), [], 3500, 'city:communities'),
+    slug === 'bend'
+      ? withTimeoutFallback(getBendNeighborhoodStats(), [], 5000, 'city:nbhStats')
+      : Promise.resolve([] as Awaited<ReturnType<typeof getBendNeighborhoodStats>>),
     withTimeoutFallback(getCityCommunitySnapshots(slug), [], 3000, 'city:commSnaps'),
     withTimeoutFallback(getAllCitySnapshots(), [], 3000, 'city:allCities'),
-    withTimeoutFallback(
-      getMarketPulse({ geoType: 'city', geoSlug: slug }),
-      null,
-      3500,
-      'city:pulse',
-    ),
-    withTimeoutFallback(
-      getPriceHistory('city', slug, 'monthly', 24),
-      [],
-      4000,
-      'city:priceHistory',
-    ),
     withTimeoutFallback(getRecentBlogPosts({ cityName, limit: 3 }), [], 3000, 'city:blog'),
-    withTimeoutFallback(
-      getGeoBoundaryMapData({ geoType: 'city', geoSlug: slug }),
-      { polygon: null, pins: [] },
-      4500,
-      'city:boundary',
-    ),
-    slug === 'bend'
-      ? withTimeoutFallback(getBendNeighborhoodStats(), [], 3500, 'city:nbhStats')
-      : Promise.resolve([]),
+    withTimeoutFallback(getOpenHousesWithListings({ city: cityName }), [], 3500, 'city:openHouses'),
+    withTimeoutFallback(getActivityFeedWithFallbackMulti({ cities: [cityName], limit: 8 }), [], 3500, 'city:activity'),
+    withTimeoutFallback(getCityMetadataByName(cityName), null, 3000, 'city:meta'),
+    withTimeoutFallback(getCityListings(cityName, { status: 'active', sort: 'newest', limit: 1500 }), [], 4500, 'city:mapTiles'),
+    withTimeoutFallback(getCityListings(cityName, { status: 'active', sort: 'price-desc', limit: 14 }), [], 4500, 'city:featured'),
   ])
 
-  // Listing tiles for the Ledger (top 8 newest active in city)
-  const cityListingTiles = await withTimeoutFallback(
-    getCityListings(cityName, { status: 'active', sort: 'newest', limit: 8 }),
-    [],
-    4500,
-    'city:listings',
-  )
-  const cityListingCards: ListingCardData[] = cityListingTiles.map(tileToCardData)
-
-  // Hero photo — VERIFIED per-city imagery (Family 4 curation, lib/geo-images.ts).
-  // DB override (cities.hero_image_url) wins when present; otherwise the curated
-  // verified hero; cities without one get the labeled regional fallback.
-  const heroImageUrl = cityMeta?.hero_image_url ?? null
-  const curatedHero = cityHero(slug)
-  const heroPhoto = heroImageUrl
-    ? { src: heroImageUrl, alt: `${cityName}, Oregon`, verified: true }
-    : curatedHero
-
-  // Market stats
+  // Hero — Bend reuses the homepage video; otherwise the VERIFIED cityHero photo
+  // (a city without one renders the LABELED regional fallback, never a wrong-city
+  // photo). DB hero_image_url override wins. (§D86)
   const activeCount = pulse?.activeCount ?? 0
-  const medianListPrice = pulse?.medianListPrice ?? snapshot.medianListPrice
-  const medianDays = pulse?.medianDaysToPending ?? null
-  const monthsOfSupply = pulse?.monthsOfSupply ?? null
-  const marketVerdict = resolveVerdict(monthsOfSupply)
+  const curatedHero = cityHero(slug)
+  const heroImageUrl = cityMeta?.hero_image_url ?? null
+  const heroPhoto = heroImageUrl ? { src: heroImageUrl, verified: true } : curatedHero
+  const heroVideoCfg = CITY_HERO_VIDEO[slug]
+  const heroVideoSrc = heroVideoCfg?.videoSrc ?? null
+  const heroPosterSrc = heroVideoCfg?.posterSrc ?? heroPhoto.src
+  const mediaCaption = heroVideoSrc || heroPhoto.verified ? undefined : 'Regional view · Cascade Range'
 
-  const medianPriceK = fmtK(medianListPrice)
-  const mosFmt = monthsOfSupply != null ? `${monthsOfSupply.toFixed(1)} mo` : null
-
-  const auxStats: [
-    { label: string; value: string; unit?: string },
-    { label: string; value: string; unit?: string },
-    { label: string; value: string; unit?: string },
-  ] = [
-    { label: 'Median list', value: medianPriceK ?? '—' },
-    {
-      label: 'Days to pending',
-      value: medianDays != null ? `${Math.round(medianDays)}` : '—',
-      unit: medianDays != null ? 'days' : undefined,
-    },
-    { label: 'Supply', value: mosFmt ?? '—' },
-  ]
-
-  // Honest editorial about copy: hand-written city content where it exists,
-  // data-driven paragraphs (live counts + verified quick facts) otherwise.
+  // About — hand-written city content where it exists, else data-driven paragraphs.
   const cityContent = getCityContent(cityName)
   const quickFacts = CITY_QUICK_FACTS[cityName] ?? null
   const aboutParagraphs: string[] = cityContent?.description
@@ -275,55 +204,41 @@ export default async function CityDetailPage({ params }: Props) {
         schoolDistrict: quickFacts?.schoolDistrict ?? null,
         nearestAirport: quickFacts?.nearestAirport ?? null,
         activeCount,
-        medianPrice: medianListPrice,
+        medianPrice: pulse?.medianListPrice ?? snapshot.medianListPrice,
         communityCount: communitySnapshots.length,
-      }).slice(0, 1)
-  const quickFactRows: Array<{ label: string; value: string }> = [
+      }).slice(0, 2)
+  const aboutFacts: { label: string; value: string }[] = [
     ...(quickFacts?.population ? [{ label: 'Population', value: quickFacts.population }] : []),
+    ...(pulse?.medianListPrice ? [{ label: 'Median list', value: fmtK(pulse.medianListPrice) ?? '—' }] : []),
+    { label: 'Active single-family', value: activeCount.toLocaleString('en-US') },
+    ...(pulse?.medianDaysToPending != null ? [{ label: 'Median to pending', value: `${Math.round(pulse.medianDaysToPending)} days` }] : []),
     ...(quickFacts?.elevation ? [{ label: 'Elevation', value: quickFacts.elevation }] : []),
     ...(quickFacts?.county ? [{ label: 'County', value: `${quickFacts.county} County` }] : []),
-    ...(quickFacts?.schoolDistrict
-      ? [{ label: 'School district', value: quickFacts.schoolDistrict }]
-      : []),
-    ...(quickFacts?.nearestAirport
-      ? [{ label: 'Nearest airport', value: quickFacts.nearestAirport }]
-      : []),
   ]
 
-  // Drop the in-progress current month from price series — avoids a misleading
-  // unfinished spike at the chart edge. Completed months only.
-  const currentMonthKey = new Date()
-    .toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' })
-    .slice(0, 7)
-  const completePriceMonths = priceHistory.filter(
-    (p) => p.periodStart.slice(0, 7) !== currentMonthKey,
-  )
-  const hasPriceHistory = completePriceMonths.length >= 4
-
-  // Communities in this city — ledger rows with live counts
-  const communitySfrBySlug = new Map<string, number>()
-  for (const s of communitySnapshots) {
-    const rawSlug = s.geoKey.includes(':') ? s.geoKey.split(':')[1] : s.geoKey
-    communitySfrBySlug.set(rawSlug.replace(/\s+/g, '-').toLowerCase(), s.activeSfrCount)
-  }
-
-  const golfCommunityItems = (
-    resortCommunitiesRegistry.communities as ReadonlyArray<{
-      slug: string
-      label: string
-      city_slug: string
-    }>
-  )
-    .filter((c) => c.city_slug === slug)
-    .map((c) => ({
-      name: c.label,
-      href: `/communities/${c.slug}`,
-      activeCount: communitySfrBySlug.get(c.slug) ?? null,
+  // Featured + map + ticker (shared resolver).
+  const featuredItems: KbFeaturedItem[] = await resolveFeaturedItems(featuredTiles)
+  const mapFeatures = mapTiles
+    .filter((t) => t.lat != null && t.lng != null)
+    .map((t) => ({
+      type: 'Feature' as const,
+      geometry: { type: 'Point' as const, coordinates: [Number(t.lng), Number(t.lat)] as [number, number] },
+      properties: {
+        p: t.listPrice, bd: t.beds, ba: t.baths, sf: t.sqft,
+        a: [t.streetNumber, t.streetName].filter(Boolean).join(' '),
+        sub: t.subdivisionName ?? '', city: t.city ?? '', img: t.photoUrl ?? '',
+      },
     }))
+  const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
+  const tickerItems: KbTickerItem[] = mapTiles.slice(0, 6).map((t) => ({
+    price: t.listPrice,
+    address: [t.streetNumber, t.streetName].filter(Boolean).join(' '),
+    town: t.city ?? '',
+  }))
 
-  // Bend neighborhoods — merge live westside stats with the full polygon list
-  const liveStatsByHref = new Map(bendNeighborhoodStats.map((r) => [r.href, r]))
-  const bendNeighborhoodItems =
+  // Neighborhoods ledger — designated Bend polygons + live westside stats. (§D83)
+  const liveStatsByHref = new Map(neighborhoodStats.map((r) => [r.href, r]))
+  const bendNeighborhoodItems: KbTownItem[] =
     slug === 'bend'
       ? (bendNeighborhoodPolygons.communities as Array<{ slug: string; name?: string }>)
           .filter((c) => c.slug.startsWith('bend-'))
@@ -332,38 +247,51 @@ export default async function CityDetailPage({ params }: Props) {
             const href = `/cities/bend/${nslug}`
             const live = liveStatsByHref.get(href)
             return {
-              name:
-                live?.label ??
-                c.name ??
-                nslug
-                  .split('-')
-                  .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                  .join(' '),
+              name: live?.label ?? c.name ?? nslug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
               href,
-              activeCount: live?.activeCount ?? null,
-              medianListPrice: live?.medianListPrice ?? null,
+              activeCount: live?.activeCount ?? 0,
+              medianPrice: live?.medianListPrice ?? null,
+              img: '',
             }
           })
       : []
 
-  const CENTRAL_OREGON_CITY_SLUGS = new Set([
-    'bend',
-    'redmond',
-    'sisters',
-    'la-pine',
-    'sunriver',
-    'madras',
-    'prineville',
-    'culver',
-    'terrebonne',
-    'tumalo',
-    'powell-butte',
-  ])
+  // Golf & master-planned communities — a SEPARATE ledger from neighborhoods. (§D85)
+  const communitySfrBySlug = new Map<string, number>()
+  for (const s of communitySnapshots) {
+    const rawSlug = s.geoKey.includes(':') ? s.geoKey.split(':')[1]! : s.geoKey
+    communitySfrBySlug.set(rawSlug.replace(/\s+/g, '-').toLowerCase(), s.activeSfrCount)
+  }
+  const golfCommunityItems: KbTownItem[] = (
+    resortCommunitiesRegistry.communities as ReadonlyArray<{ slug: string; label: string; city_slug: string }>
+  )
+    .filter((c) => c.city_slug === slug)
+    .map((c) => ({
+      name: c.label,
+      href: `/communities/${c.slug}`,
+      activeCount: communitySfrBySlug.get(c.slug) ?? 0,
+      medianPrice: null,
+      img: '',
+    }))
 
-  // Nearby cities — editorial index rows with VERIFIED thumbnails (cityHero
-  // registry; a city without a verified photo gets no thumbnail, never a
-  // wrong-city image).
-  const otherCityItems = allCitySnapshots
+  // Marquee communities (curated, with video) — the visual rail.
+  const cityComms = communities.filter((c) => c.city?.toLowerCase().trim() === cityName.toLowerCase().trim())
+  const communityVideos = communityVideoManifest as Record<string, { video?: string } | undefined>
+  const communityItems: KbCommunityItem[] = (CITY_COMMUNITIES[slug] ?? [])
+    .map((f): KbCommunityItem | null => {
+      const c = cityComms.find((x) => x.subdivision.toLowerCase().includes(f.match))
+      if (!c) return null
+      const cv = f.videoSlug ? communityVideos[f.videoSlug] : undefined
+      return {
+        name: c.subdivision, activeCount: c.activeCount, town: cityName,
+        href: `/communities/${c.slug}`, img: f.img,
+        video: cv?.video ? { url: cv.video, embedType: 'video-tag' as const } : null,
+      }
+    })
+    .filter((x): x is KbCommunityItem => x !== null)
+
+  // Explore other cities — editorial index with VERIFIED thumbnails. (§D84, §D87)
+  const otherCityItems: KbTownItem[] = allCitySnapshots
     .map((s) => ({ s, citySlug: s.geoKey.replace(/\s+/g, '-') }))
     .filter(({ citySlug }) => citySlug !== slug && CENTRAL_OREGON_CITY_SLUGS.has(citySlug))
     .slice(0, 8)
@@ -372,45 +300,70 @@ export default async function CityDetailPage({ params }: Props) {
       return {
         name: s.geoLabel,
         href: `/cities/${citySlug}`,
-        activeCount: s.activeSfrCount > 0 ? s.activeSfrCount : null,
-        medianListPrice: s.medianListPrice ?? null,
-        imageUrl: hero.verified ? hero.src : null,
-        imageAlt: hero.verified ? hero.alt : '',
+        activeCount: s.activeSfrCount > 0 ? s.activeSfrCount : 0,
+        medianPrice: s.medianListPrice ?? null,
+        img: hero.verified ? hero.src : '',
       }
     })
 
-  // Boundary map data
-  const hasListings = cityListingCards.length > 0
-  const hasMap = !!boundaryMapData.polygon
-
-  const mapPolygons = boundaryMapData.polygon
-    ? [{ slug, name: cityName, geometry: boundaryMapData.polygon }]
-    : []
-
-  const mapListings = boundaryMapData.pins.map((p) => ({
-    lat: p.lat,
-    lng: p.lng,
+  // Open houses (next, in this city) → KB cards.
+  const openHouseItems = openHouses.slice(0, 6).map((oh) => ({
     href: listingTileHref({
-      listingKey: p.listingKey,
-      streetNumber: p.streetNumber,
-      streetName: p.streetName,
-      city: p.city,
+      listingKey: oh.listing_key, streetNumber: oh.street_number, streetName: oh.street_name, city: oh.city,
     }),
-    price: p.price,
-    photoURL: p.photoUrl,
-    streetNumber: p.streetNumber,
-    streetName: p.streetName,
-    city: p.city,
-    state: 'OR',
-    postalCode: p.postalCode,
-    bedroomsTotal: p.beds,
-    bathroomsTotal: p.baths,
-    sqft: p.sqft,
+    photoUrl: oh.photo_url,
+    price: oh.list_price,
+    address: oh.unparsed_address ?? [oh.street_number, oh.street_name].filter(Boolean).join(' '),
+    cityLine: [oh.city, oh.subdivision_name].filter(Boolean).join(' · '),
+    beds: oh.beds_total,
+    baths: oh.baths_full,
+    sqft: oh.living_area,
+    whenLabel: openHouseWhen(oh.event_date, oh.start_time, oh.end_time),
   }))
 
-  // AI citability: verified market Q&A + structured data
-  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(cityName, pulse)
+  // Live activity → KB rows.
+  const activityItems = activity.slice(0, 8).map((a) => {
+    const km = ACTIVITY_KIND[a.event_type] ?? { kind: a.event_type, label: a.event_type }
+    return {
+      kind: km.kind,
+      label: km.label,
+      address: [a.StreetNumber, a.StreetName].filter(Boolean).join(' ') || 'Address on request',
+      cityLine: [a.City, a.SubdivisionName].filter(Boolean).join(' · '),
+      price: a.ListPrice ?? null,
+      href: listingTileHref({ listingKey: a.listing_key, streetNumber: a.StreetNumber ?? null, streetName: a.StreetName ?? null, city: a.City ?? null }),
+      whenLabel: monthLabel(a.event_at),
+    }
+  })
 
+  // Guides / blog. (§D80 — getRecentBlogPosts)
+  const articlePosts = blogPosts.map((p) => ({
+    title: p.title,
+    href: `/blog/${p.slug}`,
+    excerpt: p.excerpt,
+    imageUrl: p.heroImageUrl,
+    dateLabel: p.publishedAt
+      ? new Date(p.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+      : null,
+  }))
+
+  // Market HUD.
+  const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
+  const marketData: KbMarketData = {
+    active: pulse?.activeCount ?? null,
+    closed30: pulse?.closedLast30Days ?? null,
+    new30: null,
+    medianList: pulse?.medianListPrice ?? null,
+    saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
+    daysToPending: pulse?.medianDaysToPending ?? null,
+    monthsSupply: pulse?.monthsOfSupply ?? null,
+    trend: priceHist.filter((p) => p.medianSalePrice != null).map((p) => ({ label: monthLabel(p.periodStart), value: p.medianSalePrice as number })),
+    byTown: bendNeighborhoodItems.filter((n) => n.medianPrice != null).map((n) => ({ name: n.name, median: n.medianPrice as number })),
+    countyMedian: regionPulse?.medianListPrice ?? null,
+  }
+
+  // AI-citability: verified market Q&A + structured data.
+  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(cityName, pulse)
+  const hasMap = mapFeatures.length > 0
   const citySchemas: SchemaInput[] = [
     {
       type: 'breadcrumb',
@@ -436,7 +389,7 @@ export default async function CityDetailPage({ params }: Props) {
     citySchemas.push({
       type: 'dataset',
       name: `${cityName}, Oregon real estate market statistics${asOfLabel ? `, ${asOfLabel}` : ''}`,
-      description: `Live single-family home market data for ${cityName}, Oregon. Includes median list price, active inventory, months of supply, and median days to pending. Sourced from the regional MLS via Ryan Realty.`,
+      description: `Live single-family home market data for ${cityName}, Oregon. Median list price, active inventory, months of supply, and median days to pending. Sourced from the regional MLS via Ryan Realty.`,
       url: `/cities/${slug}`,
       dateModified: asOfIso ?? undefined,
       spatialCoverageName: `${cityName}, OR`,
@@ -445,409 +398,93 @@ export default async function CityDetailPage({ params }: Props) {
   }
 
   return (
-    <main className="min-h-screen bg-background">
-      {/* KB migration (Phase 9): the homepage nav on the city page — transparent
-          over the hero, flips navy on scroll. Default SiteHeader is hidden on the
-          city-detail route via HideChrome. Scoped in .kb-root so kb.css applies. */}
-      <div className="kb-root">
-        <KbNav />
-      </div>
-
-      {/* AI-citability structured data: full breadcrumb + City entity + market Dataset. */}
+    <main className="kb-root">
+      <KbNav />
+      <CityPageTracker
+        cityName={cityName}
+        slug={slug}
+        listingCount={activeCount}
+        medianPrice={pulse?.medianListPrice ?? null}
+        communityCount={communitySnapshots.length}
+      />
       <MetadataBlock schemas={citySchemas} />
-
-      <PageBreadcrumb
-        trail={[{ label: 'Cities', href: '/cities' }, { label: cityName }]}
-        includeJsonLd={false}
-      />
-
-      {/* Geo archetype hero: VERIFIED city photo, city name HUGE in Amboqia,
-          live stat overlay with count-up. A regional-fallback photo is labeled
-          honestly via mediaCaption — never a wrong-city implication. */}
-      <div id="hero">
-        <FlyoverHero
-          slug={slug}
-          displayName={cityName}
-          headline={`Homes for sale in ${cityName}, Oregon`}
-          activeCount={activeCount > 0 ? activeCount : null}
-          medianPrice={medianListPrice}
-          medianDays={medianDays}
-          videoSrc={null}
-          photoSrc={heroPhoto.src}
-          photoAlt={heroPhoto.alt}
-          mediaCaption={heroPhoto.verified ? undefined : 'Regional view · Cascade Range'}
-          sectionId="hero"
+      <KbBreadcrumb trail={[{ label: 'Cities', href: '/cities' }, { label: cityName }]} />
+      <SmoothScrollProvider>
+        <KbHero
+          data={{
+            activeCount: pulse?.activeCount ?? null,
+            medianListPrice: pulse?.medianListPrice ?? null,
+            medianDaysToPending: pulse?.medianDaysToPending ?? null,
+          }}
+          eyebrow={`${cityName} · Oregon`}
+          titleTop="Homes in"
+          titleBottom={cityName}
+          lead={`in ${cityName}, Oregon, with the live market behind every one.`}
+          videoSrc={heroVideoSrc}
+          posterSrc={heroPosterSrc}
+          mediaCaption={mediaCaption}
         />
-      </div>
-
-      {/* Video tours scoped to this city, near the top. Tap drops into /feed. */}
-      <VideoTourRail city={cityName} title={`Walk through homes in ${cityName}`} />
-
-      {/* LiveMarketBand: one giant living number (activeCount) + quiet aux stats.
-          Overlap moment: -mt-12 pulls the navy band up into the hero bottom edge. */}
-      <div id="market" className="-mt-12 relative z-10">
-        <LiveMarketBand
-          heroStat={activeCount > 0 ? activeCount : null}
-          heroLabel="Active homes"
-          auxStats={auxStats}
-          marketVerdict={marketVerdict}
-          reportHref="/housing-market"
-          reportLabel="Full market report"
-          sectionId="market"
+        {aboutParagraphs.length > 0 ? (
+          <KbAbout eyebrow={`${cityName} · Oregon`} heading={`Living in ${cityName}`} paragraphs={aboutParagraphs} facts={aboutFacts} />
+        ) : null}
+        <KbFeatured items={featuredItems} />
+        <KbListingMap
+          geojson={mapGeo}
+          totalActive={pulse?.activeCount ?? mapFeatures.length}
+          fitToFeatures
+          showRegionMarkers={false}
+          eyebrow={cityName}
+          title={`Homes in\n${cityName}`}
+          subtitle={`Every active single-family listing in ${cityName}, on the real terrain. Click any dot for the price, the beds, and the street.`}
         />
-      </div>
-
-      {/* Honest editorial intro — asymmetric split: prose + quick-facts ledger */}
-      {aboutParagraphs.length > 0 ? (
-        <EngagedSection
-          id="about"
-          pageType="geo"
-          position={1}
-          className="bg-background py-10 md:py-16"
-        >
-          <Container>
-            <div className="grid gap-8 lg:grid-cols-12 lg:gap-16">
-              <div className="lg:col-span-7">
-                <Eyebrow className="mb-2">{cityName} · Oregon</Eyebrow>
-                <DisplayHeading
-                  as="h2"
-                  className="text-foreground mb-5"
-                  style={{ fontSize: 'clamp(1.5rem, 2.6vw, 2.1rem)', letterSpacing: '-0.01em', lineHeight: 1.2 }}
-                >
-                  Living in {cityName}
-                </DisplayHeading>
-                {aboutParagraphs.map((p, i) => (
-                  <p key={i} className="text-base leading-relaxed text-muted-foreground max-w-prose">
-                    {p}
-                  </p>
-                ))}
-              </div>
-              {quickFactRows.length > 0 ? (
-                <div className="lg:col-span-5">
-                  <div className="divide-y divide-border border-t border-b border-border">
-                    {quickFactRows.map((row) => (
-                      <div key={row.label} className="flex items-baseline justify-between gap-4 py-3">
-                        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                          {row.label}
-                        </span>
-                        <span className="text-sm font-semibold tabular-nums text-foreground text-right">
-                          {row.value}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          </Container>
-        </EngagedSection>
-      ) : null}
-
-      {/* Split-scroll spine: listing ledger scrolls left, map pinned right (desktop). */}
-      {(hasListings || hasMap) ? (
-        <section id="listings" className="border-t border-border bg-background py-10 md:py-14">
-          <Container>
-            <div className="mb-8 flex items-end justify-between gap-4">
-              <div>
-                <Eyebrow className="mb-1">{cityName}</Eyebrow>
-                <H2 className="text-2xl text-foreground">
-                  Homes for sale
-                </H2>
-              </div>
-              {boundaryMapData.pins.length > cityListingCards.length ? (
-                <a
-                  href={`/homes-for-sale/${slug}`}
-                  className="shrink-0 text-sm font-medium text-primary underline-offset-2 hover:underline"
-                >
-                  View all {boundaryMapData.pins.length}
-                </a>
-              ) : null}
-            </div>
-
-            <CommunityMapLedgerPane
-              stacked
-              listings={cityListingCards}
-              polygons={mapPolygons}
-              mapListings={mapListings}
-              zoom={12}
-              mapHeight={520}
-              viewAllHref={`/homes-for-sale/${slug}`}
-              viewAllLabel={
-                boundaryMapData.pins.length > cityListingCards.length
-                  ? `View all ${boundaryMapData.pins.length} homes`
-                  : `All homes for sale in ${cityName}`
-              }
-              communityName={cityName}
-              totalCount={boundaryMapData.pins.length}
-            />
-          </Container>
-        </section>
-      ) : null}
-
-      {/* Scrubbable price history + payment slider — editorial data section */}
-      {(hasPriceHistory || medianListPrice != null) ? (
-        <section
-          id="price-history"
-          className="border-t border-border bg-secondary/30 py-10 md:py-14"
-        >
-          <Container>
-            <div className="space-y-12 md:space-y-14">
-              {hasPriceHistory ? (
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
-                    Price history
-                  </p>
-                  <H2 className="text-xl text-foreground mb-6">
-                    {cityName} median sale price
-                  </H2>
-                  <PriceHistoryScrubber
-                    data={completePriceMonths}
-                    sectionId="price-scrubber"
-                    height={220}
-                  />
-                </div>
-              ) : null}
-              {medianListPrice != null ? (
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
-                    Estimate your payment
-                  </p>
-                  <H2 className="text-xl text-foreground mb-6">
-                    What would a {cityName} home cost you monthly?
-                  </H2>
-                  <PaymentSlider
-                    medianPrice={medianListPrice}
-                    label={cityName}
-                    sectionId="payment-slider"
-                  />
-                </div>
-              ) : null}
-            </div>
-          </Container>
-        </section>
-      ) : null}
-
-      {/* Motivated sellers — price-cut + remarks-signal homes in this city */}
-      <MotivatedListings city={cityName} />
-
-      {/* Bend neighborhoods — stat-rich editorial ledger rows (no tile grid).
-          Live median + active count where the pulse cache has the neighborhood. */}
-      {bendNeighborhoodItems.length > 0 ? (
-        <EngagedSection
-          id="neighborhoods"
-          pageType="geo"
-          position={4}
-          className="border-t border-border bg-background py-10 md:py-14"
-        >
-          <Container>
-            <div className="mb-6">
-              <Eyebrow className="mb-1">{cityName}</Eyebrow>
-              <H2 className="text-2xl text-foreground">
-                Neighborhoods
-              </H2>
-            </div>
-            <div className="divide-y divide-border max-w-3xl">
-              {bendNeighborhoodItems.map((item) => (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  className="group flex items-center justify-between gap-4 py-3.5 hover:bg-secondary/40 transition-colors -mx-2 px-2 rounded-md"
-                >
-                  <span className="text-sm font-semibold text-foreground group-hover:text-primary min-w-0">
-                    {item.name}
-                  </span>
-                  <div className="flex items-baseline gap-4 flex-shrink-0">
-                    {item.activeCount != null && item.activeCount > 0 ? (
-                      <span className="text-xs tabular-nums text-muted-foreground">
-                        {item.activeCount} {item.activeCount === 1 ? 'home' : 'homes'}
-                      </span>
-                    ) : null}
-                    {item.medianListPrice != null ? (
-                      <span className="font-display tabular-nums text-foreground text-base leading-none">
-                        {fmtK(item.medianListPrice)}
-                      </span>
-                    ) : null}
-                    <span
-                      aria-hidden
-                      className="text-muted-foreground/40 group-hover:text-primary transition-colors"
-                    >
-                      &rarr;
-                    </span>
-                  </div>
-                </a>
-              ))}
-            </div>
-          </Container>
-        </EngagedSection>
-      ) : null}
-
-      {/* Golf & master-planned communities — editorial ledger rows */}
-      {golfCommunityItems.length > 0 ? (
-        <EngagedSection
-          id="communities"
-          pageType="geo"
-          position={5}
-          className="border-t border-border bg-secondary/40 py-10 md:py-14"
-        >
-          <Container>
-            <div className="mb-6">
-              <Eyebrow className="mb-1">{cityName}</Eyebrow>
-              <H2 className="text-2xl text-foreground">
-                Golf and master-planned communities
-              </H2>
-            </div>
-            <div className="divide-y divide-border max-w-3xl">
-              {golfCommunityItems.map((item) => (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  className="group flex items-center justify-between gap-4 py-3.5 hover:bg-background/70 transition-colors -mx-2 px-2 rounded-md"
-                >
-                  <span className="text-sm font-semibold text-foreground group-hover:text-primary">
-                    {item.name}
-                  </span>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    {item.activeCount != null && item.activeCount > 0 ? (
-                      <span className="text-xs tabular-nums text-muted-foreground">
-                        {item.activeCount} {item.activeCount === 1 ? 'home' : 'homes'}
-                      </span>
-                    ) : null}
-                    <span
-                      aria-hidden
-                      className="text-muted-foreground/40 group-hover:text-primary transition-colors"
-                    >
-                      &rarr;
-                    </span>
-                  </div>
-                </a>
-              ))}
-            </div>
-            <div className="mt-6">
-              <a
-                href="/communities"
-                className="text-sm font-medium text-primary underline-offset-2 hover:underline"
-              >
-                View all Central Oregon communities
-              </a>
-            </div>
-          </Container>
-        </EngagedSection>
-      ) : null}
-
-      {/* Open houses — next 14 days */}
-      <div id="open-houses">
-        <OpenHousesGrid
-          city={cityName}
-          daysAhead={14}
-          eyebrow={`Upcoming in ${cityName}`}
-          heading="Open houses"
-          viewAllHref={`/open-houses/${slug}`}
+        <KbTicker items={tickerItems} />
+        <KbMarketHud data={marketData} />
+        <KbExploreTowns
+          towns={bendNeighborhoodItems}
+          eyebrow={`${cityName} · Neighborhoods`}
+          title="Neighborhoods"
+          sectionId="neighborhoods"
+          cta={{ href: `/homes-for-sale/${slug}`, label: `All ${cityName} homes` }}
         />
-      </div>
-
-      {/* Live activity feed — city-scoped */}
-      <ActivityFeed
-        city={cityName}
-        eyebrow={`Live activity · ${cityName}`}
-        heading={`What is happening in ${cityName}`}
-        viewAllLabel="Full market pulse"
-        viewAllHref="/housing-market"
-      />
-
-      {/* Nearby Central Oregon cities — editorial index rows with VERIFIED thumbnails */}
-      {otherCityItems.length > 0 ? (
-        <EngagedSection
-          id="nearby"
-          pageType="geo"
-          position={8}
-          className="border-t border-border bg-secondary/30 py-10 md:py-14"
-        >
-          <Container>
-            <div className="mb-6">
-              <Eyebrow className="mb-1">Central Oregon</Eyebrow>
-              <H2 className="text-2xl text-foreground">Explore other cities</H2>
-            </div>
-            <div className="divide-y divide-border max-w-3xl">
-              {otherCityItems.map((item) => (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  className="group flex items-center gap-4 py-3 hover:bg-background/70 transition-colors -mx-2 px-2 rounded-md"
-                >
-                  {item.imageUrl ? (
-                    <span className="relative block h-12 w-16 flex-shrink-0 overflow-hidden rounded-md">
-                      <Image
-                        src={item.imageUrl}
-                        alt={item.imageAlt}
-                        fill
-                        sizes="64px"
-                        className="object-cover"
-                      />
-                    </span>
-                  ) : (
-                    <span className="block h-12 w-16 flex-shrink-0 rounded-md bg-primary/10" aria-hidden />
-                  )}
-                  <span className="flex-1 min-w-0 text-sm font-semibold text-foreground group-hover:text-primary">
-                    {item.name}
-                  </span>
-                  <div className="flex items-baseline gap-4 flex-shrink-0">
-                    {item.activeCount != null ? (
-                      <span className="text-xs tabular-nums text-muted-foreground">
-                        {item.activeCount} {item.activeCount === 1 ? 'home' : 'homes'}
-                      </span>
-                    ) : null}
-                    {item.medianListPrice != null ? (
-                      <span className="font-display tabular-nums text-foreground text-base leading-none hidden sm:inline">
-                        {fmtK(item.medianListPrice)}
-                      </span>
-                    ) : null}
-                    <span
-                      aria-hidden
-                      className="text-muted-foreground/40 group-hover:text-primary transition-colors"
-                    >
-                      &rarr;
-                    </span>
-                  </div>
-                </a>
-              ))}
-            </div>
-          </Container>
-        </EngagedSection>
-      ) : null}
-
-      {/* Guides and insights — recent blog posts, city-prioritized */}
-      <ArticleGrid
-        items={blogPosts}
-        eyebrow="Guides and insights"
-        heading={`${cityName} real estate, explained`}
-        subtitle={`Local housing news, neighborhood deep dives, and buyer and seller guides for ${cityName} and Central Oregon.`}
-        tone="muted"
-      />
-
-      {/* Common questions: verified market Q&A + FAQPage JSON-LD */}
-      {faqs.length > 0 ? (
-        <div id="faq">
-          <FAQBlock
-            items={faqs}
-            eyebrow="Common questions"
-            title={`${cityName} real estate questions`}
-          />
-        </div>
-      ) : null}
-
-      {/* City-specific seller CTA band (InlineValuationHook) */}
-      <InlineValuationHook
-        communityName={cityName}
-        sectionId="valuation-hook"
-      />
-
-      {/* KB footer (Phase 9 migration). The default SiteFooter is hidden on the
-          city-detail route via HideChrome, so the page carries the KB footer.
-          towns=[] keeps the per-town fine-print line off (city scope, not region). */}
-      <div className="kb-root">
+        <KbCommunities communities={communityItems} />
+        <KbExploreTowns
+          towns={golfCommunityItems}
+          eyebrow={`${cityName} · Communities`}
+          title="Golf and master-planned communities"
+          sectionId="communities-ledger"
+          cta={{ href: '/communities', label: 'Every community' }}
+        />
+        <KbOpenHouses items={openHouseItems} eyebrow={`${cityName} · This week`} heading="Open houses" viewAllHref={`/open-houses/${slug}`} />
+        <KbActivity items={activityItems} eyebrow={`Live · ${cityName}`} heading={`What is happening in ${cityName}`} viewAllHref="/housing-market" viewAllLabel="Full market pulse" />
+        <KbExploreTowns
+          towns={otherCityItems}
+          eyebrow="Central Oregon"
+          title="Explore other cities"
+          sectionId="nearby"
+          cta={{ href: '/cities', label: 'Every city' }}
+        />
+        <KbArticles
+          posts={articlePosts}
+          eyebrow="Guides and insights"
+          heading={`${cityName} real estate, explained`}
+          subtitle={`Local housing news, neighborhood deep dives, and buyer and seller guides for ${cityName} and Central Oregon.`}
+        />
+        <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
+        <KbTeam />
+        <KbSell
+          data={{
+            medianListPrice: pulse?.medianListPrice ?? null,
+            medianDaysToPending: pulse?.medianDaysToPending ?? null,
+            soldCount30d: pulse?.closedLast30Days ?? null,
+          }}
+        />
+        {faqs.length > 0 ? (
+          <div id="faq">
+            <FAQBlock items={faqs} eyebrow="Common questions" title={`${cityName} real estate questions`} />
+          </div>
+        ) : null}
         <KbFooter towns={[]} />
-      </div>
-
+      </SmoothScrollProvider>
     </main>
   )
 }

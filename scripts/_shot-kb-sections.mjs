@@ -29,9 +29,10 @@ async function shot(sel, name) {
   console.log(`OK /tmp/kb-${name}.png`)
 }
 
-await shot('#towns', 'towns')
-await shot('#map', 'map')
-await shot('#communities', 'communities')
-await shot('#listings', 'featured')
+await shot('#about', 'about')
+await shot('#open-houses', 'openhouses')
+await shot('#activity', 'activity')
+await shot('#articles', 'articles')
+await shot('#neighborhoods', 'neighborhoods')
 await ctx.close()
 await browser.close()

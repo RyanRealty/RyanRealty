@@ -8,13 +8,30 @@ until its sections are rebuilt, so live `/cities/*` pages don't lose content mid
 
 ## Spec (Matt, 2026-06-17)
 1. Market section rebuilt informative + brutalist (no slop). ✅
-2. Map zooms into the city + shows the city's neighborhood polygons. (zoom ✅ · polygons ☐)
-3. Neighborhoods listed out, homepage-cities-style. ☐
-4. KB breadcrumb — City › Neighborhood › Community/Subdivision › Listing. ☐
-5. Rename Towns → Cities (nav + everywhere). ☐
-6. Rebuild every existing city-page section in KB style + add them (open houses, blog, activity, nearby cities, about). ☐
-7. Page contract on every page: KB design + SEO (Google + LLM) + full tracking, all hardcoded/gated. (SEO partial ✅ · tracking ☐ · gates ☐)
+2. Map zooms into the city + shows the city's neighborhood polygons. (zoom ✅ · polygons ☐ next)
+3. Neighborhoods listed out, homepage-cities-style. ✅ (KbExploreTowns reused)
+4. KB breadcrumb — City › Neighborhood › Community/Subdivision › Listing. ✅ (KbBreadcrumb)
+5. Rename Towns → Cities (nav + everywhere). ✅
+6. Rebuild every existing city-page section in KB style + add them (open houses, blog, activity, nearby cities, about). ✅ (KbAbout, KbOpenHouses, KbActivity, KbArticles, KbExploreTowns nearby/golf)
+7. Page contract on every page: KB design ✅ + SEO (Google + LLM) ✅ + full tracking (CityPageTracker ✅ · per-section events ☐ next) · gates ☐ next.
 8. URL scheme `/bend`, `/bend/tetherow` — DEFERRED by Matt ("disregard urls for now").
+
+### 2 — Full KB city page (all sections) ✅ committed
+Rebuilt app/cities/[slug]/page.tsx with the complete KB section stack: breadcrumb,
+hero (cityHero + labeled regional fallback), about (KbAbout), featured, map (zoomed),
+ticker, market, neighborhoods ledger, communities, golf/master-planned ledger, open
+houses (KbOpenHouses), activity (KbActivity), explore-other-cities, guides (KbArticles),
+testimonials, team, sell, FAQ. New reusable KB sections built (KbBreadcrumb, KbAbout,
+KbOpenHouses, KbActivity, KbArticles); KbExploreTowns parameterized to drive the
+neighborhoods / golf / nearby ledgers (no fork). Towns→Cities renamed (nav + copy).
+KbHero gained a mediaCaption (labeled regional fallback). All 13 city contract tests
+pass (D78–D87); tsc + build clean. Verified each section in the browser.
+
+## Remaining (next increments)
+- Map neighborhood polygons (KbListingMap polygons layer + Bend boundaries).
+- Per-section view + interaction tracking wired into every KB section (page contract).
+- The SEO/JSON-LD presence + tracking-instrumentation gates (Phase 3).
+- Then waves 2+: community → neighborhood → listing-detail → … page-classes.
 
 ## Increments
 
