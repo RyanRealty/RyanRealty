@@ -199,7 +199,7 @@ html.lenis, html.lenis body{height:auto;}
   padding:46px 0 22px;border-bottom:var(--edge) solid currentColor;
   margin-bottom:0;
 }
-.kb-root .sec-index{font-size:.72rem;font-weight:700;letter-spacing:.2em;opacity:.5;}
+.kb-root .sec-index{font-size:.72rem;font-weight:700;letter-spacing:.2em;opacity:.68;}
 .kb-root .sec-title{font-size:clamp(2.4rem,9vw,6rem);line-height:.9;}
 .kb-root .region{background:var(--navy);color:var(--cream);padding-bottom:0;}
 .kb-root .region .sec-head{border-color:var(--cream-40);}
@@ -441,7 +441,7 @@ html.lenis, html.lenis body{height:auto;}
 @media(min-width:760px){.kb-root .mkt-kpis{grid-template-columns:repeat(3,1fr);}}
 .kb-root .mkt-kpi{background:var(--navy);padding:20px 18px;display:flex;flex-direction:column;gap:7px;}
 .kb-root .mkt-kpi-val{font-family:var(--font-amboqia),serif;font-weight:400;font-size:clamp(1.7rem,4.4vw,2.3rem);line-height:.92;color:var(--cream);font-variant-numeric:tabular-nums;}
-.kb-root .mkt-kpi-lbl{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--cream-40);}
+.kb-root .mkt-kpi-lbl{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--cream-70);}
 
 /* Verdict stamp + median headline */
 .kb-root .mkt-verdict-row{display:grid;grid-template-columns:1fr;gap:1px;background:rgba(250,248,244,.22);border:1px solid rgba(250,248,244,.22);margin-top:30px;}
@@ -454,7 +454,7 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .mkt-headline{background:var(--navy);padding:24px 24px;display:flex;flex-direction:column;gap:10px;justify-content:center;}
 .kb-root .mkt-headline-val{font-family:var(--font-amboqia),serif;font-weight:400;font-size:clamp(2.4rem,8vw,3.8rem);line-height:.86;color:var(--cream);font-variant-numeric:tabular-nums;}
 .kb-root .mkt-headline-meta{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
-.kb-root .mkt-headline-lbl{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--cream-40);}
+.kb-root .mkt-headline-lbl{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--cream-70);}
 .kb-root .mkt-headline-delta{font-size:.72rem;font-weight:700;letter-spacing:.04em;font-variant-numeric:tabular-nums;padding:4px 10px;border:1px solid var(--cream-12);border-radius:3px;}
 .kb-root .mkt-headline-delta.up{color:#7fe3b0;border-color:rgba(127,227,176,.35);}
 .kb-root .mkt-headline-delta.down{color:#f0a6a0;border-color:rgba(240,166,160,.35);}
@@ -475,7 +475,7 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .mkt-bar .bhd b{font-variant-numeric:tabular-nums;}
 .kb-root .mkt-bar .btrack{height:9px;background:rgba(250,248,244,.16);position:relative;overflow:hidden;}
 .kb-root .mkt-bar .bfill{position:absolute;top:0;bottom:0;left:0;width:0;background:var(--cream);}
-.kb-root .mkt-fine{margin-top:20px;font-size:.68rem;color:rgba(250,248,244,.42);letter-spacing:.03em;line-height:1.5;max-width:60ch;}
+.kb-root .mkt-fine{margin-top:20px;font-size:.68rem;color:var(--cream-70);letter-spacing:.03em;line-height:1.5;max-width:60ch;}
 .kb-root .mkt-chrome{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--cream-12);position:relative;}
 .kb-root .mkt-chrome::after{content:"";position:absolute;left:0;bottom:-1px;height:1px;width:100%;background:var(--cream);transform-origin:left;}
 .kb-root .mkt-chrome-right{display:inline-flex;align-items:center;gap:16px;}
@@ -868,3 +868,6 @@ html.lenis, html.lenis body{height:auto;}
 @media(max-width:680px){.kb-root .art-title{font-size:8vw;}}
 
 .kb-root .hero-caption{position:absolute;right:14px;bottom:14px;z-index:3;font-size:.58rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cream-70);background:rgba(16,39,66,.55);padding:5px 10px;border-radius:2px;}
+
+/* Keyboard focus — visible on navy AND cream surfaces (a11y) */
+.kb-root a:focus-visible,.kb-root button:focus-visible,.kb-root input:focus-visible,.kb-root [tabindex]:focus-visible{outline:3px solid var(--cream);outline-offset:2px;box-shadow:0 0 0 5px rgba(16,39,66,.6);border-radius:2px;}

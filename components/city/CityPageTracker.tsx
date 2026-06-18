@@ -19,7 +19,6 @@ export default function CityPageTracker({
   communityCount,
 }: Props) {
   const sentRef = useRef(false)
-  const scrollMilestones = useRef<Set<number>>(new Set())
 
   useEffect(() => {
     if (sentRef.current) return
@@ -37,22 +36,7 @@ export default function CityPageTracker({
     })
   }, [cityName, slug, listingCount, medianPrice, communityCount])
 
-  useEffect(() => {
-    const milestones = [25, 50, 75, 100]
-    const handleScroll = () => {
-      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
-      if (scrollHeight <= 0) return
-      const pct = Math.round((window.scrollY / scrollHeight) * 100)
-      milestones.forEach((m) => {
-        if (pct >= m && !scrollMilestones.current.has(m)) {
-          scrollMilestones.current.add(m)
-          trackEvent('scroll_depth', { page_type: 'city', city_slug: slug, depth_percent: m })
-        }
-      })
-    }
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [slug])
-
+  // Scroll depth is owned by KbSectionTracker (the KB page tracker) so it fires
+  // exactly once per milestone. This tracker only emits the city-view identity.
   return null
 }

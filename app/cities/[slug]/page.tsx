@@ -156,16 +156,20 @@ export default async function CityDetailPage({ params }: Props) {
   const snapshot = await getGeoSnapshot({ geoType: 'city', geoKey: slug })
   if (!snapshot) notFound()
   const cityName = snapshot.geoLabel
+  // market_pulse_live + market_stats_cache store city geo_slug SPACE-separated
+  // ("la pine", "powell butte") — normalize for those reads, or multi-word cities
+  // come back stat-dead. Keep the hyphenated `slug` for URLs / cityHero / config.
+  const geoSlug = slug.replace(/-/g, ' ')
 
   const [
     pulse, regionPulse, mktStats, priceHist, communities, neighborhoodStats,
     communitySnapshots, allCitySnapshots, blogPosts, openHouses, activity,
     cityMeta, mapTiles, featuredTiles,
   ] = await Promise.all([
-    withTimeoutFallback(getMarketPulse({ geoType: 'city', geoSlug: slug }), null, 3500, 'city:pulse'),
+    withTimeoutFallback(getMarketPulse({ geoType: 'city', geoSlug }), null, 3500, 'city:pulse'),
     withTimeoutFallback(getRegionPulse(), null, 3000, 'city:regionPulse'),
-    withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoSlug: slug }), null, 3000, 'city:mktStats'),
-    withTimeoutFallback(getPriceHistory('city', slug, 'monthly', 13), [], 4000, 'city:priceHistory'),
+    withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoSlug }), null, 3000, 'city:mktStats'),
+    withTimeoutFallback(getPriceHistory('city', geoSlug, 'monthly', 13), [], 4000, 'city:priceHistory'),
     withTimeoutFallback(getCommunitiesForIndex(), [], 3500, 'city:communities'),
     slug === 'bend'
       ? withTimeoutFallback(getBendNeighborhoodStats(), [], 5000, 'city:nbhStats')
@@ -344,7 +348,9 @@ export default async function CityDetailPage({ params }: Props) {
       cityLine: [a.City, a.SubdivisionName].filter(Boolean).join(' · '),
       price: a.ListPrice ?? null,
       href: listingTileHref({ listingKey: a.listing_key, streetNumber: a.StreetNumber ?? null, streetName: a.StreetName ?? null, city: a.City ?? null }),
-      whenLabel: monthLabel(a.event_at),
+      whenLabel: a.event_at
+        ? new Date(a.event_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+        : '',
     }
   })
 
@@ -422,7 +428,7 @@ export default async function CityDetailPage({ params }: Props) {
       />
       <KbSectionTracker pageType="city" />
       <MetadataBlock schemas={citySchemas} />
-      <KbBreadcrumb trail={[{ label: 'Cities', href: '/cities' }, { label: cityName }]} />
+      <KbBreadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]} />
       <SmoothScrollProvider>
         <KbHero
           data={{

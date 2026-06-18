@@ -153,7 +153,7 @@ export function KbMarketHud({ data }: { data: KbMarketData }) {
                 <span className="mkt-headline-lbl">Median list price</span>
                 {yoy ? (
                   <span className={`mkt-headline-delta ${yoy.pct >= 0 ? 'up' : 'down'}`}>
-                    {yoy.pct >= 0 ? '↑' : '↓'} {Math.abs(yoy.pct).toFixed(1)}% · {yoy.months} mo
+                    {yoy.pct >= 0 ? '↑' : '↓'} {Math.abs(yoy.pct).toFixed(1)}% median sale, {yoy.months} mo
                   </span>
                 ) : null}
               </span>
@@ -234,7 +234,7 @@ export function KbMarketHud({ data }: { data: KbMarketData }) {
           </a>
         </div>
         <p className="mkt-fine">
-          Live single-family figures from the regional MLS. Months of supply = active ÷ (homes closed in the last 6 months ÷ 6); ≤ 4 a seller&rsquo;s market, 4&ndash;6 balanced, ≥ 6 a buyer&rsquo;s market.
+          Live single-family figures from the regional MLS. Months of supply is active inventory divided by the homes closed in the last 6 months, then divided by 6. Four months or less is a seller&rsquo;s market, four to six is balanced, six or more is a buyer&rsquo;s market.
         </p>
       </div>
     </section>

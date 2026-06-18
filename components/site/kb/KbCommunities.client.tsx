@@ -81,6 +81,8 @@ export function KbCommunities({ communities }: { communities: KbCommunityItem[] 
     }
   }, [])
 
+  if (communities.length === 0) return null
+
   return (
     <section className="section comm" id="communities" ref={root}>
       <div className="wrap">
@@ -123,7 +125,7 @@ export function KbCommunities({ communities }: { communities: KbCommunityItem[] 
                 <div className="comm-body">
                   <div className="comm-name">{c.name}</div>
                   <div className="comm-sub">
-                    <span className="ct mono-num">{c.activeCount}</span> active · {c.town}
+                    <span className="ct mono-num">{c.activeCount.toLocaleString('en-US')}</span> active · {c.town}
                   </div>
                 </div>
               </a>
