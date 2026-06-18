@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.18 (2026-06-18)
+
+### Other
+- Disable fub-outreach-execution cron (duplicate notes + re-emailed archived contacts)
+
+---
+
+
 ## v1.595.17 (2026-06-18)
 
 ### Other
