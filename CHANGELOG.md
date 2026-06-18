@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.20 (2026-06-18)
+
+### Other
+- KB market chart: interactive multi-year component + remove section numbering + fix featured grid
+
+---
+
+
 ## v1.594.19 (2026-06-18)
 
 ### Other
