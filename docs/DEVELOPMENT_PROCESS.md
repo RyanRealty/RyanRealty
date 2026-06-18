@@ -93,6 +93,7 @@ Everything in `docs/plans/` is registered here. A new file in that directory wit
 | `master-plan.md`, `PRODUCT_SPEC_V2.md`, `INDEX_MASTER_DEAL_PIPELINE.md`, `USER_JOURNEYS.md`, `data-architecture-plan.md`, `continuous-improvement.md`, `phase-0-brief.md`, `phase-1-brief.md`, `phase-2-brief.md`, `phase-3-brief.md`, `phase-4-brief.md`, `phase-5-brief.md`, `phase-6-brief.md` | superseded by this canon (archive) |
 | `money-path-contract-plan-2026-06-04.md` | open input — feed into the loop's backlog |
 | `../EXPERIENCE_SYSTEM.md` | **live canon** — six page archetypes, route map, shared module kit, engagement telemetry spec, never-regress mechanics. Orchestrator for the Wave 3 UX rebuild. |
+| `KB_SITE_CONVERSION_GOAL.md` | **live** — whole-site KB (kinetic-brutalist) conversion goal, wave plan, and progress log (Phase 9+). |
 | `RENTAL_CALCULATOR_BUILD_PROMPT.md` | executed (record) |
 | `SKYSLOPE_COMPLIANCE_HANDOFF_2026-05-28.md` | ops record (not site process) |
 | `CROSS_AGENT_HANDOFF.md`, `SESSION_HANDOFF_2026-06-01.md`, `SESSION_HANDOFF_2026-06-01_PARTB.md`, `task-handoff-template.md` | session-continuity records |

@@ -1,28 +1,122 @@
 {
   "route": "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
-  "mockup": "design_system/ryan-realty/ui_kits/city/index.html",
-  "competitiveTarget": "Bend-neighborhood pages must surface the actual in-boundary homes for sale (ListingCard grid from getListingTiles), not just a description — that's the lead-gen unit no competitor has at neighborhood granularity.",
-  "note": "Created 2026-06-01 to gate the neighborhood page's listings grid (Matt directive: featured/real listings on every geo page, enforced by a gate not a one-off). The page already imports all required components, so this passes immediately and LOCKS the listings section + core structure against regression.",
+  "mockup": "design_system/ryan-realty/ui_kits/neighborhood/index.html",
+  "competitiveTarget": "Neighborhood pages must surface the actual in-boundary homes for sale plus a full KB (kinetic-brutalist) design treatment matching the city and community pages — live single-family market data, boundary map + pins, subdivisions ledger, and live activity no competitor surfaces at neighborhood granularity.",
+  "note": "KB (kinetic-brutalist) design language — Phase 9 wave 3 (docs/KB_CONVERGENCE_ROADMAP.md). Mirrors the community page section order and reuses the SAME section library (components/site/kb/*), fed neighborhood-scoped DAL data, never forked (ci:kb-single-source G50). KbNav + KbFooter carry chrome. Body lives in main.kb-root. City-fallback: when the neighborhood's own monthly price series is too sparse (<8 non-null monthly points OR <2 calendar years), the market chart falls back to the parent city's series with chartScopeLabel set to '{City} (city)' (§0 honesty).",
   "requiredComponents": [
     {
-      "name": "PageBreadcrumb",
-      "section": "Home > {City} > {Neighborhood}",
+      "name": "KbNav",
+      "section": "chrome — transparent-over-hero top bar + full-screen menu. Inside .kb-root.",
       "blocking": true
     },
     {
-      "name": "HeroBlock",
-      "section": "hero — '{Neighborhood} real estate' + lede",
+      "name": "KbSectionTracker",
+      "section": "tracking — fires the neighborhood page-view + powers section/interaction analytics (page contract).",
       "blocking": true
     },
     {
-      "name": "ListingCard",
-      "section": "'Homes for sale in {Neighborhood}' — in-boundary active listing cards from getListingTiles (the real homes, the lead-gen unit). MUST render listings, not just prose.",
+      "name": "MetadataBlock",
+      "section": "AI-citability — Breadcrumb + Neighborhood Place + market Dataset JSON-LD.",
       "blocking": true
     },
     {
-      "name": "CTABar",
-      "section": "buyer/seller CTA band",
+      "name": "KbBreadcrumb",
+      "section": "breadcrumb — KB-styled Home > {City} > {Neighborhood} hierarchy (visual; JSON-LD is in MetadataBlock).",
+      "blocking": true
+    },
+    {
+      "name": "KbHero",
+      "section": "hero — full-bleed VERIFIED neighborhood or city hero photo with labeled regional fallback, neighborhood name in Amboqia, plain-language search, live stat row.",
+      "blocking": true
+    },
+    {
+      "name": "KbAbout",
+      "section": "about — editorial intro (data-driven prose from neighborhood.description) + quick-facts ledger.",
+      "blocking": true
+    },
+    {
+      "name": "KbMarketHud",
+      "section": "market — verdict stamp, KPI grid, median-close chart with city-level fallback when neighborhood series is sparse.",
+      "blocking": true
+    },
+    {
+      "name": "KbFeatured",
+      "section": "featured homes — poster grid of top-priced in-boundary active listings.",
+      "blocking": true
+    },
+    {
+      "name": "KbTicker",
+      "section": "ticker — scrolling price/address strip.",
+      "blocking": true
+    },
+    {
+      "name": "KbListingMap",
+      "section": "map — MapLibre point map with boundary polygon and in-boundary listing pins.",
+      "blocking": true
+    },
+    {
+      "name": "KbExploreTowns",
+      "section": "ledgers — reused twice: once for the subdivisions-within-neighborhood ledger (each linking to /subdivisions/{slug}), once for the Explore-other-cities list.",
+      "blocking": true
+    },
+    {
+      "name": "KbActivity",
+      "section": "activity — live new / price-cut / pending / sold rows for the parent city.",
+      "blocking": true
+    },
+    {
+      "name": "KbArticles",
+      "section": "guides — recent blog posts scoped to the parent city (getRecentBlogPosts).",
+      "blocking": true
+    },
+    {
+      "name": "KbTestimonials",
+      "section": "testimonials — verified Google reviews.",
+      "blocking": true
+    },
+    {
+      "name": "KbTeam",
+      "section": "team — the brokers.",
+      "blocking": true
+    },
+    {
+      "name": "KbSell",
+      "section": "sell CTA — What is your {Neighborhood} home worth?",
+      "blocking": true
+    },
+    {
+      "name": "FAQBlock",
+      "section": "faq — verified market Q&A + FAQPage JSON-LD.",
+      "blocking": true
+    },
+    {
+      "name": "KbFooter",
+      "section": "footer — dual-audience close + sitemap (towns=[]).",
       "blocking": true
     }
+  ],
+  "layoutComponents": [
+    {
+      "name": "SiteHeader",
+      "section": "hidden on ^/cities/[slug]/[neighborhoodSlug] via HideChrome — KbNav renders instead.",
+      "note": "Gate checks the route file."
+    },
+    {
+      "name": "SiteFooter",
+      "section": "hidden on ^/cities/[slug]/[neighborhoodSlug] via HideChrome — KbFooter renders instead.",
+      "note": "Gate checks the route file."
+    }
+  ],
+  "removedComponents": [
+    "PageBreadcrumb (replaced by KbBreadcrumb)",
+    "HeroBlock (replaced by KbHero)",
+    "CTABar (replaced by KbSell + KbFooter)",
+    "NeighborhoodMap / SiteNeighborhoodMap (replaced by KbListingMap)",
+    "ListingCard grid (replaced by KbFeatured)",
+    "VideoTourRail (not present — video tours surface through KbFeatured .video)",
+    "MotivatedListings (replaced by KbActivity)",
+    "CommunityRichContent (folded into KbAbout)",
+    "Stat band (replaced by KbMarketHud)",
+    "BreadcrumbNav (replaced by KbBreadcrumb)"
   ]
 }

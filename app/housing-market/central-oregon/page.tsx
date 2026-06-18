@@ -1,33 +1,39 @@
 /**
- * Central Oregon region market page.
+ * Central Oregon region market report — KB (kinetic-brutalist) design.
  *
- * Data ONLY through @/lib/data. No @/app/actions/* imports (G8).
- * Composes Wave 2 Layer 3 blocks per parity.json contract.
+ * Converted from Wave 2 site blocks to the KB section library (Phase 9,
+ * docs/KB_CONVERGENCE_ROADMAP.md). Reuses components/site/kb/* AS-IS; no fork.
  *
- * Mockup reference: design_system/ryan-realty/ui_kits/market-report/index.html
- *   (dedicated region mockup is a follow-up deliverable)
- * Parity contract:  design_system/ryan-realty/ui_kits/market-report-region/parity.json
+ * THE PAGE CONTRACT: KB design + SEO (pageMetadata + MetadataBlock JSON-LD:
+ * BreadcrumbList/WebPage/Dataset/FAQPage) + KbSectionTracker pageType="market-report".
+ * Every figure live and traced to a @/lib/data source (§0).
  *
  * Section order:
- *   1. MetadataBlock — breadcrumb + webPage + dataset + faqPage JSON-LD (G34)
- *   2. BreadcrumbNav — Home > Housing market > Central Oregon
- *   3. HeroBlock — DisplayHeading H1 + data-driven region lede
- *   4. MarketSnapshot — region-level 4-stat band (no citySlug = region aggregate)
- *   5. CityComparisonTable — per-city pulse comparison from ONE snapshot call
- *   6. FAQBlock — region market FAQ (includeJsonLd=true)
- *   7. ContentSection — market narrative + methodology trace
- *   8. LeadCaptureBlock — broker inquiry (variant='inquiry')
- *   9. RelatedAreas — per-city links with active counts
- *  10. CTABar — navy broker contact band
+ *   1. MetadataBlock    — BreadcrumbList + WebPage + Dataset JSON-LD (AI-citability G34)
+ *   2. KbNav            — KB chrome
+ *   3. KbSectionTracker — page-level analytics (pageType="market-report")
+ *   4. KbBreadcrumb     — Home > Housing market > Central Oregon
+ *   5. SmoothScrollProvider wrapper
+ *   6. KbHero           — region eyebrow + glance lede
+ *   7. KbMarketHud      — region KbMarketData (§0-traced figures + yearSeries)
+ *   8. KbExploreTowns   — per-city tiles with live active counts
+ *   9. KbArticles       — related reports/guides from blog_posts
+ *  10. FAQBlock         — region FAQ (includeJsonLd=true → FAQPage JSON-LD)
+ *  11. KbSell           — seller conversion
+ *  12. KbFooter         — full sitemap close
  *
  * Data accuracy (CLAUDE.md §0):
- *   - Region pulse via getMarketPulse({geoType:'region', geoSlug:'central-oregon'})
- *     from market_pulse_live, property_type='A'. Freshness 10-15 min.
- *   - City comparison via ONE getMarketPulseCitySnapshots call. Replaces the
- *     legacy ~12-call per-city pulse fan-out in the prior version of this file.
- *   - Dataset.dateModified = regionPulse.refreshedAt (real DB timestamp, never now()).
- *   - buildMarketFaq is the single source feeding FAQ, FAQPage JSON-LD,
- *     and Dataset variableMeasured, so the three surfaces can never diverge.
+ *   regionPulse   — market_pulse_live, geo_type='region', geo_slug='central-oregon',
+ *                   property_type='A'. Freshness 10-15 min. Source: getMarketPulse.
+ *   priceHistory  — market_stats_cache region rows. Source: getPriceHistory.
+ *   citySnapshots — market_pulse_live, geo_type='city', cityLabels in CITY_LABELS.
+ *                   ONE call. Source: getMarketPulseCitySnapshots.
+ *   blogPosts     — blog_posts, published, newest first. Source: getRecentBlogPosts.
+ *   Dataset.dateModified = regionPulse.refreshedAt (real DB timestamp, never now()).
+ *   buildMarketFaq is the single source feeding FAQ, FAQPage JSON-LD, and
+ *   Dataset variableMeasured, so the three surfaces cannot diverge.
+ *
+ * Parity contract: design_system/ryan-realty/ui_kits/market-report-region/parity.json
  */
 
 import type { Metadata } from 'next'
@@ -35,34 +41,34 @@ import {
   getMarketPulse,
   getMarketPulseCitySnapshots,
   getPriceHistory,
+  getRecentBlogPosts,
 } from '@/lib/data'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { buildYearSeries } from '@/lib/kb/year-series'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import type { CityComparisonRow } from '@/components/site/CityComparisonTable'
-import type { RelatedAreaItem } from '@/components/site/RelatedAreas'
-
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-import { HeroBlock } from '@/components/site/HeroBlock'
-import MarketSnapshot from '@/components/site/MarketSnapshot'
-import { PriceChart } from '@/components/site/PriceChart'
-import { CityComparisonTable } from '@/components/site/CityComparisonTable'
-import { FAQBlock } from '@/components/site/FAQBlock'
-import { ContentSection } from '@/components/site/ContentSection'
-import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
-import { RelatedAreas } from '@/components/site/RelatedAreas'
-import { CTABar } from '@/components/site/CTABar'
+import type { KbMarketData, KbTownItem } from '@/components/site/kb/types'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbHero } from '@/components/site/kb/KbHero.client'
+import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
+import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
+import { KbArticles } from '@/components/site/kb/KbArticles'
+import { KbSell } from '@/components/site/kb/KbSell.client'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { submitMarketPageInquiry } from '@/app/housing-market/actions'
-import { CONTACT } from '@/lib/brand/contact'
+import { FAQBlock } from '@/components/site/FAQBlock'
+import '@/components/site/kb/kb.css'
 
 export const revalidate = 300
 
 // ---------------------------------------------------------------------------
-// Central Oregon cities for the comparison table and related areas.
+// City label → slug map (drives KbExploreTowns items + Dataset spatialCoverage)
 // ---------------------------------------------------------------------------
 
-const COMPARISON_CITY_LABELS = [
+const CITY_LABELS = [
   'Bend',
   'Redmond',
   'Sisters',
@@ -73,7 +79,7 @@ const COMPARISON_CITY_LABELS = [
   'Terrebonne',
 ]
 
-const COMPARISON_CITY_SLUGS: Record<string, string> = {
+const CITY_SLUG: Record<string, string> = {
   'Bend': 'bend',
   'Redmond': 'redmond',
   'Sisters': 'sisters',
@@ -107,70 +113,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 // ---------------------------------------------------------------------------
-// Market narrative — data-driven from verified region pulse figures.
-// ---------------------------------------------------------------------------
-
-function buildRegionNarrative(
-  pulse: { activeCount: number; medianListPrice: number | null; monthsOfSupply: number | null; medianDaysToPending: number | null } | null,
-  refreshedAt: string | null,
-): { what: string; method: string } {
-  if (!pulse) {
-    return {
-      what: 'Live market data for Central Oregon is being compiled. Check back shortly.',
-      method: '',
-    }
-  }
-
-  const mos = pulse.monthsOfSupply
-  const active = pulse.activeCount
-  const median = pulse.medianListPrice
-  const dom = pulse.medianDaysToPending
-
-  let verdict = 'a balanced market'
-  if (mos != null) {
-    if (mos <= 4) verdict = "a seller's market"
-    else if (mos >= 6) verdict = "a buyer's market"
-  }
-
-  const parts: string[] = []
-
-  if (active > 0) {
-    parts.push(`Central Oregon currently has ${active.toLocaleString()} active single-family homes for sale across all cities.`)
-  }
-
-  if (mos != null) {
-    const rounded = Math.round(mos * 10) / 10
-    parts.push(
-      `At ${rounded} months of supply, the region sits in ${verdict}. ` +
-        `A balanced market runs between 4 and 6 months. ` +
-        `Below 4 months benefits sellers; above 6 months benefits buyers.`,
-    )
-  }
-
-  if (median != null) {
-    const r = Math.round(median / 1000) * 1000
-    parts.push(`The region median list price stands at $${r.toLocaleString()}.`)
-  }
-
-  if (dom != null && dom > 0) {
-    parts.push(`Homes are going pending in a median of ${dom} days across the region.`)
-  }
-
-  const what = parts.join(' ')
-
-  const method = refreshedAt
-    ? `Data source: market_pulse_live, single-family homes (property_type = A), ` +
-      `geo_type = region, geo_slug = central-oregon, refreshed ${new Date(refreshedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })}. ` +
-      `City comparison from market_pulse_live geo_type = city rows for the same property_type. ` +
-      `Months of supply = active listings divided by (closed last 30 days times 2). ` +
-      `Under 4 months is a seller's market, 4 to 6 is balanced, over 6 is a buyer's market. ` +
-      `Source: Oregon Data Share via Ryan Realty.`
-    : ''
-
-  return { what, method }
-}
-
-// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
@@ -180,20 +122,21 @@ export default async function CentralOregonRegionPage() {
   //
   // §0 trace:
   //   regionPulse   — market_pulse_live, geo_type='region', geo_slug='central-oregon',
-  //                   property_type='A'. Freshness 10-15 min. Source: getMarketPulse.
-  //   citySnapshots — market_pulse_live, geo_type='city', geo_label IN
-  //                   COMPARISON_CITY_LABELS, property_type='A'.
-  //                   ONE call replaces the legacy ~12-call per-city fan-out.
-  //                   Source: getMarketPulseCitySnapshots.
+  //                   property_type='A'. Freshness 10-15 min.
+  //   priceHistory  — market_stats_cache, geo_type='region', geo_slug='central-oregon',
+  //                   interval='monthly', 60 months.
+  //   citySnapshots — market_pulse_live, geo_type='city', geo_label IN CITY_LABELS,
+  //                   property_type='A'. ONE call replaces legacy ~12-call fan-out.
+  //   blogPosts     — blog_posts, status='published', newest first. Up to 3.
   // -------------------------------------------------------------------------
-  const [regionPulse, citySnapshots, priceHistory] = await Promise.all([
+  const [regionPulse, priceHistory, citySnapshots, blogPosts] = await Promise.all([
     getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => null),
-    getMarketPulseCitySnapshots(COMPARISON_CITY_LABELS).catch(() => []),
-    getPriceHistory('region', 'central-oregon', 'monthly', 24).catch(() => []),
+    getPriceHistory('region', 'central-oregon', 'monthly', 60).catch(() => []),
+    getMarketPulseCitySnapshots(CITY_LABELS).catch(() => []),
+    getRecentBlogPosts({ limit: 3 }).catch(() => []),
   ])
 
-  // Drop the in-progress current month so the chart edge is not a misleading
-  // partial-month spike (same pattern as the city/flagship page).
+  // Drop the in-progress current month — partial-month spike is misleading.
   const currentMonthKey = new Date()
     .toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' })
     .slice(0, 7)
@@ -208,17 +151,61 @@ export default async function CentralOregonRegionPage() {
   const refreshedAt = regionPulse?.refreshedAt ?? null
 
   // -------------------------------------------------------------------------
-  // buildMarketFaq is the SINGLE source for FAQ, FAQPage JSON-LD, and
+  // buildMarketFaq — SINGLE source for FAQ, FAQPage JSON-LD, and
   // Dataset variableMeasured. All three surfaces draw from one verified pulse.
   // -------------------------------------------------------------------------
-  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq('Central Oregon', regionPulse)
+  // Pulse-timeout fallback (G52 page-contract): the Dataset + FAQPage JSON-LD must
+  // survive a slow or missing region market row, so feed buildMarketFaq a
+  // pulse-or-fallback input rather than a bare nullable pulse. Null fields degrade
+  // gracefully inside buildMarketFaq (a stat with no value is omitted, never
+  // fabricated — §0); the structured-data block itself never vanishes.
+  const pulse = regionPulse
+  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(
+    'Central Oregon',
+    pulse ?? { activeCount: null, medianListPrice: null, refreshedAt: null },
+  )
 
   // -------------------------------------------------------------------------
-  // Hero lede — data-driven from the region pulse.
+  // KbMarketData — §0 traced. Every field maps to a single DAL source.
+  //   active / closed30 / medianList / daysToPending / monthsSupply
+  //     → regionPulse (market_pulse_live, geo_type='region')
+  //   trend         → completePriceMonths last 13 (market_stats_cache)
+  //   byTown        → citySnapshots (market_pulse_live city rows)
+  //   countyMedian  → regionPulse.medianListPrice (same region row)
+  //   yearSeries    → buildYearSeries(completePriceMonths, 5)
+  // -------------------------------------------------------------------------
+  const monthLabel = (iso?: string) =>
+    iso
+      ? new Date(iso).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })
+      : ''
+
+  const marketData: KbMarketData = {
+    active: regionPulse?.activeCount ?? null,
+    closed30: regionPulse?.closedLast30Days ?? null,
+    new30: null,
+    medianList: regionPulse?.medianListPrice ?? null,
+    saleToList: null,
+    daysToPending: regionPulse?.medianDaysToPending ?? null,
+    monthsSupply: regionPulse?.monthsOfSupply ?? null,
+    trend: completePriceMonths
+      .slice(-13)
+      .filter((p) => p.medianSalePrice != null)
+      .map((p) => ({ label: monthLabel(p.periodStart), value: p.medianSalePrice as number })),
+    byTown: citySnapshots
+      .filter((s) => s.median_list_price != null)
+      .map((s) => ({ name: s.geo_label, median: s.median_list_price as number })),
+    countyMedian: regionPulse?.medianListPrice ?? null,
+    yearSeries: buildYearSeries(completePriceMonths, 5),
+  }
+
+  // -------------------------------------------------------------------------
+  // KbHero lede — data-driven from the region pulse.
   // -------------------------------------------------------------------------
   const ledeParts: string[] = []
   if (regionPulse && regionPulse.activeCount > 0) {
-    ledeParts.push(`${regionPulse.activeCount.toLocaleString()} active single-family homes across Central Oregon.`)
+    ledeParts.push(
+      `${regionPulse.activeCount.toLocaleString()} active single-family homes across Central Oregon.`,
+    )
   }
   if (regionPulse?.medianListPrice != null) {
     const r = Math.round(regionPulse.medianListPrice / 1000) * 1000
@@ -231,11 +218,46 @@ export default async function CentralOregonRegionPage() {
     else if (mos >= 6) verdict = "buyer's market"
     ledeParts.push(`${mos} months of supply: ${verdict}.`)
   }
-  const lede = ledeParts.join(' ')
+  const lede =
+    ledeParts.join(' ') ||
+    'Single-family market data across Central Oregon, updated every 15 minutes from Oregon Data Share.'
 
   // -------------------------------------------------------------------------
-  // JSON-LD schemas — breadcrumb + webPage + dataset.
-  // FAQPage is emitted by FAQBlock (includeJsonLd=true) below.
+  // City tiles — KbExploreTowns from the same citySnapshots (§0).
+  // Each slug links to /housing-market/<city-slug> (market report), not /cities.
+  // -------------------------------------------------------------------------
+  const cityTowns: KbTownItem[] = citySnapshots
+    .filter((s) => CITY_SLUG[s.geo_label] !== undefined)
+    .map((s) => ({
+      name: s.geo_label,
+      href: `/housing-market/${CITY_SLUG[s.geo_label] ?? s.geo_slug.replace(/\s+/g, '-')}`,
+      activeCount: s.active_count,
+      medianPrice: s.median_list_price,
+      img: '',
+    }))
+
+  // -------------------------------------------------------------------------
+  // Blog / guide articles (KbArticles). Falls back to empty (renders null).
+  // -------------------------------------------------------------------------
+  const articlePosts = blogPosts.map((p) => ({
+    title: p.title,
+    href: `/blog/${p.slug}`,
+    excerpt: p.excerpt,
+    imageUrl: p.heroImageUrl,
+    dateLabel: p.publishedAt
+      ? new Date(p.publishedAt).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          timeZone: 'UTC',
+        })
+      : null,
+  }))
+
+  // -------------------------------------------------------------------------
+  // JSON-LD schemas — BreadcrumbList + WebPage + Dataset.
+  // FAQPage is emitted by FAQBlock (includeJsonLd=true) below (G34).
+  // §0: dateModified is the real refreshedAt from market_pulse_live, never now().
   // -------------------------------------------------------------------------
   const schemas: SchemaInput[] = [
     {
@@ -255,8 +277,6 @@ export default async function CentralOregonRegionPage() {
     },
   ]
 
-  // Dataset schema — emit only when we have at least one verified variable.
-  // §0: dateModified is the real refreshedAt from market_pulse_live, never now().
   if (datasetVariables.length > 0 && refreshedAt) {
     schemas.push({
       type: 'dataset',
@@ -272,154 +292,92 @@ export default async function CentralOregonRegionPage() {
     })
   }
 
-  // -------------------------------------------------------------------------
-  // City comparison table data — from ONE getMarketPulseCitySnapshots call.
-  // §0: every value is exactly what came from market_pulse_live; the component
-  // owns display-level formatting, not this layer.
-  // -------------------------------------------------------------------------
-  const comparisonCities: CityComparisonRow[] = citySnapshots
-    .filter((s) => COMPARISON_CITY_SLUGS[s.geo_label] !== undefined)
-    .map((s) => ({
-      slug: COMPARISON_CITY_SLUGS[s.geo_label] ?? s.geo_slug,
-      label: s.geo_label,
-      activeCount: s.active_count,
-      medianListPrice: s.median_list_price,
-      monthsOfSupply: s.months_of_supply,
-      medianDaysToPending: s.median_active_dom,
-    }))
-
-  // -------------------------------------------------------------------------
-  // Related areas — same city snapshots, framed as navigation tiles.
-  // -------------------------------------------------------------------------
-  const relatedItems: RelatedAreaItem[] = citySnapshots
-    .filter((s) => COMPARISON_CITY_SLUGS[s.geo_label] !== undefined)
-    .slice(0, 8)
-    .map((s) => ({
-      name: s.geo_label,
-      href: `/housing-market/${COMPARISON_CITY_SLUGS[s.geo_label] ?? s.geo_slug}`,
-      activeCount: s.active_count > 0 ? s.active_count : null,
-    }))
-
-  // -------------------------------------------------------------------------
-  // Narrative — data-driven prose from the verified region pulse.
-  // -------------------------------------------------------------------------
-  const { what: narrativeWhat, method: narrativeMethod } = buildRegionNarrative(
-    regionPulse,
-    refreshedAt,
-  )
-
   return (
-    <main className="min-h-screen bg-background">
-
-      {/* AI-citability structured data: breadcrumb + webPage + Dataset.
-          BreadcrumbNav below has includeJsonLd=false to avoid a duplicate
-          BreadcrumbList. FAQPage is emitted by FAQBlock further down. */}
+    <main className="kb-root">
+      {/* AI-citability structured data: BreadcrumbList + WebPage + Dataset.
+          KbBreadcrumb has no JSON-LD of its own. FAQPage emitted by FAQBlock. */}
       <MetadataBlock schemas={schemas} />
 
-      {/* Breadcrumb */}
-      <PageBreadcrumb trail={[{ label: 'Housing market', href: '/housing-market' },
-            { label: 'Central Oregon' }]} includeJsonLd={false} />
+      <KbNav />
+      <KbSectionTracker pageType="market-report" />
 
-      {/* Hero — DisplayHeading H1 in Amboqia via HeroBlock.
-          lede is data-driven from regionPulse (market_pulse_live). */}
-      <HeroBlock
-        headline="Central Oregon market report"
-        lede={lede || 'Single-family market data across Central Oregon, updated every 15 minutes from Oregon Data Share.'}
-        minHeight={480}
+      {/* BreadcrumbList visual — Home > Housing market > Central Oregon */}
+      <KbBreadcrumb
+        trail={[
+          { label: 'Home', href: '/' },
+          { label: 'Housing market', href: '/housing-market' },
+          { label: 'Central Oregon' },
+        ]}
       />
 
-      {/* Region market snapshot — no citySlug = region aggregate.
-          Reads market_pulse_live geo_type='region', geo_slug='central-oregon'. */}
-      <MarketSnapshot />
-
-      {/* Region price trend — monthly median sale price from market_stats_cache
-          (region rows confirmed). Completed months only; partial month dropped. */}
-      {completePriceMonths.length >= 6 ? (
-        <PriceChart
-          eyebrow="12-month trend"
-          title="Central Oregon median sale price"
-          intro="Monthly median sale price for single-family homes across Central Oregon, completed months only. Source: Oregon Data Share via Ryan Realty."
-          data={completePriceMonths}
-          tone="default"
+      <SmoothScrollProvider>
+        {/* Hero — region eyebrow + data-driven glance lede */}
+        <KbHero
+          data={{
+            activeCount: regionPulse?.activeCount ?? null,
+            medianListPrice: regionPulse?.medianListPrice ?? null,
+            medianDaysToPending: regionPulse?.medianDaysToPending ?? null,
+          }}
+          eyebrow="Central Oregon · Oregon"
+          titleTop="Central Oregon"
+          titleBottom="market report"
+          lead={lede}
         />
-      ) : null}
 
-      {/* City comparison — ONE getMarketPulseCitySnapshots call replaces
-          the legacy per-city pulse fan-out. §0: every figure is the exact
-          value returned from market_pulse_live for that city row. */}
-      {comparisonCities.length > 0 ? (
-        <CityComparisonTable
-          cities={comparisonCities}
-          eyebrow="City by city"
-          title="Central Oregon market comparison"
-          tone="muted"
+        {/* Market HUD — region KbMarketData. §0: all figures from market_pulse_live
+            (region row) and market_stats_cache (price history). yearSeries built
+            from completePriceMonths via buildYearSeries, same pattern as city page. */}
+        <KbMarketHud data={marketData} eyebrow="Central Oregon · The market" />
+
+        {/* City tiles — per-city active counts from ONE getMarketPulseCitySnapshots
+            call. §0: every count is the exact active_count from market_pulse_live. */}
+        {cityTowns.length > 0 ? (
+          <KbExploreTowns
+            towns={cityTowns}
+            eyebrow="Central Oregon"
+            title="Cities and towns"
+            sectionId="cities"
+            cta={{ href: '/cities', label: 'Every Central Oregon city' }}
+          />
+        ) : null}
+
+        {/* Guide articles — recent published blog posts, region-aware. */}
+        {articlePosts.length > 0 ? (
+          <KbArticles
+            posts={articlePosts}
+            eyebrow="Guides and insights"
+            heading="Central Oregon real estate, explained"
+            subtitle="Local housing news, neighborhood deep dives, and buyer and seller guides for Central Oregon."
+          />
+        ) : null}
+
+        {/* FAQ — region Q&A from buildMarketFaq (single source with Dataset vars).
+            includeJsonLd=true auto-emits FAQPage JSON-LD (G34). */}
+        {faqs.length > 0 ? (
+          <section id="faq" aria-label="Central Oregon real estate questions">
+            <FAQBlock
+              items={faqs}
+              eyebrow="Common questions"
+              title="Central Oregon real estate questions"
+              intro="Direct answers based on live MLS data."
+              includeJsonLd={true}
+              tone="muted"
+            />
+          </section>
+        ) : null}
+
+        {/* Sell CTA — feeds off region pulse figures */}
+        <KbSell
+          data={{
+            medianListPrice: regionPulse?.medianListPrice ?? null,
+            medianDaysToPending: regionPulse?.medianDaysToPending ?? null,
+            soldCount30d: regionPulse?.closedLast30Days ?? null,
+          }}
+          eyebrow="Sell in Central Oregon"
         />
-      ) : null}
 
-      {/* FAQ — region market Q&A from buildMarketFaq (same verified source as Dataset).
-          includeJsonLd=true auto-emits FAQPage JSON-LD (G34). */}
-      {faqs.length > 0 ? (
-        <FAQBlock
-          items={faqs}
-          eyebrow="Common questions"
-          title="Central Oregon real estate questions"
-          intro="Direct answers based on live MLS data."
-          includeJsonLd={true}
-          tone="muted"
-        />
-      ) : null}
-
-      {/* Market narrative + methodology trace (CLAUDE.md §0 AI-citability). */}
-      <ContentSection
-        eyebrow="What the numbers say"
-        title="Central Oregon market summary"
-        tone="default"
-        divider
-      >
-        <div className="flex flex-col gap-4 text-muted-foreground text-base leading-relaxed">
-          <p>{narrativeWhat}</p>
-          {narrativeMethod ? (
-            <p className="text-xs text-muted-foreground border-t border-border pt-4 mt-2">
-              <strong className="text-foreground">Methodology:</strong>{' '}
-              {narrativeMethod}
-            </p>
-          ) : null}
-        </div>
-      </ContentSection>
-
-      {/* Lead capture — framed as an inquiry, not a report-subscription promise.
-          Submitted via the existing server action (no new stub). */}
-      <LeadCaptureBlock
-        variant="inquiry"
-        onSubmit={submitMarketPageInquiry}
-        eyebrow="Talk to a broker"
-        title="Questions about the Central Oregon market?"
-        intro="Tell us what you are weighing. A local broker will follow up with specifics for your situation. No pressure."
-        submitLabel="Ask a broker"
-        tone="muted"
-      />
-
-      {/* Related areas — city navigation with live active counts. */}
-      {relatedItems.length > 0 ? (
-        <RelatedAreas
-          eyebrow="Central Oregon cities"
-          title="Explore city markets"
-          items={relatedItems}
-          tone="default"
-          cols={4}
-        />
-      ) : null}
-
-      {/* CTA bar — navy broker contact band. */}
-      <CTABar
-        eyebrow="Questions about Central Oregon?"
-        title="Local brokers. Specific numbers. No pressure."
-        body="We close deals across Central Oregon. We can tell you what the data means for your situation."
-        primary={{ href: '/contact', label: 'Schedule a call' }}
-        secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: CONTACT.phoneDirect }}
-        tone="navy"
-      />
-
+        <KbFooter towns={cityTowns} />
+      </SmoothScrollProvider>
     </main>
   )
 }

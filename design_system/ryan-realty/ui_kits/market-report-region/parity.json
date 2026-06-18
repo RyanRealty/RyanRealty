@@ -1,81 +1,108 @@
 {
   "route": "app/housing-market/central-oregon/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/market-report/index.html",
-  "competitiveTarget": "Beat Zillow / Redfin / Windermere regional overview pages. Region stat band, per-city comparison table from a single snapshot call, market FAQ plus FAQPage JSON-LD, Dataset JSON-LD for AI citability, and a broker lead-capture form no aggregator carries.",
-  "note": "Region report page at /housing-market/central-oregon. A dedicated mockup is a follow-up deliverable; the page currently shares market-report/index.html. The CityComparisonTable replaces the legacy ~12-call per-city pulse fan-out with ONE getMarketPulseCitySnapshots call. MarketSnapshot with no citySlug serves the region aggregate via getRegionPulse.",
+  "competitiveTarget": "Beat Zillow / Redfin / Windermere regional market entry pages. KB kinetic-brutalist chrome, live region stat band + yearSeries overlay chart, per-city active-count tiles, market FAQ plus FAQPage JSON-LD, Dataset JSON-LD for AI citability. KbMarketHud data-credibility block that no aggregator site carries.",
+  "note": "Region report page at /housing-market/central-oregon. KB conversion — Phase 9, docs/KB_CONVERGENCE_ROADMAP.md. KbMarketData built from regionPulse (market_pulse_live geo_type='region') + completePriceMonths (market_stats_cache) via buildYearSeries. Per-city tiles from ONE getMarketPulseCitySnapshots call. FAQBlock emits FAQPage JSON-LD (includeJsonLd=true). Dataset + WebPage JSON-LD via MetadataBlock.",
   "requiredComponents": [
     {
-      "name": "PageBreadcrumb",
-      "section": "Home > Housing market > Central Oregon, includeJsonLd=false (schemas array on MetadataBlock handles the single BreadcrumbList)",
+      "name": "MetadataBlock",
+      "section": "BreadcrumbList + WebPage + Dataset JSON-LD (G34 AI-citability). dateModified equals regionPulse.refreshedAt from market_pulse_live, never hardcoded. variableMeasured from buildMarketFaq datasetVariables.",
       "blocking": true
     },
     {
-      "name": "HeroBlock",
-      "section": "Full-bleed hero with display H1 'Central Oregon market report' in Amboqia via DisplayHeading, and data-driven lede from getMarketPulse region row.",
+      "name": "KbNav",
+      "section": "KB chrome navigation — top of page.",
       "blocking": true
     },
     {
-      "name": "MarketSnapshot",
-      "section": "Region-level 4-stat band (no citySlug prop = central-oregon region aggregate). Active count, median list price, median DOM, months of supply + market verdict. Data from market_pulse_live geo_type='region'.",
+      "name": "KbSectionTracker",
+      "section": "Page-level analytics tracker. pageType='market-report'.",
       "blocking": true
     },
     {
-      "name": "PriceChart",
-      "section": "12-month region median sale price trend, getPriceHistory('region','central-oregon','monthly',24) from market_stats_cache (89 monthly rows confirmed). Renders only when the series has >= 6 complete months.",
+      "name": "KbBreadcrumb",
+      "section": "Visual breadcrumb: Home > Housing market > Central Oregon. No JSON-LD (MetadataBlock owns the BreadcrumbList).",
       "blocking": true
     },
     {
-      "name": "CityComparisonTable",
-      "section": "Per-city comparison table from ONE getMarketPulseCitySnapshots call. Replaces the legacy ~12-call per-city fan-out. Columns: city, active, median list, months of supply, median DOM. Each city row links to /housing-market/<city-slug>.",
+      "name": "SmoothScrollProvider",
+      "section": "Lenis smooth scroll wrapper around all KB sections.",
+      "blocking": true
+    },
+    {
+      "name": "KbHero",
+      "section": "Region hero — eyebrow 'Central Oregon · Oregon', titleTop 'Central Oregon', titleBottom 'market report', data-driven lede from regionPulse (active count, median list price, months of supply verdict).",
+      "blocking": true
+    },
+    {
+      "name": "KbMarketHud",
+      "section": "Region KbMarketData. §0-traced: active/closed30/medianList/daysToPending/monthsSupply from regionPulse; trend from completePriceMonths last 13; byTown from citySnapshots; yearSeries from buildYearSeries(completePriceMonths, 5). eyebrow 'Central Oregon · The market'.",
+      "blocking": true
+    },
+    {
+      "name": "KbExploreTowns",
+      "section": "Per-city active-count tiles from ONE getMarketPulseCitySnapshots call. Each item links to /housing-market/<city-slug>. eyebrow 'Central Oregon', title 'Cities and towns', sectionId='cities'.",
       "blocking": true
     },
     {
       "name": "FAQBlock",
-      "section": "Region market FAQ from buildMarketFaq, 4 to 5 Q&A pairs. includeJsonLd=true auto-emits FAQPage JSON-LD (G34).",
+      "section": "Region market FAQ from buildMarketFaq, 4 to 5 Q&A pairs. includeJsonLd=true auto-emits FAQPage JSON-LD (G34). tone='muted'.",
       "blocking": true
     },
     {
-      "name": "ContentSection",
-      "section": "Market narrative dynamically generated from region MoS verdict and live stats. Methodology trace citing market_pulse_live, geo_type=region, property_type=A, refreshed_at.",
+      "name": "KbSell",
+      "section": "Seller conversion block fed by regionPulse: medianListPrice, medianDaysToPending, closedLast30Days. eyebrow 'Sell in Central Oregon'.",
       "blocking": true
     },
     {
-      "name": "MetadataBlock",
-      "section": "Dataset JSON-LD (G34 AI-citability), breadcrumb, and webPage schemas. dateModified equals pulse.refreshedAt from market_pulse_live, never hardcoded. variableMeasured from buildMarketFaq datasetVariables.",
+      "name": "KbFooter",
+      "section": "Full sitemap close. towns prop = cityTowns array (same KbTownItem[] as KbExploreTowns).",
       "blocking": true
-    },
+    }
+  ],
+  "optionalComponents": [
     {
-      "name": "LeadCaptureBlock",
-      "section": "Broker inquiry form, variant='inquiry', tone='muted'. onSubmit=submitMarketPageInquiry. Framed as an inquiry, not a report-subscription promise.",
-      "blocking": true
-    },
-    {
-      "name": "RelatedAreas",
-      "section": "City navigation tiles with live active counts from the same citySnapshots. eyebrow 'Central Oregon cities', cols=4.",
-      "blocking": true
-    },
-    {
-      "name": "CTABar",
-      "section": "Broker contact band, tone='navy'. primary '/contact' Schedule a call, secondary 'tel:5412136706' 541.213.6706.",
-      "blocking": true
+      "name": "KbArticles",
+      "section": "Recent blog posts from getRecentBlogPosts({ limit: 3 }). Renders null when empty — not a ship-blocker.",
+      "blocking": false
     }
   ],
   "layoutComponents": [
     {
       "name": "SiteHeader",
-      "section": "renders from app/layout.tsx",
-      "note": "Not in requiredComponents because the gate checks the route file."
+      "section": "Hidden for kb-root pages via HideChrome in app/layout.tsx",
+      "note": "KbNav provides KB chrome instead."
     },
     {
       "name": "SiteFooter",
-      "section": "renders from app/layout.tsx",
-      "note": "Not in requiredComponents because the gate checks the route file."
+      "section": "Hidden for kb-root pages via HideChrome in app/layout.tsx",
+      "note": "KbFooter provides KB footer instead."
     }
   ],
   "deferredComponents": [
     {
-      "name": "PriceBandTable",
-      "reason": "No DAL price-band aggregation exists yet for the region level. Consistent with the city-page deferral in market-report-detail/parity.json."
+      "name": "KbFeatured",
+      "reason": "Region scope has no single featured-listing feed; deferred until a curated featured-region DAL function exists."
+    },
+    {
+      "name": "KbListingMap",
+      "reason": "Region-level map with per-city aggregation deferred; city pages own the map tile."
+    },
+    {
+      "name": "KbTicker",
+      "reason": "Ticker requires listing tiles with addresses; the region page has no per-listing feed."
+    },
+    {
+      "name": "KbTestimonials",
+      "reason": "Deferred from region page for now; lives on city/community pages."
+    },
+    {
+      "name": "KbTeam",
+      "reason": "Deferred from region page for now; lives on city/community pages."
+    },
+    {
+      "name": "KbAbout",
+      "reason": "No region 'about' paragraphs DAL function yet; city pages own the about section."
     }
   ],
   "jsonLd": {
@@ -86,21 +113,31 @@
         "gate": "G34"
       },
       {
+        "type": "WebPage",
+        "emittedBy": "MetadataBlock schemas array (webPage entry)",
+        "gate": "G34"
+      },
+      {
         "type": "Dataset",
         "emittedBy": "MetadataBlock schemas array (dataset entry)",
         "gate": "G34",
-        "note": "Primary AI-citability signal. dateModified must equal regionPulse.refreshedAt from market_pulse_live geo_type='region'. Each variableMeasured value must equal the on-screen number (CLAUDE.md §0)."
+        "note": "Primary AI-citability signal. dateModified must equal regionPulse.refreshedAt from market_pulse_live geo_type='region'. Each variableMeasured value must equal the on-screen number (CLAUDE.md §0). Emitted only when datasetVariables.length > 0 AND refreshedAt is present."
       },
       {
         "type": "FAQPage",
         "emittedBy": "FAQBlock includeJsonLd=true",
-        "gate": "G34"
+        "gate": "G34",
+        "note": "buildMarketFaq is the single source for FAQ items, FAQPage JSON-LD, and Dataset variableMeasured — the three surfaces cannot diverge."
       }
     ]
   },
   "dataLayer": {
-    "getMarketPulse": "lib/data/market/getMarketPulse.ts, market_pulse_live geo_type='region' geo_slug='central-oregon' property_type='A', 10 to 15 min freshness. Used for hero lede, narrative, and Dataset dateModified.",
-    "getMarketPulseCitySnapshots": "lib/data/market/getMarketPulseSnapshot.ts, market_pulse_live city rows for COMPARISON_CITY_LABELS, property_type='A'. ONE call replaces legacy ~12-call per-city fan-out. Used by CityComparisonTable and RelatedAreas.",
-    "note": "All DAL functions imported from @/lib/data (G8 compliant). No @/app/actions/* imports. MarketSnapshot internally calls getRegionPulse (no citySlug prop) — the component owns that data fetch."
+    "getMarketPulse": "lib/data/market/getMarketPulse.ts, market_pulse_live geo_type='region' geo_slug='central-oregon' property_type='A', 10 to 15 min freshness. Used for KbHero lede, KbMarketHud stats, KbSell data, and Dataset dateModified.",
+    "getPriceHistory": "lib/data/market/getPriceHistory.ts, market_stats_cache region rows, interval='monthly', 60 months. completePriceMonths drops the in-progress current month. Used for KbMarketHud trend + yearSeries.",
+    "getMarketPulseCitySnapshots": "lib/data/market/getMarketPulseSnapshot.ts, market_pulse_live city rows for CITY_LABELS, property_type='A'. ONE call replaces legacy ~12-call fan-out. Used by KbExploreTowns active counts and KbMarketHud byTown.",
+    "getRecentBlogPosts": "lib/data/blog/getRecentBlogPosts.ts, blog_posts published newest first, limit=3. Used by KbArticles (optional).",
+    "buildYearSeries": "lib/kb/year-series.ts. Groups completePriceMonths into up to 5 calendar-year lines for the KbMarketHud year-over-year overlay chart.",
+    "buildMarketFaq": "lib/site/market-faq.ts. Single source for FAQBlock items, FAQPage JSON-LD, and Dataset variableMeasured.",
+    "note": "All DAL functions imported from @/lib/data (G8 compliant). No @/app/actions/* imports. No raw .from() calls."
   }
 }
