@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.7 (2026-06-18)
+
+### Other
+- KB conversion: housing-market hub + city-level market reports
+
+---
+
+
 ## v1.595.6 (2026-06-18)
 
 ### Other
