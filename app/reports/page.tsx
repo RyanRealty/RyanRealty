@@ -218,7 +218,7 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
   return (
     <main className="kb-root">
       <KbNav />
-      <KbSectionTracker pageType="reports" />
+      <KbSectionTracker pageType="market-reports" />
       <MetadataBlock
         schemas={[
           {

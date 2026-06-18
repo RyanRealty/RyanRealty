@@ -57,7 +57,7 @@ const KB_ROUTES: RegExp[] = [
   /^\/activity$/,
   /^\/area-guides$/,
   /^\/blog(\/[^/]+)?$/,
-  /^\/buy$/,
+  /^\/buy(\/[^/]+)?$/, // /buy + /buy/<intent> lead landing (KB)
   /^\/cities(\/[^/]+(\/[^/]+)?)?$/, // /cities, /cities/<slug>, /cities/<slug>/<neighborhood>
   /^\/communities(\/[^/]+)?$/, // /communities, /communities/<slug>
   /^\/compare$/,
@@ -78,8 +78,7 @@ const KB_ROUTES: RegExp[] = [
   /^\/resources$/,
   /^\/reviews$/,
   /^\/schools(\/[^/]+)?$/,
-  /^\/sell$/,
-  /^\/sell\/valuation$/,
+  /^\/sell(\/[^/]+)?$/, // /sell + /sell/valuation + /sell/<intent> lead landing (KB)
   /^\/subdivisions\/[^/]+$/,
   /^\/team(\/[^/]+)?$/, // /team, /team/<slug>; NOT /team/<slug>/edit (2 segments)
   /^\/tools\/[^/]+$/,
@@ -96,15 +95,12 @@ export function HideChrome({ children }: { children: React.ReactNode }) {
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return null
   if (pathname.startsWith("/sign/")) return null
   if (pathname.startsWith("/concept/")) return null
-  // Housing-market hub + region report + city reports (all KB), but NOT the
-  // not-yet-migrated /housing-market/explore + /reports, nor the legacy 2-segment
-  // /housing-market/<city>/<subdivision> report.
+  // Housing-market hub + region report + city reports + explore + reports archive
+  // (all KB). The only /housing-market surface that keeps default chrome is the
+  // legacy 2-segment /housing-market/<city>/<subdivision> report.
   if (pathname === "/housing-market") return null
-  if (
-    /^\/housing-market\/[^/]+$/.test(pathname) &&
-    !/^\/housing-market\/(explore|reports)$/.test(pathname)
-  )
-    return null
+  if (/^\/housing-market\/[^/]+$/.test(pathname)) return null // 1-segment: region, city reports, explore, reports
+  if (/^\/housing-market\/reports\/[^/]+$/.test(pathname)) return null // /housing-market/reports/<slug> detail
   // Every other KB design-system route.
   if (KB_ROUTES.some((re) => re.test(pathname))) return null
   return <>{children}</>

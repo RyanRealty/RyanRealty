@@ -100,7 +100,7 @@ export default async function ReportPage({ params }: Props) {
   return (
     <main className="kb-root">
       <KbNav />
-      <KbSectionTracker pageType="reports" />
+      <KbSectionTracker pageType="market-reports" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reportSchema) }} />
       <KbBreadcrumb
         trail={[

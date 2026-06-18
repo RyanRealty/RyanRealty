@@ -92,7 +92,7 @@ export default async function ExplorePage({ searchParams }: Props) {
   return (
     <main className="kb-root">
       <KbNav />
-      <KbSectionTracker pageType="reports" />
+      <KbSectionTracker pageType="market-reports" />
       <KbBreadcrumb
         trail={[
           { label: 'Home', href: '/' },
