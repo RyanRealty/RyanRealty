@@ -2,6 +2,7 @@
 // (data/resort-community-<slug>.json), the same source the resort landing pages use.
 import Image from 'next/image'
 import Link from 'next/link'
+import { slugify } from '@/lib/slug'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import type { AmenityBlogPost } from '@/lib/data'
 
@@ -105,7 +106,10 @@ export function KbResortOverview({
                 <span className="ov-sub mono-lab">Subdivisions in {name}</span>
                 <div className="ov-alias-row">
                   {aliasChips.map((a) => (
-                    <span key={a} className="ov-alias">{a}</span>
+                    <Link key={a} href={`/subdivisions/${slugify(a)}`} className="ov-alias ov-alias-link">
+                      {a}
+                      <span className="ov-alias-arr" aria-hidden="true">›</span>
+                    </Link>
                   ))}
                 </div>
               </div>
