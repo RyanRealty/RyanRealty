@@ -1,28 +1,42 @@
 /**
- * Team page (/team) — Wave 3 site-v2 rebuild.
+ * Team index (/team) — KB (kinetic-brutalist) design, Phase 9 of the
+ * convergence program (docs/KB_CONVERGENCE_ROADMAP.md). Reuses the SAME section
+ * library as the homepage + city/community pages (components/site/kb/*), fed the
+ * team DAL, never forked (ci:kb-single-source G50). KbNav + KbFooter carry the
+ * chrome (default chrome hidden for /team via HideChrome — handled by the
+ * orchestrator, not this file).
  *
- * Composed from @/components/site/* blocks + @/lib/data DAL. No legacy
- * components/broker/* or app/actions/agents.
+ * THE PAGE CONTRACT: KB design + SEO (export const metadata + MetadataBlock
+ * JSON-LD: CollectionPage/Breadcrumb) + tracking (KbSectionTracker pageType="team").
+ * Every broker figure comes from getBrokers() (§0 — no fabricated stats).
  *
- * DATA ACCURACY (CLAUDE.md §0): the broker grid renders ONLY verified
- * getBrokers() data (name, title, Oregon license #, transparent headshot,
- * direct phone, email). No invented bios, stats, rankings, or "track record"
- * claims.
+ * Section stack: nav · breadcrumb · hero · testimonials · team grid · sell · footer.
+ *
+ * Parity contract: design_system/ryan-realty/ui_kits/team/parity.json (KB set).
+ *
+ * NOTE — HideChrome: this page needs the default site header/footer suppressed so
+ * KbNav and KbFooter can carry the chrome. That requires a HideChrome wrapper in
+ * app/layout.tsx or a route-group layout. The orchestrator handles this; this file
+ * does not touch layout components.
  */
 
 import type { Metadata } from 'next'
+import { getBrokers } from '@/lib/data/brokers/getBrokers'
+import { getReviews } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { getBrokers } from '@/lib/data/brokers/getBrokers'
-import { getSurfaceImage, getReviews } from '@/lib/data'
-import { ReviewsBlock } from '@/components/site/ReviewsBlock'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-import { HeroBlock } from '@/components/site/HeroBlock'
-import { BrokerProfileRow } from '@/components/site/BrokerProfileRow'
-import { FAQBlock } from '@/components/site/FAQBlock'
-import { CTABar } from '@/components/site/CTABar'
-import { CONTACT } from '@/lib/brand/contact'
-import { Body, Container, Eyebrow, H2, Section, Stack } from '@/components/site/primitives'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbHero } from '@/components/site/kb/KbHero.client'
+import { KbTeam } from '@/components/site/kb/KbTeam.client'
+import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
+import { KbSell } from '@/components/site/kb/KbSell.client'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import type { KbReview } from '@/components/site/kb/types'
+import { TESTIMONIALS } from '@/lib/testimonials'
+import '@/components/site/kb/kb.css'
 
 export const metadata: Metadata = pageMetadata({
   title: 'Our team · Ryan Realty, Bend Oregon',
@@ -38,51 +52,35 @@ export const metadata: Metadata = pageMetadata({
   ],
 })
 
-const OLD_MILL_HERO = '/brand/hero/hero-old-mill-master-4k.jpg'
-
-// Agent-choice intent FAQ ("bend oregon realtor", "bend real estate agent" —
-// target-query benchmark 2026-06-10). DATA ACCURACY: every answer reuses facts
-// already approved on live /team and /about copy. No new claims.
-const TEAM_FAQ_ITEMS = [
-  {
-    question: 'What does working directly with a broker mean?',
-    answer:
-      'You work with one broker from the first call to the closing table. There is no hand-off to a junior agent or a transaction desk, and the broker who prices your home is the one who answers your calls.',
-  },
-  {
-    question: 'What does my listing get?',
-    answer:
-      'Every Ryan Realty listing gets cinematic video, a 3D walkthrough, and a price built from live Central Oregon market data. The same treatment at every price point.',
-  },
-  {
-    question: 'Which areas do Ryan Realty brokers cover?',
-    answer:
-      'Bend, Redmond, Sisters, Sunriver, La Pine, Tumalo, Prineville, and Terrebonne, plus the resort communities including Tetherow, Pronghorn, Eagle Crest, and Brasada Ranch.',
-  },
-  {
-    question: 'How do I start?',
-    answer:
-      `Call ${CONTACT.phoneDirect} or schedule a time through the contact page. You talk directly with a broker, not a call center.`,
-  },
-] as const
-
 export default async function TeamPage() {
-  const [brokers, heroSrc, reviews] = await Promise.all([
+  const [brokers, reviews] = await Promise.all([
     getBrokers(),
-    // Distinct approved hero so /team does not reuse the homepage Old Mill banner.
-    getSurfaceImage('hero', { geoTags: ['central-oregon'], seed: '/team', fallback: OLD_MILL_HERO }),
-    getReviews(6),
+    getReviews(8),
   ])
 
   // Display order locked to Matt, Rebecca, Paul (Matt directive). Rank by first
   // name so it holds regardless of the DB sort_order.
   const RANK: Record<string, number> = { matt: 0, matthew: 0, rebecca: 1, paul: 2 }
   const orderedBrokers = [...brokers].sort(
-    (a, b) => (RANK[a.slug.split('-')[0]] ?? 9) - (RANK[b.slug.split('-')[0]] ?? 9),
+    (a, b) => (RANK[a.slug.split('-')[0] ?? ''] ?? 9) - (RANK[b.slug.split('-')[0] ?? ''] ?? 9),
   )
 
+  // Map the live reviews pool to KbReview shape for KbTestimonials.
+  const kbReviews: KbReview[] = reviews.reviews.map((r) => ({
+    quote: r.text,
+    author: r.reviewerName ?? 'Verified Ryan Realty client',
+  }))
+
+  // Fall back to TESTIMONIALS when the live pool is empty (e.g. DB cold start).
+  const testimonialsToShow: KbReview[] =
+    kbReviews.length > 0
+      ? kbReviews.slice(0, 8)
+      : TESTIMONIALS.slice(0, 8).map((t) => ({ quote: t.quote, author: t.author }))
+
   return (
-    <main className="min-h-screen bg-background">
+    <main className="kb-root">
+      <KbNav />
+      <KbSectionTracker pageType="team" />
       <MetadataBlock
         schemas={[
           {
@@ -103,60 +101,35 @@ export default async function TeamPage() {
           },
         ]}
       />
-      <PageBreadcrumb trail={[{ label: 'Team' }]} />
-
-      <HeroBlock
-        headline="The broker you call is the broker you get."
-        lede="No hand-offs, no transaction desk, no junior agent learning on your deal. Meet the brokers who represent Ryan Realty clients across Bend, Redmond, Sisters, and Central Oregon."
-        photo={{
-          src: heroSrc ?? OLD_MILL_HERO,
-          alt: 'Central Oregon high desert and Cascade mountains around Bend.',
-          priority: true,
-        }}
-        minHeight={440}
+      <KbBreadcrumb
+        overlay
+        trail={[{ label: 'Home', href: '/' }, { label: 'Team' }]}
       />
-
-      {/* Social proof up top — the brokerage rating backs every broker */}
-      <ReviewsBlock data={reviews} eyebrow="Client reviews" title="What clients say" tone="default" max={6} />
-
-      <Section padding="default" tone="muted" divider>
-        <Container>
-          <Stack gap="tight" className="mb-10 max-w-prose">
-            <Eyebrow>The team</Eyebrow>
-            <H2>Work with the broker who lists your home</H2>
-            <Body size="default" tone="muted" className="leading-relaxed">
-              You work directly with the same broker from the first conversation to the closing table.
-              No hand-offs to a junior agent, no transaction desk. Call any broker directly using the
-              number on their card.
-            </Body>
-          </Stack>
-
-          {/* Large broker profiles — verified bio, specialties, license, and
-              direct contact for each broker, straight from public.brokers. */}
-          <div className="flex flex-col gap-12 md:gap-16">
-            {orderedBrokers.map((broker) => (
-              <BrokerProfileRow key={broker.slug} broker={broker} />
-            ))}
-          </div>
-
-        </Container>
-      </Section>
-
-      <FAQBlock
-        eyebrow="Choosing a broker"
-        title="Working with a Bend broker"
-        items={TEAM_FAQ_ITEMS}
-        tone="default"
-      />
-
-      <CTABar
-        eyebrow="Talk to a broker"
-        title="Have a question for the team?"
-        body="Call any broker directly, or schedule a time to talk. No scripts, no hand-offs."
-        primary={{ href: '/contact', label: 'Schedule a call' }}
-        secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: CONTACT.phoneDirect }}
-        tone="navy"
-      />
+      <SmoothScrollProvider>
+        <KbHero
+          data={{
+            activeCount: null,
+            medianListPrice: null,
+            medianDaysToPending: null,
+          }}
+          eyebrow="Ryan Realty · Bend, Oregon"
+          titleTop="The broker you call"
+          titleBottom="is the broker you get."
+          lead="No hand-offs, no transaction desk, no junior agent learning on your deal."
+          videoSrc={null}
+          posterSrc="/brand/hero/hero-old-mill-master-4k.jpg"
+        />
+        <KbTestimonials reviews={testimonialsToShow} />
+        <KbTeam />
+        <KbSell
+          data={{
+            medianListPrice: null,
+            medianDaysToPending: null,
+            soldCount30d: null,
+          }}
+        />
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
     </main>
   )
 }

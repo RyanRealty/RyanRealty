@@ -80,6 +80,11 @@ export function HideChrome({ children }: { children: React.ReactNode }) {
     !/^\/housing-market\/(explore|reports)$/.test(pathname)
   )
     return null
+  // About (KB trust page):
+  if (pathname === "/about") return null
+  // Team index + per-broker profile (/team, /team/<slug>), but NOT the
+  // /team/<slug>/edit form (2 segments) which keeps the default chrome.
+  if (pathname && /^\/team(\/[^/]+)?$/.test(pathname)) return null
   return <>{children}</>
 }
 

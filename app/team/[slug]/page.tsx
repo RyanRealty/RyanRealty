@@ -1,51 +1,63 @@
 /**
- * Broker landing page (/team/[slug]) — conversion-oriented redesign.
+ * Broker landing page (/team/[slug]) — KB (kinetic-brutalist) design, Phase 9 of
+ * the convergence program (docs/KB_CONVERGENCE_ROADMAP.md). Reuses the SAME
+ * section library as the homepage + city/community pages (components/site/kb/*),
+ * fed per-broker DAL data, never forked (ci:kb-single-source G50). KbNav +
+ * KbFooter carry the chrome (default chrome hidden for /team/* via HideChrome —
+ * handled by the orchestrator, not this file).
  *
- * Visual thesis: lead with the person and the firm's proof. An oversized
- * editorial portrait against a navy field, the Google rating and Ryan Realty's
- * track record stated immediately, one direct way to start. The broker is the
- * face; Ryan Realty's results are the backing, so a newer broker never looks
- * thin on volume.
+ * THE PAGE CONTRACT: KB design + SEO (generateMetadata + MetadataBlock JSON-LD:
+ * RealEstateAgent/Breadcrumb) + tracking (KbSectionTracker pageType="broker").
  *
  * DATA ACCURACY (CLAUDE.md §0): broker identity from getAgentBySlug; the rating
  * and review count from getReviews (public.reviews); the "recent sales" grid is
- * Ryan Realty BROKERAGE closings (getBrokerageListingTiles, by ListOfficeName),
- * NOT per-broker volume — newer brokers are backed by the firm's record. Every
- * price is the recorded MLS closing price. No invented stats, ever.
+ * either THIS BROKER'S OWN closings (getBrokerSales — both sides, verified MLS
+ * close price) or the brokerage record (getBrokerageListingTiles, by
+ * ListOfficeName) — newer brokers are backed by the firm's record. No invented
+ * stats, ever.
  *
- * Uses @/components/site/* + @/components/ui/* only.
+ * REVIEW FILTERING (CRITICAL — do not remove): brokerage Google reviews are not
+ * split per broker. A review that names a DIFFERENT broker reads as misattributed
+ * on this page. reviewBelongsOnPage() keeps only reviews that name THIS broker
+ * or name no broker at all (§0 — never imply a client praised the wrong broker).
+ *
+ * Section stack: nav · breadcrumb · hero (broker portrait + stats) · bio (About)
+ * · track record (Featured) · testimonials · sell · footer.
+ *
+ * JSON-LD: RealEstateAgent (Person + worksFor LocalBusiness) + BreadcrumbList.
+ *
+ * Parity contract: design_system/ryan-realty/ui_kits/team/parity.json (KB set).
+ *
+ * NOTE — HideChrome: this page needs the default site header/footer suppressed.
+ * The orchestrator handles this via HideChrome; this file does not touch layouts.
  */
 
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import { getAgentBySlug } from '@/app/actions/agents'
 import { getBrokerageSettings } from '@/app/actions/brokerage'
 import { getBrokerageListingTiles, getReviews, getBrokerSales } from '@/lib/data'
 import type { BrokerSaleTile } from '@/lib/data'
 import type { PriceDropTile } from '@/lib/data/listings/getPriceDropTiles'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-import { CTAButton } from '@/components/site/primitives'
-import { CTABar } from '@/components/site/CTABar'
-import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
-import { ReviewsBlock } from '@/components/site/ReviewsBlock'
-import BrokerAttributionSetter from '@/components/BrokerAttributionSetter'
-import { submitBrokerSellerLead } from '@/app/team/actions'
-import { normalizeAgentSlug, BROKER_EMAIL_BY_SLUG, type BrokerSlug } from '@/lib/agent-attribution'
-import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
 import { listingTileHref } from '@/lib/slug'
-import {
-  Body,
-  Container,
-  DisplayHeading,
-  Eyebrow,
-  Grid,
-  H2,
-  Section,
-  Stack,
-  TabularNumber,
-} from '@/components/site/primitives'
+import { normalizeAgentSlug, BROKER_EMAIL_BY_SLUG, type BrokerSlug } from '@/lib/agent-attribution'
+import { submitBrokerSellerLead } from '@/app/team/actions'
+import { pageMetadata } from '@/lib/site/page-metadata'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
+import BrokerAttributionSetter from '@/components/BrokerAttributionSetter'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbHero } from '@/components/site/kb/KbHero.client'
+import { KbAbout } from '@/components/site/kb/KbAbout'
+import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
+import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
+import { KbSell } from '@/components/site/kb/KbSell.client'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import type { KbFeaturedItem, KbReview } from '@/components/site/kb/types'
+import '@/components/site/kb/kb.css'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const OFFICE_NAME = 'Ryan Realty'
@@ -89,14 +101,21 @@ function soldBadgeLabel(closeDate: string | null | undefined): string {
   return `Sold ${d.toLocaleString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })}`
 }
 
-/** Map a brokerage closing tile to a SOLD ListingCard (price = recorded MLS close). */
-function toBrokerageSoldCard(tile: PriceDropTile): ListingCardData | null {
+/** Map a brokerage closing tile to a KbFeaturedItem (price = recorded MLS close). */
+function brokerageTileToFeatured(tile: PriceDropTile): KbFeaturedItem | null {
   if (!tile.ListingKey) return null
   const addressLine = [tile.StreetNumber, tile.StreetName].filter(Boolean).join(' ') || 'Address unavailable'
   const cityParts = [tile.City, tile.PostalCode].filter(Boolean).join(' ')
-  const cityLine = [cityParts, tile.SubdivisionName].filter(Boolean).join(' · ')
+  const sub = [cityParts, tile.SubdivisionName].filter(Boolean).join(' · ')
   return {
-    listingKey: tile.ListingKey,
+    price: tile.ClosePrice ?? tile.ListPrice ?? null,
+    address: addressLine,
+    sub,
+    city: tile.City ?? '',
+    beds: tile.BedroomsTotal ?? null,
+    baths: tile.BathroomsTotal ?? null,
+    sqft: tile.TotalLivingAreaSqFt ?? null,
+    img: tile.PhotoURL ?? '',
     href: listingTileHref({
       listingKey: tile.ListingKey,
       streetNumber: tile.StreetNumber,
@@ -104,15 +123,19 @@ function toBrokerageSoldCard(tile: PriceDropTile): ListingCardData | null {
       city: tile.City,
       subdivisionName: tile.SubdivisionName,
     }),
-    photoUrl: tile.PhotoURL ?? null,
-    price: tile.ClosePrice ?? tile.ListPrice ?? null,
-    addressLine,
-    cityLine,
-    beds: tile.BedroomsTotal ?? null,
-    baths: tile.BathroomsTotal ?? null,
-    sqft: tile.TotalLivingAreaSqFt ?? null,
-    badge: { kind: 'sold', label: soldBadgeLabel(tile.CloseDate) },
+    video: null,
   }
+}
+
+/** Map a broker closed-sale tile to a KbFeaturedItem with a side-aware badge. */
+function brokerSaleToFeatured(tile: BrokerSaleTile): KbFeaturedItem | null {
+  const base = brokerageTileToFeatured(tile)
+  if (!base) return null
+  // For broker's own sales, surface the Sold/Bought label in the sub field.
+  const when = soldBadgeLabel(tile.CloseDate).replace(/^Sold/, '').trim()
+  const verb = tile.saleSide === 'listed' ? 'Sold' : 'Bought'
+  const badge = when ? `${verb} ${when}` : verb
+  return { ...base, sub: [badge, base.sub].filter(Boolean).join(' · ') }
 }
 
 /** The three broker first names, lowercased — used to keep a review that names
@@ -136,26 +159,6 @@ function reviewBelongsOnPage(text: string, firstName: string): boolean {
   if (namesBroker(text, firstName)) return true
   const me = firstName.trim().toLowerCase()
   return !BROKER_FIRST_NAMES.some((n) => n !== me && namesBroker(text, n))
-}
-
-/** Five star glyphs; `filledClass` colors the filled set, the rest inherit at 30%. */
-function Stars({ count = 5, filledClass, className }: { count?: number; filledClass: string; className?: string }) {
-  const full = Math.max(0, Math.min(5, Math.round(count)))
-  return (
-    <span aria-label={`${full} out of 5 stars`} className={`tracking-wide ${className ?? ''}`}>
-      <span aria-hidden className={filledClass}>{'★'.repeat(full)}</span>
-      <span aria-hidden className="text-current opacity-30">{'★'.repeat(5 - full)}</span>
-    </span>
-  )
-}
-
-/** Map a broker closed-sale tile to a ListingCard with a side-aware badge. */
-function toBrokerSaleCard(tile: BrokerSaleTile): ListingCardData | null {
-  const base = toBrokerageSoldCard(tile)
-  if (!base) return null
-  const when = soldBadgeLabel(tile.CloseDate).replace(/^Sold/, '').trim()
-  const verb = tile.saleSide === 'listed' ? 'Sold' : 'Bought'
-  return { ...base, badge: { kind: 'sold', label: when ? `${verb} ${when}` : verb } }
 }
 
 /** Fallback bio when a broker has no DB bio — leads with the receipt (the live
@@ -203,39 +206,25 @@ export default async function TeamMemberPage({ params }: Props) {
 
   // This broker's own closings — both sides, newest first. Verified keys only
   // (list_agent_email + buyer_agent_mls_id); each price is the recorded close.
-  const brokerSaleCards: ListingCardData[] = brokerSales
-    .map(toBrokerSaleCard)
-    .filter((c): c is ListingCardData => c !== null)
-  const closings = brokerSaleCards.length // true distinct count, both sides (≤24)
+  const brokerSaleItems: KbFeaturedItem[] = brokerSales
+    .map(brokerSaleToFeatured)
+    .filter((c): c is KbFeaturedItem => c !== null)
+  const closings = brokerSaleItems.length // true distinct count, both sides (<=24)
   const hasOwnSales = closings > 0
 
   // Brokerage recent sales — closed listings across Ryan Realty, newest first.
   // Shown as the track record for a broker who has no own closings yet.
-  const soldCards: ListingCardData[] = brokerageTiles
+  const brokerageItems: KbFeaturedItem[] = brokerageTiles
     .filter((t) => t.ClosePrice != null && (t.CloseDate != null || /clos|sold/i.test(t.StandardStatus ?? '')))
     .sort((a, b) => new Date(b.CloseDate ?? 0).getTime() - new Date(a.CloseDate ?? 0).getTime())
-    .map(toBrokerageSoldCard)
-    .filter((c): c is ListingCardData => c !== null)
+    .map(brokerageTileToFeatured)
+    .filter((c): c is KbFeaturedItem => c !== null)
     .slice(0, 6)
 
   const bioText = broker.bio?.trim()
     ? broker.bio.trim()
     : factualFallbackBio({ displayName: broker.display_name, firstName, closings, phone: broker.phone })
   const headshotSrc = HEADSHOT[broker.slug] ?? broker.photo_url ?? '/images/brokers/ryan-matt.png'
-  const telHref = broker.phone ? `tel:${broker.phone.replace(/[^\d]/g, '')}` : null
-  const smsHref = broker.phone ? `sms:${broker.phone.replace(/[^\d]/g, '')}` : null
-  const mailHref = broker.email ? `mailto:${broker.email}` : null
-
-  // Bottom-CTA body, built from live contact info. The closing sentence is the
-  // one direct-broker accountability fact on the page (a transaction-desk shop
-  // cannot truthfully paste it — passes the competitor test).
-  const ctaContact = [
-    broker.phone ? `Call or text ${broker.phone}` : null,
-    broker.email ? `email ${broker.email}` : null,
-  ]
-    .filter(Boolean)
-    .join(', or ')
-  const ctaBody = `${ctaContact ? `${ctaContact}. ` : ''}You work with ${firstName} directly, from the first call to closing.`
 
   // Reviews that belong on THIS broker's page (name them, or name nobody),
   // with the ones that name this broker first.
@@ -243,12 +232,11 @@ export default async function TeamMemberPage({ params }: Props) {
     .filter((r) => reviewBelongsOnPage(r.text, firstName))
     .sort((a, b) => Number(namesBroker(b.text, firstName)) - Number(namesBroker(a.text, firstName)))
 
-  // The single strongest relevant review for the social-proof band near the top.
-  const featured =
-    relevantReviews.find((r) => namesBroker(r.text, firstName) && r.rating >= 5 && r.text.length > 80) ??
-    relevantReviews.find((r) => r.rating >= 5 && r.text.length > 80) ??
-    relevantReviews[0] ??
-    null
+  // Map to KbReview shape for KbTestimonials.
+  const kbReviews: KbReview[] = relevantReviews.slice(0, 8).map((r) => ({
+    quote: r.text.length > 400 ? `${r.text.slice(0, 397).trimEnd()}…` : r.text,
+    author: r.reviewerName ?? 'Verified Ryan Realty client',
+  }))
 
   const canonicalSlug: BrokerSlug | null =
     normalizeAgentSlug(slug) ??
@@ -256,10 +244,34 @@ export default async function TeamMemberPage({ params }: Props) {
       ([, email]) => email.toLowerCase() === (broker.email ?? '').toLowerCase(),
     )?.[0] as BrokerSlug | undefined) ?? null)
 
+  // KbAbout facts — live data only, no fabricated stats.
+  const aboutFacts: { label: string; value: string }[] = [
+    { label: 'Title', value: broker.title ?? 'Real Estate Broker' },
+    ...(broker.license_number ? [{ label: 'Oregon license', value: `#${broker.license_number}` }] : []),
+    ...(hasOwnSales ? [{ label: 'Homes closed', value: closings.toLocaleString('en-US') }] : []),
+    ...(reviews.count > 0 ? [{ label: 'Google rating', value: `${reviews.averageRating}/5 · ${reviews.count} reviews` }] : []),
+    ...(broker.phone ? [{ label: 'Phone', value: broker.phone }] : []),
+  ]
+
+  // KbHero sub-row copy — honest, from live data.
+  const heroLead = hasOwnSales
+    ? `${closings} homes closed across Central Oregon, for buyers and sellers.`
+    : `${firstName} lists and sells homes across Bend, Redmond, Sisters, Sunriver, and Prineville.`
+
+  // Track-record items — own sales when available, brokerage record otherwise.
+  const featuredItems: KbFeaturedItem[] = hasOwnSales
+    ? brokerSaleItems.slice(0, 9)
+    : brokerageItems
+  const featuredEyebrow = hasOwnSales
+    ? `${firstName} · Track record`
+    : 'Ryan Realty · Track record'
+
   return (
-    <main className="min-h-screen bg-background">
+    <main className="kb-root">
       <BrokerAttributionSetter slug={canonicalSlug} />
 
+      {/* RealEstateAgent / Person JSON-LD — brokerage aggregate rating on worksFor,
+          not the individual (reviews are not split per broker). */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -273,8 +285,6 @@ export default async function TeamMemberPage({ params }: Props) {
             email: broker.email ?? undefined,
             url: canonicalUrl,
             areaServed: { '@type': 'Place', name: 'Central Oregon' },
-            // The Google rating is the BROKERAGE's (reviews are not split per
-            // broker), so it sits on the firm node, not the individual agent.
             worksFor: {
               '@type': ['LocalBusiness', 'RealEstateAgent'],
               name: siteName,
@@ -306,229 +316,82 @@ export default async function TeamMemberPage({ params }: Props) {
         }}
       />
 
-      <PageBreadcrumb trail={[{ label: 'Team', href: '/team' }, { label: broker.display_name }]} />
-
-      {/* ───────── Hero — navy field, oversized portrait, identity, rating, CTA ───────── */}
-      <section className="relative overflow-hidden bg-primary text-primary-foreground">
-        <Container className="grid items-end gap-8 py-12 sm:py-16 lg:grid-cols-[1.15fr_0.85fr] lg:gap-10 lg:py-20">
-          {/* Identity + proof + CTA */}
-          <div className="order-2 lg:order-1 lg:pb-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
-            <Eyebrow className="text-primary-foreground/70">Ryan Realty · Bend, Oregon</Eyebrow>
-            <DisplayHeading as="h1" className="mt-3 text-5xl text-primary-foreground sm:text-6xl">
-              {broker.display_name}
-            </DisplayHeading>
-            <p className="mt-2 text-lg font-medium text-primary-foreground/80">
-              {broker.title ?? 'Real Estate Broker'}
-            </p>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-primary-foreground/85">
-              {hasOwnSales
-                ? `${closings} homes closed across Central Oregon, for buyers and sellers.`
-                : `${firstName} lists and sells homes across Bend, Redmond, Sisters, Sunriver, and Prineville.`}
-            </p>
-
-            {/* Trust strip — Google rating + license, real values only */}
-            <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
-              {reviews.count > 0 ? (
-                <div className="flex items-center gap-2.5 text-primary-foreground">
-                  <Stars count={reviews.averageRating} filledClass="text-primary-foreground" className="text-xl leading-none" />
-                  <span className="text-base font-medium text-primary-foreground/90">
-                    <TabularNumber value={reviews.averageRating} /> on Google ·{' '}
-                    <TabularNumber value={reviews.count} /> reviews
-                  </span>
-                </div>
-              ) : null}
-              {broker.license_number ? (
-                <span className="text-sm text-primary-foreground/65 tabular-nums">
-                  Oregon license #{broker.license_number}
-                </span>
-              ) : null}
-            </div>
-
-            {/* Primary CTAs */}
-            <div className="mt-8 flex flex-wrap gap-3">
-              {telHref ? (
-                <CTAButton href={telHref} tone="on-navy" size="lg">
-                  Call {firstName}
-                </CTAButton>
-              ) : null}
-              {smsHref ? (
-                <CTAButton href={smsHref} tone="on-navy-ghost" size="lg" external>
-                  Text {firstName}
-                </CTAButton>
-              ) : mailHref ? (
-                <CTAButton href={mailHref} tone="on-navy-ghost" size="lg">
-                  Email {firstName}
-                </CTAButton>
-              ) : null}
-            </div>
-            {broker.phone ? (
-              <p className="mt-3 text-sm tabular-nums text-primary-foreground/65">{broker.phone}</p>
-            ) : null}
-          </div>
-
-          {/* Oversized transparent portrait, bottom-anchored into the navy field.
-              A soft cream halo behind it anchors the figure so the light shirt
-              does not dissolve into the navy. */}
-          <div className="relative order-1 flex justify-center self-end lg:order-2 lg:justify-end">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute bottom-0 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-primary-foreground/5 blur-2xl sm:h-72 sm:w-72 lg:h-96 lg:w-96"
-            />
-            <Image
-              src={headshotSrc}
-              alt={broker.display_name}
-              width={520}
-              height={780}
-              priority
-              className="relative h-auto w-64 select-none drop-shadow-2xl sm:w-72 lg:w-full lg:max-w-md"
-            />
-          </div>
-        </Container>
-      </section>
-
-      {/* ───────── Social proof — designed cream band directly under the hero ───────── */}
-      {featured ? (
-        <Section padding="loose" tone="muted">
-          <Container className="relative max-w-3xl text-center">
-            <span
-              aria-hidden
-              className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 select-none font-display text-9xl leading-none text-primary/10"
-            >
-              “
-            </span>
-            <Eyebrow className="relative">Clients on Ryan Realty</Eyebrow>
-            <div className="relative mt-4 flex justify-center text-foreground">
-              <Stars count={featured.rating} filledClass="text-primary" className="text-2xl leading-none" />
-            </div>
-            <blockquote className="relative mt-5">
-              <DisplayHeading as="p" className="text-2xl leading-snug text-foreground sm:text-3xl">
-                {featured.text.length > 240 ? `${featured.text.slice(0, 237).trimEnd()}…` : featured.text}
-              </DisplayHeading>
-              <footer className="mt-7 flex flex-col items-center gap-1">
-                <span className="text-base font-semibold text-foreground">
-                  {featured.reviewerName ?? 'Verified Ryan Realty client'}
-                </span>
-                {reviews.count > 0 ? (
-                  <span className="text-sm text-muted-foreground">
-                    Google review · <TabularNumber value={reviews.averageRating} />/5 across{' '}
-                    <TabularNumber value={reviews.count} /> reviews
-                  </span>
-                ) : (
-                  <span className="text-sm text-muted-foreground">Verified Google review</span>
-                )}
-              </footer>
-            </blockquote>
-          </Container>
-        </Section>
-      ) : null}
-
-      {/* ───────── Track record ─────────
-          This broker's own closings when they have them (both sides, with a
-          Sold / Bought badge); otherwise the brokerage record so a newer broker
-          still shows proof. Both are recorded MLS closings — never invented. */}
-      {hasOwnSales ? (
-        <Section padding="default" tone="muted" divider>
-          <Container>
-            <Stack gap="tight" className="mb-8 max-w-2xl">
-              <Eyebrow>Track record</Eyebrow>
-              <H2>{firstName}&apos;s recent sales</H2>
-              <Body size="default" tone="muted">
-                Homes {firstName} sold for sellers, and homes {firstName} bought for buyers. Each
-                price is the recorded closing price from the Oregon Data Share MLS.
-              </Body>
-            </Stack>
-            <Grid cols={3} gap="default">
-              {brokerSaleCards.slice(0, 9).map((card) => (
-                <ListingCard key={card.listingKey} listing={card} />
-              ))}
-            </Grid>
-          </Container>
-        </Section>
-      ) : soldCards.length > 0 ? (
-        <Section padding="default" tone="muted" divider>
-          <Container>
-            <Stack gap="tight" className="mb-8 max-w-2xl">
-              <Eyebrow>The Ryan Realty record</Eyebrow>
-              <H2>Recent Ryan Realty sales across Central Oregon</H2>
-              <Body size="default" tone="muted">
-                Recent Ryan Realty closings across Central Oregon. Each price is the recorded closing
-                price from the Oregon Data Share MLS.
-              </Body>
-            </Stack>
-            <Grid cols={3} gap="default">
-              {soldCards.map((card) => (
-                <ListingCard key={card.listingKey} listing={card} />
-              ))}
-            </Grid>
-          </Container>
-        </Section>
-      ) : null}
-
-      {/* ───────── Meet the broker — editorial bio, no repeated portrait ───────── */}
-      <Section padding="default" tone="default" divider>
-        <Container>
-          <div className="grid gap-8 lg:grid-cols-[2fr_3fr] lg:gap-16">
-            <div className="lg:pt-1">
-              <Eyebrow>Meet your broker</Eyebrow>
-              <H2 className="mt-2">{firstName}</H2>
-              <p className="mt-2 text-base font-medium text-muted-foreground">
-                {broker.title ?? 'Real Estate Broker'}
-              </p>
-              <div aria-hidden className="mt-5 h-1 w-12 rounded-full bg-primary" />
-            </div>
-            <div>
-              <Body size="default" tone="muted" className="max-w-prose leading-relaxed">
-                {bioText}
-              </Body>
-              <div className="mt-7 flex flex-wrap gap-3">
-                {telHref ? (
-                  <CTAButton href={telHref} tone="primary" size="md">
-                    Call {firstName}
-                  </CTAButton>
-                ) : null}
-                {mailHref ? (
-                  <CTAButton href={mailHref} tone="outline" size="md">
-                    Email {firstName}
-                  </CTAButton>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </Container>
-      </Section>
-
-      {/* ───────── Full reviews grid ─────────
-          Brokerage Google rating (count + average across all rows) with the
-          review cards filtered to this broker so no other broker's named review
-          shows here. */}
-      <ReviewsBlock
-        data={{ ...reviews, reviews: relevantReviews }}
-        eyebrow="Client reviews"
-        title="What clients say about Ryan Realty"
-        tone="muted"
-        max={6}
+      <KbNav />
+      <KbSectionTracker pageType="broker" />
+      <MetadataBlock
+        schemas={[
+          {
+            type: 'breadcrumb',
+            items: [
+              { name: 'Home', url: '/' },
+              { name: 'Team', url: '/team' },
+              { name: broker.display_name, url: `/team/${slug}` },
+            ],
+          },
+        ]}
       />
-
-      {/* ───────── Lead capture — routed to this broker in FUB ───────── */}
-      <LeadCaptureBlock
-        variant="seller"
-        onSubmit={submitBrokerSellerLead}
-        eyebrow="What's your home worth"
-        title={`Get a valuation from ${firstName}`}
-        intro={`Tell ${firstName} about your home and you'll get a comparative market analysis with the comparable sales behind the number, not an automated estimate.`}
-        submitLabel="Request my valuation"
-        tone="default"
+      <KbBreadcrumb
+        overlay
+        trail={[
+          { label: 'Home', href: '/' },
+          { label: 'Team', href: '/team' },
+          { label: broker.display_name },
+        ]}
       />
+      <SmoothScrollProvider>
+        {/* Hero — broker portrait as the poster, identity + live proof in the sub row. */}
+        <KbHero
+          data={{
+            activeCount: null,
+            medianListPrice: null,
+            medianDaysToPending: null,
+          }}
+          eyebrow={`Ryan Realty · Bend, Oregon`}
+          titleTop={broker.display_name.includes(' ')
+            ? broker.display_name.split(' ').slice(0, -1).join(' ')
+            : broker.display_name}
+          titleBottom={broker.display_name.includes(' ')
+            ? broker.display_name.split(' ').slice(-1).join('')
+            : ''}
+          lead={heroLead}
+          videoSrc={null}
+          posterSrc={headshotSrc}
+        />
 
-      {/* ───────── Bottom CTA ───────── */}
-      <CTABar
-        eyebrow={`Talk to ${firstName} directly`}
-        title={`Work with ${firstName}.`}
-        body={ctaBody}
-        primary={broker.phone ? { href: telHref!, label: `Call ${firstName}: ${broker.phone}` } : { href: '/contact', label: 'Get in touch' }}
-        secondary={broker.email ? { href: mailHref!, label: 'Send an email' } : { href: '/team', label: 'Meet the team' }}
-        tone="navy"
-      />
+        {/* Bio — KbAbout with the broker's verified bio and key facts. */}
+        <KbAbout
+          eyebrow={`${firstName} · ${broker.title ?? 'Real Estate Broker'}`}
+          heading={`Meet ${firstName}`}
+          paragraphs={[bioText]}
+          facts={aboutFacts}
+        />
+
+        {/* Track record — own sales (both sides, with Sold/Bought badge) when the
+            broker has them; otherwise the brokerage record so a newer broker still
+            shows proof. Both are recorded MLS closings — never invented. */}
+        {featuredItems.length > 0 ? (
+          <KbFeatured items={featuredItems} eyebrow={featuredEyebrow} />
+        ) : null}
+
+        {/* Reviews filtered to this broker — no other broker's name appears here.
+            The aggregate rating is the brokerage rating (reviews are not per-broker)
+            so it sits on the firm node in JSON-LD, not on the individual agent. */}
+        {kbReviews.length > 0 ? (
+          <KbTestimonials reviews={kbReviews} />
+        ) : null}
+
+        {/* Sell CTA — no fabricated market stats; omit the sell data numbers here
+            since there is no city-scoped pulse context on the broker profile page. */}
+        <KbSell
+          data={{
+            medianListPrice: null,
+            medianDaysToPending: null,
+            soldCount30d: null,
+          }}
+          eyebrow={`Sell with ${firstName}`}
+        />
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
     </main>
   )
 }

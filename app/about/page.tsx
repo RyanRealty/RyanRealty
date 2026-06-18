@@ -1,101 +1,154 @@
 /**
- * Brokerage profile page (/about) — site-v2.
+ * Brokerage profile page (/about) — KB (kinetic-brutalist) design, Phase 9
+ * of the KB convergence program (docs/KB_CONVERGENCE_ROADMAP.md).
  *
- * Voice (CLAUDE.md §3 + feedback-voice-no-overt-statements): understated.
- * Do NOT overtly state categories/virtues/obvious credentials ("independent
- * brokerage by design", "all licensed and active", a mascot moment). Let the
- * concrete, verified facts carry it.
+ * Reuses the SAME section library as the homepage, city, and community pages
+ * (components/site/kb/*) — single source of truth, never forked (ci:kb-single-source G50).
+ * KbNav + KbFooter carry the chrome. HideChrome should suppress the default
+ * SiteHeader/SiteFooter for this route (SKIPPED — shared-component change,
+ * orchestrator to handle).
  *
- * DATA ACCURACY (CLAUDE.md §0): every claim is verified.
- *   - getBrokers() — public.brokers: the three brokers.
+ * Voice (CLAUDE.md §3 + VOICE.md Five Laws): show, don't say. No stated virtues,
+ * no headcount/smallness positioning, no overt category claims. Every claim is
+ * a verified fact.
+ *
+ * DATA ACCURACY (CLAUDE.md §0):
  *   - Ryan Realty LLC, Bend, Oregon. Founded June 2023 (OREA 201253677, 2023-06-21).
- *   - Matt Ryan, Principal Broker OR #201206613; served in the fire service before
- *     founding; mentor Hjalmar "Red" Erickson — both from Matt's verified broker bio.
- *   - CityGrid counts are live geo_snapshot_mv data.
- * NO testimonials (no verified review source wired).
+ *   - Matt Ryan, Principal Broker OR #201206613; fire service before founding;
+ *     mentor Hjalmar "Red" Erickson — from Matt's verified broker bio.
+ *   - Reviews: TESTIMONIALS from lib/testimonials.ts (verified Google GBP, 24 reviews,
+ *     5.0 average, pulled 2026-06-13 via GBP API). Mapped to KbReview shape.
+ *   - Region pulse: getRegionPulse() for KbSell data numbers.
+ *   - Blog posts: getRecentBlogPosts() for KbArticles.
+ *   - Hero photo: getSurfaceImage('hero', central-oregon) with Old Mill fallback.
+ *
+ * PAGE CONTRACT (docs/KB_CONVERGENCE_ROADMAP.md):
+ *   KB design + SEO (pageMetadata + MetadataBlock JSON-LD: Organization/AboutPage/
+ *   Breadcrumb) + tracking (KbSectionTracker). Every figure live (§0).
+ *
+ * Section stack: KbNav · KbBreadcrumb · KbHero · KbAbout · KbTestimonials ·
+ *   KbTeam · KbArticles · KbSell · KbFooter.
+ *
+ * Parity contract: design_system/ryan-realty/ui_kits/about/parity.json (KB set).
  */
 
+import type { Metadata } from 'next'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { getBrokers } from '@/lib/data/brokers/getBrokers'
-import { getSurfaceImage, getLifestyleImages, getReviews } from '@/lib/data'
-import { ReviewsBlock } from '@/components/site/ReviewsBlock'
-import { MarketingStandardBlock } from '@/components/site/MarketingStandardBlock'
-import { LifestyleStrip } from '@/components/site/LifestyleStrip'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-import { HeroBlock } from '@/components/site/HeroBlock'
-import { ContentSection } from '@/components/site/ContentSection'
-import { BrokerCard } from '@/components/site/BrokerCard'
-import { FAQBlock } from '@/components/site/FAQBlock'
-import CityGrid from '@/components/site/CityGrid'
-import CtaDuo from '@/components/site/CtaDuo'
-import { Body, Container, Eyebrow, Grid, H2, Section, Stack, TextLink } from '@/components/site/primitives'
+import { getSurfaceImage, getRecentBlogPosts, getRegionPulse } from '@/lib/data'
+import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbHero } from '@/components/site/kb/KbHero.client'
+import { KbAbout } from '@/components/site/kb/KbAbout'
+import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
+import { KbTeam } from '@/components/site/kb/KbTeam.client'
+import { KbArticles } from '@/components/site/kb/KbArticles'
+import { KbSell } from '@/components/site/kb/KbSell.client'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { TESTIMONIALS } from '@/lib/testimonials'
+import type { KbReview } from '@/components/site/kb/types'
+import '@/components/site/kb/kb.css'
 
 const ROUTE_PATH = '/about'
+const OLD_MILL_HERO = '/images/hero/hero-old-mill-master-4k.jpg'
 
-export const metadata = pageMetadata({
-  title: 'Ryan Realty · Bend, Oregon',
-  description:
-    'Ryan Realty markets Central Oregon homes with cinematic video, 3D tours, and data-backed pricing. Bend, Oregon, founded 2023. The broker you call is the one who closes your sale.',
-  path: ROUTE_PATH,
-  ogImage: '/brand/hero/hero-old-mill-master-4k.jpg',
-  keywords: [
-    'Ryan Realty',
-    'Bend Oregon real estate',
-    'Central Oregon brokerage',
-    'Matt Ryan',
-  ],
-})
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    title: 'About Ryan Realty · Bend, Oregon',
+    description:
+      'Ryan Realty markets Central Oregon homes with cinematic video, 3D tours, and data-backed pricing. Based in Bend, Oregon, founded June 2023. The broker you call is the one who closes your sale.',
+    path: ROUTE_PATH,
+    ogImage: '/images/hero/hero-old-mill-master-4k.jpg',
+    keywords: [
+      'Ryan Realty',
+      'Bend Oregon real estate',
+      'Central Oregon brokerage',
+      'Matt Ryan broker',
+    ],
+  })
+}
 
-// FAQ — verified facts only.
-const FAQ_ITEMS = [
-  {
-    question: 'Who are the brokers?',
-    answer:
-      'Matt Ryan (Principal Broker, OR #201206613), Paul Stevenson, and Rebecca Ryser Peterson.',
-  },
-  {
-    question: 'When did Ryan Realty start?',
-    answer: 'Matt Ryan opened Ryan Realty in June 2023, based in Bend, Oregon.',
-  },
-  {
-    question: 'Will I work with the same broker from start to finish?',
-    answer:
-      'Yes. The broker you first talk to is the broker who works your purchase or sale through to close. There is no hand-off to a junior agent or a transaction desk.',
-  },
-  {
-    question: 'What areas do you cover?',
-    answer:
-      'Bend, Redmond, Sisters, Sunriver, La Pine, Tumalo, Prineville, Terrebonne, and the surrounding resort communities including Tetherow, Pronghorn, Eagle Crest, and Brasada Ranch.',
-  },
-  {
-    question: 'How do I get a home valuation?',
-    answer:
-      'Request one through the home value form. A broker prepares a comparative market analysis from recent comparable sales and gives you a price range, with the comps that support it.',
-  },
-] as const
-
-const OLD_MILL_HERO = '/brand/hero/hero-old-mill-master-4k.jpg'
+export const revalidate = 3600
 
 export default async function AboutPage() {
-  const brokers = await getBrokers()
-  // Distinct approved Bend/Central Oregon hero (seeded by route) so /about does
-  // not reuse the homepage Old Mill banner. Falls back to Old Mill if the
-  // approved pool is empty.
-  // Brand page: generic Central Oregon scenery (the region we serve), seeded by
-  // route so it stays distinct. Picker falls back internally if the pool is thin.
-  const [heroSrc, lifestyleImages, reviews] = await Promise.all([
-    getSurfaceImage('hero', {
-      geoTags: ['central-oregon'],
-      seed: ROUTE_PATH,
-      fallback: OLD_MILL_HERO,
-    }),
-    getLifestyleImages(8),
-    getReviews(6),
+  const [heroSrc, blogPosts, regionPulse] = await Promise.all([
+    withTimeoutFallback(
+      getSurfaceImage('hero', {
+        geoTags: ['central-oregon'],
+        seed: ROUTE_PATH,
+        fallback: OLD_MILL_HERO,
+      }),
+      OLD_MILL_HERO,
+      3500,
+      'about:hero',
+    ),
+    withTimeoutFallback(
+      getRecentBlogPosts({ limit: 3 }),
+      [],
+      3000,
+      'about:blog',
+    ),
+    withTimeoutFallback(
+      getRegionPulse(),
+      null,
+      3000,
+      'about:regionPulse',
+    ),
   ])
 
+  // Map TESTIMONIALS (KbReview-compatible) — verified Google reviews, verbatim.
+  const reviews: KbReview[] = TESTIMONIALS.slice(0, 8).map((t) => ({
+    quote: t.quote,
+    author: t.author,
+  }))
+
+  // Blog articles for KbArticles.
+  const articlePosts = blogPosts.map((p) => ({
+    title: p.title,
+    href: `/blog/${p.slug}`,
+    excerpt: p.excerpt,
+    imageUrl: p.heroImageUrl,
+    dateLabel: p.publishedAt
+      ? new Date(p.publishedAt).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          timeZone: 'UTC',
+        })
+      : null,
+  }))
+
+  // KbSell data from the region pulse (live Central Oregon figures).
+  const sellData = {
+    medianListPrice: regionPulse?.medianListPrice ?? null,
+    medianDaysToPending: regionPulse?.medianDaysToPending ?? null,
+    soldCount30d: regionPulse?.soldCount30d ?? null,
+  }
+
+  // About section — the origin story and what every listing gets.
+  // Concrete facts only. No stated virtues (VOICE.md Law 1 + Law 4).
+  const aboutParagraphs = [
+    'Matt Ryan founded Ryan Realty in June 2023, after years in the fire service. He works to the standard his mentor, Hjalmar “Red” Erickson, set: the job is about the people on the other side of the table, not the transaction.',
+    'Every listing gets cinematic video, a 3D walkthrough, and a price built from live Central Oregon market data. The active inventory, median price, days on market, and months of supply you see on this site are the same figures we put in front of you when it is time to price a listing or write an offer. When the data does not support a price, we say so.',
+    'The broker you first speak to is the broker who works your purchase or sale through to close. No hand-off.',
+  ]
+
+  // Quick-facts ledger — verified identifiers and founding date.
+  const aboutFacts = [
+    { label: 'Founded', value: 'June 2023' },
+    { label: 'License', value: 'OREA 201253677' },
+    { label: 'Principal Broker', value: 'OR #201206613' },
+    { label: 'Based in', value: 'Bend, Oregon' },
+    { label: 'Service area', value: 'Central Oregon' },
+  ]
+
   return (
-    <main className="min-h-screen bg-background">
+    <main className="kb-root">
+      <KbNav />
+      <KbSectionTracker pageType="about" />
       <MetadataBlock
         schemas={[
           {
@@ -116,74 +169,52 @@ export default async function AboutPage() {
           },
         ]}
       />
-      <PageBreadcrumb trail={[{ label: 'About' }]} />
-
-      <HeroBlock
-        headline="Homes here deserve more than a sign in the yard."
-        lede="Every Ryan Realty listing gets cinematic video, a 3D walkthrough, and a price built from live Central Oregon market data. The showcase treatment, on every home, at every price."
-        photo={{
-          src: heroSrc ?? OLD_MILL_HERO,
-          alt: 'Central Oregon high desert and Cascade mountains around Bend.',
-          priority: true,
-        }}
-        minHeight={440}
+      <KbBreadcrumb
+        overlay
+        trail={[
+          { label: 'Home', href: '/' },
+          { label: 'About' },
+        ]}
       />
+      <SmoothScrollProvider>
+        <KbHero
+          data={{
+            activeCount: null,
+            medianListPrice: null,
+            medianDaysToPending: null,
+          }}
+          eyebrow="Ryan Realty · Bend, Oregon"
+          titleTop="Homes here deserve"
+          titleBottom="more than a sign."
+          lead="across Central Oregon, with cinematic video, a 3D walkthrough, and a price built from live market data."
+          videoSrc={null}
+          posterSrc={heroSrc ?? OLD_MILL_HERO}
+        />
 
-      <MarketingStandardBlock tone="default" />
+        <KbAbout
+          eyebrow="Ryan Realty · Founded 2023"
+          heading="How we got here."
+          paragraphs={aboutParagraphs}
+          facts={aboutFacts}
+        />
 
-      <ContentSection eyebrow="Our story" title="How Ryan Realty started." width="wide">
-        <Stack gap="default">
-          <Body size="default" tone="muted" className="leading-relaxed">
-            Matt Ryan founded Ryan Realty in June 2023, after years in the fire service. He works to
-            the standard his mentor, Hjalmar &ldquo;Red&rdquo; Erickson, set: the job is about the
-            people on the other side of the table, not the transaction.
-          </Body>
-          <Body size="default" tone="muted" className="leading-relaxed">
-            We lead with the numbers. The active inventory, median price, days on market, and months
-            of supply you see on this site are the same figures we put in front of you when it is
-            time to price a listing or write an offer. When the data does not support a price, we
-            say so.
-          </Body>
-        </Stack>
-      </ContentSection>
+        <KbTestimonials reviews={reviews} />
 
-      <CityGrid
-        eyebrow="Service area"
-        title="Where we work"
-        subtitle="The Central Oregon cities and resort communities we cover. Active counts update daily."
-      />
+        <KbTeam />
 
-      <LifestyleStrip images={lifestyleImages} />
+        {articlePosts.length > 0 ? (
+          <KbArticles
+            posts={articlePosts}
+            eyebrow="Guides and insights"
+            heading="Central Oregon real estate, explained."
+            subtitle="Local housing news, neighborhood deep dives, and buyer and seller guides for Bend and Central Oregon."
+          />
+        ) : null}
 
-      <Section padding="default" tone="muted" divider>
-        <Container>
-          <Stack gap="tight" className="mb-10 max-w-prose">
-            <Eyebrow>The team</Eyebrow>
-            <H2>The brokers</H2>
-            <Body size="default" tone="muted" className="leading-relaxed">
-              Every broker, reachable directly. <TextLink href="/team" underline="on-hover">See full profiles</TextLink>.
-            </Body>
-          </Stack>
-          <Grid cols={3} gap="default">
-            {brokers.map((broker) => (
-              <div key={broker.slug} className="bg-card border border-border rounded-[14px] p-6 shadow-sm">
-                <BrokerCard broker={broker} variant="featured" ctaHref="/contact" ctaLabel="Get in touch" />
-              </div>
-            ))}
-          </Grid>
-        </Container>
-      </Section>
+        <KbSell data={sellData} eyebrow="Sell with us" />
 
-      <ReviewsBlock data={reviews} eyebrow="Client reviews" title="What our clients say" tone="muted" max={6} />
-
-      <FAQBlock
-        eyebrow="Common questions"
-        title="Working with Ryan Realty"
-        items={FAQ_ITEMS}
-        tone="default"
-      />
-
-      <CtaDuo />
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
     </main>
   )
 }

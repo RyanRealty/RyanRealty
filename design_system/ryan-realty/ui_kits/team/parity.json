@@ -1,40 +1,75 @@
 {
   "route": "app/team/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/team/index.html",
-  "competitiveTarget": "Beat generic brokerage team pages: real broker names, OREA license numbers, transparent-PNG headshots, and direct phone/email, with zero invented track-record or review claims.",
-  "note": "Wave 3 site-v2 rebuild; broker-data fix 2026-06-02. Large BrokerProfileRow profiles render ONLY verified getBrokers() data — real bio, specialty pills, OREA license #, transparent headshot, and direct phone/email — for all three brokers. This was the fix for getBrokers querying non-existent columns (full_name/phone_direct/headshot_png) and silently serving a thin fallback that hid the real bios + contact + specialties. Still NO fabricated stats, rankings, track-record, or review text. Reviews-platform links render only when google_review_url/zillow_review_url are set in the DB (currently null). Each profile links to the broker's full page via teamPath(slug).",
+  "competitiveTarget": "Beat generic brokerage team pages: real broker names, direct-broker accountability, transparent-PNG headshots, and verified Google reviews, inside the KB chrome.",
+  "note": "Phase 9 KB migration. Team index uses KB chrome (KbNav, KbHero, KbTeam, KbTestimonials, KbSell, KbFooter, KbSectionTracker). No fabricated stats, rankings, or review text. getBrokers() is the sole broker-data source. TESTIMONIALS/getReviews feed KbTestimonials. Per-broker profiles at /team/[slug] each carry filtered reviews (reviewBelongsOnPage) and getBrokerSales track records inside the same KB chrome.",
   "requiredComponents": [
     {
-      "name": "PageBreadcrumb",
-      "section": "Home > Team",
+      "name": "KbNav",
+      "section": "site chrome — KB top bar (replaces default SiteHeader on this route)",
       "blocking": true
     },
     {
-      "name": "HeroBlock",
-      "section": "hero — 'Three brokers. That's it.' + lede (three licensed brokers, no hand-offs) + canonical Old Mill photo",
+      "name": "KbSectionTracker",
+      "section": "tracking — section_view + scroll_depth events (page contract)",
       "blocking": true
     },
     {
-      "name": "BrokerProfileRow",
-      "section": "team profiles — large headshot + role + name + license + specialty pills + bio + direct contact for all brokers via getBrokers(), each linking to teamPath(slug)",
+      "name": "MetadataBlock",
+      "section": "JSON-LD — CollectionPage + BreadcrumbList structured data",
       "blocking": true
     },
     {
-      "name": "CTABar",
-      "section": "'Ready to talk' — navy CTA band with schedule-a-call + phone",
+      "name": "KbBreadcrumb",
+      "section": "breadcrumb — Home / Team hierarchy strip",
+      "blocking": true
+    },
+    {
+      "name": "SmoothScrollProvider",
+      "section": "motion — Lenis + GSAP ScrollTrigger layer",
+      "blocking": true
+    },
+    {
+      "name": "KbHero",
+      "section": "hero — full-bleed hero with Old Mill poster and direct-broker headline",
+      "blocking": true
+    },
+    {
+      "name": "KbTeam",
+      "section": "broker grid — three portrait cards, each linking to /team/[slug]",
+      "blocking": true
+    },
+    {
+      "name": "KbTestimonials",
+      "section": "social proof — verified Google reviews from getReviews() or TESTIMONIALS",
+      "blocking": true
+    },
+    {
+      "name": "KbSell",
+      "section": "seller CTA — address-capture, routes to /sell/valuation",
+      "blocking": true
+    },
+    {
+      "name": "KbFooter",
+      "section": "site chrome — KB footer (replaces default SiteFooter on this route)",
       "blocking": true
     }
   ],
-  "layoutComponents": [
-    {
-      "name": "SiteHeader",
-      "section": "renders from app/layout.tsx",
-      "note": "gate checks the route file"
-    },
-    {
-      "name": "SiteFooter",
-      "section": "renders from app/layout.tsx",
-      "note": "gate checks the route file"
-    }
-  ]
+  "perBrokerPage": {
+    "route": "app/team/[slug]/page.tsx",
+    "note": "Per-broker profile page shares the same KB chrome. Key invariants: (1) reviewBelongsOnPage() filters every review — a broker's page never shows another broker's named review. (2) getBrokerSales() provides per-broker closings (both sides); fallback is getBrokerageListingTiles() brokerage record. (3) JSON-LD RealEstateAgent + BreadcrumbList preserved. (4) KbHero poster = broker headshot. (5) KbAbout = verified bio + license + closings facts. (6) KbFeatured = track-record tiles. (7) KbTestimonials = filtered reviews.",
+    "requiredComponents": [
+      { "name": "KbNav", "section": "site chrome", "blocking": true },
+      { "name": "KbSectionTracker", "section": "tracking", "blocking": true },
+      { "name": "MetadataBlock", "section": "JSON-LD breadcrumb", "blocking": true },
+      { "name": "KbBreadcrumb", "section": "breadcrumb", "blocking": true },
+      { "name": "SmoothScrollProvider", "section": "motion layer", "blocking": true },
+      { "name": "KbHero", "section": "hero — broker headshot poster + identity", "blocking": true },
+      { "name": "KbAbout", "section": "bio — verified broker bio + quick facts", "blocking": true },
+      { "name": "KbFeatured", "section": "track record — own sales or brokerage record", "blocking": true },
+      { "name": "KbTestimonials", "section": "filtered reviews — per-broker attribution only", "blocking": true },
+      { "name": "KbSell", "section": "seller CTA", "blocking": true },
+      { "name": "KbFooter", "section": "site chrome", "blocking": true }
+    ]
+  }
 }

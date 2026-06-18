@@ -1,61 +1,76 @@
 {
   "route": "app/about/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/about/index.html",
-  "competitiveTarget": "Beat generic national-brokerage profile pages by leading with honesty, verified facts, real broker names + licenses, and zero marketing-speak (CLAUDE.md Data Accuracy + brand voice).",
-  "note": "Site-v2 + understated-voice rework 2026-06-02 (Matt directive: don't overtly state things — see memory feedback-voice-no-overt-statements). SiteHeader/SiteFooter render from app/layout.tsx. Every claim verified: Ryan Realty LLC (founded June 2023, OREA 201253677), Matt PB 201206613, brokers from getBrokers(), CityGrid counts live from geo_snapshot_mv, the founder/fire-service/Red-Erickson story from Matt's verified broker bio. REMOVED per the voice directive: the Jax mascot section (Matt: 'that's dumb'), the heritage-strip self-label ('Independent brokerage'), the 'Four rules we hold to' virtue-stating block, and 'Three brokers. All licensed. All active.' (a licensed active broker is the baseline, not a selling point). The page now leads with the concrete origin story + live data, not stated virtues. Distinct hero (Deschutes, not the Old Mill brand hero) so /about doesn't look identical to every other page. NO testimonials (no verified review source wired).",
+  "competitiveTarget": "Beat generic national-brokerage profile pages by leading with verified facts, concrete origin story, real Google reviews, and direct-broker accountability — zero marketing-speak (CLAUDE.md Data Accuracy + brand voice).",
+  "note": "KB (kinetic-brutalist) conversion 2026-06-18 (Phase 9 convergence). KbNav + KbFooter carry chrome. HideChrome for default SiteHeader/SiteFooter is a shared-component edit — deferred to orchestrator. Reviews now wired from TESTIMONIALS (24 verified Google 5-star reviews). Voice: show, don't say — no stated virtues, no headcount/smallness, no overt category claims (VOICE.md Five Laws). Every verified fact: Ryan Realty LLC (OREA 201253677, founded June 2023), Matt PB OR #201206613, fire service + Red Erickson mentor from verified broker bio. Region pulse feeds KbSell live numbers. Hero uses getSurfaceImage central-oregon with Old Mill fallback.",
   "requiredComponents": [
     {
-      "name": "PageBreadcrumb",
-      "section": "Home > Ryan Realty — schema.org breadcrumb",
+      "name": "KbNav",
+      "section": "top nav — transparent over hero, flips to navy on scroll; full site directory overlay",
       "blocking": true
     },
     {
-      "name": "HeroBlock",
-      "section": "hero — understated factual headline + concrete lede (founded 2023, three brokers, no hand-offs) on the Deschutes photo (page-distinct, not Old Mill)",
+      "name": "KbSectionTracker",
+      "section": "tracking — section_view + scroll_depth events (page contract G52)",
       "blocking": true
     },
     {
-      "name": "ContentSection",
-      "section": "Story — concrete origin (Matt, fire service, mentor Red Erickson, June 2023) + data-led approach. No self-labels.",
+      "name": "MetadataBlock",
+      "section": "JSON-LD — Organization/AboutPage + BreadcrumbList structured data",
       "blocking": true
     },
     {
-      "name": "CityGrid",
-      "section": "'Where we work' service-area grid — city cards with LIVE geo_snapshot_mv counts",
+      "name": "KbBreadcrumb",
+      "section": "breadcrumb strip — Home / About",
       "blocking": true
     },
     {
-      "name": "BrokerCard",
-      "section": "Team section — three broker cards via getBrokers(), minimal heading + link to /team full profiles",
+      "name": "SmoothScrollProvider",
+      "section": "Lenis + GSAP ScrollTrigger scroll layer",
       "blocking": true
     },
     {
-      "name": "FAQBlock",
-      "section": "Common questions — verified facts only (brokers, founding, no-hand-off model, service area, valuation)",
+      "name": "KbHero",
+      "section": "hero — brand eyebrow, 'Homes here deserve more than a sign.' H1, Central Oregon photo",
       "blocking": true
     },
     {
-      "name": "CtaDuo",
-      "section": "big-CTA — two conversion cards (buyer listing alerts + seller home valuation)",
+      "name": "KbAbout",
+      "section": "story — concrete origin (Matt, fire service, mentor Red Erickson, June 2023) + data-led approach + quick-facts ledger (OREA license, founding date, service area)",
       "blocking": true
+    },
+    {
+      "name": "KbTestimonials",
+      "section": "testimonials — 8 verified Google reviews from TESTIMONIALS (24 total, 5.0 avg, pulled 2026-06-13)",
+      "blocking": true
+    },
+    {
+      "name": "KbTeam",
+      "section": "team — three brokers with direct-broker accountability copy, links to /team/[slug]",
+      "blocking": true
+    },
+    {
+      "name": "KbSell",
+      "section": "seller CTA — address capture to /sell/valuation; live region pulse numbers (median, DOM, sold 30d)",
+      "blocking": true
+    },
+    {
+      "name": "KbFooter",
+      "section": "footer — contact, sitemap, legal",
+      "blocking": true
+    }
+  ],
+  "optionalComponents": [
+    {
+      "name": "KbArticles",
+      "section": "guides and insights — getRecentBlogPosts(); renders null when no posts exist",
+      "blocking": false
     }
   ],
   "deferredComponents": [
     {
-      "name": "TestimonialBlock",
-      "reason": "No verified client-review source is wired. Fabricated testimonials are a compliance + Data Accuracy violation, so the page renders none. Re-add (and restore to requiredComponents) once a real review source (e.g. Google Business Profile reviews) is connected."
-    }
-  ],
-  "layoutComponents": [
-    {
-      "name": "SiteHeader",
-      "section": "site chrome — renders from app/layout.tsx",
-      "note": "Not in requiredComponents because the gate checks the route file."
-    },
-    {
-      "name": "SiteFooter",
-      "section": "navy footer — renders from app/layout.tsx",
-      "note": "Not in requiredComponents because the gate checks the route file."
+      "name": "HideChrome",
+      "reason": "Shared-component edit needed to suppress the default SiteHeader/SiteFooter on the KB chrome pages. Deferred to orchestrator — KbNav + KbFooter already render the correct KB chrome."
     }
   ]
 }
