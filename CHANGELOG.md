@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.17 (2026-06-18)
+
+### Other
+- KbNav: add solid variant (always-navy, no scroll listener) for hero-less KB surfaces like /search
+
+---
+
+
 ## v1.595.16 (2026-06-18)
 
 ### Other
