@@ -78,6 +78,7 @@ const KB_ROUTES: RegExp[] = [
   /^\/resources$/,
   /^\/reviews$/,
   /^\/schools(\/[^/]+)?$/,
+  /^\/search$/, // KB chrome via solid KbNav (no kb-root shell — keeps the map working)
   /^\/sell$/,
   /^\/sell\/valuation$/,
   /^\/subdivisions\/[^/]+$/,
