@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.5 (2026-06-18)
+
+### Other
+- KB market chart: completed years span the full year; current year ends clean; community chart falls back to city trend when neighborhood sales are too sparse
+
+---
+
+
 ## v1.595.4 (2026-06-18)
 
 ### Other
