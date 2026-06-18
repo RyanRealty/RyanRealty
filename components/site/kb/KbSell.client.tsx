@@ -12,7 +12,7 @@ import { kbMoneyFull, type KbSellData } from './types'
  * write + attribution (Phase 4/6). Show-don't-tell copy; three live proof
  * numbers. Cream split breaks the navy run.
  */
-export function KbSell({ data }: { data: KbSellData }) {
+export function KbSell({ data, eyebrow = 'Sell with us' }: { data: KbSellData; eyebrow?: string }) {
   const root = useRef<HTMLElement>(null)
   const router = useRouter()
   const [address, setAddress] = useState('')
@@ -52,7 +52,7 @@ export function KbSell({ data }: { data: KbSellData }) {
     <section className="section sell" id="sell" ref={root}>
       <div className="sell-grid">
         <div className="sell-copy">
-          <span className="sec-index">06 / Sellers</span>
+          <span className="sec-index">{eyebrow}</span>
           <h2 className="sell-h display">
             What&rsquo;s your
             <br />

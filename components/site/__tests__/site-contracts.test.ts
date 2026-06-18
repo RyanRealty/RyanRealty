@@ -214,6 +214,23 @@ describe('design directive contracts', () => {
     expect(hud).toMatch(/over the window/)
   })
 
+  it('D101 — market chart is the reusable interactive KbMarketChart (toggle years, axis, a11y)', () => {
+    const hud = readSrc('components/site/kb/KbMarketHud.client.tsx')
+    expect(hud).toMatch(/<KbMarketChart/)
+    const chart = readSrc('components/site/kb/KbMarketChart.client.tsx')
+    expect(chart).toMatch(/aria-pressed/) // year toggle chips
+    expect(chart).toMatch(/onKeyDown/) // keyboard cursor
+    expect(chart).toMatch(/kbmc-sr/) // screen-reader data table
+    expect(chart).toMatch(/loading/) // loading state
+    expect(chart).toMatch(/Not enough/) // empty state
+  })
+
+  it('D102 — featured grid never orphans a tiny tile (count capped to fill the module)', () => {
+    const feat = readSrc('components/site/kb/KbFeatured.client.tsx')
+    expect(feat).toMatch(/\[12, 9, 6, 3\]\.find/)
+    expect(feat).toMatch(/shown\.map/)
+  })
+
   it('D100 — community page RENDERS rich resort content (amenities/golf/membership/builders)', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
     expect(src).toMatch(/getResortCommunityContent\(resortSlug\)/)

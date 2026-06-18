@@ -15,7 +15,7 @@ import { useInViewAutoplay } from './use-in-view-autoplay'
  * hover / keyboard focus, and reverts to the photo otherwise. One video plays at
  * a time. Only the active tile mounts its video.
  */
-export function KbFeatured({ items }: { items: KbFeaturedItem[] }) {
+export function KbFeatured({ items, eyebrow = 'Featured homes' }: { items: KbFeaturedItem[]; eyebrow?: string }) {
   const root = useRef<HTMLElement>(null)
   const { inViewKey, register } = useInViewAutoplay()
   const [hovered, setHovered] = useState<string | null>(null)
@@ -44,11 +44,17 @@ export function KbFeatured({ items }: { items: KbFeaturedItem[] }) {
 
   if (items.length === 0) return null
 
+  // The asymmetric poster grid is a repeating module — a hero (full width), a pair,
+  // then uniform thirds. Cap to a count whose final row of thirds is FULL so the
+  // grid never leaves an orphan tiny tile + dead whitespace: hero(1) + pair(2) +
+  // multiples of 3 thirds -> 3, 6, 9, 12. Show the largest that fits.
+  const shown = items.slice(0, [12, 9, 6, 3].find((c) => items.length >= c) ?? items.length)
+
   return (
     <section className="section listings" id="listings" ref={root}>
       <div className="wrap">
         <div className="sec-head">
-          <span className="sec-index">04 / Featured Homes</span>
+          <span className="sec-index">{eyebrow}</span>
           <h2 className="sec-title display">
             Featured
             <br />
@@ -56,7 +62,7 @@ export function KbFeatured({ items }: { items: KbFeaturedItem[] }) {
           </h2>
         </div>
         <div className="lst-grid">
-          {items.map((it) => {
+          {shown.map((it) => {
             const playing = activeHref === it.href && !!it.video
             return (
               <a

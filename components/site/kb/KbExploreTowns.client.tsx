@@ -14,7 +14,7 @@ import { kbMoneyFull, type KbTownItem } from './types'
  */
 export function KbExploreTowns({
   towns,
-  eyebrow = '01 / Explore',
+  eyebrow = 'Explore',
   title = 'Explore',
   sectionId = 'towns',
   cta = { href: '/homes-for-sale', label: 'Search homes in every town' },
