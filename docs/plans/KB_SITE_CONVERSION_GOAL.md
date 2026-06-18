@@ -71,5 +71,10 @@ per the city-page migration pattern). NOT migrating: account/dashboard/auth/lega
   Browser-verified all 4: KB chrome present, chips link out, JSON-LD intact (region keeps
   WebPage+Dataset+FAQPage+BreadcrumbList). §0 trace: region $741,000 = market_pulse_live
   median_list_price; 1818 active; 6.91 MoS → "6.9 · buyer's market"; 16 days to pending — all exact.
-- 2026-06-18 — Next wave (D): `/housing-market` hub + city-level reports `/housing-market/[...slug]`
-  → KB (mirror the verified region report). Then search/buy/zip, about/team, sell.
+- 2026-06-18 — **Wave D shipped + verified live** (`8c0d0a02`): `/housing-market` hub → KB
+  (BreadcrumbList+WebPage only, city tiles link to reports) and `/housing-market/[...slug]` city
+  reports → KB (`/housing-market/bend`: Dataset+FAQPage+WebPage+BreadcrumbList intact; §0 exact —
+  $780,450 list = market_pulse_live, 4.68 MoS → "4.7 · balanced"). 2-segment subdivision-report
+  case preserved on legacy render (no wave covers it). **8 KB pages now carry the contract.**
+- 2026-06-18 — Wave E: `/zip/[zip]` → KB (mirror the city page). Then feed pages
+  (open-houses, price-drops), bespoke trust/funnel (about/team/sell), then search/buy.
