@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.15 (2026-06-18)
+
+### Other
+- City page punch list 2: open-house interactivity, resort counts (§0), activity/golf
+
+---
+
+
 ## v1.594.14 (2026-06-18)
 
 ### Other
