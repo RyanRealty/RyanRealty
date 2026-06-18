@@ -29,6 +29,15 @@ type KbHeroProps = {
   posterSrc?: string
   /** Honest label shown over the hero when the poster is a regional fallback, not a verified city photo. */
   mediaCaption?: string
+  /**
+   * Optional CONTAINED portrait (e.g. a broker headshot) shown framed inside the
+   * hero. Use this instead of piping a portrait into posterSrc — a portrait as the
+   * full-bleed background scales to a blown-up face (Matt report 2026-06-18). When
+   * set, pass a regional/landscape photo as posterSrc for the backdrop.
+   */
+  portraitSrc?: string
+  /** Show the plain-language property search. Default true; set false on profile/non-search heroes (e.g. a broker page). */
+  showSearch?: boolean
 }
 
 export function KbHero({
@@ -40,6 +49,8 @@ export function KbHero({
   videoSrc = '/videos/hero-optimized.mp4',
   posterSrc = '/images/hero/hero-old-mill-master-4k.jpg',
   mediaCaption,
+  portraitSrc,
+  showSearch = true,
 }: KbHeroProps) {
   const root = useRef<HTMLElement>(null)
   const router = useRouter()
@@ -95,11 +106,18 @@ export function KbHero({
       </div>
       <div className="hero-grid-overlay" />
       <div className="hero-inner">
+        {portraitSrc ? (
+          <div className="hero-portrait" aria-hidden="true">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={portraitSrc} alt="" />
+          </div>
+        ) : null}
         <div className="hero-tag eyebrow"><span className="dot" /> {eyebrow}</div>
         <h1 className="hero-h display">
           <span className="reveal-mask"><span className="ln reveal-inner">{titleTop}</span></span>
           <span className="reveal-mask"><span className="ln indent reveal-inner">{titleBottom}</span></span>
         </h1>
+        {showSearch ? (
         <div className="hero-search-wrap">
           <form className="hero-search" role="search" onSubmit={submit}>
             <svg className="hs-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -125,6 +143,7 @@ export function KbHero({
             <button type="submit" className="hs-go">Search</button>
           </form>
         </div>
+        ) : null}
         <div className="hero-sub-row">
           <p className="hero-sub">
             {data.activeCount != null ? <><b>{data.activeCount.toLocaleString('en-US')} homes</b> for sale</> : 'Homes for sale'} {lead}

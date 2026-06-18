@@ -362,7 +362,9 @@ export default async function TeamMemberPage({ params }: Props) {
             : ''}
           lead={heroLead}
           videoSrc={null}
-          posterSrc={headshotSrc}
+          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          portraitSrc={headshotSrc}
+          showSearch={false}
         />
 
         {/* Bio — KbAbout with the broker's verified bio and key facts. */}
