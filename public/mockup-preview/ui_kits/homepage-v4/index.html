@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ryan Realty · homepage v4 · THE READING</title>
+
+  <!--
+    CONCEPT: THE READING
+    ────────────────────
+    The homepage is a live instrument reading of the Central Oregon market,
+    shot like a film. The data is the protagonist. One giant living number
+    opens the page, a ticker-tape carries the fresh feed, a scroll-driven
+    reading walks four figures one viewport at a time, and the neighborhood
+    ledger answers every hover with a film frame and a number.
+
+    DATA SLOTS ({live})
+    ───────────────────
+    Every figure on this page is a live slot. In production each value is
+    wired through the DAL (lib/data) to market_pulse_live (10 min freshness)
+    / market_stats_cache. Mockup values mirror the live site SSR snapshot
+    captured 2026-06-10 (active 1,808 · median $740,000 · 14 days to pending
+    · 6.9 months supply · 337 closings last 30 days). Elements carry
+    data-live="<metric>" so the build pass can wire them mechanically.
+    Neighborhood medians are placeholder-realistic and resolve from
+    market_stats_cache at build. NOTHING here ships hardcoded.
+
+    PRODUCTION NOTE — VIDEO HERO
+    ────────────────────────────
+    The hero background is designed for the Tetherow flyover VIDEO loop
+    (public/videos/flyovers/tetherow/hero.mp4, landing this week):
+    <video autoplay muted loop playsinline poster="hero-poster.jpg">.
+    Until then the poster frame runs a 28s scale drift so the frame is
+    never static. prefers-reduced-motion gets the still.
+
+    ASSETS (all real, all owned/licensed — asset-library manifest ids in parens)
+    ────────────────────────────────────────────────────────────────────────────
+    hero-poster.jpg   public/videos/flyovers/tetherow/poster.jpg
+    nb-oldmill.jpg    35e56f79 · Old Mill smokestacks aerial (A-grade)
+    nb-oldbend.jpg    aab6f55b · Mirror Pond / Drake Park aerial (A-grade)
+    nb-awbrey.jpg     13e87524 · pine forest + butte aerial (A-grade)
+    nb-nwx.jpg        30a2365e · west-side neighborhood + Cascades (A-grade)
+    nb-tetherow.jpg   ffcce64c · fairway pond + Cascade horizon (A-grade)
+    film-tower.jpg    bd103638 · Tower Theatre neon, night (A-grade)
+    film-bachelor.jpg 57daff6c · Mt. Bachelor aerial (A-grade)
+    film-river.jpg    df7a367d · Deschutes canyon aerial (A-grade)
+    film-bridge.jpg   ba294855 · Deschutes footbridge aerial (A-grade)
+  -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* Hallmark · pre-emit critique: P5 H5 E4 S5 R4 V5
+     * macrostructure: stat-led scrollytelling document · tone: instrument-grade luxury
+     * theme: locked Ryan Realty (navy #102742 / cream #faf8f4 · Amboqia + Geist)
+     * signature interaction: the living number (hero count-up → sticky reading → ledger)
+     * nav: N9 edge-aligned minimal · footer: Ft5 statement closer
+     */
+
+    @font-face {
+      font-family: 'Amboqia';
+      src: url('../../fonts/Amboqia_Boriango.otf') format('opentype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --navy: #102742;
+      --cream: #faf8f4;
+      --white: #ffffff;
+      --black: #000000;
+      --navy-85: rgba(16, 39, 66, 0.85);
+      --navy-60: rgba(16, 39, 66, 0.60);
+      --navy-40: rgba(16, 39, 66, 0.40);
+      --navy-14: rgba(16, 39, 66, 0.14);
+      --navy-08: rgba(16, 39, 66, 0.08);
+      --cream-90: rgba(250, 248, 244, 0.90);
+      --cream-70: rgba(250, 248, 244, 0.70);
+      --cream-45: rgba(250, 248, 244, 0.45);
+      --cream-16: rgba(250, 248, 244, 0.16);
+      --scrim-hero: linear-gradient(180deg, rgba(16,39,66,0.52) 0%, rgba(16,39,66,0.10) 16%, rgba(16,39,66,0.32) 52%, rgba(16,39,66,0.88) 100%);
+      --scrim-film: linear-gradient(96deg, rgba(16,39,66,0.96) 0%, rgba(16,39,66,0.88) 38%, rgba(16,39,66,0.45) 68%, rgba(16,39,66,0.18) 100%),
+                    linear-gradient(0deg, rgba(16,39,66,0.72) 0%, rgba(16,39,66,0.10) 45%);
+
+      --font-display: 'Amboqia', Georgia, serif;
+      --font-body: 'Geist', -apple-system, sans-serif;
+      --font-mono: 'Geist Mono', 'SF Mono', monospace;
+
+      --text-colossal: clamp(6.5rem, 21vw, 19rem);
+      --text-reading: clamp(5rem, 16.5vw, 16rem);
+      --text-ledger: clamp(2rem, 4.6vw, 3.9rem);
+      --text-statement: clamp(2.6rem, 6.4vw, 5.6rem);
+      --text-body-l: clamp(1.05rem, 1.5vw, 1.25rem);
+      --text-body: 1rem;
+      --text-micro: 0.6875rem;
+
+      --track-micro: 0.16em;
+      --space-gutter: clamp(20px, 4.5vw, 72px);
+
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --dur-step: 600ms;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { overflow-x: clip; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      background: var(--cream);
+      color: var(--navy);
+      font-size: var(--text-body);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+
+    .num { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
+    .micro {
+      font-size: var(--text-micro);
+      letter-spacing: var(--track-micro);
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+    .mono { font-family: var(--font-mono); }
+
+    /* ── NAV ───────────────────────────────────────────────── */
+    .nav {
+      position: fixed; inset: 0 0 auto 0; z-index: 50;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 22px var(--space-gutter);
+      transition: background 300ms var(--ease-out), padding 300ms var(--ease-out);
+    }
+    .nav.is-scrolled { background: var(--navy); padding-top: 14px; padding-bottom: 14px; }
+    .nav-logo img { height: 26px; width: auto; }
+    .nav-links { display: flex; gap: 34px; align-items: center; color: var(--cream); }
+    .nav-links a { position: relative; padding: 4px 0; }
+    .nav-links a::after {
+      content: ''; position: absolute; left: 0; bottom: 0; height: 1px; width: 100%;
+      background: var(--cream); transform: scaleX(0); transform-origin: left;
+      transition: transform 300ms var(--ease-out);
+    }
+    .nav-links a:hover::after, .nav-links a:focus-visible::after { transform: scaleX(1); }
+    .nav-links a:focus-visible { outline: 2px solid var(--cream); outline-offset: 4px; }
+    .nav-phone { font-weight: 500; }
+
+    /* ── HERO ──────────────────────────────────────────────── */
+    .hero {
+      position: relative; height: 100svh; min-height: 620px;
+      overflow: clip; background: var(--navy); color: var(--cream);
+    }
+    .hero-media {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover;
+      animation: heroDrift 28s var(--ease-out) both;
+      transform-origin: 62% 38%;
+    }
+    @keyframes heroDrift {
+      from { transform: scale(1.12); }
+      to   { transform: scale(1.0); }
+    }
+    .hero-scrim { position: absolute; inset: 0; background: var(--scrim-hero); }
+
+    .hero-content {
+      position: absolute; inset: auto 0 0 0;
+      padding: 0 var(--space-gutter) clamp(36px, 6vh, 64px);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end; gap: 24px;
+    }
+    .hero-live {
+      display: inline-flex; align-items: center; gap: 10px;
+      margin-bottom: clamp(8px, 1.6vh, 20px);
+      opacity: 0; animation: riseIn 700ms var(--ease-out) 300ms forwards;
+    }
+    .live-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--cream);
+      animation: pulse 2.2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 var(--cream-45); }
+      50% { opacity: 0.55; box-shadow: 0 0 0 7px rgba(250,248,244,0); }
+    }
+    .hero-count {
+      font-family: var(--font-display);
+      font-size: var(--text-colossal);
+      line-height: 0.86;
+      letter-spacing: -0.01em;
+      color: var(--white);
+      opacity: 0; animation: riseIn 900ms var(--ease-out) 450ms forwards;
+    }
+    .hero-sub {
+      font-size: var(--text-body-l);
+      font-weight: 300;
+      color: var(--cream-90);
+      max-width: 34ch;
+      margin-top: clamp(10px, 2vh, 22px);
+      opacity: 0; animation: riseIn 700ms var(--ease-out) 750ms forwards;
+    }
+    .hero-aside {
+      display: flex; flex-direction: column; gap: 18px;
+      text-align: right; padding-bottom: 8px;
+      opacity: 0; animation: riseIn 700ms var(--ease-out) 950ms forwards;
+    }
+    .hero-aside .stat-label { color: var(--cream-45); display: block; margin-bottom: 2px; }
+    .hero-aside .stat-value { font-size: 1.18rem; font-weight: 500; color: var(--cream); }
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── TICKER ────────────────────────────────────────────── */
+    .ticker {
+      background: var(--cream);
+      border-bottom: 1px solid var(--navy-14);
+      overflow: clip; white-space: nowrap;
+      padding: 15px 0;
+      position: relative;
+    }
+    .ticker-track {
+      display: inline-flex; gap: 0;
+      animation: tick 58s linear infinite;
+      will-change: transform;
+    }
+    .ticker:hover .ticker-track { animation-play-state: paused; }
+    @keyframes tick { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    .tick-item {
+      display: inline-flex; align-items: baseline; gap: 10px;
+      padding: 0 30px;
+      border-right: 1px solid var(--navy-14);
+    }
+    .tick-item .micro { color: var(--navy-60); }
+    .tick-item .tick-val { font-weight: 600; font-size: 0.95rem; }
+    .tick-item .tick-yoy { font-size: 0.78rem; color: var(--navy-60); font-weight: 500; }
+
+    /* ── THE READING (sticky scroll choreography) ──────────── */
+    .reading { position: relative; height: 430vh; background: var(--cream); }
+    .reading-stage {
+      position: sticky; top: 0; height: 100svh; min-height: 560px;
+      overflow: clip;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 0 var(--space-gutter);
+    }
+    .reading-kicker {
+      position: absolute; top: clamp(76px, 12vh, 120px); left: var(--space-gutter);
+      color: var(--navy-60);
+    }
+    .reading-frame { position: relative; height: min(60vh, 560px); }
+    .reading-step {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; justify-content: center;
+      opacity: 0; transform: translateY(48px);
+      transition: opacity var(--dur-step) var(--ease-out), transform var(--dur-step) var(--ease-out);
+      pointer-events: none;
+    }
+    .reading-step.is-active { opacity: 1; transform: translateY(0); }
+    .reading-step.is-past { opacity: 0; transform: translateY(-48px); }
+    .reading-label { color: var(--navy-60); margin-bottom: 14px; }
+    .reading-value {
+      font-family: var(--font-display);
+      font-size: var(--text-reading);
+      line-height: 1.04;
+      letter-spacing: -0.01em;
+      display: flex; align-items: baseline; gap: 18px;
+    }
+    .reading-unit {
+      font-family: var(--font-body);
+      font-size: clamp(1rem, 2vw, 1.5rem);
+      font-weight: 500; letter-spacing: 0.1em;
+      color: var(--navy-60);
+    }
+    .reading-sentence {
+      position: absolute; right: 0; bottom: 0;
+      max-width: 30ch;
+      font-size: var(--text-body-l); font-weight: 300;
+      text-align: right;
+      transition: opacity 400ms var(--ease-out) 150ms, transform 400ms var(--ease-out) 150ms;
+      opacity: 0; transform: translateY(14px);
+    }
+    .reading-step.is-active .reading-sentence { opacity: 1; transform: translateY(0); }
+    .reading-rail {
+      position: absolute; left: var(--space-gutter); bottom: clamp(56px, 11vh, 110px);
+      display: flex; gap: 8px; align-items: center;
+    }
+    .rail-tick {
+      width: 26px; height: 2px; background: var(--navy-14);
+      transition: background 300ms var(--ease-out);
+    }
+    .rail-tick.is-on { background: var(--navy); }
+    .reading-source {
+      position: absolute; right: var(--space-gutter); top: clamp(76px, 12vh, 120px);
+      color: var(--navy-40); font-size: 0.6875rem; letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* ── THE LEDGER ────────────────────────────────────────── */
+    .ledger {
+      background: var(--cream);
+      border-top: 1px solid var(--navy-14);
+      padding: clamp(72px, 11vh, 130px) var(--space-gutter) clamp(80px, 12vh, 150px);
+    }
+    .ledger-head { max-width: 1400px; margin: 0 auto clamp(40px, 7vh, 84px); }
+    .ledger-head h2 {
+      font-family: var(--font-display);
+      font-size: var(--text-statement);
+      font-weight: normal;
+      line-height: 1.02;
+      max-width: 14ch;
+    }
+    .ledger-head p {
+      margin-top: 18px; max-width: 44ch;
+      color: var(--navy-60); font-weight: 300; font-size: var(--text-body-l);
+    }
+    .ledger-grid {
+      max-width: 1400px; margin: 0 auto;
+      display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+      gap: clamp(28px, 4vw, 64px);
+      align-items: start;
+    }
+    .ledger-rows { border-top: 1px solid var(--navy-14); }
+    .ledger-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: baseline; gap: 18px;
+      width: 100%; text-align: left;
+      padding: clamp(18px, 2.6vh, 30px) 0;
+      border-bottom: 1px solid var(--navy-14);
+      background: none; border-left: none; border-right: none; border-top: none;
+      font: inherit; color: inherit; cursor: pointer;
+    }
+    .ledger-row:focus-visible { outline: 2px solid var(--navy); outline-offset: 4px; }
+    .ledger-index { color: var(--navy-40); font-size: 0.6875rem; letter-spacing: 0.1em; width: 26px; }
+    .ledger-name {
+      font-family: var(--font-display);
+      font-size: var(--text-ledger);
+      line-height: 1;
+      transition: transform 350ms var(--ease-out), opacity 350ms var(--ease-out);
+    }
+    .ledger-row:hover .ledger-name, .ledger-row.is-on .ledger-name { transform: translateX(12px); }
+    .ledger-rows:hover .ledger-row:not(:hover) .ledger-name { opacity: 0.34; }
+    .ledger-data { text-align: right; }
+    .ledger-data .stat-label { display: block; color: var(--navy-40); margin-bottom: 1px; }
+    .ledger-data .ledger-median { font-weight: 600; font-size: 1.05rem; }
+    .ledger-data .ledger-active { font-size: 0.8rem; color: var(--navy-60); font-weight: 500; }
+    .ledger-thumb { display: none; }
+    .ledger-stage {
+      position: sticky; top: 110px;
+      aspect-ratio: 4 / 4.6;
+      overflow: clip;
+      background: var(--navy);
+    }
+    .ledger-stage img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover;
+      opacity: 0; transform: scale(1.06);
+      transition: opacity 600ms var(--ease-out), transform 1200ms var(--ease-out);
+    }
+    .ledger-stage img.is-show { opacity: 1; transform: scale(1); }
+    .ledger-stage-caption {
+      position: absolute; left: 18px; bottom: 14px; z-index: 2;
+      color: var(--cream); font-family: var(--font-mono);
+      font-size: 0.6875rem; letter-spacing: 0.1em; text-transform: uppercase;
+    }
+    .ledger-stage::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(8deg, rgba(16,39,66,0.5) 0%, rgba(16,39,66,0) 36%);
+      pointer-events: none;
+    }
+    .ledger-foot { max-width: 1400px; margin: clamp(28px, 5vh, 52px) auto 0; }
+    .ledger-foot a {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-weight: 500; border-bottom: 1px solid var(--navy);
+      padding-bottom: 3px;
+      transition: gap 250ms var(--ease-out);
+    }
+    .ledger-foot a:hover { gap: 16px; }
+    .ledger-foot a:focus-visible { outline: 2px solid var(--navy); outline-offset: 4px; }
+
+    /* ── THE FILM ──────────────────────────────────────────── */
+    .film {
+      position: relative; color: var(--cream);
+      background: var(--navy);
+      overflow: clip;
+      padding: clamp(90px, 16vh, 190px) var(--space-gutter) clamp(72px, 11vh, 130px);
+    }
+    .film-bg {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    .film-scrim { position: absolute; inset: 0; background: var(--scrim-film); }
+    .film-inner { position: relative; max-width: 1400px; margin: 0 auto; }
+    .film h2 {
+      font-family: var(--font-display);
+      font-size: var(--text-statement);
+      font-weight: normal; line-height: 1.02;
+      max-width: 13ch; color: var(--white);
+    }
+    .film-body {
+      margin-top: 20px; max-width: 42ch;
+      font-weight: 300; font-size: var(--text-body-l); color: var(--cream-90);
+    }
+    .film-frames {
+      margin-top: clamp(48px, 8vh, 96px);
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr);
+      gap: clamp(12px, 1.6vw, 22px);
+      align-items: end;
+    }
+    .film-frame { position: relative; overflow: clip; }
+    .film-frame img {
+      width: 100%; aspect-ratio: 16 / 9; object-fit: cover;
+      transition: transform 900ms var(--ease-out);
+    }
+    .film-frame:hover img { transform: scale(1.045); }
+    .film-frame figcaption {
+      display: flex; justify-content: space-between;
+      margin-top: 10px;
+      font-family: var(--font-mono); font-size: 0.6875rem;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--cream-45);
+    }
+    .film-loc {
+      position: absolute; right: 0; top: 8px;
+      font-family: var(--font-mono); font-size: 0.6875rem;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--cream-45);
+    }
+
+    /* ── CLOSER ────────────────────────────────────────────── */
+    .closer {
+      background: var(--navy); color: var(--cream);
+      padding: clamp(110px, 20vh, 220px) var(--space-gutter) 0;
+      position: relative;
+    }
+    .closer-inner { max-width: 1400px; margin: 0 auto; }
+    .closer h2 {
+      font-family: var(--font-display);
+      font-size: clamp(3.4rem, 9.5vw, 8.6rem);
+      font-weight: normal; line-height: 0.98;
+      color: var(--white);
+      max-width: 10ch;
+    }
+    .closer-body {
+      margin-top: 28px; max-width: 46ch;
+      font-weight: 300; font-size: var(--text-body-l); color: var(--cream-70);
+    }
+    .closer-cta {
+      margin-top: clamp(36px, 6vh, 60px);
+      display: flex; gap: 28px; align-items: center; flex-wrap: wrap;
+    }
+    .btn-cream {
+      display: inline-block;
+      background: var(--cream); color: var(--navy);
+      font-weight: 500; font-size: 1rem;
+      padding: 17px 34px;
+      transition: transform 250ms var(--ease-out), background 250ms var(--ease-out);
+    }
+    .btn-cream:hover { transform: translateY(-2px); background: var(--white); }
+    .btn-cream:focus-visible { outline: 2px solid var(--cream); outline-offset: 4px; }
+    .btn-cream:active { transform: translateY(0); }
+    .closer-phone { font-size: 1.05rem; font-weight: 500; color: var(--cream); border-bottom: 1px solid var(--cream-45); padding-bottom: 2px; }
+    .closer-phone:hover { border-color: var(--cream); }
+    .closer-phone:focus-visible { outline: 2px solid var(--cream); outline-offset: 4px; }
+
+    .footer {
+      margin-top: clamp(90px, 16vh, 180px);
+      border-top: 1px solid var(--cream-16);
+      padding: 30px 0 36px;
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 18px; flex-wrap: wrap;
+      max-width: 1400px; margin-left: auto; margin-right: auto;
+    }
+    .footer-brand { display: flex; align-items: center; gap: 16px; }
+    .footer-brand img { height: 44px; width: auto; }
+    .footer .micro { color: var(--cream-45); }
+    .footer-links { display: flex; gap: 26px; }
+    .footer-links a { color: var(--cream-70); font-size: 0.85rem; }
+    .footer-links a:hover { color: var(--cream); }
+    .footer-links a:focus-visible { outline: 2px solid var(--cream); outline-offset: 4px; }
+
+    /* ── REVEALS ───────────────────────────────────────────── */
+    .reveal { opacity: 0; transform: translateY(16px); transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out); }
+    .reveal.is-in { opacity: 1; transform: translateY(0); }
+
+    /* ── RESPONSIVE ────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .nav-links a:not(.nav-phone) { display: none; }
+      .hero-content { grid-template-columns: 1fr; }
+      .hero-aside { flex-direction: row; gap: 22px; text-align: left; padding-bottom: 0; }
+      .hero-aside .stat-value { font-size: 1rem; }
+      .reading { height: 380vh; }
+      .reading-frame { height: min(56vh, 480px); }
+      .reading-source { top: auto; bottom: clamp(40px, 7vh, 64px); right: var(--space-gutter); left: auto; text-align: right; max-width: 46vw; }
+      .reading-sentence { left: 0; right: 0; max-width: none; text-align: left; }
+      .reading-rail { bottom: clamp(40px, 7vh, 64px); }
+      .ledger-grid { grid-template-columns: 1fr; }
+      .ledger-stage { display: none; }
+      .ledger-row { grid-template-columns: auto 1fr; grid-template-rows: auto auto auto; }
+      .ledger-thumb { display: block; grid-column: 1 / -1; width: 100%; aspect-ratio: 16 / 8; object-fit: cover; margin-bottom: 14px; }
+      .ledger-index { grid-row: 2; }
+      .ledger-name { grid-row: 2; }
+      .ledger-data { grid-column: 1 / -1; grid-row: 3; text-align: left; margin-top: 8px; display: flex; gap: 18px; align-items: baseline; }
+      .ledger-data .stat-label { display: inline; margin-right: 6px; }
+      .film-frames { grid-template-columns: 1fr; }
+      .footer { flex-direction: column; align-items: flex-start; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero-media { animation: none; }
+      .ticker-track { animation: none; }
+      .live-dot { animation: none; }
+      .hero-live, .hero-count, .hero-sub, .hero-aside { animation: none; opacity: 1; }
+      .reveal { opacity: 1; transform: none; transition: none; }
+      .reading-step, .reading-sentence { transition-duration: 1ms; }
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav" id="nav" aria-label="Primary">
+    <a class="nav-logo" href="#" aria-label="Ryan Realty home">
+      <img src="../../assets/brand/logo-horizontal-white-transparent.png" alt="Ryan Realty" />
+    </a>
+    <div class="nav-links micro">
+      <a href="#">Search</a>
+      <a href="#ledger">Neighborhoods</a>
+      <a href="#">Sell</a>
+      <a class="nav-phone num" href="tel:5412136706">541.213.6706</a>
+    </div>
+  </nav>
+
+  <!-- HERO · the living number over the flyover loop -->
+  <header class="hero">
+    <!-- production: <video autoplay muted loop playsinline poster="hero-poster.jpg" src="…/flyovers/tetherow/hero.mp4"> -->
+    <img class="hero-media" src="hero-poster.jpg" alt="Aerial flyover of Tetherow and the west side of Bend, Oregon" />
+    <div class="hero-scrim" aria-hidden="true"></div>
+    <div class="hero-content">
+      <div>
+        <p class="hero-live micro">
+          <span class="live-dot" aria-hidden="true"></span>
+          Live · Central Oregon MLS · <span data-live="freshness">updated 3h ago</span>
+        </p>
+        <p class="hero-count num" id="heroCount" data-live="active_listings" data-target="1808" aria-label="1,808 homes for sale">0</p>
+        <p class="hero-sub">homes for sale across Central Oregon right now.</p>
+      </div>
+      <div class="hero-aside num">
+        <div><span class="stat-label micro">Median list</span><span class="stat-value" data-live="median_list_price">$740,000</span></div>
+        <div><span class="stat-label micro">Days to pending</span><span class="stat-value" data-live="days_to_pending">14</span></div>
+        <div><span class="stat-label micro">Closed · last 30 days</span><span class="stat-value" data-live="closings_30d">337</span></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- TICKER · the feed, worn on the sleeve -->
+  <div class="ticker" role="marquee" aria-label="Live market figures by city">
+    <div class="ticker-track num" id="tickerTrack">
+      <!-- track content duplicated by JS for the seamless loop -->
+      <span class="tick-item"><span class="micro">Bend median</span><span class="tick-val" data-live="median:bend">$740,000</span><span class="tick-yoy">↑ 2.1% YoY</span></span>
+      <span class="tick-item"><span class="micro">Redmond</span><span class="tick-val" data-live="median:redmond">$549,000</span></span>
+      <span class="tick-item"><span class="micro">Sisters</span><span class="tick-val" data-live="median:sisters">$898,000</span></span>
+      <span class="tick-item"><span class="micro">Sunriver</span><span class="tick-val" data-live="median:sunriver">$985,000</span></span>
+      <span class="tick-item"><span class="micro">Days to pending</span><span class="tick-val" data-live="days_to_pending">14</span></span>
+      <span class="tick-item"><span class="micro">Months of supply</span><span class="tick-val" data-live="months_of_supply">6.9</span></span>
+      <span class="tick-item"><span class="micro">Price per sq ft</span><span class="tick-val" data-live="price_per_sqft">$382</span></span>
+      <span class="tick-item"><span class="micro">Closed · 30 days</span><span class="tick-val" data-live="closings_30d">337</span></span>
+      <span class="tick-item"><span class="micro">Active listings</span><span class="tick-val" data-live="active_listings">1,808</span></span>
+    </div>
+  </div>
+
+  <!-- THE READING · four figures, one viewport at a time -->
+  <section class="reading" id="reading" aria-label="The market reading">
+    <div class="reading-stage">
+      <p class="reading-kicker micro">The reading · June 2026</p>
+      <p class="reading-source mono" data-live="source">market_pulse_live · refreshed every 10 min</p>
+
+      <div class="reading-frame">
+        <div class="reading-step is-active" data-step="0">
+          <p class="reading-label micro">Bend · single-family median</p>
+          <p class="reading-value num" data-live="median:bend">$740,000</p>
+          <p class="reading-sentence">The median list price, as of this morning.</p>
+        </div>
+        <div class="reading-step" data-step="1">
+          <p class="reading-label micro">Days to pending</p>
+          <p class="reading-value num" data-live="days_to_pending">14<span class="reading-unit">DAYS</span></p>
+          <p class="reading-sentence">A well-priced home goes under contract in two weeks.</p>
+        </div>
+        <div class="reading-step" data-step="2">
+          <p class="reading-label micro">Months of supply</p>
+          <p class="reading-value num" data-live="months_of_supply">6.9</p>
+          <p class="reading-sentence">Above six favors the buyer. Price against it accordingly.</p>
+        </div>
+        <div class="reading-step" data-step="3">
+          <p class="reading-label micro">Refresh cycle</p>
+          <p class="reading-value num">10<span class="reading-unit">MIN</span></p>
+          <p class="reading-sentence">Every figure on this page pulls live from the MLS. Nothing is rounded to make a story.</p>
+        </div>
+      </div>
+
+      <div class="reading-rail" aria-hidden="true">
+        <span class="rail-tick is-on"></span>
+        <span class="rail-tick"></span>
+        <span class="rail-tick"></span>
+        <span class="rail-tick"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- THE LEDGER · neighborhoods answer with a number -->
+  <section class="ledger" id="ledger" aria-label="Neighborhood ledger">
+    <div class="ledger-head reveal">
+      <h2>Same city. Five different markets.</h2>
+      <p>Median list and active count, by neighborhood. Ask about a street and you get what sold near it in the last six months.</p>
+    </div>
+    <div class="ledger-grid">
+      <div class="ledger-rows reveal" id="ledgerRows">
+        <button class="ledger-row is-on" data-img="0">
+          <img class="ledger-thumb" src="nb-oldmill.jpg" alt="Old Mill District smokestacks and the Deschutes River from the air" loading="lazy" />
+          <span class="ledger-index num">01</span>
+          <span class="ledger-name">Old Mill District</span>
+          <span class="ledger-data num">
+            <span><span class="stat-label micro">Median</span><span class="ledger-median" data-live="median:old-mill">$749,000</span></span>
+            <span class="ledger-active" data-live="active:old-mill">14 active</span>
+          </span>
+        </button>
+        <button class="ledger-row" data-img="1">
+          <img class="ledger-thumb" src="nb-oldbend.jpg" alt="Mirror Pond and Drake Park from the air" loading="lazy" />
+          <span class="ledger-index num">02</span>
+          <span class="ledger-name">Old Bend</span>
+          <span class="ledger-data num">
+            <span><span class="stat-label micro">Median</span><span class="ledger-median" data-live="median:old-bend">$1,295,000</span></span>
+            <span class="ledger-active" data-live="active:old-bend">9 active</span>
+          </span>
+        </button>
+        <button class="ledger-row" data-img="2">
+          <img class="ledger-thumb" src="nb-awbrey.jpg" alt="Awbrey Butte rising over ponderosa pine and west side homes" loading="lazy" />
+          <span class="ledger-index num">03</span>
+          <span class="ledger-name">Awbrey Butte</span>
+          <span class="ledger-data num">
+            <span><span class="stat-label micro">Median</span><span class="ledger-median" data-live="median:awbrey-butte">$1,150,000</span></span>
+            <span class="ledger-active" data-live="active:awbrey-butte">21 active</span>
+          </span>
+        </button>
+        <button class="ledger-row" data-img="3">
+          <img class="ledger-thumb" src="nb-nwx.jpg" alt="NorthWest Crossing streets with the Cascades on the horizon" loading="lazy" />
+          <span class="ledger-index num">04</span>
+          <span class="ledger-name">NorthWest Crossing</span>
+          <span class="ledger-data num">
+            <span><span class="stat-label micro">Median</span><span class="ledger-median" data-live="median:northwest-crossing">$929,000</span></span>
+            <span class="ledger-active" data-live="active:northwest-crossing">11 active</span>
+          </span>
+        </button>
+        <button class="ledger-row" data-img="4">
+          <img class="ledger-thumb" src="nb-tetherow.jpg" alt="Tetherow fairway and pond with the Cascade range behind" loading="lazy" />
+          <span class="ledger-index num">05</span>
+          <span class="ledger-name">Tetherow</span>
+          <span class="ledger-data num">
+            <span><span class="stat-label micro">Median</span><span class="ledger-median" data-live="median:tetherow">$1,595,000</span></span>
+            <span class="ledger-active" data-live="active:tetherow">18 active</span>
+          </span>
+        </button>
+      </div>
+      <div class="ledger-stage reveal" id="ledgerStage" aria-hidden="true">
+        <img src="nb-oldmill.jpg" alt="" class="is-show" />
+        <img src="nb-oldbend.jpg" alt="" />
+        <img src="nb-awbrey.jpg" alt="" />
+        <img src="nb-nwx.jpg" alt="" />
+        <img src="nb-tetherow.jpg" alt="" />
+        <span class="ledger-stage-caption" id="ledgerCaption">Old Mill District · Bend</span>
+      </div>
+    </div>
+    <div class="ledger-foot reveal">
+      <a href="#">All 14 Bend neighborhoods <span aria-hidden="true">→</span></a>
+    </div>
+  </section>
+
+  <!-- THE FILM · show, don't tell -->
+  <section class="film" aria-label="Listing film">
+    <img class="film-bg" src="film-tower.jpg" alt="" aria-hidden="true" />
+    <div class="film-scrim" aria-hidden="true"></div>
+    <div class="film-inner">
+      <h2 class="reveal">Every listing gets a film.</h2>
+      <p class="film-body reveal">Aerial video, shot and edited before the listing goes live on the MLS. At every price, not just the top of the market.</p>
+      <div class="film-frames reveal">
+        <figure class="film-frame">
+          <img src="film-bachelor.jpg" alt="Mt. Bachelor ski runs from the air" loading="lazy" />
+          <figcaption><span>Frame 0:12</span><span>Mt. Bachelor</span></figcaption>
+        </figure>
+        <figure class="film-frame">
+          <img src="film-river.jpg" alt="The Deschutes River cutting through a basalt canyon" loading="lazy" />
+          <figcaption><span>Frame 0:34</span><span>Deschutes River</span></figcaption>
+        </figure>
+        <figure class="film-frame">
+          <img src="film-bridge.jpg" alt="A wooden footbridge over the Deschutes River between riverside parks" loading="lazy" />
+          <figcaption><span>Frame 1:02</span><span>River West</span></figcaption>
+        </figure>
+      </div>
+      <span class="film-loc">Tower Theatre · Downtown Bend</span>
+    </div>
+  </section>
+
+  <!-- CLOSER -->
+  <section class="closer" aria-label="Contact">
+    <div class="closer-inner">
+      <h2 class="reveal">Ask about a street.</h2>
+      <p class="closer-body reveal">You get what sold near it in the last six months, which schools feed it, and what resale has done there since 2020.</p>
+      <div class="closer-cta reveal">
+        <a class="btn-cream" href="#">Get the numbers for your address</a>
+        <a class="closer-phone num" href="tel:5412136706">541.213.6706</a>
+      </div>
+      <footer class="footer">
+        <div class="footer-brand">
+          <img src="../../assets/brand/ryan-realty-stacked-logo-white.png" alt="Ryan Realty" />
+          <span class="micro">Bend · Oregon</span>
+        </div>
+        <div class="footer-links">
+          <a href="#">Search</a>
+          <a href="#">Sell</a>
+          <a href="#ledger">Neighborhoods</a>
+          <a href="#reading">Market</a>
+        </div>
+        <span class="micro num">© 2026 Ryan Realty LLC · ryan-realty.com</span>
+      </footer>
+    </div>
+  </section>
+
+  <script>
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* NAV state */
+    const nav = document.getElementById('nav');
+    const onScrollNav = () => nav.classList.toggle('is-scrolled', window.scrollY > window.innerHeight * 0.82);
+    window.addEventListener('scroll', onScrollNav, { passive: true });
+    onScrollNav();
+
+    /* HERO count-up · the living number */
+    const counter = document.getElementById('heroCount');
+    const target = parseInt(counter.dataset.target, 10);
+    if (reduced) {
+      counter.textContent = target.toLocaleString('en-US');
+    } else {
+      const t0 = performance.now() + 450; const dur = 1900;
+      const easeOutExpo = (t) => t >= 1 ? 1 : 1 - Math.pow(2, -10 * t);
+      (function tickUp(now) {
+        const p = Math.min(Math.max((now - t0) / dur, 0), 1);
+        counter.textContent = Math.round(easeOutExpo(p) * target).toLocaleString('en-US');
+        if (p < 1) requestAnimationFrame(tickUp);
+      })(performance.now());
+    }
+
+    /* TICKER · duplicate the track for a seamless loop */
+    const track = document.getElementById('tickerTrack');
+    track.innerHTML += track.innerHTML;
+
+    /* THE READING · scroll-driven step choreography */
+    const reading = document.getElementById('reading');
+    const steps = [...reading.querySelectorAll('.reading-step')];
+    const ticks = [...reading.querySelectorAll('.rail-tick')];
+    let current = 0;
+    const setStep = (i) => {
+      if (i === current) return;
+      steps.forEach((s, k) => {
+        s.classList.toggle('is-active', k === i);
+        s.classList.toggle('is-past', k < i);
+      });
+      ticks.forEach((t, k) => t.classList.toggle('is-on', k <= i));
+      current = i;
+    };
+    const onScrollReading = () => {
+      const r = reading.getBoundingClientRect();
+      const total = r.height - window.innerHeight;
+      const p = Math.min(Math.max(-r.top / total, 0), 0.999);
+      setStep(Math.floor(p * steps.length));
+    };
+    window.addEventListener('scroll', onScrollReading, { passive: true });
+    onScrollReading();
+
+    /* THE LEDGER · hover/focus swaps the stage frame */
+    const rows = [...document.querySelectorAll('.ledger-row')];
+    const frames = [...document.querySelectorAll('#ledgerStage img')];
+    const caption = document.getElementById('ledgerCaption');
+    const names = ['Old Mill District · Bend', 'Old Bend · Drake Park', 'Awbrey Butte · Bend', 'NorthWest Crossing · Bend', 'Tetherow · Bend'];
+    const show = (i) => {
+      frames.forEach((f, k) => f.classList.toggle('is-show', k === i));
+      rows.forEach((rw, k) => rw.classList.toggle('is-on', k === i));
+      caption.textContent = names[i];
+    };
+    rows.forEach((row, i) => {
+      row.addEventListener('mouseenter', () => show(i));
+      row.addEventListener('focus', () => show(i));
+    });
+
+    /* REVEALS */
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); } });
+    }, { threshold: 0.18 });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  </script>
+</body>
+</html>

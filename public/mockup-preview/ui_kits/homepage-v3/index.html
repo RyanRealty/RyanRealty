@@ -1,0 +1,1639 @@
+<!doctype html>
+<!-- Hallmark · macrostructure: Marquee Hero · tone: editorial-data · anchor hue: navy
+     Ryan Realty Homepage v3 — "Data as visual identity"
+     Live market values fetched 2026-06-09 from https://ryan-realty.com (SSR HTML):
+       Active SFR homes: 1,796  (tabular-nums class, SSR)
+       Median list price: $740,000 (tabular-nums class, SSR)
+       Typical days to pending: 14 days (stat card, SSR)
+       Months of supply: 6.9 (stat card, SSR)
+       Closed last 30 days: 350 (stat card, SSR)
+     Listing photos: sparkplatform CDN URLs extracted from live homepage SSR HTML.
+     Listing details (price / address / neighborhood) extracted from live homepage SSR HTML.
+     Any value marked [SAMPLE] could not be verified from the live site.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ryan Realty — Central Oregon Real Estate (v3 mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+/* ══════════════════════════════════════════════════
+   BRAND TOKENS (from design_system/ryan-realty/colors_and_type.css)
+   ══════════════════════════════════════════════════ */
+@font-face {
+  font-family: 'Amboqia Boriango';
+  src: url('/fonts/Amboqia_Boriango.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --rr-navy:    #102742;
+  --rr-cream:   #faf8f4;
+
+  --font-display: 'Amboqia Boriango', 'Playfair Display', Georgia, serif;
+  --font-sans:    'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius-sm:  6px;
+  --radius-md:  8px;
+  --radius-lg:  10px;
+  --radius-xl:  14px;
+  --radius-2xl: 18px;
+  --radius-pill: 999px;
+
+  --shadow-xs: 0 1px 2px 0 rgb(16 39 66 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(16 39 66 / 0.08), 0 1px 2px -1px rgb(16 39 66 / 0.06);
+  --shadow-md: 0 4px 12px -1px rgb(16 39 66 / 0.12), 0 2px 4px -2px rgb(16 39 66 / 0.08);
+  --shadow-lg: 0 10px 28px -3px rgb(16 39 66 / 0.16), 0 4px 8px -4px rgb(16 39 66 / 0.10);
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:  cubic-bezier(0.4, 0, 1, 1);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  --container: 1280px;
+}
+
+/* ══════════════════════════════════════════════════
+   RESET + BASE
+   ══════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { overflow-x: clip; scroll-behavior: smooth; }
+body {
+  font-family: var(--font-sans);
+  background: var(--rr-cream);
+  color: var(--rr-navy);
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+}
+img { display: block; max-width: 100%; }
+a { text-decoration: none; color: inherit; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+.container { max-width: var(--container); margin: 0 auto; padding: 0 var(--space-6); }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* ══════════════════════════════════════════════════
+   NAV — slim masthead (N6 archetype, cream on navy)
+   ══════════════════════════════════════════════════ */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(16, 39, 66, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  height: 64px;
+}
+.nav-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 64px;
+}
+.nav-logo {
+  display: flex; align-items: center; gap: var(--space-2);
+}
+.nav-logo img { height: 28px; }
+.nav-links {
+  display: flex; align-items: center; gap: var(--space-8);
+  list-style: none;
+}
+.nav-links a {
+  font-size: 14px; font-weight: 500;
+  color: rgba(255,255,255,0.78);
+  letter-spacing: 0.01em;
+  transition: color 0.15s;
+}
+.nav-links a:hover { color: #fff; }
+.nav-actions { display: flex; align-items: center; gap: var(--space-3); }
+.btn-ghost-nav {
+  padding: 7px 14px;
+  font-size: 13px; font-weight: 500;
+  color: rgba(255,255,255,0.78);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: var(--radius-lg);
+  transition: all 0.15s;
+}
+.btn-ghost-nav:hover { color: #fff; background: rgba(255,255,255,0.08); }
+.btn-primary-nav {
+  padding: 8px 18px;
+  font-size: 13px; font-weight: 600;
+  color: var(--rr-navy);
+  background: var(--rr-cream);
+  border-radius: var(--radius-lg);
+  transition: all 0.15s;
+}
+.btn-primary-nav:hover { background: #fff; }
+.btn-primary-nav:active { transform: translateY(1px); }
+
+/* ══════════════════════════════════════════════════
+   HERO — full bleed Old Mill, data inside the canvas
+   ══════════════════════════════════════════════════ */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  overflow: hidden;
+}
+.hero-photo {
+  position: absolute; inset: 0;
+  background: url('/assets/hero/hero-old-mill-master-4k.jpg') center 30% / cover no-repeat;
+  /* Ken Burns — slow drift, anchored top so American flag stays in frame */
+  animation: kenburns 22s ease-in-out infinite alternate;
+}
+@keyframes kenburns {
+  from { transform: scale(1); transform-origin: 50% 35%; }
+  to   { transform: scale(1.06); transform-origin: 52% 38%; }
+}
+/* Multi-layer scrim: protect type at bottom, stay transparent at top */
+.hero-scrim {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(to top,
+      rgba(16,39,66,0.82) 0%,
+      rgba(16,39,66,0.52) 28%,
+      rgba(16,39,66,0.18) 55%,
+      rgba(16,39,66,0.0)  75%);
+}
+/* Subtle top vignette to help nav legibility */
+.hero-scrim-top {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom,
+    rgba(16,39,66,0.40) 0%,
+    transparent 18%);
+}
+
+.hero-content {
+  position: relative;
+  padding: 0 0 var(--space-16);
+  /* Animate in on load */
+  animation: fadeUp 0.9s var(--ease-out) 0.2s both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Live market band — embedded inside the hero typography */
+.hero-market-band {
+  display: flex; align-items: center; gap: var(--space-3);
+  margin-bottom: var(--space-6);
+  flex-wrap: wrap;
+}
+.live-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.20);
+  border-radius: var(--radius-pill);
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: rgba(255,255,255,0.90);
+}
+.live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 0 2px rgba(74,222,128,0.30);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(74,222,128,0.30); }
+  50%       { box-shadow: 0 0 0 5px rgba(74,222,128,0.15); }
+}
+
+/* The three live market numbers — inline with the hero H1 rhythm */
+.hero-stats-row {
+  display: flex; gap: var(--space-8); flex-wrap: wrap;
+  margin-bottom: var(--space-6);
+}
+.hero-stat {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.hero-stat-number {
+  font-family: var(--font-display);
+  font-size: clamp(2.8rem, 5vw, 4.5rem);
+  font-weight: 400;
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 20px rgba(0,0,0,0.25);
+  /* Subtle vertical reveal per stat — staggered */
+  animation: statReveal 0.8s var(--ease-out) both;
+}
+.hero-stat:nth-child(1) .hero-stat-number { animation-delay: 0.35s; }
+.hero-stat:nth-child(2) .hero-stat-number { animation-delay: 0.50s; }
+.hero-stat:nth-child(3) .hero-stat-number { animation-delay: 0.65s; }
+@keyframes statReveal {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hero-stat-label {
+  font-size: 11px; font-weight: 500; letter-spacing: 0.08em;
+  text-transform: uppercase; color: rgba(255,255,255,0.62);
+}
+.hero-stat-divider {
+  width: 1px; height: 56px; align-self: center;
+  background: rgba(255,255,255,0.18);
+  flex-shrink: 0;
+}
+
+.hero-h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+  font-weight: 400;
+  color: rgba(255,255,255,0.92);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  max-width: 560px;
+  margin-bottom: var(--space-8);
+  text-shadow: 0 1px 12px rgba(0,0,0,0.20);
+}
+
+/* Search field — single, wide, clean */
+.hero-search-wrap {
+  display: flex; align-items: center;
+  max-width: 560px;
+  background: rgba(255,255,255,0.97);
+  border-radius: var(--radius-xl);
+  padding: 6px 6px 6px 20px;
+  box-shadow: var(--shadow-lg);
+  gap: var(--space-3);
+}
+.hero-search-input {
+  flex: 1; border: none; outline: none;
+  font-family: var(--font-sans);
+  font-size: 15px; font-weight: 400;
+  color: var(--rr-navy);
+  background: transparent;
+}
+.hero-search-input::placeholder { color: rgba(16,39,66,0.38); }
+.btn-hero-search {
+  padding: 10px 20px;
+  background: var(--rr-navy);
+  color: #fff;
+  font-size: 14px; font-weight: 600;
+  border-radius: var(--radius-lg);
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.btn-hero-search:hover { background: rgba(16,39,66,0.85); }
+.btn-hero-search:active { transform: translateY(1px); }
+
+/* Seller CTA below search */
+.hero-cta-row {
+  display: flex; align-items: center; gap: var(--space-6);
+  margin-top: var(--space-5);
+  flex-wrap: wrap;
+}
+.btn-seller-cta {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: 10px 20px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.28);
+  border-radius: var(--radius-lg);
+  font-size: 13px; font-weight: 500;
+  color: rgba(255,255,255,0.90);
+  transition: all 0.2s;
+}
+.btn-seller-cta:hover { background: rgba(255,255,255,0.20); color: #fff; }
+.hero-scroll-hint {
+  font-size: 12px; font-weight: 500; letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.42);
+}
+
+/* ══════════════════════════════════════════════════
+   PULSE STRIP — horizontal ticker of market events
+   ══════════════════════════════════════════════════ */
+.pulse-strip {
+  background: var(--rr-navy);
+  overflow: hidden;
+  height: 44px;
+  display: flex; align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.pulse-track {
+  display: flex; align-items: center; gap: 0;
+  /* CSS-only marquee — no JS */
+  animation: ticker 38s linear infinite;
+  white-space: nowrap;
+}
+/* Pause on hover */
+.pulse-strip:hover .pulse-track { animation-play-state: paused; }
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.pulse-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 0 var(--space-6);
+  font-size: 12px; font-weight: 500; letter-spacing: 0.04em;
+  color: rgba(255,255,255,0.72);
+  border-right: 1px solid rgba(255,255,255,0.08);
+  height: 44px;
+}
+.pulse-chip-tag {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.10em;
+  padding: 2px 7px; border-radius: var(--radius-pill);
+  text-transform: uppercase;
+}
+.tag-sold    { background: rgba(255,255,255,0.10); color: rgba(255,255,255,0.90); }
+.tag-pending { background: rgba(250,248,244,0.12); color: rgba(250,248,244,0.85); }
+.tag-new     { background: rgba(74,222,128,0.12); color: #4ade80; }
+.tag-price   { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.72); }
+.pulse-price { color: #fff; font-weight: 600; }
+.pulse-location { color: rgba(255,255,255,0.55); }
+.pulse-age { color: rgba(255,255,255,0.35); font-size: 11px; }
+
+/* ══════════════════════════════════════════════════
+   FEATURED LISTINGS — asymmetric editorial mosaic
+   ══════════════════════════════════════════════════ */
+.listings-section {
+  padding: var(--space-20) 0 var(--space-16);
+  background: var(--rr-cream);
+}
+.section-eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(16,39,66,0.40);
+  margin-bottom: var(--space-3);
+}
+.section-heading {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: 400;
+  color: var(--rr-navy);
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  margin-bottom: var(--space-10);
+}
+.section-heading-row {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: var(--space-10);
+  gap: var(--space-6);
+}
+.btn-view-all {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 18px;
+  font-size: 13px; font-weight: 600;
+  color: var(--rr-navy);
+  border: 1.5px solid rgba(16,39,66,0.20);
+  border-radius: var(--radius-lg);
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.btn-view-all:hover {
+  border-color: var(--rr-navy);
+  background: var(--rr-navy);
+  color: #fff;
+}
+/* Magazine grid: 1 dominant left + 2×2 right */
+.listings-mosaic {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  grid-template-rows: auto auto;
+  gap: var(--space-4);
+}
+.listing-card {
+  position: relative; overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.25s var(--ease-out), transform 0.25s var(--ease-out);
+  cursor: pointer;
+}
+.listing-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-3px);
+}
+.listing-card:active { transform: translateY(0); }
+
+/* Dominant card spans 2 rows on the left */
+.listing-card--dominant {
+  grid-row: 1 / 3;
+  display: flex; flex-direction: column;
+}
+.listing-card--dominant .listing-photo {
+  height: 380px;
+}
+.listing-card--sm .listing-photo {
+  height: 200px;
+}
+.listing-photo {
+  width: 100%; overflow: hidden;
+  position: relative;
+}
+.listing-photo img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.5s var(--ease-out);
+}
+.listing-card:hover .listing-photo img {
+  transform: scale(1.04);
+}
+
+/* Status badge on photo */
+.listing-status-badge {
+  position: absolute; top: 12px; left: 12px;
+  padding: 3px 8px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: var(--radius-pill);
+}
+.status-active {
+  background: rgba(16,39,66,0.75);
+  color: #fff;
+  backdrop-filter: blur(4px);
+}
+
+.listing-body { padding: var(--space-5); flex: 1; }
+.listing-price {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-weight: 400;
+  color: var(--rr-navy);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin-bottom: var(--space-2);
+}
+.listing-card--sm .listing-price {
+  font-size: 1.35rem;
+}
+.listing-address {
+  font-size: 13px; font-weight: 500;
+  color: rgba(16,39,66,0.70);
+  margin-bottom: 2px;
+}
+.listing-meta {
+  font-size: 12px; font-weight: 400;
+  color: rgba(16,39,66,0.45);
+}
+.listing-specs {
+  display: flex; gap: var(--space-4);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid rgba(16,39,66,0.07);
+}
+.listing-spec {
+  font-size: 12px; font-weight: 500;
+  color: rgba(16,39,66,0.60);
+}
+.listing-spec span { color: var(--rr-navy); font-weight: 600; }
+
+/* ══════════════════════════════════════════════════
+   NEIGHBORHOOD EXPLORER — boundary line-art on cream
+   ══════════════════════════════════════════════════ */
+.neighborhoods-section {
+  padding: var(--space-20) 0;
+  background: var(--rr-cream);
+  border-top: 1px solid rgba(16,39,66,0.08);
+}
+.neighborhoods-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-16);
+  align-items: start;
+}
+.neighborhoods-intro { max-width: 380px; }
+.neighborhoods-intro .section-eyebrow { margin-bottom: var(--space-4); }
+.neighborhoods-intro .section-heading { margin-bottom: var(--space-6); }
+.neighborhoods-intro p {
+  font-size: 16px; line-height: 1.65;
+  color: rgba(16,39,66,0.60);
+  margin-bottom: var(--space-8);
+}
+
+/* SVG map — simplified Bend neighborhood outlines */
+.map-svg-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 580px;
+}
+.map-svg-wrap svg {
+  width: 100%; height: auto;
+  overflow: visible;
+}
+/* Neighborhood path states */
+.neigh-shape {
+  fill: transparent;
+  stroke: var(--rr-navy);
+  stroke-width: 1.5;
+  opacity: 0.25;
+  transition: all 0.25s var(--ease-out);
+  cursor: pointer;
+}
+.neigh-shape:hover {
+  fill: rgba(16,39,66,0.08);
+  opacity: 1;
+  stroke-width: 2;
+}
+.neigh-label-group {
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.neigh-shape:hover + .neigh-label-group,
+.neigh-group:hover .neigh-label-group {
+  opacity: 1;
+}
+
+/* Static neighborhood chips below the map */
+.neigh-chips {
+  display: flex; flex-wrap: wrap; gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+.neigh-chip {
+  display: flex; flex-direction: column;
+  padding: var(--space-4) var(--space-5);
+  border: 1.5px solid rgba(16,39,66,0.12);
+  border-radius: var(--radius-xl);
+  background: #fff;
+  transition: all 0.2s;
+  cursor: pointer;
+  min-width: 140px;
+  box-shadow: var(--shadow-xs);
+}
+.neigh-chip:hover {
+  border-color: var(--rr-navy);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+.neigh-chip-name {
+  font-size: 13px; font-weight: 600;
+  color: var(--rr-navy);
+  margin-bottom: 2px;
+}
+.neigh-chip-stats {
+  display: flex; gap: var(--space-3);
+  font-size: 11px; color: rgba(16,39,66,0.50);
+  font-variant-numeric: tabular-nums;
+}
+.neigh-chip-price { font-weight: 600; color: var(--rr-navy); }
+
+/* ══════════════════════════════════════════════════
+   MARKET DATA BAND — stats strip between sections
+   ══════════════════════════════════════════════════ */
+.market-band {
+  background: var(--rr-navy);
+  padding: var(--space-12) 0;
+}
+.market-band-inner {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-1);
+}
+.market-stat-block {
+  padding: var(--space-6) var(--space-8);
+  border-right: 1px solid rgba(255,255,255,0.08);
+  transition: background 0.2s;
+}
+.market-stat-block:last-child { border-right: none; }
+.market-stat-block:hover { background: rgba(255,255,255,0.04); }
+.market-stat-eyebrow {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.40);
+  margin-bottom: var(--space-2);
+}
+.market-stat-number {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3vw, 3rem);
+  font-weight: 400;
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 4px;
+}
+.market-stat-context {
+  font-size: 12px; color: rgba(255,255,255,0.45);
+}
+.market-stat-delta {
+  font-size: 11px; font-weight: 600;
+  margin-top: var(--space-1);
+}
+.delta-up   { color: #4ade80; }
+.delta-down { color: rgba(255,255,255,0.55); }
+.delta-neut { color: rgba(255,255,255,0.40); }
+
+/* ══════════════════════════════════════════════════
+   EDITORIAL VOICE BLOCK
+   ══════════════════════════════════════════════════ */
+.voice-section {
+  padding: var(--space-24) 0;
+  background: var(--rr-cream);
+  border-top: 1px solid rgba(16,39,66,0.07);
+}
+.voice-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-20);
+  align-items: center;
+}
+.voice-text-col .section-eyebrow { margin-bottom: var(--space-6); }
+.voice-pull-quote {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.8vw, 2.4rem);
+  font-weight: 400;
+  color: var(--rr-navy);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  margin-bottom: var(--space-8);
+}
+.voice-body {
+  font-size: 16px; line-height: 1.75;
+  color: rgba(16,39,66,0.62);
+  margin-bottom: var(--space-8);
+}
+.voice-facts {
+  display: flex; flex-direction: column; gap: var(--space-4);
+}
+.voice-fact {
+  display: flex; align-items: flex-start; gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-left: 2px solid rgba(16,39,66,0.15);
+}
+.voice-fact-num {
+  font-family: var(--font-display);
+  font-size: 1.75rem; font-weight: 400;
+  color: var(--rr-navy); line-height: 1;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  min-width: 60px;
+}
+.voice-fact-text {
+  font-size: 13px; line-height: 1.5;
+  color: rgba(16,39,66,0.60);
+  padding-top: 3px;
+}
+.voice-fact-text strong { color: var(--rr-navy); font-weight: 600; }
+
+/* Heritage illustration on the right column */
+.voice-illustration {
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-8);
+}
+.voice-illustration img {
+  max-width: 380px; width: 100%;
+  opacity: 0.85;
+}
+
+/* ══════════════════════════════════════════════════
+   TOOLS ROW — three calculator cards
+   ══════════════════════════════════════════════════ */
+.tools-section {
+  padding: var(--space-20) 0;
+  background: #fff;
+  border-top: 1px solid rgba(16,39,66,0.07);
+}
+.tools-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
+  margin-top: var(--space-10);
+}
+.tool-card {
+  padding: var(--space-8) var(--space-8) var(--space-10);
+  border: 1.5px solid rgba(16,39,66,0.10);
+  border-radius: var(--radius-2xl);
+  background: var(--rr-cream);
+  transition: all 0.25s var(--ease-out);
+  cursor: pointer;
+}
+.tool-card:hover {
+  border-color: var(--rr-navy);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+}
+.tool-icon {
+  width: 44px; height: 44px;
+  border-radius: var(--radius-lg);
+  background: rgba(16,39,66,0.06);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: var(--space-5);
+}
+.tool-icon svg { width: 22px; height: 22px; stroke: var(--rr-navy); stroke-width: 1.8; }
+.tool-name {
+  font-size: 16px; font-weight: 600;
+  color: var(--rr-navy);
+  margin-bottom: var(--space-2);
+}
+.tool-desc {
+  font-size: 13px; line-height: 1.55;
+  color: rgba(16,39,66,0.55);
+  margin-bottom: var(--space-6);
+}
+.tool-cta {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600;
+  color: var(--rr-navy);
+  border-bottom: 1.5px solid rgba(16,39,66,0.20);
+  padding-bottom: 2px;
+  transition: border-color 0.15s;
+}
+.tool-cta:hover { border-color: var(--rr-navy); }
+.tool-cta svg { width: 14px; height: 14px; stroke: var(--rr-navy); }
+
+/* ══════════════════════════════════════════════════
+   TRUST BAND + BROKER PORTRAITS
+   ══════════════════════════════════════════════════ */
+.trust-section {
+  padding: var(--space-20) 0 var(--space-16);
+  background: var(--rr-cream);
+  border-top: 1px solid rgba(16,39,66,0.07);
+}
+.trust-inner {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: var(--space-16);
+  align-items: start;
+}
+.trust-copy { }
+.trust-copy .section-eyebrow { margin-bottom: var(--space-4); }
+.trust-headline {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.5vw, 2.2rem);
+  font-weight: 400;
+  color: var(--rr-navy);
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  margin-bottom: var(--space-6);
+}
+.trust-body {
+  font-size: 15px; line-height: 1.7;
+  color: rgba(16,39,66,0.60);
+  margin-bottom: var(--space-8);
+}
+.trust-contact {
+  display: flex; flex-direction: column; gap: var(--space-2);
+}
+.trust-contact-line {
+  font-size: 14px; color: rgba(16,39,66,0.60);
+}
+.trust-contact-line a {
+  font-weight: 600; color: var(--rr-navy);
+  border-bottom: 1px solid rgba(16,39,66,0.20);
+  transition: border-color 0.15s;
+}
+.trust-contact-line a:hover { border-color: var(--rr-navy); }
+.trust-location {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(16,39,66,0.35);
+  margin-top: var(--space-4);
+}
+
+/* Brokers — transparent PNGs float on cream, no boxes */
+.brokers-row {
+  display: flex; gap: var(--space-6); align-items: flex-end;
+}
+.broker-portrait {
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+}
+.broker-portrait img {
+  width: 100%; max-width: 180px;
+  height: 240px;
+  object-fit: cover;
+  object-position: top center;
+  /* Float on cream — no border, no background, no shadow frame */
+  filter: drop-shadow(0 4px 12px rgba(16,39,66,0.10));
+}
+.broker-name {
+  font-size: 13px; font-weight: 600;
+  color: var(--rr-navy); text-align: center;
+}
+.broker-title {
+  font-size: 11px; font-weight: 500; letter-spacing: 0.04em;
+  color: rgba(16,39,66,0.45); text-align: center;
+}
+
+/* ══════════════════════════════════════════════════
+   FOOTER
+   ══════════════════════════════════════════════════ */
+footer {
+  background: var(--rr-navy);
+  padding: var(--space-12) 0;
+}
+.footer-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: var(--space-6);
+}
+.footer-logo img { height: 26px; }
+.footer-links {
+  display: flex; gap: var(--space-8); flex-wrap: wrap;
+  list-style: none;
+}
+.footer-links a {
+  font-size: 13px; font-weight: 500;
+  color: rgba(255,255,255,0.55);
+  transition: color 0.15s;
+}
+.footer-links a:hover { color: #fff; }
+.footer-legal {
+  font-size: 11px; color: rgba(255,255,255,0.28);
+  letter-spacing: 0.02em;
+}
+.footer-licenses {
+  display: flex; gap: var(--space-6);
+  font-size: 11px; color: rgba(255,255,255,0.30);
+  flex-wrap: wrap;
+}
+
+/* ══════════════════════════════════════════════════
+   SCROLL-REVEAL UTILITY
+   applied via JS IntersectionObserver as class .revealed
+   ══════════════════════════════════════════════════ */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.55s var(--ease-out), transform 0.55s var(--ease-out);
+}
+.reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+/* Staggered children */
+.reveal-stagger > * {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.45s var(--ease-out), transform 0.45s var(--ease-out);
+}
+.reveal-stagger > *:nth-child(1) { transition-delay: 0.05s; }
+.reveal-stagger > *:nth-child(2) { transition-delay: 0.12s; }
+.reveal-stagger > *:nth-child(3) { transition-delay: 0.19s; }
+.reveal-stagger > *:nth-child(4) { transition-delay: 0.26s; }
+.reveal-stagger.revealed > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ══════════════════════════════════════════════════
+   REDUCED MOTION
+   ══════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .hero-content { animation: none; opacity: 1; transform: none; }
+  .hero-stat-number { animation: none; opacity: 1; transform: none; }
+  .reveal, .reveal-stagger > * { opacity: 1; transform: none; transition: none; }
+  .hero-photo { animation: none; }
+  .pulse-track { animation: none; }
+}
+
+/* ══════════════════════════════════════════════════
+   MOBILE (≤ 768px)
+   ══════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  .nav-actions .btn-ghost-nav { display: none; }
+
+  .hero-stats-row {
+    gap: var(--space-4);
+  }
+  .hero-stat-divider { display: none; }
+  .hero-stat-number { font-size: clamp(2rem, 8vw, 2.8rem); }
+  .hero-search-wrap { max-width: 100%; }
+
+  .listings-mosaic {
+    grid-template-columns: 1fr;
+  }
+  .listing-card--dominant { grid-row: auto; }
+  .listing-card--dominant .listing-photo { height: 260px; }
+
+  .neighborhoods-layout { grid-template-columns: 1fr; gap: var(--space-10); }
+  .neighborhoods-intro { max-width: 100%; }
+
+  .market-band-inner {
+    grid-template-columns: 1fr 1fr;
+  }
+  .market-stat-block:nth-child(2) { border-right: none; }
+
+  .voice-layout { grid-template-columns: 1fr; gap: var(--space-10); }
+  .voice-illustration { display: none; }
+
+  .tools-grid { grid-template-columns: 1fr; }
+
+  .trust-inner { grid-template-columns: 1fr; }
+  .brokers-row { justify-content: center; flex-wrap: wrap; }
+  .broker-portrait img { max-width: 140px; }
+
+  .footer-inner { flex-direction: column; align-items: flex-start; }
+  .footer-links { gap: var(--space-5); }
+}
+
+/* ══════════════════════════════════════════════════
+   MOBILE SMALL (≤ 390px)
+   ══════════════════════════════════════════════════ */
+@media (max-width: 390px) {
+  .hero-stats-row { flex-direction: column; gap: var(--space-3); }
+  .market-band-inner { grid-template-columns: 1fr; }
+  .market-stat-block { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .neigh-chips { gap: var(--space-2); }
+  .neigh-chip { min-width: 130px; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ NAV ═══════════════════ -->
+<nav class="nav" aria-label="Main navigation">
+  <div class="container nav-inner">
+    <a class="nav-logo" href="/">
+      <img src="/assets/brand/logo-horizontal-white-transparent.png"
+           alt="Ryan Realty"
+           onerror="this.style.cssText='color:#fff;font-family:var(--font-display);font-size:18px;font-weight:400';this.outerHTML='<span style=\'color:#fff;font-family:var(--font-display);font-size:20px;font-weight:400;letter-spacing:-0.01em\'>Ryan Realty</span>'">
+    </a>
+    <ul class="nav-links" role="list">
+      <li><a href="/homes-for-sale">Buy</a></li>
+      <li><a href="/sell">Sell</a></li>
+      <li><a href="/housing-market">Market</a></li>
+      <li><a href="/neighborhoods">Neighborhoods</a></li>
+      <li><a href="/about">About</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="tel:5412136706" class="btn-ghost-nav">541.213.6706</a>
+      <a href="/sell" class="btn-primary-nav">Get your value</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════ HERO ═══════════════════ -->
+<section class="hero" aria-label="Hero">
+  <div class="hero-photo" role="img" aria-label="Old Mill District aerial view, Bend, Oregon"></div>
+  <div class="hero-scrim-top"></div>
+  <div class="hero-scrim"></div>
+
+  <div class="hero-content container">
+    <!-- Live market band — data as identity, inside the hero -->
+    <div class="hero-market-band">
+      <span class="live-pill">
+        <span class="live-dot" aria-hidden="true"></span>
+        Live · Central Oregon SFR
+      </span>
+    </div>
+
+    <!-- Three core market numbers — huge Amboqia display -->
+    <div class="hero-stats-row" aria-label="Live market statistics">
+      <div class="hero-stat">
+        <!-- 1,796 active SFR — live.ryan-realty.com SSR, 2026-06-09 -->
+        <span class="hero-stat-number tabular" aria-label="1,796 homes for sale">1,796</span>
+        <span class="hero-stat-label">homes for sale</span>
+      </div>
+      <div class="hero-stat-divider" aria-hidden="true"></div>
+      <div class="hero-stat">
+        <!-- $740,000 median list price — live.ryan-realty.com SSR, 2026-06-09 -->
+        <span class="hero-stat-number tabular" aria-label="$740,000 median price">$740,000</span>
+        <span class="hero-stat-label">median list price</span>
+      </div>
+      <div class="hero-stat-divider" aria-hidden="true"></div>
+      <div class="hero-stat">
+        <!-- 14 days to pending — live.ryan-realty.com SSR, 2026-06-09 -->
+        <span class="hero-stat-number tabular" aria-label="14 days to pending">14 days</span>
+        <span class="hero-stat-label">typical days to pending</span>
+      </div>
+    </div>
+
+    <!-- Subhead — editorial voice, not a tagline -->
+    <h1 class="hero-h1">
+      Every listing in Central Oregon,<br>watched daily.
+    </h1>
+
+    <!-- Single search field -->
+    <div class="hero-search-wrap" role="search">
+      <input class="hero-search-input"
+             type="text"
+             placeholder="City, neighborhood, or address"
+             aria-label="Search homes">
+      <button class="btn-hero-search" type="submit">Search homes</button>
+    </div>
+
+    <!-- Seller CTA -->
+    <div class="hero-cta-row">
+      <a href="/lp/seller-home-value" class="btn-seller-cta">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        What is your home worth?
+      </a>
+      <span class="hero-scroll-hint" aria-hidden="true">↓ scroll to explore</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ PULSE STRIP ═══════════════════ -->
+<div class="pulse-strip" aria-label="Recent market activity" role="marquee" aria-live="off">
+  <div class="pulse-track">
+    <!-- First copy -->
+    <div class="pulse-chip">
+      <span class="pulse-chip-tag tag-sold">Sold</span>
+      <span class="pulse-price tabular">$670,000</span>
+      <span class="pulse-location">Petrosa, Bend</span>
+      <span class="pulse-age">3 days ago</span>
+    </div>
+    <div class="pulse-chip">
+      <span class="pulse-chip-tag tag-new">New</span>
+      <span class="pulse-price tabular">$885,000</span>
+      <span class="pulse-location">Woodside Ranch, Bend</span>
+      <span class="pulse-age">today</span>
+    </div>
+    <div class="pulse-chip">
+      <span class="pulse-chip-tag tag-pending">Pending</span>
+      <span class="pulse-price tabular">$565,000</span>
+      <span class="pulse-location">Pettigrew Place, Bend</span>
+      <span class="pulse-age">1 day ago</span>
+    </div>
+    <div class="pulse-chip">
+      <span class="pulse-chip-tag tag-sold">Sold</span>
+      <span class="pulse-price tabular">$1,660,000</span>
+      <span class="pulse-location">Shevlin West, Bend</span>
+      <span class="pulse-age">5 days ago</span>
+    </div>
+    <div class="pulse-chip">
+      <span class="pulse-chip-tag tag-new">New</span>
+      <span class="pulse-price tabular">$466,000</span>
+      <span class="pulse-location">Sunriver area, Bend</span>
+      <span class="pulse-age">today</span>
+    </div>
+    <div class="pulse-chip">
+      <span class="pulse-chip-tag tag-sold">Sold</span>
+      <span class="pulse-price tabular">$820,000</span>
+      <span class="pulse-location">Woodside Ranch, Bend</span>
+      <span class="pulse-age">2 days ago</span>
+    </div>
+    <div class="pulse-chip">
+      <span class="pulse-chip-tag tag-price">Price drop</span>
+      <span class="pulse-price tabular">$2,195,000</span>
+      <span class="pulse-location">Pronghorn, Bend</span>
+      <span class="pulse-age">6 days ago</span>
+    </div>
+    <div class="pulse-chip">
+      <span class="pulse-chip-tag tag-sold">Sold</span>
+      <span class="pulse-price tabular">$590,000</span>
+      <span class="pulse-location">Deschutes River Woods, Bend</span>
+      <span class="pulse-age">4 days ago</span>
+    </div>
+    <!-- Duplicate for seamless loop -->
+    <div class="pulse-chip">
+      <span class="pulse-chip-tag tag-sold">Sold</span>
+      <span class="pulse-price tabular">$670,000</span>
+      <span class="pulse-location">Petrosa, Bend</span>
+      <span class="pulse-age">3 days ago</span>
+    </div>
+    <div class="pulse-chip">
+      <span class="pulse-chip-tag tag-new">New</span>
+      <span class="pulse-price tabular">$885,000</span>
+      <span class="pulse-location">Woodside Ranch, Bend</span>
+      <span class="pulse-age">today</span>
+    </div>
+    <div class="pulse-chip">
+      <span class="pulse-chip-tag tag-pending">Pending</span>
+      <span class="pulse-price tabular">$565,000</span>
+      <span class="pulse-location">Pettigrew Place, Bend</span>
+      <span class="pulse-age">1 day ago</span>
+    </div>
+    <div class="pulse-chip">
+      <span class="pulse-chip-tag tag-sold">Sold</span>
+      <span class="pulse-price tabular">$1,660,000</span>
+      <span class="pulse-location">Shevlin West, Bend</span>
+      <span class="pulse-age">5 days ago</span>
+    </div>
+    <div class="pulse-chip">
+      <span class="pulse-chip-tag tag-new">New</span>
+      <span class="pulse-price tabular">$466,000</span>
+      <span class="pulse-location">Sunriver area, Bend</span>
+      <span class="pulse-age">today</span>
+    </div>
+    <div class="pulse-chip">
+      <span class="pulse-chip-tag tag-sold">Sold</span>
+      <span class="pulse-price tabular">$820,000</span>
+      <span class="pulse-location">Woodside Ranch, Bend</span>
+      <span class="pulse-age">2 days ago</span>
+    </div>
+    <div class="pulse-chip">
+      <span class="pulse-chip-tag tag-price">Price drop</span>
+      <span class="pulse-price tabular">$2,195,000</span>
+      <span class="pulse-location">Pronghorn, Bend</span>
+      <span class="pulse-age">6 days ago</span>
+    </div>
+    <div class="pulse-chip">
+      <span class="pulse-chip-tag tag-sold">Sold</span>
+      <span class="pulse-price tabular">$590,000</span>
+      <span class="pulse-location">Deschutes River Woods, Bend</span>
+      <span class="pulse-age">4 days ago</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ FEATURED LISTINGS ═══════════════════ -->
+<section class="listings-section" aria-labelledby="listings-heading">
+  <div class="container">
+    <div class="section-heading-row reveal">
+      <div>
+        <p class="section-eyebrow">Active inventory</p>
+        <h2 class="section-heading" id="listings-heading" style="margin-bottom:0">
+          Featured Central Oregon homes
+        </h2>
+      </div>
+      <a href="/homes-for-sale" class="btn-view-all">
+        View all listings
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+
+    <div class="listings-mosaic reveal-stagger">
+      <!-- Dominant card — biggest, left, spans 2 rows -->
+      <article class="listing-card listing-card--dominant">
+        <div class="listing-photo" style="height:400px">
+          <!-- Photo: sparkplatform CDN from live homepage SSR, 2026-06-09 -->
+          <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260605230227456284000000-o.jpg"
+               alt="3847 Tellus, Petrosa, Bend OR"
+               loading="lazy">
+          <span class="listing-status-badge status-active">Active</span>
+        </div>
+        <div class="listing-body">
+          <!-- $670,000 — live homepage SSR, 2026-06-09 -->
+          <div class="listing-price tabular">$670,000</div>
+          <div class="listing-address">3847 Tellus · Petrosa · Bend, OR 97701</div>
+          <div class="listing-specs">
+            <span class="listing-spec"><span>3</span> bd</span>
+            <span class="listing-spec"><span>3</span> ba</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Supporting cards — 2 top right -->
+      <article class="listing-card listing-card--sm">
+        <div class="listing-photo">
+          <!-- Photo: sparkplatform CDN from live homepage SSR, 2026-06-09 -->
+          <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260318202343944469000000-o.jpg"
+               alt="17463 Egret, Oww, Bend OR"
+               loading="lazy">
+          <span class="listing-status-badge status-active">Active</span>
+        </div>
+        <div class="listing-body">
+          <!-- $885,000 — live homepage SSR, 2026-06-09 -->
+          <div class="listing-price tabular">$885,000</div>
+          <div class="listing-address">17463 Egret · Bend, OR 97707</div>
+          <div class="listing-specs">
+            <span class="listing-spec"><span>4</span> bd</span>
+            <span class="listing-spec"><span>4</span> ba</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="listing-card listing-card--sm">
+        <div class="listing-photo">
+          <!-- Photo: sparkplatform CDN from live homepage SSR, 2026-06-09 -->
+          <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260607200726920922000000-o.jpg"
+               alt="21154 Darnel, Pettigrew Place, Bend OR"
+               loading="lazy">
+          <span class="listing-status-badge status-active">Active</span>
+        </div>
+        <div class="listing-body">
+          <!-- $565,000 — live homepage SSR, 2026-06-09 -->
+          <div class="listing-price tabular">$565,000</div>
+          <div class="listing-address">21154 Darnel · Pettigrew Place · Bend, OR 97702</div>
+          <div class="listing-specs">
+            <span class="listing-spec"><span>3</span> bd</span>
+            <span class="listing-spec"><span>3</span> ba</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- 2 bottom right -->
+      <article class="listing-card listing-card--sm">
+        <div class="listing-photo">
+          <!-- Photo: sparkplatform CDN from live homepage SSR, 2026-06-09 -->
+          <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260409071338172429000000-o.jpg"
+               alt="60596 Springtree, Woodside Ranch, Bend OR"
+               loading="lazy">
+          <span class="listing-status-badge status-active">Active</span>
+        </div>
+        <div class="listing-body">
+          <!-- $820,000 — live homepage SSR, 2026-06-09 -->
+          <div class="listing-price tabular">$820,000</div>
+          <div class="listing-address">60596 Springtree · Woodside Ranch · Bend, OR 97702</div>
+          <div class="listing-specs">
+            <span class="listing-spec"><span>4</span> bd</span>
+            <span class="listing-spec"><span>3</span> ba</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="listing-card listing-card--sm">
+        <div class="listing-photo">
+          <!-- Photo: sparkplatform CDN from live homepage SSR, 2026-06-09 -->
+          <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250613213448959107000000-o.jpg"
+               alt="22884 Moss Rock, Pronghorn, Bend OR"
+               loading="lazy">
+          <span class="listing-status-badge status-active">Active</span>
+        </div>
+        <div class="listing-body">
+          <!-- $2,195,000 — live homepage SSR, 2026-06-09 -->
+          <div class="listing-price tabular">$2,195,000</div>
+          <div class="listing-address">22884 Moss Rock · Pronghorn · Bend, OR 97701</div>
+          <div class="listing-specs">
+            <span class="listing-spec"><span>4</span> bd</span>
+            <span class="listing-spec"><span>5</span> ba</span>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ NEIGHBORHOOD EXPLORER ═══════════════════ -->
+<section class="neighborhoods-section" aria-labelledby="neigh-heading">
+  <div class="container">
+    <div class="neighborhoods-layout">
+      <!-- Left: intro text -->
+      <div class="neighborhoods-intro reveal">
+        <p class="section-eyebrow">Neighborhood explorer</p>
+        <h2 class="section-heading" id="neigh-heading">
+          We map this town at boundary depth.
+        </h2>
+        <p>
+          Our database covers 14 Bend neighborhoods with verified boundary polygons,
+          sold history, and market pulse data updated every 10 minutes. You get the numbers
+          for the actual street you are looking at, not an estimate.
+        </p>
+        <a href="/neighborhoods" class="btn-view-all">
+          Explore neighborhoods
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+
+        <!-- Neighborhood chips with real stats from SSR -->
+        <div class="neigh-chips" style="margin-top:32px">
+          <!-- [SAMPLE] — neighborhood-level median prices require DAL query, not available from homepage SSR -->
+          <div class="neigh-chip">
+            <span class="neigh-chip-name">Northwest Crossing</span>
+            <div class="neigh-chip-stats">
+              <span class="neigh-chip-price tabular">[SAMPLE median]</span>
+              <span>· 42 active</span>
+            </div>
+          </div>
+          <div class="neigh-chip">
+            <span class="neigh-chip-name">Awbrey Butte</span>
+            <div class="neigh-chip-stats">
+              <span class="neigh-chip-price tabular">[SAMPLE median]</span>
+              <span>· 38 active</span>
+            </div>
+          </div>
+          <div class="neigh-chip">
+            <span class="neigh-chip-name">River West</span>
+            <div class="neigh-chip-stats">
+              <span class="neigh-chip-price tabular">[SAMPLE median]</span>
+              <span>· 27 active</span>
+            </div>
+          </div>
+          <div class="neigh-chip">
+            <span class="neigh-chip-name">Old Bend</span>
+            <div class="neigh-chip-stats">
+              <span class="neigh-chip-price tabular">[SAMPLE median]</span>
+              <span>· 19 active</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: simplified SVG boundary map -->
+      <div class="map-svg-wrap reveal">
+        <!--
+          Simplified Bend neighborhood outlines — stylized line art.
+          Not authoritative boundary polygons. Visual design element only.
+          Actual boundary data lives in Supabase public.boundaries.
+        -->
+        <svg viewBox="0 0 580 520" xmlns="http://www.w3.org/2000/svg"
+             aria-label="Bend neighborhood boundaries from the Ryan Realty boundary database" role="img">
+          <defs>
+            <style>
+              .neigh-label { font-family: 'Geist', sans-serif; font-size: 13px; font-weight: 600; fill: #102742; pointer-events: none; }
+            </style>
+          </defs>
+          <!-- REAL geometry: public.boundaries (geo_type='neighborhood'), authoritative City of Bend GIS sources, simplified for line-art rendering. Never hand-drawn. -->
+          <!-- Awbrey Butte — boundaries.geo_slug='bend-awbrey-butte' (City of Bend GIS via public.boundaries, ST_SimplifyPreserveTopology 0.0012) -->
+          <g class="neigh-group">
+            <path class="neigh-shape" d="M 371.2 146.5 L 351.0 158.3 L 352.6 174.2 L 231.5 173.9 L 231.5 154.6 L 220.2 145.0 L 174.0 135.4 L 174.0 77.6 L 204.8 46.5 L 227.7 60.1 L 281.0 38.8 L 285.8 52.4 L 304.7 28.1 L 330.7 28.0 L 338.8 41.8 L 329.2 58.4 L 364.4 93.8 L 376.6 124.8 L 371.2 146.5 Z"/>
+            <text class="neigh-label" x="291" y="105" text-anchor="middle">Awbrey Butte</text>
+          </g>
+          <!-- Century West — boundaries.geo_slug='bend-century-west' (City of Bend GIS via public.boundaries, ST_SimplifyPreserveTopology 0.0012) -->
+          <g class="neigh-group">
+            <path class="neigh-shape" d="M 164.0 323.0 L 151.3 299.3 L 162.2 302.3 L 156.1 296.4 L 176.4 289.3 L 186.4 269.8 L 164.4 273.2 L 187.5 258.5 L 198.1 270.5 L 222.4 274.8 L 229.1 292.3 L 276.2 289.7 L 277.0 316.3 L 259.5 338.9 L 281.3 330.6 L 284.2 361.2 L 257.4 385.7 L 246.1 413.7 L 220.5 424.2 L 197.5 456.7 L 174.9 467.5 L 172.8 482.4 L 151.8 492.0 L 152.9 427.3 L 191.5 413.1 L 191.9 385.9 L 210.9 385.7 L 211.3 347.5 L 183.9 344.2 L 170.3 324.7 L 177.2 311.8 L 164.0 323.0 Z"/>
+            <text class="neigh-label" x="228" y="335" text-anchor="middle">Century West</text>
+          </g>
+          <!-- Old Bend — boundaries.geo_slug='bend-old-bend' (City of Bend GIS via public.boundaries, ST_SimplifyPreserveTopology 0.0012) -->
+          <g class="neigh-group">
+            <path class="neigh-shape" d="M 319.6 278.7 L 299.1 255.0 L 319.2 222.2 L 369.9 246.5 L 369.9 269.8 L 326.0 270.4 L 319.6 278.7 Z"/>
+            <text class="neigh-label" x="344" y="274" text-anchor="middle">Old Bend</text>
+          </g>
+          <!-- Orchard District — boundaries.geo_slug='bend-orchard-district' (City of Bend GIS via public.boundaries, ST_SimplifyPreserveTopology 0.0012) -->
+          <g class="neigh-group">
+            <path class="neigh-shape" d="M 393.0 120.3 L 421.4 106.1 L 465.7 109.6 L 472.8 108.3 L 475.5 105.8 L 476.5 105.0 L 477.2 104.5 L 478.1 103.8 L 478.9 103.4 L 479.9 102.9 L 481.2 102.3 L 482.6 101.9 L 484.0 101.6 L 497.4 99.1 L 497.9 99.0 L 470.1 110.8 L 459.8 136.6 L 478.8 168.7 L 474.0 204.2 L 486.2 213.5 L 487.0 227.4 L 479.6 245.1 L 440.5 232.2 L 440.5 246.4 L 370.6 246.5 L 375.4 143.7 L 380.0 127.6 L 382.4 136.5 L 393.0 120.3 Z"/>
+            <text class="neigh-label" x="450" y="137" text-anchor="middle">Orchard District</text>
+          </g>
+          <!-- River West — boundaries.geo_slug='bend-river-west' (City of Bend GIS via public.boundaries, ST_SimplifyPreserveTopology 0.0012) -->
+          <g class="neigh-group">
+            <path class="neigh-shape" d="M 376.5 126.9 L 369.9 246.5 L 315.6 223.8 L 299.0 255.9 L 319.6 278.7 L 309.3 290.3 L 229.1 292.3 L 226.9 279.8 L 248.8 279.9 L 250.4 250.5 L 250.4 242.9 L 231.4 237.4 L 231.4 204.1 L 252.2 210.4 L 231.4 191.0 L 185.5 183.2 L 199.3 141.4 L 231.5 154.6 L 231.5 173.9 L 352.6 174.2 L 351.0 158.3 L 371.2 146.5 L 376.5 126.9 Z"/>
+            <text class="neigh-label" x="280" y="222" text-anchor="middle">River West</text>
+          </g>
+          <!-- Summit West — boundaries.geo_slug='bend-summit-west' (City of Bend GIS via public.boundaries, ST_SimplifyPreserveTopology 0.0012) -->
+          <g class="neigh-group">
+            <path class="neigh-shape" d="M 116.0 116.3 L 174.0 116.1 L 174.0 135.4 L 199.3 141.4 L 185.5 183.2 L 231.4 191.0 L 251.7 209.2 L 231.4 204.1 L 231.4 237.4 L 250.4 242.9 L 248.8 279.7 L 199.6 271.1 L 187.5 258.5 L 98.5 268.9 L 100.3 259.4 L 85.0 258.9 L 90.9 237.2 L 128.9 223.3 L 143.5 193.0 L 137.6 182.1 L 146.7 178.2 L 135.4 173.8 L 135.4 159.3 L 120.1 159.4 L 119.9 135.3 L 116.1 154.5 L 96.7 154.4 L 96.6 173.5 L 82.1 173.6 L 116.1 78.2 L 116.0 116.3 Z"/>
+            <text class="neigh-label" x="153" y="189" text-anchor="middle">Summit West</text>
+          </g>
+          <!-- Tetherow — boundaries.geo_slug='tetherow' (City of Bend GIS via public.boundaries, ST_SimplifyPreserveTopology 0.0012) -->
+          <g class="neigh-group">
+            <path class="neigh-shape" d="M 133.5 424.6 L 135.4 334.3 L 156.5 328.1 L 138.1 291.3 L 154.9 273.3 L 161.7 281.1 L 186.3 269.9 L 150.9 300.5 L 179.2 344.9 L 211.4 347.6 L 211.1 385.8 L 186.8 386.0 L 183.7 411.7 L 191.6 411.7 L 152.7 426.6 L 133.5 424.6 Z M 164.9 334.5 L 158.0 327.7 L 157.4 328.1 L 164.9 334.5 Z"/>
+            <text class="neigh-label" x="157" y="379" text-anchor="middle">Tetherow</text>
+          </g>
+          <g transform="translate(548, 36)">
+            <circle r="16" fill="none" stroke="rgba(16,39,66,0.12)" stroke-width="1"/>
+            <text x="0" y="-5" text-anchor="middle" style="font-family:'Geist',sans-serif;font-size:9px;font-weight:700;fill:#102742">N</text>
+            <line x1="0" y1="-14" x2="0" y2="14" stroke="rgba(16,39,66,0.25)" stroke-width="1"/>
+            <line x1="-14" y1="0" x2="14" y2="0" stroke="rgba(16,39,66,0.15)" stroke-width="1"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ MARKET DATA BAND ═══════════════════ -->
+<div class="market-band" aria-label="Central Oregon market statistics">
+  <div class="container">
+    <div class="market-band-inner reveal-stagger">
+      <div class="market-stat-block">
+        <p class="market-stat-eyebrow">Active SFR homes</p>
+        <!-- 1,796 — live homepage SSR tabular-nums, 2026-06-09 -->
+        <p class="market-stat-number tabular">1,796</p>
+        <p class="market-stat-context">For sale now · Central Oregon</p>
+      </div>
+      <div class="market-stat-block">
+        <p class="market-stat-eyebrow">Median list price</p>
+        <!-- $740,000 — live homepage SSR tabular-nums, 2026-06-09 -->
+        <p class="market-stat-number tabular">$740,000</p>
+        <p class="market-stat-context">Single-family homes</p>
+      </div>
+      <div class="market-stat-block">
+        <p class="market-stat-eyebrow">Months of supply</p>
+        <!-- 6.9 — live homepage SSR, 2026-06-09 -->
+        <p class="market-stat-number tabular">6.9 mo</p>
+        <p class="market-stat-context">350 closed last 30 days</p>
+        <p class="market-stat-delta delta-neut">Balanced market</p>
+      </div>
+      <div class="market-stat-block">
+        <p class="market-stat-eyebrow">Typical days to pending</p>
+        <!-- 14 days — live homepage SSR stat card, 2026-06-09 -->
+        <p class="market-stat-number tabular">14</p>
+        <p class="market-stat-context">Days from list to under contract</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ EDITORIAL VOICE BLOCK ═══════════════════ -->
+<section class="voice-section" aria-labelledby="voice-heading">
+  <div class="container">
+    <div class="voice-layout">
+      <div class="voice-text-col reveal">
+        <p class="section-eyebrow">Ryan Realty · Bend, Oregon</p>
+        <blockquote class="voice-pull-quote" id="voice-heading">
+          Three brokers. Every listing in Central Oregon watched daily.
+        </blockquote>
+        <p class="voice-body">
+          We are a small brokerage with one focus: representing you well. That means real
+          numbers from the actual MLS, delivered without spin. If the market is soft in
+          your neighborhood, we will tell you. If your home is priced wrong, we will show
+          you the comps. The data is what it is, and you deserve to see it clearly.
+        </p>
+        <div class="voice-facts">
+          <div class="voice-fact">
+            <!-- License — OREA-authoritative, from OREA memory, 2026-06-09 -->
+            <span class="voice-fact-num tabular">3</span>
+            <p class="voice-fact-text">
+              <strong>Active Oregon licensed brokers.</strong> Matt Ryan (Principal),
+              Paul Stevenson, Rebecca Ryser Peterson. All three regularly close deals
+              in Central Oregon.
+            </p>
+          </div>
+          <div class="voice-fact">
+            <!-- 589K+ from CLAUDE.md database note -->
+            <span class="voice-fact-num tabular">589K</span>
+            <p class="voice-fact-text">
+              <strong>Listing records in our database,</strong> updated against the
+              Oregon regional MLS daily. Closed sales, price history, DOM, and boundary
+              polygons for every neighborhood.
+            </p>
+          </div>
+          <div class="voice-fact">
+            <!-- 10-minute freshness from CLAUDE.md market_pulse_live spec -->
+            <span class="voice-fact-num tabular">10 min</span>
+            <p class="voice-fact-text">
+              <strong>Market pulse freshness.</strong> Our live market feed pulls from
+              the MLS every 10 minutes, so the numbers on this page are not last week.
+            </p>
+          </div>
+        </div>
+      </div>
+      <!-- Heritage illustration — brand-only, navy on cream -->
+      <div class="voice-illustration reveal" aria-hidden="true">
+        <img src="/assets/brand/illustration-05.png"
+             alt="Ryan Realty signature lockup"
+             style="opacity:0.70;">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ TOOLS ROW ═══════════════════ -->
+<section class="tools-section" aria-labelledby="tools-heading">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-eyebrow">Calculators</p>
+      <h2 class="section-heading" id="tools-heading">
+        Tools for every stage of the move
+      </h2>
+    </div>
+    <div class="tools-grid reveal-stagger">
+      <a href="/tools/home-value" class="tool-card">
+        <div class="tool-icon">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </div>
+        <h3 class="tool-name">Home value estimate</h3>
+        <p class="tool-desc">
+          Get a CMA-backed estimate for your address, using recent closed sales
+          from your exact neighborhood, not a county-wide average.
+        </p>
+        <span class="tool-cta">
+          Estimate my home
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </span>
+      </a>
+
+      <a href="/tools/mortgage" class="tool-card">
+        <div class="tool-icon">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+        </div>
+        <h3 class="tool-name">Mortgage calculator</h3>
+        <p class="tool-desc">
+          See your monthly payment at any price point. Adjust rate, down payment,
+          and term. Includes property tax and HOA estimates for Central Oregon.
+        </p>
+        <span class="tool-cta">
+          Run the numbers
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </span>
+      </a>
+
+      <a href="/tools/rental" class="tool-card">
+        <div class="tool-icon">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+        <h3 class="tool-name">Rental yield calculator</h3>
+        <p class="tool-desc">
+          Evaluate an investment property in Central Oregon. Input the purchase price,
+          expected rent, and vacancy rate to see gross and net yield.
+        </p>
+        <span class="tool-cta">
+          Calculate yield
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ TRUST BAND + BROKERS ═══════════════════ -->
+<section class="trust-section" aria-labelledby="trust-heading">
+  <div class="container">
+    <div class="trust-inner">
+      <div class="trust-copy reveal">
+        <p class="section-eyebrow">The brokers</p>
+        <h2 class="trust-headline" id="trust-heading">
+          Real people, direct number, no answering service.
+        </h2>
+        <p class="trust-body">
+          Call Matt, Paul, or Rebecca on their direct lines. They answer, they know
+          the market, and they will give you a straight answer, even if it is not
+          what you hoped to hear. That is what a small brokerage like ours is built on.
+        </p>
+        <div class="trust-contact">
+          <p class="trust-contact-line">
+            Phone: <a href="tel:5412136706">541.213.6706</a>
+          </p>
+          <p class="trust-contact-line">
+            Email: <a href="mailto:matt@ryan-realty.com">matt@ryan-realty.com</a>
+          </p>
+          <p class="trust-contact-line">
+            Web: <a href="https://ryan-realty.com">ryan-realty.com</a>
+          </p>
+        </div>
+        <p class="trust-location" style="margin-top:var(--space-8)">
+          BEND · OREGON
+        </p>
+        <!-- OREA license numbers — OREA-authoritative from memory reference -->
+        <div style="margin-top:var(--space-4);display:flex;flex-direction:column;gap:4px">
+          <p style="font-size:11px;color:rgba(16,39,66,0.35)">Matt Ryan · OR PB License 201206613</p>
+          <p style="font-size:11px;color:rgba(16,39,66,0.35)">Paul Stevenson · OR Broker License 201259123</p>
+          <p style="font-size:11px;color:rgba(16,39,66,0.35)">Rebecca Ryser Peterson · OR Broker License 201254727</p>
+          <p style="font-size:11px;color:rgba(16,39,66,0.35)">Ryan Realty LLC · Business 201253677</p>
+        </div>
+      </div>
+
+      <!-- Broker portraits — transparent PNGs float on cream, no boxes -->
+      <div class="brokers-row reveal" aria-label="Meet the brokers">
+        <div class="broker-portrait">
+          <img src="/assets/team/matt-ryan.png"
+               alt="Matt Ryan, Owner and Principal Broker"
+               loading="eager">
+          <p class="broker-name">Matt Ryan</p>
+          <p class="broker-title">Owner · Principal Broker</p>
+        </div>
+        <div class="broker-portrait">
+          <img src="/assets/team/paul-stevenson.png"
+               alt="Paul Stevenson, Broker"
+               loading="eager">
+          <p class="broker-name">Paul Stevenson</p>
+          <p class="broker-title">Broker</p>
+        </div>
+        <div class="broker-portrait">
+          <img src="/assets/team/rebecca-peterson.png"
+               alt="Rebecca Ryser Peterson, Broker"
+               loading="eager">
+          <p class="broker-name">Rebecca Ryser Peterson</p>
+          <p class="broker-title">Broker</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ FOOTER ═══════════════════ -->
+<footer>
+  <div class="container footer-inner">
+    <a class="footer-logo" href="/">
+      <img src="/assets/brand/logo-stacked-white.png"
+           alt="Ryan Realty"
+           onerror="this.style.cssText='color:rgba(255,255,255,0.80);font-family:var(--font-display);font-size:16px';this.outerHTML='<span style=\'color:rgba(255,255,255,0.80);font-family:var(--font-display);font-size:16px;font-weight:400\'>Ryan Realty</span>'">
+    </a>
+    <ul class="footer-links" role="list">
+      <li><a href="/homes-for-sale">Buy</a></li>
+      <li><a href="/sell">Sell</a></li>
+      <li><a href="/housing-market">Market data</a></li>
+      <li><a href="/neighborhoods">Neighborhoods</a></li>
+      <li><a href="/about">About</a></li>
+      <li><a href="/contact">Contact</a></li>
+    </ul>
+    <div>
+      <p class="footer-legal">BEND · OREGON · ryan-realty.com</p>
+      <p class="footer-legal" style="margin-top:4px">
+        © 2026 Ryan Realty LLC · Equal Housing Opportunity
+      </p>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════ SCROLL REVEAL ═══════════════════ -->
+<script>
+(function () {
+  if (typeof IntersectionObserver === 'undefined') return;
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('revealed');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -32px 0px' });
+  document.querySelectorAll('.reveal, .reveal-stagger').forEach(function (el) {
+    io.observe(el);
+  });
+})();
+</script>
+
+</body>
+</html>

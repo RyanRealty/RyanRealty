@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ryan Realty — THE TERMINAL (concept mockup)</title>
+  <!--
+    CONCEPT: THE TERMINAL
+    Data fetched: 2026-06-10 (live SSR from https://ryan-realty.com + https://ryan-realty.com/pulse)
+    Verified values:
+      active_count    = 1,797   (ryan-realty.com SSR, "Active single-family homes")
+      median_list     = $740,000 (ryan-realty.com SSR, Central Oregon SFR)
+      days_to_pending = 14      (ryan-realty.com SSR, "Typical days to pending")
+      months_supply   = 6.9     (ryan-realty.com SSR)
+      recent_closings = 337     (ryan-realty.com SSR, last 30 days)
+      market_class    = Buyer's market
+    Pulse events: live rows from https://ryan-realty.com/pulse (12 rows captured)
+    City medians: live from ryan-realty.com SSR
+    Neighborhood median chips: [SAMPLE] — not available from SSR, requires DAL query
+    Font: Amboqia_Boriango.otf from ../../fonts/ (relative to this file)
+    Geist: Google Fonts
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Amboqia ── */
+    @font-face {
+      font-family: 'Amboqia';
+      src: url('../../fonts/Amboqia_Boriango.otf') format('opentype');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    /* ── Brand tokens ── */
+    :root {
+      --navy:   #102742;
+      --cream:  #faf8f4;
+      --navy-8:  rgba(16, 39, 66, 0.08);
+      --navy-12: rgba(16, 39, 66, 0.12);
+      --navy-20: rgba(16, 39, 66, 0.20);
+      --navy-40: rgba(16, 39, 66, 0.40);
+      --navy-60: rgba(16, 39, 66, 0.60);
+      --navy-80: rgba(16, 39, 66, 0.80);
+      --font-display: 'Amboqia', serif;
+      --font-ui: 'Geist', system-ui, sans-serif;
+      /* shadows — navy-tinted */
+      --shadow-sm: 0 1px 3px rgb(16 39 66 / 0.08), 0 1px 2px rgb(16 39 66 / 0.06);
+      --shadow-md: 0 4px 12px rgb(16 39 66 / 0.10), 0 2px 4px rgb(16 39 66 / 0.06);
+      --shadow-lg: 0 8px 24px rgb(16 39 66 / 0.12), 0 4px 8px rgb(16 39 66 / 0.08);
+      /* radii */
+      --r-sm: 6px; --r-md: 8px; --r-lg: 10px; --r-xl: 14px;
+    }
+
+    body {
+      background: var(--cream);
+      color: var(--navy);
+      font-family: var(--font-ui);
+      font-size: 15px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Tabular numerals everywhere numeric ── */
+    .num { font-variant-numeric: tabular-nums; }
+
+    /* ══════════════════════════════════════════
+       NAV
+    ══════════════════════════════════════════ */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--cream);
+      border-bottom: 1px solid var(--navy-12);
+      height: 60px;
+      display: flex;
+      align-items: center;
+      padding: 0 32px;
+      gap: 40px;
+    }
+    .nav-wordmark {
+      font-family: var(--font-display);
+      font-size: 20px;
+      letter-spacing: -0.01em;
+      color: var(--navy);
+      text-decoration: none;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+      flex: 1;
+    }
+    .nav-links a {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--navy);
+      text-decoration: none;
+      opacity: 0.72;
+      letter-spacing: 0.01em;
+      transition: opacity 0.15s;
+    }
+    .nav-links a:hover { opacity: 1; }
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-left: auto;
+    }
+    .nav-phone {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--navy);
+      text-decoration: none;
+      letter-spacing: 0.01em;
+      font-variant-numeric: tabular-nums;
+    }
+    .nav-cta {
+      height: 34px;
+      padding: 0 18px;
+      background: var(--navy);
+      color: var(--cream);
+      border: none;
+      border-radius: var(--r-lg);
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.01em;
+    }
+    @media (max-width: 768px) {
+      .nav { padding: 0 20px; gap: 0; }
+      .nav-links, .nav-right .nav-phone { display: none; }
+    }
+
+    /* ══════════════════════════════════════════
+       COMMAND SURFACE (above fold)
+    ══════════════════════════════════════════ */
+    .command-surface {
+      background: var(--cream);
+      padding: 48px 32px 0;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    /* eyebrow */
+    .cs-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--navy);
+      opacity: 0.55;
+      margin-bottom: 6px;
+    }
+
+    /* GIANT headline */
+    .cs-headline {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 4vw, 56px);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--navy);
+      max-width: 640px;
+      margin-bottom: 40px;
+    }
+
+    /* ── Three-column command grid ── */
+    .command-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr 320px;
+      gap: 0;
+      border-top: 1px solid var(--navy-12);
+      border-left: 1px solid var(--navy-12);
+    }
+
+    .command-col {
+      border-right: 1px solid var(--navy-12);
+      border-bottom: 1px solid var(--navy-12);
+    }
+
+    /* ── LEFT: Giant numerals ── */
+    .col-numerals {
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .stat-block {
+      padding: 24px 0;
+      border-bottom: 1px solid var(--navy-12);
+    }
+    .stat-block:last-child { border-bottom: none; }
+
+    .stat-eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--navy);
+      opacity: 0.50;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* pulse dot */
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--navy);
+      opacity: 0.4;
+      flex-shrink: 0;
+      animation: pulse-beat 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse-beat {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50%       { opacity: 0.9; transform: scale(1.25); }
+    }
+
+    .stat-numeral {
+      font-family: var(--font-display);
+      font-size: clamp(48px, 5.5vw, 72px);
+      line-height: 1;
+      letter-spacing: -0.03em;
+      color: var(--navy);
+      font-variant-numeric: tabular-nums;
+      margin-bottom: 4px;
+    }
+
+    .stat-sub {
+      font-size: 12px;
+      color: var(--navy);
+      opacity: 0.55;
+      font-weight: 400;
+    }
+
+    /* market verdict pill */
+    .verdict-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 24px;
+      padding: 0 10px;
+      border-radius: 12px;
+      border: 1px solid var(--navy-20);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--navy);
+      margin-top: 14px;
+    }
+
+    /* search field */
+    .search-wrap {
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 1px solid var(--navy-12);
+    }
+    .search-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      opacity: 0.50;
+      margin-bottom: 8px;
+    }
+    .search-field {
+      display: flex;
+      border: 1px solid var(--navy-20);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      background: white;
+    }
+    .search-input {
+      flex: 1;
+      border: none;
+      padding: 11px 14px;
+      font-family: var(--font-ui);
+      font-size: 14px;
+      color: var(--navy);
+      background: transparent;
+      outline: none;
+    }
+    .search-input::placeholder { color: var(--navy); opacity: 0.35; }
+    .search-btn {
+      width: 44px;
+      background: var(--navy);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .search-btn svg { stroke: var(--cream); }
+
+    /* ── MIDDLE: Neighborhood map ── */
+    .col-map {
+      padding: 28px 24px;
+      background: var(--cream);
+      position: relative;
+    }
+
+    .map-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .map-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      letter-spacing: -0.01em;
+      line-height: 1.1;
+    }
+    .map-subtitle {
+      font-size: 12px;
+      opacity: 0.55;
+      margin-top: 3px;
+    }
+    .map-legend-link {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--navy);
+      text-decoration: none;
+      opacity: 0.60;
+      border-bottom: 1px solid var(--navy-20);
+      padding-bottom: 1px;
+      flex-shrink: 0;
+    }
+
+    /* SVG MAP */
+    .map-svg-container {
+      width: 100%;
+      position: relative;
+    }
+    .map-svg-container svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* Neighborhood shape styles */
+    .neigh-shape {
+      fill: var(--cream);
+      stroke: var(--navy);
+      stroke-width: 1.2;
+      transition: fill 0.15s;
+    }
+    .neigh-group:hover .neigh-shape {
+      fill: rgba(16, 39, 66, 0.08);
+    }
+    .neigh-label-svg {
+      font-family: 'Geist', sans-serif;
+      font-size: 10.5px;
+      font-weight: 600;
+      fill: var(--navy);
+      pointer-events: none;
+      letter-spacing: 0.01em;
+    }
+    .neigh-label-svg-sm {
+      font-family: 'Geist', sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      fill: var(--navy);
+      pointer-events: none;
+      opacity: 0.8;
+    }
+
+    /* Median price chips on the map */
+    .map-chip {
+      cursor: default;
+    }
+    .map-chip rect {
+      fill: var(--navy);
+      rx: 4;
+    }
+    .map-chip text {
+      font-family: 'Geist', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      fill: var(--cream);
+      font-variant-numeric: tabular-nums;
+    }
+    .map-chip-sample rect { fill: rgba(16,39,66,0.55); }
+
+    /* compass rose */
+    .compass-text {
+      font-family: 'Geist', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      fill: var(--navy);
+    }
+
+    /* ── RIGHT: Pulse stream ── */
+    .col-pulse {
+      padding: 20px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    .pulse-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--navy-12);
+    }
+    .pulse-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      opacity: 0.55;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .live-badge {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--cream);
+      background: var(--navy);
+      padding: 2px 6px;
+      border-radius: 3px;
+      opacity: 0.85;
+    }
+
+    .pulse-event {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--navy-8);
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      gap: 8px;
+      align-items: start;
+    }
+    .pulse-event:last-child { border-bottom: none; }
+
+    .pulse-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      border: 1px solid var(--navy-20);
+      margin-top: 1px;
+    }
+    .pulse-icon svg { width: 11px; height: 11px; }
+    .pulse-icon.sold   { background: rgba(16,39,66,0.10); }
+    .pulse-icon.new    { background: rgba(16,39,66,0.06); }
+    .pulse-icon.drop   { background: rgba(16,39,66,0.04); }
+    .pulse-icon.contract { background: rgba(16,39,66,0.08); }
+
+    .pulse-body { min-width: 0; }
+    .pulse-tag {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      opacity: 0.55;
+      margin-bottom: 2px;
+    }
+    .pulse-tag.sold    { color: var(--navy); }
+    .pulse-tag.new     { color: var(--navy); }
+    .pulse-tag.drop    { color: var(--navy); }
+    .pulse-tag.contract{ color: var(--navy); }
+
+    .pulse-address {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--navy);
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .pulse-area {
+      font-size: 11px;
+      color: var(--navy);
+      opacity: 0.55;
+      margin-top: 1px;
+    }
+    .pulse-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 4px;
+    }
+    .pulse-price {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--navy);
+      font-variant-numeric: tabular-nums;
+    }
+    .pulse-time {
+      font-size: 10px;
+      color: var(--navy);
+      opacity: 0.45;
+    }
+    .pulse-delta {
+      font-size: 10px;
+      font-weight: 600;
+      opacity: 0.65;
+    }
+    .pulse-delta.under { color: var(--navy); }
+    .pulse-delta.over  { color: var(--navy); }
+
+    .pulse-footer {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--navy-12);
+    }
+    .pulse-all-link {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--navy);
+      text-decoration: none;
+      opacity: 0.65;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pulse-all-link svg { stroke: var(--navy); }
+
+    /* ══════════════════════════════════════════
+       BELOW-FOLD: City Ledger
+    ══════════════════════════════════════════ */
+    .section {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 64px 32px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--navy-12);
+    }
+    .section-heading {
+      font-family: var(--font-display);
+      font-size: 32px;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+    }
+    .section-meta {
+      font-size: 12px;
+      opacity: 0.50;
+      text-align: right;
+    }
+
+    /* LEDGER TABLE */
+    .ledger-wrap {
+      border: 1px solid var(--navy-12);
+      border-radius: var(--r-xl);
+      overflow: hidden;
+    }
+
+    .ledger-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ledger-thead th {
+      padding: 12px 20px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--navy);
+      opacity: 0.50;
+      background: rgba(16, 39, 66, 0.04);
+      border-bottom: 1px solid var(--navy-12);
+    }
+    .ledger-thead th.num { text-align: right; }
+
+    .ledger-row td {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--navy-8);
+      vertical-align: middle;
+    }
+    .ledger-row:last-child td { border-bottom: none; }
+    .ledger-row:hover td { background: rgba(16, 39, 66, 0.025); }
+
+    .city-name {
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .city-region {
+      font-size: 11px;
+      opacity: 0.45;
+      font-weight: 400;
+      margin-left: 6px;
+    }
+    .ledger-num {
+      text-align: right;
+      font-size: 14px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+    .ledger-bar-cell { width: 140px; }
+    .ledger-bar-wrap {
+      height: 4px;
+      background: var(--navy-8);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .ledger-bar-fill {
+      height: 100%;
+      background: var(--navy);
+      border-radius: 2px;
+      opacity: 0.5;
+    }
+
+    /* market type badge */
+    .market-badge {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: var(--r-sm);
+      border: 1px solid var(--navy-20);
+      color: var(--navy);
+      white-space: nowrap;
+    }
+    .market-badge.buyer  { background: rgba(16,39,66,0.06); }
+    .market-badge.seller { background: rgba(16,39,66,0.12); }
+    .market-badge.balanced { background: rgba(16,39,66,0.08); }
+
+    /* ledger footnote */
+    .ledger-note {
+      margin-top: 12px;
+      font-size: 11px;
+      opacity: 0.45;
+      line-height: 1.4;
+    }
+
+    /* ══════════════════════════════════════════
+       FEATURED LISTING ROW
+    ══════════════════════════════════════════ */
+    .featured-section {
+      background: rgba(16, 39, 66, 0.03);
+      border-top: 1px solid var(--navy-12);
+      border-bottom: 1px solid var(--navy-12);
+    }
+    .featured-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 48px 32px;
+    }
+    .featured-eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.50;
+      margin-bottom: 20px;
+    }
+    .featured-card {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      border: 1px solid var(--navy-20);
+      border-radius: var(--r-xl);
+      overflow: hidden;
+      background: var(--cream);
+    }
+    .featured-photo {
+      background: var(--navy-8);
+      min-height: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .featured-photo-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      opacity: 0.25;
+    }
+    .featured-photo-placeholder svg { width: 32px; height: 32px; stroke: var(--navy); }
+    .featured-photo-placeholder span { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+    .featured-content {
+      padding: 32px 36px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .featured-status {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.55;
+      margin-bottom: 8px;
+    }
+    .featured-address {
+      font-family: var(--font-display);
+      font-size: 28px;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin-bottom: 4px;
+    }
+    .featured-location {
+      font-size: 14px;
+      opacity: 0.60;
+      margin-bottom: 24px;
+    }
+    .featured-stats {
+      display: flex;
+      gap: 32px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .featured-stat-item { }
+    .featured-stat-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      opacity: 0.50;
+      margin-bottom: 3px;
+    }
+    .featured-stat-val {
+      font-size: 18px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .featured-price-big {
+      font-family: var(--font-display);
+      font-size: 40px;
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+      margin-top: auto;
+    }
+    .featured-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 42px;
+      padding: 0 22px;
+      background: var(--navy);
+      color: var(--cream);
+      border-radius: var(--r-lg);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      letter-spacing: 0.02em;
+      margin-top: 20px;
+      width: fit-content;
+    }
+    .featured-cta svg { stroke: var(--cream); }
+
+    @media (max-width: 768px) {
+      .featured-card { grid-template-columns: 1fr; }
+      .featured-photo { min-height: 200px; }
+    }
+
+    /* ══════════════════════════════════════════
+       TOOLS ROW
+    ══════════════════════════════════════════ */
+    .tools-section {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 64px 32px;
+    }
+
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--navy-12);
+      border: 1px solid var(--navy-12);
+      border-radius: var(--r-xl);
+      overflow: hidden;
+    }
+    .tool-card {
+      background: var(--cream);
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .tool-card:hover { background: rgba(16,39,66,0.03); }
+    .tool-icon {
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--navy-20);
+      border-radius: var(--r-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .tool-icon svg { width: 18px; height: 18px; stroke: var(--navy); stroke-width: 1.8; fill: none; }
+    .tool-name {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--navy);
+      margin-bottom: 6px;
+    }
+    .tool-desc {
+      font-size: 13px;
+      color: var(--navy);
+      opacity: 0.60;
+      line-height: 1.45;
+      flex: 1;
+    }
+    .tool-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--navy);
+      opacity: 0.65;
+      margin-top: 16px;
+    }
+    .tool-link svg { stroke: var(--navy); width: 12px; height: 12px; }
+
+    @media (max-width: 768px) {
+      .tools-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .tools-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ══════════════════════════════════════════
+       BROKER TRUST BAND
+    ══════════════════════════════════════════ */
+    .trust-band {
+      background: var(--navy);
+      padding: 48px 32px;
+    }
+    .trust-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 48px;
+      align-items: center;
+    }
+    .trust-left { }
+    .trust-tagline {
+      font-family: var(--font-display);
+      font-size: 28px;
+      letter-spacing: -0.02em;
+      color: var(--cream);
+      margin-bottom: 20px;
+      line-height: 1.15;
+      max-width: 520px;
+    }
+    .trust-brokers {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .broker-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .broker-avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: rgba(250,248,244,0.12);
+      border: 1px solid rgba(250,248,244,0.20);
+      overflow: hidden;
+      flex-shrink: 0;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .broker-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+    }
+    .broker-avatar-init {
+      font-family: var(--font-display);
+      font-size: 22px;
+      color: var(--cream);
+      opacity: 0.60;
+      padding-bottom: 4px;
+    }
+    .broker-info { }
+    .broker-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--cream);
+      margin-bottom: 1px;
+    }
+    .broker-role {
+      font-size: 11px;
+      color: var(--cream);
+      opacity: 0.55;
+    }
+    .broker-license {
+      font-size: 10px;
+      color: var(--cream);
+      opacity: 0.40;
+      margin-top: 1px;
+      font-variant-numeric: tabular-nums;
+    }
+    .trust-right {
+      text-align: right;
+    }
+    .trust-phone {
+      font-family: var(--font-display);
+      font-size: 32px;
+      letter-spacing: -0.02em;
+      color: var(--cream);
+      text-decoration: none;
+      display: block;
+      margin-bottom: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+    .trust-web {
+      font-size: 13px;
+      color: var(--cream);
+      opacity: 0.55;
+      text-decoration: none;
+    }
+    .trust-sep {
+      font-size: 13px;
+      color: var(--cream);
+      opacity: 0.35;
+      letter-spacing: 0.08em;
+      margin-top: 12px;
+      display: block;
+    }
+
+    @media (max-width: 768px) {
+      .trust-inner { grid-template-columns: 1fr; gap: 32px; }
+      .trust-right { text-align: left; }
+    }
+
+    /* footer */
+    .site-footer {
+      background: var(--navy);
+      border-top: 1px solid rgba(250,248,244,0.10);
+      padding: 24px 32px;
+    }
+    .footer-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .footer-copy {
+      font-size: 11px;
+      color: var(--cream);
+      opacity: 0.40;
+    }
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      list-style: none;
+    }
+    .footer-links a {
+      font-size: 11px;
+      color: var(--cream);
+      opacity: 0.40;
+      text-decoration: none;
+    }
+
+    /* ══════════════════════════════════════════
+       RESPONSIVE: command grid
+    ══════════════════════════════════════════ */
+    @media (max-width: 1100px) {
+      .command-grid {
+        grid-template-columns: 1fr 1.3fr;
+      }
+      .col-pulse { display: none; }
+    }
+
+    @media (max-width: 768px) {
+      .command-surface { padding: 32px 20px 0; }
+      .command-grid {
+        grid-template-columns: 1fr;
+        border-left: none;
+      }
+      .command-col { border-right: none; }
+      /* on mobile: map first, then numerals */
+      .col-map { order: -1; }
+      .col-numerals { order: 1; }
+      .col-pulse { display: none; }
+      .stat-numeral { font-size: 56px; }
+      .cs-headline { font-size: 32px; }
+      .section { padding: 48px 20px; }
+      .ledger-table { font-size: 13px; }
+      .ledger-bar-cell { display: none; }
+    }
+
+    /* Sample tag */
+    .sample-tag {
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--navy);
+      opacity: 0.40;
+      border: 1px solid var(--navy-20);
+      padding: 1px 5px;
+      border-radius: 3px;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+
+    /* divider label */
+    .divider-label {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 56px 32px 0;
+      max-width: 1440px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .divider-label::before, .divider-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--navy-12);
+    }
+    .divider-text {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.40;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ NAV ══════════ -->
+<nav class="nav" aria-label="Main navigation">
+  <a href="/" class="nav-wordmark">Ryan Realty</a>
+  <ul class="nav-links" role="list">
+    <li><a href="/search">Buy</a></li>
+    <li><a href="/sell">Sell</a></li>
+    <li><a href="/market-report">Market</a></li>
+    <li><a href="/neighborhoods">Neighborhoods</a></li>
+    <li><a href="/cities">Cities</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="tel:5412136706" class="nav-phone">541.213.6706</a>
+    <button class="nav-cta" type="button">Get a home value</button>
+  </div>
+</nav>
+
+<!-- ══════════ COMMAND SURFACE ══════════ -->
+<div class="command-surface">
+  <p class="cs-eyebrow">Central Oregon · Real-time market intelligence</p>
+  <h1 class="cs-headline">Nobody knows this market like we do.</h1>
+
+  <div class="command-grid" role="region" aria-label="Market command center">
+
+    <!-- LEFT COL: Giant numerals -->
+    <div class="command-col col-numerals">
+
+      <div class="stat-block">
+        <p class="stat-eyebrow">
+          <span class="pulse-dot" aria-hidden="true"></span>
+          Active homes for sale
+        </p>
+        <!--
+          SOURCE: ryan-realty.com SSR, 2026-06-10
+          "Active single-family homes · Central Oregon" = 1,797
+        -->
+        <p class="stat-numeral num">1,797</p>
+        <p class="stat-sub">Single-family · Central Oregon</p>
+      </div>
+
+      <div class="stat-block">
+        <p class="stat-eyebrow">
+          <span class="pulse-dot" aria-hidden="true" style="animation-delay:0.8s"></span>
+          Median list price
+        </p>
+        <!--
+          SOURCE: ryan-realty.com SSR, 2026-06-10
+          Central Oregon SFR median list = $740,000
+        -->
+        <p class="stat-numeral num">$740,000</p>
+        <p class="stat-sub">Central Oregon SFR</p>
+        <div class="verdict-pill num">
+          <span class="pulse-dot" style="width:5px;height:5px;animation-delay:1.2s" aria-hidden="true"></span>
+          6.9 mo supply · Buyer's market
+        </div>
+      </div>
+
+      <div class="stat-block">
+        <p class="stat-eyebrow">
+          <span class="pulse-dot" aria-hidden="true" style="animation-delay:1.6s"></span>
+          Typical days to pending
+        </p>
+        <!--
+          SOURCE: ryan-realty.com SSR, 2026-06-10
+          "Typical days to pending" = 14
+        -->
+        <p class="stat-numeral num">14 days</p>
+        <p class="stat-sub">337 homes closed in last 30 days</p>
+      </div>
+
+      <div class="search-wrap">
+        <p class="search-label">Search homes</p>
+        <div class="search-field">
+          <input class="search-input" type="text" placeholder="City, neighborhood, or address" aria-label="Search homes" />
+          <button class="search-btn" type="button" aria-label="Search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.5" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /col-numerals -->
+
+    <!-- MIDDLE COL: Neighborhood map -->
+    <div class="command-col col-map">
+      <div class="map-header">
+        <div>
+          <h2 class="map-title">Bend neighborhoods</h2>
+          <p class="map-subtitle">Authoritative boundaries · public.boundaries database</p>
+        </div>
+        <a href="/neighborhoods" class="map-legend-link">All 14 →</a>
+      </div>
+
+      <div class="map-svg-container">
+        <!--
+          REAL geometry: public.boundaries (geo_type='neighborhood')
+          Source: City of Bend GIS via public.boundaries, ST_SimplifyPreserveTopology 0.0012
+          Lifted verbatim from design_system/ryan-realty/ui_kits/homepage-v3/index.html
+          Median price chips: [SAMPLE] — neighborhood-level medians require DAL query
+          City-level medians from ryan-realty.com SSR 2026-06-10 used for Bend overall ($819,000)
+        -->
+        <svg viewBox="0 0 600 545" xmlns="http://www.w3.org/2000/svg"
+             aria-label="Bend neighborhood boundary map — 7 westside neighborhoods" role="img">
+          <defs>
+            <style>
+              .neigh-shape {
+                fill: var(--cream, #faf8f4);
+                stroke: #102742;
+                stroke-width: 1.2;
+                cursor: pointer;
+                transition: fill 0.15s;
+              }
+              .neigh-group:hover .neigh-shape { fill: rgba(16,39,66,0.07); }
+              .neigh-label-svg {
+                font-family: 'Geist', sans-serif;
+                font-size: 10.5px;
+                font-weight: 600;
+                fill: #102742;
+                pointer-events: none;
+                letter-spacing: 0.005em;
+              }
+              .chip-bg { rx: 4; ry: 4; }
+            </style>
+          </defs>
+
+          <!-- Awbrey Butte -->
+          <g class="neigh-group" role="button" aria-label="Awbrey Butte neighborhood">
+            <path class="neigh-shape" d="M 371.2 146.5 L 351.0 158.3 L 352.6 174.2 L 231.5 173.9 L 231.5 154.6 L 220.2 145.0 L 174.0 135.4 L 174.0 77.6 L 204.8 46.5 L 227.7 60.1 L 281.0 38.8 L 285.8 52.4 L 304.7 28.1 L 330.7 28.0 L 338.8 41.8 L 329.2 58.4 L 364.4 93.8 L 376.6 124.8 L 371.2 146.5 Z"/>
+            <text class="neigh-label-svg" x="291" y="100" text-anchor="middle">Awbrey Butte</text>
+            <!-- [SAMPLE] median chip -->
+            <g class="map-chip map-chip-sample" transform="translate(261, 107)">
+              <rect class="chip-bg" x="0" y="0" width="62" height="15" rx="4" ry="4" fill="rgba(16,39,66,0.60)"/>
+              <text x="31" y="11" text-anchor="middle" font-family="Geist,sans-serif" font-size="9" font-weight="700" fill="#faf8f4" font-variant-numeric="tabular-nums">$1.1M [S]</text>
+            </g>
+          </g>
+
+          <!-- Century West -->
+          <g class="neigh-group" role="button" aria-label="Century West neighborhood">
+            <path class="neigh-shape" d="M 164.0 323.0 L 151.3 299.3 L 162.2 302.3 L 156.1 296.4 L 176.4 289.3 L 186.4 269.8 L 164.4 273.2 L 187.5 258.5 L 198.1 270.5 L 222.4 274.8 L 229.1 292.3 L 276.2 289.7 L 277.0 316.3 L 259.5 338.9 L 281.3 330.6 L 284.2 361.2 L 257.4 385.7 L 246.1 413.7 L 220.5 424.2 L 197.5 456.7 L 174.9 467.5 L 172.8 482.4 L 151.8 492.0 L 152.9 427.3 L 191.5 413.1 L 191.9 385.9 L 210.9 385.7 L 211.3 347.5 L 183.9 344.2 L 170.3 324.7 L 177.2 311.8 L 164.0 323.0 Z"/>
+            <text class="neigh-label-svg" x="228" y="340" text-anchor="middle">Century West</text>
+            <g class="map-chip map-chip-sample" transform="translate(196, 347)">
+              <rect class="chip-bg" x="0" y="0" width="62" height="15" rx="4" ry="4" fill="rgba(16,39,66,0.60)"/>
+              <text x="31" y="11" text-anchor="middle" font-family="Geist,sans-serif" font-size="9" font-weight="700" fill="#faf8f4" font-variant-numeric="tabular-nums">$875K [S]</text>
+            </g>
+          </g>
+
+          <!-- Old Bend -->
+          <g class="neigh-group" role="button" aria-label="Old Bend neighborhood">
+            <path class="neigh-shape" d="M 319.6 278.7 L 299.1 255.0 L 319.2 222.2 L 369.9 246.5 L 369.9 269.8 L 326.0 270.4 L 319.6 278.7 Z"/>
+            <text class="neigh-label-svg" x="340" y="268" text-anchor="middle" font-size="9.5px">Old Bend</text>
+            <g class="map-chip map-chip-sample" transform="translate(304, 238)">
+              <rect class="chip-bg" x="0" y="0" width="60" height="15" rx="4" ry="4" fill="rgba(16,39,66,0.60)"/>
+              <text x="30" y="11" text-anchor="middle" font-family="Geist,sans-serif" font-size="9" font-weight="700" fill="#faf8f4" font-variant-numeric="tabular-nums">$719K [S]</text>
+            </g>
+          </g>
+
+          <!-- Orchard District -->
+          <g class="neigh-group" role="button" aria-label="Orchard District neighborhood">
+            <path class="neigh-shape" d="M 393.0 120.3 L 421.4 106.1 L 465.7 109.6 L 472.8 108.3 L 475.5 105.8 L 476.5 105.0 L 477.2 104.5 L 478.1 103.8 L 478.9 103.4 L 479.9 102.9 L 481.2 102.3 L 482.6 101.9 L 484.0 101.6 L 497.4 99.1 L 497.9 99.0 L 470.1 110.8 L 459.8 136.6 L 478.8 168.7 L 474.0 204.2 L 486.2 213.5 L 487.0 227.4 L 479.6 245.1 L 440.5 232.2 L 440.5 246.4 L 370.6 246.5 L 375.4 143.7 L 380.0 127.6 L 382.4 136.5 L 393.0 120.3 Z"/>
+            <text class="neigh-label-svg" x="450" y="175" text-anchor="middle">Orchard District</text>
+            <g class="map-chip map-chip-sample" transform="translate(413, 183)">
+              <rect class="chip-bg" x="0" y="0" width="62" height="15" rx="4" ry="4" fill="rgba(16,39,66,0.60)"/>
+              <text x="31" y="11" text-anchor="middle" font-family="Geist,sans-serif" font-size="9" font-weight="700" fill="#faf8f4" font-variant-numeric="tabular-nums">$695K [S]</text>
+            </g>
+          </g>
+
+          <!-- River West -->
+          <g class="neigh-group" role="button" aria-label="River West neighborhood">
+            <path class="neigh-shape" d="M 376.5 126.9 L 369.9 246.5 L 315.6 223.8 L 299.0 255.9 L 319.6 278.7 L 309.3 290.3 L 229.1 292.3 L 226.9 279.8 L 248.8 279.9 L 250.4 250.5 L 250.4 242.9 L 231.4 237.4 L 231.4 204.1 L 252.2 210.4 L 231.4 191.0 L 185.5 183.2 L 199.3 141.4 L 231.5 154.6 L 231.5 173.9 L 352.6 174.2 L 351.0 158.3 L 371.2 146.5 L 376.5 126.9 Z"/>
+            <text class="neigh-label-svg" x="295" y="230" text-anchor="middle">River West</text>
+            <g class="map-chip map-chip-sample" transform="translate(259, 237)">
+              <rect class="chip-bg" x="0" y="0" width="62" height="15" rx="4" ry="4" fill="rgba(16,39,66,0.60)"/>
+              <text x="31" y="11" text-anchor="middle" font-family="Geist,sans-serif" font-size="9" font-weight="700" fill="#faf8f4" font-variant-numeric="tabular-nums">$949K [S]</text>
+            </g>
+          </g>
+
+          <!-- Summit West -->
+          <g class="neigh-group" role="button" aria-label="Summit West neighborhood">
+            <path class="neigh-shape" d="M 116.0 116.3 L 174.0 116.1 L 174.0 135.4 L 199.3 141.4 L 185.5 183.2 L 231.4 191.0 L 251.7 209.2 L 231.4 204.1 L 231.4 237.4 L 250.4 242.9 L 248.8 279.7 L 199.6 271.1 L 187.5 258.5 L 98.5 268.9 L 100.3 259.4 L 85.0 258.9 L 90.9 237.2 L 128.9 223.3 L 143.5 193.0 L 137.6 182.1 L 146.7 178.2 L 135.4 173.8 L 135.4 159.3 L 120.1 159.4 L 119.9 135.3 L 116.1 154.5 L 96.7 154.4 L 96.6 173.5 L 82.1 173.6 L 116.1 78.2 L 116.0 116.3 Z"/>
+            <text class="neigh-label-svg" x="158" y="192" text-anchor="middle">Summit West</text>
+            <g class="map-chip map-chip-sample" transform="translate(122, 199)">
+              <rect class="chip-bg" x="0" y="0" width="62" height="15" rx="4" ry="4" fill="rgba(16,39,66,0.60)"/>
+              <text x="31" y="11" text-anchor="middle" font-family="Geist,sans-serif" font-size="9" font-weight="700" fill="#faf8f4" font-variant-numeric="tabular-nums">$825K [S]</text>
+            </g>
+          </g>
+
+          <!-- Tetherow -->
+          <g class="neigh-group" role="button" aria-label="Tetherow neighborhood">
+            <path class="neigh-shape" d="M 133.5 424.6 L 135.4 334.3 L 156.5 328.1 L 138.1 291.3 L 154.9 273.3 L 161.7 281.1 L 186.3 269.9 L 150.9 300.5 L 179.2 344.9 L 211.4 347.6 L 211.1 385.8 L 186.8 386.0 L 183.7 411.7 L 191.6 411.7 L 152.7 426.6 L 133.5 424.6 Z M 164.9 334.5 L 158.0 327.7 L 157.4 328.1 L 164.9 334.5 Z"/>
+            <text class="neigh-label-svg" x="162" y="382" text-anchor="middle">Tetherow</text>
+            <g class="map-chip map-chip-sample" transform="translate(127, 388)">
+              <rect class="chip-bg" x="0" y="0" width="70" height="15" rx="4" ry="4" fill="rgba(16,39,66,0.60)"/>
+              <text x="35" y="11" text-anchor="middle" font-family="Geist,sans-serif" font-size="9" font-weight="700" fill="#faf8f4" font-variant-numeric="tabular-nums">$1.6M [S]</text>
+            </g>
+          </g>
+
+          <!-- Compass rose -->
+          <g transform="translate(568, 36)">
+            <circle r="16" fill="none" stroke="rgba(16,39,66,0.12)" stroke-width="1"/>
+            <text x="0" y="-4" text-anchor="middle" font-family="Geist,sans-serif" font-size="9" font-weight="700" fill="#102742">N</text>
+            <line x1="0" y1="-13" x2="0" y2="13" stroke="rgba(16,39,66,0.25)" stroke-width="1"/>
+            <line x1="-13" y1="0" x2="13" y2="0" stroke="rgba(16,39,66,0.15)" stroke-width="1"/>
+          </g>
+
+          <!-- [S] legend -->
+          <g transform="translate(20, 528)">
+            <text font-family="Geist,sans-serif" font-size="9" fill="#102742" opacity="0.40">[S] = SAMPLE median · requires neighborhood DAL query · not from live SSR</text>
+          </g>
+        </svg>
+      </div>
+    </div><!-- /col-map -->
+
+    <!-- RIGHT COL: Pulse stream -->
+    <!--
+      SOURCE: ryan-realty.com/pulse SSR, 2026-06-10 · 12 live rows captured
+    -->
+    <div class="command-col col-pulse">
+      <div class="pulse-header">
+        <p class="pulse-title">
+          Market pulse
+          <span class="live-badge">Live</span>
+        </p>
+      </div>
+
+      <!-- Event 1 — Just sold -->
+      <div class="pulse-event">
+        <div class="pulse-icon sold" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#102742" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="pulse-body">
+          <p class="pulse-tag sold">Just sold</p>
+          <p class="pulse-address">2302 Mary Rose</p>
+          <p class="pulse-area">Rose Terrace, Bend</p>
+          <div class="pulse-meta">
+            <span class="pulse-price num">$605,000</span>
+            <span class="pulse-delta under num">−2.4% list</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Event 2 — Price drop -->
+      <div class="pulse-event">
+        <div class="pulse-icon drop" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#102742" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="pulse-body">
+          <p class="pulse-tag drop">Price drop</p>
+          <p class="pulse-address">16985 Chinook</p>
+          <p class="pulse-area">Terrebonne</p>
+          <div class="pulse-meta">
+            <span class="pulse-price num">$849,000</span>
+            <span class="pulse-delta under num">−3.0% from $875K</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Event 3 — New listing -->
+      <div class="pulse-event">
+        <div class="pulse-icon new" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#102742" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+        <div class="pulse-body">
+          <p class="pulse-tag new">New listing</p>
+          <p class="pulse-address">70305 Arvensis</p>
+          <p class="pulse-area">Black Butte Ranch</p>
+          <div class="pulse-meta">
+            <span class="pulse-price num">$1,425,000</span>
+            <span class="pulse-time">33 min ago</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Event 4 — Just sold -->
+      <div class="pulse-event">
+        <div class="pulse-icon sold" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#102742" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="pulse-body">
+          <p class="pulse-tag sold">Just sold</p>
+          <p class="pulse-address">2979 Sugarpine</p>
+          <p class="pulse-area">Prineville</p>
+          <div class="pulse-meta">
+            <span class="pulse-price num">$514,000</span>
+            <span class="pulse-delta over num">+2.8% list</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Event 5 — New listing -->
+      <div class="pulse-event">
+        <div class="pulse-icon new" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#102742" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+        <div class="pulse-body">
+          <p class="pulse-tag new">New listing</p>
+          <p class="pulse-address">16802 Pony Express</p>
+          <p class="pulse-area">River Meadows, Bend</p>
+          <div class="pulse-meta">
+            <span class="pulse-price num">$789,900</span>
+            <span class="pulse-time">1 hr ago</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Event 6 — Price drop -->
+      <div class="pulse-event">
+        <div class="pulse-icon drop" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#102742" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="pulse-body">
+          <p class="pulse-tag drop">Price drop</p>
+          <p class="pulse-address">1733 Hemlock</p>
+          <p class="pulse-area">Canyon Rim Village, Redmond</p>
+          <div class="pulse-meta">
+            <span class="pulse-price num">$649,900</span>
+            <span class="pulse-delta under num">−2.3% from $665K</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Event 7 — New listing -->
+      <div class="pulse-event">
+        <div class="pulse-icon new" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#102742" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+        <div class="pulse-body">
+          <p class="pulse-tag new">New listing</p>
+          <p class="pulse-address">1382 Drost</p>
+          <p class="pulse-area">North Pilot Butte, Bend</p>
+          <div class="pulse-meta">
+            <span class="pulse-price num">$659,900</span>
+            <span class="pulse-time">1 hr ago</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Event 8 — Price drop -->
+      <div class="pulse-event">
+        <div class="pulse-icon drop" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#102742" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="pulse-body">
+          <p class="pulse-tag drop">Price drop</p>
+          <p class="pulse-address">21248 Lily</p>
+          <p class="pulse-area">Gardenside, Bend</p>
+          <div class="pulse-meta">
+            <span class="pulse-price num">$549,900</span>
+            <span class="pulse-delta under num">−2.7% from $565K</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pulse-footer">
+        <a href="/pulse" class="pulse-all-link">
+          All market activity
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div><!-- /col-pulse -->
+
+  </div><!-- /command-grid -->
+</div><!-- /command-surface -->
+
+<!-- ══════════ CITY LEDGER ══════════ -->
+<div class="divider-label">
+  <span class="divider-text">City market ledger</span>
+</div>
+
+<section class="section" aria-labelledby="ledger-heading">
+  <div class="section-header">
+    <h2 class="section-heading" id="ledger-heading">Central Oregon by city</h2>
+    <p class="section-meta">
+      Single-family · Active listings<br />
+      <!--
+        SOURCE: ryan-realty.com SSR, 2026-06-10
+        All city medians + active counts from live SSR
+      -->
+      Data as of 2026-06-10
+    </p>
+  </div>
+
+  <div class="ledger-wrap">
+    <table class="ledger-table" role="grid" aria-label="City market ledger">
+      <thead class="ledger-thead">
+        <tr>
+          <th scope="col" style="width:220px">City</th>
+          <th scope="col" class="num" style="width:80px">Active</th>
+          <th scope="col" class="num" style="width:140px">Median list</th>
+          <th scope="col" style="width:140px" class="ledger-bar-cell"></th>
+          <th scope="col" class="num" style="width:120px">Vs. region</th>
+          <th scope="col" style="width:120px">Market</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!--
+          All values: ryan-realty.com SSR, 2026-06-10 · SFR · Active
+          Region median = $740,000
+          Months supply for city-level market classification not available from SSR — badges use [S]
+        -->
+        <tr class="ledger-row">
+          <td><span class="city-name">Bend</span></td>
+          <td class="ledger-num">819</td>
+          <td class="ledger-num">$819,000</td>
+          <td class="ledger-bar-cell">
+            <div class="ledger-bar-wrap"><div class="ledger-bar-fill" style="width:100%"></div></div>
+          </td>
+          <td class="ledger-num num">+10.7%</td>
+          <td><span class="market-badge buyer">Buyer <span class="sample-tag">S</span></span></td>
+        </tr>
+        <tr class="ledger-row">
+          <td><span class="city-name">Sisters</span></td>
+          <td class="ledger-num">101</td>
+          <td class="ledger-num">$747,000</td>
+          <td class="ledger-bar-cell">
+            <div class="ledger-bar-wrap"><div class="ledger-bar-fill" style="width:91%"></div></div>
+          </td>
+          <td class="ledger-num num">+0.9%</td>
+          <td><span class="market-badge balanced">Balanced <span class="sample-tag">S</span></span></td>
+        </tr>
+        <tr class="ledger-row">
+          <td><span class="city-name">Sunriver</span></td>
+          <td class="ledger-num">57</td>
+          <td class="ledger-num">$660,000</td>
+          <td class="ledger-bar-cell">
+            <div class="ledger-bar-wrap"><div class="ledger-bar-fill" style="width:81%"></div></div>
+          </td>
+          <td class="ledger-num num">−10.8%</td>
+          <td><span class="market-badge buyer">Buyer <span class="sample-tag">S</span></span></td>
+        </tr>
+        <tr class="ledger-row">
+          <td><span class="city-name">Redmond</span></td>
+          <td class="ledger-num">241</td>
+          <td class="ledger-num">$545,000</td>
+          <td class="ledger-bar-cell">
+            <div class="ledger-bar-wrap"><div class="ledger-bar-fill" style="width:66%"></div></div>
+          </td>
+          <td class="ledger-num num">−26.4%</td>
+          <td><span class="market-badge balanced">Balanced <span class="sample-tag">S</span></span></td>
+        </tr>
+        <tr class="ledger-row">
+          <td><span class="city-name">La Pine</span></td>
+          <td class="ledger-num">179</td>
+          <td class="ledger-num">$495,000</td>
+          <td class="ledger-bar-cell">
+            <div class="ledger-bar-wrap"><div class="ledger-bar-fill" style="width:60%"></div></div>
+          </td>
+          <td class="ledger-num num">−33.1%</td>
+          <td><span class="market-badge balanced">Balanced <span class="sample-tag">S</span></span></td>
+        </tr>
+        <tr class="ledger-row">
+          <td><span class="city-name">Prineville</span></td>
+          <td class="ledger-num">178</td>
+          <td class="ledger-num">$489,000</td>
+          <td class="ledger-bar-cell">
+            <div class="ledger-bar-wrap"><div class="ledger-bar-fill" style="width:60%"></div></div>
+          </td>
+          <td class="ledger-num num">−33.9%</td>
+          <td><span class="market-badge balanced">Balanced <span class="sample-tag">S</span></span></td>
+        </tr>
+        <tr class="ledger-row">
+          <td><span class="city-name">Terrebonne</span></td>
+          <td class="ledger-num">57</td>
+          <td class="ledger-num">$699,000</td>
+          <td class="ledger-bar-cell">
+            <div class="ledger-bar-wrap"><div class="ledger-bar-fill" style="width:85%"></div></div>
+          </td>
+          <td class="ledger-num num">−5.5%</td>
+          <td><span class="market-badge buyer">Buyer <span class="sample-tag">S</span></span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="ledger-note">
+    Active SFR · Median list price from ryan-realty.com, 2026-06-10. Market classification [S] = SAMPLE, requires city-level months-of-supply from DAL. Region median = $740,000.
+  </p>
+</section>
+
+<!-- ══════════ FEATURED LISTING ══════════ -->
+<div class="featured-section">
+  <div class="featured-inner">
+    <p class="featured-eyebrow">Featured listing</p>
+    <div class="featured-card">
+      <div class="featured-photo" role="img" aria-label="Listing photo placeholder">
+        <div class="featured-photo-placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" aria-hidden="true">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <span>Listing photo</span>
+        </div>
+      </div>
+      <div class="featured-content">
+        <div>
+          <p class="featured-status">Active · Black Butte Ranch</p>
+          <h3 class="featured-address">70305 Arvensis</h3>
+          <p class="featured-location">Black Butte Ranch, OR</p>
+          <div class="featured-stats">
+            <div class="featured-stat-item">
+              <p class="featured-stat-label">Beds</p>
+              <p class="featured-stat-val num">—</p>
+            </div>
+            <div class="featured-stat-item">
+              <p class="featured-stat-label">Baths</p>
+              <p class="featured-stat-val num">—</p>
+            </div>
+            <div class="featured-stat-item">
+              <p class="featured-stat-label">Sq ft</p>
+              <p class="featured-stat-val num">—</p>
+            </div>
+          </div>
+        </div>
+        <div>
+          <p class="featured-price-big num">$1,425,000</p>
+          <a href="/listings/70305-arvensis" class="featured-cta">
+            View listing
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TOOLS ROW ══════════ -->
+<section class="tools-section" aria-labelledby="tools-heading">
+  <h2 class="section-heading" id="tools-heading" style="margin-bottom:28px">Everything you need to move.</h2>
+  <div class="tools-grid">
+    <a href="/search" class="tool-card">
+      <div class="tool-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      </div>
+      <p class="tool-name">Home search</p>
+      <p class="tool-desc">Filter by neighborhood, price, beds, and days on market. Updated every 15 minutes from Oregon Data Share.</p>
+      <span class="tool-link">
+        Browse homes
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </span>
+    </a>
+    <a href="/sell" class="tool-card">
+      <div class="tool-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+      <p class="tool-name">Home value</p>
+      <p class="tool-desc">See what homes on your street have sold for. Real comp data, verified boundary polygons, no estimates.</p>
+      <span class="tool-link">
+        Get your value
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </span>
+    </a>
+    <a href="/market-report" class="tool-card">
+      <div class="tool-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <p class="tool-name">Market report</p>
+      <p class="tool-desc">Median price, days on market, months of supply — by city, neighborhood, and subdivision. Refreshed every 6 hours.</p>
+      <span class="tool-link">
+        Read the report
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </span>
+    </a>
+    <a href="/neighborhoods" class="tool-card">
+      <div class="tool-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="3 11 12 2 21 11 21 21 15 21 15 15 9 15 9 21 3 21"/></svg>
+      </div>
+      <p class="tool-name">Neighborhoods</p>
+      <p class="tool-desc">14 Bend neighborhoods with verified GIS boundaries, school data, and sold comps from your exact block.</p>
+      <span class="tool-link">
+        Explore
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </span>
+    </a>
+  </div>
+</section>
+
+<!-- ══════════ BROKER TRUST BAND ══════════ -->
+<div class="trust-band">
+  <div class="trust-inner">
+    <div class="trust-left">
+      <p class="trust-tagline">Three brokers. All active. All licensed in Oregon.</p>
+      <div class="trust-brokers">
+        <!-- Matt Ryan -->
+        <div class="broker-card">
+          <div class="broker-avatar" aria-hidden="true">
+            <!--
+              Transparent PNG at design_system/ryan-realty/assets/team/matt-ryan.png
+              Falls back to initial if path not resolved in self-contained HTML
+            -->
+            <img src="../../assets/team/matt-ryan.png" alt="Matt Ryan" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+            <span class="broker-avatar-init" style="display:none">M</span>
+          </div>
+          <div class="broker-info">
+            <p class="broker-name">Matt Ryan</p>
+            <p class="broker-role">Principal Broker</p>
+            <p class="broker-license num">OR #201206613</p>
+          </div>
+        </div>
+        <!-- Paul Stevenson -->
+        <div class="broker-card">
+          <div class="broker-avatar" aria-hidden="true">
+            <img src="../../assets/team/paul-stevenson.png" alt="Paul Stevenson" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+            <span class="broker-avatar-init" style="display:none">P</span>
+          </div>
+          <div class="broker-info">
+            <p class="broker-name">Paul Stevenson</p>
+            <p class="broker-role">Broker</p>
+            <p class="broker-license num">OR #201259123</p>
+          </div>
+        </div>
+        <!-- Rebecca Peterson -->
+        <div class="broker-card">
+          <div class="broker-avatar" aria-hidden="true">
+            <img src="../../assets/team/rebecca-peterson.png" alt="Rebecca Peterson" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+            <span class="broker-avatar-init" style="display:none">R</span>
+          </div>
+          <div class="broker-info">
+            <p class="broker-name">Rebecca Peterson</p>
+            <p class="broker-role">Broker</p>
+            <p class="broker-license num">OR #201254727</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="trust-right">
+      <a href="tel:5412136706" class="trust-phone num">541.213.6706</a>
+      <a href="https://ryan-realty.com" class="trust-web">ryan-realty.com</a>
+      <span class="trust-sep">BEND · OREGON</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ FOOTER ══════════ -->
+<footer class="site-footer" aria-label="Site footer">
+  <div class="footer-inner">
+    <p class="footer-copy">© 2026 Ryan Realty LLC · OR Lic. #201253677 · Equal Housing Opportunity</p>
+    <ul class="footer-links" role="list">
+      <li><a href="/privacy">Privacy</a></li>
+      <li><a href="/terms">Terms</a></li>
+      <li><a href="/accessibility">Accessibility</a></li>
+    </ul>
+  </div>
+</footer>
+
+</body>
+</html>
