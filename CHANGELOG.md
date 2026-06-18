@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.13 (2026-06-18)
+
+### Other
+- Mockup preview: serve all current design-system surface mockups at /mockup-preview/ui_kits/
+
+---
+
+
 ## v1.595.12 (2026-06-18)
 
 ### Other
