@@ -1,22 +1,12 @@
-import { Body, Eyebrow, Stack } from '@/components/site/primitives'
+import { cn } from '@/lib/utils'
 
 /**
  * Listing-detail DescriptionBlock — renders the listing's public_remarks
- * (the agent-authored description that ships to the MLS and shows on
- * every consumer-facing portal).
+ * in the KB (kinetic-brutalist) section style: navy border-bottom sec-head,
+ * eyebrow mono label, cream/navy surface.
  *
- * Per CLAUDE.md §3 brand voice: public_remarks IS user-facing prose, so
- * the brand-voice ESLint rule scans the JSX text. The remarks come from
- * the MLS and frequently carry the "Real estate cliché" set (stunning,
- * nestled, etc.) — those slips are caught by the producer pipeline
- * when listings are first authored, not at render time. The block
- * itself stays clean.
- *
- * Long remarks render with line-break preservation (paragraphs as-typed
- * by the listing agent). No truncation here — the listing page is the
- * canonical place to read the full description.
- *
- * Per plan §9 Layer 4.
+ * Per CLAUDE.md §0.5 brand voice: public_remarks IS user-facing prose. The
+ * remarks come from the MLS; the block renders them as-is.
  */
 
 type Props = {
@@ -27,23 +17,44 @@ type Props = {
 export function DescriptionBlock({ publicRemarks, className }: Props) {
   if (!publicRemarks || publicRemarks.trim().length === 0) return null
 
-  // Preserve agent-authored paragraph breaks. Most MLS feeds use single
-  // line breaks for paragraph separation; double-line-break also works.
   const paragraphs = publicRemarks
     .split(/\n{2,}|\r\n\r\n|\r{2,}/)
     .map((p) => p.trim())
     .filter((p) => p.length > 0)
 
   return (
-    <Stack gap="default" className={className}>
-      <Eyebrow>Description</Eyebrow>
-      <div className="flex flex-col gap-4 max-w-[68ch]">
+    <section className={cn('section', className)}>
+      {/* KB sec-head */}
+      <div className="sec-head">
+        <div>
+          <div className="eyebrow sec-index">About this home</div>
+          <h2 className="sec-title display">Description</h2>
+        </div>
+      </div>
+
+      <div
+        style={{
+          paddingTop: 'clamp(22px,3vw,36px)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+          maxWidth: '68ch',
+        }}
+      >
         {paragraphs.map((p, i) => (
-          <Body key={i} size="default" tone="muted" className="leading-[1.65]">
+          <p
+            key={i}
+            style={{
+              fontSize: 'clamp(0.95rem,1.8vw,1.08rem)',
+              lineHeight: 1.65,
+              color: 'rgba(16,39,66,0.78)',
+              fontWeight: 400,
+            }}
+          >
             {p}
-          </Body>
+          </p>
         ))}
       </div>
-    </Stack>
+    </section>
   )
 }

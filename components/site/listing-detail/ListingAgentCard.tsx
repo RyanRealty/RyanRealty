@@ -1,45 +1,50 @@
 import { BrokerCard } from '@/components/site/BrokerCard'
-import { Eyebrow, Stack } from '@/components/site/primitives'
+import { cn } from '@/lib/utils'
 import type { Broker } from '@/lib/data/types/broker'
 import type { ListingDetail } from '@/lib/data/types/listing'
 
 /**
- * Listing-detail ListingAgentCard — wraps the Layer 3 BrokerCard for
- * the listing-detail sidebar.
+ * Listing-detail ListingAgentCard — KB-styled sidebar card.
+ * Navy border, eyebrow label, BrokerCard compact variant.
  *
- * Resolution upstream: callers MUST resolve the broker via
- * resolveListingAgent({ listAgentEmail, listAgentName }) before passing
- * to this component. When the listing belongs to another brokerage,
- * resolveListingAgent returns null and this component returns null —
- * the "Listing courtesy of <office>" attribution is now rendered by
- * ListingAttribution in the main column (per Matt's direction to move
- * the listed-by text to sit with core listing info, not under the CTA).
- *
- * Per CLAUDE.md broker-headshots rule: BrokerCard uses the transparent
- * PNG. Listing-agent variant is `compact` so the card fits in the
- * sidebar column.
+ * Resolution upstream: callers resolve the broker via resolveListingAgent
+ * before passing to this component. Null broker = null render.
  *
  * Per plan §9 Layer 4.
  */
 
 type Props = {
-  /** Resolved Ryan Realty broker, or null when the listing is from another brokerage. */
   broker: Broker | null
-  /** Kept in the prop interface for call-site stability; not rendered here
-   *  (attribution moved to ListingAttribution in the main column). */
   listing: Pick<ListingDetail, 'listAgentName' | 'listOfficeName'>
   className?: string
 }
 
 export function ListingAgentCard({ broker, className }: Props) {
-  if (broker) {
-    return (
-      <Stack gap="tight" className={className}>
-        <Eyebrow>Listing agent</Eyebrow>
-        <BrokerCard broker={broker} variant="compact" />
-      </Stack>
-    )
-  }
+  if (!broker) return null
 
-  return null
+  return (
+    <div
+      className={cn(className)}
+      style={{
+        border: '3px solid var(--navy, #102742)',
+        background: 'var(--cream, #faf8f4)',
+        padding: '18px 20px',
+      }}
+    >
+      <div
+        className="eyebrow"
+        style={{
+          fontSize: '0.62rem',
+          fontWeight: 700,
+          letterSpacing: '0.18em',
+          textTransform: 'uppercase',
+          color: 'rgba(16,39,66,0.55)',
+          marginBottom: 14,
+        }}
+      >
+        Listing agent
+      </div>
+      <BrokerCard broker={broker} variant="compact" />
+    </div>
+  )
 }

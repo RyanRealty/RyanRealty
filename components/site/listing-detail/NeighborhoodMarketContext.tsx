@@ -1,9 +1,5 @@
 import {
-  Body,
-  Eyebrow,
-  H3,
   Price,
-  Stack,
   TabularNumber,
   TextLink,
 } from '@/components/site/primitives'
@@ -11,38 +7,18 @@ import { cn } from '@/lib/utils'
 import type { MarketPulse, MarketStats } from '@/lib/data/types/market'
 
 /**
- * NeighborhoodMarketContext — THE Zillow beater per docs/EXECUTION_PLAN.md
- * §8 "What we BEAT" rank 1. No competitor surfaces live, geo-scoped
- * market stats inline on the listing detail page.
+ * NeighborhoodMarketContext — THE Zillow beater. KB section style:
+ * navy surface, Amboqia heading, mono KPI cells.
  *
- * Spec source:
- *   design_system/ryan-realty/ui_kits/listing-detail/index.html §nbhd-context
- *
- * Renders inside a navy-tinted card showing four stats for THIS
- * listing's subdivision / neighborhood / city: active count, median
- * list price, median DOM, months of supply. Below the grid, a one-line
- * value-transparency callout: "This home is listed at $X · Y% above
- * the median" with a link to the full market hub for that geo.
- *
- * Data comes from the cache tables only (per CLAUDE.md §0):
- *   - getMarketStats(geoType, geoSlug) → median list / median DOM / MoS
- *   - getMarketPulse(geoType, geoSlug) → active count, freshness
- * The page composes both upstream and passes them in.
- *
- * Returns null when no upstream data is available — we never
- * fabricate stats.
+ * Spec: design_system/ryan-realty/ui_kits/listing-detail/index.html §nbhd-context
  */
 
 type Props = {
-  /** Display name for the geo (e.g. "Sunriver Resort", "Awbrey Butte"). */
   geoName: string
-  /** Where the "See full market" link points (community / city / neighborhood hub). */
   hubHref: string
   pulse: MarketPulse | null
   stats: MarketStats | null
-  /** This listing's list price for the comparison line. */
   thisListPrice: number | null
-  /** Freshness timestamp source (defaults to pulse.refreshedAt). */
   refreshedAt?: string
   className?: string
 }
@@ -81,10 +57,6 @@ export function NeighborhoodMarketContext({
 
   const activeCount = pulse?.activeCount ?? null
   const medianList = pulse?.medianListPrice ?? stats?.medianListPrice ?? null
-  // Median DOM + MoS come from market_pulse_live now (added to the
-  // MarketPulse type 2026-05-28 alongside the schema fix). `stats` is
-  // still a fallback for legacy callers but the listing-detail page
-  // sources both from `pulse`.
   const medianDom = pulse?.medianDaysToPending ?? stats?.medianDaysOnMarket ?? null
   const mos = pulse?.monthsOfSupply ?? stats?.monthsOfSupply ?? null
   const freshness = refreshedAt ?? pulse?.refreshedAt ?? stats?.refreshedAt ?? null
@@ -93,80 +65,83 @@ export function NeighborhoodMarketContext({
   const aboveOrBelow = diffPct == null ? null : diffPct >= 0 ? 'above' : 'below'
 
   return (
-    <div
-      className={cn(
-        'rounded-[14px] border border-primary/15 bg-primary/4 p-6',
-        className,
-      )}
-    >
-      <Stack gap="tight">
-        <Eyebrow>Live market context</Eyebrow>
-        <H3>{geoName} market right now</H3>
-        {freshnessLabel ? (
-          <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
-            Updated {freshnessLabel} · Oregon Data Share
+    <section className={cn('section mkt', className)} style={{ padding: 0 }}>
+      <div className="wrap" style={{ paddingTop: 0, paddingBottom: 0 }}>
+        {/* KB navy sec-head inside the mkt surface */}
+        <div className="sec-head" style={{ borderBottomColor: 'rgba(250,248,244,0.28)' }}>
+          <div>
+            <div className="eyebrow sec-index" style={{ color: 'rgba(250,248,244,0.55)' }}>
+              Live market context
+            </div>
+            <h2 className="sec-title display" style={{ color: 'var(--cream, #faf8f4)' }}>
+              {geoName} market
+            </h2>
           </div>
-        ) : null}
-      </Stack>
+          {freshnessLabel ? (
+            <div
+              className="mkt-live"
+              style={{ flexShrink: 0 }}
+            >
+              <span className="dot" aria-hidden />
+              <span className="txt">Updated {freshnessLabel}</span>
+            </div>
+          ) : null}
+        </div>
 
-      <div className="mt-5 grid grid-cols-2 gap-5 md:grid-cols-4">
-        <Stat label={`Active in ${geoName}`} value={<TabularNumber value={activeCount} />} />
-        <Stat label="Median list" value={<Price value={medianList} compact />} />
-        <Stat
-          label="Median DOM"
-          value={
-            medianDom != null ? (
-              <>
-                <TabularNumber value={medianDom} /> days
-              </>
-            ) : (
-              '—'
-            )
-          }
-        />
-        <Stat
-          label="Months of supply"
-          value={
-            mos != null ? <TabularNumber value={mos} fractionDigits={1} /> : '—'
-          }
-        />
+        {/* KPI cells */}
+        <div
+          className="mkt-kpis"
+          style={{ gridTemplateColumns: `repeat(${[activeCount, medianList, medianDom, mos].filter(v => v != null).length}, 1fr)` }}
+        >
+          {activeCount != null ? (
+            <KpiCell label={`Active in ${geoName}`} value={<TabularNumber value={activeCount} />} />
+          ) : null}
+          {medianList != null ? (
+            <KpiCell label="Median list" value={<Price value={medianList} compact />} />
+          ) : null}
+          {medianDom != null ? (
+            <KpiCell label="Median DOM" value={<><TabularNumber value={medianDom} /> days</>} />
+          ) : null}
+          {mos != null ? (
+            <KpiCell label="Months of supply" value={<TabularNumber value={mos} fractionDigits={1} />} />
+          ) : null}
+        </div>
+
+        {/* Comparison line */}
+        <div style={{ paddingBottom: 'clamp(22px,3vw,36px)' }}>
+          {thisListPrice != null && medianList != null && diffPct != null && aboveOrBelow ? (
+            <p className="mkt-fine" style={{ marginTop: 0 }}>
+              This home is listed at{' '}
+              <b style={{ color: 'var(--cream, #faf8f4)' }}>
+                <Price value={thisListPrice} />
+              </b>{' '}
+              —{' '}
+              <span style={{ color: 'var(--cream, #faf8f4)', fontVariantNumeric: 'tabular-nums' }}>
+                <TabularNumber value={Math.abs(diffPct)} fractionDigits={1} />% {aboveOrBelow}
+              </span>{' '}
+              the {geoName} median.{' '}
+              <TextLink href={hubHref} underline="on-hover" className="text-sm" style={{ color: 'rgba(250,248,244,0.7)' }}>
+                See full {geoName} market →
+              </TextLink>
+            </p>
+          ) : (
+            <p className="mkt-fine" style={{ marginTop: 0 }}>
+              <TextLink href={hubHref} underline="on-hover" className="text-sm" style={{ color: 'rgba(250,248,244,0.7)' }}>
+                See full {geoName} market →
+              </TextLink>
+            </p>
+          )}
+        </div>
       </div>
-
-      {thisListPrice != null && medianList != null && diffPct != null && aboveOrBelow ? (
-        <Body size="small" tone="muted" className="mt-4">
-          This home is listed at{' '}
-          <b className="text-foreground">
-            <Price value={thisListPrice} />
-          </b>{' '}
-          ·{' '}
-          <span className="text-foreground">
-            <TabularNumber value={Math.abs(diffPct)} fractionDigits={1} />% {aboveOrBelow}
-          </span>{' '}
-          the {geoName} median list.{' '}
-          <TextLink href={hubHref} underline="on-hover" className="text-sm">
-            See full {geoName} market →
-          </TextLink>
-        </Body>
-      ) : (
-        <Body size="small" tone="muted" className="mt-4">
-          <TextLink href={hubHref} underline="on-hover" className="text-sm">
-            See full {geoName} market →
-          </TextLink>
-        </Body>
-      )}
-    </div>
+    </section>
   )
 }
 
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+function KpiCell({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div>
-      <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
-        {label}
-      </div>
-      <div className="mt-1 text-[24px] font-bold tracking-[-0.01em] tabular-nums">
-        {value}
-      </div>
+    <div className="mkt-kpi">
+      <div className="mkt-kpi-lbl">{label}</div>
+      <div className="mkt-kpi-val">{value}</div>
     </div>
   )
 }

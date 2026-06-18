@@ -1,38 +1,19 @@
-import { CTAButton, Eyebrow, H3, Price, Stack, TabularNumber } from '@/components/site/primitives'
+import { TabularNumber, Price } from '@/components/site/primitives'
+import { cn } from '@/lib/utils'
 
 /**
- * VacationRentalPotential — short-term rental projection for resort-
- * community listings. Per DESIGN_DIRECTIVES.md D77 (Zillow Showcase
- * parity), this block is shown ONLY when the listing sits in a
- * community that allows short-term rentals: Tetherow, Sunriver,
- * Eagle Crest, Caldera Springs, Crosswater, Black Butte Ranch,
- * Pronghorn, Brasada Ranch, Awbrey Glen, Broken Top, Vandevert Ranch,
- * Three Rivers, Mt Bachelor Village, Widgi Creek.
+ * VacationRentalPotential — KB section style.
+ * Navy sec-head, Amboqia heading, KPI cells in cream/navy palette.
  *
- * Wave 3 minimum: takes projection numbers as props. The
- * listing-detail page passes `null` when STR data isn't available
- * (which renders the "ask for a projection" CTA), and a real
- * projection object when we can compute one. Wave 4 wires AirDNA's
- * vacation-rental API.
- *
- * Per CLAUDE.md §0 Data Accuracy: nightly rate + occupancy must trace
- * to a primary source (similar STRs from AirDNA). Vague claims
- * forbidden — the component renders no number unless the caller
- * passes one.
+ * Per CLAUDE.md §0 Data Accuracy: no number unless caller passes one.
  */
 
 export type VacationRentalProjection = {
-  /** Estimated nightly rate at peak (July–Aug + winter holidays). */
   peakNightly: number
-  /** Estimated nightly rate at off-peak (shoulder seasons). */
   offPeakNightly: number
-  /** Estimated annual occupancy as a 0–1 fraction. */
   occupancyRate: number
-  /** Estimated annual gross rental income. */
   annualGross: number
-  /** How many comparable STRs back this projection. */
   compCount: number
-  /** Provenance per CLAUDE.md §0. */
   source?: string
 }
 
@@ -43,75 +24,119 @@ type Props = {
 
 export function VacationRentalPotential({ projection, className }: Props) {
   return (
-    <Stack gap="default" className={className}>
-      <div>
-        <Eyebrow>Investment</Eyebrow>
-        <H3 className="mt-1.5">Vacation rental potential</H3>
+    <section className={cn('section', className)}>
+      <div className="sec-head">
+        <div>
+          <div className="eyebrow sec-index">Investment</div>
+          <h2 className="sec-title display">Vacation rental</h2>
+        </div>
       </div>
 
-      {projection ? (
-        <>
-          <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-[14px] border border-border bg-card p-4 shadow-sm">
-              <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
-                Peak nightly
-              </div>
-              <div className="mt-1.5 text-[22px] font-bold tabular-nums text-foreground">
+      <div style={{ marginTop: 'clamp(22px,3vw,36px)' }}>
+        {projection ? (
+          <>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                gap: '3px',
+                background: 'rgba(16,39,66,0.12)',
+                border: '1px solid rgba(16,39,66,0.12)',
+              }}
+            >
+              <VacKpiCell label="Peak nightly" sub="July to August">
                 <Price value={projection.peakNightly} />
-              </div>
-              <div className="mt-0.5 text-xs text-muted-foreground">July to August</div>
-            </div>
-            <div className="rounded-[14px] border border-border bg-card p-4 shadow-sm">
-              <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
-                Off-peak nightly
-              </div>
-              <div className="mt-1.5 text-[22px] font-bold tabular-nums text-foreground">
+              </VacKpiCell>
+              <VacKpiCell label="Off-peak nightly" sub="Shoulder months">
                 <Price value={projection.offPeakNightly} />
-              </div>
-              <div className="mt-0.5 text-xs text-muted-foreground">Shoulder months</div>
-            </div>
-            <div className="rounded-[14px] border border-border bg-card p-4 shadow-sm">
-              <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
-                Occupancy
-              </div>
-              <div className="mt-1.5 text-[22px] font-bold tabular-nums text-foreground">
+              </VacKpiCell>
+              <VacKpiCell label="Occupancy" sub="Annual average">
                 <TabularNumber value={Math.round(projection.occupancyRate * 100)} />%
-              </div>
-              <div className="mt-0.5 text-xs text-muted-foreground">Annual average</div>
-            </div>
-            <div className="rounded-[14px] border border-border bg-card p-4 shadow-sm">
-              <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
-                Annual gross
-              </div>
-              <div className="mt-1.5 text-[22px] font-bold tabular-nums text-foreground">
+              </VacKpiCell>
+              <VacKpiCell label="Annual gross" sub={`Based on ${projection.compCount} comps`}>
                 <Price value={projection.annualGross} />
-              </div>
-              <div className="mt-0.5 text-xs text-muted-foreground">
-                Based on <TabularNumber value={projection.compCount} /> comps
-              </div>
+              </VacKpiCell>
             </div>
-          </div>
-          {projection.source ? (
-            <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
-              Source: {projection.source}
-            </div>
-          ) : null}
-        </>
-      ) : (
-        <div className="rounded-[14px] border border-border bg-card p-5 shadow-sm">
-          <p className="text-sm text-foreground">
-            We compute vacation rental projections from comparable short-term rentals in the same community, weighted by bed count, view, and amenities. A custom projection for this property is on request.
-          </p>
-          <CTAButton
-            href={`/contact?intent=vacation-rental-projection`}
-            tone="primary"
-            size="md"
-            className="mt-4"
+            {projection.source ? (
+              <div
+                className="eyebrow"
+                style={{ marginTop: 12, color: 'rgba(16,39,66,0.45)', fontSize: '0.6rem', letterSpacing: '0.14em' }}
+              >
+                Source: {projection.source}
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <div
+            style={{
+              border: '3px solid var(--navy, #102742)',
+              padding: '22px 24px',
+              background: 'var(--cream, #faf8f4)',
+            }}
           >
-            Get the rental projection
-          </CTAButton>
-        </div>
-      )}
-    </Stack>
+            <p
+              style={{
+                fontSize: 'clamp(0.92rem,1.6vw,1rem)',
+                lineHeight: 1.6,
+                color: 'rgba(16,39,66,0.75)',
+                maxWidth: '60ch',
+                marginBottom: 18,
+              }}
+            >
+              We compute vacation rental projections from comparable short-term rentals in the same community, weighted by bed count, view, and amenities. A custom projection for this property is on request.
+            </p>
+            <a
+              href="/contact?intent=vacation-rental-projection"
+              className="btn"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+            >
+              Get the rental projection <span aria-hidden>→</span>
+            </a>
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function VacKpiCell({ label, sub, children }: { label: string; sub: string; children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        background: 'var(--cream, #faf8f4)',
+        padding: '18px 20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+      }}
+    >
+      <div
+        className="eyebrow"
+        style={{ color: 'rgba(16,39,66,0.55)', fontSize: '0.62rem', letterSpacing: '0.18em' }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontFamily: 'var(--font-amboqia, serif)',
+          fontSize: 'clamp(1.2rem,2.5vw,1.7rem)',
+          lineHeight: 1,
+          color: 'var(--navy, #102742)',
+          fontVariantNumeric: 'tabular-nums',
+          overflow: 'visible',
+        }}
+      >
+        {children}
+      </div>
+      <div
+        style={{
+          fontSize: '0.68rem',
+          color: 'rgba(16,39,66,0.45)',
+          letterSpacing: '0.04em',
+        }}
+      >
+        {sub}
+      </div>
+    </div>
   )
 }

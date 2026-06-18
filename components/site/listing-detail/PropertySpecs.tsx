@@ -1,23 +1,16 @@
 import {
-  Body,
-  Eyebrow,
   Price,
-  Stack,
   TabularNumber,
 } from '@/components/site/primitives'
 import type { ListingDetail } from '@/lib/data/types/listing'
 import { cn } from '@/lib/utils'
 
 /**
- * Listing-detail PropertySpecs — the "facts" grid: beds, baths, square
- * footage, lot size, year built, property type, HOA, taxes, MLS number,
- * schools.
+ * Listing-detail PropertySpecs — key facts grid in KB section style.
+ * Navy border sec-head, Amboqia sec-title, mono labels + tabular values.
  *
- * Per CLAUDE.md §0 Data Accuracy + brand voice: every value is rendered
- * through Price / TabularNumber / em-dash fallback. Labels stay
- * sentence-case noun phrases (no marketing slop).
- *
- * Per plan §9 Layer 4.
+ * Per CLAUDE.md §0 Data Accuracy: every value is rendered through
+ * Price / TabularNumber / em-dash fallback.
  */
 
 type Props = {
@@ -53,9 +46,6 @@ type Spec = {
   value: React.ReactNode
 }
 
-// MLS PropertyType single-letter code → friendly label.
-// Codes per docs/DATABASE_FOR_AI_AGENTS.md + verified against active
-// PropertyType distribution in the listings table (8 codes A..H).
 const PROPERTY_TYPE_LABELS: Record<string, string> = {
   A: 'Residential',
   B: 'Condo or townhome',
@@ -69,18 +59,12 @@ const PROPERTY_TYPE_LABELS: Record<string, string> = {
 
 function propertyTypeLabel(code: string | null | undefined): string | null {
   if (!code) return null
-  // Single-letter MLS codes get mapped to a friendly label. Anything
-  // else (multi-word PropertySubType strings from richer feeds) renders
-  // as-is.
   if (code.length <= 2) return PROPERTY_TYPE_LABELS[code.toUpperCase()] ?? null
   return code
 }
 
 function buildSpecs(listing: Props['listing']): Spec[] {
   const sqft = listing.sqft ?? listing.totalLivingAreaSqFt ?? null
-  // Prefer the richer PropertySubType when it's a real string; fall
-  // back to the single-letter PropertyType code mapped to a friendly
-  // label. Masked / placeholder values like "********" are filtered.
   const subType =
     listing.propertySubType && !listing.propertySubType.startsWith('***')
       ? listing.propertySubType
@@ -121,25 +105,94 @@ function buildSpecs(listing: Props['listing']): Spec[] {
 
 export function PropertySpecs({ listing, className }: Props) {
   const specs = buildSpecs(listing)
+  const badges: string[] = []
+  if (listing.newConstructionYn) badges.push('New construction')
+  if (listing.fireplaceYn) badges.push('Fireplace')
+  if (listing.waterfrontYn) badges.push('Waterfront')
 
   return (
-    <Stack gap="default" className={className}>
-      <Eyebrow>Property facts</Eyebrow>
-      <dl className="grid gap-x-8 gap-y-4 grid-cols-2 md:grid-cols-3">
+    <section className={cn('section', className)}>
+      <div className="sec-head">
+        <div>
+          <div className="eyebrow sec-index">Facts</div>
+          <h2 className="sec-title display">Property details</h2>
+        </div>
+      </div>
+
+      <dl
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: '1px',
+          background: 'rgba(16,39,66,0.12)',
+          border: '1px solid rgba(16,39,66,0.12)',
+          marginTop: 'clamp(22px,3vw,36px)',
+        }}
+      >
         {specs.map((spec) => (
-          <div key={spec.label}>
-            <dt className="text-xs text-muted-foreground">{spec.label}</dt>
-            <dd className="text-[15px] text-foreground font-semibold mt-0.5">{spec.value}</dd>
+          <div
+            key={spec.label}
+            style={{
+              background: 'var(--cream, #faf8f4)',
+              padding: '14px 18px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
+            }}
+          >
+            <dt
+              className="mono-num"
+              style={{
+                fontSize: '0.6rem',
+                fontWeight: 600,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: 'rgba(16,39,66,0.55)',
+              }}
+            >
+              {spec.label}
+            </dt>
+            <dd
+              style={{
+                fontSize: 'clamp(1rem,1.8vw,1.15rem)',
+                fontWeight: 600,
+                color: 'var(--navy, #102742)',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              {spec.value}
+            </dd>
           </div>
         ))}
       </dl>
-      {(listing.fireplaceYn || listing.waterfrontYn || listing.newConstructionYn) ? (
-        <Body size="small" tone="muted" className={cn('flex flex-wrap gap-3 mt-2')}>
-          {listing.newConstructionYn ? <span className="text-foreground">• New construction</span> : null}
-          {listing.fireplaceYn ? <span className="text-foreground">• Fireplace</span> : null}
-          {listing.waterfrontYn ? <span className="text-foreground">• Waterfront</span> : null}
-        </Body>
+
+      {badges.length > 0 ? (
+        <div
+          style={{
+            marginTop: 14,
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 10,
+          }}
+        >
+          {badges.map((b) => (
+            <span
+              key={b}
+              style={{
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: 'var(--navy, #102742)',
+                border: '1px solid rgba(16,39,66,0.28)',
+                padding: '5px 12px',
+              }}
+            >
+              {b}
+            </span>
+          ))}
+        </div>
       ) : null}
-    </Stack>
+    </section>
   )
 }

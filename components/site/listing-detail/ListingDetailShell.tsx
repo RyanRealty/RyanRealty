@@ -128,10 +128,10 @@ export function ListingDetailShell({
           every other page — the old muted Section band sat the crumb at y≈113. */}
       <PageBreadcrumb trail={breadcrumbs} includeJsonLd={false} />
       {hero ? (
-        // Hero band: edge-to-edge full-viewport-width, no Container
-        // constraint. Zillow Showcase parity — immersive photo / video
-        // hero spans the page above the main+sidebar grid.
-        <section aria-label="Listing hero" className="w-full px-4 sm:px-6 lg:px-8 pt-2">
+        // Hero band: truly edge-to-edge, no padding, no Container.
+        // KB full-bleed treatment — matches city/community KbHero.
+        // The hero component owns all its internal spacing.
+        <section aria-label="Listing hero" className="w-full">
           {hero}
         </section>
       ) : null}

@@ -1,19 +1,11 @@
 import Link from 'next/link'
-import { Eyebrow, H3, Stack } from '@/components/site/primitives'
 import { cn } from '@/lib/utils'
 import { findParksNear, type ParkType } from '@/data/co-parks'
 import type { ListingDetail } from '@/lib/data/types/listing'
 
 /**
- * ParksNearbyBlock — "Parks & recreation nearby" section for the listing-detail
- * page. Lists the notable Central Oregon parks within ~3 miles of the listing,
- * computed from the listing lat/lng against the verified park centroids in the
- * registry (data/co-parks.ts). Each card links to /parks/[slug].
- *
- * Pure registry math (no DB query) — distance is the great-circle distance from
- * the listing to each park's official-boundary centroid. Renders nothing when
- * the listing has no coordinates or no park falls within the radius, so it only
- * appears where there is a real match (CLAUDE.md §0 — never invent proximity).
+ * ParksNearbyBlock — KB section style: navy border sec-head, park cards
+ * with hard edge borders in cream/navy palette.
  */
 
 type Props = {
@@ -27,7 +19,6 @@ const TYPE_LABEL: Record<ParkType, string> = {
   'natural-area': 'Natural area',
 }
 
-/** Round a mileage to one decimal for display (e.g. 1.4 mi). */
 function formatMiles(miles: number): string {
   return `${miles.toFixed(1)} mi`
 }
@@ -40,24 +31,61 @@ export function ParksNearbyBlock({ listing, className }: Props) {
   if (parks.length === 0) return null
 
   return (
-    <Stack gap="default" className={className}>
-      <div>
-        <Eyebrow>Parks and recreation</Eyebrow>
-        <H3 className="mt-1.5">Parks and recreation nearby</H3>
+    <section className={cn('section', className)}>
+      <div className="sec-head">
+        <div>
+          <div className="eyebrow sec-index">Outdoors</div>
+          <h2 className="sec-title display">Parks nearby</h2>
+        </div>
       </div>
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '3px',
+          background: 'rgba(16,39,66,0.12)',
+          border: '1px solid rgba(16,39,66,0.12)',
+          marginTop: 'clamp(22px,3vw,36px)',
+        }}
+      >
         {parks.map((park) => (
           <Link
             key={park.slug}
             href={`/parks/${park.slug}`}
-            className={cn(
-              'block rounded-[14px] border border-border bg-card p-4 shadow-sm transition hover:border-primary/30 hover:shadow-md',
-            )}
+            style={{
+              display: 'block',
+              background: 'var(--cream, #faf8f4)',
+              padding: '18px 20px',
+              textDecoration: 'none',
+              color: 'var(--navy, #102742)',
+            }}
+            className="hover:bg-[rgba(16,39,66,0.04)] transition-colors"
           >
-            <div className="text-[17px] font-bold tracking-[-0.01em] text-primary">
+            <div
+              style={{
+                fontFamily: 'var(--font-amboqia, serif)',
+                fontSize: 'clamp(1.1rem,2.2vw,1.45rem)',
+                lineHeight: 0.94,
+                color: 'var(--navy, #102742)',
+                overflow: 'visible',
+                marginBottom: 8,
+              }}
+            >
               {park.name}
             </div>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                fontSize: '0.68rem',
+                fontWeight: 600,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'rgba(16,39,66,0.55)',
+              }}
+            >
               <span>{TYPE_LABEL[park.type]}</span>
               <span aria-hidden>·</span>
               <span className="tabular-nums">{formatMiles(park.distanceMiles)}</span>
@@ -65,6 +93,6 @@ export function ParksNearbyBlock({ listing, className }: Props) {
           </Link>
         ))}
       </div>
-    </Stack>
+    </section>
   )
 }

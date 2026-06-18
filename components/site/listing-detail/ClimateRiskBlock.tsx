@@ -1,20 +1,12 @@
-import { CTAButton, Eyebrow, H3, Stack, TabularNumber } from '@/components/site/primitives'
 import { cn } from '@/lib/utils'
+import { TabularNumber } from '@/components/site/primitives'
 
 /**
- * ClimateRiskBlock — Central Oregon climate risk surface per
- * DESIGN_DIRECTIVES.md D77 (Zillow Showcase parity).
+ * ClimateRiskBlock — KB section style. Navy sec-head, Amboqia heading,
+ * risk cells in cream/navy palette.
  *
- * Four risk dimensions: flood, wildfire, heat, drought. Each is a
- * 1 to 10 integer or null. When the entire risk object is null we
- * render a "Get the climate report" CTA. We never render a fake
- * number — per CLAUDE.md §0 Data Accuracy every score must trace to
- * a verified primary source.
- *
- * Wave 3 minimum: accepts data as a prop. The listing-detail page
- * passes data when available (FEMA flood zone + Deschutes County WUI
- * wildfire map + NOAA heat trends + drought index). Wave 4 wires the
- * First Street Foundation API for parity with Zillow Showcase.
+ * CLAUDE.md §0: every score must trace to a verified primary source.
+ * When risk is null, renders a CTA (not fake numbers).
  */
 
 export type ClimateRiskScore = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
@@ -41,37 +33,54 @@ function scoreLabel(s: ClimateRiskScore | null): string {
   return 'Severe'
 }
 
-function scoreToneClass(s: ClimateRiskScore | null): string {
-  if (s == null) return 'text-muted-foreground'
-  if (s <= 7) return 'text-foreground'
-  if (s <= 8) return 'text-warning-foreground'
-  return 'text-destructive'
+function scoreToneColor(s: ClimateRiskScore | null): string {
+  if (s == null) return 'rgba(16,39,66,0.4)'
+  if (s <= 7) return 'var(--navy, #102742)'
+  if (s <= 8) return '#b45300'
+  return '#b91c1c'
 }
 
-function RiskCell({
-  label,
-  score,
-}: {
-  label: string
-  score: ClimateRiskScore | null
-}) {
-  const hasScore = score != null
+function RiskCell({ label, score }: { label: string; score: ClimateRiskScore | null }) {
   return (
-    <div className="rounded-[14px] border border-border bg-card p-4 shadow-sm">
-      <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+    <div
+      style={{
+        background: 'var(--cream, #faf8f4)',
+        padding: '18px 20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+      }}
+    >
+      <div
+        className="eyebrow"
+        style={{ color: 'rgba(16,39,66,0.55)', fontSize: '0.62rem', letterSpacing: '0.18em' }}
+      >
         {label}
       </div>
-      <div className={cn('mt-1.5 text-[22px] font-bold tabular-nums', scoreToneClass(score))}>
-        {hasScore ? (
-          <>
-            <TabularNumber value={score} /> of 10
-          </>
-        ) : (
-          'Pending'
-        )}
+      <div
+        style={{
+          fontFamily: 'var(--font-amboqia, serif)',
+          fontSize: 'clamp(1.4rem,3vw,2rem)',
+          lineHeight: 1,
+          color: scoreToneColor(score),
+          fontVariantNumeric: 'tabular-nums',
+          overflow: 'visible',
+        }}
+      >
+        {score != null ? <><TabularNumber value={score} /> <span style={{ fontSize: '0.5em', opacity: 0.6 }}>of 10</span></> : 'Pending'}
       </div>
-      {hasScore ? (
-        <div className="mt-0.5 text-xs text-muted-foreground">{scoreLabel(score)}</div>
+      {score != null ? (
+        <div
+          style={{
+            fontSize: '0.68rem',
+            fontWeight: 600,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: 'rgba(16,39,66,0.55)',
+          }}
+        >
+          {scoreLabel(score)}
+        </div>
       ) : null}
     </div>
   )
@@ -82,41 +91,69 @@ export function ClimateRiskBlock({ risk, className }: Props) {
     risk != null && [risk.flood, risk.wildfire, risk.heat, risk.drought].some((s) => s != null)
 
   return (
-    <Stack gap="default" className={className}>
-      <div>
-        <Eyebrow>Climate risk</Eyebrow>
-        <H3 className="mt-1.5">Long-term climate exposure</H3>
+    <section className={cn('section', className)}>
+      <div className="sec-head">
+        <div>
+          <div className="eyebrow sec-index">Climate</div>
+          <h2 className="sec-title display">Climate risk</h2>
+        </div>
       </div>
 
-      {hasAnyScore && risk ? (
-        <>
-          <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-            <RiskCell label="Flood" score={risk.flood} />
-            <RiskCell label="Wildfire" score={risk.wildfire} />
-            <RiskCell label="Heat" score={risk.heat} />
-            <RiskCell label="Drought" score={risk.drought} />
-          </div>
-          {risk.source ? (
-            <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
-              Source: {risk.source}
+      <div style={{ marginTop: 'clamp(22px,3vw,36px)' }}>
+        {hasAnyScore && risk ? (
+          <>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                gap: '3px',
+                background: 'rgba(16,39,66,0.12)',
+                border: '1px solid rgba(16,39,66,0.12)',
+              }}
+            >
+              <RiskCell label="Flood" score={risk.flood} />
+              <RiskCell label="Wildfire" score={risk.wildfire} />
+              <RiskCell label="Heat" score={risk.heat} />
+              <RiskCell label="Drought" score={risk.drought} />
             </div>
-          ) : null}
-        </>
-      ) : (
-        <div className="rounded-[14px] border border-border bg-card p-5 shadow-sm">
-          <p className="text-sm text-foreground">
-            We pull climate risk data from FEMA flood maps, the Deschutes County wildland-urban interface map, and NOAA heat trends. Detailed scoring for this property is on request.
-          </p>
-          <CTAButton
-            href="/contact?intent=climate-report"
-            tone="primary"
-            size="md"
-            className="mt-4"
+            {risk.source ? (
+              <div
+                className="eyebrow"
+                style={{ marginTop: 12, color: 'rgba(16,39,66,0.45)', fontSize: '0.6rem', letterSpacing: '0.14em' }}
+              >
+                Source: {risk.source}
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <div
+            style={{
+              border: '3px solid var(--navy, #102742)',
+              padding: '22px 24px',
+              background: 'var(--cream, #faf8f4)',
+            }}
           >
-            Get the climate report
-          </CTAButton>
-        </div>
-      )}
-    </Stack>
+            <p
+              style={{
+                fontSize: 'clamp(0.92rem,1.6vw,1rem)',
+                lineHeight: 1.6,
+                color: 'rgba(16,39,66,0.75)',
+                maxWidth: '60ch',
+                marginBottom: 18,
+              }}
+            >
+              We pull climate risk data from FEMA flood maps, the Deschutes County wildland-urban interface map, and NOAA heat trends. Detailed scoring for this property is on request.
+            </p>
+            <a
+              href="/contact?intent=climate-report"
+              className="btn"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+            >
+              Get the climate report <span aria-hidden>→</span>
+            </a>
+          </div>
+        )}
+      </div>
+    </section>
   )
 }

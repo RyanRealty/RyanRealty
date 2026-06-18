@@ -161,7 +161,14 @@ export function PriceCtaStrip({
   }
 
   return (
-    <div className={cn('border-b border-border pb-5 pt-6', className)}>
+    <div
+      className={cn(className)}
+      style={{
+        borderBottom: '3px solid var(--navy, #102742)',
+        paddingBottom: '1.5rem',
+        paddingTop: '1.5rem',
+      }}
+    >
       <DisplayHeading
         as="h1"
         className="text-foreground text-[clamp(2.2rem,4vw,2.75rem)] leading-none tracking-[-0.02em]"

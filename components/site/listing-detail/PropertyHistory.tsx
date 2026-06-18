@@ -1,22 +1,13 @@
 import {
-  Body,
-  Eyebrow,
-  H2,
   Price,
-  Stack,
   TabularNumber,
 } from '@/components/site/primitives'
 
 /**
- * Listing-detail PropertyHistory — chronological timeline of the
- * listing's lifecycle events: listed, price change, status change,
- * pending, closed, etc. Reads from `listing_history` via the DAL
- * function `getListingDetailHistory(listingKey)`.
+ * Listing-detail PropertyHistory — KB section style.
+ * Navy sec-head, Amboqia heading, timeline rows with 1px edge borders.
  *
- * Per CLAUDE.md §0 Data Accuracy: every figure ships through Price /
- * TabularNumber. Dates render in en-US Pacific time.
- *
- * Per plan §9 Layer 4.
+ * Per CLAUDE.md §0: Price / TabularNumber for every figure.
  */
 
 export type ListingHistoryEvent = {
@@ -29,9 +20,6 @@ export type ListingHistoryEvent = {
 
 type Props = {
   history: ReadonlyArray<ListingHistoryEvent>
-  /** D76 (DESIGN_DIRECTIVES.md) — defaults to 'all' so the timeline
-   * shows every MLS event including Photo + empty FieldChange touches.
-   * Pass 'meaningful-only' to filter to lifecycle events only. */
   mode?: 'all' | 'meaningful-only'
   className?: string
 }
@@ -69,15 +57,9 @@ function eventLabel(raw: string | undefined): string {
   return EVENT_LABEL[raw] ?? raw.replace(/_/g, ' ')
 }
 
-// MLS sync events include pure-metadata noise (Photo updates, generic
-// FieldChange touches without a price delta) alongside meaningful
-// lifecycle events. Surface only the lifecycle ones — buyers don't
-// care that the listing got new photos at 2am.
 function isMeaningfulEvent(ev: ListingHistoryEvent): boolean {
   const raw = (ev.event ?? '').toLowerCase()
   if (raw === 'photo' || raw === 'photos' || raw === 'photo_change') return false
-  // FieldChange with a price delta or a substantive description is
-  // a real event; otherwise it's MLS plumbing.
   if (raw === 'fieldchange' || raw === 'field_change') {
     if (ev.price_change && ev.price_change !== 0) return true
     if (ev.description && ev.description.trim().length > 8) return true
@@ -87,8 +69,6 @@ function isMeaningfulEvent(ev: ListingHistoryEvent): boolean {
 }
 
 export function PropertyHistory({ history, mode = 'all', className }: Props) {
-  // Sort newest first for the timeline view. Filter only when the caller
-  // explicitly asks — default 'all' surfaces every event per D76.
   const filtered = mode === 'meaningful-only' ? history.filter(isMeaningfulEvent) : history
   const events = [...filtered].sort((a, b) => {
     const ta = a.event_date ? Date.parse(a.event_date) : 0
@@ -98,13 +78,22 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
   if (events.length === 0) return null
 
   return (
-    <Stack gap="default" className={className}>
-      <div>
-        <Eyebrow>History</Eyebrow>
-        <H2 className="mt-1.5">Listing history</H2>
+    <section className={className}>
+      <div className="sec-head">
+        <div>
+          <div className="eyebrow sec-index">History</div>
+          <h2 className="sec-title display">Listing history</h2>
+        </div>
       </div>
 
-      <ol className="flex flex-col gap-3">
+      <ol
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 0,
+          marginTop: 'clamp(22px,3vw,36px)',
+        }}
+      >
         {events.map((ev, i) => {
           const label = eventLabel(ev.event)
           const dropAmount =
@@ -114,32 +103,73 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
           return (
             <li
               key={`${i}-${ev.event}-${ev.event_date}`}
-              className="flex items-start justify-between gap-4 border-t border-border pt-3 first:border-t-0 first:pt-0"
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 16,
+                padding: '14px 0',
+                borderTop: i === 0 ? 'none' : '1px solid rgba(16,39,66,0.12)',
+              }}
             >
-              <div className="flex flex-col gap-0.5">
-                <div className="text-sm font-semibold text-foreground">{label}</div>
-                <div className="text-xs text-muted-foreground tabular-nums">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <div
+                  style={{
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: 'var(--navy, #102742)',
+                  }}
+                >
+                  {label}
+                </div>
+                <div
+                  className="mono-num"
+                  style={{
+                    fontSize: '0.72rem',
+                    color: 'rgba(16,39,66,0.55)',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
                   {formatDate(ev.event_date)}
                 </div>
                 {ev.description ? (
-                  <Body size="small" tone="muted" className="mt-1 max-w-[60ch]">
+                  <p
+                    style={{
+                      marginTop: 4,
+                      fontSize: '0.82rem',
+                      lineHeight: 1.5,
+                      color: 'rgba(16,39,66,0.65)',
+                      maxWidth: '60ch',
+                    }}
+                  >
                     {ev.description}
-                  </Body>
+                  </p>
                 ) : null}
               </div>
-              <div className="text-right shrink-0 flex flex-col gap-0.5">
+              <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {ev.price ? (
-                  <div className="text-sm font-semibold text-foreground">
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-amboqia, serif)',
+                      fontSize: 'clamp(1rem,2vw,1.3rem)',
+                      lineHeight: 1,
+                      color: 'var(--navy, #102742)',
+                      fontVariantNumeric: 'tabular-nums',
+                      overflow: 'visible',
+                    }}
+                  >
                     <Price value={ev.price} />
                   </div>
                 ) : null}
                 {dropAmount ? (
-                  <div className="text-xs text-destructive">
+                  <div style={{ fontSize: '0.72rem', color: '#b91c1c', fontVariantNumeric: 'tabular-nums' }}>
                     <TabularNumber value={dropAmount} fallback="—" />{' down'}
                   </div>
                 ) : null}
                 {increaseAmount ? (
-                  <div className="text-xs text-foreground">
+                  <div style={{ fontSize: '0.72rem', color: 'var(--navy, #102742)', fontVariantNumeric: 'tabular-nums' }}>
                     <TabularNumber value={increaseAmount} />{' up'}
                   </div>
                 ) : null}
@@ -148,6 +178,6 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
           )
         })}
       </ol>
-    </Stack>
+    </section>
   )
 }

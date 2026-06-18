@@ -1,19 +1,11 @@
 import Link from 'next/link'
-import { Eyebrow, H3, Stack } from '@/components/site/primitives'
 import { cn } from '@/lib/utils'
 import { findSchoolByName } from '@/data/co-schools'
 import type { ListingDetail } from '@/lib/data/types/listing'
 
 /**
- * SchoolsBlock — three stat cards (Elementary / Middle / High) +
- * school-district subtitle on each card. Per docs/EXECUTION_PLAN.md
- * §8 Zillow Showcase parity (schools is table stakes).
- *
- * Spec source:
- *   design_system/ryan-realty/ui_kits/listing-detail/index.html §schools
- *
- * Reads from listing.elementarySchool / middleSchool / highSchool /
- * schoolDistrict. Renders nothing when no school data is present.
+ * SchoolsBlock — KB section style: navy border sec-head, Amboqia heading,
+ * card grid with hard 1px --edge border.
  */
 
 type Props = {
@@ -24,9 +16,6 @@ type Props = {
   className?: string
 }
 
-// MLS feeds often mask private-listing school + district fields with
-// a `********` placeholder. Treat those as missing rather than rendering
-// the asterisks as text.
 function cleanField(raw: string | null): string | null {
   if (!raw) return null
   const trimmed = raw.trim()
@@ -45,12 +34,24 @@ export function SchoolsBlock({ listing, className }: Props) {
   if (!anyPresent && !district) return null
 
   return (
-    <Stack gap="default" className={className}>
-      <div>
-        <Eyebrow>Schools</Eyebrow>
-        <H3 className="mt-1.5">Schools and district</H3>
+    <section className={cn('section', className)}>
+      <div className="sec-head">
+        <div>
+          <div className="eyebrow sec-index">Education</div>
+          <h2 className="sec-title display">Schools</h2>
+        </div>
       </div>
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gap: '3px',
+          background: 'rgba(16,39,66,0.12)',
+          border: '1px solid rgba(16,39,66,0.12)',
+          marginTop: 'clamp(22px,3vw,36px)',
+        }}
+      >
         {cards.map((c) => (
           <SchoolCard
             key={c.level}
@@ -60,7 +61,7 @@ export function SchoolsBlock({ listing, className }: Props) {
           />
         ))}
       </div>
-    </Stack>
+    </section>
   )
 }
 
@@ -73,21 +74,39 @@ function SchoolCard({
   name: string | null
   district: string | null
 }) {
-  // Link the school name to its /schools/[slug] page when it exists in the
-  // Central Oregon registry (slugify + lookup). Same card layout otherwise.
   const registered = name ? findSchoolByName(name) : undefined
 
   return (
-    <div className={cn('rounded-[14px] border border-border bg-card p-4 shadow-sm')}>
-      <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+    <div
+      style={{
+        background: 'var(--cream, #faf8f4)',
+        padding: '18px 20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+      }}
+    >
+      <div
+        className="eyebrow"
+        style={{ color: 'rgba(16,39,66,0.55)', fontSize: '0.62rem', letterSpacing: '0.18em' }}
+      >
         {level}
       </div>
-      <div className="mt-1.5 text-[17px] font-bold tracking-[-0.01em] text-foreground">
+      <div
+        style={{
+          fontFamily: 'var(--font-amboqia, serif)',
+          fontSize: 'clamp(1.1rem,2.2vw,1.55rem)',
+          lineHeight: 0.92,
+          color: name ? 'var(--navy, #102742)' : 'rgba(16,39,66,0.35)',
+          overflow: 'visible',
+        }}
+      >
         {name ? (
           registered ? (
             <Link
               href={`/schools/${registered.slug}`}
-              className="text-primary transition-colors hover:text-primary/85 hover:underline"
+              style={{ color: 'var(--navy, #102742)', textDecoration: 'none' }}
+              className="hover:underline"
             >
               {name}
             </Link>
@@ -99,7 +118,16 @@ function SchoolCard({
         )}
       </div>
       {district ? (
-        <div className="mt-1 text-xs text-muted-foreground">{district}</div>
+        <div
+          style={{
+            fontSize: '0.72rem',
+            fontWeight: 500,
+            color: 'rgba(16,39,66,0.55)',
+            letterSpacing: '0.02em',
+          }}
+        >
+          {district}
+        </div>
       ) : null}
     </div>
   )

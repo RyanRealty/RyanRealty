@@ -3,36 +3,16 @@
 import { useMemo, useState } from 'react'
 import {
   Body,
-  Eyebrow,
-  H2,
   Price,
-  Stack,
 } from '@/components/site/primitives'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
 /**
- * Listing-detail MortgageCalculator — fresh interactive island. Given
- * the list price, down payment %, rate, and term, returns the monthly
- * principal-and-interest payment plus a rough taxes + insurance
- * estimate so a buyer can see the all-in PITI on this specific listing.
+ * Listing-detail MortgageCalculator — KB section style.
+ * Navy sec-head, Amboqia heading. All interactive controls preserved.
  *
- * Defaults:
- *   - listPrice from the listing
- *   - downPaymentPct = 20
- *   - ratePct = 7.0 (rough current 30-yr conventional; user can change)
- *   - termYears = 30
- *
- * Tax estimate uses the listing's taxAnnualAmount when known; otherwise
- * a Central Oregon county-effective default of 0.85% of value (assessed
- * value runs ~80% of market in Deschutes County). Insurance estimate
- * uses $1,000/yr per $300k of value as a rough catch-all.
- *
- * Per CLAUDE.md §0 Data Accuracy: the calculator is explicitly labeled
- * as an estimate so the user knows it's not a quote. Real quotes come
- * from a lender.
- *
- * Per plan §9 Layer 4.
+ * Per CLAUDE.md §0 Data Accuracy: labeled as estimate, not a quote.
  */
 
 type Props = {
@@ -94,104 +74,165 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className }: Pr
   }, [priceInput, downPctInput, rateInput, termInput, taxAnnualAmount])
 
   return (
-    <Stack gap="default" className={className}>
-      <div>
-        <Eyebrow>Estimate</Eyebrow>
-        <H2 className="mt-1.5">Monthly payment estimate</H2>
-        <Body size="small" tone="muted" className="mt-1.5">
+    <section className={className}>
+      <div className="sec-head">
+        <div>
+          <div className="eyebrow sec-index">Estimate</div>
+          <h2 className="sec-title display">Monthly payment</h2>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 'clamp(22px,3vw,36px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <Body size="small" tone="muted">
           A rough estimate, not a quote. A real number comes from a lender.
         </Body>
-      </div>
 
-      <div className="bg-card border border-border rounded-[14px] p-5 grid gap-3">
-        <Field label="Home price" id="mc-price">
-          <Input
-            id="mc-price"
-            type="text"
-            inputMode="decimal"
-            value={priceInput}
-            onChange={(e) => setPriceInput(e.target.value)}
-          />
-        </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Down payment %" id="mc-down">
+        {/* Input fields */}
+        <div
+          style={{
+            border: '3px solid var(--navy, #102742)',
+            padding: '22px 24px',
+            display: 'grid',
+            gap: 16,
+            background: 'var(--cream, #faf8f4)',
+          }}
+        >
+          <KbField label="Home price" id="mc-price">
             <Input
-              id="mc-down"
+              id="mc-price"
               type="text"
               inputMode="decimal"
-              value={downPctInput}
-              onChange={(e) => setDownPctInput(e.target.value)}
+              value={priceInput}
+              onChange={(e) => setPriceInput(e.target.value)}
             />
-          </Field>
-          <Field label="Rate %" id="mc-rate">
+          </KbField>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <KbField label="Down payment %" id="mc-down">
+              <Input
+                id="mc-down"
+                type="text"
+                inputMode="decimal"
+                value={downPctInput}
+                onChange={(e) => setDownPctInput(e.target.value)}
+              />
+            </KbField>
+            <KbField label="Rate %" id="mc-rate">
+              <Input
+                id="mc-rate"
+                type="text"
+                inputMode="decimal"
+                value={rateInput}
+                onChange={(e) => setRateInput(e.target.value)}
+              />
+            </KbField>
+          </div>
+          <KbField label="Term (years)" id="mc-term">
             <Input
-              id="mc-rate"
+              id="mc-term"
               type="text"
-              inputMode="decimal"
-              value={rateInput}
-              onChange={(e) => setRateInput(e.target.value)}
+              inputMode="numeric"
+              value={termInput}
+              onChange={(e) => setTermInput(e.target.value)}
             />
-          </Field>
+          </KbField>
         </div>
-        <Field label="Term (years)" id="mc-term">
-          <Input
-            id="mc-term"
-            type="text"
-            inputMode="numeric"
-            value={termInput}
-            onChange={(e) => setTermInput(e.target.value)}
-          />
-        </Field>
-      </div>
 
-      <div className="bg-muted border border-border rounded-[14px] p-5 grid gap-2">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Principal + interest</span>
-          <span className="text-sm font-semibold text-foreground">
-            <Price value={Math.round(result.pi)} />/mo
-          </span>
+        {/* Results */}
+        <div
+          style={{
+            background: 'var(--navy, #102742)',
+            color: 'var(--cream, #faf8f4)',
+            padding: '22px 24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+          }}
+        >
+          <KpiRow label="Principal + interest" value={<Price value={Math.round(result.pi)} />} />
+          <KpiRow label="Property taxes" value={<Price value={Math.round(result.taxesMonthly)} />} />
+          <KpiRow label="Homeowners insurance" value={<Price value={Math.round(result.insuranceMonthly)} />} />
+          <div
+            style={{
+              borderTop: '1px solid rgba(250,248,244,0.28)',
+              marginTop: 6,
+              paddingTop: 12,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'baseline',
+            }}
+          >
+            <span
+              style={{
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'rgba(250,248,244,0.7)',
+              }}
+            >
+              Total monthly (PITI)
+            </span>
+            <span
+              style={{
+                fontFamily: 'var(--font-amboqia, serif)',
+                fontSize: 'clamp(1.6rem,3.5vw,2.2rem)',
+                lineHeight: 1,
+                color: 'var(--cream, #faf8f4)',
+                fontVariantNumeric: 'tabular-nums',
+                overflow: 'visible',
+              }}
+            >
+              <Price value={Math.round(result.piti)} />
+            </span>
+          </div>
+          <p
+            style={{
+              fontSize: '0.68rem',
+              color: 'rgba(250,248,244,0.5)',
+              letterSpacing: '0.02em',
+              lineHeight: 1.5,
+              marginTop: 4,
+            }}
+          >
+            Loan amount <Price value={Math.round(result.principal)} /> · <Price value={Math.round(result.down)} /> down · {termInput} year term
+          </p>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Property taxes</span>
-          <span className="text-sm font-semibold text-foreground">
-            <Price value={Math.round(result.taxesMonthly)} />/mo
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Homeowners insurance</span>
-          <span className="text-sm font-semibold text-foreground">
-            <Price value={Math.round(result.insuranceMonthly)} />/mo
-          </span>
-        </div>
-        <div className="border-t border-border mt-2 pt-2 flex items-center justify-between">
-          <span className="text-sm font-semibold text-foreground">Total monthly (PITI)</span>
-          <span className="text-base font-bold text-foreground">
-            <Price value={Math.round(result.piti)} />
-          </span>
-        </div>
-        <Body size="small" tone="muted" className="mt-2">
-          Loan amount <Price value={Math.round(result.principal)} /> ·{' '}
-          <Price value={Math.round(result.down)} /> down ·{' '}
-          {termInput} year term
-        </Body>
       </div>
-    </Stack>
+    </section>
   )
 }
 
-function Field({
-  label,
-  id,
-  children,
-}: {
-  label: string
-  id: string
-  children: React.ReactNode
-}) {
+function KbField({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <Label htmlFor={id}>{label}</Label>
       {children}
+    </div>
+  )
+}
+
+function KpiRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <span
+        style={{
+          fontSize: '0.78rem',
+          color: 'rgba(250,248,244,0.62)',
+          letterSpacing: '0.04em',
+        }}
+      >
+        {label}
+      </span>
+      <span
+        style={{
+          fontSize: '0.9rem',
+          fontWeight: 600,
+          color: 'var(--cream, #faf8f4)',
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {value}/mo
+      </span>
     </div>
   )
 }
