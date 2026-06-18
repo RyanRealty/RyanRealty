@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.2 (2026-06-18)
+
+### Other
+- Rework the market chart: calm straight lines, 2-year default, single endpoint
+
+---
+
+
 ## v1.595.1 (2026-06-18)
 
 ### Other
