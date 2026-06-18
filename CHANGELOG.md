@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.16 (2026-06-18)
+
+### Other
+- KB ledger: site-wide migration shipped + final review; remaining design-decision routes mapped
+
+---
+
+
 ## v1.595.15 (2026-06-18)
 
 ### Other
