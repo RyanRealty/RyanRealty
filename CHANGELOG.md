@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.3 (2026-06-18)
+
+### Other
+- Market chart x-axis: full Jan 1–Dec 31 frame + "as of [month]" current-year marker
+
+---
+
+
 ## v1.595.2 (2026-06-18)
 
 ### Other
