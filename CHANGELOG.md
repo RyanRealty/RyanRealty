@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.16 (2026-06-18)
+
+### Other
+- Phase 9 wave 2: community page (golf/resort/master-planned) rebuilt in KB + locked
+
+---
+
+
 ## v1.594.15 (2026-06-18)
 
 ### Other
