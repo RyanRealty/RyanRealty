@@ -193,11 +193,9 @@ export function KbMarketHud({ data }: { data: KbMarketData }) {
               <span className="mkt-headline-val">{kbMoneyFull(data.medianList)}</span>
               <span className="mkt-headline-meta">
                 <span className="mkt-headline-lbl">Median list price</span>
-                {yoy ? (
-                  <span className={`mkt-headline-delta ${yoy.pct >= 0 ? 'up' : 'down'}`}>
-                    {yoy.pct >= 0 ? '↑' : '↓'} {Math.abs(yoy.pct).toFixed(1)}% median sale, {yoy.months} mo
-                  </span>
-                ) : null}
+                {/* The list-price headline carries NO delta: the only trend we hold
+                    is median-CLOSE, shown (with its change) on the chart below, so a
+                    sale-derived % must not sit on a list-price number. (§0) */}
               </span>
             </div>
           ) : null}
@@ -257,7 +255,10 @@ export function KbMarketHud({ data }: { data: KbMarketData }) {
         ) : trend.length > 1 ? (
           <div className="mkt-panel">
             <div className="mkt-phead">
-              <span className="mono-lab">▸ Median close · single-family · {trend.length} mo</span>
+              <span className="mono-lab">
+                ▸ Median close · single-family · {trend.length} mo
+                {yoy ? `  ${yoy.pct >= 0 ? '↑' : '↓'} ${Math.abs(yoy.pct).toFixed(1)}% over the window` : ''}
+              </span>
               {kbMoneyFull(lastMedian) ? <span className="mkt-phead-now mono-num">{kbMoneyFull(lastMedian)}</span> : null}
             </div>
             <div className="mkt-chart">

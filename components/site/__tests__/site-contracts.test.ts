@@ -205,6 +205,15 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/!boundaryReliable\s*\n?\s*\?\s*null/)
   })
 
+  it('D99 — Market HUD does not pair a median-SALE delta with the median-LIST headline (§0)', () => {
+    const hud = readSrc('components/site/kb/KbMarketHud.client.tsx')
+    // the list-price headline block must not render a "median sale" delta pill
+    const headlineBlock = hud.slice(hud.indexOf('Median list price'), hud.indexOf('Median list price') + 400)
+    expect(headlineBlock).not.toMatch(/median sale/i)
+    // the sale-trend change, when shown, is attached to the median-close chart caption
+    expect(hud).toMatch(/over the window/)
+  })
+
   it('D98 — resort/golf definitions are locked by a gate (registry + alias-aware wiring)', () => {
     const gate = readSrc('scripts/check-resort-definitions.mjs')
     expect(gate).toMatch(/is_resort/)
