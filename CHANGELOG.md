@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.14 (2026-06-18)
+
+### Other
+- Site-wide KB migration: restyle all remaining user-facing pages in place (content preserved) + fidelity restore + testimonials rework
+
+---
+
+
 ## v1.595.13 (2026-06-18)
 
 ### Other
