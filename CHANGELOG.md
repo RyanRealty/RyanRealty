@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.22 (2026-06-18)
+
+### Other
+- KB ledger: lead-landing + report routes done + verified; search route-group is the last item
+
+---
+
+
 ## v1.595.21 (2026-06-18)
 
 ### Other
