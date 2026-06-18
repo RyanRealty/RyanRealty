@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.19 (2026-06-18)
+
+### Other
+- Community overview: add the subdivision-aliases transparency block (KB)
+
+---
+
+
 ## v1.594.18 (2026-06-18)
 
 ### Other
