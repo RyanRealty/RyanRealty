@@ -1343,6 +1343,7 @@ html.lenis, html.lenis body{height:auto;}
   font-size:.82rem;font-weight:700;color:var(--cream);background:var(--navy);
   border:1px solid var(--cream-40);padding:2px 7px;
 }
+.kb-root .kbmc-endlabel[data-side="left"]{transform:translate(calc(-100% - 10px),-50%);}
 .kb-root .kbmc-cross{position:absolute;top:0;bottom:0;width:1px;background:var(--cream-40);transform:translateX(-0.5px);}
 .kb-root .kbmc-tip{
   position:absolute;top:8px;display:flex;flex-direction:column;gap:3px;

@@ -62,23 +62,16 @@ function defaultFormat(n: number): string {
   return `$${Math.round(n / 1000).toLocaleString('en-US')}K`
 }
 
-/** Catmull-Rom → cubic-bezier smoothing for a sorted list of [x,y] points. */
+/**
+ * Straight-segment path (polyline). Honest time-series rendering — the standard for
+ * market/price charts (Zillow, Redfin, every stock chart): smoothing would imply
+ * median values between months that don't exist and visually overshoot the data. The
+ * "visual help" comes from a prominent current-year line, the gradient fill, the
+ * endpoint marker, and a calm 2-line default — not from bending the line.
+ */
 function smoothPath(pts: [number, number][]): string {
   if (pts.length === 0) return ''
-  if (pts.length === 1) return `M${pts[0]![0]},${pts[0]![1]}`
-  const d: string[] = [`M${pts[0]![0].toFixed(2)},${pts[0]![1].toFixed(2)}`]
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i - 1] ?? pts[i]!
-    const p1 = pts[i]!
-    const p2 = pts[i + 1]!
-    const p3 = pts[i + 2] ?? p2
-    const c1x = p1[0] + (p2[0] - p0[0]) / 6
-    const c1y = p1[1] + (p2[1] - p0[1]) / 6
-    const c2x = p2[0] - (p3[0] - p1[0]) / 6
-    const c2y = p2[1] - (p3[1] - p1[1]) / 6
-    d.push(`C${c1x.toFixed(2)},${c1y.toFixed(2)} ${c2x.toFixed(2)},${c2y.toFixed(2)} ${p2[0].toFixed(2)},${p2[1].toFixed(2)}`)
-  }
-  return d.join(' ')
+  return pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(2)},${p[1].toFixed(2)}`).join(' ')
 }
 
 export function KbMarketChart({
@@ -92,8 +85,14 @@ export function KbMarketChart({
   const root = useRef<HTMLDivElement>(null)
   const plotRef = useRef<HTMLDivElement>(null)
 
-  // Toggle state — all years visible by default. Keyed by year number.
-  const [hidden, setHidden] = useState<Set<number>>(() => new Set())
+  // Toggle state — keyed by year number. Default shows the 3 most recent years so
+  // the overlay reads cleanly; older years start off and are one tap away.
+  const [hidden, setHidden] = useState<Set<number>>(() => {
+    // default: current year + the prior year (a clean "this year vs last" read);
+    // older years are one tap away.
+    const recent = new Set(years.slice(-2).map((s) => s.year))
+    return new Set(years.filter((s) => !recent.has(s.year)).map((s) => s.year))
+  })
   // Active month (1–12) under the cursor, or null when not hovering.
   const [active, setActive] = useState<number | null>(null)
 
@@ -293,7 +292,8 @@ export function KbMarketChart({
                 d={l.path}
                 fill="none"
                 stroke={l.color}
-                strokeWidth={l.isNewest ? 2.5 : 1.6}
+                strokeWidth={l.isNewest ? 2.5 : 1.5}
+                strokeOpacity={l.isNewest ? 1 : 0.62}
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 vectorEffect="non-scaling-stroke"
@@ -309,22 +309,27 @@ export function KbMarketChart({
               {formatValue(g.value)}
             </span>
           ))}
-          {/* endpoint dots + the newest year's value label */}
-          {geo.lines
-            .filter((l) => !l.hidden && l.end)
-            .map((l) => (
-              <span key={l.year}>
+          {/* endpoint dot + value label on the NEWEST VISIBLE line only — older
+              years would otherwise litter the right edge with disconnected dots. */}
+          {(() => {
+            const lead = [...geo.lines].reverse().find((l) => !l.hidden && l.end)
+            if (!lead?.end) return null
+            return (
+              <>
                 <span
-                  className={`kbmc-dot${l.isNewest ? ' newest' : ''}`}
-                  style={{ left: `${l.end!.xPct}%`, top: `${l.end!.yPct}%`, background: l.color }}
+                  className="kbmc-dot newest"
+                  style={{ left: `${lead.end.xPct}%`, top: `${lead.end.yPct}%`, background: lead.color }}
                 />
-                {l.isNewest ? (
-                  <span className="kbmc-endlabel mono-num" style={{ left: `${l.end!.xPct}%`, top: `${l.end!.yPct}%` }}>
-                    {formatValue(l.end!.value)}
-                  </span>
-                ) : null}
-              </span>
-            ))}
+                <span
+                  className="kbmc-endlabel mono-num"
+                  style={{ left: `${lead.end.xPct}%`, top: `${lead.end.yPct}%` }}
+                  data-side={lead.end.xPct > 82 ? 'left' : 'right'}
+                >
+                  {formatValue(lead.end.value)}
+                </span>
+              </>
+            )
+          })()}
           {/* crosshair + per-year readout */}
           {active != null && activeReadout.length > 0 ? (
             <>
