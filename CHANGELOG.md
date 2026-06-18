@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.11 (2026-06-18)
+
+### Other
+- kb: comprehensive nav + horizontal logo + breadcrumb overlay + open-houses/testimonials redesign
+
+---
+
+
 ## v1.594.10 (2026-06-18)
 
 ### Maintenance
