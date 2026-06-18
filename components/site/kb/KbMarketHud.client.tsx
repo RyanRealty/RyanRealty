@@ -47,12 +47,26 @@ export function KbMarketHud({ data }: { data: KbMarketData }) {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const ctx = gsap.context(() => {
       const fills = gsap.utils.toArray<HTMLElement>('.mkt-bar .bfill')
+      const ylines = gsap.utils.toArray<SVGPathElement>('.mkt-yearline')
       if (reduce) {
         fills.forEach((f) => (f.style.width = f.dataset.w || '0%'))
         if (line.current) gsap.set(line.current, { strokeDashoffset: 0 })
         return
       }
-      if (line.current) {
+      if (ylines.length) {
+        // year-over-year overlay: draw each year line in, oldest first, staggered.
+        ylines.forEach((p, i) => {
+          const len = p.getTotalLength()
+          gsap.set(p, { strokeDasharray: len, strokeDashoffset: len })
+          gsap.to(p, {
+            strokeDashoffset: 0,
+            duration: 1.5,
+            ease: 'power2.out',
+            delay: i * 0.13,
+            scrollTrigger: { trigger: root.current, start: 'top 72%', once: true },
+          })
+        })
+      } else if (line.current) {
         const len = line.current.getTotalLength()
         gsap.set(line.current, { strokeDasharray: len, strokeDashoffset: len })
         gsap.to(line.current, {
@@ -113,6 +127,34 @@ export function KbMarketHud({ data }: { data: KbMarketData }) {
 
   const maxMed = Math.max(1, ...data.byTown.map((t) => t.median))
 
+  // Year-over-year OVERLAY geometry — up to 5 calendar-year lines on a shared
+  // Jan-Dec axis. Newest year lands on cream (brightest, thickest); prior years on
+  // muted, distinct hues so seasonality + year-over-year shifts read at a glance.
+  const MONTH_ABBR = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
+  const YEAR_PALETTE = ['#8fa6cc', '#cf9088', '#7faf9c', '#d6bd79', '#faf8f4']
+  const years = data.yearSeries ?? []
+  const hasYears = years.length >= 2
+  let yMin = Infinity
+  let yMax = -Infinity
+  for (const s of years) for (const p of s.points) {
+    if (p.value < yMin) yMin = p.value
+    if (p.value > yMax) yMax = p.value
+  }
+  const yrSpan = yMax - yMin || 1
+  const colorBase = Math.max(0, YEAR_PALETTE.length - years.length)
+  const yearLines = years.map((s, i) => ({
+    year: s.year,
+    color: YEAR_PALETTE[colorBase + i] ?? '#faf8f4',
+    recent: i === years.length - 1,
+    d: s.points
+      .map((p, j) => {
+        const x = ((p.m - 1) / 11) * W
+        const y = H - ((p.value - yMin) / yrSpan) * (H - 2 * pad) - pad
+        return `${j ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`
+      })
+      .join(' '),
+  }))
+
   return (
     <section className="section mkt" id="market-report" ref={root}>
       <div className="mkt-scan" />
@@ -171,7 +213,48 @@ export function KbMarketHud({ data }: { data: KbMarketData }) {
           <Kpi val={data.monthsSupply != null ? `${data.monthsSupply.toFixed(1)} mo` : null} lbl="Months of supply" />
         </div>
 
-        {trend.length > 1 ? (
+        {hasYears ? (
+          <div className="mkt-panel">
+            <div className="mkt-phead">
+              <span className="mono-lab">▸ Median sale · single-family · {years.length}-year overlay</span>
+              {kbMoneyFull(lastMedian) ? <span className="mkt-phead-now mono-num">{kbMoneyFull(lastMedian)}</span> : null}
+            </div>
+            <div className="mkt-chart">
+              <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+                {[0.25, 0.5, 0.75].map((g) => (
+                  <line key={g} className="mkt-grid-line" x1="0" x2={W} y1={H * g} y2={H * g} />
+                ))}
+                {yearLines.map((yl) => (
+                  <path
+                    key={yl.year}
+                    className="mkt-yearline"
+                    d={yl.d}
+                    fill="none"
+                    stroke={yl.color}
+                    strokeWidth={yl.recent ? 3 : 1.6}
+                    strokeOpacity={yl.recent ? 1 : 0.82}
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ))}
+              </svg>
+            </div>
+            <div className="mkt-legend-years">
+              {yearLines.map((yl) => (
+                <span key={yl.year} className={`mkt-yl${yl.recent ? ' on' : ''}`}>
+                  <i style={{ background: yl.color }} />
+                  {yl.year}
+                </span>
+              ))}
+            </div>
+            <div className="mkt-xlabels mkt-xlabels-mo">
+              {MONTH_ABBR.map((m, i) => (
+                <span key={i}>{m}</span>
+              ))}
+            </div>
+          </div>
+        ) : trend.length > 1 ? (
           <div className="mkt-panel">
             <div className="mkt-phead">
               <span className="mono-lab">▸ Median close · single-family · {trend.length} mo</span>

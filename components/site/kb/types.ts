@@ -80,6 +80,9 @@ export interface KbMarketData {
   trend: { label: string; value: number }[]
   byTown: { name: string; median: number }[]
   countyMedian: number | null
+  /** Up to 5 calendar years of monthly medians for the year-over-year overlay
+   *  chart (each year a colored line on a shared Jan-Dec axis). Oldest first. */
+  yearSeries?: { year: number; points: { m: number; value: number }[] }[]
 }
 
 /** Formats a price to the nearest thousand: 740123 -> "$740,000". */

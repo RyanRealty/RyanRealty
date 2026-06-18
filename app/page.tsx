@@ -6,6 +6,7 @@ import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
+import { buildYearSeries } from '@/lib/kb/year-series'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
@@ -92,7 +93,7 @@ export default async function Home() {
     getListingTiles({ status: 'active', propertyType: 'A', limit: 3000 }).catch(() => []),
     getListingTiles({ status: 'active', propertyType: 'A', sort: 'price-desc', limit: 14 }).catch(() => []),
     getMarketStatsCacheRowForGeo({ geoSlug: 'central-oregon' }).catch(() => null),
-    getPriceHistory('region', 'central-oregon', 'monthly', 13).catch(() => []),
+    getPriceHistory('region', 'central-oregon', 'monthly', 60).catch(() => []),
   ])
 
   const cityBySlug = new Map(cities.map((c) => [c.slug, c]))
@@ -155,12 +156,14 @@ export default async function Home() {
     daysToPending: pulse?.medianDaysToPending ?? null,
     monthsSupply: pulse?.monthsOfSupply ?? null,
     trend: priceHist
+      .slice(-13)
       .filter((p) => p.medianSalePrice != null)
       .map((p) => ({ label: monthLabel(p.periodStart), value: p.medianSalePrice as number })),
     byTown: towns
       .filter((t) => t.medianPrice != null)
       .map((t) => ({ name: t.name, median: t.medianPrice as number })),
     countyMedian: pulse?.medianListPrice ?? null,
+    yearSeries: buildYearSeries(priceHist, 5),
   }
 
   return (

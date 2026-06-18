@@ -41,6 +41,7 @@ import bendNeighborhoodPolygons from '@/data/bend/bend-neighborhood-polygons.jso
 import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
 import { cityHero } from '@/lib/geo-images'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
+import { buildYearSeries } from '@/lib/kb/year-series'
 import { listingTileHref } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
@@ -169,7 +170,7 @@ export default async function CityDetailPage({ params }: Props) {
     withTimeoutFallback(getMarketPulse({ geoType: 'city', geoSlug }), null, 3500, 'city:pulse'),
     withTimeoutFallback(getRegionPulse(), null, 3000, 'city:regionPulse'),
     withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoSlug }), null, 3000, 'city:mktStats'),
-    withTimeoutFallback(getPriceHistory('city', geoSlug, 'monthly', 13), [], 4000, 'city:priceHistory'),
+    withTimeoutFallback(getPriceHistory('city', geoSlug, 'monthly', 60), [], 4500, 'city:priceHistory'),
     withTimeoutFallback(getCommunitiesForIndex(), [], 3500, 'city:communities'),
     slug === 'bend'
       ? withTimeoutFallback(getBendNeighborhoodStats(), [], 5000, 'city:nbhStats')
@@ -375,9 +376,13 @@ export default async function CityDetailPage({ params }: Props) {
     saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
     daysToPending: pulse?.medianDaysToPending ?? null,
     monthsSupply: pulse?.monthsOfSupply ?? null,
-    trend: priceHist.filter((p) => p.medianSalePrice != null).map((p) => ({ label: monthLabel(p.periodStart), value: p.medianSalePrice as number })),
+    trend: priceHist
+      .slice(-13)
+      .filter((p) => p.medianSalePrice != null)
+      .map((p) => ({ label: monthLabel(p.periodStart), value: p.medianSalePrice as number })),
     byTown: bendNeighborhoodItems.filter((n) => n.medianPrice != null).map((n) => ({ name: n.name, median: n.medianPrice as number })),
     countyMedian: regionPulse?.medianListPrice ?? null,
+    yearSeries: buildYearSeries(priceHist, 5),
   }
 
   // AI-citability: verified market Q&A + structured data.

@@ -1162,3 +1162,12 @@ html.lenis, html.lenis body{height:auto;}
   .kb-root .kb-proof2-tab{padding-right:18px;}
   .kb-root .kb-proof2-tab-name{font-size:.86rem;}
 }
+
+/* Market chart — year-over-year overlay legend + month axis */
+.kb-root .mkt-legend-years{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:14px;}
+.kb-root .mkt-yl{display:inline-flex;align-items:center;gap:7px;font-size:.66rem;font-weight:600;letter-spacing:.08em;color:var(--cream-70);font-variant-numeric:tabular-nums;}
+.kb-root .mkt-yl.on{color:var(--cream);font-weight:700;}
+.kb-root .mkt-yl i{width:16px;height:3px;border-radius:2px;display:inline-block;}
+.kb-root .mkt-yl.on i{height:4px;}
+.kb-root .mkt-xlabels-mo{margin-top:8px;}
+.kb-root .mkt-xlabels-mo span{font-size:.56rem;}
