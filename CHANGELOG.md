@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.23 (2026-06-18)
+
+### Other
+- Listing detail: hide default chrome on /homes-for-sale/<listing> URLs (fix double-header)
+
+---
+
+
 ## v1.595.22 (2026-06-18)
 
 ### Other
