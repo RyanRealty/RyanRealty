@@ -28,8 +28,8 @@ const MENU_GROUPS: { title: string; links: { href: string; label: string }[] }[]
   {
     title: 'Sell',
     links: [
-      { href: '/sell/valuation', label: 'Home valuation' },
-      { href: '/home-valuation', label: "What's my home worth" },
+      { href: '/sell', label: 'Sell your home' },
+      { href: '/sell/valuation', label: "What's my home worth" },
       { href: '/motivated-sellers', label: 'Sell on a deadline' },
     ],
   },

@@ -42,6 +42,7 @@ import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { 
 import { cityHero } from '@/lib/geo-images'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { buildYearSeries } from '@/lib/kb/year-series'
+import { assignNeighborhoodPhotos } from '@/lib/kb/neighborhood-photos'
 import { listingTileHref } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
@@ -254,7 +255,26 @@ export default async function CityDetailPage({ params }: Props) {
     town: t.city ?? '',
   }))
 
+  // Communities in this city (with banner images) — reused for the rail AND as
+  // neighborhood hover imagery where a neighborhood matches a community by name.
+  const cityComms = communities.filter((c) => c.city?.toLowerCase().trim() === cityName.toLowerCase().trim())
+  const communityVideos = communityVideoManifest as Record<string, { video?: string } | undefined>
+  const commImgByName = new Map(cityComms.map((c) => [c.subdivision.toLowerCase(), c.heroImageUrl]))
+  const commImgBySlug = new Map(cityComms.map((c) => [c.slug, c.heroImageUrl]))
+
   // Neighborhoods ledger — designated Bend polygons + live westside stats. (§D83)
+  // Hover photo: a curated community banner when the neighborhood name matches a
+  // community, else a real home INSIDE the neighborhood boundary (highest-priced
+  // active listing). No match leaves it blank — never a wrong-place photo. (§D86)
+  const neighborhoodPhotos =
+    slug === 'bend'
+      ? assignNeighborhoodPhotos(
+          (bendNeighborhoodPolygons.communities as Array<{ slug: string; name?: string; geometry: { type: string; coordinates: unknown } }>).filter(
+            (c) => c.slug.startsWith('bend-'),
+          ),
+          mapTiles,
+        )
+      : new Map<string, string>()
   const liveStatsByHref = new Map(neighborhoodStats.map((r) => [r.href, r]))
   const bendNeighborhoodItems: KbTownItem[] =
     slug === 'bend'
@@ -264,12 +284,13 @@ export default async function CityDetailPage({ params }: Props) {
             const nslug = c.slug.replace(/^bend-/, '')
             const href = `/cities/bend/${nslug}`
             const live = liveStatsByHref.get(href)
+            const name = live?.label ?? c.name ?? nslug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
             return {
-              name: live?.label ?? c.name ?? nslug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+              name,
               href,
               activeCount: live?.activeCount ?? 0,
               medianPrice: live?.medianListPrice ?? null,
-              img: '',
+              img: commImgByName.get(name.toLowerCase()) ?? neighborhoodPhotos.get(c.slug) ?? '',
             }
           })
       : []
@@ -289,24 +310,30 @@ export default async function CityDetailPage({ params }: Props) {
       href: `/communities/${c.slug}`,
       activeCount: communitySfrBySlug.get(c.slug) ?? 0,
       medianPrice: null,
-      img: '',
+      img: commImgBySlug.get(c.slug) ?? '',
     }))
 
-  // Marquee communities (curated, with video) — the visual rail.
-  const cityComms = communities.filter((c) => c.city?.toLowerCase().trim() === cityName.toLowerCase().trim())
-  const communityVideos = communityVideoManifest as Record<string, { video?: string } | undefined>
-  const communityItems: KbCommunityItem[] = (CITY_COMMUNITIES[slug] ?? [])
-    .map((f): KbCommunityItem | null => {
-      const c = cityComms.find((x) => x.subdivision.toLowerCase().includes(f.match))
-      if (!c) return null
-      const cv = f.videoSlug ? communityVideos[f.videoSlug] : undefined
+  // Communities rail — EVERY community in the city that has a banner photo, with
+  // the curated marquee set (hand-picked still + silent Area Guide video) floated
+  // to the front, then the rest by active count. (Matt: "all in the slider".)
+  const curatedComms = CITY_COMMUNITIES[slug] ?? []
+  const communityItems: KbCommunityItem[] = cityComms
+    .map((c): KbCommunityItem | null => {
+      const curated = curatedComms.find((f) => c.subdivision.toLowerCase().includes(f.match))
+      const cv = curated?.videoSlug ? communityVideos[curated.videoSlug] : undefined
+      const img = curated?.img ?? c.heroImageUrl ?? null
+      if (!img) return null
       return {
-        name: c.subdivision, activeCount: c.activeCount, town: cityName,
-        href: `/communities/${c.slug}`, img: f.img,
+        name: c.subdivision,
+        activeCount: c.activeCount,
+        town: cityName,
+        href: `/communities/${c.slug}`,
+        img,
         video: cv?.video ? { url: cv.video, embedType: 'video-tag' as const } : null,
       }
     })
     .filter((x): x is KbCommunityItem => x !== null)
+    .sort((a, b) => (a.video ? 0 : 1) - (b.video ? 0 : 1) || b.activeCount - a.activeCount)
 
   // Explore other cities — editorial index with VERIFIED thumbnails. (§D84, §D87)
   const otherCityItems: KbTownItem[] = allCitySnapshots

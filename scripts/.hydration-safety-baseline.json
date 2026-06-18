@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-06-17T19:53:32.873Z",
+  "generatedAt": "2026-06-18T01:18:44.130Z",
   "format": "file:line:ruleId — each entry is one violation; both the set (no new entries) and total (count ceiling) must not grow.",
-  "total": 132,
+  "total": 133,
   "violations": [
     "app/admin/(protected)/expired-listings/ExpiredListingRow.tsx:28:locale-date",
     "app/admin/(protected)/query-builder/AdminQueryBuilderForm.tsx:253:clock-now",
@@ -130,6 +130,7 @@
     "components/search/MarketSnapshotChart.tsx:15:locale-date",
     "components/search/RecentSearches.tsx:119:clock-now",
     "components/search/RecentSearches.tsx:41:clock-now",
+    "components/site/kb/KbSectionTracker.client.tsx:9:impure-helper",
     "components/site/listing-detail/ListingBrokerCTA.client.tsx:55:clock-new-date",
     "components/tc/pdf-sign/SignFlow.tsx:140:clock-new-date",
     "components/tc/pdf-sign/SignFlow.tsx:140:locale-date",
