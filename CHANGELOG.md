@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.12 (2026-06-18)
+
+### Other
+- kb(market): 5-year year-over-year overlay chart (multi-color)
+
+---
+
+
 ## v1.594.11 (2026-06-18)
 
 ### Other
