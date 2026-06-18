@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.18 (2026-06-18)
+
+### Other
+- Community pages: restore the rich resort overview/amenities/golf/membership/builders in KB
+
+---
+
+
 ## v1.594.17 (2026-06-18)
 
 ### Other
