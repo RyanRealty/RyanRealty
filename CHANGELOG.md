@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.21 (2026-06-18)
+
+### Other
+- KB: lead-landing pages (/sell|/buy [intent]) + housing-market report chrome fix
+
+---
+
+
 ## v1.595.20 (2026-06-18)
 
 ### Other
