@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.11 (2026-06-18)
+
+### Other
+- KB conversion: /about + /team + /team/[slug] (+ HideChrome rules)
+
+---
+
+
 ## v1.595.10 (2026-06-18)
 
 ### Other
