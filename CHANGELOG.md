@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.595.6 (2026-06-18)
+
+### Other
+- KB conversion: Bend neighborhood page + Central Oregon region market report
+- Subdivisions: link resort/community subdivision chips to KB subdivision pages
+
+---
+
+
 ## v1.595.5 (2026-06-18)
 
 ### Other
