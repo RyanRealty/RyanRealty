@@ -1363,3 +1363,22 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .kbmc-skeleton{height:var(--kbmc-h,300px);background:linear-gradient(100deg,var(--cream-05) 30%,rgba(250,248,244,.12) 50%,var(--cream-05) 70%);background-size:200% 100%;animation:kbmcShimmer 1.4s ease-in-out infinite;}
 @keyframes kbmcShimmer{from{background-position:200% 0;}to{background-position:-200% 0;}}
 @media(prefers-reduced-motion:reduce){.kb-root .kbmc-skeleton{animation:none;}}
+
+/* ===== Section transitions — each section RISES into view as it enters, so the
+   cream↔navy cuts read as intentional "arrivals" instead of an abrupt snap. Pure
+   CSS scroll-driven (no JS, no flash); gated on view-timeline support, so the
+   fallback everywhere else is the static (visible) section. The hero (#top — not a
+   .section) is excluded; it's above the fold. Honors reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .kb-root .section {
+      animation: kbSectionRise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 32%;
+    }
+    @keyframes kbSectionRise {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: none; }
+    }
+  }
+}

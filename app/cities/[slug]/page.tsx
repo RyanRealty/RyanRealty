@@ -547,7 +547,12 @@ export default async function CityDetailPage({ params }: Props) {
         {aboutParagraphs.length > 0 ? (
           <KbAbout eyebrow={`${cityName} · Oregon`} heading={`Living in ${cityName}`} paragraphs={aboutParagraphs} facts={aboutFacts} />
         ) : null}
-        <KbFeatured items={featuredItems} />
+        {/* Flow: lead with the MARKET (credibility) → the homes → a live price
+            ticker → the map → drill-down (neighborhoods/communities) → this-week
+            (open houses) → live activity → guides → explore out. */}
+        <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} />
+        <KbFeatured items={featuredItems} eyebrow={`${cityName} · For sale`} />
+        <KbTicker items={tickerItems} />
         <KbListingMap
           geojson={mapGeo}
           totalActive={pulse?.activeCount ?? mapFeatures.length}
@@ -558,8 +563,6 @@ export default async function CityDetailPage({ params }: Props) {
           title={`Homes in\n${cityName}`}
           subtitle={`Every active single-family listing in ${cityName}, on the real terrain. Click any dot for the price, the beds, and the street.`}
         />
-        <KbTicker items={tickerItems} />
-        <KbMarketHud data={marketData} />
         <KbExploreTowns
           towns={bendNeighborhoodItems}
           eyebrow={`${cityName} · Neighborhoods`}
@@ -567,7 +570,7 @@ export default async function CityDetailPage({ params }: Props) {
           sectionId="neighborhoods"
           cta={{ href: `/homes-for-sale/${slug}`, label: `All ${cityName} homes` }}
         />
-        <KbCommunities communities={communityItems} />
+        <KbCommunities communities={communityItems} eyebrow={`${cityName} · Communities`} />
         <KbExploreTowns
           towns={golfCommunityItems}
           eyebrow={`${cityName} · Communities`}
@@ -577,18 +580,18 @@ export default async function CityDetailPage({ params }: Props) {
         />
         <KbOpenHouses items={openHouseItems} eyebrow={`${cityName} · This week`} heading="Open houses" viewAllHref={`/open-houses/${slug}`} />
         <KbActivity items={activityItems} eyebrow={`Live · ${cityName}`} heading="Latest market activity" viewAllHref="/housing-market" viewAllLabel="Full market pulse" />
+        <KbArticles
+          posts={articlePosts}
+          eyebrow="Guides and insights"
+          heading={`${cityName} real estate, explained`}
+          subtitle={`Local housing news, neighborhood deep dives, and buyer and seller guides for ${cityName} and Central Oregon.`}
+        />
         <KbExploreTowns
           towns={otherCityItems}
           eyebrow="Central Oregon"
           title="Explore other cities"
           sectionId="nearby"
           cta={{ href: '/cities', label: 'Every city' }}
-        />
-        <KbArticles
-          posts={articlePosts}
-          eyebrow="Guides and insights"
-          heading={`${cityName} real estate, explained`}
-          subtitle={`Local housing news, neighborhood deep dives, and buyer and seller guides for ${cityName} and Central Oregon.`}
         />
         <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
         <KbTeam />

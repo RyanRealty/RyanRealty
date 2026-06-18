@@ -655,7 +655,12 @@ export default async function CommunityDetailPage({ params }: Props) {
             facts={aboutFacts}
           />
         ) : null}
-        <KbFeatured items={featuredItems} />
+        {/* Flow (same coherent order as the city page): the lifestyle overview
+            leads, then the MARKET → the homes → a live ticker → the map →
+            nearby communities → this-week → activity → guides → explore. */}
+        <KbMarketHud data={marketData} eyebrow={`${community.name} · The market`} />
+        <KbFeatured items={featuredItems} eyebrow={`${community.name} · For sale`} />
+        <KbTicker items={tickerItems} />
         <KbListingMap
           geojson={mapGeo}
           totalActive={activeCount || mapFeatures.length}
@@ -666,9 +671,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           title={`Homes in\n${community.name}`}
           subtitle={`Every active single-family listing in ${community.name}, on the real terrain. Click any dot for the price, the beds, and the street.`}
         />
-        <KbTicker items={tickerItems} />
-        <KbMarketHud data={marketData} />
-        <KbCommunities communities={communityItems} />
+        <KbCommunities communities={communityItems} eyebrow={`${cityName} · Communities`} />
         <KbOpenHouses
           items={openHouseItems}
           eyebrow={`${cityName} · This week`}
@@ -682,18 +685,18 @@ export default async function CommunityDetailPage({ params }: Props) {
           viewAllHref="/housing-market"
           viewAllLabel="Full market pulse"
         />
+        <KbArticles
+          posts={articlePosts}
+          eyebrow="Guides and insights"
+          heading={`${community.name} real estate, explained`}
+          subtitle={`Local housing news, market data, and buyer and seller guides for ${community.name} and ${cityName}.`}
+        />
         <KbExploreTowns
           towns={otherCityItems}
           eyebrow="Central Oregon"
           title="Explore other cities"
           sectionId="nearby"
           cta={{ href: '/cities', label: 'Every city' }}
-        />
-        <KbArticles
-          posts={articlePosts}
-          eyebrow="Guides and insights"
-          heading={`${community.name} real estate, explained`}
-          subtitle={`Local housing news, market data, and buyer and seller guides for ${community.name} and ${cityName}.`}
         />
         <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
         <KbTeam />
