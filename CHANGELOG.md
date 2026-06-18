@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.8 (2026-06-18)
+
+### Other
+- KB conversion: ZIP-code page (/zip/[zip])
+
+---
+
+
 ## v1.595.7 (2026-06-18)
 
 ### Other
