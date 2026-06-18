@@ -132,7 +132,7 @@ export function KbMarketChart({
         color: PALETTE[Math.min(i, PALETTE.length - 1)] ?? '#faf8f4',
         isNewest: s.year === newestYear,
         path: smoothPath(xy),
-        end: last ? { xPct: (xOf(last.m) / W) * 100, yPct: (yOf(last.value) / H) * 100, value: last.value } : null,
+        end: last ? { xPct: (xOf(last.m) / W) * 100, yPct: (yOf(last.value) / H) * 100, value: last.value, lastM: last.m } : null,
         byMonth: new Map(sorted.map((p) => [p.m, p.value])),
         hidden: hidden.has(s.year),
       }
@@ -282,6 +282,23 @@ export function KbMarketChart({
               vectorEffect="non-scaling-stroke"
             />
           ))}
+          {/* month gridlines — a calendar frame spanning Jan 1 (left edge) to
+              Dec 31 (right edge); the two year-boundary edges are emphasized. */}
+          {MONTHS.map((_, i) => {
+            const x = (i / 11) * W
+            const edge = i === 0 || i === 11
+            return (
+              <line
+                key={`m${i}`}
+                className={`kbmc-vgrid${edge ? ' edge' : ''}`}
+                x1={x}
+                x2={x}
+                y1="0"
+                y2={H}
+                vectorEffect="non-scaling-stroke"
+              />
+            )
+          })}
           {areaPath ? <path className="kbmc-area" d={areaPath} fill={`url(#kbmc-fill-${uid})`} /> : null}
           {geo.lines
             .filter((l) => !l.hidden)
@@ -314,6 +331,7 @@ export function KbMarketChart({
           {(() => {
             const lead = [...geo.lines].reverse().find((l) => !l.hidden && l.end)
             if (!lead?.end) return null
+            const inProgress = lead.end.lastM < 12 // the year isn't over yet
             return (
               <>
                 <span
@@ -323,9 +341,10 @@ export function KbMarketChart({
                 <span
                   className="kbmc-endlabel mono-num"
                   style={{ left: `${lead.end.xPct}%`, top: `${lead.end.yPct}%` }}
-                  data-side={lead.end.xPct > 82 ? 'left' : 'right'}
+                  data-side={lead.end.xPct > 78 ? 'left' : 'right'}
                 >
                   {formatValue(lead.end.value)}
+                  {inProgress ? <span className="kbmc-endlabel-as">as of {MONTHS[lead.end.lastM - 1]}</span> : null}
                 </span>
               </>
             )
@@ -352,13 +371,23 @@ export function KbMarketChart({
         </div>
       </div>
 
-      {/* x-axis — month initials */}
+      {/* x-axis — month initials positioned at their EXACT data x (so they sit
+          under the line points); Jan anchors the left edge (Jan 1), Dec the right
+          edge (Dec 31). */}
       <div className="kbmc-xaxis" aria-hidden="true">
-        {MONTH_INITIAL.map((m, i) => (
-          <span key={i} className={active === i + 1 ? 'on' : undefined}>
-            {m}
-          </span>
-        ))}
+        {MONTH_INITIAL.map((m, i) => {
+          const anchor = i === 0 ? 'start' : i === 11 ? 'end' : 'mid'
+          return (
+            <span
+              key={i}
+              className={`kbmc-xtick${active === i + 1 ? ' on' : ''}`}
+              data-anchor={anchor}
+              style={{ left: `${(i / 11) * 100}%` }}
+            >
+              {m}
+            </span>
+          )
+        })}
       </div>
 
       {/* screen-reader data table */}

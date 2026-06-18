@@ -1340,10 +1340,12 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .kbmc-dot.newest{width:12px;height:12px;}
 .kb-root .kbmc-endlabel{
   position:absolute;transform:translate(-50%,-150%);white-space:nowrap;
+  display:flex;flex-direction:column;align-items:center;line-height:1.1;
   font-size:.82rem;font-weight:700;color:var(--cream);background:var(--navy);
-  border:1px solid var(--cream-40);padding:2px 7px;
+  border:1px solid var(--cream-40);padding:3px 7px;
 }
 .kb-root .kbmc-endlabel[data-side="left"]{transform:translate(calc(-100% - 10px),-50%);}
+.kb-root .kbmc-endlabel-as{font-size:.56rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--cream-70);margin-top:1px;}
 .kb-root .kbmc-cross{position:absolute;top:0;bottom:0;width:1px;background:var(--cream-40);transform:translateX(-0.5px);}
 .kb-root .kbmc-tip{
   position:absolute;top:8px;display:flex;flex-direction:column;gap:3px;
@@ -1355,9 +1357,13 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .kbmc-tip-mo{font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:.62rem;color:var(--cream-70);margin-bottom:2px;}
 .kb-root .kbmc-tip-row{display:flex;align-items:center;gap:6px;white-space:nowrap;font-variant-numeric:tabular-nums;}
 .kb-root .kbmc-tip-sw{width:9px;height:9px;flex-shrink:0;}
-.kb-root .kbmc-xaxis{display:flex;justify-content:space-between;margin-top:10px;padding:0 1px;}
-.kb-root .kbmc-xaxis span{font-size:.6rem;font-weight:600;letter-spacing:.05em;color:var(--cream-40);transition:color .15s ease;}
-.kb-root .kbmc-xaxis span.on{color:var(--cream);}
+.kb-root .kbmc-vgrid{stroke:var(--cream-05);stroke-width:1;}
+.kb-root .kbmc-vgrid.edge{stroke:var(--cream-40);}
+.kb-root .kbmc-xaxis{position:relative;height:14px;margin-top:9px;}
+.kb-root .kbmc-xtick{position:absolute;top:0;font-size:.6rem;font-weight:600;letter-spacing:.05em;color:var(--cream-40);transition:color .15s ease;}
+.kb-root .kbmc-xtick[data-anchor="mid"]{transform:translateX(-50%);}
+.kb-root .kbmc-xtick[data-anchor="end"]{transform:translateX(-100%);}
+.kb-root .kbmc-xtick.on{color:var(--cream);}
 .kb-root .kbmc-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}
 .kb-root .kbmc-empty{margin-top:26px;border:1px solid var(--cream-12);padding:28px;text-align:center;color:var(--cream-40);font-size:.9rem;}
 .kb-root .kbmc-loading{margin-top:26px;}
