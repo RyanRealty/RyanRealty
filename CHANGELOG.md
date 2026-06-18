@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.13 (2026-06-18)
+
+### Other
+- City page: all communities in the rail + neighborhood/golf hover photos
+
+---
+
+
 ## v1.594.12 (2026-06-18)
 
 ### Other
