@@ -27,11 +27,26 @@ neighborhoods / golf / nearby ledgers (no fork). Towns→Cities renamed (nav + c
 KbHero gained a mediaCaption (labeled regional fallback). All 13 city contract tests
 pass (D78–D87); tsc + build clean. Verified each section in the browser.
 
-## Remaining (next increments)
-- Map neighborhood polygons (KbListingMap polygons layer + Bend boundaries).
-- Per-section view + interaction tracking wired into every KB section (page contract).
-- The SEO/JSON-LD presence + tracking-instrumentation gates (Phase 3).
-- Then waves 2+: community → neighborhood → listing-detail → … page-classes.
+### 3 — Map neighborhood polygons ✅ committed
+KbListingMap `polygons` prop draws the 23 Bend neighborhood boundaries (fill + hard
+outline + labels) under the pins; the city map fits to the neighborhood extent.
+
+### 4 — Page-contract tracking + gate ✅ committed
+KbSectionTracker (section_view + scroll, GA4 + internal store) on the homepage + city
+page. New gate G52 ci:kb-page-contract enforces SEO metadata + tracking on every KB page.
+
+### 5 — Final adversarial review + fix pass ✅ committed
+15-agent review across bugs / regression / §0 data / brand-voice / a11y / page-contract.
+Found + fixed 3 blockers (multi-word cities were stat-dead from a hyphen/space slug
+mismatch -> La Pine now renders stats; mislabeled period delta -> "median sale"; no
+keyboard focus indicator) + 6 high (KbCommunities empty guard, mkt-fine semicolon,
+navy small-text contrast, map role, duplicate scroll_depth). Verified on Bend + La Pine.
+
+## Remaining (low / follow-up, non-blocking)
+- Data hygiene: purge the stale hyphenated city rows in market_stats_cache (e.g. "la-pine"
+  8 partial rows) now that reads use the space form. Render is already correct.
+- Minor a11y: KbNav overlay focus-trap; non-Bend hero alt text; #faq is a div not a section.
+- Then Phase 9 waves 2+: community → neighborhood → listing-detail → … page-classes.
 
 ## Increments
 
