@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.15 (2026-06-18)
+
+### Other
+- Broker hero: contained framed headshot, not a blown-up full-bleed background
+
+---
+
+
 ## v1.595.14 (2026-06-18)
 
 ### Other
