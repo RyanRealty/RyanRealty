@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.10 (2026-06-18)
+
+### Maintenance
+- docs: log the city-page final review + fix pass
+
+---
+
+
 ## v1.594.9 (2026-06-18)
 
 ### Other
