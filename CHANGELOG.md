@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.17 (2026-06-18)
+
+### Other
+- Market HUD §0: stop pairing a median-sale delta with the median-list headline
+
+---
+
+
 ## v1.594.16 (2026-06-18)
 
 ### Other
