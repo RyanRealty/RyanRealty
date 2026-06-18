@@ -135,3 +135,20 @@ chrome, tsc 0, ci:gates 0-new, 637 tests green.
 - **/housing-market/explore + /housing-market/reports* + /reports/[slug]/[geoName]** — data-heavy
   report sub-pages, left intact this pass.
 - **/listing/by-address + /listing/by-key** — thin resolvers to the KB /listing/[listingKey].
+
+## 2026-06-18 (later) — lead-landing + report routes DONE; search is the last item
+
+- `/sell/[intent]` + `/buy/[intent]` → KB via the shared `LeadLandingPage` (FUB form + all
+  sections preserved; ContentPageHero untouched since it's shared by 11 pages). Verified live 1/1.
+- `/housing-market/explore` + `/reports` + `/reports/[slug]` → KB chrome FIXED (pre-existing
+  double-chrome; their KB bodies live in app/reports/* and were excluded from HideChrome). Verified 1/1.
+- `/housing-market/reports/[slug]/[geoName]` + `/reports/[slug]/[geoName]` → redirect-only (no chrome).
+
+### LAST REMAINING: /search + /search/[...slug]
+Cannot take KB chrome via the current `HideChrome` mechanism — it removes the default SiteHeader
+by CLIENT hydration-unmount, and the heavy search-map hydration interferes, leaving a double header
+(verified, then reverted — would NOT ship double-chrome on the #1 page). Search is on its working
+default chrome. The correct fix is a **KB route-group layout** (`app/(kb)/layout.tsx` that omits
+SiteHeader/SiteFooter at the layout level) — no hydration dependency, kills the flash everywhere,
+and is the clean home for search. This is a deliberate architectural change (route moves), NOT a
+mid-flight patch. `KbNav solid` variant already exists for it.
