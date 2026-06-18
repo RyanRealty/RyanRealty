@@ -60,11 +60,14 @@ const MENU_GROUPS: { title: string; links: { href: string; label: string }[] }[]
  * Horizontal wordmark (whitened over the photo via CSS filter). The menu overlay
  * is a comprehensive grouped directory. Replaces the default site chrome on KB.
  */
-export function KbNav() {
+export function KbNav({ solid = false }: { solid?: boolean } = {}) {
   const bar = useRef<HTMLElement>(null)
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
+    // Solid mode: always-navy bar for hero-less surfaces (e.g. /search) that can't
+    // take the full kb-root shell. No transparent-over-hero state, no scroll listener.
+    if (solid) return
     const onScroll = () => {
       if (!bar.current) return
       bar.current.classList.toggle('scrolled', window.scrollY > window.innerHeight * 0.82)
@@ -72,7 +75,7 @@ export function KbNav() {
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+  }, [solid])
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
@@ -88,7 +91,7 @@ export function KbNav() {
 
   return (
     <>
-      <header className="topbar" ref={bar}>
+      <header className={`topbar${solid ? ' scrolled solid' : ''}`} ref={bar}>
         <a href="/" aria-label="Ryan Realty home" className="topbar-logo">
           <img className="logo-img" src="/images/brand/logo-horizontal-navy-transparent.png" alt="Ryan Realty" />
         </a>
