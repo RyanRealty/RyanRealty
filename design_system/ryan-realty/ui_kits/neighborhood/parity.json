@@ -31,7 +31,12 @@
     },
     {
       "name": "KbAbout",
-      "section": "about — editorial intro (data-driven prose from neighborhood.description) + quick-facts ledger.",
+      "section": "about — editorial intro (data-driven prose from neighborhood.description) + quick-facts ledger. Suppressed when KbResortOverview has verified rich content (avoids duplicate overview prose).",
+      "blocking": true
+    },
+    {
+      "name": "KbResortOverview",
+      "section": "rich overview — KB rebuild of the pre-KB CommunityRichContent. Verified overview prose + at-a-glance facts + drive times + amenities from getResortCommunityContent (data/resort-community-{citySlug}-{neighborhoodSlug}.json). Renders nothing when no config.",
       "blocking": true
     },
     {
@@ -115,7 +120,7 @@
     "ListingCard grid (replaced by KbFeatured)",
     "VideoTourRail (not present — video tours surface through KbFeatured .video)",
     "MotivatedListings (replaced by KbActivity)",
-    "CommunityRichContent (folded into KbAbout)",
+    "CommunityRichContent (rebuilt as KbResortOverview, fed by getResortCommunityContent)",
     "Stat band (replaced by KbMarketHud)",
     "BreadcrumbNav (replaced by KbBreadcrumb)"
   ]

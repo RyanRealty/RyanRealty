@@ -1,32 +1,37 @@
 /**
- * Buy page (/buy) — Wave 3 site-v2 rebuild.
+ * Buy page (/buy) — KB (kinetic-brutalist) design, Phase 9 page-class migration.
  *
- * Composed from @/components/site/* blocks + @/lib/data DAL. No legacy
- * ContentPageHero, no raw section headings, no inline brand-voice violations.
+ * RESTYLED IN PLACE: every section, the DAL hero fetch (getSurfaceImage), all
+ * value props, the process walkthrough, the buyer-guide sub-pages, the CTA band,
+ * the full 6-item FAQ, and the BreadcrumbList + WebPage + FAQPage JSON-LD are
+ * preserved verbatim. Only the presentation moved to the KB look (navy + cream
+ * surfaces, Amboqia display headings, hard --edge borders, the
+ * .section/.wrap rhythm, .mono-* labels), built entirely from existing kb.css
+ * classes + Tailwind utilities (no inline <style> block — D32). KB chrome
+ * (KbNav + KbFooter) replaces the default site header/footer (HideChrome hides
+ * them for /buy).
  *
- * DATA ACCURACY (CLAUDE.md §0): all value props describe real capabilities
- * only. No invented stats, no sale-percentages, no days-to-close claims.
- * Hero photo pulled from getSurfaceImage (approved asset library).
- * Market context pulled from getMarketPulse for Bend.
- * The lead path is the existing /lp/buyer-listing-alerts LP (captures the
- * lead + triggers FUB buyer workflow). This page has no embedded form.
+ * DATA ACCURACY (CLAUDE.md §0): all value props describe real capabilities only.
+ * No invented stats, no sale-percentages, no days-to-close claims. Hero photo
+ * pulled from getSurfaceImage (approved asset library). The lead path is the
+ * existing /lp/buyer-listing-alerts LP (captures the lead + triggers the FUB
+ * buyer workflow). This page has no embedded form.
  *
- * Brand voice (CLAUDE.md §3): sentence-case headings, no em-dashes, no
- * banned words ("journey", "genuine love for our community", "dedicated",
- * "premier", "passionate"). See inline comments at fixed violations.
+ * Brand voice (CLAUDE.md §3): sentence-case headings, no em-dashes, no banned
+ * words. Copy is unchanged from the prior verified version.
+ *
+ * Parity contract: design_system/ryan-realty/ui_kits/buy/parity.json (KB set).
  */
 
-import Link from 'next/link'
 import { getSurfaceImage } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-import { HeroBlock } from '@/components/site/HeroBlock'
-import { ContentSection } from '@/components/site/ContentSection'
-import { FAQBlock } from '@/components/site/FAQBlock'
-import { CTABar } from '@/components/site/CTABar'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { Card, CardContent } from '@/components/ui/card'
-import { Body } from '@/components/site/primitives'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import '@/components/site/kb/kb.css'
 
 export const revalidate = 300
 
@@ -80,6 +85,74 @@ const FAQ_ITEMS = [
 
 const OLD_MILL_HERO = '/brand/hero/hero-old-mill-master-4k.jpg'
 
+// Hero quick-links (preserved from the prior version — every destination kept).
+const HERO_CHIPS = [
+  { label: 'Search homes', href: '/homes-for-sale' },
+  { label: 'Get listing alerts', href: '/lp/buyer-listing-alerts' },
+  { label: 'Price drops', href: '/price-drops' },
+  { label: 'Talk to a broker', href: '/contact?inquiry=Buying' },
+  { label: 'Area guides', href: '/area-guides' },
+] as const
+
+// Why work with us — value-prop grid (copy preserved verbatim).
+const VALUE_PROPS = [
+  {
+    heading: 'Local market knowledge',
+    body: 'Brokers who live and work in Central Oregon. We know Bend, Redmond, Sisters, Sunriver, and every neighborhood in between. The people showing you homes are the same people who can tell you where water pressure is unreliable and which streets flood in spring.',
+  },
+  {
+    heading: 'Live MLS listings',
+    body: 'We pull directly from the MLS. Save searches, receive alerts when a match hits, and schedule showings on your schedule. No algorithm ranking by listing fee.',
+  },
+  {
+    heading: 'One broker, start to finish',
+    body: 'The broker who tours homes with you is the broker who writes the offer, negotiates, and walks you to close. No baton-passes, no hand-offs to a transaction coordinator you have never met.',
+  },
+] as const
+
+// How it works — process steps (copy preserved verbatim).
+const PROCESS_STEPS = [
+  {
+    step: '01',
+    lead: 'Tell us what you want.',
+    body: 'Share your criteria, neighborhoods, and budget. We set up a custom MLS search and you receive new matches as they hit the market.',
+  },
+  {
+    step: '02',
+    lead: 'Tour with context.',
+    body: 'A broker who knows the area points out what matters. Schools, commute, resale, HOA history, known issues in that subdivision. You decide with the full picture.',
+  },
+  {
+    step: '03',
+    lead: 'Make a well-priced offer.',
+    body: 'We pull recent closed comps for the specific address, walk you through the numbers, and help you construct an offer that reflects the market, not wishful thinking.',
+  },
+  {
+    step: '04',
+    lead: 'Close.',
+    body: 'From inspection through appraisal to the closing table, the same broker is with you. We review every document before you sign it.',
+  },
+] as const
+
+// Buyer guides — strategy sub-pages (copy + hrefs preserved verbatim).
+const BUYER_GUIDES = [
+  {
+    href: '/buy/first-time-home-buyer',
+    heading: 'First-time buyer plan',
+    body: 'Down-payment programs, inspection fundamentals, and a realistic timeline for buying your first home in Central Oregon.',
+  },
+  {
+    href: '/buy/relocation',
+    heading: 'Relocation guidance',
+    body: 'Moving to Bend or Central Oregon from out of state. What to know about the market before you arrive, and how to tour efficiently on a short visit.',
+  },
+  {
+    href: '/buy/investment',
+    heading: 'Investment strategy',
+    body: 'Vacation rental potential, long-term rental markets, and how to evaluate cash flow on a Central Oregon investment property.',
+  },
+] as const
+
 export default async function BuyPage() {
   const heroSrc = await getSurfaceImage('hero', {
     geoTags: ['central-oregon'],
@@ -88,7 +161,9 @@ export default async function BuyPage() {
   })
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="kb-root">
+      <KbNav />
+      <KbSectionTracker pageType="buy" />
 
       {/* JSON-LD: breadcrumb + webPage + RealEstateAgent organization + FAQPage */}
       <MetadataBlock
@@ -114,147 +189,250 @@ export default async function BuyPage() {
         ]}
       />
 
-      <PageBreadcrumb trail={[{ label: 'Buy' }]} />
+      <KbBreadcrumb overlay trail={[{ label: 'Home', href: '/' }, { label: 'Buy' }]} />
 
-      <HeroBlock
-        headline="Buy a home in Central Oregon."
-        lede="Live MLS data, updated continuously. One broker from your first search to the closing table, so you always know who is accountable. We cover Bend, Redmond, Sisters, Sunriver, and the surrounding communities."
-        photo={{
-          src: heroSrc ?? OLD_MILL_HERO,
-          alt: 'Old Mill District drone view with the American flag, the Deschutes River, and the Cascade mountains.',
-          priority: true,
-        }}
-        minHeight={500}
-        chips={[
-          { label: 'Search homes', href: '/homes-for-sale' },
-          { label: 'Get listing alerts', href: '/lp/buyer-listing-alerts' },
-          { label: 'Price drops', href: '/price-drops' },
-          { label: 'Talk to a broker', href: '/contact?inquiry=Buying' },
-          { label: 'Area guides', href: '/area-guides' },
-        ]}
-      />
-
-      {/* What you get working with Ryan Realty */}
-      <ContentSection
-        eyebrow="Why work with us"
-        title="Local brokers, live data, no hand-offs."
-        tone="muted"
-        divider
-        width="wide"
-      >
-        <div className="grid gap-8 sm:grid-cols-3">
-          {[
-            {
-              heading: 'Local market knowledge',
-              body: 'Brokers who live and work in Central Oregon. We know Bend, Redmond, Sisters, Sunriver, and every neighborhood in between. The people showing you homes are the same people who can tell you where water pressure is unreliable and which streets flood in spring.',
-            },
-            {
-              heading: 'Live MLS listings',
-              body: 'We pull directly from the MLS. Save searches, receive alerts when a match hits, and schedule showings on your schedule. No algorithm ranking by listing fee.',
-            },
-            {
-              heading: 'One broker, start to finish',
-              body: 'The broker who tours homes with you is the broker who writes the offer, negotiates, and walks you to close. No baton-passes, no hand-offs to a transaction coordinator you have never met.',
-            },
-          ].map((item) => (
-            <div key={item.heading} className="flex flex-col gap-2">
-              <Body size="default" className="font-semibold text-foreground">
-                {item.heading}
-              </Body>
-              <Body size="default" tone="muted">
-                {item.body}
-              </Body>
+      <SmoothScrollProvider>
+        {/* HERO — headline + broker lede + canonical photo + quick-links.
+            Restyled in place (kept the 5 quick-links the KB shared hero can't
+            carry; full-bleed photo with masked navy overlay, Amboqia H1). */}
+        <section className="hero" id="top" style={{ minHeight: 'clamp(440px,68vh,620px)' }}>
+          <div className="hero-photo">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              className="hero-video"
+              src={heroSrc ?? OLD_MILL_HERO}
+              alt="Old Mill District drone view with the American flag, the Deschutes River, and the Cascade mountains."
+            />
+          </div>
+          <div className="hero-grid-overlay" />
+          <div className="hero-inner">
+            <div className="hero-tag eyebrow">
+              <span className="dot" /> Central Oregon · Buyers
             </div>
-          ))}
-        </div>
-      </ContentSection>
+            <h1 className="hero-h display">
+              <span className="reveal-mask">
+                <span className="ln">Buy a home in</span>
+              </span>
+              <span className="reveal-mask">
+                <span className="ln indent">Central Oregon</span>
+              </span>
+            </h1>
+            <div className="hero-sub-row">
+              <p className="hero-sub">
+                Live MLS data, updated continuously. One broker from your first search to the closing table, so you
+                always know who is accountable. We cover Bend, Redmond, Sisters, Sunriver, and the surrounding
+                communities.
+              </p>
+            </div>
+            <nav className="flex flex-wrap gap-2.5 mt-5" aria-label="Buyer quick links">
+              {HERO_CHIPS.map((c) => (
+                <a key={c.href} className="btn ghost" href={c.href} style={{ padding: '11px 16px', fontSize: '.7rem' }}>
+                  {c.label}
+                </a>
+              ))}
+            </nav>
+          </div>
+        </section>
 
-      {/* How the process works */}
-      <ContentSection
-        eyebrow="How it works"
-        title="From first search to keys in hand."
-        tone="default"
-        divider
-        width="wide"
-      >
-        <div className="space-y-4">
-          <Body size="default" tone="muted">
-            <strong className="text-foreground font-semibold">Tell us what you want.</strong>{' '}
-            Share your criteria, neighborhoods, and budget. We set up a custom MLS search and you receive new matches as they hit the market.
-          </Body>
-          <Body size="default" tone="muted">
-            <strong className="text-foreground font-semibold">Tour with context.</strong>{' '}
-            A broker who knows the area points out what matters. Schools, commute, resale, HOA history, known issues in that subdivision. You decide with the full picture.
-          </Body>
-          <Body size="default" tone="muted">
-            <strong className="text-foreground font-semibold">Make a well-priced offer.</strong>{' '}
-            We pull recent closed comps for the specific address, walk you through the numbers, and help you construct an offer that reflects the market, not wishful thinking.
-          </Body>
-          <Body size="default" tone="muted">
-            <strong className="text-foreground font-semibold">Close.</strong>{' '}
-            From inspection through appraisal to the closing table, the same broker is with you. We review every document before you sign it.
-          </Body>
-        </div>
-      </ContentSection>
-
-      {/* Buyer strategy sub-pages */}
-      <ContentSection
-        eyebrow="Buyer guides"
-        title="Find the path that fits your situation."
-        tone="muted"
-        divider
-        width="wide"
-      >
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[
-            {
-              href: '/buy/first-time-home-buyer',
-              heading: 'First-time buyer plan',
-              body: 'Down-payment programs, inspection fundamentals, and a realistic timeline for buying your first home in Central Oregon.',
-            },
-            {
-              href: '/buy/relocation',
-              heading: 'Relocation guidance',
-              body: 'Moving to Bend or Central Oregon from out of state. What to know about the market before you arrive, and how to tour efficiently on a short visit.',
-            },
-            {
-              href: '/buy/investment',
-              heading: 'Investment strategy',
-              body: 'Vacation rental potential, long-term rental markets, and how to evaluate cash flow on a Central Oregon investment property.',
-            },
-          ].map((item) => (
-            <Link key={item.href} href={item.href} className="block hover:no-underline">
-              <Card className="h-full p-5 transition hover:shadow-md cursor-pointer">
-                <CardContent className="p-0">
-                  <Body size="default" className="font-semibold text-foreground mb-1">
+        {/* WHY WORK WITH US — value-prop grid (cream surface). */}
+        <section className="section about" id="why-us" aria-labelledby="why-us-title">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Why work with us</span>
+              <h2 className="sec-title display" id="why-us-title">
+                Local brokers, live data, no hand-offs.
+              </h2>
+            </div>
+            <div className="grid gap-6 sm:grid-cols-3" style={{ paddingTop: 'clamp(30px,4vw,46px)' }}>
+              {VALUE_PROPS.map((item) => (
+                <div key={item.heading} className="flex flex-col gap-3">
+                  <h3 className="display" style={{ fontSize: 'clamp(1.25rem,2.2vw,1.6rem)', lineHeight: 1 }}>
                     {item.heading}
-                  </Body>
-                  <Body size="default" tone="muted">
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: 'clamp(.95rem,1.5vw,1.05rem)',
+                      lineHeight: 1.5,
+                      fontWeight: 500,
+                      color: 'var(--navy-70)',
+                    }}
+                  >
                     {item.body}
-                  </Body>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </ContentSection>
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
 
-      <CTABar
-        eyebrow="Ready to start searching?"
-        title="Get matched listings from a local broker."
-        body="Share your criteria and a Ryan Realty broker sends matching homes directly from the MLS. No spam, no pressure."
-        primary={{ href: '/lp/buyer-listing-alerts', label: 'Get listing alerts' }}
-        secondary={{ href: '/contact?inquiry=Buying', label: 'Talk to a broker' }}
-        tone="navy"
-      />
+        {/* HOW IT WORKS — numbered process steps (navy surface). */}
+        <section
+          className="section"
+          id="how-it-works"
+          aria-labelledby="how-it-works-title"
+          style={{ background: 'var(--navy)', color: 'var(--cream)', paddingBottom: 'clamp(48px,7vw,72px)' }}
+        >
+          <div className="wrap">
+            <div className="sec-head" style={{ borderColor: 'var(--cream-40)' }}>
+              <span className="sec-index">How it works</span>
+              <h2 className="sec-title display" id="how-it-works-title">
+                From first search to keys in hand.
+              </h2>
+            </div>
+            <ol className="list-none flex flex-col" style={{ paddingTop: 'clamp(18px,3vw,30px)' }}>
+              {PROCESS_STEPS.map((s, i) => (
+                <li
+                  key={s.step}
+                  className="grid items-baseline"
+                  style={{
+                    gridTemplateColumns: 'auto 1fr',
+                    gap: 'clamp(16px,3vw,40px)',
+                    padding: 'clamp(22px,3vw,30px) 0',
+                    borderBottom: i === PROCESS_STEPS.length - 1 ? '0' : '1px solid var(--cream-40)',
+                  }}
+                >
+                  <span
+                    className="mono-num display"
+                    aria-hidden="true"
+                    style={{ fontSize: 'clamp(1.8rem,5vw,2.8rem)', lineHeight: 0.9, color: 'var(--cream-70)' }}
+                  >
+                    {s.step}
+                  </span>
+                  <p
+                    style={{
+                      fontSize: 'clamp(.98rem,1.6vw,1.18rem)',
+                      lineHeight: 1.5,
+                      fontWeight: 500,
+                      color: 'var(--cream-70)',
+                      maxWidth: '62ch',
+                    }}
+                  >
+                    <strong style={{ color: 'var(--cream)', fontWeight: 700 }}>{s.lead}</strong> {s.body}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
 
-      <FAQBlock
-        eyebrow="Common questions"
-        title="Buying with Ryan Realty"
-        items={FAQ_ITEMS}
-        tone="muted"
-        includeJsonLd={false}
-      />
+        {/* BUYER GUIDES — strategy sub-pages (cream surface, reuses .articles cards). */}
+        <section className="section articles about" id="buyer-guides" aria-labelledby="buyer-guides-title">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Buyer guides</span>
+              <h2 className="sec-title display" id="buyer-guides-title">
+                Find the path that fits your situation.
+              </h2>
+            </div>
+            <div className="art-grid" style={{ paddingTop: 'clamp(18px,3vw,30px)' }}>
+              {BUYER_GUIDES.map((item) => (
+                <a key={item.href} href={item.href} className="art-card">
+                  <div className="art-body">
+                    <h3 className="art-title display">{item.heading}</h3>
+                    <p className="art-excerpt">{item.body}</p>
+                    <span className="art-read">
+                      Read the guide <span className="arr">&rarr;</span>
+                    </span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA BAND — buyer conversion to the listing-alerts LP (navy surface). */}
+        <section
+          className="section"
+          id="get-alerts"
+          aria-labelledby="get-alerts-title"
+          style={{
+            background: 'var(--navy)',
+            color: 'var(--cream)',
+            padding: 'clamp(54px,8vw,92px) 0',
+            textAlign: 'center',
+          }}
+        >
+          <div className="wrap">
+            <span className="sec-index" style={{ display: 'block', opacity: 0.78 }}>
+              Ready to start searching?
+            </span>
+            <h2
+              className="display"
+              id="get-alerts-title"
+              style={{ fontSize: 'clamp(2rem,6vw,4rem)', lineHeight: 0.94, margin: '16px 0 18px' }}
+            >
+              Get matched listings from a local broker.
+            </h2>
+            <p
+              style={{
+                maxWidth: '54ch',
+                margin: '0 auto 28px',
+                color: 'var(--cream-70)',
+                fontSize: 'clamp(.98rem,1.8vw,1.2rem)',
+                lineHeight: 1.5,
+                fontWeight: 500,
+              }}
+            >
+              Share your criteria and a Ryan Realty broker sends matching homes directly from the MLS. No spam, no
+              pressure.
+            </p>
+            <div className="flex gap-3 justify-center flex-wrap">
+              <a href="/lp/buyer-listing-alerts" className="btn" style={{ borderColor: 'var(--cream)' }}>
+                Get listing alerts <span className="arr">&rarr;</span>
+              </a>
+              <a href="/contact?inquiry=Buying" className="btn ghost">
+                Talk to a broker
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ — verified buyer facts (cream surface). The canonical FAQPage
+            JSON-LD is emitted by MetadataBlock above, so none is duplicated here. */}
+        <section className="section about" id="faq" aria-labelledby="faq-title">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Common questions</span>
+              <h2 className="sec-title display" id="faq-title">
+                Buying with Ryan Realty
+              </h2>
+            </div>
+            <dl style={{ paddingTop: 'clamp(18px,3vw,30px)', borderTop: '1px solid var(--navy-12)' }}>
+              {FAQ_ITEMS.map((item) => (
+                <div
+                  key={item.question}
+                  style={{ padding: 'clamp(20px,2.6vw,28px) 0', borderBottom: '1px solid var(--navy-12)' }}
+                >
+                  <dt
+                    className="display"
+                    style={{
+                      fontSize: 'clamp(1.15rem,2.2vw,1.55rem)',
+                      lineHeight: 1.05,
+                      color: 'var(--navy)',
+                      marginBottom: 10,
+                    }}
+                  >
+                    {item.question}
+                  </dt>
+                  <dd
+                    style={{
+                      fontSize: 'clamp(.95rem,1.6vw,1.1rem)',
+                      lineHeight: 1.55,
+                      fontWeight: 500,
+                      color: 'var(--navy-70)',
+                      maxWidth: '74ch',
+                    }}
+                  >
+                    {item.answer}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
     </main>
   )
 }

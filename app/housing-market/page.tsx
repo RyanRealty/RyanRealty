@@ -23,8 +23,14 @@
  *   6. KbHero           — region eyebrow + glance lede (data-driven)
  *   7. KbExploreTowns   — per-city tiles with live active counts
  *   8. KbArticles       — cross-links to region report + blog posts
- *   9. KbSell           — seller conversion CTA
- *  10. KbFooter         — full sitemap close
+ *   9. ContentSection   — curated resource cross-links (region report, reports
+ *      index, explorer, communities, guides, area guides) — restored from the
+ *      pre-KB hub for internal linking the KB chrome does not otherwise carry
+ *  10. KbSell           — seller conversion CTA
+ *  11. LeadCaptureBlock — general "ask a broker" inquiry (submitMarketPageInquiry),
+ *      restored from the pre-KB hub so a non-seller market question has on-page
+ *      capture (KbSell only routes to the seller valuation flow)
+ *  12. KbFooter         — full sitemap close
  *
  * Data accuracy (CLAUDE.md §0):
  *   regionPulse   — market_pulse_live, geo_type='region', geo_slug='central-oregon',
@@ -55,6 +61,9 @@ import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { ContentSection } from '@/components/site/ContentSection'
+import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
+import { submitMarketPageInquiry } from '@/app/housing-market/actions'
 import '@/components/site/kb/kb.css'
 
 export const revalidate = 300
@@ -280,6 +289,39 @@ export default async function HousingMarketHubPage() {
           />
         ) : null}
 
+        {/* Resource cross-links — curated internal links the KB chrome does not
+            otherwise surface on this page (region report, reports index, the open
+            data explorer, communities, guides, area guides). Restored from the
+            pre-KB hub so the region report and these sibling routes keep their
+            inbound link from the hub (internal-linking / SEO value). */}
+        <ContentSection
+          eyebrow="More resources"
+          title="Explore Central Oregon real estate"
+          tone="default"
+          divider
+        >
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { href: '/housing-market/central-oregon', label: 'Central Oregon region report' },
+              { href: '/housing-market/reports', label: 'Market report index' },
+              { href: '/housing-market/explore', label: 'Open data explorer' },
+              { href: '/cities', label: 'All Central Oregon cities' },
+              { href: '/communities', label: 'Communities and neighborhoods' },
+              { href: '/homes-for-sale', label: 'Browse homes for sale' },
+              { href: '/guides', label: 'Buying and selling guides' },
+              { href: '/area-guides', label: 'Area guides' },
+            ].map(({ href, label }) => (
+              <a
+                key={href}
+                href={href}
+                className="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition hover:bg-muted hover:border-primary/30"
+              >
+                {label}
+              </a>
+            ))}
+          </div>
+        </ContentSection>
+
         {/* Sell CTA — feeds off region pulse figures (§0) */}
         <KbSell
           data={{
@@ -288,6 +330,22 @@ export default async function HousingMarketHubPage() {
             soldCount30d: regionPulse?.closedLast30Days ?? null,
           }}
           eyebrow="Sell in Central Oregon"
+        />
+
+        {/* Broker inquiry — general "ask a broker" lead capture, restored from the
+            pre-KB hub. Captured through the SAME server action the old page used
+            (submitMarketPageInquiry → submitPageCTA: FUB person + event, Meta CAPI,
+            canonical tagging, GA4 mirror). KbSell only routes to the seller
+            valuation flow, so without this a buyer/general market question had no
+            on-page capture surface. */}
+        <LeadCaptureBlock
+          variant="inquiry"
+          onSubmit={submitMarketPageInquiry}
+          eyebrow="Talk to a broker"
+          title="Questions about the Central Oregon market?"
+          intro="Tell us what you are weighing. A local broker will follow up with specifics for your situation. No pressure."
+          submitLabel="Ask a broker"
+          tone="muted"
         />
 
         <KbFooter towns={cityTowns} />

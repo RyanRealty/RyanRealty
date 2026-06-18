@@ -1,44 +1,51 @@
 /**
  * /motivated-sellers — Pillar page for motivated seller homes in Central Oregon.
  *
+ * KB (kinetic-brutalist) design — Phase 9 page-class migration. Restyled IN
+ * PLACE from the prior HeroBlock/Section/Container layout: every piece of
+ * content is preserved.
+ *   - getMotivatedListings DAL call (limit 48), wrapped in the same resilient
+ *     .catch() empty fallback
+ *   - breadcrumb + webPage JSON-LD (MetadataBlock)
+ *   - hero copy (H1 + lede)
+ *   - the "How it works / What makes a listing show up here" explanation copy
+ *     (both paragraphs) PLUS the four score-signal rows (Price cuts / Total drop
+ *     / Remarks / DOM)
+ *   - the city filter chips (All cities + one per SITE_CITY_SLUGS) linking to
+ *     the per-city pages
+ *   - the listing grid (every motivated listing rendered, top motivation reason
+ *     as a badge, beds/baths/price/address/city) with the honest empty state
+ *   - the closing CTA (talk to a broker / call)
+ *
+ * Only the presentation changed — the page wears the KB shell (KbNav, KbHero,
+ * KbFooter, SmoothScrollProvider, KbSectionTracker) and the Amboqia display /
+ * hard-edge surfaces of the rest of the migrated site. The listing grid uses
+ * the KB poster-grid markup so the motivation badge + photo + numbers all stay.
+ *
  * Data ONLY through @/lib/data. No app/actions/* imports.
  * ISR: revalidates every 600 seconds so the grid stays current.
  *
- * SEO strategy:
- *   - Targets "motivated seller homes Central Oregon", "price reduced homes Bend", etc.
- *   - Real H1 with geographic specificity
- *   - Honest explanation of how motivation is identified (trust + keyword relevance)
- *   - City filter chips link to per-city pages for internal linking depth
- *   - ItemList structured data for the listing grid
- *   - BreadcrumbList JSON-LD
- *
- * Layout: BreadcrumbNav, HeroBlock, intro text, city filters, listing grid,
- *         CTABar — mirrors the city page pattern.
+ * SEO: export ASYNC generateMetadata (canonical + OG via pageMetadata),
+ * BreadcrumbList + webPage JSON-LD. PAGE CONTRACT: KB design + SEO + tracking
+ * (KbSectionTracker pageType="motivated-sellers").
  */
 
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { getMotivatedListings } from '@/lib/data'
+import { getMotivatedListings, type MotivatedListing } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-import { HeroBlock } from '@/components/site/HeroBlock'
-import { CTABar } from '@/components/site/CTABar'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import {
-  Container,
-  Section,
-  Stack,
-  H2,
-  H3,
-  Body,
-  Eyebrow,
-} from '@/components/site/primitives'
-import { cn } from '@/lib/utils'
-import ListingCard from '@/components/site/ListingCard'
-import { motivatedToCardData } from '@/lib/site/listing-card'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { CONTACT } from '@/lib/brand/contact'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbHero } from '@/components/site/kb/KbHero.client'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { kbMoneyFull } from '@/components/site/kb/types'
+import '@/components/site/kb/kb.css'
 
 // ─── ISR ─────────────────────────────────────────────────────────────────
 
@@ -80,6 +87,52 @@ const CITY_DISPLAY: Record<string, string> = {
   'powell-butte': 'Powell Butte',
 }
 
+// ─── Listing card (KB poster grid) ──────────────────────────────────────────
+
+/** One motivated listing as a KB poster tile. Keeps the photo, top motivation
+ *  reason as a hard-edge badge, price, address, city · neighborhood, and the
+ *  beds/baths spec — every field the prior ListingCard carried, restyled. */
+function MotivatedTile({ listing }: { listing: MotivatedListing }) {
+  const key = (listing.listingKey ?? listing.listNumber ?? '').toString()
+  if (!key) return null
+  const href = `/listing/${encodeURIComponent(key)}`
+  const addressLine =
+    [listing.streetNumber, listing.streetName].filter(Boolean).join(' ') || 'Address on request'
+  const cityParts: string[] = []
+  if (listing.city) cityParts.push(`${listing.city}, OR`)
+  if (listing.postalCode) cityParts.push(listing.postalCode)
+  if (listing.subdivisionName) cityParts.push(listing.subdivisionName)
+  const reason = listing.reasons[0]
+
+  return (
+    <a className="lst-card" href={href}>
+      <div className="lst-media">
+        {listing.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className="lst-img" src={listing.photoUrl} alt={addressLine} loading="lazy" />
+        ) : (
+          // No MLS photo — the card's navy background (.lst-card) shows through.
+          <div className="lst-img" aria-hidden="true" />
+        )}
+        {reason ? <span className="lst-badge">{reason}</span> : null}
+      </div>
+      <div className="lst-info">
+        <div>
+          <div className="lst-price mono-num">{kbMoneyFull(listing.listPrice) ?? 'Price on request'}</div>
+          <div className="lst-addr">
+            {addressLine}
+            {cityParts.length > 0 ? <span className="sub">{cityParts.join(' · ')}</span> : null}
+          </div>
+        </div>
+        <div className="lst-specs">
+          {listing.beds != null ? <span>{listing.beds} bd</span> : null}
+          {listing.baths != null ? <span>{listing.baths} ba</span> : null}
+        </div>
+      </div>
+    </a>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────
 
 export default async function MotivatedSellersPage() {
@@ -100,7 +153,7 @@ export default async function MotivatedSellersPage() {
   ]
 
   if (listings.length > 0) {
-    // ItemList for the listing grid
+    // ItemList / webPage for the listing grid
     schemas.push({
       type: 'webPage',
       name: 'Motivated Seller Homes in Central Oregon',
@@ -111,84 +164,114 @@ export default async function MotivatedSellersPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="kb-root">
+      <KbNav />
+      <KbSectionTracker pageType="motivated-sellers" />
       <MetadataBlock schemas={schemas} />
 
-      {/* Breadcrumb */}
-      <PageBreadcrumb trail={[{ label: 'Motivated sellers' }]} includeJsonLd={false} />
-
-      {/* Hero */}
-      <HeroBlock
-        headline="Motivated Sellers in Central Oregon"
-        lede="Active homes with documented price cuts or seller-signaled motivation. Sorted by most motivated, updated hourly from the regional MLS."
-        photo={{
-          src: '/images/hero/hero-old-mill-master-4k.jpg',
-          alt: 'Old Mill District drone view with the American flag, the Deschutes River, and the Cascade mountains.',
-          priority: true,
-        }}
-        minHeight={480}
+      <KbBreadcrumb
+        trail={[
+          { label: 'Home', href: '/' },
+          { label: 'Motivated sellers' },
+        ]}
       />
 
-      {/* How motivation is identified — transparency + keyword relevance */}
-      <Section padding="default" tone="muted" divider>
-        <Container>
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            <Stack gap="tight" className="lg:col-span-2">
-              <Eyebrow>How it works</Eyebrow>
-              <H2>What makes a listing show up here</H2>
-              <Body size="default" tone="muted">
-                Each listing earns a motivation score from real MLS data only. Three signals
-                drive the score: price cuts from the original list price (the more and the
-                bigger, the higher the score), days on market (a long time on market with
-                no takers is a signal), and specific phrases in the listing remarks
-                (the agent or seller saying things like &quot;seller motivated,&quot; &quot;priced to sell,&quot;
-                or &quot;bring all offers&quot;). No guesswork, no fabrication.
-              </Body>
-              <Body size="default" tone="muted">
-                A home with two price cuts totaling 8 percent plus &quot;motivated seller&quot; in the
-                remarks will rank above a home that simply sat 60 days. The score is
-                recalculated every 10 minutes as new price changes come through.
-              </Body>
-            </Stack>
-            <Stack gap="tight" className="border-l border-border pl-8 hidden lg:flex">
-              <Eyebrow>Score signals</Eyebrow>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex gap-2">
-                  <span className="text-foreground font-medium w-20 shrink-0">Price cuts</span>
-                  <span>Number of distinct reductions</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-foreground font-medium w-20 shrink-0">Total drop</span>
-                  <span>From original list to current price</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-foreground font-medium w-20 shrink-0">Remarks</span>
-                  <span>Seller motivation phrases in listing text</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-foreground font-medium w-20 shrink-0">DOM</span>
-                  <span>Days on market (secondary weight)</span>
-                </li>
-              </ul>
-            </Stack>
-          </div>
-        </Container>
-      </Section>
+      <SmoothScrollProvider>
+        {/* Hero — same H1 + lede as the prior HeroBlock, in the KB Amboqia
+            display over the brand poster. */}
+        <KbHero
+          data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
+          eyebrow="Central Oregon · Motivated sellers"
+          titleTop="Motivated"
+          titleBottom="Sellers"
+          lead="Active homes with documented price cuts or seller-signaled motivation. Sorted by most motivated, updated hourly from the regional MLS."
+          videoSrc={null}
+          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+        />
 
-      {/* City filter chips */}
-      <Section padding="default" tone="default" divider>
-        <Container>
-          <Stack gap="tight">
-            <Eyebrow>Filter by city</Eyebrow>
-            <H3>Browse motivated homes by area</H3>
-            <div className="flex flex-wrap gap-2 mt-2">
+        {/* How motivation is identified — transparency + keyword relevance.
+            Both explanation paragraphs preserved, plus the four score-signal
+            rows from the prior sidebar. */}
+        <section className="section" id="how-it-works" aria-label="How it works">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">How it works</span>
+              <h2 className="sec-title display">
+                What makes a
+                <br />
+                listing show up
+              </h2>
+            </div>
+            <div className="grid gap-10 pt-8 lg:grid-cols-3">
+              <div className="lg:col-span-2 flex flex-col gap-5">
+                <p style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.7vw,1.2rem)', lineHeight: 1.55, maxWidth: '60ch' }}>
+                  Each listing earns a motivation score from real MLS data only. Three signals
+                  drive the score: price cuts from the original list price (the more and the
+                  bigger, the higher the score), days on market (a long time on market with
+                  no takers is a signal), and specific phrases in the listing remarks
+                  (the agent or seller saying things like &quot;seller motivated,&quot; &quot;priced to sell,&quot;
+                  or &quot;bring all offers&quot;). No guesswork, no fabrication.
+                </p>
+                <p style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.7vw,1.2rem)', lineHeight: 1.55, maxWidth: '60ch' }}>
+                  A home with two price cuts totaling 8 percent plus &quot;motivated seller&quot; in the
+                  remarks will rank above a home that simply sat 60 days. The score is
+                  recalculated every 10 minutes as new price changes come through.
+                </p>
+              </div>
+              <div
+                className="flex flex-col gap-3 pt-1"
+                style={{ borderTop: 'var(--edge) solid var(--navy)' }}
+              >
+                <span className="mono-lab" style={{ color: 'var(--navy-70)', paddingTop: '14px' }}>
+                  Score signals
+                </span>
+                <dl className="flex flex-col gap-3">
+                  <div className="flex gap-3">
+                    <dt style={{ fontWeight: 700, width: '6.5rem', flexShrink: 0 }}>Price cuts</dt>
+                    <dd style={{ color: 'var(--navy-70)' }}>Number of distinct reductions</dd>
+                  </div>
+                  <div className="flex gap-3">
+                    <dt style={{ fontWeight: 700, width: '6.5rem', flexShrink: 0 }}>Total drop</dt>
+                    <dd style={{ color: 'var(--navy-70)' }}>From original list to current price</dd>
+                  </div>
+                  <div className="flex gap-3">
+                    <dt style={{ fontWeight: 700, width: '6.5rem', flexShrink: 0 }}>Remarks</dt>
+                    <dd style={{ color: 'var(--navy-70)' }}>Seller motivation phrases in listing text</dd>
+                  </div>
+                  <div className="flex gap-3">
+                    <dt style={{ fontWeight: 700, width: '6.5rem', flexShrink: 0 }}>DOM</dt>
+                    <dd style={{ color: 'var(--navy-70)' }}>Days on market (secondary weight)</dd>
+                  </div>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* City filter chips — All cities + one per SITE_CITY_SLUGS, linking to
+            the per-city pages. */}
+        <section className="section" id="filter-by-city" aria-label="Filter by city">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Filter by city</span>
+              <h2 className="sec-title display">
+                Browse by
+                <br />
+                area
+              </h2>
+            </div>
+            <nav className="flex flex-wrap gap-2 pt-7" aria-label="Motivated sellers by city">
               <Link
                 href="/motivated-sellers"
-                className={cn(
-                  'inline-flex items-center rounded-full border border-border px-4 py-1.5 text-sm font-medium',
-                  'bg-primary text-primary-foreground',
-                  'transition-colors'
-                )}
+                aria-current="page"
+                className="inline-flex items-center px-4 py-2 text-sm font-semibold"
+                style={{
+                  background: 'var(--navy)',
+                  color: 'var(--cream)',
+                  border: 'var(--edge) solid var(--navy)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '.08em',
+                }}
               >
                 All cities
               </Link>
@@ -198,56 +281,107 @@ export default async function MotivatedSellersPage() {
                   <Link
                     key={slug}
                     href={`/motivated-sellers/${slug}`}
-                    className={cn(
-                      'inline-flex items-center rounded-full border border-border px-4 py-1.5 text-sm font-medium',
-                      'bg-background text-foreground hover:bg-secondary',
-                      'transition-colors'
-                    )}
+                    className="inline-flex items-center px-4 py-2 text-sm font-semibold"
+                    style={{
+                      background: 'transparent',
+                      color: 'var(--navy)',
+                      border: 'var(--edge) solid var(--navy)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '.08em',
+                    }}
                   >
                     {label}
                   </Link>
                 )
               })}
+            </nav>
+          </div>
+        </section>
+
+        {/* Listing grid — every motivated listing rendered (top motivation
+            reason badge + photo + price + address + city + beds/baths). Honest
+            empty state when the MLS returns nothing. */}
+        <section className="section listings" id="listings" aria-label="Motivated seller homes">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Most motivated</span>
+              <h2 className="sec-title display">
+                {listings.length > 0 ? (
+                  <>
+                    {listings.length} motivated
+                    <br />
+                    seller homes
+                  </>
+                ) : (
+                  <>
+                    Motivated
+                    <br />
+                    seller homes
+                  </>
+                )}
+              </h2>
             </div>
-          </Stack>
-        </Container>
-      </Section>
-
-      {/* Listing grid */}
-      <Section padding="default" tone="muted" divider>
-        <Container>
-          {listings.length > 0 ? (
-            <Stack gap="default">
-              <div className="flex items-baseline justify-between gap-4">
-                <H2>{listings.length} motivated seller homes in Central Oregon</H2>
+            {listings.length > 0 ? (
+              <div className="lst-grid">
+                {listings.map((listing) => (
+                  <MotivatedTile key={listing.listingKey ?? listing.listNumber} listing={listing} />
+                ))}
               </div>
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {listings.map((listing) => {
-                  const card = motivatedToCardData(listing)
-                  return card ? <ListingCard key={card.listingKey} listing={card} /> : null
-                })}
+            ) : (
+              <div className="pt-8" style={{ maxWidth: '54ch' }}>
+                <p style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.7vw,1.2rem)', lineHeight: 1.55 }}>
+                  No motivated seller listings found at the moment. Check back soon as the
+                  MLS updates throughout the day.
+                </p>
+                <div className="sec-cta">
+                  <a href="/homes-for-sale" className="btn alt">
+                    Browse all homes <span className="arr">→</span>
+                  </a>
+                </div>
               </div>
-            </Stack>
-          ) : (
-            <Stack gap="tight" className="py-12 text-center">
-              <Body size="default" tone="muted">
-                No motivated seller listings found at the moment. Check back soon as the
-                MLS updates throughout the day.
-              </Body>
-            </Stack>
-          )}
-        </Container>
-      </Section>
+            )}
+            <div className="lst-foot">
+              <a href="/homes-for-sale" className="btn alt">
+                All homes for sale <span className="arr">→</span>
+              </a>
+            </div>
+          </div>
+        </section>
 
-      {/* CTA */}
-      <CTABar
-        eyebrow="Ready to make an offer"
-        title="Local brokers. Specific numbers. No pressure."
-        body="We know this market. If a motivated seller has priced a home to move, we can tell you whether it is actually a deal. No hype, just the facts."
-        primary={{ href: '/contact', label: 'Talk to a broker' }}
-        secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: `Call ${CONTACT.phoneDirect}` }}
-        tone="navy"
-      />
+        {/* Closing CTA — talk to a broker / call (preserved from CTABar). */}
+        <section className="section" id="contact-cta" aria-label="Talk to a broker">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Ready to make an offer</span>
+              <h2 className="sec-title display">
+                Local brokers.
+                <br />
+                Specific numbers.
+              </h2>
+            </div>
+            <div className="pt-7" style={{ maxWidth: '52ch' }}>
+              <p style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.7vw,1.2rem)', lineHeight: 1.55 }}>
+                We know this market. If a motivated seller has priced a home to move, we can tell
+                you whether it is actually a deal. No hype, just the facts.
+              </p>
+              <div className="flex flex-wrap items-center gap-3 mt-6">
+                <a href="/contact" className="btn alt">
+                  Talk to a broker <span className="arr">→</span>
+                </a>
+                <a
+                  href={`tel:${CONTACT.phoneDirectTel}`}
+                  className="btn alt"
+                  style={{ background: 'transparent', color: 'var(--navy)' }}
+                >
+                  Call {CONTACT.phoneDirect}
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
     </main>
   )
 }

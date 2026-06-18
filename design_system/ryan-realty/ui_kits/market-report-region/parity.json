@@ -65,6 +65,16 @@
       "name": "KbArticles",
       "section": "Recent blog posts from getRecentBlogPosts({ limit: 3 }). Renders null when empty — not a ship-blocker.",
       "blocking": false
+    },
+    {
+      "name": "ContentSection",
+      "section": "Market summary + §0 methodology trace (restored from the pre-KB page). buildRegionNarrative turns the verified regionPulse into prose plus a source/MoS-formula/threshold trace for AI-citability. eyebrow 'What the numbers say', title 'Central Oregon market summary'. Renders null when there is no narrative.",
+      "blocking": false
+    },
+    {
+      "name": "LeadCaptureBlock",
+      "section": "Broker inquiry lead-capture (restored from the pre-KB page). variant='inquiry' writes via the submitMarketPageInquiry server action (FUB person + event, Meta CAPI). Captures the buyer/general 'ask a broker' path that KbSell (seller-address → /sell/valuation) does not. inquiry variant is name/email/message only, so no phone form and no SMS-consent surface. eyebrow 'Talk to a broker', tone 'muted'.",
+      "blocking": false
     }
   ],
   "layoutComponents": [

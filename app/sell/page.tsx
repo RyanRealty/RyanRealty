@@ -1,5 +1,10 @@
 /**
- * Sell page (/sell) — Wave 3 site-v2 rebuild.
+ * Sell page (/sell) — KB (kinetic-brutalist) design, Phase 9 of the KB
+ * convergence program (docs/KB_CONVERGENCE_ROADMAP.md). Restyled in place:
+ * every section, DAL call, FAQ item, internal link, and the #marketing-plan
+ * anchor from the prior Wave 3 build is preserved. KB shell (KbNav + KbFooter)
+ * carries the chrome; the existing seller sections render inside .kb-root with
+ * design-system tokens.
  *
  * Composed from @/components/site/* blocks + @/lib/data DAL. No legacy
  * components/layout/* or components/broker/* or CMS getPageContent.
@@ -12,13 +17,21 @@
  * months-of-supply thresholds. The lead path is the existing
  * /lp/seller-home-value LP, which captures the lead and triggers the FUB
  * seller workflow. This page has no form of its own.
+ *
+ * Section stack: KbNav · MetadataBlock (Service/Breadcrumb/FAQPage JSON-LD) ·
+ *   KbBreadcrumb · KbHero · SellValueProps · SellProcess · SellMarketingPlan ·
+ *   SellCommission · SellMarketContext · LifestyleStrip · SellValuationCTA ·
+ *   ContentSection ("How it works") · CTABar · FAQBlock · KbFooter.
+ *
+ * Parity contract: design_system/ryan-realty/ui_kits/sell/parity.json (KB set).
  */
 
+import type { Metadata } from 'next'
 import { getMarketPulse, getSurfaceImage, getLifestyleImages } from '@/lib/data'
+import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { LifestyleStrip } from '@/components/site/LifestyleStrip'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-import { HeroBlock } from '@/components/site/HeroBlock'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { ContentSection } from '@/components/site/ContentSection'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { CTABar } from '@/components/site/CTABar'
@@ -27,25 +40,37 @@ import { SellProcess } from '@/components/site/sell/SellProcess'
 import { SellMarketingPlan } from '@/components/site/sell/SellMarketingPlan'
 import { SellCommission } from '@/components/site/sell/SellCommission'
 import { SellValuationCTA } from '@/components/site/sell/SellValuationCTA'
-import { CONTACT } from '@/lib/brand/contact'
 import { SellMarketContext } from '@/components/site/sell/SellMarketContext'
 import { Body } from '@/components/site/primitives'
+import { CONTACT } from '@/lib/brand/contact'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbHero } from '@/components/site/kb/KbHero.client'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import '@/components/site/kb/kb.css'
 
 export const revalidate = 300
 
-export const metadata = pageMetadata({
-  title: 'Sell your home · Ryan Realty, Central Oregon',
-  description:
-    'List your Central Oregon home with Ryan Realty. Pricing from live market data, professional marketing, and one broker from valuation to close. Request a free home valuation.',
-  path: '/sell',
-  ogImage: '/brand/hero/hero-old-mill-master-4k.jpg',
-  keywords: [
-    'sell home Bend Oregon',
-    'Central Oregon home valuation',
-    'list home Bend',
-    'Ryan Realty seller',
-  ],
-})
+const ROUTE_PATH = '/sell'
+const OLD_MILL_HERO = '/brand/hero/hero-old-mill-master-4k.jpg'
+
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    title: 'Sell your home · Ryan Realty, Central Oregon',
+    description:
+      'List your Central Oregon home with Ryan Realty. Pricing from live market data, professional marketing, and one broker from valuation to close. Request a free home valuation.',
+    path: ROUTE_PATH,
+    ogImage: '/brand/hero/hero-old-mill-master-4k.jpg',
+    keywords: [
+      'sell home Bend Oregon',
+      'Central Oregon home valuation',
+      'list home Bend',
+      'Ryan Realty seller',
+    ],
+  })
+}
 
 const FAQ_ITEMS = [
   {
@@ -85,102 +110,131 @@ const FAQ_ITEMS = [
   },
 ] as const
 
-const OLD_MILL_HERO = '/brand/hero/hero-old-mill-master-4k.jpg'
-
 export default async function SellPage() {
-  const pulse = await getMarketPulse({ geoType: 'city', geoSlug: 'bend' }).catch(() => null)
-  // Distinct approved hero so /sell does not reuse the homepage Old Mill banner.
-  const heroSrc = await getSurfaceImage('hero', {
-    geoTags: ['central-oregon'],
-    seed: '/sell',
-    fallback: OLD_MILL_HERO,
-  })
-  const lifestyleImages = await getLifestyleImages(8)
+  const [pulse, heroSrc, lifestyleImages] = await Promise.all([
+    withTimeoutFallback(
+      getMarketPulse({ geoType: 'city', geoSlug: 'bend' }),
+      null,
+      3500,
+      'sell:pulse',
+    ),
+    // Distinct approved hero so /sell does not reuse the homepage Old Mill banner.
+    withTimeoutFallback(
+      getSurfaceImage('hero', {
+        geoTags: ['central-oregon'],
+        seed: ROUTE_PATH,
+        fallback: OLD_MILL_HERO,
+      }),
+      OLD_MILL_HERO,
+      3500,
+      'sell:hero',
+    ),
+    withTimeoutFallback(getLifestyleImages(8), [], 3000, 'sell:lifestyle'),
+  ])
 
   return (
-    <main className="min-h-screen bg-background">
-      <PageBreadcrumb trail={[{ label: 'Sell' }]} />
-
-      <HeroBlock
-        headline="Selling your home, done honestly."
-        lede="Specific numbers from the data. No layered hand-offs. The broker who prices your home is the broker who walks you to the finish line."
-        photo={{
-          src: heroSrc ?? OLD_MILL_HERO,
-          alt: 'Central Oregon high desert and Cascade mountains around Bend.',
-          priority: true,
-        }}
-        minHeight={500}
-        chips={[
-          { label: 'Free home valuation', href: '/lp/seller-home-value' },
-          { label: 'Talk to a broker', href: '/contact?inquiry=Selling' },
-          { label: 'See the marketing plan', href: '#marketing-plan' },
+    <main className="kb-root">
+      <KbNav />
+      <KbSectionTracker pageType="sell" />
+      <MetadataBlock
+        schemas={[
+          {
+            type: 'breadcrumb',
+            items: [
+              { name: 'Home', url: '/' },
+              { name: 'Sell', url: '/sell' },
+            ],
+          },
+          { type: 'faqPage', items: FAQ_ITEMS },
         ]}
       />
-
-      <SellValueProps />
-
-      <SellProcess />
-
-      <SellMarketingPlan />
-
-      <SellCommission />
-
-      <SellMarketContext pulse={pulse} />
-
-      <LifestyleStrip
-        images={lifestyleImages}
-        eyebrow="Why buyers come here"
-        title="The lifestyle your home is part of."
-        lede="Buyers move to Central Oregon for the life outside the front door. Trails, rivers, fairways, and ski lifts within reach. That demand is what your listing taps into."
+      <KbBreadcrumb
+        overlay
+        trail={[{ label: 'Home', href: '/' }, { label: 'Sell' }]}
       />
 
-      <SellValuationCTA
-        valuationHref="/lp/seller-home-value"
-        phoneHref={`tel:${CONTACT.phoneDirectTel}`}
-      />
+      <SmoothScrollProvider>
+        <KbHero
+          data={{
+            activeCount: pulse?.activeCount ?? null,
+            medianListPrice: pulse?.medianListPrice ?? null,
+            medianDaysToPending: pulse?.medianDaysToPending ?? null,
+          }}
+          eyebrow="Sell with Ryan Realty"
+          titleTop="Selling your home,"
+          titleBottom="done honestly."
+          lead="across Central Oregon. The broker who prices your home is the broker who walks you to the finish line. Specific numbers from the data, no layered hand-offs."
+          videoSrc={null}
+          posterSrc={heroSrc ?? OLD_MILL_HERO}
+        />
 
-      <ContentSection
-        eyebrow="How it works"
-        title="From first call to closing table."
-        tone="default"
-        divider
-        width="wide"
-      >
-        <div className="space-y-4">
-          <Body size="default" tone="muted">
-            <strong className="text-foreground font-semibold">Request a valuation.</strong>{' '}
-            Share your address and your timeline. We prepare the written CMA and email it within 24 hours.
-          </Body>
-          <Body size="default" tone="muted">
-            <strong className="text-foreground font-semibold">Review the numbers together.</strong>{' '}
-            We walk you through the comparable sales, the active competition, and an honest price range. You decide the list price from real data.
-          </Body>
-          <Body size="default" tone="muted">
-            <strong className="text-foreground font-semibold">List and market.</strong>{' '}
-            Professional photography within 48 hours of signing. MLS syndication, open-house cadence, and weekly written updates on showings and traffic.
-          </Body>
-          <Body size="default" tone="muted">
-            <strong className="text-foreground font-semibold">Close.</strong>{' '}
-            We review every offer, negotiate, manage the transaction through inspection and appraisal, and stay with you to the closing table. The same broker, start to finish.
-          </Body>
-        </div>
-      </ContentSection>
+        <SellValueProps />
 
-      <CTABar
-        eyebrow="What is your home worth?"
-        title="Get a free home valuation."
-        body="A broker prepares a comparative market analysis with recent comparable sales and an honest price range. No cost, no obligation."
-        primary={{ href: '/lp/seller-home-value', label: 'Get a home valuation' }}
-        secondary={{ href: '/contact?inquiry=Selling', label: 'Talk to a broker' }}
-        tone="navy"
-      />
+        <SellProcess />
 
-      <FAQBlock
-        eyebrow="Common questions"
-        title="Selling with Ryan Realty"
-        items={FAQ_ITEMS}
-        tone="muted"
-      />
+        <SellMarketingPlan />
+
+        <SellCommission />
+
+        <SellMarketContext pulse={pulse} />
+
+        <LifestyleStrip
+          images={lifestyleImages}
+          eyebrow="Why buyers come here"
+          title="The lifestyle your home is part of."
+          lede="Buyers move to Central Oregon for the life outside the front door. Trails, rivers, fairways, and ski lifts within reach. That demand is what your listing taps into."
+        />
+
+        <SellValuationCTA
+          valuationHref="/lp/seller-home-value"
+          phoneHref={`tel:${CONTACT.phoneDirectTel}`}
+        />
+
+        <ContentSection
+          eyebrow="How it works"
+          title="From first call to closing table."
+          tone="default"
+          divider
+          width="wide"
+        >
+          <div className="space-y-4">
+            <Body size="default" tone="muted">
+              <strong className="text-foreground font-semibold">Request a valuation.</strong>{' '}
+              Share your address and your timeline. We prepare the written CMA and email it within 24 hours.
+            </Body>
+            <Body size="default" tone="muted">
+              <strong className="text-foreground font-semibold">Review the numbers together.</strong>{' '}
+              We walk you through the comparable sales, the active competition, and an honest price range. You decide the list price from real data.
+            </Body>
+            <Body size="default" tone="muted">
+              <strong className="text-foreground font-semibold">List and market.</strong>{' '}
+              Professional photography within 48 hours of signing. MLS syndication, open-house cadence, and weekly written updates on showings and traffic.
+            </Body>
+            <Body size="default" tone="muted">
+              <strong className="text-foreground font-semibold">Close.</strong>{' '}
+              We review every offer, negotiate, manage the transaction through inspection and appraisal, and stay with you to the closing table. The same broker, start to finish.
+            </Body>
+          </div>
+        </ContentSection>
+
+        <CTABar
+          eyebrow="What is your home worth?"
+          title="Get a free home valuation."
+          body="A broker prepares a comparative market analysis with recent comparable sales and an honest price range. No cost, no obligation."
+          primary={{ href: '/lp/seller-home-value', label: 'Get a home valuation' }}
+          secondary={{ href: '/contact?inquiry=Selling', label: 'Talk to a broker' }}
+          tone="navy"
+        />
+
+        <FAQBlock
+          eyebrow="Common questions"
+          title="Selling with Ryan Realty"
+          items={FAQ_ITEMS}
+          tone="muted"
+        />
+
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
     </main>
   )
 }

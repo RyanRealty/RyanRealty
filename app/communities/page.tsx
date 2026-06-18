@@ -1,3 +1,33 @@
+/**
+ * Communities index — KB (kinetic-brutalist) design, Phase 9 page-class migration.
+ *
+ * RESTYLED IN PLACE. Every piece of the prior Geo-hub index is preserved —
+ * nothing dropped, only the presentation moved onto the KB visual language
+ * (navy #102742 + cream #faf8f4 surfaces, Amboqia display community names,
+ * hard 1px/3px --edge borders, .mono-num stats, the .section / .wrap rhythm).
+ * Content kept:
+ *
+ *   1. Compact navy hero — the live aggregate is the identity (total active
+ *      across the registry communities + community count). Honest em-dash empties.
+ *   2. Resort + master-planned community editorial rows (the 14 registry
+ *      communities, curated order) — full-bleed alternating photo/content,
+ *      curated communityImage() with labeled cityHero() fallback, one honest
+ *      editorial sentence (getResortCommunityContent), the City · Oregon
+ *      sublabel, a live stat band (active / median / pending) with
+ *      geo_snapshot_mv + index fallback, and the two links per community
+ *      (community guide / homes for sale in city).
+ *   3. Every community, A to Z — the interactive CommunityIndexBrowser
+ *      (search + collapsed alphabetical index). Kept fully working: every
+ *      /communities/<slug> URL stays server-rendered in the DOM.
+ *   4. Navy search CTA band (Search all listings / What is your home worth).
+ *
+ * Section telemetry now via KbSectionTracker (every .kb-root section[id]).
+ * All figures from the DAL — no invented numbers, em-dash when unavailable.
+ *
+ * KbNav + KbFooter carry the chrome (default SiteHeader/SiteFooter hidden for
+ * /communities via HideChrome — managed by the orchestrator, not this file).
+ */
+
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
@@ -6,10 +36,14 @@ import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { communityImage, cityHero } from '@/lib/geo-images'
 import { subdivisionEntityKey } from '@/lib/slug'
 import CommunityIndexBrowser from '@/components/community/CommunityIndexBrowser'
-import { Container, DisplayHeading, H2, Eyebrow } from '@/components/site/primitives'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-import { EngagedSection } from '@/components/site/experience'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
+import '@/components/site/kb/kb.css'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -113,10 +147,22 @@ export default async function CommunitiesPage() {
   const communityCount = allCommunities.length
 
   return (
-    <main className="min-h-screen bg-background">
-      <PageBreadcrumb trail={[{ label: 'Communities' }]} />
+    <main className="kb-root">
+      <KbNav />
+      <KbSectionTracker pageType="index" />
 
       {/* Structured data: CollectionPage + ItemList of the 14 registry communities */}
+      <MetadataBlock
+        schemas={[
+          {
+            type: 'breadcrumb',
+            items: [
+              { name: 'Home', url: '/' },
+              { name: 'Communities', url: '/communities' },
+            ],
+          },
+        ]}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -140,243 +186,223 @@ export default async function CommunitiesPage() {
         }}
       />
 
-      {/* Compact navy hero — the live aggregate is the identity (Hub archetype) */}
-      <section className="relative overflow-hidden bg-primary" aria-label="Central Oregon communities hero">
-        <Container className="relative py-12 md:py-16">
-          <div className="mb-5 flex items-center gap-2">
-            <span
-              className="inline-block h-[7px] w-[7px] rounded-full bg-green-400"
-              style={{
-                boxShadow: '0 0 0 2px rgba(74,222,128,0.30)',
-                animation: 'rr-pulse-dot 2s ease-in-out infinite',
-              }}
-              aria-hidden
-            />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-white/70">
-              Live market
-            </span>
-          </div>
+      <KbBreadcrumb
+        trail={[
+          { label: 'Home', href: '/' },
+          { label: 'Communities' },
+        ]}
+      />
 
-          <DisplayHeading
-            as="h1"
-            className="text-white"
-            style={{ fontSize: 'clamp(2rem, 4.5vw, 3.25rem)', letterSpacing: '-0.015em', lineHeight: 1.12 }}
-          >
-            Communities in Central Oregon
-          </DisplayHeading>
-          <p className="mt-3 max-w-md text-sm leading-relaxed text-white/65 md:text-[15px]">
-            Resort and master-planned communities, neighborhoods, and subdivisions
-            across Bend, Redmond, Sisters, Sunriver, and the high desert towns
-            between them. Live inventory from the regional MLS.
-          </p>
-
-          <div className="mt-8 flex flex-wrap items-end gap-x-10 gap-y-5">
-            <div className="flex flex-col gap-0.5">
-              <span
-                className="font-display tabular-nums leading-none text-white"
-                style={{ fontSize: 'clamp(2.75rem, 7vw, 4.5rem)', letterSpacing: '-0.02em' }}
-              >
-                {totalActive > 0 ? totalActive.toLocaleString() : '—'}
+      <SmoothScrollProvider>
+        {/* Compact navy hero — the live aggregate is the identity (Hub archetype) */}
+        <section className="section region" id="communities-pulse" aria-label="Central Oregon communities market pulse">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index mkt-live">
+                <span className="dot" aria-hidden />
+                Live market
               </span>
-              <span className="mt-1 text-[11px] font-medium uppercase tracking-[0.09em] text-white/55">
-                Homes for sale across these communities
-              </span>
+              <h1 className="sec-title display">Communities in<br />Central Oregon</h1>
             </div>
-            <div className="flex flex-col gap-0.5">
-              <span
-                className="font-display tabular-nums leading-none text-white"
-                style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', letterSpacing: '-0.015em' }}
-              >
-                {communityCount.toLocaleString()}
-              </span>
-              <span className="mt-1 text-[11px] font-medium uppercase tracking-[0.09em] text-white/55">
-                Communities
-              </span>
+
+            <p className="neigh-sub" style={{ marginTop: '20px' }}>
+              Resort and master-planned communities, neighborhoods, and subdivisions
+              across Bend, Redmond, Sisters, Sunriver, and the high desert towns
+              between them. Live inventory from the regional MLS.
+            </p>
+
+            <div className="region-grid" style={{ marginTop: '26px' }}>
+              <div className="stat-cell">
+                <span className="stat-num mono-num">
+                  {totalActive > 0 ? totalActive.toLocaleString() : '—'}
+                </span>
+                <span className="stat-label">Homes for sale across these communities</span>
+              </div>
+              <div className="stat-cell">
+                <span className="stat-num mono-num">{communityCount.toLocaleString()}</span>
+                <span className="stat-label">Communities</span>
+              </div>
+            </div>
+            <div className="region-foot">
+              <p className="note">
+                Single-family active inventory across every Central Oregon community we track. Figures from the MLS.
+              </p>
+              <a href="/search" className="btn">
+                Search all listings <span className="arr">→</span>
+              </a>
             </div>
           </div>
-        </Container>
+        </section>
 
-        <style>{`
-          @keyframes rr-pulse-dot {
-            0%, 100% { box-shadow: 0 0 0 2px rgba(74,222,128,0.30); }
-            50%       { box-shadow: 0 0 0 5px rgba(74,222,128,0.14); }
-          }
-        `}</style>
-      </section>
+        {/* Resort + master-planned communities — full-width editorial ledger rows */}
+        <section className="section towns" id="resort-communities">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">The fourteen</span>
+              <h2 className="sec-title display">Resort &amp;<br />master-planned</h2>
+            </div>
 
-      {/* Resort + master-planned communities — full-width editorial ledger rows */}
-      <EngagedSection id="resort-communities" pageType="geo-hub" position={1} className="bg-background">
-        <Container>
-          <div className="pt-10 pb-2 md:pt-14">
-            <Eyebrow className="mb-1">The fourteen</Eyebrow>
-            <H2 className="text-2xl text-foreground">Resort and master-planned communities</H2>
-          </div>
-
-          <div>
-            {resorts.map((r, i) => (
-              <article
-                key={r.slug}
-                className="border-b border-border py-8 first:mt-6 first:border-t md:py-10"
-              >
-                <div className="grid gap-5 md:grid-cols-12 md:items-center md:gap-10">
-                  {/* Photo — alternates sides on desktop for editorial rhythm */}
-                  <a
-                    href={`/communities/${r.slug}`}
-                    className={`relative block aspect-[16/10] overflow-hidden rounded-xl md:col-span-5 md:aspect-[4/3] ${
-                      i % 2 === 1 ? 'md:order-2' : ''
-                    }`}
-                    aria-label={`Homes for sale in ${r.name}, ${r.city} Oregon`}
-                  >
-                    <Image
-                      src={r.photoSrc}
-                      alt={r.photoAlt}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 42vw"
-                      className="object-cover transition-transform duration-500 hover:scale-[1.03]"
-                      priority={i < 2}
-                    />
-                    {r.photoIsCommunity ? null : (
-                      <span
-                        className="absolute bottom-2 right-2 rounded-md px-2 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-white/80"
-                        style={{ background: 'rgba(16,39,66,0.55)' }}
-                      >
-                        Area view · {r.city}
-                      </span>
-                    )}
-                  </a>
-
-                  {/* Editorial content */}
-                  <div className={`md:col-span-7 ${i % 2 === 1 ? 'md:order-1' : ''}`}>
-                    <a href={`/communities/${r.slug}`} className="group inline-block">
-                      <DisplayHeading
-                        as="h3"
-                        className="text-foreground transition-colors group-hover:text-primary"
-                        style={{ fontSize: 'clamp(1.75rem, 3.4vw, 2.5rem)', letterSpacing: '-0.015em', lineHeight: 1.1 }}
-                      >
-                        {r.name}
-                      </DisplayHeading>
+            <div>
+              {resorts.map((r, i) => (
+                <article
+                  key={r.slug}
+                  className="py-8 md:py-10 first:pt-8"
+                  style={{ borderBottom: 'var(--edge) solid var(--navy)' }}
+                >
+                  <div className="grid gap-5 md:grid-cols-12 md:items-center md:gap-10">
+                    {/* Photo — alternates sides on desktop for editorial rhythm */}
+                    <a
+                      href={`/communities/${r.slug}`}
+                      className={`relative block aspect-[16/10] overflow-hidden md:col-span-5 md:aspect-[4/3] ${
+                        i % 2 === 1 ? 'md:order-2' : ''
+                      }`}
+                      style={{ border: 'var(--edge) solid var(--navy)' }}
+                      aria-label={`Homes for sale in ${r.name}, ${r.city} Oregon`}
+                    >
+                      <Image
+                        src={r.photoSrc}
+                        alt={r.photoAlt}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 42vw"
+                        className="object-cover transition-transform duration-500 hover:scale-[1.03]"
+                        priority={i < 2}
+                      />
+                      {r.photoIsCommunity ? null : (
+                        <span className="hero-caption">Area view · {r.city}</span>
+                      )}
                     </a>
-                    <p className="mt-1 text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
-                      {r.city} · Oregon
-                    </p>
 
-                    {r.sentence ? (
-                      <p className="mt-2.5 max-w-prose text-[15px] leading-relaxed text-muted-foreground">
-                        {r.sentence}
+                    {/* Editorial content */}
+                    <div className={`md:col-span-7 ${i % 2 === 1 ? 'md:order-1' : ''}`}>
+                      <a href={`/communities/${r.slug}`} className="group inline-block">
+                        <h3
+                          className="display"
+                          style={{ fontSize: 'clamp(2rem, 4.4vw, 3.4rem)', lineHeight: 0.92 }}
+                        >
+                          {r.name}
+                        </h3>
+                      </a>
+                      <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '10px' }}>
+                        {r.city} · Oregon
                       </p>
-                    ) : null}
 
-                    {/* Live stat band — tabular numerals, honest em-dash empties */}
-                    <div className="mt-5 flex flex-wrap items-baseline gap-x-8 gap-y-3">
-                      <div>
-                        <p className="font-display text-xl leading-none tabular-nums text-foreground md:text-2xl">
-                          {r.activeCount != null && r.activeCount > 0
-                            ? r.activeCount.toLocaleString()
-                            : '—'}
+                      {r.sentence ? (
+                        <p
+                          className="mt-3 max-w-prose"
+                          style={{ color: 'var(--navy-70)', fontSize: 'clamp(.95rem,1.5vw,1.1rem)', lineHeight: 1.5 }}
+                        >
+                          {r.sentence}
                         </p>
-                        <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                          Active
-                        </p>
-                      </div>
-                      <div>
-                        <p className="font-display text-xl leading-none tabular-nums text-foreground md:text-2xl">
-                          {fmtPrice(r.medianPrice) ?? '—'}
-                        </p>
-                        <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                          Median list
-                        </p>
-                      </div>
-                      {r.pendingCount != null && r.pendingCount > 0 ? (
+                      ) : null}
+
+                      {/* Live stat band — tabular numerals, honest em-dash empties */}
+                      <div className="mt-6 flex flex-wrap items-baseline gap-x-9 gap-y-4">
                         <div>
-                          <p className="font-display text-xl leading-none tabular-nums text-foreground md:text-2xl">
-                            {r.pendingCount.toLocaleString()}
+                          <p className="display mono-num" style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}>
+                            {r.activeCount != null && r.activeCount > 0
+                              ? r.activeCount.toLocaleString()
+                              : '—'}
                           </p>
-                          <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                            Pending
+                          <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
+                            Active
                           </p>
                         </div>
-                      ) : null}
-                    </div>
+                        <div>
+                          <p className="display mono-num" style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}>
+                            {fmtPrice(r.medianPrice) ?? '—'}
+                          </p>
+                          <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
+                            Median list
+                          </p>
+                        </div>
+                        {r.pendingCount != null && r.pendingCount > 0 ? (
+                          <div>
+                            <p className="display mono-num" style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}>
+                              {r.pendingCount.toLocaleString()}
+                            </p>
+                            <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
+                              Pending
+                            </p>
+                          </div>
+                        ) : null}
+                      </div>
 
-                    {/* Links into the community */}
-                    <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium">
-                      <a
-                        href={`/communities/${r.slug}`}
-                        className="text-primary underline-offset-2 hover:underline"
-                      >
-                        {r.name} guide
-                      </a>
-                      <a
-                        href={`/homes-for-sale/${r.citySlug}`}
-                        className="text-primary underline-offset-2 hover:underline"
-                      >
-                        Homes for sale in {r.city}
-                      </a>
+                      {/* Links into the community */}
+                      <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">
+                        <a
+                          href={`/communities/${r.slug}`}
+                          className="underline-offset-4 hover:underline"
+                          style={{ color: 'var(--navy)' }}
+                        >
+                          {r.name} guide
+                        </a>
+                        <a
+                          href={`/homes-for-sale/${r.citySlug}`}
+                          className="underline-offset-4 hover:underline"
+                          style={{ color: 'var(--navy)' }}
+                        >
+                          Homes for sale in {r.city}
+                        </a>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              ))}
+            </div>
           </div>
-        </Container>
-      </EngagedSection>
+        </section>
 
-      {/* Every community — search + collapsed alphabetical index */}
-      <EngagedSection
-        id="all-communities"
-        pageType="geo-hub"
-        position={2}
-        className="border-t border-border bg-secondary/30 py-10 md:py-14"
-      >
-        <Container>
-          <div className="mb-4">
-            <Eyebrow className="mb-1">The full index</Eyebrow>
-            <H2 className="text-2xl text-foreground">Every community, A to Z</H2>
-            <p className="mt-2 max-w-prose text-sm text-muted-foreground">
+        {/* Every community — search + collapsed alphabetical index */}
+        <section
+          className="section towns"
+          id="all-communities"
+          style={{ background: 'rgba(16,39,66,0.04)' }}
+        >
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">The full index</span>
+              <h2 className="sec-title display">Every community,<br />A to Z</h2>
+            </div>
+            <p
+              className="mt-4 max-w-prose"
+              style={{ color: 'var(--navy-70)', fontSize: 'clamp(.95rem,1.5vw,1.05rem)', lineHeight: 1.5 }}
+            >
               {communityCount.toLocaleString()} neighborhoods and subdivisions across
               Central Oregon. Search by name or city, or browse the index. Each links
               to live listings and market data.
             </p>
-          </div>
-          <CommunityIndexBrowser items={indexItems} />
-        </Container>
-      </EngagedSection>
-
-      {/* Search CTA: navy band */}
-      <EngagedSection id="communities-cta" pageType="geo-hub" position={3} className="bg-primary py-12 md:py-16">
-        <Container>
-          <div className="max-w-xl">
-            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.10em] text-white/50">
-              Central Oregon
-            </p>
-            <DisplayHeading
-              as="h2"
-              className="mb-4 text-white"
-              style={{ fontSize: 'clamp(1.5rem, 2.5vw, 2.25rem)', letterSpacing: '-0.01em', lineHeight: 1.2 }}
-            >
-              Find your place in Central Oregon
-            </DisplayHeading>
-            <p className="mb-8 max-w-md text-sm leading-relaxed text-white/68">
-              Search active listings across every community with live filters for
-              price, beds, and location. Or start with what your current home is worth.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <a
-                href="/search"
-                className="inline-flex items-center rounded-xl bg-background px-6 py-3 text-sm font-semibold text-primary transition-colors hover:bg-white"
-              >
-                Search all listings
-              </a>
-              <a
-                href="/sell/valuation"
-                className="inline-flex items-center rounded-xl border border-white/28 px-6 py-3 text-sm font-medium text-white/88 transition-colors hover:bg-white/10 hover:text-white"
-              >
-                What is your home worth
-              </a>
+            <div className="pt-2">
+              <CommunityIndexBrowser items={indexItems} />
             </div>
           </div>
-        </Container>
-      </EngagedSection>
+        </section>
+
+        {/* Search CTA: navy band */}
+        <section className="section region" id="communities-cta" aria-label="Search Central Oregon communities">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Central Oregon</span>
+              <h2 className="sec-title display">Find your place<br />in Central Oregon</h2>
+            </div>
+            <div className="max-w-xl pt-6 pb-12">
+              <p className="neigh-sub" style={{ margin: 0 }}>
+                Search active listings across every community with live filters for
+                price, beds, and location. Or start with what your current home is worth.
+              </p>
+              <div className="sec-cta" style={{ gap: '12px', flexWrap: 'wrap', display: 'flex' }}>
+                <a href="/search" className="btn">
+                  Search all listings <span className="arr">→</span>
+                </a>
+                <a href="/sell/valuation" className="btn ghost">
+                  What is your home worth
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
     </main>
   )
 }

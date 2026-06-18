@@ -1,11 +1,35 @@
+/**
+ * /reports/explore (canonical /housing-market/explore) — interactive market
+ * data explorer.
+ *
+ * KB (kinetic-brutalist) design — Phase 9 page-class migration. Restyled IN
+ * PLACE. Every piece of content is preserved:
+ *   - export const metadata (canonical + OG + Twitter, /housing-market/explore)
+ *   - the page-view tracking trio (getSession + getFubPersonIdFromCookie +
+ *     trackPageViewIfPossible) — unchanged
+ *   - all 11 searchParam-derived initial values + the YTD-preset detection
+ *   - the Suspense-streamed <ExploreClient> with EVERY prop intact (the
+ *     interactive filters, recharts, share, voice/plain-language search all keep
+ *     their logic — this is a wrapper restyle, not a rebuild)
+ *   - the breadcrumb (Market reports › Explore) and the hero copy
+ *
+ * Only the presentation changed: KB shell (KbNav, KbBreadcrumb, KbFooter,
+ * SmoothScrollProvider, KbSectionTracker pageType='market-reports'), Amboqia
+ * display hero, hard-edge cream surface.
+ */
+
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import ExploreClient from './ExploreClient'
-import { H1 } from '@/components/site/primitives'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import '@/components/site/kb/kb.css'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const defaultOgImage = `${siteUrl}/api/og?type=default`
@@ -66,36 +90,75 @@ export default async function ExplorePage({ searchParams }: Props) {
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
 
   return (
-    <main className="min-h-screen bg-background">
-      <PageBreadcrumb trail={[{ label: 'Market reports', href: '/housing-market/reports' },
-            { label: 'Explore' }]} />
-      <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
-        <div className="mx-auto max-w-6xl text-center">
-          <H1 className="text-3xl text-primary-foreground sm:text-4xl">
-            Explore market data
-          </H1>
-          <p className="mt-3 text-lg text-muted">
-            Search by city, community, or address. Choose any date range, property type, and price range. View key metrics, price bands, and monthly trends. Share your view via link, email, or social.
-          </p>
-        </div>
-      </section>
-      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
-        <Suspense fallback={<p className="text-muted-foreground">Loading explorer…</p>}>
-          <ExploreClient
-            initialCity={city}
-            initialSubdivision={subdivision}
-            initialStart={start}
-            initialEnd={end}
-            initialPresetId={initialPresetId}
-            initialIncludeCondoTown={includeCondoTown}
-            initialIncludeManufactured={includeManufactured}
-            initialIncludeAcreage={includeAcreage}
-            initialIncludeCommercial={includeCommercial}
-            initialMinPrice={initialMinPrice}
-            initialMaxPrice={initialMaxPrice}
-          />
-        </Suspense>
-      </section>
+    <main className="kb-root">
+      <KbNav />
+      <KbSectionTracker pageType="reports" />
+      <KbBreadcrumb
+        trail={[
+          { label: 'Home', href: '/' },
+          { label: 'Market reports', href: '/housing-market/reports' },
+          { label: 'Explore' },
+        ]}
+      />
+      <SmoothScrollProvider>
+        {/* Hero — same H1 + intro copy as the prior navy hero, in the KB Amboqia
+            display. Two lines per the KB hero rhythm. */}
+        <section className="section" id="explore-hero" aria-label="Explore market data">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Central Oregon · Live data</span>
+            </div>
+            <div className="pt-7" style={{ maxWidth: '24ch' }}>
+              <h1 className="display" style={{ fontSize: 'clamp(2.4rem,8vw,6rem)', lineHeight: 0.9 }}>
+                Explore<br />market data
+              </h1>
+            </div>
+            <p
+              className="mt-5"
+              style={{
+                color: 'var(--navy-70)',
+                fontSize: 'clamp(1rem,1.8vw,1.25rem)',
+                lineHeight: 1.5,
+                maxWidth: '62ch',
+              }}
+            >
+              Search by city, community, or address. Choose any date range, property type, and price range.
+              View key metrics, price bands, and monthly trends. Share your view via link, email, or social.
+            </p>
+          </div>
+        </section>
+
+        {/* Interactive explorer — Suspense-streamed. ExploreClient keeps its full
+            logic (filters, recharts, share, plain-language + voice search) and
+            EVERY prop. Only the surrounding chrome changed. */}
+        <section className="section" id="explorer" aria-label="Market data explorer">
+          <div className="wrap pb-16">
+            <Suspense
+              fallback={
+                <p className="mono-lab" role="status" aria-live="polite" style={{ color: 'var(--navy-70)' }}>
+                  Loading explorer…
+                </p>
+              }
+            >
+              <ExploreClient
+                initialCity={city}
+                initialSubdivision={subdivision}
+                initialStart={start}
+                initialEnd={end}
+                initialPresetId={initialPresetId}
+                initialIncludeCondoTown={includeCondoTown}
+                initialIncludeManufactured={includeManufactured}
+                initialIncludeAcreage={includeAcreage}
+                initialIncludeCommercial={includeCommercial}
+                initialMinPrice={initialMinPrice}
+                initialMaxPrice={initialMaxPrice}
+              />
+            </Suspense>
+          </div>
+        </section>
+
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
     </main>
   )
 }

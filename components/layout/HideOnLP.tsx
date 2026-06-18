@@ -44,47 +44,69 @@ export default function HideOnLP({ children }: { children: React.ReactNode }) {
  * keep running on the homepage — it is the highest-traffic page — so those stay
  * on plain HideOnLP, which does NOT hide "/".
  */
+// KB design-system routes that render their OWN KbNav + KbFooter. The default
+// SiteHeader/SiteFooter must be suppressed for these or the page double-renders
+// chrome (two <header>/<footer> — Matt report 2026-06-18). Derived from the exact
+// set of app/**/page.tsx that contain `kb-root` (Phase 9 site-wide KB migration).
+// NOT-yet-KB siblings are deliberately ABSENT so they keep the default chrome:
+//   /search(+/[...slug]), /sell/[intent], /buy/[intent], /housing-market/explore,
+//   /housing-market/reports*, /listing/by-address|by-key, /reports/[slug]/[geoName],
+//   /team/[slug]/edit, and the internal/legal/auth surfaces.
+const KB_ROUTES: RegExp[] = [
+  /^\/about$/,
+  /^\/activity$/,
+  /^\/area-guides$/,
+  /^\/blog(\/[^/]+)?$/,
+  /^\/buy$/,
+  /^\/cities(\/[^/]+(\/[^/]+)?)?$/, // /cities, /cities/<slug>, /cities/<slug>/<neighborhood>
+  /^\/communities(\/[^/]+)?$/, // /communities, /communities/<slug>
+  /^\/compare$/,
+  /^\/contact$/,
+  /^\/faq$/,
+  /^\/guides(\/[^/]+)?$/,
+  /^\/join$/,
+  /^\/listing\/[^/]+$/, // /listing/<key>; NOT /listing/by-address|by-key/* (2+ segments)
+  /^\/motivated-sellers(\/[^/]+)?$/,
+  /^\/open-houses(\/[^/]+)?$/,
+  /^\/our-homes$/,
+  /^\/parks(\/[^/]+)?$/,
+  /^\/price-drops(\/[^/]+)?$/,
+  /^\/pulse$/,
+  /^\/reports$/,
+  /^\/reports\/[^/]+$/, // /reports/<slug> + /reports/explore; NOT /reports/<slug>/<geoName> (2 segments)
+  /^\/reports\/sales\/[^/]+\/[^/]+$/,
+  /^\/resources$/,
+  /^\/reviews$/,
+  /^\/schools(\/[^/]+)?$/,
+  /^\/sell$/,
+  /^\/sell\/valuation$/,
+  /^\/subdivisions\/[^/]+$/,
+  /^\/team(\/[^/]+)?$/, // /team, /team/<slug>; NOT /team/<slug>/edit (2 segments)
+  /^\/tools\/[^/]+$/,
+  /^\/videos$/,
+  /^\/zip\/[^/]+$/,
+]
+
 export function HideChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  if (!pathname) return <>{children}</>
+  // Non-public surfaces that carry their own chrome (or none).
   if (pathname === "/") return null
-  if (pathname?.startsWith("/lp/")) return null
-  if (pathname === "/admin" || pathname?.startsWith("/admin/")) return null
-  if (pathname?.startsWith("/sign/")) return null
-  if (pathname?.startsWith("/concept/")) return null
-  // KB migration (Phase 9): the city DETAIL page (/cities/<slug>, NOT the
-  // /cities index or /cities/<slug>/<neighborhood>) carries its own KbNav.
-  if (pathname && /^\/cities\/[^/]+$/.test(pathname)) return null
-  // KB migration (Phase 9 wave 2): the community DETAIL page
-  // (/communities/<slug>, NOT the /communities index or any deeper segment)
-  // carries its own KbNav + KbFooter.
-  if (pathname && /^\/communities\/[^/]+$/.test(pathname)) return null
-  // KB migration (Phase 9 waves 3+): each page-class below now renders its own
-  // KbNav + KbFooter, so the default SiteHeader/SiteFooter must NOT double up
-  // (two <header>/<footer> per page otherwise — Matt report 2026-06-18).
-  // Subdivision detail (/subdivisions/<slug>):
-  if (pathname && /^\/subdivisions\/[^/]+$/.test(pathname)) return null
-  // Bend neighborhood detail (/cities/<slug>/<neighborhood> — exactly 2 segments):
-  if (pathname && /^\/cities\/[^/]+\/[^/]+$/.test(pathname)) return null
-  // ZIP page (/zip/<zip>):
-  if (pathname && /^\/zip\/[^/]+$/.test(pathname)) return null
-  // Open-houses + price-drops (index + /<city>):
-  if (pathname && /^\/open-houses(\/[^/]+)?$/.test(pathname)) return null
-  if (pathname && /^\/price-drops(\/[^/]+)?$/.test(pathname)) return null
-  // Housing-market hub + region report + city reports (all KB). NOT the
-  // not-yet-migrated /housing-market/explore + /reports (1-segment, still site-v2),
-  // nor the legacy 2-segment /housing-market/<city>/<subdivision> report.
+  if (pathname.startsWith("/lp/")) return null
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return null
+  if (pathname.startsWith("/sign/")) return null
+  if (pathname.startsWith("/concept/")) return null
+  // Housing-market hub + region report + city reports (all KB), but NOT the
+  // not-yet-migrated /housing-market/explore + /reports, nor the legacy 2-segment
+  // /housing-market/<city>/<subdivision> report.
   if (pathname === "/housing-market") return null
   if (
-    pathname &&
     /^\/housing-market\/[^/]+$/.test(pathname) &&
     !/^\/housing-market\/(explore|reports)$/.test(pathname)
   )
     return null
-  // About (KB trust page):
-  if (pathname === "/about") return null
-  // Team index + per-broker profile (/team, /team/<slug>), but NOT the
-  // /team/<slug>/edit form (2 segments) which keeps the default chrome.
-  if (pathname && /^\/team(\/[^/]+)?$/.test(pathname)) return null
+  // Every other KB design-system route.
+  if (KB_ROUTES.some((re) => re.test(pathname))) return null
   return <>{children}</>
 }
 

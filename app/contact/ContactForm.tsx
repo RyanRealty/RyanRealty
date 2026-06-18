@@ -54,9 +54,12 @@ export default function ContactForm({ defaultInquiryType, listingKey }: { defaul
 
   if (state.success) {
     return (
-      <div className="rounded-lg border border-success/30 bg-success/10 p-6 text-success">
-        <p className="font-medium">Thanks for reaching out.</p>
-        <p className="mt-1 text-sm">We&apos;ll get back to you soon.</p>
+      <div
+        className="p-6"
+        style={{ border: '3px solid var(--navy)', color: 'var(--navy)' }}
+      >
+        <p className="font-display text-lg">Thanks for reaching out.</p>
+        <p className="mt-1 text-sm" style={{ color: 'var(--navy-70)' }}>We&apos;ll get back to you soon.</p>
       </div>
     )
   }
@@ -64,12 +67,15 @@ export default function ContactForm({ defaultInquiryType, listingKey }: { defaul
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {listingKey ? (
-        <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+        <p
+          className="px-3 py-2 text-sm"
+          style={{ border: '1px solid var(--navy-12)', color: 'var(--navy-70)' }}
+        >
           Your message will be linked to the home you were viewing.
         </p>
       ) : null}
       <div>
-        <Label htmlFor="contact-name" className="block text-sm font-medium text-muted-foreground">
+        <Label htmlFor="contact-name" className="block text-sm font-medium text-[color:var(--navy)]">
           Name
         </Label>
         <Input
@@ -81,7 +87,7 @@ export default function ContactForm({ defaultInquiryType, listingKey }: { defaul
         />
       </div>
       <div>
-        <Label htmlFor="contact-email" className="block text-sm font-medium text-muted-foreground">
+        <Label htmlFor="contact-email" className="block text-sm font-medium text-[color:var(--navy)]">
           Email <span className="text-destructive">*</span>
         </Label>
         <Input
@@ -94,7 +100,7 @@ export default function ContactForm({ defaultInquiryType, listingKey }: { defaul
         />
       </div>
       <div>
-        <Label htmlFor="contact-phone" className="block text-sm font-medium text-muted-foreground">
+        <Label htmlFor="contact-phone" className="block text-sm font-medium text-[color:var(--navy)]">
           Phone
         </Label>
         <Input
@@ -106,7 +112,7 @@ export default function ContactForm({ defaultInquiryType, listingKey }: { defaul
         />
       </div>
       <div>
-        <Label htmlFor="contact-inquiry" className="block text-sm font-medium text-muted-foreground">
+        <Label htmlFor="contact-inquiry" className="block text-sm font-medium text-[color:var(--navy)]">
           How can we help?
         </Label>
         <Select defaultValue={defaultInquiryType ?? 'General Inquiry'} name="inquiryType">
@@ -123,7 +129,7 @@ export default function ContactForm({ defaultInquiryType, listingKey }: { defaul
         </Select>
       </div>
       <div>
-        <Label htmlFor="contact-message" className="block text-sm font-medium text-muted-foreground">
+        <Label htmlFor="contact-message" className="block text-sm font-medium text-[color:var(--navy)]">
           Message
         </Label>
         <Textarea

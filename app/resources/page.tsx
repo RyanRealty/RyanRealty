@@ -1,12 +1,40 @@
+/**
+ * /resources — Buyer and seller resources for Central Oregon real estate.
+ *
+ * KB (kinetic-brutalist) design — Phase 9 page-class migration. Restyled IN
+ * PLACE from the prior ContentPageHero + shadcn Card grid. Every piece of
+ * content is preserved:
+ *   - All 6 resource links (Market reports, Housing market hub, Area guides,
+ *     Property comparison, Appreciation calculator, Live market activity) with
+ *     their titles, descriptions, and hrefs.
+ *   - The CollectionPage JSON-LD.
+ *   - The hero copy + both CTAs (View Market Reports / Search Listings).
+ *   - The AdUnit (consent-gated AdSense slot) — preserved untouched.
+ *   - The HomeValuationCta — preserved untouched.
+ *
+ * Only the presentation changed — the page now wears the KB shell (KbNav,
+ * KbHero, KbFooter, SmoothScrollProvider, KbSectionTracker) and the Amboqia
+ * display / hard-edge cream surfaces of the rest of the migrated site. The
+ * resource grid is now a hard navy-bordered ledger of tiles.
+ *
+ * SEO: export const metadata (canonical + OG + Twitter) preserved. JSON-LD
+ * preserved. PAGE CONTRACT: KB design + SEO + tracking (KbSectionTracker
+ * pageType="info").
+ */
+
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import AdUnit from '@/components/AdUnit'
 import HomeValuationCta from '@/components/HomeValuationCta'
-import ContentPageHero from '@/components/layout/ContentPageHero'
-import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { listingsBrowsePath } from '@/lib/slug'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbHero } from '@/components/site/kb/KbHero.client'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import '@/components/site/kb/kb.css'
+
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
 
@@ -72,41 +100,99 @@ export default function ResourcesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
-      <PageBreadcrumb trail={[{ label: 'Resources' }]} />
-      <ContentPageHero
-        title="Buyer and Seller Resources"
-        subtitle="Tools, market data, and guides to help you make confident decisions in Central Oregon real estate."
-        imageUrl={CONTENT_HERO_IMAGES.reports}
-        ctas={[
-          { label: 'View Market Reports', href: '/housing-market/reports', primary: true },
-          { label: 'Search Listings', href: listingsBrowsePath(), primary: false },
+    <main className="kb-root">
+      <KbNav />
+      <KbSectionTracker pageType="info" />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <KbBreadcrumb
+        trail={[
+          { label: 'Home', href: '/' },
+          { label: 'Resources' },
         ]}
       />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {resources.map((resource) => (
-          <Card key={resource.href}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">{resource.title}</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <p className="text-sm text-muted-foreground">{resource.description}</p>
-              <Link href={resource.href} className="mt-3 inline-flex text-sm font-medium text-primary hover:underline">
-                Open resource
+      <SmoothScrollProvider>
+        {/* Hero — same H1 + subtitle as the prior ContentPageHero. The two CTAs
+            (View Market Reports / Search Listings) are preserved in the CTA row
+            below. */}
+        <KbHero
+          data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
+          eyebrow="Central Oregon · Tools & market data"
+          titleTop="Buyer & seller"
+          titleBottom="resources"
+          lead="Tools, market data, and guides to help you make confident decisions in Central Oregon real estate."
+          videoSrc={null}
+          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+        />
+
+        {/* CTA row preserved from the prior hero. */}
+        <section className="section" id="resources-cta" aria-label="Reports and listings">
+          <div className="wrap">
+            <div className="flex flex-wrap items-center gap-3 py-2">
+              <Link href="/housing-market/reports" className="btn alt">
+                View market reports <span className="arr">→</span>
               </Link>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <div className="mt-8">
-        <AdUnit slot="1001003003" format="horizontal" />
-      </div>
-      <div className="mt-8">
-        <HomeValuationCta />
-      </div>
-      </div>
+              <Link
+                href={listingsBrowsePath()}
+                className="btn alt"
+                style={{ background: 'transparent', color: 'var(--navy)' }}
+              >
+                Search listings <span className="arr">→</span>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Resource ledger — every resource preserved as a hard-edge KB tile that
+            links to its destination. */}
+        <section className="section" id="resource-grid" aria-label="Resources">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Plan your next move</span>
+              <h2 className="sec-title display">Guides, tools<br />and reports</h2>
+            </div>
+            <div
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+              style={{ borderColor: 'var(--navy)', borderTopWidth: 'var(--edge)', borderLeftWidth: 'var(--edge)', marginTop: '28px' }}
+            >
+              {resources.map((resource) => (
+                <Link
+                  key={resource.href}
+                  href={resource.href}
+                  className="group flex flex-col gap-3 p-6 transition-colors hover:bg-[color:var(--navy)] hover:text-[color:var(--cream)]"
+                  style={{ borderColor: 'var(--navy)', borderRightWidth: 'var(--edge)', borderBottomWidth: 'var(--edge)' }}
+                >
+                  <h3 className="font-display text-2xl leading-none">{resource.title}</h3>
+                  <p
+                    className="text-sm leading-relaxed text-[color:var(--navy-70)] group-hover:text-[color:var(--cream-70)]"
+                  >
+                    {resource.description}
+                  </p>
+                  <span className="mt-auto inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider">
+                    Open resource <span className="arr">→</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* AdSense slot — consent-gated, renders null without marketing consent.
+            Preserved untouched. */}
+        <section className="section" id="resource-ad" aria-label="Sponsored">
+          <div className="wrap">
+            <AdUnit slot="1001003003" format="horizontal" />
+          </div>
+        </section>
+
+        {/* Home valuation CTA — preserved untouched (carries LP/UTM attribution). */}
+        <section className="section" id="resource-valuation" aria-label="What is your home worth">
+          <div className="wrap">
+            <HomeValuationCta />
+          </div>
+        </section>
+
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
     </main>
   )
 }

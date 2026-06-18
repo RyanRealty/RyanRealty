@@ -4,13 +4,27 @@ import { getListingTiles, getCityListings, type ListingTile } from '@/lib/data'
 import { tileToCardData } from '@/lib/site/listing-card'
 import VideoListingCard from '@/components/site/VideoListingCard'
 import type { ListingCardData } from '@/components/site/ListingCard'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-import { Container, Section, Stack, Grid, Eyebrow, H1, Body } from '@/components/site/primitives'
-import { Button } from '@/components/ui/button'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbHero } from '@/components/site/kb/KbHero.client'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { cn } from '@/lib/utils'
+import '@/components/site/kb/kb.css'
 
 /**
  * /videos — "Watch homes on video" destination.
+ *
+ * KB (kinetic-brutalist) design — Phase 9 page-class migration (media class).
+ * Restyled IN PLACE. Every piece of content is preserved:
+ *   - generateMetadata (city-aware title/description/canonical/OG)
+ *   - ItemList JSON-LD over the video-tour homes (AEO)
+ *   - the city filter chips (All Central Oregon + six cities), restyled as KB
+ *     pills, still real <Link>s with aria-current on the active city
+ *   - the inline-playing video grid (VideoListingCard — logic untouched)
+ *   - the honest empty state with the fallback link to /homes-for-sale
+ *   - export const revalidate = 300
  *
  * The region-wide home of every active / pending listing that carries a video
  * tour. Unlike the old lightbox client, this is a SERVER component that reads
@@ -91,15 +105,16 @@ export default async function VideosPage({
     .map((t) => tileToCardData(t, { kind: 'video', label: 'Video tour' }))
     .filter((c): c is ListingCardData => c !== null)
 
-  const heading = city ? `Watch ${city} homes on video` : 'Watch homes on video'
   const lede = city
     ? `Current ${city} listings with a full video tour. Press play and walk the home from anywhere.`
     : 'Current Central Oregon listings with a full video tour. Press play and walk the home from anywhere, then book a showing when one feels right.'
+  const heading = city ? `Watch ${city} homes on video` : 'Watch homes on video'
   const canonicalUrl = city ? `${siteUrl}/videos?city=${encodeURIComponent(city)}` : `${siteUrl}/videos`
 
   return (
-    <main className="min-h-screen bg-background">
-      <PageBreadcrumb trail={[...(city ? [{ label: 'Video tours', href: '/videos' }, { label: city }] : [{ label: 'Video tours' }])]} />
+    <main className="kb-root">
+      <KbNav />
+      <KbSectionTracker pageType="media" />
 
       {/* AEO: the video-tour homes as a structured ItemList so an answer engine
           can surface "homes for sale with video tours in <area>". Mirrors the
@@ -129,72 +144,120 @@ export default async function VideosPage({
         }}
       />
 
-      <Section padding="default">
-        <Container>
-          <Stack gap="default">
-            <Stack gap="tight">
-              <Eyebrow>Video tours</Eyebrow>
-              <H1>{heading}</H1>
-              <Body size="large">{lede}</Body>
-            </Stack>
+      <KbBreadcrumb
+        trail={
+          city
+            ? [
+                { label: 'Home', href: '/' },
+                { label: 'Video tours', href: '/videos' },
+                { label: city },
+              ]
+            : [
+                { label: 'Home', href: '/' },
+                { label: 'Video tours' },
+              ]
+        }
+      />
 
-            {/* City filter chips — design-system Button (asChild Link). The active
-                city is the solid primary variant; the rest are outline. "All" clears
-                the filter back to the region-wide grid. */}
-            <nav aria-label="Filter video tours by city" className="flex flex-wrap gap-2">
-              <Button
-                asChild
-                size="sm"
-                variant={city ? 'outline' : 'default'}
-                className="rounded-full"
+      <SmoothScrollProvider>
+        {/* Hero — same H1 + lede as the prior ContentPageHero, on the KB display
+            type. activeCount surfaces the live count of video-tour homes. */}
+        <KbHero
+          data={{ activeCount: cards.length, medianListPrice: null, medianDaysToPending: null }}
+          eyebrow={city ? `${city} · Oregon · Video tours` : 'Central Oregon · Video tours'}
+          titleTop={city ? `Watch ${city}` : 'Watch homes'}
+          titleBottom="on video"
+          lead={lede}
+          videoSrc={null}
+          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+        />
+
+        {/* City filter chips — KB pills. The active city is the solid navy pill;
+            the rest are hard-edged outline pills. "All" clears the filter back
+            to the region-wide grid. Real <Link>s with aria-current. */}
+        <section className="section" id="city-filter" aria-label="Filter video tours by city">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Filter by city</span>
+              <h2 className="sec-title display">
+                Where to<br />press play
+              </h2>
+            </div>
+            <nav aria-label="Filter video tours by city" className="flex flex-wrap items-center gap-2 pt-6">
+              <Link
+                href="/videos"
+                aria-current={city ? undefined : 'page'}
+                className={cn(
+                  'inline-flex items-center rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
+                  city
+                    ? 'border border-border bg-background text-foreground hover:bg-secondary'
+                    : 'bg-primary text-primary-foreground',
+                )}
               >
-                <Link href="/videos" aria-current={city ? undefined : 'page'}>
-                  All Central Oregon
-                </Link>
-              </Button>
+                All Central Oregon
+              </Link>
               {CITY_CHIPS.map((c) => {
                 const active = c === city
                 return (
-                  <Button
+                  <Link
                     key={c}
-                    asChild
-                    size="sm"
-                    variant={active ? 'default' : 'outline'}
-                    className={cn('rounded-full', active && 'pointer-events-none')}
+                    href={`/videos?city=${encodeURIComponent(c)}`}
+                    aria-current={active ? 'page' : undefined}
+                    className={cn(
+                      'inline-flex items-center rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
+                      active
+                        ? 'bg-primary text-primary-foreground pointer-events-none'
+                        : 'border border-border bg-background text-foreground hover:bg-secondary',
+                    )}
                   >
-                    <Link href={`/videos?city=${encodeURIComponent(c)}`} aria-current={active ? 'page' : undefined}>
-                      {c}
-                    </Link>
-                  </Button>
+                    {c}
+                  </Link>
                 )
               })}
             </nav>
-          </Stack>
+          </div>
+        </section>
 
-          {cards.length > 0 ? (
-            <Grid cols={4} gap="default" className="mt-10">
-              {cards.map((card) => (
-                <VideoListingCard key={card.listingKey} listing={card} />
-              ))}
-            </Grid>
-          ) : (
-            <div className="mt-12 rounded-xl border border-border bg-card p-10 text-center">
-              <Body tone="primary" className="font-medium">
-                {city
-                  ? `No ${city} listings have a video tour right now.`
-                  : 'No listings have a video tour right now.'}
-              </Body>
-              <Body size="small" className="mt-2">
-                New tours are added as listings come on the market.{' '}
-                <Link href="/homes-for-sale" className="text-primary underline-offset-4 hover:underline">
-                  Browse every home for sale
-                </Link>
-                .
-              </Body>
+        {/* The inline-playing video grid (cards.length > 0) or the honest empty
+            state. VideoListingCard logic is untouched — each tile plays the tour
+            in place or degrades to a link to listing detail. */}
+        <section className="section" id="video-grid" aria-label="Homes with video tours">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">
+                {cards.length} {cards.length === 1 ? 'home' : 'homes'} · video tour
+              </span>
+              <h2 className="sec-title display">
+                {city ? `${city} homes` : 'Tour the homes'}
+              </h2>
             </div>
-          )}
-        </Container>
-      </Section>
+
+            {cards.length > 0 ? (
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-8">
+                {cards.map((card) => (
+                  <VideoListingCard key={card.listingKey} listing={card} />
+                ))}
+              </div>
+            ) : (
+              <div className="mt-8 border border-border bg-background p-10 text-center">
+                <p className="font-display text-xl text-foreground">
+                  {city
+                    ? `No ${city} listings have a video tour right now.`
+                    : 'No listings have a video tour right now.'}
+                </p>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  New tours are added as listings come on the market.
+                </p>
+                <Link href="/homes-for-sale" className="btn alt mt-5">
+                  Browse every home for sale <span className="arr">→</span>
+                </Link>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
     </main>
   )
 }

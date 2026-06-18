@@ -328,6 +328,45 @@ export default async function PriceDropsCityPage({ params }: Props) {
           posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
         />
 
+        {/* Live aggregate glance — the three figures the page surfaces (count,
+            total asking-price cuts, median reduction). Each traces to the same
+            getPriceDrops() pull that feeds the JSON-LD Dataset above. */}
+        {drops.length > 0 && (
+          <section className="section region" id="glance" aria-label={`Price-drop summary for ${cityName}`}>
+            <div className="wrap">
+              <div className="sec-head">
+                <span className="sec-index">{cityName} · last 7 days · active SFR</span>
+                <h2 className="sec-title display">The numbers</h2>
+              </div>
+              <div className="region-grid">
+                <div className="stat-cell">
+                  <span className="stat-num" aria-label={`${total} price reductions in ${cityName}`}>
+                    {total.toLocaleString('en-US')}
+                  </span>
+                  <span className="stat-label">Price reductions this week</span>
+                </div>
+                {totalReduced > 0 && (
+                  <div className="stat-cell">
+                    <span className="stat-num" aria-label={`${fmtM(totalReduced)} in asking-price cuts`}>
+                      {fmtM(totalReduced)}
+                    </span>
+                    <span className="stat-label">In asking-price cuts</span>
+                  </div>
+                )}
+                {medianDropPct !== null && (
+                  <div className="stat-cell">
+                    <span className="stat-num" aria-label={`${medianDropPct.toFixed(1)} percent median reduction`}>
+                      {medianDropPct.toFixed(1)}
+                      <span className="unit">%</span>
+                    </span>
+                    <span className="stat-label">Median reduction</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* KB Featured: poster grid of biggest-dollar-drop listings */}
         {featuredItems.length > 0 && (
           <KbFeatured

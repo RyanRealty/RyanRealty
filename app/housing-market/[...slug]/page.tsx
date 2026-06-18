@@ -27,8 +27,9 @@
  *   8. KbExploreTowns   — sibling cities (same citySnapshots fan-out)
  *   9. KbArticles       — related reports/guides from blog_posts
  *  10. FAQBlock         — city FAQ (includeJsonLd=true → FAQPage JSON-LD)
- *  11. KbSell           — seller conversion
- *  12. KbFooter         — full sitemap close
+ *  11. LeadCaptureBlock — broker inquiry (submitMarketPageInquiry → FUB)
+ *  12. KbSell           — seller conversion
+ *  13. KbFooter         — full sitemap close
  *
  * Legacy section order (subdivision scope — PRESERVED):
  *   1. MetadataBlock — breadcrumb + webPage + Dataset + faqPage JSON-LD (G34)
@@ -340,7 +341,9 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   //   citySnapshots — market_pulse_live, geo_type='city', geo_slug IN
   //                   COMPARISON_CITY_LABELS. Source: getMarketPulseCitySnapshots.
   //   detail       — market_stats_cache, full projection, most recent monthly row.
-  //                  Source: getCityMarketDetail. City-level only.
+  //                  Source: getCityMarketDetail. City-level only. Feeds the
+  //                  KbMarketHud sale-to-list KPI (city scope) and the legacy
+  //                  MarketDetailStats section (subdivision scope).
   //   blogPosts    — blog_posts, published, newest first. Source: getRecentBlogPosts.
   //                  City scope only (not fetched for subdivisions).
   // -------------------------------------------------------------------------
@@ -449,12 +452,24 @@ export default async function HousingMarketGeoPage({ params }: Props) {
         ? new Date(iso).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })
         : ''
 
+    // Sale-to-list ratio from getCityMarketDetail (market_stats_cache,
+    // avg_sale_to_list_ratio — a decimal fraction, e.g. 0.9736). KbMarketHud's
+    // "Sale to list" KPI renders `${val.toFixed(1)}%`, so scale ×100. This
+    // surfaces the closed-sales detail the legacy MarketDetailStats section
+    // showed (and that the city KB render had been dropping while still paying
+    // for the getCityMarketDetail fetch). §0: the exact cached value, ×100 for
+    // the percent display — no rounding that changes the figure.
+    const saleToListPct =
+      detail?.avgSaleToListRatio != null && Number.isFinite(detail.avgSaleToListRatio)
+        ? detail.avgSaleToListRatio * 100
+        : null
+
     const marketData: KbMarketData = {
       active: pulse?.activeCount ?? null,
       closed30: pulse?.closedLast30Days ?? null,
       new30: null,
       medianList: pulse?.medianListPrice ?? null,
-      saleToList: null,
+      saleToList: saleToListPct,
       daysToPending: pulse?.medianDaysToPending ?? null,
       monthsSupply: pulse?.monthsOfSupply ?? null,
       trend: completePriceMonths
@@ -602,6 +617,27 @@ export default async function HousingMarketGeoPage({ params }: Props) {
               />
             </section>
           ) : null}
+
+          {/* Broker inquiry — general market-question lead capture (buyer OR
+              seller), submitted through submitMarketPageInquiry -> FUB person +
+              event + Meta CAPI. The legacy wave-2 city render carried this form;
+              the city KB render had replaced it with KbSell alone, which is a
+              seller-only address handoff that navigates to /sell/valuation and
+              never writes a FUB lead from this page. Restored so a buyer or a
+              "just have a question" visitor still has an on-page capture path.
+              LeadCaptureBlock is design-system styled (tone='muted') and is the
+              same component + server action the subdivision render uses. */}
+          <section id="ask-a-broker" aria-label={`Questions about the ${cityName} market`}>
+            <LeadCaptureBlock
+              variant="inquiry"
+              onSubmit={submitMarketPageInquiry}
+              eyebrow="Talk to a broker"
+              title={`Questions about the ${cityName} market?`}
+              intro="Tell us what you are weighing. A local broker will follow up with specifics for your situation. No pressure."
+              submitLabel="Ask a broker"
+              tone="muted"
+            />
+          </section>
 
           {/* Sell CTA — feeds off city pulse figures */}
           <KbSell

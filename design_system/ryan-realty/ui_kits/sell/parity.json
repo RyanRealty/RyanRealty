@@ -2,21 +2,66 @@
   "route": "app/sell/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/sell/index.html",
   "competitiveTarget": "Beat generic 'list with us' pages: honest value props (real comps, local broker, no hand-offs), a live current-market line, and a single clear valuation CTA, with zero invented results or 'verifiable results' claims (D99).",
-  "note": "Wave 3 site-v2 rebuild. The lead path is the existing /lp/seller-home-value LP (captures the lead + triggers the FUB seller workflow); this page does not embed a form. Value props describe real capabilities only. Current-market line is live getMarketPulse(Bend), classified by canonical MoS thresholds. Dropped the legacy CMS body + 'Seller Results You Can Verify' slop + the broken /sell/for-sale-by-owner|expired-listings|inherited-home links (those pages do not exist).",
+  "note": "KB (kinetic-brutalist) conversion 2026-06-18 (Phase 9 convergence). Restyled in place: every section, DAL call, FAQ item, internal link, and the #marketing-plan anchor from the prior Wave 3 build are preserved. KbNav + KbFooter carry the chrome; HideChrome for the default SiteHeader/SiteFooter is a shared-component edit deferred to the orchestrator. KbHero replaces the legacy HeroBlock; MetadataBlock (BreadcrumbList + FAQPage JSON-LD) + KbBreadcrumb replace the legacy PageBreadcrumb; KbSectionTracker adds the page-contract tracking. The existing seller sections (SellValueProps, SellProcess, SellMarketingPlan, SellCommission, SellMarketContext, SellValuationCTA, LifestyleStrip, ContentSection 'How it works', CTABar, FAQBlock) render unchanged inside .kb-root with design-system tokens. The lead path is still the /lp/seller-home-value LP; this page embeds no form. Current-market line is live getMarketPulse(Bend), classified by canonical MoS thresholds.",
   "requiredComponents": [
     {
-      "name": "PageBreadcrumb",
-      "section": "Home > Sell",
+      "name": "KbNav",
+      "section": "top nav — transparent over hero, flips to navy on scroll; full site directory overlay",
       "blocking": true
     },
     {
-      "name": "HeroBlock",
-      "section": "hero — 'Sell your Central Oregon home.' + valuation-focused lede + canonical photo",
+      "name": "KbSectionTracker",
+      "section": "tracking — section_view + scroll_depth events (page contract G52)",
+      "blocking": true
+    },
+    {
+      "name": "MetadataBlock",
+      "section": "JSON-LD — BreadcrumbList + FAQPage structured data",
+      "blocking": true
+    },
+    {
+      "name": "KbBreadcrumb",
+      "section": "breadcrumb strip — Home / Sell",
+      "blocking": true
+    },
+    {
+      "name": "SmoothScrollProvider",
+      "section": "Lenis + GSAP ScrollTrigger scroll layer",
+      "blocking": true
+    },
+    {
+      "name": "KbHero",
+      "section": "hero — 'Selling your home, done honestly.' H1 + valuation-focused lead + central-oregon photo; live pulse sub-row (active count, median, days to pending)",
+      "blocking": true
+    },
+    {
+      "name": "SellValueProps",
+      "section": "value props — three differentiation cards (priced on real data, one broker start to finish, marketed by someone who knows the market)",
+      "blocking": true
+    },
+    {
+      "name": "SellProcess",
+      "section": "process — three concrete steps from valuation request to closing table",
       "blocking": true
     },
     {
       "name": "SellMarketingPlan",
-      "section": "the marketing plan — 'What happens to your home, and when': three-phase deliverable schedule (process stated as fact + clocks) plus the two MOAT centerpieces (see-every-comp pricing, weekly written report). The /seller-plans legacy redirect deep-links here (#marketing-plan). Capabilities shown via the listing page, never claimed as adjective copy.",
+      "section": "the marketing plan — 'What happens to your home, and when': three-phase deliverable schedule (process stated as fact + clocks) plus the two MOAT centerpieces (see-every-comp pricing, weekly written report). The /seller-plans legacy redirect deep-links here (#marketing-plan).",
+      "blocking": true
+    },
+    {
+      "name": "SellCommission",
+      "section": "the fee — 3% to list, no add-ons; buyer-agent compensation explained; no contract to get the CMA",
+      "blocking": true
+    },
+    {
+      "name": "SellMarketContext",
+      "section": "live Bend market context line — getMarketPulse, MoS classification, link to /housing-market; renders a factual non-numeric trust line when data is unavailable",
+      "blocking": true
+    },
+    {
+      "name": "SellValuationCTA",
+      "section": "mid-page valuation CTA band — 'Tell us your address' -> /lp/seller-home-value, trust bullets, phone CTA",
       "blocking": true
     },
     {
@@ -31,20 +76,24 @@
     },
     {
       "name": "FAQBlock",
-      "section": "seller FAQ — verified facts only (cost, pricing method, no hand-offs, service area)",
+      "section": "seller FAQ — verified facts only (cost, pricing method, no hand-offs, service area) + FAQPage JSON-LD",
+      "blocking": true
+    },
+    {
+      "name": "LifestyleStrip",
+      "section": "why buyers come here — approved active-lifestyle photo grid from getLifestyleImages; renders null when the pool is empty",
+      "blocking": true
+    },
+    {
+      "name": "KbFooter",
+      "section": "footer — dual-audience close, contact, sitemap, legal",
       "blocking": true
     }
   ],
-  "layoutComponents": [
+  "deferredComponents": [
     {
-      "name": "SiteHeader",
-      "section": "renders from app/layout.tsx",
-      "note": "gate checks the route file"
-    },
-    {
-      "name": "SiteFooter",
-      "section": "renders from app/layout.tsx",
-      "note": "gate checks the route file"
+      "name": "HideChrome",
+      "reason": "Shared-component edit needed to suppress the default SiteHeader/SiteFooter on the KB chrome pages. Deferred to orchestrator — KbNav + KbFooter already render the correct KB chrome."
     }
   ]
 }

@@ -1,34 +1,47 @@
 /**
- * Compare page (/compare) — Wave 3 site-v2 rebuild.
+ * Compare page (/compare) — KB (kinetic-brutalist) design, Phase 9 of the KB
+ * convergence program (docs/KB_CONVERGENCE_ROADMAP.md).
  *
- * Utility page (noindex). Removed dead createClient import — the page
- * never constructed a Supabase client directly. Data is fetched via the
- * DAL (getListingTiles + getListingDetailPhotos from @/lib/data).
+ * RESTYLED IN PLACE — every piece of the prior Wave 3 page is preserved:
+ *   - The DAL fetch (getListingTiles by listNumbers AND listingKeys, dedup,
+ *     getListingDetailPhotos hero resolution, listings mapping) is byte-for-byte
+ *     the same. No data path was dropped.
+ *   - CompareClient (the interactive comparison surface — photo row, the
+ *     side-by-side feature Table, the best-in-class highlighting, the Google
+ *     Maps locations embed, Copy Link + Download PDF actions, the empty/loading
+ *     state) is rendered unchanged inside a KB cream section. Its logic is intact.
+ *   - The page H1 "Compare properties" (Amboqia display) and the conditional
+ *     intro copy (shown when no ids are present) are preserved.
+ *   - MetadataBlock BreadcrumbList JSON-LD is preserved.
+ *   - The Home > Compare breadcrumb is preserved (KbBreadcrumb is the KB chrome
+ *     equivalent of the old PageBreadcrumb — same Home / Compare trail).
+ *   - metadata (robots: noindex, follow — this route is NOT in the sitemap),
+ *     revalidate = 60, the daysOnMarket helper + its retention note, and the
+ *     AICompare wire-or-delete investigation note are all preserved.
  *
- * H1 upgraded from a plain h1 to DisplayHeading (Amboqia).
- * Layout uses Container + Section primitives from @/components/site/primitives.
- * Loading skeleton uses the Skeleton primitive from @/components/ui/skeleton
- * (see CompareClient internals) — no hand-rolled loading placeholders here
- * because the compare grid is rendered server-side; the Skeleton usage lives
- * inside CompareClient's client-side transition states.
+ * KB shell: <main className="kb-root"> + KbNav (top) + KbFooter (bottom) +
+ *   SmoothScrollProvider + KbSectionTracker pageType="compare" + kb.css.
+ *   HideChrome (suppress default SiteHeader/SiteFooter) is a shared-component
+ *   edit deferred to the orchestrator.
  *
- * AICompare: built but unimported. See bottom of file for investigation note
- * and wire-or-delete recommendation for Matt.
+ * No KbHero: /compare is a noindex utility tool, not a marketing surface, so a
+ * cinematic stock hero would be off-brand and would add content the page never
+ * had. Instead a compact navy KB header band carries the breadcrumb + H1 +
+ * intro, giving the fixed transparent topbar a dark surface to read against.
  *
- * robots: noindex, follow — kept. This route is NOT in the sitemap.
+ * Parity contract: design_system/ryan-realty/ui_kits/compare/parity.json (KB set).
  */
 
 import type { Metadata } from 'next'
 import { getListingTiles, getListingDetailPhotos } from '@/lib/data'
 import CompareClient, { type CompareListingData } from '@/components/compare/CompareClient'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-import {
-  Container,
-  Section,
-  DisplayHeading,
-  Body,
-} from '@/components/site/primitives'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import '@/components/site/kb/kb.css'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -137,7 +150,10 @@ export default async function ComparePage({
   }
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="kb-root">
+      <KbNav />
+      <KbSectionTracker pageType="compare" />
+
       <MetadataBlock
         schema={{
           type: 'breadcrumb',
@@ -148,26 +164,62 @@ export default async function ComparePage({
         }}
       />
 
-      <PageBreadcrumb trail={[{ label: 'Compare properties' }]} />
-
-      <Section padding="tight" tone="default">
-        <Container>
-          <div className="mb-6">
-            <DisplayHeading
-              as="h1"
-              className="text-4xl sm:text-5xl tracking-[-0.02em]"
+      <SmoothScrollProvider>
+        {/* Navy KB header band — carries the breadcrumb (overlay, cream-on-navy),
+            the page eyebrow, the Amboqia display H1, and the conditional intro.
+            Gives the fixed transparent topbar a dark surface to read against. */}
+        <section
+          className="section"
+          id="compare-header"
+          aria-label="Compare properties"
+          style={{ background: 'var(--navy)', color: 'var(--cream)' }}
+        >
+          <KbBreadcrumb
+            overlay
+            trail={[{ label: 'Home', href: '/' }, { label: 'Compare properties' }]}
+          />
+          <div className="wrap" style={{ paddingTop: 'clamp(96px, 14vh, 150px)', paddingBottom: 'clamp(36px, 6vw, 64px)' }}>
+            <span className="eyebrow" style={{ color: 'var(--cream-70)', display: 'block', marginBottom: '16px' }}>
+              Side by side · up to 4 homes
+            </span>
+            <h1
+              className="display"
+              style={{ fontSize: 'clamp(2.4rem, 8vw, 5.2rem)', maxWidth: '14ch' }}
             >
               Compare properties
-            </DisplayHeading>
+            </h1>
             {ids.length === 0 && (
-              <Body size="default" tone="muted" className="mt-2 max-w-prose">
+              <p
+                style={{
+                  marginTop: '20px',
+                  maxWidth: '52ch',
+                  color: 'var(--cream-70)',
+                  fontSize: 'clamp(1rem, 1.6vw, 1.15rem)',
+                  lineHeight: 1.5,
+                }}
+              >
                 Add homes from any search or listing page to compare them side by side. Up to 4 properties at a time.
-              </Body>
+              </p>
             )}
           </div>
-          <CompareClient listings={listings} />
-        </Container>
-      </Section>
+        </section>
+
+        {/* Comparison surface — CompareClient owns the interactive table, photo
+            row, locations map, Copy Link + Download PDF actions, and the
+            empty/loading state. Rendered unchanged inside a KB cream section. */}
+        <section
+          className="section"
+          id="compare-table"
+          aria-label="Property comparison"
+          style={{ background: 'var(--cream)', color: 'var(--navy)' }}
+        >
+          <div className="wrap" style={{ paddingTop: 'clamp(32px, 5vw, 56px)', paddingBottom: 'clamp(40px, 6vw, 72px)' }}>
+            <CompareClient listings={listings} />
+          </div>
+        </section>
+
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
     </main>
   )
 }

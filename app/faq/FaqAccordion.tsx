@@ -19,11 +19,16 @@ export function FaqAccordion({ items }: { items: FaqEntry[] }) {
   return (
     <Accordion type="single" collapsible className="w-full">
       {items.map((item) => (
-        <AccordionItem key={item.id} value={item.id} id={item.id} className="scroll-mt-24">
-          <AccordionTrigger className="text-left font-display text-lg">
+        <AccordionItem
+          key={item.id}
+          value={item.id}
+          id={item.id}
+          className="scroll-mt-24 border-b border-[color:var(--navy-12)]"
+        >
+          <AccordionTrigger className="text-left font-display text-lg text-[color:var(--navy)] hover:no-underline">
             {item.question}
           </AccordionTrigger>
-          <AccordionContent className="text-base leading-relaxed text-muted-foreground">
+          <AccordionContent className="text-base leading-relaxed text-[color:var(--navy-70)]">
             {item.answer}
           </AccordionContent>
         </AccordionItem>

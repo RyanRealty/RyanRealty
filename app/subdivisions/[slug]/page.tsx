@@ -46,6 +46,7 @@ import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.c
 import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { VideoTourRail } from '@/components/site/VideoTourRail'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import type { KbFeaturedItem } from '@/components/site/kb/types'
 import '@/components/site/kb/kb.css'
@@ -363,6 +364,15 @@ export default async function SubdivisionPage({ params }: Props) {
           videoSrc={null}
           posterSrc={posterSrc}
           mediaCaption={mediaCaption}
+        />
+        {/* Video tours scoped to this subdivision, near the top (restored from the
+            pre-KB page). Renders nothing when there are no video listings, and falls
+            back to the Central Oregon set so the rail is never empty. Tap drops into
+            /feed, where the videos keep playing continuously. */}
+        <VideoTourRail
+          community={displayName}
+          eyebrow={`${displayName} · Video tours`}
+          title={`Walk through homes in ${displayName}`}
         />
         {/* Map: draw boundary polygon when present; pins from active listings. */}
         {hasMap ? (

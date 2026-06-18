@@ -35,7 +35,9 @@ import {
   getGeoBoundaryMapData,
   getAllCitySnapshots,
   getRecentBlogPosts,
+  getBlogPostsBySlugs,
 } from '@/lib/data'
+import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
@@ -52,6 +54,7 @@ import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbAbout } from '@/components/site/kb/KbAbout'
+import { KbResortOverview } from '@/components/site/kb/KbResortOverview'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { KbTicker } from '@/components/site/kb/KbTicker.client'
@@ -155,7 +158,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const [
     pulse, stats, mktStats, regionPulse, priceHist,
     boundaryMapData, allCitySnapshots, blogPosts, openHouses, activity,
-    cityPriceHist, neighborhoodCommunities,
+    cityPriceHist, neighborhoodCommunities, richContent,
   ] = await Promise.all([
     withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), null, 3500, 'nbh:pulse'),
     withTimeoutFallback(getMarketStats({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug, periodType: 'rolling_365d' }), null, 3500, 'nbh:stats'),
@@ -174,6 +177,13 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     // Communities (subdivisions) within this neighborhood — drives the KbExploreTowns
     // ledger. The neighborhood's id is needed; resolved from NeighborhoodDetail.
     withTimeoutFallback(getCommunitiesInNeighborhood(neighborhood.id, cityName), [], 3500, 'nbh:communities'),
+    // Rich, verified neighborhood depth (overview prose · drive times · amenities)
+    // from data/resort-community-{citySlug}-{neighborhoodSlug}.json — the SAME
+    // curated source the resort LPs render. Null until a config is authored;
+    // KbResortOverview degrades to render nothing. Keyed by the boundary slug to
+    // match the polygon/pin namespace. Restores the pre-KB CommunityRichContent
+    // depth in the KB register (the KbResortOverview rebuild of it).
+    withTimeoutFallback(getResortCommunityContent(boundaryNeighborhoodSlug), null, 2500, 'nbh:content'),
   ])
 
   // In-boundary listing tiles (lat/lng/photo for map + featured + ticker).
@@ -208,6 +218,17 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const mediaCaption = heroVerified ? undefined : 'Regional view · Cascade Range'
 
   const neighborhoodLabel = `${neighborhood.name} · ${cityName}`
+
+  // ── RICH OVERVIEW (amenity → blog topic-cluster links) ────────────────────
+  // Resolve the published blog posts referenced by amenity rows so KbResortOverview
+  // can link each amenity to its post (same topic-cluster SEO as the community page).
+  const amenityBlogSlugs = (richContent?.amenities ?? [])
+    .map((a) => a.blog_slug)
+    .filter((s): s is string => Boolean(s))
+  const amenityPosts =
+    amenityBlogSlugs.length > 0
+      ? await withTimeoutFallback(getBlogPostsBySlugs(amenityBlogSlugs), {}, 2500, 'nbh:amenityPosts')
+      : {}
 
   // ── ABOUT ─────────────────────────────────────────────────────────────────
   const aboutParagraphs: string[] = [neighborhood.description ?? ''].filter(
@@ -448,7 +469,13 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           posterSrc={heroPhoto}
           mediaCaption={mediaCaption}
         />
-        {aboutParagraphs.length > 0 ? (
+        {/* Rich, verified neighborhood depth (overview prose · drive times ·
+            amenities) — the KB rebuild of the pre-KB CommunityRichContent. Null
+            when no config, so it degrades to nothing. When present it carries the
+            overview, so the thin data-driven About below is suppressed to avoid
+            duplicating the same prose. */}
+        <KbResortOverview content={richContent} name={neighborhood.name} postsBySlug={amenityPosts} />
+        {!richContent && aboutParagraphs.length > 0 ? (
           <KbAbout
             eyebrow={neighborhoodLabel}
             heading={`Living in ${neighborhood.name}`}

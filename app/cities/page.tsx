@@ -1,24 +1,29 @@
 // brand-voice:exempt
 /**
- * Cities index — Experience System Geo hub v3.2 (Family 4 rework).
+ * Cities index — KB (kinetic-brutalist) design, Phase 9 page-class migration.
  *
- * Matt's 2026-06-10 verdict: "the cities page is also ultra thin." This
- * rebuild turns the index from a name-and-number list into a destination:
+ * RESTYLED IN PLACE. Every piece of the prior Experience-System Geo hub v3.2
+ * is preserved — nothing dropped, only the presentation moved onto the KB
+ * visual language (navy #102742 + cream #faf8f4 surfaces, Amboqia display
+ * place names, hard 1px/3px --edge borders, .mono-num stats, the .section /
+ * .wrap rhythm). Content kept:
  *
- *   1. Compact navy hero — LIVE region pulse (active count in Amboqia
- *      display, median list, months-of-supply verdict) from getRegionPulse.
- *      Honest empty states when the cache is unreachable.
- *   2. Featured city editorial rows — full-width, hairline rules, alternating
- *      photo/content composition. Each row carries the VERIFIED city hero
- *      (Family 4 curation, lib/geo-images.ts cityHero registry), the city
- *      name in Amboqia, one honest editorial sentence, a live stat band
- *      (active / median / days on market via market_pulse_live snapshots,
- *      geo_snapshot_mv fallback), and links to the city page + its searches.
- *   3. Other-areas compact ledger.
- *   4. Navy search CTA band.
+ *   1. LIVE region pulse hero (getRegionPulse): active count in Amboqia,
+ *      median list, months-of-supply verdict pill. Honest em-dash empties.
+ *   2. Featured city editorial rows — full-bleed alternating photo/content,
+ *      VERIFIED cityHero() photography (Family 4 curation), one honest
+ *      editorial sentence per city (getCityContent, geographic-fact fallback),
+ *      a live stat band (active / median / median DOM / verdict) from
+ *      getMarketPulseCitySnapshots with geo_snapshot_mv fallback, and the
+ *      three links per city (city guide / homes for sale / open houses).
+ *   3. Other-areas compact ledger (every remaining city, live count + median).
+ *   4. Navy search CTA band (Search all listings / Get listing alerts).
  *
- * Engagement tracking on every section (EngagedSection). All figures from
- * the DAL — no invented numbers, em-dash placeholder when unavailable.
+ * Section telemetry now via KbSectionTracker (every .kb-root section[id]).
+ * All figures from the DAL — no invented numbers, em-dash when unavailable.
+ *
+ * KbNav + KbFooter carry the chrome (default SiteHeader/SiteFooter hidden for
+ * /cities via HideChrome — managed by the orchestrator, not this file).
  *
  * Parity contract: design_system/ryan-realty/ui_kits/cities/parity.json
  */
@@ -32,11 +37,14 @@ import { getCityContent } from '@/lib/city-content'
 import { cityHero } from '@/lib/geo-images'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-import { Container, DisplayHeading, H2, Eyebrow } from '@/components/site/primitives'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { EngagedSection } from '@/components/site/experience'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import type { SchemaInput } from '@/lib/site/json-ld'
+import '@/components/site/kb/kb.css'
 
 // Statically cached, revalidated every 30 minutes.
 export const revalidate = 1800
@@ -180,7 +188,9 @@ export default async function CitiesPage() {
   ]
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="kb-root">
+      <KbNav />
+      <KbSectionTracker pageType="index" />
 
       {/* Structured data: breadcrumb + CollectionPage + ItemList of city pages */}
       <MetadataBlock schemas={schemas} />
@@ -207,315 +217,282 @@ export default async function CitiesPage() {
         }}
       />
 
-      <PageBreadcrumb trail={[{ label: 'Cities' }]} includeJsonLd={false} />
+      <KbBreadcrumb
+        trail={[
+          { label: 'Home', href: '/' },
+          { label: 'Cities' },
+        ]}
+      />
 
-      {/* Compact hero: the LIVE region pulse is the identity — no tile wall, no video */}
-      <section
-        className="relative overflow-hidden bg-primary"
-        aria-label="Central Oregon cities hero"
-      >
-        <Container className="relative py-12 md:py-16">
-          {/* Live indicator */}
-          <div className="flex items-center gap-2 mb-5">
-            <span
-              className="inline-block w-[7px] h-[7px] rounded-full bg-green-400"
-              style={{
-                boxShadow: '0 0 0 2px rgba(74,222,128,0.30)',
-                animation: 'rr-pulse-dot 2s ease-in-out infinite',
-              }}
-              aria-hidden
-            />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-white/70">
-              Live market
-            </span>
-          </div>
-
-          <DisplayHeading
-            as="h1"
-            className="text-white"
-            style={{
-              fontSize: 'clamp(2rem, 4.5vw, 3.25rem)',
-              letterSpacing: '-0.015em',
-              lineHeight: 1.12,
-            }}
-          >
-            Central Oregon Cities
-          </DisplayHeading>
-          <p className="mt-3 text-white/65 text-sm md:text-[15px] max-w-md leading-relaxed">
-            Bend, Redmond, Sisters, Sunriver, and the high desert towns around them.
-            Live inventory and pricing from the regional MLS, refreshed through the day.
-          </p>
-
-          {/* Region pulse band — data as identity */}
-          <div className="mt-8 flex flex-wrap items-end gap-x-10 gap-y-5">
-            <div className="flex flex-col gap-0.5">
-              <span
-                className="font-display tabular-nums text-white leading-none"
-                style={{ fontSize: 'clamp(2.75rem, 7vw, 4.5rem)', letterSpacing: '-0.02em' }}
-              >
-                {totalActive > 0 ? totalActive.toLocaleString() : '—'}
+      <SmoothScrollProvider>
+        {/* Compact navy hero: the LIVE region pulse is the identity. */}
+        <section className="section region" id="region-pulse" aria-label="Central Oregon cities market pulse">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index mkt-live">
+                <span className="dot" aria-hidden />
+                Live market
               </span>
-              <span className="text-[11px] font-medium uppercase tracking-[0.09em] text-white/55 mt-1">
-                Active homes
-              </span>
+              <h1 className="sec-title display">Central Oregon<br />Cities</h1>
             </div>
-            <div className="flex flex-col gap-0.5">
-              <span
-                className="font-display tabular-nums text-white leading-none"
-                style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', letterSpacing: '-0.015em' }}
-              >
-                {fmtK(regionMedian) ?? '—'}
-              </span>
-              <span className="text-[11px] font-medium uppercase tracking-[0.09em] text-white/55 mt-1">
-                Median list price
-              </span>
-            </div>
-            {regionVerdict ? (
-              <div className="flex flex-col gap-1 pb-1">
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/25 px-3 py-1.5 text-xs font-semibold text-white/85">
-                  {regionVerdict}
+
+            <p
+              className="neigh-sub"
+              style={{ marginTop: '20px' }}
+            >
+              Bend, Redmond, Sisters, Sunriver, and the high desert towns around them.
+              Live inventory and pricing from the regional MLS, refreshed through the day.
+            </p>
+
+            {/* Region pulse band — data as identity */}
+            <div className="region-grid" style={{ marginTop: '26px' }}>
+              <div className="stat-cell">
+                <span className="stat-num mono-num">
+                  {totalActive > 0 ? totalActive.toLocaleString() : '—'}
                 </span>
-                <span className="text-[11px] font-medium uppercase tracking-[0.09em] text-white/55">
-                  Months of supply
-                </span>
+                <span className="stat-label">Active homes</span>
               </div>
-            ) : null}
+              <div className="stat-cell">
+                <span className="stat-num mono-num">{fmtK(regionMedian) ?? '—'}</span>
+                <span className="stat-label">Median list price</span>
+              </div>
+              {regionVerdict ? (
+                <div className="stat-cell">
+                  <span className="stat-num mono-num" style={{ fontSize: 'clamp(1.9rem,5vw,2.8rem)' }}>
+                    {regionVerdict}
+                  </span>
+                  <span className="stat-label">Months of supply</span>
+                </div>
+              ) : null}
+            </div>
+            <div className="region-foot">
+              <p className="note">
+                Single-family active inventory across the region. Figures from the MLS, updated through the day.
+              </p>
+              <a href="/search" className="btn">
+                Search all listings <span className="arr">→</span>
+              </a>
+            </div>
           </div>
-        </Container>
+        </section>
 
-        <style>{`
-          @keyframes rr-pulse-dot {
-            0%, 100% { box-shadow: 0 0 0 2px rgba(74,222,128,0.30); }
-            50%       { box-shadow: 0 0 0 5px rgba(74,222,128,0.14); }
-          }
-        `}</style>
-      </section>
+        {/* Featured cities — full-width editorial rows, alternating composition,
+            verified hero photography, live stat bands, honest sentences. */}
+        <section className="section towns" id="featured-cities">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Central Oregon</span>
+              <h2 className="sec-title display">Where do you<br />want to live?</h2>
+            </div>
 
-      {/* Featured cities — full-width editorial rows, alternating composition,
-          verified hero photography, live stat bands, honest sentences. */}
-      <EngagedSection id="featured-cities" pageType="geo-hub" position={1} className="bg-background">
-        <Container>
-          <div className="pt-10 md:pt-14 pb-2">
-            <Eyebrow className="mb-1">Central Oregon</Eyebrow>
-            <H2 className="text-2xl text-foreground">Where do you want to live?</H2>
-          </div>
-
-          <div>
-            {featured.map((city, i) => (
-              <article
-                key={city.slug}
-                className="border-b border-border py-8 md:py-10 first:border-t first:mt-6"
-              >
-                <div className="grid gap-5 md:gap-10 md:items-center md:grid-cols-12">
-                  {/* Verified photo — alternates sides on desktop for editorial rhythm */}
-                  <a
-                    href={`/cities/${city.slug}`}
-                    className={`relative block overflow-hidden rounded-xl aspect-[16/10] md:aspect-[4/3] md:col-span-5 ${
-                      i % 2 === 1 ? 'md:order-2' : ''
-                    }`}
-                    aria-label={`Homes for sale in ${city.name}, Oregon`}
-                  >
-                    <Image
-                      src={city.hero.src}
-                      alt={city.hero.alt}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 42vw"
-                      className="object-cover transition-transform duration-500 hover:scale-[1.03]"
-                      priority={i < 2}
-                    />
-                    {city.hero.verified ? null : (
-                      <span
-                        className="absolute bottom-2 right-2 rounded-md px-2 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-white/80"
-                        style={{ background: 'rgba(16,39,66,0.55)' }}
-                      >
-                        Regional view · Cascade Range
-                      </span>
-                    )}
-                  </a>
-
-                  {/* Editorial content */}
-                  <div className={`md:col-span-7 ${i % 2 === 1 ? 'md:order-1' : ''}`}>
-                    <a href={`/cities/${city.slug}`} className="group inline-block">
-                      <DisplayHeading
-                        as="h3"
-                        className="text-foreground group-hover:text-primary transition-colors"
-                        style={{
-                          fontSize: 'clamp(1.75rem, 3.4vw, 2.5rem)',
-                          letterSpacing: '-0.015em',
-                          lineHeight: 1.1,
-                        }}
-                      >
-                        {city.name}
-                      </DisplayHeading>
+            <div>
+              {featured.map((city, i) => (
+                <article
+                  key={city.slug}
+                  className="py-8 md:py-10 first:pt-8"
+                  style={{ borderBottom: 'var(--edge) solid var(--navy)' }}
+                >
+                  <div className="grid gap-5 md:gap-10 md:items-center md:grid-cols-12">
+                    {/* Verified photo — alternates sides on desktop for editorial rhythm */}
+                    <a
+                      href={`/cities/${city.slug}`}
+                      className={`relative block overflow-hidden aspect-[16/10] md:aspect-[4/3] md:col-span-5 ${
+                        i % 2 === 1 ? 'md:order-2' : ''
+                      }`}
+                      style={{ border: 'var(--edge) solid var(--navy)' }}
+                      aria-label={`Homes for sale in ${city.name}, Oregon`}
+                    >
+                      <Image
+                        src={city.hero.src}
+                        alt={city.hero.alt}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 42vw"
+                        className="object-cover transition-transform duration-500 hover:scale-[1.03]"
+                        priority={i < 2}
+                      />
+                      {city.hero.verified ? null : (
+                        <span className="hero-caption">Regional view · Cascade Range</span>
+                      )}
                     </a>
 
-                    {city.sentence ? (
-                      <p className="mt-2.5 text-[15px] leading-relaxed text-muted-foreground max-w-prose">
-                        {city.sentence}
-                      </p>
-                    ) : null}
+                    {/* Editorial content */}
+                    <div className={`md:col-span-7 ${i % 2 === 1 ? 'md:order-1' : ''}`}>
+                      <a href={`/cities/${city.slug}`} className="group inline-block">
+                        <h3
+                          className="display"
+                          style={{
+                            fontSize: 'clamp(2rem, 4.4vw, 3.4rem)',
+                            lineHeight: 0.92,
+                          }}
+                        >
+                          {city.name}
+                        </h3>
+                      </a>
 
-                    {/* Live stat band — tabular numerals, honest em-dash empties */}
-                    <div className="mt-5 flex flex-wrap items-baseline gap-x-8 gap-y-3">
-                      <div>
-                        <p className="font-display tabular-nums text-foreground text-xl md:text-2xl leading-none">
-                          {city.activeCount != null && city.activeCount > 0
-                            ? city.activeCount.toLocaleString()
-                            : '—'}
+                      {city.sentence ? (
+                        <p
+                          className="mt-3 max-w-prose"
+                          style={{ color: 'var(--navy-70)', fontSize: 'clamp(.95rem,1.5vw,1.1rem)', lineHeight: 1.5 }}
+                        >
+                          {city.sentence}
                         </p>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">
-                          Active
-                        </p>
-                      </div>
-                      <div>
-                        <p className="font-display tabular-nums text-foreground text-xl md:text-2xl leading-none">
-                          {fmtK(city.medianListPrice) ?? '—'}
-                        </p>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">
-                          Median list
-                        </p>
-                      </div>
-                      {city.medianDom != null ? (
+                      ) : null}
+
+                      {/* Live stat band — tabular numerals, honest em-dash empties */}
+                      <div className="mt-6 flex flex-wrap items-baseline gap-x-9 gap-y-4">
                         <div>
-                          <p className="font-display tabular-nums text-foreground text-xl md:text-2xl leading-none">
-                            {Math.round(city.medianDom)}
-                            <span className="font-sans text-xs font-medium text-muted-foreground ml-1">days</span>
+                          <p className="display mono-num" style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}>
+                            {city.activeCount != null && city.activeCount > 0
+                              ? city.activeCount.toLocaleString()
+                              : '—'}
                           </p>
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">
-                            Median on market
+                          <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
+                            Active
                           </p>
                         </div>
-                      ) : null}
-                      {city.verdict ? (
-                        <span className="self-center rounded-full border border-border px-2.5 py-1 text-[11px] font-semibold text-foreground/80">
-                          {city.verdict}
-                        </span>
-                      ) : null}
-                    </div>
+                        <div>
+                          <p className="display mono-num" style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}>
+                            {fmtK(city.medianListPrice) ?? '—'}
+                          </p>
+                          <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
+                            Median list
+                          </p>
+                        </div>
+                        {city.medianDom != null ? (
+                          <div>
+                            <p className="display mono-num" style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}>
+                              {Math.round(city.medianDom)}
+                              <span className="font-sans text-xs font-medium" style={{ color: 'var(--navy-70)', marginLeft: '5px' }}>days</span>
+                            </p>
+                            <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
+                              Median on market
+                            </p>
+                          </div>
+                        ) : null}
+                        {city.verdict ? (
+                          <span
+                            className="self-center mono-lab"
+                            style={{
+                              border: '1px solid var(--navy)',
+                              borderRadius: '3px',
+                              padding: '6px 12px',
+                              color: 'var(--navy)',
+                            }}
+                          >
+                            {city.verdict}
+                          </span>
+                        ) : null}
+                      </div>
 
-                    {/* Links into the city */}
-                    <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium">
-                      <a
-                        href={`/cities/${city.slug}`}
-                        className="text-primary underline-offset-2 hover:underline"
-                      >
-                        {city.name} guide
-                      </a>
-                      <a
-                        href={`/homes-for-sale/${city.slug}`}
-                        className="text-primary underline-offset-2 hover:underline"
-                      >
-                        Homes for sale
-                      </a>
-                      <a
-                        href={`/open-houses/${city.slug}`}
-                        className="text-primary underline-offset-2 hover:underline"
-                      >
-                        Open houses
-                      </a>
+                      {/* Links into the city */}
+                      <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">
+                        <a
+                          href={`/cities/${city.slug}`}
+                          className="underline-offset-4 hover:underline"
+                          style={{ color: 'var(--navy)' }}
+                        >
+                          {city.name} guide
+                        </a>
+                        <a
+                          href={`/homes-for-sale/${city.slug}`}
+                          className="underline-offset-4 hover:underline"
+                          style={{ color: 'var(--navy)' }}
+                        >
+                          Homes for sale
+                        </a>
+                        <a
+                          href={`/open-houses/${city.slug}`}
+                          className="underline-offset-4 hover:underline"
+                          style={{ color: 'var(--navy)' }}
+                        >
+                          Open houses
+                        </a>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </Container>
-      </EngagedSection>
-
-      {/* Other cities: compact ledger */}
-      {others.length > 0 ? (
-        <EngagedSection
-          id="other-cities"
-          pageType="geo-hub"
-          position={2}
-          className="border-t border-border bg-secondary/30 py-10 md:py-14"
-        >
-          <Container>
-            <div className="mb-6">
-              <Eyebrow className="mb-1">More areas</Eyebrow>
-              <H2 className="text-2xl text-foreground">Other Central Oregon cities</H2>
+                </article>
+              ))}
             </div>
+          </div>
+        </section>
 
-            <div className="divide-y divide-border max-w-2xl">
-              {others.map((city) => {
-                const snap = snapshotBySlug.get(city.slug)
-                const active = snap?.activeCount ?? city.activeCount
-                const median = snap?.medianPrice ?? city.medianPrice
+        {/* Other cities: compact ledger */}
+        {others.length > 0 ? (
+          <section
+            className="section towns"
+            id="other-cities"
+            style={{ background: 'rgba(16,39,66,0.04)' }}
+          >
+            <div className="wrap">
+              <div className="sec-head">
+                <span className="sec-index">More areas</span>
+                <h2 className="sec-title display">Other Central<br />Oregon cities</h2>
+              </div>
 
-                return (
-                  <a
-                    key={city.slug}
-                    href={`/cities/${city.slug}`}
-                    className="group flex items-center justify-between gap-4 py-3 hover:text-primary transition-colors"
-                  >
-                    <span className="text-sm font-semibold text-foreground group-hover:text-primary">
-                      {city.name}
-                    </span>
-                    <div className="flex items-center gap-4 flex-shrink-0">
-                      {active > 0 ? (
-                        <span className="text-xs tabular-nums text-muted-foreground">
-                          {active} {active === 1 ? 'home' : 'homes'}
-                        </span>
-                      ) : null}
-                      {median != null ? (
-                        <span className="text-xs tabular-nums text-muted-foreground">
-                          ${Math.round(median / 1000).toLocaleString()}K
-                        </span>
-                      ) : null}
-                      <span
-                        aria-hidden
-                        className="text-muted-foreground/40 group-hover:text-primary transition-colors"
-                      >
-                        &rarr;
+              <div className="max-w-2xl pt-2" style={{ borderTop: '1px solid var(--navy-12)' }}>
+                {others.map((city) => {
+                  const snap = snapshotBySlug.get(city.slug)
+                  const active = snap?.activeCount ?? city.activeCount
+                  const median = snap?.medianPrice ?? city.medianPrice
+
+                  return (
+                    <a
+                      key={city.slug}
+                      href={`/cities/${city.slug}`}
+                      className="group flex items-center justify-between gap-4 py-3"
+                      style={{ borderBottom: '1px solid var(--navy-12)' }}
+                    >
+                      <span className="text-sm font-semibold" style={{ color: 'var(--navy)' }}>
+                        {city.name}
                       </span>
-                    </div>
-                  </a>
-                )
-              })}
+                      <div className="flex items-center gap-4 flex-shrink-0">
+                        {active > 0 ? (
+                          <span className="text-xs mono-num" style={{ color: 'var(--navy-70)' }}>
+                            {active} {active === 1 ? 'home' : 'homes'}
+                          </span>
+                        ) : null}
+                        {median != null ? (
+                          <span className="text-xs mono-num" style={{ color: 'var(--navy-70)' }}>
+                            ${Math.round(median / 1000).toLocaleString()}K
+                          </span>
+                        ) : null}
+                        <span aria-hidden className="arr" style={{ color: 'var(--navy-70)' }}>
+                          →
+                        </span>
+                      </div>
+                    </a>
+                  )
+                })}
+              </div>
             </div>
-          </Container>
-        </EngagedSection>
-      ) : null}
+          </section>
+        ) : null}
 
-      {/* Search CTA: navy band */}
-      <EngagedSection id="search-cta" pageType="geo-hub" position={3} className="bg-primary py-12 md:py-16">
-        <Container>
-          <div className="max-w-xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.10em] text-white/50 mb-3">
-              Central Oregon
-            </p>
-            <DisplayHeading
-              as="h2"
-              className="text-white mb-4"
-              style={{
-                fontSize: 'clamp(1.5rem, 2.5vw, 2.25rem)',
-                letterSpacing: '-0.01em',
-                lineHeight: 1.2,
-              }}
-            >
-              Find your home in Central Oregon
-            </DisplayHeading>
-            <p className="text-white/68 text-sm leading-relaxed mb-8 max-w-md">
-              Search active listings across all cities with live filters for price, beds, and location.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <a
-                href="/search"
-                className="inline-flex items-center px-6 py-3 rounded-xl bg-background text-primary font-semibold text-sm hover:bg-white transition-colors"
-              >
-                Search all listings
-              </a>
-              <a
-                href="/lp/buyer-listing-alerts"
-                className="inline-flex items-center px-6 py-3 rounded-xl border border-white/28 text-white/88 font-medium text-sm hover:bg-white/10 hover:text-white transition-colors"
-              >
-                Get listing alerts
-              </a>
+        {/* Search CTA: navy band */}
+        <section className="section region" id="search-cta" aria-label="Search Central Oregon listings">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Central Oregon</span>
+              <h2 className="sec-title display">Find your home<br />in Central Oregon</h2>
+            </div>
+            <div className="max-w-xl pt-6 pb-12">
+              <p className="neigh-sub" style={{ margin: 0 }}>
+                Search active listings across all cities with live filters for price, beds, and location.
+              </p>
+              <div className="sec-cta" style={{ gap: '12px', flexWrap: 'wrap', display: 'flex' }}>
+                <a href="/search" className="btn">
+                  Search all listings <span className="arr">→</span>
+                </a>
+                <a href="/lp/buyer-listing-alerts" className="btn ghost">
+                  Get listing alerts
+                </a>
+              </div>
             </div>
           </div>
-        </Container>
-      </EngagedSection>
+        </section>
 
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
     </main>
   )
 }

@@ -1,11 +1,34 @@
+/**
+ * /guides — Real Estate Guides index for Bend and Central Oregon.
+ *
+ * KB (kinetic-brutalist) design — Phase 9 page-class migration. Restyled IN
+ * PLACE from the prior ContentPageHero layout: every piece of content is
+ * preserved (hero copy + CTAs, CollectionPage JSON-LD, breadcrumb JSON-LD,
+ * the live getPublishedGuides DAL call, and the by-category grouping of guide
+ * cards). Only the presentation changed — the page now wears the KB shell
+ * (KbNav, KbHero, KbArticles editorial cards per category, KbFooter) and the
+ * Amboqia display / hard-edge surfaces of the rest of the migrated site.
+ *
+ * Data: getPublishedGuides(12) from lib/data (DAL, cached, resilient). Zero
+ * hardcoded content — every card renders a real published (or stats-generated)
+ * guide row. Honest empty state when no guides exist.
+ *
+ * SEO: export const metadata (canonical + OG + Twitter), CollectionPage +
+ * BreadcrumbList JSON-LD. PAGE CONTRACT: KB design + SEO + tracking
+ * (KbSectionTracker pageType="guides").
+ */
+
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { getPublishedGuides } from '@/lib/data'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
-import ContentPageHero from '@/components/layout/ContentPageHero'
-import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-import { H2 } from '@/components/site/primitives'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbHero } from '@/components/site/kb/KbHero.client'
+import { KbArticles, type KbArticlePost } from '@/components/site/kb/KbArticles'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import '@/components/site/kb/kb.css'
 
 // Render on demand to avoid the 180s static-generation timeout. The published
 // guides query is slow enough at build time that the static export windows out.
@@ -44,20 +67,12 @@ export default async function GuidesIndexPage() {
     const key = guide.category?.trim() || 'General'
     grouped.set(key, [...(grouped.get(key) ?? []), guide])
   }
+  const groups = [...grouped.entries()]
 
   return (
-    <main className="min-h-screen bg-background">
-      <PageBreadcrumb trail={[{ label: 'Guides' }]} includeJsonLd={false} />
-      <ContentPageHero
-        title="Real Estate Guides"
-        subtitle="Local market explainers and step-by-step playbooks for buyers and sellers in Central Oregon."
-        imageUrl={CONTENT_HERO_IMAGES.areaGuides}
-        ctas={[
-          { label: 'Browse Listings', href: '/homes-for-sale', primary: true },
-          { label: 'Area Guides', href: '/area-guides', primary: false },
-        ]}
-      />
-      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    <main className="kb-root">
+      <KbNav />
+      <KbSectionTracker pageType="guides" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }}
@@ -73,22 +88,85 @@ export default async function GuidesIndexPage() {
           ),
         }}
       />
-      <div className="mt-8 space-y-8">
-        {[...grouped.entries()].map(([category, rows]) => (
-          <section key={category}>
-            <H2 className="text-xl">{category}</H2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              {rows.map((guide) => (
-                <Link key={guide.id} href={`/guides/${guide.slug}`} className="rounded-lg border border-border bg-card p-5 hover:shadow-sm">
-                  <p className="font-medium text-foreground">{guide.title}</p>
-                  <p className="mt-2 text-sm text-muted-foreground">{guide.meta_description || 'Read the full guide'}</p>
-                </Link>
-              ))}
+      <KbBreadcrumb
+        trail={[
+          { label: 'Home', href: '/' },
+          { label: 'Guides' },
+        ]}
+      />
+      <SmoothScrollProvider>
+        {/* Hero — same H1 + subtitle + CTAs as the prior ContentPageHero, in
+            the KB Amboqia display. The two CTAs (Browse Listings / Area Guides)
+            are preserved via the KbHero default CTA row plus the explicit
+            eyebrow/lead copy. */}
+        <KbHero
+          data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
+          eyebrow="Central Oregon · Buyer & seller guides"
+          titleTop="Real Estate"
+          titleBottom="Guides"
+          lead="Local market explainers and step-by-step playbooks for buyers and sellers in Central Oregon."
+          videoSrc={null}
+          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+        />
+
+        {/* CTA row preserved from the prior hero (Browse Listings · Area Guides) */}
+        <section className="section" id="guide-cta" aria-label="Browse and explore">
+          <div className="wrap">
+            <div className="flex flex-wrap items-center gap-3 py-2">
+              <a href="/homes-for-sale" className="btn alt">
+                Browse listings <span className="arr">→</span>
+              </a>
+              <a href="/area-guides" className="btn alt" style={{ background: 'transparent', color: 'var(--navy)' }}>
+                Area guides <span className="arr">→</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* Guides grouped by category — each group is an editorial KB article
+            set. Every published (or stats-generated) guide row is rendered;
+            nothing is dropped. */}
+        {groups.length > 0 ? (
+          groups.map(([category, rows]) => {
+            const posts: KbArticlePost[] = rows.map((guide) => ({
+              title: guide.title,
+              href: `/guides/${guide.slug}`,
+              excerpt: guide.meta_description || 'Read the full guide',
+            }))
+            return (
+              <KbArticles
+                key={category}
+                posts={posts}
+                eyebrow="Guides"
+                heading={category}
+              />
+            )
+          })
+        ) : (
+          <section className="section" id="guides-empty" aria-label="No guides yet">
+            <div className="wrap">
+              <div className="sec-head">
+                <span className="sec-index">Central Oregon</span>
+                <h2 className="sec-title display">Guides<br />coming soon</h2>
+              </div>
+              <p className="ov-prose-wide" style={{ color: 'var(--navy-70)', maxWidth: '54ch' }}>
+                We are writing the next round of local buying and selling guides. In the meantime,
+                browse active homes or explore Central Oregon by area.
+              </p>
+              <div className="flex flex-wrap items-center gap-3 mt-6">
+                <a href="/homes-for-sale" className="btn alt">
+                  Browse listings <span className="arr">→</span>
+                </a>
+                <a href="/area-guides" className="btn alt" style={{ background: 'transparent', color: 'var(--navy)' }}>
+                  Area guides <span className="arr">→</span>
+                </a>
+              </div>
             </div>
           </section>
-        ))}
-      </div>
-      </div>
+        )}
+
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
     </main>
   )
 }

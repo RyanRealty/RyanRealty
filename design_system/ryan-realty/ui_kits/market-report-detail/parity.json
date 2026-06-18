@@ -86,7 +86,7 @@
     },
     {
       "name": "MarketDetailStats",
-      "section": "Fuller market stats from getCityMarketDetail. Subdivision scope only (legacy wave-2).",
+      "section": "Fuller closed-sales stats from getCityMarketDetail. Subdivision scope only (legacy wave-2). City scope surfaces the same getCityMarketDetail data inside the KbMarketHud sale-to-list KPI rather than as a separate table, so the closed-sales detail is not lost in the KB render.",
       "blocking": true
     },
     {
@@ -106,7 +106,7 @@
     },
     {
       "name": "LeadCaptureBlock",
-      "section": "Broker inquiry form, variant='inquiry', tone='muted'. Subdivision scope only (legacy wave-2).",
+      "section": "Broker inquiry form, variant='inquiry', tone='muted', onSubmit=submitMarketPageInquiry (FUB person + event + Meta CAPI). Rendered in BOTH scopes: city KB render wraps it in a <section id='ask-a-broker'> before KbSell so a buyer or general-question visitor keeps an on-page capture path (KbSell alone is a seller-only address handoff to /sell/valuation); subdivision scope renders it inline in the legacy wave-2 stack.",
       "blocking": true
     },
     {
@@ -193,7 +193,7 @@
     "getMarketPulse": "lib/data/market/getMarketPulse.ts, market_pulse_live geo_type='city' or 'subdivision', 10 to 15 min freshness.",
     "getPriceHistory": "lib/data/market/getPriceHistory.ts, market_stats_cache monthly. limit=60 city scope, limit=24 subdivision scope.",
     "getMarketPulseCitySnapshots": "lib/data/market/getMarketPulseSnapshot.ts, market_pulse_live city rows for COMPARISON_CITY_LABELS. ONE call per render.",
-    "getCityMarketDetail": "lib/data/market/getCityMarketDetail.ts, market_stats_cache full projection, 6h freshness. City scope only.",
+    "getCityMarketDetail": "lib/data/market/getCityMarketDetail.ts, market_stats_cache full projection, 6h freshness. City scope feeds the KbMarketHud sale-to-list KPI (avg_sale_to_list_ratio ×100); subdivision scope feeds the legacy MarketDetailStats section.",
     "getRecentBlogPosts": "lib/data/blog/getRecentBlogPosts.ts, blog_posts published newest first, limit=3. City scope only.",
     "buildYearSeries": "lib/kb/year-series.ts. Groups completePriceMonths into up to 5 calendar-year lines for KbMarketHud. City scope only.",
     "buildMarketFaq": "lib/site/market-faq.ts. Both scopes. Fed pulse ?? {activeCount: null, medianListPrice: null, refreshedAt: null} for timeout resilience (G52).",

@@ -7,7 +7,11 @@
  * NOTE: No parity.json found for /open-houses/[city]. Rewrite uses KB chrome only.
  *
  * Section stack: nav · section-tracker · metadata · breadcrumb · hero ·
- * open-houses · sell · footer.
+ * open-houses · map · sell · footer.
+ *
+ * The map (KbListingMap) restores the map view the pre-KB OpenHousesClient
+ * rendered: every open house with coordinates as a navy/cream pin, uncapped
+ * (the editorial KbOpenHouses board caps at 12; the map shows the full set).
  *
  * §0: all counts via getOpenHousesWithListings + getMarketPulse from @/lib/data.
  */
@@ -27,6 +31,7 @@ import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbOpenHouses } from '@/components/site/kb/KbOpenHouses.client'
+import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -152,6 +157,29 @@ export default async function OpenHousesCityPage({
     whenLabel: openHouseWhen(oh.event_date, oh.start_time, oh.end_time),
   }))
 
+  // Map geo — every open house with coordinates (uncapped). Restores the map
+  // view the pre-KB OpenHousesClient rendered, in the KB navy/cream basemap.
+  const mapFeatures = openHouses
+    .filter((oh) => oh.latitude != null && oh.longitude != null)
+    .map((oh) => ({
+      type: 'Feature' as const,
+      geometry: {
+        type: 'Point' as const,
+        coordinates: [Number(oh.longitude), Number(oh.latitude)] as [number, number],
+      },
+      properties: {
+        p: oh.list_price,
+        bd: oh.beds_total,
+        ba: oh.baths_full,
+        sf: oh.living_area,
+        a: oh.unparsed_address ?? [oh.street_number, oh.street_name].filter(Boolean).join(' '),
+        sub: oh.subdivision_name ?? '',
+        city: oh.city ?? '',
+        img: oh.photo_url ?? '',
+      },
+    }))
+  const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
+
   const eventJsonLd = openHouses.length > 0 ? buildEventJsonLd(openHouses, cityName) : null
 
   const schemas: SchemaInput[] = [
@@ -195,6 +223,18 @@ export default async function OpenHousesCityPage({
           heading="Open houses"
           viewAllHref="/open-houses"
         />
+        {/* Map — every open house on the real terrain (restores the pre-KB map view) */}
+        {mapFeatures.length > 0 ? (
+          <KbListingMap
+            geojson={mapGeo}
+            totalActive={mapFeatures.length}
+            fitToFeatures
+            showRegionMarkers={false}
+            eyebrow={cityName}
+            title={'Open houses\non the map'}
+            subtitle={`Every open house in ${cityName} with a location, on the real terrain. Click any dot for the price, the beds, and the street.`}
+          />
+        ) : null}
         <KbSell
           data={{
             medianListPrice: pulse?.medianListPrice ?? null,

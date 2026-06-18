@@ -34,6 +34,7 @@ import { listingDetailPath } from '@/lib/slug'
 import { CTABar } from '@/components/site/CTABar'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import ListingCard from '@/components/site/ListingCard'
+import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -249,6 +250,12 @@ export default async function PriceDropsRegionPage() {
         ? (dropPcts[mid - 1] + dropPcts[mid]) / 2
         : dropPcts[mid]
 
+  // Biggest single dollar reduction this week — the headline editorial callout
+  const featured =
+    drops.length > 0
+      ? [...drops].sort((a, b) => (b.lastDropAmount ?? 0) - (a.lastDropAmount ?? 0))[0]
+      : null
+
   // Featured: top-6 biggest dollar drops for the KB poster grid
   const featuredDrops =
     drops.length > 0
@@ -279,13 +286,6 @@ export default async function PriceDropsRegionPage() {
   const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
 
   const neighborhoodTable = buildNeighborhoodTable(drops)
-
-  // Hero glance stats — N drops, total cut, median pct
-  const glanceStats = [
-    { value: String(total), label: 'price reductions this week' },
-    ...(totalReduced > 0 ? [{ value: fmtM(totalReduced), label: 'in asking-price cuts' }] : []),
-    ...(medianDropPct !== null ? [{ value: `${medianDropPct.toFixed(1)}%`, label: 'median reduction' }] : []),
-  ]
 
   // ---- Structured data ------------------------------------------------------
 
@@ -393,6 +393,61 @@ export default async function PriceDropsRegionPage() {
           />
         )}
 
+        {/* Biggest reduction this week — Now/Was, exact dollar cut, DOM */}
+        {featured && (
+          <section className="section" id="biggest-drop" aria-label="Biggest price reduction this week">
+            <div className="wrap">
+              <div className="sec-head">
+                <span className="sec-index">Biggest reduction this week</span>
+                <h2 className="sec-title display">
+                  The largest<br />price cut
+                </h2>
+              </div>
+              <div className="grid sm:grid-cols-[1fr_auto] gap-6 items-center mt-6">
+                <div>
+                  <p className="text-2xl sm:text-3xl font-display">
+                    {[featured.streetNumber, featured.streetName].filter(Boolean).join(' ') ||
+                      'Address on request'}
+                  </p>
+                  <p className="text-muted-foreground mt-1">
+                    {featured.city ? `${featured.city}, OR` : ''}
+                    {featured.subdivisionName ? ` · ${featured.subdivisionName}` : ''}
+                  </p>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <Badge variant="outline" className="font-mono tabular-nums text-sm">
+                      Now {fmtPrice(featured.listPrice)}
+                    </Badge>
+                    {featured.originalListPrice && (
+                      <Badge variant="secondary" className="font-mono tabular-nums text-sm">
+                        Was {fmtPrice(featured.originalListPrice)}
+                      </Badge>
+                    )}
+                    {featured.lastDropAmount && featured.lastDropPct && (
+                      <Badge className="bg-primary text-primary-foreground font-mono tabular-nums text-sm">
+                        -{fmtK(featured.lastDropAmount)} ({featured.lastDropPct.toFixed(1)}%)
+                      </Badge>
+                    )}
+                  </div>
+                  {featured.beds && (
+                    <p className="text-sm text-muted-foreground mt-2 tabular-nums">
+                      {featured.beds} bd
+                      {featured.baths ? ` · ${featured.baths} ba` : ''}
+                      {featured.sqft ? ` · ${Math.round(featured.sqft).toLocaleString()} sqft` : ''}
+                      {featured.dom ? ` · ${featured.dom} days on market` : ''}
+                    </p>
+                  )}
+                </div>
+                <Link
+                  href={`/listing/${encodeURIComponent(featured.listingKey)}`}
+                  className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+                >
+                  View listing
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Map — price-dropped listings on the terrain */}
         {mapFeatures.length > 0 && (
           <KbListingMap
@@ -484,12 +539,30 @@ export default async function PriceDropsRegionPage() {
           </section>
         )}
 
-        {/* Glance stats — hidden from visual flow but present for CTABar context */}
-        {glanceStats.length > 0 && (
-          <section className="section" id="stats-summary" aria-label="Price reduction summary" style={{ display: 'none' }}>
-            {/* Stats are rendered in the hero glance row by KbHero — no duplicate needed */}
-          </section>
-        )}
+        {/* Weekly drop report — buyer lead capture (listing alerts) */}
+        <section className="section" id="weekly-report" aria-label="Weekly price-drop summary">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Weekly drop report</span>
+              <h2 className="sec-title display">
+                Get the weekly<br />price-drop summary
+              </h2>
+            </div>
+            <div className="max-w-xl mt-4">
+              <p className="text-muted-foreground">
+                Every Monday we pull the prior week&rsquo;s reductions across Central Oregon and
+                send a plain-language summary. Which neighborhoods saw the most cuts, the biggest
+                drops, and what it means for buyers right now.
+              </p>
+              <Link
+                href="/lp/buyer-listing-alerts"
+                className="btn alt mt-5"
+              >
+                Get listing alerts <span className="arr">→</span>
+              </Link>
+            </div>
+          </div>
+        </section>
 
         {/* All-city navigation */}
         <section className="section" id="city-links" aria-label="Price drops by city">

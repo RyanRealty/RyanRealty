@@ -2,49 +2,49 @@
   "route": "app/buy/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/buy/index.html",
   "competitiveTarget": "Beat generic buyer-intent pages: honest value props (live MLS data, local licensed broker, no hand-offs), a specific process walkthrough, buyer strategy sub-pages, and a clear listing-alerts CTA. Zero invented stats.",
-  "note": "Wave 3 site-v2 rebuild. ContentPageHero replaced with HeroBlock (DisplayHeading H1, Amboqia). Brand-voice violations fixed: 'genuine love for our community' removed; 'the journey' removed. Lead path is the existing /lp/buyer-listing-alerts LP (submitPageCTA buyer workflow) — no embedded form. JSON-LD emits: BreadcrumbList + WebPage + FAQPage. FAQBlock includes-json-ld=false to avoid duplicate FAQPage (MetadataBlock at page top owns the canonical FAQPage schema).",
+  "note": "Phase 9 page-class migration to the KB (kinetic-brutalist) design system, RESTYLED IN PLACE. The page keeps every section, the getSurfaceImage hero DAL fetch, all value props, the process walkthrough, the buyer-guide sub-pages, the CTA band, the full 6-item FAQ, and the BreadcrumbList + WebPage + FAQPage JSON-LD. Presentation moved to KB: KB shell (KbNav + KbFooter + SmoothScrollProvider + KbSectionTracker), KbBreadcrumb, and KB-styled in-place sections (hero/value-props/process/guides/CTA/FAQ) using the .section/.wrap/.sec-head rhythm + Amboqia display headings + hard --edge borders. HideChrome hides the default SiteHeader/SiteFooter for /buy. MetadataBlock owns the canonical FAQPage schema, so the in-place FAQ renders no duplicate JSON-LD. Lead path unchanged: /lp/buyer-listing-alerts (FUB buyer workflow), no embedded form.",
   "requiredComponents": [
     {
-      "name": "PageBreadcrumb",
-      "section": "Home > Buy breadcrumb",
+      "name": "KbNav",
+      "section": "KB top chrome — replaces SiteHeader for /buy",
       "blocking": true
     },
     {
-      "name": "HeroBlock",
-      "section": "hero — 'Buy a home in Central Oregon.' + broker lede + canonical photo",
+      "name": "KbBreadcrumb",
+      "section": "Home > Buy breadcrumb (KB, overlay over the hero)",
       "blocking": true
     },
     {
-      "name": "ContentSection",
-      "section": "value-prop grid — 'Local brokers, live data, no hand-offs'",
+      "name": "SmoothScrollProvider",
+      "section": "KB Lenis + GSAP scroll layer wrapping the body",
       "blocking": true
     },
     {
-      "name": "CTABar",
-      "section": "buyer conversion band — 'Get listing alerts' -> /lp/buyer-listing-alerts",
-      "blocking": true
-    },
-    {
-      "name": "FAQBlock",
-      "section": "buyer FAQ — verified facts only (agreements, earnest money, timeline, areas)",
+      "name": "KbSectionTracker",
+      "section": "KB per-section view + scroll-depth tracking (pageType='buy')",
       "blocking": true
     },
     {
       "name": "MetadataBlock",
-      "section": "JSON-LD — BreadcrumbList + WebPage + FAQPage",
+      "section": "JSON-LD — BreadcrumbList + WebPage + FAQPage (canonical)",
+      "blocking": true
+    },
+    {
+      "name": "KbFooter",
+      "section": "KB footer — replaces SiteFooter for /buy",
       "blocking": true
     }
   ],
   "layoutComponents": [
     {
-      "name": "SiteHeader",
-      "section": "renders from app/layout.tsx",
-      "note": "gate checks the route file"
+      "name": "KbNav",
+      "section": "rendered by the route (KB chrome)",
+      "note": "default SiteHeader hidden via HideChrome for /buy"
     },
     {
-      "name": "SiteFooter",
-      "section": "renders from app/layout.tsx",
-      "note": "gate checks the route file"
+      "name": "KbFooter",
+      "section": "rendered by the route (KB chrome)",
+      "note": "default SiteFooter hidden via HideChrome for /buy"
     }
   ]
 }

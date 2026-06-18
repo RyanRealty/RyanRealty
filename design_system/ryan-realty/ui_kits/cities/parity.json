@@ -1,12 +1,17 @@
 {
   "route": "app/cities/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/cities/index.html",
-  "competitiveTarget": "Beat portal city-directory pages — a real editorial destination with verified per-city photography and a live regional pulse, not a link farm.",
-  "note": "Experience System Geo hub v3.2 (Family 4 rework, 2026-06-10). Built after Matt's 'ultra thin' verdict on the v3.1 index. Structure: live region pulse hero (getRegionPulse) -> featured city editorial rows (full-width, hairline rules, alternating photo/content, VERIFIED cityHero() photography, live per-city stat bands from getMarketPulseCitySnapshots with geo_snapshot_mv fallback, one honest editorial sentence per city, links to city page + searches + open houses) -> other-areas compact ledger -> navy search CTA. CollectionPage + ItemList + Breadcrumb JSON-LD. EngagedSection telemetry on every section. No tile walls.",
+  "competitiveTarget": "Beat portal city-directory pages — a real editorial destination with verified per-city photography and a live regional pulse, not a link farm. Now in the kinetic-brutalist design language.",
+  "note": "KB (kinetic-brutalist) design — Phase 9 page-class migration. RESTYLED IN PLACE from the Experience System Geo hub v3.2: every section, stat, sentence, link, image, and JSON-LD preserved, only the presentation moved onto the KB visual language (navy #102742 + cream #faf8f4 surfaces, Amboqia display place names, hard --edge borders, .mono-num stats, the .section/.wrap rhythm). Structure: live region pulse hero (getRegionPulse — active count, median list, months-of-supply verdict) -> featured city editorial rows (full-width, alternating photo/content, VERIFIED cityHero() photography with labeled regional fallback, live per-city stat bands from getMarketPulseCitySnapshots with geo_snapshot_mv fallback, one honest editorial sentence per city from getCityContent, links to city page + homes-for-sale + open houses) -> other-areas compact ledger -> navy search CTA. CollectionPage + ItemList rendered inline + Breadcrumb JSON-LD (MetadataBlock). KbSectionTracker replaces EngagedSection telemetry (every .kb-root section[id] fires section_view). KbNav + KbFooter carry chrome (default SiteHeader/SiteFooter hidden for /cities via HideChrome). Body in main.kb-root + SmoothScrollProvider.",
   "requiredComponents": [
     {
-      "name": "PageBreadcrumb",
-      "section": "Home > Cities",
+      "name": "KbNav",
+      "section": "chrome — transparent-over-hero top bar + full-screen menu. Inside .kb-root.",
+      "blocking": true
+    },
+    {
+      "name": "KbSectionTracker",
+      "section": "tracking — section_view telemetry on every .kb-root section[id] (replaces EngagedSection). pageType=index.",
       "blocking": true
     },
     {
@@ -15,13 +20,18 @@
       "blocking": true
     },
     {
-      "name": "EngagedSection",
-      "section": "featured-cities / other-cities / search-cta — section_view telemetry on every section.",
+      "name": "KbBreadcrumb",
+      "section": "breadcrumb — KB-styled Home > Cities (visual; JSON-LD is in MetadataBlock).",
       "blocking": true
     },
     {
-      "name": "DisplayHeading",
-      "section": "hero H1 + city names in Amboqia display — data and place names ARE the design.",
+      "name": "SmoothScrollProvider",
+      "section": "KB shell — Lenis smooth scroll + GSAP wrapping the section stack.",
+      "blocking": true
+    },
+    {
+      "name": "KbFooter",
+      "section": "footer — dual-audience close + sitemap (towns=[]).",
       "blocking": true
     },
     {
@@ -48,17 +58,20 @@
   "layoutComponents": [
     {
       "name": "SiteHeader",
-      "section": "site chrome — renders from app/layout.tsx.",
+      "section": "hidden on /cities via HideChrome — KbNav renders instead.",
       "note": "Not in requiredComponents because the gate checks the route file."
     },
     {
       "name": "SiteFooter",
-      "section": "navy footer — renders from app/layout.tsx.",
+      "section": "hidden on /cities via HideChrome — KbFooter renders instead.",
       "note": "Not in requiredComponents because the gate checks the route file."
     }
   ],
   "removedComponents": [
-    "Primary-cities name-and-number ledger (v3.1 — replaced by full editorial rows with verified photography and live stat bands)",
-    "Low-opacity Bend photo wash behind the hero (v3.2 hero is the live region pulse on navy, no decorative photo)"
+    "PageBreadcrumb (replaced by KbBreadcrumb)",
+    "EngagedSection (telemetry now via KbSectionTracker + per-section ids)",
+    "Container / DisplayHeading / H2 / Eyebrow primitives (replaced by KB .wrap / .display / .sec-head / .sec-index)",
+    "Primary-cities name-and-number ledger (already replaced in v3.2 by full editorial rows with verified photography and live stat bands)",
+    "Low-opacity Bend photo wash behind the hero (the hero is the live region pulse on navy)"
   ]
 }

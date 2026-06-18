@@ -1,22 +1,42 @@
 {
   "route": "app/compare/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/compare/index.html",
-  "competitiveTarget": "Utility comparison page: side-by-side property table. noindex — not an SEO surface. Design system compliance: DisplayHeading H1, Container + Section primitives, BreadcrumbNav.",
-  "note": "Wave 3 site-v2 rebuild. Removed dead createClient import — data now via @/lib/data DAL only. Plain h1 replaced with DisplayHeading (Amboqia). No JSON-LD WebPage (noindex utility route). Breadcrumb JSON-LD only. AICompare is built but not wired — see inline comment in page.tsx for wire-or-delete recommendation.",
+  "competitiveTarget": "Utility comparison page: side-by-side property table. noindex — not an SEO surface. KB (kinetic-brutalist) design system: navy header band with Amboqia display H1, cream comparison surface, hard --edge borders, KbNav + KbFooter chrome.",
+  "note": "KB conversion 2026-06-18 (Phase 9 convergence) — RESTYLED IN PLACE, no content dropped. KbNav + KbFooter carry chrome (HideChrome to suppress default SiteHeader/SiteFooter is a shared-component edit deferred to the orchestrator). The interactive comparison surface (photo row + side-by-side feature Table + best-in-class highlighting + Google Maps locations embed + Copy Link/Download PDF actions + empty/loading state) is unchanged in CompareClient — only the page-level chrome and header were restyled to KB. Data still via @/lib/data DAL only (getListingTiles by listNumbers AND listingKeys + getListingDetailPhotos). robots noindex,follow preserved; route is NOT in the sitemap. Breadcrumb JSON-LD only (no WebPage JSON-LD on a noindex utility route). No KbHero — a stock cinematic hero is off-brand for a utility tool; a compact navy header band carries the breadcrumb + H1 + intro. AICompare is built but not wired — see inline wire-or-delete note in page.tsx.",
   "requiredComponents": [
     {
-      "name": "PageBreadcrumb",
-      "section": "Home > Compare breadcrumb",
+      "name": "KbNav",
+      "section": "top nav — transparent over the navy header band, flips to navy on scroll; full site directory overlay",
       "blocking": true
     },
     {
-      "name": "DisplayHeading",
-      "section": "page H1 — 'Compare properties' in Amboqia",
+      "name": "KbSectionTracker",
+      "section": "tracking — section_view + scroll_depth events (page contract G52), pageType=compare",
       "blocking": true
     },
     {
       "name": "MetadataBlock",
-      "section": "JSON-LD — BreadcrumbList",
+      "section": "JSON-LD — BreadcrumbList structured data (Home > Compare)",
+      "blocking": true
+    },
+    {
+      "name": "KbBreadcrumb",
+      "section": "breadcrumb strip — Home / Compare properties (KB chrome equivalent of the old PageBreadcrumb)",
+      "blocking": true
+    },
+    {
+      "name": "SmoothScrollProvider",
+      "section": "Lenis + GSAP ScrollTrigger scroll layer",
+      "blocking": true
+    },
+    {
+      "name": "CompareClient",
+      "section": "interactive comparison surface — photo row, side-by-side feature table with best-in-class highlighting, Google Maps locations embed, Copy Link + Download PDF actions, empty/loading state",
+      "blocking": true
+    },
+    {
+      "name": "KbFooter",
+      "section": "footer — contact, sitemap, legal",
       "blocking": true
     }
   ],
@@ -24,12 +44,18 @@
     {
       "name": "SiteHeader",
       "section": "renders from app/layout.tsx",
-      "note": "gate checks the route file"
+      "note": "to be suppressed by HideChrome for KB routes — deferred to orchestrator. KbNav already renders the correct KB chrome."
     },
     {
       "name": "SiteFooter",
       "section": "renders from app/layout.tsx",
-      "note": "gate checks the route file"
+      "note": "to be suppressed by HideChrome for KB routes — deferred to orchestrator. KbFooter already renders the correct KB chrome."
+    }
+  ],
+  "deferredComponents": [
+    {
+      "name": "HideChrome",
+      "reason": "Shared-component edit needed to suppress the default SiteHeader/SiteFooter on the KB chrome pages. Deferred to orchestrator — KbNav + KbFooter already render the correct KB chrome."
     }
   ]
 }

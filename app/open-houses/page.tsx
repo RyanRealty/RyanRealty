@@ -15,7 +15,7 @@ import type { Metadata } from 'next'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
 import type { OpenHouseWithListing } from '@/app/actions/open-houses'
 import { getRegionPulse } from '@/lib/data'
-import { listingTileHref, listingDetailPath } from '@/lib/slug'
+import { listingTileHref, listingDetailPath, listingsBrowsePath } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -24,6 +24,7 @@ import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbOpenHouses } from '@/components/site/kb/KbOpenHouses.client'
+import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -133,6 +134,32 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
 
   const eventJsonLd = openHouses.length > 0 ? buildEventJsonLd(openHouses) : null
 
+  // Restored from the pre-KB page's map view: every geolocated open house as a
+  // Point feature so the KbListingMap renders the full calendar on the terrain,
+  // not just the 12 tiles in the rail. Same FeatureCollection shape the homepage
+  // map uses. The whenLabel rides in the address line so a clicked dot still
+  // reads as an open house.
+  const mapFeatures = openHouses
+    .filter((oh) => oh.latitude != null && oh.longitude != null)
+    .map((oh) => ({
+      type: 'Feature' as const,
+      geometry: {
+        type: 'Point' as const,
+        coordinates: [Number(oh.longitude), Number(oh.latitude)] as [number, number],
+      },
+      properties: {
+        p: oh.list_price,
+        bd: oh.beds_total,
+        ba: oh.baths_full,
+        sf: oh.living_area,
+        a: oh.unparsed_address ?? [oh.street_number, oh.street_name].filter(Boolean).join(' '),
+        sub: oh.subdivision_name ?? '',
+        city: oh.city ?? '',
+        img: oh.photo_url ?? '',
+      },
+    }))
+  const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
+
   const schemas: SchemaInput[] = [
     {
       type: 'breadcrumb',
@@ -171,7 +198,19 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
           items={openHouseItems}
           eyebrow="Central Oregon · This week"
           heading="Open houses"
+          viewAllHref={listingsBrowsePath()}
         />
+        {mapFeatures.length > 0 ? (
+          <KbListingMap
+            geojson={mapGeo}
+            totalActive={mapFeatures.length}
+            fitToFeatures
+            showRegionMarkers={false}
+            eyebrow="Central Oregon · On the map"
+            title={'Open houses\non the map'}
+            subtitle="Every open house with a location, on the real terrain. Click any dot for the price, the beds, and the street."
+          />
+        ) : null}
         <KbSell
           data={{
             medianListPrice: regionPulse?.medianListPrice ?? null,

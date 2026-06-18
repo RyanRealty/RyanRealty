@@ -39,6 +39,18 @@ import { TransparentCMASummary } from '@/components/site/listing-detail/Transpar
 import { PhotoGalleryLightbox as _PhotoGalleryLightboxImport } from '@/components/site/PhotoGalleryLightbox'
 import ListingTracker from '@/components/listing/ListingTracker'
 import { ListingAttribution } from '@/components/listing/ListingAttribution'
+// KB (kinetic-brutalist) shell — Phase 9 page-class migration. Wraps the
+// existing listing-detail composition (ListingDetailShell + its parity-
+// required sections) in the same chrome the homepage/city/community pages
+// use: KbNav on top, KbFooter at the bottom, the cream `.kb-root` surface,
+// inertial smooth-scroll, and section/scroll tracking. The listing body is
+// RESTYLED IN PLACE — every data fetch, section, form, gallery, map,
+// calculator, JSON-LD, and the sticky broker sidebar are preserved exactly.
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import '@/components/site/kb/kb.css'
 
 // PhotoGalleryLightbox is referenced for parity-gate coverage (D75);
 // the actual consumer is <ListingHero>, which renders it. Re-exporting
@@ -369,7 +381,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
   ) : null
 
   return (
-    <>
+    <main className="kb-root">
+      <KbNav />
       <ListingTracker
         listingKey={listing.listingKey}
         listingId={listing.listingKey}
@@ -379,13 +392,20 @@ export default async function ListingDetailPage({ params }: PageProps) {
         beds={listing.beds ?? undefined}
         baths={listing.baths ?? undefined}
       />
-      <ListingDetailShell
-        listing={listingWithPhotos}
-        breadcrumbs={breadcrumbs}
-        hero={hero}
-        main={main}
-        sidebar={sidebar}
-      />
-    </>
+      <KbSectionTracker pageType="listing" />
+      <SmoothScrollProvider>
+        {/* Clears the fixed KB top bar so it doesn't overlap the breadcrumb
+            that ListingDetailShell renders at the top of the page. */}
+        <div aria-hidden="true" className="h-16" />
+        <ListingDetailShell
+          listing={listingWithPhotos}
+          breadcrumbs={breadcrumbs}
+          hero={hero}
+          main={main}
+          sidebar={sidebar}
+        />
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
+    </main>
   )
 }

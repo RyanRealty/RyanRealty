@@ -2,7 +2,7 @@
   "route": "app/about/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/about/index.html",
   "competitiveTarget": "Beat generic national-brokerage profile pages by leading with verified facts, concrete origin story, real Google reviews, and direct-broker accountability — zero marketing-speak (CLAUDE.md Data Accuracy + brand voice).",
-  "note": "KB (kinetic-brutalist) conversion 2026-06-18 (Phase 9 convergence). KbNav + KbFooter carry chrome. HideChrome for default SiteHeader/SiteFooter is a shared-component edit — deferred to orchestrator. Reviews now wired from TESTIMONIALS (24 verified Google 5-star reviews). Voice: show, don't say — no stated virtues, no headcount/smallness, no overt category claims (VOICE.md Five Laws). Every verified fact: Ryan Realty LLC (OREA 201253677, founded June 2023), Matt PB OR #201206613, fire service + Red Erickson mentor from verified broker bio. Region pulse feeds KbSell live numbers. Hero uses getSurfaceImage central-oregon with Old Mill fallback.",
+  "note": "KB (kinetic-brutalist) conversion 2026-06-18 (Phase 9 convergence). KbNav + KbFooter carry chrome. HideChrome for default SiteHeader/SiteFooter is a shared-component edit — deferred to orchestrator. Reviews now wired from TESTIMONIALS (24 verified Google 5-star reviews). Voice: show, don't say — no stated virtues, no headcount/smallness, no overt category claims (VOICE.md Five Laws). Every verified fact: Ryan Realty LLC (OREA 201253677, founded June 2023), Matt PB OR #201206613, fire service + Red Erickson mentor from verified broker bio. Region pulse feeds KbSell live numbers. Hero uses getSurfaceImage central-oregon with Old Mill fallback. Restored 2026-06-18 (post-KB content-loss audit): the service-area city grid (now KbExploreTowns fed by getCitiesForIndex) and the verified-facts FAQ + FAQPage JSON-LD (now FAQBlock) that the KB conversion had dropped.",
   "requiredComponents": [
     {
       "name": "KbNav",
@@ -40,6 +40,11 @@
       "blocking": true
     },
     {
+      "name": "KbExploreTowns",
+      "section": "service area — 'Where we work' city ledger (Bend, Redmond, Sisters, Sunriver, La Pine, Terrebonne) with live active counts + median from getCitiesForIndex (geo_snapshot_mv). Restores the pre-KB CityGrid in KB style.",
+      "blocking": true
+    },
+    {
       "name": "KbTestimonials",
       "section": "testimonials — 8 verified Google reviews from TESTIMONIALS (24 total, 5.0 avg, pulled 2026-06-13)",
       "blocking": true
@@ -52,6 +57,11 @@
     {
       "name": "KbSell",
       "section": "seller CTA — address capture to /sell/valuation; live region pulse numbers (median, DOM, sold 30d)",
+      "blocking": true
+    },
+    {
+      "name": "FAQBlock",
+      "section": "common questions — verified-facts-only FAQ (brokers, founding, same-broker-to-close, service area, valuation) rendered as a semantic <dl> + schema.org FAQPage JSON-LD. Restores the pre-KB FAQ section + structured data (same component the KB city pages use).",
       "blocking": true
     },
     {

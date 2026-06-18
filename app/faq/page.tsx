@@ -1,16 +1,43 @@
+/**
+ * /faq — Frequently asked questions for Ryan Realty (Bend, Central Oregon).
+ *
+ * KB (kinetic-brutalist) design — Phase 9 page-class migration. Restyled IN
+ * PLACE from the prior ContentPageHero + shadcn Card layout. Every piece of
+ * content is preserved:
+ *   - All 10 FAQ entries (question + answer + category + anchor id) — the
+ *     canonical source for the page, the FAQPage JSON-LD, and the GBP Q&A seed.
+ *   - The FAQPage JSON-LD schema (Gemini Ask Maps + Google featured snippets).
+ *   - The category table-of-contents (Neighborhoods / Buying / Selling /
+ *     Working with us) with per-category counts and in-page anchors.
+ *   - The grouped FaqAccordion sections (Radix accordions; answers stay mounted
+ *     in the DOM so crawler-visible answer text and the JSON-LD stay intact).
+ *   - The hero copy + both CTAs (Talk to us / Latest market report).
+ *   - The "Have a question we did not cover?" contact CTA card.
+ *   - The session + FUB page-view tracking side-effect.
+ *
+ * Only the presentation changed — the page now wears the KB shell (KbNav,
+ * KbHero, KbFooter, SmoothScrollProvider, KbSectionTracker) and the Amboqia
+ * display / hard-edge cream surfaces of the rest of the migrated site.
+ *
+ * SEO: export const metadata (canonical + OG + Twitter) preserved. JSON-LD
+ * preserved. PAGE CONTRACT: KB design + SEO + tracking (KbSectionTracker
+ * pageType="info").
+ */
+
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
-import ContentPageHero from '@/components/layout/ContentPageHero'
-import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-import { H2, Eyebrow } from '@/components/site/primitives'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbHero } from '@/components/site/kb/KbHero.client'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { FaqAccordion } from './FaqAccordion'
+import '@/components/site/kb/kb.css'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const faqOgImage = `${siteUrl}/api/og?type=default`
@@ -140,7 +167,6 @@ function faqJsonLd() {
   }
 }
 
-
 export default async function FAQPage() {
   try {
     const [session, fubPersonId] = await Promise.all([
@@ -167,69 +193,124 @@ export default async function FAQPage() {
   }))
 
   return (
-    <main className="min-h-screen bg-background">
-      <PageBreadcrumb trail={[{ label: 'FAQ' }]} />
+    <main className="kb-root">
+      <KbNav />
+      <KbSectionTracker pageType="info" />
       {/* JSON-LD FAQPage schema for Gemini Ask Maps + Google Search featured snippets */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd()) }}
       />
-
-      <ContentPageHero
-        title="Frequently asked questions"
-        subtitle="Honest answers to the questions Bend buyers and sellers ask us every week."
-        imageUrl={CONTENT_HERO_IMAGES.about}
-        ctas={[
-          { label: 'Talk to us', href: '/contact', primary: true },
-          { label: 'Latest market report', href: '/housing-market/reports', primary: false },
+      <KbBreadcrumb
+        trail={[
+          { label: 'Home', href: '/' },
+          { label: 'FAQ' },
         ]}
       />
+      <SmoothScrollProvider>
+        {/* Hero — same H1 + subtitle + CTAs as the prior ContentPageHero, in the
+            KB Amboqia display. The two CTAs (Talk to us / Latest market report)
+            are preserved in the CTA row below the hero. */}
+        <KbHero
+          data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
+          eyebrow="Central Oregon · Buyer & seller questions"
+          titleTop="Frequently asked"
+          titleBottom="questions"
+          lead="Honest answers to the questions Bend buyers and sellers ask us every week."
+          videoSrc={null}
+          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+        />
 
-      <div className="mx-auto max-w-3xl px-6 py-12 lg:py-16">
-        {/* Mini ToC */}
-        <nav className="mb-12 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {grouped.map((g) => (
-            <Button
-              key={g.cat}
-              asChild
-              variant="outline"
-              className="h-auto px-4 py-3 text-sm font-medium justify-start"
+        {/* CTA row preserved from the prior hero. */}
+        <section className="section" id="faq-cta" aria-label="Talk to us">
+          <div className="wrap">
+            <div className="flex flex-wrap items-center gap-3 py-2">
+              <Link href="/contact" className="btn alt">
+                Talk to us <span className="arr">→</span>
+              </Link>
+              <Link
+                href="/housing-market/reports"
+                className="btn alt"
+                style={{ background: 'transparent', color: 'var(--navy)' }}
+              >
+                Latest market report <span className="arr">→</span>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Category table-of-contents — anchor links into each grouped section,
+            with the per-category count preserved. */}
+        <section className="section" id="faq-toc" aria-label="Jump to a category">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Browse by topic</span>
+              <h2 className="sec-title display">What buyers and<br />sellers ask</h2>
+            </div>
+            <nav
+              className="grid grid-cols-2 gap-0 border-t border-l sm:grid-cols-4"
+              style={{ borderColor: 'var(--navy)', borderTopWidth: 'var(--edge)', borderLeftWidth: 'var(--edge)', marginTop: '28px' }}
+              aria-label="FAQ categories"
             >
-              <a href={`#${g.cat.toLowerCase().replace(/\s+/g, '-')}`}>
-                {g.cat}
-                <span className="ml-2 text-xs text-muted-foreground">({g.items.length})</span>
-              </a>
-            </Button>
-          ))}
-        </nav>
+              {grouped.map((g) => (
+                <a
+                  key={g.cat}
+                  href={`#${g.cat.toLowerCase().replace(/\s+/g, '-')}`}
+                  className="flex items-baseline justify-between gap-3 p-5 transition-colors hover:bg-[color:var(--navy)] hover:text-[color:var(--cream)]"
+                  style={{ borderColor: 'var(--navy)', borderRightWidth: 'var(--edge)', borderBottomWidth: 'var(--edge)' }}
+                >
+                  <span className="font-display text-lg leading-none">{g.cat}</span>
+                  <span className="mono-num text-sm" style={{ opacity: 0.7 }}>({g.items.length})</span>
+                </a>
+              ))}
+            </nav>
+          </div>
+        </section>
 
+        {/* Grouped accordions — every FAQ entry rendered. Radix keeps answers
+            mounted, so the FAQPage JSON-LD and crawler-visible text are intact. */}
         {grouped.map((g) => (
           <section
             key={g.cat}
             id={g.cat.toLowerCase().replace(/\s+/g, '-')}
-            className="mb-12 scroll-mt-24"
+            className="section"
+            aria-label={`${g.cat} questions`}
+            style={{ scrollMarginTop: '96px' }}
           >
-            <Eyebrow as="h2" className="mb-4 block text-sm tracking-wider text-muted-foreground">
-              {g.cat}
-            </Eyebrow>
-            <FaqAccordion items={g.items} />
+            <div className="wrap">
+              <div className="sec-head">
+                <span className="sec-index">{g.cat}</span>
+                <h2 className="sec-title display">{g.cat}</h2>
+              </div>
+              <div className="pt-2">
+                <FaqAccordion items={g.items} />
+              </div>
+            </div>
           </section>
         ))}
 
-        <Card className="mt-16 p-8 text-center">
-          <CardContent className="p-0">
-            <H2 className="mb-3 text-xl">
-              Have a question we did not cover?
-            </H2>
-            <p className="mb-6 text-base text-muted-foreground">
-              Reach out and we will give you a direct answer. No pitch, no pressure.
-            </p>
-            <Button asChild>
-              <Link href="/contact">Contact Ryan Realty</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+        {/* "Have a question we did not cover?" contact CTA — preserved. */}
+        <section className="section" id="faq-contact" aria-label="Still have a question">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Still have a question</span>
+              <h2 className="sec-title display">Did we miss<br />your question?</h2>
+            </div>
+            <div className="max-w-2xl pt-6">
+              <p style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.6vw,1.2rem)', lineHeight: 1.55 }}>
+                Reach out and we will give you a direct answer. No pitch, no pressure.
+              </p>
+              <div className="sec-cta">
+                <Link href="/contact" className="btn alt">
+                  Contact Ryan Realty <span className="arr">→</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
     </main>
   )
 }

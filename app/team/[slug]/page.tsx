@@ -45,6 +45,7 @@ import { normalizeAgentSlug, BROKER_EMAIL_BY_SLUG, type BrokerSlug } from '@/lib
 import { submitBrokerSellerLead } from '@/app/team/actions'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
 import BrokerAttributionSetter from '@/components/BrokerAttributionSetter'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
@@ -226,6 +227,12 @@ export default async function TeamMemberPage({ params }: Props) {
     : factualFallbackBio({ displayName: broker.display_name, firstName, closings, phone: broker.phone })
   const headshotSrc = HEADSHOT[broker.slug] ?? broker.photo_url ?? '/images/brokers/ryan-matt.png'
 
+  // Direct-broker contact links — the one accountability fact a transaction-desk
+  // shop cannot truthfully paste (passes the competitor test). Live values only.
+  const telHref = broker.phone ? `tel:${broker.phone.replace(/[^\d]/g, '')}` : null
+  const smsHref = broker.phone ? `sms:${broker.phone.replace(/[^\d]/g, '')}` : null
+  const mailHref = broker.email ? `mailto:${broker.email}` : null
+
   // Reviews that belong on THIS broker's page (name them, or name nobody),
   // with the ones that name this broker first.
   const relevantReviews = reviews.reviews
@@ -390,6 +397,61 @@ export default async function TeamMemberPage({ params }: Props) {
           }}
           eyebrow={`Sell with ${firstName}`}
         />
+
+        {/* Broker-attributed lead capture (restored) — KbSell above only redirects
+            to /sell/valuation, so the per-broker FUB lead write the old page carried
+            was lost. This form posts to submitBrokerSellerLead, which adapts to the
+            seller LP pipeline and routes the lead to the ATTRIBUTED broker (the
+            BrokerAttributionSetter cookie set above). Carries SmsConsentDisclosure
+            (A2P consent surface) by way of LeadCaptureBlock. */}
+        <LeadCaptureBlock
+          variant="seller"
+          onSubmit={submitBrokerSellerLead}
+          eyebrow="What's your home worth"
+          title={`Get a valuation from ${firstName}`}
+          intro={`Tell ${firstName} about your home and you'll get a comparative market analysis with the comparable sales behind the number, not an automated estimate.`}
+          submitLabel="Request my valuation"
+          tone="default"
+        />
+
+        {/* Direct-broker contact (restored) — the call/text/email links and the
+            direct-broker accountability fact the old page surfaced. KB-styled with
+            kb.css section/btn classes; live phone + email only, no fabricated copy. */}
+        {(telHref || smsHref || mailHref) ? (
+          <section className="section" id="contact-broker" style={{ background: 'var(--cream)', color: 'var(--navy)' }}>
+            <div className="wrap" style={{ paddingTop: 'clamp(48px,7vw,72px)', paddingBottom: 'clamp(48px,7vw,72px)' }}>
+              <span className="sec-index">{`Talk to ${firstName} directly`}</span>
+              <h2 className="display" style={{ fontSize: 'clamp(2.2rem,7vw,4rem)', lineHeight: 0.92, margin: '14px 0 0' }}>
+                {`Work with ${firstName}.`}
+              </h2>
+              <p style={{ maxWidth: '52ch', margin: '18px 0 0', fontSize: '1.05rem', lineHeight: 1.55 }}>
+                {broker.phone ? `Call or text ${broker.phone}` : null}
+                {broker.phone && broker.email ? ', or ' : null}
+                {broker.email ? `email ${broker.email}` : null}
+                {broker.phone || broker.email ? '. ' : null}
+                {`You work with ${firstName} directly, from the first call to closing.`}
+              </p>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 26 }}>
+                {telHref ? (
+                  <a href={telHref} className="btn alt">
+                    {`Call ${firstName}`} <span className="arr">→</span>
+                  </a>
+                ) : null}
+                {smsHref ? (
+                  <a href={smsHref} className="btn">
+                    {`Text ${firstName}`}
+                  </a>
+                ) : null}
+                {mailHref ? (
+                  <a href={mailHref} className="btn">
+                    {`Email ${firstName}`}
+                  </a>
+                ) : null}
+              </div>
+            </div>
+          </section>
+        ) : null}
+
         <KbFooter towns={[]} />
       </SmoothScrollProvider>
     </main>

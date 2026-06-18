@@ -1213,6 +1213,23 @@ html.lenis, html.lenis body{height:auto;}
   .kb-root .kb-proof2-tab-name{font-size:.86rem;}
 }
 
+/* Testimonials — compact "Recent reviews" card grid (replaces the single
+   oversized auto-cycling plate). Hard-edged cards on cream, navy stars. */
+.kb-root .kb-reviews-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;}
+.kb-root .kb-reviews-all{align-self:flex-end;font-size:.82rem;font-weight:600;color:var(--navy);text-decoration:none;border-bottom:1px solid var(--navy);padding-bottom:2px;white-space:nowrap;transition:opacity .15s ease;}
+.kb-root .kb-reviews-all:hover{opacity:.6;}
+.kb-root .kb-reviews-all .arr{margin-left:4px;}
+.kb-root .kb-reviews-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:34px;}
+.kb-root .kb-rev-card{border:1px solid var(--navy);background:var(--cream);padding:22px 22px 20px;display:flex;flex-direction:column;gap:13px;}
+.kb-root .kb-rev-stars{display:flex;gap:3px;}
+.kb-root .kb-rev-stars svg path{fill:var(--navy);}
+.kb-root .kb-rev-quote{margin:0;flex:1;font-size:.95rem;line-height:1.55;color:var(--navy);}
+.kb-root .kb-rev-who{display:flex;flex-direction:column;gap:2px;}
+.kb-root .kb-rev-who b{font-weight:700;color:var(--navy);font-size:.86rem;}
+.kb-root .kb-rev-who span{font-size:.68rem;letter-spacing:.05em;text-transform:uppercase;color:var(--navy-70);}
+@media (min-width:781px) and (max-width:1100px){.kb-root .kb-reviews-grid{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:780px){.kb-root .kb-reviews-grid{grid-template-columns:1fr;}}
+
 /* Market chart — year-over-year overlay legend + month axis */
 .kb-root .mkt-legend-years{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:14px;}
 .kb-root .mkt-yl{display:inline-flex;align-items:center;gap:7px;font-size:.66rem;font-weight:600;letter-spacing:.08em;color:var(--cream-70);font-variant-numeric:tabular-nums;}

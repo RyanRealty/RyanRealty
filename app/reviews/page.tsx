@@ -2,10 +2,31 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ExternalLinkHugeIcon } from '@/components/icons/HugeIcons'
 import { TESTIMONIALS, GOOGLE_REVIEWS_URL } from '@/lib/testimonials'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-import { DisplayHeading, H2 } from '@/components/site/primitives'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbHero } from '@/components/site/kb/KbHero.client'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import '@/components/site/kb/kb.css'
+
+/**
+ * /reviews — Client reviews destination.
+ *
+ * KB (kinetic-brutalist) design — Phase 9 page-class migration (media class).
+ * Restyled IN PLACE. Every piece of content is preserved:
+ *   - export const metadata (title/description/canonical/OG/twitter)
+ *   - hero copy ("What Our Clients Say") + the "View reviews on Google" link
+ *   - ALL 24 verified Google testimonials (verbatim quote + author + source),
+ *     rendered as hard-edged KB review cards with five-star ratings. The full
+ *     set is kept (the shared KbTestimonials component caps at 6, which would
+ *     drop 18 — so the grid is restyled in place to preserve every review).
+ *   - the "Read more on Google" CTA at the foot of the grid
+ *   - the "Talk to a Ryan Realty broker" CTA (Contact us / Meet the team)
+ *
+ * Reviews are quoted verbatim with attribution, so the copy is exempt from the
+ * brand-voice Five Laws and is never altered (CLAUDE.md §0 + brand-voice scope).
+ */
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -24,93 +45,135 @@ export const metadata: Metadata = {
   twitter: { card: 'summary_large_image', images: [ogImage] },
 }
 
+// One five-point star, point-up inside a 24×24 box — matches KbTestimonials.
+const STAR_PATH =
+  'M12 1.6 L15.09 8.01 L22.06 8.86 L16.95 13.62 L18.27 20.51 L12 17.12 L5.73 20.51 L7.05 13.62 L1.94 8.86 L8.91 8.01 Z'
+
 export default function ReviewsPage() {
   return (
-    <main className="min-h-screen bg-background">
-      <PageBreadcrumb trail={[{ label: 'Reviews' }]} />
-      <section className="bg-primary px-4 py-16 sm:px-6 sm:py-24">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-widest text-primary-foreground/75">
-            Read Our Reviews
-          </p>
-          <DisplayHeading
-            as="h1"
-            className="mt-4 text-4xl text-primary-foreground sm:text-5xl"
-          >
-            What Our Clients Say
-          </DisplayHeading>
-          <p className="mt-6 text-lg text-muted/90">
-            Real reviews from buyers and sellers across Central Oregon. Read what clients say about
-            the process, the communication, and how deals came together.
-          </p>
-          <a
-            href={GOOGLE_REVIEWS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-10 inline-flex items-center gap-2 rounded-lg bg-accent px-6 py-3.5 text-base font-semibold text-primary shadow-md hover:bg-accent/90"
-          >
-            View reviews on Google
-            <ExternalLinkHugeIcon className="h-5 w-5" />
-          </a>
-        </div>
-      </section>
+    <main className="kb-root">
+      <KbNav />
+      <KbSectionTracker pageType="media" />
+      <KbBreadcrumb
+        trail={[
+          { label: 'Home', href: '/' },
+          { label: 'Reviews' },
+        ]}
+      />
 
-      <section className="border-b border-border bg-card px-4 py-16 sm:px-6 sm:py-20" aria-labelledby="testimonials-heading">
-        <div className="mx-auto max-w-5xl">
-          <h2 id="testimonials-heading" className="sr-only">
-            Client testimonials
-          </h2>
-          <ul className="grid gap-8 sm:grid-cols-2">
-            {TESTIMONIALS.map((t) => (
-              <li key={t.author + t.quote.slice(0, 40)}>
-                <Card className="p-6">
-                  <CardContent className="p-0">
-                    <blockquote className="text-foreground">
-                      <p className="text-lg leading-relaxed">&ldquo;{t.quote}&rdquo;</p>
-                      <footer className="mt-4 flex items-center justify-between">
-                        <cite className="not-italic font-semibold text-primary">
-                          {t.author}
-                        </cite>
-                        <span className="text-sm text-muted-foreground">{t.source}</span>
-                      </footer>
-                    </blockquote>
-                  </CardContent>
-                </Card>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-12 text-center">
-            <a
-              href={GOOGLE_REVIEWS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg border-2 border-primary px-6 py-3 font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
-            >
-              Read more on Google
-              <ExternalLinkHugeIcon className="h-5 w-5" />
-            </a>
-          </div>
-        </div>
-      </section>
+      <SmoothScrollProvider>
+        {/* Hero — "What Our Clients Say" on the KB display type. The prior
+            hero's "View reviews on Google" link is preserved in the chips row
+            below the hero so it stays one tap away. */}
+        <KbHero
+          data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
+          eyebrow="Read our reviews"
+          titleTop="What our"
+          titleBottom="clients say"
+          lead="Real reviews from buyers and sellers across Central Oregon. Read what clients say about the process, the communication, and how deals came together."
+          videoSrc={null}
+          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+        />
 
-      <section className="bg-muted px-4 py-14 sm:px-6" aria-labelledby="cta-heading">
-        <div className="mx-auto max-w-2xl text-center">
-          <H2 id="cta-heading" className="text-2xl text-primary">
-            Talk to a Ryan Realty broker.
-          </H2>
-          <p className="mt-3 text-muted-foreground">
-            Buy or sell in Central Oregon with a broker you reach directly.
-          </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-4">
-            <Button asChild size="lg">
-              <Link href="/contact">Contact us</Link>
-            </Button>
-            <Button asChild variant="outline" size="lg">
-              <Link href="/team">Meet the team</Link>
-            </Button>
+        {/* "View reviews on Google" — preserved from the prior hero CTA. */}
+        <section className="section" id="google-cta" aria-label="View reviews on Google">
+          <div className="wrap">
+            <div className="flex flex-wrap items-center gap-3 py-2">
+              <a
+                href={GOOGLE_REVIEWS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn alt"
+              >
+                View reviews on Google
+                <ExternalLinkHugeIcon className="ml-1 h-5 w-5" />
+              </a>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* Client testimonials — ALL 24 verified Google reviews, verbatim, as
+            hard-edged KB review cards (five stars + quote + attribution). */}
+        <section className="section kb-reviews" id="testimonials" aria-labelledby="testimonials-heading">
+          <div className="wrap">
+            <div className="sec-head kb-reviews-head">
+              <div>
+                <span className="sec-index">In their words</span>
+                <h2 id="testimonials-heading" className="sec-title display">
+                  Client reviews
+                </h2>
+              </div>
+              <a className="kb-reviews-all" href={GOOGLE_REVIEWS_URL} target="_blank" rel="noopener noreferrer">
+                Read all on Google <span className="arr">→</span>
+              </a>
+            </div>
+
+            <ul className="kb-reviews-grid">
+              {TESTIMONIALS.map((t) => (
+                <li key={t.author + t.quote.slice(0, 40)}>
+                  <figure className="kb-rev-card h-full">
+                    <div className="kb-rev-stars" role="img" aria-label="Five out of five stars">
+                      {Array.from({ length: 5 }).map((_, s) => (
+                        <svg key={s} viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+                          <path d={STAR_PATH} />
+                        </svg>
+                      ))}
+                    </div>
+                    <blockquote className="kb-rev-quote">&ldquo;{t.quote}&rdquo;</blockquote>
+                    <figcaption className="kb-rev-who">
+                      <b>{t.author}</b>
+                      <span>Verified {t.source} review</span>
+                    </figcaption>
+                  </figure>
+                </li>
+              ))}
+            </ul>
+
+            <div className="sec-cta">
+              <a
+                href={GOOGLE_REVIEWS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn alt"
+              >
+                Read more on Google
+                <ExternalLinkHugeIcon className="ml-1 h-5 w-5" />
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* "Talk to a Ryan Realty broker" — preserved CTA block. */}
+        <section className="section" id="cta" aria-labelledby="cta-heading">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Buy or sell in Central Oregon</span>
+              <h2 id="cta-heading" className="sec-title display">
+                Talk to a<br />Ryan Realty broker
+              </h2>
+            </div>
+            <div className="max-w-2xl pt-6">
+              <p style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.6vw,1.2rem)', lineHeight: 1.55 }}>
+                Buy or sell in Central Oregon with a broker you reach directly.
+              </p>
+              <div className="flex flex-wrap items-center gap-3 pt-6">
+                <Link href="/contact" className="btn alt">
+                  Contact us <span className="arr">→</span>
+                </Link>
+                <Link
+                  href="/team"
+                  className="btn alt"
+                  style={{ background: 'transparent', color: 'var(--navy)' }}
+                >
+                  Meet the team <span className="arr">→</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
     </main>
   )
 }

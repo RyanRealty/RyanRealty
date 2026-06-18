@@ -1,14 +1,38 @@
-import Link from 'next/link'
+/**
+ * /guides/[slug] — single guide detail.
+ *
+ * KB (kinetic-brutalist) design — Phase 9 page-class migration. Restyled IN
+ * PLACE from the prior card layout. Every piece of content is preserved:
+ *   - Article (BlogPosting) JSON-LD + BreadcrumbList JSON-LD
+ *   - guide.title + meta_description
+ *   - BOTH AdUnits (slots 4004001001 + 4004001002) around the body
+ *   - guide.content_html rendered as rich prose
+ *   - CityClusterNav (when guide.city) for topic-cluster internal linking
+ *   - related guides grid (same city OR same category, up to 4)
+ *   - HomeValuationCta lead-capture block
+ *   - generateMetadata (async) for SEO
+ *   - both DAL reads (getGuideBySlug, getPublishedGuides)
+ *
+ * Only the presentation changed: KB shell (KbNav, KbBreadcrumb, KbFooter,
+ * SmoothScrollProvider, KbSectionTracker), Amboqia display headings, hard-edge
+ * cream surfaces. The interactive AdUnit / HomeValuationCta clients keep their
+ * logic intact.
+ */
+
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-import { H1, H3 } from '@/components/site/primitives'
 import AdUnit from '@/components/AdUnit'
 import HomeValuationCta from '@/components/HomeValuationCta'
 import CityClusterNav from '@/components/CityClusterNav'
 import { getGuideBySlug, getPublishedGuides } from '@/lib/data'
 import { generateBreadcrumbSchema, generateBlogSchema } from '@/lib/structured-data'
 import { cityEntityKey } from '@/lib/slug'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import '@/components/site/kb/kb.css'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -57,7 +81,9 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ sl
   })
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="kb-root">
+      <KbNav />
+      <KbSectionTracker pageType="guides" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
@@ -74,48 +100,119 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ sl
           ),
         }}
       />
-      <PageBreadcrumb trail={[{ label: 'Guides', href: '/guides' }, { label: guide.title }]} includeJsonLd={false} />
-      <div className="mx-auto max-w-4xl px-4 pb-10 pt-4 sm:px-6">
-      <article className="rounded-lg border border-border bg-card p-6">
-        <H1 className="text-3xl">{guide.title}</H1>
-        {guide.meta_description && <p className="mt-3 text-muted-foreground">{guide.meta_description}</p>}
-        <div className="mt-6">
-          <AdUnit slot="4004001001" format="horizontal" />
-        </div>
-        <div
-          className="prose prose-sm mt-6 max-w-none text-foreground"
-          dangerouslySetInnerHTML={{ __html: guide.content_html }}
-        />
-        <div className="mt-6">
-          <AdUnit slot="4004001002" format="horizontal" />
-        </div>
-      </article>
-      {guide.city && (
-        <div className="mt-8">
-          <CityClusterNav
-            cityName={guide.city}
-            citySlug={cityEntityKey(guide.city)}
-            activePage="guide"
-            guideSlug={guide.slug}
-          />
-        </div>
-      )}
-      {related.length > 0 && (
-        <section className="mt-8 rounded-lg border border-border bg-card p-6">
-          <H3 className="text-lg font-semibold">More guides</H3>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {related.map((row) => (
-              <Link key={row.slug} href={`/guides/${row.slug}`} className="rounded-md border border-border bg-muted px-4 py-3 text-sm font-medium text-foreground hover:bg-background">
-                {row.title}
-              </Link>
-            ))}
+      <KbBreadcrumb
+        trail={[
+          { label: 'Home', href: '/' },
+          { label: 'Guides', href: '/guides' },
+          { label: guide.title },
+        ]}
+      />
+      <SmoothScrollProvider>
+        {/* Article header + body */}
+        <section className="section" id="guide" aria-label="Guide">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">
+                {guide.category?.trim() || 'Guide'}
+                {guide.city ? ` · ${guide.city}` : ''}
+              </span>
+            </div>
+            <article className="mx-auto w-full max-w-3xl pt-7">
+              <h1 className="display" style={{ fontSize: 'clamp(2.1rem,6vw,4rem)', lineHeight: 0.95 }}>
+                {guide.title}
+              </h1>
+              {guide.meta_description && (
+                <p
+                  className="mt-4"
+                  style={{
+                    color: 'var(--navy-70)',
+                    fontSize: 'clamp(1.05rem,1.6vw,1.3rem)',
+                    lineHeight: 1.45,
+                    maxWidth: '60ch',
+                  }}
+                >
+                  {guide.meta_description}
+                </p>
+              )}
+
+              {/* Top ad slot — interactive client, consent-gated. Preserved. */}
+              <div className="mt-7">
+                <AdUnit slot="4004001001" format="horizontal" />
+              </div>
+
+              {/* Rich guide body. The kb-root reset zeroes margins on every
+                  element, so the rendered HTML gets explicit important spacing
+                  + a navy-on-cream prose treatment scoped to this container. */}
+              <div
+                className="kb-guide-body mt-7 max-w-none [&_h2]:text-[clamp(1.5rem,3vw,2.1rem)] [&_h2]:leading-tight [&_h2]:font-semibold [&_h2]:mt-10! [&_h2]:mb-3! [&_h3]:font-semibold [&_h3]:text-lg [&_h3]:mt-8! [&_h3]:mb-2! [&_p]:my-4! [&_p]:leading-[1.65] [&_p]:text-[1.02rem] [&_ul]:my-4! [&_ul]:pl-6! [&_ul]:list-disc [&_ol]:my-4! [&_ol]:pl-6! [&_ol]:list-decimal [&_li]:my-1.5! [&_li]:leading-[1.6] [&_a]:underline [&_a]:underline-offset-2 [&_strong]:font-semibold [&_img]:my-6! [&_img]:rounded-md"
+                style={{ color: 'var(--navy)' }}
+                dangerouslySetInnerHTML={{ __html: guide.content_html }}
+              />
+
+              {/* Bottom ad slot — preserved. */}
+              <div className="mt-8">
+                <AdUnit slot="4004001002" format="horizontal" />
+              </div>
+            </article>
           </div>
         </section>
-      )}
-      <section className="mt-8">
-        <HomeValuationCta />
-      </section>
-      </div>
+
+        {/* City topic-cluster nav — internal linking, preserved verbatim. */}
+        {guide.city && (
+          <section className="section" id="city-cluster" aria-label="Explore this city">
+            <div className="wrap">
+              <div className="mx-auto w-full max-w-3xl">
+                <CityClusterNav
+                  cityName={guide.city}
+                  citySlug={cityEntityKey(guide.city)}
+                  activePage="guide"
+                  guideSlug={guide.slug}
+                />
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Related guides — same city OR category. Up to 4. Preserved. */}
+        {related.length > 0 && (
+          <section className="section" id="more-guides" aria-label="More guides">
+            <div className="wrap">
+              <div className="sec-head">
+                <span className="sec-index">Keep reading</span>
+                <h2 className="sec-title display">More guides</h2>
+              </div>
+              <div className="grid gap-px mt-0 sm:grid-cols-2" style={{ borderTop: 'var(--edge) solid var(--navy)' }}>
+                {related.map((row) => (
+                  <a
+                    key={row.slug}
+                    href={`/guides/${row.slug}`}
+                    className="group flex items-center justify-between gap-4 px-2 py-6"
+                    style={{ borderBottom: 'var(--edge) solid var(--navy)' }}
+                  >
+                    <span className="display" style={{ fontSize: 'clamp(1.2rem,2.6vw,1.7rem)', lineHeight: 1.05 }}>
+                      {row.title}
+                    </span>
+                    <span className="arr" style={{ fontSize: '1.4rem', transition: 'transform .18s ease' }}>
+                      →
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Home valuation lead-capture block — interactive client, preserved. */}
+        <section className="section" id="valuation-cta" aria-label="Home valuation">
+          <div className="wrap">
+            <div className="mx-auto w-full max-w-3xl">
+              <HomeValuationCta />
+            </div>
+          </div>
+        </section>
+
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
     </main>
   )
 }

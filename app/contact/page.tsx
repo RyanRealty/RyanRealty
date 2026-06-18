@@ -1,3 +1,29 @@
+/**
+ * /contact — Contact Ryan Realty (Central Oregon).
+ *
+ * KB (kinetic-brutalist) design — Phase 9 page-class migration. Restyled IN
+ * PLACE from the prior ContentPageHero + two-column layout. Every piece of
+ * content is preserved:
+ *   - The ContactForm (interactive: name/email/phone/inquiry-select/message,
+ *     server action submit, fbq + trackEvent on success, listingKey carry-
+ *     through, and the load-bearing <SmsConsentDisclosure>). Untouched logic.
+ *   - The getPageContent('contact') DAL call (CMS title override).
+ *   - The default-inquiry derivation from ?inquiry / ?listingKey / ?intent.
+ *   - The session + FUB page-view tracking side-effect.
+ *   - ContactPage + BreadcrumbList + FAQPage JSON-LD (all three preserved).
+ *   - The Office block: name, "Central Oregon", call-or-text tel link, service
+ *     area sentence, and the "Meet the team" link.
+ *   - The hero copy + both CTAs (Meet the Team / View Listings).
+ *
+ * Only the presentation changed — the page now wears the KB shell (KbNav,
+ * KbHero, KbFooter, SmoothScrollProvider, KbSectionTracker) and the Amboqia
+ * display / hard-edge cream surfaces of the rest of the migrated site.
+ *
+ * SEO: export const metadata (canonical + OG + Twitter) preserved. JSON-LD
+ * preserved. PAGE CONTRACT: KB design + SEO + tracking (KbSectionTracker
+ * pageType="info").
+ */
+
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import ContactForm from './ContactForm'
@@ -6,13 +32,16 @@ import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
-import ContentPageHero from '@/components/layout/ContentPageHero'
-import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { listingsBrowsePath } from '@/lib/slug'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 import { CONTACT } from '@/lib/brand/contact'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
-import { H2 } from '@/components/site/primitives'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbHero } from '@/components/site/kb/KbHero.client'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import '@/components/site/kb/kb.css'
 
 const contactOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')}/api/og?type=default`
 
@@ -75,46 +104,106 @@ export default async function ContactPage({ searchParams }: PageProps) {
   ])
 
   return (
-    <main className="min-h-screen bg-background">
-      <PageBreadcrumb trail={[{ label: 'Contact' }]} includeJsonLd={false} />
-      <ContentPageHero
-        title={contactTitle}
-        subtitle="Questions about buying, selling, or just exploring? Reach out and we'll get back to you quickly."
-        imageUrl={CONTENT_HERO_IMAGES.contact}
-        ctas={[
-          { label: 'Meet the Team', href: '/team', primary: false },
-          { label: 'View Listings', href: listingsBrowsePath(), primary: false },
+    <main className="kb-root">
+      <KbNav />
+      <KbSectionTracker pageType="info" />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
+      <KbBreadcrumb
+        trail={[
+          { label: 'Home', href: '/' },
+          { label: 'Contact' },
         ]}
       />
-      <section className="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16">
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
-        <div className="grid gap-10 lg:grid-cols-2">
-          <div>
-            <ContactForm defaultInquiryType={defaultInquiry} listingKey={params.listingKey} />
-          </div>
-          <div>
-            <H2 className="text-xl text-primary">Office</H2>
-            <p className="mt-2 text-muted-foreground">
-              Ryan Realty<br />
-              Central Oregon
-            </p>
-            <div className="mt-4">
-              <p className="text-sm text-muted-foreground">Call or text</p>
-              <a href={`tel:${CONTACT.phoneFubTel}`} className="text-lg font-semibold text-primary hover:underline">{CONTACT.phoneFub}</a>
-            </div>
-            <p className="mt-4 text-sm text-muted-foreground">
-              Serving Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and surrounding communities across Central Oregon.
-            </p>
-            <div className="mt-6">
-              <Link href="/team" className="font-medium text-primary hover:underline">
-                Meet the team
+      <SmoothScrollProvider>
+        {/* Hero — CMS-overridable title + subtitle, in the KB Amboqia display.
+            The two CTAs (Meet the Team / View Listings) are preserved below. */}
+        <KbHero
+          data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
+          eyebrow="Central Oregon · Talk to a broker"
+          titleTop={contactTitle}
+          titleBottom="us"
+          lead="Questions about buying, selling, or just exploring? Reach out and we will get back to you quickly."
+          videoSrc={null}
+          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+        />
+
+        {/* CTA row preserved from the prior hero. */}
+        <section className="section" id="contact-cta" aria-label="Team and listings">
+          <div className="wrap">
+            <div className="flex flex-wrap items-center gap-3 py-2">
+              <Link
+                href="/team"
+                className="btn alt"
+                style={{ background: 'transparent', color: 'var(--navy)' }}
+              >
+                Meet the team <span className="arr">→</span>
+              </Link>
+              <Link
+                href={listingsBrowsePath()}
+                className="btn alt"
+                style={{ background: 'transparent', color: 'var(--navy)' }}
+              >
+                View listings <span className="arr">→</span>
               </Link>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* Form + Office — the prior two-column layout, restyled in KB. The form
+            (interactive, with SMS consent) and the office details are preserved.
+            The form is boxed in a hard navy edge; the office is the ledger. */}
+        <section className="section" id="contact-form" aria-label="Contact form and office">
+          <div className="wrap">
+            <div className="grid gap-10 lg:grid-cols-2">
+              <div
+                className="bg-white p-6 sm:p-8"
+                style={{ border: 'var(--edge) solid var(--navy)' }}
+              >
+                <span className="sec-index" style={{ display: 'block', marginBottom: '14px' }}>
+                  Send a message
+                </span>
+                <ContactForm defaultInquiryType={defaultInquiry} listingKey={params.listingKey} />
+              </div>
+              <div>
+                <span className="sec-index" style={{ display: 'block', marginBottom: '14px' }}>
+                  Office
+                </span>
+                <h2 className="font-display" style={{ fontSize: 'clamp(2rem,6vw,3.2rem)', lineHeight: 0.95 }}>
+                  Ryan Realty
+                </h2>
+                <p className="mt-3" style={{ color: 'var(--navy-70)' }}>
+                  Central Oregon
+                </p>
+                <div className="mt-6">
+                  <p className="mono-num text-xs uppercase tracking-wider" style={{ color: 'var(--navy-70)' }}>
+                    Call or text
+                  </p>
+                  <a
+                    href={`tel:${CONTACT.phoneFubTel}`}
+                    className="font-display text-2xl hover:underline"
+                    style={{ color: 'var(--navy)' }}
+                  >
+                    {CONTACT.phoneFub}
+                  </a>
+                </div>
+                <p className="mt-6 text-sm leading-relaxed" style={{ color: 'var(--navy-70)' }}>
+                  Serving Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and surrounding
+                  communities across Central Oregon.
+                </p>
+                <div className="sec-cta">
+                  <Link href="/team" className="btn alt">
+                    Meet the team <span className="arr">→</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
     </main>
   )
 }

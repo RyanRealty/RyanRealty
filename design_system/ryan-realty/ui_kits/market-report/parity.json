@@ -45,9 +45,19 @@
       "blocking": false
     },
     {
+      "name": "ContentSection",
+      "section": "Curated resource cross-links (region report, reports index, open data explorer, all cities, communities, homes-for-sale, guides, area guides). Restored from the pre-KB hub: the KB chrome does not otherwise surface these sibling routes from this page, so dropping them lost internal-linking / SEO value.",
+      "blocking": false
+    },
+    {
       "name": "KbSell",
       "section": "Seller conversion CTA, eyebrow 'Sell in Central Oregon'. Data from regionPulse (medianListPrice, medianDaysToPending, closedLast30Days).",
       "blocking": true
+    },
+    {
+      "name": "LeadCaptureBlock",
+      "section": "General 'ask a broker' inquiry form (variant='inquiry'), submitted through submitMarketPageInquiry → submitPageCTA (FUB person + event, Meta CAPI, canonical tagging, GA4 mirror). Restored from the pre-KB hub: KbSell only routes to the seller valuation flow, so without this a buyer/general market question had no on-page lead-capture surface.",
+      "blocking": false
     },
     {
       "name": "KbFooter",
@@ -98,7 +108,8 @@
     "getMarketPulse": "lib/data/market/getMarketPulse.ts, market_pulse_live geo_type='region' geo_slug='central-oregon' property_type='A', 10 to 15 min freshness. Used for KbHero lede and KbSell data.",
     "getMarketPulseCitySnapshots": "lib/data/market/getMarketPulseSnapshot.ts, market_pulse_live city rows geo_label IN CITY_LABELS, ONE call. Used by KbExploreTowns active counts.",
     "getRecentBlogPosts": "lib/data/blog/getRecentBlogPosts.ts, blog_posts status='published', newest first, limit 3. Used by KbArticles.",
-    "note": "All DAL functions imported from @/lib/data (G8 compliant). No @/app/actions/* imports."
+    "submitMarketPageInquiry": "app/housing-market/actions.ts (route-local server action) → submitPageCTA. Bound to the restored LeadCaptureBlock inquiry form. Same action the /housing-market/[...slug] flagship page uses.",
+    "note": "All read DAL functions imported from @/lib/data (G8 compliant). The only non-DAL import is the route-local server action submitMarketPageInquiry for the lead form (same pattern as the [...slug] page); it routes writes through submitPageCTA, not a raw .from()."
   },
   "sectionOrder": [
     "MetadataBlock",
@@ -109,7 +120,9 @@
     "KbHero",
     "KbExploreTowns",
     "KbArticles",
+    "ContentSection",
     "KbSell",
+    "LeadCaptureBlock",
     "KbFooter"
   ]
 }

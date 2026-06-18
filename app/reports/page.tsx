@@ -1,4 +1,30 @@
+/**
+ * /reports (canonical /housing-market/reports) — Central Oregon market reports
+ * hub: live per-city data + pre-built sales reports + weekly reports.
+ *
+ * KB (kinetic-brutalist) design — Phase 9 page-class migration. Restyled IN
+ * PLACE. Every piece of content is preserved:
+ *   - export const metadata (canonical + OG + Twitter, /housing-market/reports)
+ *   - the page-view tracking trio (getSession + getFubPersonIdFromCookie +
+ *     trackPageViewIfPossible) — unchanged
+ *   - ReportsDataSection: getMarketReportData + getReportCities, the verified
+ *     Dataset JSON-LD built ONLY from fetched metrics (CLAUDE.md §0 compliance),
+ *     and <ReportsByCityView> with all props — Suspense-streamed
+ *   - SalesReportsSection: listMarketReports + getSalesReportCardsData +
+ *     getEngagementCountsBatchCached + <ReportsIndexContent> — Suspense-streamed
+ *   - ReportsSkeleton loading state (restyled to KB skeleton tokens)
+ *   - the "Live data" badge + "Housing Market Report" heading
+ *   - the hero copy + both CTAs (Explore market data · Search Homes)
+ *   - parseReportsParams (cities/range searchParam parsing) — unchanged
+ *
+ * Only the presentation changed: KB shell (KbNav, KbBreadcrumb, KbFooter,
+ * SmoothScrollProvider, KbSectionTracker pageType='market-reports'), KbHero,
+ * Amboqia display headings, hard-edge cream surfaces. The interactive client
+ * views (ReportsByCityView, ReportsIndexContent) keep their logic intact.
+ */
+
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { Suspense } from 'react'
 import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
@@ -10,16 +36,17 @@ import { getReportCities } from '@/app/actions/reports'
 import { getMarketReportData } from '@/app/actions/market-report'
 import { MARKET_REPORT_DEFAULT_CITIES } from '@/app/actions/market-report-types'
 import { PRIMARY_CITIES } from '@/lib/cities'
-import ContentPageHero from '@/components/layout/ContentPageHero'
-import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import ReportsByCityView from '@/components/reports/ReportsByCityView'
 import ReportsIndexContent from './ReportsIndexContent'
-import { H2 } from '@/components/site/primitives'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbHero } from '@/components/site/kb/KbHero.client'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import type { SchemaInput } from '@/lib/site/json-ld'
+import '@/components/site/kb/kb.css'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const defaultOgImage = `${siteUrl}/api/og?type=default`
@@ -63,14 +90,23 @@ function parseReportsParams(params: { [key: string]: string | string[] | undefin
   return { cities, rangeDays, periodStart, periodEnd }
 }
 
+/** KB skeleton — same shape as the prior shadcn skeleton (heading + subhead +
+ * 6 rows), restyled onto KB surface tokens with inline styles (no new CSS in
+ * kb.css). Announced to assistive tech. */
+const skelBlock = (h: number, w: number | string): React.CSSProperties => ({
+  height: h,
+  width: w,
+  background: 'var(--navy-12)',
+  border: '1px solid var(--navy-12)',
+})
 function ReportsSkeleton() {
   return (
-    <div className="space-y-4">
-      <Skeleton className="h-8 w-64" />
-      <Skeleton className="h-6 w-48" />
+    <div className="space-y-4" role="status" aria-live="polite" aria-label="Loading market data">
+      <div style={skelBlock(32, 256)} />
+      <div style={skelBlock(24, 192)} />
       <div className="mt-4 space-y-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-12 w-full" />
+          <div key={i} style={skelBlock(48, '100%')} />
         ))}
       </div>
     </div>
@@ -180,42 +216,104 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
 
   return (
-    <main className="min-h-screen bg-background">
-      <PageBreadcrumb trail={[{ label: 'Market reports' }]} />
-      <ContentPageHero
-        title="Market Reports"
-        subtitle="Real-time market data by city. Add or remove cities and change the time range. Default: last 7 days."
-        imageUrl={CONTENT_HERO_IMAGES.reports}
-        ctas={[
-          { label: 'Explore market data', href: '/reports/explore', primary: false },
-          { label: 'Search Homes', href: '/homes-for-sale', primary: false },
+    <main className="kb-root">
+      <KbNav />
+      <KbSectionTracker pageType="reports" />
+      <MetadataBlock
+        schemas={[
+          {
+            type: 'breadcrumb',
+            items: [
+              { name: 'Home', url: '/' },
+              { name: 'Market reports', url: '/housing-market/reports' },
+            ],
+          },
+          {
+            type: 'webPage',
+            name: 'Central Oregon real estate market reports',
+            description:
+              'Real-time Housing Market Report by city: sold volume, median price, days on market, inventory. Choose cities and time range.',
+            url: '/housing-market/reports',
+          },
         ]}
       />
+      <KbBreadcrumb
+        trail={[
+          { label: 'Home', href: '/' },
+          { label: 'Market reports' },
+        ]}
+      />
+      <SmoothScrollProvider>
+        {/* Hero — same H1 + subtitle as the prior ContentPageHero. The two CTAs
+            (Explore market data / Search Homes) are preserved in the CTA row
+            below so both destinations stay one tap away. */}
+        <KbHero
+          data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
+          eyebrow="Central Oregon · Live market data"
+          titleTop="Market"
+          titleBottom="reports"
+          lead="Real-time market data by city. Add or remove cities and change the time range. Default: last 7 days."
+          videoSrc={null}
+          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+        />
 
-      <section id="housing-market-report" className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
-        <div className="mb-6 flex flex-wrap items-center gap-2">
-          <Badge variant="outline" className="rounded-md border-primary/30 text-xs font-medium uppercase tracking-wider text-primary">
-            Live data
-          </Badge>
-          <H2 className="text-2xl">
-            Housing Market Report
-          </H2>
-        </div>
-        <Suspense fallback={<ReportsSkeleton />}>
-          <ReportsDataSection
-            selectedCities={selectedCities}
-            rangeDays={rangeDays}
-            periodStart={periodStart}
-            periodEnd={periodEnd}
-          />
-        </Suspense>
-      </section>
+        {/* CTA row preserved from the prior hero. */}
+        <section className="section" id="reports-cta" aria-label="Explore and search">
+          <div className="wrap">
+            <div className="flex flex-wrap items-center gap-3 py-2">
+              <Link href="/housing-market/explore" className="btn alt">
+                Explore market data <span className="arr">→</span>
+              </Link>
+              <Link
+                href="/homes-for-sale"
+                className="btn alt"
+                style={{ background: 'transparent', color: 'var(--navy)' }}
+              >
+                Search homes <span className="arr">→</span>
+              </Link>
+            </div>
+          </div>
+        </section>
 
-      <section className="mx-auto max-w-6xl border-t border-border px-4 py-10 sm:px-6 sm:py-12">
-        <Suspense fallback={<ReportsSkeleton />}>
-          <SalesReportsSection />
-        </Suspense>
-      </section>
+        {/* Live per-city Housing Market Report — Suspense-streamed. The
+            "Live data" badge + heading are preserved; ReportsByCityView keeps
+            its full interactive logic (city chips, range selector, table). */}
+        <section
+          id="housing-market-report"
+          className="section"
+          aria-label="Housing market report"
+        >
+          <div className="wrap pb-12">
+            <div className="sec-head">
+              <span className="sec-index">Live data</span>
+              <h2 className="sec-title display">Housing<br />market report</h2>
+            </div>
+            <div className="pt-7">
+              <Suspense fallback={<ReportsSkeleton />}>
+                <ReportsDataSection
+                  selectedCities={selectedCities}
+                  rangeDays={rangeDays}
+                  periodStart={periodStart}
+                  periodEnd={periodEnd}
+                />
+              </Suspense>
+            </div>
+          </div>
+        </section>
+
+        {/* Sales reports + weekly reports — Suspense-streamed. ReportsIndexContent
+            keeps its full logic (sales-report tiles slider, weekly report list,
+            empty state). */}
+        <section className="section" id="sales-and-weekly-reports" aria-label="Sales and weekly reports">
+          <div className="wrap pb-16">
+            <Suspense fallback={<ReportsSkeleton />}>
+              <SalesReportsSection />
+            </Suspense>
+          </div>
+        </section>
+
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
     </main>
   )
 }

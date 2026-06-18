@@ -60,6 +60,9 @@ import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { FAQBlock } from '@/components/site/FAQBlock'
+import { ContentSection } from '@/components/site/ContentSection'
+import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
+import { submitMarketPageInquiry } from '@/app/housing-market/actions'
 import '@/components/site/kb/kb.css'
 
 export const revalidate = 300
@@ -88,6 +91,80 @@ const CITY_SLUG: Record<string, string> = {
   'Tumalo': 'tumalo',
   'Prineville': 'prineville',
   'Terrebonne': 'terrebonne',
+}
+
+// ---------------------------------------------------------------------------
+// Market narrative — data-driven from verified region pulse figures.
+// Restored from the pre-KB page (ContentSection summary + §0 methodology trace).
+// Every sentence derives from a single market_pulse_live region row; no stat
+// is fabricated (a missing field is omitted, never estimated — §0).
+// ---------------------------------------------------------------------------
+
+function buildRegionNarrative(
+  pulse: {
+    activeCount: number
+    medianListPrice: number | null
+    monthsOfSupply: number | null
+    medianDaysToPending: number | null
+  } | null,
+  refreshedAt: string | null,
+): { what: string; method: string } {
+  if (!pulse) {
+    return {
+      what: 'Live market data for Central Oregon is being compiled. Check back shortly.',
+      method: '',
+    }
+  }
+
+  const mos = pulse.monthsOfSupply
+  const active = pulse.activeCount
+  const median = pulse.medianListPrice
+  const dom = pulse.medianDaysToPending
+
+  let verdict = 'a balanced market'
+  if (mos != null) {
+    if (mos <= 4) verdict = "a seller's market"
+    else if (mos >= 6) verdict = "a buyer's market"
+  }
+
+  const parts: string[] = []
+
+  if (active > 0) {
+    parts.push(
+      `Central Oregon currently has ${active.toLocaleString()} active single-family homes for sale across all cities.`,
+    )
+  }
+
+  if (mos != null) {
+    const rounded = Math.round(mos * 10) / 10
+    parts.push(
+      `At ${rounded} months of supply, the region sits in ${verdict}. ` +
+        `A balanced market runs between 4 and 6 months. ` +
+        `Below 4 months benefits sellers, above 6 months benefits buyers.`,
+    )
+  }
+
+  if (median != null) {
+    const r = Math.round(median / 1000) * 1000
+    parts.push(`The region median list price stands at $${r.toLocaleString()}.`)
+  }
+
+  if (dom != null && dom > 0) {
+    parts.push(`Homes are going pending in a median of ${dom} days across the region.`)
+  }
+
+  const what = parts.join(' ')
+
+  const method = refreshedAt
+    ? `Data source: market_pulse_live, single-family homes (property_type = A), ` +
+      `geo_type = region, geo_slug = central-oregon, refreshed ${new Date(refreshedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })}. ` +
+      `City comparison from market_pulse_live geo_type = city rows for the same property_type. ` +
+      `Months of supply = active listings divided by (closed last 30 days times 2). ` +
+      `Under 4 months is a seller's market, 4 to 6 is balanced, over 6 is a buyer's market. ` +
+      `Source: Oregon Data Share via Ryan Realty.`
+    : ''
+
+  return { what, method }
 }
 
 // ---------------------------------------------------------------------------
@@ -221,6 +298,17 @@ export default async function CentralOregonRegionPage() {
   const lede =
     ledeParts.join(' ') ||
     'Single-family market data across Central Oregon, updated every 15 minutes from Oregon Data Share.'
+
+  // -------------------------------------------------------------------------
+  // Market narrative + methodology trace — restored from the pre-KB page.
+  // Data-driven prose from the verified region pulse. The methodology trace is
+  // a §0 AI-citability surface (names the source, the MoS formula, and the
+  // seller/balanced/buyer thresholds) that the KB conversion had dropped.
+  // -------------------------------------------------------------------------
+  const { what: narrativeWhat, method: narrativeMethod } = buildRegionNarrative(
+    regionPulse,
+    refreshedAt,
+  )
 
   // -------------------------------------------------------------------------
   // City tiles — KbExploreTowns from the same citySnapshots (§0).
@@ -365,6 +453,44 @@ export default async function CentralOregonRegionPage() {
             />
           </section>
         ) : null}
+
+        {/* Market narrative + methodology trace (restored from the pre-KB page).
+            §0 AI-citability: data-driven summary plus the source/formula/threshold
+            trace that lets an AI assistant cite the page with provenance. */}
+        {narrativeWhat ? (
+          <ContentSection
+            eyebrow="What the numbers say"
+            title="Central Oregon market summary"
+            tone="default"
+            divider
+          >
+            <div className="flex flex-col gap-4 text-muted-foreground text-base leading-relaxed">
+              <p>{narrativeWhat}</p>
+              {narrativeMethod ? (
+                <p className="text-xs text-muted-foreground border-t border-border pt-4 mt-2">
+                  <strong className="text-foreground">Methodology:</strong>{' '}
+                  {narrativeMethod}
+                </p>
+              ) : null}
+            </div>
+          </ContentSection>
+        ) : null}
+
+        {/* Broker inquiry lead-capture (restored from the pre-KB page). KbSell
+            below routes a seller address to /sell/valuation, but the general
+            "ask a broker a question" path — for buyers and anyone weighing a
+            move — was dropped in the KB conversion. inquiry variant writes via
+            the same submitMarketPageInquiry server action the old page used
+            (name/email/message only, so no phone form = no SMS-consent surface). */}
+        <LeadCaptureBlock
+          variant="inquiry"
+          onSubmit={submitMarketPageInquiry}
+          eyebrow="Talk to a broker"
+          title="Questions about the Central Oregon market?"
+          intro="Tell us what you are weighing. A local broker will follow up with specifics for your situation. No pressure."
+          submitLabel="Ask a broker"
+          tone="muted"
+        />
 
         {/* Sell CTA — feeds off region pulse figures */}
         <KbSell

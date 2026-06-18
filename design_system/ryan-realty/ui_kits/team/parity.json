@@ -2,7 +2,7 @@
   "route": "app/team/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/team/index.html",
   "competitiveTarget": "Beat generic brokerage team pages: real broker names, direct-broker accountability, transparent-PNG headshots, and verified Google reviews, inside the KB chrome.",
-  "note": "Phase 9 KB migration. Team index uses KB chrome (KbNav, KbHero, KbTeam, KbTestimonials, KbSell, KbFooter, KbSectionTracker). No fabricated stats, rankings, or review text. getBrokers() is the sole broker-data source. TESTIMONIALS/getReviews feed KbTestimonials. Per-broker profiles at /team/[slug] each carry filtered reviews (reviewBelongsOnPage) and getBrokerSales track records inside the same KB chrome.",
+  "note": "Phase 9 KB migration. Team index uses KB chrome (KbNav, KbHero, KbAbout, KbTeam, KbTestimonials, KbSell, FAQBlock, KbFooter, KbSectionTracker). No fabricated stats, rankings, or review text. getBrokers() is the sole broker-data source and now feeds the KbAbout verified-license ledger (restored from the pre-KB BrokerProfileRow). TESTIMONIALS/getReviews feed KbTestimonials. FAQBlock restores the pre-KB agent-choice intent FAQ + FAQPage JSON-LD. Per-broker profiles at /team/[slug] each carry filtered reviews (reviewBelongsOnPage) and getBrokerSales track records inside the same KB chrome.",
   "requiredComponents": [
     {
       "name": "KbNav",
@@ -35,6 +35,11 @@
       "blocking": true
     },
     {
+      "name": "KbAbout",
+      "section": "intro prose — direct-broker accountability copy + verified Oregon license ledger (restored from pre-KB BrokerProfileRow; getBrokers() data, no fabricated stats)",
+      "blocking": true
+    },
+    {
       "name": "KbTeam",
       "section": "broker grid — three portrait cards, each linking to /team/[slug]",
       "blocking": true
@@ -47,6 +52,11 @@
     {
       "name": "KbSell",
       "section": "seller CTA — address-capture, routes to /sell/valuation",
+      "blocking": true
+    },
+    {
+      "name": "FAQBlock",
+      "section": "agent-choice intent FAQ — restored from the pre-KB /team page; shared FAQBlock emits FAQPage JSON-LD (same pattern as the community KB page)",
       "blocking": true
     },
     {
