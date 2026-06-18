@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.24 (2026-06-18)
+
+### Other
+- Listing detail -> KB: full-bleed video-first hero + KB-restyled body sections
+
+---
+
+
 ## v1.595.23 (2026-06-18)
 
 ### Other
