@@ -51,6 +51,7 @@ const DETAIL_SELECT = [
   'Latitude',
   'Longitude',
   'PhotoURL',
+  'media_suppressed',
   'PropertyType',
   'property_sub_type',
   'OnMarketDate',
@@ -105,6 +106,7 @@ type ListingRow = {
   Latitude: number | null
   Longitude: number | null
   PhotoURL: string | null
+  media_suppressed: boolean | null
   PropertyType: string | null
   property_sub_type: string | null
   OnMarketDate: string | null
@@ -173,7 +175,10 @@ function rowToDetail(row: ListingRow): ListingDetail {
     subdivisionSlug: slug(row.SubdivisionName),
     lat: row.Latitude,
     lng: row.Longitude,
-    photoUrl: row.PhotoURL,
+    // Owner media-removal request: a media_suppressed listing exposes no hero
+    // poster / OG image (mirrors getListingPhotos + getListingVideos). The flag is
+    // the durable, sync-proof gate — see migration 20260618121500_add_media_suppressed.sql.
+    photoUrl: row.media_suppressed ? null : row.PhotoURL,
     propertyType: row.PropertyType,
     propertySubType: row.property_sub_type,
     onMarketDate: row.OnMarketDate,
@@ -335,7 +340,9 @@ export const getListingDetail = async (listingKey: string): Promise<GetListingDe
     // throw-on-error fix (Vercel Data Cache persists across deploys). v2 bump
     // (2026-05-28) did the same for the column-quoting bug. Without this, listings
     // cached null during a transient blip stay "Listing Not Found" until TTL.
-    ['listing-detail-v3', listingKey],
+    // v4 bump 2026-06-18 — media_suppressed gate nulls photoUrl (owner media-removal
+    // requests); evicts entries cached before the suppression check existed.
+    ['listing-detail-v4', listingKey],
     {
       revalidate: CACHE_WINDOWS.listingDetail,
       tags: [cacheTag.listings, cacheTag.listing(listingKey)],

@@ -56,7 +56,7 @@ function pickBestUri(p: DetailsPhotoJson): string | null {
   )
 }
 
-type DetailRow = { ListingKey?: string | null; details?: { Photos?: DetailsPhotoJson[] } | null; PhotoURL?: string | null }
+type DetailRow = { ListingKey?: string | null; details?: { Photos?: DetailsPhotoJson[] } | null; PhotoURL?: string | null; media_suppressed?: boolean | null }
 
 async function fetchPhotos(listingKey: string): Promise<ListingPhoto[]> {
   const sb = supabaseAnon()
@@ -71,17 +71,24 @@ async function fetchPhotos(listingKey: string): Promise<ListingPhoto[]> {
   // for the common pretty-URL case; ListingKey second covers raw-key access.
   let detail = (await sb
     .from('listings')
-    .select('ListingKey, details, PhotoURL')
+    .select('ListingKey, details, PhotoURL, media_suppressed')
     .eq('ListNumber', listingKey)
     .maybeSingle()).data as DetailRow | null
   if (!detail) {
     detail = (await sb
       .from('listings')
-      .select('ListingKey, details, PhotoURL')
+      .select('ListingKey, details, PhotoURL, media_suppressed')
       .eq('ListingKey', listingKey)
       .maybeSingle()).data as DetailRow | null
   }
   const canonicalKey = String(detail?.ListingKey ?? listingKey).trim()
+
+  // Owner media-removal request: when the listing is flagged media_suppressed,
+  // the public site shows NO photos for it (gallery + hero collapse). See
+  // migration 20260618121500_add_media_suppressed.sql. Checked here (not just by
+  // emptying the data) because the Spark sync re-pulls details.Photos/PhotoURL on
+  // every delta/full sync — the flag is the durable, sync-proof gate.
+  if (detail?.media_suppressed === true) return []
 
   // Tier 1 — our normalized listing_photos table (keyed by the canonical ListingKey).
   const { data: rows } = await sb
@@ -131,7 +138,9 @@ export const getListingPhotos = (listingKey: string): Promise<ListingPhoto[]> =>
     // column-quoting bug window.
     // v3 bump 2026-06-08 — invalidate single-PhotoURL-fallback entries cached
     // when the ListNumber lookup missed details.Photos (every pretty-URL listing).
-    ['listing-photos-v3', listingKey],
+    // v4 bump 2026-06-18 — media_suppressed gate added (owner photo-removal
+    // requests); evicts entries cached before the suppression check existed.
+    ['listing-photos-v4', listingKey],
     {
       revalidate: CACHE_WINDOWS.listingTile,
       tags: [cacheTag.listings, cacheTag.listing(listingKey)],

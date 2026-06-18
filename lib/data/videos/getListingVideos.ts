@@ -157,21 +157,28 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
   // bumps were repeatedly hand-evicting exactly these poisoned empties.
   const byNumber = await supabase
     .from('listings')
-    .select('ListingKey, details')
+    .select('ListingKey, details, media_suppressed')
     .eq('ListNumber', listingKey)
     .maybeSingle()
   if (byNumber.error) throw new Error(`getListingVideos resolve by ListNumber ${listingKey}: ${byNumber.error.message}`)
-  let resolved = byNumber.data as { ListingKey?: string | null; details?: unknown } | null
+  let resolved = byNumber.data as { ListingKey?: string | null; details?: unknown; media_suppressed?: boolean | null } | null
   if (!resolved) {
     const byKey = await supabase
       .from('listings')
-      .select('ListingKey, details')
+      .select('ListingKey, details, media_suppressed')
       .eq('ListingKey', listingKey)
       .maybeSingle()
     if (byKey.error) throw new Error(`getListingVideos resolve by ListingKey ${listingKey}: ${byKey.error.message}`)
-    resolved = byKey.data as { ListingKey?: string | null; details?: unknown } | null
+    resolved = byKey.data as { ListingKey?: string | null; details?: unknown; media_suppressed?: boolean | null } | null
   }
   const canonicalKey = String(resolved?.ListingKey ?? listingKey).trim()
+
+  // Owner media-removal request: a media_suppressed listing shows NO videos or
+  // virtual tours on the public site (mirrors getListingPhotos). Without this a
+  // suppressed listing with a 3D tour / marketing video would still display the
+  // home's interior as a video hero, defeating the photo removal. The flag is the
+  // durable, sync-proof gate — see migration 20260618121500_add_media_suppressed.sql.
+  if (resolved?.media_suppressed === true) return []
 
   const out: VideoEmbed[] = []
   const seen = new Set<string>()
@@ -317,7 +324,9 @@ export const getListingVideos = (listingKey: string): Promise<VideoEmbed[]> =>
     // hero, which the v6-v9 bumps kept hand-evicting). makeResilientCached retries
     // once uncached then falls back to [], so a blip recovers next request instead
     // of pinning empty for the videos window. v9 entries may be poisoned.
-    ['listing-videos-v10', listingKey],
+    // v11 bump 2026-06-18 — media_suppressed gate added (owner media-removal
+    // requests); evicts entries cached before the suppression check existed.
+    ['listing-videos-v11', listingKey],
     {
       revalidate: CACHE_WINDOWS.videos,
       tags: [cacheTag.listing(listingKey), cacheTag.videos],
