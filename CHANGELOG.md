@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.20 (2026-06-18)
+
+### Other
+- Revert "Search: KB nav + footer chrome (solid normal-flow nav) — map + filters untouched"
+
+---
+
+
 ## v1.595.19 (2026-06-18)
 
 ### Other
