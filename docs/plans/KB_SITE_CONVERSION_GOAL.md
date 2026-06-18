@@ -88,5 +88,29 @@ per the city-page migration pattern). NOT migrating: account/dashboard/auth/lega
   open-houses (index+city) and price-drops (index+city) → KB; removed price-drops' hidden
   parity-shim slop and rewrote its parity.json to the KB set.
   **LESSON: every new KB route MUST be added to `HideChrome` in the same change** (else double chrome).
-- 2026-06-18 — Next: confirm single-chrome live across all routes; then bespoke trust/funnel
-  (about/team/sell) + search/buy (need new KB components — direct design attention, not a mechanical pass).
+- 2026-06-18 — **Wave F verified live**: single chrome (1 header/1 footer) confirmed on
+  zip, subdivisions, housing-market hub + bend, open-houses, price-drops, neighborhood.
+- 2026-06-18 — **Trust tier shipped + verified live** (`6f2f8773`): `/about` + `/team` +
+  `/team/[slug]` → KB. Broker profile keeps per-broker review filtering (reviewBelongsOnPage),
+  getBrokerSales, and RealEstateAgent+AggregateRating+breadcrumb JSON-LD; brand-voice 0; single
+  chrome confirmed (`/team/matt-ryan` 1 header/1 footer, h1 "Matt Ryan"). HideChrome updated
+  (/about, /team, /team/<slug>; /team/<slug>/edit keeps default chrome).
+
+### Converted to KB this session (all live-verified, gate-green, §0-checked) — ~16 KB pages
+
+home, city, community (pre-session) + subdivision, neighborhood, housing-market hub, region
+report, city reports, zip, open-houses (×2), price-drops (×2), about, team, team/[slug].
+Plus: market-chart fix + the HideChrome double-chrome fix (see [[ryanrealty-kb-route-hidechrome]]).
+
+### Remaining (design-led — NOT a mechanical pass; do with direct attention / new KB sections)
+
+- **/sell + /sell/[intent] + /sell/valuation** — seller funnel; needs KB sell sections (value
+  props, process, commission) the library doesn't have yet.
+- **/search + /search/[...slug] + /buy + /buy/[intent] + /compare** — needs new KB search/filters/
+  results components (biggest lift; #1 traffic).
+- **/blog + /blog/[slug] + /guides + /guides/[slug] + /area-guides** — needs a KB article-body layout.
+- **/listing/[listingKey]** — custom PDP, large.
+- **Reference/feed**: /schools, /parks, /videos, /resources, /reviews, /motivated-sellers, /faq,
+  /our-homes, /activity, /pulse, /contact, /reports/*.
+- **Each new KB route: add to HideChrome in the same change** (single-chrome) + async generateMetadata + rewrite its parity.json to KB (no hidden shims).
+- NOT in scope: account/dashboard/auth/legal (the authenticated app).
