@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
@@ -70,6 +70,10 @@ export function KbOpenHouses({
   viewAllHref?: string
 }) {
   const root = useRef<HTMLElement>(null)
+  // The rail is a navigable index: clicking/hovering a card promotes it into the
+  // big lead panel. The rail stays STABLE (every open house always visible, the
+  // active one marked) so there is no reflow on selection.
+  const [activeIndex, setActiveIndex] = useState(0)
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger)
@@ -80,7 +84,7 @@ export function KbOpenHouses({
 
       if (reduce) {
         if (lead) gsap.set(lead, { clipPath: 'inset(0 0 0% 0)', opacity: 1 })
-        gsap.set(rail, { opacity: 1, y: 0 })
+        gsap.set(rail, { y: 0 })
         return
       }
 
@@ -97,13 +101,15 @@ export function KbOpenHouses({
         )
       }
       if (rail.length) {
+        // Transform-only entrance — opacity is owned by CSS (active/dimmed states)
+        // so the cards are NEVER hidden if the ScrollTrigger doesn't fire. They are
+        // interactive buttons; content must not depend on an animation playing.
         gsap.from(rail, {
-          opacity: 0,
-          y: 30,
+          y: 26,
           duration: 0.6,
           ease: 'power3.out',
           stagger: 0.08,
-          scrollTrigger: { trigger: '.oh-rail', start: 'top 88%', once: true },
+          scrollTrigger: { trigger: root.current, start: 'top 80%', once: true },
         })
       }
     }, root)
@@ -112,7 +118,9 @@ export function KbOpenHouses({
 
   if (items.length === 0) return null
 
-  const [lead, ...rest] = items
+  const safeIndex = Math.min(activeIndex, items.length - 1)
+  const lead = items[safeIndex]
+  const hasRail = items.length > 1
   const leadWhen = splitWhen(lead.whenLabel)
   const leadPrice = ohMoney(lead.price)
   const leadSpecs = ohSpecs(lead)
@@ -125,7 +133,7 @@ export function KbOpenHouses({
           <h2 className="sec-title display">{heading}</h2>
         </div>
 
-        <div className={rest.length ? 'oh-board has-rail' : 'oh-board'}>
+        <div className={hasRail ? 'oh-board has-rail' : 'oh-board'}>
           {/* LEAD — the next open house, full-bleed cinematic panel */}
           <a className="oh-lead" href={lead.href}>
             <div className="oh-lead-media">
@@ -161,15 +169,29 @@ export function KbOpenHouses({
             </div>
           </a>
 
-          {/* RAIL — the rest, horizontal scroll-snap of tall photo cards */}
-          {rest.length ? (
+          {/* RAIL — every open house as a selectable card; scroll-snaps horizontally
+              on mobile, scrolls vertically beside the lead on desktop. Click or hover
+              promotes the card into the lead panel. The big lead anchor is the
+              navigation target. */}
+          {hasRail ? (
             <div className="oh-rail" role="list">
-              {rest.map((it) => {
+              {items.map((it, i) => {
                 const when = splitWhen(it.whenLabel)
                 const price = ohMoney(it.price)
                 const specs = ohSpecs(it)
+                const isActive = i === safeIndex
                 return (
-                  <a key={it.href} className="oh-rail-card" href={it.href} role="listitem">
+                  <button
+                    key={it.href}
+                    type="button"
+                    className="oh-rail-card"
+                    role="listitem"
+                    aria-current={isActive}
+                    aria-label={`Preview ${it.address}`}
+                    onClick={() => setActiveIndex(i)}
+                    onMouseEnter={() => setActiveIndex(i)}
+                    onFocus={() => setActiveIndex(i)}
+                  >
                     <div className="oh-rail-media">
                       {it.photoUrl ? (
                         <img className="oh-rail-img" src={it.photoUrl} alt={it.address} loading="lazy" />
@@ -200,7 +222,7 @@ export function KbOpenHouses({
                         </div>
                       ) : null}
                     </div>
-                  </a>
+                  </button>
                 )
               })}
             </div>

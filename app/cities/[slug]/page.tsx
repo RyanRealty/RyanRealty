@@ -25,6 +25,7 @@ import {
   getRegionPulse,
   getPriceHistory,
   getCityListings,
+  getListingTiles,
   getBendNeighborhoodStats,
   getCityCommunitySnapshots,
   getAllCitySnapshots,
@@ -38,11 +39,11 @@ import { getCityMetadataByName } from '@/lib/data/cities/getCityMetadata'
 import { getCityContent, buildDataDrivenCityAbout } from '@/lib/city-content'
 import { CITY_QUICK_FACTS } from '@/lib/cities'
 import bendNeighborhoodPolygons from '@/data/bend/bend-neighborhood-polygons.json'
-import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
 import { cityHero } from '@/lib/geo-images'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { assignNeighborhoodPhotos } from '@/lib/kb/neighborhood-photos'
+import { resortActiveSfrCounts, resortLabelToSlug, cityResorts } from '@/lib/kb/resort-active-counts'
 import { listingTileHref } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
@@ -106,6 +107,39 @@ const CITY_COMMUNITIES: Record<string, { match: string; img: string; videoSlug?:
   sunriver: [{ match: 'caldera', img: '/images/kb/caldera-springs.jpg', videoSlug: 'caldera-springs' }],
 }
 
+// Hover photo for each resort/golf community in the master-planned ledger, keyed by
+// the resort-registry slug. The literal-name image lookups miss for resorts (their
+// banner rows are tagged under alias subdivisions), so this curated map is the
+// primary source. Every path is a verified file under public/.
+const RESORT_IMG: Record<string, string> = {
+  tetherow: '/images/kb/tetherow-golf-aerial.jpg',
+  'broken-top': '/images/kb/broken-top.jpg',
+  'northwest-crossing': '/images/kb/northwest-crossing.jpg',
+  pronghorn: '/lp/central-oregon-golf/img/pronghorn-01.jpg',
+  'awbrey-glen': '/lp/central-oregon-golf/img/awbrey-glen-01.jpg',
+  'widgi-creek': '/lp/central-oregon-golf/img/widgi-creek-01.jpg',
+  'vandevert-ranch': '/images/kb/vandevert-ranch.jpg',
+  'three-rivers': '/images/kb/three-rivers.jpg',
+  'caldera-springs': '/images/kb/caldera-springs.jpg',
+  crosswater: '/lp/central-oregon-golf/img/crosswater-01.jpg',
+  'eagle-crest': '/lp/central-oregon-golf/img/eagle-crest-01.jpg',
+  'brasada-ranch': '/lp/central-oregon-golf/img/brasada-01.jpg',
+}
+
+// Every active SFR tile in a city, PAGINATED past PostgREST's 1000-row cap (Bend
+// alone has ~1044). The resort alias-aware counts must see the COMPLETE set or
+// they undercount communities whose older listings fall past the first page. (§0)
+async function fetchAllCityActiveSfr(cityName: string): Promise<Awaited<ReturnType<typeof getListingTiles>>> {
+  const PAGE = 1000
+  const all: Awaited<ReturnType<typeof getListingTiles>> = []
+  for (let offset = 0; offset < 6000; offset += PAGE) {
+    const page = await getListingTiles({ city: cityName, status: 'active', propertyType: 'A', limit: PAGE, offset })
+    all.push(...page)
+    if (page.length < PAGE) break
+  }
+  return all
+}
+
 const CENTRAL_OREGON_CITY_SLUGS = new Set([
   'bend', 'redmond', 'sisters', 'la-pine', 'sunriver', 'madras',
   'prineville', 'culver', 'terrebonne', 'tumalo', 'powell-butte',
@@ -166,7 +200,7 @@ export default async function CityDetailPage({ params }: Props) {
   const [
     pulse, regionPulse, mktStats, priceHist, communities, neighborhoodStats,
     communitySnapshots, allCitySnapshots, blogPosts, openHouses, activity,
-    cityMeta, mapTiles, featuredTiles,
+    cityMeta, mapTiles, featuredTiles, resortTiles,
   ] = await Promise.all([
     withTimeoutFallback(getMarketPulse({ geoType: 'city', geoSlug }), null, 3500, 'city:pulse'),
     withTimeoutFallback(getRegionPulse(), null, 3000, 'city:regionPulse'),
@@ -184,6 +218,12 @@ export default async function CityDetailPage({ params }: Props) {
     withTimeoutFallback(getCityMetadataByName(cityName), null, 3000, 'city:meta'),
     withTimeoutFallback(getCityListings(cityName, { status: 'active', sort: 'newest', limit: 1500 }), [], 4500, 'city:mapTiles'),
     withTimeoutFallback(getCityListings(cityName, { status: 'active', sort: 'price-desc', limit: 14 }), [], 4500, 'city:featured'),
+    // Uncapped active SFR tiles for the city — the source for alias-aware resort
+    // counts. mapTiles is capped at 1500 + all-types, which UNDERcounts resorts
+    // (Widgi 28 vs true 48). This SFR-only, high-limit pull is exact. (§0)
+    cityResorts(slug).length > 0
+      ? withTimeoutFallback(fetchAllCityActiveSfr(cityName), [], 6000, 'city:resortTiles')
+      : Promise.resolve([] as Awaited<ReturnType<typeof getListingTiles>>),
   ])
 
   // Hero — Bend reuses the homepage video; otherwise the VERIFIED cityHero photo
@@ -268,6 +308,13 @@ export default async function CityDetailPage({ params }: Props) {
   // slug first, then by NAME, before falling back to its own SFR snapshot count.
   const commActiveBySlug = new Map(cityComms.map((c) => [c.slug, c.activeCount]))
   const commActiveByName = new Map(cityComms.map((c) => [c.subdivision.toLowerCase().trim(), c.activeCount]))
+  // Alias-aware active SFR per resort. A resort's homes are MLS-tagged under many
+  // subdivision names (Widgi Creek -> "Inn Of The 7th", "Elkai Woods", ...), so the
+  // literal-name count undercounts every resort (Widgi 0 vs true 48). Counted from
+  // the city's active tiles via the registry aliases — the canonical number used by
+  // BOTH the golf ledger and the rail so a community never shows two figures. (§0)
+  const resortSfrCounts = resortActiveSfrCounts(slug, resortTiles)
+  const resortSlugByLabel = resortLabelToSlug(slug)
 
   // Neighborhoods ledger — designated Bend polygons + live westside stats. (§D83)
   // Hover photo: a curated community banner when the neighborhood name matches a
@@ -308,20 +355,13 @@ export default async function CityDetailPage({ params }: Props) {
     const rawSlug = s.geoKey.includes(':') ? s.geoKey.split(':')[1]! : s.geoKey
     communitySfrBySlug.set(rawSlug.replace(/\s+/g, '-').toLowerCase(), s.activeSfrCount)
   }
-  const golfCommunityItems: KbTownItem[] = (
-    resortCommunitiesRegistry.communities as ReadonlyArray<{ slug: string; label: string; city_slug: string }>
-  )
-    .filter((c) => c.city_slug === slug)
+  const golfCommunityItems: KbTownItem[] = cityResorts(slug)
     .map((c) => ({
       name: c.label,
       href: `/communities/${c.slug}`,
-      activeCount:
-        commActiveBySlug.get(c.slug) ??
-        commActiveByName.get(c.label.toLowerCase().trim()) ??
-        communitySfrBySlug.get(c.slug) ??
-        0,
+      activeCount: resortSfrCounts.get(c.slug) ?? communitySfrBySlug.get(c.slug) ?? 0,
       medianPrice: null,
-      img: commImgBySlug.get(c.slug) ?? commImgByName.get(c.label.toLowerCase().trim()) ?? '',
+      img: RESORT_IMG[c.slug] ?? commImgBySlug.get(c.slug) ?? commImgByName.get(c.label.toLowerCase().trim()) ?? '',
     }))
 
   // Communities rail — EVERY community in the city that has a banner photo, with
@@ -334,9 +374,14 @@ export default async function CityDetailPage({ params }: Props) {
       const cv = curated?.videoSlug ? communityVideos[curated.videoSlug] : undefined
       const img = curated?.img ?? c.heroImageUrl ?? null
       if (!img) return null
+      // When this community is a resort, show its alias-aware count (so the rail
+      // card matches the golf ledger and the real MLS total, not the literal-name
+      // undercount). (§0)
+      const resortSlug = resortSlugByLabel.get(c.subdivision.toLowerCase().trim())
+      const activeCount = resortSlug ? resortSfrCounts.get(resortSlug) ?? c.activeCount : c.activeCount
       return {
         name: c.subdivision,
-        activeCount: c.activeCount,
+        activeCount,
         town: cityName,
         href: `/communities/${c.slug}`,
         img,
@@ -386,6 +431,7 @@ export default async function CityDetailPage({ params }: Props) {
       address: [a.StreetNumber, a.StreetName].filter(Boolean).join(' ') || 'Address on request',
       cityLine: [a.City, a.SubdivisionName].filter(Boolean).join(' · '),
       price: a.ListPrice ?? null,
+      imageUrl: a.PhotoURL ?? null,
       href: listingTileHref({ listingKey: a.listing_key, streetNumber: a.StreetNumber ?? null, streetName: a.StreetName ?? null, city: a.City ?? null }),
       whenLabel: a.event_at
         ? new Date(a.event_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
@@ -528,7 +574,7 @@ export default async function CityDetailPage({ params }: Props) {
           cta={{ href: '/communities', label: 'Every community' }}
         />
         <KbOpenHouses items={openHouseItems} eyebrow={`${cityName} · This week`} heading="Open houses" viewAllHref={`/open-houses/${slug}`} />
-        <KbActivity items={activityItems} eyebrow={`Live · ${cityName}`} heading={`What is happening in ${cityName}`} viewAllHref="/housing-market" viewAllLabel="Full market pulse" />
+        <KbActivity items={activityItems} eyebrow={`Live · ${cityName}`} heading="Latest market activity" viewAllHref="/housing-market" viewAllLabel="Full market pulse" />
         <KbExploreTowns
           towns={otherCityItems}
           eyebrow="Central Oregon"

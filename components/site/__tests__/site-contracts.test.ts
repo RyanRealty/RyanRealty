@@ -93,8 +93,11 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/Regional view/)
     // the unverified seeded-pool resolvers must stay out of this page
     expect(src).not.toMatch(/getGeoTileImages|getSurfaceImage|pickGeoImage/)
-    // never hardcode a landing-page image path in the page
-    expect(src).not.toMatch(/['"`]\/lp\/[^'"`]*\.(jpg|jpeg|png|webp)/)
+    // never hardcode a landing-page image as city HERO/tile imagery. The curated
+    // /lp/central-oregon-golf/ set IS a verified golf-community source for the
+    // golf-ledger hover photos (RESORT_IMG) — allow only that path.
+    const withoutGolf = src.replace(/\/lp\/central-oregon-golf\/[^'"`]*/g, '')
+    expect(withoutGolf).not.toMatch(/['"`]\/lp\/[^'"`]*\.(jpg|jpeg|png|webp)/)
   })
 
   it('D80 — city page surfaces a blog/guides section from real posts', () => {
@@ -131,14 +134,38 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/neighborhoodPhotos\.get\(c\.slug\)/)
   })
 
-  it('D90 — one active count per community across rail + golf ledger (no two-number mismatch)', () => {
+  it('D90/D92 — resort active counts are ALIAS-AWARE, UNCAPPED, and shared by rail + golf ledger (§0)', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
-    expect(src).toMatch(/commActiveBySlug/)
-    // golf ledger matches the rail's canonical count by slug then NAME (resort registry
-    // slugs differ from index slugs), before falling back to its own SFR snapshot
-    expect(src).toMatch(/commActiveBySlug\.get\(c\.slug\)/)
-    expect(src).toMatch(/commActiveByName\.get\(c\.label\.toLowerCase\(\)\.trim\(\)\)/)
-    expect(src).toMatch(/communitySfrBySlug\.get\(c\.slug\)/)
+    // counted from the registry aliases, not the literal community name (which
+    // undercounts every resort — Widgi 0 vs true 48, Tetherow 14 vs true 43)
+    expect(src).toMatch(/resortActiveSfrCounts\(slug, resortTiles\)/)
+    // sourced from a PAGINATED fetch past the 1000-row cap (Bend has ~1044 SFR)
+    expect(src).toMatch(/fetchAllCityActiveSfr\(cityName\)/)
+    // golf ledger uses the alias-aware count + is_resort membership (drops Three Rivers)
+    expect(src).toMatch(/activeCount: resortSfrCounts\.get\(c\.slug\)/)
+    expect(src).toMatch(/golfCommunityItems: KbTownItem\[\] = cityResorts\(slug\)/)
+    // the rail card for a resort shows the SAME alias-aware count (no two-number mismatch)
+    expect(src).toMatch(/resortSlug \? resortSfrCounts\.get\(resortSlug\)/)
+    // golf/master-planned hover photos resolve from the curated resort image map
+    expect(src).toMatch(/RESORT_IMG\[c\.slug\]/)
+  })
+
+  it('D93 — activity section is "Latest market activity" with per-row listing thumbnails', () => {
+    const src = readSrc('app/cities/[slug]/page.tsx')
+    expect(src).toMatch(/heading="Latest market activity"/)
+    expect(src).toMatch(/imageUrl: a\.PhotoURL/)
+    const act = readSrc('components/site/kb/KbActivity.client.tsx')
+    expect(act).toMatch(/act-thumb/)
+    expect(act).toMatch(/imageUrl\?: string \| null/)
+  })
+
+  it('D94 — open houses rail is interactive (click/hover swaps the lead) and scrollable', () => {
+    const oh = readSrc('components/site/kb/KbOpenHouses.client.tsx')
+    expect(oh).toMatch(/useState/)
+    expect(oh).toMatch(/setActiveIndex/)
+    // rail items are buttons that promote into the lead
+    expect(oh).toMatch(/<button[\s\S]*?className="oh-rail-card"/)
+    expect(oh).toMatch(/onClick=\{\(\) => setActiveIndex\(i\)\}/)
   })
 
   it('D91 — market structured data survives a getMarketPulse timeout (snapshot fallback)', () => {

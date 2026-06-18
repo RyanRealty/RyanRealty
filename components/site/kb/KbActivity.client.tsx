@@ -16,6 +16,8 @@ export interface KbActivityItem {
   price: number | null
   href?: string
   whenLabel?: string
+  /** Listing primary photo for the row thumbnail. Null -> hatched placeholder tile. */
+  imageUrl?: string | null
 }
 
 /**
@@ -111,6 +113,13 @@ export function KbActivity({
                 role="listitem"
                 {...(it.href ? { href: it.href } : {})}
               >
+                <span className="act-thumb" aria-hidden="true">
+                  {it.imageUrl ? (
+                    <img className="act-thumb-img" src={it.imageUrl} alt="" loading="lazy" />
+                  ) : (
+                    <span className="act-thumb-noimg" />
+                  )}
+                </span>
                 <span className={`act-tag ${intent(it.kind)}`}>{it.label}</span>
                 <span className="act-place">
                   <span className="act-addr">{it.address}</span>

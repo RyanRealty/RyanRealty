@@ -110,3 +110,48 @@ and ran a final review pass.
 - FAQ `id="faq"` moved from a wrapper `<div>` to a `<section>` so KbSectionTracker observes it.
 
 Contract tests D88–D91 lock these. Verified: prod build + 51 gates + 618 tests green.
+
+---
+
+## Session 2026-06-17 (cont.) — Matt punch list #2 ✅ shipped
+
+Investigated via a 5-agent workflow, then implemented + browser-verified each.
+
+### Open houses — interactive (Matt: "scrollable list + main image changes")
+KbOpenHouses is now stateful: the right rail is a CAPPED vertical scroll container
+(max-height 440px, thin navy/cream scrollbar) of every open house as a selectable
+button; click/hover promotes that card into the big lead panel (active card full
+opacity, others dimmed). The lead anchor stays the navigation target. Reveal animates
+TRANSFORM only — opacity is CSS-owned so cards are never hidden if the ScrollTrigger
+doesn't fire (caught + fixed: cards were stuck at opacity:0).
+
+### Master-planned hover backgrounds (Matt: "no backgrounds on hover")
+The golf ledger img lookups missed for resorts (banner rows are tagged under alias
+subdivisions). Added RESORT_IMG, a curated slug->photo map (verified files under
+public/images/kb + public/lp/central-oregon-golf/img). All 7 Bend resorts now have a
+hover photo. Same name fallback applied so it degrades gracefully.
+
+### Widgi Creek count wrong → ALL resort counts fixed (§0, DATA ACCURACY)
+Root cause: a resort's homes are MLS-tagged under MANY subdivision names (Widgi Creek
+= "Inn Of The 7th"/"Elkai Woods"/... — almost nothing literally "Widgi Creek"), so the
+geo_snapshot + index (literal-name) counts were 0/undercounts. THREE compounding bugs
+fixed: (1) count alias-aware from the registry subdivision_aliases; (2) source from a
+PAGINATED uncapped fetch (Bend has 1044 active SFR, past PostgREST's 1000-row cap, so a
+single fetch dropped 44 older listings); (3) filter the ledger to is_resort=true
+(drops Three Rivers, is_resort:false, whose generic aliases "Oww"/"Sun Dance" matched
+31 unrelated homes). Same alias-aware count now feeds BOTH the rail and the ledger.
+
+§0 verification trace (listing_tile_mv, city_lower='bend', property_type='A',
+standard_status IN Active/Coming Soon/Active Under Contract, alias-prefix, 2026-06-17):
+Widgi 48 · Tetherow 43 · NorthWest Crossing 28 · Broken Top 21 · Pronghorn 14 ·
+Awbrey Glen 10 · Vandevert 0 (hidden). Rendered page matches each exactly.
+
+### Activity + articles
+"What is happening in Bend" -> "Latest market activity"; added a per-row listing
+thumbnail (a.PhotoURL, already in the feed data — no DAL change). Articles already
+rendered thumbnails (verified live); added alt text + width/height for CLS.
+
+Locked by contract tests D90/D92 (alias-aware/uncapped/is_resort), D93 (activity
+heading + thumbnails), D94 (open-house interactive rail) + the resort-active-counts
+unit suite. Verified: prod build + 51 gates + 626 tests green; Playwright confirms the
+exact counts, hover photos, activity thumbnails, and the interactive scrollable rail.

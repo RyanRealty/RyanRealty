@@ -41,7 +41,15 @@ export function KbArticles({ posts, eyebrow, heading, subtitle }: KbArticlesProp
             <a key={p.href} className="art-card" href={p.href}>
               <div className="art-media">
                 {p.imageUrl ? (
-                  <img className="art-img" src={p.imageUrl} alt="" loading="lazy" />
+                  <img
+                    className="art-img"
+                    src={p.imageUrl}
+                    alt={p.title}
+                    loading="lazy"
+                    decoding="async"
+                    width={640}
+                    height={400}
+                  />
                 ) : (
                   <span className="art-noimg" aria-hidden="true" />
                 )}
