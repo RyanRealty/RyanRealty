@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.9 (2026-06-18)
+
+### Other
+- kb(city): fix-pass from the adversarial final review (3 blockers + a11y/voice)
+
+---
+
+
 ## v1.594.8 (2026-06-17)
 
 ### Other
