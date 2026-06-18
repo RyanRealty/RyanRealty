@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.594.14 (2026-06-18)
+
+### Other
+- City page review pass: count consistency, resilient JSON-LD, harder contract gate
+
+---
+
+
 ## v1.594.13 (2026-06-18)
 
 ### Other
