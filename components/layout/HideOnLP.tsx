@@ -101,6 +101,13 @@ export function HideChrome({ children }: { children: React.ReactNode }) {
   if (pathname === "/housing-market") return null
   if (/^\/housing-market\/[^/]+$/.test(pathname)) return null // 1-segment: region, city reports, explore, reports
   if (/^\/housing-market\/reports\/[^/]+$/.test(pathname)) return null // /housing-market/reports/<slug> detail
+  // Listing detail. The canonical browser URL is /homes-for-sale/<city>/<address>
+  // (or /homes-for-sale/listing/<key>), which rewrites to app/listing/* — the KB
+  // shell. Match the listing-detail slug shapes (last segment ends in a -<5+ digit
+  // MLS number> or contains ~, or the /listing/<key> form). Does NOT match the
+  // search URLs (/homes-for-sale, /homes-for-sale/<city>, …/<filters>).
+  if (/^\/homes-for-sale\/listing\/[^/]+$/.test(pathname)) return null
+  if (/^\/homes-for-sale\/.+(-\d{5,}|~[^/]*)\/?$/.test(pathname)) return null
   // Every other KB design-system route.
   if (KB_ROUTES.some((re) => re.test(pathname))) return null
   return <>{children}</>
