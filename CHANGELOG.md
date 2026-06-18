@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.10 (2026-06-18)
+
+### Other
+- KB conversion ledger: waves A-F shipped + verified, double-chrome fix, next tier
+
+---
+
+
 ## v1.595.9 (2026-06-18)
 
 ### Other
