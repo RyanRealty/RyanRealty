@@ -641,7 +641,12 @@ export default async function CommunityDetailPage({ params }: Props) {
         {/* Rich resort/golf/master-planned depth (overview · amenities · golf ·
             membership · builders) — null when no config. When present it carries the
             overview, so the thin data-driven About is suppressed to avoid duplication. */}
-        <KbResortOverview content={richContent} name={community.name} postsBySlug={amenityPosts} />
+        <KbResortOverview
+          content={richContent}
+          name={community.name}
+          postsBySlug={amenityPosts}
+          aliases={registryEntry?.subdivision_aliases ?? []}
+        />
         {!richContent && aboutParagraphs.length > 0 ? (
           <KbAbout
             eyebrow={communityLabel}

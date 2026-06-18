@@ -23,12 +23,21 @@ export function KbResortOverview({
   content,
   name,
   postsBySlug = {},
+  aliases = [],
 }: {
   content: ResortCommunityContent | null
   name: string
   postsBySlug?: Record<string, AmenityBlogPost>
+  /** Registry subdivision_aliases — the MLS subdivision names that make up the
+   *  resort. Shown as a transparency block (also explains the alias-aware count
+   *  and helps buyers who searched an alias name land here). Hidden for single-
+   *  name communities (a resort whose only alias is its own label). */
+  aliases?: string[]
 }) {
   if (!content) return null
+  // Drop the resort's own name from the alias chips; show only the constituent
+  // subdivisions (a single-name community then shows none).
+  const aliasChips = aliases.filter((a) => a.toLowerCase().trim() !== name.toLowerCase().trim())
 
   const facts: { label: string; value: string }[] = [
     ...(content.founded ? [{ label: 'Founded', value: String(content.founded) }] : []),
@@ -86,6 +95,17 @@ export function KbResortOverview({
                       <span className="ov-drive-dest">{d.destination}</span>
                       {d.note ? <span className="ov-drive-note">{d.note}</span> : null}
                     </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {aliasChips.length > 0 ? (
+              <div className="ov-aliases">
+                <span className="ov-sub mono-lab">Subdivisions in {name}</span>
+                <div className="ov-alias-row">
+                  {aliasChips.map((a) => (
+                    <span key={a} className="ov-alias">{a}</span>
                   ))}
                 </div>
               </div>

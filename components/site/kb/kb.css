@@ -1246,6 +1246,10 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .ov-drive-dest{font-size:.92rem;font-weight:600;margin-top:10px;}
 .kb-root .ov-drive-note{font-size:.72rem;color:var(--navy-70);margin-top:3px;}
 
+.kb-root .ov-aliases{margin-top:34px;}
+.kb-root .ov-alias-row{display:flex;flex-wrap:wrap;gap:8px;}
+.kb-root .ov-alias{display:inline-block;padding:7px 13px;border:1px solid var(--navy);font-size:.78rem;font-weight:600;letter-spacing:.01em;}
+
 /* Amenities — navy showcase */
 .kb-root .ov-amen{background:var(--navy);color:var(--cream);padding-bottom:60px;}
 .kb-root .ov-amen .sec-head{border-color:var(--cream-40);}

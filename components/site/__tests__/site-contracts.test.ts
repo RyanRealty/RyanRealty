@@ -217,7 +217,8 @@ describe('design directive contracts', () => {
   it('D100 — community page RENDERS rich resort content (amenities/golf/membership/builders)', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
     expect(src).toMatch(/getResortCommunityContent\(resortSlug\)/)
-    expect(src).toMatch(/<KbResortOverview content=\{richContent\}/)
+    expect(src).toMatch(/<KbResortOverview/)
+    expect(src).toMatch(/content=\{richContent\}/)
     // the overview component carries all the dropped rich sections
     const ov = readSrc('components/site/kb/KbResortOverview.tsx')
     expect(ov).toMatch(/id="overview"/)
