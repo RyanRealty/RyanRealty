@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.4 (2026-06-18)
+
+### Other
+- Market chart: lines now span the full year — dashed "no data yet" tail to Dec 31
+
+---
+
+
 ## v1.595.3 (2026-06-18)
 
 ### Other
