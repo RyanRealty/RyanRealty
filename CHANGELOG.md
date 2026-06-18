@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.0 (2026-06-18)
+
+### Features
+- feat(listings): media_suppressed flag to honor owner media-removal requests
+
+---
+
+
 ## v1.594.20 (2026-06-18)
 
 ### Other
