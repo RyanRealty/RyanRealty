@@ -71,3 +71,42 @@ Verified: La Pine map zooms in; the $21M Aryeo home shows a Tour badge.
   testimonials/team/sell/FAQ + JSON-LD). Missing the rebuilt sections (3–6) before it can
   replace the live Experience page without a content/SEO regression.
 - `design_system/ryan-realty/ui_kits/city/parity.json` — rewritten to the KB set (coupled).
+
+---
+
+## Session 2026-06-17 — refinement batch + dedicated review pass ✅ shipped (live on prod)
+
+The held working-tree items above ARE now committed + pushed; the KB city page is live on
+prod (ryan-realty.com/cities/bend + /la-pine). This session closed Matt's refinement batch
+and ran a final review pass.
+
+### Refinement batch (Matt's punch list) — all done + Playwright-verified
+- Section headers were too large → `.sec-title` reduced to `clamp(1.9rem,5.4vw,3.6rem)` (was 6rem), mobile 9vw.
+- Market chart plots up to 5 calendar years as differently-colored overlay lines on a shared
+  Jan–Dec axis (`buildYearSeries`, `YEAR_PALETTE`); verified 5 lines + 2022–2026 legend.
+- Open houses redesigned off-grid (editorial lead + date-stamped scroll rail).
+- Testimonials get animated 5-stars + curly-quote language.
+- Menu is comprehensive (20 links, 4 grouped columns); logo is horizontal + not chopped
+  (5:1 aspect preserved); the legacy white top breadcrumb is gone (KB overlay breadcrumb only).
+- **Item B — communities rail shows EVERY community in the city that has a banner photo**
+  (was a curated 3), marquee video cards floated first, then by active count. 18 cards on Bend.
+- **Item C — neighborhoods + golf/master-planned ledgers get hover-reveal photos**: a curated
+  community banner on name-match, else a real home INSIDE the neighborhood boundary (highest-
+  priced active listing, `lib/kb/neighborhood-photos.ts` point-in-polygon). 13/13 Bend
+  neighborhoods resolve a photo (was 1). Locked by a 4-case unit test.
+
+### Dedicated review pass (2 adversarial agents) — findings fixed
+- Resort communities (Tetherow, Broken Top, NW Crossing) showed two different active counts
+  across the rail and the golf ledger → unified via `commActiveBySlug` (rail count canonical,
+  golf falls back to SFR snapshot). [D90]
+- Market Dataset/FAQPage JSON-LD silently vanished if `getMarketPulse` timed out → snapshot
+  fallback (`pulse ?? { activeSfrCount, medianListPrice, refreshedAt }`) so structured data
+  always emits. [D91]
+- G52 gate was weaker than the contract → hardened: tracker must be RENDERED (not just imported),
+  and data pages must EMIT their market JSON-LD (`<MetadataBlock>`) WITH the pulse-timeout
+  fallback. Homepage correctly exempt (global JSON-LD, no buildMarketFaq).
+- Point-in-polygon horizontal-edge divide-by-zero is guarded by operand order; documented so a
+  future refactor can't reintroduce NaN.
+- FAQ `id="faq"` moved from a wrapper `<div>` to a `<section>` so KbSectionTracker observes it.
+
+Contract tests D88–D91 lock these. Verified: prod build + 51 gates + 618 tests green.

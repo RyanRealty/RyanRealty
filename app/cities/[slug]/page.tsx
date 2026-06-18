@@ -46,7 +46,7 @@ import { assignNeighborhoodPhotos } from '@/lib/kb/neighborhood-photos'
 import { listingTileHref } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
-import { buildMarketFaq } from '@/lib/site/market-faq'
+import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
@@ -261,6 +261,13 @@ export default async function CityDetailPage({ params }: Props) {
   const communityVideos = communityVideoManifest as Record<string, { video?: string } | undefined>
   const commImgByName = new Map(cityComms.map((c) => [c.subdivision.toLowerCase(), c.heroImageUrl]))
   const commImgBySlug = new Map(cityComms.map((c) => [c.slug, c.heroImageUrl]))
+  // One active count per community across the page — a resort like Tetherow that
+  // appears in BOTH the visual rail and the golf/master-planned ledger must not
+  // show two different numbers. The rail's index count is canonical. The resort
+  // registry slugs differ from the index slugs, so the ledger matches the rail by
+  // slug first, then by NAME, before falling back to its own SFR snapshot count.
+  const commActiveBySlug = new Map(cityComms.map((c) => [c.slug, c.activeCount]))
+  const commActiveByName = new Map(cityComms.map((c) => [c.subdivision.toLowerCase().trim(), c.activeCount]))
 
   // Neighborhoods ledger — designated Bend polygons + live westside stats. (§D83)
   // Hover photo: a curated community banner when the neighborhood name matches a
@@ -308,9 +315,13 @@ export default async function CityDetailPage({ params }: Props) {
     .map((c) => ({
       name: c.label,
       href: `/communities/${c.slug}`,
-      activeCount: communitySfrBySlug.get(c.slug) ?? 0,
+      activeCount:
+        commActiveBySlug.get(c.slug) ??
+        commActiveByName.get(c.label.toLowerCase().trim()) ??
+        communitySfrBySlug.get(c.slug) ??
+        0,
       medianPrice: null,
-      img: commImgBySlug.get(c.slug) ?? '',
+      img: commImgBySlug.get(c.slug) ?? commImgByName.get(c.label.toLowerCase().trim()) ?? '',
     }))
 
   // Communities rail — EVERY community in the city that has a banner photo, with
@@ -412,8 +423,17 @@ export default async function CityDetailPage({ params }: Props) {
     yearSeries: buildYearSeries(priceHist, 5),
   }
 
-  // AI-citability: verified market Q&A + structured data.
-  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(cityName, pulse)
+  // AI-citability: verified market Q&A + structured data. The PAGE CONTRACT
+  // requires SEO/LLM-citable data on EVERY render, so the Dataset/FAQPage JSON-LD
+  // must not vanish when getMarketPulse times out or has no row. Fall back to the
+  // always-present geo snapshot (active SFR count + median list + as-of), which is
+  // awaited above and never null. Every figure stays verified (§0).
+  const marketFaqInput: MarketFaqInput = pulse ?? {
+    activeCount: snapshot.activeSfrCount,
+    medianListPrice: snapshot.medianListPrice,
+    refreshedAt: snapshot.refreshedAt,
+  }
+  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(cityName, marketFaqInput)
   const hasMap = mapFeatures.length > 0
   const citySchemas: SchemaInput[] = [
     {
@@ -532,9 +552,9 @@ export default async function CityDetailPage({ params }: Props) {
           }}
         />
         {faqs.length > 0 ? (
-          <div id="faq">
+          <section id="faq" aria-label={`${cityName} real estate questions`}>
             <FAQBlock items={faqs} eyebrow="Common questions" title={`${cityName} real estate questions`} />
-          </div>
+          </section>
         ) : null}
         <KbFooter towns={[]} />
       </SmoothScrollProvider>

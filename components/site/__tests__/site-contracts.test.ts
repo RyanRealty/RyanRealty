@@ -116,4 +116,35 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/replace\(\/\\s\+\/g, '-'\)/)
     expect(src).toMatch(/'la-pine'/)
   })
+
+  it('D88 — communities rail renders ALL the city communities (built from cityComms, not a curated 3)', () => {
+    const src = readSrc('app/cities/[slug]/page.tsx')
+    // rail maps over the full city community set, not CITY_COMMUNITIES[slug] alone
+    expect(src).toMatch(/const communityItems: KbCommunityItem\[\] = cityComms/)
+    // marquee/video cards float to the front, then by active count
+    expect(src).toMatch(/\.sort\(\(a, b\) => \(a\.video \? 0 : 1\)/)
+  })
+
+  it('D89 — neighborhood ledger hover photos are boundary-verified (real home inside the polygon)', () => {
+    const src = readSrc('app/cities/[slug]/page.tsx')
+    expect(src).toMatch(/assignNeighborhoodPhotos/)
+    expect(src).toMatch(/neighborhoodPhotos\.get\(c\.slug\)/)
+  })
+
+  it('D90 — one active count per community across rail + golf ledger (no two-number mismatch)', () => {
+    const src = readSrc('app/cities/[slug]/page.tsx')
+    expect(src).toMatch(/commActiveBySlug/)
+    // golf ledger matches the rail's canonical count by slug then NAME (resort registry
+    // slugs differ from index slugs), before falling back to its own SFR snapshot
+    expect(src).toMatch(/commActiveBySlug\.get\(c\.slug\)/)
+    expect(src).toMatch(/commActiveByName\.get\(c\.label\.toLowerCase\(\)\.trim\(\)\)/)
+    expect(src).toMatch(/communitySfrBySlug\.get\(c\.slug\)/)
+  })
+
+  it('D91 — market structured data survives a getMarketPulse timeout (snapshot fallback)', () => {
+    const src = readSrc('app/cities/[slug]/page.tsx')
+    // JSON-LD must not vanish on a slow/missing market row — fall back to the snapshot
+    expect(src).toMatch(/pulse \?\? \{/)
+    expect(src).toMatch(/snapshot\.activeSfrCount/)
+  })
 })

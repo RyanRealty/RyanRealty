@@ -34,6 +34,9 @@ function pointInRing(lng: number, lat: number, ring: Ring): boolean {
     const yi = ring[i]![1]!
     const xj = ring[j]![0]!
     const yj = ring[j]![1]!
+    // The `yi>lat !== yj>lat` test MUST stay first: for a horizontal edge (yi===yj)
+    // it short-circuits to false, so the `/(yj-yi)` divide is never reached (no NaN).
+    // Do not reorder these operands. Standard PNPOLY formulation.
     const intersect = yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi
     if (intersect) inside = !inside
   }

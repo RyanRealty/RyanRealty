@@ -36,9 +36,29 @@ for (const p of kbPages) {
   const s = readFileSync(p, 'utf8')
   const hasSeo =
     /export\s+const\s+metadata\b/.test(s) || /export\s+(?:async\s+)?function\s+generateMetadata\b/.test(s)
-  const hasTracker = /KbSectionTracker/.test(s)
+  // Tracker must be RENDERED, not merely imported — an unused import tracks nothing.
+  const hasTrackerRendered = /<KbSectionTracker[\s/>]/.test(s)
   if (!hasSeo) fails.push(`${p}: missing SEO metadata (export const metadata OR generateMetadata)`)
-  if (!hasTracker) fails.push(`${p}: missing <KbSectionTracker> (page contract: every section view is tracked)`)
+  if (!hasTrackerRendered)
+    fails.push(`${p}: <KbSectionTracker> is not rendered (page contract: every section view is tracked)`)
+
+  // Data pages (those that compute verified market stats via buildMarketFaq) carry
+  // the AI-citability lever: Dataset/FAQPage JSON-LD. The structured data must be
+  // EMITTED (MetadataBlock) — computing FAQ/dataset variables and forgetting to
+  // render them is the silent-SEO-loss regression the gate exists to stop. And the
+  // emit must survive a market-pulse timeout (snapshot fallback), or the JSON-LD
+  // vanishes on a slow query. The homepage uses global org/website JSON-LD and does
+  // not import buildMarketFaq, so it is correctly exempt from these two checks.
+  if (s.includes('buildMarketFaq')) {
+    if (!/<MetadataBlock[\s/>]/.test(s))
+      fails.push(`${p}: computes market FAQ/Dataset but does not render <MetadataBlock> (JSON-LD never emitted)`)
+    const resilient =
+      /buildMarketFaq\([^)]*\bpulse\s*\?\?/.test(s) || /pulse\s*\?\?\s*\{[\s\S]*?\}/.test(s)
+    if (!resilient)
+      fails.push(
+        `${p}: market structured data has no pulse-timeout fallback (pulse ?? snapshot) — JSON-LD vanishes on a slow/missing market row`,
+      )
+  }
 }
 
 console.log('KB page-contract gate (G52)')
@@ -48,10 +68,12 @@ if (fails.length) {
   console.error('✗ KB pages missing a page-contract element (SEO and/or tracking):\n')
   for (const f of fails) console.error('  • ' + f)
   console.error(
-    '\n  Every KB page hardcodes SEO (pageMetadata/generateMetadata) + tracking (<KbSectionTracker>).\n' +
+    '\n  Every KB page hardcodes SEO (pageMetadata/generateMetadata) + a RENDERED <KbSectionTracker>.\n' +
+      '  Data pages also EMIT their market JSON-LD (<MetadataBlock>) with a pulse-timeout fallback.\n' +
       '  See docs/KB_CONVERGENCE_ROADMAP.md "THE PAGE CONTRACT".',
   )
   process.exit(1)
 }
-console.log('All KB pages carry SEO metadata + section tracking.')
+console.log('All KB pages carry SEO metadata + a rendered section tracker;')
+console.log('data pages emit resilient market JSON-LD.')
 process.exit(0)
