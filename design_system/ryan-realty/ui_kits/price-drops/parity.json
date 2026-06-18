@@ -1,12 +1,17 @@
 {
   "route": "app/price-drops/page.tsx",
-  "description": "Price-Drop Radar region-wide page. Amboqia display numerals in hero, editorial listing grid, neighborhood mini-table, per-city chip nav, Dataset + ItemList JSON-LD.",
-  "locked": "2026-06-09",
+  "description": "Price-Drop Radar region-wide page — KB (kinetic-brutalist) chrome. KbHero count + KbFeatured poster grid of the biggest reductions + KbListingMap, full ListingCard sweep, neighborhood mini-table, per-city chip nav, Dataset + ItemList JSON-LD. KbBreadcrumb is the visible breadcrumb (MetadataBlock owns the BreadcrumbList JSON-LD).",
+  "locked": "2026-06-18",
   "requiredComponents": [
     { "name": "MetadataBlock", "from": "@/components/site/MetadataBlock" },
-    { "name": "PageBreadcrumb", "from": "@/components/site/PageBreadcrumb" },
-    { "name": "DisplayHeading", "from": "@/components/site/primitives" },
-    { "name": "ListingCard", "from": "@/components/listing/ListingCard" },
+    { "name": "KbNav", "from": "@/components/site/kb/KbNav.client" },
+    { "name": "KbSectionTracker", "from": "@/components/site/kb/KbSectionTracker.client" },
+    { "name": "KbBreadcrumb", "from": "@/components/site/kb/KbBreadcrumb" },
+    { "name": "KbHero", "from": "@/components/site/kb/KbHero.client" },
+    { "name": "KbFeatured", "from": "@/components/site/kb/KbFeatured.client" },
+    { "name": "KbSell", "from": "@/components/site/kb/KbSell.client" },
+    { "name": "KbFooter", "from": "@/components/site/kb/KbFooter.client" },
+    { "name": "ListingCard", "from": "@/components/site/ListingCard" },
     { "name": "CTABar", "from": "@/components/site/CTABar" }
   ]
 }

@@ -1,20 +1,26 @@
 /**
  * /price-drops -- Region-wide Price-Drop Radar for Central Oregon SFR.
  *
+ * KB (kinetic-brutalist) design — Phase 9 of the KB convergence program.
+ * Reuses the same section library as city/community pages (components/site/kb/*).
+ *
  * Data strategy:
  *   - getPriceDrops() from lib/data (DAL, cached 30 min, throw-on-error)
- *   - Zero hardcoded numbers -- every figure comes from the live DAL result
+ *   - Zero hardcoded numbers — every figure comes from the live DAL result
  *   - Honest empty state when no drops exist in the window
  *
- * SEO / GEO strategy (Matt directive: "seen by search engines and AI agents"):
+ * SEO / GEO strategy:
  *   - MetadataBlock: BreadcrumbList + Dataset + webPage JSON-LD
  *   - pageMetadata: canonical + OG
- *   - Sitemap: changefreq daily (see app/sitemap.ts)
- *   - llms.txt: registered at /price-drops
+ *   - KbSectionTracker: section view + scroll tracking (page contract)
  *
- * ISR: revalidate 1800s (30 min) -- matches DAL TTL.
- * Design: homepage-v3 bar -- Amboqia display numerals in hero, editorial grid,
- *         tabular-nums, navy/cream, no sliders.
+ * ISR: revalidate 1800s (30 min) — matches DAL TTL.
+ *
+ * Section stack: breadcrumb · hero (live glance) · featured listings ·
+ *   map · neighborhood table · city nav · explainer · sell · footer.
+ *
+ * PAGE CONTRACT: KB design + SEO (pageMetadata) + tracking (KbSectionTracker).
+ * Every figure live (§0). No raw .from() calls.
  */
 
 // @no-parity -- parity contract at design_system/ryan-realty/ui_kits/price-drops/parity.json
@@ -24,21 +30,10 @@ import Link from 'next/link'
 import { getPriceDrops } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
+import { listingDetailPath } from '@/lib/slug'
 import { CTABar } from '@/components/site/CTABar'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import {
-  Container,
-  Section,
-  Stack,
-  H2,
-  H3,
-  Body,
-  Eyebrow,
-  DisplayHeading,
-} from '@/components/site/primitives'
 import ListingCard from '@/components/site/ListingCard'
-import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -47,9 +42,20 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbHero } from '@/components/site/kb/KbHero.client'
+import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
+import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
+import { KbSell } from '@/components/site/kb/KbSell.client'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import type { KbFeaturedItem } from '@/components/site/kb/types'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { CONTACT } from '@/lib/brand/contact'
 import type { PriceDrop } from '@/lib/data'
+import '@/components/site/kb/kb.css'
 
 // ---- ISR -------------------------------------------------------------------
 
@@ -87,8 +93,7 @@ const CITY_DISPLAY: Record<string, string> = {
   'powell-butte': 'Powell Butte',
 }
 
-// ---- Price-drop card adapter ------------------------------------------------
-
+// ---- Format helpers --------------------------------------------------------
 
 function fmtCompactPrice(n: number): string {
   if (n >= 1_000_000) {
@@ -97,6 +102,21 @@ function fmtCompactPrice(n: number): string {
   }
   return `$${Math.round(n / 1000)}K`
 }
+
+function fmtK(n: number): string {
+  return fmtCompactPrice(n)
+}
+
+function fmtM(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
+  return fmtK(n)
+}
+
+function fmtPrice(n: number): string {
+  return `$${(Math.round(n / 1000) * 1000).toLocaleString()}`
+}
+
+// ---- Price-drop card adapter for legacy ListingCard (parity requirement) ---
 
 function dropToCardData(drop: PriceDrop) {
   const addressLine =
@@ -127,6 +147,40 @@ function dropToCardData(drop: PriceDrop) {
     baths: drop.baths ?? null,
     sqft: drop.sqft ?? null,
     badge: { kind: 'drop' as const, label: badgeLabel },
+  }
+}
+
+// ---- KB featured adapter ---------------------------------------------------
+
+function dropToFeaturedItem(drop: PriceDrop): KbFeaturedItem {
+  const origRounded = drop.originalListPrice
+    ? Math.round(drop.originalListPrice / 1000) * 1000
+    : null
+  // Encode the drop context in the sub line so it stays visible in the poster grid
+  const dropSub =
+    origRounded && drop.lastDropPct
+      ? `was ${fmtCompactPrice(origRounded)}, -${drop.lastDropPct.toFixed(1)}%`
+      : drop.lastDropPct
+        ? `-${drop.lastDropPct.toFixed(1)}%`
+        : 'Price reduced'
+
+  return {
+    price: drop.listPrice,
+    address: [drop.streetNumber, drop.streetName].filter(Boolean).join(' ') || 'Address on request',
+    sub: dropSub,
+    city: drop.city ?? '',
+    beds: drop.beds ?? null,
+    baths: drop.baths ?? null,
+    sqft: drop.sqft ?? null,
+    img: drop.photoUrl ?? '',
+    href: listingDetailPath(
+      drop.listingKey,
+      { streetNumber: drop.streetNumber, streetName: drop.streetName, city: drop.city, postalCode: drop.postalCode },
+      { city: drop.city, subdivision: drop.subdivisionName },
+      { mlsNumber: drop.listNumber },
+    ),
+    video: null,
+    tour: false,
   }
 }
 
@@ -174,21 +228,6 @@ function buildNeighborhoodTable(drops: PriceDrop[]): NeighborhoodRow[] {
   return result.sort((a, b) => b.count - a.count).slice(0, 10)
 }
 
-// ---- Format helpers --------------------------------------------------------
-
-function fmtK(n: number): string {
-  return fmtCompactPrice(n)
-}
-
-function fmtM(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
-  return fmtK(n)
-}
-
-function fmtPrice(n: number): string {
-  return `$${(Math.round(n / 1000) * 1000).toLocaleString()}`
-}
-
 // ---- Page ------------------------------------------------------------------
 
 export default async function PriceDropsRegionPage() {
@@ -210,13 +249,43 @@ export default async function PriceDropsRegionPage() {
         ? (dropPcts[mid - 1] + dropPcts[mid]) / 2
         : dropPcts[mid]
 
-  // Featured: biggest dollar drop
-  const featured =
+  // Featured: top-6 biggest dollar drops for the KB poster grid
+  const featuredDrops =
     drops.length > 0
-      ? [...drops].sort((a, b) => (b.lastDropAmount ?? 0) - (a.lastDropAmount ?? 0))[0]
-      : null
+      ? [...drops]
+          .sort((a, b) => (b.lastDropAmount ?? 0) - (a.lastDropAmount ?? 0))
+          .filter((d) => d.photoUrl)
+          .slice(0, 6)
+      : []
+  const featuredItems: KbFeaturedItem[] = featuredDrops.map(dropToFeaturedItem)
+
+  // Map geo: only drops with coordinates
+  const mapFeatures = drops
+    .filter((d) => d.lat != null && d.lng != null)
+    .map((d) => ({
+      type: 'Feature' as const,
+      geometry: { type: 'Point' as const, coordinates: [Number(d.lng), Number(d.lat)] as [number, number] },
+      properties: {
+        p: d.listPrice,
+        bd: d.beds,
+        ba: d.baths,
+        sf: d.sqft,
+        a: [d.streetNumber, d.streetName].filter(Boolean).join(' '),
+        sub: d.subdivisionName ?? '',
+        city: d.city ?? '',
+        img: d.photoUrl ?? '',
+      },
+    }))
+  const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
 
   const neighborhoodTable = buildNeighborhoodTable(drops)
+
+  // Hero glance stats — N drops, total cut, median pct
+  const glanceStats = [
+    { value: String(total), label: 'price reductions this week' },
+    ...(totalReduced > 0 ? [{ value: fmtM(totalReduced), label: 'in asking-price cuts' }] : []),
+    ...(medianDropPct !== null ? [{ value: `${medianDropPct.toFixed(1)}%`, label: 'median reduction' }] : []),
+  ]
 
   // ---- Structured data ------------------------------------------------------
 
@@ -261,207 +330,131 @@ export default async function PriceDropsRegionPage() {
   ]
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="kb-root">
+      <KbNav />
+      <KbSectionTracker pageType="price-drops" />
       <MetadataBlock schemas={schemas} />
+      <KbBreadcrumb
+        trail={[
+          { label: 'Home', href: '/' },
+          { label: 'Price drops' },
+        ]}
+      />
+      <SmoothScrollProvider>
+        {/* Hero — live glance numbers in the KB Amboqia display */}
+        <KbHero
+          data={{
+            activeCount: total,
+            medianListPrice: null,
+            medianDaysToPending: null,
+          }}
+          eyebrow="Central Oregon · Live MLS data"
+          titleTop="Price Drop"
+          titleBottom="Radar"
+          lead="across Central Oregon in the last 7 days."
+          videoSrc={null}
+          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+        />
 
-      {/* Breadcrumb */}
-      <PageBreadcrumb trail={[{ label: 'Price drops' }]} includeJsonLd={false} />
-
-      {/* Hero with live aggregate in Amboqia display numerals */}
-      <section className="relative bg-primary text-primary-foreground overflow-hidden">
-        <Container className="relative py-14 sm:py-20">
-          <Stack gap="tight">
-            <Eyebrow className="text-primary-foreground/60">Central Oregon · Live MLS data</Eyebrow>
-            <DisplayHeading
-              as="h1"
-              className="text-4xl sm:text-5xl lg:text-6xl text-primary-foreground"
-            >
-              Price Drop Radar
-            </DisplayHeading>
-
-            {/* Live aggregate numbers -- Amboqia tabular display, data as identity */}
-            {drops.length > 0 ? (
-              <div className="flex flex-wrap gap-x-8 gap-y-4 mt-4 sm:mt-6">
-                <div>
-                  <p
-                    className="font-display text-5xl sm:text-6xl text-primary-foreground font-bold tabular-nums leading-none"
-                    aria-label={`${total} price reductions`}
-                  >
-                    {total}
-                  </p>
-                  <p className="text-sm text-primary-foreground/70 mt-1">
-                    price reductions this week
-                  </p>
-                </div>
-                {totalReduced > 0 && (
-                  <>
-                    <div className="hidden sm:block w-px bg-primary-foreground/20 self-stretch" aria-hidden />
-                    <div>
-                      <p
-                        className="font-display text-5xl sm:text-6xl text-primary-foreground font-bold tabular-nums leading-none"
-                        aria-label={`${fmtM(totalReduced)} in asking-price cuts`}
-                      >
-                        {fmtM(totalReduced)}
-                      </p>
-                      <p className="text-sm text-primary-foreground/70 mt-1">
-                        in asking-price cuts
-                      </p>
-                    </div>
-                  </>
-                )}
-                {medianDropPct !== null && (
-                  <>
-                    <div className="hidden sm:block w-px bg-primary-foreground/20 self-stretch" aria-hidden />
-                    <div>
-                      <p
-                        className="font-display text-5xl sm:text-6xl text-primary-foreground font-bold tabular-nums leading-none"
-                        aria-label={`${medianDropPct.toFixed(1)} percent median drop`}
-                      >
-                        {medianDropPct.toFixed(1)}%
-                      </p>
-                      <p className="text-sm text-primary-foreground/70 mt-1">
-                        median reduction
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-            ) : (
-              <Body size="large" className="text-primary-foreground/80 mt-2 max-w-xl">
-                No price reductions in the last 7 days across Central Oregon.
-                Check back daily as the MLS updates.
-              </Body>
-            )}
-
-            <Body size="default" className="text-primary-foreground/60 mt-4 text-sm">
-              Active SFR only · updated from the regional MLS · 7-day window
-            </Body>
-          </Stack>
-        </Container>
-      </section>
-
-      {/* By-city chips */}
-      <div className="bg-secondary border-b border-border">
-        <Container className="py-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide mr-1">
-              Filter by city
-            </span>
-            <Link
-              href="/price-drops"
-              className="inline-flex items-center rounded-full bg-primary text-primary-foreground px-3 py-1 text-xs font-medium"
-            >
-              All Central Oregon
-            </Link>
-            {SITE_CITY_SLUGS.slice(0, 6).map((slug) => (
+        {/* By-city chips — filter nav */}
+        <section className="section" id="city-nav" aria-label="Filter by city">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Central Oregon</span>
+              <h2 className="sec-title display">
+                Price drops<br />by city
+              </h2>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 mt-4">
               <Link
-                key={slug}
-                href={`/price-drops/${slug}`}
-                className="inline-flex items-center rounded-full border border-border bg-background text-foreground px-3 py-1 text-xs font-medium hover:bg-secondary transition-colors"
+                href="/price-drops"
+                className="inline-flex items-center rounded-full bg-primary text-primary-foreground px-3 py-1 text-xs font-medium"
               >
-                {CITY_DISPLAY[slug] ?? slug}
+                All Central Oregon
               </Link>
-            ))}
-          </div>
-        </Container>
-      </div>
-
-      {/* Featured drop */}
-      {featured && (
-        <Section padding="default" tone="muted" divider>
-          <Container>
-            <Stack gap="tight">
-              <Eyebrow>Biggest price reduction this week</Eyebrow>
-              <div className="grid sm:grid-cols-[1fr_auto] gap-6 items-center">
-                <div>
-                  <H2 className="text-2xl sm:text-3xl">
-                    {[featured.streetNumber, featured.streetName].filter(Boolean).join(' ')}
-                  </H2>
-                  <p className="text-muted-foreground mt-1">
-                    {featured.city}, OR
-                    {featured.subdivisionName ? ` · ${featured.subdivisionName}` : ''}
-                  </p>
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    <Badge variant="outline" className="font-mono tabular-nums text-sm">
-                      Now {fmtPrice(featured.listPrice)}
-                    </Badge>
-                    {featured.originalListPrice && (
-                      <Badge variant="secondary" className="font-mono tabular-nums text-sm">
-                        Was {fmtPrice(featured.originalListPrice)}
-                      </Badge>
-                    )}
-                    {featured.lastDropAmount && featured.lastDropPct && (
-                      <Badge className="bg-primary text-primary-foreground font-mono tabular-nums text-sm">
-                        -{fmtK(featured.lastDropAmount)} ({featured.lastDropPct.toFixed(1)}%)
-                      </Badge>
-                    )}
-                  </div>
-                  {featured.beds && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {featured.beds} bd
-                      {featured.baths ? ` · ${featured.baths} ba` : ''}
-                      {featured.sqft ? ` · ${Math.round(featured.sqft).toLocaleString()} sqft` : ''}
-                      {featured.dom ? ` · ${featured.dom} days on market` : ''}
-                    </p>
-                  )}
-                </div>
+              {SITE_CITY_SLUGS.slice(0, 6).map((slug) => (
                 <Link
-                  href={`/listing/${encodeURIComponent(featured.listingKey)}`}
-                  className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+                  key={slug}
+                  href={`/price-drops/${slug}`}
+                  className="inline-flex items-center rounded-full border border-border bg-background text-foreground px-3 py-1 text-xs font-medium hover:bg-secondary transition-colors"
                 >
-                  View listing
+                  {CITY_DISPLAY[slug] ?? slug}
                 </Link>
-              </div>
-            </Stack>
-          </Container>
-        </Section>
-      )}
+              ))}
+            </div>
+          </div>
+        </section>
 
-      {/* Full listing grid */}
-      <Section padding="default" tone="default" divider>
-        <Container>
-          {drops.length > 0 ? (
-            <Stack gap="default">
-              <div className="flex items-baseline justify-between gap-4 flex-wrap">
-                <H2>
-                  {total} {total === 1 ? 'home' : 'homes'} with a price reduction
-                </H2>
-                <p className="text-sm text-muted-foreground">Last 7 days · Central Oregon SFR</p>
+        {/* KB Featured: poster grid of biggest-dollar-drop listings */}
+        {featuredItems.length > 0 && (
+          <KbFeatured
+            items={featuredItems}
+            eyebrow={`${total} price reductions · Central Oregon`}
+          />
+        )}
+
+        {/* Map — price-dropped listings on the terrain */}
+        {mapFeatures.length > 0 && (
+          <KbListingMap
+            geojson={mapGeo}
+            totalActive={total}
+            fitToFeatures={false}
+            showRegionMarkers
+            eyebrow="Central Oregon"
+            title={`${total} price\nreductions`}
+            subtitle={`Every home with a price cut in the last 7 days, on the real terrain. Click any dot for the price and the address.`}
+          />
+        )}
+
+        {/* Full listing grid — all 48 drops via the existing ListingCard (parity) */}
+        {drops.length > 0 && (
+          <section className="section" id="all-drops" aria-label="All price reductions">
+            <div className="wrap">
+              <div className="sec-head">
+                <span className="sec-index">Last 7 days · Central Oregon SFR</span>
+                <h2 className="sec-title display">
+                  {total} {total === 1 ? 'home' : 'homes'} with a<br />price reduction
+                </h2>
               </div>
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-6">
                 {drops.map((drop) => {
                   const card = dropToCardData(drop)
                   return <ListingCard key={card.listingKey} listing={card} />
                 })}
               </div>
-            </Stack>
-          ) : (
-            <Stack gap="tight" className="py-16 text-center">
-              <H2 className="text-xl text-muted-foreground">
-                No price reductions in the last 7 days
-              </H2>
-              <Body size="default" tone="muted">
+            </div>
+          </section>
+        )}
+
+        {drops.length === 0 && (
+          <section className="section" id="empty-state" aria-label="No price reductions">
+            <div className="wrap">
+              <div className="sec-head">
+                <span className="sec-index">Central Oregon · 7-day window</span>
+                <h2 className="sec-title display">No reductions<br />this week</h2>
+              </div>
+              <p className="text-muted-foreground mt-4">
                 The MLS updates throughout the day. Check back soon, or browse all active homes.
-              </Body>
+              </p>
               <Link
                 href="/homes-for-sale"
-                className="inline-flex items-center justify-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-secondary mt-2 transition-colors"
+                className="inline-flex items-center justify-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-secondary mt-4 transition-colors"
               >
                 Browse all homes for sale
               </Link>
-            </Stack>
-          )}
-        </Container>
-      </Section>
+            </div>
+          </section>
+        )}
 
-      {/* Neighborhood mini-table */}
-      {neighborhoodTable.length > 0 && (
-        <Section padding="default" tone="muted" divider>
-          <Container>
-            <Stack gap="tight">
-              <Eyebrow>By neighborhood</Eyebrow>
-              <H3>Where prices are being cut</H3>
-              <div className="w-full max-w-full overflow-x-auto no-scrollbar mt-2">
+        {/* Neighborhood mini-table */}
+        {neighborhoodTable.length > 0 && (
+          <section className="section" id="by-neighborhood" aria-label="Price reductions by neighborhood">
+            <div className="wrap">
+              <div className="sec-head">
+                <span className="sec-index">By neighborhood</span>
+                <h2 className="sec-title display">Where prices<br />are being cut</h2>
+              </div>
+              <div className="w-full max-w-full overflow-x-auto no-scrollbar mt-6">
                 <Table className="text-sm">
                   <TableHeader>
                     <TableRow className="text-muted-foreground">
@@ -477,32 +470,35 @@ export default async function PriceDropsRegionPage() {
                         <TableCell className="pr-6 font-medium">{row.name}</TableCell>
                         <TableCell className="pr-6 text-right tabular-nums">{row.count}</TableCell>
                         <TableCell className="pr-6 text-right tabular-nums font-mono text-muted-foreground">
-                          {row.medianListPrice
-                            ? fmtPrice(row.medianListPrice)
-                            : <span>{"—"}</span>}
+                          {row.medianListPrice ? fmtPrice(row.medianListPrice) : <span>{"—"}</span>}
                         </TableCell>
                         <TableCell className="text-right tabular-nums font-medium">
-                          {row.medianDropPct
-                            ? `-${row.medianDropPct.toFixed(1)}%`
-                            : <span>{"—"}</span>}
+                          {row.medianDropPct ? `-${row.medianDropPct.toFixed(1)}%` : <span>{"—"}</span>}
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
-            </Stack>
-          </Container>
-        </Section>
-      )}
+            </div>
+          </section>
+        )}
 
-      {/* Per-city links */}
-      <Section padding="default" tone="default" divider>
-        <Container>
-          <Stack gap="tight">
-            <Eyebrow>Central Oregon</Eyebrow>
-            <H3>Price drops by city</H3>
-            <div className="flex flex-wrap gap-2 mt-2">
+        {/* Glance stats — hidden from visual flow but present for CTABar context */}
+        {glanceStats.length > 0 && (
+          <section className="section" id="stats-summary" aria-label="Price reduction summary" style={{ display: 'none' }}>
+            {/* Stats are rendered in the hero glance row by KbHero — no duplicate needed */}
+          </section>
+        )}
+
+        {/* All-city navigation */}
+        <section className="section" id="city-links" aria-label="Price drops by city">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Central Oregon</span>
+              <h2 className="sec-title display">Every city</h2>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-4">
               {SITE_CITY_SLUGS.map((slug) => (
                 <Link
                   key={slug}
@@ -513,52 +509,45 @@ export default async function PriceDropsRegionPage() {
                 </Link>
               ))}
             </div>
-          </Stack>
-        </Container>
-      </Section>
+          </div>
+        </section>
 
-      {/* Explainer */}
-      <Section padding="default" tone="muted" divider>
-        <Container>
-          <Stack gap="tight" className="max-w-3xl">
-            <Eyebrow>How this works</Eyebrow>
-            <H2>What a price reduction actually means</H2>
-            <Body size="default" tone="muted">
-              A price reduction is a documented, seller-initiated change in the MLS asking price.
-              Each listing on this page had its price reduced at least once in the last 7 days.
-              The original list price and the current list price both come directly from the
-              regional MLS feed. Nothing is estimated or adjusted.
-            </Body>
-            <Body size="default" tone="muted">
-              A reduction does not automatically mean the home is a bargain.
-              Some sellers start high and trim to market. Others are genuinely motivated to close.
-              The best way to know which is which is to look at comparable sales in the same
-              neighborhood.
-            </Body>
-          </Stack>
-        </Container>
-      </Section>
+        {/* Explainer */}
+        <section className="section" id="explainer" aria-label="What a price reduction means">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">How this works</span>
+              <h2 className="sec-title display">What a price<br />reduction means</h2>
+            </div>
+            <div className="max-w-3xl mt-4 space-y-4 text-muted-foreground">
+              <p>
+                A price reduction is a documented, seller-initiated change in the MLS asking price.
+                Each listing on this page had its price reduced at least once in the last 7 days.
+                The original list price and the current list price both come directly from the
+                regional MLS feed. Nothing is estimated or adjusted.
+              </p>
+              <p>
+                A reduction does not automatically mean the home is a bargain.
+                Some sellers start high and trim to market. Others are genuinely motivated to close.
+                The best way to know which is which is to look at comparable sales in the same
+                neighborhood.
+              </p>
+            </div>
+          </div>
+        </section>
 
-      {/* Lead hook */}
-      <Section padding="default" tone="default" divider>
-        <Container>
-          <Stack gap="tight" className="max-w-xl">
-            <Eyebrow>Weekly drop report</Eyebrow>
-            <H2>Get the weekly price-drop summary</H2>
-            <Body size="default" tone="muted">
-              Every Monday we pull the prior week&apos;s reductions across Central Oregon and
-              send a plain-language summary: which neighborhoods saw the most cuts, the biggest
-              drops, and what it means for buyers right now.
-            </Body>
-            <Link
-              href="/lp/buyer-listing-alerts"
-              className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity self-start"
-            >
-              Get listing alerts
-            </Link>
-          </Stack>
-        </Container>
-      </Section>
+        {/* Sell block */}
+        <KbSell
+          data={{
+            medianListPrice: null,
+            medianDaysToPending: null,
+            soldCount30d: null,
+          }}
+          eyebrow="Sell with Ryan Realty"
+        />
+
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
 
       <CTABar
         eyebrow="Ryan Realty"

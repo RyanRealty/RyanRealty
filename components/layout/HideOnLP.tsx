@@ -58,6 +58,28 @@ export function HideChrome({ children }: { children: React.ReactNode }) {
   // (/communities/<slug>, NOT the /communities index or any deeper segment)
   // carries its own KbNav + KbFooter.
   if (pathname && /^\/communities\/[^/]+$/.test(pathname)) return null
+  // KB migration (Phase 9 waves 3+): each page-class below now renders its own
+  // KbNav + KbFooter, so the default SiteHeader/SiteFooter must NOT double up
+  // (two <header>/<footer> per page otherwise — Matt report 2026-06-18).
+  // Subdivision detail (/subdivisions/<slug>):
+  if (pathname && /^\/subdivisions\/[^/]+$/.test(pathname)) return null
+  // Bend neighborhood detail (/cities/<slug>/<neighborhood> — exactly 2 segments):
+  if (pathname && /^\/cities\/[^/]+\/[^/]+$/.test(pathname)) return null
+  // ZIP page (/zip/<zip>):
+  if (pathname && /^\/zip\/[^/]+$/.test(pathname)) return null
+  // Open-houses + price-drops (index + /<city>):
+  if (pathname && /^\/open-houses(\/[^/]+)?$/.test(pathname)) return null
+  if (pathname && /^\/price-drops(\/[^/]+)?$/.test(pathname)) return null
+  // Housing-market hub + region report + city reports (all KB). NOT the
+  // not-yet-migrated /housing-market/explore + /reports (1-segment, still site-v2),
+  // nor the legacy 2-segment /housing-market/<city>/<subdivision> report.
+  if (pathname === "/housing-market") return null
+  if (
+    pathname &&
+    /^\/housing-market\/[^/]+$/.test(pathname) &&
+    !/^\/housing-market\/(explore|reports)$/.test(pathname)
+  )
+    return null
   return <>{children}</>
 }
 
