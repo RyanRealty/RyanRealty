@@ -114,3 +114,24 @@ Plus: market-chart fix + the HideChrome double-chrome fix (see [[ryanrealty-kb-r
   /our-homes, /activity, /pulse, /contact, /reports/*.
 - **Each new KB route: add to HideChrome in the same change** (single-chrome) + async generateMetadata + rewrite its parity.json to KB (no hidden shims).
 - NOT in scope: account/dashboard/auth/legal (the authenticated app).
+
+## 2026-06-18 — SITE-WIDE MIGRATION SHIPPED + FINAL REVIEW
+
+**~47 KB routes now (from 3 at session start).** Site-wide restyle-in-place (content preserved),
+fidelity restore (market reports + neighborhood resort overview + subdivision video rail re-added),
+testimonials → compact card grid, HideChrome covers all 47 routes, broker photo → contained portrait.
+Final review (live): `/team/matt-ryan` contained portrait + compact reviews; home compact reviews;
+market reports chart + Dataset JSON-LD; `/cities/bend/old-bend` resort overview restored. All single
+chrome, tsc 0, ci:gates 0-new, 637 tests green.
+
+### Remaining — needs design decisions, NOT a mechanical restyle (left FULLY FUNCTIONAL):
+- **/search + /search/[...slug]** — incompatible with the full KB shell: Lenis hijacks the map's
+  scroll-to-search; `kb.css .kb-root *{margin:0;padding:0}` strips the shadcn search controls;
+  `html.lenis{height:auto}` breaks the full-viewport `.map-search-shell`; the fixed transparent KbNav
+  overlaps the sticky filter bar on a hero-less page. Needs a search-specific KB chrome (solid KbNav
+  variant, NO kb-root shell, NO Lenis).
+- **/sell/[intent] + /buy/[intent]** — share `components/landing/LeadLandingPage` (Phase 8). KB that
+  shared component once (preserving the FUB lead form); both inherit.
+- **/housing-market/explore + /housing-market/reports* + /reports/[slug]/[geoName]** — data-heavy
+  report sub-pages, left intact this pass.
+- **/listing/by-address + /listing/by-key** — thin resolvers to the KB /listing/[listingKey].
