@@ -64,3 +64,12 @@ per the city-page migration pattern). NOT migrating: account/dashboard/auth/lega
   year ends clean (no dashed tail), community chart falls back to labeled city trend when
   neighborhood sales are too sparse. 637 tests + gates green, browser-verified.
 - 2026-06-18 — Launched site inventory + subdivision-structure sweep (agent a9be3d9c).
+- 2026-06-18 — **Waves A/B/C shipped + verified live** (`49eed2fa`): subdivision chips link to
+  `/subdivisions/{slug}` + subdivision page → KB (no-404 contract holds — `/subdivisions/sunrise-village`
+  renders 200, not a 404, for an alias with no GIS boundary); Bend neighborhood page → KB
+  (`/cities/bend/old-bend`); region market report → KB (`/housing-market/central-oregon`).
+  Browser-verified all 4: KB chrome present, chips link out, JSON-LD intact (region keeps
+  WebPage+Dataset+FAQPage+BreadcrumbList). §0 trace: region $741,000 = market_pulse_live
+  median_list_price; 1818 active; 6.91 MoS → "6.9 · buyer's market"; 16 days to pending — all exact.
+- 2026-06-18 — Next wave (D): `/housing-market` hub + city-level reports `/housing-market/[...slug]`
+  → KB (mirror the verified region report). Then search/buy/zip, about/team, sell.

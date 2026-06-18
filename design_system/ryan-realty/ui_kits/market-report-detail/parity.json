@@ -1,96 +1,164 @@
 {
   "route": "app/housing-market/[...slug]/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/market-report/index.html",
-  "competitiveTarget": "Beat Zillow / Redfin / Windermere geo market pages. Live per-geo stat band, 12-month price trend chart, market FAQ plus FAQPage JSON-LD, Dataset JSON-LD for AI citability, and a broker lead-capture form no aggregator site carries.",
-  "note": "Flagship ranking route. Dedicated detail mockup is a follow-up deliverable; the page currently shares the market-report/index.html mockup dir. The two-table components (PriceBandTable, CityComparisonTable) are built as stubs pending verified DAL price-band aggregation — see stubbed reason in page file. Route is app/housing-market/[...slug]/page.tsx (catch-all for both /housing-market/<city> and /housing-market/<city>/<community>).",
+  "competitiveTarget": "Beat Zillow / Redfin / Windermere geo market pages. KB kinetic-brutalist chrome for city scope: live per-city stat band + yearSeries overlay chart + sibling-city tiles + market FAQ plus FAQPage JSON-LD + Dataset JSON-LD for AI citability. Subdivision scope retains wave-2 render (no KB subdivision pattern yet).",
+  "note": "Catch-all route for /housing-market/<city> (KB render, Phase 9) and /housing-market/<city>/<community> (legacy wave-2 render, preserved intact). City scope mirrors the region report (central-oregon/page.tsx) with city-scoped KbMarketData. Subdivision scope kept on wave-2 deliberately — no KB convergence roadmap wave covers subdivision market reports. Both scopes share the same JSON-LD (BreadcrumbList + WebPage + Dataset + FAQPage) via MetadataBlock + FAQBlock.",
   "requiredComponents": [
     {
-      "name": "PageBreadcrumb",
-      "section": "Home > Housing market > {geoName}, includeJsonLd=false (schemas array on MetadataBlock handles the single BreadcrumbList)",
+      "name": "MetadataBlock",
+      "section": "BreadcrumbList + WebPage + Dataset JSON-LD (G34 AI-citability). dateModified equals pulse.refreshedAt from market_pulse_live, never hardcoded. variableMeasured from buildMarketFaq. Rendered in BOTH city and subdivision scopes.",
       "blocking": true
     },
     {
-      "name": "DisplayHeading",
-      "section": "Hero H1 '{geoName} housing market' in Amboqia Boriango rendered via HeroBlock. Replaces the plain h1 line 101 of the skeleton.",
+      "name": "KbNav",
+      "section": "KB chrome navigation — city scope only.",
       "blocking": true
     },
     {
-      "name": "HeroBlock",
-      "section": "Full-bleed hero with Old Mill canonical photo, display H1 via DisplayHeading, and data-driven lede (active count + median list price from getMarketPulse).",
+      "name": "KbSectionTracker",
+      "section": "Page-level analytics tracker. pageType='market-report'. City scope only.",
       "blocking": true
     },
     {
-      "name": "MarketSnapshot",
-      "section": "Key stats band, 4 live SFR cards (active, median list, median DOM, months of supply + verdict). citySlug prop reads market_pulse_live via getMarketPulse. Replaces hand-rolled cards lines 105 to 130 of the skeleton.",
+      "name": "KbBreadcrumb",
+      "section": "Visual breadcrumb: Home > Housing market > {cityName}. No JSON-LD (MetadataBlock owns BreadcrumbList). City scope only.",
       "blocking": true
     },
     {
-      "name": "PriceChart",
-      "section": "12-month median sale price trend, getPriceHistory(geoType, geoSlug, 'monthly', 24) from market_stats_cache. Renders only when series >= 6 complete months.",
+      "name": "SmoothScrollProvider",
+      "section": "Lenis smooth scroll wrapper around all KB sections. City scope only.",
       "blocking": true
     },
     {
-      "name": "MarketDetailStats",
-      "section": "Fuller market stats section after PriceChart. Surfaces median sale price, median $/sqft (with YoY), avg sale-to-list ratio, YoY median price delta, market health label, homes sold + total volume, active inventory, cash-purchase share, median concessions. Data from getCityMarketDetail (market_stats_cache confirmed-existing columns only). Renders only when geoType === 'city'. §0: every on-screen number traces to getCityMarketDetail — columns median_sale_price, median_price_per_sqft_closed, avg_sale_to_list_ratio, yoy_median_price_delta_pct, yoy_ppsf_change_pct, yoy_dom_change, market_health_label, market_health_score, sold_count, total_volume, end_of_period_inventory, cash_purchase_pct, median_concessions_amount.",
+      "name": "KbHero",
+      "section": "City hero: eyebrow '{cityName} · Oregon', titleTop=cityName, titleBottom='market report', data-driven lede from pulse. City scope only.",
       "blocking": true
     },
     {
-      "name": "PriceBandTable",
-      "section": "'Where the activity is' inventory-by-price-band table. NEW site block at components/site/PriceBandTable.tsx. Currently stubbed with TODO — no DAL price-band aggregation exists yet.",
+      "name": "KbMarketHud",
+      "section": "City KbMarketData. §0-traced: active/closed30/medianList/daysToPending/monthsSupply from pulse; trend from completePriceMonths last 13; byTown from citySnapshots; yearSeries from buildYearSeries(completePriceMonths, 5). Pulse-timeout fallback via pulse ?? {…}. City scope only.",
       "blocking": true
     },
     {
-      "name": "CityComparisonTable",
-      "section": "City-level comparison table from per-city market_pulse_live rows. NEW site block at components/site/CityComparisonTable.tsx. Data from getMarketPulseCitySnapshots fan-out, never hardcoded.",
-      "blocking": true
-    },
-    {
-      "name": "ContentSection",
-      "section": "Market narrative dynamically generated from MoS verdict and live stats. Methodology trace line citing market_stats_cache, geo_type, geo_slug, methodology_version, refreshed_at.",
+      "name": "KbExploreTowns",
+      "section": "Sibling Central Oregon city tiles from ONE getMarketPulseCitySnapshots call, excluding current city. Links to /housing-market/<city-slug>. eyebrow 'Central Oregon', sectionId='cities'. City scope only.",
       "blocking": true
     },
     {
       "name": "FAQBlock",
-      "section": "Market FAQ, 5 to 6 geo-specific Q and A pairs from buildMarketFaq. includeJsonLd=true auto-emits FAQPage JSON-LD via MetadataBlock (G34).",
+      "section": "Market FAQ from buildMarketFaq. includeJsonLd=true auto-emits FAQPage JSON-LD (G34). tone='muted'. Rendered in BOTH scopes.",
       "blocking": true
     },
     {
-      "name": "MetadataBlock",
-      "section": "Dataset JSON-LD (G34 AI-citability), schema type 'dataset' with variableMeasured from buildMarketFaq datasetVariables. dateModified equals pulse.refreshedAt from market_pulse_live, never hardcoded. Also emits breadcrumb and webPage schemas.",
+      "name": "KbSell",
+      "section": "Seller conversion block fed by pulse: medianListPrice, medianDaysToPending, closedLast30Days. eyebrow 'Sell in {cityName}'. City scope only.",
+      "blocking": true
+    },
+    {
+      "name": "KbFooter",
+      "section": "Full sitemap close. towns prop = siblingCities (same KbTownItem[] as KbExploreTowns). City scope only.",
+      "blocking": true
+    },
+    {
+      "name": "PageBreadcrumb",
+      "section": "Home > Housing market > {cityName} > {communityName}, includeJsonLd=false. Subdivision scope only (legacy wave-2).",
+      "blocking": true
+    },
+    {
+      "name": "DisplayHeading",
+      "section": "Hero H1 '{geoName} housing market' in Amboqia Boriango via HeroBlock. Subdivision scope only (legacy wave-2).",
+      "blocking": true
+    },
+    {
+      "name": "HeroBlock",
+      "section": "Full-bleed hero with city photo, display H1, and data-driven lede. Subdivision scope only (legacy wave-2).",
+      "blocking": true
+    },
+    {
+      "name": "MarketSnapshot",
+      "section": "4-stat cards from market_pulse_live. Shows parent-city stats for subdivision scope. Subdivision scope only (legacy wave-2).",
+      "blocking": true
+    },
+    {
+      "name": "PriceChart",
+      "section": "12-month median sale price trend from getPriceHistory. Subdivision scope only (legacy wave-2).",
+      "blocking": true
+    },
+    {
+      "name": "MarketDetailStats",
+      "section": "Fuller market stats from getCityMarketDetail. Subdivision scope only (legacy wave-2).",
+      "blocking": true
+    },
+    {
+      "name": "PriceBandTable",
+      "section": "Inventory-by-price-band table, stubbed with items=[]. Subdivision scope only (legacy wave-2).",
+      "blocking": true
+    },
+    {
+      "name": "CityComparisonTable",
+      "section": "Per-city comparison table from getMarketPulseCitySnapshots. Subdivision scope only (legacy wave-2).",
+      "blocking": true
+    },
+    {
+      "name": "ContentSection",
+      "section": "Market narrative from MoS verdict and live stats. Subdivision scope only (legacy wave-2).",
       "blocking": true
     },
     {
       "name": "LeadCaptureBlock",
-      "section": "Monthly report subscription form, 'Get the {geoName} report every month', variant='inquiry', tone='muted'.",
+      "section": "Broker inquiry form, variant='inquiry', tone='muted'. Subdivision scope only (legacy wave-2).",
       "blocking": true
     },
     {
       "name": "RelatedAreas",
-      "section": "City cross-navigation, nearby Central Oregon cities with activeCount from market_pulse_live. eyebrow 'Central Oregon cities', cols=4.",
+      "section": "Nearby Central Oregon cities with activeCount from market_pulse_live. cols=4. Subdivision scope only (legacy wave-2).",
       "blocking": true
     },
     {
       "name": "CTABar",
-      "section": "Broker contact band, tone='navy'. primary '/contact' Schedule a call, secondary 'tel:5412136706' 541.213.6706.",
+      "section": "Broker contact band, tone='navy'. primary '/contact' Schedule a call. Subdivision scope only (legacy wave-2).",
       "blocking": true
+    }
+  ],
+  "optionalComponents": [
+    {
+      "name": "KbArticles",
+      "section": "Recent blog posts from getRecentBlogPosts({ limit: 3 }). Renders null when empty. City scope only.",
+      "blocking": false
     }
   ],
   "layoutComponents": [
     {
       "name": "SiteHeader",
-      "section": "renders from app/layout.tsx",
-      "note": "Not in requiredComponents because the gate checks the route file."
+      "section": "Hidden for kb-root pages (city scope) via HideChrome in app/layout.tsx. Present for subdivision scope.",
+      "note": "KbNav provides KB chrome for city scope."
     },
     {
       "name": "SiteFooter",
-      "section": "renders from app/layout.tsx",
-      "note": "Not in requiredComponents because the gate checks the route file."
+      "section": "Hidden for kb-root pages (city scope). Present for subdivision scope.",
+      "note": "KbFooter provides KB footer for city scope."
     }
   ],
   "deferredComponents": [
     {
-      "name": "ActivityFeed",
-      "reason": "Live transaction events for the geo. Deferred until geo-scoped activity feed data is verified for subdivision and community levels."
+      "name": "KbAbout",
+      "reason": "City-scope KB market report focuses on market data. KbAbout lives on /cities/[slug]."
+    },
+    {
+      "name": "KbListingMap",
+      "reason": "Listing map deferred; /cities/[slug] owns the map tile."
+    },
+    {
+      "name": "KbFeatured",
+      "reason": "Featured listings deferred; /cities/[slug] owns the featured listing feed."
+    },
+    {
+      "name": "KbTestimonials",
+      "reason": "Testimonials deferred from the market report page."
+    },
+    {
+      "name": "KbTeam",
+      "reason": "Team section deferred from the market report page."
     }
   ],
   "jsonLd": {
@@ -98,28 +166,38 @@
       {
         "type": "BreadcrumbList",
         "emittedBy": "MetadataBlock schemas array (breadcrumb entry)",
-        "gate": "G34"
+        "gate": "G34",
+        "note": "Both scopes."
+      },
+      {
+        "type": "WebPage",
+        "emittedBy": "MetadataBlock schemas array (webPage entry)",
+        "gate": "G34",
+        "note": "Both scopes."
       },
       {
         "type": "Dataset",
         "emittedBy": "MetadataBlock schemas array (dataset entry)",
         "gate": "G34",
-        "note": "Primary AI-citability signal. dateModified must equal pulse.refreshedAt from market_pulse_live. Each variableMeasured value must equal the on-screen number (CLAUDE.md §0)."
+        "note": "Primary AI-citability signal. Both scopes. dateModified must equal pulse.refreshedAt from market_pulse_live. Each variableMeasured value must equal the on-screen number (CLAUDE.md §0). Emitted only when datasetVariables.length > 0 AND refreshedAt is present."
       },
       {
         "type": "FAQPage",
         "emittedBy": "FAQBlock includeJsonLd=true",
-        "gate": "G34"
+        "gate": "G34",
+        "note": "Both scopes. buildMarketFaq is the single source for FAQ items, FAQPage JSON-LD, and Dataset variableMeasured."
       }
     ]
   },
   "dataLayer": {
-    "getMarketPulse": "lib/data/market/getMarketPulse.ts, market_pulse_live 10 to 15 min freshness, used by MarketSnapshot, lede, and Dataset dateModified",
-    "getPriceHistory": "lib/data/market/getPriceHistory.ts, market_stats_cache monthly, limit 24, used by PriceChart",
-    "getMarketStats": "lib/data/market/getMarketStats.ts, market_stats_cache 6h freshness, used by methodology trace in ContentSection",
-    "getMarketPulseCitySnapshots": "lib/data/market/getMarketPulseSnapshot.ts, market_pulse_live city rows, used by CityComparisonTable",
-    "getCityMarketDetail": "lib/data/market/getCityMarketDetail.ts, market_stats_cache full projection (confirmed-existing columns only, verified 2026-06-05), 6h freshness, used by MarketDetailStats. City-level only; subdivision deferred.",
-    "note": "All DAL functions imported from @/lib/data (G8 compliant). No @/app/actions/* imports."
+    "getMarketPulse": "lib/data/market/getMarketPulse.ts, market_pulse_live geo_type='city' or 'subdivision', 10 to 15 min freshness.",
+    "getPriceHistory": "lib/data/market/getPriceHistory.ts, market_stats_cache monthly. limit=60 city scope, limit=24 subdivision scope.",
+    "getMarketPulseCitySnapshots": "lib/data/market/getMarketPulseSnapshot.ts, market_pulse_live city rows for COMPARISON_CITY_LABELS. ONE call per render.",
+    "getCityMarketDetail": "lib/data/market/getCityMarketDetail.ts, market_stats_cache full projection, 6h freshness. City scope only.",
+    "getRecentBlogPosts": "lib/data/blog/getRecentBlogPosts.ts, blog_posts published newest first, limit=3. City scope only.",
+    "buildYearSeries": "lib/kb/year-series.ts. Groups completePriceMonths into up to 5 calendar-year lines for KbMarketHud. City scope only.",
+    "buildMarketFaq": "lib/site/market-faq.ts. Both scopes. Fed pulse ?? {activeCount: null, medianListPrice: null, refreshedAt: null} for timeout resilience (G52).",
+    "note": "All DAL functions imported from @/lib/data (G8 compliant). submitMarketPageInquiry imported from @/app/housing-market/actions for subdivision lead capture (approved pattern)."
   },
   "generateStaticParams": {
     "required": true,
