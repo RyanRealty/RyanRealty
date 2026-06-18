@@ -2,29 +2,63 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-// ONE coherent nav that navigates the whole site. The top bar shows the key
-// destinations; the overlay carries the full list. Both are REAL routes — the
-// old in-page anchors (#towns, #listings) created a second, conflicting menu
-// that only scrolled the homepage instead of navigating the site.
+// ONE coherent nav that navigates the WHOLE site. The top bar shows the key
+// destinations; the overlay is a comprehensive grouped directory (every real
+// page is reachable). All REAL routes — no in-page anchors.
 const LINKS = [
   { href: '/homes-for-sale', label: 'Search' },
   { href: '/communities', label: 'Communities' },
   { href: '/cities', label: 'Cities' },
   { href: '/sell/valuation', label: 'Sell' },
 ]
-const MENU = [
-  { href: '/homes-for-sale', label: 'Search homes' },
-  { href: '/communities', label: 'Communities' },
-  { href: '/cities', label: 'Cities' },
-  { href: '/sell/valuation', label: 'Sell your home' },
-  { href: '/about', label: 'About' },
-  { href: '/team', label: 'Our team' },
-  { href: '/contact', label: 'Contact' },
+
+const MENU_GROUPS: { title: string; links: { href: string; label: string }[] }[] = [
+  {
+    title: 'Buy',
+    links: [
+      { href: '/homes-for-sale', label: 'Search homes' },
+      { href: '/search', label: 'Map search' },
+      { href: '/communities', label: 'Communities' },
+      { href: '/cities', label: 'Cities' },
+      { href: '/open-houses', label: 'Open houses' },
+      { href: '/price-drops', label: 'Price drops' },
+      { href: '/our-homes', label: 'Our listings' },
+    ],
+  },
+  {
+    title: 'Sell',
+    links: [
+      { href: '/sell/valuation', label: 'Home valuation' },
+      { href: '/home-valuation', label: "What's my home worth" },
+      { href: '/motivated-sellers', label: 'Sell on a deadline' },
+    ],
+  },
+  {
+    title: 'Market & area',
+    links: [
+      { href: '/housing-market', label: 'Housing market' },
+      { href: '/area-guides', label: 'Area guides' },
+      { href: '/schools', label: 'Schools' },
+      { href: '/parks', label: 'Parks' },
+      { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { href: '/blog', label: 'Guides and blog' },
+      { href: '/reviews', label: 'Reviews' },
+      { href: '/about', label: 'About' },
+      { href: '/team', label: 'Our team' },
+      { href: '/contact', label: 'Contact' },
+    ],
+  },
 ]
 
 /**
  * KB top bar — transparent over the hero, flips to solid navy past the hero.
- * Full-screen menu overlay. Replaces the default site chrome on the KB surface.
+ * Horizontal wordmark (whitened over the photo via CSS filter). The menu overlay
+ * is a comprehensive grouped directory. Replaces the default site chrome on KB.
  */
 export function KbNav() {
   const bar = useRef<HTMLElement>(null)
@@ -55,8 +89,8 @@ export function KbNav() {
   return (
     <>
       <header className="topbar" ref={bar}>
-        <a href="/" aria-label="Ryan Realty home">
-          <img className="logo-img" src="/images/brand/logo-white.png" alt="Ryan Realty" />
+        <a href="/" aria-label="Ryan Realty home" className="topbar-logo">
+          <img className="logo-img" src="/images/brand/logo-horizontal-navy-transparent.png" alt="Ryan Realty" />
         </a>
         <nav className="nav-right">
           {LINKS.map((l) => (
@@ -64,28 +98,35 @@ export function KbNav() {
               {l.label}
             </a>
           ))}
-          <button className="menu-btn" onClick={() => setOpen(true)}>
+          <button className="menu-btn" onClick={() => setOpen(true)} aria-expanded={open} aria-label="Open menu">
             Menu +
           </button>
         </nav>
       </header>
-      <div className={`menu-overlay${open ? ' open' : ''}`}>
+      <div className={`menu-overlay${open ? ' open' : ''}`} aria-hidden={!open}>
         <div className="menu-top">
-          <img className="logo-img" src="/images/brand/logo-white.png" alt="Ryan Realty" />
+          <a href="/" aria-label="Ryan Realty home">
+            <img className="logo-img" src="/images/brand/logo-horizontal-navy-transparent.png" alt="Ryan Realty" />
+          </a>
           <button className="menu-close" onClick={() => setOpen(false)}>
             Close ×
           </button>
         </div>
-        <nav className="menu-nav">
-          {MENU.map((l) => (
-            <a key={l.href} href={l.href} onClick={() => setOpen(false)}>
-              {l.label}
-            </a>
+        <nav className="menu-nav menu-grid">
+          {MENU_GROUPS.map((g) => (
+            <div className="menu-group" key={g.title}>
+              <span className="menu-group-title">{g.title}</span>
+              {g.links.map((l) => (
+                <a key={l.href} href={l.href} onClick={() => setOpen(false)}>
+                  {l.label}
+                </a>
+              ))}
+            </div>
           ))}
         </nav>
         <div className="menu-foot">
-          <span>Central Oregon</span>
-          <span>Bend · Redmond · Sisters</span>
+          <span>Bend · Oregon</span>
+          <a href="tel:5412136706">541.213.6706</a>
         </div>
       </div>
     </>

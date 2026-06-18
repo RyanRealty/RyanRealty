@@ -18,13 +18,13 @@ export interface KbCrumb {
  * BreadcrumbList JSON-LD is emitted by MetadataBlock, so none is rendered here.
  * Returns null when there is nothing to show.
  */
-export function KbBreadcrumb({ trail }: { trail: KbCrumb[] }) {
+export function KbBreadcrumb({ trail, overlay = false }: { trail: KbCrumb[]; overlay?: boolean }) {
   if (!trail || trail.length === 0) return null
 
   const lastIndex = trail.length - 1
 
   return (
-    <nav className="kb-bc" aria-label="Breadcrumb">
+    <nav className={`kb-bc${overlay ? ' overlay on-navy' : ''}`} aria-label="Breadcrumb">
       <div className="wrap">
         <ol className="kb-bc-list">
           {trail.map((crumb, i) => {

@@ -428,7 +428,7 @@ export default async function CityDetailPage({ params }: Props) {
       />
       <KbSectionTracker pageType="city" />
       <MetadataBlock schemas={citySchemas} />
-      <KbBreadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]} />
+      <KbBreadcrumb overlay trail={[{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]} />
       <SmoothScrollProvider>
         <KbHero
           data={{

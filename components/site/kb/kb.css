@@ -62,8 +62,8 @@ html.lenis, html.lenis body{height:auto;}
   transition:background .3s ease, padding .3s ease;
 }
 .kb-root .topbar.scrolled{background:var(--navy);padding-top:11px;padding-bottom:11px;}
-.kb-root .topbar .logo-img{height:66px;width:auto;pointer-events:auto;filter:drop-shadow(0 1px 6px rgba(0,0,0,.5));transition:height .3s ease;}
-.kb-root .topbar.scrolled .logo-img{height:46px;filter:none;}
+.kb-root .topbar .logo-img{height:34px;width:auto;max-width:60vw;object-fit:contain;pointer-events:auto;filter:brightness(0) invert(1) drop-shadow(0 1px 5px rgba(0,0,0,.45));transition:height .3s ease;}
+.kb-root .topbar.scrolled .logo-img{height:28px;filter:brightness(0) invert(1);}
 .kb-root .topbar .nav-right{display:flex;align-items:center;gap:24px;pointer-events:auto;}
 .kb-root .topbar a{color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.45);}
 .kb-root .topbar.scrolled a, .kb-root .topbar.scrolled .menu-btn{text-shadow:none;}
@@ -200,7 +200,7 @@ html.lenis, html.lenis body{height:auto;}
   margin-bottom:0;
 }
 .kb-root .sec-index{font-size:.72rem;font-weight:700;letter-spacing:.2em;opacity:.68;}
-.kb-root .sec-title{font-size:clamp(2.4rem,9vw,6rem);line-height:.9;}
+.kb-root .sec-title{font-size:clamp(1.9rem,5.4vw,3.6rem);line-height:.92;}
 .kb-root .region{background:var(--navy);color:var(--cream);padding-bottom:0;}
 .kb-root .region .sec-head{border-color:var(--cream-40);}
 .kb-root .region-grid{
@@ -419,14 +419,16 @@ html.lenis, html.lenis body{height:auto;}
 }
 .kb-root .menu-overlay.open{transform:translateY(0);opacity:1;visibility:visible;pointer-events:auto;transition:transform .55s cubic-bezier(.7,0,.2,1),opacity .4s ease;}
 .kb-root .menu-top{display:flex;align-items:center;justify-content:space-between;}
-.kb-root .menu-top .logo-img{height:24px;}
+.kb-root .menu-top .logo-img{height:26px;width:auto;filter:brightness(0) invert(1);}
 .kb-root .menu-close{background:none;border:0;color:var(--cream);font-size:.78rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;font-family:inherit;}
-.kb-root .menu-nav{flex:1;display:flex;flex-direction:column;justify-content:center;gap:2px;}
-.kb-root .menu-nav a{
-  font-family:var(--font-amboqia),serif;font-size:clamp(2.2rem,12vw,7rem);line-height:.92;text-transform:uppercase;
-  opacity:.55;transition:opacity .25s ease,padding-left .25s ease;
-}
-.kb-root .menu-nav a:hover{opacity:1;padding-left:14px;}
+.kb-root .menu-nav{flex:1;display:flex;flex-direction:column;justify-content:center;}
+.kb-root .menu-grid{display:grid;grid-template-columns:1fr;gap:26px 40px;align-content:center;padding:clamp(20px,4vh,40px) 0;overflow-y:auto;}
+@media(min-width:680px){.kb-root .menu-grid{grid-template-columns:repeat(2,1fr);}}
+@media(min-width:1000px){.kb-root .menu-grid{grid-template-columns:repeat(4,1fr);}}
+.kb-root .menu-group{display:flex;flex-direction:column;gap:10px;}
+.kb-root .menu-group-title{font-size:.64rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--cream-70);padding-bottom:9px;border-bottom:1px solid var(--cream-12);margin-bottom:4px;}
+.kb-root .menu-grid a{font-family:var(--font-amboqia),serif;font-size:clamp(1.3rem,2.3vw,1.7rem);line-height:1;color:var(--cream);opacity:.82;transition:opacity .2s ease,padding-left .2s ease;}
+.kb-root .menu-grid a:hover{opacity:1;padding-left:8px;}
 .kb-root .menu-foot{display:flex;justify-content:space-between;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--cream-70);}
 .kb-root .no-anim .reveal-inner{transform:none!important;}
 @media(prefers-reduced-motion:reduce){.kb-root *{animation-duration:.001ms!important;transition-duration:.001ms!important;}.kb-root .ticker-track{animation:none!important;}}
@@ -661,7 +663,7 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .kb-pop-addr{font-size:.78rem;font-weight:600;margin-top:6px;letter-spacing:.01em;}
 .kb-root .kb-pop-addr .sub{display:block;font-weight:500;color:var(--cream-70);font-size:.7rem;margin-top:2px;}
 .kb-root .kb-pop-specs{margin-top:9px;font-size:.66rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--cream-70);display:flex;gap:12px;}
-@media(max-width:760px){.kb-root .wrap{padding:0 20px;}.kb-root .sec-title{font-size:12.5vw!important;line-height:.92;}.kb-root .hero-h{font-size:11vw!important;}.kb-root .stat-num{font-size:13vw!important;}.kb-root .town-row{grid-template-columns:1fr!important;gap:6px;padding:18px 0;}.kb-root .town-row .town-name{font-size:11vw!important;white-space:normal!important;overflow:visible!important;min-width:0;transform:none!important;}.kb-root .town-stats{text-align:left!important;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;}.kb-root .town-count{font-size:1.7rem!important;}.kb-root .town-count .lbl{display:inline!important;margin:0 0 0 6px;}.kb-root .town-price{margin-top:0!important;}.kb-root .comm-name{font-size:7.5vw!important;white-space:normal!important;}.kb-root .lst-price{font-size:8vw!important;}.kb-root .sell-h{font-size:11vw!important;}.kb-root .team-name{font-size:9vw!important;}.kb-root .foot-cta .display{font-size:13vw!important;}}
+@media(max-width:760px){.kb-root .wrap{padding:0 20px;}.kb-root .sec-title{font-size:9vw!important;line-height:.95;}.kb-root .hero-h{font-size:11vw!important;}.kb-root .stat-num{font-size:13vw!important;}.kb-root .town-row{grid-template-columns:1fr!important;gap:6px;padding:18px 0;}.kb-root .town-row .town-name{font-size:11vw!important;white-space:normal!important;overflow:visible!important;min-width:0;transform:none!important;}.kb-root .town-stats{text-align:left!important;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;}.kb-root .town-count{font-size:1.7rem!important;}.kb-root .town-count .lbl{display:inline!important;margin:0 0 0 6px;}.kb-root .town-price{margin-top:0!important;}.kb-root .comm-name{font-size:7.5vw!important;white-space:normal!important;}.kb-root .lst-price{font-size:8vw!important;}.kb-root .sell-h{font-size:11vw!important;}.kb-root .team-name{font-size:9vw!important;}.kb-root .foot-cta .display{font-size:13vw!important;}}
 
 /* ===== KB city-page sections (breadcrumb, about, open houses, activity, articles) ===== */
 /* --- KbBreadcrumb --- */
@@ -871,3 +873,292 @@ html.lenis, html.lenis body{height:auto;}
 
 /* Keyboard focus — visible on navy AND cream surfaces (a11y) */
 .kb-root a:focus-visible,.kb-root button:focus-visible,.kb-root input:focus-visible,.kb-root [tabindex]:focus-visible{outline:3px solid var(--cream);outline-offset:2px;box-shadow:0 0 0 5px rgba(16,39,66,.6);border-radius:2px;}
+
+/* Breadcrumb overlay variant — sits OVER the hero (not a cream strip pushing it down) */
+.kb-root{position:relative;}
+.kb-root .kb-bc.overlay{position:absolute;top:60px;left:0;right:0;z-index:80;background:transparent;border-bottom:0;pointer-events:none;}
+.kb-root .kb-bc.overlay .wrap{pointer-events:auto;padding-top:6px;padding-bottom:6px;}
+.kb-root .kb-bc.overlay .kb-bc-link,.kb-root .kb-bc.overlay .kb-bc-current,.kb-root .kb-bc.overlay .kb-bc-sep{text-shadow:0 1px 5px rgba(0,0,0,.55);}
+@media(max-width:760px){.kb-root .kb-bc.overlay{top:52px;}}
+
+/* ===== KB redesigns: open houses (editorial) + testimonials (animated stars) ===== */
+/* --- KbOpenHouses --- */
+/* ===== KbOpenHouses — editorial lead + horizontal scroll-snap rail =====
+   Replaces the old .oh-grid card grid. Navy .openhouses surface + cream edges
+   already exist in kb.css; these additions build the board. The date/time is the
+   hero: a hard ledger stamp with a live pulse dot on every tile. Lead panel gets
+   a clip-path wipe reveal, rail cards stagger up (both GSAP, reduced-motion safe).
+   On wide screens the lead sits left, the rail stacks to its right; below 1040px
+   the lead goes full width and the rail runs as a horizontal scroll-snap track. */
+
+.kb-root .oh-board{padding-top:30px;}
+@media(min-width:1040px){
+  .kb-root .oh-board.has-rail{
+    display:grid;
+    grid-template-columns:minmax(0,1.32fr) minmax(0,1fr);
+    gap:18px;align-items:stretch;
+  }
+}
+
+/* ---- shared tile chrome ---- */
+.kb-root .oh-lead,
+.kb-root .oh-rail-card{
+  position:relative;display:block;overflow:hidden;
+  border:var(--edge) solid var(--cream);background:#0b1c30;color:var(--cream);
+}
+.kb-root .oh-lead-media,
+.kb-root .oh-rail-media{position:absolute;inset:0;overflow:hidden;}
+.kb-root .oh-lead-img,
+.kb-root .oh-rail-img{
+  width:100%;height:100%;object-fit:cover;
+  transition:transform .8s cubic-bezier(.2,.8,.2,1);will-change:transform;
+}
+.kb-root .oh-lead:hover .oh-lead-img,
+.kb-root .oh-rail-card:hover .oh-rail-img{transform:scale(1.045);}
+.kb-root .oh-noimg{
+  position:absolute;inset:0;
+  background:
+    linear-gradient(180deg,rgba(250,248,244,.06),transparent 55%),
+    repeating-linear-gradient(135deg,rgba(250,248,244,.05) 0 1px,transparent 1px 14px),
+    #0b1c30;
+}
+/* scrim — darker at the foot where price/address sit, kept off the photo top */
+.kb-root .oh-lead-media::after,
+.kb-root .oh-rail-media::after{
+  content:"";position:absolute;inset:0;z-index:1;
+  background:linear-gradient(180deg,rgba(11,28,48,.05) 0%,rgba(11,28,48,.05) 42%,rgba(11,28,48,.92) 100%);
+}
+
+/* ---- THE DATE/TIME STAMP — hero element, hard ledger plate ---- */
+.kb-root .oh-stamp{
+  position:absolute;top:0;left:0;z-index:3;
+  display:flex;flex-direction:column;
+  background:var(--cream);color:var(--navy);
+  padding:11px 14px 12px;
+  border-right:var(--edge) solid var(--navy);
+  border-bottom:var(--edge) solid var(--navy);
+}
+.kb-root .oh-stamp-live{
+  position:absolute;top:13px;right:12px;
+  width:7px;height:7px;border-radius:50%;background:var(--navy);
+  animation:mktBlink 1.4s ease-in-out infinite;
+}
+.kb-root .oh-stamp-kicker{
+  font-size:.56rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--navy-70);margin-bottom:5px;padding-right:16px;
+}
+.kb-root .oh-stamp-day{
+  font-family:var(--font-amboqia),serif;font-weight:400;
+  font-size:clamp(1.5rem,3.4vw,2.1rem);line-height:.86;letter-spacing:-.01em;
+  text-transform:uppercase;
+}
+.kb-root .oh-stamp-time{
+  margin-top:6px;font-size:.66rem;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--navy);white-space:nowrap;
+}
+
+/* ---- LEAD panel ---- */
+.kb-root .oh-lead{aspect-ratio:16/10;min-height:300px;}
+@media(min-width:1040px){.kb-root .oh-board.has-rail .oh-lead{aspect-ratio:auto;min-height:440px;}}
+.kb-root .oh-lead .oh-stamp-day{font-size:clamp(1.9rem,4vw,2.7rem);}
+.kb-root .oh-lead-info{
+  position:absolute;left:0;right:0;bottom:0;z-index:3;
+  padding:clamp(18px,2.4vw,26px);
+}
+.kb-root .oh-lead-price{
+  font-size:clamp(2.2rem,6vw,3.6rem);line-height:.9;color:var(--cream);
+}
+.kb-root .oh-lead-addr{
+  font-size:clamp(.92rem,1.4vw,1.05rem);font-weight:600;margin-top:9px;letter-spacing:.01em;
+}
+
+/* ---- RAIL — horizontal scroll-snap of tall photo cards ---- */
+.kb-root .oh-rail{
+  display:flex;gap:14px;
+  overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  margin:18px -18px 0;padding:0 18px 6px;
+}
+.kb-root .oh-rail::-webkit-scrollbar{display:none;}
+@media(min-width:760px){.kb-root .oh-rail{margin-left:-40px;margin-right:-40px;padding-left:40px;padding-right:40px;}}
+/* On wide screens the rail rides beside the lead — vertical, no negative bleed */
+@media(min-width:1040px){
+  .kb-root .oh-board.has-rail .oh-rail{
+    flex-direction:column;overflow:visible;margin:0;padding:0;gap:14px;
+    scroll-snap-type:none;
+  }
+}
+.kb-root .oh-rail-card{
+  scroll-snap-align:start;flex:0 0 76vw;max-width:340px;
+  aspect-ratio:4/5;
+}
+@media(min-width:560px){.kb-root .oh-rail-card{flex-basis:300px;}}
+@media(min-width:1040px){
+  .kb-root .oh-board.has-rail .oh-rail-card{
+    flex:1 1 auto;max-width:none;width:100%;
+    aspect-ratio:auto;min-height:0;
+    display:grid;grid-template-columns:42% minmax(0,1fr);
+  }
+  /* beside the lead the rail card splits: photo left, info on a navy panel right */
+  .kb-root .oh-board.has-rail .oh-rail-media{position:relative;inset:auto;height:100%;min-height:122px;}
+  .kb-root .oh-board.has-rail .oh-rail-media::after{
+    background:linear-gradient(90deg,transparent 40%,rgba(11,28,48,.4));
+  }
+  .kb-root .oh-board.has-rail .oh-rail-info{
+    position:relative;left:auto;right:auto;bottom:auto;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:16px 18px;background:#0b1c30;
+  }
+  .kb-root .oh-board.has-rail .oh-rail-card .oh-stamp{
+    padding:8px 11px 9px;
+  }
+  .kb-root .oh-board.has-rail .oh-rail-card .oh-stamp-kicker{display:none;}
+}
+.kb-root .oh-rail-info{
+  position:absolute;left:0;right:0;bottom:0;z-index:3;padding:15px;
+}
+.kb-root .oh-rail-price{
+  font-size:clamp(1.7rem,5vw,2.3rem);line-height:.9;color:var(--cream);
+}
+.kb-root .oh-rail-addr{
+  font-size:.82rem;font-weight:600;margin-top:7px;letter-spacing:.01em;
+}
+
+/* ---- shared address sub + spec line ---- */
+.kb-root .oh-sub{
+  display:block;font-weight:500;color:var(--cream-70);
+  font-size:.72rem;margin-top:4px;letter-spacing:.04em;
+}
+.kb-root .oh-specs{
+  display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:11px;
+  font-size:.66rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--cream-70);
+}
+.kb-root .oh-specs span{position:relative;}
+.kb-root .oh-specs span+span::before{
+  content:"";position:absolute;left:-8px;top:50%;width:1px;height:9px;
+  transform:translateY(-50%);background:var(--cream-40);
+}
+
+@media(max-width:760px){
+  .kb-root .oh-lead-price{font-size:9vw;}
+  .kb-root .oh-rail-price{font-size:8vw;}
+}
+/* --- KbTestimonials --- */
+/* ====================================================================
+   KbTestimonials (kb-proof2) — asymmetric editorial quote plate + animated
+   five-star rating. Lives inside the existing .proof shell (navy bg, cream
+   text, .proof-scan dot field). Navy/cream only. No grid of cards: one
+   oversized quote plate against a hard hairline frame, a mono index rail
+   overlapping its top-left corner, and a single hard-ruled name ledger.
+   ==================================================================== */
+
+/* The plate: a hard 1px hairline frame the quote sits inside, with the index
+   rail breaking out over the top-left corner (overlap, not a boxed grid). */
+.kb-root .kb-proof2-plate{
+  position:relative;
+  margin-top:clamp(34px,5vw,58px);
+  padding:clamp(30px,5vw,58px) clamp(22px,4vw,52px) clamp(28px,4vw,48px);
+  border:1px solid var(--cream-12);
+}
+/* Hard corner ticks — brutalist register, cream, 1px, no radius. */
+.kb-root .kb-proof2-plate::before,
+.kb-root .kb-proof2-plate::after{
+  content:"";position:absolute;width:18px;height:18px;pointer-events:none;
+}
+.kb-root .kb-proof2-plate::before{top:-1px;left:-1px;border-top:var(--edge) solid var(--cream);border-left:var(--edge) solid var(--cream);}
+.kb-root .kb-proof2-plate::after{bottom:-1px;right:-1px;border-bottom:var(--edge) solid var(--cream);border-right:var(--edge) solid var(--cream);}
+
+/* Vertical mono index rail, overlapping the plate's top-left corner. */
+.kb-root .kb-proof2-rail{
+  position:absolute;top:clamp(24px,4vw,44px);left:calc(-1 * clamp(7px,1.2vw,14px));
+  display:none;flex-direction:column;align-items:center;gap:12px;
+  font-size:.66rem;font-weight:700;letter-spacing:.04em;color:var(--cream-40);
+}
+@media(min-width:920px){.kb-root .kb-proof2-rail{display:flex;}}
+.kb-root .kb-proof2-rail-idx{color:var(--cream);font-size:.82rem;}
+.kb-root .kb-proof2-rail-line{width:1px;flex:1;min-height:clamp(120px,18vw,210px);background:var(--cream-12);}
+.kb-root .kb-proof2-rail-total{color:var(--cream-40);}
+
+/* The crossfading stage (GSAP animates opacity + y on active change). */
+.kb-root .kb-proof2-stage{display:flex;flex-direction:column;}
+
+/* ---- Animated five-star rating ---- */
+.kb-root .kb-stars{
+  position:relative;display:inline-flex;align-items:center;gap:clamp(7px,1.1vw,12px);
+  width:max-content;margin-bottom:clamp(20px,3vw,30px);padding-bottom:2px;
+}
+.kb-root .kb-star{display:block;width:clamp(22px,3vw,30px);height:clamp(22px,3vw,30px);overflow:visible;}
+/* Hard cream fill (illuminated state), navy hairline edge from the stroke path. */
+.kb-root .kb-star-fill{fill:var(--cream);}
+.kb-root .kb-star-stroke{fill:none;stroke:var(--cream);stroke-width:1.4;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke;}
+/* Single cream sweep that travels across the row once per active change.
+   Masked to the star band so it reads as a light catch, not a bar. */
+.kb-root .kb-star-sweep{
+  position:absolute;top:-12%;left:0;height:124%;width:34%;
+  background:linear-gradient(100deg,transparent,rgba(250,248,244,.85) 50%,transparent);
+  mix-blend-mode:screen;opacity:0;pointer-events:none;filter:blur(1px);
+}
+/* Reduced-motion: stars render static and fully lit, no sweep, no draw gaps.
+   GSAP bails before touching them, so the resting CSS is the final state. */
+@media(prefers-reduced-motion:reduce){
+  .kb-root .kb-star-fill{opacity:1;}
+  .kb-root .kb-star-sweep{display:none;}
+}
+
+/* ---- The quote (verbatim, in curly quotes, Amboqia display face) ---- */
+.kb-root .kb-proof2-quote{
+  font-family:var(--font-amboqia),serif;font-weight:400;
+  font-size:clamp(1.55rem,3.4vw,2.95rem);line-height:1.04;letter-spacing:-.01em;
+  color:var(--cream);max-width:24ch;overflow:visible;
+  text-wrap:balance;
+}
+@media(min-width:920px){.kb-root .kb-proof2-quote{max-width:18ch;}}
+
+.kb-root .kb-proof2-cite{margin-top:clamp(22px,3.5vw,34px);}
+.kb-root .kb-proof2-cite b{display:block;font-size:1rem;font-weight:600;color:var(--cream);letter-spacing:.02em;}
+.kb-root .kb-proof2-cite span{display:block;margin-top:5px;font-size:.66rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--cream-40);}
+
+.kb-root .kb-proof2-google{
+  display:inline-flex;align-items:center;gap:7px;margin-top:clamp(20px,3vw,28px);
+  font-size:.8rem;font-weight:600;letter-spacing:.02em;color:var(--cream-70);
+  transition:color .2s ease;
+}
+.kb-root .kb-proof2-google:hover{color:var(--cream);}
+.kb-root .kb-proof2-google .arr{transition:transform .18s ease;}
+.kb-root .kb-proof2-google:hover .arr{transform:translateX(4px);}
+
+/* ---- Name ledger: one hard-ruled horizontal record, sliding active marker.
+   Not a vertical card list — names read across, the active name lit on a
+   1px cream top rule with a short under-marker. ---- */
+.kb-root .kb-proof2-ledger{
+  display:flex;flex-wrap:wrap;gap:0;margin-top:clamp(34px,5vw,56px);
+  border-top:1px solid var(--cream-12);
+}
+.kb-root .kb-proof2-tab{
+  position:relative;display:inline-flex;align-items:center;
+  background:none;border:0;cursor:pointer;font-family:inherit;
+  padding:16px clamp(14px,2vw,22px) 16px 0;
+  border-bottom:1px solid var(--cream-12);
+}
+.kb-root .kb-proof2-tab-name{
+  font-size:.92rem;font-weight:600;letter-spacing:.01em;color:var(--cream-40);
+  transition:color .25s ease;white-space:nowrap;
+}
+.kb-root .kb-proof2-tab:hover .kb-proof2-tab-name,
+.kb-root .kb-proof2-tab.active .kb-proof2-tab-name{color:var(--cream);}
+/* Under-marker: a short hard cream rule that grows under the live name. */
+.kb-root .kb-proof2-tab::after{
+  content:"";position:absolute;left:0;top:-1px;height:var(--edge);width:0;
+  background:var(--cream);transition:width .3s cubic-bezier(.2,.8,.2,1);
+}
+.kb-root .kb-proof2-tab:hover::after,
+.kb-root .kb-proof2-tab.active::after{width:100%;}
+@media(prefers-reduced-motion:reduce){
+  .kb-root .kb-proof2-tab::after{transition:none;}
+}
+
+@media(max-width:760px){
+  .kb-root .kb-proof2-tab{padding-right:18px;}
+  .kb-root .kb-proof2-tab-name{font-size:.86rem;}
+}

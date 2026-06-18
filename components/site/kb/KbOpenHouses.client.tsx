@@ -20,7 +20,7 @@ export interface KbOpenHouseItem {
 /**
  * Price to the nearest thousand. Sub-million rounds to a "$895K" short form,
  * a million and up renders in full with commas ("$1,250,000"). Returns null
- * when there is no usable number so the chip simply renders the date instead.
+ * when there is no usable number so the stamp simply renders the date instead.
  */
 function ohMoney(n: number | null | undefined): string | null {
   if (n == null || !Number.isFinite(n)) return null
@@ -30,13 +30,33 @@ function ohMoney(n: number | null | undefined): string | null {
 }
 
 /**
- * KB Open Houses — upcoming open houses on a navy brutalist board. Each card is
- * the listing photo with a hard navy date/time chip (the whenLabel) stamped
- * top-left, the price in Amboqia, the address + city line, and bd/ba/sf specs in
- * mono. The whole card links to the listing. Reuses the listing-tile markup
- * (.lst-card family) so it stays visually locked to Featured homes. Server-safe
- * data in, scroll-reveal only on the client; renders null when there is nothing
- * on the calendar.
+ * Split a "Sat 11am-1pm" style label into its weekday token and the time
+ * window so the stamp can set the day big and the window small underneath.
+ * Falls back to the whole string in the day slot when there is no space.
+ */
+function splitWhen(label: string): { day: string; time: string } {
+  const i = label.indexOf(' ')
+  if (i === -1) return { day: label, time: '' }
+  return { day: label.slice(0, i), time: label.slice(i + 1) }
+}
+
+function ohSpecs(it: KbOpenHouseItem): string[] {
+  const out: string[] = []
+  if (it.beds != null) out.push(`${it.beds} bd`)
+  if (it.baths != null) out.push(`${it.baths} ba`)
+  if (it.sqft) out.push(`${Number(it.sqft).toLocaleString('en-US')} sf`)
+  return out
+}
+
+/**
+ * KB Open Houses — an editorial board, not a card grid. The next open house on
+ * the calendar takes a full-bleed cinematic LEAD panel; the rest run as a
+ * horizontal scroll-snap rail of tall photo cards. The date/time is the hero of
+ * every tile: a hard navy/cream ledger stamp with a live pulse dot, because the
+ * window is what makes an open house urgent. Price sets in Amboqia, the address
+ * carries a mono city sub, and bd/ba/sf run as a mono spec line. The whole tile
+ * links to the listing. Navy surface, cream edges, server-safe data in,
+ * scroll-reveal only on the client. Renders null when the calendar is empty.
  */
 export function KbOpenHouses({
   items,
@@ -55,24 +75,47 @@ export function KbOpenHouses({
     gsap.registerPlugin(ScrollTrigger)
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const ctx = gsap.context(() => {
-      const cards = gsap.utils.toArray<HTMLElement>('.lst-card')
+      const lead = root.current?.querySelector<HTMLElement>('.oh-lead')
+      const rail = gsap.utils.toArray<HTMLElement>('.oh-rail-card')
+
       if (reduce) {
-        gsap.set(cards, { opacity: 1, y: 0 })
+        if (lead) gsap.set(lead, { clipPath: 'inset(0 0 0% 0)', opacity: 1 })
+        gsap.set(rail, { opacity: 1, y: 0 })
         return
       }
-      gsap.from(cards, {
-        opacity: 0,
-        y: 26,
-        duration: 0.6,
-        ease: 'power3.out',
-        stagger: 0.07,
-        scrollTrigger: { trigger: root.current, start: 'top 80%', once: true },
-      })
+
+      if (lead) {
+        gsap.fromTo(
+          lead,
+          { clipPath: 'inset(0 0 100% 0)', opacity: 1 },
+          {
+            clipPath: 'inset(0 0 0% 0)',
+            duration: 1.05,
+            ease: 'power4.out',
+            scrollTrigger: { trigger: lead, start: 'top 82%', once: true },
+          },
+        )
+      }
+      if (rail.length) {
+        gsap.from(rail, {
+          opacity: 0,
+          y: 30,
+          duration: 0.6,
+          ease: 'power3.out',
+          stagger: 0.08,
+          scrollTrigger: { trigger: '.oh-rail', start: 'top 88%', once: true },
+        })
+      }
     }, root)
     return () => ctx.revert()
   }, [])
 
   if (items.length === 0) return null
+
+  const [lead, ...rest] = items
+  const leadWhen = splitWhen(lead.whenLabel)
+  const leadPrice = ohMoney(lead.price)
+  const leadSpecs = ohSpecs(lead)
 
   return (
     <section className="section openhouses" id="open-houses" ref={root}>
@@ -81,40 +124,89 @@ export function KbOpenHouses({
           <span className="sec-index">{eyebrow}</span>
           <h2 className="sec-title display">{heading}</h2>
         </div>
-        <div className="oh-grid">
-          {items.map((it) => {
-            const price = ohMoney(it.price)
-            return (
-              <a key={it.href} className="lst-card" href={it.href}>
-                <div className="lst-media">
-                  {it.photoUrl ? (
-                    <img className="lst-img" src={it.photoUrl} alt={it.address} loading="lazy" />
-                  ) : null}
-                  <span className="lst-badge oh">
-                    <span className="oh-dot" aria-hidden="true" />
-                    {it.whenLabel}
-                  </span>
+
+        <div className={rest.length ? 'oh-board has-rail' : 'oh-board'}>
+          {/* LEAD — the next open house, full-bleed cinematic panel */}
+          <a className="oh-lead" href={lead.href}>
+            <div className="oh-lead-media">
+              {lead.photoUrl ? (
+                <img className="oh-lead-img" src={lead.photoUrl} alt={lead.address} loading="lazy" />
+              ) : (
+                <div className="oh-noimg" aria-hidden="true" />
+              )}
+            </div>
+
+            <div className="oh-stamp oh-stamp-lead">
+              <span className="oh-stamp-live" aria-hidden="true" />
+              <span className="oh-stamp-kicker">Open house</span>
+              <span className="oh-stamp-day mono-num">{leadWhen.day}</span>
+              {leadWhen.time ? <span className="oh-stamp-time mono-num">{leadWhen.time}</span> : null}
+            </div>
+
+            <div className="oh-lead-info">
+              {leadPrice ? <div className="oh-lead-price display mono-num">{leadPrice}</div> : null}
+              <div className="oh-lead-addr">
+                {lead.address}
+                <span className="oh-sub">{lead.cityLine}</span>
+              </div>
+              {leadSpecs.length ? (
+                <div className="oh-specs">
+                  {leadSpecs.map((s) => (
+                    <span key={s} className="mono-num">
+                      {s}
+                    </span>
+                  ))}
                 </div>
-                <div className="lst-info">
-                  <div>
-                    {price ? <div className="lst-price mono-num">{price}</div> : null}
-                    <div className="lst-addr">
-                      {it.address}
-                      <span className="sub">{it.cityLine}</span>
+              ) : null}
+            </div>
+          </a>
+
+          {/* RAIL — the rest, horizontal scroll-snap of tall photo cards */}
+          {rest.length ? (
+            <div className="oh-rail" role="list">
+              {rest.map((it) => {
+                const when = splitWhen(it.whenLabel)
+                const price = ohMoney(it.price)
+                const specs = ohSpecs(it)
+                return (
+                  <a key={it.href} className="oh-rail-card" href={it.href} role="listitem">
+                    <div className="oh-rail-media">
+                      {it.photoUrl ? (
+                        <img className="oh-rail-img" src={it.photoUrl} alt={it.address} loading="lazy" />
+                      ) : (
+                        <div className="oh-noimg" aria-hidden="true" />
+                      )}
                     </div>
-                  </div>
-                  <div className="lst-specs">
-                    {it.beds != null ? <span className="mono-num">{it.beds} bd</span> : null}
-                    {it.baths != null ? <span className="mono-num">{it.baths} ba</span> : null}
-                    {it.sqft ? (
-                      <span className="mono-num">{Number(it.sqft).toLocaleString('en-US')} sf</span>
-                    ) : null}
-                  </div>
-                </div>
-              </a>
-            )
-          })}
+
+                    <div className="oh-stamp">
+                      <span className="oh-stamp-live" aria-hidden="true" />
+                      <span className="oh-stamp-day mono-num">{when.day}</span>
+                      {when.time ? <span className="oh-stamp-time mono-num">{when.time}</span> : null}
+                    </div>
+
+                    <div className="oh-rail-info">
+                      {price ? <div className="oh-rail-price display mono-num">{price}</div> : null}
+                      <div className="oh-rail-addr">
+                        {it.address}
+                        <span className="oh-sub">{it.cityLine}</span>
+                      </div>
+                      {specs.length ? (
+                        <div className="oh-specs">
+                          {specs.map((s) => (
+                            <span key={s} className="mono-num">
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  </a>
+                )
+              })}
+            </div>
+          ) : null}
         </div>
+
         {viewAllHref ? (
           <div className="lst-foot">
             <a href={viewAllHref} className="btn ghost">
