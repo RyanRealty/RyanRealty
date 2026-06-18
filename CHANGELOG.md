@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.1 (2026-06-18)
+
+### Other
+- City/community flow + section transitions: coherent order + scroll-reveal
+
+---
+
+
 ## v1.595.0 (2026-06-18)
 
 ### Features
