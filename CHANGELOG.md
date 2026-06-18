@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.12 (2026-06-18)
+
+### Other
+- KB ledger: trust tier (/about, /team) shipped + verified; remaining design-led tier mapped
+
+---
+
+
 ## v1.595.11 (2026-06-18)
 
 ### Other
