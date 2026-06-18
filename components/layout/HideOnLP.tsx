@@ -54,6 +54,10 @@ export function HideChrome({ children }: { children: React.ReactNode }) {
   // KB migration (Phase 9): the city DETAIL page (/cities/<slug>, NOT the
   // /cities index or /cities/<slug>/<neighborhood>) carries its own KbNav.
   if (pathname && /^\/cities\/[^/]+$/.test(pathname)) return null
+  // KB migration (Phase 9 wave 2): the community DETAIL page
+  // (/communities/<slug>, NOT the /communities index or any deeper segment)
+  // carries its own KbNav + KbFooter.
+  if (pathname && /^\/communities\/[^/]+$/.test(pathname)) return null
   return <>{children}</>
 }
 

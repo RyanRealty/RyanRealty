@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resortActiveSfrCounts, resortLabelToSlug } from '../resort-active-counts'
+import { resortActiveSfrCounts, resortLabelToSlug, resortTilesForSlug } from '../resort-active-counts'
 
 // These assert the ALIAS-AWARE behavior against the real registry: Widgi Creek's
 // homes are tagged under alias subdivisions, never literally "Widgi Creek".
@@ -44,6 +44,36 @@ describe('resortActiveSfrCounts', () => {
     // not appear in the counts at all, regardless of matching tiles.
     const counts = resortActiveSfrCounts('bend', [{ subdivisionName: 'Sun Dance Estates', propertyType: 'A' }])
     expect(counts.has('three-rivers')).toBe(false)
+  })
+
+  it('resortTilesForSlug returns the alias-matched tiles for one resort (count == tiles)', () => {
+    const tiles = [
+      { subdivisionName: 'Inn Of The 7th Mountain', propertyType: 'A', listingKey: '1' },
+      { subdivisionName: 'Elkai Woods', propertyType: 'A', listingKey: '2' },
+      { subdivisionName: 'Tetherow', propertyType: 'A', listingKey: '3' }, // different resort
+      { subdivisionName: 'Inn Of The 7th', propertyType: 'C', listingKey: '4' }, // condo, skip
+      { subdivisionName: 'Somewhere Else', propertyType: 'A', listingKey: '5' },
+    ]
+    const widgi = resortTilesForSlug('bend', 'widgi-creek', tiles)
+    expect(widgi.map((t) => t.listingKey).sort()).toEqual(['1', '2'])
+    // the helper's tiles count agrees with the count helper (same alias assignment)
+    expect(widgi.length).toBe(resortActiveSfrCounts('bend', tiles).get('widgi-creek'))
+  })
+
+  it('token-boundary match: a foreign subdivision sharing leading chars is NOT bucketed', () => {
+    // "Tetherow" is a Tetherow alias; "Tetherowville" shares the prefix but has no
+    // word boundary, so it must NOT count toward tetherow. A real phase ("Tetherow
+    // Phase 2") still matches.
+    const tiles = [
+      { subdivisionName: 'Tetherowville Estates', propertyType: 'A' },
+      { subdivisionName: 'Tetherow Phase 2', propertyType: 'A' },
+      { subdivisionName: 'Tetherow', propertyType: 'A' },
+    ]
+    expect(resortActiveSfrCounts('bend', tiles).get('tetherow')).toBe(2)
+  })
+
+  it('resortTilesForSlug returns [] for a non-resort slug', () => {
+    expect(resortTilesForSlug('bend', 'not-a-resort', [{ subdivisionName: 'Tetherow', propertyType: 'A' }])).toEqual([])
   })
 
   it('resortLabelToSlug maps the resort display name to its slug', () => {

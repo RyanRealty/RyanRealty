@@ -131,13 +131,15 @@ const RESORT_IMG: Record<string, string> = {
 // they undercount communities whose older listings fall past the first page. (§0)
 async function fetchAllCityActiveSfr(cityName: string): Promise<Awaited<ReturnType<typeof getListingTiles>>> {
   const PAGE = 1000
-  const all: Awaited<ReturnType<typeof getListingTiles>> = []
+  // Dedupe by listingKey across pages — offset pagination over a newest-sorted set
+  // can repeat a row if inventory shifts between page fetches.
+  const byKey = new Map<string, Awaited<ReturnType<typeof getListingTiles>>[number]>()
   for (let offset = 0; offset < 6000; offset += PAGE) {
     const page = await getListingTiles({ city: cityName, status: 'active', propertyType: 'A', limit: PAGE, offset })
-    all.push(...page)
+    for (const t of page) byKey.set(t.listingKey, t)
     if (page.length < PAGE) break
   }
-  return all
+  return [...byKey.values()]
 }
 
 const CENTRAL_OREGON_CITY_SLUGS = new Set([

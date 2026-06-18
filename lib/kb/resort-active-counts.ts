@@ -24,6 +24,18 @@ interface ResortEntry {
   subdivision_aliases?: string[]
 }
 
+/**
+ * Token-boundary alias match: the subdivision equals the alias OR begins with the
+ * alias followed by a space (a phase suffix like "Inn Of The 7th Mountain" or
+ * "Tetherow Phase 2"). Stricter than a bare startsWith — a generic alias like
+ * "Triple" or "Braeburn" can no longer attribute an unrelated subdivision that
+ * merely shares those leading characters with no word boundary (e.g. "Tetherowville",
+ * "Braeburnwood"). Keeps every real match in the current data unchanged. (§0)
+ */
+function aliasMatches(sub: string, prefix: string): boolean {
+  return sub === prefix || sub.startsWith(prefix + ' ')
+}
+
 /** Genuine golf/master-planned resorts in a city: `is_resort === true`. Excludes
  *  registry rows like Three Rivers (is_resort:false, a south-county recreational
  *  subdivision whose generic aliases — "Oww", "Sun Dance" — over-match unrelated
@@ -56,7 +68,7 @@ export function resortActiveSfrCounts(citySlug: string, tiles: SubTile[]): Map<s
     if (t.propertyType !== 'A') continue
     const sub = (t.subdivisionName ?? '').toLowerCase().trim()
     if (!sub) continue
-    const hit = aliasIndex.find((a) => sub.startsWith(a.prefix))
+    const hit = aliasIndex.find((a) => aliasMatches(sub, a.prefix))
     if (hit) counts.set(hit.slug, (counts.get(hit.slug) ?? 0) + 1)
   }
   return counts
@@ -66,4 +78,30 @@ export function resortActiveSfrCounts(citySlug: string, tiles: SubTile[]): Map<s
  *  community-rail card resolve its resort alias-aware count by name. */
 export function resortLabelToSlug(citySlug: string): Map<string, string> {
   return new Map(cityResorts(citySlug).map((c) => [c.label.toLowerCase().trim(), c.slug]))
+}
+
+/**
+ * The active SFR tiles that belong to ONE resort, alias-aware. Same longest-prefix
+ * assignment as resortActiveSfrCounts (so a tile lands in exactly one resort), but
+ * returns the full tiles for `resortSlug` — used to populate a resort community
+ * page's map / featured / ticker, which the literal-name subdivision query misses
+ * entirely for alias-heavy resorts (Widgi Creek has ~0 homes literally tagged
+ * "Widgi Creek" but ~48 across its aliases). Generic over the tile type. (§0)
+ */
+export function resortTilesForSlug<T extends SubTile>(citySlug: string, resortSlug: string, tiles: T[]): T[] {
+  const resorts = cityResorts(citySlug)
+  if (!resorts.some((r) => r.slug === resortSlug)) return []
+  const aliasIndex = resorts
+    .flatMap((r) => (r.subdivision_aliases?.length ? r.subdivision_aliases : [r.label]).map((a) => ({ slug: r.slug, prefix: a.toLowerCase().trim() })))
+    .filter((a) => a.prefix.length > 0)
+    .sort((a, b) => b.prefix.length - a.prefix.length)
+  const out: T[] = []
+  for (const t of tiles) {
+    if (t.propertyType !== 'A') continue
+    const sub = (t.subdivisionName ?? '').toLowerCase().trim()
+    if (!sub) continue
+    const hit = aliasIndex.find((a) => aliasMatches(sub, a.prefix))
+    if (hit && hit.slug === resortSlug) out.push(t)
+  }
+  return out
 }

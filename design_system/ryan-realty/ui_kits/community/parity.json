@@ -1,95 +1,48 @@
 {
   "route": "app/communities/[slug]/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/community/index.html",
-  "competitiveTarget": "Resort / master-planned community detail page (e.g. Tetherow). Beats Zillow/Redfin community pages by pairing live verified market data with authored local knowledge (sub-neighborhoods, HOA + club dues, amenities, drive times), a split-scroll map/ledger spine, scrubbable price history, and an inline payment slider.",
-  "note": "Geo archetype v3.1 (Experience System de-tiling pass, 2026-06-09). ListingLedger replaces uniform ListingCard grid (1 dominant featured + hairline ledger rows). CommunityMapLedgerPane provides split-scroll spine (map sticky right desktop, ledger scrolls left). LiveMarketBand v2: one giant Amboqia activeCount + quiet aux stats, overlaps hero by 3rem. PriceHistoryScrubber adds scrubbable recharts price history. PaymentSlider adds inline mortgage estimate. useCountUp wired to hero + band activeCount stats. All SEO output (MetadataBlock: breadcrumb + Place + Dataset + FAQPage) and data accuracy (CLAUDE.md §0) preserved. SiteHeader/SiteFooter render from app/layout.tsx.",
+  "competitiveTarget": "Beat Zillow / Redfin / Coldwell Banker community pages — the kinetic-brutalist homepage look applied at resort / master-planned community scope: live single-family market data, the in-community listing map + zoom, per-community featured tours, sub-neighborhoods, open houses, and live activity no competitor surfaces, paired with authored local knowledge (HOA + club dues, amenities, drive times).",
+  "note": "KB (kinetic-brutalist) design language — Phase 9 wave 2 (docs/KB_CONVERGENCE_ROADMAP.md). The community page reuses the SAME section library as the homepage and the city page (components/site/kb/*), fed community-scoped DAL data, never forked (ci:kb-single-source G50). KbNav + KbFooter carry chrome (default SiteHeader/SiteFooter hidden for ^/communities/[slug] via HideChrome). Body lives in main.kb-root. THE PAGE CONTRACT: KB design + SEO for Google & LLMs (pageMetadata + MetadataBlock JSON-LD: Breadcrumb/Place/Dataset/FAQPage) + tracking (KbSectionTracker). Supersedes the Experience System Geo archetype v3.1; every former section (FlyoverHero, LiveMarketBand, SectionNav, CommunityMapLedgerPane + ListingLedger, PriceHistoryScrubber, PaymentSlider, PriceRangeTiles, RelatedAreas, ActivityFeed, ArticleGrid, InlineValuationHook, PageBreadcrumb) was rebuilt in KB form.",
   "requiredComponents": [
-    {
-      "name": "PageBreadcrumb",
-      "section": "Home > Communities > {City} > {Community}",
-      "blocking": true
-    },
-    {
-      "name": "FlyoverHero",
-      "section": "Geo archetype hero — video flyover + Amboqia live stat overlay with count-up animation",
-      "blocking": true
-    },
-    {
-      "name": "LiveMarketBand",
-      "section": "navy band — one giant Amboqia activeCount + 3 quiet aux stats, overlaps hero by 3rem",
-      "blocking": true
-    },
-    {
-      "name": "SectionNav",
-      "section": "sticky in-page anchor navigation rail",
-      "blocking": true
-    },
-    {
-      "name": "CommunityRichContent",
-      "section": "About + amenities + drive times + golf/course + HOA + builders (verified, from data/resort-community-*.json)",
-      "blocking": true
-    },
-    {
-      "name": "PriceHistoryScrubber",
-      "section": "scrubbable recharts price history chart with large tabular readout",
-      "blocking": true
-    },
-    {
-      "name": "PaymentSlider",
-      "section": "inline mortgage payment slider with labeled rate assumption",
-      "blocking": true
-    },
-    {
-      "name": "CommunityMapLedgerPane",
-      "section": "split-scroll spine: sticky map right + listing ledger left (desktop), stacked on mobile — renders ListingLedger internally",
-      "blocking": true
-    },
-    {
-      "name": "PriceRangeTiles",
-      "section": "browse by price range",
-      "blocking": true
-    },
-    {
-      "name": "OpenHousesGrid",
-      "section": "upcoming open houses in the community",
-      "blocking": true
-    },
-    {
-      "name": "RelatedAreas",
-      "section": "golf + master-planned communities cross-nav and other-cities cross-nav (two instances)",
-      "blocking": true
-    },
-    {
-      "name": "ActivityFeed",
-      "section": "live market activity for the city",
-      "blocking": true
-    },
-    {
-      "name": "ArticleGrid",
-      "section": "guides + insights blog grid",
-      "blocking": true
-    },
-    {
-      "name": "FAQBlock",
-      "section": "common questions — verified market Q&A (single source feeds FAQPage JSON-LD)",
-      "blocking": true
-    },
-    {
-      "name": "InlineValuationHook",
-      "section": "community-specific seller CTA band — 'What is your {Community} home worth?'",
-      "blocking": true
-    }
+    { "name": "KbNav", "section": "chrome — transparent-over-hero top bar + full-screen menu. Inside .kb-root.", "blocking": true },
+    { "name": "KbSectionTracker", "section": "tracking — fires the community page-view + powers section/interaction analytics (page contract).", "blocking": true },
+    { "name": "MetadataBlock", "section": "AI-citability — Breadcrumb + Place + market Dataset JSON-LD.", "blocking": true },
+    { "name": "KbBreadcrumb", "section": "breadcrumb — KB-styled Home > Communities > {City} > {Community} hierarchy (visual; JSON-LD is in MetadataBlock).", "blocking": true },
+    { "name": "KbHero", "section": "hero — full-bleed video or VERIFIED communityHero photo with labeled regional fallback, community name in Amboqia, plain-language search, live stat row.", "blocking": true },
+    { "name": "KbAbout", "section": "about — editorial intro (authored local knowledge / data-driven: HOA + club dues, amenities, drive times) + quick-facts ledger.", "blocking": true },
+    { "name": "KbFeatured", "section": "featured homes — poster grid; silent tour autoplay on focus or a Tour badge.", "blocking": true },
+    { "name": "KbListingMap", "section": "map — MapLibre point map zoomed to the community's listings.", "blocking": true },
+    { "name": "KbTicker", "section": "ticker — scrolling price/address strip.", "blocking": true },
+    { "name": "KbMarketHud", "section": "market — verdict stamp, KPI grid, median-close chart, by-sub-neighborhood ladder.", "blocking": true },
+    { "name": "KbExploreTowns", "section": "ledgers — reused for the sub-neighborhoods ledger, the golf & master-planned communities cross-nav ledger, and the Explore-other-cities list.", "blocking": true },
+    { "name": "KbCommunities", "section": "communities — marquee rail with silent Area Guide clips.", "blocking": true },
+    { "name": "KbOpenHouses", "section": "open houses — upcoming, this community.", "blocking": true },
+    { "name": "KbActivity", "section": "activity — live new / price-cut / pending / sold rows.", "blocking": true },
+    { "name": "KbArticles", "section": "guides — recent blog posts scoped to the community (getRecentBlogPosts).", "blocking": true },
+    { "name": "KbTestimonials", "section": "testimonials — verified Google reviews.", "blocking": true },
+    { "name": "KbTeam", "section": "team — the brokers.", "blocking": true },
+    { "name": "KbSell", "section": "sell CTA — What is your {Community} home worth?", "blocking": true },
+    { "name": "FAQBlock", "section": "faq — verified market Q&A + FAQPage JSON-LD.", "blocking": true },
+    { "name": "KbFooter", "section": "footer — dual-audience close + sitemap (towns=[]).", "blocking": true }
   ],
   "layoutComponents": [
-    {
-      "name": "SiteHeader",
-      "section": "navy header — renders from app/layout.tsx",
-      "note": "gate checks the route file"
-    },
-    {
-      "name": "SiteFooter",
-      "section": "navy footer — renders from app/layout.tsx",
-      "note": "gate checks the route file"
-    }
+    { "name": "SiteHeader", "section": "hidden on ^/communities/[slug] via HideChrome — KbNav renders instead.", "note": "Gate checks the route file." },
+    { "name": "SiteFooter", "section": "hidden on ^/communities/[slug] via HideChrome — KbFooter renders instead.", "note": "Gate checks the route file." }
+  ],
+  "removedComponents": [
+    "FlyoverHero (replaced by KbHero)",
+    "LiveMarketBand (replaced by KbMarketHud)",
+    "SectionNav (KB pages have no sticky anchor rail)",
+    "CommunityMapLedgerPane + ListingLedger (replaced by KbFeatured + KbListingMap)",
+    "PriceHistoryScrubber (folded into KbMarketHud)",
+    "PaymentSlider (removed; lives on tools/sell surfaces)",
+    "PriceRangeTiles (folded into KbFeatured / KbListingMap browse)",
+    "InlineValuationHook (replaced by KbSell)",
+    "CommunityRichContent (folded into KbAbout)",
+    "OpenHousesGrid (replaced by KbOpenHouses)",
+    "ActivityFeed (replaced by KbActivity)",
+    "ArticleGrid (replaced by KbArticles)",
+    "RelatedAreas / editorial nearby rows (replaced by KbExploreTowns reuse)",
+    "PageBreadcrumb (replaced by KbBreadcrumb)"
   ]
 }
