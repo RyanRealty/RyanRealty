@@ -214,6 +214,19 @@ describe('design directive contracts', () => {
     expect(hud).toMatch(/over the window/)
   })
 
+  it('D100 — community page RENDERS rich resort content (amenities/golf/membership/builders)', () => {
+    const src = readSrc('app/communities/[slug]/page.tsx')
+    expect(src).toMatch(/getResortCommunityContent\(resortSlug\)/)
+    expect(src).toMatch(/<KbResortOverview content=\{richContent\}/)
+    // the overview component carries all the dropped rich sections
+    const ov = readSrc('components/site/kb/KbResortOverview.tsx')
+    expect(ov).toMatch(/id="overview"/)
+    expect(ov).toMatch(/id="amenities"/)
+    expect(ov).toMatch(/id="golf"/)
+    expect(ov).toMatch(/id="membership"/)
+    expect(ov).toMatch(/id="builders"/)
+  })
+
   it('D98 — resort/golf definitions are locked by a gate (registry + alias-aware wiring)', () => {
     const gate = readSrc('scripts/check-resort-definitions.mjs')
     expect(gate).toMatch(/is_resort/)

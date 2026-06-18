@@ -48,7 +48,9 @@ import {
   getAllCitySnapshots,
   getRecentBlogPosts,
   getResortCommunityBySlug,
+  getBlogPostsBySlugs,
 } from '@/lib/data'
+import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
@@ -68,6 +70,7 @@ import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbAbout } from '@/components/site/kb/KbAbout'
+import { KbResortOverview } from '@/components/site/kb/KbResortOverview'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { KbTicker } from '@/components/site/kb/KbTicker.client'
@@ -229,7 +232,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const [
     snapshot, pulse, stats, mktStats, regionPulse, priceHist,
     boundaryMapData, resortBoundary, allCitySnapshots, communities,
-    blogPosts, openHouses, activity, featuredTiles, citySfrTiles,
+    blogPosts, openHouses, activity, featuredTiles, citySfrTiles, richContent,
   ] = await Promise.all([
     // Always-present community snapshot — the JSON-LD/Place fallback source. (§0)
     withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
@@ -255,7 +258,23 @@ export default async function CommunityDetailPage({ params }: Props) {
     isResortInCity
       ? withTimeoutFallback(fetchAllCityActiveSfr(cityName), [], 6000, 'comm:citySfr')
       : Promise.resolve([] as Awaited<ReturnType<typeof getListingTiles>>),
+    // Rich, verified resort/golf/master-planned content (amenities, drive times,
+    // golf course, membership, builders) from data/resort-community-<slug>.json —
+    // the depth the page is REQUIRED to carry (owner directive). Null when a
+    // community has no config (the page degrades to the data-driven About). (§0)
+    withTimeoutFallback(getResortCommunityContent(resortSlug), null, 2500, 'comm:content'),
   ])
+
+  // Amenity → blog-post link cards (topic-cluster SEO): resolve the published posts
+  // for any amenity carrying a blog_slug, so those amenity cards render with a hero
+  // image + "Read more". Only fetched when the content actually references posts.
+  const amenityBlogSlugs = (richContent?.amenities ?? [])
+    .map((a) => a.blog_slug)
+    .filter((s): s is string => Boolean(s))
+  const amenityPosts =
+    amenityBlogSlugs.length > 0
+      ? await withTimeoutFallback(getBlogPostsBySlugs(amenityBlogSlugs), {}, 2500, 'comm:amenityPosts')
+      : {}
 
   // ── BOUNDARY RELIABILITY (preserved) ──────────────────────────────────────
   // Reliable boundary -> the in-polygon homes are correct (drive count + pins).
@@ -619,7 +638,11 @@ export default async function CommunityDetailPage({ params }: Props) {
           posterSrc={heroPhoto}
           mediaCaption={mediaCaption}
         />
-        {aboutParagraphs.length > 0 ? (
+        {/* Rich resort/golf/master-planned depth (overview · amenities · golf ·
+            membership · builders) — null when no config. When present it carries the
+            overview, so the thin data-driven About is suppressed to avoid duplication. */}
+        <KbResortOverview content={richContent} name={community.name} postsBySlug={amenityPosts} />
+        {!richContent && aboutParagraphs.length > 0 ? (
           <KbAbout
             eyebrow={communityLabel}
             heading={`Living in ${community.name}`}

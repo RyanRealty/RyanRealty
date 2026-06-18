@@ -1213,3 +1213,86 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .mkt-yl.on i{height:4px;}
 .kb-root .mkt-xlabels-mo{margin-top:8px;}
 .kb-root .mkt-xlabels-mo span{font-size:.56rem;}
+
+/* ===== KbResortOverview — rich resort/golf/master-planned content (overview,
+   amenities, golf, membership, builders). Cream sections (.ov) + a navy amenities
+   showcase (.ov-amen). Hard edges, Amboqia display, mono labels — same brutalist
+   register as the rest of the KB stack; no rounded cards. ===== */
+.kb-root .ov{background:var(--cream);color:var(--navy);padding-bottom:54px;}
+.kb-root .ov .sec-head{border-color:var(--navy);}
+.kb-root .ov .mono-lab{color:var(--navy-70);}
+
+.kb-root .ov-grid{display:grid;grid-template-columns:1fr;gap:28px;padding-top:28px;}
+@media(min-width:1040px){.kb-root .ov-grid{grid-template-columns:minmax(0,1fr) 340px;gap:48px;align-items:start;}}
+.kb-root .ov-prose{max-width:64ch;}
+.kb-root .ov-prose p{font-size:clamp(1rem,1.5vw,1.15rem);line-height:1.6;margin:0 0 16px;}
+.kb-root .ov-prose p:last-child{margin-bottom:0;}
+.kb-root .ov-prose-wide{max-width:72ch;padding-top:24px;}
+
+.kb-root .ov-facts{border:var(--edge) solid var(--navy);padding:22px;}
+.kb-root .ov-facts-lbl{display:block;margin-bottom:14px;}
+.kb-root .ov-fact{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px solid var(--navy-12);}
+.kb-root .ov-fact:last-child{border-bottom:0;padding-bottom:0;}
+.kb-root .ov-fact dt{font-size:.85rem;color:var(--navy-70);}
+.kb-root .ov-fact dd{font-size:.9rem;font-weight:600;text-align:right;}
+
+.kb-root .ov-drives{margin-top:34px;}
+.kb-root .ov-sub{display:block;margin-bottom:14px;}
+.kb-root .ov-drive-row{display:grid;grid-template-columns:repeat(2,1fr);border-top:var(--edge) solid var(--navy);border-left:var(--edge) solid var(--navy);}
+@media(min-width:760px){.kb-root .ov-drive-row{grid-template-columns:repeat(4,1fr);}}
+.kb-root .ov-drive{padding:18px;border-right:var(--edge) solid var(--navy);border-bottom:var(--edge) solid var(--navy);display:flex;flex-direction:column;}
+.kb-root .ov-drive-min{font-size:clamp(2rem,4vw,2.8rem);line-height:.9;}
+.kb-root .ov-drive-unit{font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;color:var(--navy-70);margin-top:2px;}
+.kb-root .ov-drive-dest{font-size:.92rem;font-weight:600;margin-top:10px;}
+.kb-root .ov-drive-note{font-size:.72rem;color:var(--navy-70);margin-top:3px;}
+
+/* Amenities — navy showcase */
+.kb-root .ov-amen{background:var(--navy);color:var(--cream);padding-bottom:60px;}
+.kb-root .ov-amen .sec-head{border-color:var(--cream-40);}
+.kb-root .amen-grid{display:grid;grid-template-columns:1fr;border-top:var(--edge) solid var(--cream);border-left:var(--edge) solid var(--cream);margin-top:28px;}
+@media(min-width:640px){.kb-root .amen-grid{grid-template-columns:repeat(2,1fr);}}
+@media(min-width:1040px){.kb-root .amen-grid{grid-template-columns:repeat(3,1fr);}}
+.kb-root .amen-card{display:flex;flex-direction:column;border-right:var(--edge) solid var(--cream);border-bottom:var(--edge) solid var(--cream);background:#0b1c30;}
+.kb-root a.amen-link{color:inherit;text-decoration:none;transition:background .2s ease;}
+@media(hover:hover){.kb-root a.amen-link:hover{background:rgba(250,248,244,.06);}}
+.kb-root .amen-media{position:relative;width:100%;aspect-ratio:16/10;overflow:hidden;border-bottom:1px solid var(--cream-12);}
+.kb-root .amen-img{object-fit:cover;}
+.kb-root .amen-body{padding:20px;display:flex;flex-direction:column;}
+.kb-root .amen-cat{margin-bottom:8px;}
+.kb-root .amen-name{font-size:1.15rem;font-weight:600;letter-spacing:.01em;}
+.kb-root .amen-desc{font-size:.88rem;line-height:1.55;color:var(--cream-70);margin:10px 0 0;}
+.kb-root .amen-access{font-size:.74rem;color:var(--cream-40);margin-top:12px;}
+.kb-root .amen-read{font-size:.74rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-top:14px;}
+.kb-root .amen-read .arr{transition:transform .18s ease;display:inline-block;}
+@media(hover:hover){.kb-root a.amen-link:hover .amen-read .arr{transform:translateX(4px);}}
+
+/* Golf KPIs / signature / rankings (cream .ov) */
+.kb-root .ov-kpis{display:grid;grid-template-columns:repeat(2,1fr);border-top:var(--edge) solid var(--navy);border-left:var(--edge) solid var(--navy);margin-top:28px;}
+@media(min-width:760px){.kb-root .ov-kpis{grid-template-columns:repeat(4,1fr);}}
+.kb-root .ov-kpi{padding:20px;border-right:var(--edge) solid var(--navy);border-bottom:var(--edge) solid var(--navy);display:flex;flex-direction:column;}
+.kb-root .ov-kpi-val{font-size:clamp(2rem,4.5vw,3rem);line-height:.9;}
+.kb-root .ov-kpi-lbl{margin-top:8px;}
+.kb-root .ov-signature{margin-top:28px;border-left:var(--edge) solid var(--navy);padding:4px 0 4px 20px;}
+.kb-root .ov-sig-line{display:block;font-size:1.2rem;margin:6px 0 8px;}
+.kb-root .ov-signature p{font-size:.95rem;line-height:1.6;max-width:64ch;margin:0;}
+.kb-root .ov-rankings{display:grid;grid-template-columns:1fr;border-top:var(--edge) solid var(--navy);border-left:var(--edge) solid var(--navy);margin-top:28px;}
+@media(min-width:640px){.kb-root .ov-rankings{grid-template-columns:repeat(2,1fr);}}
+@media(min-width:1040px){.kb-root .ov-rankings{grid-template-columns:repeat(3,1fr);}}
+.kb-root .ov-rank{padding:18px;border-right:var(--edge) solid var(--navy);border-bottom:var(--edge) solid var(--navy);display:flex;flex-direction:column;}
+.kb-root .ov-rank-val{font-size:1.4rem;line-height:1;}
+.kb-root .ov-rank-pub{font-size:.9rem;font-weight:600;margin-top:6px;}
+.kb-root .ov-rank-desc{font-size:.76rem;color:var(--navy-70);margin-top:4px;}
+
+/* Membership tiers + builders (cream .ov) */
+.kb-root .ov-tiers,.kb-root .ov-builders{display:grid;grid-template-columns:1fr;border-top:var(--edge) solid var(--navy);border-left:var(--edge) solid var(--navy);margin-top:28px;}
+@media(min-width:760px){.kb-root .ov-tiers,.kb-root .ov-builders{grid-template-columns:repeat(3,1fr);}}
+.kb-root .ov-tier,.kb-root .ov-builder{padding:22px;border-right:var(--edge) solid var(--navy);border-bottom:var(--edge) solid var(--navy);display:flex;flex-direction:column;}
+.kb-root .ov-tier-eyebrow,.kb-root .ov-builder-role{margin-bottom:6px;}
+.kb-root .ov-tier-name,.kb-root .ov-builder-name{font-size:1.15rem;font-weight:600;}
+.kb-root .ov-tier-desc,.kb-root .ov-builder-desc{font-size:.88rem;line-height:1.55;color:var(--navy-70);margin:10px 0 0;}
+.kb-root .ov-tier-details{margin-top:14px;}
+.kb-root .ov-tier-wait{font-size:.74rem;color:var(--navy-70);margin-top:12px;}
+.kb-root .ov-note{margin-top:16px;font-size:.85rem;color:var(--navy-70);}
+.kb-root .ov-builder-link{font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--navy);margin-top:14px;text-decoration:none;}
+.kb-root .ov-builder-link .arr{display:inline-block;transition:transform .18s ease;}
+@media(hover:hover){.kb-root .ov-builder-link:hover .arr{transform:translateX(4px);}}

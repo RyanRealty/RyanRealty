@@ -146,6 +146,11 @@ if (commPageSrc) {
     { token: 'isBoundaryReliable(', why: 'oversized-boundary guard (no bloated polygon/count)' },
     { token: 'RESORT_IMG', why: 'resort hover/banner photos' },
     { token: 'redirect(', why: 'compound resort slug → canonical bare slug (no duplicate undercounted page)' },
+    // The page must RENDER the rich resort content (amenities/golf/membership/
+    // builders), not just hold the data — owner directive: "every resort/golf/
+    // planned community needs an overview section… amenities."
+    { token: 'getResortCommunityContent(', why: 'rich resort content (amenities/golf/membership/builders) fetch' },
+    { token: 'KbResortOverview', why: 'rich resort content RENDERED (overview + amenities + golf + membership + builders)' },
   ]
   for (const { token, why } of required) {
     if (!commPageSrc.includes(token)) {
