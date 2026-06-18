@@ -76,5 +76,17 @@ per the city-page migration pattern). NOT migrating: account/dashboard/auth/lega
   reports → KB (`/housing-market/bend`: Dataset+FAQPage+WebPage+BreadcrumbList intact; §0 exact —
   $780,450 list = market_pulse_live, 4.68 MoS → "4.7 · balanced"). 2-segment subdivision-report
   case preserved on legacy render (no wave covers it). **8 KB pages now carry the contract.**
-- 2026-06-18 — Wave E: `/zip/[zip]` → KB (mirror the city page). Then feed pages
-  (open-houses, price-drops), bespoke trust/funnel (about/team/sell), then search/buy.
+- 2026-06-18 — **Wave E shipped + verified live** (`358a2d5b`): `/zip/[zip]` → KB. §0: ZIP
+  KPIs are ZIP-level (getZipListings); the trend chart is the parent-city series labeled
+  `chartScopeLabel="Bend (city)"` (caught + fixed before ship — never read as the ZIP's own).
+- 2026-06-18 — **CROSS-CUTTING FIX + Wave F** (`f7ce9da5`): `HideChrome` only excluded
+  `/cities/<slug>` + `/communities/<slug>`, so EVERY other KB route shipped this session was
+  double-rendering the global SiteHeader+SiteFooter on top of KbNav+KbFooter (confirmed live:
+  `/zip/97701` had 2 `<header>`/2 `<footer>`). Added all KB route families to `HideChrome`
+  (subdivisions, 2-seg neighborhood, zip, open-houses, price-drops, housing-market hub+region+
+  city-reports; excludes not-yet-migrated explore/reports + legacy 2-seg report). Plus
+  open-houses (index+city) and price-drops (index+city) → KB; removed price-drops' hidden
+  parity-shim slop and rewrote its parity.json to the KB set.
+  **LESSON: every new KB route MUST be added to `HideChrome` in the same change** (else double chrome).
+- 2026-06-18 — Next: confirm single-chrome live across all routes; then bespoke trust/funnel
+  (about/team/sell) + search/buy (need new KB components — direct design attention, not a mechanical pass).
