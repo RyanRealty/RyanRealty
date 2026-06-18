@@ -127,22 +127,15 @@ export function KbMarketChart({
       const sorted = [...s.points].sort((a, b) => a.m - b.m)
       const xy = sorted.map((p) => [xOf(p.m), yOf(p.value)] as [number, number])
       const last = sorted[sorted.length - 1]
-      const inProgress = !!last && last.m < 12
-      // For the in-progress year, a flat dashed continuation from the last real
-      // month to Dec 31 (right edge) so the line still spans the full Jan–Dec axis.
-      // Clearly "no data yet" — dashed + faint, with the solid line + "as of" marker
-      // making the real-data cutoff explicit. (§0: not presented as actual values.)
-      const proj =
-        last && inProgress
-          ? `M${xOf(last.m).toFixed(2)},${yOf(last.value).toFixed(2)} L${W},${yOf(last.value).toFixed(2)}`
-          : ''
+      // Completed (past) calendar years always render as a full solid line spanning
+      // their data (Jan→Dec when complete). ONLY the current calendar year — the
+      // newest series — legitimately stops mid-axis; it gets the "as of" endpoint
+      // marker (below), never a fabricated continuation to December. (§0)
       return {
         year: s.year,
         color: PALETTE[Math.min(i, PALETTE.length - 1)] ?? '#faf8f4',
         isNewest: s.year === newestYear,
         path: smoothPath(xy),
-        proj,
-        inProgress,
         end: last ? { xPct: (xOf(last.m) / W) * 100, yPct: (yOf(last.value) / H) * 100, value: last.value, lastM: last.m } : null,
         byMonth: new Map(sorted.map((p) => [p.m, p.value])),
         hidden: hidden.has(s.year),
@@ -311,23 +304,6 @@ export function KbMarketChart({
             )
           })}
           {areaPath ? <path className="kbmc-area" d={areaPath} fill={`url(#kbmc-fill-${uid})`} /> : null}
-          {/* dashed "no data yet" continuation to Dec 31 for an in-progress year */}
-          {geo.lines
-            .filter((l) => !l.hidden && l.proj)
-            .map((l) => (
-              <path
-                key={`proj-${l.year}`}
-                className="kbmc-proj"
-                d={l.proj}
-                fill="none"
-                stroke={l.color}
-                strokeWidth={l.isNewest ? 2 : 1.3}
-                strokeOpacity="0.5"
-                strokeDasharray="2 6"
-                strokeLinecap="round"
-                vectorEffect="non-scaling-stroke"
-              />
-            ))}
           {geo.lines
             .filter((l) => !l.hidden)
             .map((l) => (
@@ -359,7 +335,9 @@ export function KbMarketChart({
           {(() => {
             const lead = [...geo.lines].reverse().find((l) => !l.hidden && l.end)
             if (!lead?.end) return null
-            const inProgress = lead.end.lastM < 12 // the year isn't over yet
+            // "as of" only on the CURRENT (newest) year — a completed past year that
+            // happens to lack a trailing month is NOT in progress; it just ends there.
+            const inProgress = lead.year === geo.newestYear && lead.end.lastM < 12
             return (
               <>
                 <span

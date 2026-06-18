@@ -31,7 +31,21 @@ function Kpi({ val, lbl }: { val: string | null; lbl: string }) {
  * traced to a cached DAL source (§0). Reused on the homepage (region) and every
  * city page (city scope) via props — never forked.
  */
-export function KbMarketHud({ data, eyebrow = 'The market' }: { data: KbMarketData; eyebrow?: string }) {
+export function KbMarketHud({
+  data,
+  eyebrow = 'The market',
+  chartScopeLabel,
+}: {
+  data: KbMarketData
+  eyebrow?: string
+  /**
+   * When the trend chart shows a DIFFERENT geography than the section (e.g. a
+   * community page whose own neighborhood sales are too sparse, so the chart falls
+   * back to the parent city), this label names that geography in the chart panel so
+   * the city figure is never read as the community's. (§0 honesty.)
+   */
+  chartScopeLabel?: string
+}) {
   const root = useRef<HTMLElement>(null)
   const [now, setNow] = useState('--:--:--')
 
@@ -140,14 +154,15 @@ export function KbMarketHud({ data, eyebrow = 'The market' }: { data: KbMarketDa
           <div className="mkt-panel">
             <div className="mkt-phead">
               <span className="mono-lab">
-                ▸ Median sale · single-family · {years.length >= 2 ? `${years.length}-year overlay` : 'monthly'}
+                ▸ Median sale · single-family{chartScopeLabel ? ` · ${chartScopeLabel}` : ''} ·{' '}
+                {years.length >= 2 ? `${years.length}-year overlay` : 'monthly'}
                 {yoy ? `  ${yoy.pct >= 0 ? '↑' : '↓'} ${Math.abs(yoy.pct).toFixed(1)}% over the window` : ''}
               </span>
               {kbMoneyFull(lastMedian) ? <span className="mkt-phead-now mono-num">{kbMoneyFull(lastMedian)}</span> : null}
             </div>
             <KbMarketChart
               years={years}
-              ariaLabel={`Median sale price by year, ${data.byTown.length ? 'this area' : 'Central Oregon'}`}
+              ariaLabel={`Median sale price by year${chartScopeLabel ? `, ${chartScopeLabel}` : data.byTown.length ? ', this area' : ', Central Oregon'}`}
               height={320}
             />
           </div>

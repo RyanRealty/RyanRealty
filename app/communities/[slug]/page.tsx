@@ -233,6 +233,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     snapshot, pulse, stats, mktStats, regionPulse, priceHist,
     boundaryMapData, resortBoundary, allCitySnapshots, communities,
     blogPosts, openHouses, activity, featuredTiles, citySfrTiles, richContent,
+    cityPriceHist,
   ] = await Promise.all([
     // Always-present community snapshot — the JSON-LD/Place fallback source. (§0)
     withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
@@ -263,6 +264,11 @@ export default async function CommunityDetailPage({ params }: Props) {
     // the depth the page is REQUIRED to carry (owner directive). Null when a
     // community has no config (the page degrades to the data-driven About). (§0)
     withTimeoutFallback(getResortCommunityContent(resortSlug), null, 2500, 'comm:content'),
+    // Parent-city monthly price history — the chart's fallback when this community's
+    // own neighborhood close-sale series is too thin for a real multi-year trend
+    // (most subdivisions cache only a handful of recent months). Relabeled as
+    // city-level when used, so no city figure is passed off as the community's. (§0)
+    withTimeoutFallback(getPriceHistory('city', citySlug, 'monthly', 60), [], 4500, 'comm:cityPriceHistory'),
   ])
 
   // Amenity → blog-post link cards (topic-cluster SEO): resolve the published posts
@@ -535,6 +541,17 @@ export default async function CommunityDetailPage({ params }: Props) {
   }))
 
   // ── MARKET HUD ──────────────────────────────────────────────────────────────
+  // Trend chart series: prefer this community's OWN neighborhood close-sale history.
+  // But subdivision sales are sparse (often only the last month or two are cached),
+  // which renders a degenerate single-line stub with a flat axis. When the community's
+  // series can't support a real multi-year trend (<8 monthly points OR <2 calendar
+  // years), fall back to the parent CITY's trend — relabeled as city-level so no city
+  // figure is ever passed off as the community's. (§0)
+  const commPricePoints = priceHist.filter((p) => p.medianSalePrice != null)
+  const commTrendYears = new Set(commPricePoints.map((p) => new Date(p.periodStart).getUTCFullYear()))
+  const chartIsCityLevel = commPricePoints.length < 8 || commTrendYears.size < 2
+  const chartPriceHist = chartIsCityLevel ? cityPriceHist : priceHist
+
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
   const marketData: KbMarketData = {
     active: activeCount,
@@ -544,13 +561,13 @@ export default async function CommunityDetailPage({ params }: Props) {
     saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
     daysToPending: pulse?.medianDaysToPending ?? null,
     monthsSupply: pulse?.monthsOfSupply ?? null,
-    trend: priceHist
+    trend: chartPriceHist
       .slice(-13)
       .filter((p) => p.medianSalePrice != null)
       .map((p) => ({ label: monthLabel(p.periodStart), value: p.medianSalePrice as number })),
     byTown: [],
     countyMedian: regionPulse?.medianListPrice ?? null,
-    yearSeries: buildYearSeries(priceHist, 5),
+    yearSeries: buildYearSeries(chartPriceHist, 5),
   }
 
   // ── PAGE CONTRACT: AI-citable verified Q&A + structured data ───────────────
@@ -658,7 +675,11 @@ export default async function CommunityDetailPage({ params }: Props) {
         {/* Flow (same coherent order as the city page): the lifestyle overview
             leads, then the MARKET → the homes → a live ticker → the map →
             nearby communities → this-week → activity → guides → explore. */}
-        <KbMarketHud data={marketData} eyebrow={`${community.name} · The market`} />
+        <KbMarketHud
+          data={marketData}
+          eyebrow={`${community.name} · The market`}
+          chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
+        />
         <KbFeatured items={featuredItems} eyebrow={`${community.name} · For sale`} />
         <KbTicker items={tickerItems} />
         <KbListingMap
