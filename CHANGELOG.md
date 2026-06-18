@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.9 (2026-06-18)
+
+### Other
+- Fix KB double-chrome (all converted routes) + open-houses & price-drops -> KB
+
+---
+
+
 ## v1.595.8 (2026-06-18)
 
 ### Other
