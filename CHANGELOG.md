@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.35 (2026-06-19)
+
+### Other
+- Fix chart confusion + Style JSON leak (Matt screenshots 2026-06-19)
+
+---
+
+
 ## v1.595.34 (2026-06-19)
 
 ### Other
