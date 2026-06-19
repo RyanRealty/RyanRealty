@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { trackSignedInUser, findPersonByEmail } from '@/lib/followupboss'
+import { stitchVisitorIdentity } from '@/lib/visitor-backfill'
 import * as Sentry from '@sentry/nextjs'
 import { NextResponse } from 'next/server'
 import { cookies, headers } from 'next/headers'
@@ -17,7 +18,13 @@ const FUB_CID_MAX_AGE = 90 * 24 * 60 * 60 // 90 days — matches identifyFubFrom
  * a brand-new contact not yet in FUB simply gets stamped on a later visit. Never
  * blocks or fails sign-in.
  */
-async function stampFubCidFromEmail(res: NextResponse, email: string): Promise<void> {
+async function stampFubCidFromEmail(
+  res: NextResponse,
+  email: string,
+  rrVid: string | undefined,
+  userId: string | undefined,
+  source: string,
+): Promise<void> {
   const normalized = email.trim().toLowerCase()
   if (!normalized) return
   try {
@@ -31,6 +38,16 @@ async function stampFubCidFromEmail(res: NextResponse, email: string): Promise<v
         path: '/',
       })
     }
+    // Phase 7 -> Phase 5: feed the login into the first-party identity graph so a
+    // Google/Facebook/email sign-in stitches the durable rr_vid cookie to the
+    // known person/email/auth-user (same graph a form submit writes). Best-effort.
+    await stitchVisitorIdentity({
+      rrVid,
+      fubPersonId: person?.id ?? null,
+      email: normalized,
+      userId: userId ?? null,
+      source,
+    })
   } catch (err) {
     Sentry.captureException(err)
   }
@@ -60,6 +77,9 @@ export async function GET(request: Request) {
   const next = nextFromCookie ?? searchParams.get('next') ?? '/'
   const safeNext = safeRedirectPath(next)
   const base = await getBaseUrl(request)
+  // Durable first-party visitor id (Phase 5) — present server-side so the login
+  // can stitch this browser's anonymous history to the now-known person.
+  const rrVid = cookieStore.get('rr_vid')?.value
 
   const errorParam = searchParams.get('error')
   const errorDesc = searchParams.get('error_description')
@@ -105,7 +125,7 @@ export async function GET(request: Request) {
       const redirectUrl = safeNext.includes('?') ? `${base}${safeNext}&signed_up=1` : `${base}${safeNext}?signed_up=1`
       const res = NextResponse.redirect(redirectUrl)
       res.cookies.delete(AUTH_NEXT_COOKIE)
-      await stampFubCidFromEmail(res, data.user.email ?? '')
+      await stampFubCidFromEmail(res, data.user.email ?? '', rrVid, data.user.id, 'auth_oauth')
       return res
     }
   }
@@ -128,7 +148,7 @@ export async function GET(request: Request) {
       const redirectUrl = safeNext.includes('?') ? `${base}${safeNext}&signed_up=1` : `${base}${safeNext}?signed_up=1`
       const res = NextResponse.redirect(redirectUrl)
       res.cookies.delete(AUTH_NEXT_COOKIE)
-      await stampFubCidFromEmail(res, data.user.email ?? '')
+      await stampFubCidFromEmail(res, data.user.email ?? '', rrVid, data.user.id, type === 'recovery' ? 'auth_recovery' : 'auth_email')
       return res
     }
   }

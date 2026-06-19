@@ -40,6 +40,43 @@ function getServiceSupabase(): SupabaseClient | null {
   return createClient(url, key)
 }
 
+/**
+ * Upsert the anon->known link in visitor_identity_map: rr_vid (the durable
+ * first-party cookie set by middleware) -> the known FUB person / email / auth
+ * user. The single stitch reused by EVERY identify path — the WordPress One-Tap
+ * bridge (backfillSessionToFub, below) AND the Vercel Supabase OAuth callback
+ * (app/auth/callback) — so a Google/Facebook login feeds the Phase-5 identity
+ * graph just like a form submit does. email / fub / user_id are set
+ * when-present so a re-identify never clobbers a previously-captured value.
+ * Service-role write; never throws (must not block sign-in or tracking).
+ */
+export async function stitchVisitorIdentity(params: {
+  rrVid: string | null | undefined
+  fubPersonId?: number | null
+  email?: string | null
+  userId?: string | null
+  sessionId?: string | null
+  source: string
+}): Promise<void> {
+  if (!params.rrVid) return
+  const supabase = getServiceSupabase()
+  if (!supabase) return
+  const row: Record<string, unknown> = {
+    rr_vid: params.rrVid,
+    identify_source: params.source,
+    identified_at: new Date().toISOString(),
+  }
+  if (params.fubPersonId != null) row.fub_person_id = params.fubPersonId
+  if (params.email) row.email = params.email.toLowerCase()
+  if (params.userId) row.user_id = params.userId
+  if (params.sessionId) row.session_id = params.sessionId
+  try {
+    await supabase.from('visitor_identity_map').upsert(row, { onConflict: 'rr_vid' })
+  } catch {
+    /* never block the caller (sign-in / tracking) on a graph write */
+  }
+}
+
 // Categories worth replaying to FUB. We skip 'home', 'about', 'blog', 'other'
 // because firing 30 "Viewed Page: blog post" events at the moment of sign-in
 // is noise that drowns out the real signals. Listing detail + seller/buyer
@@ -173,20 +210,13 @@ export async function backfillSessionToFub(params: {
   // Upsert on rr_vid; the email/fub fields are only set when present so a
   // re-identify (e.g. the email-click bridge, which has no email) never clobbers
   // a previously-captured email. Service-role write; never blocks the response.
-  if (session.rr_vid) {
-    const mapRow: Record<string, unknown> = {
-      rr_vid: session.rr_vid,
-      fub_person_id: params.fubPersonId,
-      session_id: params.sessionId,
-      identify_source: params.identifiedVia,
-      identified_at: new Date().toISOString(),
-    }
-    if (params.email) mapRow.email = params.email.toLowerCase()
-    const { error: mapErr } = await supabase
-      .from('visitor_identity_map')
-      .upsert(mapRow, { onConflict: 'rr_vid' })
-    if (mapErr) errors.push(`identity-map upsert failed: ${mapErr.message}`)
-  }
+  await stitchVisitorIdentity({
+    rrVid: session.rr_vid,
+    fubPersonId: params.fubPersonId,
+    email: params.email,
+    sessionId: params.sessionId,
+    source: params.identifiedVia,
+  })
 
   // ─── 2. Fetch all unpushed events in chronological order ──────────────────
   const { data: eventsRaw, error: eventsErr } = await supabase
