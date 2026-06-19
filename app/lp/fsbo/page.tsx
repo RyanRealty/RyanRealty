@@ -111,7 +111,7 @@ export default function FsboLPPage() {
           <Link href="/" className="flex items-center" aria-label="Ryan Realty · Bend, Oregon">
             <span className="relative block h-7 w-[140px] shrink-0 sm:h-9 sm:w-[180px]">
               <Image
-                src="/images/brand/logo-horizontal-blue.png"
+                src="/images/brand/logo-horizontal-navy-transparent.png"
                 alt="Ryan Realty · Bend, Oregon"
                 fill
                 sizes="(max-width: 640px) 140px, 180px"
