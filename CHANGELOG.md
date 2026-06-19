@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.30 (2026-06-19)
+
+### Other
+- Roadmap: dedicated review-pass outcomes (13/14 fixed + live-verified)
+
+---
+
+
 ## v1.595.29 (2026-06-19)
 
 ### Other
