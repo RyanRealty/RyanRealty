@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.46 (2026-06-19)
+
+### Other
+- Wire per-location Area Guide videos into city/community/neighborhood pages
+
+---
+
+
 ## v1.595.45 (2026-06-19)
 
 ### Other
