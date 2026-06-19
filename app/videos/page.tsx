@@ -111,6 +111,38 @@ export default async function VideosPage({
   const heading = city ? `Watch ${city} homes on video` : 'Watch homes on video'
   const canonicalUrl = city ? `${siteUrl}/videos?city=${encodeURIComponent(city)}` : `${siteUrl}/videos`
 
+  // Make a card URL absolute for schema.org (it prefers absolute URLs). MLS /
+  // CDN media (photoUrl, tourUrl) is already absolute and passes through; the
+  // listing href is a site-relative path and gets the canonical origin.
+  const absoluteUrl = (u: string | null | undefined): string | undefined => {
+    if (!u) return undefined
+    if (u.startsWith('http://') || u.startsWith('https://')) return u
+    return `${siteUrl}${u.startsWith('/') ? '' : '/'}${u}`
+  }
+
+  // AEO: one schema.org VideoObject per home that carries a real, embeddable
+  // tour URL — built ONLY from data already on the card (name, the poster the
+  // card shows as thumbnailUrl, the real tour URL as contentUrl/embedUrl). The
+  // MLS feed carries no upload date, so uploadDate is omitted rather than
+  // fabricated. Cards without a tourUrl are excluded (no video, no VideoObject).
+  const videoObjects = cards
+    .map((c) => {
+      const contentUrl = absoluteUrl(c.tourUrl)
+      if (!contentUrl) return null
+      const thumbnailUrl = absoluteUrl(c.photoUrl)
+      return {
+        '@context': 'https://schema.org',
+        '@type': 'VideoObject',
+        name: `Video tour · ${c.addressLine}`,
+        description: `Video tour of ${c.addressLine}, ${c.cityLine}.`,
+        ...(thumbnailUrl ? { thumbnailUrl } : {}),
+        contentUrl,
+        embedUrl: contentUrl,
+        url: absoluteUrl(c.href),
+      }
+    })
+    .filter((v): v is NonNullable<typeof v> => v !== null)
+
   return (
     <main className="kb-root">
       <KbNav />
@@ -143,6 +175,60 @@ export default async function VideosPage({
           }),
         }}
       />
+
+      {/* BreadcrumbList — mirrors the app/schools/page.tsx pattern (Home → Video
+          tours [→ city]). Absolute item URLs so parsers resolve cross-page. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: (city
+              ? [
+                  { name: 'Home', url: `${siteUrl}/` },
+                  { name: 'Video tours', url: `${siteUrl}/videos` },
+                  { name: city, url: canonicalUrl },
+                ]
+              : [
+                  { name: 'Home', url: `${siteUrl}/` },
+                  { name: 'Video tours', url: `${siteUrl}/videos` },
+                ]
+            ).map((item, i) => ({
+              '@type': 'ListItem',
+              position: i + 1,
+              name: item.name,
+              item: item.url,
+            })),
+          }),
+        }}
+      />
+
+      {/* WebPage — the page entity itself, as a CollectionPage (this is a
+          collection of video-tour homes). Same node sibling data pages carry. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'CollectionPage',
+            name: heading,
+            description: lede,
+            url: canonicalUrl,
+          }),
+        }}
+      />
+
+      {/* One VideoObject per home with a real, embeddable tour — emitted so an
+          answer engine / Google Video indexing can surface each home's tour.
+          Skipped entirely when no listing carries a tour URL. */}
+      {videoObjects.map((video) => (
+        <script
+          key={video.contentUrl}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(video) }}
+        />
+      ))}
 
       <KbBreadcrumb
         trail={

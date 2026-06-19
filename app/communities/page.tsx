@@ -53,7 +53,7 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 export const revalidate = 1800
 
 export const metadata: Metadata = {
-  title: 'Communities in Central Oregon | Bend, Redmond, Sisters | Ryan Realty',
+  title: 'Communities in Central Oregon | Bend, Redmond, Sisters',
   description:
     'Explore communities and neighborhoods in Central Oregon. Find homes in Bend, Redmond, Sisters, Sunriver, and surrounding areas.',
   alternates: { canonical: `${siteUrl}/communities` },

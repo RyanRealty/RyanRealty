@@ -42,7 +42,7 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 const ogImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
-  title: 'Our Homes | Listings by Ryan Realty | Ryan Realty',
+  title: 'Our Homes',
   description:
     'Browse homes listed for sale by Ryan Realty. Our current listings across Bend, Redmond, Sisters, Sunriver and Central Oregon.',
   alternates: { canonical: `${siteUrl}/our-homes` },

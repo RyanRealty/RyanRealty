@@ -4,18 +4,18 @@
  * Converted to the KB (kinetic-brutalist) design system (Phase 9).
  * Reuses components/site/kb/* AS-IS; no fork.
  *
- * This is the navigation / overview page. The deep, AI-citable region REPORT
- * (Dataset + FAQ + price chart + city comparison + narrative) lives at
- * /housing-market/central-oregon. The hub deliberately does NOT duplicate the
- * region Dataset/FAQ, so the two URLs do not compete on the same query.
+ * This is the navigation / overview page. The deep region REPORT (price chart +
+ * city comparison + narrative) lives at /housing-market/central-oregon. The hub
+ * emits the same AI-citable Dataset + FAQPage structured data its child pages do
+ * (built from the region pulse the hub already fetches), so the hub is consistent
+ * with /housing-market/bend and /housing-market/central-oregon.
  *
  * THE PAGE CONTRACT: KB design + SEO (pageMetadata + MetadataBlock JSON-LD:
- * BreadcrumbList/WebPage) + KbSectionTracker pageType="market-report".
- * Every figure live and traced to a @/lib/data source (§0).
+ * BreadcrumbList/WebPage/Dataset + FAQPage via FAQBlock) + KbSectionTracker
+ * pageType="market-report". Every figure live and traced to a @/lib/data source (§0).
  *
  * Section order:
- *   1. MetadataBlock    — breadcrumb + webPage JSON-LD (no Dataset; that lives
- *      on /housing-market/central-oregon so the hub and report never compete)
+ *   1. MetadataBlock    — BreadcrumbList + WebPage + Dataset JSON-LD (AI-citability G34)
  *   2. KbNav            — KB chrome
  *   3. KbSectionTracker — page-level analytics (pageType="market-report")
  *   4. KbBreadcrumb     — Home > Housing market
@@ -23,14 +23,15 @@
  *   6. KbHero           — region eyebrow + glance lede (data-driven)
  *   7. KbExploreTowns   — per-city tiles with live active counts
  *   8. KbArticles       — cross-links to region report + blog posts
- *   9. ContentSection   — curated resource cross-links (region report, reports
+ *   9. FAQBlock         — region FAQ (includeJsonLd=true → FAQPage JSON-LD)
+ *  10. ContentSection   — curated resource cross-links (region report, reports
  *      index, explorer, communities, guides, area guides) — restored from the
  *      pre-KB hub for internal linking the KB chrome does not otherwise carry
- *  10. KbSell           — seller conversion CTA
- *  11. LeadCaptureBlock — general "ask a broker" inquiry (submitMarketPageInquiry),
+ *  11. KbSell           — seller conversion CTA
+ *  12. LeadCaptureBlock — general "ask a broker" inquiry (submitMarketPageInquiry),
  *      restored from the pre-KB hub so a non-seller market question has on-page
  *      capture (KbSell only routes to the seller valuation flow)
- *  12. KbFooter         — full sitemap close
+ *  13. KbFooter         — full sitemap close
  *
  * Data accuracy (CLAUDE.md §0):
  *   regionPulse   — market_pulse_live, geo_type='region', geo_slug='central-oregon',
@@ -48,6 +49,7 @@ import {
   getMarketPulseCitySnapshots,
   getRecentBlogPosts,
 } from '@/lib/data'
+import { buildMarketFaq } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import type { KbTownItem } from '@/components/site/kb/types'
@@ -61,6 +63,7 @@ import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { FAQBlock } from '@/components/site/FAQBlock'
 import { ContentSection } from '@/components/site/ContentSection'
 import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
 import { submitMarketPageInquiry } from '@/app/housing-market/actions'
@@ -138,8 +141,28 @@ export default async function HousingMarketHubPage() {
   ])
 
   // -------------------------------------------------------------------------
+  // buildMarketFaq — SINGLE source for the FAQ, the FAQPage JSON-LD, and the
+  // Dataset variableMeasured, all drawn from the same verified region pulse the
+  // hub already fetches. Same pattern as /housing-market/central-oregon so the
+  // hub emits the same AI-citable structured data its child page does.
+  // Null fields degrade gracefully inside buildMarketFaq (a stat with no value
+  // is omitted, never fabricated — §0); the structured-data block never vanishes.
+  // §0: Dataset.dateModified = pulse.refreshedAt (real refresh ts from
+  // market_pulse_live). Never a hardcoded or derived date.
+  // -------------------------------------------------------------------------
+  const refreshedAt = regionPulse?.refreshedAt ?? null
+  // Pulse-timeout fallback (G52 page-contract): feed buildMarketFaq a
+  // pulse-or-fallback input so the Dataset + FAQPage JSON-LD survives a slow or
+  // missing region market row instead of vanishing. Same pattern as the child
+  // /housing-market/central-oregon page.
+  const pulse = regionPulse
+  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(
+    'Central Oregon',
+    pulse ?? { activeCount: null, medianListPrice: null, refreshedAt: null },
+  )
+
+  // -------------------------------------------------------------------------
   // KbHero lede — data-driven from the region pulse (§0).
-  // No Dataset JSON-LD here; the /central-oregon report owns the citable data.
   // -------------------------------------------------------------------------
   const ledeParts: string[] = []
   if (regionPulse && regionPulse.activeCount > 0) {
@@ -215,9 +238,10 @@ export default async function HousingMarketHubPage() {
   }))
 
   // -------------------------------------------------------------------------
-  // JSON-LD — BreadcrumbList + WebPage only.
-  // Dataset + FAQPage live on /housing-market/central-oregon (the region report)
-  // so the hub and the report never emit the same structured market data.
+  // JSON-LD schemas — BreadcrumbList + WebPage + Dataset.
+  // FAQPage is emitted by FAQBlock (includeJsonLd=true) below (G34), so the hub
+  // carries the same AI-citable structured data as /housing-market/central-oregon.
+  // §0: dateModified is the real refreshedAt from market_pulse_live, never now().
   // -------------------------------------------------------------------------
   const schemas: SchemaInput[] = [
     {
@@ -236,10 +260,25 @@ export default async function HousingMarketHubPage() {
     },
   ]
 
+  if (datasetVariables.length > 0 && refreshedAt) {
+    schemas.push({
+      type: 'dataset',
+      name: `Central Oregon, Oregon real estate market statistics${asOfLabel ? `, ${asOfLabel}` : ''}`,
+      description:
+        'Live single-family home market data for Central Oregon. ' +
+        'Includes region median list price, active inventory, months of supply, and median days to pending. ' +
+        'Sourced from Oregon Data Share via Ryan Realty.',
+      url: '/housing-market',
+      dateModified: asOfIso ?? undefined,
+      spatialCoverageName: 'Central Oregon, OR',
+      variableMeasured: datasetVariables,
+    })
+  }
+
   return (
     <main className="kb-root">
-      {/* AI-citability: breadcrumb + webPage only. KbBreadcrumb has no JSON-LD
-          of its own; MetadataBlock emits the single BreadcrumbList. */}
+      {/* AI-citability structured data: BreadcrumbList + WebPage + Dataset.
+          KbBreadcrumb has no JSON-LD of its own. FAQPage emitted by FAQBlock. */}
       <MetadataBlock schemas={schemas} />
 
       <KbNav />
@@ -287,6 +326,22 @@ export default async function HousingMarketHubPage() {
             heading="Central Oregon real estate, explained"
             subtitle="Local housing data, neighborhood deep dives, and buyer and seller guides for Central Oregon."
           />
+        ) : null}
+
+        {/* FAQ — region Q&A from buildMarketFaq (single source with the Dataset
+            vars above). includeJsonLd=true auto-emits the FAQPage JSON-LD (G34),
+            matching the structured data on /housing-market/central-oregon. */}
+        {faqs.length > 0 ? (
+          <section id="faq" aria-label="Central Oregon real estate questions">
+            <FAQBlock
+              items={faqs}
+              eyebrow="Common questions"
+              title="Central Oregon real estate questions"
+              intro="Direct answers based on live MLS data."
+              includeJsonLd={true}
+              tone="muted"
+            />
+          </section>
         ) : null}
 
         {/* Resource cross-links — curated internal links the KB chrome does not

@@ -121,8 +121,8 @@ function buildSearchTitle(filters: ReturnType<typeof parseFilters>): string {
   if (filters.baths != null && filters.baths > 0) parts.push(`${filters.baths}+ Bath`)
   const loc = [filters.subdivision, filters.city].filter(Boolean).join(', ')
   if (loc) parts.push(loc)
-  if (parts.length === 0) return 'Homes for Sale | Ryan Realty'
-  return `${parts.join(' ')} Homes for Sale | Ryan Realty`
+  if (parts.length === 0) return 'Homes for Sale'
+  return `${parts.join(' ')} Homes for Sale`
 }
 
 export async function generateMetadata({

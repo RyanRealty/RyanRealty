@@ -48,7 +48,7 @@ const contactOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-rea
 type PageProps = { searchParams: Promise<{ inquiry?: string; listingKey?: string; intent?: string }> }
 
 export const metadata: Metadata = {
-  title: 'Contact Us | Ryan Realty',
+  title: 'Contact Us',
   description: 'Get in touch with Ryan Realty. Office address, phone, email, and contact form for buying or selling in Central Oregon.',
   alternates: { canonical: `${getCanonicalSiteUrl()}/contact` },
   openGraph: {

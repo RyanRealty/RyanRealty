@@ -125,7 +125,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!neighborhood) notFound()
 
   const title =
-    neighborhood.seoTitle ||
+    neighborhood.seoTitle?.trim() ||
     `Homes for Sale in ${neighborhood.name} | ${neighborhood.cityName}, Oregon`
 
   const description =

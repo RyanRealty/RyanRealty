@@ -55,11 +55,36 @@ const DEFAULT_KEYWORDS: ReadonlyArray<string> = [
 // renders a branded 1200×630 card; robots.ts allows /api/og for social scrapers.
 const DEFAULT_OG_IMAGE = '/api/og?type=default'
 
+/**
+ * Normalize a page title before the layout's title.template appends the single
+ * canonical brand suffix (" | Ryan Realty — Central Oregon Real Estate"):
+ *   1. Strip a trailing brand the caller (or a DB seoTitle) already baked in, so
+ *      the template can't double-brand the SERP title ("Foo | Ryan Realty" + the
+ *      template was producing "Foo | Ryan Realty | Ryan Realty — …").
+ *   2. Cap at MAX_TITLE WITHOUT cutting mid-word — the old slice(0,60) sheared
+ *      long neighborhood titles to a dangling "… | Rya".
+ *   3. Never return empty — a brand-only / whitespace title would collapse the
+ *      SERP title to the bare brand suffix.
+ */
+function cleanTitle(raw: string): string {
+  const original = raw.trim()
+  let t = original.replace(/\s*[|·—–-]\s*Ryan Realty\b.*$/i, '').trim()
+  if (!t) t = original // brand-only input — keep the original rather than go empty
+  if (t.length > MAX_TITLE) {
+    t = t
+      .slice(0, MAX_TITLE)
+      .replace(/\s+\S*$/, '') // drop the partial last word
+      .replace(/\s*[|·—–-]\s*$/, '') // drop a now-dangling separator
+      .trim()
+  }
+  return t || original
+}
+
 export function pageMetadata(input: PageMetadataInput): Metadata {
   const site = getCanonicalSiteUrl()
   const path = input.path.startsWith('/') ? input.path : `/${input.path}`
   const canonical = `${site}${path}`
-  const title = input.title.trim().slice(0, MAX_TITLE)
+  const title = cleanTitle(input.title)
   const description = shareDescription(input.description, MAX_DESC)
   const ogImage = input.ogImage ?? DEFAULT_OG_IMAGE
   const twitterImage = input.twitterImage ?? ogImage

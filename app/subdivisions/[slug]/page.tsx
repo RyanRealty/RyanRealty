@@ -33,6 +33,7 @@ import {
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { getListingsWithVideos } from '@/app/actions/videos'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { cityHero } from '@/lib/geo-images'
 import resortCommunitiesData from '@/data/resort-communities.json'
@@ -313,6 +314,31 @@ export default async function SubdivisionPage({ params }: Props) {
 
   const hasMap = mapFeatures.length > 0 || Boolean(mapPolygons)
 
+  // ── Video tours scoped to THIS subdivision ───────────────────────────────
+  // VideoTourRail falls back to the top-priced site-wide Central Oregon set when
+  // its own scoped fetch returns nothing — which would render 24 unrelated
+  // luxury listings under a "Walk through homes in {displayName}" header. Probe
+  // the same subdivision-scoped feed here (community = the MLS SubdivisionName,
+  // city = its parent city) and only render the rail when at least one in-area
+  // video tour exists. No registry match => no MLS subdivision name to scope on
+  // => never show the rail (the fallback would be unrelated). (§0 — honest scope)
+  const subdivisionVideoTours = registryMatch
+    ? await withTimeoutFallback(
+        getListingsWithVideos({
+          community: registryMatch.canonicalName,
+          city: registryMatch.city,
+          status: 'active',
+          limit: 12,
+        }),
+        [],
+        4500,
+        'sub:video-tours',
+      )
+    : []
+  const hasSubdivisionVideoTours = subdivisionVideoTours.some(
+    (r) => r.listing_key && (r.video_url ?? '').trim(),
+  )
+
   // ── JSON-LD ───────────────────────────────────────────────────────────────
   const schemas: SchemaInput[] = [
     {
@@ -366,14 +392,20 @@ export default async function SubdivisionPage({ params }: Props) {
           mediaCaption={mediaCaption}
         />
         {/* Video tours scoped to this subdivision, near the top (restored from the
-            pre-KB page). Renders nothing when there are no video listings, and falls
-            back to the Central Oregon set so the rail is never empty. Tap drops into
-            /feed, where the videos keep playing continuously. */}
-        <VideoTourRail
-          community={displayName}
-          eyebrow={`${displayName} · Video tours`}
-          title={`Walk through homes in ${displayName}`}
-        />
+            pre-KB page). Gated on hasSubdivisionVideoTours so the rail only renders
+            when in-area video tours actually exist — never the top-priced site-wide
+            Central Oregon fallback under a "Walk through homes in {displayName}"
+            header. We scope on the canonical MLS SubdivisionName (community) rather
+            than displayName so the rail's own scoped fetch matches the probe above.
+            Tap drops into /feed, where the videos keep playing continuously. */}
+        {hasSubdivisionVideoTours && registryMatch ? (
+          <VideoTourRail
+            community={registryMatch.canonicalName}
+            city={registryMatch.city}
+            eyebrow={`${displayName} · Video tours`}
+            title={`Walk through homes in ${displayName}`}
+          />
+        ) : null}
         {/* Map: draw boundary polygon when present; pins from active listings. */}
         {hasMap ? (
           <KbListingMap

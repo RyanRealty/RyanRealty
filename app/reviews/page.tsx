@@ -49,9 +49,71 @@ export const metadata: Metadata = {
 const STAR_PATH =
   'M12 1.6 L15.09 8.01 L22.06 8.86 L16.95 13.62 L18.27 20.51 L12 17.12 L5.73 20.51 L7.05 13.62 L1.94 8.86 L8.91 8.01 Z'
 
+// Rating the page renders for every testimonial card. lib/testimonials.ts is the
+// source of truth: all 24 entries are verified 5-star reviews (the grid above
+// draws exactly five stars per card from this value). Per CLAUDE.md §0 every
+// number in the JSON-LD traces to this same rendered rating — nothing invented.
+const RENDERED_STAR_RATING = 5
+
+/**
+ * Review + AggregateRating JSON-LD for the brokerage, built from the SAME
+ * TESTIMONIALS the page renders so SERP rich results match what's on screen.
+ *
+ * Each rendered card draws RENDERED_STAR_RATING stars, so every Review node
+ * carries that rating as reviewRating. reviewCount = the actual count of those
+ * rated reviews, and ratingValue = the mean of their ratings (derived, not
+ * hardcoded — if the data changes the math follows). aggregateRating is emitted
+ * only when at least one rated review exists, so no rating is ever fabricated.
+ */
+function buildReviewsJsonLd(): Record<string, unknown> {
+  const reviews = TESTIMONIALS.map((t) => ({
+    '@type': 'Review',
+    author: { '@type': 'Person', name: t.author },
+    reviewBody: t.quote,
+    datePublished: t.date,
+    reviewRating: {
+      '@type': 'Rating',
+      ratingValue: RENDERED_STAR_RATING,
+      bestRating: 5,
+      worstRating: 1,
+    },
+  }))
+
+  const ratingCount = reviews.length
+  const aggregateRating =
+    ratingCount > 0
+      ? {
+          '@type': 'AggregateRating',
+          ratingValue:
+            reviews.reduce((sum, r) => sum + r.reviewRating.ratingValue, 0) / ratingCount,
+          reviewCount: ratingCount,
+          bestRating: 5,
+          worstRating: 1,
+        }
+      : undefined
+
+  const subject: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'RealEstateAgent',
+    '@id': `${siteUrl}#organization`,
+    name: 'Ryan Realty',
+    url: `${siteUrl}/reviews`,
+    review: reviews,
+  }
+  if (aggregateRating) subject.aggregateRating = aggregateRating
+  return subject
+}
+
 export default function ReviewsPage() {
+  const reviewsJsonLd = buildReviewsJsonLd()
   return (
     <main className="kb-root">
+      {/* Review + AggregateRating JSON-LD — built from the rendered TESTIMONIALS
+          so the SERP rich result matches the cards on the page. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd) }}
+      />
       <KbNav />
       <KbSectionTracker pageType="media" />
       <KbBreadcrumb

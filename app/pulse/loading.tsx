@@ -1,7 +1,7 @@
 export default function PulseLoading() {
   return (
     <main className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card">
+      <div aria-hidden="true" className="border-b border-border bg-card">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
           <div className="h-3 w-32 animate-pulse rounded bg-muted" />
           <div className="mt-3 h-9 w-3/4 max-w-lg animate-pulse rounded bg-muted" />
@@ -15,7 +15,7 @@ export default function PulseLoading() {
             ))}
           </div>
         </div>
-      </header>
+      </div>
       <div className="mx-auto w-full max-w-xl px-4 pt-6 sm:px-0">
         <div className="mb-3 flex gap-2 overflow-hidden">
           {Array.from({ length: 6 }).map((_, i) => (

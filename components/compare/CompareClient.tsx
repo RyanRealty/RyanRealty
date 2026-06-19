@@ -11,7 +11,7 @@ import { LinkSquare01Icon, Cancel01Icon, Download01Icon, CheckmarkCircle01Icon }
 import { Button } from "@/components/ui/button"
 import { listingDetailPath } from '@/lib/slug'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { H1, H3 } from '@/components/site/primitives'
+import { H1, H2, H3 } from '@/components/site/primitives'
 
 export type CompareListingData = {
   listingKey: string
@@ -131,7 +131,7 @@ export default function CompareClient({ listings }: { listings: CompareListingDa
   if (listings.length === 0) {
     return (
       <div className="py-20 text-center">
-        <H1 className="text-2xl text-primary mb-4">No Listings to Compare</H1>
+        <H2 className="text-2xl text-primary mb-4">No Listings to Compare</H2>
         <p className="text-muted-foreground mb-6">
           {comparisonItems.length > 0
             ? 'Loading your selected homes...'

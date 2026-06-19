@@ -73,7 +73,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const params = await searchParams
   const shouldNoIndex = shouldNoIndexBlogIndex(params)
-  const title = 'Central Oregon Real Estate Blog | Market Insights and Guides | Ryan Realty'
+  const title = 'Central Oregon Real Estate Blog | Market Insights and Guides'
   const description = 'Market reports, community guides, and tips for buying and selling in Central Oregon.'
   return {
     title,

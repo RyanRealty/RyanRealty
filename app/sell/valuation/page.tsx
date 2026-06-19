@@ -33,7 +33,7 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 const VALUATION_HERO = '/images/hero/hero-old-mill-master-4k.jpg'
 
 export const metadata: Metadata = {
-  title: 'Home Valuation | Free Estimate | Ryan Realty',
+  title: 'Home Valuation | Free Estimate',
   description:
     'Get a data-driven estimate of your Central Oregon home\'s value. Free, no obligation. See what your home could be worth in today\'s market.',
   alternates: { canonical: `${siteUrl}/sell/valuation` },
