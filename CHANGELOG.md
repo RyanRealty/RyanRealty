@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.33 (2026-06-19)
+
+### Other
+- Phase 6: Meta offline-conversion upload (closed-loop ROAS) + admin route + gate
+
+---
+
+
 ## v1.595.32 (2026-06-19)
 
 ### Other
