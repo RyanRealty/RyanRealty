@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.28 (2026-06-19)
+
+### Other
+- Review pass fixes: SERP titles, structured data, a11y, geo-scoped video
+
+---
+
+
 ## v1.595.27 (2026-06-19)
 
 ### Other
