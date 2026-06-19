@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.47 (2026-06-19)
+
+### Other
+- KB a11y pass: fix 2 invisible-text bugs + accessible names + AA contrast
+
+---
+
+
 ## v1.595.46 (2026-06-19)
 
 ### Other
