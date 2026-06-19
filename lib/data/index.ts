@@ -192,6 +192,10 @@ export type { GeoTileImageMap } from '@/lib/data/media/getGeoTileImages'
 // homepage keeps its Old Mill master (not in asset_library, never returned here).
 export { getSurfaceImage, getSurfaceImages, pickSurfaceImage } from '@/lib/data/media/getSurfaceImages'
 export type { SurfaceImage, Surface } from '@/lib/data/media/getSurfaceImages'
+// Per-location AREA GUIDE video (exact geo match) — the marketing cut for a
+// "Watch the <location> area guide" click-to-play slot on city/community/nbhd pages.
+export { getAreaGuideVideo, getAreaGuideVideos } from '@/lib/data/media/getAreaGuideVideos'
+export type { AreaGuideVideo } from '@/lib/data/media/getAreaGuideVideos'
 // Active-lifestyle photography (biking/skiing/fishing/…) for the LifestyleStrip.
 export { getLifestyleImages } from '@/lib/data/media/getLifestyleImages'
 export type { LifestyleImage } from '@/lib/data/media/getLifestyleImages'

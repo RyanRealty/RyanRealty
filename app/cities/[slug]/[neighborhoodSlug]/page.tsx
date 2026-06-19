@@ -36,6 +36,7 @@ import {
   getAllCitySnapshots,
   getRecentBlogPosts,
   getBlogPostsBySlugs,
+  getAreaGuideVideo,
 } from '@/lib/data'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
@@ -65,6 +66,7 @@ import { KbArticles } from '@/components/site/kb/KbArticles'
 import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
 import { KbTeam } from '@/components/site/kb/KbTeam.client'
 import { KbSell } from '@/components/site/kb/KbSell.client'
+import { KbAreaGuideVideo } from '@/components/site/kb/KbAreaGuideVideo'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { FAQBlock } from '@/components/site/FAQBlock'
@@ -167,7 +169,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const [
     pulse, stats, mktStats, regionPulse, priceHist,
     boundaryMapData, allCitySnapshots, blogPosts, openHouses, activity,
-    cityPriceHist, neighborhoodCommunities, richContent,
+    cityPriceHist, neighborhoodCommunities, richContent, areaGuideVideo,
   ] = await Promise.all([
     withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), null, 3500, 'nbh:pulse'),
     withTimeoutFallback(getMarketStats({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug, periodType: 'rolling_365d' }), null, 3500, 'nbh:stats'),
@@ -193,6 +195,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     // match the polygon/pin namespace. Restores the pre-KB CommunityRichContent
     // depth in the KB register (the KbResortOverview rebuild of it).
     withTimeoutFallback(getResortCommunityContent(boundaryNeighborhoodSlug), null, 2500, 'nbh:content'),
+    // Per-neighborhood area-guide video — area-guide videos are tagged by the
+    // neighborhood/community slug (EXACT geo match). Null when this neighborhood
+    // has no guide; KbAreaGuideVideo then renders nothing.
+    withTimeoutFallback(getAreaGuideVideo(neighborhoodSlug), null, 3000, 'area-guide-video'),
   ])
 
   // In-boundary listing tiles (lat/lng/photo for map + featured + ticker).
@@ -520,6 +526,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             cta={{ href: `/homes-for-sale/${citySlug}`, label: `All ${cityName} homes` }}
           />
         ) : null}
+        <KbAreaGuideVideo videoUrl={areaGuideVideo} locationName={neighborhood.name} />
         <KbActivity
           items={activityItems}
           eyebrow={`Live · ${neighborhood.name}`}

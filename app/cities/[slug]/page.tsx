@@ -30,6 +30,7 @@ import {
   getCityCommunitySnapshots,
   getAllCitySnapshots,
   getRecentBlogPosts,
+  getAreaGuideVideo,
 } from '@/lib/data'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
@@ -60,6 +61,7 @@ import { KbTicker } from '@/components/site/kb/KbTicker.client'
 import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
 import { KbCommunities } from '@/components/site/kb/KbCommunities.client'
+import { KbAreaGuideVideo } from '@/components/site/kb/KbAreaGuideVideo'
 import { KbOpenHouses } from '@/components/site/kb/KbOpenHouses.client'
 import { KbActivity } from '@/components/site/kb/KbActivity.client'
 import { KbArticles } from '@/components/site/kb/KbArticles'
@@ -202,7 +204,7 @@ export default async function CityDetailPage({ params }: Props) {
   const [
     pulse, regionPulse, mktStats, priceHist, communities, neighborhoodStats,
     communitySnapshots, allCitySnapshots, blogPosts, openHouses, activity,
-    cityMeta, mapTiles, featuredTiles, resortTiles,
+    cityMeta, mapTiles, featuredTiles, resortTiles, areaGuideVideo,
   ] = await Promise.all([
     withTimeoutFallback(getMarketPulse({ geoType: 'city', geoSlug }), null, 3500, 'city:pulse'),
     withTimeoutFallback(getRegionPulse(), null, 3000, 'city:regionPulse'),
@@ -226,6 +228,7 @@ export default async function CityDetailPage({ params }: Props) {
     cityResorts(slug).length > 0
       ? withTimeoutFallback(fetchAllCityActiveSfr(cityName), [], 6000, 'city:resortTiles')
       : Promise.resolve([] as Awaited<ReturnType<typeof getListingTiles>>),
+    withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'area-guide-video'),
   ])
 
   // Hero — Bend reuses the homepage video; otherwise the VERIFIED cityHero photo
@@ -578,6 +581,7 @@ export default async function CityDetailPage({ params }: Props) {
           sectionId="communities-ledger"
           cta={{ href: '/communities', label: 'Every community' }}
         />
+        <KbAreaGuideVideo videoUrl={areaGuideVideo} locationName={cityName} />
         <KbOpenHouses items={openHouseItems} eyebrow={`${cityName} · This week`} heading="Open houses" viewAllHref={`/open-houses/${slug}`} />
         <KbActivity items={activityItems} eyebrow={`Live · ${cityName}`} heading="Latest market activity" viewAllHref="/housing-market" viewAllLabel="Full market pulse" />
         <KbArticles

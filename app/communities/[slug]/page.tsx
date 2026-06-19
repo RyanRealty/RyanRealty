@@ -49,6 +49,7 @@ import {
   getRecentBlogPosts,
   getResortCommunityBySlug,
   getBlogPostsBySlugs,
+  getAreaGuideVideo,
 } from '@/lib/data'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
@@ -75,6 +76,7 @@ import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { KbTicker } from '@/components/site/kb/KbTicker.client'
 import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
+import { KbAreaGuideVideo } from '@/components/site/kb/KbAreaGuideVideo'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
 import { KbCommunities } from '@/components/site/kb/KbCommunities.client'
 import { KbOpenHouses } from '@/components/site/kb/KbOpenHouses.client'
@@ -233,7 +235,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     snapshot, pulse, stats, mktStats, regionPulse, priceHist,
     boundaryMapData, resortBoundary, allCitySnapshots, communities,
     blogPosts, openHouses, activity, featuredTiles, citySfrTiles, richContent,
-    cityPriceHist,
+    cityPriceHist, areaGuideVideo,
   ] = await Promise.all([
     // Always-present community snapshot — the JSON-LD/Place fallback source. (§0)
     withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
@@ -269,6 +271,10 @@ export default async function CommunityDetailPage({ params }: Props) {
     // (most subdivisions cache only a handful of recent months). Relabeled as
     // city-level when used, so no city figure is passed off as the community's. (§0)
     withTimeoutFallback(getPriceHistory('city', citySlug, 'monthly', 60), [], 4500, 'comm:cityPriceHistory'),
+    // Approved per-location AREA GUIDE video for THIS community's geo slug (EXACT
+    // match, null when the location has no guide video). The slot self-hides when
+    // null, so it is always safe to render. (§0)
+    withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'comm:areaGuideVideo'),
   ])
 
   // Amenity → blog-post link cards (topic-cluster SEO): resolve the published posts
@@ -693,6 +699,10 @@ export default async function CommunityDetailPage({ params }: Props) {
           subtitle={`Every active single-family listing in ${community.name}, on the real terrain. Click any dot for the price, the beds, and the street.`}
         />
         <KbCommunities communities={communityItems} eyebrow={`${cityName} · Communities`} />
+        {/* Per-location area guide video — self-hides when this community has no
+            approved guide video. Sits after the communities rail, before the
+            this-week / activity / FAQ / sell blocks. */}
+        <KbAreaGuideVideo videoUrl={areaGuideVideo} locationName={community.name} />
         <KbOpenHouses
           items={openHouseItems}
           eyebrow={`${cityName} · This week`}
