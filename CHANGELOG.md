@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.40 (2026-06-19)
+
+### Other
+- Phase 8 fix: LP header logo white-box -> clean white wordmark
+
+---
+
+
 ## v1.595.39 (2026-06-19)
 
 ### Other
