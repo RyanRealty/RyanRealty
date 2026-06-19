@@ -128,11 +128,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     neighborhood.seoTitle?.trim() ||
     `Homes for Sale in ${neighborhood.name} | ${neighborhood.cityName}, Oregon`
 
-  const description =
-    neighborhood.seoDescription ||
-    (neighborhood.activeCount > 0
+  const generatedDescription =
+    neighborhood.activeCount > 0
       ? `${neighborhood.activeCount} homes for sale in ${neighborhood.name}, ${neighborhood.cityName}. Median list price ${neighborhood.medianPrice != null ? fmtK(neighborhood.medianPrice) ?? '' : 'available on request'}. Local market data from Ryan Realty.`
-      : `Explore ${neighborhood.name} in ${neighborhood.cityName}, Oregon. Live market data and listings from a local brokerage.`)
+      : `Explore ${neighborhood.name} in ${neighborhood.cityName}, Oregon. Live market data and listings from a local brokerage.`
+  // Brand voice (CLAUDE.md): a curated DB seo_description carrying a banned
+  // real-estate cliche (e.g. the live "charming" on /cities/bend/old-bend) must
+  // never ship to the SERP. Fall back to the clean, data-driven description when
+  // the stored copy trips the cliche guard — defense-in-depth over the DB value.
+  const bannedDescRe =
+    /\b(charming|stunning|nestled|boasts|pristine|breathtaking|must-see|hidden gem|luxurious|meticulously|gorgeous|immaculate)\b/i
+  const description =
+    neighborhood.seoDescription && !bannedDescRe.test(neighborhood.seoDescription)
+      ? neighborhood.seoDescription
+      : generatedDescription
 
   return pageMetadata({
     title,
