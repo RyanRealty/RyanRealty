@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.27 (2026-06-19)
+
+### Other
+- Phase 5 CORE DONE: roadmap ledger — identity graph shipped + live-verified
+
+---
+
+
 ## v1.595.26 (2026-06-19)
 
 ### Other
