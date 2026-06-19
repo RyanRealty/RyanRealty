@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema_version": 1,
-  "updated_at": "2026-06-10T20:44:08.197Z",
+  "updated_at": "2026-06-19T20:28:13.625Z",
   "description": "Ryan Realty asset library manifest. Every fetched, generated, or rendered asset is registered here. Future builds query this file FIRST before going to external sources. Closes the loop on cost, license tracking, and reuse. Authored 2026-05-07.",
   "assets": [
     {
@@ -717,7 +717,7 @@
         "social-brand-banner-2026-05-13"
       ],
       "approval": "approved",
-      "notes": "P69 \u2014 Approved by Matt 2026-05-13 as the social hero banner across YouTube, X, Pinterest, Facebook, LinkedIn, GBP, TikTok (also referenced from Instagram bio attribution). Composited at every platform spec; output in design_system/ryan-realty/assets/social/banner-photo/. CC BY-SA 4.0 attribution baked into every social bio.",
+      "notes": "P69 — Approved by Matt 2026-05-13 as the social hero banner across YouTube, X, Pinterest, Facebook, LinkedIn, GBP, TikTok (also referenced from Instagram bio attribution). Composited at every platform spec; output in design_system/ryan-realty/assets/social/banner-photo/. CC BY-SA 4.0 attribution baked into every social bio.",
       "permalink": "https://commons.wikimedia.org/wiki/File:Old_Mill_District_2019.jpg",
       "vision_caption": "Aerial dusk photo of the Old Mill District showing three tall smokestacks, a river with a pedestrian bridge, and a colorful waterfront district with trees.",
       "vision_scene": "aerial-town",
@@ -761,7 +761,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Mountains View Scenic Oregon. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Mountains View Scenic Oregon. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/17fvNo97koHi-feKp6QWO8xm6AilMX3UV/view"
     },
     {
@@ -796,7 +796,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Hiking Forest Oregon. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Hiking Forest Oregon. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/17eRx17Y6b3mq9A4H2uc4I16eG5GHMWZ-/view"
     },
     {
@@ -830,7 +830,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Kayak Fly Fishing Lake. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Kayak Fly Fishing Lake. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/17fpP0Sq0-9Vqsu2fiTM0Gpk9oFT_sVqr/view"
     },
     {
@@ -864,7 +864,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Mountains Lake Trees Alpine. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Mountains Lake Trees Alpine. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/17if7PCpwTV90gtcrqMMPT6Dl0ovVXseB/view"
     },
     {
@@ -899,7 +899,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Forest Fire Hills Timelapse. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Forest Fire Hills Timelapse. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/17jgUdQxKGwmzCovu8Y7R-zBlY3ElhPZD/view"
     },
     {
@@ -933,7 +933,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Wind Blowing Lake Timelapse. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Wind Blowing Lake Timelapse. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/17qJIY6ur5_y49KoXr25GFWkldxa8_xRJ/view"
     },
     {
@@ -964,7 +964,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Lake HD. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Lake HD. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/17s7BKvEEeuW2bFvLPGuLnzgITs629MfP/view"
     },
     {
@@ -999,7 +999,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Family Hiking Mountain Silhouette. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Family Hiking Mountain Silhouette. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/17tUZEA1VrG1c75NLH7YWh97Gj-jHHSi9/view"
     },
     {
@@ -1032,7 +1032,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Woman Running Forest. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Woman Running Forest. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/17w4grCkyPYaoieHqUqluuJkKEj4oW6HQ/view"
     },
     {
@@ -1066,7 +1066,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Woman Running Forest Path. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Woman Running Forest Path. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/17xTj_Ij0s1LPO_5am0taglkcnW2qtviJ/view"
     },
     {
@@ -1100,7 +1100,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 River Stream Rocks. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — River Stream Rocks. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/180u9jqtyrN7nwenu5oPXJFok-I22Rp4O/view"
     },
     {
@@ -1134,7 +1134,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Two Women Mountain Bikes Aerial. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Two Women Mountain Bikes Aerial. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/182n7FREGBXyctGHb8UBKUuwQOtR6lO0T/view"
     },
     {
@@ -1168,7 +1168,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Cyclist Forest. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Cyclist Forest. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/18BKQ9OseSEQtwiW56DAYaUPLOmCQBy6v/view"
     },
     {
@@ -1203,7 +1203,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Women Off-Road Biking Mountain Aerial. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Women Off-Road Biking Mountain Aerial. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/18BNXsjmRYZcmjZGbzG4Fc9nhkP8yxhGG/view"
     },
     {
@@ -1236,7 +1236,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Mountain Bike POV Extreme. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Mountain Bike POV Extreme. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/18N9JmHKuvTjHbOsKYZxkxzuDFmlC9pSg/view"
     },
     {
@@ -1270,7 +1270,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 People Snowboarding Hill. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — People Snowboarding Hill. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/18RGkTnvNPVSiLhCfd6kcSdmn2DPKKI3A/view"
     },
     {
@@ -1305,7 +1305,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Cross-Country Skiing Forest. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Cross-Country Skiing Forest. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/18e_Za2ue9wqpQWC9nXBjMJYjZoBm6Key/view"
     },
     {
@@ -1339,7 +1339,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Fisherman Lake. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Fisherman Lake. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/18mEvQrb83-Nh5LsXB1nWk7P_8CHRuBsD/view"
     },
     {
@@ -1373,7 +1373,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Fisherman River. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Fisherman River. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/18n2rlhLG4pdv2NWyRF8M6r8-SoEoq0pG/view"
     },
     {
@@ -1408,7 +1408,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Horses Running Fields Windy. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Horses Running Fields Windy. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/18ndIBEwyQQH8TpB2vGbi0PMRSY1zqcge/view"
     },
     {
@@ -1439,7 +1439,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Lake HD wide. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Lake HD wide. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/18oAfxAmT0OpOIqcG3qO42qQtIUvkoK1Z/view"
     },
     {
@@ -1473,7 +1473,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Drone Above Forest Road. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Drone Above Forest Road. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/18tGv-jg_FccnVRv8_NdoNA7BoYoiPaEa/view"
     },
     {
@@ -1511,7 +1511,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "approved",
-      "notes": "Stock video clip \u2014 Yellowstone Park Drone Campervan. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
+      "notes": "Stock video clip — Yellowstone Park Drone Campervan. Registered 2026-05-13 from Drive folder 17agk0Pj5CF_TqBQxsozKJ_7WXfWFtW7k. To use: download via Drive on demand.",
       "permalink": "https://drive.google.com/file/d/18tJAF-O7QG4jO2wKhZS7LUyH5XbHJqMg/view"
     },
     {
@@ -1572,7 +1572,7 @@
         "social-brand-hero-banner-2026-05-13"
       ],
       "approval": "approved",
-      "notes": "F1 hero \u2014 Approved by Matt 2026-05-13 as the social hero banner across YouTube, X, Pinterest, Facebook, GBP, LinkedIn, TikTok, Instagram. 720p source upscaled with lanczos+sharpen for YouTube 2048x1152. Higher-res 4K master available at Drive ID iStock-1330945786.mov if re-extraction needed.",
+      "notes": "F1 hero — Approved by Matt 2026-05-13 as the social hero banner across YouTube, X, Pinterest, Facebook, GBP, LinkedIn, TikTok, Instagram. 720p source upscaled with lanczos+sharpen for YouTube 2048x1152. Higher-res 4K master available at Drive ID iStock-1330945786.mov if re-extraction needed.",
       "permalink": "",
       "vision_caption": "An aerial view of the Old Mill District showing three tall smokestacks, a river bend with kayakers, green parkland, and an American flag, matching the canonical hero photo.",
       "vision_scene": "aerial-town",
@@ -4831,7 +4831,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "intake",
-      "notes": "[rescreen 2026-06-03] identifiable/bend: No watermarks or credits found in any corner or edge. Aerial shot of a park with a pond, manicured sports fields, and the Three Sisters snow peaks clearly visible on the horizon \u2014 definitively Bend, Oregon. Clean pixels throughout all six crops. Works as both a wide hero and a card tile. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
+      "notes": "[rescreen 2026-06-03] identifiable/bend: No watermarks or credits found in any corner or edge. Aerial shot of a park with a pond, manicured sports fields, and the Three Sisters snow peaks clearly visible on the horizon — definitively Bend, Oregon. Clean pixels throughout all six crops. Works as both a wide hero and a card tile. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
       "file_path": "public/asset-library/photos/curated/2db874b4-54f1-47e0-a6e6-33801baebe77.JPG",
       "vision_caption": "Aerial view of a small pond and surrounding irrigated fields and pine tree clusters under a blue sky with light clouds.",
       "vision_scene": "aerial-nature",
@@ -5526,13 +5526,13 @@
         "blog-hero-living-in-nw-crossing-bend"
       ],
       "approval": "approved",
-      "notes": "[rescreen 2026-06-03] identifiable/bend: No watermarks in any corner or crop \u2014 pixels fully clean. Aerial drone shot showing the iconic wooden pedestrian footbridge crossing the Deschutes River at Mirror Pond / Drake Park in Bend, with Cascade mountain peaks visible in background. Definitively identifiable as Bend's Mirror Pond landmark. Wide scenic composition suits hero; thumbnail crops well for card. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
+      "notes": "[rescreen 2026-06-03] identifiable/bend: No watermarks in any corner or crop — pixels fully clean. Aerial drone shot showing the iconic wooden pedestrian footbridge crossing the Deschutes River at Mirror Pond / Drake Park in Bend, with Cascade mountain peaks visible in background. Definitively identifiable as Bend's Mirror Pond landmark. Wide scenic composition suits hero; thumbnail crops well for card. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
       "file_path": "public/asset-library/photos/curated/ba294855-26c1-493e-a07a-752fa6151eb4.JPG",
       "vision_caption": "Aerial of a wooden footbridge crossing the calm Deschutes River between riverside parks, homes in the trees, Cascade peaks on the horizon",
       "vision_scene": "aerial-nature",
       "vision_quality": "A",
       "vision_watermark": false,
-      "vision_note": "caption corrected eyes-on 2026-06-09 (audit row was shuffled \u2014 said dry meadow)",
+      "vision_note": "caption corrected eyes-on 2026-06-09 (audit row was shuffled — said dry meadow)",
       "enhanced_path": "public/asset-library/photos/enhanced/ba294855-26c1-493e-a07a-752fa6151eb4-enhanced.jpg",
       "enhanced_at": "2026-06-09",
       "enhanced_pipeline": "real-esrgan+brand-grade-v1",
@@ -7078,7 +7078,7 @@
         "blog-hero-bend-building-permit-timeline-construction"
       ],
       "approval": "intake",
-      "notes": "[rescreen 2026-06-03] generic/bend: Drone aerial of a modern high-desert residential neighborhood. Cascade peaks (Three Sisters / Mt. Bachelor silhouettes) visible on horizon, ponderosa pine forest and sandy terrain \u2014 unmistakably Bend, Oregon. No watermarks, stock stamps, or photographer credits found in any corner, centre, or across the full image. 'TAYLOR' sign visible in mid-crop is a builder signage in the subdivision, not a stock watermark. Pixels clean throughout. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
+      "notes": "[rescreen 2026-06-03] generic/bend: Drone aerial of a modern high-desert residential neighborhood. Cascade peaks (Three Sisters / Mt. Bachelor silhouettes) visible on horizon, ponderosa pine forest and sandy terrain — unmistakably Bend, Oregon. No watermarks, stock stamps, or photographer credits found in any corner, centre, or across the full image. 'TAYLOR' sign visible in mid-crop is a builder signage in the subdivision, not a stock watermark. Pixels clean throughout. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
       "file_path": "public/asset-library/photos/curated/11452d83-f98e-441f-829d-c42612bdacf6.JPG",
       "vision_caption": "Aerial view of a new residential subdivision with modern dark-roofed homes along a wide arterial road, with snow-capped mountains visible in the background.",
       "vision_scene": "aerial-residential",
@@ -7767,7 +7767,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "intake",
-      "notes": "[rescreen 2026-06-03] identifiable/sisters: No stock watermarks or photographer credit stamps anywhere. The 'Harcourts' text visible in mid crop is a real business storefront sign in the background scene, not a stock overlay. Classic Sisters downtown roundabout with sculpture, ponderosa pines, and main-street commercial strip \u2014 definitively identifiable as Sisters. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
+      "notes": "[rescreen 2026-06-03] identifiable/sisters: No stock watermarks or photographer credit stamps anywhere. The 'Harcourts' text visible in mid crop is a real business storefront sign in the background scene, not a stock overlay. Classic Sisters downtown roundabout with sculpture, ponderosa pines, and main-street commercial strip — definitively identifiable as Sisters. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
       "file_path": "public/asset-library/photos/curated/6ae94ec1-fd80-4a94-8b7c-041093262318.JPG",
       "vision_caption": "Aerial view of a downtown roundabout intersection with mixed-use commercial buildings, paved pathways, and ponderosa pines on a clear spring day.",
       "vision_scene": "aerial-town",
@@ -8859,7 +8859,7 @@
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - River Vale - 01.JPG)",
       "file_path": "public/asset-library/photos/curated/29069469-c8be-4105-a168-7dfa1d07732a.JPG",
-      "vision_caption": "Ground-level view of a dark metal monument sign reading 'River Vale \u2014 A Pahlisch Land Community' surrounded by pine trees and landscaping.",
+      "vision_caption": "Ground-level view of a dark metal monument sign reading 'River Vale — A Pahlisch Land Community' surrounded by pine trees and landscaping.",
       "vision_scene": "other",
       "vision_quality": "B",
       "vision_watermark": false
@@ -14426,7 +14426,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "intake",
-      "notes": "[rescreen 2026-06-03] reject(off-brand-or-graphic): Ground-level photo of the Broken Top community monument rock with branded logo and name engraved. Baked-in neighborhood logo/sign monument per reject criteria. No stock watermarks present, but content is a branded sign graphic \u2014 not suitable as a clean location photo. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
+      "notes": "[rescreen 2026-06-03] reject(off-brand-or-graphic): Ground-level photo of the Broken Top community monument rock with branded logo and name engraved. Baked-in neighborhood logo/sign monument per reject criteria. No stock watermarks present, but content is a branded sign graphic — not suitable as a clean location photo. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
       "file_path": "public/asset-library/photos/curated/1bfebc15-918b-47a4-8214-6c4bc5e7a5df.JPG",
       "vision_caption": "Ground-level view of a large volcanic rock monument engraved with the name Broken Top surrounded by smaller rocks and ponderosa pines.",
       "vision_scene": "home-exterior",
@@ -17727,7 +17727,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "intake",
-      "notes": "[rescreen 2026-06-03] identifiable/prineville: No watermarks or stock agency text in any crop. Top corners are clean blue sky. Bottom-right corner shows a street-level road sign ('NO PARKING') and a small pennant flag \u2014 these are real-world scene elements, not overlays. The mid-crop clearly shows Central Oregon rimrock formations consistent with Prineville's Crooked River valley and surrounding buttes. Town layout and river corridor match Prineville. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
+      "notes": "[rescreen 2026-06-03] identifiable/prineville: No watermarks or stock agency text in any crop. Top corners are clean blue sky. Bottom-right corner shows a street-level road sign ('NO PARKING') and a small pennant flag — these are real-world scene elements, not overlays. The mid-crop clearly shows Central Oregon rimrock formations consistent with Prineville's Crooked River valley and surrounding buttes. Town layout and river corridor match Prineville. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
       "file_path": "public/asset-library/photos/curated/35e4ce1d-370c-4233-bf5d-0a666a186751.JPG",
       "vision_caption": "An aerial view of a small rural town with a main road intersection, low commercial buildings, and rugged brown hills and mountains in the background.",
       "vision_scene": "aerial-town",
@@ -19037,7 +19037,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "intake",
-      "notes": "[rescreen 2026-06-03] identifiable/sisters: No watermark or stock stamp in any corner. Aerial looking east over Sisters Main Street commercial district with the Three Sisters volcanic peaks prominent in the background. Definitively Sisters, OR \u2014 not Bend or generic Central Oregon. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
+      "notes": "[rescreen 2026-06-03] identifiable/sisters: No watermark or stock stamp in any corner. Aerial looking east over Sisters Main Street commercial district with the Three Sisters volcanic peaks prominent in the background. Definitively Sisters, OR — not Bend or generic Central Oregon. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
       "file_path": "public/asset-library/photos/curated/322a2c0f-a145-4d94-8c7d-ecccd3a32d59.JPG",
       "vision_caption": "An aerial view of a small town commercial district with low-rise buildings, parking lots, and three snow-capped peaks of the Three Sisters visible on the horizon.",
       "vision_scene": "aerial-town",
@@ -23414,7 +23414,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "intake",
-      "notes": "[rescreen 2026-06-03] identifiable/bend: No watermarks or stamps in any corner or crop. Tall cascade over basalt rimrock with dense pine/fir forest \u2014 consistent with Tumalo Falls near Bend, a definitive identifiable Central Oregon landmark. Pixels clean throughout. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
+      "notes": "[rescreen 2026-06-03] identifiable/bend: No watermarks or stamps in any corner or crop. Tall cascade over basalt rimrock with dense pine/fir forest — consistent with Tumalo Falls near Bend, a definitive identifiable Central Oregon landmark. Pixels clean throughout. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
       "file_path": "public/asset-library/photos/curated/959b07f5-f0d7-4875-b344-931e34ef5a2d.jpg",
       "vision_caption": "A tall waterfall drops through a conifer-lined basalt gorge with a rocky streambed visible below, photographed in soft overcast light.",
       "vision_scene": "river-water",
@@ -23746,7 +23746,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "intake",
-      "notes": "[rescreen 2026-06-03] reject(off-region): No watermarks found in any crop. Scene shows a steeply switchbacking paved road through dense Pacific silver fir forest at high elevation with a volcanic peak behind \u2014 characteristic of Mt. Hood's Timberline Road or western Cascades, not Central Oregon. Central Oregon Cascade roads (Century Drive) run through drier lodgepole/ponderosa terrain at lower density. Rejecting as off-region. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
+      "notes": "[rescreen 2026-06-03] reject(off-region): No watermarks found in any crop. Scene shows a steeply switchbacking paved road through dense Pacific silver fir forest at high elevation with a volcanic peak behind — characteristic of Mt. Hood's Timberline Road or western Cascades, not Central Oregon. Central Oregon Cascade roads (Century Drive) run through drier lodgepole/ponderosa terrain at lower density. Rejecting as off-region. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
       "file_path": "public/asset-library/photos/curated/0ae0ca93-eb7d-4987-8bb9-6035fd1ac453.jpg",
       "vision_caption": "A paved mountain road curves through pine trees with a single snow-capped volcanic peak visible in the distant hazy blue ridgeline.",
       "vision_scene": "mountain-landscape",
@@ -24376,7 +24376,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "intake",
-      "notes": "[rescreen 2026-06-03] reject(off-brand-or-graphic): No stock watermarks found in any of the six crops. Image is fully desaturated black-and-white artistic treatment \u2014 rules explicitly reject archival/B&W as off-brand-or-graphic since it conflicts with the color design system. Rock formation is consistent with Smith Rock basalt columns but cannot be confirmed without color context. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
+      "notes": "[rescreen 2026-06-03] reject(off-brand-or-graphic): No stock watermarks found in any of the six crops. Image is fully desaturated black-and-white artistic treatment — rules explicitly reject archival/B&W as off-brand-or-graphic since it conflicts with the color design system. Rock formation is consistent with Smith Rock basalt columns but cannot be confirmed without color context. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
       "file_path": "public/asset-library/photos/curated/34e8d097-4053-47f4-97e5-fadee5c738cb.jpg",
       "vision_caption": "Black-and-white image of a slackliner balancing on a highline wire stretched between two rock formations against a grey sky.",
       "vision_scene": "lifestyle-people",
@@ -25229,7 +25229,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "intake",
-      "notes": "[rescreen 2026-06-03] reject(off-brand-or-graphic): Native centre crop reveals a baked-in stat graphic overlay: 'HOA PREVALENCE \u2014 24% \u2014 avg $50/mo when present' in white/gold type on the image. Stat-card text graphic. Reject off-brand-or-graphic. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
+      "notes": "[rescreen 2026-06-03] reject(off-brand-or-graphic): Native centre crop reveals a baked-in stat graphic overlay: 'HOA PREVALENCE — 24% — avg $50/mo when present' in white/gold type on the image. Stat-card text graphic. Reject off-brand-or-graphic. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
       "file_path": "public/asset-library/photos/curated/d670fed6-b107-4111-8d3d-7b4ea164f931.jpg",
       "vision_caption": "A tall multi-tiered waterfall descends through a mossy green gorge forest with a small figure visible for scale at the base.",
       "vision_scene": "river-water",
@@ -25481,7 +25481,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "intake",
-      "notes": "[rescreen 2026-06-03] reject(off-region): Sharp glaciated pyramidal alpine peaks (Weisshorn/Zinalrothorn type) at sunrise above a sea of clouds \u2014 the European/Swiss Alps. Central Oregon peaks are rounded volcanic cones, not glaciated horns. Foreign mountains -> off-region. Native crop clean of watermark but wrong region. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
+      "notes": "[rescreen 2026-06-03] reject(off-region): Sharp glaciated pyramidal alpine peaks (Weisshorn/Zinalrothorn type) at sunrise above a sea of clouds — the European/Swiss Alps. Central Oregon peaks are rounded volcanic cones, not glaciated horns. Foreign mountains -> off-region. Native crop clean of watermark but wrong region. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
       "file_path": "public/asset-library/photos/curated/5db087bf-2b34-4cea-9ff0-582fa39433f0.jpg",
       "vision_caption": "A calm river winds through a deep canyon lined with dense green conifers and rocky cliffs under a blue partly cloudy sky.",
       "vision_scene": "river-water",
@@ -25711,7 +25711,7 @@
       "approval": "approved",
       "notes": "Ingested from Google Drive (sharp_JsD3HThXSrM.jpg) | family4 city curation 2026-06-10: geo verified (vision_location / Area Guide source label / Unsplash location metadata) + heroes visually reviewed",
       "file_path": "public/asset-library/photos/curated/febd2b74-6ca7-47e0-a8fd-4a8a4bcf1ae5.jpg",
-      "vision_caption": "Tall orange-red rock cliffs and spires perfectly reflected in a still deep blue river under a clear sky \u2014 nearly identical composition to another image in the batch.",
+      "vision_caption": "Tall orange-red rock cliffs and spires perfectly reflected in a still deep blue river under a clear sky — nearly identical composition to another image in the batch.",
       "vision_scene": "river-water",
       "vision_quality": "A",
       "vision_watermark": false,
@@ -27349,7 +27349,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "intake",
-      "notes": "[rescreen 2026-06-03] reject(off-region): No watermark found in any crop. Scene is a heavily glaciated, sharply pyramidal high-alpine peak (Matterhorn-style profile) rising above a dense sea of clouds at sunset \u2014 characteristic of the Swiss Alps or similar European range. Entirely inconsistent with Central Oregon or the Oregon Cascades, which lack this glacial peak morphology. Rejected as off-region. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
+      "notes": "[rescreen 2026-06-03] reject(off-region): No watermark found in any crop. Scene is a heavily glaciated, sharply pyramidal high-alpine peak (Matterhorn-style profile) rising above a dense sea of clouds at sunset — characteristic of the Swiss Alps or similar European range. Entirely inconsistent with Central Oregon or the Oregon Cascades, which lack this glacial peak morphology. Rejected as off-region. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
       "file_path": "public/asset-library/photos/curated/bf53e884-277a-401a-985b-f3f235d2f31c.jpg",
       "vision_caption": "A close-up macro shot of amber-colored liquid (beer or whiskey) forming a droplet on a dark black background.",
       "vision_scene": "food-drink",
@@ -29892,7 +29892,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "intake",
-      "notes": "[rescreen 2026-06-03] identifiable/bend: Old Mill District tower in Bend \u2014 recognizable neon '5 Market' landmark with bare winter trees and construction crane in background. No watermark, stock stamp, or photographer credit found in any of the six crops (tl/tr corners are plain sky; bl/br show building wall and crane, no text overlays). Approve as Bend identifiable. Portrait orientation suits card tile; too narrow for hero banner. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
+      "notes": "[rescreen 2026-06-03] identifiable/bend: Old Mill District tower in Bend — recognizable neon '5 Market' landmark with bare winter trees and construction crane in background. No watermark, stock stamp, or photographer credit found in any of the six crops (tl/tr corners are plain sky; bl/br show building wall and crane, no text overlays). Approve as Bend identifiable. Portrait orientation suits card tile; too narrow for hero banner. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
       "file_path": "public/asset-library/photos/curated/2201e1f7-81cd-46e7-9347-621f01b99c7f.jpg",
       "vision_caption": "Close-up telephoto shot of the Old Mill District clock tower with the '55' numerals and an American flag against a pale sky and bare trees.",
       "vision_scene": "street-downtown",
@@ -32238,7 +32238,7 @@
       "approval": "intake",
       "notes": "Ingested from Google Drive (sisters_08_2al-kyhv7iM.jpg)",
       "file_path": "public/asset-library/photos/curated/806cbf10-8d0d-4ef3-abbb-c44fef597915.jpg",
-      "vision_caption": "A wide river scene with a shallow rocky creek flowing toward two snow-dusted volcanic peaks \u2014 two distinct summits visible \u2014 under a bright blue sky, with green marsh vegetation in the foreground.",
+      "vision_caption": "A wide river scene with a shallow rocky creek flowing toward two snow-dusted volcanic peaks — two distinct summits visible — under a bright blue sky, with green marsh vegetation in the foreground.",
       "vision_scene": "river-water",
       "vision_quality": "B",
       "vision_watermark": false
@@ -32742,7 +32742,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "intake",
-      "notes": "[rescreen 2026-06-03] identifiable/terrebonne: No watermarks or credits in any crop. Elevated view showing the Crooked River's signature bend flanked by red tuff columns on the left and the flat rimrock plateau above \u2014 definitively Smith Rock State Park (Terrebonne). Wide vertical composition suits hero use. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
+      "notes": "[rescreen 2026-06-03] identifiable/terrebonne: No watermarks or credits in any crop. Elevated view showing the Crooked River's signature bend flanked by red tuff columns on the left and the flat rimrock plateau above — definitively Smith Rock State Park (Terrebonne). Wide vertical composition suits hero use. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
       "file_path": "public/asset-library/photos/curated/5f526d9f-d34a-4b51-85d6-0af9c89d1195.jpg",
       "vision_caption": "A dramatic portrait view of a river canyon with layered tan and grey volcanic rock walls and a turquoise river winding through the base under cloudy skies.",
       "vision_scene": "river-water",
@@ -33910,7 +33910,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "intake",
-      "notes": "[rescreen 2026-06-03] identifiable/bend: No watermarks or text in any corner or center crop. Conical basalt peak with scrubby pines and warm-toned sunset sky \u2014 matches Pilot Butte in Bend. Distinctively Central Oregon high-desert rimrock; no coastal, Mt Hood, or foreign indicators. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
+      "notes": "[rescreen 2026-06-03] identifiable/bend: No watermarks or text in any corner or center crop. Conical basalt peak with scrubby pines and warm-toned sunset sky — matches Pilot Butte in Bend. Distinctively Central Oregon high-desert rimrock; no coastal, Mt Hood, or foreign indicators. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
       "file_path": "public/asset-library/photos/curated/c09b12a0-bf3f-4c11-b839-52aae1351d56.jpg",
       "vision_caption": "A rugged rocky mountain peak with scattered pine trees and partial snow cover under a dramatic orange-tinted cloudy sky at sunset or sunrise.",
       "vision_scene": "mountain-landscape",
@@ -35802,7 +35802,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "intake",
-      "notes": "[rescreen 2026-06-03] identifiable/bend: No watermarks or stock stamps found in any corner or centre crop. The tall waterfall, distinctive basalt column walls, and conifer-lined canyon are unmistakably Tumalo Falls west of Bend, OR \u2014 a definitive identifiable landmark. Place slug = bend. Clean editorial-style shot, good resolution for both hero and card use. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
+      "notes": "[rescreen 2026-06-03] identifiable/bend: No watermarks or stock stamps found in any corner or centre crop. The tall waterfall, distinctive basalt column walls, and conifer-lined canyon are unmistakably Tumalo Falls west of Bend, OR — a definitive identifiable landmark. Place slug = bend. Clean editorial-style shot, good resolution for both hero and card use. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
       "file_path": "public/asset-library/photos/curated/1feba5fd-5551-4d09-89a7-8929cac9c0bc.jpg",
       "vision_caption": "A tall waterfall dropping through a narrow basalt canyon surrounded by dense evergreen forest.",
       "vision_scene": "river-water",
@@ -36025,7 +36025,7 @@
       "last_used_at": null,
       "used_in": [],
       "approval": "intake",
-      "notes": "[rescreen 2026-06-03] identifiable/bend: No watermarks or text anywhere in all six crops. Tall single-drop waterfall over columnar basalt with ponderosa/fir forest and fall foliage \u2014 this is definitively Tumalo Falls west of Bend, a well-known Central Oregon landmark. Assigned place=bend (Tumalo Falls is in the Bend park system). Wide composition suits hero; vertical framing also works as card. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
+      "notes": "[rescreen 2026-06-03] identifiable/bend: No watermarks or text anywhere in all six crops. Tall single-drop waterfall over columnar basalt with ponderosa/fir forest and fall foliage — this is definitively Tumalo Falls west of Bend, a well-known Central Oregon landmark. Assigned place=bend (Tumalo Falls is in the Bend park system). Wide composition suits hero; vertical framing also works as card. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
       "file_path": "public/asset-library/photos/curated/9863e327-bf7a-4d32-9fda-8964b6cd41ad.jpg",
       "vision_caption": "A tall single-drop waterfall plunges from a high basalt cliff into a rocky streambed surrounded by autumn-colored trees.",
       "vision_scene": "river-water",
@@ -42789,10 +42789,10 @@
         "license": "Pexels License (free)",
         "pexels_id": 13953867,
         "pexels_url": "https://www.pexels.com/photo/grayscale-photo-of-a-man-standing-on-a-paddleboard-13953867/",
-        "photographer": "Tanhauser V\u00e1zquez R.",
+        "photographer": "Tanhauser Vázquez R.",
         "photographer_url": "https://www.pexels.com/@tanhauser"
       },
-      "creator": "Tanhauser V\u00e1zquez R.",
+      "creator": "Tanhauser Vázquez R.",
       "creator_url": "https://www.pexels.com/@tanhauser",
       "storage_bucket": "asset-library",
       "storage_object_path": "photos/pexels/30dff817-d344-4df3-82a1-980c61953ebd.jpg",
@@ -44417,7 +44417,7 @@
         "license_required": false,
         "attribution_encouraged": true
       },
-      "creator": "Ahmet Can Avc\u0131",
+      "creator": "Ahmet Can Avcı",
       "creator_url": "https://www.pexels.com/@ahmet-can-avci-484300061",
       "storage_bucket": "asset-library",
       "storage_object_path": "photos/pexels/32031151.jpg",
@@ -45144,7 +45144,7 @@
         "license_required": false,
         "attribution_encouraged": true
       },
-      "creator": "Mario Am\u00e9",
+      "creator": "Mario Amé",
       "creator_url": "https://www.pexels.com/@imperioame",
       "storage_bucket": "asset-library",
       "storage_object_path": "photos/pexels/13359834.jpg",
@@ -45284,6 +45284,123 @@
         "golf"
       ],
       "file_path": "public/asset-library/photos/pexels/33718225.jpg"
+    },
+    {
+      "id": "467c35f9-ebba-4aaa-b6e7-9d950e8d9412",
+      "type": "photo",
+      "source": "curated",
+      "source_id": "drive:1XIGQJ5AKqOwIT7vMpIwOmhQtviNJ5HCT",
+      "license": "owned",
+      "license_metadata": {
+        "drive_name": "Area Guide - The Eight at Old Mill - 02.JPG",
+        "drive_file_id": "1XIGQJ5AKqOwIT7vMpIwOmhQtviNJ5HCT",
+        "drive_modified_time": "2025-05-08T17:31:19.000Z"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/curated/467c35f9-ebba-4aaa-b6e7-9d950e8d9412.JPG",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/467c35f9-ebba-4aaa-b6e7-9d950e8d9412.JPG",
+      "file_size_bytes": 7827027,
+      "geo_tags": [
+        "the-eight-at-the-old-mill",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "area-guide",
+        "landscape",
+        "exterior"
+      ],
+      "search_query": "Drive ingest: Area Guide - The Eight at Old Mill - 02.JPG",
+      "width": 4200,
+      "height": 2957,
+      "duration_sec": null,
+      "registered_at": "2026-06-19T20:20:31.43+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Ingested from Google Drive (Area Guide - The Eight at Old Mill - 02.JPG)",
+      "surface_tags": [],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/curated/467c35f9-ebba-4aaa-b6e7-9d950e8d9412.JPG"
+    },
+    {
+      "id": "d0acae09-0a81-481d-86f2-7014f1cfaade",
+      "type": "photo",
+      "source": "curated",
+      "source_id": "drive:1muvvbMWuIyhstd0cposTId6mmcnZ0Pxe",
+      "license": "owned",
+      "license_metadata": {
+        "drive_name": "Area Guide - Cascade Meadow Ranch - 03.JPG",
+        "drive_file_id": "1muvvbMWuIyhstd0cposTId6mmcnZ0Pxe",
+        "drive_modified_time": "2025-04-27T07:34:24.000Z"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/curated/d0acae09-0a81-481d-86f2-7014f1cfaade.JPG",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/d0acae09-0a81-481d-86f2-7014f1cfaade.JPG",
+      "file_size_bytes": 11749743,
+      "geo_tags": [
+        "cascade-meadow-ranch",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "area-guide",
+        "landscape",
+        "exterior"
+      ],
+      "search_query": "Drive ingest: Area Guide - Cascade Meadow Ranch - 03.JPG",
+      "width": 4200,
+      "height": 3150,
+      "duration_sec": null,
+      "registered_at": "2026-06-19T20:27:57.012+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Ingested from Google Drive (Area Guide - Cascade Meadow Ranch - 03.JPG)",
+      "surface_tags": [],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/curated/d0acae09-0a81-481d-86f2-7014f1cfaade.JPG"
+    },
+    {
+      "id": "4db4da4d-e7b4-4d2f-a372-df365ab7c563",
+      "type": "photo",
+      "source": "curated",
+      "source_id": "drive:1zX3riI_Ljtdzm4ugu8fit1ktA-q7slrI",
+      "license": "owned",
+      "license_metadata": {
+        "drive_name": "Area Guide - Sisters - 13.JPG",
+        "drive_file_id": "1zX3riI_Ljtdzm4ugu8fit1ktA-q7slrI",
+        "drive_modified_time": "2025-04-27T07:31:18.000Z"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/curated/4db4da4d-e7b4-4d2f-a372-df365ab7c563.JPG",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/4db4da4d-e7b4-4d2f-a372-df365ab7c563.JPG",
+      "file_size_bytes": 11864956,
+      "geo_tags": [
+        "sisters",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "area-guide",
+        "landscape",
+        "exterior"
+      ],
+      "search_query": "Drive ingest: Area Guide - Sisters - 13.JPG",
+      "width": 4200,
+      "height": 3150,
+      "duration_sec": null,
+      "registered_at": "2026-06-19T20:28:13.068+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Ingested from Google Drive (Area Guide - Sisters - 13.JPG)",
+      "surface_tags": [],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/curated/4db4da4d-e7b4-4d2f-a372-df365ab7c563.JPG"
     }
   ]
 }
