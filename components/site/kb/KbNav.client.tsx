@@ -101,12 +101,12 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
               {l.label}
             </a>
           ))}
-          <button className="menu-btn" onClick={() => setOpen(true)} aria-expanded={open} aria-label="Open menu">
+          <button className="menu-btn" onClick={() => setOpen(true)} aria-expanded={open} aria-controls="menu-overlay" aria-label="Open menu">
             Menu +
           </button>
         </nav>
       </header>
-      <div className={`menu-overlay${open ? ' open' : ''}`} aria-hidden={!open}>
+      <div id="menu-overlay" className={`menu-overlay${open ? ' open' : ''}`} aria-hidden={!open}>
         <div className="menu-top">
           <a href="/" aria-label="Ryan Realty home">
             <img className="logo-img" src="/images/brand/logo-horizontal-navy-transparent.png" alt="Ryan Realty" />
@@ -118,7 +118,7 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
         <nav className="menu-nav menu-grid">
           {MENU_GROUPS.map((g) => (
             <div className="menu-group" key={g.title}>
-              <span className="menu-group-title">{g.title}</span>
+              <h3 className="menu-group-title">{g.title}</h3>
               {g.links.map((l) => (
                 <a key={l.href} href={l.href} onClick={() => setOpen(false)}>
                   {l.label}

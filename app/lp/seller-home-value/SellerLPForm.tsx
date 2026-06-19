@@ -260,7 +260,7 @@ export default function SellerLPForm({
         >
           {pending ? 'Working…' : isListNow ? 'Start my home sale →' : 'Get my home value →'}
         </Button>
-        <SmsConsentDisclosure tone="on-dark" className="mt-3 text-center" />
+        <SmsConsentDisclosure tone="on-dark" className="mt-3 text-center [text-shadow:0_1px_3px_rgba(0,0,0,0.55)]" />
       </form>
     )
   }
@@ -271,7 +271,7 @@ export default function SellerLPForm({
       <form
         id={formId}
         onSubmit={advanceFromAddress}
-        className="scroll-mt-24 rounded-2xl border border-primary/15 bg-card p-6 text-left shadow-sm sm:p-8"
+        className="scroll-mt-24 rounded-2xl border border-primary/15 bg-card p-6 text-left text-foreground shadow-sm sm:p-8"
         aria-labelledby={`${formId}-heading`}
         noValidate
       >

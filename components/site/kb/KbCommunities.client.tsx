@@ -101,6 +101,7 @@ export function KbCommunities({ communities, eyebrow = 'Communities' }: { commun
                 ref={register(c.href)}
                 className={`comm-card${playing ? ' playing' : ''}`}
                 href={c.href}
+                aria-label={`${c.name} – ${c.activeCount.toLocaleString('en-US')} active listings in ${c.town}. View community.`}
                 onMouseEnter={() => setHovered(c.href)}
                 onMouseLeave={() => setHovered((p) => (p === c.href ? null : p))}
                 onFocus={() => setHovered(c.href)}

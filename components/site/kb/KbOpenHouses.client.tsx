@@ -135,7 +135,11 @@ export function KbOpenHouses({
 
         <div className={hasRail ? 'oh-board has-rail' : 'oh-board'}>
           {/* LEAD — the next open house, full-bleed cinematic panel */}
-          <a className="oh-lead" href={lead.href}>
+          <a
+            className="oh-lead"
+            href={lead.href}
+            aria-label={`Open house: ${lead.address}${leadPrice ? `, ${leadPrice}` : ''}, ${leadWhen.day}${leadWhen.time ? ` ${leadWhen.time}` : ''}`}
+          >
             <div className="oh-lead-media">
               {lead.photoUrl ? (
                 <img className="oh-lead-img" src={lead.photoUrl} alt={lead.address} loading="lazy" />

@@ -147,7 +147,7 @@ export default async function ListYourHomePage() {
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_auto] lg:items-end lg:gap-16">
             {/* Left: confident claim line */}
             <div className="max-w-xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
                 Bend · Oregon · List your home
               </p>
               <h1 className="mt-4 font-display text-4xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-5xl lg:text-6xl">
@@ -200,7 +200,7 @@ export default async function ListYourHomePage() {
       <section className="border-b-[3px] border-[#102742] bg-[#faf8f4] py-16 sm:py-20">
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
               The difference
             </p>
             <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
@@ -233,7 +233,7 @@ export default async function ListYourHomePage() {
       <section className="border-b-[3px] border-[#102742] bg-[#faf8f4] py-16 sm:py-20">
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
               Who lists your home
             </p>
             <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
@@ -260,7 +260,7 @@ export default async function ListYourHomePage() {
               <div className="mt-3">
                 <p className="font-display text-xl uppercase leading-none tracking-[-0.01em] text-[#102742]">Matt Ryan</p>
                 <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#102742]/65">Principal Broker · Founder</p>
-                <p className="mt-1.5 text-sm leading-relaxed text-[#102742]/60">Founded Ryan Realty in 2023. Licensed in Oregon since 2021.</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-[#102742]/70">Founded Ryan Realty in 2023. Licensed in Oregon since 2021.</p>
               </div>
             </ScrollReveal>
 
@@ -279,7 +279,7 @@ export default async function ListYourHomePage() {
                 <div className="mt-3">
                   <p className="font-display text-base uppercase leading-none tracking-[-0.01em] text-[#102742]">Paul Stevenson</p>
                   <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#102742]/65">Broker</p>
-                  <p className="mt-1 text-xs leading-relaxed text-[#102742]/60">Buyers and sellers across Bend.</p>
+                  <p className="mt-1 text-xs leading-relaxed text-[#102742]/70">Buyers and sellers across Bend.</p>
                 </div>
               </ScrollReveal>
 
@@ -296,7 +296,7 @@ export default async function ListYourHomePage() {
                 <div className="mt-3">
                   <p className="font-display text-base uppercase leading-none tracking-[-0.01em] text-[#102742]">Rebecca Peterson</p>
                   <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#102742]/65">Broker</p>
-                  <p className="mt-1 text-xs leading-relaxed text-[#102742]/60">NW Crossing and Westside Bend.</p>
+                  <p className="mt-1 text-xs leading-relaxed text-[#102742]/70">NW Crossing and Westside Bend.</p>
                 </div>
               </ScrollReveal>
             </div>
@@ -312,7 +312,7 @@ export default async function ListYourHomePage() {
         <section className="border-b-[3px] border-[#102742] bg-[#faf8f4] py-16 sm:py-20">
           <div className="mx-auto max-w-5xl px-4 sm:px-6">
             <ScrollReveal className="mb-10">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
                 Closed · Verified
               </p>
               <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
@@ -416,7 +416,7 @@ export default async function ListYourHomePage() {
           <ScrollReveal>
             <div className="flex items-baseline justify-between gap-6">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
                   In their words
                 </p>
                 <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">

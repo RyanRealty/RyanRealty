@@ -216,7 +216,7 @@ export default function FsboLPPage() {
       <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
         <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-20">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
               Side by side
             </p>
             <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
@@ -266,7 +266,7 @@ export default function FsboLPPage() {
       <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-2">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
               No strings
             </p>
             <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
@@ -283,7 +283,7 @@ export default function FsboLPPage() {
           </ScrollReveal>
           <ScrollReveal delayMs={100}>
             <div className="mx-auto w-full max-w-sm border-[3px] border-[#102742] bg-[#faf8f4] p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#102742]/60">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#102742]/70">
                 Your pricing report
               </p>
               <p className="mt-1 font-display text-xl uppercase leading-[0.95] tracking-[-0.01em] text-[#102742]">
@@ -307,7 +307,7 @@ export default function FsboLPPage() {
         <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-20">
           <ScrollReveal>
             <div className="border-[3px] border-[#102742] bg-[#faf8f4] p-7 sm:p-10">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
                 When it changes
               </p>
               <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
@@ -342,7 +342,7 @@ export default function FsboLPPage() {
         <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
           <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-16">
             <ScrollReveal>
-              <p className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+              <p className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
                 What past sellers say
               </p>
               <ReviewStrip reviews={FSBO_LP_REVIEWS} tone="light" />
@@ -355,7 +355,7 @@ export default function FsboLPPage() {
       <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
         <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-20">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
               Common questions
             </p>
             <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">

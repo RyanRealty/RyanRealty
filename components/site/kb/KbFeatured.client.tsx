@@ -70,6 +70,7 @@ export function KbFeatured({ items, eyebrow = 'Featured homes' }: { items: KbFea
                 ref={register(it.href)}
                 className={`lst-card${playing ? ' playing' : ''}`}
                 href={it.href}
+                aria-label={`${it.address}, ${it.city}${it.price ? ` – ${kbMoneyFull(it.price)}` : ''}${it.beds != null ? `, ${it.beds} bed` : ''}${it.baths != null ? `, ${it.baths} bath` : ''}. View listing.`}
                 onMouseEnter={() => enter(it.href)}
                 onMouseLeave={() => leave(it.href)}
                 onFocus={() => enter(it.href)}

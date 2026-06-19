@@ -70,8 +70,8 @@ export function KbSell({ data, eyebrow = 'Sell with us' }: { data: KbSellData; e
               value={address}
               onChange={(e) => setAddress(e.target.value)}
             />
-            <button type="submit" className="btn">
-              Value my home <span className="arr">→</span>
+            <button type="submit" className="btn" aria-label="Value my home">
+              Value my home <span className="arr" aria-hidden="true">→</span>
             </button>
           </form>
           <div className="sell-data">

@@ -38,7 +38,12 @@ export function KbArticles({ posts, eyebrow, heading, subtitle }: KbArticlesProp
         {subtitle ? <p className="art-sub">{subtitle}</p> : null}
         <div className="art-grid">
           {posts.map((p) => (
-            <a key={p.href} className="art-card" href={p.href}>
+            <a
+              key={p.href}
+              className="art-card"
+              href={p.href}
+              aria-label={`${p.title}${p.dateLabel ? `, published ${p.dateLabel}` : ''}. Read the guide.`}
+            >
               <div className="art-media">
                 {p.imageUrl ? (
                   <img

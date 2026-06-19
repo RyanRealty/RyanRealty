@@ -254,7 +254,7 @@ export function KbListingMap({
         </div>
         <p className="neigh-sub">{subtitle}</p>
         <div className="neigh-map" id="neighMap">
-          <div id="kbMap" ref={el} role="img" aria-label="Map of active single-family listings; the same homes are listed as text above and below." />
+          <div id="kbMap" ref={el} role="region" aria-label="Map of active single-family listings" />
           <div className="neigh-legend">
             <span className="nl-live">
               <span className="dot" /> Live · MLS

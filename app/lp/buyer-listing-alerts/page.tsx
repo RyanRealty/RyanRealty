@@ -317,7 +317,7 @@ export default async function BuyerLPPage() {
       <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
               Where we watch
             </p>
             <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
@@ -371,7 +371,7 @@ export default async function BuyerLPPage() {
               </ScrollReveal>
             ))}
           </div>
-          <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#102742]/55">
+          <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#102742]/70">
             Live counts · single-family listings by MLS subdivision · refreshed with the market
             snapshot
           </p>
@@ -382,7 +382,7 @@ export default async function BuyerLPPage() {
       <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
         <div className="mx-auto max-w-4xl px-4 py-14 sm:px-6 sm:py-20">
           <ScrollReveal>
-            <p className="text-center text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+            <p className="text-center text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
               Three steps
             </p>
             <h2 className="mt-3 text-center font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
@@ -419,7 +419,7 @@ export default async function BuyerLPPage() {
       <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-2">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
               Buy from anywhere
             </p>
             <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
@@ -486,7 +486,7 @@ export default async function BuyerLPPage() {
         <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
           <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-16">
             <ScrollReveal>
-              <p className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+              <p className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
                 What past buyers say
               </p>
               <ReviewStrip reviews={BUYER_LP_REVIEWS} tone="light" />
@@ -499,7 +499,7 @@ export default async function BuyerLPPage() {
       <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
         <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-20">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
               Common questions
             </p>
             <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">

@@ -207,7 +207,7 @@ export default async function ExpiredListingPage() {
       <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
         <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
               The diagnosis
             </p>
             <h2 className="mt-3 font-display text-2xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-3xl">
@@ -240,7 +240,7 @@ export default async function ExpiredListingPage() {
       <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-2">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
               What you get
             </p>
             <h2 className="mt-3 font-display text-2xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-3xl">
@@ -262,7 +262,7 @@ export default async function ExpiredListingPage() {
           {/* Mini report mock — typographic, honest placeholder slots. */}
           <ScrollReveal delayMs={100}>
             <div className="mx-auto w-full max-w-sm border-[3px] border-[#102742] bg-[#faf8f4] p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#102742]/60">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#102742]/70">
                 Listing audit
               </p>
               <p className="mt-1 font-display text-xl uppercase leading-[0.95] tracking-[-0.01em] text-[#102742]">
@@ -289,7 +289,7 @@ export default async function ExpiredListingPage() {
                   </p>
                 </div>
               </div>
-              <p className="mt-3 text-right text-[11px] text-[#102742]/55">
+              <p className="mt-3 text-right text-[11px] text-[#102742]/70">
                 Sample layout · your audit carries your listing
               </p>
             </div>
@@ -307,7 +307,7 @@ export default async function ExpiredListingPage() {
           ) : null}
           {EXPIRED_LP_REVIEWS.length > 0 ? (
             <ScrollReveal className="mt-8 border-t-[3px] border-[#102742] pt-10">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
                 What past sellers say
               </p>
               <ReviewStrip reviews={EXPIRED_LP_REVIEWS} tone="light" />
@@ -321,7 +321,7 @@ export default async function ExpiredListingPage() {
         <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
           <ScrollReveal>
             <div className="border-[3px] border-[#102742] bg-[#faf8f4] p-7 sm:p-10">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
                 From the broker
               </p>
               <h2 className="mt-3 font-display text-2xl uppercase leading-snug tracking-[-0.01em] text-[#102742] sm:text-3xl">
@@ -371,7 +371,7 @@ export default async function ExpiredListingPage() {
       <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
         <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
               Common questions
             </p>
             <h2 className="mt-3 font-display text-2xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-3xl">
