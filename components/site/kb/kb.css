@@ -1383,6 +1383,12 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .kbmc-tip-sw{width:9px;height:9px;flex-shrink:0;}
 .kb-root .kbmc-vgrid{stroke:var(--cream-05);stroke-width:1;}
 .kb-root .kbmc-vgrid.edge{stroke:var(--cream-40);}
+/* Current-year "as of" cutoff: shade the not-yet-happened months + a dashed
+   divider, so a current-year line that stops mid-axis reads as "year so far". */
+.kb-root .kbmc-future{fill:var(--cream-05);}
+.kb-root .kbmc-asof{stroke:var(--cream-40);stroke-width:1;stroke-dasharray:3 3;}
+.kb-root .kbmc-asof-label{position:absolute;top:2px;font-size:.56rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--cream-70);white-space:nowrap;transform:translateX(6px);}
+.kb-root .kbmc-asof-label[data-side="left"]{transform:translateX(calc(-100% - 6px));}
 .kb-root .kbmc-xaxis{position:relative;height:14px;margin-top:9px;}
 .kb-root .kbmc-xtick{position:absolute;top:0;font-size:.6rem;font-weight:600;letter-spacing:.05em;color:var(--cream-40);transition:color .15s ease;}
 .kb-root .kbmc-xtick[data-anchor="mid"]{transform:translateX(-50%);}

@@ -227,6 +227,37 @@ function cleanText(s: string | null | undefined): string | null {
 }
 
 /**
+ * Format an MLS multi-select field the RETS feed stores as a JSON object of
+ * {Label: true} — e.g. architectural_style = '{"Craftsman": true, "Northwest": true}',
+ * roof = '{"Composition": true, "Membrane": true}'. Returns the truthy labels
+ * joined ("Craftsman, Northwest"), a plain string as-is, or null for the privacy
+ * sentinel / empty / unparseable. Without this the raw '{"Northwest": true}' JSON
+ * was rendering verbatim on the listing detail page (Matt report 2026-06-19).
+ */
+function formatMlsMultiSelect(s: string | null | undefined): string | null {
+  const t = cleanText(s)
+  if (!t) return null
+  if (t.startsWith('{') || t.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(t) as unknown
+      if (Array.isArray(parsed)) {
+        const labels = parsed.filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+        return labels.length ? labels.join(', ') : null
+      }
+      if (parsed && typeof parsed === 'object') {
+        const obj = parsed as Record<string, unknown>
+        const labels = Object.keys(obj).filter((k) => obj[k] === true || obj[k] === 'true')
+        return labels.length ? labels.join(', ') : null
+      }
+      return null
+    } catch {
+      return null // an object/array-shaped string we cannot parse must not render raw
+    }
+  }
+  return t
+}
+
+/**
  * Guard a numeric field against the MLS `'********'` sentinel. Our schema
  * types these columns as numeric/smallint so PostgREST returns a number when
  * the value is real; a masked value comes back as the asterisk string. Only a
@@ -306,7 +337,7 @@ function rowToDetail(row: ListingRow): ListingDetail {
     totalLivingAreaSqFt: row.TotalLivingAreaSqFt,
     fireplaceYn: row.fireplace_yn,
     waterfrontYn: row.waterfront_yn,
-    architecturalStyle: cleanText(row.architectural_style),
+    architecturalStyle: formatMlsMultiSelect(row.architectural_style),
     newConstructionYn: row.new_construction_yn,
     schoolDistrict: cleanText(row.school_district),
     elementarySchool: row.elementary_school,
@@ -332,12 +363,12 @@ function rowToDetail(row: ListingRow): ListingDetail {
     spaYn: row.spa_yn,
     // Exterior / lot
     lotSizeSqft: cleanNumber(row.lot_size_sqft),
-    lotFeatures: cleanText(row.lot_features),
-    fencing: cleanText(row.fencing),
+    lotFeatures: formatMlsMultiSelect(row.lot_features),
+    fencing: formatMlsMultiSelect(row.fencing),
     directionFaces: cleanText(row.direction_faces),
-    viewDescription: cleanText(row.view_description),
-    roof: cleanText(row.roof),
-    constructionMaterials: cleanText(row.construction_materials),
+    viewDescription: formatMlsMultiSelect(row.view_description),
+    roof: formatMlsMultiSelect(row.roof),
+    constructionMaterials: formatMlsMultiSelect(row.construction_materials),
     foundationDetails: cleanText(row.foundation_details),
     propertyAttachedYn: row.property_attached_yn,
     // Parking
