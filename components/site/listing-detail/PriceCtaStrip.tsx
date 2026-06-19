@@ -2,13 +2,11 @@
 
 import { useState } from 'react'
 import {
-  CTAButton,
   DisplayHeading,
   MiddleDot,
   Price,
   TabularNumber,
 } from '@/components/site/primitives'
-import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { ListingDetail } from '@/lib/data/types/listing'
 
@@ -65,16 +63,19 @@ type Props = {
   className?: string
 }
 
-const PILL_TONE = {
-  Active: 'bg-success/12 text-success-foreground border-success/25',
-  'Coming Soon': 'bg-warning/15 text-foreground border-warning/25',
-  'Active Under Contract': 'bg-warning/15 text-foreground border-warning/25',
-  Pending: 'bg-primary text-primary-foreground border-transparent',
-  Closed: 'bg-muted text-foreground border-border',
-  Withdrawn: 'bg-muted text-foreground border-border',
-  Expired: 'bg-muted text-foreground border-border',
-  Canceled: 'bg-muted text-foreground border-border',
-} as const
+// KB pill registry. Brutalist navy-on-cream chips: a filled navy chip for
+// the live/active states (the strongest visual weight), a cream chip with a
+// 2px navy edge for everything else. `filled` flips the chip to navy ground.
+const PILL_TONE: Record<string, { filled: boolean }> = {
+  Active: { filled: true },
+  'Coming Soon': { filled: true },
+  'Active Under Contract': { filled: false },
+  Pending: { filled: true },
+  Closed: { filled: false },
+  Withdrawn: { filled: false },
+  Expired: { filled: false },
+  Canceled: { filled: false },
+}
 
 function statusDot(status: string): string {
   if (status === 'Active' || status === 'Coming Soon') return '●'
@@ -164,31 +165,35 @@ export function PriceCtaStrip({
     <div
       className={cn(className)}
       style={{
-        borderBottom: '3px solid var(--navy, #102742)',
+        borderBottom: '3px solid var(--navy)',
         paddingBottom: '1.5rem',
         paddingTop: '1.5rem',
       }}
     >
       <DisplayHeading
         as="h1"
-        className="text-foreground text-[clamp(2.2rem,4vw,2.75rem)] leading-none tracking-[-0.02em]"
+        className="text-[clamp(2.2rem,4vw,2.75rem)] leading-none tracking-[-0.02em]"
+        style={{ color: 'var(--navy)' }}
       >
         <Price value={headlinePrice} />
       </DisplayHeading>
       {street ? (
-        <div className="mt-1 text-[18px] text-foreground">{street}</div>
+        <div className="mt-1 text-[18px]" style={{ color: 'var(--navy)' }}>
+          {street}
+        </div>
       ) : null}
       {cityWithCommunity ? (
-        <div className="mt-0.5 text-sm text-muted-foreground">{cityWithCommunity}</div>
+        <div className="mt-0.5 text-sm" style={{ color: 'rgba(16,39,66,0.62)' }}>
+          {cityWithCommunity}
+        </div>
       ) : null}
 
       {drop ? (
-        <div className="mt-2 text-[13px] text-muted-foreground">
+        <div className="mt-2 text-[13px]" style={{ color: 'rgba(16,39,66,0.62)' }}>
           Down <Price value={drop} /> from original list price{' '}
-          <Price
-            value={listing.originalListPrice}
-            className="line-through text-muted-foreground/70"
-          />
+          <span style={{ color: 'rgba(16,39,66,0.42)' }}>
+            <Price value={listing.originalListPrice} className="line-through" />
+          </span>
           {listing.priceDropCount && listing.priceDropCount > 1 ? (
             <> after {listing.priceDropCount} price changes.</>
           ) : (
@@ -221,27 +226,41 @@ export function PriceCtaStrip({
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2.5">
-        <CTAButton href={tourHref} tone="primary" size="lg">
-          Schedule a tour
-        </CTAButton>
-        <CTAButton href={askHrefResolved} tone="outline" size="lg">
+        {/* Primary action — navy-filled KB button (.btn.alt) on the cream strip. */}
+        <a href={tourHref} className="btn alt">
+          Schedule a tour <span className="arr">→</span>
+        </a>
+        {/* Secondary actions — outlined navy KB buttons on cream. */}
+        <a href={askHrefResolved} className="btn" style={OUTLINE_BTN_STYLE}>
           Ask a question
-        </CTAButton>
-        <CTAButton
-          tone="outline"
-          size="lg"
+        </a>
+        <button
+          type="button"
+          className="btn"
+          style={OUTLINE_BTN_STYLE}
           onClick={handleSave}
           disabled={saveState === 'saving'}
           aria-pressed={saveState === 'saved'}
         >
           {saveState === 'saved' ? 'Saved' : saveState === 'saving' ? 'Saving...' : 'Save'}
-        </CTAButton>
-        <CTAButton tone="outline" size="lg" onClick={handleShare}>
+        </button>
+        <button type="button" className="btn" style={OUTLINE_BTN_STYLE} onClick={handleShare}>
           Share
-        </CTAButton>
+        </button>
       </div>
     </div>
   )
+}
+
+// Outlined-on-cream variant of the KB .btn. The base .btn ships a cream
+// ground + cream edge (built for navy surfaces); on this cream strip we flip
+// it to a transparent ground with a 2px navy edge + navy text so the
+// secondary actions read as outlined brutalist chips next to the navy-filled
+// primary (.btn.alt).
+const OUTLINE_BTN_STYLE: React.CSSProperties = {
+  background: 'transparent',
+  color: 'var(--navy)',
+  borderColor: 'var(--navy)',
 }
 
 function Pill({
@@ -251,23 +270,32 @@ function Pill({
   kind: keyof typeof PILL_TONE | 'dom' | 'psqft'
   children: React.ReactNode
 }) {
-  let cls: string
-  if (kind === 'dom') {
-    cls = 'bg-muted text-foreground border-border'
-  } else if (kind === 'psqft') {
-    cls = 'bg-primary/8 text-primary border-primary/20'
-  } else {
-    cls = (PILL_TONE as Record<string, string>)[kind] ?? 'bg-muted text-foreground border-border'
-  }
+  // dom + psqft are always quiet cream chips; status chips can flip to a
+  // filled navy ground for the live/active states.
+  const filled = kind === 'dom' || kind === 'psqft' ? false : (PILL_TONE[kind]?.filled ?? false)
+  const navy = 'var(--navy)'
+  const cream = 'var(--cream)'
   return (
-    <Badge
-      className={cn(
-        'gap-1.5 rounded-full border px-3 py-[5px] text-xs font-semibold tabular-nums h-auto',
-        cls,
-      )}
+    <span
+      className="mono-lab"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        // Square brutalist chip — hard 2px navy edge, no rounding.
+        border: `2px solid ${navy}`,
+        background: filled ? navy : 'transparent',
+        color: filled ? cream : navy,
+        // mono-lab ships a cream tone for dark surfaces; force the on-cream values.
+        padding: '5px 11px',
+        fontSize: '0.62rem',
+        letterSpacing: '0.14em',
+        fontVariantNumeric: 'tabular-nums',
+        lineHeight: 1.1,
+      }}
     >
       {children}
-    </Badge>
+    </span>
   )
 }
 

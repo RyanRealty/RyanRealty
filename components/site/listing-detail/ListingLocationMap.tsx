@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { Eyebrow, H3, Stack } from '@/components/site/primitives'
+import { cn } from '@/lib/utils'
 
 /**
  * ListingLocationMap — 21:9 aspect map with the listing pin + optional
@@ -26,7 +26,11 @@ const ListingLocationMapClient = dynamic(() => import('./ListingLocationMap.clie
   loading: () => (
     <div
       aria-hidden
-      className="h-full w-full animate-pulse rounded-[14px] border border-border bg-card"
+      className="h-full w-full animate-pulse"
+      style={{
+        background: 'var(--cream)',
+        border: '3px solid var(--navy)',
+      }}
     />
   ),
 })
@@ -53,12 +57,18 @@ export function ListingLocationMap({
   if (lat == null || lng == null) return null
 
   return (
-    <Stack gap="default" className={className}>
-      <div>
-        <Eyebrow>Location</Eyebrow>
-        <H3 className="mt-1.5">Where this home sits</H3>
+    <section className={cn('section', className)}>
+      <div className="sec-head">
+        <div>
+          <div className="eyebrow sec-index">Location</div>
+          <h2 className="sec-title display">Where this home sits</h2>
+        </div>
       </div>
-      <div className="relative w-full self-stretch" style={{ aspectRatio: '21 / 9' }}>
+
+      <div
+        className="relative w-full self-stretch"
+        style={{ aspectRatio: '21 / 9', marginTop: 'clamp(22px,3vw,36px)' }}
+      >
         <div className="absolute inset-0">
           <ListingLocationMapClient
             lat={lat}
@@ -69,8 +79,19 @@ export function ListingLocationMap({
         </div>
       </div>
       {lifestyleLine ? (
-        <div className="text-[13px] text-muted-foreground tabular-nums">{lifestyleLine}</div>
+        <div
+          className="tabular-nums"
+          style={{
+            marginTop: 14,
+            fontSize: '0.78rem',
+            fontWeight: 500,
+            letterSpacing: '0.02em',
+            color: 'rgba(16,39,66,0.55)',
+          }}
+        >
+          {lifestyleLine}
+        </div>
       ) : null}
-    </Stack>
+    </section>
   )
 }

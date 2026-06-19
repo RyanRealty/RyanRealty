@@ -61,22 +61,41 @@ export function ListingVideoEmbed({ videos, className, variant = 'video' }: Prop
           // not stretch its children), and aspect-video derives height FROM
           // width — without w-full the box collapses to ~0 and the absolute
           // iframe/video has nothing to fill (the "empty 3D tour box" bug).
-          'relative w-full rounded-[14px] overflow-hidden bg-muted border border-border',
+          'relative w-full overflow-hidden',
           orientationClass,
         )}
+        style={{
+          background: 'var(--navy)',
+          border: '3px solid var(--navy)',
+        }}
       >
         {video.embedType === 'link' ? (
           <a
             href={video.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-primary/30 to-primary/10 text-primary-foreground"
+            className="absolute inset-0 flex flex-col items-center justify-center gap-3"
+            style={{ background: 'var(--navy)', color: 'var(--cream)' }}
             aria-label={`${ctaLabel} (opens in a new tab)`}
           >
-            <span className="w-16 h-16 rounded-full bg-white/95 text-primary flex items-center justify-center shadow-lg">
+            <span
+              className="w-16 h-16 flex items-center justify-center"
+              style={{
+                background: 'var(--cream)',
+                border: '3px solid var(--cream)',
+                color: 'var(--navy)',
+              }}
+            >
               <span aria-hidden className="text-2xl ml-1">▶</span>
             </span>
-            <span className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+            <span
+              className="px-4 py-2 text-sm font-semibold"
+              style={{
+                background: 'var(--cream)',
+                color: 'var(--navy)',
+                letterSpacing: '0.04em',
+              }}
+            >
               {ctaLabel}
             </span>
           </a>
@@ -123,9 +142,16 @@ export function ListingVideoEmbed({ videos, className, variant = 'video' }: Prop
             aria-label="Play listing video"
           >
             {!video.posterUrl ? (
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary/10" />
+              <div className="absolute inset-0" style={{ background: 'var(--navy)' }} />
             ) : null}
-            <span className="relative w-16 h-16 rounded-full bg-white/95 group-hover:bg-white text-primary flex items-center justify-center shadow-lg transition">
+            <span
+              className="relative w-16 h-16 flex items-center justify-center transition"
+              style={{
+                background: 'var(--cream)',
+                border: '3px solid var(--cream)',
+                color: 'var(--navy)',
+              }}
+            >
               <span aria-hidden className="text-2xl ml-1">▶</span>
             </span>
           </button>

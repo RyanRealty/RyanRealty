@@ -80,6 +80,43 @@ export type ListingDetail = ListingTile & {
   closePricePerSqft: number | null
   saleToListRatio: number | null
   estimatedMonthlyPiti: number | null
+  // Structure / interior
+  storiesTotal: number | null
+  levels: string | null
+  roomsTotal: number | null
+  basementYn: boolean | null
+  buildingAreaTotal: number | null
+  heatingYn: boolean | null
+  coolingYn: boolean | null
+  fireplacesTotal: number | null
+  spaYn: boolean | null
+  // Exterior / lot
+  lotSizeSqft: number | null
+  lotFeatures: string | null
+  fencing: string | null
+  directionFaces: string | null
+  viewDescription: string | null
+  roof: string | null
+  constructionMaterials: string | null
+  foundationDetails: string | null
+  propertyAttachedYn: boolean | null
+  // Parking
+  parkingTotal: number | null
+  carportSpaces: number | null
+  garageYn: boolean | null
+  // Utilities
+  sewer: string | null
+  water: string | null
+  // Financial / tax
+  county: string | null
+  taxYear: number | null
+  parcelNumber: string | null
+  associationFee: number | null
+  associationFeeFrequency: string | null
+  walkScore: number | null
+  // Listing dates
+  listDate: IsoTimestamp | null
+  cumulativeDaysOnMarket: number | null
   // Listing-detail-specific
   photos: ListingPhoto[]
   videos: VideoEmbed[]

@@ -5,6 +5,7 @@ import {
   getListingDetailHistory,
   getListingPhotos,
   getListingVideos,
+  getListingDetailOpenHouses,
   getMarketPulse,
   getMarketStats,
   getBrokers,
@@ -20,6 +21,7 @@ import { ListingDetailShell } from '@/components/site/listing-detail/ListingDeta
 import { ListingHero } from '@/components/site/listing-detail/ListingHero'
 import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
 import { PriceCtaStrip } from '@/components/site/listing-detail/PriceCtaStrip'
+import { OpenHouses } from '@/components/site/listing-detail/OpenHouses'
 import { PropertySpecs } from '@/components/site/listing-detail/PropertySpecs'
 import { DescriptionBlock } from '@/components/site/listing-detail/DescriptionBlock'
 import { NeighborhoodMarketContext } from '@/components/site/listing-detail/NeighborhoodMarketContext'
@@ -242,7 +244,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
   // ad-landing surface, and an unbounded pooler stall on any of these used to
   // hang the render to FUNCTION_INVOCATION_TIMEOUT / "Something went wrong".
   // Each section degrades independently. Enforced by the db-timeout-guard gate.
-  const [similar, history, photos, videos, brokers, listingAgent, marketPulse, marketStats] =
+  const [similar, history, photos, videos, brokers, listingAgent, marketPulse, marketStats, openHouses] =
     await Promise.all([
       withTimeoutFallback(getSimilarListings(listingKey, 4), [], 3000, 'listing:similar'),
       withTimeoutFallback(getListingDetailHistory(listingKey), [], 3000, 'listing:history'),
@@ -274,6 +276,10 @@ export default async function ListingDetailPage({ params }: PageProps) {
       // count + median list price + comparison). Do NOT "un-stub" this without
       // first adding the columns to the cache + a methodology bump.
       Promise.resolve(null),
+      // Upcoming open houses for THIS listing (open_houses joined by key).
+      // Empty for most listings -> the section renders nothing. Timeout-guarded
+      // like every other arm so a slow pooler can't hang the #1 ad surface.
+      withTimeoutFallback(getListingDetailOpenHouses(listingKey), [], 3000, 'listing:open-houses'),
     ])
 
   const listingWithPhotos = { ...listing, photos }
@@ -330,6 +336,17 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const main = (
     <>
       <PriceCtaStrip listing={listingWithPhotos} onSave={saveListingFromStrip} initialSaved={initialSaved} />
+      {openHouses.length > 0 ? (
+        <OpenHouses
+          events={openHouses.map((oh) => ({
+            open_house_key: oh.id,
+            event_date: oh.event_date,
+            start_time: oh.start_time,
+            end_time: oh.end_time,
+            notes: oh.remarks,
+          }))}
+        />
+      ) : null}
       <PropertySpecs listing={listingWithPhotos} />
       {virtualTours.length > 0 ? <ListingVideoEmbed videos={virtualTours} variant="tour" /> : null}
       <ListingAttribution

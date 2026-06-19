@@ -84,6 +84,41 @@ const DETAIL_SELECT = [
   'boundary_city',
   'boundary_neighborhood',
   'boundary_subdivision',
+  // Wider detail fields surfaced on the listing page (previously fetched but
+  // unrendered, or not fetched at all). Mixed-case ("ListDate",
+  // "CumulativeDaysOnMarket") go bare to PostgREST like the other RETS columns.
+  'county',
+  'tax_year',
+  'lot_size_sqft',
+  'stories_total',
+  'levels',
+  'roof',
+  'construction_materials',
+  'foundation_details',
+  'basement_yn',
+  'view_description',
+  'parking_total',
+  'carport_spaces',
+  'garage_yn',
+  'heating_yn',
+  'cooling_yn',
+  'sewer',
+  'water',
+  'fireplaces_total',
+  'new_construction_yn',
+  'property_attached_yn',
+  'ListDate',
+  'CumulativeDaysOnMarket',
+  'parcel_number',
+  'walk_score',
+  'association_fee',
+  'association_fee_frequency',
+  'rooms_total',
+  'building_area_total',
+  'spa_yn',
+  'lot_features',
+  'fencing',
+  'direction_faces',
 ].join(',')
 
 type ListingRow = {
@@ -139,11 +174,74 @@ type ListingRow = {
   boundary_city: string | null
   boundary_neighborhood: string | null
   boundary_subdivision: string | null
+  county: string | null
+  tax_year: number | null
+  lot_size_sqft: number | null
+  stories_total: number | null
+  levels: string | null
+  roof: string | null
+  construction_materials: string | null
+  foundation_details: string | null
+  basement_yn: boolean | null
+  view_description: string | null
+  parking_total: number | null
+  carport_spaces: number | null
+  garage_yn: boolean | null
+  heating_yn: boolean | null
+  cooling_yn: boolean | null
+  sewer: string | null
+  water: string | null
+  fireplaces_total: number | null
+  new_construction_yn: boolean | null
+  property_attached_yn: boolean | null
+  ListDate: string | null
+  CumulativeDaysOnMarket: number | null
+  parcel_number: string | null
+  walk_score: number | null
+  association_fee: number | null
+  association_fee_frequency: string | null
+  rooms_total: number | null
+  building_area_total: number | null
+  spa_yn: boolean | null
+  lot_features: string | null
+  fencing: string | null
+  direction_faces: string | null
 }
 
 function slug(s: string | null | undefined): string | null {
   if (!s) return null
   return s.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+}
+
+/**
+ * Strip the MLS `'********'` privacy sentinel out of free-text fields. MLS
+ * masks suppressed values with a run of asterisks; rendering that verbatim
+ * leaks a placeholder into the UI. Returns null for any value that's empty
+ * or starts with `***` so the renderer omits the field entirely.
+ */
+function cleanText(s: string | null | undefined): string | null {
+  if (s == null) return null
+  const t = s.trim()
+  if (t.length === 0 || t.startsWith('***')) return null
+  return t
+}
+
+/**
+ * Guard a numeric field against the MLS `'********'` sentinel. Our schema
+ * types these columns as numeric/smallint so PostgREST returns a number when
+ * the value is real; a masked value comes back as the asterisk string. Only a
+ * finite number survives — anything else (the sentinel, NaN, a stray string)
+ * becomes null so we never cast or render a sentinel.
+ */
+function cleanNumber(n: number | string | null | undefined): number | null {
+  if (typeof n === 'number') return Number.isFinite(n) ? n : null
+  if (typeof n === 'string') {
+    const t = n.trim()
+    if (t.length === 0 || t.startsWith('*') || !/^-?\d/.test(t)) return null
+    const parsed = Number(t)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+  return null
 }
 
 function rowToDetail(row: ListingRow): ListingDetail {
@@ -208,9 +306,9 @@ function rowToDetail(row: ListingRow): ListingDetail {
     totalLivingAreaSqFt: row.TotalLivingAreaSqFt,
     fireplaceYn: row.fireplace_yn,
     waterfrontYn: row.waterfront_yn,
-    architecturalStyle: row.architectural_style,
-    newConstructionYn: null,
-    schoolDistrict: row.school_district,
+    architecturalStyle: cleanText(row.architectural_style),
+    newConstructionYn: row.new_construction_yn,
+    schoolDistrict: cleanText(row.school_district),
     elementarySchool: row.elementary_school,
     middleSchool: row.middle_school,
     highSchool: row.high_school,
@@ -222,6 +320,43 @@ function rowToDetail(row: ListingRow): ListingDetail {
     closePricePerSqft,
     saleToListRatio: row.sale_to_list_ratio,
     estimatedMonthlyPiti: row.estimated_monthly_piti,
+    // Structure / interior
+    storiesTotal: cleanNumber(row.stories_total),
+    levels: cleanText(row.levels),
+    roomsTotal: cleanNumber(row.rooms_total),
+    basementYn: row.basement_yn,
+    buildingAreaTotal: cleanNumber(row.building_area_total),
+    heatingYn: row.heating_yn,
+    coolingYn: row.cooling_yn,
+    fireplacesTotal: cleanNumber(row.fireplaces_total),
+    spaYn: row.spa_yn,
+    // Exterior / lot
+    lotSizeSqft: cleanNumber(row.lot_size_sqft),
+    lotFeatures: cleanText(row.lot_features),
+    fencing: cleanText(row.fencing),
+    directionFaces: cleanText(row.direction_faces),
+    viewDescription: cleanText(row.view_description),
+    roof: cleanText(row.roof),
+    constructionMaterials: cleanText(row.construction_materials),
+    foundationDetails: cleanText(row.foundation_details),
+    propertyAttachedYn: row.property_attached_yn,
+    // Parking
+    parkingTotal: cleanNumber(row.parking_total),
+    carportSpaces: cleanNumber(row.carport_spaces),
+    garageYn: row.garage_yn,
+    // Utilities
+    sewer: cleanText(row.sewer),
+    water: cleanText(row.water),
+    // Financial / tax
+    county: cleanText(row.county),
+    taxYear: cleanNumber(row.tax_year),
+    parcelNumber: cleanText(row.parcel_number),
+    associationFee: cleanNumber(row.association_fee),
+    associationFeeFrequency: cleanText(row.association_fee_frequency),
+    walkScore: cleanNumber(row.walk_score),
+    // Listing dates
+    listDate: row.ListDate,
+    cumulativeDaysOnMarket: cleanNumber(row.CumulativeDaysOnMarket),
     photos: [], // populated separately via getListingPhotos (TODO Wave 1.6)
     videos: [], // populated separately via getListingVideos
     listAgentName: row.ListAgentName,

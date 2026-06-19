@@ -1,6 +1,5 @@
 import {
   Body,
-  CTAButton,
   Eyebrow,
   H3,
   Stack,
@@ -55,28 +54,40 @@ export function TextMattCTA({
     : null
 
   return (
-    <Stack
-      gap="default"
-      className={`bg-card border border-border rounded-[14px] p-6 shadow-sm ${className ?? ''}`}
+    <div
+      className={className ?? undefined}
+      style={{
+        border: '3px solid var(--navy)',
+        background: 'var(--cream)',
+        padding: 'clamp(20px,3vw,26px)',
+      }}
     >
-      <Eyebrow>Talk to a broker</Eyebrow>
-      <H3>{headline ?? 'Questions about this home?'}</H3>
-      <Body size="small" tone="muted" className="leading-[1.55]">
-        {body ?? 'Tour requests usually get a same-day reply. No pressure, no obligation.'}
-      </Body>
+      <Stack gap="default">
+        <Eyebrow>Talk to a broker</Eyebrow>
+        <H3>{headline ?? 'Questions about this home?'}</H3>
+        <Body size="small" tone="muted" className="leading-[1.55]">
+          {body ?? 'Tour requests usually get a same-day reply. No pressure, no obligation.'}
+        </Body>
 
-      <BrokerCard broker={broker} variant="compact" />
+        <BrokerCard broker={broker} variant="compact" />
 
-      <div className="flex flex-col gap-2 pt-2">
-        <CTAButton href={tourHref} tone="primary" size="md">
-          {tourLabel}
-        </CTAButton>
-        {textHref ? (
-          <CTAButton href={textHref} tone="outline" size="md" external>
-            Text {broker.fullName.split(/\s+/)[0]}
-          </CTAButton>
-        ) : null}
-      </div>
-    </Stack>
+        <div className="flex flex-col gap-3 pt-2">
+          <a href={tourHref} className="btn alt" style={{ justifyContent: 'center' }}>
+            {tourLabel}
+          </a>
+          {textHref ? (
+            <a
+              href={textHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn"
+              style={{ justifyContent: 'center' }}
+            >
+              Text {broker.fullName.split(/\s+/)[0]}
+            </a>
+          ) : null}
+        </div>
+      </Stack>
+    </div>
   )
 }

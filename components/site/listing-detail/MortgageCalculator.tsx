@@ -5,8 +5,6 @@ import {
   Body,
   Price,
 } from '@/components/site/primitives'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 
 /**
  * Listing-detail MortgageCalculator — KB section style.
@@ -90,49 +88,53 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className }: Pr
         {/* Input fields */}
         <div
           style={{
-            border: '3px solid var(--navy, #102742)',
+            border: '3px solid var(--navy)',
             padding: '22px 24px',
             display: 'grid',
             gap: 16,
-            background: 'var(--cream, #faf8f4)',
+            background: 'var(--cream)',
           }}
         >
           <KbField label="Home price" id="mc-price">
-            <Input
+            <input
               id="mc-price"
               type="text"
               inputMode="decimal"
               value={priceInput}
               onChange={(e) => setPriceInput(e.target.value)}
+              style={KB_INPUT_STYLE}
             />
           </KbField>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <KbField label="Down payment %" id="mc-down">
-              <Input
+              <input
                 id="mc-down"
                 type="text"
                 inputMode="decimal"
                 value={downPctInput}
                 onChange={(e) => setDownPctInput(e.target.value)}
+                style={KB_INPUT_STYLE}
               />
             </KbField>
             <KbField label="Rate %" id="mc-rate">
-              <Input
+              <input
                 id="mc-rate"
                 type="text"
                 inputMode="decimal"
                 value={rateInput}
                 onChange={(e) => setRateInput(e.target.value)}
+                style={KB_INPUT_STYLE}
               />
             </KbField>
           </div>
           <KbField label="Term (years)" id="mc-term">
-            <Input
+            <input
               id="mc-term"
               type="text"
               inputMode="numeric"
               value={termInput}
               onChange={(e) => setTermInput(e.target.value)}
+              style={KB_INPUT_STYLE}
             />
           </KbField>
         </div>
@@ -140,8 +142,8 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className }: Pr
         {/* Results */}
         <div
           style={{
-            background: 'var(--navy, #102742)',
-            color: 'var(--cream, #faf8f4)',
+            background: 'var(--navy)',
+            color: 'var(--cream)',
             padding: '22px 24px',
             display: 'flex',
             flexDirection: 'column',
@@ -177,7 +179,7 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className }: Pr
                 fontFamily: 'var(--font-amboqia, serif)',
                 fontSize: 'clamp(1.6rem,3.5vw,2.2rem)',
                 lineHeight: 1,
-                color: 'var(--cream, #faf8f4)',
+                color: 'var(--cream)',
                 fontVariantNumeric: 'tabular-nums',
                 overflow: 'visible',
               }}
@@ -202,10 +204,37 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className }: Pr
   )
 }
 
+/** KB cream field: 2px navy edge, navy text, no rounding. */
+const KB_INPUT_STYLE: React.CSSProperties = {
+  width: '100%',
+  background: 'var(--cream)',
+  border: '2px solid var(--navy)',
+  borderRadius: 0,
+  padding: '10px 12px',
+  fontFamily: 'inherit',
+  fontSize: '0.95rem',
+  fontWeight: 600,
+  color: 'var(--navy)',
+  fontVariantNumeric: 'tabular-nums',
+  outline: 'none',
+}
+
 function KbField({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <Label htmlFor={id}>{label}</Label>
+      <label
+        htmlFor={id}
+        style={{
+          fontSize: '0.6rem',
+          fontWeight: 600,
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase',
+          color: 'rgba(16,39,66,0.55)',
+          fontFamily: 'var(--font-sans, sans-serif)',
+        }}
+      >
+        {label}
+      </label>
       {children}
     </div>
   )
@@ -227,7 +256,7 @@ function KpiRow({ label, value }: { label: string; value: React.ReactNode }) {
         style={{
           fontSize: '0.9rem',
           fontWeight: 600,
-          color: 'var(--cream, #faf8f4)',
+          color: 'var(--cream)',
           fontVariantNumeric: 'tabular-nums',
         }}
       >
