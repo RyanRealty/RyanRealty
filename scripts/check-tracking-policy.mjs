@@ -136,6 +136,21 @@ const backfill = read('lib/visitor-backfill.ts')
 check('Identify backfill writes the identity graph', /visitor_identity_map/.test(backfill),
   'lib/visitor-backfill.ts must upsert visitor_identity_map at identify so anonymous browsing is stitched to the known FUB person/email (anon->known graph).')
 
+// ── 7. Offline-conversion upload (Phase 6 — closed-loop ROAS) ─────────────────
+// Online-sourced leads (they carried a Meta click id -> fbc) that convert OFFLINE
+// (signed listing / under contract / closed) get uploaded back to Meta so the ad
+// that drove the click earns credit and the campaign optimizes toward real
+// outcomes, not just form fills. Lock the uploader's load-bearing invariants.
+const offline = read('lib/meta-offline-conversions.ts')
+check('Offline-conversion uploader hashes PII (sha256)', /sha256|createHash/.test(offline),
+  'lib/meta-offline-conversions.ts must SHA-256 hash email/phone before sending to Meta (no raw PII).')
+check('Offline-conversion forwards the fbc attribution key', /\bfbc\b/.test(offline),
+  'lib/meta-offline-conversions.ts must forward the stored fbc click id — the key that attributes the offline conversion back to the ad click.')
+check('Offline-conversion is idempotent (stable event_id)', /event_id/.test(offline) && /eventId/.test(offline),
+  'lib/meta-offline-conversions.ts must send a stable event_id so a retry/re-run never double-counts the conversion.')
+check('Offline-conversion uses system_generated action_source', /system_generated/.test(offline),
+  "lib/meta-offline-conversions.ts must use action_source 'system_generated' (the conversion did not happen on the website).")
+
 // ── report ───────────────────────────────────────────────────────────────────
 if (failures.length) {
   console.error(`\n✗ tracking-policy: ${failures.length} invariant(s) regressed:\n`)
@@ -146,4 +161,4 @@ if (failures.length) {
   console.error('\n  See docs/TRACKING_POLICY.md for the rationale + research citations.')
   process.exit(1)
 }
-console.log('✓ tracking-policy: consent-mode v2 (4 params), consent-gated tags, CAPI PII-hashing, pixel/CAPI dedup, lead-path click-ID capture, and the first-party rr_vid identity graph all intact.')
+console.log('✓ tracking-policy: consent-mode v2 (4 params), consent-gated tags, CAPI PII-hashing, pixel/CAPI dedup, lead-path click-ID capture, the first-party rr_vid identity graph, and offline-conversion upload all intact.')
