@@ -271,8 +271,17 @@ export async function POST(request: NextRequest) {
     ? body.fbclid.trim().slice(0, 512)
     : undefined
 
+  // First-party durable visitor id (Phase 5). Set by middleware on the first
+  // page request, so it is present on every same-origin track POST. It is a
+  // functional pseudonymous identifier (same category as session_id), so it is
+  // recorded at every consent level that stores anything — NOT stripped under
+  // essential — to link this session to the durable visitor + the identity map.
+  const rrVidCookie = request.cookies.get('rr_vid')?.value
+  const rrVid = rrVidCookie && UUID_V4.test(rrVidCookie) ? rrVidCookie : undefined
+
   const sessionInsert = {
     session_id: sessionId,
+    rr_vid: rrVid,
     source_domain: sourceDomain,
     utm_source:   campaign?.source ?? undefined,
     utm_medium:   campaign?.medium ?? undefined,

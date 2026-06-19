@@ -119,6 +119,23 @@ check('event_id forwarded to browser pixel', /eventID\s*:\s*result\.eventId|even
 check('Lead path captures utm + click IDs', /utm_/.test(sellerAction) && /fbclid|gclid/.test(sellerAction),
   'Seller LP action must capture utm_* + fbclid/gclid on submit so the lead can be attributed and uploaded as an offline conversion.')
 
+// ── 6. First-party visitor identity graph (Phase 5) ──────────────────────────
+// The durable first-party rr_vid cookie + the anon->known identity graph are the
+// spine of cross-session attribution. If middleware stops setting rr_vid, the
+// server loses its only request-time visitor id (the client session_id is not
+// available on the first server request); if the identify backfill stops writing
+// visitor_identity_map, anonymous browsing can never be stitched to a known
+// person server-side. Lock all three legs.
+const mw = read('middleware.ts')
+check('Middleware sets the first-party rr_vid cookie', /rr_vid/.test(mw) && /cookies\.set\(\s*['"]rr_vid['"]/.test(mw),
+  "middleware.ts must set the durable first-party rr_vid cookie (attachVidCookie) — the server-readable visitor id present on the first request.")
+const track = read('app/api/visitors/track/route.ts')
+check('Track route records rr_vid on the session', /rr_vid/.test(track),
+  'app/api/visitors/track/route.ts must read the rr_vid cookie and persist it on visitor_sessions (links the tracked session to the durable visitor).')
+const backfill = read('lib/visitor-backfill.ts')
+check('Identify backfill writes the identity graph', /visitor_identity_map/.test(backfill),
+  'lib/visitor-backfill.ts must upsert visitor_identity_map at identify so anonymous browsing is stitched to the known FUB person/email (anon->known graph).')
+
 // ── report ───────────────────────────────────────────────────────────────────
 if (failures.length) {
   console.error(`\n✗ tracking-policy: ${failures.length} invariant(s) regressed:\n`)
@@ -129,4 +146,4 @@ if (failures.length) {
   console.error('\n  See docs/TRACKING_POLICY.md for the rationale + research citations.')
   process.exit(1)
 }
-console.log('✓ tracking-policy: consent-mode v2 (4 params), consent-gated tags, CAPI PII-hashing, pixel/CAPI dedup, and lead-path click-ID capture all intact.')
+console.log('✓ tracking-policy: consent-mode v2 (4 params), consent-gated tags, CAPI PII-hashing, pixel/CAPI dedup, lead-path click-ID capture, and the first-party rr_vid identity graph all intact.')

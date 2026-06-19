@@ -302,6 +302,32 @@ function attachFbcCookie(response: NextResponse, request: NextRequest, host: str
   return response
 }
 
+/**
+ * First-party visitor id (Phase 5 — tracking policy / identity graph). Sets a
+ * durable, server-readable `rr_vid` cookie on the first page request when none
+ * exists. Unlike the client-generated session_id (localStorage rr_session_id),
+ * this cookie is present on the very FIRST server request — before any client
+ * JS — so server actions, the identify backfill (lib/visitor-backfill.ts), and
+ * CAPI can stitch anonymous browsing to a known person without waiting on the
+ * client. Scoped to the registrable domain so it is stable across the apex and
+ * the seller. LP subdomain. NOT httpOnly: the client tracker reads it to use as
+ * a stable external_id (Meta) / user_id (GA) for cross-event identity. 2-year
+ * TTL (a returning visitor keeps the same id). No-op when rr_vid already exists.
+ */
+function attachVidCookie(response: NextResponse, request: NextRequest, host: string): NextResponse {
+  if (request.cookies.get('rr_vid')) return response
+  const isProd = host.endsWith('ryan-realty.com')
+  response.cookies.set('rr_vid', crypto.randomUUID(), {
+    maxAge: 2 * 365 * 24 * 60 * 60,
+    path: '/',
+    sameSite: 'lax',
+    httpOnly: false,
+    secure: isProd,
+    ...(isProd ? { domain: 'ryan-realty.com' } : {}),
+  })
+  return response
+}
+
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const url = request.nextUrl
   const pathname = url.pathname
@@ -400,7 +426,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     rewriteUrl.pathname = subdomainLpRoot
     const requestHeaders = new Headers(request.headers)
     requestHeaders.set('x-pathname', subdomainLpRoot)
-    return attachFbcCookie(NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } }), request, host)
+    return attachVidCookie(attachFbcCookie(NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } }), request, host), request, host)
   }
 
   // ─── (2) Rate limiting for /api/* ──────────────────────────────────────
@@ -432,7 +458,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   // ─── (3) Default: forward x-pathname so server components can branch ───
-  return attachFbcCookie(buildNextResponse(pathname, request), request, host)
+  return attachVidCookie(attachFbcCookie(buildNextResponse(pathname, request), request, host), request, host)
 }
 
 // Run on everything that isn't a Next.js internal or static asset.

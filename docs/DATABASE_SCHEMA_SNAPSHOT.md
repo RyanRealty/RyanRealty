@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-15T22:15:18.731Z
+**Generated:** 2026-06-19T02:52:25.982Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -218,6 +218,7 @@ Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case co
 | `boundary_city` | text | yes |  |
 | `boundary_neighborhood` | text | yes |  |
 | `boundary_subdivision` | text | yes |  |
+| `media_suppressed` | boolean | no | false |
 
 ### `open_houses` · **rows ≈ 20**
 
@@ -299,7 +300,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 595,512**
+### `listing_tile_mv` · **rows ≈ 591,248**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -343,7 +344,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 75,576**
+### `similar_listings_mv` · **rows ≈ 75,709**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 
@@ -412,7 +413,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 14,361**
+### `market_stats_cache` · **rows ≈ 15,271**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -611,7 +612,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `delivered_at` | timestamp with time zone | yes |  |
 | `archived_at` | timestamp with time zone | yes |  |
 
-### `content_performance` · **rows ≈ 0**
+### `content_performance` · **rows ≈ 6**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -647,7 +648,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `asset_library_refs` | ARRAY | yes |  |
 | `pulled_at` | timestamp with time zone | yes |  |
 
-### `expired_listings` · **rows ≈ 19**
+### `expired_listings` · **rows ≈ 36**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -691,7 +692,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `owner_lookup_attempts` | integer | yes | 0 |
 | `last_owner_lookup_at` | timestamp with time zone | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 84**
+### `marketing_brain_actions` · **rows ≈ 89**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -3308,6 +3309,22 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pushed_to_fub_at` | timestamp with time zone | yes |  |
 | `metadata` | jsonb | yes |  |
 
+### `visitor_identity_map`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `rr_vid` | text | no |  |
+| `fub_person_id` | integer | yes |  |
+| `email` | text | yes |  |
+| `user_id` | uuid | yes |  |
+| `session_id` | text | yes |  |
+| `identify_source` | text | yes |  |
+| `first_seen_at` | timestamp with time zone | no | now() |
+| `identified_at` | timestamp with time zone | yes |  |
+| `metadata` | jsonb | no | '{}'::jsonb |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
 ### `visitor_sessions`
 
 | Column | Type | Nullable | Default |
@@ -3338,6 +3355,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `events_backfilled_at` | timestamp with time zone | yes |  |
 | `events_backfilled_count` | integer | no | 0 |
 | `fbclid` | text | yes |  |
+| `rr_vid` | text | yes |  |
 
 ### `visits`
 

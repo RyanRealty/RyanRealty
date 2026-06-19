@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-06-15T22:15:18.802Z
+**Generated:** 2026-06-19T02:52:26.039Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -396,7 +396,7 @@ Companion files:
 
 **Tables:** `listings`, `listing_photos`
 
-**Selected columns:** `ListingKey`, `details`, `PhotoURL`, `photo_url`, `cdn_url`, `sort_order`, `caption`
+**Selected columns:** `ListingKey`, `details`, `PhotoURL`, `media_suppressed`, `photo_url`, `cdn_url`, `sort_order`, `caption`
 
 **TTL windows:** `CACHE_WINDOWS.listingTile`
 
@@ -822,7 +822,7 @@ Companion files:
 
 **Tables:** `listings`, `listing_videos`, `video_tours_cache`
 
-**Selected columns:** `ListingKey`, `details`, `video_url`, `source`, `duration_seconds`, `sort_order`, `listings`
+**Selected columns:** `ListingKey`, `details`, `media_suppressed`, `video_url`, `source`, `duration_seconds`, `sort_order`, `listings`
 
 **TTL windows:** `CACHE_WINDOWS.videos`
 

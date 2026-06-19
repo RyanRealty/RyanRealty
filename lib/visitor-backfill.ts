@@ -72,6 +72,7 @@ type EventRow = {
 
 type SessionRow = {
   session_id: string
+  rr_vid: string | null
   identified_at: string | null
   fub_person_id: number | null
   utm_source: string | null
@@ -125,7 +126,7 @@ export async function backfillSessionToFub(params: {
   // reports.
   const { data: sessionRows, error: readErr } = await supabase
     .from('visitor_sessions')
-    .select('session_id, identified_at, fub_person_id, utm_source, utm_medium, utm_campaign, utm_content, utm_term')
+    .select('session_id, rr_vid, identified_at, fub_person_id, utm_source, utm_medium, utm_campaign, utm_content, utm_term')
     .eq('session_id', params.sessionId)
     .limit(1)
 
@@ -162,6 +163,29 @@ export async function backfillSessionToFub(params: {
       .eq('session_id', params.sessionId)
       .is('identified_at', null)
     if (updateErr) errors.push(`session update failed: ${updateErr.message}`)
+  }
+
+  // ─── 1b. Stitch the durable first-party visitor id into the identity graph ──
+  // rr_vid (the middleware-set first-party cookie) is the anchor of the
+  // anon->known graph. Recording it here means EVERY identify path — form
+  // submit, Google/Facebook OAuth, the email-click bridge — writes one row per
+  // visitor in visitor_identity_map, enriched the moment they become known.
+  // Upsert on rr_vid; the email/fub fields are only set when present so a
+  // re-identify (e.g. the email-click bridge, which has no email) never clobbers
+  // a previously-captured email. Service-role write; never blocks the response.
+  if (session.rr_vid) {
+    const mapRow: Record<string, unknown> = {
+      rr_vid: session.rr_vid,
+      fub_person_id: params.fubPersonId,
+      session_id: params.sessionId,
+      identify_source: params.identifiedVia,
+      identified_at: new Date().toISOString(),
+    }
+    if (params.email) mapRow.email = params.email.toLowerCase()
+    const { error: mapErr } = await supabase
+      .from('visitor_identity_map')
+      .upsert(mapRow, { onConflict: 'rr_vid' })
+    if (mapErr) errors.push(`identity-map upsert failed: ${mapErr.message}`)
   }
 
   // ─── 2. Fetch all unpushed events in chronological order ──────────────────
