@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.25 (2026-06-19)
+
+### Other
+- Phase 3 gate: ci:kb-shared-shell — lock every KB page to KbNav + KbFooter
+
+---
+
+
 ## v1.595.24 (2026-06-18)
 
 ### Other
