@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.34 (2026-06-19)
+
+### Other
+- Phase 7: feed OAuth/email login into the Phase-5 identity graph
+
+---
+
+
 ## v1.595.33 (2026-06-19)
 
 ### Other
