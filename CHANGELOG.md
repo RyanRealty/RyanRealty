@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.31 (2026-06-19)
+
+### Other
+- Listing detail: finish KB makeover + surface the missing listing data
+
+---
+
+
 ## v1.595.30 (2026-06-19)
 
 ### Other
