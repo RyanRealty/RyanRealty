@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.43 (2026-06-19)
+
+### Other
+- ingest-area-guides: retry resilience for the long unattended batch
+
+---
+
+
 ## v1.595.42 (2026-06-19)
 
 ### Other
