@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.32 (2026-06-19)
+
+### Other
+- Neighborhoods SEO content cleanup (applied to hosted Supabase)
+
+---
+
+
 ## v1.595.31 (2026-06-19)
 
 ### Other
