@@ -149,3 +149,40 @@ verify against the live Vercel prod deploy (dev is Windows-only) — KbHero play
 video, the map renders the Bend polygon, the HUD trend shows ≥4 completed months,
 communities rail scrolls · data-accuracy trace (§0) per stat surfaced. Draft-first:
 surface the prod-preview + gate summary + trace, wait for explicit approval.
+
+---
+
+## Dedicated review pass — outcomes (2026-06-18)
+
+Exhaustive live audit (12 page-classes × 10 dimensions, each high/med finding
+adversarially re-verified). 14 confirmed findings; 13 fixed + verified live, plus
+brand-voice + Phase 5 work landed the same session.
+
+**Shipped + live-verified:**
+- SERP titles de-branded site-wide. Root cause: `lib/site/page-metadata.ts`
+  `slice(0,60)` cut mid-word (`| Rya`) + per-page titles baked `| Ryan Realty`
+  that the layout `title.template` doubled. Fix: `cleanTitle()` strips a baked
+  trailing brand + word-boundary truncates + never empties; per-page inline brand
+  removed (blog, area-guides, our-homes, /homes-for-sale, communities, contact,
+  sell/valuation). Verified: old-bend `| Rya` gone, /our-homes single-branded.
+- Structured data: `/housing-market` Dataset+FAQPage (G52 pulse fallback),
+  `/reviews` Review+AggregateRating, `/videos` BreadcrumbList+WebPage. Live ✓.
+- a11y/semantics: `/compare` 2nd `<h1>`→`<h2>` (live: 1 h1); `/pulse` skeleton
+  `<header>`→`<div aria-hidden>` (live: 1 header).
+- Content: `/subdivisions/[slug]` video rail scoped to in-subdivision tours
+  (no more site-wide luxury fallback under a `<Name>` header).
+- Brand voice: neighborhood meta-description cliché guard (old-bend "Charming"
+  → clean data-driven fallback; DB write classifier-gated, so guarded in code).
+
+**Open follow-ups (low priority):**
+- `/videos` VideoObject JSON-LD: not emitted. `listing_tile_mv` carries only the
+  `has_virtual_tour` flag, not the URL (real URLs live in the rich
+  `lib/data/videos/getListingVideos` subsystem). Emitting it needs a batch video-
+  URL resolver on the /videos grid — marginal SEO, deferred.
+- Neighborhoods DB content cleanup (classifier-gated; needs Matt or a perm rule):
+  `update public.neighborhoods set seo_title = split_part(seo_title,' | ',1) || ' in Bend, Oregon' where seo_title ilike '%ryan realty%';`
+  `update public.neighborhoods set seo_description = replace(seo_description,'Charming','Established') where slug='old-bend';`
+  (The code guards already neutralize the title double-brand + the banned word;
+  this just makes the stored data concise/clean.)
+- `/housing-market` intermittent ISR cache-poisoning (1-in-~210, self-heals) —
+  infra-deep, deferred.
