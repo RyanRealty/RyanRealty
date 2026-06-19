@@ -5,7 +5,8 @@ import { getSession } from '@/app/actions/auth'
 import { getCachedCMA, computeCMA } from '@/lib/cma'
 import { CMAPdfDocument } from '@/lib/pdf/cma-pdf'
 import { createClient } from '@supabase/supabase-js'
-import { sendEvent } from '@/lib/followupboss'
+import { sendEvent, findPersonByEmail } from '@/lib/followupboss'
+import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { listingDetailPath } from '@/lib/slug'
 
@@ -93,9 +94,10 @@ export async function POST(request: Request) {
 
   // Fire-and-forget: FUB tracking must never block the PDF response
   const source = siteUrl.replace(/^https?:\/\//, '').toLowerCase() || 'ryan-realty.com'
+  const leadEmail = session.user.email
   sendEvent({
     type: 'Property Inquiry',
-    person: { emails: [{ value: session.user.email }] },
+    person: { emails: [{ value: leadEmail }] },
     source,
     sourceUrl: `${siteUrl}${listingHref}`,
     message: 'Downloaded CMA / Value Report (high intent)',
@@ -103,7 +105,17 @@ export async function POST(request: Request) {
       street: pdfData.address,
       url: `${siteUrl}${listingHref}`,
     },
-  }).catch((err) => console.error('[cma-pdf] FUB tracking failed:', err))
+  })
+    .then(async () => {
+      // A CMA / value-report download is a high-intent SELLER signal — tag it into
+      // the canonical audience workflow so it enters the seller pipeline + is
+      // measured, instead of landing in FUB untagged. Best-effort, after creation.
+      const person = await findPersonByEmail(leadEmail)
+      if (person?.id) {
+        await canonicallyTagLead({ fubPersonId: person.id, audience: 'seller', source: 'cma-request', tier: 'warm' })
+      }
+    })
+    .catch((err) => console.error('[cma-pdf] FUB tracking failed:', err))
 
   return new NextResponse(new Uint8Array(buffer), {
     status: 200,

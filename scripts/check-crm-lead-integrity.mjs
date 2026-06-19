@@ -35,6 +35,15 @@ const KNOWN_PEOPLE_POST = new Set([
   'app/api/meta/lead-webhook/route.ts',
 ])
 
+// Files that fire a lead-type FUB event but legitimately do NOT tag a buyer/seller
+// audience (top-of-funnel registrations where the audience is genuinely unknown at
+// signup). Keep this list tight — an untagged BUYER/SELLER lead never enters the
+// workflow. A newsletter subscriber is neither buyer nor seller at signup; their
+// audience is assigned later when they take a buyer/seller action.
+const AUDIENCE_TAG_ALLOW = new Set([
+  'app/actions/home.ts', // subscribeNewsletter — newsletter signup, audience unknown at signup
+])
+
 const SCAN = ['lib', 'app']
 function walk(dir, out = []) {
   const abs = join(ROOT, dir)
@@ -71,6 +80,23 @@ for (const rel of files) {
       `${rel}: POSTs to FUB /v1/textMessages. That endpoint only LOGS a message, it never sends. If you are logging an already-sent message this is fine — confirm it, then allowlist it here. If you intended to SEND an SMS, that is wrong (FUB cannot send for integrations; route real sends through the approved sender + consent gate).`,
     )
   }
+
+  // ── 4. audience-tag coverage on lead-creation callers (Phase 4) ──
+  // A file that CREATES a lead — calls sendEvent()/pushToFub() AND fires an
+  // unambiguous lead-type event (Registration / Seller|Buyer Inquiry / Open House
+  // RSVP) — must route the person into the canonical audience workflow
+  // (canonicallyTagLead) or apply an explicit audience:* tag. An untagged lead
+  // lands in FUB but never enters the buyer/seller action plan and is invisible to
+  // qualified_*_leads. The client definitions (followupboss.ts/fub.ts) are exempt.
+  const isClientDef = rel === 'lib/followupboss.ts' || rel === 'lib/fub.ts'
+  const createsLead = /\bsendEvent\s*\(|\bpushToFub\s*\(/.test(src)
+  const firesLeadEvent = /['"](Registration|Seller Inquiry|Buyer Inquiry|Open House RSVP)['"]/.test(src)
+  const tagsAudience = /canonicallyTagLead|['"]audience:/.test(src)
+  if (createsLead && firesLeadEvent && !isClientDef && !tagsAudience && !AUDIENCE_TAG_ALLOW.has(rel)) {
+    fails.push(
+      `${rel}: creates a lead (sendEvent/pushToFub with a lead-type event) but never tags the audience. Route the person through canonicallyTagLead from '@/lib/canonical-lead-tagger', or apply an audience:* tag, so the lead enters the buyer/seller workflow and is counted in qualified_*_leads. Allowlist in AUDIENCE_TAG_ALLOW only if it is genuinely a non-lead activity event.`,
+    )
+  }
 }
 
 // ── 3. source required on every event ──────────────────────────────────────────
@@ -93,6 +119,6 @@ if (fails.length) {
 }
 const tracked = KNOWN_PEOPLE_POST.size
 console.log(
-  `✓ crm-lead-integrity: leads use POST /v1/events (not /people), textMessages is log-only, source is required.` +
+  `✓ crm-lead-integrity: leads use POST /v1/events (not /people), textMessages is log-only, source is required, every lead-creation path tags an audience.` +
     (tracked ? ` ${tracked} file keeps a documented /people fallback (events-first path is primary; CRM_INTEGRATION #1).` : ''),
 )

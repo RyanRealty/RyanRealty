@@ -36,6 +36,8 @@ export type LeadSource =
   | 'calendly'
   | 'blog-email'
   | 'homepage-cta'
+  | 'home-valuation'
+  | 'open-house-rsvp'
   | 'unknown'
 
 export type CanonicalLeadParams = {

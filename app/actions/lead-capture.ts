@@ -110,6 +110,18 @@ export async function trackHomeValuationCta(campaign?: CampaignInput, sessionId?
     campaign,
   })
 
+  // A home-valuation CTA fires a Seller Inquiry into FUB — tag it into the
+  // canonical seller audience (nurture tier; it's a mid-funnel click, not a full
+  // submit) so it enters the workflow + is measured instead of landing untagged.
+  if (resolvedPersonId) {
+    await canonicallyTagLead({
+      fubPersonId: resolvedPersonId,
+      audience: 'seller',
+      source: 'home-valuation',
+      tier: 'nurture',
+    }).catch(() => {})
+  }
+
   await fireCapiLead({
     eventName: 'ViewContent',
     email,

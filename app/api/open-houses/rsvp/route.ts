@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { pushToFub } from '@/lib/fub'
+import { findPersonByEmail } from '@/lib/followupboss'
+import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { listingDetailPath } from '@/lib/slug'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -95,6 +97,21 @@ export async function POST(request: NextRequest) {
     eventDate,
     tags: ['open-house-rsvp'],
   })
+
+  // An open-house RSVP is a clear BUYER-intent lead — tag it into the canonical
+  // buyer audience so it enters the buyer workflow + is counted in
+  // qualified_buyer_leads, instead of carrying only the bare open-house-rsvp tag.
+  // Best-effort, after the push; never blocks the RSVP response.
+  if (email) {
+    try {
+      const person = await findPersonByEmail(email)
+      if (person?.id) {
+        await canonicallyTagLead({ fubPersonId: person.id, audience: 'buyer', source: 'open-house-rsvp', tier: 'warm' })
+      }
+    } catch (err) {
+      console.warn('[open-house-rsvp] canonical tag failed (non-blocking):', err)
+    }
+  }
 
   return Response.json({ ok: true })
 }
