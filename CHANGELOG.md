@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.44 (2026-06-19)
+
+### Other
+- Asset library: auto-approve A/B geo photos so the site uses them
+
+---
+
+
 ## v1.595.43 (2026-06-19)
 
 ### Other
