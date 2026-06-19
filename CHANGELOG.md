@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.41 (2026-06-19)
+
+### Other
+- Roadmap: Phase 8 core done (all /lp/* in KB register)
+
+---
+
+
 ## v1.595.40 (2026-06-19)
 
 ### Other
