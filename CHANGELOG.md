@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.42 (2026-06-19)
+
+### Other
+- Asset library: bulk-ingest the entire Area Guides Drive library (81 locations)
+
+---
+
+
 ## v1.595.41 (2026-06-19)
 
 ### Other
