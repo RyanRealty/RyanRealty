@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.26 (2026-06-19)
+
+### Other
+- Phase 5: first-party visitor identity graph (rr_vid + anon→known stitch)
+
+---
+
+
 ## v1.595.25 (2026-06-19)
 
 ### Other
