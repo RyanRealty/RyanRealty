@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.45 (2026-06-19)
+
+### Other
+- Asset library: sync manifest after Area Guides ingest run
+
+---
+
+
 ## v1.595.44 (2026-06-19)
 
 ### Other
