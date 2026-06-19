@@ -35,6 +35,23 @@ function slugify(name) {
     .replace(/^-+|-+$/g, '')
 }
 
+// Retry a flaky network call (the Drive/token fetch occasionally ETIMEDOUTs on a
+// long unattended batch). Exponential-ish backoff; throws after the last try.
+async function withRetry(fn, label, tries = 4) {
+  let lastErr
+  for (let i = 0; i < tries; i++) {
+    try {
+      return await fn()
+    } catch (e) {
+      lastErr = e
+      const ms = 2000 * (i + 1)
+      console.warn(`  retry ${label} (${i + 1}/${tries}) after ${ms}ms: ${e instanceof Error ? e.message : String(e)}`)
+      await new Promise((r) => setTimeout(r, ms))
+    }
+  }
+  throw lastErr
+}
+
 function parseArgs(argv) {
   const out = { _: [] }
   for (let i = 0; i < argv.length; i++) {
@@ -55,7 +72,7 @@ async function main() {
   console.log('\n=== Ingest Area Guides → asset_library ===')
   console.log(`root: ${AREA_GUIDES_ROOT}  dryRun: ${dryRun}${only ? `  only: ${only}` : ''}\n`)
 
-  const locations = await listSubfolders(AREA_GUIDES_ROOT)
+  const locations = await withRetry(() => listSubfolders(AREA_GUIDES_ROOT), 'listSubfolders(root)')
   console.log(`Found ${locations.length} subfolders under the root.\n`)
 
   const totals = { locations: 0, files_ingested: 0, files_skipped: 0, errors: 0 }
@@ -71,16 +88,20 @@ async function main() {
 
     console.log(`\n──── ${loc.name}  (geo=${slug}) ────`)
     try {
-      const assets = await ingestFolder(loc.id, {
-        recursive: true, // walks Photo/ + Video/
-        geo: `${slug},central-oregon`,
-        subject: 'area-guide,landscape,exterior',
-        source: 'curated',
-        license: 'owned',
-        approval: 'approved', // owned, professionally-shot footage
-        dryRun,
-        onProgress: (msg) => console.log(`    ${msg}`),
-      })
+      const assets = await withRetry(
+        () =>
+          ingestFolder(loc.id, {
+            recursive: true, // walks Photo/ + Video/
+            geo: `${slug},central-oregon`,
+            subject: 'area-guide,landscape,exterior',
+            source: 'curated',
+            license: 'owned',
+            approval: 'approved', // owned, professionally-shot footage
+            dryRun,
+            onProgress: (msg) => console.log(`    ${msg}`),
+          }),
+        `ingestFolder(${slug})`,
+      )
       totals.locations++
       const n = Array.isArray(assets) ? assets.length : 0
       totals.files_ingested += n
