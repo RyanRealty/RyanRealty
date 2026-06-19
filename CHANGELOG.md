@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.38 (2026-06-19)
+
+### Other
+- Phase 8: seller LP -> KB (the conversion-page pattern)
+
+---
+
+
 ## v1.595.37 (2026-06-19)
 
 ### Other
