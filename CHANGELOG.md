@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.29 (2026-06-19)
+
+### Other
+- Brand-voice guard: drop banned cliches from neighborhood meta descriptions
+
+---
+
+
 ## v1.595.28 (2026-06-19)
 
 ### Other
