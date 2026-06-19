@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.37 (2026-06-19)
+
+### Other
+- Roadmap: Phase 4 core done (audience coverage+gate), 6 done, 7 done
+
+---
+
+
 ## v1.595.36 (2026-06-19)
 
 ### Other
