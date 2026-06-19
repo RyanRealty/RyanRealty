@@ -9,8 +9,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import LandingPageTracker from '@/components/LandingPageTracker'
 import ExitIntentPrompt from '@/components/landing/ExitIntentPrompt'
 import ScrollReveal from '@/components/landing/ScrollReveal'
@@ -25,6 +23,12 @@ import FsboLPForm from './FsboLPForm'
  *
  * Voice: respectful of the owner's choice to sell on their own. Honest
  * comparison, no fear-mongering, commission conversation stated plainly.
+ *
+ * Styling: KB (kinetic-brutalist) register — navy #102742 on cream #faf8f4,
+ * Amboqia display headings via the global font-display class, hard 3px navy
+ * edges, no rounded corners, square brutalist framing. Matches the shipped
+ * exemplar app/lp/seller-home-value/page.tsx. LPs do NOT carry the .kb-root
+ * shell, so the navy/cream values are applied via Tailwind arbitrary values.
  */
 export const metadata: Metadata = {
   title: 'Selling It Yourself? Smart. Here Is Backup | Ryan Realty',
@@ -98,41 +102,72 @@ const REPORT_CONTENTS = [
 
 export default function FsboLPPage() {
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <div className="bg-[#faf8f4] text-[#102742]">
       <LandingPageTracker lpVariant="fsbo" />
 
+      {/* ─── Sticky minimal header — wordmark + phone (KB navy bar) ───────── */}
+      <header className="sticky top-0 z-40 border-b-[3px] border-[#102742] bg-[#102742]">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
+          <Link href="/" className="flex items-center" aria-label="Ryan Realty · Bend, Oregon">
+            <span className="relative block h-7 w-[140px] shrink-0 sm:h-9 sm:w-[180px]">
+              <Image
+                src="/images/brand/logo-horizontal-blue.png"
+                alt="Ryan Realty · Bend, Oregon"
+                fill
+                sizes="(max-width: 640px) 140px, 180px"
+                className="object-contain object-left brightness-0 invert"
+                priority
+              />
+            </span>
+          </Link>
+          <a
+            href={`tel:${BROKER_PHONE_TEL}`}
+            className="inline-flex items-center gap-1.5 border-[3px] border-[#faf8f4] bg-[#faf8f4] px-3 py-2 text-sm font-bold uppercase tracking-[0.1em] text-[#102742] transition-colors hover:bg-transparent hover:text-[#faf8f4] sm:px-4"
+            aria-label={`Call Ryan Realty at ${BROKER_PHONE}`}
+          >
+            <PhoneIcon className="h-4 w-4" />
+            <span className="tabular-nums">{BROKER_PHONE}</span>
+          </a>
+        </div>
+      </header>
+
       {/* ─── HERO — warm neighborhood photo, navy scrim, address capture ──── */}
-      <section className="relative isolate border-b border-primary/10">
+      <section className="relative isolate border-b-[3px] border-[#102742]">
         <Image
           src="/images/lp/hero-pond.jpg"
           alt="A neighborhood pond and homes in Bend, Oregon"
           fill
           priority
           sizes="100vw"
-          className="absolute inset-0 -z-20 object-cover object-center"
+          className="lp-kenburns absolute inset-0 -z-20 object-cover object-center"
         />
+        {/* Navy scrim — lighter through the middle so the photo reads, denser
+            at top and bottom where the eyebrow + form sit. */}
         <div
-          className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/60 via-primary/55 to-primary/70"
+          className="absolute inset-0 -z-10 bg-gradient-to-b from-[#102742]/70 via-[#102742]/60 to-[#102742]/80"
           aria-hidden="true"
         />
 
         <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-12 text-center sm:px-6 sm:py-16 lg:py-20">
-          <p className="text-sm font-semibold uppercase tracking-wider text-card/85 drop-shadow-sm">
-            Central Oregon for-sale-by-owner
+          {/* Eyebrow — mono label */}
+          <p className="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.28em] text-[#faf8f4]/85 drop-shadow-sm">
+            <span className="h-[7px] w-[7px] rounded-full bg-[#faf8f4]" aria-hidden="true" />
+            Central Oregon · For sale by owner
           </p>
 
-          <h1 className="mt-4 font-display text-4xl font-semibold leading-tight tracking-tight text-card drop-shadow-sm sm:text-5xl">
+          {/* H1 — Amboqia display, Title Case (hero only) */}
+          <h1 className="mt-4 font-display text-4xl uppercase leading-[0.92] tracking-[-0.01em] text-[#faf8f4] drop-shadow-sm sm:text-5xl lg:text-6xl">
             Selling It Yourself? Smart. Here Is Backup.
           </h1>
 
-          <p className="mt-4 max-w-xl text-lg leading-relaxed text-card drop-shadow-sm">
+          <p className="mt-5 max-w-xl text-lg leading-relaxed text-[#faf8f4] drop-shadow-sm">
             Keep the sale yours. We will tell you what your home should bring, who the buyer
             pool is, and where for-sale-by-owner deals lose money. Free, and you owe us nothing.
           </p>
 
-          {/* Broker trust chip */}
-          <div className="mt-5 flex items-center gap-2.5">
-            <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-card/10 ring-2 ring-card/40">
+          {/* Broker trust chip — hard-edge square frame */}
+          <div className="mt-6 flex items-center gap-3 border-[3px] border-[#faf8f4]/40 px-3 py-2">
+            <div className="relative h-10 w-10 shrink-0 overflow-hidden border border-[#faf8f4]/40 bg-[#faf8f4]/10">
               <Image
                 src="/images/brokers/ryan-matt.png"
                 alt="Matt Ryan, Principal Broker"
@@ -143,28 +178,33 @@ export default function FsboLPPage() {
               />
             </div>
             <div className="text-left">
-              <p className="text-sm font-semibold leading-tight text-card">Matt Ryan</p>
-              <p className="text-xs leading-tight text-card/75">Principal broker · Ryan Realty</p>
+              <p className="text-sm font-semibold leading-tight text-[#faf8f4]">Matt Ryan</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] leading-tight text-[#faf8f4]/70">
+                Principal broker · Ryan Realty
+              </p>
             </div>
           </div>
 
           {/* Address capture — consent disclosure renders inside the form on
               BOTH steps (first-paint HTML, A2P-verified text). */}
-          <div className="mt-5 w-full">
+          <div className="mt-6 w-full">
             <FsboLPForm heroVariant formId="fsbo-form" />
           </div>
 
-          <p className="mt-3 text-sm text-card/70 drop-shadow-sm">
+          <p className="mt-4 text-sm text-[#faf8f4]/75 drop-shadow-sm">
             No listing agreement. No pitch call required. The report is yours either way.
           </p>
         </div>
       </section>
 
       {/* ─── S2 · Honest-respect band ──────────────────────────────────────── */}
-      <section className="border-b border-primary/10 bg-card">
-        <div className="mx-auto max-w-3xl px-4 py-12 text-center sm:px-6 sm:py-14">
+      <section className="border-b-[3px] border-[#102742] bg-[#102742] text-[#faf8f4]">
+        <div className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-6 sm:py-16">
           <ScrollReveal>
-            <p className="font-display text-2xl font-semibold leading-snug tracking-tight text-primary sm:text-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#faf8f4]/55">
+              The honest read
+            </p>
+            <p className="mt-4 font-display text-2xl uppercase leading-[0.95] tracking-[-0.01em] sm:text-3xl">
               Plenty of owners sell on their own. The ones who net the most treat it like a
               brokerage would.
             </p>
@@ -173,26 +213,30 @@ export default function FsboLPPage() {
       </section>
 
       {/* ─── S3 · Honest comparison table ──────────────────────────────────── */}
-      <section className="border-b border-primary/10 bg-background">
-        <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
+      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
+        <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-20">
           <ScrollReveal>
-            <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+              Side by side
+            </p>
+            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
               The honest comparison
             </h2>
-            <p className="mt-3 max-w-2xl text-base text-muted-foreground">
+            <p className="mt-4 max-w-2xl text-base text-[#102742]/70">
               Each of these is doable on your own. The question is what your weekends are worth
               and where the dollars actually move.
             </p>
           </ScrollReveal>
           <ScrollReveal delayMs={100}>
-            <div className="mt-8 overflow-hidden rounded-2xl border border-primary/10 bg-card shadow-sm">
+            {/* Brutalist matrix — hard navy hairlines, no rounded cards. */}
+            <div className="mt-8 overflow-hidden border-[3px] border-[#102742]">
               {/* Header row */}
-              <div className="grid grid-cols-3 gap-3 border-b border-primary/10 bg-primary px-4 py-3 sm:px-6">
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/80" />
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/80">
+              <div className="grid grid-cols-3 gap-3 border-b-[3px] border-[#102742] bg-[#102742] px-4 py-3 sm:px-6">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#faf8f4]/70" />
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#faf8f4]/70">
                   On your own
                 </p>
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary-foreground">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#faf8f4]">
                   With Ryan Realty
                 </p>
               </div>
@@ -201,13 +245,13 @@ export default function FsboLPPage() {
                   key={row.criterion}
                   className={
                     i % 2 === 1
-                      ? 'grid grid-cols-3 gap-3 bg-secondary/50 px-4 py-4 sm:px-6'
-                      : 'grid grid-cols-3 gap-3 px-4 py-4 sm:px-6'
+                      ? 'grid grid-cols-3 gap-3 bg-[#102742]/[0.04] px-4 py-4 sm:px-6'
+                      : 'grid grid-cols-3 gap-3 bg-[#faf8f4] px-4 py-4 sm:px-6'
                   }
                 >
-                  <p className="text-sm font-medium text-foreground">{row.criterion}</p>
-                  <p className="text-sm text-muted-foreground">{row.solo}</p>
-                  <p className="flex items-start gap-2 text-sm font-medium text-primary">
+                  <p className="text-sm font-semibold text-[#102742]">{row.criterion}</p>
+                  <p className="text-sm text-[#102742]/65">{row.solo}</p>
+                  <p className="flex items-start gap-2 text-sm font-semibold text-[#102742]">
                     <CheckIcon className="mt-0.5 h-4 w-4 shrink-0" />
                     <span>{row.withUs}</span>
                   </p>
@@ -219,51 +263,57 @@ export default function FsboLPPage() {
       </section>
 
       {/* ─── S4 · What we hand you, free ───────────────────────────────────── */}
-      <section className="border-b border-primary/10 bg-card">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-2">
+      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-2">
           <ScrollReveal>
-            <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+              No strings
+            </p>
+            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
               What we hand you, free
             </h2>
-            <p className="mt-4 text-lg leading-relaxed text-foreground/80">
+            <p className="mt-5 text-lg leading-relaxed text-[#102742]/80">
               The same pricing analysis we build for our own listings, for the home you are
               selling yourself. No listing agreement attached, no follow-up condition.
             </p>
-            <p className="mt-4 text-base leading-relaxed text-foreground/70">
+            <p className="mt-4 text-base leading-relaxed text-[#102742]/70">
               Why free? Because owners who get an honest number remember where it came from.
               Some keep selling solo and do fine. Some call us later. Both are fine outcomes.
             </p>
           </ScrollReveal>
           <ScrollReveal delayMs={100}>
-            <Card className="mx-auto w-full max-w-sm rounded-2xl bg-background p-6 text-base shadow-md ring-primary/10">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="mx-auto w-full max-w-sm border-[3px] border-[#102742] bg-[#faf8f4] p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#102742]/60">
                 Your pricing report
               </p>
-              <p className="mt-1 font-display text-lg font-semibold text-primary">
+              <p className="mt-1 font-display text-xl uppercase leading-[0.95] tracking-[-0.01em] text-[#102742]">
                 Built from closed sales, not estimates
               </p>
-              <ul className="mt-4 space-y-3">
+              <ul className="mt-5 space-y-px border border-[#102742]/20 bg-[#102742]/20">
                 {REPORT_CONTENTS.map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <CheckIcon className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                    <span className="text-sm leading-relaxed text-foreground/85">{item}</span>
+                  <li key={item} className="flex items-start gap-3 bg-[#faf8f4] px-3 py-3">
+                    <CheckIcon className="mt-0.5 h-5 w-5 shrink-0 text-[#102742]" />
+                    <span className="text-sm leading-relaxed text-[#102742]/85">{item}</span>
                   </li>
                 ))}
               </ul>
-            </Card>
+            </div>
           </ScrollReveal>
         </div>
       </section>
 
       {/* ─── S5 · Transition block — commission stated plainly ─────────────── */}
-      <section className="border-b border-primary/10 bg-background">
-        <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
+      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
+        <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-20">
           <ScrollReveal>
-            <Card className="rounded-2xl p-7 text-base shadow-sm ring-primary/10 sm:p-10">
-              <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+            <div className="border-[3px] border-[#102742] bg-[#faf8f4] p-7 sm:p-10">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+                When it changes
+              </p>
+              <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
                 If it stops being worth your weekend
               </h2>
-              <div className="mt-5 space-y-4 text-base leading-7 text-foreground/85">
+              <div className="mt-5 space-y-4 text-base leading-7 text-[#102742]/85">
                 <p>
                   Some owners run the whole sale themselves and close happy. Others get three
                   weeks in and decide the showings, the screening, and the paperwork are not
@@ -282,17 +332,17 @@ export default function FsboLPPage() {
                   that part.
                 </p>
               </div>
-            </Card>
+            </div>
           </ScrollReveal>
         </div>
       </section>
 
       {/* ─── S6 · Reviews ──────────────────────────────────────────────────── */}
       {FSBO_LP_REVIEWS.length > 0 ? (
-        <section className="border-b border-primary/10 bg-card">
-          <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-14">
+        <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
+          <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-16">
             <ScrollReveal>
-              <p className="mb-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <p className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
                 What past sellers say
               </p>
               <ReviewStrip reviews={FSBO_LP_REVIEWS} tone="light" />
@@ -302,23 +352,27 @@ export default function FsboLPPage() {
       ) : null}
 
       {/* ─── S7 · FAQ ─────────────────────────────────────────────────────── */}
-      <section className="border-b border-primary/10 bg-background">
-        <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
+      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
+        <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-20">
           <ScrollReveal>
-            <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+              Common questions
+            </p>
+            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
               Quick answers
             </h2>
-            <p className="mt-3 text-base leading-relaxed text-foreground/75">
-              Or ask a broker directly:{' '}
+            <p className="mt-4 text-base leading-relaxed text-[#102742]/75">
+              Or ask a broker directly.{' '}
               <a
                 href={`tel:${BROKER_PHONE_TEL}`}
-                className="font-semibold tabular-nums text-primary underline underline-offset-4"
+                className="inline-flex items-center gap-1.5 font-semibold text-[#102742] underline-offset-4 hover:underline"
               >
-                {BROKER_PHONE}
+                <PhoneIcon className="h-4 w-4" />
+                <span className="tabular-nums">{BROKER_PHONE}</span>
               </a>
             </p>
           </ScrollReveal>
-          <Accordion type="single" collapsible className="mt-6 gap-4">
+          <Accordion type="single" collapsible className="mt-8 gap-4">
             <FAQ
               value="faq-catch"
               q="What is the catch on the free report?"
@@ -343,21 +397,24 @@ export default function FsboLPPage() {
         </div>
       </section>
 
-      {/* ─── S8 · Closing band ────────────────────────────────────────────── */}
-      <section className="bg-primary text-primary-foreground">
-        <div className="mx-auto max-w-2xl px-4 py-14 text-center sm:px-6 sm:py-16">
+      {/* ─── S8 · Closing navy band — second address capture ──────────────── */}
+      <section className="bg-[#102742] text-[#faf8f4]">
+        <div className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6 sm:py-20">
           <ScrollReveal>
-            <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#faf8f4]/55">
+              One field
+            </p>
+            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] sm:text-4xl">
               Sell it yourself, with the right number
             </h2>
-            <p className="mx-auto mt-3 max-w-xl text-lg text-primary-foreground/85">
+            <p className="mx-auto mt-4 max-w-xl text-lg text-[#faf8f4]/85">
               Enter the address. The report lands in your inbox within one business day.
             </p>
           </ScrollReveal>
-          <div className="mt-7 text-left">
+          <div className="mt-8 text-left">
             <FsboLPForm formId="fsbo-form-closing" />
           </div>
-          <p className="mt-5 text-sm text-primary-foreground/75">
+          <p className="mt-6 text-sm text-[#faf8f4]/75">
             Prefer to talk?{' '}
             <a
               href={`tel:${BROKER_PHONE_TEL}`}
@@ -369,19 +426,23 @@ export default function FsboLPPage() {
         </div>
       </section>
 
-      <footer className="mx-auto max-w-3xl px-4 py-8 pb-24 text-center text-sm text-muted-foreground sm:pb-10">
-        <p>
-          Ryan Realty · Bend · Oregon ·{' '}
-          <a href={`tel:${BROKER_PHONE_TEL}`} className="text-primary underline tabular-nums">
-            {BROKER_PHONE}
-          </a>
-        </p>
-        <p className="mt-2">
-          Equal Housing Opportunity · © {new Date().getFullYear()} Ryan Realty LLC ·{' '}
-          <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">
-            Privacy
-          </Link>
-        </p>
+      {/* ─── Mini fine print ─────────────────────────────────────────────── */}
+      <footer className="border-t-[3px] border-[#102742] bg-[#102742] pb-24 sm:pb-8">
+        <div className="mx-auto max-w-7xl px-4 py-8 text-center text-xs font-semibold uppercase tracking-[0.12em] text-[#faf8f4]/65 sm:px-6">
+          <p>
+            Ryan Realty LLC · Bend · Oregon ·{' '}
+            <a href={`tel:${BROKER_PHONE_TEL}`} className="tabular-nums underline underline-offset-2 hover:text-[#faf8f4]">
+              {BROKER_PHONE}
+            </a>
+          </p>
+          <p className="mt-2 normal-case tracking-normal">
+            Equal Housing Opportunity ·{' '}
+            <Link href="/privacy" className="underline underline-offset-2 hover:text-[#faf8f4]">
+              Privacy
+            </Link>
+            <span className="mx-2">·</span>© {new Date().getFullYear()} Ryan Realty LLC
+          </p>
+        </div>
       </footer>
 
       {/* Exit-intent prompt — desktop-only, once per session. */}
@@ -393,23 +454,25 @@ export default function FsboLPPage() {
       />
 
       {/* Sticky mobile CTA bar — pinned to viewport bottom on mobile only. */}
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-primary/15 bg-card/95 px-3 py-3 shadow-md backdrop-blur sm:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t-[3px] border-[#102742] bg-[#faf8f4] px-3 py-3 sm:hidden">
         <div className="flex items-center gap-2">
-          <Button asChild className="flex-1 rounded-xl text-sm font-semibold">
-            <Link href="#fsbo-form" scroll>
-              Get my pricing report
-            </Link>
-          </Button>
+          <Link
+            href="#fsbo-form"
+            scroll
+            className="flex-1 border-[3px] border-[#102742] bg-[#102742] px-4 py-3 text-center text-sm font-bold uppercase tracking-[0.1em] text-[#faf8f4]"
+          >
+            Get my pricing report
+          </Link>
           <a
             href={`tel:${BROKER_PHONE_TEL}`}
             aria-label={`Call Ryan Realty at ${BROKER_PHONE}`}
-            className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-primary text-primary"
+            className="flex h-12 w-12 items-center justify-center border-[3px] border-[#102742] text-[#102742]"
           >
             <PhoneIcon className="h-5 w-5" />
           </a>
         </div>
       </div>
-    </main>
+    </div>
   )
 }
 
@@ -453,12 +516,12 @@ function FAQ({ value, q, a }: { value: string; q: string; a: string }) {
   return (
     <AccordionItem
       value={value}
-      className="rounded-xl border border-primary/10 bg-card px-5 not-last:border-b data-[state=open]:border-primary/30"
+      className="border-[3px] border-[#102742] bg-[#faf8f4] px-5"
     >
-      <AccordionTrigger className="py-4 font-display text-lg font-semibold text-primary hover:no-underline">
+      <AccordionTrigger className="py-4 font-display text-lg uppercase leading-snug tracking-[-0.01em] text-[#102742] hover:no-underline">
         {q}
       </AccordionTrigger>
-      <AccordionContent className="pb-4 text-base leading-relaxed text-foreground/85">
+      <AccordionContent className="pb-4 text-base leading-relaxed text-[#102742]/85">
         {a}
       </AccordionContent>
     </AccordionItem>

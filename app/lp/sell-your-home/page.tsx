@@ -2,6 +2,7 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
+import ScrollReveal from '@/components/landing/ScrollReveal'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import LandingPageTracker from '@/components/LandingPageTracker'
 import SellerLPForm from '@/app/lp/seller-home-value/SellerLPForm'
@@ -103,31 +104,31 @@ export default async function ListYourHomePage() {
   }
 
   return (
-    <div className="bg-background text-foreground">
+    <div className="bg-[#faf8f4] text-[#102742]">
       <LandingPageTracker lpVariant="sell-your-home" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewSchema) }}
       />
 
-      {/* Sticky header */}
-      <header className="sticky top-0 z-40 border-b border-primary/10 bg-card/95 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <Link href="/" className="flex items-center" aria-label="Ryan Realty, Bend, Oregon">
-            <span className="relative block h-7 w-36 shrink-0 sm:h-9 sm:w-44">
+      {/* ─── Sticky minimal header — wordmark + phone (KB navy bar) ───────── */}
+      <header className="sticky top-0 z-40 border-b-[3px] border-[#102742] bg-[#102742]">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
+          <Link href="/" className="flex items-center" aria-label="Ryan Realty · Bend, Oregon">
+            <span className="relative block h-7 w-[140px] shrink-0 sm:h-9 sm:w-[180px]">
               <Image
                 src="/images/brand/logo-horizontal-blue.png"
-                alt="Ryan Realty, Bend, Oregon"
+                alt="Ryan Realty · Bend, Oregon"
                 fill
                 sizes="(max-width: 640px) 140px, 180px"
-                className="object-contain object-left"
+                className="object-contain object-left brightness-0 invert"
                 priority
               />
             </span>
           </Link>
           <a
             href={`tel:${BROKER_PHONE_TEL}`}
-            className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:px-4"
+            className="inline-flex items-center gap-1.5 border-[3px] border-[#faf8f4] bg-[#faf8f4] px-3 py-2 text-sm font-bold uppercase tracking-[0.1em] text-[#102742] transition-colors hover:bg-transparent hover:text-[#faf8f4] sm:px-4"
             aria-label={`Call Ryan Realty at ${BROKER_PHONE}`}
           >
             <PhoneIcon className="h-4 w-4" />
@@ -140,48 +141,51 @@ export default async function ListYourHomePage() {
           Proof-led, left-anchored, typographic.
           The total volume is an oversized design element, not a card.
           No centered stack. No eyebrow/headline/subhead/CTA template. */}
-      <section className="overflow-x-clip bg-background pt-16 pb-14 sm:pt-24 sm:pb-20">
-        <div className="mx-auto max-w-5xl px-6">
+      <section className="overflow-x-clip border-b-[3px] border-[#102742] bg-[#faf8f4] pt-16 pb-14 sm:pt-24 sm:pb-20">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
           {/* Asymmetric two-column: claim left, stat anchor right */}
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_auto] lg:items-end lg:gap-16">
             {/* Left: confident claim line */}
             <div className="max-w-xl">
-              <h1 className="not-italic font-display text-4xl font-semibold leading-tight tracking-tight text-primary sm:text-5xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+                Bend · Oregon · List your home
+              </p>
+              <h1 className="mt-4 font-display text-4xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-5xl lg:text-6xl">
                 The proof is the page.
               </h1>
-              <p className="mt-5 text-lg leading-relaxed text-foreground/75">
+              <p className="mt-5 text-lg leading-relaxed text-[#102742]/75">
                 Ryan Realty has represented sellers through every kind of Bend market. Real data, real broker, from your first call to closing day.
               </p>
               {aggregate.count > 0 && (
-                <p className="mt-4 text-sm text-muted-foreground tabular-nums">
-                  <span className="text-warning" aria-label="Five stars">{'★★★★★'}</span>
+                <p className="mt-4 text-sm tabular-nums text-[#102742]/70">
+                  <span className="text-[#102742]" aria-label="Five stars">{'★★★★★'}</span>
                   {'  '}{aggregate.rating} · {aggregate.count} Google reviews
                 </p>
               )}
               <div className="mt-8">
                 <a
                   href="#consult"
-                  className="inline-flex h-12 items-center justify-center rounded-full bg-primary px-8 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  className="inline-flex items-center justify-center border-[3px] border-[#102742] bg-[#102742] px-8 py-4 text-sm font-bold uppercase tracking-[0.1em] text-[#faf8f4] transition-colors hover:bg-transparent hover:text-[#102742] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102742] focus-visible:ring-offset-2"
                 >
                   Book a free consultation
                 </a>
               </div>
             </div>
 
-            {/* Right: oversized typographic volume anchor. Not a card. */}
+            {/* Right: oversized typographic volume anchor. Hard navy frame. */}
             {trackRecord !== null && (
-              <div className="shrink-0 lg:pb-1">
+              <div className="shrink-0 border-[3px] border-[#102742] bg-[#102742] p-6 text-[#faf8f4] sm:p-8">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#faf8f4]/60">
+                  In Bend homes sold
+                </p>
                 <p
-                  className="not-italic font-display font-semibold tabular-nums leading-none text-primary"
+                  className="mt-3 font-display tabular-nums leading-none text-[#faf8f4]"
                   style={{ fontSize: 'clamp(4rem, 8vw, 7rem)' }}
                   aria-label={`${fmtCompact(trackRecord.totalVolume)} in Bend homes sold`}
                 >
                   {fmtCompact(trackRecord.totalVolume)}
                 </p>
-                <p className="mt-2 text-base text-foreground/60">
-                  in Bend homes sold
-                </p>
-                <p className="mt-1 text-sm tabular-nums text-muted-foreground">
+                <p className="mt-4 text-sm tabular-nums text-[#faf8f4]/70">
                   Avg {fmtCompact(trackRecord.avgSalePrice)} per sale
                 </p>
               </div>
@@ -193,13 +197,18 @@ export default async function ListYourHomePage() {
       {/* SECTION 2: WHY LIST WITH US
           Typographic stacked sequence. NOT three equal cards. NOT tiles.
           No uppercase eyebrow per point. Asymmetric column rhythm. */}
-      <section className="bg-card py-16 sm:py-20">
-        <div className="mx-auto max-w-5xl px-6">
-          <h2 className="not-italic font-display text-3xl font-semibold text-primary sm:text-4xl">
-            Why list with us
-          </h2>
+      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4] py-16 sm:py-20">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <ScrollReveal>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+              The difference
+            </p>
+            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
+              Why list with us
+            </h2>
+          </ScrollReveal>
 
-          <div className="mt-12 divide-y divide-primary/8">
+          <div className="mt-12 border-t-[3px] border-[#102742]">
             <WhyPoint
               title="Broker access from day one"
               body="The person who prices your home is the person on the phone when a buyer's agent calls. No handoffs."
@@ -221,19 +230,24 @@ export default async function ListYourHomePage() {
           Matt primary (larger). Paul + Rebecca secondary.
           Transparent PNGs floating on cream. No rectangular card frames.
           No drop-shadow boxes. No centered three-equal-avatar grid. */}
-      <section className="bg-background py-16 sm:py-20">
-        <div className="mx-auto max-w-5xl px-6">
-          <h2 className="not-italic font-display text-3xl font-semibold text-primary sm:text-4xl">
-            Your broker is based in Bend
-          </h2>
-          <p className="mt-3 max-w-lg text-base leading-relaxed text-foreground/65">
-            Working this market every day. The broker you meet is your broker from listing to close.
-          </p>
+      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4] py-16 sm:py-20">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <ScrollReveal>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+              Who lists your home
+            </p>
+            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
+              Your broker is based in Bend
+            </h2>
+            <p className="mt-4 max-w-lg text-base leading-relaxed text-[#102742]/65">
+              Working this market every day. The broker you meet is your broker from listing to close.
+            </p>
+          </ScrollReveal>
 
           {/* Asymmetric: Matt large + primary, Paul + Rebecca secondary + offset */}
           <div className="mt-12 flex flex-col gap-12 sm:flex-row sm:items-end sm:gap-8 lg:gap-14">
             {/* Primary broker: Matt */}
-            <div className="flex flex-col sm:w-64">
+            <ScrollReveal className="flex flex-col sm:w-64" delayMs={0}>
               <span className="relative block h-72 w-48 sm:h-80 sm:w-56">
                 <Image
                   src="/images/brokers/ryan-matt.png"
@@ -244,15 +258,15 @@ export default async function ListYourHomePage() {
                 />
               </span>
               <div className="mt-3">
-                <p className="not-italic font-display text-xl font-semibold text-primary">Matt Ryan</p>
-                <p className="text-sm text-muted-foreground">Principal Broker · Founder</p>
-                <p className="mt-1.5 text-sm leading-relaxed text-foreground/60">Founded Ryan Realty in 2023. Licensed in Oregon since 2021.</p>
+                <p className="font-display text-xl uppercase leading-none tracking-[-0.01em] text-[#102742]">Matt Ryan</p>
+                <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#102742]/65">Principal Broker · Founder</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-[#102742]/60">Founded Ryan Realty in 2023. Licensed in Oregon since 2021.</p>
               </div>
-            </div>
+            </ScrollReveal>
 
             {/* Secondary brokers: Paul and Rebecca */}
             <div className="flex flex-row gap-8 sm:gap-6 lg:gap-10">
-              <div className="flex flex-col">
+              <ScrollReveal className="flex flex-col" delayMs={75}>
                 <span className="relative block h-52 w-36 sm:h-60 sm:w-40">
                   <Image
                     src="/images/brokers/stevenson-paul.png"
@@ -263,13 +277,13 @@ export default async function ListYourHomePage() {
                   />
                 </span>
                 <div className="mt-3">
-                  <p className="not-italic font-display text-base font-semibold text-primary">Paul Stevenson</p>
-                  <p className="text-xs text-muted-foreground">Broker</p>
-                  <p className="mt-1 text-xs leading-relaxed text-foreground/60">Buyers and sellers across Bend.</p>
+                  <p className="font-display text-base uppercase leading-none tracking-[-0.01em] text-[#102742]">Paul Stevenson</p>
+                  <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#102742]/65">Broker</p>
+                  <p className="mt-1 text-xs leading-relaxed text-[#102742]/60">Buyers and sellers across Bend.</p>
                 </div>
-              </div>
+              </ScrollReveal>
 
-              <div className="flex flex-col">
+              <ScrollReveal className="flex flex-col" delayMs={150}>
                 <span className="relative block h-52 w-36 sm:h-60 sm:w-40">
                   <Image
                     src="/images/brokers/peterson-rebecca.png"
@@ -280,11 +294,11 @@ export default async function ListYourHomePage() {
                   />
                 </span>
                 <div className="mt-3">
-                  <p className="not-italic font-display text-base font-semibold text-primary">Rebecca Peterson</p>
-                  <p className="text-xs text-muted-foreground">Broker</p>
-                  <p className="mt-1 text-xs leading-relaxed text-foreground/60">NW Crossing and Westside Bend.</p>
+                  <p className="font-display text-base uppercase leading-none tracking-[-0.01em] text-[#102742]">Rebecca Peterson</p>
+                  <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#102742]/65">Broker</p>
+                  <p className="mt-1 text-xs leading-relaxed text-[#102742]/60">NW Crossing and Westside Bend.</p>
                 </div>
-              </div>
+              </ScrollReveal>
             </div>
           </div>
         </div>
@@ -295,19 +309,22 @@ export default async function ListYourHomePage() {
           NOT three equal cards. Real address, neighborhood, close price.
           Only verified Bend list-side sales with photos. */}
       {soldListings.length > 0 && (
-        <section className="bg-card py-16 sm:py-20">
-          <div className="mx-auto max-w-5xl px-6">
-            <div className="mb-10">
-              <h2 className="not-italic font-display text-3xl font-semibold text-primary sm:text-4xl">
+        <section className="border-b-[3px] border-[#102742] bg-[#faf8f4] py-16 sm:py-20">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6">
+            <ScrollReveal className="mb-10">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+                Closed · Verified
+              </p>
+              <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
                 Recently sold in Bend
               </h2>
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p className="mt-3 text-base text-[#102742]/70">
                 Verified against MLS records. Homes we listed.
               </p>
-            </div>
+            </ScrollReveal>
 
             {/* Varied editorial layout: breakout strip on top, two smaller below */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-5">
               {/* Breakout: full-width wide card */}
               {soldListings[0] !== undefined && (() => {
                 const story = soldListings[0]
@@ -318,36 +335,38 @@ export default async function ListYourHomePage() {
                     ? story.listing.closePrice
                     : null
                 return (
-                  <div key={story.key} className="overflow-hidden rounded-2xl bg-background">
-                    <div className="relative h-72 w-full overflow-hidden sm:h-80">
-                      <Image
-                        src={story.listing.photoUrl}
-                        alt={story.listing.addressLine}
-                        fill
-                        sizes="100vw"
-                        className="object-cover object-center transition-transform duration-700 hover:scale-105"
-                      />
-                    </div>
-                    <div className="px-5 py-4">
-                      <p className="text-xs text-muted-foreground">
-                        {story.listing.neighborhood !== null ? story.listing.neighborhood : 'Bend, OR'}
-                      </p>
-                      <p className="mt-0.5 not-italic font-display text-base font-semibold text-primary">
-                        {story.listing.addressLine}
-                      </p>
-                      {cp !== null && (
-                        <p className="mt-2 text-sm font-semibold tabular-nums text-foreground">
-                          Sold {fmtFull(cp)}
+                  <ScrollReveal key={story.key}>
+                    <div className="overflow-hidden border-[3px] border-[#102742] bg-[#102742] text-[#faf8f4]">
+                      <div className="relative h-72 w-full overflow-hidden sm:h-80">
+                        <Image
+                          src={story.listing.photoUrl}
+                          alt={story.listing.addressLine}
+                          fill
+                          sizes="100vw"
+                          className="object-cover object-center"
+                        />
+                      </div>
+                      <div className="p-5">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#faf8f4]/65">
+                          {story.listing.neighborhood !== null ? story.listing.neighborhood : 'Bend, OR'}
                         </p>
-                      )}
+                        <p className="mt-1 text-sm font-semibold tracking-[0.01em] text-[#faf8f4]">
+                          {story.listing.addressLine}
+                        </p>
+                        {cp !== null && (
+                          <p className="mt-4 inline-flex border-[3px] border-[#faf8f4] bg-[#faf8f4] px-3 py-1 font-display text-sm tabular-nums text-[#102742]">
+                            Sold {fmtFull(cp)}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  </ScrollReveal>
                 )
               })()}
 
               {/* Secondary row: two smaller cards side by side */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {soldListings.slice(1).map((story) => {
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                {soldListings.slice(1).map((story, i) => {
                   const cp =
                     story.listing.closePrice !== null &&
                     story.listing.closePrice !== undefined &&
@@ -355,30 +374,32 @@ export default async function ListYourHomePage() {
                       ? story.listing.closePrice
                       : null
                   return (
-                    <div key={story.key} className="overflow-hidden rounded-2xl bg-background">
-                      <div className="relative h-52 w-full overflow-hidden">
-                        <Image
-                          src={story.listing.photoUrl}
-                          alt={story.listing.addressLine}
-                          fill
-                          sizes="(max-width: 640px) 100vw, 50vw"
-                          className="object-cover object-center transition-transform duration-700 hover:scale-105"
-                        />
-                      </div>
-                      <div className="px-5 py-4">
-                        <p className="text-xs text-muted-foreground">
-                          {story.listing.neighborhood !== null ? story.listing.neighborhood : 'Bend, OR'}
-                        </p>
-                        <p className="mt-0.5 not-italic font-display text-base font-semibold text-primary">
-                          {story.listing.addressLine}
-                        </p>
-                        {cp !== null && (
-                          <p className="mt-2 text-sm font-semibold tabular-nums text-foreground">
-                            Sold {fmtFull(cp)}
+                    <ScrollReveal key={story.key} delayMs={i * 75}>
+                      <div className="overflow-hidden border-[3px] border-[#102742] bg-[#102742] text-[#faf8f4]">
+                        <div className="relative h-52 w-full overflow-hidden">
+                          <Image
+                            src={story.listing.photoUrl}
+                            alt={story.listing.addressLine}
+                            fill
+                            sizes="(max-width: 640px) 100vw, 50vw"
+                            className="object-cover object-center"
+                          />
+                        </div>
+                        <div className="p-5">
+                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#faf8f4]/65">
+                            {story.listing.neighborhood !== null ? story.listing.neighborhood : 'Bend, OR'}
                           </p>
-                        )}
+                          <p className="mt-1 text-sm font-semibold tracking-[0.01em] text-[#faf8f4]">
+                            {story.listing.addressLine}
+                          </p>
+                          {cp !== null && (
+                            <p className="mt-4 inline-flex border-[3px] border-[#faf8f4] bg-[#faf8f4] px-3 py-1 font-display text-sm tabular-nums text-[#102742]">
+                              Sold {fmtFull(cp)}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    </ScrollReveal>
                   )
                 })}
               </div>
@@ -389,48 +410,55 @@ export default async function ListYourHomePage() {
 
       {/* SECTION 5: REVIEWS
           Oversized pull-quotes on cream. NOT a wall. NOT a 3-col grid.
-          Stars use warning token only. Aggregate from live data. */}
-      <section className="bg-background py-16 sm:py-20">
-        <div className="mx-auto max-w-5xl px-6">
-          <div className="flex items-baseline justify-between gap-6">
-            <h2 className="not-italic font-display text-3xl font-semibold text-primary sm:text-4xl">
-              What sellers say
-            </h2>
-            {aggregate.count > 0 && (
-              <a
-                href={GOOGLE_REVIEWS_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="shrink-0 text-sm font-semibold text-primary underline-offset-4 hover:underline"
-              >
-                {aggregate.rating} ★ · {aggregate.count} reviews
-              </a>
-            )}
-          </div>
+          Aggregate from live data. */}
+      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4] py-16 sm:py-20">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <ScrollReveal>
+            <div className="flex items-baseline justify-between gap-6">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/60">
+                  In their words
+                </p>
+                <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
+                  What sellers say
+                </h2>
+              </div>
+              {aggregate.count > 0 && (
+                <a
+                  href={GOOGLE_REVIEWS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 text-sm font-semibold text-[#102742] underline-offset-4 hover:underline"
+                >
+                  {aggregate.rating} ★ · {aggregate.count} reviews
+                </a>
+              )}
+            </div>
+          </ScrollReveal>
 
           {/* Oversized pull-quotes, single column, generous spacing */}
-          <div className="mt-10 space-y-12">
+          <div className="mt-10 space-y-px border border-[#102742]/20 bg-[#102742]/20">
             {featuredReviews.map((t) => (
-              <figure key={t.author} className="max-w-3xl">
-                <span className="text-lg leading-none text-warning" aria-label="Five star rating">
+              <figure key={t.author} className="bg-[#faf8f4] p-6 sm:p-8">
+                <span className="text-lg leading-none text-[#102742]" aria-label="Five star rating">
                   {'★★★★★'}
                 </span>
-                <blockquote className="mt-3 not-italic font-display text-xl font-semibold leading-snug text-primary sm:text-2xl">
+                <blockquote className="mt-3 max-w-3xl font-display text-xl uppercase leading-snug tracking-[-0.01em] text-[#102742] sm:text-2xl">
                   {'"'}{t.quote}{'"'}
                 </blockquote>
-                <figcaption className="mt-4 text-sm text-muted-foreground">
+                <figcaption className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-[#102742]/65">
                   {t.author}
                 </figcaption>
               </figure>
             ))}
           </div>
 
-          <div className="mt-12 border-t border-primary/8 pt-10">
+          <div className="mt-10 border-t-[3px] border-[#102742] pt-8">
             <a
               href={GOOGLE_REVIEWS_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline-offset-4 hover:underline"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-[#102742] underline-offset-4 hover:underline"
             >
               <GoogleMark className="h-4 w-4 opacity-60" />
               Read all {aggregate.count} reviews on Google
@@ -440,25 +468,27 @@ export default async function ListYourHomePage() {
       </section>
 
       {/* SECTION 6: CONSULTATION FORM
-          The ONE full-bleed navy moment. id="consult".
-          bg-primary text-primary-foreground.
-          Only dark register shift on this page. The conversion goal. */}
-      <section id="consult" className="bg-primary py-16 sm:py-20">
-        <div className="mx-auto max-w-2xl px-6">
-          <h2 className="not-italic font-display text-3xl font-semibold text-primary-foreground sm:text-4xl">
+          The full-bleed navy moment. id="consult".
+          The conversion goal. SellerLPForm island + props preserved exactly. */}
+      <section id="consult" className="bg-[#102742] py-16 text-[#faf8f4] sm:py-20">
+        <div className="mx-auto max-w-2xl px-4 sm:px-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#faf8f4]/55">
+            One conversation
+          </p>
+          <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] sm:text-4xl">
             {"Let's talk about your sale."}
           </h2>
-          <p className="mt-4 text-base leading-relaxed text-primary-foreground/75">
+          <p className="mt-4 text-base leading-relaxed text-[#faf8f4]/80">
             Tell us about your property. A broker will reach out to talk through pricing and a plan. No pitch, no pressure, no obligation.
           </p>
           <div className="mt-8">
             <SellerLPForm knownVisitor={knownVisitor} variant="list-now" />
           </div>
-          <p className="mt-5 text-sm text-primary-foreground/50">
-            Or call us directly:{' '}
+          <p className="mt-6 text-sm text-[#faf8f4]/75">
+            Or call us directly.{' '}
             <a
               href={`tel:${BROKER_PHONE_TEL}`}
-              className="font-semibold tabular-nums text-primary-foreground underline-offset-2 hover:underline"
+              className="font-semibold tabular-nums text-[#faf8f4] underline underline-offset-2 hover:no-underline"
             >
               {BROKER_PHONE}
             </a>
@@ -467,11 +497,11 @@ export default async function ListYourHomePage() {
       </section>
 
       {/* SECTION 7: FOOTER - minimal */}
-      <footer className="bg-card pb-20 sm:pb-8">
-        <div className="mx-auto max-w-5xl px-6 py-8 text-center text-sm text-muted-foreground">
-          <p>Ryan Realty LLC · Equal Housing Opportunity</p>
-          <p className="mt-2">
-            <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">
+      <footer className="border-t-[3px] border-[#102742] bg-[#102742] pb-24 sm:pb-8">
+        <div className="mx-auto max-w-5xl px-4 py-8 text-center text-xs font-semibold uppercase tracking-[0.12em] text-[#faf8f4]/65 sm:px-6">
+          <p>Ryan Realty LLC · Equal Housing Opportunity · Bend · Oregon</p>
+          <p className="mt-2 normal-case tracking-normal">
+            <Link href="/privacy" className="underline underline-offset-2 hover:text-[#faf8f4]">
               Privacy
             </Link>
             <span className="mx-2">·</span>
@@ -480,19 +510,19 @@ export default async function ListYourHomePage() {
         </div>
       </footer>
 
-      {/* Sticky mobile CTA bar */}
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-primary/15 bg-card/95 px-3 py-3 backdrop-blur sm:hidden">
+      {/* Sticky mobile CTA bar — pinned to viewport bottom on mobile only. */}
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t-[3px] border-[#102742] bg-[#faf8f4] px-3 py-3 sm:hidden">
         <div className="flex items-center gap-2">
           <a
             href="#consult"
-            className="flex-1 rounded-full bg-primary px-4 py-3 text-center text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/85"
+            className="flex-1 border-[3px] border-[#102742] bg-[#102742] px-4 py-3 text-center text-sm font-bold uppercase tracking-[0.1em] text-[#faf8f4]"
           >
             Book a free consultation
           </a>
           <a
             href={`tel:${BROKER_PHONE_TEL}`}
             aria-label={`Call Ryan Realty at ${BROKER_PHONE}`}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors hover:bg-primary/15"
+            className="flex h-12 w-12 items-center justify-center border-[3px] border-[#102742] text-[#102742]"
           >
             <PhoneIcon className="h-5 w-5" />
           </a>
@@ -506,11 +536,11 @@ export default async function ListYourHomePage() {
 
 function WhyPoint({ title, body }: { title: string; body: string }) {
   return (
-    <div className="py-8 first:pt-0 last:pb-0 sm:grid sm:grid-cols-[2fr_3fr] sm:items-start sm:gap-12">
-      <p className="not-italic font-display text-lg font-semibold leading-snug text-primary sm:text-xl">
+    <div className="border-b-[3px] border-[#102742] py-8 sm:grid sm:grid-cols-[2fr_3fr] sm:items-start sm:gap-12">
+      <p className="font-display text-lg uppercase leading-snug tracking-[-0.01em] text-[#102742] sm:text-xl">
         {title}
       </p>
-      <p className="mt-2 text-base leading-relaxed text-foreground/65 sm:mt-0">
+      <p className="mt-2 text-base leading-relaxed text-[#102742]/70 sm:mt-0">
         {body}
       </p>
     </div>

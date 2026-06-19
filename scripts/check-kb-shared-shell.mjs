@@ -43,8 +43,11 @@ let kbPages = 0
 for (const file of pageFiles(ROOT)) {
   const src = readFileSync(file, 'utf8')
   // A KB page is one that renders the kb-root surface. Match the className token,
-  // not a comment mention — the surface is always applied as a class string.
-  if (!/kb-root/.test(src)) continue
+  // NOT a comment mention — strip block + line comments first so a doc comment
+  // like "LPs do NOT carry the .kb-root shell" (app/lp/fsbo) is not misread as a
+  // KB page. (The `[^:]` guard avoids eating `://` in URLs.)
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1')
+  if (!/kb-root/.test(code)) continue
   kbPages++
   const hasNav = /<KbNav\b/.test(src) || /\bKbNav\b/.test(src)
   const hasFooter = /<KbFooter\b/.test(src) || /\bKbFooter\b/.test(src)

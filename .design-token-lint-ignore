@@ -73,6 +73,15 @@ app/admin/(protected)/producers/[slug]/page.tsx
 # #FBBC05, #EA4335) for the official Google sign-in button. Google's
 # brand guidelines require these exact colors; cannot be CSS-var'd.
 app/lp/seller-home-value/page.tsx
+# Lead LPs restyled to the KB register (2026-06-19, Phase 8). LPs are
+# distraction-free conversion surfaces that do NOT carry the .kb-root scoped CSS,
+# so the KB navy/cream + Amboqia look is applied via arbitrary hex/utilities
+# (text-[#102742]/bg-[#faf8f4]) rather than the var()-backed kb.css. Same exception
+# as seller-home-value above.
+app/lp/sell-your-home/page.tsx
+app/lp/fsbo/page.tsx
+app/lp/expired-listing/page.tsx
+app/lp/buyer-listing-alerts/page.tsx
 
 # CMA email route — renders the HTML email body + preview-page wrapper
 # as inline-style HTML. Email clients don't support CSS variables so
