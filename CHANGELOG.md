@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.36 (2026-06-19)
+
+### Other
+- Phase 4: full audience-tag coverage on lead paths + gate it
+
+---
+
+
 ## v1.595.35 (2026-06-19)
 
 ### Other
