@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.39 (2026-06-19)
+
+### Other
+- Phase 8: restyle the 4 remaining lead LPs to KB (forms preserved)
+
+---
+
+
 ## v1.595.38 (2026-06-19)
 
 ### Other
