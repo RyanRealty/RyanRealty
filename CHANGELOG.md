@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.64 (2026-06-20)
+
+### Other
+- Listing: clear the last 2 axe nodes + tighten the navy-muted gate to catch any sub-AA
+
+---
+
+
 ## v1.595.63 (2026-06-20)
 
 ### Other
