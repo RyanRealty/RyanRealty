@@ -1350,7 +1350,7 @@ html.lenis, html.lenis body{height:auto;}
 }
 .kb-root .kbmc-chip:hover{border-color:var(--cream);}
 .kb-root .kbmc-chip.off{color:var(--cream-muted);border-color:var(--cream-12);}
-.kb-root .kbmc-swatch{width:11px;height:11px;border:1.5px solid;flex-shrink:0;}
+.kb-root .kbmc-swatch{width:18px;height:0;border:0;border-top-width:2.5px;border-top-style:solid;flex-shrink:0;align-self:center;}
 .kb-root .kbmc-chip:focus-visible{outline:2px solid var(--cream);outline-offset:2px;}
 
 .kb-root .kbmc-plot{position:relative;width:100%;height:var(--kbmc-h,300px);}

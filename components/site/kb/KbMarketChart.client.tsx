@@ -159,9 +159,15 @@ export function KbMarketChart({
       return {
         year: s.year,
         color: LINE_INK,
-        // Distinguish years by brightness, not hue: current year full cream, older
-        // years fade back so the focal line is unmistakable and we stay two-color.
-        opacity: isNewest ? 1 : Math.max(0.26, 0.6 - recency * 0.085),
+        // Make the years OBVIOUSLY different (two-color, so it's style, not hue): the
+        // current year is SOLID + full-bright (the focal line); prior years are DASHED
+        // and kept clearly visible — so a complete past year unmistakably spans the
+        // full width to December (the thin faint line was nearly invisible on wide
+        // screens, which read as "no line reaches the end"). At a glance: solid bright
+        // = this year so far (stops at the "as of" mark); dashed = a full past year,
+        // edge to edge.
+        opacity: isNewest ? 1 : Math.max(0.55, 0.82 - recency * 0.1),
+        dash: isNewest ? undefined : recency <= 1 ? '9 6' : '2 7',
         isNewest,
         path: brokenPath(plotted.map((p) => [xOf(p.m), yOf(p.value), p.m] as [number, number, number])),
         end: last ? { xPct: (xOf(last.m) / W) * 100, yPct: (yOf(last.value) / H) * 100, value: last.value, lastM: last.m } : null,
@@ -209,17 +215,18 @@ export function KbMarketChart({
     const ctx = gsap.context(() => {
       const paths = gsap.utils.toArray<SVGPathElement>(`.kbmc-line`)
       if (reduce) {
-        gsap.set(paths, { strokeDashoffset: 0 })
+        gsap.set(paths, { opacity: 1 })
         return
       }
+      // Fade each line in (staggered). We can't "draw" the line via strokeDashoffset
+      // anymore — the dash PATTERN that distinguishes prior years owns strokeDasharray.
       paths.forEach((p, i) => {
-        const len = p.getTotalLength()
-        gsap.set(p, { strokeDasharray: len, strokeDashoffset: len })
+        gsap.set(p, { opacity: 0 })
         gsap.to(p, {
-          strokeDashoffset: 0,
-          duration: 1.4,
+          opacity: 1,
+          duration: 0.9,
           ease: 'power2.out',
-          delay: i * 0.12,
+          delay: i * 0.1,
           scrollTrigger: { trigger: root.current, start: 'top 78%', once: true },
         })
       })
@@ -284,7 +291,14 @@ export function KbMarketChart({
             aria-pressed={!l.hidden}
             onClick={() => toggle(l.year)}
           >
-            <span className="kbmc-swatch" style={{ background: l.hidden ? 'transparent' : l.color, borderColor: l.color }} />
+            <span
+              className="kbmc-swatch"
+              style={{
+                borderTopStyle: l.dash ? 'dashed' : 'solid',
+                borderTopColor: l.hidden ? 'var(--cream-12)' : l.color,
+                opacity: l.hidden ? 1 : Math.max(0.7, l.opacity),
+              }}
+            />
             {l.year}
           </button>
         ))}
@@ -369,9 +383,10 @@ export function KbMarketChart({
                 d={l.path}
                 fill="none"
                 stroke={l.color}
-                strokeWidth={l.isNewest ? 2.5 : 1.5}
+                strokeWidth={l.isNewest ? 2.5 : 1.75}
                 strokeOpacity={l.opacity}
-                strokeLinecap="round"
+                strokeDasharray={l.dash}
+                strokeLinecap={l.dash ? 'butt' : 'round'}
                 strokeLinejoin="round"
                 vectorEffect="non-scaling-stroke"
               />
