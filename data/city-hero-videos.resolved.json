@@ -42,5 +42,27 @@
     ],
     "source": "drive:1bkUBY6J11r6nApimLSiTo0F0Nky7K4HM",
     "label": "NorthWest Crossing Area Guide (landscape)"
+  },
+  "bend": {
+    "scope": "cities",
+    "video": "/videos/cities/bend.mp4",
+    "poster": "/videos/cities/bend.jpg",
+    "geo_tags": [
+      "bend",
+      "central-oregon"
+    ],
+    "source": "drive:1yyBPCfWNKac664jHOA4v68FkrEd4-9BL",
+    "label": "Mt Bachelor Twilight (4K) — Ryan Realty Header Video"
+  },
+  "sunriver": {
+    "scope": "cities",
+    "video": "/videos/cities/sunriver.mp4",
+    "poster": "/videos/cities/sunriver.jpg",
+    "geo_tags": [
+      "sunriver",
+      "central-oregon"
+    ],
+    "source": "drive:1MpET_q3zyPrhmmNPVWclWaXfVk28MV7P",
+    "label": "Sparks Lake RL (4K, Cascade Lakes near Sunriver) — Ryan Realty Header Video"
   }
 }

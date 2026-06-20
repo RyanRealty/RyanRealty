@@ -6,8 +6,9 @@
     { "scope": "communities", "slug": "broken-top", "driveFileId": "1cwOiepvRBR7o8pctl653vuwvjBMTDxdj", "geo_tags": ["bend", "broken-top"], "label": "Broken Top Area Guide (landscape)", "startSec": 2, "durationSec": 13 },
     { "scope": "communities", "slug": "northwest-crossing", "driveFileId": "1bkUBY6J11r6nApimLSiTo0F0Nky7K4HM", "geo_tags": ["bend", "northwest-crossing"], "label": "NorthWest Crossing Area Guide (landscape)", "startSec": 2, "durationSec": 13 },
 
-    { "scope": "cities", "slug": "bend", "driveFileId": null, "geo_tags": ["bend", "central-oregon"], "note": "covered by homepage hero (Old Mill drone)" },
-    { "scope": "cities", "slug": "redmond", "driveFileId": null, "geo_tags": ["redmond"], "note": "only 9x16 social Area Guide; awaiting clean landscape B-roll or use city photo" },
-    { "scope": "cities", "slug": "sisters", "driveFileId": null, "geo_tags": ["sisters"], "note": "only 9x16 social Area Guide; awaiting clean landscape" }
+    { "scope": "cities", "slug": "bend", "driveFileId": "1yyBPCfWNKac664jHOA4v68FkrEd4-9BL", "geo_tags": ["bend", "central-oregon"], "label": "Mt Bachelor Twilight (4K) — Ryan Realty Header Video", "startSec": 0, "durationSec": 12 },
+    { "scope": "cities", "slug": "sisters", "driveFileId": null, "geo_tags": ["sisters"], "note": "Proxy Falls.mp4 has a burned-in 'Proxy Falls N.' label across the whole clip (reference cut, not clean B-roll) — held until clean Sisters/Three Sisters B-roll is available; city photo fallback for now" },
+    { "scope": "cities", "slug": "sunriver", "driveFileId": "1MpET_q3zyPrhmmNPVWclWaXfVk28MV7P", "geo_tags": ["sunriver", "central-oregon"], "label": "Sparks Lake RL (4K, Cascade Lakes near Sunriver) — Ryan Realty Header Video", "startSec": 1, "durationSec": 13 },
+    { "scope": "cities", "slug": "redmond", "driveFileId": null, "geo_tags": ["redmond"], "note": "no Redmond-specific clean B-roll yet (Smith Rock); city photo fallback" }
   ]
 }

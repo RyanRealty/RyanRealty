@@ -92,11 +92,16 @@ export const revalidate = 60
 
 type Props = { params: Promise<{ slug: string }> }
 
-// Bend reuses the homepage Old Mill drone video; other cities use their verified
-// cityHero photo (resolved below) with a labeled regional fallback.
-const CITY_HERO_VIDEO: Record<string, { videoSrc: string; posterSrc: string }> = {
-  bend: { videoSrc: '/videos/hero-optimized.mp4', posterSrc: '/images/hero/hero-old-mill-master-4k.jpg' },
-}
+// Each city's scenic hero B-roll (Mt Bachelor for Bend, Sparks Lake for Sunriver, ...)
+// is produced by scripts/sync-city-videos.mjs into public/videos/cities/ and recorded
+// in data/city-hero-videos.resolved.json (scope:'cities'). It renders as the muted,
+// looping <KbHero> background over its poster still. Cities without a clean B-roll clip
+// fall back to their verified cityHero photo.
+const CITY_HERO_VIDEO: Record<string, { videoSrc: string; posterSrc: string }> = Object.fromEntries(
+  Object.entries(communityVideoManifest as Record<string, { scope?: string; video?: string; poster?: string }>)
+    .filter(([, v]) => v?.scope === 'cities' && v.video && v.poster)
+    .map(([slug, v]) => [slug, { videoSrc: v.video as string, posterSrc: v.poster as string }]),
+)
 
 // Curated marquee communities per city (img + Area Guide video), resolved against
 // live counts from getCommunitiesForIndex — same pattern as the homepage.
