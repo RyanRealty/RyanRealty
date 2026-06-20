@@ -1405,6 +1405,24 @@ html.lenis, html.lenis body{height:auto;}
 @keyframes kbmcShimmer{from{background-position:200% 0;}to{background-position:-200% 0;}}
 @media(prefers-reduced-motion:reduce){.kb-root .kbmc-skeleton{animation:none;}}
 
+/* ===== kb-tool-skin — re-skin an embedded shadcn tool (the RentalCalculator) to the
+   brutalist KB look on listing/site surfaces, WITHOUT touching the standalone /tools
+   page (the skin only applies inside .kb-tool-skin). Hard edges, navy/cream, tabular
+   numerals, and NO red — the two-color system has no destructive red; a negative reads
+   by its minus sign. One component, two skins, no fork. ===== */
+.kb-root .kb-tool-skin{font-variant-numeric:tabular-nums;}
+.kb-root .kb-tool-skin .text-destructive{color:var(--navy)!important;}
+.kb-root .kb-tool-skin [data-slot="card"]{border:var(--edge,3px) solid var(--navy);border-radius:0;box-shadow:none;background:var(--cream);}
+.kb-root .kb-tool-skin [data-slot="card-title"]{color:var(--navy);}
+.kb-root .kb-tool-skin [data-slot="input"],
+.kb-root .kb-tool-skin [data-slot="select-trigger"]{border:1.5px solid rgba(16,39,66,.30);border-radius:4px;background:var(--cream);color:var(--navy);font-variant-numeric:tabular-nums;}
+.kb-root .kb-tool-skin [data-slot="input"]:focus-visible,
+.kb-root .kb-tool-skin [data-slot="select-trigger"]:focus-visible{border-color:var(--navy);outline:2px solid rgba(16,39,66,.25);outline-offset:1px;}
+.kb-root .kb-tool-skin [data-slot="label"]{color:var(--navy);font-weight:600;}
+.kb-root .kb-tool-skin [data-slot="button"]{border-radius:0;}
+.kb-root .kb-tool-skin [data-slot="separator"]{background:rgba(16,39,66,.14);}
+.kb-root .kb-tool-skin table{font-variant-numeric:tabular-nums;}
+
 /* ===== Section transitions — each section RISES into view as it enters, so the
    cream↔navy cuts read as intentional "arrivals" instead of an abrupt snap. Pure
    CSS scroll-driven (no JS, no flash); gated on view-timeline support, so the
