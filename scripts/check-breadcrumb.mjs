@@ -60,6 +60,10 @@ const EXEMPT = [
   /^app\/(login|signup|forgot-password|auth-error|offline)\//, // auth + utility
   /^app\/(privacy|terms|fair-housing|accessibility|cookies|dmca|data-deletion)\/page\.tsx$/, // legal
   /^app\/alerts\//, // email unsubscribe utility
+  /^app\/newsletter\/unsubscribe\//, // token-confirm utility (mirrors alerts/unsubscribe)
+  /^app\/sign\//, // public tokenized e-signing surface — not a content page
+  /^app\/dev\//, // internal component gallery for review, not a public page
+  /^app\/feed\/page\.tsx$/, // standalone immersive video feed
   /^app\/cma-drafts\//, // internal draft viewer
   /^app\/team\/\[slug\]\/edit\//, // admin edit form
   /^app\/lp\//, // standalone landing pages are intentionally crumb-less
@@ -125,7 +129,10 @@ function classify(pagePath) {
     .filter((l) => l && !l.startsWith('//') && !l.startsWith('/*') && !l.startsWith('*'))
   const isReExportOnly =
     meaningful.length > 0 && meaningful.every((l) => /^export\s+(\{[^}]*\}|\*)\s+from\s+['"]/.test(l))
-  const hasBreadcrumb = isReExportOnly || /BreadcrumbNav|PageBreadcrumb/.test(src)
+  // KbBreadcrumb is the KB-era breadcrumb (components/site/kb/KbBreadcrumb) — the
+  // design-system pages render it instead of PageBreadcrumb. It counts as a real
+  // breadcrumb; this gate predated it, which is why ~49 KB pages read as "missing".
+  const hasBreadcrumb = isReExportOnly || /BreadcrumbNav|PageBreadcrumb|KbBreadcrumb/.test(src)
   const usesDeprecated = DEPRECATED_IMPORT.test(src)
   const directRender = DIRECT_RENDER.test(src)
   const navyTone = /tone="on-navy"/.test(src) && !NAVY_TONE_ALLOWED.has(rel)

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-11T15:32:17.124Z",
+  "generatedAt": "2026-06-20T16:45:54.602Z",
   "reason": "Breadcrumb debt at canon time (P1-1). `violators` = pages with no breadcrumb. `directUsage` = pages still rendering <BreadcrumbNav> directly instead of <PageBreadcrumb> (excluded-lane pages pending their own migration). NEW entries in either class fail CI; both lists only shrink.",
   "total": 0,
   "violators": [],

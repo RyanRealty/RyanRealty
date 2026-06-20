@@ -322,7 +322,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       type: 'breadcrumb',
       items: [
         { name: 'Home', url: '/' },
-        { name: 'Search', url: '/search' },
+        { name: 'Homes for sale', url: '/homes-for-sale' },
         { name: zip, url: zipPageUrl },
       ],
     },
@@ -359,7 +359,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
-          { label: 'Search', href: '/search' },
+          { label: 'Homes for sale', href: '/homes-for-sale' },
           { label: zip },
         ]}
       />
