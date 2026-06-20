@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.63 (2026-06-20)
+
+### Other
+- Breadcrumb gate: teach it KbBreadcrumb, clear the 49 false-missing, wire + lock it
+
+---
+
+
 ## v1.595.62 (2026-06-20)
 
 ### Other
