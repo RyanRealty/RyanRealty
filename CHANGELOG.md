@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.61 (2026-06-20)
+
+### Other
+- Listing history: drop the stray "0 down" on the baseline row
+
+---
+
+
 ## v1.595.60 (2026-06-20)
 
 ### Other
