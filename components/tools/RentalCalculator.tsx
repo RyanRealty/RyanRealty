@@ -346,6 +346,7 @@ export default function RentalCalculator({
                 </div>
                 <Slider
                   id="down"
+                  aria-label="Down payment percent"
                   value={[downPaymentPct]}
                   onValueChange={(v) => setDownPaymentPct(v[0] ?? 0)}
                   min={0}

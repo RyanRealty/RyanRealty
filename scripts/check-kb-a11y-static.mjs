@@ -22,7 +22,8 @@
  *
  * Usage: node scripts/check-kb-a11y-static.mjs
  */
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
 
 const FILE = 'components/site/kb/kb.css'
 const raw = readFileSync(FILE, 'utf8')
@@ -71,7 +72,35 @@ while ((r = pairRe.exec(css)) !== null) {
   }
 }
 
-console.log('KB static a11y guard (kb.css)')
+// ── Check 3: sub-AA navy-alpha as a TEXT color in site components ────────────
+// The navy-side analog of cream-40: navy at < 0.64 alpha on cream/white is < 4.5:1.
+// Muted text on light surfaces must use navy-70+ (rgba(16,39,66,0.7) → 5.56:1).
+// Scans components/site (inline styles), excluding gradients/backgrounds (those
+// don't use the `color:` property).
+function walk(dir) {
+  const out = []
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const p = join(dir, e.name)
+    if (e.isDirectory()) out.push(...walk(p))
+    else if (e.name.endsWith('.tsx')) out.push(p)
+  }
+  return out
+}
+// color: 'rgba(16,39,66, <0.5|0.55|0.6|0.62>)' — the failing navy-alpha text values.
+const navyText = /\bcolor\s*:\s*['"]rgba\(\s*16\s*,\s*39\s*,\s*66\s*,\s*0?\.(5|50|55|6|60|62|63)\)['"]/g
+for (const file of walk('components/site')) {
+  const src = readFileSync(file, 'utf8')
+  let mm
+  while ((mm = navyText.exec(src)) !== null) {
+    const line = src.slice(0, mm.index).split('\n').length
+    failures.push(
+      `${file}:${line}  color rgba(16,39,66,.${mm[1]}) used as TEXT — navy < 0.64 alpha on cream/white fails WCAG 1.4.3 (< 4.5:1). ` +
+        `Use rgba(16,39,66,0.72) (5.8:1) or var(--navy-70) for muted text.`,
+    )
+  }
+}
+
+console.log('KB static a11y guard (kb.css + site inline styles)')
 console.log('============================')
 if (failures.length) {
   console.error(`\nFAIL — ${failures.length} issue(s):\n`)
