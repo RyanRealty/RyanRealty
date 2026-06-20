@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.58 (2026-06-20)
+
+### Other
+- Breadcrumb overlay: fix remaining 7 dark-hero pages + lock with gate G56
+
+---
+
+
 ## v1.595.57 (2026-06-20)
 
 ### Other
