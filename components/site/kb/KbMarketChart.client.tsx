@@ -32,6 +32,9 @@ export interface KbMarketYearPoint {
   /** Calendar month, 1–12. */
   m: number
   value: number
+  /** Closed sales behind this month's median. Months below the volume floor are
+   *  suppressed (sparse-geo noise control). null = unknown (never suppressed). */
+  soldCount?: number | null
 }
 export interface KbMarketYearSeries {
   year: number
@@ -53,8 +56,14 @@ export interface KbMarketChartProps {
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const MONTH_INITIAL = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
-// Oldest → newest. The newest visible year always renders in cream (brightest).
-const PALETTE = ['#8fa6cc', '#cf9088', '#7faf9c', '#d6bd79', '#b8a3d6', '#faf8f4']
+// Two-color brand system (Design System v2): every year line is CREAM on the navy
+// chart; years are distinguished by BRIGHTNESS (recency), never hue. The current year
+// is full cream + thickest (the focal line); older years fade back as context. No
+// rainbow — the multi-hue palette was the off-brand "spaghetti" look.
+const LINE_INK = '#faf8f4'
+// A month closed by fewer than this many sales is noise, not a trend: suppress it and
+// break the line across the gap rather than zigzagging through it (§0 honesty).
+const VOLUME_FLOOR = 3
 
 function defaultFormat(n: number): string {
   if (!Number.isFinite(n)) return '—'
@@ -63,15 +72,23 @@ function defaultFormat(n: number): string {
 }
 
 /**
- * Straight-segment path (polyline). Honest time-series rendering — the standard for
- * market/price charts (Zillow, Redfin, every stock chart): smoothing would imply
- * median values between months that don't exist and visually overshoot the data. The
- * "visual help" comes from a prominent current-year line, the gradient fill, the
- * endpoint marker, and a calm 2-line default — not from bending the line.
+ * Straight-segment polyline that BREAKS across month gaps. Honest time-series
+ * rendering — the standard for market/price charts (Zillow, Redfin, every stock
+ * chart): smoothing would imply median values between months that don't exist and
+ * overshoot the data (§0). Each point carries its calendar month; when the next
+ * plotted month isn't contiguous (a sparse/suppressed month was dropped), the line
+ * lifts (new "M") instead of asserting a value through the gap.
  */
-function smoothPath(pts: [number, number][]): string {
+function brokenPath(pts: [number, number, number][]): string {
   if (pts.length === 0) return ''
-  return pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(2)},${p[1].toFixed(2)}`).join(' ')
+  let d = ''
+  let prevM: number | null = null
+  for (const [x, y, m] of pts) {
+    const cmd = prevM != null && m - prevM === 1 ? 'L' : 'M'
+    d += `${cmd}${x.toFixed(2)},${y.toFixed(2)} `
+    prevM = m
+  }
+  return d.trim()
 }
 
 export function KbMarketChart({
@@ -111,6 +128,9 @@ export function KbMarketChart({
     let min = Infinity
     let max = -Infinity
     for (const s of src) for (const p of s.points) {
+      // Suppressed (sub-floor) months don't set the axis — otherwise a single-sale
+      // outlier would blow out the Y-range and flatten the real line.
+      if (p.soldCount != null && p.soldCount < VOLUME_FLOOR) continue
       if (p.value < min) min = p.value
       if (p.value > max) max = p.value
     }
@@ -123,21 +143,29 @@ export function KbMarketChart({
     const yOf = (v: number) => H - ((v - min) / span) * (H - 2 * padY) - padY
     const xOf = (m: number) => ((m - 1) / 11) * W
     const newestYear = years[years.length - 1]?.year
+    const nYears = years.length
     const lines = years.map((s, i) => {
       const sorted = [...s.points].sort((a, b) => a.m - b.m)
-      const xy = sorted.map((p) => [xOf(p.m), yOf(p.value)] as [number, number])
-      const last = sorted[sorted.length - 1]
-      // Completed (past) calendar years always render as a full solid line spanning
-      // their data (Jan→Dec when complete). ONLY the current calendar year — the
-      // newest series — legitimately stops mid-axis; it gets the "as of" endpoint
-      // marker (below), never a fabricated continuation to December. (§0)
+      // Sparse-geo volume floor: drop months below the closed-sale floor (noise, not
+      // a trend); brokenPath then lifts the line across the gap. soldCount null
+      // (older cache rows) is treated as present — never suppress what we can't size.
+      const plotted = sorted.filter((p) => p.soldCount == null || p.soldCount >= VOLUME_FLOOR)
+      const last = plotted[plotted.length - 1]
+      const isNewest = s.year === newestYear
+      const recency = nYears - 1 - i // 0 = newest
+      // Completed (past) calendar years render full solid; ONLY the current year
+      // legitimately stops mid-axis and gets the "as of" marker (below) — never a
+      // fabricated continuation to December (§0).
       return {
         year: s.year,
-        color: PALETTE[Math.min(i, PALETTE.length - 1)] ?? '#faf8f4',
-        isNewest: s.year === newestYear,
-        path: smoothPath(xy),
+        color: LINE_INK,
+        // Distinguish years by brightness, not hue: current year full cream, older
+        // years fade back so the focal line is unmistakable and we stay two-color.
+        opacity: isNewest ? 1 : Math.max(0.26, 0.6 - recency * 0.085),
+        isNewest,
+        path: brokenPath(plotted.map((p) => [xOf(p.m), yOf(p.value), p.m] as [number, number, number])),
         end: last ? { xPct: (xOf(last.m) / W) * 100, yPct: (yOf(last.value) / H) * 100, value: last.value, lastM: last.m } : null,
-        byMonth: new Map(sorted.map((p) => [p.m, p.value])),
+        byMonth: new Map(plotted.map((p) => [p.m, p.value])),
         hidden: hidden.has(s.year),
       }
     })
@@ -342,7 +370,7 @@ export function KbMarketChart({
                 fill="none"
                 stroke={l.color}
                 strokeWidth={l.isNewest ? 2.5 : 1.5}
-                strokeOpacity={l.isNewest ? 1 : 0.62}
+                strokeOpacity={l.opacity}
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 vectorEffect="non-scaling-stroke"
