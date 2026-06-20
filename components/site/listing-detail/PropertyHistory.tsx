@@ -24,19 +24,43 @@ type Props = {
   className?: string
 }
 
-const EVENT_LABEL: Record<string, string> = {
-  new_listing: 'Listed',
-  price_change: 'Price change',
-  price_drop: 'Price drop',
-  price_increase: 'Price increase',
-  status_change: 'Status change',
-  status_pending: 'Pending',
-  status_closed: 'Closed',
-  status_expired: 'Expired',
-  status_canceled: 'Canceled',
-  status_withdrawn: 'Withdrawn',
-  back_on_market: 'Back on market',
+// Canonical key = lowercased with every separator stripped, so the lowercase_under-
+// score form AND the raw UPPERCASE MLS code ("NEWLISTING", "PRICECHANGE") both map.
+function normalizeEvent(raw: string | undefined): string {
+  return (raw ?? '').toLowerCase().replace(/[\s_-]+/g, '')
 }
+
+const EVENT_LABEL: Record<string, string> = {
+  newlisting: 'Listed',
+  listed: 'Listed',
+  comingsoon: 'Coming soon',
+  pricechange: 'Price change',
+  pricedrop: 'Price drop',
+  priceincrease: 'Price increase',
+  statuschange: 'Status change',
+  pending: 'Pending',
+  statuspending: 'Pending',
+  active: 'Active',
+  statusactive: 'Active',
+  backonmarket: 'Back on market',
+  contingent: 'Contingent',
+  statuscontingent: 'Contingent',
+  closed: 'Sold',
+  sold: 'Sold',
+  statusclosed: 'Sold',
+  expired: 'Expired',
+  statusexpired: 'Expired',
+  canceled: 'Canceled',
+  cancelled: 'Canceled',
+  statuscanceled: 'Canceled',
+  withdrawn: 'Withdrawn',
+  statuswithdrawn: 'Withdrawn',
+}
+
+// Only price + status moments belong in the buyer-facing history. MLS change-log
+// noise (document uploads, photo swaps, text/field edits, tour/open-house pings)
+// is filtered out — that wall of "DOCUMENT / PHOTO / TEXTCHANGE" rows is not history.
+const MEANINGFUL_EVENTS = new Set(Object.keys(EVENT_LABEL))
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return ''
@@ -53,19 +77,16 @@ function formatDate(iso: string | null | undefined): string {
 }
 
 function eventLabel(raw: string | undefined): string {
-  if (!raw) return 'Event'
-  return EVENT_LABEL[raw] ?? raw.replace(/_/g, ' ')
+  const key = normalizeEvent(raw)
+  if (!key) return 'Update'
+  return EVENT_LABEL[key] ?? raw!.replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 function isMeaningfulEvent(ev: ListingHistoryEvent): boolean {
-  const raw = (ev.event ?? '').toLowerCase()
-  if (raw === 'photo' || raw === 'photos' || raw === 'photo_change') return false
-  if (raw === 'fieldchange' || raw === 'field_change') {
-    if (ev.price_change && ev.price_change !== 0) return true
-    if (ev.description && ev.description.trim().length > 8) return true
-    return false
-  }
-  return true
+  if (MEANINGFUL_EVENTS.has(normalizeEvent(ev.event))) return true
+  // A generic/unknown change still counts when it actually moved the price.
+  if (ev.price_change && ev.price_change !== 0) return true
+  return false
 }
 
 export function PropertyHistory({ history, mode = 'all', className }: Props) {
@@ -164,7 +185,7 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
                   </div>
                 ) : null}
                 {dropAmount ? (
-                  <div style={{ fontSize: '0.72rem', color: '#b91c1c', fontVariantNumeric: 'tabular-nums' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'rgba(16,39,66,0.72)', fontVariantNumeric: 'tabular-nums' }}>
                     <TabularNumber value={dropAmount} fallback="—" />{' down'}
                   </div>
                 ) : null}

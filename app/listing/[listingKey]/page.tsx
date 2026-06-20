@@ -371,7 +371,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         taxAnnualAmount={listing.taxAnnualAmount}
       />
       <RentalAnalysis listing={listing} />
-      {history.length > 0 ? <PropertyHistory history={history} mode="all" /> : null}
+      {history.length > 0 ? <PropertyHistory history={history} mode="meaningful-only" /> : null}
       <ListingLocationMap
         lat={listing.lat}
         lng={listing.lng}
