@@ -116,11 +116,21 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
         }}
       >
         {events.map((ev, i) => {
-          const label = eventLabel(ev.event)
-          const dropAmount =
-            ev.price_change && ev.price_change < 0 ? Math.abs(ev.price_change) : null
-          const increaseAmount =
-            ev.price_change && ev.price_change > 0 ? ev.price_change : null
+          // Derive the price move from the actual sequence (newest-first), not the
+          // unreliable MLS price_change field (often 0 on a field-change row).
+          const prevPrice = events.slice(i + 1).find((e) => e.price != null)?.price ?? null
+          const delta = ev.price != null && prevPrice != null ? ev.price - prevPrice : (ev.price_change ?? null)
+          const norm = normalizeEvent(ev.event)
+          // A generic/unknown event that's here because it moved the price reads as a
+          // price event, not the raw "FieldChange".
+          let label = eventLabel(ev.event)
+          if (!EVENT_LABEL[norm]) {
+            if (delta && delta < 0) label = 'Price drop'
+            else if (delta && delta > 0) label = 'Price increase'
+            else if (ev.price != null) label = 'Price change'
+          }
+          const dropAmount = delta && delta < 0 ? Math.abs(delta) : null
+          const increaseAmount = delta && delta > 0 ? delta : null
           return (
             <li
               key={`${i}-${ev.event}-${ev.event_date}`}
