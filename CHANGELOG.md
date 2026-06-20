@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.50 (2026-06-20)
+
+### Other
+- KbMarketChart: kill the rainbow palette + add a sparse-geo volume floor (honest trend)
+
+---
+
+
 ## v1.595.49 (2026-06-20)
 
 ### Other
