@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.56 (2026-06-20)
+
+### Other
+- Lock navy-muted contrast + label the rental down-payment slider
+
+---
+
+
 ## v1.595.55 (2026-06-20)
 
 ### Other
