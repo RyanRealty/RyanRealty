@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.62 (2026-06-20)
+
+### Other
+- Listing page: immersive hero so the nav stops sitting white-on-cream
+
+---
+
+
 ## v1.595.61 (2026-06-20)
 
 ### Other
