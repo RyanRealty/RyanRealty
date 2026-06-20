@@ -124,17 +124,18 @@ export function ListingDetailShell({
   return (
     <>
       <MetadataBlock schemas={schemas} />
-      {/* Canonical crumb chrome (P1-1): same Container pt-3 pb-1 placement as
-          every other page — the old muted Section band sat the crumb at y≈113. */}
-      <PageBreadcrumb trail={breadcrumbs} includeJsonLd={false} />
       {hero ? (
-        // Hero band: truly edge-to-edge, no padding, no Container.
-        // KB full-bleed treatment — matches city/community KbHero.
-        // The hero component owns all its internal spacing.
+        // Hero FIRST + truly edge-to-edge (no padding/Container), so it sits under
+        // the fixed KbNav and the nav overlays the dark photo — the immersive
+        // full-bleed treatment every other KB page uses. (Putting the cream
+        // breadcrumb above the hero left the white nav sitting on cream = invisible.)
         <section aria-label="Listing hero" className="w-full">
           {hero}
         </section>
       ) : null}
+      {/* Breadcrumb below the hero, on the cream surface (navy-on-cream stays
+          readable; the canonical PageBreadcrumb chrome is unchanged). */}
+      <PageBreadcrumb trail={breadcrumbs} includeJsonLd={false} />
       <Section padding="default">
         <Container className={cn('grid gap-10', sidebar ? 'lg:grid-cols-[1.6fr_360px]' : '', className)}>
           <div className="min-w-0 flex flex-col gap-10">{main}</div>

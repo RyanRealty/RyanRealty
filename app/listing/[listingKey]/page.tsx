@@ -425,9 +425,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
       />
       <KbSectionTracker pageType="listing" />
       <SmoothScrollProvider>
-        {/* Clears the fixed KB top bar so it doesn't overlap the breadcrumb
-            that ListingDetailShell renders at the top of the page. */}
-        <div aria-hidden="true" className="h-16" />
+        {/* No top spacer: the hero is now the first thing, full-bleed under the
+            fixed KbNav (immersive, nav overlays the dark photo) — matching every
+            other KB page. */}
         <ListingDetailShell
           listing={listingWithPhotos}
           breadcrumbs={breadcrumbs}
