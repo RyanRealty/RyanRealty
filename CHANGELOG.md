@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.53 (2026-06-20)
+
+### Other
+- Listing rental analysis: re-skin the embedded shadcn calculator to brutalist KB
+
+---
+
+
 ## v1.595.52 (2026-06-20)
 
 ### Other
