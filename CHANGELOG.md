@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.52 (2026-06-20)
+
+### Other
+- KbMarketChart: dashed prior years + visible across full width (fix wide-screen "lines don't reach the end")
+
+---
+
+
 ## v1.595.51 (2026-06-20)
 
 ### Other
