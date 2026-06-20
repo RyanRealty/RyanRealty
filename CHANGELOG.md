@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.57 (2026-06-20)
+
+### Other
+- Breadcrumb: navy overlay variant on all dark-hero pages (kill the white bar)
+
+---
+
+
 ## v1.595.56 (2026-06-20)
 
 ### Other
