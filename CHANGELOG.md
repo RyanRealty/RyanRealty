@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.55 (2026-06-20)
+
+### Other
+- Search filters: accessible names on the 4 unlabeled filter selects (axe button-name)
+
+---
+
+
 ## v1.595.54 (2026-06-20)
 
 ### Other
