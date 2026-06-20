@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.48 (2026-06-20)
+
+### Other
+- KB a11y pass 2: systemic muted-text contrast, LP consent legibility, frame-title + lock gate
+
+---
+
+
 ## v1.595.47 (2026-06-19)
 
 ### Other
