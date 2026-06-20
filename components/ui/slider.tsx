@@ -49,6 +49,9 @@ function Slider({
         <SliderPrimitive.Thumb
           data-slot="slider-thumb"
           key={index}
+          // The thumb carries role="slider"; forward the control's accessible name
+          // here (radix puts {...props} aria-label on the Root, not the Thumb).
+          aria-label={(props as { ["aria-label"]?: string })["aria-label"]}
           className="relative block size-3 shrink-0 rounded-full border border-ring bg-card ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50"
         />
       ))}

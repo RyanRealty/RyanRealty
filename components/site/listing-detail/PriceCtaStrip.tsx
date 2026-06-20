@@ -191,7 +191,7 @@ export function PriceCtaStrip({
       {drop ? (
         <div className="mt-2 text-[13px]" style={{ color: 'rgba(16,39,66,0.72)' }}>
           Down <Price value={drop} /> from original list price{' '}
-          <span style={{ color: 'rgba(16,39,66,0.42)' }}>
+          <span style={{ color: 'rgba(16,39,66,0.72)' }}>
             <Price value={listing.originalListPrice} className="line-through" />
           </span>
           {listing.priceDropCount && listing.priceDropCount > 1 ? (

@@ -86,15 +86,19 @@ function walk(dir) {
   }
   return out
 }
-// color: 'rgba(16,39,66, <0.5|0.55|0.6|0.62>)' — the failing navy-alpha text values.
-const navyText = /\bcolor\s*:\s*['"]rgba\(\s*16\s*,\s*39\s*,\s*66\s*,\s*0?\.(5|50|55|6|60|62|63)\)['"]/g
+// Any navy rgba used as a `color:` with alpha < 0.64 fails AA on cream/white
+// (navy-0.64 ≈ 4.5:1). Parse the alpha rather than enumerate values, so 0.42 etc.
+// can't slip through.
+const navyText = /\bcolor\s*:\s*['"]rgba\(\s*16\s*,\s*39\s*,\s*66\s*,\s*(0?\.\d+|0|1)\s*\)['"]/g
 for (const file of walk('components/site')) {
   const src = readFileSync(file, 'utf8')
   let mm
   while ((mm = navyText.exec(src)) !== null) {
+    const alpha = parseFloat(mm[1])
+    if (alpha >= 0.64) continue
     const line = src.slice(0, mm.index).split('\n').length
     failures.push(
-      `${file}:${line}  color rgba(16,39,66,.${mm[1]}) used as TEXT — navy < 0.64 alpha on cream/white fails WCAG 1.4.3 (< 4.5:1). ` +
+      `${file}:${line}  color rgba(16,39,66,${mm[1]}) used as TEXT — navy < 0.64 alpha on cream/white fails WCAG 1.4.3 (< 4.5:1). ` +
         `Use rgba(16,39,66,0.72) (5.8:1) or var(--navy-70) for muted text.`,
     )
   }

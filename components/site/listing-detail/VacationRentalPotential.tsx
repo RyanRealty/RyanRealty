@@ -60,7 +60,7 @@ export function VacationRentalPotential({ projection, className }: Props) {
             {projection.source ? (
               <div
                 className="eyebrow"
-                style={{ marginTop: 12, color: 'rgba(16,39,66,0.45)', fontSize: '0.6rem', letterSpacing: '0.14em' }}
+                style={{ marginTop: 12, color: 'rgba(16,39,66,0.72)', fontSize: '0.6rem', letterSpacing: '0.14em' }}
               >
                 Source: {projection.source}
               </div>
@@ -131,7 +131,7 @@ function VacKpiCell({ label, sub, children }: { label: string; sub: string; chil
       <div
         style={{
           fontSize: '0.68rem',
-          color: 'rgba(16,39,66,0.45)',
+          color: 'rgba(16,39,66,0.72)',
           letterSpacing: '0.04em',
         }}
       >

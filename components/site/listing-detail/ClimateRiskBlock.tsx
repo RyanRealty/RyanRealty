@@ -119,7 +119,7 @@ export function ClimateRiskBlock({ risk, className }: Props) {
             {risk.source ? (
               <div
                 className="eyebrow"
-                style={{ marginTop: 12, color: 'rgba(16,39,66,0.45)', fontSize: '0.6rem', letterSpacing: '0.14em' }}
+                style={{ marginTop: 12, color: 'rgba(16,39,66,0.72)', fontSize: '0.6rem', letterSpacing: '0.14em' }}
               >
                 Source: {risk.source}
               </div>

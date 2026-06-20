@@ -87,7 +87,7 @@ export function PriceBlock({ listing, className }: Props) {
       {drop ? (
         <Body size="small" tone="muted">
           Down <Price value={drop} /> from original list price{' '}
-          <Price value={listing.originalListPrice} className="line-through text-muted-foreground/70" />
+          <Price value={listing.originalListPrice} className="line-through text-foreground/70" />
           {listing.priceDropCount && listing.priceDropCount > 1 ? (
             <> after {listing.priceDropCount} price changes.</>
           ) : (
