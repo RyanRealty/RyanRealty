@@ -119,7 +119,9 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
           // Derive the price move from the actual sequence (newest-first), not the
           // unreliable MLS price_change field (often 0 on a field-change row).
           const prevPrice = events.slice(i + 1).find((e) => e.price != null)?.price ?? null
-          const delta = ev.price != null && prevPrice != null ? ev.price - prevPrice : (ev.price_change ?? null)
+          // Only a REAL delta (from the price sequence) drives the up/down amount.
+          // The oldest row has no prior price, so it shows just its price, no "0 down".
+          const delta = ev.price != null && prevPrice != null ? ev.price - prevPrice : null
           const norm = normalizeEvent(ev.event)
           // A generic/unknown event that's here because it moved the price reads as a
           // price event, not the raw "FieldChange".
