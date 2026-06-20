@@ -176,7 +176,7 @@ export default function FsboLPForm({ heroVariant = false, formId = 'fsbo-form' }
       <form
         id={formId}
         onSubmit={advanceFromAddress}
-        className="scroll-mt-24 rounded-2xl border border-primary/15 bg-card p-6 text-left shadow-sm sm:p-8"
+        className="scroll-mt-24 rounded-2xl border border-primary/15 bg-card p-6 text-left text-foreground shadow-sm sm:p-8"
         aria-labelledby={`${formId}-heading`}
         noValidate
       >
@@ -223,7 +223,7 @@ export default function FsboLPForm({ heroVariant = false, formId = 'fsbo-form' }
   return (
     <form
       onSubmit={handleContactSubmit}
-      className="mx-auto w-full max-w-xl rounded-2xl border border-primary/15 bg-card p-6 text-left shadow-sm sm:p-8"
+      className="mx-auto w-full max-w-xl rounded-2xl border border-primary/15 bg-card p-6 text-left text-foreground shadow-sm sm:p-8"
       aria-labelledby={`${formId}-heading-2`}
       noValidate
     >

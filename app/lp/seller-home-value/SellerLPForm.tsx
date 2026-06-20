@@ -180,7 +180,7 @@ export default function SellerLPForm({
     const isHot = resultClassification === 'hot'
     if (isListNow) {
       return (
-        <div className="rounded-2xl border border-primary/15 bg-card p-8 text-left shadow-sm">
+        <div className="rounded-2xl border border-primary/15 bg-card p-8 text-left text-foreground shadow-sm">
           <h2 className="font-display text-2xl font-semibold text-primary">
             Thanks. A local broker will reach out to start your sale.
           </h2>
@@ -198,7 +198,7 @@ export default function SellerLPForm({
       )
     }
     return (
-      <div className="rounded-2xl border border-primary/15 bg-card p-8 text-left shadow-sm">
+      <div className="rounded-2xl border border-primary/15 bg-card p-8 text-left text-foreground shadow-sm">
         <h2 className="font-display text-2xl font-semibold text-primary">
           Got it. Your home value is on its way.
         </h2>
@@ -319,7 +319,7 @@ export default function SellerLPForm({
   return (
     <form
       onSubmit={handleQualifySubmit}
-      className="rounded-2xl border border-primary/15 bg-card p-6 text-left shadow-sm sm:p-8"
+      className="rounded-2xl border border-primary/15 bg-card p-6 text-left text-foreground shadow-sm sm:p-8"
       aria-labelledby="seller-lp-form-heading-2"
       noValidate
     >

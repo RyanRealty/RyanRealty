@@ -187,7 +187,7 @@ export default function FsboLPPage() {
 
           {/* Address capture — consent disclosure renders inside the form on
               BOTH steps (first-paint HTML, A2P-verified text). */}
-          <div className="mt-6 w-full">
+          <div className="mt-6 w-full rounded-2xl bg-[#102742]/80 p-4 shadow-xl backdrop-blur-sm sm:p-5">
             <FsboLPForm heroVariant formId="fsbo-form" />
           </div>
 

@@ -17,6 +17,34 @@ export default function FollowUpBossPixel() {
     return () => window.removeEventListener('cookie-consent', onConsent)
   }, [])
 
+  // FUB's widgetbe script injects a hidden tracking iframe named "widgetCta" with
+  // no title — an axe frame-title (WCAG 4.1.2) violation on every page. It carries
+  // no user-facing content, so name it and hide it from the accessibility tree.
+  useEffect(() => {
+    if (!consentGranted) return
+    const fix = () => {
+      let done = false
+      document
+        .querySelectorAll<HTMLIFrameElement>('iframe[name="widgetCta"]:not([title])')
+        .forEach((f) => {
+          f.title = 'Follow Up Boss analytics'
+          f.setAttribute('aria-hidden', 'true')
+          done = true
+        })
+      return done
+    }
+    if (fix()) return
+    const obs = new MutationObserver(() => {
+      if (fix()) obs.disconnect()
+    })
+    obs.observe(document.documentElement, { childList: true, subtree: true })
+    const t = window.setTimeout(() => obs.disconnect(), 15000)
+    return () => {
+      obs.disconnect()
+      window.clearTimeout(t)
+    }
+  }, [consentGranted])
+
   if (!consentGranted || !FUB_PIXEL_ID) return null
 
   const safeId = FUB_PIXEL_ID.replace(/'/g, "\\'")

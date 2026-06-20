@@ -270,7 +270,7 @@ export default async function SellerHomeValuePage({
 
           {/* Address capture — the hero centerpiece. SmsConsentDisclosure is
               rendered inside the form (first-paint HTML, A2P-verified text). */}
-          <div className="mt-6 w-full">
+          <div className="mt-6 w-full rounded-2xl bg-[#102742]/80 p-4 shadow-xl backdrop-blur-sm sm:p-5">
             <SellerLPForm knownVisitor={knownVisitor} heroVariant />
           </div>
 

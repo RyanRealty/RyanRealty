@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-18T01:18:44.130Z",
+  "generatedAt": "2026-06-19T23:59:24.404Z",
   "format": "file:line:ruleId — each entry is one violation; both the set (no new entries) and total (count ceiling) must not grow.",
   "total": 133,
   "violations": [
@@ -54,7 +54,7 @@
     "components/ExitIntentPopup.tsx:32:impure-helper",
     "components/ExitIntentPopup.tsx:71:impure-helper",
     "components/ExportMyDataButton.tsx:26:clock-new-date",
-    "components/FollowUpBossPixel.tsx:30:clock-new-date",
+    "components/FollowUpBossPixel.tsx:58:clock-new-date",
     "components/GTMHead.tsx:32:clock-new-date",
     "components/GoogleAnalytics.tsx:84:clock-new-date",
     "components/HomeValuationCta.tsx:24:impure-helper",
