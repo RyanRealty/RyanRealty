@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.54 (2026-06-20)
+
+### Other
+- Listing-detail contrast: navy-muted labels to AA + darken hero nav band
+
+---
+
+
 ## v1.595.53 (2026-06-20)
 
 ### Other
