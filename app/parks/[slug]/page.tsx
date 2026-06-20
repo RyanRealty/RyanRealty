@@ -179,7 +179,7 @@ export default async function ParkDetailPage({ params }: Props) {
       <KbNav />
       <KbSectionTracker pageType="parks" />
       <MetadataBlock schemas={schemas} />
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[{ label: 'Home', href: '/' }, { label: 'Parks', href: '/parks' }, { label: park.name }]}
       />
 

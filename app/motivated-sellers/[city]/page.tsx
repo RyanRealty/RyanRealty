@@ -197,7 +197,7 @@ export default async function MotivatedSellersCityPage({ params }: Props) {
       <KbSectionTracker pageType="motivated-sellers-city" />
       <MetadataBlock schemas={schemas} />
 
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Motivated sellers', href: '/motivated-sellers' },

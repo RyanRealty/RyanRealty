@@ -356,7 +356,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       <KbNav />
       <KbSectionTracker pageType="zip" />
       <MetadataBlock schemas={schemas} />
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Search', href: '/search' },

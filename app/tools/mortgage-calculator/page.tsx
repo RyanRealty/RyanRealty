@@ -79,7 +79,7 @@ export default async function MortgageCalculatorPage({ searchParams }: Props) {
       <KbNav />
       <KbSectionTracker pageType="tools" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }} />
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Tools', href: '/tools/mortgage-calculator' },

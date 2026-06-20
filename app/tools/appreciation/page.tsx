@@ -67,7 +67,7 @@ export default function AppreciationToolPage() {
       <KbNav />
       <KbSectionTracker pageType="tools" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Tools', href: '/tools/mortgage-calculator' },

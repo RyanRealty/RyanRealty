@@ -120,7 +120,7 @@ export default async function RentalPropertyCalculatorPage({ searchParams }: Pro
       <KbSectionTracker pageType="tools" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Tools', href: '/tools/mortgage-calculator' },

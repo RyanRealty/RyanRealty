@@ -305,7 +305,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
       <KbNav />
       <KbSectionTracker pageType="price-drops-city" />
       <MetadataBlock schemas={schemas} />
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Price drops', href: '/price-drops' },
