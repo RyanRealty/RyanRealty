@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.49 (2026-06-20)
+
+### Other
+- Scenic city hero videos: Bend (Mt Bachelor) + Sunriver (Sparks Lake)
+
+---
+
+
 ## v1.595.48 (2026-06-20)
 
 ### Other
