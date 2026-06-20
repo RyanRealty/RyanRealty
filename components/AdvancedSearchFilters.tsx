@@ -201,7 +201,7 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
         <div className="flex min-w-0 flex-col gap-1">
           <span className={labelClass}>Baths</span>
           <Select value={baths || '__all__'} onValueChange={(v) => setBaths(v === '__all__' ? '' : v)}>
-            <SelectTrigger className="w-full min-w-0">
+            <SelectTrigger className="w-full min-w-0" aria-label="Bathrooms">
               <SelectValue placeholder="Any" />
             </SelectTrigger>
             <SelectContent>
@@ -220,7 +220,7 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
         <div className="col-span-2 flex min-w-0 flex-col gap-1 sm:col-span-1">
           <span className={labelClass}>Property type</span>
           <Select value={propertyType || '__all__'} onValueChange={(v) => setPropertyType(v === '__all__' ? '' : v)}>
-            <SelectTrigger className="w-full min-w-0">
+            <SelectTrigger className="w-full min-w-0" aria-label="Property type">
               <SelectValue placeholder="Any" />
             </SelectTrigger>
             <SelectContent>
@@ -234,7 +234,7 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
         <div className="col-span-2 flex min-w-0 flex-col gap-1 md:col-span-1">
           <span className={labelClass}>Status</span>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full min-w-0">
+            <SelectTrigger className="w-full min-w-0" aria-label="Listing status">
               <SelectValue placeholder="Active only" />
             </SelectTrigger>
             <SelectContent>
@@ -248,7 +248,7 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
         <div className="col-span-2 flex min-w-0 flex-col gap-1 xl:col-span-1">
           <span className={labelClass}>Sort by</span>
           <Select value={sort} onValueChange={setSort}>
-            <SelectTrigger className="w-full min-w-0">
+            <SelectTrigger className="w-full min-w-0" aria-label="Sort listings by">
               <SelectValue placeholder="Newest first" />
             </SelectTrigger>
             <SelectContent>
