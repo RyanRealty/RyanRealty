@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.59 (2026-06-20)
+
+### Other
+- Listing history: clean event labels + drop change-log noise (raw MLS codes fix)
+
+---
+
+
 ## v1.595.58 (2026-06-20)
 
 ### Other
