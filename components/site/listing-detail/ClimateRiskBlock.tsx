@@ -53,7 +53,7 @@ function RiskCell({ label, score }: { label: string; score: ClimateRiskScore | n
     >
       <div
         className="eyebrow"
-        style={{ color: 'rgba(16,39,66,0.55)', fontSize: '0.62rem', letterSpacing: '0.18em' }}
+        style={{ color: 'rgba(16,39,66,0.72)', fontSize: '0.62rem', letterSpacing: '0.18em' }}
       >
         {label}
       </div>
@@ -76,7 +76,7 @@ function RiskCell({ label, score }: { label: string; score: ClimateRiskScore | n
             fontWeight: 600,
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
-            color: 'rgba(16,39,66,0.55)',
+            color: 'rgba(16,39,66,0.72)',
           }}
         >
           {scoreLabel(score)}

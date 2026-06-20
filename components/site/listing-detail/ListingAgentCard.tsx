@@ -38,7 +38,7 @@ export function ListingAgentCard({ broker, className }: Props) {
           fontWeight: 700,
           letterSpacing: '0.18em',
           textTransform: 'uppercase',
-          color: 'rgba(16,39,66,0.55)',
+          color: 'rgba(16,39,66,0.72)',
           marginBottom: 14,
         }}
       >

@@ -86,7 +86,7 @@ export function ListingLocationMap({
             fontSize: '0.78rem',
             fontWeight: 500,
             letterSpacing: '0.02em',
-            color: 'rgba(16,39,66,0.55)',
+            color: 'rgba(16,39,66,0.72)',
           }}
         >
           {lifestyleLine}

@@ -83,7 +83,7 @@ export function ParksNearbyBlock({ listing, className }: Props) {
                 fontWeight: 600,
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
-                color: 'rgba(16,39,66,0.55)',
+                color: 'rgba(16,39,66,0.72)',
               }}
             >
               <span>{TYPE_LABEL[park.type]}</span>

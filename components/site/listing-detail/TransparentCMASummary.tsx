@@ -66,7 +66,7 @@ export function TransparentCMASummary({ cma, className }: Props) {
           <div>
             <div
               className="eyebrow"
-              style={{ color: 'rgba(16,39,66,0.55)', fontSize: '0.62rem', letterSpacing: '0.18em', marginBottom: 6 }}
+              style={{ color: 'rgba(16,39,66,0.72)', fontSize: '0.62rem', letterSpacing: '0.18em', marginBottom: 6 }}
             >
               Estimated range
             </div>
@@ -86,7 +86,7 @@ export function TransparentCMASummary({ cma, className }: Props) {
           <div>
             <div
               className="eyebrow"
-              style={{ color: 'rgba(16,39,66,0.55)', fontSize: '0.62rem', letterSpacing: '0.18em', marginBottom: 6 }}
+              style={{ color: 'rgba(16,39,66,0.72)', fontSize: '0.62rem', letterSpacing: '0.18em', marginBottom: 6 }}
             >
               Suggested list
             </div>
@@ -106,7 +106,7 @@ export function TransparentCMASummary({ cma, className }: Props) {
           <div>
             <div
               className="eyebrow"
-              style={{ color: 'rgba(16,39,66,0.55)', fontSize: '0.62rem', letterSpacing: '0.18em', marginBottom: 6 }}
+              style={{ color: 'rgba(16,39,66,0.72)', fontSize: '0.62rem', letterSpacing: '0.18em', marginBottom: 6 }}
             >
               Based on
             </div>
@@ -139,7 +139,7 @@ export function TransparentCMASummary({ cma, className }: Props) {
           <div
             style={{
               fontSize: '0.72rem',
-              color: 'rgba(16,39,66,0.55)',
+              color: 'rgba(16,39,66,0.72)',
               letterSpacing: '0.02em',
               lineHeight: 1.5,
             }}

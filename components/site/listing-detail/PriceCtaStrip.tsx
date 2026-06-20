@@ -183,13 +183,13 @@ export function PriceCtaStrip({
         </div>
       ) : null}
       {cityWithCommunity ? (
-        <div className="mt-0.5 text-sm" style={{ color: 'rgba(16,39,66,0.62)' }}>
+        <div className="mt-0.5 text-sm" style={{ color: 'rgba(16,39,66,0.72)' }}>
           {cityWithCommunity}
         </div>
       ) : null}
 
       {drop ? (
-        <div className="mt-2 text-[13px]" style={{ color: 'rgba(16,39,66,0.62)' }}>
+        <div className="mt-2 text-[13px]" style={{ color: 'rgba(16,39,66,0.72)' }}>
           Down <Price value={drop} /> from original list price{' '}
           <span style={{ color: 'rgba(16,39,66,0.42)' }}>
             <Price value={listing.originalListPrice} className="line-through" />

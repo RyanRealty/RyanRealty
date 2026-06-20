@@ -88,7 +88,7 @@ function SchoolCard({
     >
       <div
         className="eyebrow"
-        style={{ color: 'rgba(16,39,66,0.55)', fontSize: '0.62rem', letterSpacing: '0.18em' }}
+        style={{ color: 'rgba(16,39,66,0.72)', fontSize: '0.62rem', letterSpacing: '0.18em' }}
       >
         {level}
       </div>
@@ -122,7 +122,7 @@ function SchoolCard({
           style={{
             fontSize: '0.72rem',
             fontWeight: 500,
-            color: 'rgba(16,39,66,0.55)',
+            color: 'rgba(16,39,66,0.72)',
             letterSpacing: '0.02em',
           }}
         >

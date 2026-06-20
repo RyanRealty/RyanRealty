@@ -229,7 +229,7 @@ function KbField({ label, id, children }: { label: string; id: string; children:
           fontWeight: 600,
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
-          color: 'rgba(16,39,66,0.55)',
+          color: 'rgba(16,39,66,0.72)',
           fontFamily: 'var(--font-sans, sans-serif)',
         }}
       >

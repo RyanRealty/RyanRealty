@@ -128,7 +128,7 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
                   className="mono-num"
                   style={{
                     fontSize: '0.72rem',
-                    color: 'rgba(16,39,66,0.55)',
+                    color: 'rgba(16,39,66,0.72)',
                     fontVariantNumeric: 'tabular-nums',
                   }}
                 >
