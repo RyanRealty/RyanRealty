@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.60 (2026-06-20)
+
+### Other
+- Listing history: label price moves correctly + drop the bogus "0 down"
+
+---
+
+
 ## v1.595.59 (2026-06-20)
 
 ### Other
