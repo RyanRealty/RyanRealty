@@ -285,7 +285,7 @@ export default async function HousingMarketHubPage() {
       <KbSectionTracker pageType="market-report" />
 
       {/* Breadcrumb visual — Home > Housing market */}
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Housing market' },

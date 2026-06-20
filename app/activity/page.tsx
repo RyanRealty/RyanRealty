@@ -128,7 +128,7 @@ export default async function ActivityPage() {
           ),
         }}
       />
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Activity' },

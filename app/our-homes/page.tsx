@@ -105,7 +105,7 @@ export default async function OurHomesPage() {
     <main className="kb-root">
       <KbNav />
       <KbSectionTracker pageType="info" />
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Our homes' },

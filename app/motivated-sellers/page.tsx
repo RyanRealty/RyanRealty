@@ -169,7 +169,7 @@ export default async function MotivatedSellersPage() {
       <KbSectionTracker pageType="motivated-sellers" />
       <MetadataBlock schemas={schemas} />
 
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Motivated sellers' },

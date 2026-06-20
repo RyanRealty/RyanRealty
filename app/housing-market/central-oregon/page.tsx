@@ -390,7 +390,7 @@ export default async function CentralOregonRegionPage() {
       <KbSectionTracker pageType="market-report" />
 
       {/* BreadcrumbList visual — Home > Housing market > Central Oregon */}
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Housing market', href: '/housing-market' },

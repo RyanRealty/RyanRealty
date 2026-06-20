@@ -116,7 +116,7 @@ export default function ReviewsPage() {
       />
       <KbNav />
       <KbSectionTracker pageType="media" />
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Reviews' },

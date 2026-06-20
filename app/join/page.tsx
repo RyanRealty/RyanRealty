@@ -236,7 +236,7 @@ export default async function JoinPage() {
           lives here once. */}
       <MetadataBlock schema={{ type: 'faqPage', items: FAQ_ITEMS }} />
 
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Join the team' },

@@ -88,7 +88,7 @@ export default async function GuidesIndexPage() {
           ),
         }}
       />
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Guides' },

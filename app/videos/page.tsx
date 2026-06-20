@@ -230,7 +230,7 @@ export default async function VideosPage({
         />
       ))}
 
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={
           city
             ? [

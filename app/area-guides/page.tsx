@@ -108,7 +108,7 @@ export default async function AreaGuidesPage() {
           },
         ]}
       />
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Area guides' },

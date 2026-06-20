@@ -334,7 +334,7 @@ export default async function PriceDropsRegionPage() {
       <KbNav />
       <KbSectionTracker pageType="price-drops" />
       <MetadataBlock schemas={schemas} />
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Price drops' },

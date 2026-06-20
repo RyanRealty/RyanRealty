@@ -237,7 +237,7 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
           },
         ]}
       />
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Market reports' },

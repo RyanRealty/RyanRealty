@@ -149,7 +149,7 @@ export default async function PulsePage() {
           ),
         }}
       />
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Market pulse' },

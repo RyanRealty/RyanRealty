@@ -104,7 +104,7 @@ export default function ResourcesPage() {
       <KbNav />
       <KbSectionTracker pageType="info" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <KbBreadcrumb
+      <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Resources' },
