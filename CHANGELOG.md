@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.51 (2026-06-20)
+
+### Other
+- Lock the market-chart fix: ci:market-chart-honesty gate (G55)
+
+---
+
+
 ## v1.595.50 (2026-06-20)
 
 ### Other
