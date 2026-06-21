@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next'
 import path from 'path'
 import fs from 'fs'
+import withSerwistInit from '@serwist/next'
 
 /**
  * Load Supabase vars from .env.local so they win over Cursor's Supabase plugin
@@ -248,4 +249,13 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig
+// Serwist compiles app/sw.ts → public/sw.js via webpack's InjectManifest plugin.
+// Turbopack (used in `next dev`) skips webpack plugins, so the SW is only built
+// during `next build`. Manifest + offline page + InstallPrompt work in dev without it.
+const withSerwist = withSerwistInit({
+  swSrc: 'app/sw.ts',
+  swDest: 'public/sw.js',
+  disable: process.env.NODE_ENV === 'development',
+})
+
+export default withSerwist(nextConfig)

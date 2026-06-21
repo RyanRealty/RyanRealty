@@ -21,6 +21,10 @@
 /.next/
 /out/
 
+# Serwist build artifact — generated during `next build --webpack`
+/public/sw.js
+/public/workbox-*.js
+
 # production
 /build
 
