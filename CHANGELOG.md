@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.72 (2026-06-21)
+
+### Bug Fixes
+- fix(audit-p0.4b): consolidate data-layer MoS verdict thresholds onto marketVerdict()
+
+---
+
+
 ## v1.595.71 (2026-06-21)
 
 ### Bug Fixes
