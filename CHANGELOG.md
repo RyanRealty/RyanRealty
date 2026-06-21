@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.73 (2026-06-21)
+
+### Bug Fixes
+- fix(audit-p0.3): CRM compliance fail-safe — enroll fails closed + STOP/START reversible (TCPA)
+
+---
+
+
 ## v1.595.72 (2026-06-21)
 
 ### Bug Fixes
