@@ -59,6 +59,7 @@
  */
 
 import type { Metadata } from 'next'
+import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { notFound } from 'next/navigation'
 import {
   getMarketPulse,
@@ -253,8 +254,7 @@ function buildNarrative(
   const method = refreshedAt
     ? `Data source: market_pulse_live, single-family homes (property_type = A), ` +
       `geo_type = city, refreshed ${new Date(refreshedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })}. ` +
-      `Price trend from market_stats_cache monthly aggregates. Months of supply = active listings divided by (closed last 30 days times 2). ` +
-      `Under 4 months is a seller's market, 4 to 6 is balanced, over 6 is a buyer's market. ` +
+      `Price trend from market_stats_cache monthly aggregates. ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE} ` +
       `Source: Oregon Data Share via Ryan Realty.`
     : ''
 

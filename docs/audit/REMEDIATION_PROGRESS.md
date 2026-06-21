@@ -11,7 +11,7 @@
 | 0 | 0.1 | MLS sync data-loss | ✅ done (2026-06-20) |
 | 0 | 0.2 | Auth/access holes — a: open-redirect ✅ · b: admin CRON_SECRET mutations ✅ · c: access-denied loop ✅ · d: unauthed service-role action ✅ | ✅ done (2026-06-20) |
 | 0 | 0.3 | CRM compliance fail-safe | ⏳ next |
-| 0 | 0.4 | Market-classification helper | ⬜ todo |
+| 0 | 0.4 | Market-classification helper — a: §0 methodology-string fix ✅ · b: threshold consolidation ⏳ | 🔶 in progress |
 | 1 | 1.3 | Shared auth guards (`lib/auth/guards.ts`) | ✅ shipped (foundation; adopt in 0.2b/d) |
 | 1 | 1.1, 1.2, 1.4–1.6 | Consolidate duplication | ⬜ todo |
 | 2 | 2.1–2.2 | Make the DAL boundary real | ⬜ todo |
@@ -26,6 +26,21 @@
 ---
 
 ## Log
+
+### 0.4a — Wrong published months-of-supply formula (§0 compliance) · 2026-06-21
+
+**Problem (audit HIGH, §0 data-accuracy on a licensed-broker surface).** Two market pages printed an AI-citable methodology trace stating "Months of supply = active listings divided by (closed last 30 days times 2)" (`central-oregon/page.tsx:162`, `[...slug]/page.tsx:256`). That contradicts the canonical §0 formula `active / (closed_6mo / 6)` AND the number actually shown (from `market_pulse_live.months_of_supply`). The displayed verdict thresholds (≤4/<6/≥6) were already correct and consistent across sites — the published *formula text* was the violation.
+
+**Change set.**
+- `lib/market/classify.ts` — NEW single source: `monthsOfSupply()`, `marketVerdict()` (the one place the ≤4/<6/≥6 boundaries live), `MOS_METHODOLOGY_CLAUSE` (canonical formula text), `MOS_THRESHOLD_CLAUSE`. + `classify.test.ts` (5 cases incl. boundary at 4 and 6, null handling, no "times 2"/"30 days" in the clause).
+- `central-oregon/page.tsx` + `[...slug]/page.tsx` — methodology trace now uses `MOS_METHODOLOGY_CLAUSE` + `MOS_THRESHOLD_CLAUSE` instead of the false inline string.
+- `scripts/check-market-formula.mjs` (`ci:market-formula`, wired into `ci:gates`) — fails if any app/lib file publishes "closed last 30 days times 2".
+
+**Real-test (local).** `npx vitest run lib/market/classify.test.ts` → 5/5. `ci:market-formula` → OK (no wrong formula remains). `ci:gates-wired` → 66 gates, green. `tsc` → source clean.
+
+**Assumption / note.** The displayed MoS number comes from the `refresh_market_pulse()` RPC (not in this repo). The fix makes the *printed* methodology match the §0-mandated canonical formula; it assumes the RPC implements canonical (which §0 mandates). Recommend a one-time reconciliation query to confirm the column == `active/(closed_6mo/6)`; logged here rather than blocking the text fix.
+
+**Next (0.4b):** consolidate the ~8 inline `mos <= 4 / < 6 / >= 6` verdict sites onto `marketVerdict()` (preserving each site's exact displayed label), then extend `ci:market-formula` to ban inline MoS thresholds outside `lib/market/classify.ts`.
 
 ### 0.2d — Unauthed service-role admin-role mutations (privilege escalation) · 2026-06-20
 
