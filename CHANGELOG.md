@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.66 (2026-06-21)
+
+### Bug Fixes
+- fix(audit-p0.1): stop MLS delta-sync from silently losing data
+
+---
+
+
 ## v1.595.65 (2026-06-21)
 
 ### Bug Fixes
