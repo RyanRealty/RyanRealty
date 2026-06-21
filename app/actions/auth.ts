@@ -1,6 +1,7 @@
 'use server'
 
 import { cookies, headers } from 'next/headers'
+import { safeRedirectPath } from '@/lib/auth/safeRedirect'
 import { createClient } from '@/lib/supabase/server'
 import { trackSignedInUser } from '@/lib/followupboss'
 
@@ -61,7 +62,7 @@ export async function getSignInUrl(provider: 'google' | 'facebook' | 'apple', ne
   const supabase = await createClient()
   const base = await getRequestBaseUrl()
   const cookieStore = await cookies()
-  const safeNext = next.startsWith('/') ? next : `/${next}`
+  const safeNext = safeRedirectPath(next)
   cookieStore.set(AUTH_NEXT_COOKIE, safeNext, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -88,7 +89,7 @@ export async function signInWithEmailPassword(
 ): Promise<{ ok: true; next?: string } | { ok: false; error: string }> {
   const cookieStore = await cookies()
   if (options?.next) {
-    const safeNext = options.next.startsWith('/') ? options.next : `/${options.next}`
+    const safeNext = safeRedirectPath(options.next)
     cookieStore.set(AUTH_NEXT_COOKIE, safeNext, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -109,8 +110,7 @@ export async function signInWithEmailPassword(
     sourceUrl,
     message: 'Signed in (email)',
   }).catch(() => {})
-  const next = cookieStore.get(AUTH_NEXT_COOKIE)?.value || '/'
-  return { ok: true, next: next.startsWith('/') ? next : `/${next}` }
+  return { ok: true, next: safeRedirectPath(cookieStore.get(AUTH_NEXT_COOKIE)?.value) }
 }
 
 /** Sign up with email and password. Tracks user in FollowUp Boss (create or merge by email). */
@@ -121,7 +121,7 @@ export async function signUpWithEmailPassword(
 ): Promise<{ ok: true; next?: string } | { ok: false; error: string }> {
   const cookieStore = await cookies()
   if (options?.next) {
-    const safeNext = options.next.startsWith('/') ? options.next : `/${options.next}`
+    const safeNext = safeRedirectPath(options.next)
     cookieStore.set(AUTH_NEXT_COOKIE, safeNext, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -146,8 +146,7 @@ export async function signUpWithEmailPassword(
     sourceUrl,
     message: 'Signed up (email)',
   }).catch(() => {})
-  const next = cookieStore.get(AUTH_NEXT_COOKIE)?.value || '/'
-  return { ok: true, next: next.startsWith('/') ? next : `/${next}` }
+  return { ok: true, next: safeRedirectPath(cookieStore.get(AUTH_NEXT_COOKIE)?.value) }
 }
 
 export async function signOut() {
@@ -162,7 +161,7 @@ export async function resetPasswordForEmail(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const supabase = await createClient()
   const base = await getRequestBaseUrl()
-  const next = options?.next?.startsWith('/') ? options.next : '/dashboard/settings'
+  const next = safeRedirectPath(options?.next, '/dashboard/settings')
   const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
     redirectTo: `${base}/auth/callback?next=${encodeURIComponent(next)}`,
   })

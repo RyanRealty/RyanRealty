@@ -4,6 +4,7 @@ import { stitchVisitorIdentity } from '@/lib/visitor-backfill'
 import * as Sentry from '@sentry/nextjs'
 import { NextResponse } from 'next/server'
 import { cookies, headers } from 'next/headers'
+import { safeRedirectPath } from '@/lib/auth/safeRedirect'
 
 const AUTH_NEXT_COOKIE = 'auth_next'
 const FUB_CID_COOKIE = 'fub_cid'
@@ -62,12 +63,6 @@ async function getBaseUrl(request: Request): Promise<string> {
   }
   const { origin } = new URL(request.url)
   return (process.env.NEXT_PUBLIC_SITE_URL || origin).replace(/\/$/, '')
-}
-
-/** Ensure redirect target is a same-origin path (no protocol-relative or double slash). */
-function safeRedirectPath(next: string): string {
-  const withLeading = next.startsWith('/') ? next : `/${next}`
-  return withLeading.replace(/\/\/+/g, '/')
 }
 
 export async function GET(request: Request) {

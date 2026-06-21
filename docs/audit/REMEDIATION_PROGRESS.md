@@ -9,7 +9,7 @@
 |---|---|---|---|
 | 0 | 0.0 | Governance-gate truth (meta-gate blind spot) | ✅ done (2026-06-20) |
 | 0 | 0.1 | MLS sync data-loss | ✅ done (2026-06-20) |
-| 0 | 0.2 | Auth/access holes | ⏳ next |
+| 0 | 0.2 | Auth/access holes — a: open-redirect ✅ · b: admin CRON_SECRET-gated mutations · c: access-denied redirect loop · d: unauthed service-role action | 🔶 in progress |
 | 0 | 0.3 | CRM compliance fail-safe | ⬜ todo |
 | 0 | 0.4 | Market-classification helper | ⬜ todo |
 | 1 | 1.1–1.6 | Consolidate duplication | ⬜ todo |
@@ -25,6 +25,20 @@
 ---
 
 ## Log
+
+### 0.2a — Open-redirect in auth server actions · 2026-06-20
+
+**Problem (audit HIGH, security).** `app/actions/auth.ts` sanitized the post-auth `next` redirect with `next.startsWith('/') ? next : `/${next}`` in 6 places — `//evil.com` starts with `/`, so it passed and became a protocol-relative open redirect after sign-in. `app/auth/callback/route.ts` had a stronger-but-local `safeRedirectPath` (collapsed `//` but missed backslash tricks).
+
+**Change set.**
+- `lib/auth/safeRedirect.ts` — NEW single sanitizer: strips control chars (codepoint filter), normalizes `\`→`/`, rejects non-relative targets (`https://`, `javascript:`, bare host), collapses leading slashes. + `lib/auth/safeRedirect.test.ts` (6 cases incl. `//evil.com`, `/\evil.com`, `https://`, CR/LF).
+- `app/actions/auth.ts` — all 6 weak checks routed through `safeRedirectPath()`.
+- `app/auth/callback/route.ts` — local `safeRedirectPath` removed; imports the shared one (kills the duplication finding + hardens it).
+- `scripts/check-auth-redirect.mjs` (`ci:auth-redirect`, wired into `ci:gates`) — fails if either auth file uses the weak `startsWith('/') ?` pattern or stops importing `safeRedirectPath`.
+
+**Real-test (local).** `npx vitest run lib/auth/safeRedirect.test.ts` → 6/6. `ci:auth-redirect` → OK. `ci:gates-wired` → 62 gates wired, exit 0. `npx tsc --noEmit` → no errors. No weak `startsWith('/')` redirect pattern remains in either file.
+
+**Remaining 0.2 sub-fixes (next):** (b) admin mutation endpoints gated only by a shared `CRON_SECRET` bearer instead of operator session+role; (c) `access-denied` page inside the `(protected)` group it is the redirect target of (infinite loop); (d) a public `'use server'` POST using the service-role key with no auth guard. These depend on the shared `requireAdmin`/`requireSuperuser` guards (Step 1.3) and change live admin authz, so they get extra care + a running-app check where feasible.
 
 ### 0.1 — MLS sync data-loss · 2026-06-20
 
