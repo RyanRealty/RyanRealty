@@ -75,6 +75,14 @@ export async function upsertAdminRole(
   role: AdminRoleType,
   brokerId?: string | null
 ): Promise<{ ok: true } | { ok: false; error: string }> {
+  // Caller guard (audit p0.2d): managing admin roles is superuser-only. This is a
+  // 'use server' action = a public POST endpoint; without this check anyone could
+  // grant themselves a broker/report_viewer role via the service-role write.
+  const session = await getSession()
+  const actorEmail = session?.user?.email ?? null
+  const actorRole = actorEmail ? (await getAdminRoleForEmail(actorEmail))?.role ?? null : null
+  if (actorRole !== 'superuser') return { ok: false, error: 'Forbidden — superuser access required' }
+
   const trimmed = email.trim().toLowerCase()
   if (!trimmed) return { ok: false, error: 'Email is required' }
   if (role === 'superuser' && !isSuperuserAdmin(trimmed)) return { ok: false, error: 'Only the designated superuser can be set as superuser.' }
@@ -84,9 +92,7 @@ export async function upsertAdminRole(
     { onConflict: 'email' }
   )
   if (error) return { ok: false, error: error.message }
-  const session = await getSession()
-  const actorRole = session?.user?.email ? (await getAdminRoleForEmail(session.user.email))?.role ?? null : null
-  await logAdminAction({ adminEmail: session?.user?.email ?? '', role: actorRole, actionType: 'upsert', resourceType: 'admin_role', resourceId: trimmed, details: { role, broker_id: brokerId ?? null } })
+  await logAdminAction({ adminEmail: actorEmail ?? '', role: actorRole, actionType: 'upsert', resourceType: 'admin_role', resourceId: trimmed, details: { role, broker_id: brokerId ?? null } })
   revalidatePath('/admin')
   revalidatePath('/admin/users')
   return { ok: true }
@@ -94,13 +100,17 @@ export async function upsertAdminRole(
 
 /** Remove admin access for an email. Only superuser. */
 export async function removeAdminRole(email: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  // Caller guard (audit p0.2d): removing admin roles is superuser-only.
+  const session = await getSession()
+  const actorEmail = session?.user?.email ?? null
+  const actorRole = actorEmail ? (await getAdminRoleForEmail(actorEmail))?.role ?? null : null
+  if (actorRole !== 'superuser') return { ok: false, error: 'Forbidden — superuser access required' }
+
   if (isSuperuserAdmin(email)) return { ok: false, error: 'Cannot remove the superuser.' }
   const supabase = getServiceSupabase()
   const { error } = await supabase.from('admin_roles').delete().eq('email', email.trim().toLowerCase())
   if (error) return { ok: false, error: error.message }
-  const session = await getSession()
-  const actorRole = session?.user?.email ? (await getAdminRoleForEmail(session.user.email))?.role ?? null : null
-  await logAdminAction({ adminEmail: session?.user?.email ?? '', role: actorRole, actionType: 'delete', resourceType: 'admin_role', resourceId: email.trim().toLowerCase() })
+  await logAdminAction({ adminEmail: actorEmail ?? '', role: actorRole, actionType: 'delete', resourceType: 'admin_role', resourceId: email.trim().toLowerCase() })
   revalidatePath('/admin')
   revalidatePath('/admin/users')
   return { ok: true }

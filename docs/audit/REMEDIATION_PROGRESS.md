@@ -9,8 +9,8 @@
 |---|---|---|---|
 | 0 | 0.0 | Governance-gate truth (meta-gate blind spot) | ✅ done (2026-06-20) |
 | 0 | 0.1 | MLS sync data-loss | ✅ done (2026-06-20) |
-| 0 | 0.2 | Auth/access holes — a: open-redirect ✅ · b: admin CRON_SECRET mutations ✅ · c: access-denied loop ✅ · d: unauthed service-role action ⏳ | 🔶 in progress |
-| 0 | 0.3 | CRM compliance fail-safe | ⬜ todo |
+| 0 | 0.2 | Auth/access holes — a: open-redirect ✅ · b: admin CRON_SECRET mutations ✅ · c: access-denied loop ✅ · d: unauthed service-role action ✅ | ✅ done (2026-06-20) |
+| 0 | 0.3 | CRM compliance fail-safe | ⏳ next |
 | 0 | 0.4 | Market-classification helper | ⬜ todo |
 | 1 | 1.3 | Shared auth guards (`lib/auth/guards.ts`) | ✅ shipped (foundation; adopt in 0.2b/d) |
 | 1 | 1.1, 1.2, 1.4–1.6 | Consolidate duplication | ⬜ todo |
@@ -26,6 +26,16 @@
 ---
 
 ## Log
+
+### 0.2d — Unauthed service-role admin-role mutations (privilege escalation) · 2026-06-20
+
+**Problem (audit HIGH, security — privilege escalation).** `upsertAdminRole` + `removeAdminRole` in `app/actions/admin-roles.ts` are `'use server'` actions (exposed as public POST endpoints) that write the `admin_roles` table via the **service role**. They validated only the *target* email (can't set `superuser`), never the **caller** — so any unauthenticated visitor could POST and grant an arbitrary email a `broker`/`report_viewer` admin role. The `getSession()` call present was for audit-logging only, not authorization.
+
+**Change set.**
+- Both mutations now resolve the caller (`getSession` → `getAdminRoleForEmail`) at the top and **return `Forbidden` unless the caller is `superuser`** before any write. Reuses the now-hoisted session for the audit log (removed the duplicate `getSession`). Guarded inline (not via `lib/auth/guards`) because `guards.ts` imports `admin-roles` — importing back would be circular.
+- `scripts/check-admin-role-guard.mjs` (`ci:admin-role-guard`, wired into `ci:gates`) — asserts both mutations carry the superuser caller guard.
+
+**Real-test (local).** `ci:admin-role-guard` → PASS. `ci:gates-wired` → green. `tsc --noEmit` → source clean. The admin Users page calls these as a superuser → unaffected; non-superuser/unauthed callers are now blocked (correct).
 
 ### 0.2b — Interactive admin endpoints gated only by CRON_SECRET · 2026-06-20
 
