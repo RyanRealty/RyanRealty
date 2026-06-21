@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.71 (2026-06-21)
+
+### Bug Fixes
+- fix(audit-p0.4a): correct the published months-of-supply formula (§0 compliance)
+
+---
+
+
 ## v1.595.70 (2026-06-21)
 
 ### Bug Fixes
