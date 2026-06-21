@@ -9,10 +9,11 @@
 |---|---|---|---|
 | 0 | 0.0 | Governance-gate truth (meta-gate blind spot) | ✅ done (2026-06-20) |
 | 0 | 0.1 | MLS sync data-loss | ✅ done (2026-06-20) |
-| 0 | 0.2 | Auth/access holes — a: open-redirect ✅ · b: admin CRON_SECRET-gated mutations · c: access-denied redirect loop · d: unauthed service-role action | 🔶 in progress |
+| 0 | 0.2 | Auth/access holes — a: open-redirect ✅ · c: access-denied loop ✅ · b: admin CRON_SECRET mutations ⏳ · d: unauthed service-role action ⏳ | 🔶 in progress |
 | 0 | 0.3 | CRM compliance fail-safe | ⬜ todo |
 | 0 | 0.4 | Market-classification helper | ⬜ todo |
-| 1 | 1.1–1.6 | Consolidate duplication | ⬜ todo |
+| 1 | 1.3 | Shared auth guards (`lib/auth/guards.ts`) | ✅ shipped (foundation; adopt in 0.2b/d) |
+| 1 | 1.1, 1.2, 1.4–1.6 | Consolidate duplication | ⬜ todo |
 | 2 | 2.1–2.2 | Make the DAL boundary real | ⬜ todo |
 | 3 | 3.1–3.5 | Governance + tests + env | ⬜ todo |
 
@@ -25,6 +26,20 @@
 ---
 
 ## Log
+
+### 0.2c — Admin access-denied redirect loop + 1.3 shared guards · 2026-06-20
+
+**Problem (audit HIGH, structural).** `app/admin/(protected)/access-denied/page.tsx` lived INSIDE the `(protected)` route group whose layout (`getSession` → `getAdminRoleForEmail` → `redirect('/admin/access-denied')`) guards every page under it. A signed-in non-admin was redirected to access-denied, which re-ran the same guard, which redirected again — infinite loop. (Re-verified against code; my first glob missed the file because of the `(protected)` parens — the audit was right.)
+
+**Change set.**
+- Deleted `app/admin/(protected)/access-denied/page.tsx` (the looping page).
+- Added `app/admin/access-denied/page.tsx` OUTSIDE the group, under the no-auth `app/admin/layout.tsx`, so the redirect target renders without re-triggering the guard. Also resolves the previously-dead target (it never existed at a reachable location → would 404).
+- `scripts/check-access-denied-loop.mjs` (`ci:access-denied`, wired into `ci:gates`) — fails if the page is missing OR if one exists inside `(protected)`.
+- **Step 1.3 foundation:** `lib/auth/guards.ts` — single source for `getAdminContext()` / `requireAdminOr403()` / `requireSuperuserOr403()` / `isAuthorizedAdminOrCron()`, modeled exactly on the existing `getSession` + `getAdminRoleForEmail` chain (superuser + admin_roles). Additive (no adoption yet → no behavior change); will replace the ~6 inline authz patterns in 0.2b/d and the duplication cleanup.
+
+**Real-test (local).** `ci:access-denied` → OK (after deleting the inside page). `ci:gates-wired` → green. `ci:auth-redirect` → green. package.json valid. `lib/auth/guards.ts` type-checks (verified via pre-push G46 tsc on commit).
+
+**Note.** 0.2b (CRON_SECRET-gated interactive mutations → `isAuthorizedAdminOrCron`) and 0.2d (the specific unauthed service-role `'use server'` action) change live admin authz and I can't fully runtime-verify them here, so they get adopted carefully next with the shared guards, additively (session-OR-secret) to avoid any lockout.
 
 ### 0.2a — Open-redirect in auth server actions · 2026-06-20
 
