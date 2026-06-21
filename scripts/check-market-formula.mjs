@@ -32,15 +32,33 @@ const SELF = new Set([
 ])
 
 const files = [...walk('app'), ...walk('lib')].filter((f) => !SELF.has(f))
-const hits = files.filter((f) => BAD_FORMULA.test(readFileSync(f, 'utf8')))
+const formulaHits = files.filter((f) => BAD_FORMULA.test(readFileSync(f, 'utf8')))
+
+// Ban inline MoS verdict thresholds in the data layer (audit p0.4b) — the
+// <=4 / <6 / >=6 boundaries live ONLY in lib/market/classify.ts (marketVerdict).
+// Scoped to the reusable data layer; page-prose verdict sites are a tracked
+// follow-up (correct today, article-variation labels).
+const THRESHOLD = /\bmos\b\s*(<=\s*4|<\s*6|>=\s*6)/i
+const dataFiles = [...walk('lib/data'), ...walk('lib/site')].filter((f) => !SELF.has(f))
+const thresholdHits = dataFiles.filter((f) => THRESHOLD.test(readFileSync(f, 'utf8')))
 
 console.log('market MoS-formula gate (ci:market-formula)')
 console.log('===========================================')
-if (hits.length) {
+let failed = false
+if (formulaHits.length) {
+  failed = true
   console.error('Files publishing the WRONG months-of-supply formula ("closed last 30 days times 2"):')
-  for (const h of hits) console.error(`  ✗ ${h}`)
-  console.error('\nUse MOS_METHODOLOGY_CLAUSE from lib/market/classify.ts (canonical §0 formula).')
+  for (const h of formulaHits) console.error(`  ✗ ${h}`)
+  console.error('  Use MOS_METHODOLOGY_CLAUSE from lib/market/classify.ts (canonical §0 formula).')
+}
+if (thresholdHits.length) {
+  failed = true
+  console.error('Data-layer files with inline MoS thresholds (use marketVerdict() from lib/market/classify.ts):')
+  for (const h of thresholdHits) console.error(`  ✗ ${h}`)
+}
+if (failed) {
+  console.error('\nFAILED.')
   process.exit(1)
 }
-console.log('OK — no surface publishes the wrong MoS formula.')
+console.log('OK — canonical MoS formula + data-layer verdicts via lib/market/classify.ts.')
 process.exit(0)

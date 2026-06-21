@@ -1,5 +1,6 @@
 // brand-voice:exempt — factual market Q&A generated from verified live data, no marketing prose
 import type { StatValue } from '@/lib/site/json-ld'
+import { marketVerdict } from '@/lib/market/classify'
 
 /**
  * Structural input — a full MarketPulse satisfies this, and a geo page can also
@@ -67,9 +68,9 @@ function roundedThousand(n: number): string {
 
 /** Months-of-supply -> market type, per the canonical CLAUDE.md thresholds. */
 function marketType(mos: number): string {
-  if (mos <= 4) return "seller's"
-  if (mos < 6) return 'balanced'
-  return "buyer's"
+  // Thresholds via lib/market/classify.ts (audit p0.4b); short form for FAQ prose.
+  const SHORT = { sellers: "seller's", balanced: 'balanced', buyers: "buyer's", unknown: 'balanced' } as const
+  return SHORT[marketVerdict(mos).kind]
 }
 
 export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): MarketFaqResult {

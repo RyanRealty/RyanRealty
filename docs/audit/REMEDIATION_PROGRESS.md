@@ -11,7 +11,7 @@
 | 0 | 0.1 | MLS sync data-loss | ✅ done (2026-06-20) |
 | 0 | 0.2 | Auth/access holes — a: open-redirect ✅ · b: admin CRON_SECRET mutations ✅ · c: access-denied loop ✅ · d: unauthed service-role action ✅ | ✅ done (2026-06-20) |
 | 0 | 0.3 | CRM compliance fail-safe | ⏳ next |
-| 0 | 0.4 | Market-classification helper — a: §0 methodology-string fix ✅ · b: threshold consolidation ⏳ | 🔶 in progress |
+| 0 | 0.4 | Market-classification helper — a: §0 methodology fix ✅ · b: data-layer threshold consolidation ✅ (page-prose sites: follow-up) | ✅ done (2026-06-21) |
 | 1 | 1.3 | Shared auth guards (`lib/auth/guards.ts`) | ✅ shipped (foundation; adopt in 0.2b/d) |
 | 1 | 1.1, 1.2, 1.4–1.6 | Consolidate duplication | ⬜ todo |
 | 2 | 2.1–2.2 | Make the DAL boundary real | ⬜ todo |
@@ -40,7 +40,17 @@
 
 **Assumption / note.** The displayed MoS number comes from the `refresh_market_pulse()` RPC (not in this repo). The fix makes the *printed* methodology match the §0-mandated canonical formula; it assumes the RPC implements canonical (which §0 mandates). Recommend a one-time reconciliation query to confirm the column == `active/(closed_6mo/6)`; logged here rather than blocking the text fix.
 
-**Next (0.4b):** consolidate the ~8 inline `mos <= 4 / < 6 / >= 6` verdict sites onto `marketVerdict()` (preserving each site's exact displayed label), then extend `ci:market-formula` to ban inline MoS thresholds outside `lib/market/classify.ts`.
+### 0.4b — Consolidate data-layer MoS verdict thresholds · 2026-06-21
+
+**Change set.** The 3 reusable data-layer helpers now derive their verdict from `marketVerdict()` instead of inline `mos <= 4 / < 6 / >= 6`, with byte-identical output:
+- `lib/data/market/getMarketStats.ts` `classifyMoS` → `marketVerdict().kind` (null preserved).
+- `lib/data/nav/getMegaMenuData.ts` `verdictFromMoS` → keeps its `mos<=0 → null` guard, then `marketVerdict().kind`.
+- `lib/site/market-faq.ts` `marketType` → maps `marketVerdict().kind` to the FAQ's short labels ("seller's"/"balanced"/"buyer's").
+- `ci:market-formula` extended to ALSO fail on inline MoS thresholds in `lib/data` + `lib/site`.
+
+**Real-test.** `ci:market-formula` → OK. `rg "mos <= 4|< 6|>= 6" lib/data lib/site` → none. `tsc` → source clean.
+
+**Follow-up (tracked):** the ~8 page-prose verdict sites in `app/housing-market/*` (e.g. "a seller's market" with article variations) still inline the thresholds. They render the CORRECT verdict today; consolidating them onto `marketVerdict().label` is a low-risk cleanup left for the Phase-1 pass (the gate's threshold ban is scoped to the data layer to avoid altering published page copy without a render check).
 
 ### 0.2d — Unauthed service-role admin-role mutations (privilege escalation) · 2026-06-20
 

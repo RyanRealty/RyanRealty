@@ -30,6 +30,7 @@
  */
 
 import { unstable_cache } from 'next/cache'
+import { marketVerdict } from '@/lib/market/classify'
 
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { getGeoSnapshot } from '@/lib/data/geo/getGeoSnapshot'
@@ -235,10 +236,9 @@ function positiveOrNull(value: number | null | undefined): number | null {
  * verdict so a pill never appears next to an unknown number.
  */
 function verdictFromMoS(mos: number | null): MoSVerdict | null {
+  // mos<=0 stays "no verdict"; thresholds via lib/market/classify.ts (audit p0.4b).
   if (mos == null || !Number.isFinite(mos) || mos <= 0) return null
-  if (mos <= 4) return 'sellers'
-  if (mos < 6) return 'balanced'
-  return 'buyers'
+  return marketVerdict(mos).kind as MoSVerdict
 }
 
 // ───────────────────────── Builders ─────────────────────────

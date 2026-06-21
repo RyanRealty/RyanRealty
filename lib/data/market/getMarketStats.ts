@@ -17,6 +17,7 @@
  */
 
 import { z } from 'zod'
+import { marketVerdict } from '@/lib/market/classify'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached, readOrThrow } from '@/lib/data/cache/resilient'
@@ -34,10 +35,9 @@ const InputSchema = z.object({
 type GetMarketStatsInput = z.input<typeof InputSchema>
 
 function classifyMoS(mos: number | null): MoSVerdict | null {
-  if (mos == null || !Number.isFinite(mos)) return null
-  if (mos <= 4) return 'sellers'
-  if (mos < 6) return 'balanced'
-  return 'buyers'
+  // Thresholds live in lib/market/classify.ts (audit p0.4b — single source).
+  const kind = marketVerdict(mos).kind
+  return kind === 'unknown' ? null : kind
 }
 
 async function fetchMarketStats(input: GetMarketStatsInput): Promise<MarketStats | null> {
