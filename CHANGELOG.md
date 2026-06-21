@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.69 (2026-06-21)
+
+### Bug Fixes
+- fix(audit-p0.2b): require admin session (not just CRON_SECRET) on interactive admin endpoints
+
+---
+
+
 ## v1.595.68 (2026-06-21)
 
 ### Bug Fixes
