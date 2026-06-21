@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.70 (2026-06-21)
+
+### Bug Fixes
+- fix(audit-p0.2d): require superuser caller on admin-role mutations (privilege escalation)
+
+---
+
+
 ## v1.595.69 (2026-06-21)
 
 ### Bug Fixes
