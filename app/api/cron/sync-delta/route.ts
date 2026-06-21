@@ -175,6 +175,14 @@ export async function GET(request: Request) {
   let skippedFinalized = 0
   let page = 1
   let totalPages = 1
+  // Cursor-safety (audit p0.1). Only advance last_delta_sync_at as far as we
+  // actually drained, so an overflow (MAX_PAGES cap) or a failed upsert can't
+  // skip rows forever. runStartedAt is captured BEFORE fetching so rows modified
+  // mid-run are re-picked next tick. maxProcessedTs is the newest row we saw
+  // (Spark is _orderby=+ModificationTimestamp, ascending).
+  const runStartedAt = new Date().toISOString()
+  let maxProcessedTs: string | null = null
+  let upsertFailed = false
 
   try {
     while (page <= totalPages && page <= MAX_PAGES) {
@@ -184,6 +192,12 @@ export async function GET(request: Request) {
       if (response.D.Pagination) totalPages = response.D.Pagination.TotalPages
       const results = response.D.Results as Array<{ StandardFields: Record<string, unknown> }>
       totalFetched += results.length
+
+      // High-water mark of modification time seen this run (safe-advance cursor).
+      for (const r of results) {
+        const ts = r.StandardFields?.ModificationTimestamp
+        if (typeof ts === 'string' && (!maxProcessedTs || ts > maxProcessedTs)) maxProcessedTs = ts
+      }
 
       // Get existing listings to detect changes
       const listNumbers = results
@@ -352,7 +366,7 @@ export async function GET(request: Request) {
         const chunk = rowsToUpsert.slice(i, i + UPSERT_CHUNK)
         const result = await upsertListingRows(chunk)
         if (result.ok) totalUpserted += chunk.length
-        else console.error('[sync-delta] upsert error:', result.error)
+        else { upsertFailed = true; console.error('[sync-delta] upsert error:', result.error) }
       }
 
       // 2. Insert price_history records
@@ -446,9 +460,18 @@ export async function GET(request: Request) {
       page++
     }
 
-    // Update last sync timestamp
+    // Update last sync timestamp — only as far as we actually drained (audit p0.1).
+    // truncated = hit the MAX_PAGES cap with more pages still available.
+    const truncated = page > MAX_PAGES && totalPages > MAX_PAGES
+    const { computeNextDeltaCursor } = await import('@/lib/sync/deltaCursor')
     const { updateSyncStateLastDelta } = await import('@/lib/data')
-    await updateSyncStateLastDelta(new Date().toISOString())
+    const nextCursor = computeNextDeltaCursor({ upsertFailed, truncated, runStartedAt, maxProcessedTs })
+    if (nextCursor) await updateSyncStateLastDelta(nextCursor)
+    if (upsertFailed) {
+      console.error('[sync-delta] upsert failure(s) this run — cursor NOT advanced; window retried next tick')
+    } else if (truncated) {
+      console.warn(`[sync-delta] TRUNCATED at MAX_PAGES=${MAX_PAGES} of ${totalPages} pages; cursor -> ${nextCursor ?? '(unchanged)'} (not now())`)
+    }
 
     // Refresh market pulse after sync
     try {
@@ -509,7 +532,8 @@ export async function GET(request: Request) {
     ].filter(Boolean).join(', ')
 
     return NextResponse.json({
-      ok: true,
+      ok: !upsertFailed,
+      partial: upsertFailed || truncated,
       summary,
       totalFetched,
       totalUpserted,

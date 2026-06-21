@@ -8,8 +8,8 @@
 | Phase | Step | Title | Status |
 |---|---|---|---|
 | 0 | 0.0 | Governance-gate truth (meta-gate blind spot) | ✅ done (2026-06-20) |
-| 0 | 0.1 | MLS sync data-loss | ⏳ next |
-| 0 | 0.2 | Auth/access holes | ⬜ todo |
+| 0 | 0.1 | MLS sync data-loss | ✅ done (2026-06-20) |
+| 0 | 0.2 | Auth/access holes | ⏳ next |
 | 0 | 0.3 | CRM compliance fail-safe | ⬜ todo |
 | 0 | 0.4 | Market-classification helper | ⬜ todo |
 | 1 | 1.1–1.6 | Consolidate duplication | ⬜ todo |
@@ -25,6 +25,20 @@
 ---
 
 ## Log
+
+### 0.1 — MLS sync data-loss · 2026-06-20
+
+**Problem (audit HIGH).** `app/api/cron/sync-delta/route.ts` set the cursor `last_delta_sync_at = now()` unconditionally at the end of every run. Two silent-data-loss paths: (1) overflow — a run caps at `MAX_PAGES=100` (~20k rows); if more pages remained, jumping the cursor to now() skipped every un-fetched change permanently; (2) failed upserts were logged + skipped but the cursor still advanced, so those rows were never re-fetched. Confirmed Spark is fetched `_orderby=+ModificationTimestamp` (ascending), so the newest processed row is a safe resume point.
+
+**Change set.**
+- `lib/sync/deltaCursor.ts` — NEW pure helper `computeNextDeltaCursor({upsertFailed, truncated, runStartedAt, maxProcessedTs})`: returns the ISO to write, or `null` to leave the cursor unchanged. Failure → null (retry whole window, idempotent); truncated → newest processed row; clean drain → runStartedAt (captured BEFORE fetching).
+- `lib/sync/deltaCursor.test.ts` — NEW, 5 cases (clean / truncated / truncated-empty / failure / failure-overrides-truncation).
+- `app/api/cron/sync-delta/route.ts` — capture `runStartedAt` before the loop; track `maxProcessedTs` high-water mark per page; set `upsertFailed` on any failed chunk; replace the unconditional `updateSyncStateLastDelta(new Date())` with a `computeNextDeltaCursor()`-gated write; return `ok: !upsertFailed` + `partial` flag.
+- `scripts/check-sync-cursor.mjs` (`ci:sync-cursor`, wired into `ci:gates`) — fails if the route advances the cursor straight to `new Date()` or stops using `computeNextDeltaCursor()`.
+
+**Real-test (local).** `npx vitest run lib/sync/deltaCursor.test.ts` → 5/5 pass. `ci:sync-cursor` → OK. `ci:gates-wired` → 61 gates wired, 91 files, 24 baseline, exit 0. `npx tsc --noEmit` → no errors. package.json valid.
+
+**Residual risk / note.** The safe-advance assumes ascending Spark order (verified via `_orderby=+ModificationTimestamp` in `fetchSparkDelta`). On a real overflow the run now self-heals over subsequent ticks instead of losing rows; a sustained backlog > MAX_PAGES×200 will catch up gradually (raise `MAX_PAGES` or run a full sync if it ever persists). Behavior on a normal (non-overflow, no-failure) run is unchanged except the cursor is `runStartedAt` instead of post-run `now()` — strictly safer (re-picks rows modified mid-run).
 
 ### 0.0 — Governance-gate truth (CRITICAL) · 2026-06-20
 
