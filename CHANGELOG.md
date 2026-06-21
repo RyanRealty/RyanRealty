@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.65 (2026-06-21)
+
+### Bug Fixes
+- fix(audit-p0.0): close gate-enforcement blind spot + wire 3 orphaned gates
+
+---
+
+
 ## v1.595.64 (2026-06-20)
 
 ### Other
