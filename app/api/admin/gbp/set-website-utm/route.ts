@@ -24,6 +24,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { isAuthorizedAdminOrCron } from '@/lib/auth/guards'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -85,11 +86,9 @@ async function getAccessToken(): Promise<{ token: string }> {
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
-  // Auth: bearer = CRON_SECRET (mirrors the other admin write endpoints in this repo)
-  const cronSecret = (process.env.CRON_SECRET || '').trim()
-  if (!cronSecret) return NextResponse.json({ ok: false, error: 'CRON_SECRET not configured' }, { status: 500 })
-  const auth = req.headers.get('authorization') || ''
-  if (auth !== `Bearer ${cronSecret}`) return unauthorized('missing or invalid bearer')
+  // Auth (audit p0.2b): a valid admin session OR the CRON_SECRET bearer. Was
+  // secret-only — an interactive cross-account write with no operator identity.
+  if (!(await isAuthorizedAdminOrCron(req))) return unauthorized('admin session or valid bearer required')
 
   const locationId = process.env.GOOGLE_BUSINESS_PROFILE_LOCATION_ID
   if (!locationId) return NextResponse.json({ ok: false, error: 'GOOGLE_BUSINESS_PROFILE_LOCATION_ID not set' }, { status: 500 })

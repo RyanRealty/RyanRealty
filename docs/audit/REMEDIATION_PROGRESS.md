@@ -9,7 +9,7 @@
 |---|---|---|---|
 | 0 | 0.0 | Governance-gate truth (meta-gate blind spot) | ✅ done (2026-06-20) |
 | 0 | 0.1 | MLS sync data-loss | ✅ done (2026-06-20) |
-| 0 | 0.2 | Auth/access holes — a: open-redirect ✅ · c: access-denied loop ✅ · b: admin CRON_SECRET mutations ⏳ · d: unauthed service-role action ⏳ | 🔶 in progress |
+| 0 | 0.2 | Auth/access holes — a: open-redirect ✅ · b: admin CRON_SECRET mutations ✅ · c: access-denied loop ✅ · d: unauthed service-role action ⏳ | 🔶 in progress |
 | 0 | 0.3 | CRM compliance fail-safe | ⬜ todo |
 | 0 | 0.4 | Market-classification helper | ⬜ todo |
 | 1 | 1.3 | Shared auth guards (`lib/auth/guards.ts`) | ✅ shipped (foundation; adopt in 0.2b/d) |
@@ -26,6 +26,19 @@
 ---
 
 ## Log
+
+### 0.2b — Interactive admin endpoints gated only by CRON_SECRET · 2026-06-20
+
+**Problem (audit HIGH, security).** Interactive admin mutation endpoints authenticated with a shared `Bearer ${CRON_SECRET}` only — no operator identity. Confirmed two: `app/api/admin/gbp/set-website-utm` (cross-account GBP write; its own comment "mirrors the other admin write endpoints") and `app/api/admin/expired-listing-lookup` (manual owner-lookup trigger, "when Matt wants to immediately re-fire", used `isAuthorizedCron`).
+
+**Change set.**
+- Both now authenticate via `isAuthorizedAdminOrCron()` (lib/auth/guards.ts) — accepts a valid admin session OR the cron secret. **Additive**: operators get an identity path; any existing automation using the secret still works (no lockout). Adopts the Step 1.3 guards.
+- `expired-listing-lookup` drops the `isAuthorizedCron` import from `lib/marketing-brain/snapshot`.
+- `scripts/check-admin-endpoint-auth.mjs` (`ci:admin-endpoint-auth`, wired into `ci:gates`) — asserts these converted endpoints authenticate via `@/lib/auth/guards` (regression guard; grows as more interactive endpoints convert).
+
+**Real-test (local).** `ci:admin-endpoint-auth` → PASS. `ci:gates-wired` → green. `tsc --noEmit` → no source errors (only a stale gitignored `.next/types` artifact referencing the 0.2c-deleted page; G46 runs tsc on a clean HEAD tree so it passes on push). The 4 genuinely cron/maintenance admin endpoints (`sync/photos`, `sync/history-active`, `run-loop-cycle`, `tracerfy-history`) correctly keep secret-only auth.
+
+**Note.** Could not runtime-verify the live endpoints (no running app with auth here). The change is additive (session-OR-secret) specifically so a wrong assumption can't lock out an operator or break automation — worst case is unchanged behavior.
 
 ### 0.2c — Admin access-denied redirect loop + 1.3 shared guards · 2026-06-20
 

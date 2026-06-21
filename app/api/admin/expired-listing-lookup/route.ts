@@ -16,7 +16,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { lookupOwnerForExpiredListing, enrichOwnerContact, isPhoneOnDNC } from '@/lib/expired-owner-lookup'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { isAuthorizedAdminOrCron } from '@/lib/auth/guards'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,8 +28,10 @@ function getSupabase() {
 }
 
 export async function POST(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // Auth (audit p0.2b): a valid admin session OR the CRON_SECRET bearer. Was
+  // secret-only despite being an interactive, manual owner-lookup trigger.
+  if (!(await isAuthorizedAdminOrCron(request))) {
+    return NextResponse.json({ error: 'Unauthorized — admin session or valid bearer required' }, { status: 401 })
   }
 
   let body: { listing_key?: string; street_address?: string; city?: string; skip_dial?: boolean }
