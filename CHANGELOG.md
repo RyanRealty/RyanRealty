@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.67 (2026-06-21)
+
+### Bug Fixes
+- fix(audit-p0.2a): close open-redirect in auth server actions
+
+---
+
+
 ## v1.595.66 (2026-06-21)
 
 ### Bug Fixes
