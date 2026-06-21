@@ -1,14 +1,16 @@
 {
-  "generatedAt": "2026-06-10T02:04:16.798Z",
+  "generatedAt": "2026-06-21T00:53:22.229Z",
   "reason": "Per-route snapshot of components a parity.json contract requires but the route does not yet import. Gate fails only on NEW missing components beyond this baseline. As each rebuild closes its gap, the route disappears here.",
   "routes": [
     {
-      "route": "/price-drops",
+      "route": "app/page.tsx",
       "knownMissing": [
-        "MetadataBlock",
-        "BreadcrumbNav",
-        "DisplayHeading",
-        "ListingCard",
+        "HomepageV6Hero",
+        "CityGrid",
+        "RelatedAreas",
+        "FeaturedListings",
+        "MarketSnapshot",
+        "ArticleGrid",
         "CTABar"
       ]
     }

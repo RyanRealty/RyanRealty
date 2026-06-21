@@ -1,0 +1,30 @@
+{
+  "note": "check-*.mjs gate files that run nowhere automatically — KNOWN DEBT pending triage (wire into ci:gates / a workflow, or delete). Count may only SHRINK. Regenerate with `node scripts/check-gates-wired.mjs --write-baseline`.",
+  "generated_by": "check-gates-wired.mjs --write-baseline",
+  "files": [
+    "check-broker-facts.mjs",
+    "check-bundle-budget.mjs",
+    "check-canonical-listings.mjs",
+    "check-cma-routing.mjs",
+    "check-collections-wiring.mjs",
+    "check-community-content.mjs",
+    "check-console-kit.mjs",
+    "check-dead-ui.mjs",
+    "check-design-directives.mjs",
+    "check-email-brand-tokens.mjs",
+    "check-flyover-video-size.mjs",
+    "check-geo-imagery.mjs",
+    "check-heading-display.mjs",
+    "check-hero-image.mjs",
+    "check-legacy-redirects.mjs",
+    "check-lp-conversion.mjs",
+    "check-measurement-loop.mjs",
+    "check-missing-videos.mjs",
+    "check-mockup-coverage.mjs",
+    "check-nav-reachability.mjs",
+    "check-producer-skills.mjs",
+    "check-rental-lead-wiring.mjs",
+    "check-tool-discipline.mjs",
+    "check-video-urls.mjs"
+  ]
+}

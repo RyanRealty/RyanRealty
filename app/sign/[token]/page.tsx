@@ -1,5 +1,6 @@
 // @no-parity — public e-signing surface (tokenized), not a marketing route; no mockup contract
 // @data-free — token-gated signing data comes from a server action (tc-sign), not a cached @/lib/data DAL read
+// @no-static-params — token-gated signing route, inherently per-request (revalidate=0); no static params to generate
 import { getSigningSession } from '@/app/actions/tc-sign'
 import { SignFlow } from '@/components/tc/pdf-sign/SignFlow'
 

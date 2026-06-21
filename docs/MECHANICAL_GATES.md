@@ -66,7 +66,7 @@ Run them all locally before pushing:
 npm run ci:gates
 ```
 
-That umbrella runs design-tokens + seo-routes + dal-boundary + brand-voice + mockup-parity + mockup-coverage + page-dal + static-params + data-access + dal-column-quoting + dal-internal-discipline + producer-guard + producer-skills + tool-discipline + geo-imagery + boundary-map + community-page + community-content + ai-structured-data + design-directives + hook-tests in sequence. CI runs the same set in `.github/workflows/CI.yml` plus pa11y-ci + Lighthouse on PRs and route-smoke against `start-server-and-test`.
+That umbrella runs the gate chain defined in `package.json` → `ci:gates` (~60 gates). **That script is the single source of truth — do not re-enumerate the list in prose here; it drifts.** (The 2026-06-20 audit found this paragraph listed gates like `mockup-coverage`, `data-access`, `producer-skills`, `tool-discipline`, `geo-imagery`, `community-content`, `design-directives` as "in the umbrella" when they were never wired.) The meta-gate `ci:gates-wired` (last in the chain) now enforces two things: every `ci:*` gate is wired, AND no `scripts/check-*.mjs` runs nowhere. As of 2026-06-20, **24 gate files are an orphan backlog** tracked in `scripts/gates-wired-baseline.json` (NOT enforced — triage each: wire into `ci:gates`/a workflow, or delete; the count may only shrink). DB-dependent gates (G16 `ci:data-access`) run locally + nightly, not the secret-less static chain. CI runs `ci:gates` in `.github/workflows/ci.yml` plus pa11y-ci + Lighthouse on PRs and route-smoke against `start-server-and-test`.
 
 ## The ratchet pattern
 
