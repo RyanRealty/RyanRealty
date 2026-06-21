@@ -12,7 +12,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { lookupPersonByPhone, normalizeTo10, twilioWebhookValidationUrl, validateTwilioSignature } from '@/lib/crm/twilio'
-import { addSuppression } from '@/lib/crm/suppressions'
+import { addSuppression, removeSuppression } from '@/lib/crm/suppressions'
 import { CRM_MAILBOXES, sendCrmEmail } from '@/lib/crm/gmail'
 
 export const runtime = 'nodejs'
@@ -20,6 +20,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 const STOP_WORDS = new Set(['stop', 'stopall', 'unsubscribe', 'cancel', 'end', 'quit'])
+const START_WORDS = new Set(['start', 'unstop', 'yes', 'resubscribe'])
 
 function twiml(message?: string): NextResponse {
   const body = message
@@ -90,6 +91,18 @@ export async function POST(request: Request) {
         title: 'SMS opt-out (STOP) — sms channel suppressed', source: 'twilio',
       })
       return twiml('You have been unsubscribed and will not receive further texts. Reply START to resubscribe.')
+    }
+
+    // START handling (audit p0.3): the STOP reply promises "Reply START to
+    // resubscribe", so honor it. Only clears the user's own sms stop-keyword
+    // opt-out — never a compliance do-not-text/hard-stop suppression we set.
+    if (START_WORDS.has(body.toLowerCase())) {
+      await removeSuppression({ personId: match.personId, channel: 'sms', reason: 'stop-keyword' })
+      await sb.from('crm_timeline').insert({
+        person_id: match.personId, kind: 'system',
+        title: 'SMS opt-in (START) — sms stop-keyword suppression removed', source: 'twilio',
+      })
+      return twiml('You are resubscribed and will receive texts again. Reply STOP to opt out.')
     }
 
     // Alert the assigned broker: open a task + email notification

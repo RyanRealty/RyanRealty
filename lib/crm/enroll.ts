@@ -44,12 +44,14 @@ export async function autoEnrollPerson(personId: number): Promise<AutoEnrollResu
   if (!rule) return { enrolled: false, reason: 'no rule matches tags' }
 
   // hard-stop: never enroll
-  const { data: hardStop } = await sb
+  const { data: hardStop, error: hardStopError } = await sb
     .from('crm_suppressions')
     .select('id')
     .eq('person_id', personId)
     .eq('channel', 'all')
     .limit(1)
+  // fail CLOSED (audit p0.3): an unreadable compliance table must NOT enroll.
+  if (hardStopError) return { enrolled: false, reason: 'hard-stop check failed: ' + hardStopError.message }
   if (hardStop?.length) return { enrolled: false, reason: 'hard-stopped' }
 
   // resolve the target sequence (must be active)
@@ -116,12 +118,14 @@ export async function manualEnrollPerson(personId: number, sequenceId: number, e
   if (!seq) return { enrolled: false, reason: 'workflow not found' }
   if (seq.status !== 'active') return { enrolled: false, reason: 'that workflow is not active' }
 
-  const { data: hardStop } = await sb
+  const { data: hardStop, error: hardStopError } = await sb
     .from('crm_suppressions')
     .select('id')
     .eq('person_id', personId)
     .eq('channel', 'all')
     .limit(1)
+  // fail CLOSED (audit p0.3): an unreadable compliance table must NOT enroll.
+  if (hardStopError) return { enrolled: false, reason: 'hard-stop check failed: ' + hardStopError.message }
   if (hardStop?.length) return { enrolled: false, reason: 'contact is hard-stopped' }
 
   // Never double-enroll into the SAME sequence while it is still live.

@@ -44,6 +44,22 @@ export async function isSuppressed(personId: number, channel: SendChannel): Prom
   return { suppressed: reasons.length > 0, reasons }
 }
 
+/**
+ * Remove a suppression (audit p0.3 — makes "Reply START to resubscribe" real).
+ * Scoped by channel + optional reason so a user STARTing only clears their own
+ * stop-keyword opt-out, never a compliance do-not-text/hard-stop we set.
+ */
+export async function removeSuppression(params: {
+  personId: number
+  channel: 'all' | SendChannel
+  reason?: string
+}): Promise<void> {
+  const sb = createServiceClient()
+  let q = sb.from('crm_suppressions').delete().eq('person_id', params.personId).eq('channel', params.channel)
+  if (params.reason) q = q.eq('reason', params.reason)
+  await q
+}
+
 export async function addSuppression(params: {
   personId: number
   channel: 'all' | SendChannel

@@ -10,7 +10,7 @@
 | 0 | 0.0 | Governance-gate truth (meta-gate blind spot) | ✅ done (2026-06-20) |
 | 0 | 0.1 | MLS sync data-loss | ✅ done (2026-06-20) |
 | 0 | 0.2 | Auth/access holes — a: open-redirect ✅ · b: admin CRON_SECRET mutations ✅ · c: access-denied loop ✅ · d: unauthed service-role action ✅ | ✅ done (2026-06-20) |
-| 0 | 0.3 | CRM compliance fail-safe | ⏳ next |
+| 0 | 0.3 | CRM compliance fail-safe — enroll fail-closed ✅ · STOP/START reversible ✅ (meta-webhook routing: follow-up) | ✅ done (2026-06-21) |
 | 0 | 0.4 | Market-classification helper — a: §0 methodology fix ✅ · b: data-layer threshold consolidation ✅ (page-prose sites: follow-up) | ✅ done (2026-06-21) |
 | 1 | 1.3 | Shared auth guards (`lib/auth/guards.ts`) | ✅ shipped (foundation; adopt in 0.2b/d) |
 | 1 | 1.1, 1.2, 1.4–1.6 | Consolidate duplication | ⬜ todo |
@@ -26,6 +26,20 @@
 ---
 
 ## Log
+
+### 0.3 — CRM compliance fail-safe (TCPA) · 2026-06-21 — PHASE 0 COMPLETE
+
+**Problem (audit HIGH, TCPA/SMS).** Re-verified: the send-path chokepoint `isSuppressed` (suppressions.ts) ALREADY fails closed (good). The real gaps: (1) `lib/crm/enroll.ts` hard-stop checks (2 sites) ignored the query `.error` → a network blip returned no rows → **enrolled a hard-stopped contact** (fail OPEN); (2) the STOP auto-reply promises "Reply START to resubscribe" but **no START handler existed** — an opt-out was permanent, contradicting the promise.
+
+**Change set (all err toward NOT messaging — the TCPA-safe direction).**
+- `lib/crm/enroll.ts` — both hard-stop checks now capture `.error` and return `enrolled:false` on error (fail CLOSED).
+- `lib/crm/suppressions.ts` — new `removeSuppression({personId, channel, reason})`, scoped by reason.
+- `app/api/twilio/inbound-sms/route.ts` — `START_WORDS` handler removes the user's own `sms` `stop-keyword` suppression (never a compliance do-not-text/hard-stop), logs it, and confirms. The "Reply START" promise is now real.
+- `scripts/check-crm-fail-closed.mjs` (`ci:crm-fail-closed`, wired into `ci:gates`) — asserts every enroll hard-stop read has an error guard + a START handler exists.
+
+**Real-test.** `ci:crm-fail-closed` → OK. `ci:gates-wired` → 67 gates, green. `tsc` → source clean. Could not runtime-test live SMS here; both changes are conservative (fail-closed enroll; START only clears the user's own opt-out), so a wrong assumption cannot create a TCPA violation — worst case is a suppressed-but-sendable message or an unchanged opt-out.
+
+**Follow-up (tracked):** 0.3(c) — the Meta `lead-webhook` re-implements tagging by hand and skips the canonical `canonicallyTagLead` path. Lower compliance risk (lead *creation* doesn't send; every send still hits the fail-closed `isSuppressed`), so deferred to the Phase-1 CRM-consolidation pass rather than rushed here.
 
 ### 0.4a — Wrong published months-of-supply formula (§0 compliance) · 2026-06-21
 
