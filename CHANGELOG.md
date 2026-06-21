@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.68 (2026-06-21)
+
+### Bug Fixes
+- fix(audit-p0.2c): kill admin access-denied redirect loop + add shared auth guards (1.3)
+
+---
+
+
 ## v1.595.67 (2026-06-21)
 
 ### Bug Fixes
