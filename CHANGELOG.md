@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.10 (2026-06-22)
+
+### Maintenance
+- refactor(audit-p1.1): remove dead createServiceClient import (broker-self)
+
+---
+
+
 ## v1.598.9 (2026-06-22)
 
 ### Maintenance
