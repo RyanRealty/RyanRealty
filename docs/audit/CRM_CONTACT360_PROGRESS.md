@@ -31,10 +31,12 @@
 | 4 | 4.2 | link/unlink/setType actions (reciprocal) | ⬜ todo |
 | 4 | 4.3 | Relationships panel + RelationshipPicker | ⬜ todo |
 | 4 | 4.4 | Backfill 29 legacy rows + dedup guard | ⬜ todo |
-| 5 | 5.1 | crm_people → Meta Custom Audience uploader + cron | 🚩 flagged (Meta creds) |
-| 5 | 5.2 | FB Lead-Ad webhook graph-aware (rr_vid/fbclid stitch) | ⬜ todo |
-| 5 | 5.3 | external_id=rr_vid on pixel + CAPI | ⬜ todo |
-| 5 | 5.4 | Auto-fire offline conversions on a CRM milestone | 🚩 flagged (Meta + decision) |
+| 5 | 5.1 | crm_people→Meta uploader, in-app + consent-gated + ledger | 🚩 flagged (Meta creds + go) |
+| 5 | 5.2 | Audience cron + <1k-match monitor + token-model fix | 🚩 flagged (token authority) |
+| 5 | 5.3 | Lead-webhook identity stitch + external_id=rr_vid | ⬜ todo |
+| 5 | 5.4 | CAPI match-quality parity (fbc/fbp/IP/UA) + dedup everywhere | ⬜ todo |
+| 5 | 5.5 | fbc persistence + auto offline conversions (ROAS loop) | 🚩 flagged (value model + Meta) |
+| 5 | 5.6 | meta_capi_log + retry + EMQ reconciliation + Graph v25 pin | ⬜ todo |
 | 6 | 6.1 | Bulk-select island | ⬜ todo |
 | 6 | 6.2 | Bulk fan-out actions + crm_bulk_jobs audit | ⬜ todo |
 | 6 | 6.3 | Bulk compliance rails (preview/EBR/scope/enqueue) | ⬜ todo |
@@ -45,6 +47,23 @@
 | 7 | 7.4 | Consumer controls: cadence + pause/resume + edit-criteria | ⬜ todo |
 | 7 | 7.5 | Kill the dead /account/notifications frequency setting | ⬜ todo |
 | 7 | 7.6 | Broker visibility: real saved searches + homes (stop regex-infer) | ⬜ todo |
+| 8 | 8.1 | GPC + consent gate on tracking/CAPI (LDU on opt-out) | ⬜ todo |
+| 8 | 8.2 | Consent surface on landing pages (Pixel can't pre-fire) | ⬜ todo |
+| 8 | 8.3 | Privacy policy: disclose rr_vid/rr_fbc/Pixel/CAPI/offline + CCPA/OCPA right | ⬜ todo |
+| 8 | 8.4 | Consent ledger + audience opt-out removal (deleteUsers) | ⬜ todo |
+| 8 | 8.5 | Harden rr_vid anchor + dual-host PKCE alignment | ⬜ todo |
+| 9 | 9.1 | Resend DNS (DKIM/SPF/DMARC) + remove sandbox fallback | 🚩 flagged (Cloudflare DNS) |
+| 9 | 9.2 | Bounce/complaint → crm_suppressions (+ Svix HMAC fix) | ⬜ todo |
+| 9 | 9.3 | RFC 8058 one-click List-Unsubscribe on bulk sends | ⬜ todo |
+| 9 | 9.4 | /api/twilio/status delivery receipts + 30007 detect + A2P governor | ⬜ todo |
+| 9 | 9.5 | /admin/crm/health observability dashboard | ⬜ todo |
+| 9 | 9.6 | crm-health-check cron + alarms + relay heartbeat | ⬜ todo |
+| 9 | 9.7 | crm-fub-reconcile + 14-day zero-diff cutover gate | 🚩 flagged (FUB creds, nightly) |
+| 9 | 9.8 | Hardening (orphan cron, EMAIL_TRACKING_SECRET, bounce seed) | ⬜ todo |
+| 10 | 10.1 | Broker RBAC (server-side assigned_broker scope everywhere) | ⬜ todo |
+| 10 | 10.2 | Service-role boundary audit (RLS tables via DAL only) | ⬜ todo |
+| 10 | 10.3 | Dual-host OAuth/PKCE fix verified | ⬜ todo |
+| 10 | 10.4 | Broker daily/weekly digests repointed FUB → crm_people + scheduled | ⬜ todo |
 
 Legend: ⬜ todo · 🔶 in progress · ✅ done · 🚩 flagged (needs creds / a decision / Matt's go).
 
