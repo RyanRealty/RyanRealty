@@ -1,6 +1,5 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
 import type { ListingTileRow } from './listings'
 
 const SELECT =
@@ -19,7 +18,6 @@ export async function getAdminListingsPage(
   if (!url?.trim() || !serviceKey?.trim()) {
     return { rows: [], total: 0 }
   }
-  void createClient
   void SELECT
   // DAL: admin listings list via listing_tile_mv. Filters: status bucket +
   // free-text searchQuery. Result count derived from result.length given the
