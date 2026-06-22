@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.12 (2026-06-22)
+
+### Maintenance
+- refactor(audit-p1.1): remove dead createClient import (admin-listings)
+
+---
+
+
 ## v1.598.11 (2026-06-22)
 
 ### Maintenance
