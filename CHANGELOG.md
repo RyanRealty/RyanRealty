@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.74 (2026-06-22)
+
+### Maintenance
+- chore(audit-p1.5a): delete 32 dead Homepage* prototype components (~3,055 LOC)
+
+---
+
+
 ## v1.595.73 (2026-06-21)
 
 ### Bug Fixes
