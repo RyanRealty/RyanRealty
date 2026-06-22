@@ -1,6 +1,7 @@
 // brand-voice:exempt — factual market Q&A generated from verified live data, no marketing prose
 import type { StatValue } from '@/lib/site/json-ld'
 import { marketVerdict } from '@/lib/market/classify'
+import { formatPrice } from '@/lib/format/money'
 
 /**
  * Structural input — a full MarketPulse satisfies this, and a geo page can also
@@ -60,12 +61,6 @@ function resolveAsOf(refreshedAt: string | null | undefined): { iso: string | nu
   }
 }
 
-/** Currency rounded to the nearest thousand, e.g. 894750 -> "$895,000". */
-function roundedThousand(n: number): string {
-  const r = Math.round(n / 1000) * 1000
-  return `$${r.toLocaleString('en-US')}`
-}
-
 /** Months-of-supply -> market type, per the canonical CLAUDE.md thresholds. */
 function marketType(mos: number): string {
   // Thresholds via lib/market/classify.ts (audit p0.4b); short form for FAQ prose.
@@ -84,7 +79,7 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
   if (pulse.medianListPrice != null && pulse.medianListPrice > 0) {
     faqs.push({
       question: `What is the median home price in ${geoName}?`,
-      answer: `The median list price for a single-family home in ${geoName} is ${roundedThousand(pulse.medianListPrice)}${asOf}, based on live MLS data.`,
+      answer: `The median list price for a single-family home in ${geoName} is ${formatPrice(pulse.medianListPrice)}${asOf}, based on live MLS data.`,
     })
     datasetVariables.push({ name: 'Median List Price', value: Math.round(pulse.medianListPrice), unitText: 'USD' })
   }

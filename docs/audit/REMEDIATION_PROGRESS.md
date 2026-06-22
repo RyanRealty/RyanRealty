@@ -17,7 +17,7 @@
 | 1 | 1.4 | Canonical money + date formatters | 🔶 helpers + gates ✅; migrating call sites (currency 59, date 86 baselined) |
 | 1 | 1.1 | Unify Supabase clients | 🔶 service-role ratchet gate ✅ (baseline 137; 6 dead helpers removed); browser/server factories deferred (needs `next build`) |
 | 1 | 1.2 | FUB client + env-key collapse | 🔶 accessor + gate ✅; 11 readers migrated (3 left: a page, hand-rolled lead-webhook, the .mjs); 3-client merge todo |
-| 1 | 1.6 | Remaining forks | ⬜ todo |
+| 1 | 1.6 | Remaining forks | 🔶 market-faq `roundedThousand` → canonical `formatPrice` (proven byte-identical for positive inputs, guarded caller, test asserts it) ✅; ~15 page-level round-to-$1k dupes are the render-verify currency-migration bucket (locale-default toLocaleString + unguarded-0 edge cases) — deferred; the 2 `lib/data/*` ones return numbers, not currency — not candidates |
 | 2 | 2.1 | DAL boundary → default-deny | 🔶 any-table matcher + ratchet 213→0 ✅ (write-path read/write split: todo) |
 | 2 | 2.2 | Split barrels/god-files + server-only | ⬜ todo |
 | 3 | 3.x | Governance + tests + env | 🔶 orphan gates 24→7 ✅ · doc drift ✅ (orphan-count 24→7 synced in CLAUDE.md + MECHANICAL_GATES.md) · tests +18 files / 726 (+ inventory-filters, search-filters dedup, walkFiles, report-year-compare YoY, market-faq) ✅ · shared gate-lib: walkFiles + 4 gates migrated (the clean p1.4 cluster); remaining ~29 are NOT drop-in (abs-path/path.join, unanchored skip, varying ext + skip-sets) so left as-is — low-value/rising-risk to force ✅; typed env: todo |
