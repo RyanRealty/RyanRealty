@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.20 (2026-06-22)
+
+### Bug Fixes
+- fix(audit-p3.x): retire sand token in newsletter email + wire ci:email-brand-tokens (orphan 9->8)
+
+---
+
+
 ## v1.598.19 (2026-06-22)
 
 ### Maintenance
