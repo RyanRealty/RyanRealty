@@ -18,7 +18,7 @@ import { z } from 'zod'
 
 const nonEmpty = z.string().trim().min(1)
 
-const EnvSchema = z.object({
+export const EnvSchema = z.object({
   // Required at build time (NEXT_PUBLIC_* are inlined into the client bundle).
   NEXT_PUBLIC_SUPABASE_URL: nonEmpty,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: nonEmpty,
@@ -43,10 +43,15 @@ const EnvSchema = z.object({
 
 export type Env = z.infer<typeof EnvSchema>
 
-/** The required/optional split, preserved exactly (Stage 1: no expansion). */
-const requiredForBuild = ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'] as const
-const requiredForRuntime = ['SUPABASE_SERVICE_ROLE_KEY', 'SPARK_API_KEY'] as const
-const optional = [
+/**
+ * The required/optional split, preserved exactly (Stage 1: no expansion).
+ * Exported so the partition coverage guard (lib/env.test.ts) can assert that
+ * every EnvSchema key is classified into exactly one list and vice-versa — the
+ * prerequisite invariant for a future ~159-key Stage-2 expansion.
+ */
+export const requiredForBuild = ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'] as const
+export const requiredForRuntime = ['SUPABASE_SERVICE_ROLE_KEY', 'SPARK_API_KEY'] as const
+export const optional = [
   'NEXT_PUBLIC_SITE_URL',
   'NEXT_PUBLIC_SITE_OWNER_EMAIL',
   'NEXT_PUBLIC_SITE_OWNER_NAME',
