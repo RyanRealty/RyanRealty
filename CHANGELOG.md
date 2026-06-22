@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.17 (2026-06-22)
+
+### Maintenance
+- refactor(audit-3.3): migrate the 4 live Meta publishers to getMetaPageToken (baseline 4->0, migration complete)
+
+---
+
+
 ## v1.599.16 (2026-06-22)
 
 ### Maintenance
