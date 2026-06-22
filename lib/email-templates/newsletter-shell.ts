@@ -6,6 +6,8 @@
  * unsubscribe link. Keep this the ONLY place newsletter email markup lives.
  */
 
+import { EMAIL_BORDER } from '@/lib/email/brand'
+
 const NAVY = '#102742'
 const CREAM = '#faf8f4'
 const CHARCOAL = '#1a1a1a'
@@ -23,7 +25,7 @@ export function wrapNewsletterHtml(args: {
 ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(preheader)}</div>` : ''}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${CREAM};padding:24px 0;">
   <tr><td align="center">
-    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e8e2d4;">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid ${EMAIL_BORDER};">
       <tr><td style="background:${NAVY};padding:20px 32px;">
         <span style="color:${CREAM};font-size:18px;font-weight:700;letter-spacing:0.04em;">RYAN REALTY</span>
       </td></tr>
