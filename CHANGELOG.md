@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.26 (2026-06-22)
+
+### Other
+- p1.2 FUB: canonical fubAuthHeaderTrimmed() + characterization test (merge guardrail)
+
+---
+
+
 ## v1.599.25 (2026-06-22)
 
 ### Other
