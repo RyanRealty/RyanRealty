@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.9 (2026-06-22)
+
+### Maintenance
+- docs(audit-p3.5): fix ARCHITECTURE.md sync/trigger drift
+
+---
+
+
 ## v1.598.8 (2026-06-22)
 
 ### Maintenance
