@@ -101,6 +101,158 @@ const WRITE_PATH_PREFIXES = [
 // `Buffer.from(` / `Array.from(` (not Supabase calls).
 const FROM_REGEX = /(?<!Buffer)(?<!Array)\.from\(\s*['"`]([a-z][a-z0-9_]*)['"`]/g
 
+// ── Part A: cached-read write classifier (audit p2.1) ────────────────────────
+// A Supabase WRITE must never run on a cached-read path, because unstable_cache
+// memoizes/dedupes its callback — a mutation placed there would be silently
+// skipped on a cache hit (correctness bug) and is conceptually wrong (a cache is
+// for pure reads). This is a ZERO-TOLERANCE invariant, NOT a ratcheted baseline:
+// any hit fails the commit outright.
+//
+// Two statically-detectable rules (the directive's "lib/data/cache OR an
+// unstable_cache callback"):
+//   Rule 1 — lib/data/cache/** is read-only caching infrastructure. No write
+//            call (.insert/.update/.upsert/.delete) may appear there at all.
+//   Rule 2 — No write call may appear LEXICALLY inside an inline cache-wrapper
+//            callback: unstable_cache(async () => { … }, …) or
+//            makeResilientCached(async () => { … }, …). When the first arg is a
+//            NAMED function reference (unstable_cache(fetchFn, …)), the write —
+//            if any — lives in fetchFn's own body, which call-graph resolution
+//            (deferred DAL Part C) would have to chase; Part A is purely lexical.
+const WRITE_REGEX = /\.(insert|update|upsert|delete)\s*\(/g
+const CACHE_WRAPPER_FNS = ['unstable_cache', 'makeResilientCached']
+const CACHE_INFRA_PREFIX = 'lib/data/cache/'
+
+/**
+ * Given the index of an opening '(' in `content`, return the index of its
+ * matching ')'. Skips parens that live inside line/block comments, single/double
+ * quoted strings, and template literals (including `${…}` interpolations, which
+ * re-enter code mode). Returns -1 if unbalanced.
+ */
+function findMatchingParen(content, openIdx) {
+  const n = content.length
+  let depth = 0
+  let i = openIdx
+  // Mode stack so template `${ … }` interpolations re-enter code mode and the
+  // closing `}` returns to template mode. Each frame: 'code' | 'tmpl'.
+  const stack = ['code']
+  // For each 'code' frame entered from a template interp, track brace depth so
+  // its matching `}` pops back to 'tmpl'. -1 means "top-level code" (never pops).
+  const braceDepth = [-1]
+  let inLine = false
+  let inBlock = false
+  let inS = false
+  let inD = false
+
+  while (i < n) {
+    const c = content[i]
+    const c2 = i + 1 < n ? content[i + 1] : ''
+    const mode = stack[stack.length - 1]
+
+    if (inLine) { if (c === '\n') inLine = false; i += 1; continue }
+    if (inBlock) { if (c === '*' && c2 === '/') { inBlock = false; i += 2; continue } i += 1; continue }
+    if (inS) { if (c === '\\') { i += 2; continue } if (c === "'") inS = false; i += 1; continue }
+    if (inD) { if (c === '\\') { i += 2; continue } if (c === '"') inD = false; i += 1; continue }
+
+    if (mode === 'tmpl') {
+      if (c === '\\') { i += 2; continue }
+      if (c === '`') { stack.pop(); braceDepth.pop(); i += 1; continue }
+      if (c === '$' && c2 === '{') { stack.push('code'); braceDepth.push(0); i += 2; continue }
+      i += 1
+      continue
+    }
+
+    // mode === 'code'
+    if (c === '/' && c2 === '/') { inLine = true; i += 2; continue }
+    if (c === '/' && c2 === '*') { inBlock = true; i += 2; continue }
+    if (c === "'") { inS = true; i += 1; continue }
+    if (c === '"') { inD = true; i += 1; continue }
+    if (c === '`') { stack.push('tmpl'); braceDepth.push(-1); i += 1; continue }
+    if (c === '{') { if (braceDepth[braceDepth.length - 1] >= 0) braceDepth[braceDepth.length - 1] += 1; i += 1; continue }
+    if (c === '}') {
+      const top = braceDepth.length - 1
+      if (braceDepth[top] > 0) { braceDepth[top] -= 1; i += 1; continue }
+      if (braceDepth[top] === 0) { stack.pop(); braceDepth.pop(); i += 1; continue } // close ${…}
+      i += 1
+      continue
+    }
+    if (c === '(') { depth += 1; i += 1; continue }
+    if (c === ')') { depth -= 1; if (depth === 0) return i; i += 1; continue }
+    i += 1
+  }
+  return -1
+}
+
+function lineOf(content, index) {
+  return content.slice(0, index).split('\n').length
+}
+
+/**
+ * Scan a single lib/data file for cached-read write violations (Rules 1 & 2).
+ * Returns an array of { file, line, rule, detail }.
+ */
+function scanCachedWrites(relPath, content) {
+  const out = []
+
+  // Rule 1: no writes anywhere under lib/data/cache/.
+  if (relPath.startsWith(CACHE_INFRA_PREFIX)) {
+    for (const m of content.matchAll(WRITE_REGEX)) {
+      out.push({
+        file: relPath,
+        line: lineOf(content, m.index),
+        rule: 'cache-infra-write',
+        detail: `.${m[1]}( in caching infrastructure (lib/data/cache/ is read-only)`,
+      })
+    }
+    return out
+  }
+
+  // Rule 2: no writes lexically inside an inline cache-wrapper callback.
+  for (const fn of CACHE_WRAPPER_FNS) {
+    const callRe = new RegExp(`\\b${fn}\\s*\\(`, 'g')
+    for (const m of content.matchAll(callRe)) {
+      const openParen = m.index + m[0].length - 1
+      const close = findMatchingParen(content, openParen)
+      if (close < 0) continue
+      // Only the inline-callback form is in scope: first arg starts with a
+      // function literal (`async`, `function`, or `(`/`<` arrow). A bare
+      // identifier first arg is a named reference → Part C, not Part A.
+      const argStart = content.slice(openParen + 1).search(/\S/)
+      if (argStart < 0) continue
+      const firstChunk = content.slice(openParen + 1 + argStart, openParen + 1 + argStart + 12)
+      const isInlineFn = /^(async\b|function\b|\(|<)/.test(firstChunk)
+      if (!isInlineFn) continue
+      const span = content.slice(openParen, close + 1)
+      for (const w of span.matchAll(WRITE_REGEX)) {
+        out.push({
+          file: relPath,
+          line: lineOf(content, openParen + w.index),
+          rule: 'write-in-cache-callback',
+          detail: `.${w[1]}( inside an inline ${fn}() callback`,
+        })
+      }
+    }
+  }
+  return out
+}
+
+function scanAllCachedWrites() {
+  const out = []
+  const absDir = join(ROOT, 'lib/data')
+  if (!existsSync(absDir)) return out
+  for (const file of walk(absDir)) {
+    const relPath = normalize(relative(ROOT, file))
+    if (relPath.includes('/__tests__/') || relPath.endsWith('.test.ts') || relPath.endsWith('.test.tsx')) continue
+    let content
+    try {
+      content = readFileSync(file, 'utf8')
+    } catch {
+      continue
+    }
+    out.push(...scanCachedWrites(relPath, content))
+  }
+  return out
+}
+
 function normalize(p) {
   return p.split(sep).join('/')
 }
@@ -198,6 +350,20 @@ function main() {
   const results = scanAll()
   const summary = summarize(results)
 
+  // Part A invariant — runs in EVERY mode, never ratcheted. A write on a cached
+  // read path is always a bug, so it hard-fails even during --write-baseline /
+  // --report (those exit before the ratchet, so we surface it explicitly here).
+  const cachedWriteViolations = scanAllCachedWrites()
+  const reportCachedWrites = () => {
+    if (cachedWriteViolations.length === 0) return
+    console.error(`✗ DAL cached-read write violation(s): ${cachedWriteViolations.length}`)
+    console.error('  A Supabase write (.insert/.update/.upsert/.delete) must never run on a cached-read path.')
+    for (const v of cachedWriteViolations) {
+      console.error(`  ${v.file}:${v.line} — ${v.detail}`)
+    }
+    console.error('  See docs/DATA_ACCESS_LAYER.md. Move the mutation out of the cache wrapper / lib/data/cache/.')
+  }
+
   if (writeBaseline) {
     writeFileSync(
       BASELINE_PATH,
@@ -214,6 +380,7 @@ function main() {
     )
     console.log(`✓ Baseline written: ${summary.total} violations across ${results.length} files.`)
     console.log(`  → ${BASELINE_PATH}`)
+    reportCachedWrites() // surface invariant breaches, but baseline write itself is not blocked
     process.exit(0)
   }
 
@@ -223,7 +390,20 @@ function main() {
       console.log(`  ${r.count.toString().padStart(4)} ${r.file}`)
     }
     if (results.length > 30) console.log(`  ... and ${results.length - 30} more files`)
+    console.log('')
+    if (cachedWriteViolations.length === 0) {
+      console.log('✓ Cached-read write classifier: 0 violations (no writes on any cached path)')
+    } else {
+      reportCachedWrites()
+    }
     process.exit(0)
+  }
+
+  // Part A hard invariant: a write on a cached-read path fails the commit
+  // outright (zero-tolerance, ahead of the ratcheted boundary check below).
+  if (cachedWriteViolations.length > 0) {
+    reportCachedWrites()
+    process.exit(1)
   }
 
   // Default mode: ratchet check against baseline.

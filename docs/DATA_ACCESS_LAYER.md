@@ -297,6 +297,26 @@ npm run ci:dal-boundary
 
 Both run on every PR. Neither can be skipped.
 
+#### Cached-read write classifier (zero-tolerance, NOT ratcheted)
+
+The same script also enforces a hard invariant inside `lib/data/`: **a Supabase write
+(`.insert` / `.update` / `.upsert` / `.delete`) must never run on a cached-read path.**
+`unstable_cache` memoizes and dedupes its callback, so a mutation placed there is
+silently skipped on a cache hit — a correctness bug, and conceptually wrong (a cache
+is for pure reads). Two statically-detected rules:
+
+1. **`lib/data/cache/**` is read-only caching infrastructure** — no write call may
+   appear there at all.
+2. **No write lexically inside an inline cache-wrapper callback** —
+   `unstable_cache(async () => { … }, …)` or `makeResilientCached(async () => { … }, …)`.
+   When the first arg is a *named function reference* (`unstable_cache(fetchFn, …)`),
+   the write — if any — lives in `fetchFn`'s body; chasing that requires call-graph
+   resolution (the deferred DAL Part C). Part A is purely lexical.
+
+Unlike the `.from()` boundary above, this is **not** ratcheted against a baseline —
+any hit fails the commit outright. Put mutations in a dedicated write function
+(uncached), outside any cache wrapper and outside `lib/data/cache/`.
+
 ---
 
 ## Contract tests
