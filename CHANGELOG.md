@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.6 (2026-06-22)
+
+### Maintenance
+- chore(audit-p1.5): delete 3 confirmed-dead lib modules (308 LOC) + correct types/database
+
+---
+
+
 ## v1.599.5 (2026-06-22)
 
 ### Maintenance
