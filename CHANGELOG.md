@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.29 (2026-06-22)
+
+### Other
+- audit log: record deferred-items deep pass (7 shipped) + correct stale process-canon note
+
+---
+
+
 ## v1.599.28 (2026-06-22)
 
 ### Other
