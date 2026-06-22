@@ -257,7 +257,7 @@ function safeDiv(a: number | null, b: number | null, decimals: number): number |
   return Math.round((a / b) * Math.pow(10, decimals)) / Math.pow(10, decimals)
 }
 
-interface Tier1Input {
+export interface Tier1Input {
   listPrice: number | null
   closePrice: number | null
   originalListPrice: number | null
@@ -275,7 +275,7 @@ interface Tier1Input {
   taxAssessed: number | null
 }
 
-function computeTier1(input: Tier1Input) {
+export function computeTier1(input: Tier1Input) {
   const {
     listPrice, closePrice, originalListPrice, sqft, lotAcres, lotSqft,
     bedrooms, bathrooms, rooms, yearBuilt, aboveGrade, buildingTotal,
