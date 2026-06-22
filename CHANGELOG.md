@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.16 (2026-06-22)
+
+### Maintenance
+- docs(audit): refresh progress-log status table to current state
+
+---
+
+
 ## v1.598.15 (2026-06-22)
 
 ### Maintenance
