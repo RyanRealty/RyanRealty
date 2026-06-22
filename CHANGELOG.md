@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.20 (2026-06-22)
+
+### Other
+- Wire collections-wiring gate: repoint to /account, add to ci:gates (orphan 4->3)
+
+---
+
+
 ## v1.599.19 (2026-06-22)
 
 ### Other
