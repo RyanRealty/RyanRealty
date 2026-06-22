@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.15 (2026-06-22)
+
+### Bug Fixes
+- fix(audit-3.x): route city/community golf tiles through canonical GOLF_COMMUNITY_IMAGES + wire ci:geo-imagery (orphan 5->4)
+
+---
+
+
 ## v1.599.14 (2026-06-22)
 
 ### Maintenance
