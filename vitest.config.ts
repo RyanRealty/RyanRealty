@@ -23,6 +23,12 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),
+      // `server-only` / `client-only` are Next-bundler packages that throw
+      // outside the RSC graph and don't resolve under plain Node/vitest. Tests
+      // import server modules directly, so stub the side-effect marker. The real
+      // guarantee comes from `next build`, not from tests.
+      'server-only': path.resolve(__dirname, 'test/server-only-stub.ts'),
+      'client-only': path.resolve(__dirname, 'test/server-only-stub.ts'),
     },
   },
 })

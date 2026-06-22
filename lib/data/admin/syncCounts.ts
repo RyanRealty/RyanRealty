@@ -9,6 +9,7 @@
  * Used exclusively by /admin/sync dashboards — not by any public LP route.
  */
 
+import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
 

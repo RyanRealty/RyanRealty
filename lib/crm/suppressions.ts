@@ -3,6 +3,7 @@
  * (blueprint §6). One function, one table, no per-path tag logic.
  */
 
+import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 
 export type SendChannel = 'email' | 'sms' | 'call'

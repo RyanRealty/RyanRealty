@@ -10,6 +10,7 @@
  * against the existing row set (e.g. did price change, did status change).
  */
 
+import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 
 function client() {

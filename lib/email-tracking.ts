@@ -15,6 +15,7 @@
  * tampered (the click URL is INSIDE the token, never a separate query param —
  * that closes the open-redirect hole).
  */
+import 'server-only'
 import { createHmac, timingSafeEqual } from 'node:crypto'
 
 const SECRET =

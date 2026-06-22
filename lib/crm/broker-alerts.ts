@@ -14,6 +14,7 @@
  * 15-minute catch-all cron never double-text a broker.
  */
 
+import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 
 const ALERT_PHONE_BY_BROKER: Record<string, string | undefined> = {

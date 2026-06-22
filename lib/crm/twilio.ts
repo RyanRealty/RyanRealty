@@ -6,6 +6,7 @@
  * the matching contact; unknown senders become new leads.
  */
 
+import 'server-only'
 import crypto from 'node:crypto'
 import { createServiceClient } from '@/lib/supabase/service'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'

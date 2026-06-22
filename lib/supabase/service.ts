@@ -4,6 +4,7 @@
  * from lib/supabase/server.ts (cookie-based).
  */
 
+import 'server-only'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 let _serviceClient: SupabaseClient | null = null
