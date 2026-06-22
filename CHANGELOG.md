@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.18 (2026-06-22)
+
+### Maintenance
+- test(audit-p3.2): unit-test parseZillowItem (FSBO lead parser)
+
+---
+
+
 ## v1.598.17 (2026-06-22)
 
 ### Maintenance
