@@ -20,3 +20,23 @@ export function fubAuthHeader(): string {
   }
   return `Basic ${Buffer.from(`${key}:`).toString('base64')}`
 }
+
+/**
+ * Basic-auth header that TRIMS the key first — byte-for-byte identical to what
+ * the three hand-rolled FUB clients build today (lib/followupboss.ts, lib/fub.ts,
+ * lib/fub-snapshot.ts all do `getFubApiKey()?.trim()` then base64(key + ':')).
+ *
+ * This exists to give the deferred FUB 3-client merge (audit) a byte-identity
+ * landing pad: those clients can later swap to this helper with NO change on the
+ * wire. fubAuthHeader() (no trim) and this DIFFER whenever the env value carries
+ * surrounding whitespace — that discrepancy is the reason the merge can't just
+ * point everything at fubAuthHeader(); the characterization test in
+ * fub-env.test.ts locks both behaviors so the swap can't silently change auth.
+ */
+export function fubAuthHeaderTrimmed(): string {
+  const key = getFubApiKey()?.trim()
+  if (!key) {
+    throw new Error('FollowUpBoss API key not configured (set FOLLOWUPBOSS_API_KEY or FUB_API_KEY)')
+  }
+  return `Basic ${Buffer.from(`${key}:`).toString('base64')}`
+}
