@@ -1,6 +1,6 @@
 # CRM Contact-360 + Flywheel — Progress Log
 
-**Source plan:** `scratch/CRM_CONTACT360_BUILDOUT.md`.
+**Source plan:** `docs/audit/CRM_CONTACT360_BUILDOUT.md`.
 **How to read:** newest entry at the top. Each increment records what/why, the change set, how it was verified (tsc + gate + vitest [+ next build]), the result, and follow-ups. The status table is the at-a-glance index.
 
 ## Status
