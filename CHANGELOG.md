@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.22 (2026-06-22)
+
+### Other
+- p2.1 DAL Part C: resolve named fetch-fn references in the cached-write classifier
+
+---
+
+
 ## v1.599.21 (2026-06-22)
 
 ### Other
