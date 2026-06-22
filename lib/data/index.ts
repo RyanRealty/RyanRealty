@@ -12,6 +12,8 @@
  *   4. Update the caching table in docs/DATA_ACCESS_LAYER.md
  */
 
+import 'server-only'
+
 // Types ------------------------------------------------------------
 export type {
   Slug,
