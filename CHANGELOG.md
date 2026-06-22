@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.18 (2026-06-22)
+
+### Other
+- p3.3 Zod env Stage 1: typed schema for lib/env.ts, zod as direct dep
+
+---
+
+
 ## v1.599.17 (2026-06-22)
 
 ### Maintenance
