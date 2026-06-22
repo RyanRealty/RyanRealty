@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.13 (2026-06-22)
+
+### Maintenance
+- docs(audit-p3.5): fix ARCHITECTURE.md cron-table drift
+
+---
+
+
 ## v1.598.12 (2026-06-22)
 
 ### Maintenance
