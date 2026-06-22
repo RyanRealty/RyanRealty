@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.597.1 (2026-06-22)
+
+### Maintenance
+- refactor(audit-p1.1a): consolidate inline service-role Supabase clients + ratchet gate
+
+---
+
+
 ## v1.597.0 (2026-06-22)
 
 ### Features
