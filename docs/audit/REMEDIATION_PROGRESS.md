@@ -20,7 +20,7 @@
 | 1 | 1.6 | Remaining forks | ⬜ todo |
 | 2 | 2.1 | DAL boundary → default-deny | 🔶 any-table matcher + ratchet 213→0 ✅ (write-path read/write split: todo) |
 | 2 | 2.2 | Split barrels/god-files + server-only | ⬜ todo |
-| 3 | 3.x | Governance + tests + env | 🔶 orphan gates 24→7 ✅ · doc drift ✅ · tests +17 files / 722 (+ inventory-filters, search-filters dedup, walkFiles, report-year-compare YoY) ✅ · shared gate-lib: walkFiles + 4 gates migrated (the clean p1.4 cluster); remaining ~29 are NOT drop-in (abs-path/path.join, unanchored skip, varying ext + skip-sets) so left as-is — low-value/rising-risk to force ✅; typed env: todo |
+| 3 | 3.x | Governance + tests + env | 🔶 orphan gates 24→7 ✅ · doc drift ✅ (orphan-count 24→7 synced in CLAUDE.md + MECHANICAL_GATES.md) · tests +18 files / 726 (+ inventory-filters, search-filters dedup, walkFiles, report-year-compare YoY, market-faq) ✅ · shared gate-lib: walkFiles + 4 gates migrated (the clean p1.4 cluster); remaining ~29 are NOT drop-in (abs-path/path.join, unanchored skip, varying ext + skip-sets) so left as-is — low-value/rising-risk to force ✅; typed env: todo |
 
 ## Discovered (cross-step follow-ups, not yet scheduled)
 
