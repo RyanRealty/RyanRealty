@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.25 (2026-06-22)
+
+### Maintenance
+- refactor(audit-p3.x): shared scripts/lib/walk.mjs gate file-walker (4 gates DRYed)
+
+---
+
+
 ## v1.598.24 (2026-06-22)
 
 ### Maintenance
