@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.40 (2026-06-22)
+
+### Other
+- plan: add Phase 7 — unified saved searches + saved homes (consumer + broker)
+
+---
+
+
 ## v1.599.39 (2026-06-22)
 
 ### Other
