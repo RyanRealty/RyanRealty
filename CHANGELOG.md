@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.41 (2026-06-22)
+
+### Other
+- plan: production-grade depth — expand Phase 5 + add Phases 8 (consent) 9 (ops) 10 (security)
+
+---
+
+
 ## v1.599.40 (2026-06-22)
 
 ### Other
