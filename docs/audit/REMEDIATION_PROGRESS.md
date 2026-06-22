@@ -3,6 +3,24 @@
 **Source plan:** `scratch/AUDIT_REMEDIATION_PROMPT.md` (the master prompt from the 2026-06-20 inherited-codebase audit; 174 verified findings).
 **How to read:** newest entry at the top of the log. Each step records what/why, the change set, how it was real-tested, the result, and any follow-ups discovered. Status table is the at-a-glance index.
 
+## Autonomous /loop run — final state (2026-06-22)
+
+The safe, autonomously-verifiable portion of the plan is **complete**. Review pass: all 15 audit-added gates pass, `tsc` source-clean, vitest 775/775. What shipped this run:
+
+- **Phase 0 (CRITICAL):** all done before this run (governance meta-gate, sync data-loss, auth/access holes, CRM fail-closed, market-classification).
+- **3.2 the 5 critical-path tests — DONE 5/5:** DAL (`resolveCanonicalListingKey`), sync-cursor (`deltaCursor`), market-formula (`classify`), FUB lead-create (`sendEvent`, fetch-mocked), auth-guards (`isValidCronAuth` + `safeRedirect`).
+- **3.3 dual-name env collapse — DONE for both names the plan flagged:** FUB (`getFubApiKey`, `ci:fub-env` 14→1) + Meta (`getMetaPageToken`, new `ci:meta-token`).
+- **Shared gate-lib (`scripts/lib/walk.mjs`)** + 4 gates migrated byte-identical; new gates dogfood it.
+- **Orphan gate backlog 28→7** (fixed-then-wired email-brand-tokens + producer-skills, etc.).
+- **1.5 dead code:** −308 LOC (3 verified-dead lib modules); corrected the audit's wrong `types/database.ts` "dead" label.
+- **1.6 fork:** market-faq routed through canonical `formatPrice`.
+- **1.2 FUB env-key collapse complete** (only the `.mjs` remains, can't import the `.ts`).
+- **Doc drift:** orphan-count synced in CLAUDE.md + MECHANICAL_GATES.md.
+- **Tests:** +27 files / 775 total (80 files), incl. money/date/market-classify/YoY/FAQ/dedup/JSON-LD-honesty/coercers/phone/attribution/FSBO/inventory/TC-field-map/sync-health.
+
+**Deferred — needs a build env, render-verify, live-path care, creds, or a Matt decision (NOT blind-pushed, per policy):**
+- Build-failing Zod over ~159 keys (needs `next build`); FUB 3-client merge + Meta-publisher reader migrations (live paths, trim-semantics nuance); currency/date baseline shrink + ~15 page-level round-to-$1k dupes (output-changing, render-verify); `2.2` barrel split + `server-only` (needs `next build`); `dal-boundary` write-path read/write split; the `experience/` family per-symbol consumption trace; the remaining 7 orphan gates (`bundle-budget` build · `geo-imagery`/`collections-wiring` page/feature · `legacy-redirects`/`missing-videos`/`video-urls` creds · `tool-discipline` frozen-layer owner call); `ci:process-canon` was already RED on `main` pre-run (an unregistered plan doc, someone's to own).
+
 ## Status
 
 | Phase | Step | Title | Status |
