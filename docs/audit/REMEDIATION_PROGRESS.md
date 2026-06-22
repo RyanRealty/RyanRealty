@@ -20,7 +20,7 @@
 | 1 | 1.6 | Remaining forks | 🔶 market-faq `roundedThousand` → canonical `formatPrice` (proven byte-identical for positive inputs, guarded caller, test asserts it) ✅; ~15 page-level round-to-$1k dupes are the render-verify currency-migration bucket (locale-default toLocaleString + unguarded-0 edge cases) — deferred; the 2 `lib/data/*` ones return numbers, not currency — not candidates |
 | 2 | 2.1 | DAL boundary → default-deny | 🔶 any-table matcher + ratchet 213→0 ✅ (write-path read/write split: todo) |
 | 2 | 2.2 | Split barrels/god-files + server-only | ⬜ todo |
-| 3 | 3.x | Governance + tests + env | 🔶 orphan gates 24→7 ✅ · doc drift ✅ (orphan-count 24→7 synced in CLAUDE.md + MECHANICAL_GATES.md) · tests +18 files / 726 (+ inventory-filters, search-filters dedup, walkFiles, report-year-compare YoY, market-faq) ✅ · shared gate-lib: walkFiles + 4 gates migrated (the clean p1.4 cluster); remaining ~29 are NOT drop-in (abs-path/path.join, unanchored skip, varying ext + skip-sets) so left as-is — low-value/rising-risk to force ✅; typed env: todo |
+| 3 | 3.x | Governance + tests + env | 🔶 orphan gates 24→7 ✅ · doc drift ✅ (orphan-count 24→7 synced in CLAUDE.md + MECHANICAL_GATES.md) · tests +19 files / 729 (+ inventory-filters, search-filters dedup, walkFiles, report-year-compare YoY, market-faq, meta-env) ✅ · shared gate-lib: walkFiles + 4 gates migrated; rest NOT drop-in, left as-is ✅ · **3.3 dual-name env collapse: `getMetaPageToken()` (META_PAGE_ACCESS_TOKEN ?? META_PAGE_TOKEN) + `ci:meta-token` gate (baseline 8, dogfoods walkFiles), meta-health page migrated** 🔶; build-failing-Zod-over-159-keys: deferred (needs `next build`) |
 
 ## Discovered (cross-step follow-ups, not yet scheduled)
 

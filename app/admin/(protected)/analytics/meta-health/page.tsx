@@ -20,6 +20,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
+import { getMetaPageToken } from '@/lib/meta-env'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -34,7 +35,7 @@ export const revalidate = 0
 const PAGE_ID = process.env.META_FB_PAGE_ID
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID
 const AD_ACCOUNT_ID = process.env.META_AD_ACCOUNT_ID
-const TOKEN = (process.env.META_PAGE_ACCESS_TOKEN || process.env.META_PAGE_TOKEN || '').trim()
+const TOKEN = (getMetaPageToken() || '').trim()
 
 function formatInt(n: number): string {
   return new Intl.NumberFormat('en-US').format(n)
