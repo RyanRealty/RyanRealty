@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.8 (2026-06-22)
+
+### Maintenance
+- test(audit-p3.2): lock the strict-verify sync-health state machine
+
+---
+
+
 ## v1.599.7 (2026-06-22)
 
 ### Maintenance
