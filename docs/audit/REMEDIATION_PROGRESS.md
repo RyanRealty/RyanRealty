@@ -14,7 +14,8 @@
 | 0 | 0.4 | Market-classification helper — a: §0 methodology fix ✅ · b: data-layer threshold consolidation ✅ (page-prose sites: follow-up) | ✅ done (2026-06-21) |
 | 1 | 1.3 | Shared auth guards (`lib/auth/guards.ts`) | ✅ shipped + adopted in 0.2b/d |
 | 1 | 1.5 | Delete confirmed dead code | ✅ done — 32 Homepage* (3,055 LOC) + kpi-dashboard (559) + 4 orphan lib modules |
-| 1 | 1.1, 1.2, 1.4, 1.6 | Consolidate duplication | ⬜ todo |
+| 1 | 1.4 | Canonical money formatter | 🔶 helper + ratchet gate ✅ (60 call sites baselined for migration) |
+| 1 | 1.1, 1.2, 1.6 | Consolidate duplication | ⬜ todo |
 | 2 | 2.1–2.2 | Make the DAL boundary real | ⬜ todo |
 | 3 | 3.1–3.5 | Governance + tests + env | ⬜ todo |
 
@@ -27,6 +28,16 @@
 ---
 
 ## Log
+
+### 1.4 — Canonical money formatter + ratchet gate · 2026-06-21
+
+**Problem (audit HIGH, duplication).** ~58 inline `Intl.NumberFormat(... currency ...)` call sites and 3 divergent `formatPriceCompact` defs (the two LP copies differed only in millions rounding → inconsistent `$1.2M` vs `$1.20M`), risking the brand rule of rounding to the nearest $1,000.
+
+**Change set.** `lib/format/money.ts` — single `formatPrice` (nearest $1,000) + `formatPriceCompact` (one rounding rule). + `money.test.ts`. `ci:currency-format` ratchet gate wired into `ci:gates`: 60 existing offenders baselined (`scripts/currency-format-baseline.json`), NEW inline currency formatters fail. Baseline may only shrink.
+
+**Real-test.** money tests pass; `ci:currency-format` → 60 baselined / 0 new; `ci:gates-wired` → 68 gates; `tsc` source clean. Additive — zero change to currently-published output.
+
+**Next (gradual, ratchet):** migrate the 60 baselined call sites onto the helper (starting with the 2 divergent LP `formatPriceCompact` copies), shrinking the baseline toward 0; then the same for a date/timezone helper.
 
 ### 1.5a — Delete 32 dead Homepage* prototype components · 2026-06-21
 
