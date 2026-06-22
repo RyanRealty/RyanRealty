@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.14 (2026-06-22)
+
+### Maintenance
+- test(audit-p3.2): unit-test Spark sanitizers (toNum/toInt/toTimestamp/toDate/toBool/toText)
+
+---
+
+
 ## v1.598.13 (2026-06-22)
 
 ### Maintenance
