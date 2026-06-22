@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.13 (2026-06-22)
+
+### Maintenance
+- chore(audit-1.2/3.x): delete dead fub-client.mjs + retire 2 one-shot debug gates (orphan 7->5)
+
+---
+
+
 ## v1.599.12 (2026-06-22)
 
 ### Bug Fixes
