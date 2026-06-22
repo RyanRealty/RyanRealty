@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.27 (2026-06-22)
+
+### Other
+- p1.4 migrate 2 byte-identical date formatters to formatDate (gate 86->83)
+
+---
+
+
 ## v1.599.26 (2026-06-22)
 
 ### Other
