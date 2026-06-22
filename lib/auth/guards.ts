@@ -1,6 +1,7 @@
 import 'server-only'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail, type AdminRoleType } from '@/app/actions/admin-roles'
+import { isValidCronAuth } from '@/lib/auth/cron-auth'
 
 /**
  * Shared admin authorization guards (audit Step 1.3).
@@ -60,10 +61,7 @@ export async function requireSuperuserOr403(): Promise<AdminContext | Response> 
  * CRON_SECRET" hole (audit p0.2b) without breaking any legitimate automation.
  */
 export async function isAuthorizedAdminOrCron(req: Request): Promise<boolean> {
-  const secret = process.env.CRON_SECRET
-  if (secret) {
-    const h = req.headers.get('authorization') ?? req.headers.get('x-cron-secret') ?? ''
-    if (h === `Bearer ${secret}` || h === secret) return true
-  }
+  const header = req.headers.get('authorization') ?? req.headers.get('x-cron-secret')
+  if (isValidCronAuth(header, process.env.CRON_SECRET)) return true
   return (await getAdminContext()) !== null
 }
