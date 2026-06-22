@@ -19,6 +19,7 @@
  *   META_IG_BUSINESS_ACCOUNT_ID — Instagram Business Account ID
  */
 import { NextRequest, NextResponse } from 'next/server'
+import { getMetaPageTokenTrimmed } from '@/lib/meta-env'
 import {
   getPageInsights,
   getPagePostsWithInsights,
@@ -142,7 +143,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
-  const token = process.env.META_PAGE_ACCESS_TOKEN?.trim()
+  const token = getMetaPageTokenTrimmed()
   const pageId = process.env.META_FB_PAGE_ID?.trim()
   const igUserId = process.env.META_IG_BUSINESS_ACCOUNT_ID?.trim()
 

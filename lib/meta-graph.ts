@@ -1,3 +1,5 @@
+import { getMetaPageTokenTrimmed } from '@/lib/meta-env'
+
 const META_GRAPH_BASE = 'https://graph.facebook.com/v25.0'
 // Marketing API version pinned separately (v18.0 in the .mjs ad-creation client;
 // insights endpoint is stable on v25.0 which we use here).
@@ -1034,9 +1036,7 @@ export async function getMetaAdsInsights(date: string): Promise<{
   accountRow: MetaAdsInsightRow | null
   campaignRows: MetaAdsInsightRow[]
 }> {
-  const token =
-    process.env.META_PAGE_ACCESS_TOKEN?.trim() ||
-    process.env.META_PAGE_TOKEN?.trim()
+  const token = getMetaPageTokenTrimmed()
   if (!token) {
     throw new MetaGraphError(
       'META_PAGE_ACCESS_TOKEN (or META_PAGE_TOKEN) is not set in the environment'
@@ -1099,9 +1099,7 @@ export async function fetchMetaPostMetrics(
   postId: string,
   platform: 'ig' | 'fb' | string = 'fb',
 ): Promise<Record<string, number | string>> {
-  const token =
-    process.env.META_PAGE_ACCESS_TOKEN?.trim() ||
-    process.env.META_PAGE_TOKEN?.trim()
+  const token = getMetaPageTokenTrimmed()
   if (!token) {
     throw new MetaGraphError('META_PAGE_ACCESS_TOKEN (or META_PAGE_TOKEN) is not set in the environment')
   }

@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { getMetaPageTokenTrimmed } from '@/lib/meta-env'
 import { createServiceClient } from '@/lib/supabase/service'
 import { fetchMyLeadsFromFubLive } from '@/lib/followupboss'
 import { getFubApiKey } from '@/lib/crm/fub-env'
@@ -288,8 +289,7 @@ async function getMetaAdsSummary30d(): Promise<{
 }> {
   const adAccountIdRaw = process.env.META_AD_ACCOUNT_ID?.trim()
   const token =
-    process.env.META_PAGE_ACCESS_TOKEN?.trim() ||
-    process.env.META_PAGE_TOKEN?.trim() ||
+    getMetaPageTokenTrimmed() ||
     process.env.META_APP_TOKEN?.trim() ||
     null
 

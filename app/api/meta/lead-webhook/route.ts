@@ -12,6 +12,7 @@ import {
 } from '@/lib/followupboss'
 import { createCmaRequest } from '@/lib/cma-request'
 import { getFubApiKey } from '@/lib/crm/fub-env'
+import { getMetaPageToken } from '@/lib/meta-env'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
 
 export const runtime = 'nodejs'
@@ -70,12 +71,7 @@ function getMetaToken(): string {
   // fetch field_data for each inbound Lead Ad). Fall back to the Page token
   // — which can receive webhooks but CANNOT read individual lead payloads,
   // so falling back means downstream FUB persons get no email/phone/timeline.
-  const token = (
-    process.env.META_USER_ACCESS_TOKEN ||
-    process.env.META_PAGE_ACCESS_TOKEN ||
-    process.env.META_PAGE_TOKEN ||
-    ''
-  ).trim()
+  const token = (process.env.META_USER_ACCESS_TOKEN || getMetaPageToken() || '').trim()
   if (!token) throw new Error('META_USER_ACCESS_TOKEN or META_PAGE_ACCESS_TOKEN not configured')
   return token
 }

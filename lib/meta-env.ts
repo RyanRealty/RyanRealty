@@ -16,3 +16,12 @@
 export function getMetaPageToken(): string | undefined {
   return process.env.META_PAGE_ACCESS_TOKEN ?? process.env.META_PAGE_TOKEN
 }
+
+/**
+ * Trimmed variant for readers that did `A?.trim() || B?.trim()` (per-value trim,
+ * truthy fallback). Byte-equivalent to that form; returns undefined when neither
+ * name holds a non-blank value.
+ */
+export function getMetaPageTokenTrimmed(): string | undefined {
+  return process.env.META_PAGE_ACCESS_TOKEN?.trim() || process.env.META_PAGE_TOKEN?.trim() || undefined
+}
