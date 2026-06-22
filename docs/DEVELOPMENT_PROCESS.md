@@ -94,6 +94,7 @@ Everything in `docs/plans/` is registered here. A new file in that directory wit
 | `money-path-contract-plan-2026-06-04.md` | open input — feed into the loop's backlog |
 | `../EXPERIENCE_SYSTEM.md` | **live canon** — six page archetypes, route map, shared module kit, engagement telemetry spec, never-regress mechanics. Orchestrator for the Wave 3 UX rebuild. |
 | `KB_SITE_CONVERSION_GOAL.md` | **live** — whole-site KB (kinetic-brutalist) conversion goal, wave plan, and progress log (Phase 9+). |
+| `PAGE_REVIEW_REDESIGN_RUNBOOK.md` | **live** — render-don't-read page-review + redesign runbook (six-phase per-page loop, brutalist QA rubric, market-chart honesty spec, per-page competitor bars). Active page-class backlog. |
 | `RENTAL_CALCULATOR_BUILD_PROMPT.md` | executed (record) |
 | `SKYSLOPE_COMPLIANCE_HANDOFF_2026-05-28.md` | ops record (not site process) |
 | `CROSS_AGENT_HANDOFF.md`, `SESSION_HANDOFF_2026-06-01.md`, `SESSION_HANDOFF_2026-06-01_PARTB.md`, `task-handoff-template.md` | session-continuity records |
