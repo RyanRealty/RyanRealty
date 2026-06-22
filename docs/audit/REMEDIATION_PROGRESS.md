@@ -20,17 +20,29 @@
 | 1 | 1.6 | Remaining forks | ⬜ todo |
 | 2 | 2.1 | DAL boundary → default-deny | 🔶 any-table matcher + ratchet 213→0 ✅ (write-path read/write split: todo) |
 | 2 | 2.2 | Split barrels/god-files + server-only | ⬜ todo |
-| 3 | 3.x | Governance + tests + env | 🔶 orphan gates 24→9 ✅ · doc drift (sync + cron table) ✅ · tests +9 files (computeTier1, Spark coercers, phone, fub-env, classify, money, date, deltaCursor, safeRedirect) ✅; shared gate-lib / typed env: todo |
+| 3 | 3.x | Governance + tests + env | 🔶 orphan gates 24→7 ✅ (email-brand-tokens + producer-skills fixed & wired) · doc drift (sync + cron table) ✅ · tests +13 files / 699 (computeTier1, Spark coercers, phone, fub-env, classify, money, date, deltaCursor, safeRedirect, agent-attribution, fsbo, admin, mls-source) ✅; shared gate-lib / typed env: todo |
 
 ## Discovered (cross-step follow-ups, not yet scheduled)
 
-- **Orphaned gate-file backlog (24).** The audit said 4 documented gates ran nowhere; the real number is **28 `scripts/check-*.mjs` that run nowhere**. 4 resolved in 0.0; **24 remain**, tracked in `scripts/gates-wired-baseline.json` (the meta-gate now prints them every run and blocks NEW ones). Triage each: wire into `ci:gates`/a workflow, or delete. This is its own mini-project (each gate must be run + decided).
+- **Orphaned gate-file backlog (7, was 28).** The audit said 4 documented gates ran nowhere; the real number was **28 `scripts/check-*.mjs` that run nowhere**. Now **7 remain**, tracked in `scripts/gates-wired-baseline.json` (the meta-gate prints them every run and blocks NEW ones). Remaining 7 split: 3 DB/network (`legacy-redirects`, `missing-videos`, `video-urls`) → wire to a creds-bearing workflow; `bundle-budget` needs a clean `next build` to re-baseline; `geo-imagery` + `collections-wiring` need real page/feature fixes (output-changing — flagged, not blind-fixed); `tool-discipline` references a missing `viral-playbook/SKILL.md` (frozen-layer owner decision). Each remaining one is fix-the-violations-or-retire, not just wire.
 - **`ci:gates` was already RED on `main`** before this work: `ci:process-canon` (G44) fails because `docs/plans/PAGE_REVIEW_REDESIGN_RUNBOOK.md` is committed but not registered in `docs/DEVELOPMENT_PROCESS.md`. Quick win: register it (status row) or remove the rogue doc. Not fixed here (it's someone's plan doc; needs an owner decision), but it means the static chain is not currently green for reasons unrelated to this step.
 - **8 competing homepage mockup contracts** (`homepage`, `-film`, `-magazine`, `-terminal`, `-v4/5/6`, `-v7-cinematic`) all map to `app/page.tsx`; the live KB homepage satisfies none of the component-bearing ones. One was baselined in 0.0 to wire `mockup-parity`; the contract sprawl itself is a Phase-1.5 (design-system consolidation / dead-prototype) cleanup.
 
 ---
 
 ## Log
+
+### 3.x — Orphan backlog 9 → 7 (fix-then-wire) + 4 pure-function test files · 2026-06-22
+
+**Two orphan gates fixed at the source, then wired (no baseline cop-out).**
+- **`ci:email-brand-tokens` (orphan 9→8).** The newsletter HTML shell (`lib/email-templates/newsletter-shell.ts`) carried retired sand `#e8e2d4` as its card border — invisible to the design-token gate (which scans only `app/`+`components/`). Imported the canonical `EMAIL_BORDER` (`rgba(16,39,66,0.08)`) from `lib/email/brand.ts` and used it; gate now CLEAN; wired into `ci:gates`.
+- **`ci:producer-skills` (orphan 8→7).** The CMA producer SKILL (a live recipe the producer-runtime reads verbatim → produced copy inherits its dashes) had 3 em-dashes in prose. Replaced with period/comma; G35 now passes 52/0 across all producers; wired into `ci:gates`. No REGISTRY row added — `producer-freeze` still green at 78 rows.
+
+**Tests +4 files (→ 699 / 66 files).** `lib/admin.test.ts` (isSuperuserAdmin auth gate — case/whitespace tolerance + non-string rejection), `lib/mls-source.test.ts` (getMlsSourceMeta known-source map + empty/title-case fallback; normalizeMlsDisplayNumber 5–12 alphanumeric guard). Earlier this run: `agent-attribution`, `fsbo-detector`.
+
+**Real-test.** Each gate run green before wiring; `ci:gates-wired` → orphan baseline re-written 9→8→7, meta-gate green; full `vitest` 699/699; G46 pre-push full `tsc` PASS.
+
+**Deferred (flagged, per the loop's no-blind-push rule):** currency/date baseline shrink is NOT zero-output-change — `formatPrice` rounds to the nearest $1,000, so migrating inline `Intl.NumberFormat` call sites changes output for non-thousand prices; needs per-site review, not a mechanical sweep. Remaining 5 orphan gates need a `next build` (`bundle-budget`), real page/feature edits (`geo-imagery`, `collections-wiring`), a creds-bearing workflow (`legacy-redirects`, `missing-videos`, `video-urls`), or a frozen-layer owner decision (`tool-discipline`).
 
 ### 3.x — Triage the orphaned gate-file backlog (24 → 12) · 2026-06-22
 
