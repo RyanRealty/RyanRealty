@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.16 (2026-06-22)
+
+### Maintenance
+- refactor(audit-3.3): migrate Meta-token dual-readers to getMetaPageToken(Trimmed) (baseline 8->4)
+
+---
+
+
 ## v1.599.15 (2026-06-22)
 
 ### Bug Fixes
