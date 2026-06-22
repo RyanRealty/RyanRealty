@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.7 (2026-06-22)
+
+### Maintenance
+- test(audit-p3.2): lock SkySlope TC field mapping (signer-role routing + geometry)
+
+---
+
+
 ## v1.599.6 (2026-06-22)
 
 ### Maintenance
