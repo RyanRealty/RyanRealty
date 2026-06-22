@@ -16,7 +16,7 @@ This is the single authoritative description of the Ryan Realty system. When thi
 
 ## 1. The system in one paragraph
 
-Ryan Realty is a Next.js 16 (App Router) real-estate platform for Central Oregon, deployed on Vercel, backed by Supabase Postgres + Storage + Auth. It pulls MLS data from Flexmls/Spark into `listings` + `listing_history` via two syncs (delta every 10 min, full every Sunday 02:00). A Postgres trigger (`trg_compute_listing_fields`) computes 21 derived fields on every insert/update. A cron (`mpl_refresh_30min`) refreshes `market_pulse_live` per (geo × property_type) every 30 minutes. A Postgres-backed summary table (`market_stats_cache`) holds historical period stats. Public pages are ISR-cached. FollowUpBoss is the CRM of record. TikTok, Meta Graph, Google Ads, GA4/GTM, Google Maps, and SkySlope are integrated.
+Ryan Realty is a Next.js 16 (App Router) real-estate platform for Central Oregon, deployed on Vercel, backed by Supabase Postgres + Storage + Auth. It pulls MLS data from Flexmls/Spark into `listings` + `listing_history` via two syncs (delta every 15 min, full every Sunday 02:00). Tier 1 derived fields are computed in TypeScript (`computeTier1`) at sync time (the `trg_compute_listing_fields` DB-trigger era was dropped). A cron (`mpl_refresh_30min`) refreshes `market_pulse_live` per (geo × property_type) every 30 minutes. A Postgres-backed summary table (`market_stats_cache`) holds historical period stats. Public pages are ISR-cached. FollowUpBoss is the CRM of record. TikTok, Meta Graph, Google Ads, GA4/GTM, Google Maps, and SkySlope are integrated.
 
 ---
 
@@ -101,7 +101,7 @@ Full spec: `.cursor/rules/data-architecture.mdc` + `.cursor/rules/supabase-data-
 
 ### Auto-computed fields
 
-Trigger `trg_compute_listing_fields` (enabled, on INSERT/UPDATE of `listings`) computes 21 Tier 1 fields:
+Tier 1 derived fields are computed in TypeScript by `computeTier1` (`lib/listing-mapper.ts`) at sync time, NOT by a DB trigger. (The `trg_compute_listing_fields` trigger era was dropped in migration `20260421090000`.) `computeTier1` is the source of truth for the current set (~17 fields):
 DaysOnMarket, days_to_pending, days_pending_to_close, was_relisted, price_per_sqft, close_price_per_sqft, sale_to_list_ratio, sale_to_final_list_ratio, total_price_change_pct, total_price_change_amt, price_per_acre, price_per_bedroom, price_per_room, property_age, sqft_efficiency, bed_bath_ratio, above_grade_pct, hoa_annual_cost, hoa_pct_of_price, tax_rate, estimated_monthly_piti.
 
 All values clamped to column precision.
@@ -122,8 +122,8 @@ Sale-to-list ratio: computed from close/list numerics, never hardcoded.
 
 | Lane | Route | Cadence | Purpose |
 |---|---|---|---|
-| Delta | `/api/cron/sync-delta` | Every 10 min | New listings, price/status changes, closings; emits activity_events |
-| History-terminal backfill | `/api/cron/sync-history-terminal` | Every 5 min | Drains terminal history |
+| Delta | `/api/cron/sync-delta` | Every 15 min (`3,18,33,48`) | New listings, price/status changes, closings; emits activity_events |
+| History-terminal backfill | `/api/cron/sync-history-terminal` | Hourly (`:12`) | Drains terminal history |
 | Full | `/api/cron/sync-full` | Sunday 02:00 | Safety net for anything delta missed; skips finalized rows |
 | Market pulse | pg_cron `mpl_refresh_30min` | Every 30 min | Refreshes `market_pulse_live` per geo×type |
 | Refresh video cache | `/api/cron/refresh-video-tours-cache` | Every 30 min | — |
