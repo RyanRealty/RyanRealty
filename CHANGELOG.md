@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.595.75 (2026-06-22)
+
+### Maintenance
+- chore(audit-p1.5b): delete kpi-dashboard route + 4 orphan lib modules
+
+---
+
+
 ## v1.595.74 (2026-06-22)
 
 ### Maintenance
