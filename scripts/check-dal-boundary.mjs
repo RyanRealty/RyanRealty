@@ -18,8 +18,8 @@
  * See docs/DATA_ACCESS_LAYER.md for the contract.
  */
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs'
-import { join, relative, sep } from 'node:path'
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, realpathSync } from 'node:fs'
+import { join, relative, sep, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { dirname } from 'node:path'
 
@@ -114,10 +114,17 @@ const FROM_REGEX = /(?<!Buffer)(?<!Array)\.from\(\s*['"`]([a-z][a-z0-9_]*)['"`]/
 //            call (.insert/.update/.upsert/.delete) may appear there at all.
 //   Rule 2 — No write call may appear LEXICALLY inside an inline cache-wrapper
 //            callback: unstable_cache(async () => { … }, …) or
-//            makeResilientCached(async () => { … }, …). When the first arg is a
-//            NAMED function reference (unstable_cache(fetchFn, …)), the write —
-//            if any — lives in fetchFn's own body, which call-graph resolution
-//            (deferred DAL Part C) would have to chase; Part A is purely lexical.
+//            makeResilientCached(async () => { … }, …).
+//   Rule 3 (Part C, audit p2.1) — When the first arg is a NAMED function
+//            reference (unstable_cache(fetchFn, …)), resolve fetchFn to its
+//            declaration WITHIN THE SAME FILE (`function fetchFn(){…}` or
+//            `const fetchFn = (…) => {…}`) and scan that body for writes. This is
+//            ONE level of resolution only — it does not chase helper calls inside
+//            the resolved body (call-graph closure), which no fetch fn needs
+//            today. A reference that can't be resolved in-file (a cross-file /
+//            imported fn, a function PARAMETER like makeResilientCached's own
+//            `fetchFn`, or an expression-bodied arrow) is UNRESOLVED and never
+//            flags — the resolver never guesses, so it can't false-positive.
 const WRITE_REGEX = /\.(insert|update|upsert|delete)\s*\(/g
 const CACHE_WRAPPER_FNS = ['unstable_cache', 'makeResilientCached']
 const CACHE_INFRA_PREFIX = 'lib/data/cache/'
@@ -187,11 +194,122 @@ function lineOf(content, index) {
 }
 
 /**
- * Scan a single lib/data file for cached-read write violations (Rules 1 & 2).
- * Returns an array of { file, line, rule, detail }.
+ * Like findMatchingParen but matches the '{' at `openIdx` to its '}'. Handles
+ * strings, comments, and template `${…}` interpolations — whose own braces (and
+ * closing brace) must not be miscounted as the target block's. The BOTTOM code
+ * frame owns the target brace; interpolation frames start at depth 0 and their
+ * first depth-0 '}' closes the interp. Returns -1 if unbalanced.
  */
-function scanCachedWrites(relPath, content) {
+function findMatchingBrace(content, openIdx) {
+  const n = content.length
+  let i = openIdx
+  const stack = [{ type: 'code', depth: 0 }]
+  let inLine = false
+  let inBlock = false
+  let inS = false
+  let inD = false
+
+  while (i < n) {
+    const c = content[i]
+    const c2 = i + 1 < n ? content[i + 1] : ''
+    const frame = stack[stack.length - 1]
+
+    if (inLine) { if (c === '\n') inLine = false; i += 1; continue }
+    if (inBlock) { if (c === '*' && c2 === '/') { inBlock = false; i += 2; continue } i += 1; continue }
+    if (inS) { if (c === '\\') { i += 2; continue } if (c === "'") inS = false; i += 1; continue }
+    if (inD) { if (c === '\\') { i += 2; continue } if (c === '"') inD = false; i += 1; continue }
+
+    if (frame.type === 'tmpl') {
+      if (c === '\\') { i += 2; continue }
+      if (c === '`') { stack.pop(); i += 1; continue }
+      if (c === '$' && c2 === '{') { stack.push({ type: 'code', depth: 0 }); i += 2; continue }
+      i += 1
+      continue
+    }
+
+    // code frame
+    if (c === '/' && c2 === '/') { inLine = true; i += 2; continue }
+    if (c === '/' && c2 === '*') { inBlock = true; i += 2; continue }
+    if (c === "'") { inS = true; i += 1; continue }
+    if (c === '"') { inD = true; i += 1; continue }
+    if (c === '`') { stack.push({ type: 'tmpl' }); i += 1; continue }
+    if (c === '{') { frame.depth += 1; i += 1; continue }
+    if (c === '}') {
+      if (frame.depth === 0) {
+        // closes a ${…} interpolation frame (the bottom target always has
+        // depth>=1 here, since openIdx's '{' was counted)
+        if (stack.length > 1) stack.pop()
+        i += 1
+        continue
+      }
+      frame.depth -= 1
+      if (frame.depth === 0 && stack.length === 1) return i // target matched
+      i += 1
+      continue
+    }
+    i += 1
+  }
+  return -1
+}
+
+/**
+ * Resolve a bare identifier to a function body span { start, end } using a
+ * TOP-LEVEL declaration in the SAME file: `function ident(...) {…}`, or
+ * `const|let|var ident = (async) function|(…) => {…}`. Returns null (UNRESOLVED)
+ * for: no in-file declaration (cross-file/imported ref, or a function PARAMETER —
+ * which has no `function`/`const` declaration), an expression-bodied arrow, or a
+ * non-function RHS. UNRESOLVED never flags. Fail-safe: it may under-detect on
+ * exotic shapes, but it never points at the wrong span.
+ */
+function resolveNamedFnBody(content, ident) {
+  const esc = ident.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const bodyFromParen = (fromIdx) => {
+    const parenIdx = content.indexOf('(', fromIdx)
+    if (parenIdx < 0) return null
+    const parenClose = findMatchingParen(content, parenIdx)
+    if (parenClose < 0) return null
+    const braceIdx = content.indexOf('{', parenClose)
+    if (braceIdx < 0) return null
+    const braceClose = findMatchingBrace(content, braceIdx)
+    if (braceClose < 0) return null
+    return { start: braceIdx, end: braceClose }
+  }
+
+  // (a) function declaration: function ident(...) {...}
+  const fnDecl = new RegExp(`\\b(?:export\\s+)?(?:async\\s+)?function\\s+${esc}\\b`).exec(content)
+  if (fnDecl) return bodyFromParen(fnDecl.index)
+
+  // (b) const/let/var ident = ...
+  const varDecl = new RegExp(`\\b(?:export\\s+)?(?:const|let|var)\\s+${esc}\\s*=`).exec(content)
+  if (varDecl) {
+    const eqIdx = content.indexOf('=', varDecl.index)
+    if (eqIdx < 0) return null
+    // = (async) function (...) {...}
+    if (/^\s*(?:async\s+)?function\b/.test(content.slice(eqIdx + 1))) return bodyFromParen(eqIdx)
+    // = (async) (...) => {...}  — block-bodied arrow only
+    const arrowIdx = content.indexOf('=>', eqIdx)
+    if (arrowIdx >= 0 && arrowIdx - eqIdx < 400) {
+      const after = content.slice(arrowIdx + 2).search(/\S/)
+      if (after >= 0) {
+        const bodyStart = arrowIdx + 2 + after
+        if (content[bodyStart] === '{') {
+          const braceClose = findMatchingBrace(content, bodyStart)
+          if (braceClose >= 0) return { start: bodyStart, end: braceClose }
+        }
+      }
+    }
+  }
+  return null
+}
+
+/**
+ * Scan a single lib/data file for cached-read write violations (Rules 1, 2 & 3).
+ * Returns an array of { file, line, rule, detail }. Exported for the negative
+ * test in scripts/__tests__/check-dal-boundary.test.mjs.
+ */
+export function scanCachedWrites(relPath, content) {
   const out = []
+  const resolvedSeen = new Set()
 
   // Rule 1: no writes anywhere under lib/data/cache/.
   if (relPath.startsWith(CACHE_INFRA_PREFIX)) {
@@ -218,16 +336,40 @@ function scanCachedWrites(relPath, content) {
       // identifier first arg is a named reference → Part C, not Part A.
       const argStart = content.slice(openParen + 1).search(/\S/)
       if (argStart < 0) continue
-      const firstChunk = content.slice(openParen + 1 + argStart, openParen + 1 + argStart + 12)
-      const isInlineFn = /^(async\b|function\b|\(|<)/.test(firstChunk)
-      if (!isInlineFn) continue
-      const span = content.slice(openParen, close + 1)
-      for (const w of span.matchAll(WRITE_REGEX)) {
+      const rest = content.slice(openParen + 1 + argStart)
+      const isInlineFn = /^(async\b|function\b|\(|<)/.test(rest.slice(0, 12))
+
+      if (isInlineFn) {
+        // Rule 2: write lexically inside the inline callback span.
+        const span = content.slice(openParen, close + 1)
+        for (const w of span.matchAll(WRITE_REGEX)) {
+          out.push({
+            file: relPath,
+            line: lineOf(content, openParen + w.index),
+            rule: 'write-in-cache-callback',
+            detail: `.${w[1]}( inside an inline ${fn}() callback`,
+          })
+        }
+        continue
+      }
+
+      // Rule 3 (Part C): bare-identifier first arg → resolve the named fetch fn
+      // within this file and scan its body. The trailing comma distinguishes a
+      // reference `unstable_cache(fetchFn, …)` from a call `someFactory(…)`.
+      const idMatch = /^([A-Za-z_$][\w$]*)\s*,/.exec(rest)
+      if (!idMatch) continue
+      const ident = idMatch[1]
+      if (resolvedSeen.has(ident)) continue
+      const body = resolveNamedFnBody(content, ident)
+      if (!body) continue // UNRESOLVED → never flag
+      resolvedSeen.add(ident)
+      const bodyText = content.slice(body.start, body.end + 1)
+      for (const w of bodyText.matchAll(WRITE_REGEX)) {
         out.push({
           file: relPath,
-          line: lineOf(content, openParen + w.index),
-          rule: 'write-in-cache-callback',
-          detail: `.${w[1]}( inside an inline ${fn}() callback`,
+          line: lineOf(content, body.start + w.index),
+          rule: 'write-in-named-cache-fn',
+          detail: `.${w[1]}( inside named fetch fn ${ident}() referenced by ${fn}()`,
         })
       }
     }
@@ -441,4 +583,13 @@ function main() {
   process.exit(0)
 }
 
-main()
+// Run only when invoked directly (`node scripts/check-dal-boundary.mjs`), so the
+// negative test can import scanCachedWrites without triggering main()/exit.
+const invokedDirectly = (() => {
+  try {
+    return Boolean(process.argv[1]) && realpathSync(resolve(process.argv[1])) === __filename
+  } catch {
+    return false
+  }
+})()
+if (invokedDirectly) main()
