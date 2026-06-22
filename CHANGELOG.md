@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.30 (2026-06-22)
+
+### Maintenance
+- refactor(audit-p1.2): route last 2 .ts FUB key-readers through getFubApiKey (baseline 3->1)
+
+---
+
+
 ## v1.598.29 (2026-06-22)
 
 ### Maintenance
