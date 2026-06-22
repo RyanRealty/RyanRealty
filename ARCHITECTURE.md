@@ -126,9 +126,9 @@ Sale-to-list ratio: computed from close/list numerics, never hardcoded.
 | History-terminal backfill | `/api/cron/sync-history-terminal` | Hourly (`:12`) | Drains terminal history |
 | Full | `/api/cron/sync-full` | Sunday 02:00 | Safety net for anything delta missed; skips finalized rows |
 | Market pulse | pg_cron `mpl_refresh_30min` | Every 30 min | Refreshes `market_pulse_live` per geo×type |
-| Refresh video cache | `/api/cron/refresh-video-tours-cache` | Every 30 min | — |
-| Refresh year stats | `/api/cron/refresh-listing-year-stats` | Hourly | — |
 | Refresh place content | `/api/cron/refresh-place-content` | 03:00 daily | Grok-generated city copy |
+
+_`refresh-video-tours-cache` and `refresh-listing-year-stats` routes exist but are NOT currently scheduled in `vercel.json` (re-add a `crons` entry to re-enable). **`vercel.json` is the authoritative schedule** — 37 scheduled crons across sync / CRM / marketing lanes; this table covers only the sync/refresh lanes, not the full list._
 
 **Finalization (permanent):** a listing is frozen (`is_finalized=true`) only when (a) status contains "Closed", (b) `CloseDate` is not null, AND (c) `history_finalized=true`. Full rule: `.cursor/rules/sync-pipeline.mdc`.
 
