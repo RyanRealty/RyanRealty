@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.7 (2026-06-22)
+
+### Maintenance
+- refactor(audit-p1.1): remove 3 dead getServiceSupabase helpers (pdf routes)
+
+---
+
+
 ## v1.598.6 (2026-06-22)
 
 ### Bug Fixes
