@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.38 (2026-06-22)
+
+### Other
+- plan: CRM Contact-360 + lead-tracking + audience-flywheel build runbook
+
+---
+
+
 ## v1.599.37 (2026-06-22)
 
 ### Other
