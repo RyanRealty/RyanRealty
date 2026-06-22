@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.597.2 (2026-06-22)
+
+### Maintenance
+- refactor(audit-p1.4): migrate 3 round-to-$1,000 formatters onto lib/format/money.ts
+
+---
+
+
 ## v1.597.1 (2026-06-22)
 
 ### Maintenance
