@@ -57,7 +57,7 @@ import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
 import boundarySanityBaseline from '@/data/boundary-sanity-baseline.json' assert { type: 'json' }
-import { communityImage, cityHero } from '@/lib/geo-images'
+import { communityImage, cityHero, GOLF_COMMUNITY_IMAGES } from '@/lib/geo-images'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { resortActiveSfrCounts, cityResorts, resortTilesForSlug } from '@/lib/kb/resort-active-counts'
@@ -117,16 +117,18 @@ const CENTRAL_OREGON_CITY_SLUGS = new Set([
 // lookups miss for resorts (banner rows are tagged under alias subdivisions),
 // so communityImage(slug) is the curated primary source. Every path is verified.
 const RESORT_IMG: Record<string, string> = {
+  // KB hero imagery (non-golf-lp slugs) stays as KB literals.
   tetherow: '/images/kb/tetherow-golf-aerial.jpg',
   'broken-top': '/images/kb/broken-top.jpg',
   'northwest-crossing': '/images/kb/northwest-crossing.jpg',
-  pronghorn: '/lp/central-oregon-golf/img/pronghorn-01.jpg',
-  'awbrey-glen': '/lp/central-oregon-golf/img/awbrey-glen-01.jpg',
-  'widgi-creek': '/lp/central-oregon-golf/img/widgi-creek-01.jpg',
   'caldera-springs': '/images/kb/caldera-springs.jpg',
-  crosswater: '/lp/central-oregon-golf/img/crosswater-01.jpg',
-  'eagle-crest': '/lp/central-oregon-golf/img/eagle-crest-01.jpg',
-  'brasada-ranch': '/lp/central-oregon-golf/img/brasada-01.jpg',
+  // Golf/master-community tile imagery from the canonical source (D86 / G30).
+  pronghorn: GOLF_COMMUNITY_IMAGES.pronghorn,
+  'awbrey-glen': GOLF_COMMUNITY_IMAGES['awbrey-glen'],
+  'widgi-creek': GOLF_COMMUNITY_IMAGES['widgi-creek'],
+  crosswater: GOLF_COMMUNITY_IMAGES.crosswater,
+  'eagle-crest': GOLF_COMMUNITY_IMAGES['eagle-crest'],
+  'brasada-ranch': GOLF_COMMUNITY_IMAGES['brasada-ranch'],
 }
 
 // Boundaries listed in the sanity baseline are oversized / un-corrected

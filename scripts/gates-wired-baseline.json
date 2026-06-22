@@ -4,7 +4,6 @@
   "files": [
     "check-bundle-budget.mjs",
     "check-collections-wiring.mjs",
-    "check-geo-imagery.mjs",
     "check-legacy-redirects.mjs",
     "check-tool-discipline.mjs"
   ]
