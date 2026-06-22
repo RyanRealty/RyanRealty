@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.2 (2026-06-22)
+
+### Maintenance
+- refactor(audit-p1.2): migrate 3 more FUB readers onto getFubApiKey()
+
+---
+
+
 ## v1.598.1 (2026-06-22)
 
 ### Maintenance
