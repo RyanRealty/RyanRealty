@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.23 (2026-06-22)
+
+### Maintenance
+- test(audit-p3.2): cover inventory-filters + saved-search dedup (normalize/hash)
+
+---
+
+
 ## v1.598.22 (2026-06-22)
 
 ### Maintenance
