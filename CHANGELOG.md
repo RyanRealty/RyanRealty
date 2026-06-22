@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.19 (2026-06-22)
+
+### Maintenance
+- test(audit-p3.2): cover isSuperuserAdmin + MLS source/display-number helpers
+
+---
+
+
 ## v1.598.18 (2026-06-22)
 
 ### Maintenance
