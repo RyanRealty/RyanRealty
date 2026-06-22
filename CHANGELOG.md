@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.10 (2026-06-22)
+
+### Maintenance
+- test(audit-p3.2): lock the inbound-SMS webhook HMAC auth (validateTwilioSignature)
+
+---
+
+
 ## v1.599.9 (2026-06-22)
 
 ### Maintenance
