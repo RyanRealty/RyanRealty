@@ -13,6 +13,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { upsertCrmMirrorPerson } from '@/lib/crm/mirror'
+import { getFubApiKey } from '@/lib/crm/fub-env'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const startMs = Date.now()
-  const apiKey = process.env.FOLLOWUPBOSS_API_KEY?.trim()
+  const apiKey = getFubApiKey()?.trim()
   if (!apiKey) return NextResponse.json({ ok: false, error: 'FOLLOWUPBOSS_API_KEY missing' }, { status: 500 })
 
   const headers: HeadersInit = {

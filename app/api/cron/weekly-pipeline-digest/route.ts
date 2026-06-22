@@ -23,6 +23,7 @@ import {
   type SourceCount,
   type SmartListMovement,
 } from '@/lib/digest-email-templates'
+import { getFubApiKey } from '@/lib/crm/fub-env'
 import { createClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
@@ -42,7 +43,7 @@ type FubDeal = { id?: number; stage?: string | null; price?: number | null; stat
 type FubSmartList = { id?: number; name?: string; total?: number }
 
 function fubHeaders(): HeadersInit {
-  const apiKey = (process.env.FOLLOWUPBOSS_API_KEY || process.env.FUB_API_KEY || '').trim()
+  const apiKey = (getFubApiKey() || '').trim()
   if (!apiKey) throw new Error('FOLLOWUPBOSS_API_KEY not set')
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

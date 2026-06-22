@@ -3,6 +3,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
 import { fetchMyLeadsFromFubLive } from '@/lib/followupboss'
+import { getFubApiKey } from '@/lib/crm/fub-env'
 import { getGA4Summary } from './ga4-report'
 import {
   getAdminSyncCounts,
@@ -568,7 +569,7 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
     })
   }
 
-  if (process.env.FOLLOWUPBOSS_API_KEY?.trim()) score += 15
+  if (getFubApiKey()?.trim()) score += 15
   else {
     reportItems.push({
       action: 'fix',
@@ -782,11 +783,11 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
       valuationRateFromFacebookSellerVisits,
     },
     fub: {
-      configured: Boolean(process.env.FOLLOWUPBOSS_API_KEY?.trim()),
+      configured: Boolean(getFubApiKey()?.trim()),
       contactsSynced30d,
       facebookContacts30d,
       facebookContactCaptureRate,
-      error: process.env.FOLLOWUPBOSS_API_KEY?.trim() ? null : 'FOLLOWUPBOSS_API_KEY is not configured',
+      error: getFubApiKey()?.trim() ? null : 'FOLLOWUPBOSS_API_KEY is not configured',
     },
     fubPipeline,
     reportCard: {

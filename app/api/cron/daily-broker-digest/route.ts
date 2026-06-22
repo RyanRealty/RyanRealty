@@ -20,6 +20,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/resend'
 import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
 import { DailyDigestEmail, type DailyLead } from '@/lib/digest-email-templates'
+import { getFubApiKey } from '@/lib/crm/fub-env'
 import { createClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
@@ -53,7 +54,7 @@ type FubPerson = {
 }
 
 function fubHeaders(): HeadersInit {
-  const apiKey = (process.env.FOLLOWUPBOSS_API_KEY || process.env.FUB_API_KEY || '').trim()
+  const apiKey = (getFubApiKey() || '').trim()
   if (!apiKey) throw new Error('FOLLOWUPBOSS_API_KEY not set')
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

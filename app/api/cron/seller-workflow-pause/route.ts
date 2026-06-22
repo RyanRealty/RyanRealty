@@ -23,6 +23,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { addPersonTags } from '@/lib/followupboss'
+import { getFubApiKey } from '@/lib/crm/fub-env'
 import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
 
 export const maxDuration = 60
@@ -39,7 +40,7 @@ const SYSTEM_HEADERS = {
 const LOOKBACK_MINUTES = 20
 
 function authHeader(): string {
-  const key = process.env.FOLLOWUPBOSS_API_KEY?.trim()
+  const key = getFubApiKey()?.trim()
   if (!key) throw new Error('FOLLOWUPBOSS_API_KEY missing')
   return `Basic ${Buffer.from(`${key}:`).toString('base64')}`
 }
