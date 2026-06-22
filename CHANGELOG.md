@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.11 (2026-06-22)
+
+### Bug Fixes
+- fix(a2p): explicit SMS consent checkbox + fail-closed gating + Terms SMS disclosures (Twilio 27497858)
+
+---
+
+
 ## v1.599.10 (2026-06-22)
 
 ### Maintenance
