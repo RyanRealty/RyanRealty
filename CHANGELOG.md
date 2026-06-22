@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.1 (2026-06-22)
+
+### Maintenance
+- refactor(audit-p1.2): migrate 3 FUB readers onto getFubApiKey() (env-key accessor)
+
+---
+
+
 ## v1.598.0 (2026-06-22)
 
 ### Features
