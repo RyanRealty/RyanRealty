@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.35 (2026-06-22)
+
+### Other
+- audit log: record build-enabled pass (bundle-budget orphan->0, server-only x8)
+
+---
+
+
 ## v1.599.34 (2026-06-22)
 
 ### Other
