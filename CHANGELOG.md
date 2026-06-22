@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.34 (2026-06-22)
+
+### Other
+- p2.2 add server-only to the DAL barrel lib/data/index.ts (build-verified)
+
+---
+
+
 ## v1.599.33 (2026-06-22)
 
 ### Other
