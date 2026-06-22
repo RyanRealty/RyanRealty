@@ -20,7 +20,7 @@
 | 1 | 1.6 | Remaining forks | ⬜ todo |
 | 2 | 2.1 | DAL boundary → default-deny | 🔶 any-table matcher + ratchet 213→0 ✅ (write-path read/write split: todo) |
 | 2 | 2.2 | Split barrels/god-files + server-only | ⬜ todo |
-| 3 | 3.x | Governance + tests + env | 🔶 orphan gates 24→7 ✅ (email-brand-tokens + producer-skills fixed & wired) · doc drift (sync + cron table) ✅ · tests +13 files / 699 (computeTier1, Spark coercers, phone, fub-env, classify, money, date, deltaCursor, safeRedirect, agent-attribution, fsbo, admin, mls-source) ✅; shared gate-lib / typed env: todo |
+| 3 | 3.x | Governance + tests + env | 🔶 orphan gates 24→7 ✅ (email-brand-tokens + producer-skills fixed & wired) · doc drift (sync + cron table) ✅ · tests +15 files / 713 (prior 13 + inventory-filters, search-filters saved-search dedup) ✅; shared gate-lib / typed env: todo |
 
 ## Discovered (cross-step follow-ups, not yet scheduled)
 
