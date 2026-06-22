@@ -20,7 +20,7 @@
 | 1 | 1.6 | Remaining forks | ⬜ todo |
 | 2 | 2.1 | DAL boundary → default-deny | 🔶 any-table matcher + ratchet 213→0 ✅ (write-path read/write split: todo) |
 | 2 | 2.2 | Split barrels/god-files + server-only | ⬜ todo |
-| 3 | 3.x | Governance + tests + env | 🔶 orphan gates 24→7 ✅ · doc drift ✅ · tests +16 files / 717 (+ inventory-filters, search-filters dedup, walkFiles) ✅ · shared gate-lib STARTED (scripts/lib/walk.mjs + test; 4/33 gates migrated, byte-identical verified) 🔶; typed env: todo |
+| 3 | 3.x | Governance + tests + env | 🔶 orphan gates 24→7 ✅ · doc drift ✅ · tests +17 files / 722 (+ inventory-filters, search-filters dedup, walkFiles, report-year-compare YoY) ✅ · shared gate-lib: walkFiles + 4 gates migrated (the clean p1.4 cluster); remaining ~29 are NOT drop-in (abs-path/path.join, unanchored skip, varying ext + skip-sets) so left as-is — low-value/rising-risk to force ✅; typed env: todo |
 
 ## Discovered (cross-step follow-ups, not yet scheduled)
 
@@ -34,7 +34,11 @@
 
 ### 3.x — Shared gate file-walker + more pure-function tests · 2026-06-22
 
-**Shared `scripts/lib/walk.mjs` (gate-lib, audit-maintainability finding).** ~33 `check-*.mjs` gates each re-implemented the identical recursive `walk(dir, acc)` (skip `node_modules/.next/.git`, collect `.ts/.tsx`). Extracted the single source (configurable `ext`/`skip`) + a vitest unit test (wired `scripts/lib/**/*.test.mjs` into `vitest.config.ts` include). Migrated the 4 p1.4-era gates whose walk was behavior-identical: `currency-format`, `date-format`, `service-client`, `market-formula`. **Each verified byte-identical output before/after** (captured to `/tmp`, diffed) — no gate changes what it scans. Remaining ~29 walk copies can adopt `walkFiles` incrementally with the same before/after check.
+**Shared `scripts/lib/walk.mjs` (gate-lib, audit-maintainability finding).** ~33 `check-*.mjs` gates each re-implemented the identical recursive `walk(dir, acc)` (skip `node_modules/.next/.git`, collect `.ts/.tsx`). Extracted the single source (configurable `ext`/`skip`) + a vitest unit test (wired `scripts/lib/**/*.test.mjs` into `vitest.config.ts` include). Migrated the 4 p1.4-era gates whose walk was behavior-identical: `currency-format`, `date-format`, `service-client`, `market-formula`. **Each verified byte-identical output before/after** (captured to `/tmp`, diffed) — no gate changes what it scans.
+
+**Gate-walker finding (thread closed for the safe cluster).** Inspecting the other ~29 walk copies: they are NOT drop-in compatible with `walkFiles`. They use `path.join(ROOT, ...)` absolute paths + `path.relative` to re-derive (vs walkFiles' forward-slash `${dir}/${e.name}`), unanchored skip regexes (`/node_modules|\.next|\.git/` matches mid-name), and divergent skip-sets (`no-staging-host` skips only `node_modules`+`.next`, NOT `.git`) and extensions (`.tsx/.jsx`, `.ts/.mts`, generators). Forcing them onto `walkFiles` means restructuring each gate's path-building, with real divergence risk for a tooling-only DRY win. Decision: keep the canonical `walkFiles` for the clean cluster + as the home for any NEW gate; leave the heterogeneous legacy walkers in place. Not worth the per-gate risk.
+
+**Test +1 (this cycle): `report-year-compare.test.ts`** (YoY market-report grid + the published "up/down N%" interpretation sentence — data-accuracy-critical per S0): `getAvailableYears` (distinct, desc, invalid-skipping), `buildYtdComparisonRows` (per-year keys, null for missing year-month), `summarizeInterpretation` (YTD + peer-delta math).
 
 **Tests +2 files (→ 717 / 69).** `inventory-filters.test.ts` (city/market "homes for sale" counts: `isActiveForSaleStatus`/`classifyInventoryPropertyType`/`isResidentialInventoryType`), `search-filters.test.ts` (saved-search alert dedup: `getSavedSearchHash` is order-independent, `'500000'==500000`, junk-ignoring, changes on real diff). Plus `scripts/lib/walk.test.mjs`.
 
