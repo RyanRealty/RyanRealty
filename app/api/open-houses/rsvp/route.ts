@@ -1,18 +1,9 @@
 import { NextRequest } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { pushToFub } from '@/lib/fub'
 import { findPersonByEmail } from '@/lib/followupboss'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { listingDetailPath } from '@/lib/slug'
-
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-function getServiceSupabase() {
-  if (!url?.trim() || !serviceKey?.trim()) throw new Error('Supabase service role not configured')
-  return createClient(url, serviceKey)
-}
 
 type RsvpBody = { openHouseId: string; listingId: string }
 
@@ -40,7 +31,6 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'openHouseId and listingId required' }, { status: 400 })
   }
 
-  void getServiceSupabase
   const {
     getOpenHouseByIdAndListing,
     insertOpenHouseRsvp,
@@ -66,8 +56,7 @@ export async function POST(request: NextRequest) {
   const now = new Date()
   const listingUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}${listingDetailPath(listingId)}`
   if (in24h > now) {
-    void getServiceSupabase
-    const { insertNotificationQueueRow } = await import('@/lib/data')
+      const { insertNotificationQueueRow } = await import('@/lib/data')
     await insertNotificationQueueRow({
       user_id: user.id,
       notification_type: 'open_house_reminder_24h',
@@ -77,8 +66,7 @@ export async function POST(request: NextRequest) {
     })
   }
   if (in1h > now) {
-    void getServiceSupabase
-    const { insertNotificationQueueRow } = await import('@/lib/data')
+      const { insertNotificationQueueRow } = await import('@/lib/data')
     await insertNotificationQueueRow({
       user_id: user.id,
       notification_type: 'open_house_reminder_1h',

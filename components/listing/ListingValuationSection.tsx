@@ -1,13 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
 import { getCachedCMA, computeCMA } from '@/lib/cma'
 import ListingValuation from './ListingValuation'
-
-function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) return null
-  return createClient(url, key)
-}
 
 type Props = {
   listingKey: string
@@ -24,7 +16,6 @@ export default async function ListingValuationSection({
   signedIn,
   propertyId: propIdFromParent,
 }: Props) {
-  void getServiceSupabase
   let propertyId = propIdFromParent ?? null
 
   if (!propertyId) {

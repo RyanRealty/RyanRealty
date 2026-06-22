@@ -2,7 +2,6 @@
 
 import React from 'react'
 import { renderToBuffer } from '@react-pdf/renderer'
-import { createClient } from '@supabase/supabase-js'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { sendEvent, findPersonByEmail } from '@/lib/followupboss'
 import { sendEmail } from '@/lib/resend'
@@ -19,13 +18,6 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? process.env.RESEND_ADMIN_EMAIL ??
 
 export type ValuationFormState = { error?: string; success?: boolean; cmaSent?: boolean; eventId?: string }
 
-function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) throw new Error('Server not configured')
-  return createClient(url, key)
-}
-
 /** Try to find a property in DB by address components (for auto-CMA). */
 async function findPropertyByAddress(params: {
   street?: string | null
@@ -33,7 +25,6 @@ async function findPropertyByAddress(params: {
   state?: string | null
   postalCode?: string | null
 }): Promise<string | null> {
-  void getServiceSupabase
   const city = params.city?.trim()
   if (!city) return null
 
@@ -81,7 +72,6 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
   const state = stateZipMatch?.[1] ?? stateZip.replace(/\d/g, '').trim()
   const postalCode = stateZipMatch?.[2] ?? parts[3]?.trim() ?? ''
 
-  void getServiceSupabase
   const { insertValuationRequest } = await import('@/lib/data')
   const insertRes = await insertValuationRequest({
     address_street: street || null,
