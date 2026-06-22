@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.5 (2026-06-22)
+
+### Maintenance
+- test(audit-p3.2): lock the DAL listing-resolution path — 5/5 critical paths covered
+
+---
+
+
 ## v1.599.4 (2026-06-22)
 
 ### Maintenance
