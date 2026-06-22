@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.37 (2026-06-22)
+
+### Other
+- audit log: mark Zod env Stage 2 done (runtime-boot fail-fast, build-safe-verified)
+
+---
+
+
 ## v1.599.36 (2026-06-22)
 
 ### Other
