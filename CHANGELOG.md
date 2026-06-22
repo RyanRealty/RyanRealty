@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.29 (2026-06-22)
+
+### Maintenance
+- refactor(audit-p1.6): route market-faq median price through canonical formatPrice
+
+---
+
+
 ## v1.598.28 (2026-06-22)
 
 ### Maintenance
