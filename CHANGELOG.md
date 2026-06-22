@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.14 (2026-06-22)
+
+### Maintenance
+- chore(audit-1.5): remove dead experience/ component family (12 files, keep useEngagementTracking)
+
+---
+
+
 ## v1.599.13 (2026-06-22)
 
 ### Maintenance
