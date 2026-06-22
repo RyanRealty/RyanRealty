@@ -11,24 +11,14 @@
  *   node scripts/check-currency-format.mjs                  # check
  *   node scripts/check-currency-format.mjs --write-baseline # record current offenders
  */
-import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { walkFiles } from './lib/walk.mjs'
 
 const BASELINE = 'scripts/currency-format-baseline.json'
 const WRITE = process.argv.includes('--write-baseline')
 const CURRENCY = /Intl\.NumberFormat\([^)]*currency/i
 
-function walk(dir, acc = []) {
-  let entries = []
-  try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return acc }
-  for (const e of entries) {
-    const p = `${dir}/${e.name}`
-    if (e.isDirectory()) { if (!/(^|\/)(node_modules|\.next|\.git)(\/|$)/.test(p)) walk(p, acc) }
-    else if (/\.(ts|tsx)$/.test(e.name)) acc.push(p)
-  }
-  return acc
-}
-
-const files = [...walk('app'), ...walk('lib'), ...walk('components')].filter(
+const files = [...walkFiles('app'), ...walkFiles('lib'), ...walkFiles('components')].filter(
   (f) => !f.startsWith('lib/format/') && !/\.test\.(ts|tsx)$/.test(f),
 )
 const offenders = files.filter((f) => CURRENCY.test(readFileSync(f, 'utf8'))).sort()

@@ -12,24 +12,14 @@
  *   node scripts/check-service-client.mjs                  # check
  *   node scripts/check-service-client.mjs --write-baseline # record offenders
  */
-import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { walkFiles } from './lib/walk.mjs'
 
 const BASELINE = 'scripts/service-client-baseline.json'
 const WRITE = process.argv.includes('--write-baseline')
 
-function walk(dir, acc = []) {
-  let entries = []
-  try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return acc }
-  for (const e of entries) {
-    const p = `${dir}/${e.name}`
-    if (e.isDirectory()) { if (!/(^|\/)(node_modules|\.next|\.git)(\/|$)/.test(p)) walk(p, acc) }
-    else if (/\.(ts|tsx)$/.test(e.name)) acc.push(p)
-  }
-  return acc
-}
-
 const CANON = 'lib/supabase/service.ts'
-const files = [...walk('app'), ...walk('lib'), ...walk('components')].filter(
+const files = [...walkFiles('app'), ...walkFiles('lib'), ...walkFiles('components')].filter(
   (f) => f !== CANON && !/\.test\.(ts|tsx)$/.test(f),
 )
 // Offender = constructs a client AND references the service-role key.

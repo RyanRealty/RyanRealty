@@ -8,21 +8,8 @@
  * MOS_THRESHOLD_CLAUSE / marketVerdict() from lib/market/classify.ts so the
  * published methodology can never drift from the canonical formula again.
  */
-import { readFileSync, readdirSync } from 'node:fs'
-
-function walk(dir, acc = []) {
-  let entries = []
-  try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return acc }
-  for (const e of entries) {
-    const p = `${dir}/${e.name}`
-    if (e.isDirectory()) {
-      if (!/(^|\/)(node_modules|\.next|\.git)(\/|$)/.test(p)) walk(p, acc)
-    } else if (/\.(ts|tsx)$/.test(e.name)) {
-      acc.push(p)
-    }
-  }
-  return acc
-}
+import { readFileSync } from 'node:fs'
+import { walkFiles } from './lib/walk.mjs'
 
 const BAD_FORMULA = /closed last 30 days (times 2|\* ?2)/i
 const SELF = new Set([
@@ -31,7 +18,7 @@ const SELF = new Set([
   'scripts/check-market-formula.mjs',
 ])
 
-const files = [...walk('app'), ...walk('lib')].filter((f) => !SELF.has(f))
+const files = [...walkFiles('app'), ...walkFiles('lib')].filter((f) => !SELF.has(f))
 const formulaHits = files.filter((f) => BAD_FORMULA.test(readFileSync(f, 'utf8')))
 
 // Ban inline MoS verdict thresholds in the data layer (audit p0.4b) — the
@@ -39,7 +26,7 @@ const formulaHits = files.filter((f) => BAD_FORMULA.test(readFileSync(f, 'utf8')
 // Scoped to the reusable data layer; page-prose verdict sites are a tracked
 // follow-up (correct today, article-variation labels).
 const THRESHOLD = /\bmos\b\s*(<=\s*4|<\s*6|>=\s*6)/i
-const dataFiles = [...walk('lib/data'), ...walk('lib/site')].filter((f) => !SELF.has(f))
+const dataFiles = [...walkFiles('lib/data'), ...walkFiles('lib/site')].filter((f) => !SELF.has(f))
 const thresholdHits = dataFiles.filter((f) => THRESHOLD.test(readFileSync(f, 'utf8')))
 
 console.log('market MoS-formula gate (ci:market-formula)')
