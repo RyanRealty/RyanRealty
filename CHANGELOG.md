@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.11 (2026-06-22)
+
+### Maintenance
+- test(audit-p3.2): unit-test computeTier1 (sync derived fields)
+
+---
+
+
 ## v1.598.10 (2026-06-22)
 
 ### Maintenance
