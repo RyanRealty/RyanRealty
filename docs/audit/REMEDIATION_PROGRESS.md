@@ -15,7 +15,8 @@
 | 1 | 1.3 | Shared auth guards (`lib/auth/guards.ts`) | ✅ shipped + adopted in 0.2b/d |
 | 1 | 1.5 | Delete confirmed dead code | ✅ done — 32 Homepage* (3,055 LOC) + kpi-dashboard (559) + 4 orphan lib modules |
 | 1 | 1.4 | Canonical money + date formatters | 🔶 helpers + ratchet gates ✅ (60 currency + 86 date sites baselined for migration) |
-| 1 | 1.1, 1.2, 1.6 | Consolidate duplication | ⬜ todo |
+| 1 | 1.1 | Unify Supabase clients | 🔶 service-role ratchet gate ✅ + admin-roles migrated (browser/server factories: render-verified pass) |
+| 1 | 1.2, 1.6 | Consolidate duplication | ⬜ todo |
 | 2 | 2.1–2.2 | Make the DAL boundary real | ⬜ todo |
 | 3 | 3.1–3.5 | Governance + tests + env | ⬜ todo |
 
@@ -28,6 +29,16 @@
 ---
 
 ## Log
+
+### 1.1a — Consolidate inline service-role Supabase clients · 2026-06-22
+
+**Problem (audit MED, duplication).** The service-role client was constructed inline in many files (`createClient(url, SUPABASE_SERVICE_ROLE_KEY)`) instead of the memoized singleton `createServiceClient()` (lib/supabase/service.ts) — 143 files reference the key + build a client. Each inline copy rebuilds a client per call (no memoization) and duplicates the bootstrap.
+
+**Change set.** `ci:service-client` ratchet gate wired into `ci:gates`: 143 inline offenders baselined (`scripts/service-client-baseline.json`), NEW ones fail. Migrated `app/actions/admin-roles.ts` off its inline `getServiceSupabase()` onto `createServiceClient()` (server-only, exact match) as the first shrink.
+
+**Real-test.** `ci:service-client` → 143 baselined / 0 new; admin-roles has 0 service-key refs now; `ci:gates-wired` → 70 gates; `tsc` source clean.
+
+**Scope note (1.1 browser/server factories).** The 5-factory unification of the *browser*/*server cookie* clients (lib/supabase.ts, lib/supabase/{server,client}.ts) crosses the React client/server boundary — a wrong import poisons the client bundle and is caught only by `next build`, not `tsc`. That part is deferred to a render-verified pass rather than blind-pushed; the service-role consolidation (server-only, safe) proceeds now via the ratchet.
 
 ### 1.4 — Canonical money formatter + ratchet gate · 2026-06-21
 

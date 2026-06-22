@@ -1,18 +1,11 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { isSuperuserAdmin } from '@/lib/admin'
 import { getSession } from '@/app/actions/auth'
 import { logAdminAction } from '@/app/actions/log-admin-action'
-
-function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) throw new Error('Supabase service role not configured')
-  return createClient(url, key)
-}
 
 export type AdminRoleType = 'superuser' | 'broker' | 'report_viewer'
 
@@ -49,7 +42,7 @@ export async function getAdminRoleForEmail(email: string | null | undefined): Pr
   // Service-role read: admin_roles is RLS-locked, and the broker's own session
   // cannot see its row (this silently denied Rebecca + Paul until 2026-06-09).
   // The email always comes from the verified Supabase session, never user input.
-  const supabase = getServiceSupabase()
+  const supabase = createServiceClient()
   const { data } = await supabase
     .from('admin_roles')
     .select('role, broker_id')
@@ -86,7 +79,7 @@ export async function upsertAdminRole(
   const trimmed = email.trim().toLowerCase()
   if (!trimmed) return { ok: false, error: 'Email is required' }
   if (role === 'superuser' && !isSuperuserAdmin(trimmed)) return { ok: false, error: 'Only the designated superuser can be set as superuser.' }
-  const supabase = getServiceSupabase()
+  const supabase = createServiceClient()
   const { error } = await supabase.from('admin_roles').upsert(
     { email: trimmed, role, broker_id: brokerId || null, updated_at: new Date().toISOString() },
     { onConflict: 'email' }
@@ -107,7 +100,7 @@ export async function removeAdminRole(email: string): Promise<{ ok: true } | { o
   if (actorRole !== 'superuser') return { ok: false, error: 'Forbidden — superuser access required' }
 
   if (isSuperuserAdmin(email)) return { ok: false, error: 'Cannot remove the superuser.' }
-  const supabase = getServiceSupabase()
+  const supabase = createServiceClient()
   const { error } = await supabase.from('admin_roles').delete().eq('email', email.trim().toLowerCase())
   if (error) return { ok: false, error: error.message }
   await logAdminAction({ adminEmail: actorEmail ?? '', role: actorRole, actionType: 'delete', resourceType: 'admin_role', resourceId: email.trim().toLowerCase() })
@@ -122,7 +115,7 @@ export async function listPlatformUsersForAdmin(): Promise<AdminPlatformUserRow[
   const role = await getAdminRoleForEmail(session?.user?.email ?? null)
   if (role?.role !== 'superuser') return []
 
-  const supabase = getServiceSupabase()
+  const supabase = createServiceClient()
   const [profilesRes, savedListingsRes, savedSearchesRes, activitiesRes] = await Promise.all([
     supabase
       .from('profiles')
