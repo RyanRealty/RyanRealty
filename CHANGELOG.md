@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.27 (2026-06-22)
+
+### Maintenance
+- test(audit-p3.2): lock YoY market-report comparison math (report-year-compare)
+
+---
+
+
 ## v1.598.26 (2026-06-22)
 
 ### Maintenance
