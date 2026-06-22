@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.22 (2026-06-22)
+
+### Maintenance
+- docs(audit): log orphan backlog 9->7 + 4 test files; flag deferred currency/build/feature work
+
+---
+
+
 ## v1.598.21 (2026-06-22)
 
 ### Bug Fixes
