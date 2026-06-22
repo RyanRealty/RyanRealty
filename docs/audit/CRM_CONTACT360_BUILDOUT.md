@@ -107,8 +107,26 @@ The auth.users-uuid "identity fork" is **currently theoretical** — `profiles` 
 
 ---
 
+## Phase 7 — Saved Searches & Saved Homes (the unified, person-anchored store)
+
+> Goal: ONE store per concept that a CONSUMER fully self-manages AND a BROKER sees in full — a save belongs to a *person*, not to whichever identity they happened to use. **Sequence this RIGHT AFTER Phase 1 (resolver):** both saved-search tables are ~0 rows today (`saved_searches`≈0, `guest_search_alerts`≈0, `saved_listings`=2, `likes`=6), so the unification is nearly free NOW and gets harder with every save created under the split. Depends on `resolvePersonIdentity()` (1.2).
+
+**The problem (mapped):** saves are filed under three identities — guest=email (`guest_search_alerts`, broker-visible, consumer can't manage), signed-in=auth uuid (`saved_searches`, consumer-managed, **broker-invisible**), and homes are triplicated (`saved_listings` + `likes` + `listing_collections`) with no anonymous path and a broker view that *regex-infers* "saved" from `visitor_events` instead of the real table.
+
+- **7.1 Unified saved-search table.** Keep `saved_searches` as the base (richer: cache cols + public-share + owner-RLS); add nullable `email`, `crm_person_id`, keep `user_id`. **Email is the resolution anchor.** One canonical `filters_hash` everywhere (today `getSavedSearchHash` vs `stableHash` differ, so the "same" search never dedupes — fix to a single hasher). Migrate the handful of `guest_search_alerts` rows in; retire it as a separate concept (or a thin pre-auth write that upserts into the unified row). Reconcile `is_active` (guest) vs `is_paused` (saved) semantics so alerts don't double-fire or silently stop. *Migration applied to hosted Supabase same-delivery.*
+- **7.2 Unified saved-home table.** Collapse `likes` into `saved_listings` (one heart/bookmark writes one table); add `email` + `crm_person_id` (+ keep `user_id`) so an **anonymous lead can heart a home and the broker sees it**; **fix the live bug** where `RemoveSavedButton` (`app/account/saved-homes/RemoveSavedButton.tsx`) is a silent no-op for liked-only homes (it only calls `unsaveListing`). *Acceptance:* every home on `/account/saved-homes` removes correctly.
+- **7.3 Claim-on-sign-in.** On first login / account creation, `UPDATE saved_searches SET user_id=:uuid WHERE email=:authEmail AND user_id IS NULL` (and the same for saved-homes) so prior anonymous saves attach to the account **and stay broker-visible**. *Acceptance:* a guest who saves then signs in sees their searches in `/account`.
+- **7.4 Consumer self-management — close the holes.** In `app/account/saved-searches/SavedSearchesList.tsx` add per-search: a **cadence** Select (instant/daily/weekly → writes `notification_frequency`, which the cron already honors), a **pause/resume** toggle (`is_paused`; today only the email unsubscribe sets it, with no resume), and an **edit-criteria** affordance (the `updateSavedSearch(filters)` action already exists; no UI exposes it). Have `createSavedSearch` set `notification_frequency` explicitly from the user's default instead of relying on the column default.
+- **7.5 Kill the dead setting.** `/account/notifications` `savedSearchFrequency` writes a global `profiles.notification_preferences` value **no cron reads** — it lies to users. Either fan it out to every saved-search row on change, or demote it to a create-time default only; never leave a write-only control that implies it changed cadence.
+- **7.6 Broker visibility — show the real saves.** On `app/admin/console/leads/[id]/page.tsx`, via the resolver, read the unified saved-search rows + the real `saved_listings`/`saved_communities`/`saved_cities`/`listing_collections` for the lead. **Stop inferring "saved" from `visitor_events` regex** — show the actual hearted homes + saved searches with `getFiltersSummary` human labels, deep links, last-sent, and the pause/resume + cadence toggles from Phase 3.1 (which now sit on the unified row). A broker "remove" and a consumer "remove" act on the same object.
+
+*All of Phase 7 is build-now-safe (additive + a near-empty-table migration) and `next build`-verifiable. It is the foundation Phase 3.1 (listing-alerts UNION) sits on — once unified, "UNION two tables" becomes "read one table".*
+
+---
+
 ## Sequencing & flags summary
 
-- **Build now (safe, additive, verifiable here):** 0.1–0.6, 1.1–1.3, 2.1–2.3, 2.6–2.7, 3.1–3.3, 4.1–4.4, 6.1–6.2.
+- **Build now (safe, additive, verifiable here):** 0.1–0.6, 1.1–1.3, **7.1–7.6 (sequence right after Phase 1 — tables are near-empty NOW)**, 2.1–2.3, 2.6–2.7, 3.1–3.3, 4.1–4.4, 6.1–6.2.
+- **Recommended order:** Phase 0 → Phase 1 → **Phase 7** → Phase 2 → Phase 3 → Phase 4 → Phase 6 (Phase 5 flagged). Phase 7 is front-loaded because the saved-search/home unification is a near-free migration today and is the foundation 3.1 sits on.
 - **Flag for Matt's go / needs creds or a decision:** 0.7 (DB-nightly), 2.4–2.5 (BatchData/Google cost), 5.1–5.4 (Meta creds + privacy + business call), 6.3–6.4 (bulk sends = TCPA), and anything that flips intake to native-first at the FUB cutover.
 - **TCPA/compliance invariants are never weakened** by any increment: the suppression chokepoint, A2P hard-gate, fail-closed, quiet hours, and consent-on-every-send stay green (`ci:crm-sms-safety` / `ci:crm-fail-closed` / `ci:sms-consent`).

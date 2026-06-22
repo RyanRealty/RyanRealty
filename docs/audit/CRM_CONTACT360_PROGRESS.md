@@ -39,6 +39,12 @@
 | 6 | 6.2 | Bulk fan-out actions + crm_bulk_jobs audit | ⬜ todo |
 | 6 | 6.3 | Bulk compliance rails (preview/EBR/scope/enqueue) | ⬜ todo |
 | 6 | 6.4 | Wire bulk sends | 🚩 flagged (TCPA — Matt's go) |
+| 7 | 7.1 | Unified saved-search table (+ single filters_hash) | ⬜ todo (run after Phase 1) |
+| 7 | 7.2 | Unified saved-home table + fix remove no-op bug | ⬜ todo |
+| 7 | 7.3 | Claim-on-sign-in (attach guest saves to account) | ⬜ todo |
+| 7 | 7.4 | Consumer controls: cadence + pause/resume + edit-criteria | ⬜ todo |
+| 7 | 7.5 | Kill the dead /account/notifications frequency setting | ⬜ todo |
+| 7 | 7.6 | Broker visibility: real saved searches + homes (stop regex-infer) | ⬜ todo |
 
 Legend: ⬜ todo · 🔶 in progress · ✅ done · 🚩 flagged (needs creds / a decision / Matt's go).
 
