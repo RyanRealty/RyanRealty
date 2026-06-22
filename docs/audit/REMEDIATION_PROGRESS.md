@@ -20,7 +20,7 @@
 | 1 | 1.6 | Remaining forks | ⬜ todo |
 | 2 | 2.1 | DAL boundary → default-deny | 🔶 any-table matcher + ratchet 213→0 ✅ (write-path read/write split: todo) |
 | 2 | 2.2 | Split barrels/god-files + server-only | ⬜ todo |
-| 3 | 3.1–3.5 | Governance + tests + env | ⬜ todo |
+| 3 | 3.x | Governance + tests + env | 🔶 orphan-gate triage (24→12 wired) ✅ · FUB accessor test ✅; shared gate-lib / typed env / more tests: todo |
 
 ## Discovered (cross-step follow-ups, not yet scheduled)
 
@@ -31,6 +31,16 @@
 ---
 
 ## Log
+
+### 3.x — Triage the orphaned gate-file backlog (24 → 12) · 2026-06-22
+
+**Problem (audit CRITICAL follow-up).** Step 0.0 surfaced 28 `scripts/check-*.mjs` gate files that ran nowhere; 4 were resolved then, leaving a 24-file backlog (`scripts/gates-wired-baseline.json`). These are real gates the team wrote but never wired.
+
+**Change set.** Ran all 24: 15 pass, 9 fail (real violations / obsolete). Of the 15 passing, 12 are file-only (no DB/network) → **wired into `ci:gates`**: `cma-routing`, `community-content`, `console-kit`, `dead-ui`, `design-directives`, `flyover-video-size`, `hero-image`, `lp-conversion`, `measurement-loop`, `mockup-coverage`, `nav-reachability`, `rental-lead-wiring`. Re-baselined the orphan list to **12**.
+
+**Real-test.** All 12 pass; `ci:gates-wired` → 83 ci:* gates wired / 0 orphaned, 12 file-orphans baselined; meta-gate green.
+
+**Remaining (12 orphans):** 3 are DB/network-dependent (`legacy-redirects`, `missing-videos`, `video-urls`) — wire to a creds-bearing workflow, not the static chain; 9 currently FAIL (`broker-facts`, `bundle-budget`, `canonical-listings`, `collections-wiring`, `email-brand-tokens`, `geo-imagery`, `heading-display`, `producer-skills`, `tool-discipline`) — each needs its violations fixed or the gate retired. Tracked for the next passes.
 
 ### 1.2a — Single FollowUpBoss API-key accessor · 2026-06-22
 
