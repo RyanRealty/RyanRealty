@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.6 (2026-06-22)
+
+### Bug Fixes
+- fix(audit-p3.x): wire 3 more orphaned gates via ratchet baseline (backlog 12->9)
+
+---
+
+
 ## v1.598.5 (2026-06-22)
 
 ### Bug Fixes
