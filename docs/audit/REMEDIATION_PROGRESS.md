@@ -20,7 +20,7 @@
 | 1 | 1.6 | Remaining forks | ⬜ todo |
 | 2 | 2.1 | DAL boundary → default-deny | 🔶 any-table matcher + ratchet 213→0 ✅ (write-path read/write split: todo) |
 | 2 | 2.2 | Split barrels/god-files + server-only | ⬜ todo |
-| 3 | 3.x | Governance + tests + env | 🔶 orphan gates 24→7 ✅ (email-brand-tokens + producer-skills fixed & wired) · doc drift (sync + cron table) ✅ · tests +15 files / 713 (prior 13 + inventory-filters, search-filters saved-search dedup) ✅; shared gate-lib / typed env: todo |
+| 3 | 3.x | Governance + tests + env | 🔶 orphan gates 24→7 ✅ · doc drift ✅ · tests +16 files / 717 (+ inventory-filters, search-filters dedup, walkFiles) ✅ · shared gate-lib STARTED (scripts/lib/walk.mjs + test; 4/33 gates migrated, byte-identical verified) 🔶; typed env: todo |
 
 ## Discovered (cross-step follow-ups, not yet scheduled)
 
@@ -31,6 +31,14 @@
 ---
 
 ## Log
+
+### 3.x — Shared gate file-walker + more pure-function tests · 2026-06-22
+
+**Shared `scripts/lib/walk.mjs` (gate-lib, audit-maintainability finding).** ~33 `check-*.mjs` gates each re-implemented the identical recursive `walk(dir, acc)` (skip `node_modules/.next/.git`, collect `.ts/.tsx`). Extracted the single source (configurable `ext`/`skip`) + a vitest unit test (wired `scripts/lib/**/*.test.mjs` into `vitest.config.ts` include). Migrated the 4 p1.4-era gates whose walk was behavior-identical: `currency-format`, `date-format`, `service-client`, `market-formula`. **Each verified byte-identical output before/after** (captured to `/tmp`, diffed) — no gate changes what it scans. Remaining ~29 walk copies can adopt `walkFiles` incrementally with the same before/after check.
+
+**Tests +2 files (→ 717 / 69).** `inventory-filters.test.ts` (city/market "homes for sale" counts: `isActiveForSaleStatus`/`classifyInventoryPropertyType`/`isResidentialInventoryType`), `search-filters.test.ts` (saved-search alert dedup: `getSavedSearchHash` is order-independent, `'500000'==500000`, junk-ignoring, changes on real diff). Plus `scripts/lib/walk.test.mjs`.
+
+**Real-test.** All 4 gates byte-identical; `ci:gates-wired` green (walk.mjs not flagged as a gate); full `vitest` 717/717; G46 pre-push `tsc` PASS.
 
 ### 3.x — Orphan backlog 9 → 7 (fix-then-wire) + 4 pure-function test files · 2026-06-22
 
