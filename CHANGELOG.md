@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.32 (2026-06-22)
+
+### Other
+- G10: fix + wire bundle-budget against a real build — orphan backlog 1 -> 0
+
+---
+
+
 ## v1.599.31 (2026-06-22)
 
 ### Other
