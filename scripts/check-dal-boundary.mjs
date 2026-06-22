@@ -93,9 +93,13 @@ const WRITE_PATH_PREFIXES = [
   'app/admin/',
 ]
 
-// Match: .from('listings'), .from("listings"), .from(`listings`) — any quote style.
-const tablePattern = BANNED_TABLES.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
-const FROM_REGEX = new RegExp(`\\.from\\(\\s*['"\`](${tablePattern})['"\`]`, 'g')
+// Default-deny (audit p2.1): flag `.from('<table>')` for ANY lowercase snake_case
+// table name outside lib/data/ (+ the write-path prefixes below). Previously this
+// matched only the 26-table BANNED_TABLES denylist, so any UNLISTED table could be
+// read raw from a page/component without tripping the gate. The BANNED_TABLES list
+// is retained above only as the eslint-mirrored reference set. Lookbehind excludes
+// `Buffer.from(` / `Array.from(` (not Supabase calls).
+const FROM_REGEX = /(?<!Buffer)(?<!Array)\.from\(\s*['"`]([a-z][a-z0-9_]*)['"`]/g
 
 function normalize(p) {
   return p.split(sep).join('/')

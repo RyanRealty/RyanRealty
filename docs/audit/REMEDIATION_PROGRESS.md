@@ -17,7 +17,8 @@
 | 1 | 1.4 | Canonical money + date formatters | 🔶 helpers + gates ✅; migrating call sites (currency 60→59) |
 | 1 | 1.1 | Unify Supabase clients | 🔶 service-role ratchet gate ✅ + admin-roles migrated (browser/server factories: render-verified pass) |
 | 1 | 1.2, 1.6 | Consolidate duplication | ⬜ todo |
-| 2 | 2.1–2.2 | Make the DAL boundary real | ⬜ todo |
+| 2 | 2.1 | DAL boundary → default-deny | 🔶 any-table matcher + ratchet 213→0 ✅ (write-path read/write split: todo) |
+| 2 | 2.2 | Split barrels/god-files + server-only | ⬜ todo |
 | 3 | 3.1–3.5 | Governance + tests + env | ⬜ todo |
 
 ## Discovered (cross-step follow-ups, not yet scheduled)
@@ -29,6 +30,16 @@
 ---
 
 ## Log
+
+### 2.1 — Flip the DAL boundary gate to default-deny · 2026-06-22
+
+**Problem (audit HIGH, structural).** `check-dal-boundary.mjs` (G1) only matched a hardcoded **26-table denylist**, so the audit's note held: "any new/non-listed table can be read raw from a page/component without tripping the gate." The boundary was partial by design.
+
+**Change set.** The matcher is now **default-deny**: it flags `.from('<table>')` for ANY lowercase snake_case table name outside `lib/data/` (+ the existing write-path prefixes `app/actions`/`app/api`/`app/admin`), with lookbehind excluding `Buffer.from(`/`Array.from(`. Re-baselined: **213 boundary violations across 48 files** (`scripts/dal-boundary-baseline.json`) — the real consumer-read/lib-helper boundary debt, which now ratchets toward 0.
+
+**Real-test.** `ci:dal-boundary` passes at the 213 baseline; a synthetic `supabase.from('some_new_table')` in `app/` correctly FAILS (regression-catches-new, which the old 26-table list would have passed); regex sanity-checked to match `listings`/`crm_people` and exclude `Buffer.from('hello')`/`Array.from(x)`; `ci:gates-wired` → 70 gates.
+
+**Scope note.** The remaining part of 2.1 — narrowing the blanket `app/actions`/`api`/`admin` write-path exemption so raw READS there are also flagged (the audit's ~440 in app/actions) — requires a read/write split of those files (move reads into `lib/data` / an `app/actions/_read` tier) and is a larger architecture pass; deferred. This flip already closes the "unlisted table" hole and ratchets the 213.
 
 ### 1.1a — Consolidate inline service-role Supabase clients · 2026-06-22
 
