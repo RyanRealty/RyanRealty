@@ -1,8 +1,6 @@
 {
   "note": "Files reading the FUB API key directly from process.env — migrate to getFubApiKey() from lib/crm/fub-env.ts. Count may only shrink.",
   "files": [
-    "app/admin/(protected)/people/[fubPersonId]/page.tsx",
-    "app/api/meta/lead-webhook/route.ts",
     "lib/fub-client.mjs"
   ]
 }

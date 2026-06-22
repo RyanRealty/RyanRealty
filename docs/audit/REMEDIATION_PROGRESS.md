@@ -16,7 +16,7 @@
 | 1 | 1.5 | Delete confirmed dead code | ✅ done — 32 Homepage* (3,055 LOC) + kpi-dashboard (559) + 4 orphan lib modules |
 | 1 | 1.4 | Canonical money + date formatters | 🔶 helpers + gates ✅; migrating call sites (currency 59, date 86 baselined) |
 | 1 | 1.1 | Unify Supabase clients | 🔶 service-role ratchet gate ✅ (baseline 137; 6 dead helpers removed); browser/server factories deferred (needs `next build`) |
-| 1 | 1.2 | FUB client + env-key collapse | 🔶 accessor + gate ✅; 11 readers migrated (3 left: a page, hand-rolled lead-webhook, the .mjs); 3-client merge todo |
+| 1 | 1.2 | FUB client + env-key collapse | 🔶 accessor + gate ✅; ALL app/+lib `.ts/.tsx` key-readers now via `getFubApiKey()` (page + meta lead-webhook migrated; `ci:fub-env` baseline 3→1 — only `lib/fub-client.mjs` left, a `.mjs` that can't import the `.ts` accessor); 3-client merge deferred (needs `next build`) |
 | 1 | 1.6 | Remaining forks | 🔶 market-faq `roundedThousand` → canonical `formatPrice` (proven byte-identical for positive inputs, guarded caller, test asserts it) ✅; ~15 page-level round-to-$1k dupes are the render-verify currency-migration bucket (locale-default toLocaleString + unguarded-0 edge cases) — deferred; the 2 `lib/data/*` ones return numbers, not currency — not candidates |
 | 2 | 2.1 | DAL boundary → default-deny | 🔶 any-table matcher + ratchet 213→0 ✅ (write-path read/write split: todo) |
 | 2 | 2.2 | Split barrels/god-files + server-only | ⬜ todo |

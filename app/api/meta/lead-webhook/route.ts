@@ -11,6 +11,7 @@ import {
   updatePersonAutomationState,
 } from '@/lib/followupboss'
 import { createCmaRequest } from '@/lib/cma-request'
+import { getFubApiKey } from '@/lib/crm/fub-env'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
 
 export const runtime = 'nodejs'
@@ -93,11 +94,7 @@ function getSupabase() {
 }
 
 function getFubConfig(): { apiKey: string; pipelineId: string | null } {
-  const apiKey = (
-    process.env.FUB_API_KEY ||
-    process.env.FOLLOWUPBOSS_API_KEY ||
-    ''
-  ).trim()
+  const apiKey = (getFubApiKey() || '').trim()
   if (!apiKey) throw new Error('FUB_API_KEY not configured')
   const pipelineId = (process.env.FUB_PIPELINE_ID || '').trim() || null
   return { apiKey, pipelineId }

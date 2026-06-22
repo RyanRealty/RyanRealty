@@ -26,6 +26,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
+import { getFubApiKey } from '@/lib/crm/fub-env'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
@@ -166,7 +167,7 @@ type AssignmentHistory = {
 // ─── FUB person fetch ─────────────────────────────────────────────────────
 
 async function fetchFubPerson(personId: number): Promise<FubPersonFull | null> {
-  const apiKey = (process.env.FOLLOWUPBOSS_API_KEY || process.env.FUB_API_KEY || '').trim()
+  const apiKey = (getFubApiKey() || '').trim()
   if (!apiKey) return null
   const fields = 'id,firstName,lastName,name,emails,phones,tags,source,sourceUrl,stage,assignedUserId,assignedTo,created,updated,lastActivity,lastCommunication,customFields'
   const url = `https://api.followupboss.com/v1/people/${personId}?fields=${encodeURIComponent(fields)}`
