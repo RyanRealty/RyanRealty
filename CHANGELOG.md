@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.15 (2026-06-22)
+
+### Maintenance
+- test(audit-p3.2): unit-test phone normalizers (normalizeTo10/toE164)
+
+---
+
+
 ## v1.598.14 (2026-06-22)
 
 ### Maintenance
