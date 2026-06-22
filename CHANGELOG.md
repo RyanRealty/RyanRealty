@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.0 (2026-06-22)
+
+### Features
+- feat(audit-p1.2a): single FollowUpBoss API-key accessor + ratchet gate
+
+---
+
+
 ## v1.597.3 (2026-06-22)
 
 ### Bug Fixes
