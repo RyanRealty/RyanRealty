@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.28 (2026-06-22)
+
+### Other
+- LAUNCH-04: make legacy-redirects gate static + wire it (orphan 3->2)
+
+---
+
+
 ## v1.599.27 (2026-06-22)
 
 ### Other
