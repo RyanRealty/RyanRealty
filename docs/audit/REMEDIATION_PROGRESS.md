@@ -5,7 +5,7 @@
 
 ## Autonomous /loop run — final state (2026-06-22)
 
-The safe, autonomously-verifiable portion of the plan is **complete**. Review pass: all 15 audit-added gates pass, `tsc` source-clean, vitest 775/775. What shipped this run:
+The safe, autonomously-verifiable portion of the plan is **complete**. Review pass: all 15 audit-added gates pass, `tsc` source-clean, vitest 780/780. What shipped this run:
 
 - **Phase 0 (CRITICAL):** all done before this run (governance meta-gate, sync data-loss, auth/access holes, CRM fail-closed, market-classification).
 - **3.2 the 5 critical-path tests — DONE 5/5:** DAL (`resolveCanonicalListingKey`), sync-cursor (`deltaCursor`), market-formula (`classify`), FUB lead-create (`sendEvent`, fetch-mocked), auth-guards (`isValidCronAuth` + `safeRedirect`).
@@ -16,7 +16,7 @@ The safe, autonomously-verifiable portion of the plan is **complete**. Review pa
 - **1.6 fork:** market-faq routed through canonical `formatPrice`.
 - **1.2 FUB env-key collapse complete** (only the `.mjs` remains, can't import the `.ts`).
 - **Doc drift:** orphan-count synced in CLAUDE.md + MECHANICAL_GATES.md.
-- **Tests:** +27 files / 775 total (80 files), incl. money/date/market-classify/YoY/FAQ/dedup/JSON-LD-honesty/coercers/phone/attribution/FSBO/inventory/TC-field-map/sync-health.
+- **Tests:** +28 files / 780 total (81 files), incl. money/date/market-classify/YoY/FAQ/dedup/JSON-LD-honesty/coercers/phone/attribution/FSBO/inventory/TC-field-map/sync-health/Twilio-webhook-auth.
 
 **Deferred — needs a build env, render-verify, live-path care, creds, or a Matt decision (NOT blind-pushed, per policy):**
 - Build-failing Zod over ~159 keys (needs `next build`); FUB 3-client merge + Meta-publisher reader migrations (live paths, trim-semantics nuance); currency/date baseline shrink + ~15 page-level round-to-$1k dupes (output-changing, render-verify); `2.2` barrel split + `server-only` (needs `next build`); `dal-boundary` write-path read/write split; the `experience/` family per-symbol consumption trace; the remaining 7 orphan gates (`bundle-budget` build · `geo-imagery`/`collections-wiring` page/feature · `legacy-redirects`/`missing-videos`/`video-urls` creds · `tool-discipline` frozen-layer owner call); `ci:process-canon` was already RED on `main` pre-run (an unregistered plan doc, someone's to own).
@@ -38,7 +38,7 @@ The safe, autonomously-verifiable portion of the plan is **complete**. Review pa
 | 1 | 1.6 | Remaining forks | 🔶 market-faq `roundedThousand` → canonical `formatPrice` (proven byte-identical for positive inputs, guarded caller, test asserts it) ✅; ~15 page-level round-to-$1k dupes are the render-verify currency-migration bucket (locale-default toLocaleString + unguarded-0 edge cases) — deferred; the 2 `lib/data/*` ones return numbers, not currency — not candidates |
 | 2 | 2.1 | DAL boundary → default-deny | 🔶 any-table matcher + ratchet 213→0 ✅ (write-path read/write split: todo) |
 | 2 | 2.2 | Split barrels/god-files + server-only | ⬜ todo |
-| 3 | 3.x | Governance + tests + env | 🔶 orphan gates 24→7 ✅ · doc drift ✅ (orphan-count 24→7 synced in CLAUDE.md + MECHANICAL_GATES.md) · tests +27 files / 775 ✅ (+ skyslope-field-map TC signer-role routing, strict-verify-run-health sync-health state machine) · **3.2 critical paths — 5/5 COVERED ✅: sync-cursor · market-formula · auth-guards (pure isValidCronAuth from the CRON_SECRET bypass surface + safeRedirect) · FUB lead-create (sendEvent fetch-mocked + isPlaceholderFubEmail) · DAL-fn (resolveCanonicalListingKey, supabase+cache-mocked: ListNumber-first -> ListingKey -> input-unchanged resolution + no-client fallback; the mismatch that repeatedly broke photos/videos/history)** · shared gate-lib: walkFiles + 4 gates migrated; rest NOT drop-in, left as-is ✅ · **3.3 dual-name env collapse: `getMetaPageToken()` (META_PAGE_ACCESS_TOKEN ?? META_PAGE_TOKEN) + `ci:meta-token` gate (baseline 8, dogfoods walkFiles), meta-health page migrated** 🔶; build-failing-Zod-over-159-keys: deferred (needs `next build`) |
+| 3 | 3.x | Governance + tests + env | 🔶 orphan gates 24→7 ✅ · doc drift ✅ (orphan-count 24→7 synced in CLAUDE.md + MECHANICAL_GATES.md) · tests +28 files / 780 ✅ (+ skyslope-field-map TC signer-role routing, strict-verify-run-health sync-health state machine, twilio validateTwilioSignature webhook HMAC auth) · **3.2 critical paths — 5/5 COVERED ✅: sync-cursor · market-formula · auth-guards (pure isValidCronAuth from the CRON_SECRET bypass surface + safeRedirect) · FUB lead-create (sendEvent fetch-mocked + isPlaceholderFubEmail) · DAL-fn (resolveCanonicalListingKey, supabase+cache-mocked: ListNumber-first -> ListingKey -> input-unchanged resolution + no-client fallback; the mismatch that repeatedly broke photos/videos/history)** · shared gate-lib: walkFiles + 4 gates migrated; rest NOT drop-in, left as-is ✅ · **3.3 dual-name env collapse: `getMetaPageToken()` (META_PAGE_ACCESS_TOKEN ?? META_PAGE_TOKEN) + `ci:meta-token` gate (baseline 8, dogfoods walkFiles), meta-health page migrated** 🔶; build-failing-Zod-over-159-keys: deferred (needs `next build`) |
 
 ## Discovered (cross-step follow-ups, not yet scheduled)
 
