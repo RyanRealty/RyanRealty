@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.0 (2026-06-22)
+
+### Features
+- feat(audit-p3.3): canonical getMetaPageToken() accessor + ci:meta-token gate
+
+---
+
+
 ## v1.598.30 (2026-06-22)
 
 ### Maintenance
