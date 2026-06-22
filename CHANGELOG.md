@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.5 (2026-06-22)
+
+### Bug Fixes
+- fix(audit-p3.x): wire 12 passing orphaned gates into ci:gates (backlog 24->12)
+
+---
+
+
 ## v1.598.4 (2026-06-22)
 
 ### Maintenance
