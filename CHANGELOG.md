@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.1 (2026-06-22)
+
+### Maintenance
+- test(audit-p3.2): lock JSON-LD offer-honesty rule + structured-data shapes
+
+---
+
+
 ## v1.599.0 (2026-06-22)
 
 ### Features
