@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.24 (2026-06-22)
+
+### Maintenance
+- docs(audit): bump test coverage 699->713 (inventory-filters + saved-search dedup)
+
+---
+
+
 ## v1.598.23 (2026-06-22)
 
 ### Maintenance
