@@ -1,0 +1,19 @@
+{
+  "note": "Files reading the FUB API key directly from process.env — migrate to getFubApiKey() from lib/crm/fub-env.ts. Count may only shrink.",
+  "files": [
+    "app/actions/dashboard.ts",
+    "app/admin/(protected)/people/[fubPersonId]/page.tsx",
+    "app/api/cron/crm-fub-delta/route.ts",
+    "app/api/cron/daily-broker-digest/route.ts",
+    "app/api/cron/seller-workflow-pause/route.ts",
+    "app/api/cron/weekly-pipeline-digest/route.ts",
+    "app/api/meta/lead-webhook/route.ts",
+    "lib/canonical-lead-tagger.ts",
+    "lib/cma-delivery.ts",
+    "lib/crm/mirror.ts",
+    "lib/expired-owner-lookup.ts",
+    "lib/fub-client.mjs",
+    "lib/fub-snapshot.ts",
+    "lib/fub.ts"
+  ]
+}

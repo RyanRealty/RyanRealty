@@ -16,7 +16,8 @@
 | 1 | 1.5 | Delete confirmed dead code | ✅ done — 32 Homepage* (3,055 LOC) + kpi-dashboard (559) + 4 orphan lib modules |
 | 1 | 1.4 | Canonical money + date formatters | 🔶 helpers + gates ✅; migrating call sites (currency 60→59) |
 | 1 | 1.1 | Unify Supabase clients | 🔶 service-role ratchet gate ✅ + admin-roles migrated (browser/server factories: render-verified pass) |
-| 1 | 1.2, 1.6 | Consolidate duplication | ⬜ todo |
+| 1 | 1.2 | FUB client + env-key collapse | 🔶 single key accessor + auth-header helper + ratchet gate ✅; main client migrated (14 readers left) |
+| 1 | 1.6 | Remaining forks | ⬜ todo |
 | 2 | 2.1 | DAL boundary → default-deny | 🔶 any-table matcher + ratchet 213→0 ✅ (write-path read/write split: todo) |
 | 2 | 2.2 | Split barrels/god-files + server-only | ⬜ todo |
 | 3 | 3.1–3.5 | Governance + tests + env | ⬜ todo |
@@ -30,6 +31,16 @@
 ---
 
 ## Log
+
+### 1.2a — Single FollowUpBoss API-key accessor · 2026-06-22
+
+**Problem (audit MED/HIGH, duplication + fragility).** The FUB key was read under two env names — `FOLLOWUPBOSS_API_KEY` (15 files) and `FUB_API_KEY` (6) — and the main client (`followupboss.ts:23`) read only the former, so a key set under just `FUB_API_KEY` silently disabled half the system. The Basic-auth header was also hand-built `Buffer.from(...)` in 8+ places.
+
+**Change set.** `lib/crm/fub-env.ts` — `getFubApiKey()` (reads `FOLLOWUPBOSS_API_KEY ?? FUB_API_KEY`, so either name works everywhere) + `fubAuthHeader()` (the shared Basic-auth header). `ci:fub-env` ratchet gate wired into `ci:gates`: direct `process.env.FOLLOWUPBOSS_API_KEY|FUB_API_KEY` reads baselined (14 after migrating the main client), new ones fail. Migrated `lib/followupboss.ts` onto the accessor.
+
+**Real-test.** `ci:fub-env` → 14 baselined / 0 new; `followupboss.ts` has 0 direct env reads now; `ci:gates-wired` → 71 gates; `tsc` source clean.
+
+**Next (1.2):** collapse the 3 FUB clients (`followupboss.ts` / `fub.ts` / `fub-client.mjs`) + a single `createLead()` entry, and route the remaining 14 key-readers + the inline `Buffer.from` headers through `fub-env.ts`.
 
 ### 2.1 — Flip the DAL boundary gate to default-deny · 2026-06-22
 

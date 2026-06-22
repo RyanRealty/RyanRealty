@@ -16,11 +16,12 @@ import {
   mirrorSiteEvent,
   mirrorTaskToCrm,
 } from './crm/mirror'
+import { getFubApiKey } from './crm/fub-env'
 
 const FUB_BASE = 'https://api.followupboss.com/v1'
 
 function getAuth(): { apiKey: string; system?: string; systemKey?: string } | null {
-  const apiKey = process.env.FOLLOWUPBOSS_API_KEY?.trim()
+  const apiKey = getFubApiKey()?.trim()
   if (!apiKey) return null
   return {
     apiKey,
