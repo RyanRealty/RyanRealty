@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getMetaPageToken } from '@/lib/meta-env'
 import {
   publishImage,
   publishReel,
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const accessToken = process.env.META_PAGE_ACCESS_TOKEN
+  const accessToken = getMetaPageToken()
   const igUserId = process.env.META_IG_BUSINESS_ACCOUNT_ID
 
   if (!accessToken || !igUserId) {

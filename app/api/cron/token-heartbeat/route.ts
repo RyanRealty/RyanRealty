@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getMetaPageToken } from '@/lib/meta-env'
 import { randomUUID } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { requireSecret } from '@/lib/require-secret'
@@ -52,7 +53,7 @@ interface PlatformResult {
 // 401, refresh never ran, all 3 OAuth tokens drifted to expiry on 2026-05-20.)
 
 async function pingMeta(): Promise<PlatformResult> {
-  const token = process.env.META_PAGE_ACCESS_TOKEN
+  const token = getMetaPageToken()
   if (!token) return { platform: 'meta', status: 'skipped', message: 'No META_PAGE_ACCESS_TOKEN configured' }
   try {
     const r = await fetch(`https://graph.facebook.com/v25.0/me?fields=id,name&access_token=${encodeURIComponent(token)}`)

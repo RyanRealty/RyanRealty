@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getMetaPageToken } from '@/lib/meta-env'
 import {
   publishImage,
   publishReel,
@@ -278,7 +279,7 @@ async function publishToInstagram(
   caption: string,
   coverUrl?: string
 ): Promise<PlatformResult> {
-  const accessToken = process.env.META_PAGE_ACCESS_TOKEN
+  const accessToken = getMetaPageToken()
   const igUserId = process.env.META_IG_BUSINESS_ACCOUNT_ID
 
   if (!accessToken || !igUserId) {
@@ -315,7 +316,7 @@ async function publishToFacebook(
   mediaUrl: string,
   message: string
 ): Promise<PlatformResult> {
-  const accessToken = process.env.META_PAGE_ACCESS_TOKEN
+  const accessToken = getMetaPageToken()
   const pageId = process.env.META_FB_PAGE_ID
 
   if (!accessToken || !pageId) {

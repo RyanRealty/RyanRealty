@@ -1,9 +1,4 @@
 {
   "note": "Files reading the Meta page token directly from process.env -- migrate to getMetaPageToken() from lib/meta-env.ts. Count may only shrink.",
-  "files": [
-    "app/api/cron/token-heartbeat/route.ts",
-    "app/api/social/publish-facebook/route.ts",
-    "app/api/social/publish-instagram/route.ts",
-    "app/api/social/publish/route.ts"
-  ]
+  "files": []
 }

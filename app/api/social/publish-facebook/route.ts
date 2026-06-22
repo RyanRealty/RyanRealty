@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getMetaPageToken } from '@/lib/meta-env'
 import {
   publishFacebookPost,
   publishFacebookPhoto,
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const accessToken = process.env.META_PAGE_ACCESS_TOKEN
+  const accessToken = getMetaPageToken()
   const pageId = process.env.META_FB_PAGE_ID
 
   if (!accessToken || !pageId) {
