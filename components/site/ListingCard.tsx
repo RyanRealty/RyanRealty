@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import { formatPrice } from '@/lib/format/money'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
@@ -28,12 +29,6 @@ export type ListingCardData = {
   /** Scalar virtual-tour / video URL. When present and embeddable, the
    *  VideoListingCard plays it inline; otherwise the card links to detail. */
   tourUrl?: string | null
-}
-
-function formatPrice(n: number | null): string {
-  if (n == null) return '—'
-  // Round to nearest $1k per brand voice
-  return `$${(Math.round(n / 1000) * 1000).toLocaleString()}`
 }
 
 function formatInt(n: number | null): string {

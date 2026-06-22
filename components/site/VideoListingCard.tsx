@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
+import { formatPrice } from '@/lib/format/money'
 import { normalizeEmbed } from '@/lib/video-embed'
 import type { ListingCardData } from '@/components/site/ListingCard'
 import type { VideoEmbed } from '@/lib/data/types/video'
@@ -45,11 +46,6 @@ function toEmbed(norm: NonNullable<ReturnType<typeof normalizeEmbed>>, posterUrl
       isVirtualTour: true,
     },
   ]
-}
-
-function formatPrice(n: number | null): string {
-  if (n == null) return '—'
-  return `$${(Math.round(n / 1000) * 1000).toLocaleString()}`
 }
 
 export default function VideoListingCard({ listing }: { listing: ListingCardData }) {

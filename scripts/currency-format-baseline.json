@@ -41,7 +41,6 @@
     "components/listing/PriceHistory.tsx",
     "components/listing/PriceHistoryChart.tsx",
     "components/listing/SimilarListings.tsx",
-    "components/listing/showcase/ShowcaseKeyFacts.tsx",
     "components/listing/showcase/ShowcaseStickyBar.tsx",
     "components/neighborhood/NeighborhoodHero.tsx",
     "components/neighborhood/NeighborhoodListings.tsx",

@@ -14,7 +14,7 @@
 | 0 | 0.4 | Market-classification helper — a: §0 methodology fix ✅ · b: data-layer threshold consolidation ✅ (page-prose sites: follow-up) | ✅ done (2026-06-21) |
 | 1 | 1.3 | Shared auth guards (`lib/auth/guards.ts`) | ✅ shipped + adopted in 0.2b/d |
 | 1 | 1.5 | Delete confirmed dead code | ✅ done — 32 Homepage* (3,055 LOC) + kpi-dashboard (559) + 4 orphan lib modules |
-| 1 | 1.4 | Canonical money + date formatters | 🔶 helpers + ratchet gates ✅ (60 currency + 86 date sites baselined for migration) |
+| 1 | 1.4 | Canonical money + date formatters | 🔶 helpers + gates ✅; migrating call sites (currency 60→59) |
 | 1 | 1.1 | Unify Supabase clients | 🔶 service-role ratchet gate ✅ + admin-roles migrated (browser/server factories: render-verified pass) |
 | 1 | 1.2, 1.6 | Consolidate duplication | ⬜ todo |
 | 2 | 2.1–2.2 | Make the DAL boundary real | ⬜ todo |

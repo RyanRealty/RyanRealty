@@ -1,4 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card'
+import { formatPrice } from '@/lib/format/money'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { getPropertyTypeLabel } from '@/lib/property-type-labels'
@@ -9,14 +10,6 @@ import { H3 } from '@/components/site/primitives'
 function formatNum(n: number | null | undefined): string {
   if (n == null) return '—'
   return Number(n).toLocaleString()
-}
-
-function formatPrice(n: number | null | undefined): string {
-  if (n == null) return '—'
-  // Brand-voice rule (CLAUDE.md §0.6 + SITE_SPEC line 122): currency rounded
-  // to the nearest thousand. $895,250 → $895,000. $895,750 → $896,000.
-  const rounded = Math.round(Number(n) / 1000) * 1000
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(rounded)
 }
 
 type Fact = { label: string; value: string }
