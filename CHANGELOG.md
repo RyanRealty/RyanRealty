@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.4 (2026-06-22)
+
+### Maintenance
+- test(audit-p3.2): lock the FUB lead-create critical path (sendEvent, fetch-mocked)
+
+---
+
+
 ## v1.599.3 (2026-06-22)
 
 ### Maintenance
