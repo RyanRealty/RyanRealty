@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.26 (2026-06-22)
+
+### Maintenance
+- docs(audit): log shared gate-walker (4 gates DRYed, verified) + tests ->717
+
+---
+
+
 ## v1.598.25 (2026-06-22)
 
 ### Maintenance
