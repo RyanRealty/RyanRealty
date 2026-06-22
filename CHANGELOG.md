@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.21 (2026-06-22)
+
+### Other
+- audit log: record Tier-1 SAFE deferred set done (Zod Stage 1, DAL Part A, collections gate)
+
+---
+
+
 ## v1.599.20 (2026-06-22)
 
 ### Other
