@@ -127,7 +127,10 @@
 
 **Real-test.** `tsc` → source clean. The only post-delete name hits were a string literal (`source: 'visitor'`) and an HTML id (`id="meta-pixel"`), not imports.
 
-**Remaining dead code (follow-up):** `types/database.ts` (5,502 LOC) still has ONE importer (a vendored `video/listing-tour` script) so it can't be plain-deleted; the `experience/` v3 component family needs the same per-file verification pass.
+**Remaining dead code (follow-up).**
+- **`types/database.ts` — NOT dead, corrected.** Re-verified 2026-06-22: its one importer (`video/listing-tour/scripts/prepare-tour.ts:399`, `createClient<Database>(...)`) is load-bearing for the ACTIVE `npm run video:listing-tour:prepare` script (package.json:186). The audit's "dead" label was wrong. Keep it.
+- **3 confirmed-dead lib modules deleted (308 LOC, 2026-06-22):** `lib/community-profiles.ts` (140, superseded by `data/resort-communities.json` + KB community pages), `lib/pulse-brain-content.ts` (99, frozen brain layer), `lib/push-notifications.ts` (69, never wired since 2026-03-30). Each: zero imports + zero references to any export repo-wide + `tsc` source-clean after removal. All git-recoverable if any is wanted back.
+- **`components/site/experience/` family:** all 13 files have >=1 ref, but mostly via the heavily-used `index.ts` barrel (241 refs) which masks downstream consumption. Needs per-SYMBOL consumption tracing (is each export actually rendered by a page?) before any deletion — real breakage risk, deferred.
 
 ### 0.3 — CRM compliance fail-safe (TCPA) · 2026-06-21 — PHASE 0 COMPLETE
 
