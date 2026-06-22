@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.4 (2026-06-22)
+
+### Maintenance
+- test(audit-p3.2): unit-test the FUB env-key accessor (getFubApiKey/fubAuthHeader)
+
+---
+
+
 ## v1.598.3 (2026-06-22)
 
 ### Maintenance
