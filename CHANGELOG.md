@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.25 (2026-06-22)
+
+### Other
+- p3.3 Zod env: partition coverage guard + behavior tests (Stage-2 prerequisite)
+
+---
+
+
 ## v1.599.24 (2026-06-22)
 
 ### Other
