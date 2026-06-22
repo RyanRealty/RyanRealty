@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.33 (2026-06-22)
+
+### Other
+- p2.2 add server-only markers to 7 server modules (build-verified) + vitest stub
+
+---
+
+
 ## v1.599.32 (2026-06-22)
 
 ### Other
