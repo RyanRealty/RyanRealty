@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.30 (2026-06-22)
+
+### Other
+- G36: retire dead Layer 1, salvage + wire the inline-call ratchet (orphan 2->1)
+
+---
+
+
 ## v1.599.29 (2026-06-22)
 
 ### Other
