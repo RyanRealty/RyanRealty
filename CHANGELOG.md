@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.24 (2026-06-22)
+
+### Other
+- p2.2 freeze god-files: ci:file-size-budget ratchet (no-code-touch)
+
+---
+
+
 ## v1.599.23 (2026-06-22)
 
 ### Other
