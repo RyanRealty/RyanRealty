@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.36 (2026-06-22)
+
+### Other
+- p3.3 Zod env Stage 2: fail loud at runtime boot on a missing required var (build-safe)
+
+---
+
+
 ## v1.599.35 (2026-06-22)
 
 ### Other
