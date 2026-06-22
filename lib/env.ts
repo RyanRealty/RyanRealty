@@ -7,10 +7,14 @@
  * validateEnvRuntime (server boot) keep their EXACT prior behavior: they return
  * { ok, missing } and NEVER throw — app/layout.tsx console.error's on failure.
  *
- * Stage 2 (deliberately NOT done here): make validation build-FAILING by throwing
- * in instrumentation.ts. That needs a verified `next build` against the real
- * Vercel env + a conservative required-vs-optional sign-off, since over-marking a
- * var as required bricks every deploy. Until then this is additive + non-throwing.
+ * Stage 2 (DONE 2026-06-22, runtime-boot only): assertRuntimeEnv() throws if a
+ * required var is missing, called from instrumentation.ts register() in the
+ * nodejs runtime and SKIPPED during `next build` (NEXT_PHASE) — so a missing
+ * runtime-only var fails the running server loudly but can NEVER brick a deploy's
+ * build. Verified with a build that has a required runtime var unset (still
+ * succeeds). NOT done: a build-FAILING throw over the broader ~159-key surface,
+ * which would need a conservative required-vs-optional sign-off against the real
+ * Vercel build env (over-marking a build-required var bricks every deploy).
  *
  * zod is already a build dependency (used across lib/data/*); this joins it.
  */
@@ -89,6 +93,27 @@ export function validateEnv(): { ok: boolean; missing: string[] } {
 export function validateEnvRuntime(): { ok: boolean; missing: string[] } {
   const missing = [...requiredForBuild, ...requiredForRuntime].filter((key) => !getEnv(key))
   return { ok: missing.length === 0, missing }
+}
+
+/**
+ * Stage 2 — fail LOUD at runtime server boot if a required var is missing,
+ * instead of limping along and breaking in confusing ways downstream.
+ *
+ * Called ONLY from instrumentation.ts register() in the nodejs runtime, and ONLY
+ * when NOT in the `next build` phase (the caller gates on NEXT_PHASE). That gate
+ * is the safety guarantee: a missing runtime-only var (e.g. SPARK_API_KEY, which
+ * the build doesn't need) can never brick a deploy's build — it only fails the
+ * running server, where you WANT it to fail loud. In healthy production all four
+ * required vars are present, so this throws never fires.
+ */
+export function assertRuntimeEnv(): void {
+  const { ok, missing } = validateEnvRuntime()
+  if (!ok) {
+    throw new Error(
+      `[env] Missing required environment variable(s): ${missing.join(', ')}. ` +
+        'Set them in .env.local (dev) or the Vercel project environment (prod).',
+    )
+  }
 }
 
 export function logOptionalEnv(): void {

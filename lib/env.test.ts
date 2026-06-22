@@ -7,6 +7,7 @@ import {
   validateEnv,
   validateEnvRuntime,
   getValidatedEnv,
+  assertRuntimeEnv,
 } from './env'
 
 // Save/restore every env key the schema knows about so these tests can mutate
@@ -81,5 +82,23 @@ describe('getValidatedEnv', () => {
     for (const k of ALL_KEYS) delete process.env[k]
     expect(() => getValidatedEnv()).not.toThrow()
     expect(typeof getValidatedEnv()).toBe('object')
+  })
+})
+
+describe('assertRuntimeEnv (Stage 2 boot fail-fast)', () => {
+  it('does not throw when all required vars are set', () => {
+    setAll()
+    expect(() => assertRuntimeEnv()).not.toThrow()
+  })
+
+  it('throws and names the missing required var', () => {
+    setAll()
+    delete process.env.SPARK_API_KEY
+    expect(() => assertRuntimeEnv()).toThrow(/SPARK_API_KEY/)
+  })
+
+  it('reports every missing required var', () => {
+    for (const k of ALL_KEYS) delete process.env[k]
+    expect(() => assertRuntimeEnv()).toThrow(/NEXT_PUBLIC_SUPABASE_URL/)
   })
 })
