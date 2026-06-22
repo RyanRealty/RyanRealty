@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.12 (2026-06-22)
+
+### Bug Fixes
+- fix(audit-3.x): register PAGE_REVIEW_REDESIGN_RUNBOOK in DEVELOPMENT_PROCESS (greens ci:process-canon / the gate chain)
+
+---
+
+
 ## v1.599.11 (2026-06-22)
 
 ### Bug Fixes
