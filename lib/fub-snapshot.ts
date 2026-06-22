@@ -1,3 +1,5 @@
+import { getFubApiKey } from './crm/fub-env'
+
 /**
  * Thin FUB auth helper for the marketing-snapshot-fub ingestor.
  *
@@ -14,7 +16,7 @@
  * is not configured. The caller should bail early on null.
  */
 export function getFubHeaders(): HeadersInit | null {
-  const apiKey = process.env.FOLLOWUPBOSS_API_KEY?.trim()
+  const apiKey = getFubApiKey()?.trim()
   if (!apiKey) return null
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

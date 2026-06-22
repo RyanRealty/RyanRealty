@@ -10,10 +10,7 @@
     "app/api/meta/lead-webhook/route.ts",
     "lib/canonical-lead-tagger.ts",
     "lib/cma-delivery.ts",
-    "lib/crm/mirror.ts",
     "lib/expired-owner-lookup.ts",
-    "lib/fub-client.mjs",
-    "lib/fub-snapshot.ts",
-    "lib/fub.ts"
+    "lib/fub-client.mjs"
   ]
 }

@@ -16,17 +16,18 @@
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { getFubApiKey } from './fub-env'
 
 const FUB_BASE = 'https://api.followupboss.com/v1'
 
 const BROKER_BY_FUB_USER: Record<number, string> = { 1: 'matt', 2: 'rebecca', 3: 'paul' }
 
 function mirrorEnabled(): boolean {
-  return process.env.CRM_MIRROR_ENABLED !== 'false' && !!process.env.FOLLOWUPBOSS_API_KEY
+  return process.env.CRM_MIRROR_ENABLED !== 'false' && !!getFubApiKey()
 }
 
 function fubGetHeaders(): HeadersInit | null {
-  const key = process.env.FOLLOWUPBOSS_API_KEY?.trim()
+  const key = getFubApiKey()?.trim()
   if (!key) return null
   return {
     Authorization: `Basic ${Buffer.from(`${key}:`).toString('base64')}`,

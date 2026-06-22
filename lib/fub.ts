@@ -3,6 +3,8 @@
  * Pushes events to FUB with system "ryan-realty-platform" and source from site URL.
  */
 
+import { getFubApiKey } from './crm/fub-env'
+
 const FUB_EVENTS_URL = 'https://api.followupboss.com/v1/events'
 
 export interface FubPerson {
@@ -23,7 +25,7 @@ export async function pushToFub(
   person: FubPerson,
   properties?: Record<string, unknown>
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const apiKey = process.env.FOLLOWUPBOSS_API_KEY?.trim()
+  const apiKey = getFubApiKey()?.trim()
   if (!apiKey) {
     return { ok: false, error: 'FOLLOWUPBOSS_API_KEY is not set' }
   }
