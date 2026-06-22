@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.28 (2026-06-22)
+
+### Maintenance
+- docs(audit): sync orphan-gate count 24->7 (CLAUDE.md + MECHANICAL_GATES) + test buildMarketFaq
+
+---
+
+
 ## v1.598.27 (2026-06-22)
 
 ### Maintenance
