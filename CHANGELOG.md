@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.8 (2026-06-22)
+
+### Maintenance
+- refactor(audit-p1.1): remove 3 more dead getServiceSupabase helpers
+
+---
+
+
 ## v1.598.7 (2026-06-22)
 
 ### Maintenance
