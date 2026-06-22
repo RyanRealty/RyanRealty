@@ -168,14 +168,6 @@ app/admin/(protected)/crm/sequences/page.tsx
 app/admin/(protected)/crm/approvals/page.tsx
 app/admin/(protected)/crm/workflows/page.tsx
 app/admin/(protected)/sign-off/page.tsx
-components/site/HomepageHeroV3.tsx
-components/site/HomepagePulseTicker.tsx
-components/site/HomepageListingsMosaic.tsx
-components/site/HomepageNeighborhoodMap.tsx
-components/site/HomepageMarketBand.tsx
-components/site/HomepageVoiceBlock.tsx
-components/site/HomepageToolsRow.tsx
-components/site/HomepageTrustBand.tsx
 # Admin sidebar: sticky-below-61px-header needs h-[calc(100vh-61px)] — no
 # locked-ladder step for viewport-minus-header heights (same exception class
 # as the admin report/chart pages above).

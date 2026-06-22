@@ -12,8 +12,9 @@
 | 0 | 0.2 | Auth/access holes — a: open-redirect ✅ · b: admin CRON_SECRET mutations ✅ · c: access-denied loop ✅ · d: unauthed service-role action ✅ | ✅ done (2026-06-20) |
 | 0 | 0.3 | CRM compliance fail-safe — enroll fail-closed ✅ · STOP/START reversible ✅ (meta-webhook routing: follow-up) | ✅ done (2026-06-21) |
 | 0 | 0.4 | Market-classification helper — a: §0 methodology fix ✅ · b: data-layer threshold consolidation ✅ (page-prose sites: follow-up) | ✅ done (2026-06-21) |
-| 1 | 1.3 | Shared auth guards (`lib/auth/guards.ts`) | ✅ shipped (foundation; adopt in 0.2b/d) |
-| 1 | 1.1, 1.2, 1.4–1.6 | Consolidate duplication | ⬜ todo |
+| 1 | 1.3 | Shared auth guards (`lib/auth/guards.ts`) | ✅ shipped + adopted in 0.2b/d |
+| 1 | 1.5 | Delete confirmed dead code | 🔶 in progress — 32 Homepage* (3,055 LOC) ✅ |
+| 1 | 1.1, 1.2, 1.4, 1.6 | Consolidate duplication | ⬜ todo |
 | 2 | 2.1–2.2 | Make the DAL boundary real | ⬜ todo |
 | 3 | 3.1–3.5 | Governance + tests + env | ⬜ todo |
 
@@ -26,6 +27,16 @@
 ---
 
 ## Log
+
+### 1.5a — Delete 32 dead Homepage* prototype components · 2026-06-21
+
+**Problem (audit MED, dead code).** `components/site/Homepage*` = 3 abandoned homepage prototype generations (Cine / V6 / HeroV3 families), 32 files / ~3,055 LOC. The live homepage is 100% KB; re-verified **zero external importers** (the 5 that looked live only reference each other).
+
+**Change set.** `git rm` all 32 `components/site/Homepage*`. Cleaned the stale entries they left in the debt baselines (the honest ratchet "decrease"): `scripts/shadcn-burndown-baseline.json` 244→238 (existence-filtered), `.design-token-lint-ignore` 199→191 (dropped deleted-file paths).
+
+**Real-test.** `tsc` → source clean. `ci:design-tokens`, `ci:shadcn-burndown`, `ci:mockup-parity`, `ci:gates-wired` → all PASS. (The `mockup-parity` baseline still lists `HomepageV6Hero` as a required-but-missing component for the dead `homepage-v6` ui_kit contract — that's the "8 competing homepage contracts" follow-up, not a live route.)
+
+**Next:** continue 1.5 — `kpi-dashboard` (559 LOC, 0 inbound refs) and the 9 orphan top-level `lib/` modules.
 
 ### 0.3 — CRM compliance fail-safe (TCPA) · 2026-06-21 — PHASE 0 COMPLETE
 

@@ -1,5 +1,5 @@
 {
-  "count": 244,
+  "count": 238,
   "files": [
     "app/account/buying-preferences/BuyingPreferencesForm.tsx",
     "app/account/buying-preferences/page.tsx",
@@ -219,12 +219,6 @@
     "components/site/AttributedBrokerCard.client.tsx",
     "components/site/BrokerContactCard.tsx",
     "components/site/CityComparisonTable.tsx",
-    "components/site/HomepageCineCloser.tsx",
-    "components/site/HomepageCineSearch.client.tsx",
-    "components/site/HomepageCineSell.tsx",
-    "components/site/HomepageV6AskBar.client.tsx",
-    "components/site/HomepageV6Closer.tsx",
-    "components/site/HomepageV6Sell.tsx",
     "components/site/LeadCaptureBlock.tsx",
     "components/site/ListingCard.tsx",
     "components/site/MobileNav.tsx",
