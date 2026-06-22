@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.31 (2026-06-22)
+
+### Other
+- audit log: record tool-discipline salvage; safely-completable set exhausted
+
+---
+
+
 ## v1.599.30 (2026-06-22)
 
 ### Other
