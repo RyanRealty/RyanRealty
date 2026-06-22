@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { StagePill } from '@/components/console/StatusPill'
 import { cn } from '@/lib/utils'
+import { formatDate } from '@/lib/format/date'
 
 /** Live engagement for one lead, resolved from active visitor sessions. */
 type LeadPulse = { score: number; intent: string | null; hot: boolean }
@@ -28,7 +29,9 @@ function fmtAgo(iso: string | null): string {
   if (hrs < 24) return `${hrs}h ago`
   const days = Math.round(hrs / 24)
   if (days < 30) return `${days}d ago`
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })
+  // iso is guaranteed valid here (the NaN guard above early-returns); formatDate's
+  // default opts + forced America/Los_Angeles make this byte-identical.
+  return formatDate(iso)
 }
 
 function primaryEmail(p: CrmPersonRow): string | null {

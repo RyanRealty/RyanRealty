@@ -9,6 +9,7 @@ import { isResortCommunity } from '@/lib/resort-communities'
 import { toggleSavedListing } from '@/app/actions/saved-listings'
 import { toggleLikeListing } from '@/app/actions/likes'
 import { cn } from '@/lib/utils'
+import { formatDate } from '@/lib/format/date'
 import CardActionBar from '@/components/ui/CardActionBar'
 import { useComparison } from '@/contexts/ComparisonContext'
 import CardBadges from '@/components/ui/CardBadges'
@@ -46,7 +47,9 @@ function formatListedDate(dateText: string | null | undefined): string | null {
   if (!dateText) return null
   const d = new Date(dateText)
   if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })
+  // formatDate's default opts (short month, numeric day/year) + forced
+  // America/Los_Angeles equal this exact call — byte-identical for a valid Date.
+  return formatDate(d)
 }
 
 function formatActivityDateTime(dateText: string | null | undefined): string | null {
