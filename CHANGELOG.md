@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.597.3 (2026-06-22)
+
+### Bug Fixes
+- fix(audit-p2.1): flip DAL boundary gate to default-deny (any table, not a 26-table denylist)
+
+---
+
+
 ## v1.597.2 (2026-06-22)
 
 ### Maintenance
