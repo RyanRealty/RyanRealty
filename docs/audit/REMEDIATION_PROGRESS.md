@@ -20,7 +20,7 @@
 | 1 | 1.6 | Remaining forks | ⬜ todo |
 | 2 | 2.1 | DAL boundary → default-deny | 🔶 any-table matcher + ratchet 213→0 ✅ (write-path read/write split: todo) |
 | 2 | 2.2 | Split barrels/god-files + server-only | ⬜ todo |
-| 3 | 3.x | Governance + tests + env | 🔶 orphan-gate triage (24→12 wired) ✅ · FUB accessor test ✅; shared gate-lib / typed env / more tests: todo |
+| 3 | 3.x | Governance + tests + env | 🔶 orphan-gate triage (24→9 wired) ✅ · FUB accessor test ✅; shared gate-lib / typed env / more tests: todo |
 
 ## Discovered (cross-step follow-ups, not yet scheduled)
 
@@ -40,7 +40,9 @@
 
 **Real-test.** All 12 pass; `ci:gates-wired` → 83 ci:* gates wired / 0 orphaned, 12 file-orphans baselined; meta-gate green.
 
-**Remaining (12 orphans):** 3 are DB/network-dependent (`legacy-redirects`, `missing-videos`, `video-urls`) — wire to a creds-bearing workflow, not the static chain; 9 currently FAIL (`broker-facts`, `bundle-budget`, `canonical-listings`, `collections-wiring`, `email-brand-tokens`, `geo-imagery`, `heading-display`, `producer-skills`, `tool-discipline`) — each needs its violations fixed or the gate retired. Tracked for the next passes.
+**Second pass (same day): 12 → 9.** Of the 9 failing gates, 3 support a `--write-baseline` ratchet and pass once baselined → wired: `broker-facts` (bans literal phone numbers, use lib/brand/contact.ts), `canonical-listings` (bans new legacy-ListingCard usage), `heading-display`. Baselines committed alongside.
+
+**Remaining (9 orphans):** 3 DB/network-dependent (`legacy-redirects`, `missing-videos`, `video-urls`) → wire to a creds-bearing workflow; 6 fail with no baseline mechanism (`bundle-budget`, `tool-discipline` fail even after baseline; `collections-wiring`, `email-brand-tokens`, `geo-imagery`, `producer-skills`) — each needs its violations fixed or the gate retired (several relate to the frozen marketing-brain producer layer). Tracked for the next passes.
 
 ### 1.2a — Single FollowUpBoss API-key accessor · 2026-06-22
 

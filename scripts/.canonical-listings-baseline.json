@@ -1,15 +1,9 @@
 {
   "allowed": [
+    "app/account/history/page.tsx",
+    "app/account/page.tsx",
     "app/account/saved-homes/page.tsx",
-    "app/dashboard/collections/page.tsx",
-    "app/dashboard/history/page.tsx",
-    "app/dashboard/likes/page.tsx",
-    "app/dashboard/page.tsx",
-    "app/dashboard/saved/page.tsx",
-    "app/listings/ListingsMapSplitView.tsx",
-    "app/listings/page.tsx",
     "app/reports/ReportsIndexContent.tsx",
-    "app/search/[...slug]/page.tsx",
     "components/ActivityFeedSlider.tsx",
     "components/FeedInfiniteList.tsx",
     "components/HomeListingsSection.tsx",
