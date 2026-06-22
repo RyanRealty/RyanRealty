@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.597.0 (2026-06-22)
+
+### Features
+- feat(audit-p1.4): canonical date/timezone formatter + ratchet gate
+
+---
+
+
 ## v1.596.0 (2026-06-22)
 
 ### Features
