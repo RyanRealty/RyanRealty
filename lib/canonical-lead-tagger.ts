@@ -21,6 +21,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { addPersonTags, assignPersonToUser, setPersonCustomFields, postLeadOriginNote } from '@/lib/followupboss'
+import { getFubApiKey } from '@/lib/crm/fub-env'
 import type { LeadOriginContext } from '@/lib/fub-lead-origin-note'
 
 export type LeadAudience = 'seller' | 'buyer'
@@ -161,7 +162,7 @@ const HARD_STOP_TAGS = new Set([
 export async function isHardStopped(personId: number): Promise<boolean> {
   try {
     const url = `https://api.followupboss.com/v1/people/${personId}?fields=id,tags`
-    const key = process.env.FOLLOWUPBOSS_API_KEY?.trim()
+    const key = getFubApiKey()?.trim()
     if (!key) return false
     const auth = Buffer.from(`${key}:`).toString('base64')
     const res = await fetch(url, { headers: { Authorization: `Basic ${auth}` }, cache: 'no-store' })

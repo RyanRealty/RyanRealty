@@ -29,6 +29,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import type { CountyOwner, SkipTraceResult } from './owner-resolution.d.ts'
+import { getFubApiKey } from './crm/fub-env'
 
 const APIFY_BASE = 'https://api.apify.com/v2'
 const APIFY_DIAL_ACTOR_ID = 'apify/web-scraper'  // generic scraper; can be replaced with a custom actor
@@ -83,7 +84,7 @@ function getSupabase() {
  * (which we populate from geocoding).
  */
 export async function fubAddressMatch(streetAddress: string, city: string): Promise<OwnerLookupResult | null> {
-  const key = process.env.FOLLOWUPBOSS_API_KEY?.trim()
+  const key = getFubApiKey()?.trim()
   if (!key) return null
 
   const norm = streetAddress.trim().toLowerCase().replace(/\s+/g, ' ')

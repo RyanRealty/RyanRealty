@@ -20,6 +20,7 @@
  */
 
 import 'server-only'
+import { getFubApiKey } from '@/lib/crm/fub-env'
 
 import React from 'react'
 import { renderToBuffer } from '@react-pdf/renderer'
@@ -617,9 +618,7 @@ async function resolveAssignedBroker(params: {
 }
 
 async function getFubAssignedUserEmail(personId: number): Promise<string | null> {
-  const apiKey = (
-    process.env.FOLLOWUPBOSS_API_KEY ?? process.env.FUB_API_KEY ?? ''
-  ).trim()
+  const apiKey = (getFubApiKey() ?? '').trim()
   if (!apiKey) return null
   try {
     const auth = `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}`

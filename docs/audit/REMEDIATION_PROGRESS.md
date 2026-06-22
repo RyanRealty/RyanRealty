@@ -16,7 +16,7 @@
 | 1 | 1.5 | Delete confirmed dead code | ✅ done — 32 Homepage* (3,055 LOC) + kpi-dashboard (559) + 4 orphan lib modules |
 | 1 | 1.4 | Canonical money + date formatters | 🔶 helpers + gates ✅; migrating call sites (currency 60→59) |
 | 1 | 1.1 | Unify Supabase clients | 🔶 service-role ratchet gate ✅ + admin-roles migrated (browser/server factories: render-verified pass) |
-| 1 | 1.2 | FUB client + env-key collapse | 🔶 accessor + auth-header helper + gate ✅; migrating readers (11 left); 3-client merge todo |
+| 1 | 1.2 | FUB client + env-key collapse | 🔶 accessor + auth-header helper + gate ✅; migrating readers (8 left); 3-client merge todo |
 | 1 | 1.6 | Remaining forks | ⬜ todo |
 | 2 | 2.1 | DAL boundary → default-deny | 🔶 any-table matcher + ratchet 213→0 ✅ (write-path read/write split: todo) |
 | 2 | 2.2 | Split barrels/god-files + server-only | ⬜ todo |

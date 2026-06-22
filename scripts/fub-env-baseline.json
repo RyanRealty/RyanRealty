@@ -8,9 +8,6 @@
     "app/api/cron/seller-workflow-pause/route.ts",
     "app/api/cron/weekly-pipeline-digest/route.ts",
     "app/api/meta/lead-webhook/route.ts",
-    "lib/canonical-lead-tagger.ts",
-    "lib/cma-delivery.ts",
-    "lib/expired-owner-lookup.ts",
     "lib/fub-client.mjs"
   ]
 }
