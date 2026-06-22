@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.39 (2026-06-22)
+
+### Other
+- plan: relocate CRM Contact-360 runbook to docs/audit/ (durable, committed)
+
+---
+
+
 ## v1.599.38 (2026-06-22)
 
 ### Other
