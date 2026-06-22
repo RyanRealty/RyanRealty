@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.598.21 (2026-06-22)
+
+### Bug Fixes
+- fix(audit-p3.x): strip banned dashes from cma producer SKILL + wire ci:producer-skills (orphan 8->7)
+
+---
+
+
 ## v1.598.20 (2026-06-22)
 
 ### Bug Fixes
