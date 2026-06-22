@@ -2,15 +2,7 @@ import { NextResponse } from 'next/server'
 import React from 'react'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { ComparisonPdfDocument, type ComparisonListing } from '@/lib/pdf/comparison-pdf'
-import { createClient } from '@supabase/supabase-js'
 import { checkRateLimit } from '@/lib/rate-limit'
-
-function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) throw new Error('Supabase service role not configured')
-  return createClient(url, key)
-}
 
 export async function POST(request: Request) {
   const rl = await checkRateLimit(request, 'strict')
@@ -28,7 +20,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing listingIds' }, { status: 400 })
   }
 
-  void getServiceSupabase
   const { getListingTiles, getListingDetailPhotos } = await import('@/lib/data')
   // DAL: pull tiles by both keying paths (ListingKey OR ListNumber).
   const [byNumberTiles, byKeyTiles] = await Promise.all([

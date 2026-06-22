@@ -4,20 +4,12 @@ import { renderToBuffer } from '@react-pdf/renderer'
 import { getSession } from '@/app/actions/auth'
 import { getCachedCMA, computeCMA } from '@/lib/cma'
 import { CMAPdfDocument } from '@/lib/pdf/cma-pdf'
-import { createClient } from '@supabase/supabase-js'
 import { sendEvent, findPersonByEmail } from '@/lib/followupboss'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { listingDetailPath } from '@/lib/slug'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-
-function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) throw new Error('Supabase service role not configured')
-  return createClient(url, key)
-}
 
 export async function POST(request: Request) {
   const rl = await checkRateLimit(request, 'strict')
@@ -44,7 +36,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No valuation available' }, { status: 404 })
   }
 
-  void getServiceSupabase
   const { getPropertyById, getCityListings: getCityListingsDAL } = await import('@/lib/data')
   const p = await getPropertyById(propertyId)
 
