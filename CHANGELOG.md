@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.23 (2026-06-22)
+
+### Other
+- p2.1 ratchet app/actions raw reads (ci:dal-actions-reads), baseline 266
+
+---
+
+
 ## v1.599.22 (2026-06-22)
 
 ### Other
