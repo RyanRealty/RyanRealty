@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.19 (2026-06-22)
+
+### Other
+- p2.1 DAL Part A: cached-read write classifier in check-dal-boundary.mjs
+
+---
+
+
 ## v1.599.18 (2026-06-22)
 
 ### Other
