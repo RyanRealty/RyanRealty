@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.2 (2026-06-22)
+
+### Maintenance
+- test(audit-p3.2): lock YoY year-series grouping + CMA static-map URL builder
+
+---
+
+
 ## v1.599.1 (2026-06-22)
 
 ### Maintenance
