@@ -171,13 +171,13 @@ WHERE id = '<id>';
 
 Compute `slug` from the subject address (e.g. `cma-21042-robin`).  kebab-case, ≤40 chars, prefix `cma-`.
 
-**CANONICAL SLUG + SINGLE PATH (locked 2026-06-13, Matt directive — enforced by G47 `scripts/check-cma-routing.mjs`).** Every CMA routes through THIS skill, and a property gets exactly ONE slug. Rules:
-- **The canonical slug IS the action row's `target` slug** (`target = 'cma:<slug>'`). Use it verbatim. Do NOT re-derive a second slug from the address — that is how a duplicate was created (`cma-62285-deer` vs `cma-62285-deer-usa`). If you are building from an address with no action row, create the action row first (via `marketing_brain_skills/produce/`), then use its target slug.
+**CANONICAL SLUG + SINGLE PATH (locked 2026-06-13, Matt directive, enforced by G47 `scripts/check-cma-routing.mjs`).** Every CMA routes through THIS skill, and a property gets exactly ONE slug. Rules:
+- **The canonical slug IS the action row's `target` slug** (`target = 'cma:<slug>'`). Use it verbatim. Do NOT re-derive a second slug from the address. That is how a duplicate was created (`cma-62285-deer` vs `cma-62285-deer-usa`). If you are building from an address with no action row, create the action row first (via `marketing_brain_skills/produce/`), then use its target slug.
 - **Before building, check for an existing CMA for this property:** look in `public.cmas` (by address), `public/cmas/<slug>/`, and `public/drafts/<slug>/`. If one exists, UPDATE it in place at its existing slug. Never create a parallel slug for the same property.
 - One property = one slug = one CMA. The gate fails the build if two committed slugs normalize to the same address (including the `-usa`/country-suffix alias case).
 - CMAs are produced ONLY by this skill, never by `scripts/build_cma_wrapper.py` (retired stub) or any copy-and-relabel path.
 
-**Client-doc hygiene (locked 2026-06-13):** never expose internal revision history or prior-draft numbers in the client-facing CMA (no "v1 said $975k", no "the earlier estimate"). Present the current valuation confidently. Internal change-tracking lives in `out/<slug>/build-spec*.json`, not the deliverable. And never INFER a water source — state well type (community vs private) and septic from the authoritative record or the seller, never from an area guess (Step 3.6).
+**Client-doc hygiene (locked 2026-06-13):** never expose internal revision history or prior-draft numbers in the client-facing CMA (no "v1 said $975k", no "the earlier estimate"). Present the current valuation confidently. Internal change-tracking lives in `out/<slug>/build-spec*.json`, not the deliverable. And never INFER a water source. State well type (community vs private) and septic from the authoritative record or the seller, never from an area guess (Step 3.6).
 
 **Step 2.  Load mandatory references**
 

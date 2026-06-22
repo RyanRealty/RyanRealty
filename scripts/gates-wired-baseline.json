@@ -7,7 +7,6 @@
     "check-geo-imagery.mjs",
     "check-legacy-redirects.mjs",
     "check-missing-videos.mjs",
-    "check-producer-skills.mjs",
     "check-tool-discipline.mjs",
     "check-video-urls.mjs"
   ]
