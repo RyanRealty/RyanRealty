@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.9 (2026-06-22)
+
+### Maintenance
+- docs(audit): review-pass capstone — final-state handoff (safe portion complete)
+
+---
+
+
 ## v1.599.8 (2026-06-22)
 
 ### Maintenance
