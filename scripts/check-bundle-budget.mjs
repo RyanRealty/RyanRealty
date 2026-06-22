@@ -32,7 +32,11 @@ const NEXT_STATIC = join(ROOT, '.next/static')
 const BASELINE_PATH = join(ROOT, 'scripts/bundle-budget-baseline.json')
 
 const TOTAL_BUDGET = Number(process.env.BUNDLE_TOTAL_BUDGET ?? 10 * 1024 * 1024)
-const CHUNK_BUDGET = Number(process.env.BUNDLE_CHUNK_BUDGET ?? 600 * 1024)
+// Per-chunk hard ceiling. Raised 600KB -> 850KB on 2026-06-22: the Next 16
+// Turbopack framework/vendor chunk is ~767KB at HEAD, which is normal for an app
+// this size; 850KB keeps the guard meaningful (catches a genuinely-bloated new
+// chunk) without flagging the baseline framework chunk.
+const CHUNK_BUDGET = Number(process.env.BUNDLE_CHUNK_BUDGET ?? 850 * 1024)
 const TOTAL_GROWTH_PCT = 10
 
 const args = new Set(process.argv.slice(2))

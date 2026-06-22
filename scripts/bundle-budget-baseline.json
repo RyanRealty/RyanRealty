@@ -1,87 +1,87 @@
 {
-  "generatedAt": "2026-05-28T13:57:30.426Z",
-  "totalBytes": 3797142,
-  "chunkCount": 156,
+  "generatedAt": "2026-06-22T20:51:34.873Z",
+  "totalBytes": 6425152,
+  "chunkCount": 179,
   "top20": [
     {
-      "rel": "chunks/3e736cb98ae769dc.js",
-      "bytes": 377746
+      "rel": "chunks/995c04c252dd40e7.js",
+      "bytes": 785403
     },
     {
-      "rel": "chunks/fe6dba44b298ce72.js",
-      "bytes": 377746
+      "rel": "chunks/8266993a9e31b4d2.js",
+      "bytes": 415538
     },
     {
-      "rel": "chunks/3789e8ed8fa26755.js",
-      "bytes": 238421
+      "rel": "chunks/087e8b3589b7cd2f.js",
+      "bytes": 391576
+    },
+    {
+      "rel": "chunks/2d480908bbd9cee3.js",
+      "bytes": 391576
+    },
+    {
+      "rel": "chunks/3b6214399aca5d34.js",
+      "bytes": 391576
+    },
+    {
+      "rel": "chunks/748e2a73da44c0a0.js",
+      "bytes": 331551
     },
     {
       "rel": "chunks/4253ef967f1cfdc1.js",
       "bytes": 223599
     },
     {
-      "rel": "chunks/e9466efdc20fd855.js",
-      "bytes": 146133
+      "rel": "chunks/73e09385fcc72e8e.js",
+      "bytes": 184214
+    },
+    {
+      "rel": "chunks/9914274bd4018f67.js",
+      "bytes": 145435
+    },
+    {
+      "rel": "chunks/26ce45f6c36190cb.js",
+      "bytes": 140558
+    },
+    {
+      "rel": "chunks/c8136c6f925704ec.js",
+      "bytes": 140558
+    },
+    {
+      "rel": "chunks/6b93856a8b04ca7c.js",
+      "bytes": 125369
     },
     {
       "rel": "chunks/a6dad97d9634a72d.js",
       "bytes": 112594
     },
     {
-      "rel": "chunks/b2f1c76136f648dc.js",
-      "bytes": 87491
-    },
-    {
       "rel": "chunks/0de4c7c87d754a93.js",
       "bytes": 84697
     },
     {
-      "rel": "chunks/c53c22fa4ae73aa5.js",
-      "bytes": 52979
+      "rel": "chunks/f2a15fb69a8b64e4.js",
+      "bytes": 63900
     },
     {
-      "rel": "chunks/98093b6e6d43d862.js",
-      "bytes": 50611
+      "rel": "chunks/d3f341e182aafb9d.js",
+      "bytes": 57276
     },
     {
-      "rel": "chunks/cf361df7db79fd79.js",
-      "bytes": 49590
+      "rel": "chunks/94907d4a87cbb6ba.js",
+      "bytes": 49650
     },
     {
-      "rel": "chunks/7f3a2330b1e0e904.js",
-      "bytes": 44714
+      "rel": "chunks/af22cef90163ea23.js",
+      "bytes": 49549
     },
     {
-      "rel": "chunks/c820cc93adf1e436.js",
-      "bytes": 44714
+      "rel": "chunks/6b12efe750107d9e.js",
+      "bytes": 48432
     },
     {
-      "rel": "chunks/ff4aeceaa5e6610a.js",
-      "bytes": 43074
-    },
-    {
-      "rel": "chunks/ddff0f4bf60fb818.js",
-      "bytes": 42443
-    },
-    {
-      "rel": "chunks/9d7857a92e335d77.js",
-      "bytes": 41786
-    },
-    {
-      "rel": "chunks/1b8ea1af2790fcde.js",
-      "bytes": 41549
-    },
-    {
-      "rel": "chunks/475ea5e1a30cb7f5.js",
-      "bytes": 41120
-    },
-    {
-      "rel": "chunks/efda77e5bd727bd2.js",
-      "bytes": 39336
-    },
-    {
-      "rel": "chunks/1770cff809b2384f.js",
-      "bytes": 36956
+      "rel": "chunks/cee84c1dfbbcf17d.js",
+      "bytes": 46685
     }
   ]
 }

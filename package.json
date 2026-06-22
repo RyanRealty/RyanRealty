@@ -24,6 +24,8 @@
     "ci:legacy-redirects": "node scripts/check-legacy-redirects.mjs",
     "ci:tool-discipline": "node scripts/check-tool-discipline.mjs",
     "ci:tool-discipline:baseline": "node scripts/check-tool-discipline.mjs --write-baseline",
+    "ci:bundle-budget": "node scripts/check-bundle-budget.mjs",
+    "ci:bundle-budget:baseline": "node scripts/check-bundle-budget.mjs --write-baseline",
     "ci:collections-wiring": "node scripts/check-collections-wiring.mjs",
     "ci:dal-boundary:report": "node scripts/check-dal-boundary.mjs --report",
     "ci:dal-boundary:baseline": "node scripts/check-dal-boundary.mjs --write-baseline",
