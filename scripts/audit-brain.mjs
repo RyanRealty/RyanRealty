@@ -120,7 +120,6 @@ check('Admin UIs + diagnostic tools present', () => {
   const required = [
     'app/admin/(protected)/producers/page.tsx',
     'app/admin/(protected)/approval-queue/page.tsx',
-    'app/admin/(protected)/kpi-dashboard/page.tsx',
     'app/api/admin/run-loop-cycle/route.ts',
     'app/api/admin/run-producer/[id]/route.ts',
     'scripts/loop-health-check.mjs',

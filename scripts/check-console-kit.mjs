@@ -60,7 +60,6 @@ const REQUIRED_KIT_PAGES = [
   'app/admin/(protected)/sign-off/page.tsx',
   // Ops / home cluster
   'app/admin/(protected)/operations/page.tsx',
-  'app/admin/(protected)/kpi-dashboard/page.tsx',
   'app/admin/(protected)/crm/new/page.tsx',
   'app/admin/(protected)/crm/deals/page.tsx',
   'app/admin/(protected)/forms/page.tsx',

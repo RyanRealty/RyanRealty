@@ -13,7 +13,7 @@
 | 0 | 0.3 | CRM compliance fail-safe — enroll fail-closed ✅ · STOP/START reversible ✅ (meta-webhook routing: follow-up) | ✅ done (2026-06-21) |
 | 0 | 0.4 | Market-classification helper — a: §0 methodology fix ✅ · b: data-layer threshold consolidation ✅ (page-prose sites: follow-up) | ✅ done (2026-06-21) |
 | 1 | 1.3 | Shared auth guards (`lib/auth/guards.ts`) | ✅ shipped + adopted in 0.2b/d |
-| 1 | 1.5 | Delete confirmed dead code | 🔶 in progress — 32 Homepage* (3,055 LOC) ✅ |
+| 1 | 1.5 | Delete confirmed dead code | ✅ done — 32 Homepage* (3,055 LOC) + kpi-dashboard (559) + 4 orphan lib modules |
 | 1 | 1.1, 1.2, 1.4, 1.6 | Consolidate duplication | ⬜ todo |
 | 2 | 2.1–2.2 | Make the DAL boundary real | ⬜ todo |
 | 3 | 3.1–3.5 | Governance + tests + env | ⬜ todo |
@@ -36,7 +36,16 @@
 
 **Real-test.** `tsc` → source clean. `ci:design-tokens`, `ci:shadcn-burndown`, `ci:mockup-parity`, `ci:gates-wired` → all PASS. (The `mockup-parity` baseline still lists `HomepageV6Hero` as a required-but-missing component for the dead `homepage-v6` ui_kit contract — that's the "8 competing homepage contracts" follow-up, not a live route.)
 
-**Next:** continue 1.5 — `kpi-dashboard` (559 LOC, 0 inbound refs) and the 9 orphan top-level `lib/` modules.
+### 1.5b — Delete kpi-dashboard route + 4 orphan lib modules · 2026-06-21
+
+**Change set.** Verified zero importers (exact-path grep across app/components/lib/scripts + tsc), then `git rm`:
+- `app/admin/(protected)/kpi-dashboard/` (page + loading + KpiAutoRefresh, 559 LOC) — orphan after the 3-dashboard collapse, no nav/link refs.
+- `lib/meta-pixel.ts` (decoy shadowed by `meta-pixel-helpers.ts`), `lib/activity-tracker.ts`, `lib/ga4-data-api.ts`, `lib/visitor.ts` — top-level modules with zero importers.
+- Removed the now-stale `kpi-dashboard` entries from two non-CI scripts (`check-console-kit.mjs`, `audit-brain.mjs`) so they don't trip when the orphan-gate backlog is triaged.
+
+**Real-test.** `tsc` → source clean. The only post-delete name hits were a string literal (`source: 'visitor'`) and an HTML id (`id="meta-pixel"`), not imports.
+
+**Remaining dead code (follow-up):** `types/database.ts` (5,502 LOC) still has ONE importer (a vendored `video/listing-tour` script) so it can't be plain-deleted; the `experience/` v3 component family needs the same per-file verification pass.
 
 ### 0.3 — CRM compliance fail-safe (TCPA) · 2026-06-21 — PHASE 0 COMPLETE
 
