@@ -6,8 +6,6 @@
     "check-collections-wiring.mjs",
     "check-geo-imagery.mjs",
     "check-legacy-redirects.mjs",
-    "check-missing-videos.mjs",
-    "check-tool-discipline.mjs",
-    "check-video-urls.mjs"
+    "check-tool-discipline.mjs"
   ]
 }

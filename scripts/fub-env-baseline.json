@@ -1,6 +1,4 @@
 {
   "note": "Files reading the FUB API key directly from process.env — migrate to getFubApiKey() from lib/crm/fub-env.ts. Count may only shrink.",
-  "files": [
-    "lib/fub-client.mjs"
-  ]
+  "files": []
 }
