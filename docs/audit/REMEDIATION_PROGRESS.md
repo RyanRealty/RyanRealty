@@ -14,7 +14,7 @@
 | 0 | 0.4 | Market-classification helper — a: §0 methodology fix ✅ · b: data-layer threshold consolidation ✅ (page-prose sites: follow-up) | ✅ done (2026-06-21) |
 | 1 | 1.3 | Shared auth guards (`lib/auth/guards.ts`) | ✅ shipped + adopted in 0.2b/d |
 | 1 | 1.5 | Delete confirmed dead code | ✅ done — 32 Homepage* (3,055 LOC) + kpi-dashboard (559) + 4 orphan lib modules |
-| 1 | 1.4 | Canonical money formatter | 🔶 helper + ratchet gate ✅ (60 call sites baselined for migration) |
+| 1 | 1.4 | Canonical money + date formatters | 🔶 helpers + ratchet gates ✅ (60 currency + 86 date sites baselined for migration) |
 | 1 | 1.1, 1.2, 1.6 | Consolidate duplication | ⬜ todo |
 | 2 | 2.1–2.2 | Make the DAL boundary real | ⬜ todo |
 | 3 | 3.1–3.5 | Governance + tests + env | ⬜ todo |
@@ -37,7 +37,9 @@
 
 **Real-test.** money tests pass; `ci:currency-format` → 60 baselined / 0 new; `ci:gates-wired` → 68 gates; `tsc` source clean. Additive — zero change to currently-published output.
 
-**Next (gradual, ratchet):** migrate the 60 baselined call sites onto the helper (starting with the 2 divergent LP `formatPriceCompact` copies), shrinking the baseline toward 0; then the same for a date/timezone helper.
+**Date helper (same turn).** `lib/format/date.ts` — `formatDate`/`formatDateTime` (default `America/Los_Angeles`) + `date.test.ts`. `ci:date-format` ratchet gate wired into `ci:gates`: 86 inline date formatters baselined (`scripts/date-format-baseline.json`), new ones fail.
+
+**Migration note (currency + date, gradual).** The ~60 currency + ~86 date call sites are heterogeneous — local `formatPrice` defs vary (some round to $1,000 matching the helper, some show exact, some use `$895k` compact style), so a blind codemod would change PUBLISHED prices/dates I can't render-verify from here. Per the additive/flag rule, the helpers + ratchet gates are shipped now (banking the no-new-duplication value); each existing call site migrates in a render-checked pass that shrinks the baseline. Start point for the next pass: the formatters that already round-to-$1,000 (byte-identical to `formatPrice`, e.g. `ShowcaseKeyFacts.tsx`) — zero-output-change migrations first.
 
 ### 1.5a — Delete 32 dead Homepage* prototype components · 2026-06-21
 
