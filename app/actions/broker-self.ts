@@ -1,7 +1,6 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { createServiceClient } from '@/lib/supabase/service'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { revalidatePath } from 'next/cache'
@@ -31,7 +30,6 @@ async function getCurrentBrokerRecord(): Promise<BrokerSelfRow | null> {
   if (!email) return null
   const role = await getAdminRoleForEmail(email)
   if (!role?.brokerId) return null
-  void createServiceClient
   const { getBrokerSelfRecord } = await import('@/lib/data')
   const data = await getBrokerSelfRecord(role.brokerId)
   return (data as BrokerSelfRow | null) ?? null
@@ -54,7 +52,6 @@ export async function updateCurrentBrokerProfile(input: {
 }): Promise<{ ok: boolean; error?: string }> {
   const broker = await getCurrentBrokerRecord()
   if (!broker) return { ok: false, error: 'Broker account not found for this login.' }
-  void createServiceClient
   const payload = {
     bio: input.bio?.trim() || null,
     phone: input.phone?.trim() || null,
@@ -78,7 +75,6 @@ export async function updateCurrentBrokerProfile(input: {
 export async function getCurrentBrokerDashboard() {
   const broker = await getCurrentBrokerRecord()
   if (!broker) return null
-  void createServiceClient
   const { getListingKeysForBrokerByLicense, getListingKeysForBrokerByEmail } = await import('@/lib/data')
   let listingKeys: string[] = []
   if (broker.license_number?.trim()) {
