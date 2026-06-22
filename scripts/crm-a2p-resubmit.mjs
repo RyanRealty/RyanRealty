@@ -34,7 +34,7 @@ const EXECUTE = process.argv.includes('--execute');
 
 // Must match components/site/SmsConsentDisclosure.tsx SMS_CONSENT_TEXT exactly.
 const CONSENT_TEXT =
-  'By submitting, you agree to receive calls and texts from Ryan Realty about your request. Message frequency varies. Msg & data rates may apply. Reply STOP to opt out, HELP for help.';
+  'I agree to receive text messages from Ryan Realty about my request, including property and home-value updates, scheduling, and replies from our team, at the phone number I provided. Consent is not a condition of any purchase or service. Message frequency varies. Msg & data rates may apply. Reply STOP to opt out, HELP for help.';
 
 const CTA_URLS = [
   'https://ryan-realty.com/contact',
@@ -46,7 +46,7 @@ const CTA_URLS = [
 ];
 
 const MESSAGE_FLOW =
-  `End users opt in to SMS by submitting a lead form on ryan-realty.com. Every lead form that collects a phone number displays this consent disclosure directly below the submit button: "${CONSENT_TEXT}" The disclosure links to the privacy policy at https://ryan-realty.com/privacy, which carries the full SMS terms in the section "SMS and text messaging", including the statement that no mobile information is shared with third parties or affiliates for marketing or promotional purposes. The disclosure can be verified live on these pages: ${CTA_URLS.join(', ')}. End users can also opt in by texting our business number first. Opt-out (STOP) and HELP keywords are honored automatically.`;
+  `End users opt in to SMS through a single method: submitting a lead form on ryan-realty.com. Every lead form that collects a phone number displays an explicit, unchecked-by-default SMS consent checkbox, separate from any voice-call consent, with this label: "${CONSENT_TEXT}" The consumer must actively check the box to consent to text messages; a person is only enrolled in SMS when the box is checked, and consent is not a condition of any purchase or service. The checkbox links to the privacy policy at https://ryan-realty.com/privacy (full SMS terms in the "SMS and text messaging" section, including that no mobile information is shared with third parties or affiliates) and the terms of service at https://ryan-realty.com/terms (which carries the SMS program disclosures). The checkbox can be verified live on these pages: ${CTA_URLS.join(', ')}. Opt-out (STOP) and HELP keywords are honored automatically.`;
 
 const CAMPAIGN = {
   UsAppToPersonUsecase: 'LOW_VOLUME',

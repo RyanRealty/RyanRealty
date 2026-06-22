@@ -33,6 +33,8 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   const inquiryType = formData.get('inquiryType')?.toString()?.trim() ?? 'General Inquiry'
   const message = formData.get('message')?.toString()?.trim() ?? ''
   const sessionId = formData.get('sessionId')?.toString()?.trim() ?? ''
+  // A2P/TCPA fail-closed: SMS only when the consent box was actively checked.
+  const smsConsent = formData.get('smsConsent') === 'yes'
 
   if (!email) return { error: 'Email is required' }
 
@@ -125,7 +127,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
         })
         // Instant CRM mirror + auto-enroll (kills the 30-min delta-cron lag).
         const { autoEnrollByFubId } = await import('@/lib/crm/enroll')
-        await autoEnrollByFubId(found.id).catch((e: unknown) =>
+        await autoEnrollByFubId(found.id, { smsConsent }).catch((e: unknown) =>
           console.warn('[contact-form] instant auto-enroll failed:', e),
         )
         // Stitch this visitor's prior anonymous browsing history to the FUB

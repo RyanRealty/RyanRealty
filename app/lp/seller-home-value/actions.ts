@@ -40,6 +40,8 @@ type BrokerAssignment = { broker: BrokerSlug; userId: number }
 export type SellerLPTimeline = 'ready-now' | 'next-3-6' | 'next-6-12' | 'exploring'
 
 export type SellerLPSubmission = {
+  /** A2P/TCPA: true only when the lead actively checked the SMS consent box. */
+  smsConsent?: boolean
   address: string
   name?: string
   email?: string
@@ -547,7 +549,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // person for sequence merge fields.
     if (fubPersonId) {
       const { autoEnrollByFubId } = await import('@/lib/crm/enroll')
-      await autoEnrollByFubId(fubPersonId).catch((e: unknown) =>
+      await autoEnrollByFubId(fubPersonId, { smsConsent: submission.smsConsent }).catch((e: unknown) =>
         console.warn('[seller-lp] instant auto-enroll failed:', e),
       )
     }

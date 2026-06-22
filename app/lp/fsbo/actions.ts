@@ -49,6 +49,8 @@ type BrokerSlug = 'matt' | 'rebecca' | 'paul'
 type BrokerAssignment = { broker: BrokerSlug; userId: number }
 
 export type FsboLPSubmission = {
+  /** A2P/TCPA: true only when the lead actively checked the SMS consent box. */
+  smsConsent?: boolean
   /** The property the owner is selling themselves. */
   address: string
   name?: string
@@ -292,7 +294,7 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
       // FSBO Recovery sequence. Awaited so the CMA link can stamp onto the
       // CRM person for sequence merge fields (mirrors the seller LP order).
       const { autoEnrollByFubId } = await import('@/lib/crm/enroll')
-      await autoEnrollByFubId(fubPersonId).catch((e: unknown) =>
+      await autoEnrollByFubId(fubPersonId, { smsConsent: submission.smsConsent }).catch((e: unknown) =>
         console.warn('[fsbo-lp] instant auto-enroll failed:', e),
       )
     }

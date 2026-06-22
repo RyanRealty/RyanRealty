@@ -74,6 +74,7 @@ export default function SellerLPForm({
   const [email, setEmail] = useState(prefillEmail ?? '')
   const [phone, setPhone] = useState(prefillPhone ?? '')
   const [timeline, setTimeline] = useState<SellerLPTimeline | ''>('')
+  const [smsConsent, setSmsConsent] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [resultClassification, setResultClassification] = useState<'hot' | 'warm' | 'nurture' | 'unknown' | null>(null)
@@ -114,6 +115,7 @@ export default function SellerLPForm({
     setError(null)
     startTransition(async () => {
       const result = await submitSellerLPForm({
+        smsConsent,
         address: address.trim(),
         name: opts.skipQualify ? prefillName ?? name.trim() : name.trim(),
         email: opts.skipQualify ? prefillEmail ?? email.trim() : email.trim(),
@@ -260,7 +262,7 @@ export default function SellerLPForm({
         >
           {pending ? 'Working…' : isListNow ? 'Start my home sale →' : 'Get my home value →'}
         </Button>
-        <SmsConsentDisclosure tone="on-dark" className="mt-3 text-center [text-shadow:0_1px_3px_rgba(0,0,0,0.55)]" />
+        <SmsConsentDisclosure tone="on-dark" className="mt-3 [text-shadow:0_1px_3px_rgba(0,0,0,0.55)]" checked={smsConsent} onCheckedChange={setSmsConsent} />
       </form>
     )
   }
@@ -310,7 +312,7 @@ export default function SellerLPForm({
         >
           {pending ? 'Working…' : isListNow ? 'Start my home sale →' : 'Get my home value →'}
         </Button>
-        <SmsConsentDisclosure className="mt-4" />
+        <SmsConsentDisclosure className="mt-4" checked={smsConsent} onCheckedChange={setSmsConsent} />
       </form>
     )
   }
@@ -525,7 +527,7 @@ export default function SellerLPForm({
       </div>
 
       {/* Carrier-required SMS consent disclosure — exact text quoted in the A2P campaign */}
-      <SmsConsentDisclosure className="mt-4" />
+      <SmsConsentDisclosure className="mt-4" checked={smsConsent} onCheckedChange={setSmsConsent} />
 
       {error && (
         <p className="mt-3 text-sm font-medium text-destructive" role="alert">

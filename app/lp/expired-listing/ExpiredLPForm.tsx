@@ -53,6 +53,7 @@ export default function ExpiredLPForm() {
       contactPath,
       notes: formData.get('notes')?.toString() ?? '',
       sessionId: readRrSessionId(),
+      smsConsent: formData.get('smsConsent') === 'yes',
     }
     startTransition(async () => {
       const r = await submitExpiredLPForm(submission)

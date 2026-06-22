@@ -38,6 +38,8 @@ type BrokerSlug = 'matt' | 'rebecca' | 'paul'
 type BrokerAssignment = { broker: BrokerSlug; userId: number }
 
 export type ExpiredLPSubmission = {
+  /** A2P/TCPA: true only when the lead actively checked the SMS consent box. */
+  smsConsent?: boolean
   name?: string
   email: string
   phone?: string
@@ -238,7 +240,7 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
 
       // Instant CRM mirror + auto-enroll (kills the 30-min delta-cron lag).
       void import('@/lib/crm/enroll')
-        .then(({ autoEnrollByFubId }) => autoEnrollByFubId(fubPersonId))
+        .then(({ autoEnrollByFubId }) => autoEnrollByFubId(fubPersonId, { smsConsent: submission.smsConsent }))
         .catch((e) => console.warn('[expired-lp] instant auto-enroll failed:', e))
 
       // Mirror the canonical assignment ledger row used by the gold-standard

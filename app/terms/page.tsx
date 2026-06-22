@@ -120,6 +120,23 @@ export default function TermsPage() {
           </p>
         </div>
 
+        <div id="sms">
+          <H2 className="text-lg text-foreground">Text messaging (SMS) program</H2>
+          <p className="mt-2">
+            If you provide your phone number on one of our forms and check the SMS consent box, you agree to receive text messages from Ryan Realty related to your request, including property and home-value updates, scheduling, and replies from our team. Consent to receive text messages is not a condition of any purchase or service.
+          </p>
+          <p className="mt-2">
+            Message frequency varies. Message and data rates may apply. Reply <strong>STOP</strong> at any time to unsubscribe, or <strong>HELP</strong> for help. Mobile carriers are not liable for delayed or undelivered messages. We honor STOP and HELP keywords automatically.
+          </p>
+          <p className="mt-2">
+            No mobile information will be shared with third parties or affiliates for marketing or promotional purposes. Text messaging originator opt-in data and consent are not shared with any third parties. Full details are in our{' '}
+            <Link href="/privacy#sms" className="text-accent-foreground underline hover:no-underline">
+              Privacy Policy
+            </Link>
+            .
+          </p>
+        </div>
+
         <div>
           <H2 className="text-lg text-foreground">Contact</H2>
           <p className="mt-2">

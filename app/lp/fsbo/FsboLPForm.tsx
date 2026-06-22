@@ -38,6 +38,7 @@ export default function FsboLPForm({ heroVariant = false, formId = 'fsbo-form' }
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const [smsConsent, setSmsConsent] = useState(false)
   const [notes, setNotes] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -69,6 +70,7 @@ export default function FsboLPForm({ heroVariant = false, formId = 'fsbo-form' }
     }
     startTransition(async () => {
       const result = await submitFsboLPForm({
+        smsConsent,
         address: address.trim(),
         name: name.trim(),
         email: trimmedEmail,
@@ -166,7 +168,7 @@ export default function FsboLPForm({ heroVariant = false, formId = 'fsbo-form' }
         </Button>
         {/* Carrier-verifiable consent disclosure MUST be in first-paint HTML
             on BOTH steps. The A2P campaign message_flow cites this URL. */}
-        <SmsConsentDisclosure tone="on-dark" className="mt-3 text-center" />
+        <SmsConsentDisclosure tone="on-dark" className="mt-3" checked={smsConsent} onCheckedChange={setSmsConsent} />
       </form>
     )
   }
@@ -214,7 +216,7 @@ export default function FsboLPForm({ heroVariant = false, formId = 'fsbo-form' }
         >
           {pending ? 'Working…' : 'Get my pricing report →'}
         </Button>
-        <SmsConsentDisclosure className="mt-4" />
+        <SmsConsentDisclosure className="mt-4" checked={smsConsent} onCheckedChange={setSmsConsent} />
       </form>
     )
   }
@@ -318,7 +320,7 @@ export default function FsboLPForm({ heroVariant = false, formId = 'fsbo-form' }
       </div>
 
       {/* Carrier-required SMS consent disclosure on the submit step too. */}
-      <SmsConsentDisclosure className="mt-4" />
+      <SmsConsentDisclosure className="mt-4" checked={smsConsent} onCheckedChange={setSmsConsent} />
 
       {error && (
         <p className="mt-3 text-sm font-medium text-destructive" role="alert">

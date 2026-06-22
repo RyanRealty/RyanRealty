@@ -192,7 +192,10 @@ export async function renderFirstTouchPreview(
 }
 
 /** Resolve a FUB person id to the CRM mirror (mirroring first if needed), then auto-enroll. */
-export async function autoEnrollByFubId(fubPersonId: number): Promise<AutoEnrollResult> {
+export async function autoEnrollByFubId(
+  fubPersonId: number,
+  opts?: { smsConsent?: boolean },
+): Promise<AutoEnrollResult> {
   const sb = createServiceClient()
   let { data } = await sb.from('crm_people').select('id').eq('fub_legacy_id', fubPersonId).maybeSingle()
   if (!data) {
@@ -201,6 +204,22 @@ export async function autoEnrollByFubId(fubPersonId: number): Promise<AutoEnroll
     ;({ data } = await sb.from('crm_people').select('id').eq('fub_legacy_id', fubPersonId).maybeSingle())
   }
   if (!data) return { enrolled: false, reason: 'mirror not available' }
+  // Fail-closed SMS consent (A2P 10DLC / TCPA, Twilio ticket 27497858): a person
+  // is text-eligible ONLY when they actively checked the SMS consent box on a
+  // public lead form (the action passes smsConsent:true). Every other caller —
+  // the expired-listing detection cron, the canonical lead-tagger, any import —
+  // passes no consent and is suppressed on the sms channel by default. Email and
+  // voice are never gated by this. Removing the suppression on explicit consent
+  // covers a returning lead who opts in on a later submission.
+  try {
+    const { addSuppression, removeSuppression } = await import('@/lib/crm/suppressions')
+    await removeSuppression({ personId: data.id, channel: 'sms', reason: 'no-sms-consent' })
+    if (opts?.smsConsent !== true) {
+      await addSuppression({ personId: data.id, channel: 'sms', reason: 'no-sms-consent', source: 'lead-form' })
+    }
+  } catch (e) {
+    console.error('[autoEnrollByFubId] sms-consent suppression failed', e)
+  }
   const result = await autoEnrollPerson(data.id)
   // Instant broker text for site-originated leads (dedupe inside the queue —
   // the 15-min auto-enroll cron will hit the same key and no-op).

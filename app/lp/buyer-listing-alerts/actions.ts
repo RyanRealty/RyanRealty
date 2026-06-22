@@ -34,6 +34,8 @@ type BrokerAssignment = { broker: BrokerSlug; userId: number; reason: string }
 export type BuyerLPTimeline = 'ready-now' | 'next-3-6' | 'next-6-12' | 'exploring'
 
 export type BuyerLPSubmission = {
+  /** A2P/TCPA: true only when the lead actively checked the SMS consent box. */
+  smsConsent?: boolean
   name?: string
   email: string
   phone?: string
@@ -280,7 +282,7 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
 
       // Instant CRM mirror + auto-enroll (kills the 30-min delta-cron lag).
       void import('@/lib/crm/enroll')
-        .then(({ autoEnrollByFubId }) => autoEnrollByFubId(fubPersonId))
+        .then(({ autoEnrollByFubId }) => autoEnrollByFubId(fubPersonId, { smsConsent: submission.smsConsent }))
         .catch((e) => console.warn('[buyer-lp] instant auto-enroll failed:', e))
 
       // ─── Lead origin note ──────────────────────────────────────────────────
