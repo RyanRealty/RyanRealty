@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.51 (2026-06-23)
+
+### Other
+- CONTACT360: progress log — Wave 2 (4 increments) + Phase 1.1 migration flagged
+
+---
+
+
 ## v1.599.50 (2026-06-23)
 
 ### Other
