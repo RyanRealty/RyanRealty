@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.43 (2026-06-23)
+
+### Other
+- plan: add email inbox-placement & anti-spam standing requirement (9.E) + mark 9.2 done
+
+---
+
+
 ## v1.599.42 (2026-06-23)
 
 ### Other
