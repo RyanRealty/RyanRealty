@@ -39,6 +39,25 @@ export function normalizeAgentSlug(raw: string | null | undefined): BrokerSlug |
   return SLUG_NORMALIZE[lower] ?? null
 }
 
+/**
+ * Extract a broker slug from free text (e.g. a Meta campaign / ad-set name like
+ * "Seller Leads — Rebecca"). Used by the FB lead webhook to route per-broker
+ * when there's no hidden form field — Meta Instant Forms have no true hidden
+ * field, but the broker controls their campaign name. Word-boundary matched so
+ * "matt" doesn't fire on "Matterhorn"; first match wins. Returns null if none.
+ */
+export function brokerSlugFromText(text: string | null | undefined): BrokerSlug | null {
+  if (!text) return null
+  const lower = text.toLowerCase()
+  // Longest keys first so "rebecca-peterson" beats a bare "rebecca", etc.
+  const keys = Object.keys(SLUG_NORMALIZE).sort((a, b) => b.length - a.length)
+  for (const key of keys) {
+    const re = new RegExp(`(^|[^a-z])${key.replace(/[-]/g, '[-\\s]?')}([^a-z]|$)`, 'i')
+    if (re.test(lower)) return SLUG_NORMALIZE[key]
+  }
+  return null
+}
+
 // FUB user IDs by canonical broker slug
 export const FUB_USER_ID_BY_BROKER: Record<BrokerSlug, number> = {
   matt: 1,

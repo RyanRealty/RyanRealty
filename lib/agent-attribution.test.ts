@@ -1,10 +1,26 @@
 import { describe, it, expect } from 'vitest'
 import {
   normalizeAgentSlug,
+  brokerSlugFromText,
   parseAgentAttributionCookie,
   FUB_USER_ID_BY_BROKER,
   BROKER_EMAIL_BY_SLUG,
 } from './agent-attribution'
+
+describe('brokerSlugFromText (FB campaign-name routing)', () => {
+  it('extracts the broker from a campaign/ad-set name', () => {
+    expect(brokerSlugFromText('Seller Leads — Rebecca')).toBe('rebecca')
+    expect(brokerSlugFromText('Paul / Expired Q3')).toBe('paul')
+    expect(brokerSlugFromText('Matt - Home Value')).toBe('matt')
+    expect(brokerSlugFromText('rebecca-peterson buyers')).toBe('rebecca')
+  })
+  it('does not false-match on substrings or empty', () => {
+    expect(brokerSlugFromText('Matterhorn Listings')).toBeNull()
+    expect(brokerSlugFromText('Generic Seller Campaign')).toBeNull()
+    expect(brokerSlugFromText('')).toBeNull()
+    expect(brokerSlugFromText(null)).toBeNull()
+  })
+})
 
 // Lead routing depends on resolving the ?agent= slug to a canonical broker.
 // Wrong mapping → a lead lands on the wrong broker. Audit p3.2.

@@ -14,7 +14,7 @@ import { createCmaRequest } from '@/lib/cma-request'
 import { getFubApiKey } from '@/lib/crm/fub-env'
 import { getMetaPageToken } from '@/lib/meta-env'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
-import { normalizeAgentSlug, FUB_USER_ID_BY_BROKER, type BrokerSlug } from '@/lib/agent-attribution'
+import { normalizeAgentSlug, brokerSlugFromText, FUB_USER_ID_BY_BROKER, type BrokerSlug } from '@/lib/agent-attribution'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 
 export const runtime = 'nodejs'
@@ -646,10 +646,15 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
   const parsed = parseLeadFields(leadDetail)
   console.log(`[lead-webhook] Lead fields — name: ${parsed.firstName} ${parsed.lastName}, email: ${parsed.email}, intent: ${parsed.buySellIntent}`)
 
-  // Per-broker routing: a hidden `assigned_broker` form field routes the lead to
-  // that broker; absent → Matt (the default). Resolved once, used by both the
-  // native fallback and the FUB assignment below.
-  const brokerSlug: BrokerSlug = parsed.assignedBroker ?? 'matt'
+  // Per-broker routing, in order of reliability: an explicit hidden
+  // `assigned_broker` form field, else the broker's name in the campaign/ad-set
+  // name (e.g. "Seller Leads — Rebecca" — the practical lever since Meta Instant
+  // Forms have no true hidden field), else Matt. Used by both the native fallback
+  // and the FUB assignment below.
+  const brokerSlug: BrokerSlug =
+    parsed.assignedBroker ??
+    brokerSlugFromText(`${parsed.campaignName ?? ''} ${parsed.adSetName ?? ''}`) ??
+    'matt'
   const brokerFubUserId = FUB_USER_ID_BY_BROKER[brokerSlug] ?? FUB_USER_MATT
 
   if (!parsed.email && !parsed.phone) {
