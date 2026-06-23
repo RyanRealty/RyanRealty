@@ -92,6 +92,7 @@ export async function GET(request: Request) {
       dryRunReason: add.dryRunReason,
       wouldUpload: add.wouldUpload,
       excludedSuppressed: add.excludedSuppressed,
+      excludedRealtors: add.excludedRealtors,
       skippedUnhashable: add.skippedUnhashable,
       numReceived: add.numReceived,
       numInvalid: add.numInvalid,

@@ -6,7 +6,18 @@
  *   1. has at least one email OR phone (a name-only row can never match a Meta
  *      customer file), AND
  *   2. is NOT deleted, AND
- *   3. carries NO crm_suppressions row.
+ *   3. carries NO crm_suppressions row, AND
+ *   4. carries NO realtor/agent tag (a TARGETING exclusion -- we never advertise
+ *      to competitors -- enforced here independently of consent suppression).
+ *
+ * Why #4 is its own gate, not a suppression: realtor-exclusion is a targeting
+ * rule, not a consent rule. A realtor in Matt's sphere of influence can still get
+ * CRM email/referral touches (they are not "do-not-contact"); they simply must
+ * never enter a Meta prospecting audience. Baking the exclusion into THIS read
+ * means a contact tagged a realtor tomorrow is auto-excluded even if no one ever
+ * suppresses them -- a leak the suppression-only gate allowed (Matt directive
+ * 2026-06-23: 54 realtor-tagged contacts were not in the hard-stop list and would
+ * otherwise have been uploaded).
  *
  * The suppression filter is the load-bearing compliance rule: a contact with ANY
  * suppression (compliance:hard-stop / do-not-call / do-not-text / do-not-email /
@@ -63,6 +74,28 @@ async function getSuppressedPersonIds(
   return suppressed
 }
 
+/**
+ * Tag patterns that bar a person from the Meta ad audience regardless of consent
+ * state. A targeting exclusion (never advertise to competitors), NOT a consent
+ * suppression. Matched case-insensitively against every crm_people tag, so
+ * 'industry:realtor', 'Realtor', and 'realtor' all hit. Extensible: add a pattern
+ * here (e.g. test accounts, other industry pros) and the audience auto-honors it.
+ */
+export const AUDIENCE_EXCLUDED_TAG_PATTERNS: readonly RegExp[] = [/realtor/i]
+
+/**
+ * Pure (unit-tested): true when ANY of a person's tags matches an audience
+ * exclusion pattern. Non-array / non-string-element input is treated as no match.
+ */
+export function isAudienceExcludedByTag(tags: unknown): boolean {
+  if (!Array.isArray(tags)) return false
+  for (const t of tags) {
+    if (typeof t !== 'string') continue
+    if (AUDIENCE_EXCLUDED_TAG_PATTERNS.some((re) => re.test(t))) return true
+  }
+  return false
+}
+
 /** First string value out of a crm_people JSONB contact array (emails/phones). */
 function valuesFromJsonbArray(raw: unknown): string[] {
   if (!Array.isArray(raw)) return []
@@ -95,20 +128,21 @@ export type GetAudienceEligibleOptions = {
  */
 export async function getAudienceEligiblePeople(
   options: GetAudienceEligibleOptions = {},
-): Promise<{ people: AudienceEligiblePerson[]; excludedSuppressed: number }> {
+): Promise<{ people: AudienceEligiblePerson[]; excludedSuppressed: number; excludedRealtors: number }> {
   const sb = createServiceClient()
   const suppressedIds = await getSuppressedPersonIds(sb)
 
   const limit = options.limit ?? 50000
   const people: AudienceEligiblePerson[] = []
   let excludedSuppressed = 0
+  let excludedRealtors = 0
 
   const PAGE = 1000
   let offset = 0
   for (;;) {
     const { data, error } = await sb
       .from('crm_people')
-      .select('id,first_name,last_name,emails,phones,deleted')
+      .select('id,first_name,last_name,emails,phones,deleted,tags')
       .eq('deleted', false)
       .range(offset, offset + PAGE - 1)
     if (error || !data) break
@@ -128,6 +162,13 @@ export async function getAudienceEligiblePeople(
         continue
       }
 
+      // Targeting gate: realtors/agents are never advertised to, independent of
+      // consent. Counted separately so the dry-run can report "0 realtors".
+      if (isAudienceExcludedByTag(row.tags)) {
+        excludedRealtors += 1
+        continue
+      }
+
       people.push({
         personId: id,
         firstName: (row.first_name as string | null) ?? null,
@@ -136,7 +177,7 @@ export async function getAudienceEligiblePeople(
         phones,
       })
       if (people.length >= limit) {
-        return { people, excludedSuppressed }
+        return { people, excludedSuppressed, excludedRealtors }
       }
     }
 
@@ -144,5 +185,5 @@ export async function getAudienceEligiblePeople(
     offset += PAGE
   }
 
-  return { people, excludedSuppressed }
+  return { people, excludedSuppressed, excludedRealtors }
 }

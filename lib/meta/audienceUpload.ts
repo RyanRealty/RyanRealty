@@ -76,6 +76,8 @@ export type SyncCrmAudienceResult = {
   wouldUpload: number
   /** Otherwise-eligible people dropped solely because they are suppressed. */
   excludedSuppressed: number
+  /** Otherwise-eligible people dropped because they carry a realtor/agent tag. */
+  excludedRealtors: number
   /** Eligible people whose record could not be hashed (no usable key). */
   skippedUnhashable: number
   /** Up to a few HASHED ids, for the operator to eyeball (never raw PII). */
@@ -205,8 +207,8 @@ export async function syncCrmAudience(
   const fetchImpl = options.fetchImpl ?? fetch
   const read = options.readEligible ?? getAudienceEligiblePeople
 
-  // 1. Consent-gated read.
-  const { people, excludedSuppressed } = await read({ limit: options.limit })
+  // 1. Consent-gated + realtor-excluded read.
+  const { people, excludedSuppressed, excludedRealtors } = await read({ limit: options.limit })
 
   // 2. Hash.
   const { records, skippedUnhashable } = buildRecords(people)
@@ -216,6 +218,7 @@ export async function syncCrmAudience(
     dryRun: true,
     wouldUpload: records.length,
     excludedSuppressed,
+    excludedRealtors,
     skippedUnhashable,
     sampleHash,
     audienceName: CRM_AUDIENCE_NAME,
@@ -228,7 +231,8 @@ export async function syncCrmAudience(
     const reason: 'requested' | 'flag-disabled' = dryRunRequested ? 'requested' : 'flag-disabled'
     console.log(
       `[syncCrmAudience] DRY RUN (${reason}): wouldUpload=${records.length} ` +
-        `excludedSuppressed=${excludedSuppressed} skippedUnhashable=${skippedUnhashable} ` +
+        `excludedSuppressed=${excludedSuppressed} excludedRealtors=${excludedRealtors} ` +
+        `skippedUnhashable=${skippedUnhashable} ` +
         `sampleHashedIds=${JSON.stringify(sampleHash)} -- no Meta call.`,
     )
     return { ...base, dryRun: true, dryRunReason: reason }
@@ -250,7 +254,8 @@ export async function syncCrmAudience(
   const { numReceived, numInvalid, errors } = await pushUsers(fetchImpl, audienceId, token, records)
   console.log(
     `[syncCrmAudience] LIVE push to "${CRM_AUDIENCE_NAME}" (${audienceId}): ` +
-      `received=${numReceived} invalid=${numInvalid} excludedSuppressed=${excludedSuppressed}.`,
+      `received=${numReceived} invalid=${numInvalid} ` +
+      `excludedSuppressed=${excludedSuppressed} excludedRealtors=${excludedRealtors}.`,
   )
   return {
     ...base,

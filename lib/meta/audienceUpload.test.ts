@@ -6,8 +6,9 @@ import type { AudienceEligiblePerson } from '@/lib/data/crm/getAudienceEligibleP
 function fakeReader(
   people: AudienceEligiblePerson[],
   excludedSuppressed: number,
+  excludedRealtors = 0,
 ): typeof import('@/lib/data/crm/getAudienceEligiblePeople').getAudienceEligiblePeople {
-  return async () => ({ people, excludedSuppressed })
+  return async () => ({ people, excludedSuppressed, excludedRealtors })
 }
 
 const PEOPLE: AudienceEligiblePerson[] = [
@@ -28,7 +29,7 @@ describe('syncCrmAudience -- dry run (default)', () => {
   it('returns the dry-run shape and NEVER calls Meta by default', async () => {
     const fetchSpy = vi.fn()
     const out = await syncCrmAudience({
-      readEligible: fakeReader(PEOPLE, 7),
+      readEligible: fakeReader(PEOPLE, 7, 4),
       fetchImpl: fetchSpy as unknown as typeof fetch,
     })
 
@@ -38,6 +39,8 @@ describe('syncCrmAudience -- dry run (default)', () => {
     // 2 hashable people (john, jane); the name-only row is skipped.
     expect(out.wouldUpload).toBe(2)
     expect(out.excludedSuppressed).toBe(7)
+    // realtor-excluded count passes through from the reader.
+    expect(out.excludedRealtors).toBe(4)
     expect(out.skippedUnhashable).toBe(1)
     expect(out.audienceName).toBe(CRM_AUDIENCE_NAME)
     // sampleHash carries only HASHED ids -- 64-char hex, no raw PII.

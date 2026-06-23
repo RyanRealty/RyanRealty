@@ -35,6 +35,7 @@ export type AudienceRunSummary = {
     dryRunReason?: string
     wouldUpload: number
     excludedSuppressed: number
+    excludedRealtors: number
     skippedUnhashable: number
     /** Only set on the live path. */
     numReceived?: number
@@ -97,6 +98,7 @@ export function summarizeAudienceRun(
       dryRunReason: add.dryRunReason,
       wouldUpload: add.wouldUpload,
       excludedSuppressed: add.excludedSuppressed,
+      excludedRealtors: add.excludedRealtors,
       skippedUnhashable: add.skippedUnhashable,
       numReceived: add.numReceived,
       numInvalid: add.numInvalid,
