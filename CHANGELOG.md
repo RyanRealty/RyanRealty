@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.42 (2026-06-23)
+
+### Other
+- CONTACT360 9.2: fix Resend webhook (Svix HMAC) + bounce/complaint → suppression
+
+---
+
+
 ## v1.599.41 (2026-06-22)
 
 ### Other
