@@ -52,7 +52,11 @@ function walk(dir, out = []) {
     if (name === 'node_modules' || name === '.next') continue
     const rel = `${dir}/${name}`
     if (statSync(join(ROOT, rel)).isDirectory()) walk(rel, out)
-    else if (/\.(ts|tsx)$/.test(name)) out.push(rel)
+    // Production lead-creation paths only. Test/spec fixtures construct
+    // sendEvent/pushToFub payloads to verify the client serializes them — they
+    // never create a real lead, so the audience-tag / events-not-people rules
+    // don't apply to them. Scanning them produces false positives.
+    else if (/\.(ts|tsx)$/.test(name) && !/\.(test|spec)\.(ts|tsx)$/.test(name)) out.push(rel)
   }
   return out
 }
