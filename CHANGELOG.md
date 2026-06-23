@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.63 (2026-06-23)
+
+### Other
+- CONTACT360: Wave 6 + buildable set complete (27 increments) — remaining work is Matt-gated
+
+---
+
+
 ## v1.599.62 (2026-06-23)
 
 ### Other
