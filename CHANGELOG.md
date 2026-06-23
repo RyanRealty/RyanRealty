@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.604.10 (2026-06-23)
+
+### Other
+- Buyer ad v3: strip broker entirely, shift to existential/finite-time register
+
+---
+
+
 ## v1.604.9 (2026-06-23)
 
 ### Maintenance
