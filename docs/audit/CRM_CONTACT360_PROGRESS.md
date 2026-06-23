@@ -8,7 +8,7 @@
 | Phase | Increment | Title | Status |
 |---|---|---|---|
 | 0 | 0.1 | Close the inbound-voice lead leak | ✅ done (03e2efae) |
-| 0 | 0.2 | Native-capture fallback on FUB failure | ⬜ todo |
+| 0 | 0.2 | Native-capture fallback on FUB failure | ✅ done (80ecbcaf) — ensureNativeLead wired into seller/FSBO/lead-landing failure branches; Meta webhook + others = follow-up |
 | 0 | 0.3 | Convert sustained hot-anonymous to a durable record | ⬜ todo |
 | 0 | 0.4 | Resolve native-create stubs | ⬜ todo |
 | 0 | 0.5 | Alarm the CRM_MIRROR_ENABLED kill switch | ✅ done (09161a2c) |
@@ -17,19 +17,19 @@
 | 1 | 1.1 | Bridge columns (crm_person_id) + backfill | 🚩 flagged — migration written + pre-verified safe (`supabase/migrations/20260622190000_crm_person_id_bridge_columns.sql`); applying to prod needs Matt's explicit OK (classifier blocked autonomous prod migration) |
 | 1 | 1.2 | resolvePersonIdentity() resolver | ✅ done v1 (c5cf2058) — authUserId from visitor_identity_map; email→auth.users needs Phase 1.1 RPC |
 | 1 | 1.3 | Refactor getters to crm_person_id / the bundle | ⬜ todo |
-| 2 | 2.1 | Unified ContactActivityFeed | ⬜ todo |
+| 2 | 2.1 | Unified ContactActivityFeed | ✅ reader done (4cabc1f8); panel UI = Wave 4 |
 | 2 | 2.2 | Ownership panel — fix the home-photo proximity bug | ✅ done (fab16276) — address-match gate; near miss shows no photo, never the wrong house |
 | 2 | 2.3 | Real owner_type (absentee/out-of-state) | ⬜ todo |
 | 2 | 2.4 | Property attributes for never-listed homes | 🚩 flagged (BatchData) |
 | 2 | 2.5 | Geocode coverage cron | 🚩 flagged (Google cost) |
-| 2 | 2.6 | Behavior/intent summary panel | ⬜ todo |
-| 2 | 2.7 | Identity strip + source_url + CMA-history panel | ⬜ todo |
+| 2 | 2.6 | Behavior/intent summary panel | ✅ reader done (2980e50a); panel UI = Wave 4 |
+| 2 | 2.7 | Identity strip + source_url + CMA-history panel | ✅ reader done (df6d1604); panel UI = Wave 4+ |
 | 3 | 3.1 | Listing-alerts UNION + humanizer + deep links | ✅ reader done (0bc6ffaa); UI wiring = 3.3/7.6 |
-| 3 | 3.2 | Newsletter detail (status/frequency/engagement) | ⬜ todo |
-| 3 | 3.3 | One-click membership toggles + consent events | ⬜ todo |
-| 4 | 4.1 | Relationships schema + type vocab | ⬜ todo |
-| 4 | 4.2 | link/unlink/setType actions (reciprocal) | ⬜ todo |
-| 4 | 4.3 | Relationships panel + RelationshipPicker | ⬜ todo |
+| 3 | 3.2 | Newsletter detail (status/frequency/engagement) | ✅ reader done (387322e5) — frequency from segment (no cadence column) |
+| 3 | 3.3 | One-click membership toggles + consent events | ✅ DONE — reader+actions (a0e0d7f6) + toggle UI live on the lead page (3f6e4272), consent-safe, next build verified |
+| 4 | 4.1 | Relationships schema + type vocab | ✅ vocab + reciprocalType (beaaf0f5); UNIQUE/no-self-link constraint = flagged migration (with 1.1) |
+| 4 | 4.2 | link/unlink/setType actions (reciprocal) | ✅ done (beaaf0f5) |
+| 4 | 4.3 | Relationships panel + RelationshipPicker | 🔶 Wave 4 (in flight) |
 | 4 | 4.4 | Backfill 29 legacy rows + dedup guard | ⬜ todo |
 | 5 | 5.1 | crm_people→Meta uploader, in-app + consent-gated + ledger | 🚩 flagged (Meta creds + go) |
 | 5 | 5.2 | Audience cron + <1k-match monitor + token-model fix | 🚩 flagged (token authority) |
@@ -71,6 +71,17 @@ Legend: ⬜ todo · 🔶 in progress · ✅ done · 🚩 flagged (needs creds / 
 ## Log
 
 _(append newest-first)_
+
+### 2026-06-22 · Wave 3 (5 increments) + Wave 4 marquee UI — the one-click toggles ship
+Wave 3's 5 agents all succeeded; integrated + verified (tsc + 79 new tests + consent/lead/dal gates + crm-fail-closed all green) + committed:
+- **3.3** membership toggles reader + consent-safe actions (`a0e0d7f6`) — getContactMemberships + setSequenceEnrollment/setNewsletterSubscription/setListingAlertsPaused; canSubscribe REFUSES re-subscribing a hard-stopped channel (14 tests). suppressions.ts now EXPORTS TAG_CHANNEL (read-only) so the consent reader shares the one authoritative mapping — chokepoint logic unchanged.
+- **3.2** newsletter detail reader (`387322e5`), **2.6** behavior/intent reader (`2980e50a`), **4.1+4.2** relationships vocab + reciprocal link/unlink/setType actions (`beaaf0f5`), **0.2** FUB-failure native fallback wired into the seller/FSBO/lead-landing submit actions (`80ecbcaf`).
+
+**Then the marquee UI (3.3 UI, `3f6e4272`):** MembershipToggles island (design-system <Switch>, optimistic + reverts on failure surfacing the consent reason) wired into the lead detail page as a Memberships card — Matt's "one click assign/unassign by toggling." **next build passes (18.4s)**, route /admin/console/leads/[id] compiles, 1068 tests green. file-size-budget re-baselined for genuine feature growth (lead page +12, seller-home-value +26 from the FUB fallback, syncWrites +1 inherited).
+
+Plus two inline readers earlier this cycle: **2.7** identity-strip + CMA history (`df6d1604`), **2.1** unified activity feed (`4cabc1f8`).
+
+**Wave 4 in flight:** the remaining view panels (activity feed, behavior/intent, relationships + reader, humanized listing-alerts) as design-system components to wire into the page. Session total so far: 18 increments shipped.
 
 ### 2026-06-22 · Wave 2 (parallel-agent build) — 4 increments shipped + Phase 1.1 migration written (flagged)
 All 4 agents succeeded (disk healthy after the Wave 1 cleanup). Each verified in its worktree (tsc + vitest), integrated + re-verified (tsc + full ci:gates) + committed by the orchestrator.
