@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.601.7 (2026-06-23)
+
+### Bug Fixes
+- fix(crm): native-CRM fallback on contact/home-valuation/housing-market forms (FUB cutover)
+
+---
+
+
 ## v1.601.6 (2026-06-23)
 
 ### Maintenance
