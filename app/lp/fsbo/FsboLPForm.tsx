@@ -253,11 +253,11 @@ export default function FsboLPForm({ heroVariant = false, formId = 'fsbo-form' }
 
       <div className="mt-5 grid gap-4">
         <div>
-          <Label htmlFor="fsbo-name" className="text-base font-medium text-foreground">
+          <Label htmlFor={`${formId}-name`} className="text-base font-medium text-foreground">
             Your name
           </Label>
           <Input
-            id="fsbo-name"
+            id={`${formId}-name`}
             name="name"
             type="text"
             autoComplete="name"
@@ -270,11 +270,11 @@ export default function FsboLPForm({ heroVariant = false, formId = 'fsbo-form' }
           />
         </div>
         <div>
-          <Label htmlFor="fsbo-email" className="text-base font-medium text-foreground">
+          <Label htmlFor={`${formId}-email`} className="text-base font-medium text-foreground">
             Email
           </Label>
           <Input
-            id="fsbo-email"
+            id={`${formId}-email`}
             name="email"
             type="email"
             autoComplete="email"
@@ -287,11 +287,11 @@ export default function FsboLPForm({ heroVariant = false, formId = 'fsbo-form' }
           />
         </div>
         <div>
-          <Label htmlFor="fsbo-phone" className="text-base font-medium text-foreground">
+          <Label htmlFor={`${formId}-phone`} className="text-base font-medium text-foreground">
             Phone <span className="text-sm font-normal text-muted-foreground">(optional)</span>
           </Label>
           <Input
-            id="fsbo-phone"
+            id={`${formId}-phone`}
             name="phone"
             type="tel"
             autoComplete="tel"
@@ -303,12 +303,12 @@ export default function FsboLPForm({ heroVariant = false, formId = 'fsbo-form' }
           />
         </div>
         <div>
-          <Label htmlFor="fsbo-notes" className="text-base font-medium text-foreground">
+          <Label htmlFor={`${formId}-notes`} className="text-base font-medium text-foreground">
             How is the sale going so far?{' '}
             <span className="text-sm font-normal text-muted-foreground">(optional)</span>
           </Label>
           <Textarea
-            id="fsbo-notes"
+            id={`${formId}-notes`}
             name="notes"
             rows={3}
             value={notes}
