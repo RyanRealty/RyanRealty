@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.69 (2026-06-23)
+
+### Other
+- CONTACT360: progress log — Phase 7 shipped + Meta verified + Wave 8 (Meta audiences) dispatched
+
+---
+
+
 ## v1.599.68 (2026-06-23)
 
 ### Other
