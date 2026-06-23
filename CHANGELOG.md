@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.68 (2026-06-23)
+
+### Other
+- CONTACT360 Phase 7: consumers manage their own saved searches + homes
+
+---
+
+
 ## v1.599.67 (2026-06-23)
 
 ### Other
