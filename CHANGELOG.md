@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.604.0 (2026-06-23)
+
+### Features
+- feat(crm): FB per-broker routing via campaign-name (Meta forms have no hidden field)
+
+---
+
+
 ## v1.603.0 (2026-06-23)
 
 ### Features
