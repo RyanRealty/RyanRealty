@@ -31,8 +31,8 @@
 | 4 | 4.2 | link/unlink/setType actions (reciprocal) | ✅ done (beaaf0f5) |
 | 4 | 4.3 | Relationships panel + RelationshipPicker | ✅ DONE — reader + add/remove panel in the overview (4d05333b); contact-search picker (vs numeric id) = polish follow-up |
 | 4 | 4.4 | Backfill 29 legacy rows + dedup guard | ✅ dedup guard APPLIED (2026-06-22) — no-self-link CHECK + partial-unique on real pairs (verified 0 conflicts); resolving the 29 null-related legacy names to person ids = data follow-up |
-| 5 | 5.1 | crm_people→Meta uploader, in-app + consent-gated + ledger | 🚩 flagged (Meta creds + go) |
-| 5 | 5.2 | Audience cron + <1k-match monitor + token-model fix | 🚩 flagged (token authority) |
+| 5 | 5.1 | crm_people→Meta uploader, in-app + consent-gated + ledger | 🔶 building (Wave 8) — token VERIFIED (System User, ads_management); consent-gated + DRY-RUN first |
+| 5 | 5.2 | Audience cron + <1k-match monitor + token-model fix | 🔶 building (Wave 8) — token authority RESOLVED (System User never-expires) |
 | 5 | 5.3 | Lead-webhook identity stitch + external_id=rr_vid | ⬜ todo |
 | 5 | 5.4 | CAPI match-quality parity (fbc/fbp/IP/UA) + dedup everywhere | ⬜ todo |
 | 5 | 5.5 | fbc persistence + auto offline conversions (ROAS loop) | 🚩 flagged (value model + Meta) |
@@ -41,12 +41,12 @@
 | 6 | 6.2 | Bulk fan-out actions + crm_bulk_jobs audit | ⬜ todo |
 | 6 | 6.3 | Bulk compliance rails (preview/EBR/scope/enqueue) | ⬜ todo |
 | 6 | 6.4 | Wire bulk sends | 🚩 flagged (TCPA — Matt's go) |
-| 7 | 7.1 | Unified saved-search table (+ single filters_hash) | ⬜ todo (run after Phase 1) |
-| 7 | 7.2 | Unified saved-home table + fix remove no-op bug | ⬜ todo |
-| 7 | 7.3 | Claim-on-sign-in (attach guest saves to account) | ⬜ todo |
-| 7 | 7.4 | Consumer controls: cadence + pause/resume + edit-criteria | ⬜ todo |
-| 7 | 7.5 | Kill the dead /account/notifications frequency setting | ⬜ todo |
-| 7 | 7.6 | Broker visibility: real saved searches + homes (stop regex-infer) | ⬜ todo |
+| 7 | 7.1 | Unified saved-search table (+ single filters_hash) | 🚩 guest-save-without-account needs a saved_searches.user_id-nullable + email migration (pending Matt) |
+| 7 | 7.2 | Unified saved-home table + fix remove no-op bug | ✅ remove bug FIXED (2759b5d4) — deleted both saved_listings + likes |
+| 7 | 7.3 | Claim-on-sign-in (attach guest saves to account) | ✅ done (2759b5d4) — guest searches claimed on verified sign-in, idempotent |
+| 7 | 7.4 | Consumer controls: cadence + pause/resume + edit-criteria | ✅ done (2759b5d4) — /account/saved-searches pause/resume/cadence/rename/delete; WANTS Matt visual review |
+| 7 | 7.5 | Kill the dead /account/notifications frequency setting | ✅ done (2759b5d4) — now writes the real per-row cadence |
+| 7 | 7.6 | Broker visibility: real saved searches + homes (stop regex-infer) | ✅ done (by Wave 4 panels) |
 | 8 | 8.1 | GPC + consent gate on tracking/CAPI (LDU on opt-out) | ⬜ todo |
 | 8 | 8.2 | Consent surface on landing pages (Pixel can't pre-fire) | ⬜ todo |
 | 8 | 8.3 | Privacy policy: disclose rr_vid/rr_fbc/Pixel/CAPI/offline + CCPA/OCPA right | ⬜ todo |
@@ -71,6 +71,19 @@ Legend: ⬜ todo · 🔶 in progress · ✅ done · 🚩 flagged (needs creds / 
 ## Log
 
 _(append newest-first)_
+
+### 2026-06-22 · Phase 7 shipped (saved-search management) + Meta verified + Meta build dispatched
+**Phase 7 (`2759b5d4`)** — consumers manage their own saved searches + homes. All session-user-scoped (reviewed every action):
+- 7.4 /account/saved-searches controls (pause/resume/cadence/rename/delete) — CONSUMER UI, wants Matt's visual review.
+- 7.3 claim-on-sign-in (guest_search_alerts -> saved_searches on first verified sign-in, idempotent, wired into app/auth/callback).
+- 7.2 saved-home REMOVE bug fixed (root cause: only deleted saved_listings, not likes; the page renders the union).
+- 7.5 dead /account/notifications frequency control now writes the real per-row cadence. 7.6 already done by Wave 4.
+- 7.1 (guest save WITHOUT an account) still needs a saved_searches.user_id-nullable migration — flagged.
+1233 tests, next build 18.4s, 3 routes compile.
+
+**Meta verified (Matt asked "is it set up?")** — YES. META_USER_ACCESS_TOKEN is a SYSTEM_USER token, never-expiring, with ads_management / ads_read / business_management / leads_retrieval / pages_manage_ads. Ad account act_1178780510184911 reachable (MANAGE), Custom Audiences readable (3 exist). META_CAPI_ACCESS_TOKEN present for offline conversions. **(c) is unblocked, no token work needed.** ROAS model (Matt: "I don't care, keep going"): default to commission-value-per-closed-deal.
+
+**Phase 5 + 8 dispatched (Wave 8, consent-first):** crm_people->Meta Custom Audience uploader, GPC/consent gate, opt-out->audience-removal, sync cron + ledger. HARD GUARDRAILS baked in: gates on crm_suppressions, SHA-256 hashed PII, **DRY-RUN by default — nothing pushes to Meta until META_AUDIENCE_PUSH_ENABLED + Matt sees the dry-run + says go.** The first live PII push is Matt's explicit call.
 
 ### 2026-06-22 · Matt unblocked (a) + (b): migrations APPLIED + RBAC ENFORCED
 - **(a) Migrations applied to prod** (Matt: "apply migrations") — Phase 1.1 crm_person_id bridge columns + backfill, Phase 4.4 crm_relationships no-self-link + partial-unique. Snapshot refreshed. **Phase 7 (saved-search unification) is now unblocked.**
