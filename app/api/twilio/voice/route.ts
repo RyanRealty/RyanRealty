@@ -13,7 +13,9 @@
 
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { TWILIO_PUBLIC_ORIGIN, forwardNumberFor, lookupPersonByPhone, twilioWebhookValidationUrl, validateTwilioSignature } from '@/lib/crm/twilio'
+import { TWILIO_PUBLIC_ORIGIN, forwardNumberFor, twilioWebhookValidationUrl, validateTwilioSignature } from '@/lib/crm/twilio'
+import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
+import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -32,7 +34,11 @@ export async function POST(request: Request) {
   }
 
   const from = params.From ?? ''
-  const match = await lookupPersonByPhone(from)
+  // Find the caller, OR create a tracked lead when they are unknown (CONTACT360
+  // Phase 0.1 — the inbound-voice lead leak). Mirrors the inbound-SMS native
+  // create. This runs BEFORE forwarding so the call still rings the broker; the
+  // create never blocks the dial.
+  const { match, created } = await findOrCreatePersonByPhone({ phone: from, source: 'inbound-call' })
   const target = forwardNumberFor(match?.broker ?? null)
   const recording = process.env.CRM_CALL_RECORDING !== 'false'
 
@@ -47,6 +53,23 @@ export async function POST(request: Request) {
       source: 'twilio',
       dedupe_key: params.CallSid ? `twilio:call:${params.CallSid}:p${match.personId}` : null,
     })
+
+    // Instant new-lead alert — only on a real create, so a known caller never
+    // re-alerts. queueBrokerAlert dedupes per person+kind on top of this.
+    if (created) {
+      await queueBrokerAlert({
+        broker: match.broker,
+        personId: match.personId,
+        kind: 'new-lead',
+        body: newLeadAlertBody({
+          name: match.name,
+          source: 'inbound-call',
+          stage: 'Lead',
+          personId: match.personId,
+          detail: `Calling now from ${from}`,
+        }),
+      })
+    }
   }
 
   // Pass the CALLER's real number through as caller ID (allowed on bridged

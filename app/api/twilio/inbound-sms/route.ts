@@ -11,7 +11,8 @@
 
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { lookupPersonByPhone, normalizeTo10, twilioWebhookValidationUrl, validateTwilioSignature } from '@/lib/crm/twilio'
+import { twilioWebhookValidationUrl, validateTwilioSignature } from '@/lib/crm/twilio'
+import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
 import { addSuppression, removeSuppression } from '@/lib/crm/suppressions'
 import { CRM_MAILBOXES, sendCrmEmail } from '@/lib/crm/gmail'
 
@@ -46,28 +47,10 @@ export async function POST(request: Request) {
   const sid = params.MessageSid ?? `unknown-${Date.now()}`
   const sb = createServiceClient()
 
-  let match = await lookupPersonByPhone(from)
-
-  // Unknown sender → create a lead. An inbound text is a hot signal.
-  if (!match) {
-    const ten = normalizeTo10(from)
-    const { data: created } = await sb
-      .from('crm_people')
-      .insert({
-        name: `Text lead ${ten ?? from}`,
-        stage: 'Lead',
-        source: 'inbound-sms',
-        assigned_broker: 'matt',
-        phones: [{ value: from, type: 'Mobile', isPrimary: 1 }],
-        tags: ['source:inbound-sms'],
-      })
-      .select('id,name,assigned_broker')
-      .single()
-    if (created && ten) {
-      await sb.from('crm_contact_points').insert({ person_id: created.id, kind: 'phone', value: ten, is_primary: true })
-      match = { personId: created.id, name: created.name, broker: 'matt' }
-    }
-  }
+  // Unknown sender → create a lead. An inbound text is a hot signal. Shared
+  // find-or-create (lib/data/crm) so the create shape stays identical to the
+  // inbound-voice path and never drifts.
+  const { match } = await findOrCreatePersonByPhone({ phone: from, source: 'inbound-sms' })
 
   if (match) {
     await sb.from('crm_timeline').upsert(
