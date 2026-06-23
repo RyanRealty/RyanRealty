@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.46 (2026-06-23)
+
+### Other
+- CONTACT360 9.E: email spam/deliverability analyzer (core of the inbox-placement gate)
+
+---
+
+
 ## v1.599.45 (2026-06-23)
 
 ### Other
