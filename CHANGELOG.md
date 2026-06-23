@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.601.5 (2026-06-23)
+
+### Maintenance
+- docs(ads): paid-ads plan — Meta-primary seller-first, synthesized from 104-agent research + LP/capture audit + per-broker investigation
+
+---
+
+
 ## v1.601.4 (2026-06-23)
 
 ### Bug Fixes
