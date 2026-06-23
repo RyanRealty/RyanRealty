@@ -33,6 +33,14 @@ import { getOwnedHomeMatches, getGuestSearchAlertsForLead, getViewedListingsForL
 import { getOwnedHomeMedia } from '@/lib/crm/owned-home-media'
 import { getContactMemberships } from '@/lib/data/crm/getContactMemberships'
 import { MembershipToggles } from '@/components/admin/crm/MembershipToggles'
+import { getContactActivityFeed } from '@/lib/data/crm/getContactActivityFeed'
+import ContactActivityFeed from '@/components/admin/crm/ContactActivityFeed'
+import { getContactBehaviorSummary } from '@/lib/data/crm/getContactBehaviorSummary'
+import ContactBehaviorPanel from '@/components/admin/crm/ContactBehaviorPanel'
+import { getContactRelationships } from '@/lib/data/crm/getContactRelationships'
+import { RelationshipsPanel } from '@/components/admin/crm/RelationshipsPanel'
+import { getContactListingAlerts } from '@/lib/data/crm/getContactListingAlerts'
+import { ContactListingAlertsPanel } from '@/components/admin/crm/ContactListingAlertsPanel'
 import { EmailComposer } from '@/components/admin/crm/EmailComposer'
 import { SmsComposer } from '@/components/admin/crm/SmsComposer'
 import ConversationThread, { isConversationEvent } from '@/components/admin/crm/ConversationThread'
@@ -261,12 +269,16 @@ export default async function ConsoleLeadPage({
   const personEmails = (person.emails ?? []).map((e) => e.value).filter((v): v is string => Boolean(v))
 
   // What they're shopping for — saved searches + the homes they're watching (live MLS) + newsletter status.
-  const [savedSearches, viewedListings, membership, activeSequences, contactMemberships] = await Promise.all([
+  const [savedSearches, viewedListings, membership, activeSequences, contactMemberships, activityFeed, behaviorSummary, relationships, contactAlerts] = await Promise.all([
     getGuestSearchAlertsForLead({ fubPersonId: person.fub_legacy_id, emails: personEmails }),
     getViewedListingsForLead(person.fub_legacy_id),
     getNewsletterMembershipForLead({ crmPersonId: person.id, emails: personEmails }),
     listActiveSequences(),
     getContactMemberships(person.id),
+    getContactActivityFeed(person.id),
+    getContactBehaviorSummary(person.id),
+    getContactRelationships(person.id),
+    getContactListingAlerts(person.id),
   ])
 
   // Owned home.
@@ -408,6 +420,24 @@ export default async function ConsoleLeadPage({
           <MembershipToggles personId={person.id} memberships={contactMemberships} />
         </CardContent>
       </Card>
+
+      {/* ── Relationships: link/unlink related contacts (spouse, co-buyer, referrer) ── */}
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-base">Relationships</CardTitle></CardHeader>
+        <CardContent className="p-4 pt-0 sm:p-5 sm:pt-0">
+          <RelationshipsPanel personId={person.id} relationships={relationships} />
+        </CardContent>
+      </Card>
+
+      {/* ── Recent activity glance (full unified feed lives in the Activity tab) ── */}
+      {activityFeed.length > 0 ? (
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-base">Recent activity</CardTitle></CardHeader>
+          <CardContent className="p-4 pt-0 sm:p-5 sm:pt-0">
+            <ContactActivityFeed items={activityFeed.slice(0, 8)} />
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* ── Next best action (the mockup hero) — always present ── */}
       <Card style={{ backgroundColor: 'var(--console-info-soft)', borderColor: 'var(--console-info)' }}>
@@ -558,6 +588,7 @@ export default async function ConsoleLeadPage({
         }
         watching={
           <>
+          <ContactBehaviorPanel summary={behaviorSummary} />
           {/* Watching — live homes from their site behavior */}
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-base">Watching <span className="font-normal text-muted-foreground">({viewedListings.length})</span></CardTitle></CardHeader>
@@ -594,6 +625,7 @@ export default async function ConsoleLeadPage({
           </Card>
 
           {/* Saved searches */}
+          <ContactListingAlertsPanel alerts={contactAlerts} />
           <Card id="saved-searches" className="scroll-mt-20">
             <CardHeader className="pb-3"><CardTitle className="text-base">Saved searches <span className="font-normal text-muted-foreground">({savedSearches.length})</span></CardTitle></CardHeader>
             <CardContent className="space-y-2">
