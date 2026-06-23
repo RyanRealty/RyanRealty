@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sha256 } from '@noble/hashes/sha256'
 import { bytesToHex } from '@noble/hashes/utils'
 import { sendServerEvent, type MetaCapiUserData } from '@/lib/meta-capi'
+import { shouldExcludeFromSharing } from '@/lib/crm/gpc'
+import { getPersonIdsByEmail } from '@/lib/data/crm/getPersonIdsByEmail'
+import { getPersonSuppressions } from '@/lib/data/crm/getPersonSuppressions'
 
 export const runtime = 'nodejs'
 
@@ -130,6 +133,28 @@ export async function POST(req: NextRequest) {
       }
     } else if (typeof bodyLdu === 'boolean') {
       ldu = bodyLdu
+    }
+
+    // Opt-out -> force Limited Data Use (Phase 8.1). When the subject is a known
+    // CRM person who carries ANY suppression (a GPC opt-out, a hard-stop, an
+    // unsubscribe), Meta must not use this conversion for ad targeting. We
+    // resolve the subject by email, read their suppressions, and let the PURE
+    // shouldExcludeFromSharing helper decide. This can only turn LDU ON, never
+    // off -- a cookie/body LDU=true is never downgraded. Best-effort + never
+    // throws: a lookup failure leaves the existing LDU decision untouched.
+    if (!ldu && email?.trim()) {
+      try {
+        const personIds = await getPersonIdsByEmail(email)
+        for (const pid of personIds) {
+          const suppressions = await getPersonSuppressions(pid)
+          if (shouldExcludeFromSharing(suppressions)) {
+            ldu = true
+            break
+          }
+        }
+      } catch (e) {
+        console.warn('[Meta CAPI] suppression LDU check failed:', e instanceof Error ? e.message : String(e))
+      }
     }
 
     // Send to Meta CAPI

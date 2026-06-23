@@ -36,6 +36,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { trackPageView, trackListingView, trackPropertySearch } from '@/lib/followupboss'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { isGpcOptOut } from '@/lib/crm/gpc'
+import { recordGpcSuppression } from '@/lib/data/crm/recordGpcSuppression'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -147,6 +149,13 @@ type TrackBody = {
    * Stripped to 512 chars max; only accepted at analytics/all consent level.
    */
   fbclid?: string
+  /**
+   * Global Privacy Control JS flag (navigator.globalPrivacyControl) forwarded
+   * by the client. The Sec-GPC request header is read server-side; this is the
+   * parallel JS source. Either being a GPC opt-out drops the event and (for an
+   * identified visitor) records a durable suppression. Phase 8.1.
+   */
+  gpc?: boolean
 }
 
 function getSupabase() {
@@ -246,6 +255,41 @@ export async function POST(request: NextRequest) {
     // Don't 500 — page load must not depend on this. Log and return success.
     console.warn('[visitors/track] Supabase service role not configured; event dropped')
     return NextResponse.json({ ok: true, dropped: true }, { headers: corsHeaders(origin) })
+  }
+
+  // ─── GPC opt-out gate (server-side enforcement) ─────────────────────────
+  // Global Privacy Control is a legally binding "do not sell / share" signal in
+  // CA/CO/CT. On a GPC opt-out we (1) STOP tracking this event entirely (no
+  // session/event writes), and (2) if the session is already identified to a
+  // CRM person, record a durable channel='all' suppression so the opt-out
+  // sticks across every send path AND pulls them from the Meta audience. The
+  // suppression write is best-effort and never blocks the response. (Phase 8.1)
+  const gpcOptOut = isGpcOptOut({
+    secGpcHeader: request.headers.get('sec-gpc'),
+    jsFlag: typeof body.gpc === 'boolean' ? body.gpc : null,
+  })
+  if (gpcOptOut) {
+    let suppressionRecorded = false
+    try {
+      const { data: gpcSess } = await supabase
+        .from('visitor_sessions')
+        .select('crm_person_id')
+        .eq('session_id', sessionId)
+        .maybeSingle()
+      const crmPersonId = gpcSess && typeof gpcSess.crm_person_id === 'number' ? gpcSess.crm_person_id : null
+      if (crmPersonId) {
+        const res = await recordGpcSuppression(crmPersonId)
+        suppressionRecorded = res.ok && res.recorded
+        if (!res.ok) console.warn('[visitors/track] gpc suppression failed:', res.error)
+      }
+    } catch (err) {
+      // Never let the suppression write break the tracking response.
+      console.warn('[visitors/track] gpc handling error:', err instanceof Error ? err.message : String(err))
+    }
+    return NextResponse.json(
+      { ok: true, dropped: true, reason: 'gpc_opt_out', suppressionRecorded },
+      { headers: corsHeaders(origin) },
+    )
   }
 
   const sourceDomain = resolveSourceDomain(pageUrl, body.sourceDomain)

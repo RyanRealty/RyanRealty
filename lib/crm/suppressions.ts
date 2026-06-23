@@ -81,4 +81,19 @@ export async function addSuppression(params: {
     source: params.source ?? 'app',
     value: params.value ?? null,
   })
+
+  // Phase 8.4 — enqueue removal from the Meta CRM Custom Audience. A suppressed
+  // contact must be DELETED from the audience, not just excluded from the next
+  // upload. This is NON-BLOCKING and FAIL-CLOSED-PRESERVING: the suppression row
+  // above is already written (the load-bearing consent record). The queue write
+  // is a best-effort downstream side effect wrapped so a queue/Meta failure can
+  // NEVER throw out of addSuppression. (enqueueAudienceRemoval also swallows its
+  // own errors; this try/catch is the belt-and-suspenders second guard.)
+  try {
+    const { enqueueAudienceRemoval } = await import('@/lib/data/crm/enqueueAudienceRemoval')
+    const res = await enqueueAudienceRemoval(params.personId, params.reason)
+    if (!res.ok) console.warn('[suppressions] audience-removal enqueue failed:', res.error)
+  } catch (e) {
+    console.warn('[suppressions] audience-removal enqueue threw:', e instanceof Error ? e.message : String(e))
+  }
 }
