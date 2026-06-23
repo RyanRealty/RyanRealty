@@ -11,20 +11,20 @@
 | 0 | 0.2 | Native-capture fallback on FUB failure | ⬜ todo |
 | 0 | 0.3 | Convert sustained hot-anonymous to a durable record | ⬜ todo |
 | 0 | 0.4 | Resolve native-create stubs | ⬜ todo |
-| 0 | 0.5 | Alarm the CRM_MIRROR_ENABLED kill switch | ⬜ todo |
-| 0 | 0.6 | First-touch UTM fallback from visitor_sessions | ⬜ todo |
+| 0 | 0.5 | Alarm the CRM_MIRROR_ENABLED kill switch | ✅ done (09161a2c) |
+| 0 | 0.6 | First-touch UTM fallback from visitor_sessions | ✅ reader done (6c54c7e1); wiring into lead-create = follow-up |
 | 0 | 0.7 | ci:lead-coverage reconciliation gate (DB nightly) | 🚩 flagged (creds) |
-| 1 | 1.1 | Bridge columns (crm_person_id) + backfill | ⬜ todo |
+| 1 | 1.1 | Bridge columns (crm_person_id) + backfill | 🚩 flagged — migration written + pre-verified safe (`supabase/migrations/20260622190000_crm_person_id_bridge_columns.sql`); applying to prod needs Matt's explicit OK (classifier blocked autonomous prod migration) |
 | 1 | 1.2 | resolvePersonIdentity() resolver | ✅ done v1 (c5cf2058) — authUserId from visitor_identity_map; email→auth.users needs Phase 1.1 RPC |
 | 1 | 1.3 | Refactor getters to crm_person_id / the bundle | ⬜ todo |
 | 2 | 2.1 | Unified ContactActivityFeed | ⬜ todo |
-| 2 | 2.2 | Ownership panel — fix the home-photo proximity bug | ⬜ todo |
+| 2 | 2.2 | Ownership panel — fix the home-photo proximity bug | ✅ done (fab16276) — address-match gate; near miss shows no photo, never the wrong house |
 | 2 | 2.3 | Real owner_type (absentee/out-of-state) | ⬜ todo |
 | 2 | 2.4 | Property attributes for never-listed homes | 🚩 flagged (BatchData) |
 | 2 | 2.5 | Geocode coverage cron | 🚩 flagged (Google cost) |
 | 2 | 2.6 | Behavior/intent summary panel | ⬜ todo |
 | 2 | 2.7 | Identity strip + source_url + CMA-history panel | ⬜ todo |
-| 3 | 3.1 | Listing-alerts UNION + humanizer + deep links | ⬜ todo |
+| 3 | 3.1 | Listing-alerts UNION + humanizer + deep links | ✅ reader done (0bc6ffaa); UI wiring = 3.3/7.6 |
 | 3 | 3.2 | Newsletter detail (status/frequency/engagement) | ⬜ todo |
 | 3 | 3.3 | One-click membership toggles + consent events | ⬜ todo |
 | 4 | 4.1 | Relationships schema + type vocab | ⬜ todo |
@@ -71,6 +71,17 @@ Legend: ⬜ todo · 🔶 in progress · ✅ done · 🚩 flagged (needs creds / 
 ## Log
 
 _(append newest-first)_
+
+### 2026-06-22 · Wave 2 (parallel-agent build) — 4 increments shipped + Phase 1.1 migration written (flagged)
+All 4 agents succeeded (disk healthy after the Wave 1 cleanup). Each verified in its worktree (tsc + vitest), integrated + re-verified (tsc + full ci:gates) + committed by the orchestrator.
+- **0.5** mirror kill-switch alarm (`09161a2c`) — a disabled CRM_MIRROR_ENABLED now logs one structured warn/process + a pure `mirrorHealthStatus()` the future /admin/crm/health board reads. 5 tests.
+- **0.6** first-touch UTM reader (`6c54c7e1`) — `getFirstTouchAttribution()` recovers original utm/landing from the earliest visitor_sessions row; pure `pickFirstTouch()`. 10 tests. Wiring into lead-create = follow-up.
+- **2.2** home-photo proximity fix (`fab16276`) — the "Home they own" panel resolved the photo by nearest-listing lat/lng with NO address compare (could show a neighbor's house). Now `addressMatches()` gates every candidate; a photo surfaces only on a confirmed street match, a near miss keeps the sale-history row but withholds the photo. 27 tests. Behavior change: photo appears less often (only when confirmed) — intended.
+- **3.1** unified listing-alerts reader (`0bc6ffaa`) — `getContactListingAlerts()` unions signed-in saved_searches + guest_search_alerts into one humanized, deep-linked list (resolver-driven). 22 tests. Note: signed-in saved searches reachable only when the contact is stitched to an auth user (the resolver's documented email->auth.users gap).
+
+**Phase 1.1 bridge columns — FLAGGED (needs Matt's go).** Wrote `supabase/migrations/20260622190000_crm_person_id_bridge_columns.sql`: additive `crm_person_id bigint` (FK -> crm_people(id) ON DELETE SET NULL) on visitor_identity_map / visitor_sessions / saved_searches / profiles + indexes + a backfill (the migration runs as postgres, so its backfill resolves user_id -> auth.users.email -> crm_contact_points — the clean place to do the auth.users join the app can't). Pre-checked safe: saved_searches + profiles are 0 rows, visitor_identity_map 1, visitor_sessions 210 — the ideal zero-risk moment. **The auto-mode classifier blocked applying it autonomously (prod infra).** The file is committed-ready; applying needs Matt's explicit OK (or a Supabase-MCP permission rule). This unblocks Phase 1.3 (getter refactor) + Phase 7 (saved-search unification).
+
+**Still-inherited red (not CRM scope):** `ci:hydration-safety` 4 NEW #418 violations remain in app/lp/*LPForm.tsx + components/ListingTile.tsx — owned by the concurrent **p1.x** track that actively ratchets that gate (`8547a714` "gate 86->83", touched 6-8h ago). Left to that track; touching a gate another agent is mid-ratchet on would conflict on its baseline.
 
 ### 2026-06-22 · Wave 1 (parallel-agent build) — 6 increments shipped + 2 pre-existing reds fixed
 End-to-end orchestration per Matt's directive: an end-to-end goal (complete the buildable CRM surface), split into file-disjoint increments, built by parallel worktree-isolated agents, then integrated + verified (tsc + vitest + the full ci:gates chain) + committed by the orchestrator. **Disk hit 100%** mid-run (2 of 5 agents died at worktree-create with "No space left on device" — NOT code failures); freed ~13 GB by non-destructively removing 6 **clean** stale prior-session worktrees (`git worktree remove`, no `--force`, so no other session's uncommitted work could be lost), then integrated the 3 that finished and built the 2 disk-killed ones (the interdependent email slice) inline.
