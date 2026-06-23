@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.601.6 (2026-06-23)
+
+### Maintenance
+- docs(ads): resolve decisions — $20/day model, 2.5% commission ROAS, Google test, Housing audience research (lookalike OUT, customer-file contested)
+
+---
+
+
 ## v1.601.5 (2026-06-23)
 
 ### Maintenance
