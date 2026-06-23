@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.57 (2026-06-23)
+
+### Other
+- CONTACT360 Wave 4: assemble the Contact-360 view — activity feed, behavior, relationships, listing-alerts panels
+
+---
+
+
 ## v1.599.56 (2026-06-23)
 
 ### Other
