@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.58 (2026-06-23)
+
+### Other
+- CONTACT360: progress log — the Contact-360 view is assembled (Wave 4), 20 increments
+
+---
+
+
 ## v1.599.57 (2026-06-23)
 
 ### Other
