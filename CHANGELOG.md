@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.73 (2026-06-23)
+
+### Maintenance
+- docs(crm): mark Wave-8 Meta-rest done (8.1 GPC, 8.4 removal, 5.2/5.6 cron) + record first consent-gated dry-run (13,945 would upload, 4,154 excluded for consent)
+
+---
+
+
 ## v1.599.72 (2026-06-23)
 
 ### Other
