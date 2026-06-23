@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.601.1 (2026-06-23)
+
+### Maintenance
+- chore(deploy): bind META_AUDIENCE_PUSH_ENABLED on next prod build
+
+---
+
+
 ## v1.601.0 (2026-06-23)
 
 ### Features
