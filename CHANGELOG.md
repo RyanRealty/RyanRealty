@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.605.0 (2026-06-23)
+
+### Features
+- feat(attribution): mirror seller-lead attribution for buyers
+
+---
+
+
 ## v1.604.15 (2026-06-23)
 
 ### Bug Fixes
