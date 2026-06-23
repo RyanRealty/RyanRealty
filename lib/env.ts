@@ -43,6 +43,19 @@ export const EnvSchema = z.object({
   VAPID_PRIVATE_KEY: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   FOLLOWUPBOSS_API_KEY: z.string().optional(),
+  // CRM send/track secrets (CONTACT360 Phase 9.8). Listed so a missing one is
+  // visible at boot instead of silently falling back to the service-role key /
+  // 'insecure-dev-secret'. EMAIL_TRACKING_SECRET signs the open/click + unsubscribe
+  // tokens (lib/email-tracking.ts, lib/email/unsubscribe-token.ts); CRON_SECRET
+  // gates every cron send/track route (lib/auth/cron-auth.ts). Optional at build (a
+  // missing one must never brick a deploy build); their presence is the running
+  // server's concern. ci:crm-secrets requires both stay listed here, so a CRM send/
+  // track path that references a NEW secret unlisted in this schema fails the gate.
+  EMAIL_TRACKING_SECRET: z.string().optional(),
+  CRON_SECRET: z.string().optional(),
+  // CMA preview/delivery token signing secret (lib/cma-delivery-tokens.ts) — the
+  // third member of the email-track/unsubscribe signing-secret fallback chain.
+  CMA_PREVIEW_SECRET: z.string().optional(),
 })
 
 export type Env = z.infer<typeof EnvSchema>
@@ -69,6 +82,9 @@ export const optional = [
   'VAPID_PRIVATE_KEY',
   'RESEND_API_KEY',
   'FOLLOWUPBOSS_API_KEY',
+  'EMAIL_TRACKING_SECRET',
+  'CRON_SECRET',
+  'CMA_PREVIEW_SECRET',
 ] as const
 
 function getEnv(name: string): string | undefined {
