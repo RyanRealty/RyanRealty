@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.55 (2026-06-23)
+
+### Other
+- CONTACT360 3.3 (UI): one-click membership toggles on the Contact-360 view
+
+---
+
+
 ## v1.599.54 (2026-06-23)
 
 ### Other
