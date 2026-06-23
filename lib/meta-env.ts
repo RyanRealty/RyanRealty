@@ -64,3 +64,15 @@ export function getMetaAdAccountId(): string | undefined {
 export function isMetaAudiencePushEnabled(): boolean {
   return process.env.META_AUDIENCE_PUSH_ENABLED?.trim() === 'true'
 }
+
+/**
+ * The CRM→CAPI "qualified lead" loop (Conversion Leads Optimization) fires a
+ * Meta CAPI quality event when a lead reaches a qualifying CRM stage, so Meta
+ * learns which leads convert. OFF by default — it sends hashed PII to Meta, and
+ * at low lead volume it has no optimization effect (needs ~50 events/ad-set/wk),
+ * so it stays dry-run until META_CAPI_QUALIFIED_ENABLED === 'true'. Mirrors the
+ * audience-push double-gate posture: no surprise sends to Meta.
+ */
+export function isMetaCapiQualifiedEnabled(): boolean {
+  return process.env.META_CAPI_QUALIFIED_ENABLED?.trim() === 'true'
+}

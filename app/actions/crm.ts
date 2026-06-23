@@ -31,6 +31,7 @@ import {
   type CrmBrokerSlug,
 } from '@/lib/crm/constants'
 import { scopeBroker, isPersonInScope } from '@/lib/crm/scope'
+import { isQualifyingStage, fireQualifiedLeadEvent } from '@/lib/meta/qualifiedEvent'
 
 export type CrmActionResult = { ok: true } | { ok: false; error: string }
 
@@ -1028,6 +1029,15 @@ export async function updateCrmStageAction(formData: FormData): Promise<CrmActio
   })
   if (person.fub_legacy_id) {
     await updatePersonAutomationState({ personId: person.fub_legacy_id, stage })
+  }
+  // CRM→CAPI qualified loop: a lead crossing INTO a qualifying stage (from a
+  // non-qualifying one) fires a Meta quality event so Meta learns which leads
+  // convert. Fire-and-forget + dry-run-safe (gated by META_CAPI_QUALIFIED_ENABLED);
+  // never blocks the stage update.
+  if (isQualifyingStage(stage) && !isQualifyingStage(person.stage)) {
+    void fireQualifiedLeadEvent({ personId, stage }).catch((e) =>
+      console.warn('[crm] qualified CAPI event failed (non-blocking):', e),
+    )
   }
   revalidateCrm(personId)
   return { ok: true }
