@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.601.0 (2026-06-23)
+
+### Features
+- feat(crm): apply Meta audience removal-queue + ledger migrations (first live push)
+
+### Maintenance
+- docs(crm): migrations applied; live-push arming is agent-hard-blocked (human-only)
+
+---
+
+
 ## v1.600.2 (2026-06-23)
 
 ### Maintenance
