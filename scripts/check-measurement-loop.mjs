@@ -63,6 +63,21 @@ for (const p of PULLS) {
     /onConflict:\s*['"]action_id,platform['"]/.test(src))
   check(`${p} must NOT use the unindexed onConflict 'action_id,platform,post_external_id'`,
     !/action_id,platform,post_external_id/.test(src))
+  check(`${p} must normalize the published_to platform via platformFetchCode (publisher-sweep writes long names like 'instagram'/'facebook'; the fetch switch is keyed by 'ig'/'fb' — without normalizing, every IG/FB post stored {error:'unknown_platform'})`,
+    /platformFetchCode\s*\(/.test(src))
+}
+
+// 2b. The shared platform normalizer must map the token-live publish names to the
+//     short fetch codes the pulls dispatch on. publisher-sweep writes the publish
+//     endpoint's long Platform names; the pulls switch on short codes. A drift
+//     here silently routes every Instagram + Facebook post — the only platforms
+//     with a live token — to the `unknown_platform` default.
+const vocab = read('lib/marketing-brain/platform-fetch-code.ts')
+check('lib/marketing-brain/platform-fetch-code.ts is missing', vocab !== null)
+if (vocab) {
+  check("platform-fetch-code must map instagram -> ig (token-live)", /instagram:\s*['"]ig['"]/.test(vocab))
+  check("platform-fetch-code must map facebook -> fb (token-live)", /facebook:\s*['"]fb['"]/.test(vocab))
+  check("platform-fetch-code must map google_business_profile -> gbp", /google_business_profile:\s*['"]gbp['"]/.test(vocab))
 }
 
 // 3. The three pulls must be scheduled in vercel.json, or the loop never fires.
@@ -106,7 +121,7 @@ console.log('=============================\n')
 if (failures.length === 0) {
   console.log('OK — measurement loop is fully wired:')
   console.log('  publisher-sweep -> published_to + utm stamp')
-  console.log('  performance-pull-48h/7d/30d -> read published_to, upsert (action_id,platform)')
+  console.log('  performance-pull-48h/7d/30d -> read published_to, normalize platform, upsert (action_id,platform)')
   console.log('  3 pulls scheduled in vercel.json')
   console.log('  fetchMetaPostMetrics implemented')
   console.log('  attribution parses utm from sourceUrl; LP forwards it')

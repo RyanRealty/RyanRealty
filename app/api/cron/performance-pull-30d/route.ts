@@ -28,6 +28,7 @@ import { fetchMetaPostMetrics } from '@/lib/meta-graph'
 import { fetchLinkedInPostMetrics } from '@/lib/linkedin'
 import { fetchXPostMetrics } from '@/lib/x'
 import { fetchGbpPostMetrics } from '@/lib/google-business-profile'
+import { platformFetchCode } from '@/lib/marketing-brain/platform-fetch-code'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -38,7 +39,11 @@ const WINDOW_HOURS = 720 // 30 days
 type PlatformEntry = { platform: string; post_id: string }
 
 async function fetchByPlatform(platform: string, postId: string): Promise<Record<string, unknown>> {
-  switch (platform) {
+  // Normalize the published_to vocabulary first: publisher-sweep writes the
+  // publish endpoint's long names ('instagram','facebook','google_business_profile')
+  // but this switch dispatches on short codes. Without it every IG/FB post — the
+  // only token-live platforms — stored {error:'unknown_platform'} instead of metrics.
+  switch (platformFetchCode(platform)) {
     case 'ig':
       return (await fetchMetaPostMetrics(postId, 'ig')) as unknown as Record<string, unknown>
     case 'fb':
@@ -50,6 +55,7 @@ async function fetchByPlatform(platform: string, postId: string): Promise<Record
     case 'gbp':
       return (await fetchGbpPostMetrics(postId)) as unknown as Record<string, unknown>
     case 'tt':
+    case 'youtube':
     case 'pinterest':
     case 'threads':
     case 'nextdoor':
