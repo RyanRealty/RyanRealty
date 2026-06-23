@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.600.1 (2026-06-23)
+
+### Bug Fixes
+- fix(crm): exclude realtors from the Meta ad audience (targeting gate, not consent)
+
+---
+
+
 ## v1.600.0 (2026-06-23)
 
 ### Features
