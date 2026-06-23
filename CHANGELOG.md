@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.599.59 (2026-06-23)
+
+### Other
+- CONTACT360 0.4: one canonical native-create shape + delete 3 dead lead stubs
+- CONTACT360 0.3: capture sustained hot-anonymous visitors as tracked leads
+- CONTACT360 9.5: /admin/crm/health observability board
+
+---
+
+
 ## v1.599.58 (2026-06-23)
 
 ### Other
