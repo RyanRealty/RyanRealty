@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.71 (2026-06-23)
+
+### Other
+- CONTACT360: 5.1 Meta uploader shipped (dry-run safe); GPC/removal/cron rebuilding clean
+
+---
+
+
 ## v1.599.70 (2026-06-23)
 
 ### Other
