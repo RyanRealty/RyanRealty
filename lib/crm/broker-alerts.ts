@@ -16,6 +16,7 @@
 
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import { recentHealthAlertExists, insertHealthAlert } from '@/lib/data/crm/healthAlertQueue'
 
 const ALERT_PHONE_BY_BROKER: Record<string, string | undefined> = {
   matt: process.env.TWILIO_FORWARD_MATT,
@@ -149,6 +150,44 @@ export async function queueBrokerAlert(params: {
     return true
   } catch (err) {
     console.warn('[broker-alerts] queue error:', err)
+    return false
+  }
+}
+
+/**
+ * System health alert (Contact-360 Phase 9.6 crm-health-check). Unlike
+ * queueBrokerAlert, a health alarm is NOT person-scoped — a broken mirror or a
+ * stale webhook has no crm_people row to hang a dedupe crm_timeline row off
+ * (person_id is NOT NULL there). So this dedupes directly against
+ * crm_broker_alerts: it suppresses a re-alert when a row with the same stable
+ * `[crm-health:<key>]` body prefix was queued within `cooldownMinutes`. That
+ * keeps a persistently-broken vital from texting the broker on every 30-minute
+ * run while still re-paging once the cooldown lapses (the problem is still live).
+ *
+ * Health alerts always route to Matt — they are operational, not lead-routing.
+ * Returns true when an alert was queued, false when deduped or unconfigured.
+ */
+export async function queueBrokerHealthAlert(params: {
+  key: string
+  body: string
+  cooldownMinutes?: number
+}): Promise<boolean> {
+  try {
+    const toPhone = ALERT_PHONE_BY_BROKER.matt
+    if (!toPhone) return false
+
+    const marker = `[crm-health:${params.key}]`
+    const cooldownMs = (params.cooldownMinutes ?? 360) * 60 * 1000
+    const since = new Date(Date.now() - cooldownMs).toISOString()
+
+    // Dedupe: a same-key health alert queued inside the cooldown window
+    // suppresses this one. The read + write live in the DAL (G1) so this module
+    // stays free of raw .from() (boundary baseline holds at 213).
+    if (await recentHealthAlertExists(marker, since)) return false
+    await insertHealthAlert({ toPhone, body: `${marker} ${params.body}` })
+    return true
+  } catch (err) {
+    console.warn('[broker-alerts] health queue error:', err)
     return false
   }
 }

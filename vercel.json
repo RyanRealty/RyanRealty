@@ -21,6 +21,10 @@
       "schedule": "4,19,34,49 * * * *"
     },
     {
+      "path": "/api/cron/crm-health-check",
+      "schedule": "11,41 * * * *"
+    },
+    {
       "path": "/api/cron/sync-history-terminal",
       "schedule": "12 * * * *"
     },
