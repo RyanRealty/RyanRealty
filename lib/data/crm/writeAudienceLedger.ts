@@ -30,6 +30,7 @@ export async function writeAudienceLedger(
       dry_run: summary.dryRun,
       add_would_upload: summary.add.wouldUpload,
       add_excluded_suppressed: summary.add.excludedSuppressed,
+      add_excluded_realtors: summary.add.excludedRealtors,
       add_skipped_unhashable: summary.add.skippedUnhashable,
       add_num_received: summary.add.numReceived ?? null,
       add_num_invalid: summary.add.numInvalid ?? null,

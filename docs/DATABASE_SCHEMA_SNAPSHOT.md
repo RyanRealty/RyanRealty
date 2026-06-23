@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-23T04:33:33.712Z
+**Generated:** 2026-06-23T12:35:26.912Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -300,7 +300,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 591,919**
+### `listing_tile_mv` · **rows ≈ 592,871**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -413,7 +413,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 17,047**
+### `market_stats_cache` · **rows ≈ 16,805**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -2092,6 +2092,40 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `status` | text | yes | 'draft'::text |
 | `superseded_by` | uuid | yes |  |
 | `notes` | text | yes |  |
+
+### `meta_audience_log`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `ran_at` | timestamp with time zone | no | now() |
+| `dry_run` | boolean | no |  |
+| `add_would_upload` | integer | no | 0 |
+| `add_excluded_suppressed` | integer | no | 0 |
+| `add_excluded_realtors` | integer | no | 0 |
+| `add_skipped_unhashable` | integer | no | 0 |
+| `add_num_received` | integer | yes |  |
+| `add_num_invalid` | integer | yes |  |
+| `remove_requested` | integer | no | 0 |
+| `remove_would_remove` | integer | no | 0 |
+| `remove_skipped_unhashable` | integer | no | 0 |
+| `remove_num_removed` | integer | yes |  |
+| `audience_id` | text | yes |  |
+| `errors` | jsonb | no | '[]'::jsonb |
+| `message` | text | no |  |
+
+### `meta_audience_removal_queue`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `person_id` | bigint | no |  |
+| `reason` | text | no | 'suppressed'::text |
+| `status` | text | no | 'pending'::text |
+| `enqueued_at` | timestamp with time zone | no | now() |
+| `processed_at` | timestamp with time zone | yes |  |
+| `attempts` | integer | no | 0 |
+| `last_error` | text | yes |  |
 
 ### `neighborhoods`
 

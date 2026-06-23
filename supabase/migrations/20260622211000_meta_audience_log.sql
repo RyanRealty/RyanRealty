@@ -19,6 +19,7 @@ create table if not exists public.meta_audience_log (
   -- Add (upload) leg counts.
   add_would_upload int not null default 0,
   add_excluded_suppressed int not null default 0,
+  add_excluded_realtors int not null default 0,
   add_skipped_unhashable int not null default 0,
   add_num_received int,
   add_num_invalid int,

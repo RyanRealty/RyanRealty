@@ -9,10 +9,10 @@ MCP `apply_migration` (project `dwvlophlbvvygjfxcrhm`), then
 `npm run ci:data-access -- --refresh` and commit.
 
 ## Held
-- `20260622210000_meta_audience_removal_queue.sql` (Phase 8.4) — the opt-out ->
-  audience-removal queue table. Until applied, enqueueAudienceRemoval fails soft
-  (the suppression itself still takes effect).
-- `20260622211000_meta_audience_log.sql` (Phase 5.6) — the audience-sync ledger.
-  Until applied, the cron logs a console summary instead.
+_(none currently)_
 
-Neither is needed until the first LIVE Meta push (Matt's call after the dry-run).
+## Applied
+- `20260622210000_meta_audience_removal_queue.sql` (Phase 8.4) + `20260622211000_meta_audience_log.sql` (Phase 5.6)
+  — APPLIED to prod 2026-06-23 at the first LIVE Meta push (Matt: "set the
+  variable and wire it so new leads flow in"). Moved into `supabase/migrations/`.
+  Both are idempotent (`create table if not exists`).
