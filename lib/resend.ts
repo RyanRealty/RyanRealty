@@ -1,12 +1,25 @@
 import type { ReactElement } from 'react'
 import { Resend } from 'resend'
 
-// FROM address. Override via RESEND_FROM env var once a custom domain
-// (e.g. mail.ryan-realty.com) is verified at https://resend.com/domains.
-// Until then we use Resend's always-verified sandbox so emails actually
-// deliver; callers should set `replyTo` to the broker/admin address.
-const DEFAULT_FROM =
-  process.env.RESEND_FROM?.trim() || 'Ryan Realty <onboarding@resend.dev>'
+/**
+ * Resolve the verified From address (CONTACT360 9.1).
+ *
+ * Order: an explicit per-send `from` → `RESEND_FROM` (the verified
+ * mail.ryan-realty.com sender) → in PRODUCTION, FAIL (never send from the
+ * `onboarding@resend.dev` sandbox — it lands in spam and fails DKIM, tanking
+ * sender reputation). The sandbox is allowed only in development.
+ */
+export function resolveFrom(explicit?: string): { from: string; error?: undefined } | { from?: undefined; error: string } {
+  const ex = explicit?.trim()
+  if (ex) return { from: ex }
+  const envFrom = process.env.RESEND_FROM?.trim()
+  if (envFrom) return { from: envFrom }
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
+  if (isProd) {
+    return { error: 'RESEND_FROM not set in production — refusing to send from the resend.dev sandbox (spam/DKIM-fail). Set RESEND_FROM to the verified sender.' }
+  }
+  return { from: 'Ryan Realty <onboarding@resend.dev>' }
+}
 
 function getClient(): Resend | null {
   const key = process.env.RESEND_API_KEY
@@ -42,9 +55,16 @@ export async function sendEmail(options: SendEmailOptions): Promise<{ id?: strin
     return { error: 'Email not configured' }
   }
   const to = Array.isArray(options.to) ? options.to : [options.to]
+  const fromResolved = resolveFrom(options.from)
+  const from = fromResolved.from
+  if (!from) {
+    const msg = fromResolved.error ?? 'Email sender not configured'
+    console.error('[Resend] ' + msg)
+    return { error: msg }
+  }
   try {
     const { data, error } = await client.emails.send({
-      from: options.from ?? DEFAULT_FROM,
+      from,
       to,
       subject: options.subject,
       html: options.html,
