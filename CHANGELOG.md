@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.604.11 (2026-06-23)
+
+### Other
+- Buyer ad footage: lock the 2 gap clips to specific, license-cleared sources
+
+---
+
+
 ## v1.604.10 (2026-06-23)
 
 ### Other
