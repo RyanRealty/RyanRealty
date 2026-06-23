@@ -31,12 +31,12 @@
 | 4 | 4.2 | link/unlink/setType actions (reciprocal) | ✅ done (beaaf0f5) |
 | 4 | 4.3 | Relationships panel + RelationshipPicker | ✅ DONE — reader + add/remove panel in the overview (4d05333b); contact-search picker (vs numeric id) = polish follow-up |
 | 4 | 4.4 | Backfill 29 legacy rows + dedup guard | ✅ dedup guard APPLIED (2026-06-22) — no-self-link CHECK + partial-unique on real pairs (verified 0 conflicts); resolving the 29 null-related legacy names to person ids = data follow-up |
-| 5 | 5.1 | crm_people→Meta uploader, in-app + consent-gated + ledger | 🔶 building (Wave 8) — token VERIFIED (System User, ads_management); consent-gated + DRY-RUN first |
+| 5 | 5.1 | crm_people→Meta uploader, in-app + consent-gated + ledger | ✅ SHIPPED (69be3036) — syncCrmAudience: consent-gated (excludes any crm_suppressions), SHA-256 hashed, DRY-RUN default (live needs dryRun:false AND META_AUDIENCE_PUSH_ENABLED). First live push = Matt reviews the dry-run then says go |
 | 5 | 5.2 | Audience cron + <1k-match monitor + token-model fix | 🔶 building (Wave 8) — token authority RESOLVED (System User never-expires) |
 | 5 | 5.3 | Lead-webhook identity stitch + external_id=rr_vid | ⬜ todo |
 | 5 | 5.4 | CAPI match-quality parity (fbc/fbp/IP/UA) + dedup everywhere | ⬜ todo |
 | 5 | 5.5 | fbc persistence + auto offline conversions (ROAS loop) | 🚩 flagged (value model + Meta) |
-| 5 | 5.6 | meta_capi_log + retry + EMQ reconciliation + Graph v25 pin | ⬜ todo |
+| 5 | 5.6 | meta_capi_log + retry + EMQ reconciliation + Graph v25 pin | 🔶 rebuilding — meta-audience-sync cron (dry-run) + ledger migration (flagged) |
 | 6 | 6.1 | Bulk-select island | ⬜ todo |
 | 6 | 6.2 | Bulk fan-out actions + crm_bulk_jobs audit | ⬜ todo |
 | 6 | 6.3 | Bulk compliance rails (preview/EBR/scope/enqueue) | ⬜ todo |
@@ -47,10 +47,10 @@
 | 7 | 7.4 | Consumer controls: cadence + pause/resume + edit-criteria | ✅ done (2759b5d4) — /account/saved-searches pause/resume/cadence/rename/delete; WANTS Matt visual review |
 | 7 | 7.5 | Kill the dead /account/notifications frequency setting | ✅ done (2759b5d4) — now writes the real per-row cadence |
 | 7 | 7.6 | Broker visibility: real saved searches + homes (stop regex-infer) | ✅ done (by Wave 4 panels) |
-| 8 | 8.1 | GPC + consent gate on tracking/CAPI (LDU on opt-out) | ⬜ todo |
+| 8 | 8.1 | GPC + consent gate on tracking/CAPI (LDU on opt-out) | 🔶 rebuilding on the canonical base (Wave 8 had 4-way module conflicts; 5.1 kept, GPC/removal/cron re-dispatched clean) |
 | 8 | 8.2 | Consent surface on landing pages (Pixel can't pre-fire) | ⬜ todo |
 | 8 | 8.3 | Privacy policy: disclose rr_vid/rr_fbc/Pixel/CAPI/offline + CCPA/OCPA right | ⬜ todo |
-| 8 | 8.4 | Consent ledger + audience opt-out removal (deleteUsers) | ⬜ todo |
+| 8 | 8.4 | Consent ledger + audience opt-out removal (deleteUsers) | 🔶 rebuilding (opt-out enqueues removal off the suppression chokepoint, fail-closed) |
 | 8 | 8.5 | Harden rr_vid anchor + dual-host PKCE alignment | ⬜ todo |
 | 9 | 9.1 | Resend DNS done (Matt) + remove sandbox fallback code-side | ✅ code done (f372f427); DNS confirm |
 | 9 | 9.2 | Bounce/complaint → crm_suppressions (+ Svix HMAC fix) | ✅ done (4b55bf6a) |
