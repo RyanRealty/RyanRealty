@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.604.1 (2026-06-23)
+
+### Maintenance
+- docs(ads): go-live runbook — launch checklist tying the build to Matt's Meta/Vercel/FUB actions
+
+---
+
+
 ## v1.604.0 (2026-06-23)
 
 ### Features
