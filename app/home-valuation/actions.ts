@@ -10,6 +10,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { CMAPdfDocument } from '@/lib/pdf/cma-pdf'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { headers } from 'next/headers'
 
 const source = (process.env.NEXT_PUBLIC_SITE_URL ?? 'ryan-realty.com').replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase()
@@ -129,8 +130,25 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
       : undefined,
   })
   if (!fubRes.ok) {
-    // Lead is saved; log but don't fail
+    // FUB push failed — the request is in valuation_requests but NOT crm_people.
+    // Capture it natively too so a FUB outage/cutover never loses the seller lead.
     console.warn('[valuation] FUB send failed:', fubRes.error)
+    try {
+      const native = await ensureNativeLead({
+        name,
+        email,
+        phone,
+        source: 'home-valuation',
+        tags: ['audience:seller', 'source:home-valuation', 'fub-fallback'],
+      })
+      if (native.created || native.personId > 0) {
+        console.warn(
+          `[valuation] native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
+        )
+      }
+    } catch (e) {
+      console.warn('[valuation] native fallback failed:', e)
+    }
   }
 
   // Canonical tagging — apply audience:seller + source:home-valuation +

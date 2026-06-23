@@ -8,6 +8,7 @@ import { sendContactNotification } from '@/lib/resend'
 import { canonicallyTagLead, type LeadAudience } from '@/lib/canonical-lead-tagger'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 
 const source = (process.env.NEXT_PUBLIC_SITE_URL ?? 'ryan-realty.com').replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase()
 
@@ -98,7 +99,28 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
       : undefined,
   })
 
-  if (!res.ok) return { error: res.error ?? 'Failed to send' }
+  if (!res.ok) {
+    // FUB push failed — capture the lead natively so a FUB outage/cutover never
+    // loses it, then proceed as success (the lead IS recorded, in crm_people).
+    try {
+      const native = await ensureNativeLead({
+        name,
+        email,
+        phone,
+        source: 'contact-form',
+        tags: ['source:contact-form', 'fub-fallback'],
+      })
+      if (!native.created && native.personId === 0) {
+        return { error: res.error ?? 'Failed to send' }
+      }
+      console.warn(
+        `[contact] FUB push failed; native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
+      )
+    } catch (e) {
+      console.warn('[contact] native fallback failed:', e)
+      return { error: res.error ?? 'Failed to send' }
+    }
+  }
 
   await sendContactNotification({ name, email, phone, inquiryType, message }).catch(() => {})
 

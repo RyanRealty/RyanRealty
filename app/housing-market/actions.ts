@@ -19,6 +19,7 @@
 
 import type { LeadCapturePayload } from '@/components/site/LeadCaptureBlock'
 import { submitPageCTA } from '@/app/actions/lead-capture'
+import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 
 export async function submitMarketPageInquiry(
   payload: LeadCapturePayload,
@@ -46,7 +47,23 @@ export async function submitMarketPageInquiry(
   })
 
   if (error) {
-    return { ok: false, message: error }
+    // FUB push failed — capture natively so a FUB outage/cutover never loses the
+    // inquiry. Only surface an error if the native capture also fails.
+    try {
+      const native = await ensureNativeLead({
+        name,
+        email,
+        source: 'housing-market-inquiry',
+        tags: ['source:housing-market', 'fub-fallback'],
+      })
+      if (!native.created && native.personId === 0) {
+        return { ok: false, message: error }
+      }
+      console.warn(`[housing-market] FUB push failed; native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`)
+    } catch (e) {
+      console.warn('[housing-market] native fallback failed:', e)
+      return { ok: false, message: error }
+    }
   }
 
   return { ok: true, message: 'Got it. A local broker will follow up.' }
