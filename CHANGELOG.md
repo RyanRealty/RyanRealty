@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.604.14 (2026-06-23)
+
+### Bug Fixes
+- fix(fsbo-lp): scope step-2 field ids to formId (kill duplicate DOM ids)
+
+---
+
+
 ## v1.604.13 (2026-06-23)
 
 ### Bug Fixes
