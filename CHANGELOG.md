@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.599.47 (2026-06-23)
+
+### Other
+- CONTACT360 0.1: close the inbound-voice lead leak (shared find-or-create)
+- CONTACT360 9.4: Twilio delivery-receipt route + carrier-filter classifier
+- CONTACT360 1.2: resolvePersonIdentity() — the keystone CRM identity resolver
+- CONTACT360: crm-lead-integrity gate skips test/spec fixtures (fix pre-existing red)
+
+---
+
+
 ## v1.599.46 (2026-06-23)
 
 ### Other
