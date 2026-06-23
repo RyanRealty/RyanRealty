@@ -189,6 +189,11 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
     const areasStr = searchAreasArr.length ? searchAreasArr.join(', ') : 'unspecified'
 
     // ─── Inbound attribution UTMs (hoisted so sendEvent can use them) ──────
+    // FUB's /v1/people exposes sourceUrl but NOT utmContent/utmCampaign, so the
+    // only way to attribute a buyer lead back to the ad that produced it is to
+    // carry the utm params INTO the FUB sourceUrl. The buyer-lead-attribution
+    // cron parses utm_content (= the action_id) back out. Mirrors the seller LP.
+    let leadSourceUrl = `${siteUrl}/lp/buyer-listing-alerts`
     let originUtmSource: string | undefined
     let originUtmMedium: string | undefined
     let originUtmCampaign: string | undefined
@@ -201,6 +206,13 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
         originUtmMedium = refUrl.searchParams.get('utm_medium') ?? undefined
         originUtmCampaign = refUrl.searchParams.get('utm_campaign') ?? undefined
         originUtmContent = refUrl.searchParams.get('utm_content') ?? undefined
+        const passthrough = new URLSearchParams()
+        for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']) {
+          const v = refUrl.searchParams.get(k)
+          if (v) passthrough.set(k, v)
+        }
+        const qs = passthrough.toString()
+        if (qs) leadSourceUrl = `${siteUrl}/lp/buyer-listing-alerts?${qs}`
       }
     } catch {}
 
@@ -208,7 +220,7 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
       type: 'Property Inquiry',
       person,
       source,
-      sourceUrl: `${siteUrl}/lp/buyer-listing-alerts`,
+      sourceUrl: leadSourceUrl,
       pageTitle: 'Buyer LP — Listing Alerts',
       message: `Buyer LP submission. Budget: ${budgetStr}. Areas: ${areasStr}. Beds min: ${bedsMin ?? 'unspecified'}. Timeline: ${timeline ?? 'unspecified'}. Tier: ${classification}. Assigned: ${assignment.broker}. ${notes ? `Notes: ${notes}` : ''}`,
       campaign: originUtmSource

@@ -1,0 +1,276 @@
+/**
+ * Buyer-lead attribution cron. Mirror of seller-lead-attribution for buyers.
+ *
+ * Daily. Reads FUB /v1/people for leads created in the last 24 hours with
+ * buyer-intent tags. For each lead, attempts to match back to a
+ * content_performance row via utm_content, utm_campaign, or asset URL
+ * alignment. Increments north_star_attributed_buyer_leads on matches.
+ *
+ * Attribution chain (in priority order):
+ *   1. Lead's source_url contains a post_external_id from content_performance.
+ *   2. Lead's utm_content matches an action_id in marketing_brain_actions.
+ *   3. Lead's utm_campaign matches an action_type prefix pattern.
+ *
+ * Idempotency: re-running for the same day does not double-count. The guard
+ * checks whether the lead's FUB ID has already been recorded in
+ * content_performance.metrics_48h.attributed_lead_ids.
+ *
+ * Schedule: daily (see vercel.json). Auth: Authorization: Bearer $CRON_SECRET
+ *
+ * Manual invocation:
+ *   GET /api/cron/buyer-lead-attribution?lookbackHours=24&dryRun=true
+ */
+import { NextRequest, NextResponse } from 'next/server'
+import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { createServiceClient } from '@/lib/supabase/service'
+import { getFubHeaders } from '@/lib/fub-snapshot'
+
+export const maxDuration = 120
+
+const FUB_BASE = 'https://api.followupboss.com/v1'
+const DEFAULT_LOOKBACK_HOURS = 24
+
+// Buyer-intent tags. The buyer LP tagger applies `audience:buyer` to every buyer
+// plus `buyer:<tier>` (hot|warm|nurture, default nurture). Legacy strings kept so
+// pre- and post-migration leads attribute.
+const BUYER_TAGS = new Set([
+  // Canonical
+  'audience:buyer',
+  'buyer:hot',
+  'buyer:warm',
+  'buyer:nurture',
+  // Legacy / variants
+  'hot-buyer',
+  'warm-buyer',
+  'buyer',
+  'buyer-lead',
+  'buyer_intent',
+])
+
+interface FubPerson {
+  id: number
+  created: string
+  tags?: string[]
+  sourceUrl?: string
+  utmContent?: string
+  utmCampaign?: string
+  utmSource?: string
+  utmMedium?: string
+  name?: string
+}
+
+interface AttributionMatch {
+  fub_person_id: number
+  content_performance_id: string
+  action_id: string
+  platform: string
+  match_method: string
+}
+
+/**
+ * FUB's /v1/people API exposes `sourceUrl` but NOT `utmContent`/`utmCampaign`
+ * as person fields. So the utm params a published post carried (utm_content =
+ * the action_id) survive only inside the stored sourceUrl. Recover them by
+ * parsing the query string. The buyer LP forwards the inbound utm_* into the FUB
+ * sourceUrl for exactly this round-trip.
+ */
+function utmFromSourceUrl(sourceUrl?: string): { content?: string; campaign?: string } {
+  if (!sourceUrl) return {}
+  try {
+    const u = new URL(sourceUrl)
+    return {
+      content: u.searchParams.get('utm_content') ?? undefined,
+      campaign: u.searchParams.get('utm_campaign') ?? undefined,
+    }
+  } catch {
+    return {}
+  }
+}
+
+export async function GET(request: NextRequest) {
+  if (!isAuthorizedCron(request)) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  }
+
+  const url = new URL(request.url)
+  const lookbackHoursParam = url.searchParams.get('lookbackHours')
+  const dryRun = url.searchParams.get('dryRun') === 'true'
+  const lookbackHours = lookbackHoursParam
+    ? Math.min(168, Math.max(1, parseInt(lookbackHoursParam, 10) || DEFAULT_LOOKBACK_HOURS))
+    : DEFAULT_LOOKBACK_HOURS
+
+  const startedAt = new Date().toISOString()
+  const supabase = createServiceClient()
+
+  const fubHeaders = getFubHeaders()
+  if (!fubHeaders) {
+    return NextResponse.json({
+      startedAt,
+      gap: 'FOLLOWUPBOSS_API_KEY not configured. No leads checked.',
+      unattributed_leads_today: 0,
+      attributed_count: 0,
+      matches: [],
+    })
+  }
+
+  const since = new Date(Date.now() - lookbackHours * 60 * 60 * 1000).toISOString()
+
+  let fubPeople: FubPerson[] = []
+  let fubGap: string | null = null
+
+  try {
+    const resp = await fetch(
+      `${FUB_BASE}/people?sort=-created&limit=100&created=${encodeURIComponent(since)}`,
+      { headers: fubHeaders as HeadersInit, signal: AbortSignal.timeout(20_000) }
+    )
+    if (!resp.ok) {
+      fubGap = `FUB API returned HTTP ${resp.status}`
+    } else {
+      const body = await resp.json() as { people?: FubPerson[] }
+      fubPeople = body.people ?? []
+    }
+  } catch (err) {
+    fubGap = err instanceof Error ? err.message : String(err)
+  }
+
+  const buyerLeads = fubPeople.filter((p) =>
+    (p.tags ?? []).some((t) => BUYER_TAGS.has(t.toLowerCase().trim()))
+  )
+
+  const unattributedCount = buyerLeads.length
+
+  if (buyerLeads.length === 0 || dryRun) {
+    return NextResponse.json({
+      startedAt,
+      gap: fubGap,
+      lookback_hours: lookbackHours,
+      buyer_leads_found: buyerLeads.length,
+      unattributed_leads_today: unattributedCount,
+      attributed_count: 0,
+      matches: [],
+      dryRun,
+      candidates: dryRun
+        ? buyerLeads.map((p) => ({
+            fub_id: p.id,
+            tags: p.tags,
+            source_url: p.sourceUrl,
+            utm_content: p.utmContent,
+            utm_campaign: p.utmCampaign,
+          }))
+        : undefined,
+    })
+  }
+
+  const { data: perfRows, error: perfErr } = await supabase
+    .from('content_performance')
+    .select('id, action_id, platform, post_external_id, posted_at, north_star_attributed_buyer_leads, metrics_48h')
+    .gte('posted_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
+    .order('posted_at', { ascending: false })
+
+  if (perfErr) {
+    return NextResponse.json({ error: perfErr.message }, { status: 500 })
+  }
+
+  const perf = perfRows ?? []
+
+  const byExternalId = new Map<string, typeof perf[0]>()
+  const byActionId = new Map<string, typeof perf[0]>()
+  for (const p of perf) {
+    if (p.post_external_id) byExternalId.set(p.post_external_id, p)
+    if (p.action_id) byActionId.set(p.action_id, p)
+  }
+
+  const matches: AttributionMatch[] = []
+  const alreadyAttributed = new Set<string>()
+
+  for (const lead of buyerLeads) {
+    let matchedPerf: typeof perf[0] | undefined
+    let matchMethod = ''
+
+    const utm = utmFromSourceUrl(lead.sourceUrl)
+    const utmContent = lead.utmContent ?? utm.content
+    const utmCampaign = lead.utmCampaign ?? utm.campaign
+
+    // Method 1: source_url contains a post_external_id.
+    if (lead.sourceUrl) {
+      for (const [extId, row] of byExternalId.entries()) {
+        if (extId && lead.sourceUrl.includes(extId)) {
+          matchedPerf = row
+          matchMethod = 'source_url_contains_external_id'
+          break
+        }
+      }
+    }
+
+    // Method 2: utm_content (= the action_id) matches a content_performance row.
+    if (!matchedPerf && utmContent) {
+      matchedPerf = byActionId.get(utmContent)
+      if (matchedPerf) matchMethod = 'utm_content_action_id'
+    }
+
+    // Method 3: utm_campaign contains an action_id substring.
+    if (!matchedPerf && utmCampaign) {
+      for (const [actionId, row] of byActionId.entries()) {
+        if (utmCampaign.includes(actionId)) {
+          matchedPerf = row
+          matchMethod = 'utm_campaign_action_id_substring'
+          break
+        }
+      }
+    }
+
+    if (!matchedPerf) continue
+
+    const dedupeKey = `${lead.id}:${matchedPerf.id}`
+    if (alreadyAttributed.has(dedupeKey)) continue
+
+    const existingMeta48h = (matchedPerf.metrics_48h ?? {}) as Record<string, unknown>
+    const alreadyAttributedIds = Array.isArray(existingMeta48h.attributed_lead_ids)
+      ? (existingMeta48h.attributed_lead_ids as number[])
+      : []
+
+    if (alreadyAttributedIds.includes(lead.id)) {
+      alreadyAttributed.add(dedupeKey)
+      continue
+    }
+
+    alreadyAttributed.add(dedupeKey)
+
+    const newLeadIds = [...alreadyAttributedIds, lead.id]
+    const updatedMeta48h = { ...existingMeta48h, attributed_lead_ids: newLeadIds }
+
+    const { error: updateErr } = await supabase
+      .from('content_performance')
+      .update({
+        north_star_attributed_buyer_leads:
+          (typeof matchedPerf.north_star_attributed_buyer_leads === 'number'
+            ? matchedPerf.north_star_attributed_buyer_leads
+            : 0) + 1,
+        metrics_48h: updatedMeta48h,
+      })
+      .eq('id', matchedPerf.id)
+
+    if (updateErr) {
+      console.error(`[buyer-lead-attribution] update error for perf ${matchedPerf.id}:`, updateErr.message)
+      continue
+    }
+
+    matches.push({
+      fub_person_id: lead.id,
+      content_performance_id: matchedPerf.id,
+      action_id: matchedPerf.action_id,
+      platform: matchedPerf.platform,
+      match_method: matchMethod,
+    })
+  }
+
+  return NextResponse.json({
+    startedAt,
+    gap: fubGap,
+    lookback_hours: lookbackHours,
+    buyer_leads_found: buyerLeads.length,
+    unattributed_leads_today: buyerLeads.length - matches.length,
+    attributed_count: matches.length,
+    matches,
+  })
+}

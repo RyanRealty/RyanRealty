@@ -115,6 +115,30 @@ if (lp) {
     /leadSourceUrl/.test(lp) && /utm_content/.test(lp))
 }
 
+// 6. Buyer attribution mirrors the seller round-trip: the buyer LP forwards utm
+//    into the FUB sourceUrl, and buyer-lead-attribution recovers it + increments
+//    north_star_attributed_buyer_leads. Without the LP passthrough the buyer
+//    north-star can never move off zero (the buyer LP used to send a bare URL).
+const battr = read('app/api/cron/buyer-lead-attribution/route.ts')
+check('buyer-lead-attribution/route.ts is missing', battr !== null)
+if (battr) {
+  check('buyer-lead-attribution must recover utm from sourceUrl (FUB has no utmContent field)',
+    /utmFromSourceUrl|searchParams\.get\(\s*['"]utm_content['"]\s*\)/.test(battr))
+  check('buyer-lead-attribution must increment north_star_attributed_buyer_leads',
+    /north_star_attributed_buyer_leads/.test(battr))
+}
+const blp = read('app/lp/buyer-listing-alerts/actions.ts')
+check('buyer LP actions.ts is missing', blp !== null)
+if (blp) {
+  check('buyer LP must forward inbound utm into the FUB sourceUrl (leadSourceUrl)',
+    /leadSourceUrl/.test(blp) && /utm_content/.test(blp))
+}
+const vercelBuyer = read('vercel.json')
+if (vercelBuyer) {
+  check('vercel.json must schedule /api/cron/buyer-lead-attribution',
+    vercelBuyer.includes('/api/cron/buyer-lead-attribution'))
+}
+
 // ── Report ────────────────────────────────────────────────────────────────
 console.log('Measurement-loop wiring check')
 console.log('=============================\n')
