@@ -42,6 +42,12 @@ export type EnsureNativeLeadInput = {
   source: string
   /** Extra tags to stamp on the created person (audience:*, source:*, etc.). */
   tags?: string[]
+  /**
+   * Broker to assign the native lead to. Defaults to Matt. Callers pass the
+   * agent-attributed broker (?agent= cookie) so a FUB-outage fallback still
+   * routes a Rebecca/Paul ad lead to the right broker instead of Matt.
+   */
+  assignedBroker?: CrmBrokerSlug
 }
 
 export type EnsureNativeLeadResult = { personId: number; created: boolean }
@@ -181,7 +187,7 @@ export async function ensureNativeLead(input: EnsureNativeLeadInput): Promise<En
     first_name: first,
     last_name: last,
     source: input.source,
-    assignedBroker: DEFAULT_BROKER,
+    assignedBroker: input.assignedBroker ?? DEFAULT_BROKER,
     emails: emailObjs,
     phones: phoneObjs,
     tags: input.tags,

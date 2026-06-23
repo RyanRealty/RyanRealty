@@ -17,6 +17,7 @@ import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
+import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { cookies, headers } from 'next/headers'
 
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -228,6 +229,30 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
     if (!fubPersonId && email) {
       const newlyCreated = await findPersonByEmail(email)
       if (newlyCreated?.id) fubPersonId = newlyCreated.id
+    }
+
+    // ─── Native-capture fallback on a FUB push failure (CONTACT360 Phase 0.2)
+    // FUB down → record the buyer lead natively so it is NEVER lost (critical for
+    // the FollowUpBoss cutover — this LP previously had no fallback). Routes to
+    // the agent-attributed broker, not a hardcoded default. Happy path unchanged.
+    if (!eventResult.ok && !fubPersonId) {
+      try {
+        const native = await ensureNativeLead({
+          name,
+          email,
+          phone,
+          source: 'buyer-lp',
+          assignedBroker: assignment.broker,
+          tags: ['audience:buyer', tierTag, 'source:buyer-lp', `broker:${assignment.broker}`, 'fub-fallback'],
+        })
+        if (native.created || native.personId > 0) {
+          console.warn(
+            `[buyer-lp] FUB push failed; native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
+          )
+        }
+      } catch (e) {
+        console.warn('[buyer-lp] native fallback lead failed:', e)
+      }
     }
 
     // ─── Stitch anonymous browsing history to this FUB person ──────────────

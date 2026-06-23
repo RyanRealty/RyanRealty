@@ -411,7 +411,8 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
           email,
           phone,
           source: lpSource,
-          tags: ['audience:seller', tierTag, `source:${lpSource}`, 'fub-fallback'],
+          assignedBroker: assignment.broker,
+          tags: ['audience:seller', tierTag, `source:${lpSource}`, `broker:${assignment.broker}`, 'fub-fallback'],
         })
         if (native.created || native.personId > 0) {
           console.warn(

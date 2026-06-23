@@ -227,7 +227,8 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
           email,
           phone,
           source: 'fsbo-lp',
-          tags: ['audience:seller', 'seller:hot', 'source:fsbo-lp', 'intent:fsbo', 'fub-fallback'],
+          assignedBroker: assignment.broker,
+          tags: ['audience:seller', 'seller:hot', 'source:fsbo-lp', 'intent:fsbo', `broker:${assignment.broker}`, 'fub-fallback'],
         })
         if (native.created || native.personId > 0) {
           console.warn(
