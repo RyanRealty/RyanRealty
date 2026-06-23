@@ -48,7 +48,7 @@ export default function ValuationForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" id="home_valuation">
+    <form onSubmit={handleSubmit} className="kb-tool-skin space-y-4" id="home_valuation">
       <div>
         <Label htmlFor="val-address" className="block text-sm font-medium text-foreground">
           Property address <span className="text-destructive">*</span>

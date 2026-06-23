@@ -65,7 +65,7 @@ export default function ContactForm({ defaultInquiryType, listingKey }: { defaul
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="kb-tool-skin space-y-4">
       {listingKey ? (
         <p
           className="px-3 py-2 text-sm"
