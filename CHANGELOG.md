@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.60 (2026-06-23)
+
+### Other
+- CONTACT360 9.6: crm-health-check cron — proactive CRM vital alarms
+
+---
+
+
 ## v1.599.59 (2026-06-23)
 
 ### Other
