@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.601.4 (2026-06-23)
+
+### Bug Fixes
+- fix(crm): native-CRM fallback on buyer+expired LPs + broker-aware fallback (FUB cutover lead-loss)
+
+---
+
+
 ## v1.601.3 (2026-06-23)
 
 ### Bug Fixes
