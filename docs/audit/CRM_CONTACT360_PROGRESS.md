@@ -52,7 +52,7 @@
 | 8 | 8.3 | Privacy policy: disclose rr_vid/rr_fbc/Pixel/CAPI/offline + CCPA/OCPA right | ⬜ todo |
 | 8 | 8.4 | Consent ledger + audience opt-out removal (deleteUsers) | ⬜ todo |
 | 8 | 8.5 | Harden rr_vid anchor + dual-host PKCE alignment | ⬜ todo |
-| 9 | 9.1 | Resend DNS done (Matt) → remove sandbox fallback code-side | 🔶 DNS done; code-side todo |
+| 9 | 9.1 | Resend DNS done (Matt) + remove sandbox fallback code-side | ✅ code done (f372f427); DNS confirm |
 | 9 | 9.2 | Bounce/complaint → crm_suppressions (+ Svix HMAC fix) | ✅ done (4b55bf6a) |
 | 9 | 9.3 | RFC 8058 one-click List-Unsubscribe on bulk sends | ⬜ todo |
 | 9 | 9.E | Email inbox-placement & anti-spam (STANDING + ci:email-quality gate + prepareDeliverableEmail) | ⬜ todo |
@@ -71,6 +71,9 @@ Legend: ⬜ todo · 🔶 in progress · ✅ done · 🚩 flagged (needs creds / 
 ## Log
 
 _(append newest-first)_
+
+### 2026-06-22 · 9.1 code-side: no resend.dev sandbox in production — `f372f427`
+`resolveFrom()` — explicit from → `RESEND_FROM` → in prod FAIL LOUD (never the sandbox; it lands in spam + fails DKIM) → sandbox only in dev. 4-case test. Assumes `RESEND_FROM` is set in Vercel (Matt confirms Resend set up). Next: 9.3 List-Unsubscribe + 9.E spam-quality linter/preflight.
 
 ### 2026-06-22 · 9.2 Resend webhook fixed (Svix HMAC + bounce→suppression) — `4b55bf6a`
 First execution increment. The webhook verified signatures with a naive string-compare (rejected every real Svix event → no bounce ever recorded). Fixed: proper Svix HMAC (`lib/crm/resend-webhook.ts`, 13-case test incl. an independent signer + replay window + bounce/complaint/soft classification), and on hard bounce/complaint → `addSuppression({channel:'email'})` across all sibling rows sharing the email (`lib/data/crm/getPersonIdsByEmail.ts`). tsc clean, 843 tests, DAL boundary stable. Follow-up: confirm a real Resend test event in the dashboard post-deploy. Also added the **9.E email inbox-placement & anti-spam standing requirement** to the runbook (Matt directive).
