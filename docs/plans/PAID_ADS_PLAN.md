@@ -9,8 +9,10 @@
 ## 1. The strategic shape (what the research actually supports)
 
 1. **Meta is primary. Run Lead-Conversion campaigns** (instant forms optimized for completions/booking), NOT Awareness or Traffic. Add **qualifier questions** to every instant form to fight junk leads. (high confidence, Meta-doc + 7-source consensus)
-2. **"Housing" Special Ad Category is MANDATORY and load-bearing.** It strips age/gender/ZIP and protected-class targeting, and **limits lookalikes/saved audiences**. Account restriction/ad rejection if not declared. (high, Meta Ad Standards)
-   - **Implication:** the consent-gated **13,900-homeowner Custom Audience** is the primary precision lever (Custom Audiences stay usable under Housing). **The 1% lookalike we just built may be Housing-LIMITED — must verify in Ads Manager before relying on it** (open decision #3). Custom Audiences do NOT "bypass" Housing — refuted.
+2. **"Housing" Special Ad Category is MANDATORY and reshapes targeting** (decision #3, researched 2026-06-23 — see §8). It strips age/gender/ZIP and protected-class targeting. Account restriction/ad rejection if not declared. (high, Meta Ad Standards)
+   - **Lookalike audiences are NOT usable for Housing** — confirmed across 5 sources (Special Ad Audiences, the old workaround, were also retired Aug 2022). **The 1% lookalike we built cannot target Housing ads.** It's not wasted (it's a CAPI signal + Google Customer-Match seed + non-Housing use), but cross it off the Meta-targeting plan.
+   - **The 13,900 customer-file Custom Audience for Housing is CONTESTED** — real-estate practitioner sources say uploaded lists are still usable; others cite a Jan-2025 US restriction on customer-list audiences for HEC. **Matt must confirm in Ads Manager: set Special Ad Category = Housing, then check if "Ryan Realty CRM Leads" is selectable for inclusion** (2-min, authoritative). Plan assumes it MAY be unavailable.
+   - **The Housing-legal precision levers (confirmed available):** retargeting / engagement Custom Audiences (LP visitors, video viewers, lead-form openers, page engagers), broad geo (city/region, 15-mi+ radius, no ZIP), interest targeting (Zillow, Apartments.com, home-improvement), and Advantage+ automated audience. **→ The customer file's biggest paid value shifts to Google Customer Match + retargeting-seed + CAPI, not Meta inclusion targeting.**
 3. **Pixel + CAPI + dedup is the tracking spine — and we already have it** (audit: 100% Pixel + CAPI coverage, shared `event_id` dedup). Pixel-only loses ~30-40% of conversions to ATT/ITP/ad-blockers; CAPI recovers ~10-25% of that. ✅ Already shipped.
 4. **CRM→CAPI "qualified" quality loop (Conversion Leads Optimization):** fire a quality event back to Meta when a `crm_people` lead reaches a qualified stage, so Meta learns *which* leads convert. Right architecture to BUILD now — BUT needs **~50 qualified events / ad-set / week** to exit learning. At our volume (~1 buyer / 7 sellers per 60 days) it won't meaningfully optimize delivery yet. Build it; treat the efficiency gain as latent until volume scales. (high)
 5. **Follow-up SPEED is the single highest-leverage lever.** Lead-to-client on paid is structurally tiny (**0.4-1.2%**), and speed dominates: 5-min vs 30-min response = **21× qualification odds**; **78% of buyers work with the first agent to respond** (MIT/Oldroyd, 15k leads). Every lead must hit `crm_people` + a human within **minutes**. (high)
@@ -20,18 +22,27 @@
 
 ---
 
-## 2. Campaign architecture (concrete, seller-first)
+## 2. Campaign architecture — at $20/day (the prove-it phase)
 
-**Special Ad Category = Housing on every campaign. US 15-mi min radius (Central Oregon).**
+**$20/day (~$600/mo) is ONE campaign, one ad set — not three.** Spreading it starves them all: Meta needs ~50 events/ad-set/week to exit learning, and at ~$28 CPL, $600/mo ≈ **~21 leads/mo total** — already below threshold. Run one thing well, prove lead quality + speed-to-close, then scale.
 
-| # | Campaign | Objective | Audience (Housing-legal) | Destination |
-|---|---|---|---|---|
-| 1 | **Seller — Home Value** (flagship) | Lead-Conversion | 13,900 homeowner Custom Audience (+1% LAL *if eligible*) | Instant form w/ qualifiers, OR traffic → `/lp/seller-home-value` |
-| 2 | **Expired / FSBO** | Lead-Conversion | Broad Central Oregon + interest layers (Housing limits apply) | `/lp/expired-listing`, `/lp/fsbo` (high-intent, custom LP) |
-| 3 | **Buyer — Listing Alerts** (volume builder) | Lead-Conversion | Broad + lookalike (if eligible) | Instant form → also manufactures qualified events to make CLO viable |
+**Launch campaign: Seller — Home Value.**
+- **Objective:** Lead-Conversion, instant form with 2-3 **qualifier questions** (fights junk). Special Ad Category = **Housing**. Central Oregon (Bend/Redmond, 15-mi+ radius, no ZIP).
+- **Audience (Housing-legal only):** broad Central Oregon geo + **Advantage+** (Meta finds the seller within the geo), optional home-improvement/Zillow interest layer. **NOT the lookalike** (illegal under Housing). Customer file ONLY if Ads Manager confirms it's selectable (decision #3).
+- **Destination — A/B:** (a) Meta **instant form** (cheapest CPL, fastest-to-CRM) vs (b) **traffic → `/lp/seller-home-value`** (higher intent, AND it builds a website-visitor retargeting audience that IS Housing-legal — the precision lever the customer file can't be).
+- **Retargeting ad set** (once LP traffic accrues): website-visitor / lead-form-opener Custom Audience. This is the durable Housing-legal targeting asset — every traffic dollar seeds it.
+- **Creative** (brand voice — show don't tell, a number beats an adjective): "What would your home bring today?" + a real recent local comp. No banned hype words.
+- **Scale trigger:** once cost-per-qualified-lead is known and ≥1 deal is attributable, add Expired/FSBO + Buyer campaigns and lift budget.
 
-- **Creative angles** (research + brand voice): show-don't-tell, a number beats an adjective. Seller: "What would your home bring today?" + a real local comp. Expired: the honest read. Avoid banned hype words.
-- **Seller-first** because we already own the seller audience engine. Buyer runs partly to build event volume toward the CLO learning threshold.
+### Budget & ROAS reality ($20/day, 2.5% commission)
+- ~$600/mo ≈ **~21 leads/mo** at a ~$28 US benchmark CPL (refresh with actuals).
+- One close at **2.5% commission** on a typical Central Oregon sale (~$700k illustrative — confirm actual avg) ≈ **~$17,500/side**.
+- **Break-even ≈ ONE closed deal per ~29 months of spend** ($17,500 ÷ $600/mo). Even an extremely low close rate is profitable — this is **NOT a ROAS-risk play, it's a volume/learning + lead-quality play.**
+- **Ignore in-window ROAS.** Track **cost-per-QUALIFIED-lead** and **speed-to-first-touch**; the per-close commission carries the economics.
+- **The real risk is volume** (~21 leads/mo is below Meta's learning threshold → delivery won't self-optimize), which is why creative + speed-to-lead + a single tight campaign matter more than algorithm tricks at this budget.
+
+### Google — parallel test (decision #4: yes)
+Run a small **Google Search** test alongside Meta for **high-intent seller capture** Meta literally cannot target under Housing: queries like *"sell my house Bend"*, *"home value Bend OR"*, *"what's my home worth"*. Search catches active intent; Meta catches interrupt-demand. Google also has its own Housing restrictions (confirm Customer Match eligibility), but Search-by-keyword intent is the gap Meta's Housing rules leave wide open. Point these ads at `/lp/seller-home-value?agent=<broker>` so attribution + per-broker routing carry over. Keep it small ($5-10/day) until cost-per-qualified-lead is comparable.
 
 ---
 
@@ -73,12 +84,14 @@ The 5 Tier-1 LPs already have single conversion goals + KB design + Pixel/CAPI. 
 
 ---
 
-## 6. Open decisions (need Matt — these shape execution, not blockers)
+## 6. Decisions — RESOLVED 2026-06-23
 
-1. **Monthly ad budget?** Sets scale + whether we can reach the ~50-qualified-events/ad-set/week CLO threshold.
-2. **Actual close rate + avg commission per qualified lead** (by source if known) — the missing inputs for the real ROAS model. (Trust `qualified_*` metrics; `new_leads` is import-polluted.)
-3. **Verify in Ads Manager: is the 1% lookalike Housing-eligible?** If limited, the Custom Audience carries targeting alone.
-4. **Google Search / PMax for high-intent seller capture** ("sell my house Bend", home-valuation queries) — research established Meta-primary but did not benchmark Google head-to-head for this market. Worth a test budget?
+1. **Budget: $20/day (~$600/mo)** until results show → ONE campaign (§2), prove-it phase, below Meta's learning threshold by design.
+2. **Avg commission 2.5%** (~$17.5k/side on a ~$700k sale); **close rate unknown** → track cost-per-qualified-lead + actual closes. Commission math: break-even ≈ 1 deal / ~29 months, so economics are safe; volume is the constraint.
+3. **Housing audience — RESEARCHED (§8): lookalike is OUT for Housing; customer-file is CONTESTED → Matt confirms in Ads Manager.** Precision lever shifts to retargeting + broad geo + Advantage+.
+4. **Google: YES** — small parallel Search test for high-intent seller queries (§2 "Google — parallel test").
+
+**Still useful to confirm when convenient:** actual avg sale price (for the ROAS model) and whether the customer-file audience is selectable under Housing in Ads Manager.
 
 ---
 
@@ -90,3 +103,16 @@ The 5 Tier-1 LPs already have single conversion goals + KB design + Pixel/CAPI. 
 - **Phase 3 — Launch + measure:** seller-first campaigns under Housing; instant forms w/ qualifiers; measure **cost-per-qualified-lead** (not in-window ROAS); speed-to-lead < minutes; iterate.
 
 **Guiding metric:** cost-per-**qualified**-lead and speed-to-first-touch — not clicks, not in-window ROAS.
+
+---
+
+## 8. Housing-category audience research (decision #3, 2026-06-23)
+
+Researched because the first-pass research said "Custom Audiences stay usable under Housing" but other sources flagged a Jan-2025 restriction. Findings across 5 sources:
+
+- **Lookalike audiences: NOT usable for Housing — unanimous.** "Lookalikes: Not available for Special Ad Category campaigns." Special Ad Audiences (the 2019-2022 workaround) stopped accepting new creation **Aug 25, 2022** and are deprecated for HEC. → **The 1% lookalike we built can't target Housing ads.**
+- **Customer-file (uploaded list) Custom Audiences: CONTESTED.** A real-estate-specific source still recommends uploading lists ("past clients, leads, or email subscribers"); others cite a **Jan-2025 US restriction on customer-list audiences for housing/employment/credit.** No primary Meta doc reachable (JS-gated). → **Authoritative check = Ads Manager:** set Special Ad Category = Housing, open the audience selector, see if "Ryan Realty CRM Leads" is selectable for inclusion. Plan assumes it may be unavailable.
+- **Confirmed Housing-legal:** retargeting/engagement Custom Audiences (LP visitors, video viewers, lead-form openers, page engagers), broad geo (city/region, 15-mi+ radius, no ZIP), interest targeting, Advantage+ automated audience.
+- **So:** the customer file's paid value shifts off Meta inclusion-targeting and onto Google Customer Match + retargeting-seed + the CAPI quality signal. The Meta precision lever becomes **retargeting people who hit the LPs** — which is why driving LP traffic (vs instant forms only) compounds.
+
+Sources: [agencyfifty3](https://agencyfifty3.com/blog/facebook-is-removing-one-of-its-key-audiences-for-use-in-housing-campaigns/) · [adamigo](https://www.adamigo.ai/blog/meta-housing-ads-policy-real-estate-compliance-tips) · [leadenforce](https://leadenforce.com/blog/special-ad-category-audience-tips-for-real-estate-credit-and-employment-ads) · [jonloomer](https://www.jonloomer.com/special-ad-audiences-going-away-for-facebook-targeting/) · Meta Business Help Center 2220749868045706 (primary, JS-gated — confirm in-platform).
