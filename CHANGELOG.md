@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.604.4 (2026-06-23)
+
+### Maintenance
+- docs(ads): pro swipe file — 14 curated examples (named creators + exact hooks) from 23 researched
+
+---
+
+
 ## v1.604.3 (2026-06-23)
 
 ### Maintenance
