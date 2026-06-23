@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.604.3 (2026-06-23)
+
+### Maintenance
+- docs(ads): creative direction North Star — buyer=Bend lifestyle video, seller=trusted advisor; ALL old video excluded, ground-up
+
+---
+
+
 ## v1.604.2 (2026-06-23)
 
 ### Bug Fixes
