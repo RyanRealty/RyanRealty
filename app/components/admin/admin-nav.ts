@@ -110,6 +110,7 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
   // ── System: plumbing and access ──
   const system: AdminNavItem[] = []
   if (isSuperuser) system.push(item('/admin/operations', 'Operations', 'gauge'))
+  if (isSuperuser) system.push(item('/admin/crm/health', 'CRM health', 'activity'))
   system.push(item('/admin/sync', 'Sync status', 'refresh'))
   if (isSuperuser) system.push(item('/admin/spark-status', 'Spark', 'zap'))
   if (canBrokers) {
