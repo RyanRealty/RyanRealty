@@ -14,6 +14,7 @@ import {
 } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { saveAnonymousPartialAddress } from '@/lib/data'
+import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { createCmaRequest } from '@/lib/cma-request'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
 import { geocodeAndTagLead } from '@/lib/lead-geocode'
@@ -212,6 +213,30 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
     if (!fubPersonId && email) {
       const newlyCreated = await findPersonByEmail(email)
       if (newlyCreated?.id) fubPersonId = newlyCreated.id
+    }
+
+    // ─── Native-capture fallback on a FUB push failure (CONTACT360 Phase 0.2)
+    // If the FUB push FAILED and we still cannot resolve a FUB person id, FUB
+    // is likely down — without this the FSBO lead (a hot seller) would be
+    // dropped entirely. Record it natively in crm_people + crm_contact_points
+    // so a FUB outage never silently loses a lead. The happy path is unchanged.
+    if (!eventResult.ok && !fubPersonId) {
+      try {
+        const native = await ensureNativeLead({
+          name,
+          email,
+          phone,
+          source: 'fsbo-lp',
+          tags: ['audience:seller', 'seller:hot', 'source:fsbo-lp', 'intent:fsbo', 'fub-fallback'],
+        })
+        if (native.created || native.personId > 0) {
+          console.warn(
+            `[fsbo-lp] FUB push failed; native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
+          )
+        }
+      } catch (e) {
+        console.warn('[fsbo-lp] native fallback lead failed:', e)
+      }
     }
 
     // ─── Anonymous-to-known backfill (non-blocking, idempotent) ────────────

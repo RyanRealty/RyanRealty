@@ -7,6 +7,7 @@ import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
+import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -96,7 +97,31 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
         ...(input.lpContext?.lp_term ? { term: input.lpContext.lp_term } : {}),
       },
     })
-    if (!result.ok) return { error: result.error ?? 'Could not submit request right now' }
+    if (!result.ok) {
+      // ─── Native-capture fallback on a FUB push failure (CONTACT360 Phase 0.2)
+      // The FUB push failed (likely a FUB outage) — without a native record this
+      // buyer/seller LP lead would be dropped entirely. Capture it in crm_people
+      // + crm_contact_points so the lead is tracked, then still surface the error
+      // so the visitor is prompted to retry (the native row dedupes on retry).
+      const lpSource = input.audience === 'seller' ? 'seller-lp' : 'buyer-lp'
+      try {
+        const native = await ensureNativeLead({
+          name,
+          email,
+          phone,
+          source: lpSource,
+          tags: [`audience:${input.audience}`, `source:${lpSource}`, 'fub-fallback'],
+        })
+        if (native.created || native.personId > 0) {
+          console.warn(
+            `[lead-landing] FUB push failed; native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
+          )
+        }
+      } catch (e) {
+        console.warn('[lead-landing] native fallback lead failed:', e)
+      }
+      return { error: result.error ?? 'Could not submit request right now' }
+    }
 
     const eventId = generateEventId()
     const leadValue = input.audience === 'seller' ? 500 : 300
