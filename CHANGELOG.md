@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.66 (2026-06-23)
+
+### Other
+- CONTACT360 10.1: enforce broker RBAC (Option A) — close the cross-broker leak
+
+---
+
+
 ## v1.599.65 (2026-06-23)
 
 ### Other
