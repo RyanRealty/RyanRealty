@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.52 (2026-06-23)
+
+### Other
+- CONTACT360 2.7: contact identity-strip + CMA-history reader
+
+---
+
+
 ## v1.599.51 (2026-06-23)
 
 ### Other
