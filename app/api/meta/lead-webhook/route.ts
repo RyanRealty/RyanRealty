@@ -724,6 +724,21 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
   // Add context note
   await addFubNote(personId, parsed)
 
+  // Instant auto-enroll for buyer leads. The buyer LP enrolls inline, but FB
+  // instant-form leads were only picked up by the 15-min catch-all cron, so the
+  // first automated email landed 15-30 min late. Speed-to-first-touch is the #1
+  // conversion lever on a lead-form ad, so mirror the LP path: enroll now into
+  // the email-first buyer sequence (plan 70, selected by the audience:buyer tag).
+  // SMS stays FAIL-CLOSED — an FB instant form captures no SMS consent, so
+  // smsConsent:false suppresses the sms step and only the email touch fires until
+  // the lead opts in. Realtors skipped. Dedupe-safe: the cron hits the same key
+  // and no-ops. Non-blocking so it never delays the 200 webhook ack.
+  if (parsed.audience === 'buyer' && !parsed.possibleRealtor) {
+    void import('@/lib/crm/enroll')
+      .then(({ autoEnrollByFubId }) => autoEnrollByFubId(personId, { smsConsent: false }))
+      .catch((e) => console.warn('[lead-webhook] buyer auto-enroll failed (non-blocking):', e))
+  }
+
   // Seller lead that included a property address → kick off the CMA pipeline,
   // exactly like the website LP path (createCmaRequest → cmas row + content:cma
   // brain action → CMA producer builds the 15-page CMA + a Gmail draft for Matt).
