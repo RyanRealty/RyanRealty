@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.45 (2026-06-23)
+
+### Other
+- progress: log 9.1 code-side done (no prod sandbox sender)
+
+---
+
+
 ## v1.599.44 (2026-06-23)
 
 ### Other
