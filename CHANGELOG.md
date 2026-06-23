@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.601.2 (2026-06-23)
+
+### Maintenance
+- docs(crm): first live Meta audience push COMPLETE — 13,883 received, lookalike created
+
+---
+
+
 ## v1.601.1 (2026-06-23)
 
 ### Maintenance
