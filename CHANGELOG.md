@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.604.6 (2026-06-23)
+
+### Maintenance
+- docs(ads): buyer-video footage plan — owned 4K masters + Getty (real Bend) + Artgrid; licensing gate + quality bar
+
+---
+
+
 ## v1.604.5 (2026-06-23)
 
 ### Maintenance
