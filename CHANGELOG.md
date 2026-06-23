@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.67 (2026-06-23)
+
+### Other
+- CONTACT360: progress log — migrations applied + RBAC enforced (Matt's a+b)
+
+---
+
+
 ## v1.599.66 (2026-06-23)
 
 ### Other
