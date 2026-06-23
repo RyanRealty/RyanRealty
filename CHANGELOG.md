@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.604.12 (2026-06-23)
+
+### Bug Fixes
+- fix(saved-listings): resolve canonical ListingKey on save-state reads + writes
+
+### Maintenance
+- chore(gates): restore green ci:gates — register ads docs + realign drifted baselines
+
+---
+
+
 ## v1.604.11 (2026-06-23)
 
 ### Other
