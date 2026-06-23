@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { incrementListingSaveCount, decrementListingSaveCount } from '@/app/actions/engagement'
+import { unlikeListing } from '@/app/actions/likes'
+import { normalizeListingKey, planSavedHomeRemoval } from '@/lib/saved-home-toggle'
 
 export async function getSavedListingKeys(): Promise<string[]> {
   const supabase = await createClient()
@@ -64,6 +66,29 @@ export async function toggleSavedListing(listingKey: string): Promise<{ saved: b
   }
   const { error } = await saveListing(listingKey)
   return { saved: true, error }
+}
+
+/**
+ * Remove a saved home for the signed-in user across BOTH stores.
+ *
+ * The /account/saved-homes page renders the UNION of `saved_listings` (bookmark)
+ * and `likes` (heart). The old remove only called `unsaveListing`, so a home
+ * that lived only in `likes` was a silent no-op. This clears both stores so the
+ * home is actually gone. A delete against a store with no matching row is a
+ * harmless zero-row delete, never an error. Both helpers resolve the user from
+ * the session (`supabase.auth.getUser()`) — the client-passed listing key is the
+ * only client input, and it never selects a different user's rows.
+ */
+export async function removeSavedHome(listingKey: string): Promise<{ error: string | null }> {
+  const key = normalizeListingKey(listingKey)
+  if (!key) return { error: 'Missing listing' }
+  // Membership isn't known at the page level, so plan a full clear (both stores).
+  const plan = planSavedHomeRemoval()
+  const [saveResult, likeResult] = await Promise.all([
+    plan.removeSaved ? unsaveListing(key) : Promise.resolve({ error: null }),
+    plan.removeLiked ? unlikeListing(key) : Promise.resolve({ error: null }),
+  ])
+  return { error: saveResult.error ?? likeResult.error ?? null }
 }
 
 /** Public save count for a listing (social proof). Uses service role to count saved_listings. */

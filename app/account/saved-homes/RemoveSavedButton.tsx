@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { unsaveListing } from '@/app/actions/saved-listings'
+import { removeSavedHome } from '@/app/actions/saved-listings'
 import { Button } from "@/components/ui/button"
 
 type Props = { listingKey: string }
@@ -13,7 +13,9 @@ export default function RemoveSavedButton({ listingKey }: Props) {
 
   function handleRemove() {
     startTransition(async () => {
-      await unsaveListing(listingKey)
+      // Clears BOTH stores (saved_listings + likes). The old call only hit
+      // saved_listings, so a liked-only home was a silent no-op on remove.
+      await removeSavedHome(listingKey)
       router.refresh()
     })
   }

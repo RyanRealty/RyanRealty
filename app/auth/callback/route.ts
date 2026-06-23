@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { trackSignedInUser, findPersonByEmail } from '@/lib/followupboss'
 import { stitchVisitorIdentity } from '@/lib/visitor-backfill'
+import { claimGuestSavedSearches } from '@/lib/data/savedSearches'
+import type { User } from '@supabase/supabase-js'
 import * as Sentry from '@sentry/nextjs'
 import { NextResponse } from 'next/server'
 import { cookies, headers } from 'next/headers'
@@ -49,6 +51,27 @@ async function stampFubCidFromEmail(
       userId: userId ?? null,
       source,
     })
+  } catch (err) {
+    Sentry.captureException(err)
+  }
+}
+
+/**
+ * CONTACT360 Phase 7.3 — claim-on-sign-in. Attach a guest's email-keyed saved
+ * searches (guest_search_alerts) to their account on first sign-in so they are
+ * not orphaned. EMAIL-VERIFICATION GATED: only claim when Supabase reports the
+ * account email as confirmed (user.email_confirmed_at). The OAuth + magic-link +
+ * recovery flows that reach this callback all verify the email, but we re-check
+ * the field so we never attach another person's guest searches to an account on
+ * an unverified address. Best-effort and idempotent (dedupes by filters_hash) —
+ * never blocks or fails sign-in.
+ */
+async function claimGuestSearchesForUser(user: User): Promise<void> {
+  const email = user.email?.trim().toLowerCase()
+  if (!email) return
+  if (!user.email_confirmed_at) return // verified email only
+  try {
+    await claimGuestSavedSearches(user.id, email)
   } catch (err) {
     Sentry.captureException(err)
   }
@@ -121,6 +144,9 @@ export async function GET(request: Request) {
       const res = NextResponse.redirect(redirectUrl)
       res.cookies.delete(AUTH_NEXT_COOKIE)
       await stampFubCidFromEmail(res, data.user.email ?? '', rrVid, data.user.id, 'auth_oauth')
+      // Phase 7.3: pull this signer's guest email-keyed saved searches into the
+      // account (verified-email gated, idempotent, never blocks sign-in).
+      await claimGuestSearchesForUser(data.user)
       return res
     }
   }
@@ -144,6 +170,9 @@ export async function GET(request: Request) {
       const res = NextResponse.redirect(redirectUrl)
       res.cookies.delete(AUTH_NEXT_COOKIE)
       await stampFubCidFromEmail(res, data.user.email ?? '', rrVid, data.user.id, type === 'recovery' ? 'auth_recovery' : 'auth_email')
+      // Phase 7.3: pull this signer's guest email-keyed saved searches into the
+      // account (verified-email gated, idempotent, never blocks sign-in).
+      await claimGuestSearchesForUser(data.user)
       return res
     }
   }

@@ -11,6 +11,14 @@ import {
   normalizeSavedSearchFilters,
   type SavedSearchFilters,
 } from '@/lib/search-filters'
+import {
+  validateCadence,
+  type SavedSearchCadence,
+} from '@/lib/saved-search-cadence'
+import {
+  normalizeSavedSearchFrequency,
+  type SavedSearchFrequency,
+} from '@/lib/saved-search-frequency'
 
 export type SavedSearchRow = {
   id: string
@@ -24,6 +32,10 @@ export type SavedSearchRow = {
   cache_listing_keys: string[] | null
   cache_refreshed_at: string | null
   public_click_count: number | null
+  /** false = receiving alerts, true = paused (the alert cron skips paused rows). */
+  is_paused: boolean
+  /** instant | daily | weekly — the cadence the alert cron honors. */
+  notification_frequency: SavedSearchCadence
 }
 
 export type PublicSearchRow = {
@@ -43,10 +55,15 @@ export async function getSavedSearches(): Promise<SavedSearchRow[]> {
   if (!user) return []
   const { data } = await supabase
     .from('saved_searches')
-    .select('id, name, filters, created_at, is_public, public_title, filters_hash, result_count, cache_listing_keys, cache_refreshed_at, public_click_count')
+    .select('id, name, filters, created_at, is_public, public_title, filters_hash, result_count, cache_listing_keys, cache_refreshed_at, public_click_count, is_paused, notification_frequency')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
-  return (data ?? []) as SavedSearchRow[]
+  const rows = (data ?? []) as Array<Record<string, unknown>>
+  return rows.map((row): SavedSearchRow => ({
+    ...(row as unknown as Omit<SavedSearchRow, 'is_paused' | 'notification_frequency'>),
+    is_paused: row.is_paused === true,
+    notification_frequency: validateCadence(row.notification_frequency) ?? 'daily',
+  }))
 }
 
 export async function createSavedSearch(
@@ -143,6 +160,82 @@ export async function deleteSavedSearch(id: string) {
     .eq('user_id', user.id)
   if (error) return { error: error.message }
   return { error: null }
+}
+
+/**
+ * CONTACT360 Phase 7.4 — consumer self-management of saved-search alerts.
+ *
+ * These let a SIGNED-IN user manage their own listing alerts from /account:
+ * pause/resume, change the email cadence, and rename. Every one is scoped to
+ * the session user — `createClient()` reads the auth cookie, `getUser()`
+ * returns the authenticated id, and every write carries BOTH `.eq('id', id)`
+ * AND `.eq('user_id', user.id)`. A client never passes a user id, so a user
+ * can only ever touch their own rows. The matching admin-side toggles live in
+ * lib/data/crm/getContactMemberships.ts; these are the consumer counterpart.
+ */
+
+type SavedSearchActionResult = { error: string | null }
+
+/** Pause a saved search so the alert cron stops emailing matches. Scoped to the session user. */
+export async function pauseSavedSearch(id: string): Promise<SavedSearchActionResult> {
+  return setSavedSearchPausedState(id, true)
+}
+
+/** Resume a paused saved search so alerts start sending again. Scoped to the session user. */
+export async function resumeSavedSearch(id: string): Promise<SavedSearchActionResult> {
+  return setSavedSearchPausedState(id, false)
+}
+
+async function setSavedSearchPausedState(id: string, paused: boolean): Promise<SavedSearchActionResult> {
+  const searchId = (id ?? '').trim()
+  if (!searchId) return { error: 'Search not found' }
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not signed in' }
+  const { error } = await supabase
+    .from('saved_searches')
+    .update({ is_paused: paused })
+    .eq('id', searchId)
+    .eq('user_id', user.id)
+  if (error) return { error: error.message }
+  return { error: null }
+}
+
+/**
+ * Change a saved search's email cadence. Only the three cron-honored values
+ * (instant / daily / weekly) are accepted — validateCadence refuses anything
+ * else so the user can't pick a frequency the alert sender silently ignores.
+ * Scoped to the session user.
+ */
+export async function setSavedSearchCadence(
+  id: string,
+  frequency: string,
+): Promise<SavedSearchActionResult> {
+  const searchId = (id ?? '').trim()
+  if (!searchId) return { error: 'Search not found' }
+  const cadence = validateCadence(frequency)
+  if (!cadence) return { error: 'Pick a valid alert frequency.' }
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not signed in' }
+  const { error } = await supabase
+    .from('saved_searches')
+    .update({ notification_frequency: cadence })
+    .eq('id', searchId)
+    .eq('user_id', user.id)
+  if (error) return { error: error.message }
+  return { error: null }
+}
+
+/**
+ * Rename a saved search. Thin, explicitly-named wrapper over updateSavedSearch
+ * so the consumer UI reads clearly and never reaches into the filters branch.
+ * Scoped to the session user (updateSavedSearch carries the user_id guard).
+ */
+export async function renameSavedSearch(id: string, name: string): Promise<SavedSearchActionResult> {
+  const next = (name ?? '').trim()
+  if (!next) return { error: 'Give this search a name.' }
+  return updateSavedSearch(id, { name: next })
 }
 
 export async function setSavedSearchPublicState(
@@ -260,4 +353,31 @@ export async function trackPublicSearchClick(id: string): Promise<void> {
   } catch (error) {
     console.error('[trackPublicSearchClick]', error)
   }
+}
+
+/**
+ * Set the alert cadence on EVERY saved search the signed-in user owns
+ * (CONTACT360 Phase 7.5). The alert cron decides whether a saved search is due
+ * by reading the per-row `saved_searches.notification_frequency`, so this is the
+ * write that actually changes what the user receives. The /account/notifications
+ * "Saved search matches" control writes here so the choice is no longer a dead
+ * global profile preference no cron reads.
+ *
+ * Scoped to the signed-in user's auth id (`.eq('user_id', user.id)`), never a
+ * client-passed id. Returns the normalized value the rows now hold so the caller
+ * can keep its UI / profile mirror in sync.
+ */
+export async function setSavedSearchFrequencyForUser(
+  frequency: string,
+): Promise<{ error: string | null; frequency: SavedSearchFrequency }> {
+  const normalized = normalizeSavedSearchFrequency(frequency)
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not signed in', frequency: normalized }
+  const { error } = await supabase
+    .from('saved_searches')
+    .update({ notification_frequency: normalized })
+    .eq('user_id', user.id)
+  if (error) return { error: error.message, frequency: normalized }
+  return { error: null, frequency: normalized }
 }
