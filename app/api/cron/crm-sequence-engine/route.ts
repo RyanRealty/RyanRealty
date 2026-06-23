@@ -32,6 +32,18 @@ export const maxDuration = 300
 
 const BATCH = 50
 
+/**
+ * A FollowUpBoss-archived email/SMS template imports into crm_templates with its
+ * subject AND body replaced by the literal placeholder "archived" (FUB's marker
+ * for a disabled template). Delivering one sends a contact an email/text that
+ * literally reads "archived". This guards the send path: a resolved template
+ * whose subject or body is just that placeholder is never sent. Pure + total.
+ */
+function isArchivedPlaceholder(subject: string, body: string): boolean {
+  const norm = (s: string) => s.trim().toLowerCase()
+  return norm(body) === 'archived' || norm(subject) === 'archived'
+}
+
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET?.trim()
   const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
@@ -202,6 +214,15 @@ export async function GET(request: Request) {
           if (tpl) { subject = tpl.subject ?? subject; body = tpl.body ?? body }
         }
         if (!body) { await finish({ status: 'stopped' }); await log(`Sequence "${seq.name}" stopped — empty email step`); errored++; continue }
+        // Archived-placeholder guard: a FUB-archived template imports with
+        // subject/body = the literal "archived". The empty-body check above
+        // misses it (it is 8 non-empty chars). NEVER deliver a placeholder.
+        if (isArchivedPlaceholder(subject, body)) {
+          await finish({ status: 'stopped' })
+          await log(`Sequence "${seq.name}" stopped — archived/placeholder template (${step.templateKey ?? 'inline'})`)
+          errored++
+          continue
+        }
 
         // CMA hold (parity with SMS): never email a dead/empty CMA link. Checked
         // on the raw body (the %cma_link% token survives until renderMerge).
@@ -280,6 +301,14 @@ export async function GET(request: Request) {
         if (!body.trim()) {
           await finish({ status: 'stopped' })
           await log(`Sequence "${seq.name}" stopped — empty SMS step`)
+          errored++
+          continue
+        }
+        // Same archived-placeholder guard as the email path (FUB-archived
+        // templates import body = the literal "archived").
+        if (isArchivedPlaceholder(body, body)) {
+          await finish({ status: 'stopped' })
+          await log(`Sequence "${seq.name}" stopped — archived/placeholder SMS template`)
           errored++
           continue
         }
