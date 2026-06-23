@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.604.13 (2026-06-23)
+
+### Bug Fixes
+- fix(measurement): normalize platform vocabulary in performance-pull crons
+
+---
+
+
 ## v1.604.12 (2026-06-23)
 
 ### Bug Fixes
