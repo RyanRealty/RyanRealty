@@ -15,11 +15,15 @@ The insight that makes the ad work: **they are not buying a house. They are buyi
 ### ⚠️ The fair-housing trap (must thread this)
 The "raise their kids somewhere better" motivation is **familial status — we can NEVER target it in copy.** No "perfect for families," "great for raising kids," "for parents/professionals," no demographic targeting. We honor that motivation *implicitly* by showing the wholesome, active, outdoors, connected life — and the right person sees themselves and their family in it. **Sell the PLACE and the LIFE; never name the occupant.**
 
-## The deeper truth + our position (Matt directive 2026-06-23) — this is the ad's soul
-- **The real pain isn't the commute. It's the quiet fear they're MISSING THEIR LIFE.** The years slipping by in traffic, meetings, screens, gray — the sense that "success" bought them everything except *actually living*. That FOMO-on-your-own-life is the gut driver under every lifestyle shot.
-- **Our position is lived empathy, not a pitch: WE WERE THEM.** We felt that exact thing. We made the move to Central Oregon. So the ad speaks **peer-to-peer, not agent-to-prospect**: *"We get it — we were you. And you're not wrong."* We **validate the instinct** instead of manufacturing urgency. That authenticity — a real person who made the leap — is the trust that makes the whole thing land, and it's exactly what the swipe file proves converts (lived story + personality beat polish).
-- **Voice / throughline:** affirm the instinct, then show it's real and within reach. Not "look at this pretty place" — **"you already know you want this. We did too. It's a Tuesday here. Come live it."** A light broker-voice or first-person text thread over the lifestyle montage carries it. Never salesy, never hype — Matt's honest, direct, kind register.
-- **The emotional turn the ad must hit:** *missing out → seen ("we were you") → validated ("you're not wrong") → it's real and it's here → the easy first step.*
+## The crisis underneath (Matt directive 2026-06-23) — this is the ad's soul
+- These are not "people sick of traffic." They are **high-level, substantive human beings** who worked brutally hard, won the game, and reached a summit they don't actually like — and they feel the clock. It's an **existential crisis**: the creeping certainty that they're **missing the important things** — the light, the people, the body alive outdoors, the finite years — while the calendar empties. They did everything right and it feels hollow.
+- They will **not be sold to.** They need to be **understood** — and shown, without a word of pitch, that another life is real and within reach. Our empathy is genuine (we lived this move), but it shows up as the ad *understanding the ache* — never as a broker saying it.
+
+### ⛔ HARD RULE: NO BROKER. EVER.
+**The last thing this person wants to see is a broker.** No agent face, no broker voiceover, no "we were you," no headshot, no logo-forward moment — nothing that smells of a salesperson. The brand earns its place only at the very end, quietly. This is a short film about a life worth living that happens to be findable here — *not a real-estate ad until the final frame.* (Per-broker routing still works via the destination `?agent=` link — no face required.)
+
+### Execution: elevated restraint
+Near-silent. Real footage + a finite clock carry it. At most ONE oblique line about time / the important things — never narrated emotion, never a pitch. These people read restraint as respect and a pitch as an insult. The turn is felt, not stated: *you've been missing this → it's a real, ordinary Tuesday here → the years are finite → a quiet first step.*
 
 ## BUYER AD — sell the life, not the listing
 - **Format: VIDEO.** Motion, place, emotion. Not a static price card.
