@@ -274,11 +274,15 @@ export default async function ConsoleLeadPage({
   let homeMedia: Awaited<ReturnType<typeof getOwnedHomeMedia>> | null = null
   let homeMatches: OwnedHomeMatch[] = []
   if (homeLat !== null && homeLng !== null) {
-    ;[homeMedia, homeMatches] = await Promise.all([getOwnedHomeMedia(homeLat, homeLng), getOwnedHomeMatches(homeLat, homeLng)])
+    ;[homeMedia, homeMatches] = await Promise.all([getOwnedHomeMedia(homeLat, homeLng), getOwnedHomeMatches(homeLat, homeLng, homeAddress)])
   }
-  const homeMlsPhoto = homeMatches.find((m) => m.photoUrl)?.photoUrl ?? null
-  const homeActiveListing = homeMatches.find((m) => ['Active', 'Coming Soon', 'Active Under Contract', 'Pending'].includes(m.status ?? '')) ?? null
-  const homeFacts = homeMatches.find((m) => m.beds || m.sqft) ?? null
+  // Only trust a candidate whose street address actually matches the owner's —
+  // proximity alone can land on a neighbor, so a near miss shows no photo / no
+  // "on the market" alert rather than the wrong house.
+  const confirmedMatches = homeMatches.filter((m) => m.addressMatched)
+  const homeMlsPhoto = confirmedMatches.find((m) => m.photoUrl)?.photoUrl ?? null
+  const homeActiveListing = confirmedMatches.find((m) => ['Active', 'Coming Soon', 'Active Under Contract', 'Pending'].includes(m.status ?? '')) ?? null
+  const homeFacts = confirmedMatches.find((m) => m.beds || m.sqft) ?? null
 
   const webEvents = full.timeline.filter((t) => t.kind === 'web_event').slice(0, 6)
   const activityLog = full.timeline.filter((t) => !isConversationEvent(t.kind) && t.kind !== 'email_open' && t.kind !== 'email_click')
