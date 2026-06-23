@@ -17,19 +17,19 @@
 | 1 | 1.1 | Bridge columns (crm_person_id) + backfill | 🚩 flagged — migration written + pre-verified safe (`supabase/migrations/20260622190000_crm_person_id_bridge_columns.sql`); applying to prod needs Matt's explicit OK (classifier blocked autonomous prod migration) |
 | 1 | 1.2 | resolvePersonIdentity() resolver | ✅ done v1 (c5cf2058) — authUserId from visitor_identity_map; email→auth.users needs Phase 1.1 RPC |
 | 1 | 1.3 | Refactor getters to crm_person_id / the bundle | ⬜ todo |
-| 2 | 2.1 | Unified ContactActivityFeed | ✅ reader done (4cabc1f8); panel UI = Wave 4 |
+| 2 | 2.1 | Unified ContactActivityFeed | ✅ DONE — reader (4cabc1f8) + panel wired as the overview "Recent activity" glance (4d05333b) |
 | 2 | 2.2 | Ownership panel — fix the home-photo proximity bug | ✅ done (fab16276) — address-match gate; near miss shows no photo, never the wrong house |
 | 2 | 2.3 | Real owner_type (absentee/out-of-state) | ⬜ todo |
 | 2 | 2.4 | Property attributes for never-listed homes | 🚩 flagged (BatchData) |
 | 2 | 2.5 | Geocode coverage cron | 🚩 flagged (Google cost) |
-| 2 | 2.6 | Behavior/intent summary panel | ✅ reader done (2980e50a); panel UI = Wave 4 |
+| 2 | 2.6 | Behavior/intent summary panel | ✅ DONE — reader (2980e50a) + "On the website" panel in the watching tab (4d05333b) |
 | 2 | 2.7 | Identity strip + source_url + CMA-history panel | ✅ reader done (df6d1604); panel UI = Wave 4+ |
-| 3 | 3.1 | Listing-alerts UNION + humanizer + deep links | ✅ reader done (0bc6ffaa); UI wiring = 3.3/7.6 |
+| 3 | 3.1 | Listing-alerts UNION + humanizer + deep links | ✅ DONE — reader (0bc6ffaa) + humanized panel in the watching tab (4d05333b) |
 | 3 | 3.2 | Newsletter detail (status/frequency/engagement) | ✅ reader done (387322e5) — frequency from segment (no cadence column) |
 | 3 | 3.3 | One-click membership toggles + consent events | ✅ DONE — reader+actions (a0e0d7f6) + toggle UI live on the lead page (3f6e4272), consent-safe, next build verified |
 | 4 | 4.1 | Relationships schema + type vocab | ✅ vocab + reciprocalType (beaaf0f5); UNIQUE/no-self-link constraint = flagged migration (with 1.1) |
 | 4 | 4.2 | link/unlink/setType actions (reciprocal) | ✅ done (beaaf0f5) |
-| 4 | 4.3 | Relationships panel + RelationshipPicker | 🔶 Wave 4 (in flight) |
+| 4 | 4.3 | Relationships panel + RelationshipPicker | ✅ DONE — reader + add/remove panel in the overview (4d05333b); contact-search picker (vs numeric id) = polish follow-up |
 | 4 | 4.4 | Backfill 29 legacy rows + dedup guard | ⬜ todo |
 | 5 | 5.1 | crm_people→Meta uploader, in-app + consent-gated + ledger | 🚩 flagged (Meta creds + go) |
 | 5 | 5.2 | Audience cron + <1k-match monitor + token-model fix | 🚩 flagged (token authority) |
@@ -71,6 +71,15 @@ Legend: ⬜ todo · 🔶 in progress · ✅ done · 🚩 flagged (needs creds / 
 ## Log
 
 _(append newest-first)_
+
+### 2026-06-22 · Wave 4 — the Contact-360 VIEW is assembled (`4d05333b`)
+All 4 panel agents succeeded; integrated + wired into the lead detail page, verified (tsc + 18 new tests + admin-responsive + brand-voice + dead-ui + next build 18.6s, route compiles), committed. The lead page now lays out, design-system + mobile-first:
+- **Overview:** identity → Memberships (one-click toggles) → Relationships (link/unlink typed reciprocal) → Recent-activity glance (unified feed) → next-best-action.
+- **Watching tab:** "On the website" behavior/intent panel → watching homes → humanized listing-alerts → saved searches.
+- **Activity tab:** the existing rich ConversationThread + site/system feed (kept; the unified feed reader also powers the overview glance).
+- **Comms tab:** the existing email/SMS composers.
+
+file-size-budget re-baselined (page 781→812 for the 4 panels). The whole Contact-360 read + action + consent + VIEW layer is now built and live. **Session total: 20 increments.** Remaining buildable: 9.5/9.6 observability (/admin/crm/health + health cron), 9.8 hardening, 10.x RBAC/digests, 2.7 identity-strip panel polish. Blocked-on-Matt: Phase 1.1 + 4.4 migrations (say "apply the migrations"), Phase 5 Meta audiences (creds/decisions), Phase 7 saved-search unification (needs 1.1).
 
 ### 2026-06-22 · Wave 3 (5 increments) + Wave 4 marquee UI — the one-click toggles ship
 Wave 3's 5 agents all succeeded; integrated + verified (tsc + 79 new tests + consent/lead/dal gates + crm-fail-closed all green) + committed:
