@@ -25,3 +25,42 @@ export function getMetaPageToken(): string | undefined {
 export function getMetaPageTokenTrimmed(): string | undefined {
   return process.env.META_PAGE_ACCESS_TOKEN?.trim() || process.env.META_PAGE_TOKEN?.trim() || undefined
 }
+
+/**
+ * System-User access token for Meta Marketing API writes (Custom Audiences,
+ * offline conversions) -- distinct from the Page token used for publishing.
+ * This token carries `ads_management` on the ad account. Read it ONLY through
+ * this accessor so every META_* read stays in this canonical file (mirrors the
+ * page-token policy the `ci:meta-token` gate enforces). The historical user
+ * names (`META_USER_ACCESS_TOKEN_USER`) are accepted as a fallback so a token
+ * set under either name works everywhere.
+ *
+ * Returns undefined when neither name holds a non-blank value.
+ */
+export function getMetaUserAccessToken(): string | undefined {
+  return (
+    process.env.META_USER_ACCESS_TOKEN?.trim() ||
+    process.env.META_USER_ACCESS_TOKEN_USER?.trim() ||
+    undefined
+  )
+}
+
+/**
+ * The Meta ad-account id, always normalized to the `act_<digits>` form Graph
+ * API path segments require. Returns undefined when unset/blank.
+ */
+export function getMetaAdAccountId(): string | undefined {
+  const raw = process.env.META_AD_ACCOUNT_ID?.trim()
+  if (!raw) return undefined
+  return raw.startsWith('act_') ? raw : `act_${raw}`
+}
+
+/**
+ * The live-push safety flag. The audience uploader pushes real hashed PII to
+ * Meta ONLY when this is the exact string 'true' AND the caller passes
+ * dryRun:false. Any other value (unset, '1', 'yes', 'TRUE') keeps the uploader
+ * in dry-run -- the first live push is an explicit, deliberate decision.
+ */
+export function isMetaAudiencePushEnabled(): boolean {
+  return process.env.META_AUDIENCE_PUSH_ENABLED?.trim() === 'true'
+}
