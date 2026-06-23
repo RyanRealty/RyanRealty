@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.56 (2026-06-23)
+
+### Other
+- CONTACT360: progress log — Wave 3 (5 increments) + marquee toggle UI + Wave 4 dispatched
+
+---
+
+
 ## v1.599.55 (2026-06-23)
 
 ### Other
