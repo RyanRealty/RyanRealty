@@ -2,6 +2,17 @@
 
 From the asset inventory + a 105-agent footage deep dive. **The verdict: a hybrid — our OWNED 4K landmark masters + Getty's authentic Bend catalog for activity + Artgrid for cinematic lifestyle b-roll. No faked landmarks, no generic-stock clichés, fully ad-licensed.**
 
+## ✅ WHAT WE ACTUALLY OWN (Drive "Ryan Realty Header Video", found 2026-06-23)
+The folder holds the real masters (not the 720p web copies) — large files = 4K/high-bitrate, ours, zero licensing risk:
+- **Mt Bachelor Aerial** (1.5 GB) · **Mt Bachelor Timelapse Day→Night** (1.6 GB) · **Mt Bachelor Twilight** (99 MB, the golden-hour hero) — driveFileIds in `data/city-hero-videos.json`; full folder id `1Wb3odqbt2liHJScDgZDS3oJsGe2trRlD`.
+- **Sparks Lake Reflection** (60 MB) · **Sparks Lake Paddleboarding** (698 MB) + **Paddleboarding 2** (446 MB) — summer water lifestyle.
+- **Mountain Bike** (39 MB) — covers the MTB gap outright.
+- **Crater Lake Aurora · Proxy Falls · Skylight Cave** — bonus cinematic scenic.
+- **Misc – Long** (1.8 GB) — a compilation to review; likely covers river/downtown/coffee.
+- Plus the **Old Mill iStock hero clip** (1330945786) + 299 asset-library b-roll videos.
+
+→ This covers HOOK + all landmarks + paddleboarding + MTB. **Real remaining gaps are small:** skiing/first-chair, downtown Bend coffee/brewery/street life, and a Deschutes tubing close-up (paddleboarding is a near-substitute). Those few → Getty Bend (à la carte) or Artgrid. The plan below stands but the gap list is now tiny.
+
 ## ⚖️ The hard rule (non-negotiable)
 Every clip in a **paid** ad must be **commercially licensed**, with **model releases** for any recognizable person and **property releases** for any recognizable private property/branded venue. **Editorial-only footage is legally barred** from promoting a service. → No editorial clips of identifiable river floaters, brewery patrons, or branded taprooms unless commercially cleared. AI **cannot** fake an exact real landmark.
 

@@ -13,12 +13,14 @@ Built from `ADS_CREATIVE_DIRECTION.md` (positioning) + `ADS_PRO_EXAMPLES.md` (wh
 ## BUYER AD — "This is Bend. Want first look?"
 **Sell the life; the listing alert is just the easy first step.** (The Welcome-to-Charlotte / Jered-Jones / Madison-Sutton lifestyle model, Bend edition.)
 
-- **Format:** 20-30s **vertical video (9:16)**. FRESH footage only — never the old renders. Authentic > cinematic.
-- **Shot list (our real assets):**
-  - **0-3s HOOK:** open on the strongest Central Oregon lifestyle frame — Sparks Lake / Mt Bachelor / the Deschutes at golden hour (our city-hero footage) — with a sound-off text overlay. Motion + place IS the scroll-stop (Ziemer "drone/lifestyle hook").
-  - **4-20s:** fast cuts of the *life* — first chair, the river, Old Mill, trail, the light — each with a concrete text overlay (a number, not an adjective): "20 minutes to first chair." "Median Bend home sells in ~[X] days."
-  - **21-30s:** turn to the offer + CTA; optional broker face for a human close.
-- **Hook line (sound-off text):** "See Bend homes before they hit Zillow." / alt: "A regular Tuesday in Bend."
+- **Who it's for:** the high-performing metro professional sick of the commute/grind, chasing a higher quality of life — outdoors, health, tribe, and a better place to raise their kids. **The spine is THE TRADE: what they left vs. what's here.** (Sell the place + the life; never name the occupant — see the fair-housing trap.)
+- **Format:** 20-30s **vertical video (9:16)**, built on our OWNED 4K masters. Authentic > glossy.
+- **Emotional arc (mapped to footage we own):**
+  - **0-3s HOOK — the trade, full force:** Mt Bachelor Twilight / Aerial or Sparks Lake Reflection (our 4K), sound-off text overlay: **"Trade your commute for this."** / alt **"This is the drive to work in Bend."** The push→pull contrast IS the scroll-stop.
+  - **4-22s — the life, made visible:** Sparks Lake paddleboarding (before the workday), Mountain Bike on the pine trail (lunch break), the Deschutes, golden hour — each with a contrast/number overlay, never an adjective: *"First chair, then your 10am."* · *"20 minutes to the water."* · *"The trail is your gym."* This is the outdoors / health / activity / tribe — the quality of life they're moving toward.
+  - **23-30s — the soft turn:** "Homes here move fast. See them before they hit Zillow." + CTA.
+  - **Throughline:** not "buy a house" — *"this could be your life."*
+- **Hook lines (sound-off, fair-housing-safe):** "Trade your commute for this." · "This is a Tuesday in Bend." · "Your morning, reimagined."
 - **Headlines (pick/test):** (1) "Central Oregon listings — sent within 30 minutes of going live." (2) "See Bend homes before they hit the public sites." (3) "Early-access + off-market alerts for your price range."
 - **Primary text A:** "Homes in Central Oregon move fast. Get new and early/off-market listings sent to you within 30 minutes — matched to your price range and must-haves. Set it up in under a minute; unsubscribe anytime."
 - **Primary text B:** "Want first look at Bend-area homes? We send new + coming-soon listings within 30 minutes of hitting the market — scoped to your budget and the one feature you won't compromise on. Free, no spam."
