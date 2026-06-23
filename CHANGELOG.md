@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.604.5 (2026-06-23)
+
+### Maintenance
+- docs(ads): copy-ready video-first briefs — buyer (Bend lifestyle) + seller (trusted advisor), fair-housing compliant
+
+---
+
+
 ## v1.604.4 (2026-06-23)
 
 ### Maintenance
