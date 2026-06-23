@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.65 (2026-06-23)
+
+### Other
+- CONTACT360 1.1 + 4.4: APPLY the migrations (Matt's go) — bridge columns + relationships guards
+
+---
+
+
 ## v1.599.64 (2026-06-23)
 
 ### Other
