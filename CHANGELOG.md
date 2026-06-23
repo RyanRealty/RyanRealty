@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.70 (2026-06-23)
+
+### Other
+- CONTACT360 5.1: consent-gated Meta Custom Audience uploader (dry-run by default)
+
+---
+
+
 ## v1.599.69 (2026-06-23)
 
 ### Other
