@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.603.0 (2026-06-23)
+
+### Features
+- feat(crm): CRM->CAPI qualified-lead loop (Conversion Leads Optimization)
+
+---
+
+
 ## v1.602.0 (2026-06-23)
 
 ### Features
