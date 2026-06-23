@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.53 (2026-06-23)
+
+### Other
+- CONTACT360 2.1 (read side): unified contact activity feed
+
+---
+
+
 ## v1.599.52 (2026-06-23)
 
 ### Other
