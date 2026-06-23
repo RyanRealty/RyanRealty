@@ -13,6 +13,25 @@ The folder holds the real masters (not the 720p web copies) — large files = 4K
 
 → This covers HOOK + all landmarks + paddleboarding + MTB. **Real remaining gaps are small:** skiing/first-chair, downtown Bend coffee/brewery/street life, and a Deschutes tubing close-up (paddleboarding is a near-substitute). Those few → Getty Bend (à la carte) or Artgrid. The plan below stands but the gap list is now tiny.
 
+## ✅ The 2 script gap-clips — SOURCED + costed (2026-06-23, real-web confirmed)
+The v3 buyer cut ("A Tuesday") owns every beat except two. Both are now nailed to specific, license-cleared options — Matt's only decision is the spend.
+
+### Gap 1 — Smith Rock climber → SOLVED (buy 1 Getty clip)
+Four real Smith Rock climber clips confirmed on Getty (same Bend shooter, Vetta collection): all **4K 3840×2160, royalty-free / commercial (NOT editorial), Model released.** Smith Rock is public state-park land → no property release needed. Recognizable spires, golden hour.
+- **PICK (hero):** *Climber Standing on Rock in Front of Sun Flare in Smith Rock* — https://www.gettyimages.com/detail/video/climber-standing-on-rock-in-front-of-sun-flare-in-smith-stock-footage/1315797000 — **silhouette / no identifiable face** (cleanest release), already cut to ~4s (00:00:04:28). ~$499 à-la-carte / **~$350 in a pack** / $175 web tier.
+- **B-option:** *Climber Slowly Descending Cliff Face at Golden Hour* (/1315797721) — 5s rope descent, most cinematic motion. Buy in the same pack with the hero → ~$350/clip total.
+- Alts (all RF + model-released): /1315797772 (rappel, rope explicit), /1315797080 (ascend + moon, 24s = room to sub-cut), /1315797026, /1315797182.
+- **Avoid:** /694163896 ("smiling at camera") — face dead-center, release-dependent.
+- Backup vendor: Shutterstock Smith Rock catalog (~346 clips) — verify the per-clip model-release flag before buying.
+
+### Gap 2 — brewery / craft-beer patio at golden hour → Artgrid is the right call
+The genuinely cinematic "Cascades brewery deck at sunset, end of a good day" look lives in **Artgrid's subscription catalog**, not a clean à-la-carte clip. Honest read:
+- **RECOMMENDED:** **Artgrid Creator $29.99/mo** (4K/8K + ProRes, billed annually) — **universal, royalty-free, worldwide, perpetual commercial license that survives cancellation.** Only source whose catalog actually nails the warm non-cheesy mountain-town deck beat. Caveat: Artgrid doesn't tout per-clip model releases → **frame for anonymous faces** (hands / glasses / over-the-shoulder / blurred crowd), which their catalog has in volume. The $30 sub also covers any future cinematic generic b-roll, so it's not a one-clip cost.
+- **à-la-carte alt (cheapest, but compromises):** iStock *"friends toasting with beer… enjoying drinks"* (https://www.istockphoto.com/video/beautiful-friends-toasting-with-beer-party-multiethnic-people-enjoying-drinks-gm1314866419-402989977) — 4K RF, **$9.90 intro (6 credits)** — BUT it's a *city rooftop* not Cascades, and faces are face-forward → **must confirm the "Model released" badge at checkout** before using in a paid ad.
+- **fully-released fallback (off-brief):** Getty *"Cheers!"* (/1150622918) — 4K, **model AND property released** (zero risk) but **indoor pub**, no patio/mountain/sunset, ~$499. Only if release-proof is the dealbreaker.
+
+**Bottom line for the $20/day test:** Smith Rock hero clip (~$350, Getty pack) + Artgrid Creator sub (~$30/mo) = **~$380 one-time-ish** and every beat is real, cinematic, and ad-legal. Everything else we already own.
+
 ## ⚖️ The hard rule (non-negotiable)
 Every clip in a **paid** ad must be **commercially licensed**, with **model releases** for any recognizable person and **property releases** for any recognizable private property/branded venue. **Editorial-only footage is legally barred** from promoting a service. → No editorial clips of identifiable river floaters, brewery patrons, or branded taprooms unless commercially cleared. AI **cannot** fake an exact real landmark.
 

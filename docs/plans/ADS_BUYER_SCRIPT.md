@@ -23,7 +23,7 @@ One ordinary weekday in a life worth living — told in timestamps over real Cen
 
 ## Footage map
 - **Own (4K masters):** Sparks Lake paddle, Mt Bachelor first light, Mountain Bike, Deschutes/kayak, Old Mill golden hour. → the spine.
-- **Source (2 clips):** Smith Rock climber (Getty), brewery patio (Getty/Artgrid — needs model + property releases).
+- **Source (2 clips, sourced + costed — see ADS_FOOTAGE_PLAN.md):** Smith Rock climber → Getty `/1315797000` (4K, royalty-free, model-released silhouette, already ~4s, ~$350 in a pack). Brewery patio → Artgrid Creator sub ($30/mo, perpetual commercial license; frame for anonymous faces). ~$380 total covers both; everything else we own.
 
 ## Production notes
 - 9:16, 30s, ~4s/beat, ambient sound design only (no on-the-nose music swell). Timestamps in the caption-safe zone, sound-off readable.
