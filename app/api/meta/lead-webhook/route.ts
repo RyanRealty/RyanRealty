@@ -14,6 +14,8 @@ import { createCmaRequest } from '@/lib/cma-request'
 import { getFubApiKey } from '@/lib/crm/fub-env'
 import { getMetaPageToken } from '@/lib/meta-env'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
+import { normalizeAgentSlug, FUB_USER_ID_BY_BROKER, type BrokerSlug } from '@/lib/agent-attribution'
+import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 
 export const runtime = 'nodejs'
 
@@ -231,6 +233,8 @@ interface ParsedLead {
   adSetName: string | null
   leadId: string
   createdTime: string
+  /** Per-broker routing from a hidden `assigned_broker` form field (else null → Matt). */
+  assignedBroker: BrokerSlug | null
 }
 
 const TIMELINE_FIELD_HINTS = [
@@ -377,6 +381,10 @@ function parseLeadFields(lead: MetaLeadDetail): ParsedLead {
     adSetName: lead.adset_name || null,
     leadId: lead.id,
     createdTime: lead.created_time,
+    // Hidden per-broker field on the lead form (e.g. assigned_broker=rebecca).
+    // Lets a broker's FB lead ad route the lead to them — the webhook is
+    // server-to-server so the ?agent= cookie isn't available here.
+    assignedBroker: normalizeAgentSlug(get('assigned_broker')),
   }
 }
 
@@ -638,6 +646,12 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
   const parsed = parseLeadFields(leadDetail)
   console.log(`[lead-webhook] Lead fields — name: ${parsed.firstName} ${parsed.lastName}, email: ${parsed.email}, intent: ${parsed.buySellIntent}`)
 
+  // Per-broker routing: a hidden `assigned_broker` form field routes the lead to
+  // that broker; absent → Matt (the default). Resolved once, used by both the
+  // native fallback and the FUB assignment below.
+  const brokerSlug: BrokerSlug = parsed.assignedBroker ?? 'matt'
+  const brokerFubUserId = FUB_USER_ID_BY_BROKER[brokerSlug] ?? FUB_USER_MATT
+
   if (!parsed.email && !parsed.phone) {
     console.warn(`[lead-webhook] Lead ${leadId} has no email or phone — creating FUB contact anyway (name-only record)`)
   }
@@ -645,22 +659,56 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
   // Create FUB contact
   const personId = await createFubContact(parsed)
   if (!personId) {
-    console.error(`[lead-webhook] FUB person creation failed for lead ${leadId}`)
+    // FUB person creation failed — capture the lead natively so an FB-ad lead is
+    // NEVER orphaned on a FUB outage/cutover (was: silently dropped). Routes to
+    // the per-broker slug, records the assignment ledger, then finishes (the
+    // FUB-dependent steps below can't run without a FUB person id).
+    console.error(`[lead-webhook] FUB person creation failed for lead ${leadId}; native fallback`)
+    try {
+      const native = await ensureNativeLead({
+        name: [parsed.firstName, parsed.lastName].filter(Boolean).join(' ') || null,
+        email: parsed.email,
+        phone: parsed.phone,
+        source: 'meta-lead-form',
+        assignedBroker: brokerSlug,
+        tags: ['source:meta-lead-form', `audience:${parsed.audience}`, `broker:${brokerSlug}`, 'fub-fallback'],
+      })
+      console.warn(
+        `[lead-webhook] native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId} (broker ${brokerSlug})`,
+      )
+      if (supabase && (native.created || native.personId > 0)) {
+        await supabase
+          .from('marketing_assignments')
+          .insert({
+            audience: parsed.audience === 'buyer' ? 'buyer' : 'seller',
+            broker: brokerSlug,
+            fub_user_id: null,
+            fub_person_id: null,
+            source: 'meta-lead-form',
+            tier: parsed.intent === 'hot' || parsed.intent === 'warm' ? parsed.intent : 'nurture',
+          })
+          .then(({ error }) => {
+            if (error) console.warn('[lead-webhook] native marketing_assignments insert failed:', error.message)
+          })
+      }
+    } catch (e) {
+      console.error('[lead-webhook] native fallback failed:', e)
+    }
     return
   }
 
   // Assign the person to a FUB user so the lead is not left unassigned/invisible
   // (FB-form leads were landing with no owner). Meta calls us server-to-server
-  // with no browser cookie (see the GA4 note below), so agent attribution can't
-  // be resolved here — route to Matt, then record the assignment for the audit
-  // trail exactly like the seller-LP path (recordSellerAssignment).
-  const assigned = await assignPersonToUser(personId, FUB_USER_MATT)
-  console.log(`[lead-webhook] Person ${personId} assigned to FUB user ${FUB_USER_MATT}: ${assigned}`)
+  // with no browser cookie, so the ?agent= cookie isn't available — instead we
+  // route by the hidden `assigned_broker` form field (brokerSlug, default Matt),
+  // then record the assignment for the audit trail like the seller-LP path.
+  const assigned = await assignPersonToUser(personId, brokerFubUserId)
+  console.log(`[lead-webhook] Person ${personId} assigned to FUB user ${brokerFubUserId} (${brokerSlug}): ${assigned}`)
   if (supabase) {
     const { error: assignErr } = await supabase.from('marketing_assignments').insert({
       audience: parsed.audience === 'buyer' ? 'buyer' : 'seller',
-      broker: 'matt',
-      fub_user_id: FUB_USER_MATT,
+      broker: brokerSlug,
+      fub_user_id: brokerFubUserId,
       fub_person_id: personId,
       source: 'meta-lead-form',
       tier: parsed.intent === 'hot' || parsed.intent === 'warm' ? parsed.intent : 'nurture',
