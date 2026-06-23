@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.604.9 (2026-06-23)
+
+### Maintenance
+- docs(ads): buyer script v2 'A Tuesday' — restrained, show-don't-tell (timestamps over footage, no narrated emotion)
+
+---
+
+
 ## v1.604.8 (2026-06-23)
 
 ### Maintenance
