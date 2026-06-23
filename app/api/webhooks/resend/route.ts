@@ -1,53 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { recordNewsletterEvent } from '@/lib/data'
+import { getPersonIdsByEmail } from '@/lib/data/crm/getPersonIdsByEmail'
+import { addSuppression } from '@/lib/crm/suppressions'
+import { verifySvixSignature, isFreshTimestamp, classifyResendEvent } from '@/lib/crm/resend-webhook'
 
 /**
  * Resend webhook: delivered, opened, clicked, bounced, complained, unsubscribed.
- * Verify signature, then record newsletter open/click/delivery events against the
- * matching newsletter_recipients row (by resend message id) — the data behind the
- * per-broker delivery/open/click stats + who-clicked-what view.
+ *
+ * (1) Verify the Svix signature properly (HMAC, not the old string-compare that
+ *     rejected every real event). (2) Record the event against newsletter_recipients
+ *     for the per-broker delivery/open/click stats. (3) On a HARD bounce or a
+ *     complaint, suppress the EMAIL channel for the recipient across all sibling
+ *     crm_people rows — so we stop emailing a dead/complaining address (CAN-SPAM +
+ *     sender reputation). Writing a suppression only ever STOPS sends, never enables.
  */
-const EVENT_MAP: Record<string, 'delivered' | 'opened' | 'clicked' | 'bounced' | 'complained'> = {
-  'email.delivered': 'delivered',
-  'email.opened': 'opened',
-  'email.clicked': 'clicked',
-  'email.bounced': 'bounced',
-  'email.complained': 'complained',
-}
-
 export async function POST(request: NextRequest) {
   const raw = await request.text()
-  const sig = request.headers.get('svix-signature') ?? request.headers.get('resend-signature') ?? ''
   const secret = process.env.RESEND_WEBHOOK_SECRET?.trim()
   const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
+
   if (!secret) {
     if (isProd) {
       console.error('[resend-webhook] RESEND_WEBHOOK_SECRET not set in production — rejecting')
       return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
     }
     console.warn('[resend-webhook] RESEND_WEBHOOK_SECRET not set — allowing in dev')
-  } else if (!sig) {
-    return NextResponse.json({ error: 'Missing signature' }, { status: 401 })
-  } else if (sig !== secret) {
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+  } else {
+    const svixId = request.headers.get('svix-id') ?? ''
+    const svixTimestamp = request.headers.get('svix-timestamp') ?? ''
+    const signatureHeader = request.headers.get('svix-signature') ?? ''
+    const ok =
+      verifySvixSignature({ secret, svixId, svixTimestamp, signatureHeader, body: raw }) &&
+      isFreshTimestamp(svixTimestamp, Date.now())
+    if (!ok) {
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    }
   }
 
-  let body: { type?: string; created_at?: string; data?: { email_id?: string; created_at?: string; click?: { link?: string } } }
+  let payload: Parameters<typeof classifyResendEvent>[0]
   try {
-    body = JSON.parse(raw)
+    payload = JSON.parse(raw)
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const mapped = EVENT_MAP[body.type ?? '']
-  const emailId = body.data?.email_id
-  if (mapped && emailId) {
+  const event = classifyResendEvent(payload)
+  const emailId = payload.data?.email_id
+
+  // Newsletter stats (existing behavior).
+  if (event.type && emailId) {
     await recordNewsletterEvent({
       resendMessageId: emailId,
-      type: mapped,
-      url: mapped === 'clicked' ? body.data?.click?.link ?? null : null,
-      isoTs: body.data?.created_at ?? body.created_at ?? null,
+      type: event.type,
+      url: event.clickUrl,
+      isoTs: event.isoTs,
     })
+  }
+
+  // CRM suppression on hard bounce / complaint.
+  if (event.suppressEmail && event.suppressReason) {
+    for (const email of event.recipients) {
+      const personIds = await getPersonIdsByEmail(email)
+      for (const personId of personIds) {
+        await addSuppression({
+          personId,
+          channel: 'email',
+          reason: event.suppressReason,
+          source: 'resend-webhook',
+          value: email,
+        })
+      }
+    }
   }
 
   return NextResponse.json({ ok: true })
