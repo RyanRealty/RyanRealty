@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.604.15 (2026-06-23)
+
+### Bug Fixes
+- fix(lead-webhook): instant auto-enroll for FB buyer leads (speed-to-lead)
+
+---
+
+
 ## v1.604.14 (2026-06-23)
 
 ### Bug Fixes
