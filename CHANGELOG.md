@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.604.2 (2026-06-23)
+
+### Bug Fixes
+- fix(lp): SMS consent checkbox only on the step that collects the phone
+
+---
+
+
 ## v1.604.1 (2026-06-23)
 
 ### Maintenance
