@@ -19,6 +19,7 @@
     "app/admin/(protected)/people/[fubPersonId]/page.tsx",
     "app/admin/(protected)/spark-status/page.tsx",
     "app/api/cron/analytics-daily-digest/route.ts",
+    "app/api/cron/crm-health-check/route.ts",
     "app/api/cron/crm-sequence-engine/route.ts",
     "app/api/pdf/report/route.ts",
     "app/blog/[slug]/page.tsx",
