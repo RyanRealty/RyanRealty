@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.605.1 (2026-06-23)
+
+### Bug Fixes
+- fix(forms): apply .kb-tool-skin to contact + valuation forms (KB surface skin)
+
+---
+
+
 ## v1.605.0 (2026-06-23)
 
 ### Features
