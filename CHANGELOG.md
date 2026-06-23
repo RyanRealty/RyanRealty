@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.44 (2026-06-23)
+
+### Other
+- CONTACT360 9.1 (code-side): never send from the resend.dev sandbox in production
+
+---
+
+
 ## v1.599.43 (2026-06-23)
 
 ### Other
