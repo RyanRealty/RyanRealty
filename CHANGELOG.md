@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.601.9 (2026-06-23)
+
+### Bug Fixes
+- fix(crm): FB lead webhook native fallback + per-broker routing
+
+---
+
+
 ## v1.601.8 (2026-06-23)
 
 ### Bug Fixes
