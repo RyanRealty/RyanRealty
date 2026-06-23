@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.604.8 (2026-06-23)
+
+### Maintenance
+- docs(ads): buyer ad script v1 'You're Not Wrong' — 30s, peer-voice trade montage on owned footage
+
+---
+
+
 ## v1.604.7 (2026-06-23)
 
 ### Maintenance
