@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.601.8 (2026-06-23)
+
+### Bug Fixes
+- fix(ads): add LandingPageTracker to expired-listing LP (was missing page-view tracking)
+
+---
+
+
 ## v1.601.7 (2026-06-23)
 
 ### Bug Fixes
