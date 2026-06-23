@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.599.50 (2026-06-23)
+
+### Other
+- CONTACT360 0.6: first-touch UTM attribution fallback reader
+- CONTACT360 3.1: unified contact listing-alerts reader (read side)
+- CONTACT360 2.2: home-photo proximity fix — never show a neighbor's house
+- CONTACT360 0.5: alarm the CRM_MIRROR_ENABLED kill switch
+
+---
+
+
 ## v1.599.49 (2026-06-23)
 
 ### Other
