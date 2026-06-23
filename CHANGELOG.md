@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.600.0 (2026-06-23)
+
+### Features
+- feat(crm): Meta audience <1k-match monitor (Phase 5.2 follow-up)
+
+---
+
+
 ## v1.599.73 (2026-06-23)
 
 ### Maintenance
