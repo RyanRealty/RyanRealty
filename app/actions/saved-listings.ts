@@ -5,6 +5,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { incrementListingSaveCount, decrementListingSaveCount } from '@/app/actions/engagement'
 import { unlikeListing } from '@/app/actions/likes'
 import { normalizeListingKey, planSavedHomeRemoval } from '@/lib/saved-home-toggle'
+import { resolveCanonicalListingKey } from '@/lib/data'
 
 export async function getSavedListingKeys(): Promise<string[]> {
   const supabase = await createClient()
@@ -22,11 +23,16 @@ export async function isListingSaved(listingKey: string): Promise<boolean> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return false
+  // Resolve to the canonical RETS ListingKey first: saved_listings is keyed by
+  // ListingKey, but callers (pretty /homes-for-sale URLs, paid-ad landings) can
+  // pass an MLS ListNumber, which would silently match nothing. Writes resolve
+  // the same way, so the table stays consistently canonical-keyed.
+  const canonicalKey = await resolveCanonicalListingKey(listingKey)
   const { data } = await supabase
     .from('saved_listings')
     .select('id')
     .eq('user_id', user.id)
-    .eq('listing_key', listingKey)
+    .eq('listing_key', canonicalKey)
     .maybeSingle()
   return !!data
 }
@@ -35,12 +41,13 @@ export async function saveListing(listingKey: string): Promise<{ error: string |
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not signed in' }
+  const canonicalKey = await resolveCanonicalListingKey(listingKey.trim())
   const { error } = await supabase.from('saved_listings').insert({
     user_id: user.id,
-    listing_key: listingKey.trim(),
+    listing_key: canonicalKey,
   })
   if (error) return { error: error.message }
-  await incrementListingSaveCount(listingKey.trim())
+  await incrementListingSaveCount(canonicalKey)
   return { error: null }
 }
 
@@ -48,13 +55,14 @@ export async function unsaveListing(listingKey: string): Promise<{ error: string
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not signed in' }
+  const canonicalKey = await resolveCanonicalListingKey(listingKey.trim())
   const { error } = await supabase
     .from('saved_listings')
     .delete()
     .eq('user_id', user.id)
-    .eq('listing_key', listingKey.trim())
+    .eq('listing_key', canonicalKey)
   if (error) return { error: error.message }
-  await decrementListingSaveCount(listingKey.trim())
+  await decrementListingSaveCount(canonicalKey)
   return { error: null }
 }
 
@@ -96,11 +104,12 @@ export async function getSavedListingCount(listingKey: string): Promise<number> 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url?.trim() || !serviceKey?.trim() || !listingKey?.trim()) return 0
+  const canonicalKey = await resolveCanonicalListingKey(listingKey.trim())
   const supabase = createServiceClient(url, serviceKey)
   const { count, error } = await supabase
     .from('saved_listings')
     .select('*', { count: 'exact', head: true })
-    .eq('listing_key', listingKey.trim())
+    .eq('listing_key', canonicalKey)
   if (error) return 0
   return count ?? 0
 }
