@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.599.62 (2026-06-23)
+
+### Other
+- CONTACT360 10.1: broker-RBAC audit (read-only; no access change)
+- CONTACT360 9.8: ci:crm-secrets gate — boot-visible signing secrets + orphan-cron audit
+- CONTACT360 10.4: repoint broker digests from FUB to the self-owned crm_* tables
+
+---
+
+
 ## v1.599.61 (2026-06-23)
 
 ### Other
