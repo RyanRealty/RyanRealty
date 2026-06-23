@@ -28,7 +28,7 @@ import { isValidCronAuth } from '@/lib/auth/cron-auth'
 import { isMetaAudiencePushEnabled } from '@/lib/meta-env'
 import { syncCrmAudience } from '@/lib/meta/audienceUpload'
 import { removeFromCrmAudience } from '@/lib/meta/audienceRemove'
-import { summarizeAudienceRun } from '@/lib/meta/audienceLedger'
+import { summarizeAudienceRun, META_MIN_AUDIENCE_SIZE } from '@/lib/meta/audienceLedger'
 import {
   getPendingAudienceRemovals,
   resolvePeopleForRemoval,
@@ -68,12 +68,25 @@ export async function GET(request: Request) {
 
   // 3. LEDGER -- pure summary -> persisted row (or console fallback).
   const summary = summarizeAudienceRun(add, remove)
+
+  // <1k-match monitor (Phase 5.2): a too-small audience is created but never
+  // served. Surface it in the logs so a shrinking consent-gated population is
+  // visible BEFORE (or right after) a live push. Non-fatal -- just a warning.
+  if (summary.belowMinimumMatch) {
+    console.warn(
+      `[meta-audience-sync] WARNING: matchable population ${summary.matchCount} is below ` +
+        `Meta's ${META_MIN_AUDIENCE_SIZE} targetable floor -- audience will not be served.`,
+    )
+  }
+
   const ledger = await writeAudienceLedger(summary)
 
   return NextResponse.json({
     ok: true,
     ran_at: new Date().toISOString(),
     dry_run: summary.dryRun,
+    below_minimum_match: summary.belowMinimumMatch,
+    match_count: summary.matchCount,
     add: {
       dryRun: add.dryRun,
       dryRunReason: add.dryRunReason,

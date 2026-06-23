@@ -32,7 +32,7 @@
 | 4 | 4.3 | Relationships panel + RelationshipPicker | ✅ DONE — reader + add/remove panel in the overview (4d05333b); contact-search picker (vs numeric id) = polish follow-up |
 | 4 | 4.4 | Backfill 29 legacy rows + dedup guard | ✅ dedup guard APPLIED (2026-06-22) — no-self-link CHECK + partial-unique on real pairs (verified 0 conflicts); resolving the 29 null-related legacy names to person ids = data follow-up |
 | 5 | 5.1 | crm_people→Meta uploader, in-app + consent-gated + ledger | ✅ SHIPPED (69be3036) — syncCrmAudience: consent-gated (excludes any crm_suppressions), SHA-256 hashed, DRY-RUN default (live needs dryRun:false AND META_AUDIENCE_PUSH_ENABLED). First live push = Matt reviews the dry-run then says go |
-| 5 | 5.2 | Audience cron + <1k-match monitor + token-model fix | ✅ DONE — /api/cron/meta-audience-sync (cron-auth, dry-run unless META_AUDIENCE_PUSH_ENABLED); vercel.json `0 9 * * *`; token authority = System User never-expires. <1k-match monitor = follow-up |
+| 5 | 5.2 | Audience cron + <1k-match monitor + token-model fix | ✅ DONE — /api/cron/meta-audience-sync (cron-auth, dry-run unless META_AUDIENCE_PUSH_ENABLED); vercel.json `0 9 * * *`; token authority = System User never-expires. <1k-match monitor SHIPPED (META_MIN_AUDIENCE_SIZE=1000 in audienceLedger.summarizeAudienceRun: belowMinimumMatch by Meta accepted-count on live / would-upload on dry; surfaced in the ledger row + cron JSON + console.warn). Alarm-wiring into crm-health = follow-up |
 | 5 | 5.3 | Lead-webhook identity stitch + external_id=rr_vid | ⬜ todo |
 | 5 | 5.4 | CAPI match-quality parity (fbc/fbp/IP/UA) + dedup everywhere | ⬜ todo |
 | 5 | 5.5 | fbc persistence + auto offline conversions (ROAS loop) | 🚩 flagged (value model + Meta) |

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { summarizeAudienceRun } from './audienceLedger'
+import { summarizeAudienceRun, META_MIN_AUDIENCE_SIZE } from './audienceLedger'
 import type { SyncCrmAudienceResult } from './audienceUpload'
 import type { RemoveFromCrmAudienceResult } from './audienceRemove'
 
@@ -82,5 +82,50 @@ describe('summarizeAudienceRun (pure)', () => {
     }
     const s = summarizeAudienceRun(dryAdd, liveRemove)
     expect(s.dryRun).toBe(false)
+  })
+
+  describe('<1k-match monitor (Phase 5.2)', () => {
+    it('flags a dry run under the match floor (uses would-upload as the proxy)', () => {
+      // dryAdd.wouldUpload = 12, well under META_MIN_AUDIENCE_SIZE
+      const s = summarizeAudienceRun(dryAdd, dryRemove)
+      expect(s.matchCount).toBe(12)
+      expect(s.belowMinimumMatch).toBe(true)
+      expect(s.message).toContain(`< ${META_MIN_AUDIENCE_SIZE} match floor`)
+      expect(s.message).toContain('not targetable')
+    })
+
+    it('does NOT flag a dry run at or above the floor', () => {
+      const bigAdd: SyncCrmAudienceResult = { ...dryAdd, wouldUpload: META_MIN_AUDIENCE_SIZE }
+      const s = summarizeAudienceRun(bigAdd, dryRemove)
+      expect(s.matchCount).toBe(META_MIN_AUDIENCE_SIZE)
+      expect(s.belowMinimumMatch).toBe(false)
+      expect(s.message).not.toContain('match floor')
+    })
+
+    it('on a live push, gauges the floor by Meta accepted count, not would-upload', () => {
+      // would-upload looks healthy, but Meta only accepted 4 -> below floor.
+      const liveAdd: SyncCrmAudienceResult = {
+        dryRun: false,
+        wouldUpload: 5000,
+        excludedSuppressed: 0,
+        skippedUnhashable: 0,
+        sampleHash: [],
+        audienceId: 'aud-1',
+        numReceived: 4,
+        numInvalid: 0,
+      }
+      const liveRemove: RemoveFromCrmAudienceResult = {
+        dryRun: false,
+        requested: 0,
+        wouldRemove: 0,
+        skippedUnhashable: 0,
+        sampleHash: [],
+        audienceId: 'aud-1',
+        numRemoved: 0,
+      }
+      const s = summarizeAudienceRun(liveAdd, liveRemove)
+      expect(s.matchCount).toBe(4)
+      expect(s.belowMinimumMatch).toBe(true)
+    })
   })
 })

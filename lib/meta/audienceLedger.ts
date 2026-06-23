@@ -9,9 +9,26 @@
 import type { SyncCrmAudienceResult } from '@/lib/meta/audienceUpload'
 import type { RemoveFromCrmAudienceResult } from '@/lib/meta/audienceRemove'
 
+/**
+ * Meta's minimum matched-audience size (CONTACT360 Phase 5.2 "<1k-match
+ * monitor"). A Custom Audience below this many matched users is created but
+ * stays too small to be targetable -- Meta silently won't serve ads against it.
+ * The sync watches for this so a shrinking consent-gated population (e.g. after
+ * a suppression spike) surfaces in the ledger + logs BEFORE a live push wastes a
+ * sync on an unusable audience. This is a MONITOR (it surfaces), not a blocker.
+ */
+export const META_MIN_AUDIENCE_SIZE = 1000
+
 export type AudienceRunSummary = {
   /** True when BOTH the add and remove paths stayed dry (no Meta mutation). */
   dryRun: boolean
+  /**
+   * The matchable population this run represents: Meta's accepted count
+   * (numReceived) on a live push, else the would-upload count on a dry run.
+   */
+  matchCount: number
+  /** True when matchCount is under Meta's targetable floor (not serveable). */
+  belowMinimumMatch: boolean
   /** The add (upload) leg. */
   add: {
     dryRun: boolean
@@ -53,6 +70,12 @@ export function summarizeAudienceRun(
   const errors = [...(add.errors ?? []), ...(remove.errors ?? [])]
   const dryRun = add.dryRun && remove.dryRun
 
+  // <1k-match monitor: gauge the targetable population. Live runs know Meta's
+  // accepted count (numReceived); dry runs use would-upload as the proxy (if we
+  // can't even SEND 1k records we definitely can't MATCH 1k).
+  const matchCount = add.dryRun ? add.wouldUpload : (add.numReceived ?? add.wouldUpload)
+  const belowMinimumMatch = matchCount < META_MIN_AUDIENCE_SIZE
+
   const addPart = add.dryRun
     ? `add: DRY would-upload ${add.wouldUpload} (excluded ${add.excludedSuppressed})`
     : `add: LIVE received ${add.numReceived ?? 0} invalid ${add.numInvalid ?? 0}`
@@ -60,10 +83,15 @@ export function summarizeAudienceRun(
     ? `remove: DRY would-remove ${remove.wouldRemove} of ${remove.requested}`
     : `remove: LIVE removed ${remove.numRemoved ?? 0} of ${remove.requested}`
   const errPart = errors.length ? ` | ${errors.length} error(s)` : ''
-  const message = `Meta audience sync (${dryRun ? 'DRY' : 'LIVE'}) -- ${addPart}; ${removePart}${errPart}`
+  const floorPart = belowMinimumMatch
+    ? ` | WARNING ${matchCount} < ${META_MIN_AUDIENCE_SIZE} match floor (audience not targetable)`
+    : ''
+  const message = `Meta audience sync (${dryRun ? 'DRY' : 'LIVE'}) -- ${addPart}; ${removePart}${errPart}${floorPart}`
 
   return {
     dryRun,
+    matchCount,
+    belowMinimumMatch,
     add: {
       dryRun: add.dryRun,
       dryRunReason: add.dryRunReason,
