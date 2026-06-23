@@ -92,6 +92,7 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
   }
   if (canBrokers) marketing.push(item('/admin/newsletters', 'Newsletter', 'mail'))
   if (canBrokers) marketing.push(item('/admin/fub-attribution', 'FUB attribution', 'target'))
+  if (canBrokers) marketing.push(item('/admin/broker-links', 'Ad links', 'megaphone'))
 
   // ── Content: site surfaces and media ──
   const content: AdminNavItem[] = []
