@@ -17,13 +17,27 @@
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { getFubApiKey } from './fub-env'
+import { mirrorHealthStatus } from './mirror-health'
 
 const FUB_BASE = 'https://api.followupboss.com/v1'
 
 const BROKER_BY_FUB_USER: Record<number, string> = { 1: 'matt', 2: 'rebecca', 3: 'paul' }
 
+// Once-per-process guard so the kill-switch alarm is loud but not spammy: every
+// mirror entrypoint funnels through mirrorEnabled(), so without this the warn
+// would fire on every single mirror call.
+let killSwitchWarned = false
+
 function mirrorEnabled(): boolean {
-  return process.env.CRM_MIRROR_ENABLED !== 'false' && !!getFubApiKey()
+  const health = mirrorHealthStatus({ CRM_MIRROR_ENABLED: process.env.CRM_MIRROR_ENABLED })
+  // The kill switch (CRM_MIRROR_ENABLED=false) silently stops every crm_* write.
+  // Surface it ONCE, loudly + structured — a missing FUB key is a separate
+  // config concern (level stays 'ok') and is intentionally not alarmed here.
+  if (health.level === 'alarm' && !killSwitchWarned) {
+    killSwitchWarned = true
+    console.warn(health.message)
+  }
+  return health.enabled && !!getFubApiKey()
 }
 
 function fubGetHeaders(): HeadersInit | null {
