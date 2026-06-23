@@ -15,6 +15,7 @@ import { ExpiredMarketStatStrip } from '@/components/landing/ExpiredMarketStatSt
 import ExitIntentPrompt from '@/components/landing/ExitIntentPrompt'
 import ScrollReveal from '@/components/landing/ScrollReveal'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+import LandingPageTracker from '@/components/LandingPageTracker'
 
 /**
  * Expired Listings Landing Page — /lp/expired-listing
@@ -91,6 +92,7 @@ export default async function ExpiredListingPage() {
 
   return (
     <main className="min-h-screen bg-[#faf8f4] text-[#102742]">
+      <LandingPageTracker lpVariant="expired-listing" />
       {/* ─── Sticky minimal header — wordmark + phone (KB navy bar) ───────── */}
       <header className="sticky top-0 z-40 border-b-[3px] border-[#102742] bg-[#102742]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
