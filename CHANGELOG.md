@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.604.7 (2026-06-23)
+
+### Maintenance
+- docs(ads): buyer psychology + soul — missing their life, 'we were you, you're not wrong'; persona-driven buyer arc; owned-footage inventory
+
+---
+
+
 ## v1.604.6 (2026-06-23)
 
 ### Maintenance
