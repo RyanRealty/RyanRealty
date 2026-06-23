@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.599.54 (2026-06-23)
+
+### Other
+- CONTACT360 0.2: native-capture fallback on FUB push failure
+- CONTACT360 4.1+4.2: contact relationships (typed, reciprocal link/unlink/setType)
+- CONTACT360 2.6: behavior/intent summary reader
+- CONTACT360 3.2: newsletter detail reader (status/engagement)
+- CONTACT360 3.3: one-click membership toggles (workflow / newsletter / listing-alerts)
+
+---
+
+
 ## v1.599.53 (2026-06-23)
 
 ### Other
