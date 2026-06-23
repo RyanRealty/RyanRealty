@@ -31,7 +31,7 @@
 | 4 | 4.2 | link/unlink/setType actions (reciprocal) | ✅ done (beaaf0f5) |
 | 4 | 4.3 | Relationships panel + RelationshipPicker | ✅ DONE — reader + add/remove panel in the overview (4d05333b); contact-search picker (vs numeric id) = polish follow-up |
 | 4 | 4.4 | Backfill 29 legacy rows + dedup guard | ✅ dedup guard APPLIED (2026-06-22) — no-self-link CHECK + partial-unique on real pairs (verified 0 conflicts); resolving the 29 null-related legacy names to person ids = data follow-up |
-| 5 | 5.1 | crm_people→Meta uploader, in-app + consent-gated + ledger | ✅ SHIPPED (69be3036) — syncCrmAudience: consent-gated (excludes any crm_suppressions), SHA-256 hashed, DRY-RUN default (live needs dryRun:false AND META_AUDIENCE_PUSH_ENABLED). First live push = Matt reviews the dry-run then says go |
+| 5 | 5.1 | crm_people→Meta uploader, in-app + consent-gated + ledger | ✅ LIVE PUSH DONE 2026-06-23 — syncCrmAudience (consent-gated + realtor-excluded, SHA-256 hashed, double-gated). First live push received 13,883 (0 invalid) into "Ryan Realty CRM Leads" (aud 120246504502300698); lookalike 120246504872880698 created |
 | 5 | 5.2 | Audience cron + <1k-match monitor + token-model fix | ✅ DONE — /api/cron/meta-audience-sync (cron-auth, dry-run unless META_AUDIENCE_PUSH_ENABLED); vercel.json `0 9 * * *`; token authority = System User never-expires. <1k-match monitor SHIPPED (META_MIN_AUDIENCE_SIZE=1000 in audienceLedger.summarizeAudienceRun: belowMinimumMatch by Meta accepted-count on live / would-upload on dry; surfaced in the ledger row + cron JSON + console.warn). Alarm-wiring into crm-health = follow-up |
 | 5 | 5.3 | Lead-webhook identity stitch + external_id=rr_vid | ⬜ todo |
 | 5 | 5.4 | CAPI match-quality parity (fbc/fbp/IP/UA) + dedup everywhere | ⬜ todo |
@@ -71,6 +71,16 @@ Legend: ⬜ todo · 🔶 in progress · ✅ done · 🚩 flagged (needs creds / 
 ## Log
 
 _(append newest-first)_
+
+### 2026-06-23 · ✅ FIRST LIVE META AUDIENCE PUSH COMPLETE
+The live push ran in production (Matt set META_AUDIENCE_PUSH_ENABLED=true in Vercel + triggered the cron via the `!` session prefix — the agent is hard-blocked from arming PII→Meta, so the human pulled the trigger; the agent did everything else). Result, all verified:
+- **add_num_received 13,883 · num_invalid 0 · dry_run false** — consent-gated (4,154 excludedSuppressed) + realtor-excluded (54 excludedRealtors). Ledger row persisted to meta_audience_log (audience_id 120246504502300698).
+- Audience **"Ryan Realty CRM Leads"** (id 120246504502300698) live, customer_file_source USER_PROVIDED_ONLY, delivery "ready for use", matched size ~6–7k and climbing as Meta finishes matching.
+- Lookalike **"LAL 1% US — RR CRM Leads"** (id 120246504872880698) created off it, building.
+- Daily auto-refresh is WIRED: the 09:00 UTC cron now re-runs live (ADD new eligible leads, REMOVE opt-outs via the drained removal queue), each run writing a meta_audience_log row.
+- Earlier this session: 5 dead lookalikes deleted; realtor leak fixed (54 would have leaked); migrations applied.
+
+CONTACT360 Meta audience track (Phase 5 + 8) is now LIVE end-to-end. Follow-ups: watch the matched size climb; confirm the lookalike builds (it may sit pending until the source finishes processing); optionally re-seed the other lookalikes Matt wants off this audience.
 
 ### 2026-06-23 · Realtor leak in the Meta audience CLOSED (Matt's pre-push check) + live audience inventory
 **Matt asked "are we sure all realtors are excluded?" before the live push — they were NOT.** Investigated the live data: 2,405 contacts carry a realtor tag (`industry:realtor` / `Realtor`); 2,351 were already in the `tcpa-hard-stop` suppression list (= the `compliance:hard-stop` tag, 3,228, exactly matches), but **54 were tagged realtor WITHOUT a suppression row** and would have been uploaded. The audience query gated only on suppression.
