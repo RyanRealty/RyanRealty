@@ -60,17 +60,32 @@
 | 9 | 9.5 | /admin/crm/health observability dashboard | ✅ done (372d2745) — live vital-sign tiles, next build verified |
 | 9 | 9.6 | crm-health-check cron + alarms + relay heartbeat | ✅ done (9665f469) — every 30m, deduped broker alerts, evaluateHealthRules (19 tests) |
 | 9 | 9.7 | crm-fub-reconcile + 14-day zero-diff cutover gate | 🚩 flagged (FUB creds, nightly) |
-| 9 | 9.8 | Hardening (orphan cron, EMAIL_TRACKING_SECRET, bounce seed) | ⬜ todo |
-| 10 | 10.1 | Broker RBAC (server-side assigned_broker scope everywhere) | ⬜ todo |
+| 9 | 9.8 | Hardening (orphan cron, EMAIL_TRACKING_SECRET, bounce seed) | ✅ gate done (d7830476) — ci:crm-secrets (boot-visible secrets + orphan-cron audit); secret VALUES + orphan crm-smart-followups = Matt/ops follow-up |
+| 10 | 10.1 | Broker RBAC (server-side assigned_broker scope everywhere) | 🚩 AUDIT done (8969c0f6, docs/audit/CRM_RBAC_AUDIT.md) — GAP-0 cross-broker leak found; enforcement needs Matt's policy call (Option A vs B), security-sensitive, NOT blind-shipped |
 | 10 | 10.2 | Service-role boundary audit (RLS tables via DAL only) | ⬜ todo |
 | 10 | 10.3 | Dual-host OAuth/PKCE fix verified | ⬜ todo |
-| 10 | 10.4 | Broker daily/weekly digests repointed FUB → crm_people + scheduled | ⬜ todo |
+| 10 | 10.4 | Broker daily/weekly digests repointed FUB → crm_people + scheduled | ✅ repoint done (8df4253b) — getBrokerDigest reads crm_*; SCHEDULING (add both to vercel.json crons) + FUB-only smartlists/appointments = follow-up |
 
 Legend: ⬜ todo · 🔶 in progress · ✅ done · 🚩 flagged (needs creds / a decision / Matt's go).
 
 ## Log
 
 _(append newest-first)_
+
+### 2026-06-22 · Wave 6 + BUILDABLE SET COMPLETE — the loop has reached its no-blocker goal
+Wave 6 (3 increments, all verified + committed):
+- **10.4** broker digests repointed FUB -> crm_* (`8df4253b`) — getBrokerDigest reads the self-owned CRM; daily fully repointed, weekly partial (smartlists/appointments are FUB-only). Follow-up: add both routes to vercel.json crons (still unscheduled).
+- **9.8** `ci:crm-secrets` gate (`d7830476`) — EMAIL_TRACKING_SECRET / CRON_SECRET / CMA_PREVIEW_SECRET listed in lib/env.ts (optional, boot-visible) + orphan-cron audit (flags the dead /api/cron/crm-smart-followups). Follow-up: set the secret VALUES in Vercel so token signing stops falling back to the service-role key.
+- **10.1** RBAC audit (`8969c0f6`, docs/audit/CRM_RBAC_AUDIT.md) — **found GAP-0: any broker can read any other broker's full contact-360 via /admin/console/leads/<id>** (getCrmPersonFull has no assigned_broker check); write-side mutations also trust a raw personId. Enforcement is security-sensitive + has a policy fork (Matt=superuser-sees-all vs just-a-broker) — NOT blind-shipped.
+
+**Loop status: the entire buildable, no-blocker Contact-360 plan is shipped (27 increments this session).** Everything that remains is BLOCKED on a Matt decision and the loop is intentionally stopping rather than churn:
+- **Phase 1.1 + 4.4 migrations** — written + pre-verified safe; need "apply the migrations" (classifier blocks autonomous prod-DB). Unblocks **Phase 7** (consumer saved-search management) + the relationships uniqueness guard.
+- **Phase 5** (Meta audiences from leads) — needs the Meta token authority + closed-deal value model.
+- **Phase 8** (GPC/consent posture) — a business/compliance decision.
+- **Phase 10.1 RBAC enforcement** — act on the audit; needs the Option A/B policy call (and ships detail+lists together).
+- Smaller follow-ups: schedule the 2 digest crons + crm-smart-followups; set the email-signing secret values in Vercel; wire 0.3/0.6 readers into their crons.
+
+Inherited red (not CRM scope): `ci:hydration-safety` 4 #418 violations in app/lp/*LPForm.tsx + components/ListingTile.tsx — owned by the concurrent p1.x track.
 
 ### 2026-06-22 · Wave 5 — observability + lead-tracking completeness (4 increments)
 All 4 agents succeeded; integrated + verified (tsc + 66 new tests + next build for the health page + boundary held at 213) + committed:
