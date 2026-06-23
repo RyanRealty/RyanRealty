@@ -3,12 +3,19 @@
  *
  * Schedule: 0 15 * * 1  (Monday 15:00 UTC = 08:00 PT during DST).
  *
- * Aggregates the prior 7 days of FUB activity:
- *   1. Count new leads by audience (seller, buyer, unknown).
- *   2. Count new leads by source (top 10).
- *   3. Compare smart-list counts week-over-week.
- *   4. Pull totals: conversations, appointments, active deals, pipeline value.
+ * Aggregates the prior 7 days:
+ *   1. Count new leads by audience (seller, buyer, unknown) — from crm_people.
+ *   2. Count new leads by source (top 10) — from crm_people.
+ *   3. Compare smart-list counts week-over-week — FUB (no crm_* equivalent).
+ *   4. Pull totals: conversations + active deals + pipeline value from crm_*,
+ *      appointments from FUB (no crm_* equivalent).
  *   5. Compose one key insight (e.g. expired-listing detection cadence).
+ *
+ * Phase 10.4 repoint: new leads, deals, pipeline value, and conversation volume
+ * now read our own crm_* tables via getWeeklyPipelineDigest. FLAG: smart-list
+ * movement and appointment count are still FUB-sourced because neither maps to a
+ * crm_* table (smart lists are a FUB construct; appointments are not modeled in
+ * crm_*). The email/delivery mechanism is unchanged.
  *
  * Brand voice §4.7. Sentence case, no em-dashes, no banned cliches.
  * Auth: Bearer $CRON_SECRET.
@@ -23,6 +30,7 @@ import {
   type SourceCount,
   type SmartListMovement,
 } from '@/lib/digest-email-templates'
+import { getWeeklyPipelineDigest, summarizeWeeklyLeads } from '@/lib/data/crm/getBrokerDigest'
 import { getFubApiKey } from '@/lib/crm/fub-env'
 import { createClient } from '@supabase/supabase-js'
 
@@ -31,15 +39,7 @@ export const maxDuration = 60
 
 const FUB_BASE = 'https://api.followupboss.com/v1'
 
-type FubPerson = {
-  id?: number
-  tags?: string[] | null
-  source?: string | null
-  created?: string | null
-}
-
 type FubAppointment = { id?: number; start?: string | null; status?: string | null }
-type FubDeal = { id?: number; stage?: string | null; price?: number | null; status?: string | null }
 type FubSmartList = { id?: number; name?: string; total?: number }
 
 function fubHeaders(): HeadersInit {
@@ -61,41 +61,6 @@ function getServiceSupabase() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url?.trim() || !key?.trim()) return null
   return createClient(url, key)
-}
-
-function classifyAudience(tags: string[] | null | undefined): 'seller' | 'buyer' | 'unknown' {
-  if (!Array.isArray(tags)) return 'unknown'
-  const lower = tags.map((t) => t.toLowerCase())
-  if (lower.includes('audience:seller')) return 'seller'
-  if (lower.includes('audience:buyer')) return 'buyer'
-  if (lower.includes('seller')) return 'seller'
-  if (lower.includes('buyer')) return 'buyer'
-  return 'unknown'
-}
-
-async function fetchPeopleCreatedSince(sinceIso: string): Promise<FubPerson[]> {
-  const pageSize = 100
-  const all: FubPerson[] = []
-  for (let offset = 0; offset < 2000; offset += pageSize) {
-    const q = new URLSearchParams({
-      createdAfter: sinceIso,
-      sort: '-created',
-      limit: String(pageSize),
-      offset: String(offset),
-      fields: 'id,tags,source,created',
-    })
-    const res = await fetch(`${FUB_BASE}/people?${q.toString()}`, {
-      headers: fubHeaders(),
-      cache: 'no-store',
-    })
-    if (!res.ok) break
-    const data = (await res.json().catch(() => null)) as { people?: FubPerson[] } | null
-    const people = Array.isArray(data?.people) ? data!.people : []
-    if (people.length === 0) break
-    all.push(...people)
-    if (people.length < pageSize) break
-  }
-  return all
 }
 
 async function fetchSmartLists(): Promise<FubSmartList[]> {
@@ -122,50 +87,6 @@ async function fetchAppointmentsThisWeek(sinceIso: string): Promise<number> {
     if (!res.ok) return 0
     const data = (await res.json().catch(() => null)) as { appointments?: FubAppointment[]; _metadata?: { total?: number } } | null
     return data?._metadata?.total ?? (data?.appointments?.length ?? 0)
-  } catch {
-    return 0
-  }
-}
-
-async function fetchActiveDeals(): Promise<{ count: number; value: number }> {
-  try {
-    const res = await fetch(`${FUB_BASE}/deals?limit=100`, {
-      headers: fubHeaders(),
-      cache: 'no-store',
-    })
-    if (!res.ok) return { count: 0, value: 0 }
-    const data = (await res.json().catch(() => null)) as { deals?: FubDeal[] } | null
-    const deals = data?.deals ?? []
-    let count = 0
-    let value = 0
-    for (const d of deals) {
-      const stage = (d.stage || '').toLowerCase()
-      if (stage.includes('lost') || stage.includes('closed') || stage.includes('won')) continue
-      count += 1
-      const p = Number(d.price)
-      if (Number.isFinite(p)) value += p
-    }
-    return { count, value }
-  } catch {
-    return { count: 0, value: 0 }
-  }
-}
-
-async function fetchConversationsCount(sinceIso: string): Promise<number> {
-  try {
-    const q = new URLSearchParams({ createdAfter: sinceIso, limit: '1' })
-    const [textsRes, emailsRes, callsRes] = await Promise.all([
-      fetch(`${FUB_BASE}/textMessages?${q.toString()}`, { headers: fubHeaders(), cache: 'no-store' }).catch(() => null),
-      fetch(`${FUB_BASE}/emails?${q.toString()}`, { headers: fubHeaders(), cache: 'no-store' }).catch(() => null),
-      fetch(`${FUB_BASE}/calls?${q.toString()}`, { headers: fubHeaders(), cache: 'no-store' }).catch(() => null),
-    ])
-    let total = 0
-    for (const res of [textsRes, emailsRes, callsRes]) {
-      if (!res || !res.ok) continue
-      const data = (await res.json().catch(() => null)) as { _metadata?: { total?: number } } | null
-      total += data?._metadata?.total ?? 0
-    }
-    return total
   } catch {
     return 0
   }
@@ -284,38 +205,23 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const supabase = getServiceSupabase()
 
-  // Pull data in parallel
-  const [people, smartLists, appointments, deals, conversations, keyInsight, prevSnapshot] = await Promise.all([
-    fetchPeopleCreatedSince(sinceIso),
+  // Pull data in parallel. Leads + deals + conversations come from our crm_*
+  // tables (getWeeklyPipelineDigest). Smart lists + appointments stay on FUB
+  // because neither maps to a crm_* table (FLAG in the header doc).
+  const [crm, smartLists, appointments, keyInsight, prevSnapshot] = await Promise.all([
+    getWeeklyPipelineDigest({ weekStartIso: sinceIso }),
     fetchSmartLists(),
     fetchAppointmentsThisWeek(sinceIso),
-    fetchActiveDeals(),
-    fetchConversationsCount(sinceIso),
     buildKeyInsight(supabase, sinceIso),
     loadPreviousSmartListSnapshot(supabase),
   ])
 
-  // Audience tally
-  const audienceMap = new Map<string, number>()
-  for (const p of people) {
-    const a = classifyAudience(p.tags)
-    audienceMap.set(a, (audienceMap.get(a) ?? 0) + 1)
-  }
-  const newLeadsByAudience: AudienceCount[] = [
-    { label: 'Seller', count: audienceMap.get('seller') ?? 0 },
-    { label: 'Buyer', count: audienceMap.get('buyer') ?? 0 },
-    { label: 'Unclassified', count: audienceMap.get('unknown') ?? 0 },
-  ].filter((r) => r.count > 0)
+  const leadSummary = summarizeWeeklyLeads(crm.newLeads)
+  const deals = crm.activeDeals
+  const conversations = crm.conversations
 
-  // Source tally
-  const sourceMap = new Map<string, number>()
-  for (const p of people) {
-    const s = (p.source || 'Unknown').trim() || 'Unknown'
-    sourceMap.set(s, (sourceMap.get(s) ?? 0) + 1)
-  }
-  const newLeadsBySource: SourceCount[] = Array.from(sourceMap.entries())
-    .map(([source, count]) => ({ source, count }))
-    .sort((a, b) => b.count - a.count)
+  const newLeadsByAudience: AudienceCount[] = leadSummary.byAudience
+  const newLeadsBySource: SourceCount[] = leadSummary.bySource
 
   // Smart list movement
   const smartListMovement: SmartListMovement[] = smartLists

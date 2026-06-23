@@ -175,6 +175,225 @@ export function DailyDigestEmail({ brokerFirstName, asOfDate, leads }: DailyDige
 }
 
 // ---------------------------------------------------------------------------
+// Daily broker digest sourced from crm_* (CONTACT360 Phase 10.4)
+//
+// Same brand shell as DailyDigestEmail above, but renders the richer CRM-sourced
+// summary: new leads (linking into our own /admin/crm), open tasks, hot/awaiting
+// workflow enrollments, and recent inbound replies. Shape comes straight from
+// summarizeDigest() in lib/data/crm/getBrokerDigest.ts, so the email holds no
+// data logic of its own.
+// ---------------------------------------------------------------------------
+
+export type CrmDigestLeadProp = {
+  personId: number
+  name: string
+  email: string | null
+  phone: string | null
+  source: string | null
+  audience: 'seller' | 'buyer' | 'unknown'
+  crmUrl: string
+}
+
+export type CrmDigestTaskProp = {
+  taskId: number
+  name: string
+  personName: string | null
+  dueAtIso: string | null
+  overdue: boolean
+}
+
+export type CrmDigestEnrollmentProp = {
+  enrollmentId: number
+  personName: string | null
+  sequenceName: string
+  status: string
+  awaiting: boolean
+}
+
+export type CrmDigestInboundProp = {
+  timelineId: number
+  personName: string | null
+  kind: string
+  snippet: string | null
+  tsIso: string
+}
+
+export type BrokerCrmDigestEmailProps = {
+  brokerFirstName: string
+  asOfDate: string // YYYY-MM-DD
+  summarySentence: string
+  leads: CrmDigestLeadProp[]
+  tasks: CrmDigestTaskProp[]
+  enrollments: CrmDigestEnrollmentProp[]
+  inbound: CrmDigestInboundProp[]
+}
+
+function formatDueDate(iso: string | null): string {
+  if (!iso) return 'No due date'
+  const d = new Date(iso)
+  if (!Number.isFinite(d.getTime())) return 'No due date'
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function inboundLabel(kind: string): string {
+  switch (kind) {
+    case 'sms_in':
+      return 'Text'
+    case 'email_in':
+      return 'Email'
+    case 'form_submit':
+      return 'Form'
+    case 'voicemail':
+      return 'Voicemail'
+    default:
+      return 'Reply'
+  }
+}
+
+const crmSectionLabelStyle: React.CSSProperties = {
+  fontSize: 11,
+  color: '#102742',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  fontWeight: 600,
+  margin: '24px 0 8px 0',
+}
+
+export function BrokerCrmDigestEmail({
+  brokerFirstName,
+  asOfDate,
+  summarySentence,
+  leads,
+  tasks,
+  enrollments,
+  inbound,
+}: BrokerCrmDigestEmailProps): React.ReactElement {
+  const nothing = leads.length === 0 && tasks.length === 0 && enrollments.length === 0 && inbound.length === 0
+
+  return (
+    <Html>
+      <Head />
+      <Body style={{ fontFamily: EMAIL_FONT_STACK, backgroundColor: '#faf8f4', margin: 0, padding: 0 }}>
+        <Container style={{ maxWidth: 640, margin: '0 auto' }}>
+          {brandHeader()}
+          <Section style={{ backgroundColor: '#ffffff', padding: 24 }}>
+            <Heading as="h1" style={{ fontSize: 20, color: '#102742', margin: '0 0 8px 0', fontWeight: 600 }}>
+              Your day in the CRM
+            </Heading>
+            <Text style={{ fontSize: 13, color: '#6b7280', margin: '0 0 16px 0' }}>{formatDateLong(asOfDate)}</Text>
+            <Text style={{ fontSize: 15, color: '#102742', margin: '0 0 8px 0', lineHeight: 1.5 }}>
+              Hi {brokerFirstName}. {summarySentence}
+            </Text>
+
+            {nothing ? (
+              <Text style={{ fontSize: 14, color: '#4b5563', margin: '16px 0 0 0' }}>
+                Nothing needs you right now. We will email you again tomorrow morning.
+              </Text>
+            ) : null}
+
+            {leads.length > 0 ? (
+              <>
+                <Text style={crmSectionLabelStyle}>New leads ({leads.length})</Text>
+                {leads.map((lead) => (
+                  <Section
+                    key={lead.personId}
+                    style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #f1f5f9' }}
+                  >
+                    <Text style={{ fontSize: 15, fontWeight: 600, color: '#102742', margin: '0 0 4px 0' }}>{lead.name}</Text>
+                    {lead.email ? (
+                      <Text style={{ fontSize: 13, color: '#475569', margin: '0 0 2px 0' }}>{lead.email}</Text>
+                    ) : null}
+                    {lead.phone ? (
+                      <Text style={{ fontSize: 13, color: '#475569', margin: '0 0 2px 0' }}>{lead.phone}</Text>
+                    ) : null}
+                    <Text style={{ fontSize: 13, color: '#475569', margin: '0 0 8px 0' }}>
+                      Source: {lead.source ?? 'Unknown'}. Audience: {lead.audience}.
+                    </Text>
+                    <Link
+                      href={lead.crmUrl}
+                      style={{ fontSize: 13, color: '#102742', fontWeight: 500, textDecoration: 'underline' }}
+                    >
+                      Open the contact
+                    </Link>
+                  </Section>
+                ))}
+              </>
+            ) : null}
+
+            {inbound.length > 0 ? (
+              <>
+                <Text style={crmSectionLabelStyle}>Recent inbound ({inbound.length})</Text>
+                {inbound.map((item) => (
+                  <Section key={item.timelineId} style={{ marginBottom: 12 }}>
+                    <Text style={{ fontSize: 14, color: '#102742', margin: '0 0 2px 0' }}>
+                      <span style={{ fontWeight: 600 }}>{item.personName ?? 'A contact'}</span> sent a{' '}
+                      {inboundLabel(item.kind).toLowerCase()}.
+                    </Text>
+                    {item.snippet ? (
+                      <Text style={{ fontSize: 13, color: '#475569', margin: 0 }}>{item.snippet}</Text>
+                    ) : null}
+                  </Section>
+                ))}
+              </>
+            ) : null}
+
+            {enrollments.length > 0 ? (
+              <>
+                <Text style={crmSectionLabelStyle}>Workflows needing you ({enrollments.length})</Text>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <tbody>
+                    {enrollments.map((e) => (
+                      <tr key={e.enrollmentId}>
+                        <td style={{ padding: '6px 0', color: '#475569' }}>
+                          {e.personName ?? 'A contact'} on {e.sequenceName}
+                        </td>
+                        <td style={{ padding: '6px 0', color: '#102742', fontWeight: 600, textAlign: 'right' }}>
+                          {e.awaiting ? 'Awaiting you' : 'Running'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            ) : null}
+
+            {tasks.length > 0 ? (
+              <>
+                <Text style={crmSectionLabelStyle}>Open tasks ({tasks.length})</Text>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <tbody>
+                    {tasks.map((t) => (
+                      <tr key={t.taskId}>
+                        <td style={{ padding: '6px 0', color: '#475569' }}>
+                          {t.name}
+                          {t.personName ? ` for ${t.personName}` : ''}
+                        </td>
+                        <td
+                          style={{
+                            padding: '6px 0',
+                            color: t.overdue ? '#b91c1c' : '#102742',
+                            fontWeight: 600,
+                            textAlign: 'right',
+                          }}
+                        >
+                          {t.overdue ? 'Overdue' : formatDueDate(t.dueAtIso)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            ) : null}
+
+            {brandFooter()}
+          </Section>
+        </Container>
+      </Body>
+    </Html>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Weekly pipeline-health digest (Matt only)
 // ---------------------------------------------------------------------------
 
