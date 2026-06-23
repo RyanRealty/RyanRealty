@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.599.48 (2026-06-23)
+
+### Other
+- CONTACT360 9.E.4: ci:email-quality gate — no new sender bypasses the preflight
+- CONTACT360 9.3 + 9.E.7: email one-click unsubscribe + prepareDeliverableEmail preflight
+
+---
+
+
 ## v1.599.47 (2026-06-23)
 
 ### Other
