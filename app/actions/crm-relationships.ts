@@ -26,7 +26,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getCrmAccess, type CrmActionResult } from '@/app/actions/crm'
+import { getCrmAccess, requirePersonInScope, type CrmActionResult } from '@/app/actions/crm'
 import {
   reciprocalType,
   validateLink,
@@ -71,6 +71,12 @@ export async function linkContacts(params: RelationshipParams): Promise<CrmActio
   if (!valid.ok) return { ok: false, error: valid.error }
   const type: RelationshipType = valid.type
   const { fromPersonId, toPersonId } = params
+
+  // Broker-RBAC (GAP-W): BOTH contacts must be in the caller's scope to relate them.
+  const fromScope = await requirePersonInScope(fromPersonId, access)
+  if (!fromScope.ok) return fromScope
+  const toScope = await requirePersonInScope(toPersonId, access)
+  if (!toScope.ok) return toScope
 
   const sb = createServiceClient()
 
@@ -147,6 +153,12 @@ export async function unlinkContacts(params: {
   }
   if (fromPersonId === toPersonId) return { ok: false, error: 'A contact cannot be linked to itself' }
 
+  // Broker-RBAC (GAP-W): BOTH contacts must be in the caller's scope to unrelate them.
+  const fromScope = await requirePersonInScope(fromPersonId, access)
+  if (!fromScope.ok) return fromScope
+  const toScope = await requirePersonInScope(toPersonId, access)
+  if (!toScope.ok) return toScope
+
   const sb = createServiceClient()
 
   const { data: people } = await sb
@@ -203,6 +215,12 @@ export async function setRelationshipType(params: RelationshipParams): Promise<C
   if (!valid.ok) return { ok: false, error: valid.error }
   const type: RelationshipType = valid.type
   const { fromPersonId, toPersonId } = params
+
+  // Broker-RBAC (GAP-W): BOTH contacts must be in the caller's scope to re-type them.
+  const fromScope = await requirePersonInScope(fromPersonId, access)
+  if (!fromScope.ok) return fromScope
+  const toScope = await requirePersonInScope(toPersonId, access)
+  if (!toScope.ok) return toScope
 
   const sb = createServiceClient()
 

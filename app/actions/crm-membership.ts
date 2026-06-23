@@ -31,7 +31,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getCrmAccess } from '@/app/actions/crm'
+import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { manualEnrollPerson } from '@/lib/crm/enroll'
 import { addSuppression, removeSuppression } from '@/lib/crm/suppressions'
 import { canSubscribe } from '@/lib/crm/membership-consent'
@@ -77,6 +77,8 @@ export async function setSequenceEnrollment(input: {
   if (!Number.isFinite(personId) || personId <= 0 || !Number.isFinite(sequenceId) || sequenceId <= 0) {
     return { ok: false, error: 'A contact and a workflow are required' }
   }
+  const scoped = await requirePersonInScope(personId, access)
+  if (!scoped.ok) return scoped
 
   const sb = createServiceClient()
 
@@ -137,6 +139,8 @@ export async function setNewsletterSubscription(input: {
   if (!access) return { ok: false, error: 'Unauthorized' }
   const personId = Number(input.personId)
   if (!Number.isFinite(personId) || personId <= 0) return { ok: false, error: 'A contact is required' }
+  const scoped = await requirePersonInScope(personId, access)
+  if (!scoped.ok) return scoped
 
   const sb = createServiceClient()
   const identity = await resolvePersonIdentity(personId)
@@ -218,6 +222,8 @@ export async function setListingAlertsPaused(input: {
   if (!access) return { ok: false, error: 'Unauthorized' }
   const personId = Number(input.personId)
   if (!Number.isFinite(personId) || personId <= 0) return { ok: false, error: 'A contact is required' }
+  const scoped = await requirePersonInScope(personId, access)
+  if (!scoped.ok) return scoped
 
   const touched = await setContactListingAlertsPaused(personId, input.paused)
   const total = touched.savedSearches + touched.guestAlerts

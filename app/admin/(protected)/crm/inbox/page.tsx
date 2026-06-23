@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess, listCrmConversations } from '@/app/actions/crm'
+import { scopeBroker } from '@/lib/crm/scope'
 import { timelineEmailBody } from '@/lib/crm/email-body'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 import InboxSegments, { type InboxItem } from '@/components/admin/InboxSegments'
@@ -17,7 +18,9 @@ const KIND_LABEL: Record<string, string> = {
 export default async function CrmInboxPage() {
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
-  const rows = await listCrmConversations(150)
+  // GAP-4: scope the Inbox + Sent tabs to the caller's own contacts server-side.
+  const scope = scopeBroker(access)
+  const rows = await listCrmConversations(150, scope)
   const slug = access.brokerSlug
 
   // Shape each row for the client segments view (body trimmed server-side so the

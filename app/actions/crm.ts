@@ -30,6 +30,7 @@ import {
   FUB_USER_ID_BY_BROKER,
   type CrmBrokerSlug,
 } from '@/lib/crm/constants'
+import { scopeBroker, isPersonInScope } from '@/lib/crm/scope'
 
 export type CrmActionResult = { ok: true } | { ok: false; error: string }
 
@@ -89,6 +90,38 @@ async function requireCrmAccess(): Promise<{ ok: true; access: CrmAccess } | { o
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
   return { ok: true, access }
+}
+
+// The broker-RBAC policy (Option A — Matt is owner/superuser) lives in
+// lib/crm/scope.ts as a PURE, unit-tested helper (`scopeBroker`), imported above.
+// It is NOT re-exported from this 'use server' file because Next.js requires every
+// export of a 'use server' module to be an async function. Pages + this module
+// import `scopeBroker` directly from '@/lib/crm/scope'. Returns the slug a caller's
+// reads/writes must scope to, or `null` for an owner/superuser (sees ALL brokers).
+
+/**
+ * Shared write guard: refuse a mutation when the caller is a restricted broker
+ * and the target contact is not assigned to them. A superuser (slug === null)
+ * passes unconditionally. Mirrors completeCrmTaskAction's inline ownership check.
+ * Exported so the membership + relationship mutations in sibling action files
+ * (crm-membership.ts, crm-relationships.ts) reuse the one guard.
+ */
+export async function requirePersonInScope(
+  personId: number,
+  access: CrmAccess,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const slug = scopeBroker(access)
+  if (!slug) return { ok: true }
+  const sb = createServiceClient()
+  const { data } = await sb
+    .from('crm_people')
+    .select('assigned_broker')
+    .eq('id', personId)
+    .maybeSingle()
+  if (!isPersonInScope(slug, (data?.assigned_broker as string | null) ?? null)) {
+    return { ok: false, error: 'Not authorized for this contact' }
+  }
+  return { ok: true }
 }
 
 // ── Reads ──────────────────────────────────────────────────────────────────
@@ -183,15 +216,19 @@ export type CrmOverview = {
   lastDeltaSync: string | null
 }
 
-export async function getCrmOverview(): Promise<CrmOverview> {
+export async function getCrmOverview(brokerSlug?: string | null): Promise<CrmOverview> {
   const sb = createServiceClient()
   const head = { count: 'exact' as const, head: true }
+  // GAP-2: scope the headline KPI counts to the caller's own book when restricted.
+  // The page passes scopeBroker(access) — null (superuser) leaves them global.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const byBroker = (q: any): any => (brokerSlug ? q.eq('assigned_broker', brokerSlug) : q)
   const [total, sellers, buyers, hardStops, openTasks, lastSync] = await Promise.all([
-    sb.from('crm_people').select('id', head),
-    sb.from('crm_people').select('id', head).contains('tags', ['audience:seller']),
-    sb.from('crm_people').select('id', head).contains('tags', ['audience:buyer']),
-    sb.from('crm_people').select('id', head).contains('tags', ['compliance:hard-stop']),
-    sb.from('crm_tasks').select('id', head).is('completed_at', null),
+    byBroker(sb.from('crm_people').select('id', head)),
+    byBroker(sb.from('crm_people').select('id', head).contains('tags', ['audience:seller'])),
+    byBroker(sb.from('crm_people').select('id', head).contains('tags', ['audience:buyer'])),
+    byBroker(sb.from('crm_people').select('id', head).contains('tags', ['compliance:hard-stop'])),
+    byBroker(sb.from('crm_tasks').select('id', head).is('completed_at', null)),
     sb.from('crm_imports').select('finished_at').eq('status', 'done').order('id', { ascending: false }).limit(1).maybeSingle(),
   ])
   return {
@@ -323,10 +360,36 @@ export type CrmPersonFull = {
   visitorSessions: number
 }
 
+/** The empty bundle returned for a missing OR out-of-scope contact (GAP-0). The
+ *  page calls notFound() on a null person, so this produces a clean 404. */
+const EMPTY_PERSON_FULL: CrmPersonFull = {
+  person: null,
+  contactPoints: [],
+  timeline: [],
+  timelineTotal: 0,
+  tasks: [],
+  suppressions: [],
+  enrollments: [],
+  geo: null,
+  cmaDeliveries: [],
+  visitorSessions: 0,
+}
+
 export async function getCrmPersonFull(id: number): Promise<CrmPersonFull> {
   const sb = createServiceClient()
   const personQ = await sb.from('crm_people').select('*').eq('id', id).maybeSingle()
   const person = personQ.data as CrmPersonFull['person']
+
+  // GAP-0 (highest risk): broker-RBAC gate. A self-guard so the contact 360
+  // can't be read by id — null access OR an out-of-scope lead returns the same
+  // empty bundle the page already treats as notFound(). Closes every side-panel
+  // at once (they are all fed person.id from this bundle).
+  const access = await getCrmAccess()
+  if (!access) return EMPTY_PERSON_FULL
+  const slug = scopeBroker(access)
+  if (slug && !isPersonInScope(slug, (person?.assigned_broker as string | null) ?? null)) {
+    return EMPTY_PERSON_FULL
+  }
 
   const fubId = person?.fub_legacy_id ?? null
   const [points, timeline, tasks, suppressions, enrollments, geo, cma, visitors] = await Promise.all([
@@ -411,6 +474,8 @@ export async function addCrmNoteAction(formData: FormData): Promise<CrmActionRes
   const personId = Number(formData.get('personId'))
   const body = String(formData.get('body') ?? '').trim()
   if (!personId || !body) return { ok: false, error: 'Note body required' }
+  const scoped = await requirePersonInScope(personId, access.access)
+  if (!scoped.ok) return scoped
   const person = await getPersonCore(personId)
   if (!person) return { ok: false, error: 'Person not found' }
 
@@ -438,6 +503,8 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   const subject = String(formData.get('subject') ?? '').trim()
   const body = String(formData.get('body') ?? '').trim()
   if (!personId || !subject || !body) return { ok: false, error: 'Subject and body required' }
+  const scoped = await requirePersonInScope(personId, access.access)
+  if (!scoped.ok) return scoped
 
   const sb = createServiceClient()
   const { data: person } = await sb
@@ -668,16 +735,23 @@ export type CrmConversationRow = {
  * unread badge are intentionally absent — crm_timeline has no read/closed state
  * to back them honestly (would need a conversation-status column).
  */
-export async function listCrmConversations(perDirection = 80): Promise<CrmConversationRow[]> {
+export async function listCrmConversations(perDirection = 80, brokerSlug?: string | null): Promise<CrmConversationRow[]> {
   const sb = createServiceClient()
   // Embed the person (name/stage/assigned_broker). person_id is NOT NULL with an
-  // FK, so a plain embed is equivalent to an inner join here. Fetch inbound and
-  // outbound SEPARATELY: outbound (automated email) is high-volume, so a single
+  // FK, so an inner embed matches every row. Fetch inbound and outbound
+  // SEPARATELY: outbound (automated email) is high-volume, so a single
   // time-ordered limit would starve the Inbox segment of recent inbound.
-  const select = 'id,person_id,ts,kind,title,body,broker,crm_people(name,stage,assigned_broker)'
+  // GAP-4: when scoped, filter BOTH selects by the embedded owner so the Inbox +
+  // Sent tabs only show the caller's own contacts. The page passes scopeBroker.
+  const select = 'id,person_id,ts,kind,title,body,broker,crm_people!inner(name,stage,assigned_broker)'
+  const scoped = (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    q: any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): any => (brokerSlug ? q.eq('crm_people.assigned_broker', brokerSlug) : q)
   const [inbound, outbound] = await Promise.all([
-    sb.from('crm_timeline').select(select).in('kind', ['email_in', 'sms_in', 'call', 'voicemail']).order('ts', { ascending: false }).limit(perDirection),
-    sb.from('crm_timeline').select(select).in('kind', ['email_out', 'sms_out']).order('ts', { ascending: false }).limit(perDirection),
+    scoped(sb.from('crm_timeline').select(select).in('kind', ['email_in', 'sms_in', 'call', 'voicemail'])).order('ts', { ascending: false }).limit(perDirection),
+    scoped(sb.from('crm_timeline').select(select).in('kind', ['email_out', 'sms_out'])).order('ts', { ascending: false }).limit(perDirection),
   ])
   const data = [...(inbound.data ?? []), ...(outbound.data ?? [])]
   return data.map((r) => {
@@ -709,13 +783,21 @@ export type CrmDealRow = {
   person: { name: string | null } | null
 }
 
-export async function listCrmDeals(): Promise<CrmDealRow[]> {
+export async function listCrmDeals(brokerSlug?: string | null): Promise<CrmDealRow[]> {
   const sb = createServiceClient()
-  const { data } = await sb
+  // GAP-7: crm_deals has NO assigned_broker column, so scope through the embedded
+  // crm_people.assigned_broker. The embed must be inner so .eq() filters rows.
+  // Deals whose person_id is null are pre-link rows — an inner embed drops them
+  // when scoped, which is correct (a restricted broker can't own an unlinked deal).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const embed = brokerSlug ? 'crm_people!inner(name,assigned_broker)' : 'crm_people(name,assigned_broker)'
+  let q = sb
     .from('crm_deals')
-    .select('id,name,pipeline,stage,value,entered_stage_at,person_id,crm_people(name)')
+    .select(`id,name,pipeline,stage,value,entered_stage_at,person_id,${embed}`)
     .order('pipeline')
     .order('entered_stage_at', { ascending: false })
+  if (brokerSlug) q = q.eq('crm_people.assigned_broker', brokerSlug)
+  const { data } = await q
   return (data ?? []).map((r) => ({
     ...(r as unknown as Omit<CrmDealRow, 'person'>),
     person: (r as unknown as { crm_people: { name: string | null } | null }).crm_people ?? null,
@@ -765,6 +847,8 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   const personId = Number(formData.get('personId'))
   const body = String(formData.get('body') ?? '').trim()
   if (!personId || !body) return { ok: false, error: 'Message body required' }
+  const scoped = await requirePersonInScope(personId, access.access)
+  if (!scoped.ok) return scoped
 
   const sb = createServiceClient()
   const { data: person } = await sb
@@ -876,6 +960,12 @@ export async function listBrokerLicenses(): Promise<BrokerLicenseRow[]> {
 export async function assignCrmBrokerAction(formData: FormData): Promise<CrmActionResult> {
   const access = await requireCrmAccess()
   if (!access.ok) return access
+  // Reassigning a lead is an OWNER operation (Option A, GAP-W elevated). Only a
+  // superuser (Matt) may move a lead between brokers — a restricted broker
+  // (scopeBroker non-null) is refused outright, so no one can steal a lead.
+  if (scopeBroker(access.access) !== null) {
+    return { ok: false, error: 'Not authorized — only an owner can reassign a contact' }
+  }
   const personId = Number(formData.get('personId'))
   const brokerSlug = String(formData.get('broker') ?? '').trim() as CrmBrokerSlug
   if (!personId || !(CRM_BROKERS as readonly string[]).includes(brokerSlug)) {
@@ -923,6 +1013,8 @@ export async function updateCrmStageAction(formData: FormData): Promise<CrmActio
   const stage = String(formData.get('stage') ?? '').trim()
   if (!personId || !stage) return { ok: false, error: 'Stage required' }
   if (!(CRM_STAGES as readonly string[]).includes(stage)) return { ok: false, error: 'Unknown stage' }
+  const scoped = await requirePersonInScope(personId, access.access)
+  if (!scoped.ok) return scoped
   const person = await getPersonCore(personId)
   if (!person) return { ok: false, error: 'Person not found' }
   if (person.stage === stage) return { ok: true }
@@ -947,6 +1039,8 @@ export async function addCrmTagAction(formData: FormData): Promise<CrmActionResu
   const personId = Number(formData.get('personId'))
   const tag = String(formData.get('tag') ?? '').trim().toLowerCase()
   if (!personId || !tag || tag.length > 80) return { ok: false, error: 'Tag required (max 80 chars)' }
+  const scoped = await requirePersonInScope(personId, access.access)
+  if (!scoped.ok) return scoped
   const person = await getPersonCore(personId)
   if (!person) return { ok: false, error: 'Person not found' }
   if (person.tags.includes(tag)) return { ok: true }
@@ -967,6 +1061,8 @@ export async function removeCrmTagAction(formData: FormData): Promise<CrmActionR
   const personId = Number(formData.get('personId'))
   const tag = String(formData.get('tag') ?? '').trim()
   if (!personId || !tag) return { ok: false, error: 'Tag required' }
+  const scoped = await requirePersonInScope(personId, access.access)
+  if (!scoped.ok) return scoped
   const person = await getPersonCore(personId)
   if (!person) return { ok: false, error: 'Person not found' }
   const nextTags = person.tags.filter((t) => t !== tag)
@@ -990,6 +1086,8 @@ export async function addCrmTaskAction(formData: FormData): Promise<CrmActionRes
   const type = String(formData.get('type') ?? 'Follow Up')
   const dueHours = Math.max(0.05, Number(formData.get('dueHours') ?? 24))
   if (!personId || !name) return { ok: false, error: 'Task name required' }
+  const scoped = await requirePersonInScope(personId, access.access)
+  if (!scoped.ok) return scoped
   const person = await getPersonCore(personId)
   if (!person) return { ok: false, error: 'Person not found' }
 
@@ -1040,7 +1138,12 @@ export async function listCrmOpenTasks(broker?: string): Promise<CrmOpenTask[]> 
     .or(`due_at.is.null,due_at.gte.${staleTaskFloor}`)
     .order('due_at', { ascending: true, nullsFirst: false })
     .limit(300)
-  if (broker) q = q.eq('assigned_broker', broker)
+  // GAP-3: default to the caller's own scope instead of "all brokers". A
+  // restricted broker (scope non-null) can't widen past their own slug — their
+  // scope overrides any wider ?broker= the URL tries to pass.
+  const scope = scopeBroker(access.access)
+  const effective = scope ?? broker
+  if (effective) q = q.eq('assigned_broker', effective)
   const { data } = await q
   return (data ?? []).map((r) => ({
     id: r.id as number,
@@ -1162,12 +1265,17 @@ export async function getAwaitingApprovals(): Promise<AwaitingApproval[]> {
   const access = await getCrmAccess()
   if (!access) return []
   const sb = createServiceClient()
-  const { data } = await sb
+  // GAP-5: scope the read to the caller's own queued leads (the write is already
+  // guarded by setEnrollment). The query already inner-joins crm_people.
+  const slug = scopeBroker(access)
+  let q = sb
     .from('crm_sequence_enrollments')
     .select('id,person_id,sequence_id,created_at,crm_sequences!inner(id,name),crm_people!inner(id,name,source,assigned_broker,custom)')
     .eq('status', 'awaiting_broker')
     .order('created_at', { ascending: false })
     .limit(100)
+  if (slug) q = q.eq('crm_people.assigned_broker', slug)
+  const { data } = await q
   const { renderFirstTouchPreview } = await import('@/lib/crm/enroll')
   const out: AwaitingApproval[] = []
   for (const row of data ?? []) {
@@ -1503,12 +1611,17 @@ export async function getWorkflowBoard(): Promise<WorkflowBoardSequence[]> {
     .select('id,name,steps,status')
     .eq('status', 'active')
     .order('id')
-  const { data: ens } = await sb
+  // GAP-6: scope active enrollments to the caller's own leads. The query already
+  // inner-joins crm_people; sequence DEFINITIONS above stay shared (all-brokers).
+  const slug = scopeBroker(access)
+  let enQ = sb
     .from('crm_sequence_enrollments')
     .select('id,person_id,sequence_id,status,step_index,next_run_at,created_at,crm_people!inner(id,name,assigned_broker)')
     .in('status', ['awaiting_broker', 'running', 'paused', 'paused_reply'])
     .order('created_at', { ascending: false })
     .limit(500)
+  if (slug) enQ = enQ.eq('crm_people.assigned_broker', slug)
+  const { data: ens } = await enQ
   return (seqs ?? []).map((s) => {
     const steps = (s.steps as Array<{ channel?: string; delayDays?: number; taskName?: string }> | null) ?? []
     return {

@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess, listCrmDeals } from '@/app/actions/crm'
+import { scopeBroker } from '@/lib/crm/scope'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 
 export const metadata = { title: 'Pipeline | CRM | Admin' }
@@ -15,7 +16,9 @@ function money(v: number | null): string {
 export default async function CrmDealsPage() {
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
-  const deals = await listCrmDeals()
+  // GAP-7: scope the pipeline to the caller's own contacts (crm_deals has no
+  // assigned_broker, so the scope routes through the embedded crm_people).
+  const deals = await listCrmDeals(scopeBroker(access))
 
   const pipelines = [...new Set(deals.map((d) => d.pipeline ?? 'Other'))]
 

@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess, getCrmOverview, listBrokerLicenses, listCrmPeople, listCrmSavedViews } from '@/app/actions/crm'
+import { scopeBroker } from '@/lib/crm/scope'
 import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import { Badge } from '@/components/ui/badge'
 import ContactsSearch from '@/components/admin/crm/ContactsSearch'
@@ -34,15 +35,22 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
   const sp = await searchParams
   const page = Math.max(1, Number(sp.page ?? '1') || 1)
 
+  // GAP-1: the broker-RBAC scope (Option A). A superuser (Matt) → null = sees all
+  // brokers; a restricted broker (Rebecca, Paul) → their own slug. This clamps the
+  // '?broker=all' override server-side: only a superuser may drop the filter.
+  const scope = scopeBroker(access)
+
   // Brokers land on THEIR leads by default; '?broker=all' (or the All brokers
-  // option in the filter) opens the shared book. Matt (superuser) sees all.
-  const defaultBroker = access.role === 'broker' ? access.brokerSlug ?? undefined : undefined
-  const effectiveBroker = sp.broker === 'all' ? undefined : sp.broker || defaultBroker
+  // option in the filter) opens the shared book — but ONLY for a superuser. A
+  // restricted broker passing ?broker=all (or any other slug) falls back to their
+  // own scope and can never widen past it.
+  const requestedBroker = sp.broker === 'all' ? undefined : sp.broker || undefined
+  const effectiveBroker = scope ?? requestedBroker
   const isMyLeads = !!access.brokerSlug && effectiveBroker === access.brokerSlug
 
   const [views, overview, result, licenses] = await Promise.all([
     listCrmSavedViews(),
-    getCrmOverview(),
+    getCrmOverview(scope),
     listCrmPeople({ q: sp.q, stage: sp.stage, broker: effectiveBroker, tag: sp.tag, view: sp.view, page }),
     listBrokerLicenses(),
   ])
