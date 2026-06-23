@@ -31,6 +31,8 @@ import { getSignatureForMailbox } from '@/lib/crm/email-signature'
 import { CRM_MAILBOXES } from '@/lib/crm/gmail'
 import { getOwnedHomeMatches, getGuestSearchAlertsForLead, getViewedListingsForLead, type OwnedHomeMatch } from '@/lib/data'
 import { getOwnedHomeMedia } from '@/lib/crm/owned-home-media'
+import { getContactMemberships } from '@/lib/data/crm/getContactMemberships'
+import { MembershipToggles } from '@/components/admin/crm/MembershipToggles'
 import { EmailComposer } from '@/components/admin/crm/EmailComposer'
 import { SmsComposer } from '@/components/admin/crm/SmsComposer'
 import ConversationThread, { isConversationEvent } from '@/components/admin/crm/ConversationThread'
@@ -259,11 +261,12 @@ export default async function ConsoleLeadPage({
   const personEmails = (person.emails ?? []).map((e) => e.value).filter((v): v is string => Boolean(v))
 
   // What they're shopping for — saved searches + the homes they're watching (live MLS) + newsletter status.
-  const [savedSearches, viewedListings, membership, activeSequences] = await Promise.all([
+  const [savedSearches, viewedListings, membership, activeSequences, contactMemberships] = await Promise.all([
     getGuestSearchAlertsForLead({ fubPersonId: person.fub_legacy_id, emails: personEmails }),
     getViewedListingsForLead(person.fub_legacy_id),
     getNewsletterMembershipForLead({ crmPersonId: person.id, emails: personEmails }),
     listActiveSequences(),
+    getContactMemberships(person.id),
   ])
 
   // Owned home.
@@ -395,6 +398,14 @@ export default async function ConsoleLeadPage({
               </a>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Memberships: one-click toggles (workflow / newsletter / listing alerts) ── */}
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-base">Memberships</CardTitle></CardHeader>
+        <CardContent className="p-4 pt-0 sm:p-5 sm:pt-0">
+          <MembershipToggles personId={person.id} memberships={contactMemberships} />
         </CardContent>
       </Card>
 
