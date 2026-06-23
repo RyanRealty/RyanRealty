@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.72 (2026-06-23)
+
+### Other
+- CONTACT360 8.1 + 8.4 + 5.6: Meta GPC gate, opt-out audience removal, sync cron
+
+---
+
+
 ## v1.599.71 (2026-06-23)
 
 ### Other
