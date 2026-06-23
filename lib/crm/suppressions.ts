@@ -8,8 +8,13 @@ import { createServiceClient } from '@/lib/supabase/service'
 
 export type SendChannel = 'email' | 'sms' | 'call'
 
-/** Tag → channel suppression mapping (tags are live the instant they land on a person). */
-const TAG_CHANNEL: Array<{ tag: string; channels: Array<'all' | SendChannel> }> = [
+/**
+ * Tag → channel suppression mapping (tags are live the instant they land on a
+ * person). Exported read-only so a consent-decision reader projects the SAME
+ * authoritative tag footprint isSuppressed enforces at send time — one mapping,
+ * never a second copy that can drift.
+ */
+export const TAG_CHANNEL: ReadonlyArray<{ tag: string; channels: ReadonlyArray<'all' | SendChannel> }> = [
   { tag: 'compliance:hard-stop', channels: ['all'] },
   { tag: 'contact:do-not-text', channels: ['sms'] },
   // TCPA: a text message is legally a "call". A do-not-call contact must be
