@@ -14,7 +14,7 @@
 | 0 | 0.5 | Alarm the CRM_MIRROR_ENABLED kill switch | ✅ done (09161a2c) |
 | 0 | 0.6 | First-touch UTM fallback from visitor_sessions | ✅ reader done (6c54c7e1); wiring into lead-create = follow-up |
 | 0 | 0.7 | ci:lead-coverage reconciliation gate (DB nightly) | 🚩 flagged (creds) |
-| 1 | 1.1 | Bridge columns (crm_person_id) + backfill | 🚩 flagged — migration written + pre-verified safe, HELD at `docs/audit/pending-migrations/` (moved OUT of supabase/migrations/ so Cursor's always-apply rule can't auto-run it). Applying needs Matt's "apply the migrations"; see that dir's README. Unblocks Phase 7 |
+| 1 | 1.1 | Bridge columns (crm_person_id) + backfill | ✅ APPLIED to prod (Matt's go 2026-06-22) — crm_person_id on all 4 tables + indexes + backfill (1 vim row bridged; saved_searches/profiles 0-row so 0). Snapshot refreshed. Unblocks Phase 7 |
 | 1 | 1.2 | resolvePersonIdentity() resolver | ✅ done v1 (c5cf2058) — authUserId from visitor_identity_map; email→auth.users needs Phase 1.1 RPC |
 | 1 | 1.3 | Refactor getters to crm_person_id / the bundle | ⬜ todo |
 | 2 | 2.1 | Unified ContactActivityFeed | ✅ DONE — reader (4cabc1f8) + panel wired as the overview "Recent activity" glance (4d05333b) |
@@ -30,7 +30,7 @@
 | 4 | 4.1 | Relationships schema + type vocab | ✅ vocab + reciprocalType (beaaf0f5); UNIQUE/no-self-link constraint = flagged migration (with 1.1) |
 | 4 | 4.2 | link/unlink/setType actions (reciprocal) | ✅ done (beaaf0f5) |
 | 4 | 4.3 | Relationships panel + RelationshipPicker | ✅ DONE — reader + add/remove panel in the overview (4d05333b); contact-search picker (vs numeric id) = polish follow-up |
-| 4 | 4.4 | Backfill 29 legacy rows + dedup guard | ⬜ todo |
+| 4 | 4.4 | Backfill 29 legacy rows + dedup guard | ✅ dedup guard APPLIED (2026-06-22) — no-self-link CHECK + partial-unique on real pairs (verified 0 conflicts); resolving the 29 null-related legacy names to person ids = data follow-up |
 | 5 | 5.1 | crm_people→Meta uploader, in-app + consent-gated + ledger | 🚩 flagged (Meta creds + go) |
 | 5 | 5.2 | Audience cron + <1k-match monitor + token-model fix | 🚩 flagged (token authority) |
 | 5 | 5.3 | Lead-webhook identity stitch + external_id=rr_vid | ⬜ todo |
