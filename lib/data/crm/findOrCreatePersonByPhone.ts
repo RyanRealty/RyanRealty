@@ -1,6 +1,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { lookupPersonByPhone, normalizeTo10 } from '@/lib/crm/twilio'
+import { buildNativePersonRow } from './nativeCreate'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
 
 /**
@@ -70,17 +71,26 @@ export async function findOrCreatePersonByPhone(params: {
   // ten is non-null here (shouldCreatePerson guards it), but narrow for TS.
   if (!ten) return { match: existing, created: false }
 
+  // The crm_people payload comes from the shared canonical builder so the native
+  // create shape (source + stage + assigned_broker + source-tag) is identical to
+  // the FUB-fallback path (ensureNativeLead) and can never drift. Audience is
+  // genuinely unknown on a first inbound contact (the caller could be a buyer or
+  // a seller), so no audience tag is stamped here — it is assigned later when the
+  // contact takes a buyer/seller action, the same convention the lead-integrity
+  // gate allows for top-of-funnel registrations.
+  const personRow = buildNativePersonRow({
+    name: inboundLeadName(params.source, params.phone, ten),
+    first_name: null,
+    last_name: null,
+    source: params.source,
+    assignedBroker: DEFAULT_BROKER,
+    phones: [{ value: params.phone, type: 'Mobile', isPrimary: 1 }],
+  })
+
   const sb = createServiceClient()
   const { data: created } = await sb
     .from('crm_people')
-    .insert({
-      name: inboundLeadName(params.source, params.phone, ten),
-      stage: 'Lead',
-      source: params.source,
-      assigned_broker: DEFAULT_BROKER,
-      phones: [{ value: params.phone, type: 'Mobile', isPrimary: 1 }],
-      tags: [`source:${params.source}`],
-    })
+    .insert(personRow)
     .select('id,name,assigned_broker')
     .single()
 

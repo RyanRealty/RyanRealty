@@ -1,6 +1,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { normalizeEmail, normalizePhone } from './resolvePersonIdentity'
+import { buildNativePersonRow } from './nativeCreate'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
 
 /**
@@ -168,25 +169,27 @@ export async function ensureNativeLead(input: EnsureNativeLeadInput): Promise<En
   }
 
   // Create — person row first, then its contact points keyed on the same
-  // normalized values the lookup uses (so the next resolve hits this row).
+  // normalized values the lookup uses (so the next resolve hits this row). The
+  // crm_people payload comes from the shared canonical builder so the native
+  // create shape (source + stage + assigned_broker + source-tag) is identical to
+  // the inbound-phone path and can never drift.
   const { first, last } = splitName(input.name)
   const emailObjs = normalizedEmail ? [{ value: normalizedEmail, type: 'Primary', isPrimary: 1 }] : []
   const phoneObjs = normalizedPhone ? [{ value: normalizedPhone, type: 'Mobile', isPrimary: normalizedEmail ? 0 : 1 }] : []
-  const tags = [...new Set([`source:${input.source}`, ...(input.tags ?? [])])]
+  const personRow = buildNativePersonRow({
+    name: nativeLeadName(input.name, normalizedEmail, normalizedPhone),
+    first_name: first,
+    last_name: last,
+    source: input.source,
+    assignedBroker: DEFAULT_BROKER,
+    emails: emailObjs,
+    phones: phoneObjs,
+    tags: input.tags,
+  })
 
   const { data: created, error: createError } = await sb
     .from('crm_people')
-    .insert({
-      name: nativeLeadName(input.name, normalizedEmail, normalizedPhone),
-      first_name: first,
-      last_name: last,
-      stage: 'Lead',
-      source: input.source,
-      assigned_broker: DEFAULT_BROKER,
-      emails: emailObjs,
-      phones: phoneObjs,
-      tags,
-    })
+    .insert(personRow)
     .select('id')
     .single()
 
