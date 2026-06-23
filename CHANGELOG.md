@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.64 (2026-06-23)
+
+### Other
+- CONTACT360: hold the Phase 1.1 migration out of supabase/migrations until Matt's go
+
+---
+
+
 ## v1.599.63 (2026-06-23)
 
 ### Other
