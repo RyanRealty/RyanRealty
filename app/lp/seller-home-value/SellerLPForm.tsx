@@ -262,7 +262,6 @@ export default function SellerLPForm({
         >
           {pending ? 'Working…' : isListNow ? 'Start my home sale →' : 'Get my home value →'}
         </Button>
-        <SmsConsentDisclosure tone="on-dark" className="mt-3 [text-shadow:0_1px_3px_rgba(0,0,0,0.55)]" checked={smsConsent} onCheckedChange={setSmsConsent} />
       </form>
     )
   }
@@ -312,7 +311,6 @@ export default function SellerLPForm({
         >
           {pending ? 'Working…' : isListNow ? 'Start my home sale →' : 'Get my home value →'}
         </Button>
-        <SmsConsentDisclosure className="mt-4" checked={smsConsent} onCheckedChange={setSmsConsent} />
       </form>
     )
   }

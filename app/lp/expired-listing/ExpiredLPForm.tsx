@@ -126,9 +126,6 @@ export default function ExpiredLPForm() {
         <Button type="submit" className="w-full">
           Continue
         </Button>
-        {/* Carrier-verifiable consent disclosure MUST be in first-paint HTML —
-            the A2P campaign message_flow cites this URL. Never step-2 only. */}
-        <SmsConsentDisclosure />
         <p className="text-center text-xs text-muted-foreground">
           No commitment. You get the audit either way.
         </p>
