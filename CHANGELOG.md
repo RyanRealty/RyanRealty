@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.601.3 (2026-06-23)
+
+### Bug Fixes
+- fix(crm): never send a FUB-archived placeholder template ('archived')
+
+---
+
+
 ## v1.601.2 (2026-06-23)
 
 ### Maintenance
