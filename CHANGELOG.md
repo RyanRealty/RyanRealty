@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.61 (2026-06-23)
+
+### Other
+- CONTACT360: exempt the standalone HTML unsubscribe page from design-tokens + progress log (Wave 5)
+
+---
+
+
 ## v1.599.60 (2026-06-23)
 
 ### Other
