@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.602.0 (2026-06-23)
+
+### Features
+- feat(admin): broker ad-link generator (/admin/broker-links)
+
+---
+
+
 ## v1.601.9 (2026-06-23)
 
 ### Bug Fixes
