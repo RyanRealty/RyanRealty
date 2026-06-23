@@ -61,7 +61,7 @@
 | 9 | 9.6 | crm-health-check cron + alarms + relay heartbeat | ✅ done (9665f469) — every 30m, deduped broker alerts, evaluateHealthRules (19 tests) |
 | 9 | 9.7 | crm-fub-reconcile + 14-day zero-diff cutover gate | 🚩 flagged (FUB creds, nightly) |
 | 9 | 9.8 | Hardening (orphan cron, EMAIL_TRACKING_SECRET, bounce seed) | ✅ gate done (d7830476) — ci:crm-secrets (boot-visible secrets + orphan-cron audit); secret VALUES + orphan crm-smart-followups = Matt/ops follow-up |
-| 10 | 10.1 | Broker RBAC (server-side assigned_broker scope everywhere) | 🚩 AUDIT done (8969c0f6, docs/audit/CRM_RBAC_AUDIT.md) — GAP-0 cross-broker leak found; enforcement needs Matt's policy call (Option A vs B), security-sensitive, NOT blind-shipped |
+| 10 | 10.1 | Broker RBAC (server-side assigned_broker scope everywhere) | ✅ ENFORCED — Option A (Matt's call: he sees all, Rebecca/Paul scoped). lib/crm/scope.ts scopeBroker + requirePersonInScope; GAP-0 leak closed, every mutation guarded, lists scoped, assignBroker owner-only. next build OK. (c00f4d03). FOLLOW-UP: scope/deny report_viewer if ever created |
 | 10 | 10.2 | Service-role boundary audit (RLS tables via DAL only) | ⬜ todo |
 | 10 | 10.3 | Dual-host OAuth/PKCE fix verified | ⬜ todo |
 | 10 | 10.4 | Broker daily/weekly digests repointed FUB → crm_people + scheduled | ✅ repoint done (8df4253b) — getBrokerDigest reads crm_*; SCHEDULING (add both to vercel.json crons) + FUB-only smartlists/appointments = follow-up |
@@ -71,6 +71,11 @@ Legend: ⬜ todo · 🔶 in progress · ✅ done · 🚩 flagged (needs creds / 
 ## Log
 
 _(append newest-first)_
+
+### 2026-06-22 · Matt unblocked (a) + (b): migrations APPLIED + RBAC ENFORCED
+- **(a) Migrations applied to prod** (Matt: "apply migrations") — Phase 1.1 crm_person_id bridge columns + backfill, Phase 4.4 crm_relationships no-self-link + partial-unique. Snapshot refreshed. **Phase 7 (saved-search unification) is now unblocked.**
+- **(b) RBAC enforced, Option A** (Matt: "I see all") — `c00f4d03`. lib/crm/scope.ts is the policy source of truth; GAP-0 contact-detail leak closed, every personId mutation guarded (crm.ts + membership + relationships), all-broker list reads scoped, assignCrmBroker owner-only, restricted brokers can't widen via ?broker=. Reviewed every scope check before commit; next build 17.6s, 1192 tests.
+- **(c) Meta + (d) GPC** still need Matt's input (see the session response) — both are business/credential decisions, not buildable autonomously.
 
 ### 2026-06-22 · Wave 6 + BUILDABLE SET COMPLETE — the loop has reached its no-blocker goal
 Wave 6 (3 increments, all verified + committed):
