@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.600.2 (2026-06-23)
+
+### Maintenance
+- docs(crm): live-push session outcome — 5 dead lookalikes deleted, push hard-blocked locally (must run in prod)
+
+---
+
+
 ## v1.600.1 (2026-06-23)
 
 ### Bug Fixes
