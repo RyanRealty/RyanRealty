@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.599.49 (2026-06-23)
+
+### Other
+- CONTACT360: progress log — Wave 1 (6 increments) + gate fix + inherited-red note
+
+---
+
+
 ## v1.599.48 (2026-06-23)
 
 ### Other
