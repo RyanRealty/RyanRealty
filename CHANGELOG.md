@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.607.0 (2026-06-24)
+
+### Features
+- feat(tc): zod schema for the public signing boundary (H5)
+
+---
+
+
 ## v1.606.4 (2026-06-24)
 
 ### Maintenance
