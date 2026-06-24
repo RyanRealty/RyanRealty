@@ -7,6 +7,8 @@
  * y/h over page height, page = pageNumber + 1 (SkySlope pageNumber is 0-indexed).
  */
 
+import type { SignFieldType } from './signing'
+
 export interface SkySlopeSourceField {
   type?: string
   originalType?: string
@@ -29,7 +31,11 @@ export interface SkySlopeSourcePage {
   height?: number
 }
 
-export type MappedFieldType = 'signature' | 'initials' | 'date' | 'checkbox' | 'text'
+// Canonical signing field types live in ./signing.ts (SIGN_FIELD_TYPES, kept in
+// lock-step with the tc_envelope_fields.type CHECK). The mapper MUST emit only
+// those — this alias makes emitting a non-canonical type (e.g. the old 'date',
+// which the DB CHECK rejects) a COMPILE error instead of a runtime template break.
+export type MappedFieldType = SignFieldType
 export type SignerRole = 'buyer' | 'seller' | 'listing_agent' | 'buyer_agent' | null
 
 export interface MappedField {
@@ -48,9 +54,9 @@ export interface MappedField {
 const TYPE_MAP: Record<string, MappedFieldType> = {
   Signature: 'signature',
   Initials: 'initials',
-  DateSigned: 'date',
-  TimeSigned: 'date',
-  Date: 'date',
+  DateSigned: 'date_signed',
+  TimeSigned: 'date_signed',
+  Date: 'date_signed',
   checkboxblock: 'checkbox',
 }
 
@@ -102,12 +108,12 @@ function clamp01(n: number): number {
 }
 
 /** Counts for the ingest response / smoke-test acceptance. */
-export function summarizeMap(map: MappedField[]): { total: number; signature: number; initials: number; date: number; text: number; checkbox: number } {
+export function summarizeMap(map: MappedField[]): { total: number; signature: number; initials: number; date_signed: number; text: number; checkbox: number } {
   return {
     total: map.length,
     signature: map.filter((m) => m.type === 'signature').length,
     initials: map.filter((m) => m.type === 'initials').length,
-    date: map.filter((m) => m.type === 'date').length,
+    date_signed: map.filter((m) => m.type === 'date_signed').length,
     text: map.filter((m) => m.type === 'text').length,
     checkbox: map.filter((m) => m.type === 'checkbox').length,
   }

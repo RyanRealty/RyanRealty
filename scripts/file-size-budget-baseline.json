@@ -10,7 +10,7 @@
     "app/actions/listings.ts": 2671,
     "app/actions/sync-full-cron.ts": 654,
     "app/actions/sync-spark.ts": 1661,
-    "app/actions/tc-envelopes.ts": 758,
+    "app/actions/tc-envelopes.ts": 761,
     "app/admin/(protected)/broker-dashboard/page.tsx": 702,
     "app/admin/(protected)/deals/page.tsx": 657,
     "app/admin/(protected)/people/[fubPersonId]/page.tsx": 727,

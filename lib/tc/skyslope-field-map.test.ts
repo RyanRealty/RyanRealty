@@ -5,6 +5,7 @@ import {
   summarizeMap,
   type MappedField,
 } from './skyslope-field-map'
+import { SIGN_FIELD_TYPES } from './signing'
 
 // SkySlope -> envelope field mapping (TC docs). deriveSignerRole routes a signature
 // field to the right recipient; agent-vs-principal precedence must hold or a
@@ -53,10 +54,25 @@ describe('summarizeMap', () => {
     const map = [
       { type: 'signature' },
       { type: 'signature' },
-      { type: 'date' },
+      { type: 'date_signed' },
       { type: 'text' },
       { type: 'checkbox' },
     ] as MappedField[]
-    expect(summarizeMap(map)).toEqual({ total: 5, signature: 2, initials: 0, date: 1, text: 1, checkbox: 1 })
+    expect(summarizeMap(map)).toEqual({ total: 5, signature: 2, initials: 0, date_signed: 1, text: 1, checkbox: 1 })
+  })
+})
+
+// C4 lock: the SkySlope mapper must ONLY emit canonical signing field types (the
+// tc_envelope_fields.type CHECK / SIGN_FIELD_TYPES). Emitting 'date' was the bug
+// that silently broke envelope creation from any OREF template with a date field.
+describe('field-type canonical parity (C4)', () => {
+  it('every mapped type is a canonical SignFieldType', () => {
+    const skyslopeTypes = ['Signature', 'Initials', 'DateSigned', 'TimeSigned', 'Date', 'checkboxblock', 'Unknown']
+    const mapped = translateSkyslopeFields(skyslopeTypes.map((t) => ({ type: t })), [])
+    for (const m of mapped) expect(SIGN_FIELD_TYPES).toContain(m.type)
+  })
+  it('SkySlope date variants map to date_signed, never the rejected "date"', () => {
+    const mapped = translateSkyslopeFields([{ type: 'DateSigned' }, { type: 'Date' }, { type: 'TimeSigned' }], [])
+    expect(mapped.every((m) => m.type === 'date_signed')).toBe(true)
   })
 })

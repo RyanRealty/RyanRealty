@@ -409,7 +409,10 @@ export async function createEnvelopeFromTemplate(
         envelope_id: env.id,
         document_id: doc.id,
         recipient_id: recipientByRole(f.signerRole),
-        type: f.type,
+        // Defensive: any legacy field_map blob ingested before the canonical-type
+        // fix may carry 'date', which the tc_envelope_fields.type CHECK rejects
+        // (it accepts 'date_signed'). Normalize so a stale template can't 23514. (C4)
+        type: (f.type as string) === 'date' ? 'date_signed' : f.type,
         page: Math.max(1, Math.round(f.page)),
         x: clamp01(f.x),
         y: clamp01(f.y),
