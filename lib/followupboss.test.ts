@@ -10,6 +10,12 @@ vi.mock('./crm/mirror', () => ({
   mirrorTaskToCrm: vi.fn(),
 }))
 
+// FUB DECOMMISSIONED (2026-06-24): sendEvent now captures natively via
+// ensureNativeLead and never touches FollowUp Boss. Mock the native writer.
+type NativeLeadInput = { name?: string | null; email?: string | null; phone?: string | null; source: string; tags?: string[]; assignedBroker?: string }
+const ensureNativeLeadMock = vi.fn(async (_input: NativeLeadInput) => ({ personId: 1, created: true }))
+vi.mock('@/lib/data/crm/ensureNativeLead', () => ({ ensureNativeLead: ensureNativeLeadMock }))
+
 import { isPlaceholderFubEmail, sendEvent } from './followupboss'
 
 // Lead-create path (audit p3.2). Placeholder emails (@placeholder.ryan-realty.com)
@@ -29,84 +35,55 @@ describe('isPlaceholderFubEmail', () => {
   })
 })
 
-const ORIG_KEY = process.env.FOLLOWUPBOSS_API_KEY
-const ORIG_FUB = process.env.FUB_API_KEY
-
-// sendEvent is the FUB /v1/events lead-create path (one of the plan's 5 critical
-// paths). It must fail closed without a key (never crash, never silently "succeed"),
-// build the correct event payload, and surface API/network errors honestly.
-describe('sendEvent (FUB lead-create)', () => {
-  const person = { firstName: 'Jane', lastName: 'Doe', emails: [{ value: 'jane@example.com' }] }
+// sendEvent post-decommission: it captures the lead NATIVELY (ensureNativeLead)
+// and NEVER posts to Follow Up Boss. It maps the event to native fields, infers
+// the audience tag from the event type, and returns the native success shape.
+describe('sendEvent (native capture, FUB decommissioned)', () => {
+  const person = { firstName: 'Jane', lastName: 'Doe', emails: [{ value: 'jane@example.com' }], phones: [{ value: '5415551234' }] }
 
   beforeEach(() => {
-    process.env.FOLLOWUPBOSS_API_KEY = 'test-key'
-    delete process.env.FUB_API_KEY
+    ensureNativeLeadMock.mockClear()
+    ensureNativeLeadMock.mockResolvedValue({ personId: 1, created: true })
   })
   afterEach(() => {
     vi.unstubAllGlobals()
-    vi.clearAllMocks()
-    if (ORIG_KEY === undefined) delete process.env.FOLLOWUPBOSS_API_KEY
-    else process.env.FOLLOWUPBOSS_API_KEY = ORIG_KEY
-    if (ORIG_FUB === undefined) delete process.env.FUB_API_KEY
-    else process.env.FUB_API_KEY = ORIG_FUB
   })
 
-  it('fails closed without an API key and does not hit the network', async () => {
-    delete process.env.FOLLOWUPBOSS_API_KEY
+  it('never POSTs to FollowUp Boss', async () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
-    const r = await sendEvent({ type: 'Registration', source: 'Website', person })
-    expect(r).toEqual({ ok: false, error: 'FollowUp Boss not configured' })
+    await sendEvent({ type: 'Registration', source: 'Website', person })
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('POSTs the event payload to /v1/events with Basic auth and the default system', async () => {
-    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }))
-    vi.stubGlobal('fetch', fetchMock)
-    await sendEvent({ type: 'Registration', source: 'Buyer LP', person, message: 'hi' })
-    expect(fetchMock).toHaveBeenCalledTimes(1)
-    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
-    expect(url).toBe('https://api.followupboss.com/v1/events')
-    expect(init.method).toBe('POST')
-    expect((init.headers as Record<string, string>).Authorization).toMatch(/^Basic /)
-    const body = JSON.parse(init.body as string)
-    expect(body).toMatchObject({ type: 'Registration', source: 'Buyer LP', system: 'Ryan Realty Website', message: 'hi' })
-    expect(body.person).toEqual(person)
+  it('captures natively with mapped fields + source tag, returns the native shape', async () => {
+    const r = await sendEvent({ type: 'Registration', source: 'Buyer LP', person })
+    expect(r).toEqual({ ok: true, status: 200 })
+    expect(ensureNativeLeadMock).toHaveBeenCalledTimes(1)
+    const arg = ensureNativeLeadMock.mock.calls[0][0]
+    expect(arg).toMatchObject({ name: 'Jane Doe', email: 'jane@example.com', phone: '5415551234', source: 'Buyer LP' })
+    expect(arg.tags).toContain('source:Buyer LP')
   })
 
-  it('omits optional fields that are absent or empty (no property / campaign / message)', async () => {
-    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }))
-    vi.stubGlobal('fetch', fetchMock)
-    await sendEvent({ type: 'Registration', source: 'X', person, property: {}, campaign: { source: '' } })
-    const body = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string)
-    expect('property' in body).toBe(false)
-    expect('campaign' in body).toBe(false)
-    expect('message' in body).toBe(false)
+  it('infers audience:seller from a Seller Inquiry', async () => {
+    await sendEvent({ type: 'Seller Inquiry', source: 'Seller LP', person })
+    expect(ensureNativeLeadMock.mock.calls[0][0].tags).toContain('audience:seller')
   })
 
-  it('returns ok on a 204', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 204 })))
-    expect(await sendEvent({ type: 'Registration', source: 'S', person })).toEqual({ ok: true, status: 204 })
+  it('infers audience:buyer from a Property Inquiry', async () => {
+    await sendEvent({ type: 'Property Inquiry', source: 'Listing', person })
+    expect(ensureNativeLeadMock.mock.calls[0][0].tags).toContain('audience:buyer')
   })
 
-  it('surfaces the parsed error on a non-ok response', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ message: 'bad request' }), { status: 400 })))
-    expect(await sendEvent({ type: 'Registration', source: 'S', person })).toEqual({
-      ok: false,
-      status: 400,
-      error: 'bad request',
-    })
+  it('passes a valid broker attribution through as assignedBroker', async () => {
+    await sendEvent({ type: 'Registration', source: 'S', person, brokerAttribution: { brokerSlug: 'rebecca' } })
+    expect(ensureNativeLeadMock.mock.calls[0][0].assignedBroker).toBe('rebecca')
   })
 
-  it('returns a network-error result when fetch throws', async () => {
+  it('returns a failure result (never throws) when native capture fails', async () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    vi.stubGlobal('fetch', vi.fn(async () => {
-      throw new Error('boom')
-    }))
-    expect(await sendEvent({ type: 'Registration', source: 'S', person })).toEqual({
-      ok: false,
-      error: 'FUB network error',
-    })
+    ensureNativeLeadMock.mockRejectedValueOnce(new Error('db down'))
+    expect(await sendEvent({ type: 'Registration', source: 'S', person })).toEqual({ ok: false, error: 'native capture failed' })
     errSpy.mockRestore()
   })
 })

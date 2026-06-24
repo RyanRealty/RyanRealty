@@ -863,92 +863,35 @@ export async function updatePersonAutomationState(params: {
  * Use type "Registration" for sign-ups; FUB matches by email to avoid duplicates.
  */
 export async function sendEvent(params: SendEventParams): Promise<{ ok: true; status: number } | { ok: false; status?: number; error?: string }> {
-  const auth = getAuth()
-  if (!auth) return { ok: false, error: 'FollowUp Boss not configured' }
-  const body = {
-    type: params.type,
-    source: params.source,
-    system: params.system ?? 'Ryan Realty Website',
-    person: params.person,
-    ...(params.sourceUrl && { sourceUrl: params.sourceUrl }),
-    ...(params.message && { message: params.message }),
-    ...(params.property && Object.keys(params.property).length > 0 && { property: params.property }),
-    ...(params.pageUrl && { pageUrl: params.pageUrl }),
-    ...(params.pageTitle && { pageTitle: params.pageTitle }),
-    ...(params.campaign && Object.values(params.campaign).some(Boolean) && { campaign: params.campaign }),
-  }
-  let res: Response
+  // FUB DECOMMISSIONED (cutover 2026-06-24): capture natively instead of POSTing
+  // to Follow Up Boss. A lead-bearing event creates/reuses a crm_people lead with
+  // inferred audience + source tags; an anonymous tracking event (no email/phone)
+  // resolves to nothing (ensureNativeLead skips it). Every former sendEvent caller
+  // now writes to the in-house CRM with zero FUB traffic — no per-caller change.
+  // First-party visitor_sessions covers page-view tracking the old events carried.
   try {
-    res = await fetch(`${FUB_BASE}/events`, {
-      method: 'POST',
-      headers: fubHeaders(auth),
-      body: JSON.stringify(body),
-      next: { revalidate: 0 },
-    })
+    const email = params.person?.emails?.[0]?.value ?? null
+    const phone = params.person?.phones?.[0]?.value ?? null
+    const name = [params.person?.firstName, params.person?.lastName].filter(Boolean).join(' ').trim() || null
+    const t = params.type
+    const audience: 'seller' | 'buyer' | null =
+      t === 'Seller Inquiry'
+        ? 'seller'
+        : t === 'Property Inquiry' || t === 'Viewed Property' || t === 'Saved Property' || t === 'Property Search' || t === 'Saved Property Search'
+          ? 'buyer'
+          : null
+    const tags = [audience ? `audience:${audience}` : null, params.source ? `source:${params.source}` : null].filter(
+      (x): x is string => Boolean(x),
+    )
+    const slug = params.brokerAttribution?.brokerSlug
+    const assignedBroker = slug === 'matt' || slug === 'rebecca' || slug === 'paul' ? slug : undefined
+    const { ensureNativeLead } = await import('@/lib/data/crm/ensureNativeLead')
+    await ensureNativeLead({ name, email, phone, source: params.source, tags, assignedBroker })
+    return { ok: true, status: 200 }
   } catch (err) {
-    console.error('[sendEvent] Network error:', err)
-    return { ok: false, error: 'FUB network error' }
+    console.error('[sendEvent → native] capture failed:', err)
+    return { ok: false, error: 'native capture failed' }
   }
-  if (res.status === 204) {
-    if (params.brokerAttribution?.brokerSlug) {
-      const attribution = await applyBrokerAttribution({
-        person: params.person,
-        brokerSlug: params.brokerAttribution.brokerSlug,
-        brokerEmail: params.brokerAttribution.brokerEmail,
-      })
-      if (!attribution.assignedUserId || !attribution.attributionUpdated) {
-        const message = `FUB broker attribution incomplete for "${params.brokerAttribution.brokerSlug}" (person=${attribution.personId ?? 'unknown'})`
-        if (isBrokerAssignmentGuardrailEnabled()) {
-          return { ok: false, status: 500, error: `${message}. Set FOLLOWUPBOSS_BROKER_USER_MAP or matching broker email.` }
-        }
-        console.error(message)
-      }
-    }
-    void mirrorSiteEvent({
-      email: params.person?.emails?.[0]?.value,
-      type: params.type,
-      source: params.source,
-      pageUrl: params.pageUrl ?? params.sourceUrl,
-      pageTitle: params.pageTitle,
-      message: params.message,
-      propertyStreet: params.property?.street,
-    })
-    return { ok: true, status: 204 }
-  }
-  if (res.ok) {
-    if (params.brokerAttribution?.brokerSlug) {
-      const attribution = await applyBrokerAttribution({
-        person: params.person,
-        brokerSlug: params.brokerAttribution.brokerSlug,
-        brokerEmail: params.brokerAttribution.brokerEmail,
-      })
-      if (!attribution.assignedUserId || !attribution.attributionUpdated) {
-        const message = `FUB broker attribution incomplete for "${params.brokerAttribution.brokerSlug}" (person=${attribution.personId ?? 'unknown'})`
-        if (isBrokerAssignmentGuardrailEnabled()) {
-          return { ok: false, status: 500, error: `${message}. Set FOLLOWUPBOSS_BROKER_USER_MAP or matching broker email.` }
-        }
-        console.error(message)
-      }
-    }
-    void mirrorSiteEvent({
-      email: params.person?.emails?.[0]?.value,
-      type: params.type,
-      source: params.source,
-      pageUrl: params.pageUrl ?? params.sourceUrl,
-      pageTitle: params.pageTitle,
-      message: params.message,
-      propertyStreet: params.property?.street,
-    })
-    return { ok: true, status: res.status }
-  }
-  let error: string | undefined
-  try {
-    const data = await res.json() as { error?: string; message?: string }
-    error = data.error ?? data.message ?? res.statusText
-  } catch {
-    error = res.statusText
-  }
-  return { ok: false, status: res.status, error }
 }
 
 /**

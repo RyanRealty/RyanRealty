@@ -8,8 +8,16 @@
  * provides the Basic-auth header (key as username, blank password) that was
  * otherwise hand-built `Buffer.from(...)` in 8+ files.
  */
+/**
+ * FUB DECOMMISSIONED (cutover 2026-06-24). Returns undefined so every FollowUp
+ * Boss API path no-ops — each FUB client function guards `if (!apiKey) return`
+ * (the codebase's supported keyless state from before the key was ever
+ * provisioned), so this single switch stops ALL outbound FUB traffic. Lead
+ * capture is native (see lib/followupboss.sendEvent → ensureNativeLead and
+ * lib/crm/lead-router). Re-enabling FUB is intentionally not a config flip.
+ */
 export function getFubApiKey(): string | undefined {
-  return process.env.FOLLOWUPBOSS_API_KEY ?? process.env.FUB_API_KEY
+  return undefined
 }
 
 /** Basic-auth header value for FollowUpBoss (key as username, blank password). */

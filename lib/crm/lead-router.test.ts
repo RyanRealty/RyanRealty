@@ -19,9 +19,9 @@ describe('crmLeadBackend', () => {
     if (v === undefined) delete process.env.CRM_LEAD_BACKEND
     else process.env.CRM_LEAD_BACKEND = v
   }
-  it('defaults to dual when unset', () => {
+  it('defaults to native when unset (FUB decommissioned 2026-06-24)', () => {
     set(undefined)
-    expect(crmLeadBackend()).toBe('dual')
+    expect(crmLeadBackend()).toBe('native')
   })
   it('reads fub / native (case-insensitive)', () => {
     set('FUB')
@@ -29,9 +29,9 @@ describe('crmLeadBackend', () => {
     set('native')
     expect(crmLeadBackend()).toBe('native')
   })
-  it('falls back to dual on an unknown value', () => {
+  it('falls back to native on an unknown value', () => {
     set('garbage')
-    expect(crmLeadBackend()).toBe('dual')
+    expect(crmLeadBackend()).toBe('native')
     set(orig)
   })
 })

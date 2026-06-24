@@ -73,7 +73,8 @@ check('hasAnalyticsConsent exported', /export\s+function\s+hasAnalyticsConsent/.
   'CookieConsentBanner.tsx must export hasAnalyticsConsent() — the analytics consent gate.')
 check('hasMarketingConsent exported', /export\s+function\s+hasMarketingConsent/.test(banner),
   'CookieConsentBanner.tsx must export hasMarketingConsent() — the marketing consent gate.')
-for (const rel of ['components/GTMHead.tsx', 'components/FollowUpBossPixel.tsx']) {
+// (FollowUpBossPixel removed at the FUB cutover 2026-06-24 — FUB is decommissioned.)
+for (const rel of ['components/GTMHead.tsx']) {
   const src = read(rel)
   check(`${rel} gates on consent`, /hasAnalyticsConsent|hasMarketingConsent|hasTrackingConsent/.test(src),
     `${rel} must check a consent helper before loading its tag.`)

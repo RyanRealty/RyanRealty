@@ -25,8 +25,11 @@ import { sendEvent, type SendEventParams } from '@/lib/followupboss'
 export type CrmLeadBackend = 'fub' | 'dual' | 'native'
 
 export function crmLeadBackend(): CrmLeadBackend {
-  const v = (process.env.CRM_LEAD_BACKEND ?? 'dual').trim().toLowerCase()
-  return v === 'fub' || v === 'native' ? v : 'dual'
+  // Default flipped to 'native' at the FUB cutover (2026-06-24) — the in-house
+  // CRM is the live lead backend. FUB writes are dead end-to-end (the FUB client
+  // is neutralized via getFubApiKey()), so 'fub'/'dual' are legacy no-ops.
+  const v = (process.env.CRM_LEAD_BACKEND ?? 'native').trim().toLowerCase()
+  return v === 'fub' || v === 'native' ? v : 'native'
 }
 
 /** Pure routing decision — unit-tested without DB/FUB. */
