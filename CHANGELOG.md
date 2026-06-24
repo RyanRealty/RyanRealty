@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.616.0 (2026-06-24)
+
+### Features
+- feat(cutover): remove FUB crons, routes, and the FUB-sync health rules
+
+---
+
+
 ## v1.615.0 (2026-06-24)
 
 ### Features
