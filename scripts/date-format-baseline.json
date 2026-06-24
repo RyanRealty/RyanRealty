@@ -80,6 +80,7 @@
     "components/site/listing-detail/TransparentCMASummary.tsx",
     "components/tc/pdf-sign/SignFlow.tsx",
     "components/ui/calendar.tsx",
+    "lib/crm/quiet-hours.ts",
     "lib/data/guides/getGuides.ts",
     "lib/digest-email-templates.tsx",
     "lib/pdf/cma-pdf.tsx",

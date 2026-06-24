@@ -852,20 +852,11 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   if (!scoped.ok) return scoped
 
   const sb = createServiceClient()
-  const { data: person } = await sb
-    .from('crm_people')
-    .select('id,fub_legacy_id,phones,assigned_broker,name,first_name,custom')
-    .eq('id', personId)
-    .maybeSingle()
-  if (!person) return { ok: false, error: 'Person not found' }
-
-  let to =
-    (person.phones as Array<{ value?: string; isPrimary?: number | boolean }> | null)
-      ?.sort((a, b) => Number(!!b.isPrimary) - Number(!!a.isPrimary))[0]?.value ?? ''
-  if (!to) {
-    const { data: pt } = await sb.from('crm_contact_points').select('value').eq('person_id', personId).eq('kind', 'phone').limit(1).maybeSingle()
-    to = pt?.value ?? ''
-  }
+  const { getSendTarget } = await import('@/lib/data/crm/getSendTarget')
+  const target = await getSendTarget(personId)
+  if (!target) return { ok: false, error: 'Person not found' }
+  const person = target.person
+  const to = target.phone
   if (!to) return { ok: false, error: 'No phone number on file' }
 
   const { isSuppressed } = await import('@/lib/crm/suppressions')
@@ -919,20 +910,11 @@ export async function startCrmCallAction(formData: FormData): Promise<CrmActionR
   if (!scoped.ok) return scoped
 
   const sb = createServiceClient()
-  const { data: person } = await sb
-    .from('crm_people')
-    .select('id,phones,assigned_broker,name')
-    .eq('id', personId)
-    .maybeSingle()
-  if (!person) return { ok: false, error: 'Person not found' }
-
-  let to =
-    (person.phones as Array<{ value?: string; isPrimary?: number | boolean }> | null)
-      ?.sort((a, b) => Number(!!b.isPrimary) - Number(!!a.isPrimary))[0]?.value ?? ''
-  if (!to) {
-    const { data: pt } = await sb.from('crm_contact_points').select('value').eq('person_id', personId).eq('kind', 'phone').limit(1).maybeSingle()
-    to = pt?.value ?? ''
-  }
+  const { getSendTarget } = await import('@/lib/data/crm/getSendTarget')
+  const target = await getSendTarget(personId)
+  if (!target) return { ok: false, error: 'Person not found' }
+  const person = target.person
+  const to = target.phone
   if (!to) return { ok: false, error: 'No phone number on file' }
 
   const callingBroker = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'

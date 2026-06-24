@@ -53,6 +53,10 @@ export interface HealthSignals {
   minutesSinceCleanDelta: number | null
   /** New crm_people leads created in the trailing 24h (across every source). */
   newLeads24h: number
+  /** Twilio API reachability with the configured creds. false = creds present
+   *  but the account call failed (rotated/invalid token → all inbound webhooks
+   *  403 + all outbound blocked). null = creds not configured (skip the rule). */
+  twilioReachable: boolean | null
 }
 
 /** Inbound webhook is "stale" after this many hours of business-hours silence. */
@@ -148,6 +152,20 @@ export function evaluateHealthRules(signals: HealthSignals): { alarms: HealthAla
       severity: 'warning',
       message:
         'No new leads in the last 24 hours from any source. Lead capture may be broken upstream (landing-page forms, FUB webhook, or the mirror).',
+    })
+  }
+
+  // Rule 6: Twilio unreachable with the configured creds.
+  // A rotated/revoked TWILIO_AUTH_TOKEN makes every inbound webhook signature
+  // check fail (403) and blocks every outbound send — silently, until someone
+  // notices no texts/calls. A single account-ping catches it within one cron
+  // cycle instead of the 6h inbound-stale window. null = creds not configured.
+  if (signals.twilioReachable === false) {
+    alarms.push({
+      key: 'twilio-unreachable',
+      severity: 'critical',
+      message:
+        'Twilio is unreachable with the configured credentials. Every inbound call/text webhook will 403 and every outbound send is blocked. Check TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN (likely rotated).',
     })
   }
 

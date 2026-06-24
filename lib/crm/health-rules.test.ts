@@ -17,6 +17,7 @@ function healthy(): HealthSignals {
     smsSendAttempts24h: 12,
     minutesSinceCleanDelta: 20,
     newLeads24h: 4,
+    twilioReachable: true,
   }
 }
 
@@ -141,6 +142,21 @@ describe('evaluateHealthRules', () => {
     })
   })
 
+  describe('twilio reachability (Rule 6)', () => {
+    it('fires critical when configured but unreachable (rotated token)', () => {
+      const alarm = evaluateHealthRules({ ...healthy(), twilioReachable: false }).alarms.find(
+        (a) => a.key === 'twilio-unreachable',
+      )
+      expect(alarm?.severity).toBe('critical')
+    })
+    it('does not fire when reachable', () => {
+      expect(keys({ ...healthy(), twilioReachable: true })).not.toContain('twilio-unreachable')
+    })
+    it('skips the rule when creds are not configured (null)', () => {
+      expect(keys({ ...healthy(), twilioReachable: null })).not.toContain('twilio-unreachable')
+    })
+  })
+
   describe('composition', () => {
     it('fires multiple independent alarms at once and only those', () => {
       const result = evaluateHealthRules({
@@ -151,6 +167,7 @@ describe('evaluateHealthRules', () => {
         smsSendAttempts24h: 3,
         minutesSinceCleanDelta: null,
         newLeads24h: 0,
+        twilioReachable: true,
       })
       expect(new Set(result.alarms.map((a) => a.key))).toEqual(
         new Set([
@@ -171,6 +188,7 @@ describe('evaluateHealthRules', () => {
         smsSendAttempts24h: 3,
         minutesSinceCleanDelta: null,
         newLeads24h: 0,
+        twilioReachable: true,
       })
       for (const a of alarms) {
         expect(a.key.length).toBeGreaterThan(0)

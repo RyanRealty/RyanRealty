@@ -21,7 +21,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { isValidCronAuth } from '@/lib/auth/cron-auth'
-import { getA2pCampaignStatus } from '@/lib/crm/twilio'
+import { getA2pCampaignStatus, getAccountType } from '@/lib/crm/twilio'
 import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
 import { evaluateHealthRules, type HealthSignals } from '@/lib/crm/health-rules'
 
@@ -121,6 +121,11 @@ export async function GET(request: Request) {
       ? (now.getTime() - new Date(deltaRow.data.finished_at as string).getTime()) / 60000
       : null
 
+  // Twilio reachability: only meaningful when creds are configured. A null here
+  // means "not configured" (skip the rule); false means the account ping failed.
+  const twilioConfigured = Boolean(process.env.TWILIO_ACCOUNT_SID?.trim() && process.env.TWILIO_AUTH_TOKEN?.trim())
+  const twilioReachable = twilioConfigured ? (await getAccountType()) !== null : null
+
   const signals: HealthSignals = {
     mirrorEnabled: mirrorEnabled(),
     businessHours: isBusinessHoursPacific(now),
@@ -129,6 +134,7 @@ export async function GET(request: Request) {
     smsSendAttempts24h: smsOut24h.count ?? 0,
     minutesSinceCleanDelta,
     newLeads24h: newLeads24h.count ?? 0,
+    twilioReachable,
   }
 
   const { alarms } = evaluateHealthRules(signals)
