@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.606.3 (2026-06-24)
+
+### Maintenance
+- refactor(tc): extract + test the seal y-flip geometry (H4)
+
+---
+
+
 ## v1.606.2 (2026-06-24)
 
 ### Maintenance
