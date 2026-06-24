@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.607.1 (2026-06-24)
+
+### Maintenance
+- docs(tc): pause + resume handoff for the TC build-out
+
+---
+
+
 ## v1.607.0 (2026-06-24)
 
 ### Features
