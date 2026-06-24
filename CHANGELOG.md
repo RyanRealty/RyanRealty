@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.607.3 (2026-06-24)
+
+### Bug Fixes
+- fix(listing): resolve listing-detail visual inconsistencies
+
+---
+
+
 ## v1.607.2 (2026-06-24)
 
 ### Bug Fixes
