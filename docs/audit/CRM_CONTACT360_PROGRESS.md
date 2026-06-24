@@ -31,7 +31,7 @@
 | 4 | 4.2 | link/unlink/setType actions (reciprocal) | ✅ done (beaaf0f5) |
 | 4 | 4.3 | Relationships panel + RelationshipPicker | ✅ DONE — reader + add/remove panel in the overview (4d05333b); contact-search picker (vs numeric id) = polish follow-up |
 | 4 | 4.4 | Backfill 29 legacy rows + dedup guard | ✅ dedup guard APPLIED (2026-06-22) — no-self-link CHECK + partial-unique on real pairs (verified 0 conflicts); resolving the 29 null-related legacy names to person ids = data follow-up |
-| 5 | 5.1 | crm_people→Meta uploader, in-app + consent-gated + ledger | ✅ LIVE PUSH DONE 2026-06-23 — syncCrmAudience (consent-gated + realtor-excluded, SHA-256 hashed, double-gated). First live push received 13,883 (0 invalid) into "Ryan Realty CRM Leads" (aud 120246504502300698); lookalike 120246504872880698 created |
+| 5 | 5.1 | crm_people→Meta uploader, in-app + consent-gated + ledger | ✅ LIVE + STEADY (verified 2026-06-24) — syncCrmAudience (consent-gated + realtor-excluded, SHA-256 hashed, double-gated). First live push received 13,883 (0 invalid) into "Ryan Realty CRM Leads" (aud 120246504502300698, matched 6.7–7.9k, ready); lookalike 120246504872880698 ready (2.1–2.5M); daily auto-refresh cron confirmed running (2nd live ledger row 06-24 09:00 UTC) |
 | 5 | 5.2 | Audience cron + <1k-match monitor + token-model fix | ✅ DONE — /api/cron/meta-audience-sync (cron-auth, dry-run unless META_AUDIENCE_PUSH_ENABLED); vercel.json `0 9 * * *`; token authority = System User never-expires. <1k-match monitor SHIPPED (META_MIN_AUDIENCE_SIZE=1000 in audienceLedger.summarizeAudienceRun: belowMinimumMatch by Meta accepted-count on live / would-upload on dry; surfaced in the ledger row + cron JSON + console.warn). Alarm-wiring into crm-health = follow-up |
 | 5 | 5.3 | Lead-webhook identity stitch + external_id=rr_vid | ⬜ todo |
 | 5 | 5.4 | CAPI match-quality parity (fbc/fbp/IP/UA) + dedup everywhere | ⬜ todo |
@@ -71,6 +71,13 @@ Legend: ⬜ todo · 🔶 in progress · ✅ done · 🚩 flagged (needs creds / 
 ## Log
 
 _(append newest-first)_
+
+### 2026-06-24 · Meta audience steady-state verified (push + lookalike both READY, auto-refresh confirmed running)
+Re-confirmed the dry-run through the real uploader (wouldUpload **13,883**, excludedSuppressed 4,154, excludedRealtors **54**, skippedUnhashable 8 — both gates intact), then verified the live end state. Everything from the 06-23 push has settled and the scheduled cron is now demonstrably running live:
+- **Source audience "Ryan Realty CRM Leads"** (id 120246504502300698) — created 2026-06-23 13:47:21 UTC, customer_file_source USER_PROVIDED_ONLY. operation_status 200 Normal, delivery **"ready for use"**, matched size **6,700–7,900** (≈48–57% of 13,883 — the expected half-to-two-thirds first-party match).
+- **Lookalike "LAL 1% US — RR CRM Leads"** (id 120246504872880698) — created 2026-06-23 13:50:23 UTC, origin = the CRM Leads audience (confirmed in lookalike_spec: ratio 0.01, country US). operation_status 200 Normal, delivery **"ready for use"**, reach **2.1M–2.5M**. (Earlier "building" → now ready. No duplicate created — exactly one CRM-Leads lookalike exists.)
+- **Daily auto-refresh CONFIRMED RUNNING (not just wired):** meta_audience_log now has TWO live rows — id 1 (2026-06-23 13:47:24 UTC, the triggered first push) and **id 2 (2026-06-24 09:00:26 UTC, the scheduled `0 9 * * *` cron)** — both `dry_run=false`, `add_num_received=13883`, `add_num_invalid=0`, `add_excluded_realtors=54`, `add_excluded_suppressed=4154`, `remove_num_removed=0` (no opt-outs queued yet).
+- No other audience touched (account holds 27 total; the other 25 are Matt's, untouched). The two AGENT-HARD-BLOCKED steps (arming the flag + the PII push) were done by Matt via the `!` prefix; the agent did the dry-run, the read-only verification, and this doc update only.
 
 ### 2026-06-23 · ✅ FIRST LIVE META AUDIENCE PUSH COMPLETE
 The live push ran in production (Matt set META_AUDIENCE_PUSH_ENABLED=true in Vercel + triggered the cron via the `!` session prefix — the agent is hard-blocked from arming PII→Meta, so the human pulled the trigger; the agent did everything else). Result, all verified:
