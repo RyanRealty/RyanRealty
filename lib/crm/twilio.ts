@@ -186,8 +186,14 @@ export async function brokerTwilioNumber(slug: CrmBrokerSlug): Promise<string | 
   return envTwilioNumber(slug) ?? null
 }
 
+// Module-level cache so a single composer/sequence run doesn't re-hit Twilio
+// 3× per send. A status change (FAILED→VERIFIED) propagates within the TTL.
+let _a2pCache: { value: A2pCampaignStatus; at: number } | null = null
+const A2P_TTL_MS = 5 * 60 * 1000
+
 /** Live A2P 10DLC campaign status for the messaging service (outbound blocked until VERIFIED). */
 export async function getA2pCampaignStatus(): Promise<A2pCampaignStatus> {
+  if (_a2pCache && Date.now() - _a2pCache.at < A2P_TTL_MS) return _a2pCache.value
   const c = creds()
   const ms = process.env.TWILIO_MESSAGING_SERVICE_SID?.trim()
   if (!c || !ms) return null
@@ -197,10 +203,22 @@ export async function getA2pCampaignStatus(): Promise<A2pCampaignStatus> {
   if (!res.ok) return null
   const data = (await res.json()) as { compliance?: Array<{ campaign_status?: string; status?: string }>; us_app_to_person?: Array<{ campaign_status?: string; status?: string }> }
   const row = (data.compliance ?? data.us_app_to_person ?? [])[0]
-  if (!row) return 'NONE'
-  const st = row.campaign_status ?? row.status
-  if (st === 'VERIFIED' || st === 'IN_PROGRESS' || st === 'FAILED' || st === 'PENDING') return st
-  return st as A2pCampaignStatus
+  let value: A2pCampaignStatus = 'NONE'
+  if (row) {
+    const st = row.campaign_status ?? row.status
+    value = (st === 'VERIFIED' || st === 'IN_PROGRESS' || st === 'FAILED' || st === 'PENDING') ? st : (st as A2pCampaignStatus)
+  }
+  _a2pCache = { value, at: Date.now() }
+  return value
+}
+
+/**
+ * Outbound SMS gate — FAIL CLOSED. Block unless the campaign is explicitly
+ * VERIFIED: a null/unknown status (a transient Twilio 5xx, missing config) must
+ * never let an unregistered-campaign text through (carrier 30034 + TCPA risk).
+ */
+function a2pBlocked(a2p: A2pCampaignStatus): boolean {
+  return a2p !== 'VERIFIED'
 }
 
 export function formatTwilioSendError(code: number | string | null | undefined, message: string | null | undefined, a2p: A2pCampaignStatus): string {
@@ -215,6 +233,11 @@ export function formatTwilioSendError(code: number | string | null | undefined, 
 async function postMessage(form: URLSearchParams): Promise<{ ok: true; sid: string } | { ok: false; error: string; errorCode?: number }> {
   const c = creds()
   if (!c) return { ok: false, error: 'Twilio not configured' }
+  // Every send asks Twilio to POST delivery receipts to our status webhook, so
+  // queued -> sent -> delivered / undelivered / opt-out all land on the timeline
+  // (the status route advances payload.deliveryState). Without this no send path
+  // had delivery visibility.
+  if (!form.has('StatusCallback')) form.set('StatusCallback', `${TWILIO_PUBLIC_ORIGIN}/api/twilio/status`)
   const res = await fetch(`${API}/Accounts/${c.sid}/Messages.json`, {
     method: 'POST',
     headers: { Authorization: authHeader(c), 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -246,7 +269,7 @@ export async function sendSms(params: { from: string; to: string; body: string }
   const to = toE164(params.to)
   if (!to) return { ok: false, error: 'Invalid phone number' }
   const a2p = await getA2pCampaignStatus()
-  if (a2p && a2p !== 'VERIFIED') {
+  if (a2pBlocked(a2p)) {
     return { ok: false, error: formatTwilioSendError(30034, null, a2p) }
   }
   const form = new URLSearchParams({ From: params.from, To: to, Body: params.body })
@@ -261,7 +284,7 @@ export async function sendSmsViaMessagingService(params: { to: string; body: str
   const to = toE164(params.to)
   if (!to) return { ok: false, error: 'Invalid phone number' }
   const a2p = await getA2pCampaignStatus()
-  if (a2p && a2p !== 'VERIFIED') {
+  if (a2pBlocked(a2p)) {
     return { ok: false, error: formatTwilioSendError(30034, null, a2p) }
   }
   const form = new URLSearchParams({ MessagingServiceSid: ms, To: to, Body: params.body })

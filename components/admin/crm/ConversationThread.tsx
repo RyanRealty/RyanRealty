@@ -22,6 +22,20 @@ function recordingSidOf(payload: ConversationEvent['payload']): string | null {
   return sid && RECORDING_SID_RE.test(sid) ? sid : null
 }
 
+/** Inbound MMS attachments on a message bubble, resolved to admin proxy URLs. */
+function mediaOf(payload: ConversationEvent['payload']): Array<{ messageSid: string; mediaSid: string; contentType: string }> {
+  if (!payload) return []
+  const sid = typeof payload.sid === 'string' ? payload.sid : typeof payload.messageSid === 'string' ? payload.messageSid : ''
+  if (!/^(MM|SM)[a-f0-9]{32}$/.test(sid)) return []
+  const arr = Array.isArray(payload.media) ? payload.media : []
+  return arr.flatMap((m) => {
+    const mm = m as { mediaSid?: unknown; contentType?: unknown }
+    const mediaSid = typeof mm.mediaSid === 'string' ? mm.mediaSid : ''
+    if (!/^ME[a-f0-9]{32}$/.test(mediaSid)) return []
+    return [{ messageSid: sid, mediaSid, contentType: typeof mm.contentType === 'string' ? mm.contentType : 'application/octet-stream' }]
+  })
+}
+
 const COMMS_KINDS = new Set(['sms_in', 'sms_out', 'email_in', 'email_out', 'call', 'voicemail'])
 
 export function isConversationEvent(kind: string): boolean {
@@ -100,6 +114,27 @@ export default function ConversationThread({
               {text.slice(0, 1200)}
               {text.length > 1200 ? '…' : ''}
             </div>
+            {(() => {
+              const media = mediaOf(e.payload)
+              if (!media.length) return null
+              return (
+                <div className={`mt-1 flex max-w-xs flex-wrap gap-1.5 sm:max-w-md ${out ? 'justify-end' : 'justify-start'}`}>
+                  {media.map((m) => {
+                    const src = `/api/admin/crm/mms/${m.messageSid}/${m.mediaSid}`
+                    return m.contentType.startsWith('image/') ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <a key={m.mediaSid} href={src} target="_blank" rel="noopener noreferrer">
+                        <img src={src} alt="MMS attachment" className="h-28 w-28 rounded-lg border border-border object-cover" loading="lazy" />
+                      </a>
+                    ) : (
+                      <a key={m.mediaSid} href={src} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-border px-3 py-2 text-xs text-foreground hover:bg-muted">
+                        📎 attachment
+                      </a>
+                    )
+                  })}
+                </div>
+              )
+            })()}
             <div className="mt-0.5 text-xs text-muted-foreground">
               {out ? (e.broker ?? 'us') : personName} · {fmtTs(e.ts)}
             </div>

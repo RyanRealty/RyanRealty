@@ -23,6 +23,20 @@ export const maxDuration = 60
 
 const STOP_WORDS = new Set(['stop', 'stopall', 'unsubscribe', 'cancel', 'end', 'quit'])
 const START_WORDS = new Set(['start', 'unstop', 'yes', 'resubscribe'])
+const HELP_WORDS = new Set(['help', 'info'])
+
+/** Extract Twilio MMS media (mediaSid + contentType) from the webhook params so
+ *  client-sent photos/docs are captured, not silently dropped. Capped at 10. */
+function parseMms(params: Record<string, string>): Array<{ mediaSid: string; contentType: string }> {
+  const n = Number(params.NumMedia ?? 0)
+  const out: Array<{ mediaSid: string; contentType: string }> = []
+  for (let i = 0; i < n && i < 10; i++) {
+    const url = params[`MediaUrl${i}`] ?? ''
+    const m = url.match(/\/Media\/(ME[a-f0-9]{32})/)
+    if (m) out.push({ mediaSid: m[1], contentType: params[`MediaContentType${i}`] ?? 'application/octet-stream' })
+  }
+  return out
+}
 
 function twiml(message?: string): NextResponse {
   const body = message
@@ -40,6 +54,9 @@ export async function POST(request: Request) {
   const to = params.To ?? ''
   const body = (params.Body ?? '').trim()
   const sid = params.MessageSid ?? `unknown-${Date.now()}`
+  const firstToken = body.toLowerCase().split(/\s+/)[0] ?? ''
+  const media = parseMms(params)
+  const displayBody = body || (media.length ? `[${media.length} attachment${media.length > 1 ? 's' : ''}]` : '')
   const sb = createServiceClient()
 
   // Route by the DIALED Twilio line: a text to Paul's line creates a
@@ -58,8 +75,8 @@ export async function POST(request: Request) {
       {
         person_id: match.personId,
         kind: 'sms_in',
-        body,
-        payload: { fromNumber: from, toNumber: to, sid },
+        body: displayBody,
+        payload: { fromNumber: from, toNumber: to, sid, ...(media.length ? { media, messageSid: sid } : {}) },
         broker: match.broker,
         source: 'twilio',
         dedupe_key: `twilio:${sid}:p${match.personId}`,
@@ -67,8 +84,13 @@ export async function POST(request: Request) {
       { onConflict: 'dedupe_key', ignoreDuplicates: true },
     )
 
-    // STOP handling → suppression chokepoint
-    if (STOP_WORDS.has(body.toLowerCase())) {
+    // HELP keyword → carrier-required help reply (does not change subscription).
+    if (HELP_WORDS.has(firstToken)) {
+      return twiml('Ryan Realty. Reply STOP to opt out. Msg and data rates may apply. For help visit ryan-realty.com/contact.')
+    }
+
+    // STOP handling (leading-token match) → suppression chokepoint
+    if (STOP_WORDS.has(firstToken)) {
       await addSuppression({ personId: match.personId, channel: 'sms', reason: 'stop-keyword', source: 'twilio' })
       await sb.from('crm_timeline').insert({
         person_id: match.personId, kind: 'system',
@@ -80,7 +102,7 @@ export async function POST(request: Request) {
     // START handling (audit p0.3): the STOP reply promises "Reply START to
     // resubscribe", so honor it. Only clears the user's own sms stop-keyword
     // opt-out — never a compliance do-not-text/hard-stop suppression we set.
-    if (START_WORDS.has(body.toLowerCase())) {
+    if (START_WORDS.has(firstToken)) {
       await removeSuppression({ personId: match.personId, channel: 'sms', reason: 'stop-keyword' })
       await sb.from('crm_timeline').insert({
         person_id: match.personId, kind: 'system',

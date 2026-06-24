@@ -872,11 +872,26 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   const gate = await isSuppressed(personId, 'sms')
   if (gate.suppressed) return { ok: false, error: `Blocked by suppression (${gate.reasons.join(', ')})` }
 
+  // TCPA quiet hours: block 9pm to 8am Pacific unless the broker explicitly
+  // overrides (a deliberate reply to an active conversation). The automated
+  // sequence engine is hard-gated; a manual reply may override with intent.
+  const { inSmsQuietHours } = await import('@/lib/crm/quiet-hours')
+  const override = String(formData.get('overrideQuietHours') ?? '') === '1'
+  if (inSmsQuietHours() && !override) {
+    return { ok: false, error: 'Quiet hours (TCPA): texts pause 9pm to 8am Pacific. Call instead, or check "send anyway" to override.' }
+  }
+
   const { renderCrmMerge, attributeSiteLinks } = await import('@/lib/crm/merge')
   const smsBrokerSlug = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
   const mergedBody = attributeSiteLinks(renderCrmMerge(body, person), smsBrokerSlug, person.fub_legacy_id as number | null)
-  const { sendSmsViaMessagingService } = await import('@/lib/crm/twilio')
-  const sent = await sendSmsViaMessagingService({ to, body: mergedBody })
+  // Send from the broker's OWN Twilio business line so the lead sees a
+  // consistent number (the one they texted), not a random pooled sender. Falls
+  // back to the A2P messaging service if the broker has no number configured.
+  const { sendSms, sendSmsViaMessagingService, brokerTwilioNumber } = await import('@/lib/crm/twilio')
+  const fromNumber = await brokerTwilioNumber(smsBrokerSlug)
+  const sent = fromNumber
+    ? await sendSms({ from: fromNumber, to, body: mergedBody })
+    : await sendSmsViaMessagingService({ to, body: mergedBody })
   if (!sent.ok) return { ok: false, error: sent.error }
 
   const actingSlug = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'

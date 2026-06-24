@@ -8,6 +8,8 @@
 import { useMemo, useState } from 'react'
 import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 
 function segmentInfo(text: string): { chars: number; segments: number } {
@@ -54,7 +56,13 @@ export function SmsComposer(props: {
           Unfilled merge fields, this contact has no value for: {unresolved.join(', ')}. Edit before sending.
         </p>
       ) : null}
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Checkbox id="overrideQuietHours" name="overrideQuietHours" value="1" />
+          <Label htmlFor="overrideQuietHours" className="text-xs font-normal text-muted-foreground">
+            Send anyway (quiet hours)
+          </Label>
+        </div>
         <Button type="submit" size="sm">Send text</Button>
       </div>
     </form>
