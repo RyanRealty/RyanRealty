@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.610.0 (2026-06-24)
+
+### Features
+- feat(crm/sms): delivery receipts, broker-line send, quiet hours, MMS capture
+
+---
+
+
 ## v1.609.0 (2026-06-24)
 
 ### Features
