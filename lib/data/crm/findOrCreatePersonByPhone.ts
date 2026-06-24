@@ -61,6 +61,9 @@ export function inboundLeadName(source: InboundLeadSource, raw: string, normaliz
 export async function findOrCreatePersonByPhone(params: {
   phone: string
   source: InboundLeadSource
+  /** Assign a NEW lead to this broker (the owner of the dialed Twilio line).
+   *  Defaults to Matt (the default desk). Ignored for an existing contact. */
+  assignBroker?: CrmBrokerSlug | null
 }): Promise<FindOrCreateResult> {
   const existing = await lookupPersonByPhone(params.phone)
   const ten = normalizeTo10(params.phone)
@@ -70,6 +73,7 @@ export async function findOrCreatePersonByPhone(params: {
   }
   // ten is non-null here (shouldCreatePerson guards it), but narrow for TS.
   if (!ten) return { match: existing, created: false }
+  const assignedBroker: CrmBrokerSlug = params.assignBroker ?? DEFAULT_BROKER
 
   // The crm_people payload comes from the shared canonical builder so the native
   // create shape (source + stage + assigned_broker + source-tag) is identical to
@@ -83,7 +87,7 @@ export async function findOrCreatePersonByPhone(params: {
     first_name: null,
     last_name: null,
     source: params.source,
-    assignedBroker: DEFAULT_BROKER,
+    assignedBroker,
     phones: [{ value: params.phone, type: 'Mobile', isPrimary: 1 }],
   })
 
@@ -107,7 +111,7 @@ export async function findOrCreatePersonByPhone(params: {
     match: {
       personId: created.id,
       name: created.name,
-      broker: (created.assigned_broker as CrmBrokerSlug | null) ?? DEFAULT_BROKER,
+      broker: (created.assigned_broker as CrmBrokerSlug | null) ?? assignedBroker,
     },
     created: true,
   }

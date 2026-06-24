@@ -9,7 +9,8 @@
 import 'server-only'
 import crypto from 'node:crypto'
 import { createServiceClient } from '@/lib/supabase/service'
-import type { CrmBrokerSlug } from '@/lib/crm/constants'
+import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
+import { getBrokerTelephony } from '@/lib/data/crm/getBrokerTelephony'
 
 export type A2pCampaignStatus = 'VERIFIED' | 'IN_PROGRESS' | 'FAILED' | 'PENDING' | 'NONE' | null
 
@@ -38,6 +39,41 @@ export function twilioWebhookValidationUrl(request: Request): string {
 /** Canonical origin for TwiML callbacks wired in Twilio console. */
 export const TWILIO_PUBLIC_ORIGIN = 'https://ryan-realty.com'
 
+/**
+ * Whether to enforce Twilio signature validation. Enforce whenever an auth token
+ * is configured (ALL environments — production AND preview), unless an explicit
+ * local escape hatch is set. This closes the old `NODE_ENV !== 'production'`
+ * bypass that left preview/staging webhooks wide open to forged posts.
+ */
+export function shouldEnforceTwilioSignature(): boolean {
+  if (process.env.TWILIO_SKIP_SIG_CHECK === '1') return false
+  return Boolean(process.env.TWILIO_AUTH_TOKEN?.trim())
+}
+
+/**
+ * Parse a Twilio webhook form body and validate its signature in one place.
+ * Returns the params on success, or ok:false (→ the route returns 403). Wrapping
+ * formData() in try/catch also turns a malformed/empty body into a clean 403
+ * instead of an unhandled 500.
+ */
+export async function verifiedTwilioParams(
+  request: Request,
+): Promise<{ ok: true; params: Record<string, string> } | { ok: false }> {
+  let params: Record<string, string> = {}
+  try {
+    const form = await request.formData()
+    for (const [k, v] of form.entries()) params[k] = String(v)
+  } catch {
+    return { ok: false }
+  }
+  if (shouldEnforceTwilioSignature()) {
+    const url = twilioWebhookValidationUrl(request)
+    const signature = request.headers.get('x-twilio-signature')
+    if (!validateTwilioSignature(url, params, signature)) return { ok: false }
+  }
+  return { ok: true, params }
+}
+
 /** Twilio request signature validation (X-Twilio-Signature, HMAC-SHA1). */
 export function validateTwilioSignature(url: string, params: Record<string, string>, signature: string | null): boolean {
   const c = creds()
@@ -57,14 +93,60 @@ export function normalizeTo10(v: string | null | undefined): string | null {
   return d || null
 }
 
-/** Broker forwarding targets for voice. Env-driven; matt's direct cell is the default. */
-export function forwardNumberFor(slug: CrmBrokerSlug | null): string {
-  const map: Record<string, string | undefined> = {
-    matt: process.env.TWILIO_FORWARD_MATT,
-    rebecca: process.env.TWILIO_FORWARD_REBECCA,
-    paul: process.env.TWILIO_FORWARD_PAUL,
+/**
+ * The brokerage brand/marketing line (541.703.3095, ported from FUB into Twilio).
+ * Inbound to this line has no single broker owner — it routes to the default desk.
+ * Overridable via TWILIO_NUMBER_MARKETING.
+ */
+export const MARKETING_NUMBER = (process.env.TWILIO_NUMBER_MARKETING || '+15417033095').trim()
+
+/** Default desk for the shared marketing line + the no-forward-resolved fallback. */
+export const DEFAULT_DESK_BROKER: CrmBrokerSlug = 'matt'
+
+function envTwilioNumber(slug: CrmBrokerSlug): string | undefined {
+  return { matt: process.env.TWILIO_NUMBER_MATT, rebecca: process.env.TWILIO_NUMBER_REBECCA, paul: process.env.TWILIO_NUMBER_PAUL }[slug]?.trim()
+}
+function envForward(slug: CrmBrokerSlug): string | undefined {
+  return { matt: process.env.TWILIO_FORWARD_MATT, rebecca: process.env.TWILIO_FORWARD_REBECCA, paul: process.env.TWILIO_FORWARD_PAUL }[slug]?.trim()
+}
+
+/**
+ * Reverse-map a DIALED Twilio number (params.To) to the broker who owns that
+ * line. This is the basis of "each business number forwards to that broker's
+ * cell": route by the line the caller dialed, not by the caller's prior
+ * assignment. DB telephony is the source of truth, env is the fallback. Returns
+ * null for the shared marketing line or an unrecognized number — the caller then
+ * picks DEFAULT_DESK_BROKER (or the caller's existing assignment).
+ */
+export async function brokerForTwilioNumber(toRaw: string | null | undefined): Promise<CrmBrokerSlug | null> {
+  const ten = normalizeTo10(toRaw)
+  if (!ten) return null
+  if (normalizeTo10(MARKETING_NUMBER) === ten) return null // shared line, no single owner
+  try {
+    const tel = await getBrokerTelephony()
+    if (tel.byTwilioLast10[ten]) return tel.byTwilioLast10[ten]
+  } catch { /* fall through to env */ }
+  for (const slug of CRM_BROKERS) {
+    if (normalizeTo10(envTwilioNumber(slug)) === ten) return slug
   }
-  return (slug && map[slug]) || process.env.TWILIO_FORWARD_MATT || '+15412136706'
+  return null
+}
+
+/**
+ * Personal cell a broker's line forwards to. DB source of truth, env fallback,
+ * default-desk fallback (env), then null. No hardcoded literal — an unresolved
+ * forward returns null so the caller routes to voicemail and logs a config error
+ * instead of silently misrouting to a baked-in cell.
+ */
+export async function forwardCellForBroker(slug: CrmBrokerSlug | null): Promise<string | null> {
+  let tel: Awaited<ReturnType<typeof getBrokerTelephony>> | null = null
+  try { tel = await getBrokerTelephony() } catch { tel = null }
+  if (slug) {
+    const c = tel?.bySlug[slug]?.forwardToCell ?? envForward(slug)
+    if (c) return c
+  }
+  // default desk (env value, not a hardcoded number)
+  return tel?.bySlug[DEFAULT_DESK_BROKER]?.forwardToCell ?? envForward(DEFAULT_DESK_BROKER) ?? null
 }
 
 export async function lookupPersonByPhone(phone: string): Promise<{ personId: number; name: string | null; broker: CrmBrokerSlug | null } | null> {
@@ -94,13 +176,14 @@ export function toE164(phone: string | null | undefined): string | null {
   return `+1${ten}`
 }
 
-export function brokerTwilioNumber(slug: CrmBrokerSlug): string | null {
-  const map: Record<CrmBrokerSlug, string | undefined> = {
-    matt: process.env.TWILIO_NUMBER_MATT,
-    rebecca: process.env.TWILIO_NUMBER_REBECCA,
-    paul: process.env.TWILIO_NUMBER_PAUL,
-  }
-  return map[slug]?.trim() ?? null
+/** A broker's public Twilio business line (E.164). DB source of truth, env fallback. */
+export async function brokerTwilioNumber(slug: CrmBrokerSlug): Promise<string | null> {
+  try {
+    const tel = await getBrokerTelephony()
+    const n = tel.bySlug[slug]?.twilioNumber
+    if (n) return n
+  } catch { /* fall through to env */ }
+  return envTwilioNumber(slug) ?? null
 }
 
 /** Live A2P 10DLC campaign status for the messaging service (outbound blocked until VERIFIED). */

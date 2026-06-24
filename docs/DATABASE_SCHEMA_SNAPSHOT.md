@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-23T22:36:56.473Z
+**Generated:** 2026-06-24T17:01:16.305Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -300,7 +300,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 590,503**
+### `listing_tile_mv` · **rows ≈ 593,335**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -413,7 +413,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 17,437**
+### `market_stats_cache` · **rows ≈ 17,180**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -560,6 +560,8 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `license_checked_at` | timestamp with time zone | yes |  |
 | `nrds_id` | text | yes |  |
 | `license_notes` | text | yes |  |
+| `twilio_number` | text | yes |  |
+| `forward_to_cell` | text | yes |  |
 
 ## App + analytics
 
@@ -649,7 +651,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 46**
+### `expired_listings` · **rows ≈ 48**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -693,7 +695,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `owner_lookup_attempts` | integer | yes | 0 |
 | `last_owner_lookup_at` | timestamp with time zone | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 114**
+### `marketing_brain_actions` · **rows ≈ 115**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|

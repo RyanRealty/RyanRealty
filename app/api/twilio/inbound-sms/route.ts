@@ -11,9 +11,10 @@
 
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { twilioWebhookValidationUrl, validateTwilioSignature } from '@/lib/crm/twilio'
+import { DEFAULT_DESK_BROKER, brokerForTwilioNumber, verifiedTwilioParams } from '@/lib/crm/twilio'
 import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
 import { addSuppression, removeSuppression } from '@/lib/crm/suppressions'
+import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import { CRM_MAILBOXES, sendCrmEmail } from '@/lib/crm/gmail'
 
 export const runtime = 'nodejs'
@@ -31,15 +32,9 @@ function twiml(message?: string): NextResponse {
 }
 
 export async function POST(request: Request) {
-  const form = await request.formData()
-  const params: Record<string, string> = {}
-  for (const [k, v] of form.entries()) params[k] = String(v)
-
-  const url = twilioWebhookValidationUrl(request)
-  const signature = request.headers.get('x-twilio-signature')
-  if (process.env.NODE_ENV === 'production' && !validateTwilioSignature(url, params, signature)) {
-    return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
-  }
+  const verified = await verifiedTwilioParams(request)
+  if (!verified.ok) return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
+  const params = verified.params
 
   const from = params.From ?? ''
   const to = params.To ?? ''
@@ -47,10 +42,16 @@ export async function POST(request: Request) {
   const sid = params.MessageSid ?? `unknown-${Date.now()}`
   const sb = createServiceClient()
 
-  // Unknown sender → create a lead. An inbound text is a hot signal. Shared
-  // find-or-create (lib/data/crm) so the create shape stays identical to the
-  // inbound-voice path and never drifts.
-  const { match } = await findOrCreatePersonByPhone({ phone: from, source: 'inbound-sms' })
+  // Route by the DIALED Twilio line: a text to Paul's line creates a
+  // Paul-assigned lead and alerts Paul. The shared marketing line (null) falls
+  // back to the default desk. Unknown sender → create a lead (a text is a hot
+  // signal). Shared find-or-create so the shape matches the inbound-voice path.
+  const dialedBroker = await brokerForTwilioNumber(to)
+  const { match, created } = await findOrCreatePersonByPhone({
+    phone: from,
+    source: 'inbound-sms',
+    assignBroker: dialedBroker ?? DEFAULT_DESK_BROKER,
+  })
 
   if (match) {
     await sb.from('crm_timeline').upsert(
@@ -88,16 +89,37 @@ export async function POST(request: Request) {
       return twiml('You are resubscribed and will receive texts again. Reply STOP to opt out.')
     }
 
+    // Route the alert to the dialed line's broker (the contact's assignment for
+    // the shared marketing line), then the default desk.
+    const alertBroker = dialedBroker ?? match.broker ?? 'matt'
+
+    // New-lead alert — only on a real create, so a known texter never re-alerts.
+    // An inbound text from an unknown number is the hottest signal there is.
+    if (created) {
+      await queueBrokerAlert({
+        broker: alertBroker,
+        personId: match.personId,
+        kind: 'new-lead',
+        body: newLeadAlertBody({
+          name: match.name,
+          source: 'inbound-sms',
+          stage: 'Lead',
+          personId: match.personId,
+          detail: `Texting now from ${from}: ${body.slice(0, 120)}`,
+        }),
+      })
+    }
+
     // Alert the assigned broker: open a task + email notification
     await sb.from('crm_tasks').insert({
       person_id: match.personId,
       name: `Reply to text from ${match.name ?? from}`,
       type: 'Text',
       due_at: new Date(Date.now() + 15 * 60000).toISOString(),
-      assigned_broker: match.broker ?? 'matt',
+      assigned_broker: alertBroker,
       origin: 'twilio',
     })
-    const mailbox = CRM_MAILBOXES.find((m) => m.slug === (match.broker ?? 'matt')) ?? CRM_MAILBOXES[0]
+    const mailbox = CRM_MAILBOXES.find((m) => m.slug === alertBroker) ?? CRM_MAILBOXES[0]
     void sendCrmEmail({
       fromMailbox: mailbox.email,
       to: mailbox.email,

@@ -20,7 +20,7 @@
 
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { twilioWebhookValidationUrl, validateTwilioSignature } from '@/lib/crm/twilio'
+import { verifiedTwilioParams } from '@/lib/crm/twilio'
 import { classifyTwilioStatus, isForwardStateTransition, type SmsDeliveryState } from '@/lib/crm/sms-status'
 import { addSuppression } from '@/lib/crm/suppressions'
 
@@ -36,15 +36,9 @@ type SmsOutPayload = Record<string, unknown> & {
 }
 
 export async function POST(request: Request) {
-  const form = await request.formData()
-  const params: Record<string, string> = {}
-  for (const [k, v] of form.entries()) params[k] = String(v)
-
-  const url = twilioWebhookValidationUrl(request)
-  const signature = request.headers.get('x-twilio-signature')
-  if (process.env.NODE_ENV === 'production' && !validateTwilioSignature(url, params, signature)) {
-    return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
-  }
+  const verified = await verifiedTwilioParams(request)
+  if (!verified.ok) return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
+  const params = verified.params
 
   const sid = (params.MessageSid ?? params.SmsSid ?? '').trim()
   const status = params.MessageStatus ?? params.SmsStatus ?? null

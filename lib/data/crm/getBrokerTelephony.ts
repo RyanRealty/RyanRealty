@@ -1,0 +1,54 @@
+import 'server-only'
+import { unstable_cache } from 'next/cache'
+import { supabaseAnon } from '@/lib/data/client'
+import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { CRM_BROKER_BY_EMAIL, type CrmBrokerSlug } from '@/lib/crm/constants'
+
+/**
+ * Broker telephony — the single source of truth tying each CRM broker to their
+ * Twilio business line and the private cell it forwards to (Twilio cutover,
+ * 2026-06-24). Reads public.brokers (twilio_number, forward_to_cell), keyed to
+ * the CRM slug via the broker's email. Cached on the brokers tag; the inbound
+ * webhook + composer read this (env is the resilience fallback in lib/crm/twilio).
+ *
+ * `byTwilioLast10` powers dialed-number routing: an inbound call/text to a given
+ * Twilio line resolves to the broker who owns that line, regardless of who the
+ * caller is.
+ */
+export type BrokerTelephonyEntry = { twilioNumber: string | null; forwardToCell: string | null }
+export type BrokerTelephony = {
+  bySlug: Partial<Record<CrmBrokerSlug, BrokerTelephonyEntry>>
+  /** normalized last-10 of each broker's twilio_number → CRM slug */
+  byTwilioLast10: Record<string, CrmBrokerSlug>
+}
+
+function last10(v: string | null | undefined): string | null {
+  const d = String(v ?? '').replace(/\D/g, '')
+  return d.length >= 10 ? d.slice(-10) : null
+}
+
+export const getBrokerTelephony = unstable_cache(
+  async (): Promise<BrokerTelephony> => {
+    const out: BrokerTelephony = { bySlug: {}, byTwilioLast10: {} }
+    const sb = supabaseAnon()
+    if (!sb) return out
+    const { data, error } = await sb
+      .from('brokers')
+      .select('email, twilio_number, forward_to_cell')
+      .eq('is_active', true)
+    if (error || !data) {
+      if (error) console.error('[getBrokerTelephony]', error.message)
+      return out
+    }
+    for (const row of data as Array<{ email: string | null; twilio_number: string | null; forward_to_cell: string | null }>) {
+      const slug = CRM_BROKER_BY_EMAIL[String(row.email ?? '').trim().toLowerCase()]
+      if (!slug) continue
+      out.bySlug[slug] = { twilioNumber: row.twilio_number ?? null, forwardToCell: row.forward_to_cell ?? null }
+      const t10 = last10(row.twilio_number)
+      if (t10) out.byTwilioLast10[t10] = slug
+    }
+    return out
+  },
+  ['crm-broker-telephony-v1'],
+  { revalidate: CACHE_WINDOWS.brokers, tags: [cacheTag.brokers] }
+)

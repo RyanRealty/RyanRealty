@@ -7,8 +7,12 @@
 
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { TWILIO_PUBLIC_ORIGIN, twilioWebhookValidationUrl, validateTwilioSignature } from '@/lib/crm/twilio'
+import { TWILIO_PUBLIC_ORIGIN, verifiedTwilioParams } from '@/lib/crm/twilio'
 import { CRM_MAILBOXES, sendCrmEmail } from '@/lib/crm/gmail'
+
+/** Twilio CallSid / RecordingSid shape — validate before using inside a PostgREST
+ *  .or() filter so a crafted value can never inject filter syntax. */
+const SID_RE = /^(CA|RE)[a-f0-9]{32}$/
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -36,22 +40,18 @@ async function transcribe(audio: ArrayBuffer): Promise<string | null> {
 }
 
 export async function POST(request: Request) {
-  const form = await request.formData()
-  const params: Record<string, string> = {}
-  for (const [k, v] of form.entries()) params[k] = String(v)
-
-  const url = twilioWebhookValidationUrl(request)
-  const signature = request.headers.get('x-twilio-signature')
-  if (process.env.NODE_ENV === 'production' && !validateTwilioSignature(url, params, signature)) {
-    return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
-  }
+  const verified = await verifiedTwilioParams(request)
+  if (!verified.ok) return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
+  const params = verified.params
 
   const site = TWILIO_PUBLIC_ORIGIN
 
   const callSid = params.CallSid ?? ''
   const recordingSid = params.RecordingSid ?? ''
   const duration = Number(params.RecordingDuration ?? 0)
-  if (!callSid || !recordingSid) return NextResponse.json({ ok: false, error: 'missing sids' }, { status: 400 })
+  if (!SID_RE.test(callSid) || !SID_RE.test(recordingSid)) {
+    return NextResponse.json({ ok: false, error: 'invalid sids' }, { status: 400 })
+  }
 
   const sb = createServiceClient()
   // the call/voicemail row logged by the voice webhooks

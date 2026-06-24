@@ -1,90 +1,142 @@
 /**
- * Twilio inbound voice webhook (blueprint §5.5): announce recording, forward
- * the call to the right broker's cell based on the contact's assigned broker
- * (caller lookup), record dual-channel, and log a `call` timeline entry.
- * Unanswered calls fall through to /api/twilio/voice-complete which captures
- * a voicemail. Recordings + voicemails are transcribed via /api/twilio/recording.
+ * Twilio inbound voice webhook (blueprint §5.5 + Twilio cutover 2026-06-24):
+ * announce recording, forward the call to the right broker's cell, record
+ * dual-channel, and log a `call` timeline entry.
  *
- * Compliance: a brief "may be recorded" announcement plays before connecting —
- * continuing past it is consent in every state (out-of-state callers can be in
- * two-party-consent states like California). Disable recording entirely with
- * CRM_CALL_RECORDING=false.
+ * Routing rule (the "each business number forwards to that broker's cell" rule):
+ * resolve the broker from the DIALED Twilio line (params.To) FIRST. A call to
+ * Paul's line forwards to Paul and creates a Paul-assigned lead. Only the shared
+ * marketing line (no single owner) falls back to the caller's existing
+ * assignment, then the default desk.
+ *
+ * Unanswered calls fall through to /api/twilio/voice-complete (voicemail).
+ * Recordings + voicemails are transcribed via /api/twilio/recording.
+ *
+ * Compliance (Matt directive 2026-06-24 — record both legs, announce): a "may be
+ * recorded" announcement plays before connecting. Continuing past it is consent
+ * in every state (out-of-state callers can be in two-party-consent states like
+ * California). Disable recording entirely with CRM_CALL_RECORDING=false.
  */
 
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { TWILIO_PUBLIC_ORIGIN, forwardNumberFor, twilioWebhookValidationUrl, validateTwilioSignature } from '@/lib/crm/twilio'
+import {
+  TWILIO_PUBLIC_ORIGIN,
+  DEFAULT_DESK_BROKER,
+  brokerForTwilioNumber,
+  forwardCellForBroker,
+  verifiedTwilioParams,
+} from '@/lib/crm/twilio'
 import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
 import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
+import type { CrmBrokerSlug } from '@/lib/crm/constants'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
+function xml(body: string): NextResponse {
+  return new NextResponse(body, { status: 200, headers: { 'Content-Type': 'text/xml' } })
+}
+
+/** Voicemail TwiML — used when no forward number resolves, so a caller is never dropped. */
+function voicemailResponse(site: string): NextResponse {
+  return xml(`<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say>You have reached Ryan Realty. This call is recorded. Please leave a message after the tone and we will call you right back.</Say>
+  <Record maxLength="180" playBeep="true" recordingStatusCallback="${site}/api/twilio/recording" recordingStatusCallbackEvent="completed" />
+  <Say>Thank you. Goodbye.</Say>
+</Response>`)
+}
+
 export async function POST(request: Request) {
-  const form = await request.formData()
-  const params: Record<string, string> = {}
-  for (const [k, v] of form.entries()) params[k] = String(v)
+  const verified = await verifiedTwilioParams(request)
+  if (!verified.ok) return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
+  const params = verified.params
 
   const site = TWILIO_PUBLIC_ORIGIN
-  const url = twilioWebhookValidationUrl(request)
-  const signature = request.headers.get('x-twilio-signature')
-  if (process.env.NODE_ENV === 'production' && !validateTwilioSignature(url, params, signature)) {
-    return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
+  const from = params.From ?? ''
+  const dialed = params.To ?? ''
+
+  // 1. Who owns the DIALED line? (null = shared marketing line / unrecognized.)
+  const dialedBroker = await brokerForTwilioNumber(dialed)
+
+  // 2. Find/create the caller. A new lead created on a specific broker's line is
+  //    assigned to THAT broker; on the marketing line it goes to the default desk.
+  //    The create never blocks the dial — wrap it so a DB failure still rings.
+  let match: { personId: number; name: string | null; broker: CrmBrokerSlug | null } | null = null
+  let created = false
+  try {
+    const res = await findOrCreatePersonByPhone({
+      phone: from,
+      source: 'inbound-call',
+      assignBroker: dialedBroker ?? DEFAULT_DESK_BROKER,
+    })
+    match = res.match
+    created = res.created
+  } catch (e) {
+    console.error('[twilio/voice] find-or-create failed (continuing to dial):', e)
   }
 
-  const from = params.From ?? ''
-  // Find the caller, OR create a tracked lead when they are unknown (CONTACT360
-  // Phase 0.1 — the inbound-voice lead leak). Mirrors the inbound-SMS native
-  // create. This runs BEFORE forwarding so the call still rings the broker; the
-  // create never blocks the dial.
-  const { match, created } = await findOrCreatePersonByPhone({ phone: from, source: 'inbound-call' })
-  const target = forwardNumberFor(match?.broker ?? null)
-  const recording = process.env.CRM_CALL_RECORDING !== 'false'
+  // 3. Forwarding target: the dialed line's broker wins; else the caller's
+  //    existing assignment; else the default desk. forwardCellForBroker returns
+  //    null only if nothing resolves (→ voicemail, never a dropped call).
+  const forwardingBroker: CrmBrokerSlug = dialedBroker ?? match?.broker ?? DEFAULT_DESK_BROKER
+  const target = await forwardCellForBroker(forwardingBroker)
 
+  // 4. Log the inbound call (idempotent on dedupe_key, crash-safe — a logging
+  //    failure must never prevent the TwiML response).
   if (match) {
-    const sb = createServiceClient()
-    await sb.from('crm_timeline').insert({
-      person_id: match.personId,
-      kind: 'call',
-      title: 'Inbound call',
-      payload: { fromNumber: from, toNumber: params.To ?? null, callSid: params.CallSid ?? null, forwardedTo: target },
-      broker: match.broker,
-      source: 'twilio',
-      dedupe_key: params.CallSid ? `twilio:call:${params.CallSid}:p${match.personId}` : null,
-    })
-
-    // Instant new-lead alert — only on a real create, so a known caller never
-    // re-alerts. queueBrokerAlert dedupes per person+kind on top of this.
-    if (created) {
-      await queueBrokerAlert({
-        broker: match.broker,
-        personId: match.personId,
-        kind: 'new-lead',
-        body: newLeadAlertBody({
-          name: match.name,
-          source: 'inbound-call',
-          stage: 'Lead',
+    try {
+      const sb = createServiceClient()
+      await sb.from('crm_timeline').upsert(
+        {
+          person_id: match.personId,
+          kind: 'call',
+          title: 'Inbound call',
+          payload: { fromNumber: from, toNumber: dialed, callSid: params.CallSid ?? null, forwardedTo: target, dialedBroker, forwardingBroker, recordingConsent: 'announced' },
+          broker: forwardingBroker,
+          source: 'twilio',
+          dedupe_key: params.CallSid ? `twilio:call:${params.CallSid}:p${match.personId}` : null,
+        },
+        { onConflict: 'dedupe_key', ignoreDuplicates: true },
+      )
+      if (created) {
+        await queueBrokerAlert({
+          broker: forwardingBroker,
           personId: match.personId,
-          detail: `Calling now from ${from}`,
-        }),
-      })
+          kind: 'new-lead',
+          body: newLeadAlertBody({
+            name: match.name,
+            source: 'inbound-call',
+            stage: 'Lead',
+            personId: match.personId,
+            detail: `Calling now from ${from}`,
+          }),
+        })
+      }
+    } catch (e) {
+      console.error('[twilio/voice] timeline/alert write failed (continuing):', e)
     }
   }
 
-  // Pass the CALLER's real number through as caller ID (allowed on bridged
-  // inbound calls) so the broker sees who is calling and can call back
-  // directly — FUB's forwarding behavior.
+  // 5. No forward number resolved → voicemail rather than a dropped/misrouted call.
+  if (!target) {
+    console.error(`[twilio/voice] no forward number for broker=${forwardingBroker} (dialed=${dialed}); routing to voicemail`)
+    return voicemailResponse(site)
+  }
+
+  // 6. Dial the broker's cell, recording both legs with the caller already on
+  //    notice. Pass the CALLER's number as caller ID so the broker sees who is
+  //    calling and can call back directly (FUB's forwarding behavior).
+  const recording = process.env.CRM_CALL_RECORDING !== 'false'
   const recAttrs = recording
     ? ` record="record-from-answer-dual" recordingStatusCallback="${site}/api/twilio/recording" recordingStatusCallbackEvent="completed"`
     : ''
-  const announce = recording
-    ? '<Say>This call may be recorded for quality purposes.</Say>'
-    : ''
-  const body = `<?xml version="1.0" encoding="UTF-8"?>
+  const announce = recording ? '<Say>This call may be recorded for quality purposes.</Say>' : ''
+  return xml(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   ${announce}
-  <Dial timeout="25" callerId="${from || params.To || ''}" action="${site}/api/twilio/voice-complete" method="POST"${recAttrs}>${target}</Dial>
-</Response>`
-  return new NextResponse(body, { status: 200, headers: { 'Content-Type': 'text/xml' } })
+  <Dial timeout="25" callerId="${from || dialed}" action="${site}/api/twilio/voice-complete" method="POST"${recAttrs}>${target}</Dial>
+</Response>`)
 }

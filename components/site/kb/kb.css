@@ -218,6 +218,11 @@ html.lenis, html.lenis body{height:auto;}
   margin-bottom:0;
 }
 .kb-root .sec-index{font-size:.72rem;font-weight:700;letter-spacing:.2em;opacity:.68;}
+/* Stacked sec-head (eyebrow ABOVE the title, wrapped in a bare div — the
+   listing-detail pattern, vs the landing pages' side-by-side direct children).
+   The title's line-height:.92 + overflow:visible pushes its ascenders up, so a
+   0-gap eyebrow collides with "PROPERTY DETAILS". Give the eyebrow clear air. */
+.kb-root .sec-head > div > .sec-index{display:block;margin-bottom:12px;}
 .kb-root .sec-title{font-size:clamp(1.9rem,5.4vw,3.6rem);line-height:.92;}
 .kb-root .region{background:var(--navy);color:var(--cream);padding-bottom:0;}
 .kb-root .region .sec-head{border-color:var(--cream-40);}
