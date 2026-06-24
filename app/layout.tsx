@@ -59,6 +59,16 @@ export const metadata: Metadata = {
     description: "Find your next home in Bend and Central Oregon. Expert real estate service and listings.",
   },
   robots: "index, follow",
+  // iOS PWA: enables standalone (full-screen) mode when launched from home screen
+  // and registers the apple-touch-icon used on the springboard.
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Ryan Realty',
+  },
+  icons: {
+    apple: '/icons/apple-touch-icon.png',
+  },
   // No blanket alternates.canonical here — a root-layout canonical silently
   // masks every page that forgets its own canonical (Google sees the homepage
   // URL as canonical for every route). Each page sets its own canonical.

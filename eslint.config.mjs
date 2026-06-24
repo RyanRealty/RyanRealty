@@ -180,6 +180,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored minified workers — not source code, ESLint produces
+    // thousands of false-positive errors on minified bundles.
+    "public/pdf.worker.min.mjs",
     // Parallel-agent worktrees — these are scratch copies of the
     // repo that other Claude sessions create. They're not part of
     // this checkout's source and shouldn't be lint-gated.
