@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.607.7 (2026-06-24)
+
+### Bug Fixes
+- fix(listing): featured-homes rail, drop breadcrumb, description above details
+
+---
+
+
 ## v1.607.6 (2026-06-24)
 
 ### Bug Fixes
