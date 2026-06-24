@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.613.3 (2026-06-24)
+
+### Maintenance
+- docs(crm): Meta audience steady-state verified — push + lookalike ready, auto-refresh cron confirmed running
+
+---
+
+
 ## v1.613.2 (2026-06-24)
 
 ### Bug Fixes
