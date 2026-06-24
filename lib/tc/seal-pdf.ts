@@ -60,6 +60,29 @@ function dataUrlToBytes(dataUrl: string): Uint8Array | null {
   }
 }
 
+/**
+ * THE geometry conversion: a field's page-relative TOP-LEFT fractional rect
+ * (the lib/tc/signing.ts convention) -> pdf-lib's BOTTOM-LEFT point box. The
+ * y-flip (`H - y*H - h`) is the single most legally load-bearing line in the
+ * sealer — a regression here mis-places a signature on the executed legal PDF.
+ * Pure + exported so it can be unit-tested (it was inline + untested before).
+ */
+export function fieldRectToPdf(
+  field: { x: number; y: number; w: number; h: number },
+  pageWidth: number,
+  pageHeight: number,
+): { x: number; y: number; w: number; h: number } {
+  const w = field.w * pageWidth
+  const h = field.h * pageHeight
+  return {
+    x: field.x * pageWidth,
+    w,
+    h,
+    // field.y is a fraction from the TOP; pdf-lib's origin is bottom-left.
+    y: pageHeight - field.y * pageHeight - h,
+  }
+}
+
 async function drawFieldValue(
   out: PDFDocument,
   page: PDFPage,
@@ -67,13 +90,7 @@ async function drawFieldValue(
   value: SignFieldValue,
   font: PDFFont
 ): Promise<void> {
-  const W = page.getWidth()
-  const H = page.getHeight()
-  const fx = field.x * W
-  const fw = field.w * W
-  const fh = field.h * H
-  // y is fraction from TOP → pdf-lib bottom-left origin
-  const fy = H - field.y * H - fh
+  const { x: fx, y: fy, w: fw, h: fh } = fieldRectToPdf(field, page.getWidth(), page.getHeight())
 
   if ((value.kind === 'signature' || value.kind === 'initials') && value.png) {
     const bytes = dataUrlToBytes(value.png)
