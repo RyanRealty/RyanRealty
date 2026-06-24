@@ -77,8 +77,31 @@ Method: 8-subsystem parallel audit (workflow `twilio-cutover-audit`) + live Twil
 
 ---
 
-## Build order (waves) — see decisions below
-Filled in once Matt confirms the 3 forks (public-number model, recording posture, cutover aggressiveness).
+## Cutover runbook (the flip Matt owns)
+
+The comms layer (Waves 1-6) is fully FUB-independent already (Twilio + crm_* +
+Gmail + Resend). The remaining cutover is the LEAD-ENTRY backend, gated behind
+`CRM_LEAD_BACKEND` (lib/crm/lead-router.ts `captureLead`, default `dual`).
+
+**To flip (when the gate below passes):**
+1. Repoint each lead entry point through `captureLead({ ...nativeFields, fub: <existing SendEventParams> })` — it already builds the FUB event; just pass it plus the native fields. Entry points: `app/actions/lead-capture.ts` (the 5 LP forms), `app/actions/lead-landing.ts`, `app/actions/agents.ts`, `app/actions/home.ts`, the Tetherow/Heath LPs, `app/api/meta/lead-webhook`, expired/FSBO detection crons. (Inbound SMS + voice already create native leads via findOrCreatePersonByPhone.)
+2. Set `CRM_LEAD_BACKEND=dual` in Vercel and run the proving window.
+3. When the gate passes, set `CRM_LEAD_BACKEND=native`. FUB writes stop; crm_people keeps filling with zero FUB dependency.
+4. Retire/guard the FUB-polling crons (crm-fub-delta, marketing-snapshot-fub, buyer/seller-lead-attribution); remove the FollowUpBossPixel after confirming first-party visitor parity; archive the full FUB export.
+
+**Cutover gate (all must pass):**
+- [x] A2P 10DLC campaign VERIFIED (live-confirmed 2026-06-24)
+- [x] 541.703.3095 ported into Twilio + webhooks live (live-confirmed)
+- [x] Per-broker numbers on the public site, forwarding to each broker's cell
+- [x] Inbound + outbound SMS/voice + recording captured to the timeline
+- [x] Delivery receipts + STOP/HELP + suppression enforced on every send path
+- [ ] 14 consecutive days of dual-write with zero reconciliation diffs on new leads
+- [ ] All lead entry points repointed through captureLead (step 1 above)
+- [ ] Hot-lead alert latency <= FUB push (measured)
+- [ ] Full FUB export snapshot archived
+
+## Build order (waves)
+Waves 1-6 shipped (see progress log). Wave 7 = the cutover chokepoint (this section). Wave 8 = gates/health. Wave 9 = live end-to-end verification.
 
 ## Decisions (Matt, 2026-06-24)
 1. **Public numbers:** per-broker Twilio lines shown publicly + 541.703.3095 as the brokerage brand line. Matt's 541.213.6706 → forward-only, off the site.
