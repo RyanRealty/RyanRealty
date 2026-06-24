@@ -123,6 +123,14 @@ Waves 1-6 shipped (see progress log). Wave 7 = the cutover chokepoint (this sect
 
 **Status: comms layer is production-grade and live-verified. Remaining = the lead-entry flip (Matt owns, runbook above).**
 
+### Final adversarial review (independent agent) — dispositions
+- **FIXED [prod bug]** /team pages render via `getAgentBySlug`→`getBrokerBySlug` in `app/actions/brokers.ts` (a different fn than the lib/data one Wave 3 updated), so Rebecca's 415 + Paul's old cell were live. Added twilio_number + `withPublicPhone()`; the fn is uncached so it fixes prod on deploy.
+- **FIXED [HIGH]** recording + MMS proxies failed OPEN for a non-superuser with no broker slug (report_viewer) → blanket access to every contact's audio/MMS. Now fail closed (null slug = 403).
+- **FIXED [HIGH]** recording webhook not idempotent (Twilio retry → re-transcribe + dup email + transcript wipe). Added already-processed short-circuit + never-null-body.
+- **FIXED [MED]** stripped private `forward_to_cell` from lib/data BROKER_FULL_SELECT (latent client leak).
+- **Tracked follow-ups (real, lower-risk):** per-recipient-tz quiet hours (today Pacific-default; out-of-state automated sends under-protected); click-to-call insert-after-call race (near-zero practical risk); inbound dup-lead race on a brand-new number hit by 2 simultaneous webhooks (rare; merge tool exists; a global unique index is wrong since spouses share numbers); sequence engine should import the shared quiet-hours lib.
+- **Confirmed correct by review:** dialed-number routing, recording `.or()` injection-safety, A2P fail-closed + StatusCallback-on-every-send, the forward-only SMS delivery state machine, slug-present recording/MMS ownership, dedupe_key NULL handling, the consent gate.
+
 ### Wave 6 documented follow-ups (tracked, not blocking the cutover)
 - Unknown-sender inbound email → auto-create a lead (or holding table) excluding automated/blocked domains. Today the Gmail sync only matches existing contacts; a brand-new emailer is not captured (FUB's inbox parser used to). Needs spam-safe sender filtering.
 - CRM email composer reply threading (In-Reply-To / References / Gmail threadId) so replies continue the client's thread instead of starting a new one.
