@@ -179,7 +179,10 @@ export const getBrokerBySlug = unstable_cache(
     }
     return broker
   },
-  ['broker-by-slug-v1'],
+  // v2: cache-key bump on the Twilio-cutover phone change (twilio_number is now
+  // the public display phone) so the deploy orphans stale pre-migration entries
+  // instead of serving old per-broker cells for up to the 1h TTL.
+  ['broker-by-slug-v2'],
   { revalidate: 3600, tags: [cacheTag.brokers] }
 )
 
@@ -304,7 +307,8 @@ export const getBrokers = unstable_cache(
       }
     })
   },
-  ['brokers-v2'],
+  // v3: cache-key bump on the Twilio-cutover phone change (see getBrokerBySlug).
+  ['brokers-v3'],
   {
     revalidate: CACHE_WINDOWS.brokers,
     tags: [cacheTag.brokers],
