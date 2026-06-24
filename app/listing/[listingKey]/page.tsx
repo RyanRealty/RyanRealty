@@ -6,12 +6,13 @@ import {
   getListingPhotos,
   getListingVideos,
   getListingDetailOpenHouses,
+  getListingTiles,
   getMarketPulse,
   getMarketStats,
   getBrokers,
   resolveListingAgent,
 } from '@/lib/data'
-import { getSimilarListings } from '@/lib/data/listings/getSimilarListings'
+import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingShareSummary } from '@/lib/share-metadata'
@@ -31,8 +32,7 @@ import { MortgageCalculator } from '@/components/site/listing-detail/MortgageCal
 import { RentalAnalysis } from '@/components/site/listing-detail/RentalAnalysis'
 import { PropertyHistory } from '@/components/site/listing-detail/PropertyHistory'
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
-import { SimilarListings } from '@/components/site/listing-detail/SimilarListings'
-import VideoHomesSection, { type VideoHomesScope } from '@/components/site/VideoHomesSection'
+import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import { ListingAgentCard } from '@/components/site/listing-detail/ListingAgentCard'
 import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
 import { ClimateRiskBlock } from '@/components/site/listing-detail/ClimateRiskBlock'
@@ -244,9 +244,24 @@ export default async function ListingDetailPage({ params }: PageProps) {
   // ad-landing surface, and an unbounded pooler stall on any of these used to
   // hang the render to FUNCTION_INVOCATION_TIMEOUT / "Something went wrong".
   // Each section degrades independently. Enforced by the db-timeout-guard gate.
-  const [similar, history, photos, videos, brokers, listingAgent, marketPulse, marketStats, openHouses] =
+  // "Similar homes" = active homes in THIS listing's place (subdivision first,
+  // then neighborhood, then city) — the same canonical featured-homes rail the
+  // city/community pages use, not a bespoke MV. Scope mirrors marketGeo.
+  const nearbyScope =
+    marketGeo?.geoType === 'community'
+      ? { subdivision: marketGeo.name, city: listing.city ?? undefined }
+      : marketGeo?.geoType === 'neighborhood'
+      ? { neighborhood: marketGeo.name, city: listing.city ?? undefined }
+      : { city: listing.city ?? undefined }
+
+  const [nearbyTilesRaw, history, photos, videos, brokers, listingAgent, marketPulse, marketStats, openHouses] =
     await Promise.all([
-      withTimeoutFallback(getSimilarListings(listingKey, 4), [], 3000, 'listing:similar'),
+      withTimeoutFallback(
+        getListingTiles({ ...nearbyScope, status: 'active', propertyType: 'A', limit: 13 }),
+        [],
+        3000,
+        'listing:nearby',
+      ),
       withTimeoutFallback(getListingDetailHistory(listingKey), [], 3000, 'listing:history'),
       withTimeoutFallback(getListingPhotos(listingKey), [], 4000, 'listing:photos'),
       withTimeoutFallback(getListingVideos(listingKey), [], 3000, 'listing:videos'),
@@ -283,6 +298,19 @@ export default async function ListingDetailPage({ params }: PageProps) {
     ])
 
   const listingWithPhotos = { ...listing, photos }
+
+  // Drop THIS listing from its own "homes in this area" rail, then resolve to the
+  // canonical KbFeatured item shape (the city/community featured section).
+  const nearbyTiles = nearbyTilesRaw
+    .filter((t) => t.listingKey !== listing.listingKey && t.listNumber !== listing.listNumber)
+    .slice(0, 12)
+  const featuredItems = await withTimeoutFallback(
+    resolveFeaturedItems(nearbyTiles, 12),
+    [],
+    3000,
+    'listing:featured',
+  )
+
   const { isListingSaved } = await import('@/app/actions/saved-listings')
   const initialSaved = await isListingSaved(listing.listingKey).catch(() => false)
   // Resolve the fallback contact broker by the STABLE principal flag, not a slug
@@ -347,6 +375,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
           }))}
         />
       ) : null}
+      {/* Description sits directly above Property details (Matt directive). */}
+      <DescriptionBlock publicRemarks={listingWithPhotos.publicRemarks} />
       <PropertySpecs listing={listingWithPhotos} />
       {virtualTours.length > 0 ? <ListingVideoEmbed videos={virtualTours} variant="tour" /> : null}
       <ListingAttribution
@@ -354,7 +384,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
         listOfficeName={listing.listOfficeName}
         refreshedAt={listing.refreshedAt}
       />
-      <DescriptionBlock publicRemarks={listingWithPhotos.publicRemarks} />
       {marketGeo ? (
         <NeighborhoodMarketContext
           geoName={marketGeo.name}
@@ -383,20 +412,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
       <ClimateRiskBlock risk={null} />
       <VacationRentalPotential projection={null} />
       <TransparentCMASummary cma={null} />
-      {similar.length > 0 ? <SimilarListings similar={similar} /> : null}
-      <VideoHomesSection
-        scope={
-          (listing.subdivisionName && listing.subdivisionName !== 'N/A'
-            ? { kind: 'community', subdivision: listing.subdivisionName }
-            : listing.city
-              ? { kind: 'city', city: listing.city }
-              : { kind: 'region' }) as VideoHomesScope
-        }
-        excludeKey={listing.listingKey}
-        limit={4}
-        heading="More homes with video tours"
-        tone="muted"
-      />
     </>
   )
 
@@ -435,6 +450,13 @@ export default async function ListingDetailPage({ params }: PageProps) {
           main={main}
           sidebar={sidebar}
         />
+        {/* "Similar homes" = the canonical full-width featured-homes rail the
+            city/community pages use, scoped to THIS listing's subdivision /
+            neighborhood (falling back to the city). Renders nothing when the
+            area has no other active inventory. */}
+        {featuredItems.length > 0 ? (
+          <KbFeatured items={featuredItems} eyebrow={`${marketGeo?.name ?? listing.city ?? 'Nearby'} · For sale`} />
+        ) : null}
         <KbFooter towns={[]} />
       </SmoothScrollProvider>
     </main>

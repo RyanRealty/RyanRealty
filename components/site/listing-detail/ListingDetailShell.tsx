@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Container, Section } from '@/components/site/primitives'
 import type { BreadcrumbNavItem } from '@/components/site/BreadcrumbNav'
-import { PageBreadcrumb, BREADCRUMB_HOME } from '@/components/site/PageBreadcrumb'
+import { BREADCRUMB_HOME } from '@/components/site/PageBreadcrumb'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { ListingDetail } from '@/lib/data/types/listing'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -133,9 +133,9 @@ export function ListingDetailShell({
           {hero}
         </section>
       ) : null}
-      {/* Breadcrumb below the hero, on the cream surface (navy-on-cream stays
-          readable; the canonical PageBreadcrumb chrome is unchanged). */}
-      <PageBreadcrumb trail={breadcrumbs} includeJsonLd={false} />
+      {/* No visual breadcrumb on the listing page (Matt directive). The
+          BreadcrumbList JSON-LD above is retained for SEO/rich results — it's
+          invisible structured data, not the on-page nav strip. */}
       <Section padding="default">
         <Container className={cn('grid gap-10', sidebar ? 'lg:grid-cols-[1.6fr_360px]' : '', className)}>
           <div className="min-w-0 flex flex-col gap-10">{main}</div>

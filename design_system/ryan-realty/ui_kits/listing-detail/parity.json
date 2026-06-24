@@ -54,13 +54,14 @@
       "notes": "Per Plan §8 'What we BEAT' rank 6 — Bend lifestyle data."
     },
     {
-      "name": "SimilarListings",
-      "section": "ld-section: Similar listings — 4-card grid from getSimilarListings",
-      "blocking": true
+      "name": "KbFeatured",
+      "section": "Similar homes — the canonical full-width featured-homes rail (same as the city/community pages), scoped to THIS listing's subdivision/neighborhood (city fallback) via resolveFeaturedItems. Supersedes the old SimilarListings 4-card MV grid + the VideoHomesSection cross-sell (Matt directive 2026-06-24).",
+      "blocking": true,
+      "notes": "Renders below the main+sidebar grid, full-bleed. Excludes the current listing. resolveFeaturedItems builds the KbFeaturedItem[] from getListingTiles({subdivision|neighborhood|city, status:'active'})."
     },
     {
       "name": "ListingDetailShell",
-      "section": "page chrome — breadcrumb + main+sticky-sidebar grid + JSON-LD",
+      "section": "page chrome — main+sticky-sidebar grid + JSON-LD (no visual breadcrumb; BreadcrumbList JSON-LD retained for SEO, Matt directive 2026-06-24)",
       "blocking": true
     },
     {
