@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.605.2 (2026-06-24)
+
+### Bug Fixes
+- fix(forms): apply .kb-tool-skin to newsletter, lead-capture, lead-landing forms
+
+---
+
+
 ## v1.605.1 (2026-06-23)
 
 ### Bug Fixes
