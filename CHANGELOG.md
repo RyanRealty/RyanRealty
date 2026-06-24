@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.606.1 (2026-06-24)
+
+### Maintenance
+- chore(gates): allow lib/tc/ as a tc_* write-path prefix (DAL boundary)
+
+---
+
+
 ## v1.606.0 (2026-06-24)
 
 ### Features
