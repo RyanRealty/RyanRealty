@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.614.2 (2026-06-24)
+
+### Bug Fixes
+- fix(comms): repoint CMA/digest/rental-PDF/inbox signatures to the Twilio brand line
+
+---
+
+
 ## v1.614.1 (2026-06-24)
 
 ### Bug Fixes
