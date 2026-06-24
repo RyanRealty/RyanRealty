@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.605.4 (2026-06-24)
+
+### Bug Fixes
+- fix(listing-hero): lighten the top of the hero scrim so the photo pops
+
+---
+
+
 ## v1.605.3 (2026-06-24)
 
 ### Bug Fixes
