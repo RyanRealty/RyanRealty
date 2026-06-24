@@ -108,7 +108,7 @@ function composeBody(ctx: ReplyContext): { subject: string; body: string } {
     '',
     'This inbox is reserved for the Ryan Realty brokerage team. Your sender address is not currently on the allowlist, so the request was not picked up.',
     '',
-    'If you need to reach Ryan Realty, please use matt@ryan-realty.com or call 541.213.6706.',
+    'If you need to reach Ryan Realty, please use matt@ryan-realty.com or call 541.703.3095.',
   ].join('\n')
   return { subject: ctx.original_subject ? `Re: ${ctx.original_subject}` : 'Marketing inbox', body }
 }
@@ -120,7 +120,7 @@ function composeBody(ctx: ReplyContext): { subject: string; body: string } {
 function validateReplyVoice(body: string): { passed: boolean; violations: string[] } {
   // applyBrandVoice expects { hook, body, cta }; we send body in hook so
   // every sentence is checked. The phone-number rule in BANNED_PHRASES does
-  // not strip dotted numbers like 541.213.6706.
+  // not strip dotted numbers like 541.703.3095.
   const result = applyBrandVoice({ hook: body, body: undefined, cta: undefined })
   return { passed: result.passed, violations: result.violations }
 }

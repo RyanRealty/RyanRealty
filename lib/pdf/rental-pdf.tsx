@@ -134,7 +134,7 @@ export function RentalPdfDocument({ data }: { data: RentalPdfData }) {
         </Text>
 
         <Text style={styles.footer}>
-          Ryan Realty · 541.213.6706 · ryan-realty.com{data.generatedOn ? ` · ${data.generatedOn}` : ''}
+          Ryan Realty · 541.703.3095 · ryan-realty.com{data.generatedOn ? ` · ${data.generatedOn}` : ''}
         </Text>
       </Page>
     </Document>

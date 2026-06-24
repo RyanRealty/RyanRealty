@@ -76,7 +76,7 @@ function brandFooter(): React.ReactElement {
         Ryan Realty. Central Oregon real estate.
       </Text>
       <Text style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>
-        541.213.6706. ryan-realty.com.
+        541.703.3095. ryan-realty.com.
       </Text>
     </Section>
   )

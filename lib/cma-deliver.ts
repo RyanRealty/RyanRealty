@@ -135,7 +135,7 @@ function buildLeadEmailBody(params: {
   <p style="margin:0 0 14px 0;">Thanks for reaching out. I put together a full market analysis for <strong>${escapeHtml(params.subjectAddress)}</strong>, and it's attached as a PDF.</p>
   ${numbersHtml}
   <p style="margin:0 0 14px 0;">The report walks through the comparable sales and where the Bend market sits right now. I'm happy to talk it through whenever works for you, no pressure.</p>
-  <p style="margin:18px 0 0 0;">${escapeHtml(params.signOff)}<br/>Ryan Realty<br/>541.213.6706</p>
+  <p style="margin:18px 0 0 0;">${escapeHtml(params.signOff)}<br/>Ryan Realty<br/>541.703.3095</p>
 </div>
 `.trim()
 
@@ -147,7 +147,7 @@ ${numbersText}The report walks through the comparable sales and where the Bend m
 
 ${params.signOff}
 Ryan Realty
-541.213.6706`
+541.703.3095`
 
   return { html, text }
 }

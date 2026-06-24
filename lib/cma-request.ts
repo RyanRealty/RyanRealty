@@ -437,7 +437,7 @@ async function sendLeadConfirmation(params: {
     '',
     `Matt Ryan`,
     `Ryan Realty`,
-    `541.213.6706`,
+    `541.703.3095`,
     `https://ryan-realty.com`,
   ].join('\n')
 
@@ -450,7 +450,7 @@ async function sendLeadConfirmation(params: {
   <p style="margin-top:32px;color:#5b6473;font-size:13px;">
     Matt Ryan<br/>
     Ryan Realty<br/>
-    <a href="tel:5412136706" style="color:#5b6473;">541.213.6706</a><br/>
+    <a href="tel:5417033095" style="color:#5b6473;">541.703.3095</a><br/>
     <a href="https://ryan-realty.com" style="color:#5b6473;">ryan-realty.com</a>
   </p>
 </div>

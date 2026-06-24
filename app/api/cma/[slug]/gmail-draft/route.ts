@@ -110,7 +110,7 @@ async function handleDraft(slug: string, body: DraftPayload) {
       <p style="margin:0 0 14px 0;">Thanks for reaching out. I put together a full market analysis for <strong>${subjectAddress}</strong>, and it's attached as a PDF.</p>
       ${numbersHtml}
       <p style="margin:0 0 14px 0;">The report walks through the comparable sales and where the Bend market sits right now. I'm happy to talk it through whenever works for you, no pressure.</p>
-      <p style="margin:18px 0 0 0;">${signOff}<br/>Ryan Realty<br/>541.213.6706</p>
+      <p style="margin:18px 0 0 0;">${signOff}<br/>Ryan Realty<br/>541.703.3095</p>
     </div>
   `.trim()
 
@@ -122,7 +122,7 @@ ${numbersText}The report walks through the comparable sales and where the Bend m
 
 ${signOff}
 Ryan Realty
-541.213.6706`
+541.703.3095`
 
   try {
     const { buffer } = await renderCmaPdfBuffer(safeSlug)
