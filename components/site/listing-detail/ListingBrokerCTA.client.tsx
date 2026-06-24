@@ -16,7 +16,9 @@
  */
 import { useEffect, useState } from 'react'
 import { TextMattCTA } from './TextMattCTA'
+import ListingMobileContactBar from './ListingMobileContactBar.client'
 import type { Broker } from '@/lib/data/types/broker'
+import type { ReviewsSummary } from '@/lib/data/reviews/getReviews'
 
 function readAttributedSlug(): string | null {
   try {
@@ -52,13 +54,13 @@ function matchBroker(slug: string, brokers: Broker[]): Broker | null {
  *  the brand-voice gate flags sits in source. */
 function writeAttribution(slug: string) {
   try {
-    const expires = new Date()
-    expires.setDate(expires.getDate() + 90)
+    // 90-day cookie via max-age (seconds) rather than an `expires` Date — no
+    // clock read at all, so it stays SSR/hydration-safe and trips no clock gate.
     const SEP = String.fromCharCode(59) + ' '
     const cookie = [
       `rr_agent_attribution=${encodeURIComponent(JSON.stringify({ slug }))}`,
       'path=/',
-      `expires=${expires.toUTCString()}`,
+      `max-age=${90 * 24 * 60 * 60}`,
       'SameSite=Lax',
     ].join(SEP)
     document.cookie = cookie
@@ -71,12 +73,15 @@ export default function ListingBrokerCTA({
   defaultBroker,
   brokers,
   listingKey,
+  reviews,
   className,
   lockToDefault = false,
 }: {
   defaultBroker: Broker
   brokers: Broker[]
   listingKey: string
+  /** Brokerage Google reviews for the desktop card's lg-only social-proof block. */
+  reviews?: ReviewsSummary | null
   className?: string
   /** True when defaultBroker is the resolved Ryan Realty listing agent for THIS
    *  home — keep them as the contact; never random-reassign over them. */
@@ -103,5 +108,12 @@ export default function ListingBrokerCTA({
     setBroker(chosen)
   }, [brokers, defaultBroker, lockToDefault])
 
-  return <TextMattCTA broker={broker} listingKey={listingKey} className={className} />
+  return (
+    <>
+      <TextMattCTA broker={broker} listingKey={listingKey} reviews={reviews} className={className} />
+      {/* Always-reachable mobile bar (hidden on lg+ via CSS) — replaces the FUB
+          floating widget; shows the same attributed broker as the card. */}
+      <ListingMobileContactBar broker={broker} listingKey={listingKey} />
+    </>
+  )
 }

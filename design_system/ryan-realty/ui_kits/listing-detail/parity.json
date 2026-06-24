@@ -66,14 +66,15 @@
     },
     {
       "name": "TextMattCTA",
-      "section": "ld-side sticky: text-matt block — broker contact card with phone + Schedule a tour + Text Matt",
+      "section": "ld-side sticky: the ONE broker contact card — headshot + FULL contact (click-to-call Twilio line + email) + name/title/license + Schedule a tour / Call / Text, and an lg-only verified-Google-review social-proof block (rating + count + one quote). Consolidates the old TextMattCTA + ListingAgentCard (Matt directive 2026-06-24).",
       "blocking": true,
-      "notes": "Per Plan §8 'What we BEAT' rank 2 — sticky 'Text Matt: 541.213.6706' CTA."
+      "notes": "Rendered via ListingBrokerCTA.client (attribution wrapper). reviews from getReviews(8); social proof hidden < lg per directive."
     },
     {
-      "name": "ListingAgentCard",
-      "section": "ld-side: Listing agent compact card (transparent PNG headshot)",
-      "blocking": true
+      "name": "ListingMobileContactBar",
+      "section": "ld mobile sticky bottom bar — always-reachable broker CTA on < lg (replaces the retiring FUB floating widget): mini headshot + first name + Call / Text / Schedule a tour. Fixed to the viewport bottom, slides up past the hero (Matt directive 2026-06-24).",
+      "blocking": true,
+      "notes": "Imported by ListingBrokerCTA.client (so the page file imports it transitively). Hidden on lg+ via .listing-mobile-cta CSS."
     },
     {
       "name": "PhotoGalleryLightbox",

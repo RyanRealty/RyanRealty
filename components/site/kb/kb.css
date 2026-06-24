@@ -1459,3 +1459,28 @@ html.lenis, html.lenis body{height:auto;}
     }
   }
 }
+
+/* ===== Listing mobile contact bar — the always-reachable broker CTA on small
+   screens (replaces the retiring FUB floating widget). Fixed to the viewport
+   bottom, hidden on lg+ (the desktop sticky sidebar card carries it there).
+   Slides up once the visitor scrolls past the hero. ===== */
+.kb-root .listing-mobile-cta{
+  position:fixed;left:0;right:0;bottom:0;z-index:80;
+  background:var(--cream);border-top:2px solid var(--navy);
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));
+  box-shadow:0 -8px 24px rgba(16,39,66,.14);
+  transform:translateY(110%);transition:transform .28s ease;
+  will-change:transform;
+}
+.kb-root .listing-mobile-cta[data-shown="true"]{transform:translateY(0);}
+@media(min-width:1024px){.kb-root .listing-mobile-cta{display:none;}}
+@media(prefers-reduced-motion:reduce){.kb-root .listing-mobile-cta{transition:none;}}
+.kb-root .listing-mobile-cta-inner{display:flex;align-items:center;gap:9px;max-width:640px;margin:0 auto;}
+.kb-root .listing-mobile-cta-name{display:flex;flex-direction:column;min-width:3.4em;flex:1 1 auto;line-height:1.1;margin-right:2px;}
+.kb-root .listing-mobile-cta-name .lmc-eyebrow{font-size:.54rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(16,39,66,.55);}
+.kb-root .listing-mobile-cta-name .lmc-name{font-size:.92rem;font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.kb-root .listing-mobile-cta-actions{display:flex;align-items:center;gap:7px;flex:0 0 auto;}
+.kb-root .listing-mobile-cta-actions .lmc-icon{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border:2px solid var(--navy);color:var(--navy);background:transparent;}
+.kb-root .listing-mobile-cta-actions .lmc-icon:active{background:rgba(16,39,66,.08);}
+.kb-root .listing-mobile-cta-actions .lmc-tour{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 13px;background:var(--navy);color:var(--cream);font-size:.74rem;font-weight:700;letter-spacing:.03em;white-space:nowrap;}
+.kb-root .listing-mobile-cta-actions .lmc-tour:active{opacity:.9;}
