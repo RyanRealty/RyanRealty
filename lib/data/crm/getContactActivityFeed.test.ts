@@ -60,6 +60,8 @@ describe('getContactActivityFeed pure helpers (2.1)', () => {
         snippet: 'Is this still available?',
         broker: 'matt',
         source: 'twilio',
+        recordingSid: null,
+        recordingDurationSec: null,
       })
     })
     it('defaults source to app when missing', () => {

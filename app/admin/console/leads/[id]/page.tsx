@@ -20,6 +20,7 @@ import {
   removeCrmTagAction,
   sendCrmEmailAction,
   sendCrmSmsAction,
+  startCrmCallAction,
   updateCrmStageAction,
 } from '@/app/actions/crm'
 import { manualEnrollPerson, listActiveSequences } from '@/lib/crm/enroll'
@@ -109,6 +110,16 @@ async function sendSmsForm(personId: number, formData: FormData): Promise<void> 
   formData.set('personId', String(personId))
   const r = await sendCrmSmsAction(formData)
   if (!r.ok) redirect(`${BASE}/${personId}?error=${encodeURIComponent(`Text not sent — ${r.error ?? 'unknown error'}`)}`)
+}
+async function startCallForm(personId: number, formData: FormData): Promise<void> {
+  'use server'
+  formData.set('personId', String(personId))
+  const r = await startCrmCallAction(formData)
+  redirect(
+    r.ok
+      ? `${BASE}/${personId}?flash=${encodeURIComponent('Calling now — your phone rings first, then connects to the lead (recorded).')}`
+      : `${BASE}/${personId}?error=${encodeURIComponent(`Call not started — ${r.error ?? 'unknown error'}`)}`,
+  )
 }
 async function confirmNextForm(formData: FormData): Promise<void> {
   'use server'
@@ -353,7 +364,11 @@ export default async function ConsoleLeadPage({
       <Card>
         <CardContent className="p-4 sm:p-5">
           <div className="flex gap-2">
-            {primaryPhone ? <Button asChild className="min-h-11 flex-1"><a href={`tel:+1${primaryPhone.replace(/\D/g, '').slice(-10)}`}>Call</a></Button> : null}
+            {primaryPhone ? (
+              <form action={startCallForm.bind(null, person.id)} className="flex-1">
+                <Button type="submit" className="min-h-11 w-full" title="Rings your phone first, then connects to the lead — recorded and logged">Call</Button>
+              </form>
+            ) : null}
             {primaryPhone ? <Button asChild variant="outline" className="min-h-11 flex-1"><a href="#comms">Text</a></Button> : null}
             {primaryEmail ? <Button asChild variant="outline" className="min-h-11 flex-1"><a href="#comms">Email</a></Button> : null}
           </div>
@@ -773,7 +788,7 @@ export default async function ConsoleLeadPage({
         activity={
           <ConsoleSection title="Activity">
         {(() => {
-          const convo = full.timeline.filter((t) => isConversationEvent(t.kind)).slice(0, 40).map((t) => ({ id: t.id, ts: t.ts, kind: t.kind, title: t.title, body: t.body, broker: t.broker }))
+          const convo = full.timeline.filter((t) => isConversationEvent(t.kind)).slice(0, 40).map((t) => ({ id: t.id, ts: t.ts, kind: t.kind, title: t.title, body: t.body, broker: t.broker, payload: t.payload }))
           const hasConvo = convo.length > 0
           const hasOther = activityLog.length > 0
           if (!hasConvo && !hasOther) return <p className="text-sm text-muted-foreground">No messages, calls, or visits yet.</p>

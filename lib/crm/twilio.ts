@@ -269,6 +269,34 @@ export async function sendSmsViaMessagingService(params: { to: string; body: str
   return r.ok ? r : { ok: false, error: r.error }
 }
 
+/**
+ * Click-to-call: ring the broker's own cell first (toCell), and when they answer
+ * Twilio fetches bridgeUrl for TwiML that dials the lead and records the
+ * conversation. From is the broker's Twilio business line (caller ID + A2P/10DLC
+ * brand). Returns the parent Call SID — the same SID the recording webhook
+ * reports, so the pre-inserted timeline row matches on `twilio:call:<sid>:p<id>`.
+ */
+export async function startOutboundCall(params: {
+  toCell: string
+  fromNumber: string
+  bridgeUrl: string
+}): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
+  const c = creds()
+  if (!c) return { ok: false, error: 'Twilio not configured' }
+  const to = toE164(params.toCell)
+  const from = toE164(params.fromNumber)
+  if (!to || !from) return { ok: false, error: 'Broker phone not configured' }
+  const form = new URLSearchParams({ To: to, From: from, Url: params.bridgeUrl, Method: 'POST' })
+  const res = await fetch(`${API}/Accounts/${c.sid}/Calls.json`, {
+    method: 'POST',
+    headers: { Authorization: authHeader(c), 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: form,
+  })
+  const data = (await res.json()) as { sid?: string; message?: string }
+  if (!res.ok || !data.sid) return { ok: false, error: data.message?.trim() || `Twilio call failed (${res.status})` }
+  return { ok: true, sid: data.sid }
+}
+
 export async function getAccountType(): Promise<'Trial' | 'Full' | null> {
   const c = creds()
   if (!c) return null

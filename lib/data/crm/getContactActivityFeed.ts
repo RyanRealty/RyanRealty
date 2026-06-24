@@ -27,6 +27,9 @@ export type ActivityFeedItem = {
   snippet: string | null
   broker: string | null
   source: string
+  /** Twilio recording for a call/voicemail — drives the inline <audio> player. */
+  recordingSid: string | null
+  recordingDurationSec: number | null
 }
 
 type KindMeta = { category: ActivityCategory; direction: 'in' | 'out' | null; label: string }
@@ -71,6 +74,11 @@ export function buildSnippet(row: { title?: string | null; body?: string | null;
 export function toFeedItem(row: Record<string, unknown>): ActivityFeedItem {
   const kind = String(row.kind ?? '')
   const meta = classifyTimelineKind(kind)
+  const payload = (row.payload ?? {}) as Record<string, unknown>
+  const recRaw = typeof payload.recordingSid === 'string' ? payload.recordingSid : null
+  const recordingSid = recRaw && /^RE[a-f0-9]{32}$/.test(recRaw) ? recRaw : null
+  const durRaw = payload.recordingDurationSec
+  const recordingDurationSec = typeof durRaw === 'number' && Number.isFinite(durRaw) ? durRaw : null
   return {
     id: Number(row.id),
     ts: String(row.ts ?? ''),
@@ -85,6 +93,8 @@ export function toFeedItem(row: Record<string, unknown>): ActivityFeedItem {
     }),
     broker: (row.broker as string | null) ?? null,
     source: String(row.source ?? 'app'),
+    recordingSid,
+    recordingDurationSec,
   }
 }
 

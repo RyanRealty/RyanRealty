@@ -125,6 +125,17 @@ export default function ContactActivityFeed({ items }: { items: ActivityFeedItem
                       </p>
                     ) : null}
 
+                    {item.recordingSid ? (
+                      <audio
+                        controls
+                        preload="none"
+                        src={`/api/admin/crm/recording/${item.recordingSid}`}
+                        className="mt-1.5 h-8 w-full max-w-xs"
+                      >
+                        <track kind="captions" />
+                      </audio>
+                    ) : null}
+
                     <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
                       {(() => {
                         const parts: React.ReactNode[] = []

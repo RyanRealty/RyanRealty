@@ -67,6 +67,8 @@ describe('groupByDay', () => {
       snippet: null,
       broker: null,
       source: 'app',
+      recordingSid: null,
+      recordingDurationSec: null,
     }
   }
 

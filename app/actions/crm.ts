@@ -889,6 +889,64 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   return { ok: true }
 }
 
+/**
+ * Click-to-call: ring the acting broker's own cell, then bridge to the lead and
+ * record the conversation (Twilio cutover 2026-06-24). The call is logged to the
+ * timeline immediately (kind 'call', direction out); the recording webhook
+ * attaches the audio + transcript by CallSid. Replaces the untracked tel: link.
+ */
+export async function startCrmCallAction(formData: FormData): Promise<CrmActionResult> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  const personId = Number(formData.get('personId'))
+  if (!personId) return { ok: false, error: 'personId required' }
+  const scoped = await requirePersonInScope(personId, access.access)
+  if (!scoped.ok) return scoped
+
+  const sb = createServiceClient()
+  const { data: person } = await sb
+    .from('crm_people')
+    .select('id,phones,assigned_broker,name')
+    .eq('id', personId)
+    .maybeSingle()
+  if (!person) return { ok: false, error: 'Person not found' }
+
+  let to =
+    (person.phones as Array<{ value?: string; isPrimary?: number | boolean }> | null)
+      ?.sort((a, b) => Number(!!b.isPrimary) - Number(!!a.isPrimary))[0]?.value ?? ''
+  if (!to) {
+    const { data: pt } = await sb.from('crm_contact_points').select('value').eq('person_id', personId).eq('kind', 'phone').limit(1).maybeSingle()
+    to = pt?.value ?? ''
+  }
+  if (!to) return { ok: false, error: 'No phone number on file' }
+
+  const callingBroker = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
+  const { brokerTwilioNumber, forwardCellForBroker, toE164, startOutboundCall, TWILIO_PUBLIC_ORIGIN } = await import('@/lib/crm/twilio')
+  const [fromNumber, brokerCell] = await Promise.all([brokerTwilioNumber(callingBroker), forwardCellForBroker(callingBroker)])
+  if (!fromNumber || !brokerCell) return { ok: false, error: 'Your Twilio business number or forwarding cell is not configured' }
+  const leadE164 = toE164(to)
+  if (!leadE164) return { ok: false, error: 'Invalid lead phone number' }
+
+  const call = await startOutboundCall({
+    toCell: brokerCell,
+    fromNumber,
+    bridgeUrl: `${TWILIO_PUBLIC_ORIGIN}/api/twilio/outbound-bridge`,
+  })
+  if (!call.ok) return { ok: false, error: call.error }
+
+  await sb.from('crm_timeline').insert({
+    person_id: personId,
+    kind: 'call',
+    title: 'Outbound call',
+    payload: { callSid: call.sid, toNumber: leadE164, fromNumber, direction: 'out', forwardedTo: brokerCell, recordingConsent: 'announced' },
+    broker: callingBroker,
+    source: 'app',
+    dedupe_key: `twilio:call:${call.sid}:p${personId}`,
+  })
+  revalidateCrm(personId)
+  return { ok: true }
+}
+
 export type CrmSequenceRow = {
   id: number
   name: string

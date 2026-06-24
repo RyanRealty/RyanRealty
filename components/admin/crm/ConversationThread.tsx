@@ -13,6 +13,13 @@ export type ConversationEvent = {
   title: string | null
   body: string | null
   broker: string | null
+  payload?: Record<string, unknown> | null
+}
+
+const RECORDING_SID_RE = /^RE[a-f0-9]{32}$/
+function recordingSidOf(payload: ConversationEvent['payload']): string | null {
+  const sid = payload && typeof payload.recordingSid === 'string' ? payload.recordingSid : null
+  return sid && RECORDING_SID_RE.test(sid) ? sid : null
 }
 
 const COMMS_KINDS = new Set(['sms_in', 'sms_out', 'email_in', 'email_out', 'call', 'voicemail'])
@@ -56,9 +63,27 @@ export default function ConversationThread({
         const isMarker = e.kind === 'call' || e.kind === 'voicemail'
         const text = (e.body ? timelineEmailBody(e.body) : e.title) ?? ''
         if (isMarker) {
+          const recordingSid = recordingSidOf(e.payload)
+          const durRaw = e.payload?.recordingDurationSec
+          const dur = typeof durRaw === 'number' && Number.isFinite(durRaw) ? `${Math.round(durRaw)}s` : null
+          const transcript = e.body ? timelineEmailBody(e.body) : null
           return (
-            <div key={e.id} className="self-center rounded-full bg-muted px-4 py-1 text-xs text-muted-foreground">
-              {e.kind === 'call' ? '📞' : '🎙'} {e.title ?? e.kind} · {fmtTs(e.ts)}
+            <div key={e.id} className="flex flex-col items-center gap-1.5">
+              <div className="rounded-full bg-muted px-4 py-1 text-xs text-muted-foreground">
+                {e.kind === 'call' ? '📞' : '🎙'} {e.title ?? e.kind}
+                {dur ? ` · ${dur}` : ''} · {fmtTs(e.ts)}
+              </div>
+              {recordingSid ? (
+                <audio controls preload="none" src={`/api/admin/crm/recording/${recordingSid}`} className="h-8 w-full max-w-sm">
+                  <track kind="captions" />
+                </audio>
+              ) : null}
+              {transcript ? (
+                <div className="max-w-md whitespace-pre-wrap rounded-lg bg-muted/60 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+                  {transcript.slice(0, 1200)}
+                  {transcript.length > 1200 ? '…' : ''}
+                </div>
+              ) : null}
             </div>
           )
         }
