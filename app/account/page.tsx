@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { redirect } from 'next/navigation'
+import { CONTACT } from '@/lib/brand/contact'
 import { getSession } from '@/app/actions/auth'
 import { getProfile } from '@/app/actions/profile'
 import { getSavedSearches } from '@/app/actions/saved-searches'
@@ -285,7 +286,7 @@ export default async function AccountPage() {
             <p className="text-xs text-muted-foreground">Principal broker · Ryan Realty</p>
           </div>
           <div className="flex shrink-0 flex-wrap justify-end gap-2">
-            <Button asChild size="sm" variant="outline"><a href="tel:5412136706">Call</a></Button>
+            <Button asChild size="sm" variant="outline"><a href={`tel:${CONTACT.phoneDirectTel}`}>Call</a></Button>
             <Button asChild size="sm"><a href="mailto:matt@ryan-realty.com">Email</a></Button>
           </div>
         </Card>

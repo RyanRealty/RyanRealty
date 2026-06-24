@@ -136,7 +136,7 @@ const CONFIRMED_LICENSES: Record<string, string> = {
 }
 
 const BROKER_FULL_SELECT =
-  'id, slug, display_name, title, license_number, bio, photo_url, email, phone, google_review_url, zillow_review_url, sort_order, is_active, created_at, updated_at, tagline, specialties, designations, years_experience, social_instagram, social_facebook, social_linkedin, social_youtube, social_tiktok, social_x, mls_id, zillow_id, realtor_id, yelp_id, google_business_id, intro_video_url, saved_headshot_urls'
+  'id, slug, display_name, title, license_number, bio, photo_url, email, phone, twilio_number, forward_to_cell, google_review_url, zillow_review_url, sort_order, is_active, created_at, updated_at, tagline, specialties, designations, years_experience, social_instagram, social_facebook, social_linkedin, social_youtube, social_tiktok, social_x, mls_id, zillow_id, realtor_id, yelp_id, google_business_id, intro_video_url, saved_headshot_urls'
 
 /**
  * getBrokerBySlug — full broker row for the /team/[slug] detail page.
@@ -170,10 +170,12 @@ export const getBrokerBySlug = unstable_cache(
     if (broker && !String(broker.license_number ?? '').trim() && CONFIRMED_LICENSES[String(broker.slug)]) {
       broker.license_number = CONFIRMED_LICENSES[String(broker.slug)]!
     }
-    // Normalize the stored phone to the brand-voice dotted format (541.703.3095)
-    // so the detail page never renders a parenthesized "(541) 703-3095".
-    if (broker && broker.phone) {
-      broker.phone = normalizePhone(broker.phone as string | null)
+    // Public display phone = the broker's Twilio business line (recorded +
+    // tracked + forwarded), falling back to the legacy phone column. Normalized
+    // to the brand-voice dotted format so the detail page never renders a
+    // parenthesized "(541) 703-3095". (Twilio cutover 2026-06-24.)
+    if (broker) {
+      broker.phone = normalizePhone((broker.twilio_number as string | null) ?? (broker.phone as string | null))
     }
     return broker
   },
@@ -247,7 +249,7 @@ export const getBrokers = unstable_cache(
     const { data, error } = await supabase
       .from('brokers')
       .select(
-        'slug, display_name, title, email, phone, photo_url, license_number, bio, ' +
+        'slug, display_name, title, email, phone, twilio_number, photo_url, license_number, bio, ' +
           'sort_order, is_active, tagline, specialties, designations, years_experience, ' +
           'google_review_url, zillow_review_url, intro_video_url, ' +
           'social_instagram, social_facebook, social_linkedin, social_youtube, social_tiktok, social_x'
@@ -264,7 +266,10 @@ export const getBrokers = unstable_cache(
     return (data as unknown as Array<Record<string, unknown>>).map((row) => {
       const slug = (row.slug as string) ?? ''
       const title = (row.title as string) ?? 'Broker'
-      const phone = normalizePhone(row.phone as string | null)
+      // Public display phone = the broker's Twilio business line (recorded +
+      // tracked + forwarded to their private cell), falling back to the legacy
+      // phone column. (Twilio cutover 2026-06-24.)
+      const phone = normalizePhone((row.twilio_number as string | null) ?? (row.phone as string | null))
       const photoUrl = (row.photo_url as string | null) ?? null
       return {
         slug,

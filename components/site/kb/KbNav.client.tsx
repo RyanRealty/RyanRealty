@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { CONTACT } from '@/lib/brand/contact'
 
 // ONE coherent nav that navigates the WHOLE site. The top bar shows the key
 // destinations; the overlay is a comprehensive grouped directory (every real
@@ -129,7 +130,7 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
         </nav>
         <div className="menu-foot">
           <span>Bend · Oregon</span>
-          <a href="tel:5412136706">541.213.6706</a>
+          <a href={`tel:${CONTACT.phoneDirectTel}`}>{CONTACT.phoneDirect}</a>
         </div>
       </div>
     </>

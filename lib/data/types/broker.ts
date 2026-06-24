@@ -31,9 +31,10 @@ export type Broker = {
   fullName: string
   title: string
   email: string | null
-  /** Public display phone (dotted, e.g. 541.703.3095) — normalized from the
-   *  brokers.phone column, which holds the FUB-tracked number so inbound calls
-   *  attribute correctly. */
+  /** Public display phone (dotted, e.g. 541.224.5025) — the broker's Twilio
+   *  business line (brokers.twilio_number, falling back to brokers.phone).
+   *  Inbound is recorded, logged to the CRM timeline, and forwarded to the
+   *  broker's private cell. Both fields carry the same Twilio line. */
   phoneDirect: string | null
   phoneFub: string | null
   headshotPng: string          // /images/brokers/<slug>.png (transparent PNG)

@@ -64,12 +64,15 @@ export const BRAND = {
 export const SOCIAL_PROFILES: string[] = Object.values(BRAND.social)
 
 export const CONTACT = {
-  /** Matt's direct brokerage line, dotted brand-voice format. Org JSON-LD
-   *  telephone + site footer. Distinct from the FUB line below. */
-  phoneDirect: '541.213.6706',
-  phoneDirectTel: '+1-541-213-6706',
-  /** FUB-tracked lead-capture line (calls attribute to the website). Use on
-   *  lead-capture CTAs. Canonical home of lib/listing-cta.ts. */
+  /** Brokerage brand line. As of the Twilio cutover (2026-06-24) this is the
+   *  ported 541.703.3095 line, now living in Twilio: every inbound call/text is
+   *  recorded, logged to the CRM timeline, and routed to the right broker. Used
+   *  by the site footer + Organization JSON-LD telephone. Matt's old direct line
+   *  (541.213.6706) is now a private forward target only, off the public site. */
+  phoneDirect: '541.703.3095',
+  phoneDirectTel: '+15417033095',
+  /** Lead-capture line — same Twilio brand line. Use on lead-capture CTAs.
+   *  Canonical home of lib/listing-cta.ts. */
   phoneFub: '541.703.3095',
   phoneFubDisplay: '541-703-3095',
   phoneFubTel: '+15417033095',
@@ -88,6 +91,11 @@ export type BrokerKey = 'matt' | 'paul' | 'rebecca'
  * `nameShort` is the everyday display form — several surfaces render
  * "Rebecca Peterson", NOT the full "Rebecca Ryser Peterson"; use `nameShort`
  * there so the visible name never changes.
+ *
+ * `phone` is each broker's PUBLIC Twilio business line (cutover 2026-06-24):
+ * inbound is recorded, logged to the CRM timeline, and forwarded to that
+ * broker's private cell (brokers.forward_to_cell — never shown publicly). This
+ * is the fallback roster; the live values are public.brokers.twilio_number.
  */
 export const BROKERS = {
   matt: {
@@ -97,7 +105,7 @@ export const BROKERS = {
     title: 'Owner & Principal Broker',
     titleShort: 'Principal Broker',
     email: 'matt@ryan-realty.com',
-    phone: '541.703.3095',
+    phone: '541.224.5025',
     license: '201206613',
     isPrincipal: true,
   },
@@ -108,7 +116,7 @@ export const BROKERS = {
     title: 'Broker',
     titleShort: 'Broker',
     email: 'paul@ryan-realty.com',
-    phone: '541.977.6841',
+    phone: '541.501.3436',
     license: '201259123',
     isPrincipal: false,
   },
@@ -119,7 +127,7 @@ export const BROKERS = {
     title: 'Broker',
     titleShort: 'Broker',
     email: 'rebeccapeterson@ryan-realty.com',
-    phone: '415.308.9087',
+    phone: '541.250.3380',
     license: '201254727',
     isPrincipal: false,
   },

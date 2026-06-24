@@ -1,10 +1,8 @@
 {
-  "app/account/page.tsx": 1,
   "app/lp/sell-your-home/page.tsx": 2,
   "app/lp/seller-home-value/page.tsx": 2,
   "app/lp/seller-home-value/SellerLPForm.tsx": 4,
   "app/sign/[token]/page.tsx": 1,
   "app/sign/layout.tsx": 1,
-  "components/site/kb/KbFooter.client.tsx": 4,
-  "components/site/kb/KbNav.client.tsx": 1
+  "components/site/kb/KbFooter.client.tsx": 3
 }

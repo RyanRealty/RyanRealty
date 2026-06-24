@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { kbMoneyFull, type KbTownItem } from './types'
+import { CONTACT } from '@/lib/brand/contact'
 
 /**
  * KB footer — dual-audience close + full sitemap. Per-town inventory fine print
@@ -56,7 +57,7 @@ export function KbFooter({ towns }: { towns: KbTownItem[] }) {
             <img className="logo-img" src="/images/brand/logo-white.png" alt="Ryan Realty" />
             <p>Central Oregon real estate across Bend, Redmond, Sisters, Sunriver, La Pine and Terrebonne.</p>
             <div className="foot-contact">
-              <a href="tel:15412136706">541.213.6706</a>
+              <a href={`tel:${CONTACT.phoneDirectTel}`}>{CONTACT.phoneDirect}</a>
               <a href="mailto:matt@ryan-realty.com">matt@ryan-realty.com</a>
               <span>Bend · Oregon</span>
             </div>

@@ -80,5 +80,13 @@ Method: 8-subsystem parallel audit (workflow `twilio-cutover-audit`) + live Twil
 ## Build order (waves) — see decisions below
 Filled in once Matt confirms the 3 forks (public-number model, recording posture, cutover aggressiveness).
 
+## Decisions (Matt, 2026-06-24)
+1. **Public numbers:** per-broker Twilio lines shown publicly + 541.703.3095 as the brokerage brand line. Matt's 541.213.6706 → forward-only, off the site.
+2. **Recording:** record both legs + announce, leave ON. Add voicemail notice + CI gate.
+3. **Cutover:** build everything + dual-run; Matt flips the final switch.
+
 ## Progress log
-- 2026-06-24 — Audit complete (8 subsystems + live Twilio/DB verification). Doc created. Awaiting Matt's 3 decisions, then build.
+- 2026-06-24 — Audit complete (8 subsystems + live Twilio/DB verification). Doc created.
+- 2026-06-24 — **Wave 1+2 shipped** (commit b6427f2f — bundled by a concurrent-agent `git add -A`; code verified correct, on origin): brokers.twilio_number + forward_to_cell migration + backfill; getBrokerTelephony DAL; dialed-number routing in voice + inbound-sms; verifiedTwilioParams (signature in all envs, 403-not-500); idempotent crash-safe call/voicemail upserts; find-or-create in voice-complete; inbound-SMS new-lead alert; recording-webhook SID validation; voicemail recording notice. tsc 0 errors, 1346 tests pass, all static gates green.
+- 2026-06-24 — **Wave 3 shipped**: public site now shows each broker's Twilio business line (getBrokers + getBrokerBySlug map twilio_number; BROKERS fallback roster updated); CONTACT brand line + footer + org JSON-LD → 541.703.3095; account page + KB footer/nav off Matt's old direct; brokerage_settings.primary_phone → brand line; G38 baseline ratcheted 16→13. Old per-broker cells now private (forward_to_cell only). NOTE: deferred to Wave 6 — CMA/digest/rental-PDF email + video comms still show 541.213.6706, repoint to the Twilio brand line there.
+- NOTE: a concurrent agent/Cursor session is committing to this same checkout (shared working tree). Some of my work landed under its commit messages. Code is correct + on origin; flagged for Matt.
