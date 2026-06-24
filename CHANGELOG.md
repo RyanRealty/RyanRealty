@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.607.6 (2026-06-24)
+
+### Bug Fixes
+- fix(kb): give stacked sec-head eyebrows clearance above the title
+
+---
+
+
 ## v1.607.5 (2026-06-24)
 
 ### Bug Fixes
