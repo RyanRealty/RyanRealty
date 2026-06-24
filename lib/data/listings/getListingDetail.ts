@@ -18,6 +18,7 @@ import { unstable_cache } from 'next/cache'
 import { z } from 'zod'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { cleanText, formatMlsMultiSelect } from './mls-multiselect'
 import type { ListingDetail, ListingStatus } from '@/lib/data/types/listing'
 
 const InputSchema = z.object({
@@ -213,49 +214,7 @@ function slug(s: string | null | undefined): string | null {
   return s.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
 }
 
-/**
- * Strip the MLS `'********'` privacy sentinel out of free-text fields. MLS
- * masks suppressed values with a run of asterisks; rendering that verbatim
- * leaks a placeholder into the UI. Returns null for any value that's empty
- * or starts with `***` so the renderer omits the field entirely.
- */
-function cleanText(s: string | null | undefined): string | null {
-  if (s == null) return null
-  const t = s.trim()
-  if (t.length === 0 || t.startsWith('***')) return null
-  return t
-}
-
-/**
- * Format an MLS multi-select field the RETS feed stores as a JSON object of
- * {Label: true} — e.g. architectural_style = '{"Craftsman": true, "Northwest": true}',
- * roof = '{"Composition": true, "Membrane": true}'. Returns the truthy labels
- * joined ("Craftsman, Northwest"), a plain string as-is, or null for the privacy
- * sentinel / empty / unparseable. Without this the raw '{"Northwest": true}' JSON
- * was rendering verbatim on the listing detail page (Matt report 2026-06-19).
- */
-function formatMlsMultiSelect(s: string | null | undefined): string | null {
-  const t = cleanText(s)
-  if (!t) return null
-  if (t.startsWith('{') || t.startsWith('[')) {
-    try {
-      const parsed = JSON.parse(t) as unknown
-      if (Array.isArray(parsed)) {
-        const labels = parsed.filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
-        return labels.length ? labels.join(', ') : null
-      }
-      if (parsed && typeof parsed === 'object') {
-        const obj = parsed as Record<string, unknown>
-        const labels = Object.keys(obj).filter((k) => obj[k] === true || obj[k] === 'true')
-        return labels.length ? labels.join(', ') : null
-      }
-      return null
-    } catch {
-      return null // an object/array-shaped string we cannot parse must not render raw
-    }
-  }
-  return t
-}
+// cleanText + formatMlsMultiSelect now live in ./mls-multiselect (pure + tested).
 
 /**
  * Guard a numeric field against the MLS `'********'` sentinel. Our schema
@@ -353,7 +312,7 @@ function rowToDetail(row: ListingRow): ListingDetail {
     estimatedMonthlyPiti: row.estimated_monthly_piti,
     // Structure / interior
     storiesTotal: cleanNumber(row.stories_total),
-    levels: cleanText(row.levels),
+    levels: formatMlsMultiSelect(row.levels),
     roomsTotal: cleanNumber(row.rooms_total),
     basementYn: row.basement_yn,
     buildingAreaTotal: cleanNumber(row.building_area_total),
@@ -369,15 +328,15 @@ function rowToDetail(row: ListingRow): ListingDetail {
     viewDescription: formatMlsMultiSelect(row.view_description),
     roof: formatMlsMultiSelect(row.roof),
     constructionMaterials: formatMlsMultiSelect(row.construction_materials),
-    foundationDetails: cleanText(row.foundation_details),
+    foundationDetails: formatMlsMultiSelect(row.foundation_details),
     propertyAttachedYn: row.property_attached_yn,
     // Parking
     parkingTotal: cleanNumber(row.parking_total),
     carportSpaces: cleanNumber(row.carport_spaces),
     garageYn: row.garage_yn,
     // Utilities
-    sewer: cleanText(row.sewer),
-    water: cleanText(row.water),
+    sewer: formatMlsMultiSelect(row.sewer),
+    water: formatMlsMultiSelect(row.water),
     // Financial / tax
     county: cleanText(row.county),
     taxYear: cleanNumber(row.tax_year),
