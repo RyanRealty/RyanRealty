@@ -23,10 +23,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ sid
     return NextResponse.json({ error: 'bad recording sid' }, { status: 400 })
   }
 
-  // Ownership scope: a per-broker role only listens to recordings on contacts
-  // they own. Superusers + Matt (principal supervision) see everything.
-  const seesAll = access.role === 'superuser' || access.brokerSlug === 'matt'
-  if (!seesAll && access.brokerSlug) {
+  // Ownership scope: superusers (incl. the principal) see everything. Any other
+  // role only listens to recordings on contacts they own — and a non-superuser
+  // with NO broker identity (e.g. report_viewer) is denied outright, never
+  // granted blanket access. (Fail closed: null slug = deny, not allow.)
+  if (access.role !== 'superuser') {
+    if (!access.brokerSlug) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     const ownerBroker = await getRecordingOwnerBroker(recordingSid)
     if (!ownerBroker || ownerBroker !== access.brokerSlug) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

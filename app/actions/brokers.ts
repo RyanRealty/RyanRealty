@@ -50,7 +50,26 @@ export type BrokerRow = {
 }
 
 const BROKER_SELECT =
-  'id, slug, display_name, title, license_number, bio, photo_url, email, phone, google_review_url, zillow_review_url, sort_order, is_active, created_at, updated_at, tagline, specialties, designations, years_experience, social_instagram, social_facebook, social_linkedin, social_youtube, social_tiktok, social_x, mls_id, zillow_id, realtor_id, yelp_id, google_business_id, intro_video_url, saved_headshot_urls'
+  'id, slug, display_name, title, license_number, bio, photo_url, email, phone, twilio_number, google_review_url, zillow_review_url, sort_order, is_active, created_at, updated_at, tagline, specialties, designations, years_experience, social_instagram, social_facebook, social_linkedin, social_youtube, social_tiktok, social_x, mls_id, zillow_id, realtor_id, yelp_id, google_business_id, intro_video_url, saved_headshot_urls'
+
+/**
+ * Public display phone = the broker's Twilio business line (brokers.twilio_number),
+ * falling back to the legacy phone column, in brand-voice dotted format. Inbound
+ * to the Twilio line is recorded, logged to the CRM timeline, and forwarded to
+ * the broker's private cell. forward_to_cell is never selected here. This is the
+ * source the public /team pages render (via getAgentBySlug). (Twilio cutover
+ * 2026-06-24.)
+ */
+function withPublicPhone(broker: BrokerRow | null): BrokerRow | null {
+  if (!broker) return broker
+  const raw = (broker as { twilio_number?: string | null }).twilio_number ?? broker.phone
+  if (raw) {
+    const digits = String(raw).replace(/\D/g, '')
+    const ten = digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits
+    if (ten.length === 10) broker.phone = `${ten.slice(0, 3)}.${ten.slice(3, 6)}.${ten.slice(6)}`
+  }
+  return broker
+}
 
 async function _getActiveBrokersUncached(): Promise<BrokerRow[]> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -63,12 +82,14 @@ async function _getActiveBrokersUncached(): Promise<BrokerRow[]> {
     .eq('is_active', true)
     .order('sort_order', { ascending: true })
     .order('display_name', { ascending: true })
-  return (data ?? []) as BrokerRow[]
+  return ((data ?? []) as BrokerRow[]).map((b) => withPublicPhone(b) as BrokerRow)
 }
 
 const _getActiveBrokersCached = unstable_cache(
   _getActiveBrokersUncached,
-  ['active-brokers-v1'],
+  // v2: cache-key bump on the Twilio-cutover phone change (public phone is now
+  // twilio_number) so the deploy orphans stale pre-migration cached rows.
+  ['active-brokers-v2'],
   { revalidate: 900, tags: ['brokers'] }
 )
 
@@ -132,14 +153,9 @@ export async function getBrokerBySlug(slug: string): Promise<BrokerRow | null> {
   if (broker && !broker.license_number?.trim() && CONFIRMED_LICENSES[broker.slug]) {
     broker.license_number = CONFIRMED_LICENSES[broker.slug]!
   }
-  // Normalize the stored phone to the brand-voice dotted format (541.703.3095)
-  // so the detail page never renders a parenthesized "(541) 703-3095".
-  if (broker?.phone) {
-    const digits = broker.phone.replace(/\D/g, '')
-    const ten = digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits
-    if (ten.length === 10) broker.phone = `${ten.slice(0, 3)}.${ten.slice(3, 6)}.${ten.slice(6)}`
-  }
-  return broker
+  // Public display phone = the broker's Twilio business line (twilio_number),
+  // dotted, falling back to the legacy phone column. (Twilio cutover 2026-06-24.)
+  return withPublicPhone(broker)
 }
 
 /** All brokers for admin (including inactive). */

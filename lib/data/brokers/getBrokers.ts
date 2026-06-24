@@ -135,8 +135,10 @@ const CONFIRMED_LICENSES: Record<string, string> = {
   'rebecca-peterson': '201254727',
 }
 
+// NOTE: forward_to_cell is the broker's PRIVATE cell — never selected here so it
+// can never serialize to a client. Only twilio_number (the public line) is read.
 const BROKER_FULL_SELECT =
-  'id, slug, display_name, title, license_number, bio, photo_url, email, phone, twilio_number, forward_to_cell, google_review_url, zillow_review_url, sort_order, is_active, created_at, updated_at, tagline, specialties, designations, years_experience, social_instagram, social_facebook, social_linkedin, social_youtube, social_tiktok, social_x, mls_id, zillow_id, realtor_id, yelp_id, google_business_id, intro_video_url, saved_headshot_urls'
+  'id, slug, display_name, title, license_number, bio, photo_url, email, phone, twilio_number, google_review_url, zillow_review_url, sort_order, is_active, created_at, updated_at, tagline, specialties, designations, years_experience, social_instagram, social_facebook, social_linkedin, social_youtube, social_tiktok, social_x, mls_id, zillow_id, realtor_id, yelp_id, google_business_id, intro_video_url, saved_headshot_urls'
 
 /**
  * getBrokerBySlug — full broker row for the /team/[slug] detail page.

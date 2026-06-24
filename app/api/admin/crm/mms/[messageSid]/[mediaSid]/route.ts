@@ -23,8 +23,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ mes
     return NextResponse.json({ error: 'bad sid' }, { status: 400 })
   }
 
-  const seesAll = access.role === 'superuser' || access.brokerSlug === 'matt'
-  if (!seesAll && access.brokerSlug) {
+  // Fail closed: superusers see all; any other role only its own contacts; a
+  // non-superuser with no broker identity (report_viewer) is denied outright.
+  if (access.role !== 'superuser') {
+    if (!access.brokerSlug) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     const owner = await getMmsOwnerBroker(messageSid)
     if (!owner || owner !== access.brokerSlug) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }

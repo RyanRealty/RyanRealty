@@ -62,6 +62,14 @@ export async function POST(request: Request) {
     .limit(2)
   const row = rows?.find((r) => r.kind === 'voicemail') ?? rows?.[0]
 
+  // Idempotency: Twilio can redeliver the recording callback. If we already
+  // attached a recording to this row, stop — no re-fetch, no re-transcribe
+  // (ElevenLabs spend), no duplicate broker email, and no risk of a failed
+  // retry nulling the saved transcript.
+  if (row && (row.payload as Record<string, unknown> | null)?.recordingSid) {
+    return NextResponse.json({ ok: true, alreadyProcessed: true })
+  }
+
   // fetch audio (mp3) with account auth
   const sid = process.env.TWILIO_ACCOUNT_SID?.trim()
   const token = process.env.TWILIO_AUTH_TOKEN?.trim()
@@ -75,15 +83,17 @@ export async function POST(request: Request) {
   }
 
   if (row) {
-    await sb.from('crm_timeline').update({
-      body: transcript ?? null,
+    // Never null an existing body — only write the transcript when we have one.
+    const update: Record<string, unknown> = {
       payload: {
         ...(row.payload as Record<string, unknown>),
         recordingSid,
         recordingDurationSec: duration,
         transcribed: !!transcript,
       },
-    }).eq('id', row.id)
+    }
+    if (transcript) update.body = transcript
+    await sb.from('crm_timeline').update(update).eq('id', row.id)
 
     // alert the broker with the transcript
     const mailbox = CRM_MAILBOXES.find((m) => m.slug === row.broker) ?? CRM_MAILBOXES[0]
