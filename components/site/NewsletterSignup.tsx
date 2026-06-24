@@ -74,7 +74,7 @@ export function NewsletterSignup({ source = 'site-footer' }: { source?: string }
           </Body>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-2 rounded-xl bg-card p-3 sm:flex-row sm:items-center">
+        <form onSubmit={handleSubmit} className="kb-tool-skin mt-4 flex flex-col gap-2 rounded-xl bg-card p-3 sm:flex-row sm:items-center">
           <div className="flex-1">
             <Label htmlFor="newsletter-email" className="sr-only">
               Email address

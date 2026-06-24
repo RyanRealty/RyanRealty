@@ -108,7 +108,7 @@ export default function LeadLandingForm({
             </p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="kb-tool-skin space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="lead-name">Name</Label>
