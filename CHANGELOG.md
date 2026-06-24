@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.613.4 (2026-06-24)
+
+### Maintenance
+- docs(twilio-cutover): Wave 7-9 progress + live-verification results
+
+---
+
+
 ## v1.613.3 (2026-06-24)
 
 ### Maintenance
