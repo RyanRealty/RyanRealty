@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.615.0 (2026-06-24)
+
+### Features
+- feat(cutover): native is live; Follow Up Boss API traffic killed at the seam
+- feat(cutover): remove the Follow Up Boss tracking pixel
+
+---
+
+
 ## v1.614.2 (2026-06-24)
 
 ### Bug Fixes
