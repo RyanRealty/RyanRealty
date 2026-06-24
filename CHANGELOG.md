@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.606.2 (2026-06-24)
+
+### Maintenance
+- test(tc): lock the OAR 863-015-0140 banking-day deadline math (H4)
+
+---
+
+
 ## v1.606.1 (2026-06-24)
 
 ### Maintenance
