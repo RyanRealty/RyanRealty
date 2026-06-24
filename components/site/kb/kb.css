@@ -1416,7 +1416,7 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .kb-tool-skin [data-slot="card-title"]{color:var(--navy);}
 .kb-root .kb-tool-skin [data-slot="input"],
 .kb-root .kb-tool-skin [data-slot="textarea"],
-.kb-root .kb-tool-skin [data-slot="select-trigger"]{border:1.5px solid rgba(16,39,66,.30);border-radius:4px;background:var(--cream);color:var(--navy);font-variant-numeric:tabular-nums;}
+.kb-root .kb-tool-skin [data-slot="select-trigger"]{border:2px solid var(--navy);border-radius:0;background:var(--cream);color:var(--navy);font-variant-numeric:tabular-nums;}
 .kb-root .kb-tool-skin [data-slot="input"]:focus-visible,
 .kb-root .kb-tool-skin [data-slot="textarea"]:focus-visible,
 .kb-root .kb-tool-skin [data-slot="select-trigger"]:focus-visible{border-color:var(--navy);outline:2px solid rgba(16,39,66,.25);outline-offset:1px;}

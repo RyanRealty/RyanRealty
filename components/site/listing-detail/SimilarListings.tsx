@@ -1,7 +1,7 @@
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
 import { Grid } from '@/components/site/primitives'
 import type { ListingTile } from '@/lib/data/types/listing'
-import { listingTileHref } from '@/lib/slug'
+import { listingTileHref, displaySubdivision } from '@/lib/slug'
 import { cn } from '@/lib/utils'
 
 /**
@@ -20,7 +20,7 @@ function tileToCard(tile: ListingTile): ListingCardData {
   const street = [tile.streetNumber, tile.streetName].filter(Boolean).join(' ').trim()
   const cityParts: string[] = []
   if (tile.city) cityParts.push(tile.city)
-  const cityLine = [cityParts.join(', '), tile.postalCode, tile.subdivisionName]
+  const cityLine = [cityParts.join(', '), tile.postalCode, displaySubdivision(tile.subdivisionName)]
     .filter(Boolean)
     .join(' · ')
   return {

@@ -1,6 +1,6 @@
 import type { ListingBadge, ListingCardData } from '@/components/site/ListingCard'
 import type { ListingTile, MotivatedListing } from '@/lib/data'
-import { listingTileHref } from '@/lib/slug'
+import { listingTileHref, displaySubdivision } from '@/lib/slug'
 
 /**
  * Canonical mappers to the ONE listing card shape (ListingCardData → ListingCard).
@@ -16,7 +16,8 @@ export function motivatedToCardData(l: MotivatedListing): ListingCardData | null
   const cityParts: string[] = []
   if (l.city) cityParts.push(`${l.city}, OR`)
   if (l.postalCode) cityParts.push(l.postalCode)
-  if (l.subdivisionName) cityParts.push(l.subdivisionName)
+  const lSubdivision = displaySubdivision(l.subdivisionName)
+  if (lSubdivision) cityParts.push(lSubdivision)
   const reason = l.reasons[0]
   return {
     listingKey: key,
@@ -45,7 +46,8 @@ export function tileToCardData(
   const cityParts: string[] = []
   if (t.city) cityParts.push(`${t.city}, OR`)
   if (t.postalCode) cityParts.push(t.postalCode)
-  if (t.subdivisionName) cityParts.push(t.subdivisionName)
+  const tSubdivision = displaySubdivision(t.subdivisionName)
+  if (tSubdivision) cityParts.push(tSubdivision)
   return {
     listingKey: key,
     href: listingTileHref({

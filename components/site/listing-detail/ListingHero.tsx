@@ -427,7 +427,10 @@ function PhotoStrip({
             alt={p.caption ?? `${altBase} ${i + 1} of ${total}`}
             fill
             sizes="(min-width: 1200px) 16vw, (min-width: 760px) 20vw, 33vw"
-            loading={i === 0 ? 'eager' : 'lazy'}
+            // The strip sits at the fold directly under the hero — lazy-loading
+            // left the cells as solid navy voids on first paint. Load all visible
+            // thumbnails eagerly so the strip renders as photos, never a gap.
+            loading="eager"
             priority={i === 0 && !hasVideo}
             className="object-cover transition-transform duration-500 hover:scale-[1.03]"
             style={{ objectFit: 'cover' }}

@@ -206,9 +206,9 @@ function buildGroups(listing: Props['listing']): Group[] {
   // ── Financial ───────────────────────────────────────────────────────────────
   const financial: Spec[] = []
   if (num(listing.pricePerSqft))
-    financial.push({ label: 'Price / sq ft', value: <Price value={listing.pricePerSqft} /> })
+    financial.push({ label: 'Price / sq ft', value: <Price value={listing.pricePerSqft} exact /> })
   if (num(listing.closePricePerSqft))
-    financial.push({ label: 'Sold / sq ft', value: <Price value={listing.closePricePerSqft} /> })
+    financial.push({ label: 'Sold / sq ft', value: <Price value={listing.closePricePerSqft} exact /> })
   if (num(listing.saleToListRatio))
     financial.push({
       label: 'Sale to list',
@@ -256,6 +256,11 @@ function buildGroups(listing: Props['listing']): Group[] {
 }
 
 function SpecGrid({ specs }: { specs: Spec[] }) {
+  // The grid sits on a navy ground that shows through the 1px gaps as cell
+  // borders. An odd-count group would leave the trailing 2nd column empty —
+  // the navy ground would then read as a solid void. Span the last cell across
+  // both columns so every track is a cream cell.
+  const lastIsOrphan = specs.length % 2 === 1
   return (
     <dl
       style={{
@@ -266,7 +271,7 @@ function SpecGrid({ specs }: { specs: Spec[] }) {
         border: '1px solid #102742',
       }}
     >
-      {specs.map((spec) => (
+      {specs.map((spec, i) => (
         <div
           key={spec.label}
           style={{
@@ -275,6 +280,7 @@ function SpecGrid({ specs }: { specs: Spec[] }) {
             display: 'flex',
             flexDirection: 'column',
             gap: 4,
+            ...(lastIsOrphan && i === specs.length - 1 ? { gridColumn: '1 / -1' } : null),
           }}
         >
           <dt

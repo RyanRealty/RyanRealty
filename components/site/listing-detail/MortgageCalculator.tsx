@@ -38,6 +38,15 @@ function parseCurrency(raw: string): number {
   return Number.isFinite(n) ? n : 0
 }
 
+/** Comma-group the home-price field for display ("6999000" → "6,999,000")
+ *  while keeping the raw digits in state. Empty stays empty so the field can
+ *  be cleared. */
+function formatPriceForDisplay(raw: string): string {
+  const digits = raw.replace(/[^\d]/g, '')
+  if (!digits) return ''
+  return Number(digits).toLocaleString('en-US')
+}
+
 function parsePercent(raw: string): number {
   const n = parseFloat(raw.replace(/[^\d.]/g, ''))
   return Number.isFinite(n) ? n : 0
@@ -99,9 +108,9 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className }: Pr
             <input
               id="mc-price"
               type="text"
-              inputMode="decimal"
-              value={priceInput}
-              onChange={(e) => setPriceInput(e.target.value)}
+              inputMode="numeric"
+              value={formatPriceForDisplay(priceInput)}
+              onChange={(e) => setPriceInput(e.target.value.replace(/[^\d]/g, ''))}
               style={KB_INPUT_STYLE}
             />
           </KbField>
@@ -150,9 +159,9 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className }: Pr
             gap: 10,
           }}
         >
-          <KpiRow label="Principal + interest" value={<Price value={Math.round(result.pi)} />} />
-          <KpiRow label="Property taxes" value={<Price value={Math.round(result.taxesMonthly)} />} />
-          <KpiRow label="Homeowners insurance" value={<Price value={Math.round(result.insuranceMonthly)} />} />
+          <KpiRow label="Principal + interest" value={<Price value={Math.round(result.pi)} exact />} />
+          <KpiRow label="Property taxes" value={<Price value={Math.round(result.taxesMonthly)} exact />} />
+          <KpiRow label="Homeowners insurance" value={<Price value={Math.round(result.insuranceMonthly)} exact />} />
           <div
             style={{
               borderTop: '1px solid rgba(250,248,244,0.28)',
@@ -184,7 +193,7 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className }: Pr
                 overflow: 'visible',
               }}
             >
-              <Price value={Math.round(result.piti)} />
+              <Price value={Math.round(result.piti)} exact />
             </span>
           </div>
           <p

@@ -168,7 +168,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 // city-level geographic relationships; a city without a verified line returns
 // null so the lifestyle line simply does not render rather than show a wrong one.
 const CITY_LIFESTYLE_LINE: Record<string, string> = {
-  bend: 'On the Deschutes River in Bend, near downtown and the route to Mt. Bachelor.',
+  bend: 'In Bend, the largest city in Central Oregon, between the high desert and the Cascades.',
   redmond: 'In Redmond, at the center of the Central Oregon High Desert.',
   sisters: 'In Sisters, at the foot of the Three Sisters.',
   sunriver: 'In Sunriver, a Deschutes River resort community south of Bend.',

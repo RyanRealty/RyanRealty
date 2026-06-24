@@ -31,8 +31,25 @@ export type ListingCardData = {
   tourUrl?: string | null
 }
 
-function formatInt(n: number | null): string {
-  return n == null ? '—' : Math.round(n).toLocaleString()
+/** beds · baths · sqft, rendering only the values the listing actually has —
+ *  no "— bd · — ba · — sqft" placeholder rows for land / estate parcels whose
+ *  MLS record carries no living-area stats. Renders nothing when all are null. */
+function MetaRow({ beds, baths, sqft }: { beds: number | null; baths: number | null; sqft: number | null }) {
+  const parts: string[] = []
+  if (beds != null) parts.push(`${Math.round(beds).toLocaleString()} bd`)
+  if (baths != null) parts.push(`${Math.round(baths).toLocaleString()} ba`)
+  if (sqft != null) parts.push(`${Math.round(sqft).toLocaleString()} sqft`)
+  if (parts.length === 0) return null
+  return (
+    <div className="mt-2.5 text-xs text-muted-foreground tabular-nums flex flex-wrap gap-1.5 items-center">
+      {parts.map((p, i) => (
+        <span key={p} className="flex items-center gap-1.5">
+          {i > 0 ? <span aria-hidden>·</span> : null}
+          <span>{p}</span>
+        </span>
+      ))}
+    </div>
+  )
 }
 
 const BADGE_CLASS: Record<ListingBadge, string> = {
@@ -94,13 +111,7 @@ export default function ListingCard({ listing }: { listing: ListingCardData }) {
         </div>
         <div className="text-[13px] text-foreground mt-0.5">{listing.addressLine}</div>
         <div className="text-xs text-muted-foreground mt-px">{listing.cityLine}</div>
-        <div className="mt-2.5 text-xs text-muted-foreground tabular-nums flex flex-wrap gap-1.5 items-center">
-          <span>{formatInt(listing.beds)} bd</span>
-          <span aria-hidden>·</span>
-          <span>{formatInt(listing.baths)} ba</span>
-          <span aria-hidden>·</span>
-          <span>{formatInt(listing.sqft)} sqft</span>
-        </div>
+        <MetaRow beds={listing.beds} baths={listing.baths} sqft={listing.sqft} />
       </div>
     </Link>
   )

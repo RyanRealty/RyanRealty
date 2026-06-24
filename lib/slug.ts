@@ -20,6 +20,24 @@ export function getSubdivisionDisplayName(name: string | null | undefined): stri
   return (name ?? '').trim()
 }
 
+/**
+ * Sentinel subdivision values the MLS uses to mean "no subdivision" — they must
+ * never render as if they were a real community name (e.g. "Bend, OR 97703 ·
+ * N/A"). Covers the literal "N/A" string, "None"/"Unknown" placeholders, and the
+ * `***`-masked private-field convention.
+ *
+ * Single source of truth — used by the price strip address line, similar-listing
+ * card city lines, and the JSON-LD builder so every surface agrees.
+ */
+export function displaySubdivision(name: string | null | undefined): string | null {
+  const raw = (name ?? '').trim()
+  if (!raw) return null
+  if (raw.startsWith('***')) return null
+  const n = raw.toLowerCase()
+  if (n === 'n/a' || n === 'na' || n === 'none' || n === 'unknown' || n === 'n/a.') return null
+  return raw
+}
+
 /** Entity key for a city (e.g. "Bend" -> "bend"). */
 export function cityEntityKey(city: string): string {
   return slugify(city)

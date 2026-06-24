@@ -8,6 +8,7 @@ import {
   TabularNumber,
 } from '@/components/site/primitives'
 import { cn } from '@/lib/utils'
+import { displaySubdivision } from '@/lib/slug'
 import type { ListingDetail } from '@/lib/data/types/listing'
 
 /**
@@ -100,12 +101,10 @@ export function PriceCtaStrip({
   const cityLine = [listing.city ? `${listing.city}, OR` : null, listing.postalCode]
     .filter(Boolean)
     .join(' ')
-  // MLS feeds mask private fields with `********`; treat that as
-  // "no subdivision" rather than rendering asterisks in the address.
-  const cleanSubdivision =
-    listing.subdivisionName && !listing.subdivisionName.startsWith('***')
-      ? listing.subdivisionName
-      : null
+  // MLS feeds mask private fields with `********` and stamp absent ones as
+  // "N/A"; displaySubdivision() collapses every such sentinel to null so the
+  // address never renders "Bend, OR 97703 · N/A".
+  const cleanSubdivision = displaySubdivision(listing.subdivisionName)
   const cityWithCommunity = cleanSubdivision
     ? [cityLine, cleanSubdivision].filter(Boolean).join(' · ')
     : cityLine
@@ -220,7 +219,7 @@ export function PriceCtaStrip({
         ) : null}
         {listing.pricePerSqft != null ? (
           <Pill kind="psqft">
-            <Price value={Math.round(listing.pricePerSqft)} compact />/sqft
+            <Price value={listing.pricePerSqft} exact />/sqft
           </Pill>
         ) : null}
       </div>
