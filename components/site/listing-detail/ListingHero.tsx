@@ -155,7 +155,7 @@ export function ListingHero({ photos, videos, addressLine, price, beds, baths, s
           style={{
             position: 'absolute',
             inset: 0,
-            background: 'linear-gradient(180deg,rgba(16,39,66,.58) 0%,rgba(16,39,66,.20) 16%,rgba(16,39,66,.10) 38%,rgba(16,39,66,.62) 72%,rgba(16,39,66,.92) 100%)',
+            background: 'linear-gradient(180deg,rgba(16,39,66,.30) 0%,rgba(16,39,66,.08) 18%,rgba(16,39,66,.02) 42%,rgba(16,39,66,.58) 74%,rgba(16,39,66,.92) 100%)',
             zIndex: 2,
             pointerEvents: 'none',
           }}
