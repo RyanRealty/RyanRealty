@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.614.1 (2026-06-24)
+
+### Bug Fixes
+- fix(listing): bigger broker photo, photo-left/contact-right, generic review
+
+---
+
+
 ## v1.614.0 (2026-06-24)
 
 ### Features
