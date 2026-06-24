@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.607.2 (2026-06-24)
+
+### Bug Fixes
+- fix(listing): parse the remaining MLS multi-select fields (levels/foundation/sewer/water)
+
+---
+
+
 ## v1.607.1 (2026-06-24)
 
 ### Maintenance
