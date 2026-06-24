@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.613.0 (2026-06-24)
+
+### Features
+- feat(crm): call-recording-consent gate + twilio-unreachable health alarm
+
+---
+
+
 ## v1.612.0 (2026-06-24)
 
 ### Features
