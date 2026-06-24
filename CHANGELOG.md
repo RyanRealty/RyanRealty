@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.606.4 (2026-06-24)
+
+### Maintenance
+- refactor(tc): extract + test the commission net-split math (H4 complete)
+
+---
+
+
 ## v1.606.3 (2026-06-24)
 
 ### Maintenance
