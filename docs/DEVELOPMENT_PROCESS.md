@@ -97,6 +97,7 @@ Everything in `docs/plans/` is registered here. A new file in that directory wit
 | `PAGE_REVIEW_REDESIGN_RUNBOOK.md` | **live** — render-don't-read page-review + redesign runbook (six-phase per-page loop, brutalist QA rubric, market-chart honesty spec, per-page competitor bars). Active page-class backlog. |
 | `PAID_ADS_PLAN.md`, `ADS_CREATIVE_DIRECTION.md`, `ADS_BRIEFS.md`, `ADS_BUYER_SCRIPT.md`, `ADS_FOOTAGE_PLAN.md`, `ADS_PRO_EXAMPLES.md`, `ADS_GO_LIVE.md` | **live** — paid-ads program (one premium buyer ad): Meta plan, creative North Star, copy-ready briefs, buyer script v3 ("A Tuesday", broker-free), footage sourcing + the two costed gap clips, pro swipe file, and the go-live runbook. |
 | `TC_ARCHITECTURE_REVIEW.md` | **live** — senior-engineer deep dive on the Vault transaction-coordination (`tc_*`) system: architecture overview, ranked problem areas (C1-C4 critical), phased refactor strategy, target architecture + code. The build-out backlog. |
+| `TC_BUILDOUT_HANDOFF.md` | **paused 2026-06-24** — resume point for the TC build-out: what's done (C4 + §5.1 FSM + H4 tests + H5 schema), the 3 Matt-gated migrations, the next code-only increments, and Phase 1+. Read to pick up cold. |
 | `RENTAL_CALCULATOR_BUILD_PROMPT.md` | executed (record) |
 | `SKYSLOPE_COMPLIANCE_HANDOFF_2026-05-28.md` | ops record (not site process) |
 | `CROSS_AGENT_HANDOFF.md`, `SESSION_HANDOFF_2026-06-01.md`, `SESSION_HANDOFF_2026-06-01_PARTB.md`, `task-handoff-template.md` | session-continuity records |
