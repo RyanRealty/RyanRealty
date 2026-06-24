@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.605.3 (2026-06-24)
+
+### Bug Fixes
+- fix(community-stats): 12-month cache fallback in the market HUD (no more dashes)
+
+---
+
+
 ## v1.605.2 (2026-06-24)
 
 ### Bug Fixes
