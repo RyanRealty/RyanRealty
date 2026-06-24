@@ -257,7 +257,12 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const [nearbyTilesRaw, history, photos, videos, brokers, listingAgent, marketPulse, marketStats, openHouses] =
     await Promise.all([
       withTimeoutFallback(
-        getListingTiles({ ...nearbyScope, status: 'active', propertyType: 'A', limit: 13 }),
+        // sort price-desc (same as the homepage featured rail): the top-priced
+        // active homes in the area are the ones carrying cinematic autoplay video
+        // tours, so resolveFeaturedItems can surface them video-first and the cards
+        // autoplay in-view. Default 'newest' buried them and the rail showed only
+        // photos / "Tour" badges.
+        getListingTiles({ ...nearbyScope, status: 'active', propertyType: 'A', sort: 'price-desc', limit: 14 }),
         [],
         3000,
         'listing:nearby',

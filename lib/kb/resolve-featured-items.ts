@@ -1,6 +1,6 @@
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
-import { listingDetailPath } from '@/lib/slug'
+import { listingDetailPath, displaySubdivision } from '@/lib/slug'
 import type { KbFeaturedItem } from '@/components/site/kb/types'
 import type { ListingTile } from '@/lib/data'
 
@@ -44,7 +44,7 @@ export async function resolveFeaturedItems(tiles: ListingTile[], limit = 6): Pro
     .map(({ t, m }) => ({
       price: t.listPrice,
       address: [t.streetNumber, t.streetName].filter(Boolean).join(' '),
-      sub: t.subdivisionName ?? '',
+      sub: displaySubdivision(t.subdivisionName) ?? '',
       city: t.city ?? '',
       beds: t.beds,
       baths: t.baths,
