@@ -2,7 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { recordNewsletterEvent } from '@/lib/data'
 import { getPersonIdsByEmail } from '@/lib/data/crm/getPersonIdsByEmail'
 import { addSuppression } from '@/lib/crm/suppressions'
-import { verifySvixSignature, isFreshTimestamp, classifyResendEvent } from '@/lib/crm/resend-webhook'
+import { createServiceClient } from '@/lib/supabase/service'
+import { verifySvixSignature, isFreshTimestamp, classifyResendEvent, type ResendEventType } from '@/lib/crm/resend-webhook'
+
+/** Resend event type -> crm_timeline kind. The lead page renders these on the
+ *  conversation + engagement panel; without them email opens/clicks/bounces were
+ *  invisible to the broker. */
+const TIMELINE_KIND: Record<ResendEventType, string> = {
+  delivered: 'email_delivered',
+  opened: 'email_open',
+  clicked: 'email_click',
+  bounced: 'email_bounce',
+  complained: 'email_complaint',
+}
+const TIMELINE_TITLE: Record<ResendEventType, string> = {
+  delivered: 'Email delivered',
+  opened: 'Email opened',
+  clicked: 'Email link clicked',
+  bounced: 'Email bounced',
+  complained: 'Spam complaint',
+}
 
 /**
  * Resend webhook: delivered, opened, clicked, bounced, complained, unsubscribed.
@@ -55,6 +74,36 @@ export async function POST(request: NextRequest) {
       url: event.clickUrl,
       isoTs: event.isoTs,
     })
+  }
+
+  // Mirror the event onto each matched contact's conversation timeline so the
+  // broker sees email engagement (opened/clicked/bounced/complained). Deduped
+  // per (emailId, type, person[, url]) so an email shows "opened" once, not 50×.
+  // The subject is stamped as payload.label so the lead page attributes the
+  // open/click to the right sent email.
+  if (event.type && emailId) {
+    const kind = TIMELINE_KIND[event.type]
+    const subject = typeof (payload.data as { subject?: unknown } | undefined)?.subject === 'string'
+      ? (payload.data as { subject?: string }).subject ?? null
+      : null
+    const sb = createServiceClient()
+    for (const email of event.recipients) {
+      const personIds = await getPersonIdsByEmail(email)
+      for (const personId of personIds) {
+        const urlKey = event.clickUrl ? `:${event.clickUrl.slice(0, 80)}` : ''
+        await sb.from('crm_timeline').upsert(
+          {
+            person_id: personId,
+            kind,
+            title: TIMELINE_TITLE[event.type],
+            source: 'resend',
+            payload: { emailId, email, label: subject, url: event.clickUrl ?? null },
+            dedupe_key: `resend:${emailId}:${event.type}${urlKey}:p${personId}`,
+          },
+          { onConflict: 'dedupe_key', ignoreDuplicates: true },
+        )
+      }
+    }
   }
 
   // CRM suppression on hard bounce / complaint.
