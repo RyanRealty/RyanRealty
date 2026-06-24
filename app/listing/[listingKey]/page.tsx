@@ -308,8 +308,10 @@ export default async function ListingDetailPage({ params }: PageProps) {
       // like every other arm so a slow pooler can't hang the #1 ad surface.
       withTimeoutFallback(getListingDetailOpenHouses(listingKey), [], 3000, 'listing:open-houses'),
       // Brokerage Google reviews — the lg-only social-proof block on the sticky
-      // broker card. Empty summary on a blip → the block just doesn't render.
-      withTimeoutFallback(getReviews(8), null, 3000, 'listing:reviews'),
+      // broker card. Fetch a wide pool (count + average stay brokerage-wide
+      // regardless) so the broker-name filter below can still find a generic,
+      // broker-agnostic quote. Empty summary on a blip → the block just doesn't render.
+      withTimeoutFallback(getReviews(50), null, 3000, 'listing:reviews'),
     ])
 
   const listingWithPhotos = { ...listing, photos }
@@ -339,6 +341,27 @@ export default async function ListingDetailPage({ params }: PageProps) {
     brokers[0] ??
     null
   const ctaBroker = listingAgent ?? matt
+
+  // The sticky card shows ONE broker who may not be the person a given review
+  // names, so the social-proof quote must be broker-agnostic. Drop any review
+  // that names a broker (first/last name), keeping the brokerage count + average
+  // intact. "ryan" is excluded from the tokens — it's the brokerage name, not a
+  // person — and "matt" is added for the Matthew short form.
+  const brokerNameTokens = new Set<string>(['matt'])
+  for (const b of brokers) {
+    for (const part of b.fullName.split(/\s+/)) {
+      const t = part.toLowerCase().replace(/[^a-z]/g, '')
+      if (t.length >= 4 && t !== 'ryan') brokerNameTokens.add(t)
+    }
+  }
+  const genericReviews = reviews
+    ? {
+        ...reviews,
+        reviews: reviews.reviews.filter(
+          (r) => ![...brokerNameTokens].some((tok) => new RegExp(`\\b${tok}\\b`).test(r.text.toLowerCase())),
+        ),
+      }
+    : reviews
 
   const street = [listing.streetNumber, listing.streetName].filter(Boolean).join(' ').trim()
   const cityHref = listing.citySlug ? `/cities/${listing.citySlug}` : null
@@ -438,7 +461,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       defaultBroker={ctaBroker}
       brokers={brokers}
       listingKey={listingKey}
-      reviews={reviews}
+      reviews={genericReviews}
       lockToDefault={listingAgent != null}
     />
   ) : null

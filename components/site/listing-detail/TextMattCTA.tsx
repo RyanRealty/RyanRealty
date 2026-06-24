@@ -53,7 +53,6 @@ export function TextMattCTA({
   const tourHref = primaryCta?.href ?? `/contact?listingKey=${encodeURIComponent(listingKey)}`
   const tourLabel = primaryCta?.label ?? 'Schedule a tour'
   const phone = broker.phoneDirect ?? broker.phoneFub ?? null
-  const firstName = broker.fullName.split(/\s+/)[0]
 
   const quote = reviews?.reviews?.[0] ?? null
   const showProof = !!reviews && reviews.count > 0 && reviews.averageRating > 0
@@ -74,39 +73,35 @@ export function TextMattCTA({
           {body ?? 'Tour requests usually get a same-day reply. No pressure, no obligation.'}
         </Body>
 
-        {/* Broker identity */}
-        <div className="flex items-center gap-3 pt-1">
+        {/* Broker — large photo on the left, all contact on the right */}
+        <div className="flex gap-4 pt-1">
           <Image
             src={broker.headshotPng}
             alt={broker.fullName}
-            width={56}
-            height={56}
-            className="shrink-0"
-            style={{ width: 56, height: 56, objectFit: 'contain', objectPosition: 'top' }}
+            width={96}
+            height={120}
+            className="shrink-0 self-start"
+            style={{ width: 96, height: 120, objectFit: 'contain', objectPosition: 'top' }}
           />
-          <div className="min-w-0">
-            <div className="text-[15px] font-semibold leading-tight" style={{ color: 'var(--navy)' }}>
-              {broker.fullName}
+          <div className="min-w-0 flex flex-col gap-1.5">
+            <div>
+              <div className="text-[16px] font-semibold leading-tight" style={{ color: 'var(--navy)' }}>
+                {broker.fullName}
+              </div>
+              <div className="text-[12px] leading-snug" style={{ color: 'var(--navy-70)' }}>
+                {broker.title}
+                {broker.licenseNumber ? (
+                  <>
+                    {' '}
+                    <span className="tabular-nums">#{broker.licenseNumber}</span>
+                  </>
+                ) : null}
+              </div>
             </div>
-            <div className="text-[12px] leading-snug" style={{ color: 'rgba(16,39,66,0.66)' }}>
-              {broker.title}
-              {broker.licenseNumber ? (
-                <>
-                  {' '}
-                  <span className="tabular-nums">#{broker.licenseNumber}</span>
-                </>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        {/* Full contact — click-to-call + email */}
-        {phone || broker.email ? (
-          <div className="flex flex-col" style={{ borderTop: '1px solid rgba(16,39,66,0.14)', paddingTop: 12 }}>
             {phone ? (
               <a
                 href={`tel:${digits(phone)}`}
-                className="flex items-center gap-2.5 py-1.5 text-[15px] font-semibold tabular-nums"
+                className="flex items-center gap-2 text-[15px] font-semibold tabular-nums"
                 style={{ color: 'var(--navy)' }}
               >
                 <PhoneIcon />
@@ -116,15 +111,15 @@ export function TextMattCTA({
             {broker.email ? (
               <a
                 href={`mailto:${broker.email}`}
-                className="flex items-center gap-2.5 py-1.5 text-[13px] break-all"
-                style={{ color: 'rgba(16,39,66,0.78)' }}
+                className="flex items-center gap-2 text-[12.5px] break-all leading-snug"
+                style={{ color: 'var(--navy-70)' }}
               >
                 <MailIcon />
                 {broker.email}
               </a>
             ) : null}
           </div>
-        ) : null}
+        </div>
 
         {/* Actions */}
         <div className="flex flex-col gap-2.5 pt-1">
@@ -139,7 +134,7 @@ export function TextMattCTA({
             ) : null}
             {phone ? (
               <a href={`sms:${digits(phone)}`} className="btn" style={OUTLINE_BTN}>
-                Text {firstName}
+                Text
               </a>
             ) : null}
           </div>
