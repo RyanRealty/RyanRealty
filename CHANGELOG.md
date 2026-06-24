@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.614.0 (2026-06-24)
+
+### Features
+- feat(listing): sticky broker contact card with full info + reviews, mobile bar
+
+---
+
+
 ## v1.613.6 (2026-06-24)
 
 ### Maintenance
