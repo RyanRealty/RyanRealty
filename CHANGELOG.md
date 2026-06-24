@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.611.0 (2026-06-24)
+
+### Features
+- feat(crm/email): mirror Resend engagement events onto the lead conversation
+
+---
+
+
 ## v1.610.0 (2026-06-24)
 
 ### Features
