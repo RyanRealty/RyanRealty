@@ -94,6 +94,22 @@ export function KbMarketHud({
   const years = data.yearSeries ?? []
   const chartPoints = years.reduce((n, s) => n + s.points.length, 0)
 
+  // KPI tiles — include each ONLY when it has a live value, so a scope without a
+  // metric shows fewer tiles instead of a wall of em-dashes. For neighborhood/
+  // community scope (no market_pulse_live row) the 30-day Closed/Median-to-pending
+  // tiles fall back to the 12-month market_stats_cache figures, RELABELED honestly
+  // ("Sold · 12 mo", "Median on market · 12 mo") — a 12-month number is never
+  // shown under a 30-day label. (§0)
+  const kpis: { val: string; lbl: string }[] = []
+  if (data.active != null) kpis.push({ val: data.active.toLocaleString('en-US'), lbl: 'Active homes' })
+  if (data.closed30 != null) kpis.push({ val: data.closed30.toLocaleString('en-US'), lbl: 'Closed · 30 days' })
+  else if (data.sold12mo != null) kpis.push({ val: data.sold12mo.toLocaleString('en-US'), lbl: 'Sold · 12 mo' })
+  if (data.new30 != null) kpis.push({ val: data.new30.toLocaleString('en-US'), lbl: 'New · 30 days' })
+  if (data.saleToList != null) kpis.push({ val: `${data.saleToList.toFixed(1)}%`, lbl: 'Sale to list' })
+  if (data.daysToPending != null) kpis.push({ val: `${Math.round(data.daysToPending)} days`, lbl: 'Median to pending' })
+  else if (data.medianDom12mo != null) kpis.push({ val: `${Math.round(data.medianDom12mo)} days`, lbl: 'Median on market · 12 mo' })
+  if (data.monthsSupply != null) kpis.push({ val: `${data.monthsSupply.toFixed(1)} mo`, lbl: 'Months of supply' })
+
   return (
     <section className="section mkt" id="market-report" ref={root}>
       <div className="mkt-scan" />
@@ -140,14 +156,11 @@ export function KbMarketHud({
           ) : null}
         </div>
 
-        {/* Six-stat KPI grid */}
+        {/* KPI grid — only tiles with live values render (no em-dash wall) */}
         <div className="mkt-kpis">
-          <Kpi val={data.active != null ? data.active.toLocaleString('en-US') : null} lbl="Active homes" />
-          <Kpi val={data.closed30 != null ? data.closed30.toLocaleString('en-US') : null} lbl="Closed · 30 days" />
-          <Kpi val={data.new30 != null ? data.new30.toLocaleString('en-US') : null} lbl="New · 30 days" />
-          <Kpi val={data.saleToList != null ? `${data.saleToList.toFixed(1)}%` : null} lbl="Sale to list" />
-          <Kpi val={data.daysToPending != null ? `${Math.round(data.daysToPending)} days` : null} lbl="Median to pending" />
-          <Kpi val={data.monthsSupply != null ? `${data.monthsSupply.toFixed(1)} mo` : null} lbl="Months of supply" />
+          {kpis.map((k) => (
+            <Kpi key={k.lbl} val={k.val} lbl={k.lbl} />
+          ))}
         </div>
 
         {chartPoints >= 2 ? (

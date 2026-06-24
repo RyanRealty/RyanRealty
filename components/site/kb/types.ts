@@ -77,6 +77,13 @@ export interface KbMarketData {
   saleToList: number | null
   daysToPending: number | null
   monthsSupply: number | null
+  /** 12-month rolling fallbacks for NEIGHBORHOOD/community scope, where
+   *  market_pulse_live has no row so the 30-day fields above are null. These come
+   *  from market_stats_cache (rolling_365d) and are rendered with honest 12-month
+   *  labels (never as 30-day numbers). Null on city/region scope (the 30-day
+   *  fields carry those). (§0) */
+  sold12mo?: number | null
+  medianDom12mo?: number | null
   trend: { label: string; value: number }[]
   byTown: { name: string; median: number }[]
   countyMedian: number | null

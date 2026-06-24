@@ -569,6 +569,11 @@ export default async function CommunityDetailPage({ params }: Props) {
     saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
     daysToPending: pulse?.medianDaysToPending ?? null,
     monthsSupply: pulse?.monthsOfSupply ?? null,
+    // 12-month rolling fallbacks (market_stats_cache) for neighborhood scope,
+    // where market_pulse_live has no row so the 30-day fields are null. Rendered
+    // with honest 12-month labels by the HUD — never as 30-day figures. (§0)
+    sold12mo: stats?.soldCount ?? null,
+    medianDom12mo: stats?.medianDaysOnMarket ?? null,
     trend: chartPriceHist
       .slice(-13)
       .filter((p) => p.medianSalePrice != null)
