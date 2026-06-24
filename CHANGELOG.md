@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.616.1 (2026-06-24)
+
+### Maintenance
+- docs(cutover): record the FUB decommission (native live, FUB traffic dead)
+
+---
+
+
 ## v1.616.0 (2026-06-24)
 
 ### Features
