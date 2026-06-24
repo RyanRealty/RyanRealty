@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.607.5 (2026-06-24)
+
+### Bug Fixes
+- fix(kb): stop the KB reset from clobbering Tailwind spacing utilities
+
+---
+
+
 ## v1.607.4 (2026-06-24)
 
 ### Bug Fixes
