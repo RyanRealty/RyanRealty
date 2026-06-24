@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.613.1 (2026-06-24)
+
+### Bug Fixes
+- fix(listing): featured rail autoplays video in-view + drops N/A subdivision
+
+---
+
+
 ## v1.613.0 (2026-06-24)
 
 ### Features
