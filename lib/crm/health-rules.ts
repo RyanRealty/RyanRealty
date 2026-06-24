@@ -39,8 +39,6 @@ export interface HealthAlarm {
  * evaluator stays trivially testable.
  */
 export interface HealthSignals {
-  /** CRM_MIRROR_ENABLED kill switch — true when leads are mirroring into crm_*. */
-  mirrorEnabled: boolean
   /** True when "now" (Pacific) is inside business hours; the route computes this. */
   businessHours: boolean
   /** Hours since the most recent inbound sms_in/call timeline row; null = none ever seen in window. */
@@ -49,8 +47,6 @@ export interface HealthSignals {
   a2pStatus: 'VERIFIED' | 'IN_PROGRESS' | 'FAILED' | 'PENDING' | 'NONE' | null
   /** Outbound SMS send attempts in the trailing window (sms_out timeline rows). */
   smsSendAttempts24h: number
-  /** Minutes since the last CLEAN fub-delta run finished; null = no clean run on record. */
-  minutesSinceCleanDelta: number | null
   /** New crm_people leads created in the trailing 24h (across every source). */
   newLeads24h: number
   /** Twilio API reachability with the configured creds. false = creds present
@@ -61,28 +57,16 @@ export interface HealthSignals {
 
 /** Inbound webhook is "stale" after this many hours of business-hours silence. */
 export const INBOUND_STALE_HOURS = 6
-/** Delta sync is "stale" after this many minutes without a clean finish. */
-export const DELTA_STALE_MINUTES = 90
 
 /**
  * Evaluate every CRM health rule against a snapshot. Returns the alarms that are
  * currently firing — an empty list means every vital is healthy. Pure and total.
+ *
+ * (FUB mirror + delta-sync rules retired at the cutover 2026-06-24 — the in-house
+ * CRM is now the lead system of record; there is no FUB sync to monitor.)
  */
 export function evaluateHealthRules(signals: HealthSignals): { alarms: HealthAlarm[] } {
   const alarms: HealthAlarm[] = []
-
-  // Rule 1: the mirror kill switch.
-  // CRM_MIRROR_ENABLED=false silently stops every mirror-path crm_people write.
-  // A disabled mirror is never an acceptable steady state, so it is critical and
-  // has no grace window.
-  if (!signals.mirrorEnabled) {
-    alarms.push({
-      key: 'mirror-disabled',
-      severity: 'critical',
-      message:
-        'CRM mirror is disabled. FUB leads are not flowing into crm_*. Re-enable CRM_MIRROR_ENABLED to restore lead capture.',
-    })
-  }
 
   // Rule 2: inbound webhook stale (business hours only).
   // No inbound sms_in or call for a long stretch during business hours means the
@@ -124,34 +108,15 @@ export function evaluateHealthRules(signals: HealthSignals): { alarms: HealthAla
     })
   }
 
-  // Rule 4: delta sync stale.
-  // The fub-delta cron is the parallel-run safety net. A clean run that has not
-  // finished in well over its interval means delta sync silently stopped and the
-  // crm_* mirror is drifting from FUB. A null (no clean run on record) is stale.
-  const deltaStale =
-    signals.minutesSinceCleanDelta === null ||
-    signals.minutesSinceCleanDelta >= DELTA_STALE_MINUTES
-  if (deltaStale) {
-    const detail =
-      signals.minutesSinceCleanDelta === null
-        ? 'no clean delta run on record'
-        : `last clean delta finished ${formatMinutes(signals.minutesSinceCleanDelta)} ago`
-    alarms.push({
-      key: 'delta-stale',
-      severity: 'warning',
-      message: `FUB delta sync looks stale (${detail}). The crm_* mirror may be drifting from FUB.`,
-    })
-  }
-
   // Rule 5: lead volume cratered.
   // Zero new leads in a full day, across every source, is a strong signal that
-  // capture broke upstream (LP form, webhook, mirror) rather than a quiet day.
+  // capture broke upstream (LP form, webhook, native capture) rather than a quiet day.
   if (signals.newLeads24h <= 0) {
     alarms.push({
       key: 'lead-volume-cratered',
       severity: 'warning',
       message:
-        'No new leads in the last 24 hours from any source. Lead capture may be broken upstream (landing-page forms, FUB webhook, or the mirror).',
+        'No new leads in the last 24 hours from any source. Lead capture may be broken upstream (landing-page forms, webhooks, or native capture).',
     })
   }
 
@@ -177,9 +142,4 @@ function formatHours(hours: number): string {
   const rounded = Math.round(hours * 10) / 10
   return `${rounded} ${rounded === 1 ? 'hour' : 'hours'}`
 }
-
-/** Format a minutes value for an alarm message: "92 minutes" / "1 minute". */
-function formatMinutes(minutes: number): string {
-  const rounded = Math.round(minutes)
-  return `${rounded} ${rounded === 1 ? 'minute' : 'minutes'}`
-}
+// (formatMinutes + the delta-stale/mirror rules removed at the FUB cutover 2026-06-24.)

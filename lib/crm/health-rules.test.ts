@@ -2,20 +2,18 @@ import { describe, it, expect } from 'vitest'
 import {
   evaluateHealthRules,
   INBOUND_STALE_HOURS,
-  DELTA_STALE_MINUTES,
   type HealthSignals,
 } from './health-rules'
 
 // A fully-healthy baseline. Each test mutates exactly the vital under test so a
 // fired alarm can only have come from that vital, never an unintended one.
+// (mirror + delta-stale rules retired at the FUB cutover 2026-06-24.)
 function healthy(): HealthSignals {
   return {
-    mirrorEnabled: true,
     businessHours: true,
     hoursSinceLastInbound: 0.5,
     a2pStatus: 'VERIFIED',
     smsSendAttempts24h: 12,
-    minutesSinceCleanDelta: 20,
     newLeads24h: 4,
     twilioReachable: true,
   }
@@ -29,18 +27,6 @@ describe('evaluateHealthRules', () => {
   it('returns no alarms when every vital is healthy', () => {
     const { alarms } = evaluateHealthRules(healthy())
     expect(alarms).toEqual([])
-  })
-
-  describe('rule: mirror disabled', () => {
-    it('fires critical when the mirror kill switch is off', () => {
-      const { alarms } = evaluateHealthRules({ ...healthy(), mirrorEnabled: false })
-      const alarm = alarms.find((a) => a.key === 'mirror-disabled')
-      expect(alarm).toBeDefined()
-      expect(alarm?.severity).toBe('critical')
-    })
-    it('clears when the mirror is enabled', () => {
-      expect(keys({ ...healthy(), mirrorEnabled: true })).not.toContain('mirror-disabled')
-    })
   })
 
   describe('rule: inbound webhook stale', () => {
@@ -110,25 +96,6 @@ describe('evaluateHealthRules', () => {
     })
   })
 
-  describe('rule: delta sync stale', () => {
-    it('fires when the last clean delta is past the threshold', () => {
-      const alarm = evaluateHealthRules({
-        ...healthy(),
-        minutesSinceCleanDelta: DELTA_STALE_MINUTES,
-      }).alarms.find((a) => a.key === 'delta-stale')
-      expect(alarm).toBeDefined()
-      expect(alarm?.severity).toBe('warning')
-    })
-    it('fires when there is no clean delta run on record (null)', () => {
-      expect(keys({ ...healthy(), minutesSinceCleanDelta: null })).toContain('delta-stale')
-    })
-    it('clears just under the threshold', () => {
-      expect(
-        keys({ ...healthy(), minutesSinceCleanDelta: DELTA_STALE_MINUTES - 1 }),
-      ).not.toContain('delta-stale')
-    })
-  })
-
   describe('rule: lead volume cratered', () => {
     it('fires when zero new leads in 24h', () => {
       const alarm = evaluateHealthRules({ ...healthy(), newLeads24h: 0 }).alarms.find(
@@ -160,35 +127,30 @@ describe('evaluateHealthRules', () => {
   describe('composition', () => {
     it('fires multiple independent alarms at once and only those', () => {
       const result = evaluateHealthRules({
-        mirrorEnabled: false,
         businessHours: true,
         hoursSinceLastInbound: null,
         a2pStatus: 'FAILED',
         smsSendAttempts24h: 3,
-        minutesSinceCleanDelta: null,
         newLeads24h: 0,
-        twilioReachable: true,
+        twilioReachable: false,
       })
       expect(new Set(result.alarms.map((a) => a.key))).toEqual(
         new Set([
-          'mirror-disabled',
           'inbound-webhook-stale',
           'a2p-not-verified',
-          'delta-stale',
           'lead-volume-cratered',
+          'twilio-unreachable',
         ]),
       )
     })
     it('every alarm carries a stable key, a known severity, and a non-empty message', () => {
       const { alarms } = evaluateHealthRules({
-        mirrorEnabled: false,
         businessHours: true,
         hoursSinceLastInbound: null,
         a2pStatus: 'FAILED',
         smsSendAttempts24h: 3,
-        minutesSinceCleanDelta: null,
         newLeads24h: 0,
-        twilioReachable: true,
+        twilioReachable: false,
       })
       for (const a of alarms) {
         expect(a.key.length).toBeGreaterThan(0)

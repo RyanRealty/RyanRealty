@@ -50,11 +50,6 @@ function isBusinessHoursPacific(now: Date): boolean {
   return hour >= BUSINESS_HOUR_START && hour < BUSINESS_HOUR_END
 }
 
-/** mirror.ts semantics: enabled unless CRM_MIRROR_ENABLED is exactly 'false'. */
-function mirrorEnabled(): boolean {
-  return process.env.CRM_MIRROR_ENABLED !== 'false'
-}
-
 export async function GET(request: Request) {
   if (!isValidCronAuth(request.headers.get('authorization'), process.env.CRON_SECRET?.trim())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -74,7 +69,6 @@ export async function GET(request: Request) {
   const [
     lastInbound,
     smsOut24h,
-    deltaRow,
     newLeads24h,
     a2pStatus,
   ] = await Promise.all([
@@ -93,15 +87,6 @@ export async function GET(request: Request) {
       .select('id', { count: 'exact', head: true })
       .eq('kind', 'sms_out')
       .gte('ts', sendSince),
-    // Last CLEAN fub-delta run (status 'done').
-    sb
-      .from('crm_imports')
-      .select('finished_at')
-      .eq('source', 'fub-delta')
-      .eq('status', 'done')
-      .order('id', { ascending: false })
-      .limit(1)
-      .maybeSingle(),
     // New leads created in the trailing 24h (any source).
     sb
       .from('crm_people')
@@ -116,23 +101,16 @@ export async function GET(request: Request) {
       ? (now.getTime() - new Date(lastInbound.data.ts as string).getTime()) / 3600000
       : null
 
-  const minutesSinceCleanDelta =
-    deltaRow.data?.finished_at != null
-      ? (now.getTime() - new Date(deltaRow.data.finished_at as string).getTime()) / 60000
-      : null
-
   // Twilio reachability: only meaningful when creds are configured. A null here
   // means "not configured" (skip the rule); false means the account ping failed.
   const twilioConfigured = Boolean(process.env.TWILIO_ACCOUNT_SID?.trim() && process.env.TWILIO_AUTH_TOKEN?.trim())
   const twilioReachable = twilioConfigured ? (await getAccountType()) !== null : null
 
   const signals: HealthSignals = {
-    mirrorEnabled: mirrorEnabled(),
     businessHours: isBusinessHoursPacific(now),
     hoursSinceLastInbound,
     a2pStatus,
     smsSendAttempts24h: smsOut24h.count ?? 0,
-    minutesSinceCleanDelta,
     newLeads24h: newLeads24h.count ?? 0,
     twilioReachable,
   }
