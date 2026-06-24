@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.606.0 (2026-06-24)
+
+### Features
+- feat(tc): typed envelope state machine + compare-and-swap primitive (§5.1)
+
+---
+
+
 ## v1.605.5 (2026-06-24)
 
 ### Bug Fixes
