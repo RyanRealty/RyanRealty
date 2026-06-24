@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.605.5 (2026-06-24)
+
+### Bug Fixes
+- fix(tc): C4 — canonical signing field types (unbreak template envelope creation)
+
+---
+
+
 ## v1.605.4 (2026-06-24)
 
 ### Bug Fixes
