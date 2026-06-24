@@ -17,6 +17,7 @@ Full-resolution visual audit of `/listing/20260618202606519366000000` (67480 Clo
 | 7 | Mortgage $/mo rounded to $1,000 ($37,000/mo) | `exact` mode → $37,252/mo, PITI $42,254 | `MortgageCalculator.tsx` |
 | 8 | HOME PRICE input raw `6999000` | Comma-format display, store raw digits | `MortgageCalculator.tsx` |
 | 9 | Hero thumbnail strip = navy void on first paint | Eager-load visible strip thumbnails (they're at the fold) | `ListingHero.tsx` |
+| 11 | (found in review pass) BEND MARKET 4-KPI row overflowed its container ~48px on mobile (inline `repeat(4,1fr)` defeated the responsive rule) | Drive desktop column count via `--kpi-cols` CSS var; base rule `repeat(2,minmax(0,1fr))` → 2×2 mobile, `var(--kpi-cols)` desktop. Verified 4-across desktop, 2×2 mobile, 0 overflow | `NeighborhoodMarketContext.tsx`, `kb.css` |
 
 `exact` Price mode + `displaySubdivision()` are reusable primitives now — use them anywhere $/sqft or a subdivision label renders.
 

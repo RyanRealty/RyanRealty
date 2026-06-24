@@ -88,10 +88,12 @@ export function NeighborhoodMarketContext({
           ) : null}
         </div>
 
-        {/* KPI cells */}
+        {/* KPI cells — column count drives the desktop layout via a CSS var so
+            the responsive rule in kb.css can collapse to 2-up on mobile (an inline
+            grid-template-columns would override that and overflow at 375px). */}
         <div
           className="mkt-kpis"
-          style={{ gridTemplateColumns: `repeat(${[activeCount, medianList, medianDom, mos].filter(v => v != null).length}, 1fr)` }}
+          style={{ ['--kpi-cols' as string]: [activeCount, medianList, medianDom, mos].filter(v => v != null).length }}
         >
           {activeCount != null ? (
             <KpiCell label={`Active in ${geoName}`} value={<TabularNumber value={activeCount} />} />
