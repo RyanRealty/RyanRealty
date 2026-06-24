@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.612.0 (2026-06-24)
+
+### Features
+- feat(crm): CRM_LEAD_BACKEND cutover chokepoint (captureLead)
+
+---
+
+
 ## v1.611.0 (2026-06-24)
 
 ### Features
