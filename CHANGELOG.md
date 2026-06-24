@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.609.0 (2026-06-24)
+
+### Features
+- feat(crm): call-recording playback in the timeline + outbound click-to-call
+
+---
+
+
 ## v1.608.0 (2026-06-24)
 
 ### Features
