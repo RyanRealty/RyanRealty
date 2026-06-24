@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.613.6 (2026-06-24)
+
+### Maintenance
+- docs(twilio-cutover): record adversarial-review findings + dispositions
+
+---
+
+
 ## v1.613.5 (2026-06-24)
 
 ### Bug Fixes
