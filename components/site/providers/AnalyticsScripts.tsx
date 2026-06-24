@@ -1,7 +1,6 @@
 import { Suspense } from 'react'
 import GTMBody from '@/components/GTMBody'
 import GoogleAnalytics from '@/components/GoogleAnalytics'
-import FollowUpBossPixel from '@/components/FollowUpBossPixel'
 import MetaPixel from '@/components/MetaPixel'
 import PageViewTracker from '@/components/PageViewTracker'
 import { GoogleMapsBootstrap } from '@/components/GoogleMapsBootstrap'
@@ -20,7 +19,6 @@ import { GoogleMapsBootstrap } from '@/components/GoogleMapsBootstrap'
  * Slots:
  *   - GTMBody — Google Tag Manager noscript iframe fallback
  *   - GoogleAnalytics — GA4 + Google Ads + Consent Mode v2 defaults
- *   - FollowUpBossPixel — FUB visitor tracking (analytics consent gate)
  *   - MetaPixel — Meta Pixel + CAPI advanced-matching prep (marketing consent gate)
  *   - GoogleMapsBootstrap — official Maps JS API loader (no consent gate, no PII)
  *   - PageViewTracker — useSearchParams island, must live in Suspense
@@ -32,7 +30,6 @@ export function AnalyticsScripts() {
     <>
       <GTMBody />
       <GoogleAnalytics />
-      <FollowUpBossPixel />
       <MetaPixel />
       <GoogleMapsBootstrap />
       <Suspense fallback={null}>
