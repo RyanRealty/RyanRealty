@@ -18,6 +18,9 @@ Full-resolution visual audit of `/listing/20260618202606519366000000` (67480 Clo
 | 8 | HOME PRICE input raw `6999000` | Comma-format display, store raw digits | `MortgageCalculator.tsx` |
 | 9 | Hero thumbnail strip = navy void on first paint | Eager-load visible strip thumbnails (they're at the fold) | `ListingHero.tsx` |
 | 11 | (found in review pass) BEND MARKET 4-KPI row overflowed its container ~48px on mobile (inline `repeat(4,1fr)` defeated the responsive rule) | Drive desktop column count via `--kpi-cols` CSS var; base rule `repeat(2,minmax(0,1fr))` → 2×2 mobile, `var(--kpi-cols)` desktop. Verified 4-across desktop, 2×2 mobile, 0 overflow | `NeighborhoodMarketContext.tsx`, `kb.css` |
+| 12 | **(the big one Matt flagged) "text right below the price is off"** — price block crammed (zero gap under price), whole page hugging the left edge with no gutter, not centered on wide screens | ROOT CAUSE: `kb.css` had an **unlayered** `.kb-root *{margin:0;padding:0}` reset. Unlayered CSS beats Tailwind's `@layer utilities` regardless of specificity, so EVERY `mt-*`/`mx-auto`/`px-*` on every React component inside the KB shell was silently zeroed. Fix: move the margin/padding reset into `@layer base` (box-sizing stays universal+unlayered). Now utilities win; bare-element UA reset still holds. Verified: listing detail desktop+mobile (centered, gutter, spacing), homepage, city page, search — no regressions. This was a whole *class* of bug, not one element. | `kb.css` |
+
+**Key lesson:** an unlayered `* {margin:0;padding:0}` reset inside a wrapper that hosts Tailwind-utility components silently breaks ALL their spacing — and it's invisible because specificity looks fine (the cause is layer precedence, not specificity). `@layer base` is the fix.
 
 `exact` Price mode + `displaySubdivision()` are reusable primitives now — use them anywhere $/sqft or a subdivision label renders.
 

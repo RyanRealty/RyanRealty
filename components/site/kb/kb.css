@@ -15,7 +15,18 @@
   --cream-05:rgba(250,248,244,.05);
   --edge:3px;
 }
-.kb-root *{margin:0;padding:0;box-sizing:border-box;}
+/* UA reset placed in @layer base so Tailwind's `utilities` layer (mx-auto,
+   mt-*, px-*) overrides it. The old unlayered `.kb-root *{margin:0;padding:0}`
+   beat EVERY Tailwind utility (unlayered > layered, regardless of specificity)
+   on every React component mounted in the KB shell — silently zeroing the
+   listing-detail price-block spacing and the page Container's centering/gutter.
+   In @layer base it still resets bare-element UA defaults, but any utility or
+   component style wins. box-sizing stays universal + unlayered (nothing fights
+   it) so border-box holds everywhere. */
+.kb-root *{box-sizing:border-box;}
+@layer base {
+  .kb-root *{margin:0;padding:0;}
+}
 html{-webkit-text-size-adjust:100%;}
 html.lenis, html.lenis body{height:auto;}
 .lenis.lenis-smooth{scroll-behavior:auto!important;}
