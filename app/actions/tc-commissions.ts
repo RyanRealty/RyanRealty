@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { computeCommissionNets } from '@/lib/tc/commission-math'
 
 /**
  * Commission tracking (TC rung 11) — per-cycle, per-agent commission records.
@@ -156,13 +157,13 @@ export async function updateTcCommission(
   }
 
   const gci = row.gci == null ? null : Number(row.gci)
-  let agent_net: number | null = null
-  let brokerage_net: number | null = null
-  if (gci != null) {
-    const net = gci - next.referral_fee - next.tc_fee - next.other_deductions
-    agent_net = Math.round(net * (next.split_percent / 100) * 100) / 100
-    brokerage_net = Math.round((net - agent_net) * 100) / 100
-  }
+  const { agentNet: agent_net, brokerageNet: brokerage_net } = computeCommissionNets({
+    gci,
+    referralFee: next.referral_fee,
+    tcFee: next.tc_fee,
+    otherDeductions: next.other_deductions,
+    splitPercent: next.split_percent,
+  })
 
   const { error: upErr } = await supabase
     .from('tc_commissions')
