@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.608.0 (2026-06-24)
+
+### Features
+- feat(site): publish per-broker Twilio business lines on the public site
+
+---
+
+
 ## v1.607.7 (2026-06-24)
 
 ### Bug Fixes
