@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.607.4 (2026-06-24)
+
+### Bug Fixes
+- fix(listing): market-context KPI row no longer overflows on mobile
+
+---
+
+
 ## v1.607.3 (2026-06-24)
 
 ### Bug Fixes
