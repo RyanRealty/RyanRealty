@@ -106,4 +106,17 @@ Progress tracked in the task list + per-wave commit log appended below.
 
 ## Wave progress log
 
-- (pending) Wave 1 launched.
+All 8 build waves shipped to `main`, each: built via parallel agents → integrated serially → migrations
+applied to hosted Supabase → tsc + full `ci:gates` green → committed + pushed. 2143 tests pass.
+
+- ✅ **Wave 1 — Foundations** (`efe7e3e1`): filter-AST resolver, bulk-job framework + worker, `email_events`,
+  config-table pattern + `crm_stages`, custom-field registry, suppression-send CI gate.
+- ✅ **Wave 2 — Configurability** (`c4c5c716`): tags/templates/segments/areas/suppression/brokers + `/admin/crm/settings`.
+- ✅ **Wave 3 — Bulk operations** (`9c8b044b`): select-all-matching + bulk assign/tag/stage/enroll/report/email-cohort, suppression-safe, 18K-scale.
+- ✅ **Wave 4 — Saved views** (`c4c8d8d8`): `crm_saved_views` + 18 smart lists + audience bus + record-card custom fields.
+- ✅ **Wave 5 — Email engine + reporting** (`ac9a34bd`): sent log + honest rates, false-zero campaign fix, dual-rail `email_events`, compose-cohort + scheduled sends.
+- ✅ **Wave 6 — Workflow authoring** (`ddc9a173`): step schema + lifecycle CRUD + step builder + UI triggers + analytics.
+- ✅ **Wave 7 — Routing / inbox / tasks** (`626b4f2f`): dormant routing engine, inbox triage + inline reply, task lifecycle.
+- ✅ **Wave 8 — Market-report engine** (`403233d7`): §0 cache-sourced renderer + cadence send engine.
+- ⏳ **Wave 9 — Final review + validation**: adversarial review running; then authenticated browser walkthrough
+  (needs `claude --chrome` restart) + go-live checklist.
