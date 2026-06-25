@@ -100,6 +100,7 @@ Everything in `docs/plans/` is registered here. A new file in that directory wit
 | `TC_BUILDOUT_HANDOFF.md` | **paused 2026-06-24** — resume point for the TC build-out: what's done (C4 + §5.1 FSM + H4 tests + H5 schema), the 3 Matt-gated migrations, the next code-only increments, and Phase 1+. Read to pick up cold. |
 | `twilio-cutover-2026-06-24.md` | **live** — Twilio cutover from Follow Up Boss: live-verified audit (8 subsystems), the broker→Twilio→cell model, per-wave build plan + progress log. The active cutover backlog. |
 | `crm-attribution-coverage-2026-06-24.md` | **live** — per-channel broker-attribution + open/deliver/bounce tracking coverage map (newsletter, market report, saved-search alert, CMA) for the CRM record-card cutover; names each send-path chokepoint to route through `attributeOutbound`/`attributeUrl`. |
+| `crm-completion-spec-2026-06-25.md` | **live** — the canonical CRM completion plan (locked scope, bulletproof bar, 9-wave build sequence) reconciled against `docs/fub-feature-audit/FUB_FEATURE_AUDIT.md`. The HOW to the audit's WHAT. Active build backlog. |
 | `RENTAL_CALCULATOR_BUILD_PROMPT.md` | executed (record) |
 | `SKYSLOPE_COMPLIANCE_HANDOFF_2026-05-28.md` | ops record (not site process) |
 | `CROSS_AGENT_HANDOFF.md`, `SESSION_HANDOFF_2026-06-01.md`, `SESSION_HANDOFF_2026-06-01_PARTB.md`, `task-handoff-template.md` | session-continuity records |
