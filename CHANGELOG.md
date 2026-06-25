@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.619.0 (2026-06-25)
+
+### Features
+- feat(crm): Wave 2 — Configurability (every building block UI-editable)
+
+---
+
+
 ## v1.618.0 (2026-06-25)
 
 ### Features
