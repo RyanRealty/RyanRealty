@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.626.0 (2026-06-25)
+
+### Features
+- feat(crm): Wave 8 — market-report send engine (the inert subscription becomes a real product)
+
+---
+
+
 ## v1.625.0 (2026-06-25)
 
 ### Features
