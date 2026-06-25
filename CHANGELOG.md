@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.624.0 (2026-06-25)
+
+### Features
+- feat(crm): Wave 6 — workflow authoring (FUB action-plan replacement, no jsonb-in-SQL)
+
+---
+
+
 ## v1.623.0 (2026-06-25)
 
 ### Features
