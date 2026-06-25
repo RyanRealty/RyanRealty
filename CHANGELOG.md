@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.617.1 (2026-06-25)
+
+### Bug Fixes
+- fix(crm): adversarial-review fixes on the contact record card
+
+---
+
+
 ## v1.617.0 (2026-06-25)
 
 ### Features
