@@ -118,5 +118,33 @@ applied to hosted Supabase → tsc + full `ci:gates` green → committed + pushe
 - ✅ **Wave 6 — Workflow authoring** (`ddc9a173`): step schema + lifecycle CRUD + step builder + UI triggers + analytics.
 - ✅ **Wave 7 — Routing / inbox / tasks** (`626b4f2f`): dormant routing engine, inbox triage + inline reply, task lifecycle.
 - ✅ **Wave 8 — Market-report engine** (`403233d7`): §0 cache-sourced renderer + cadence send engine.
-- ⏳ **Wave 9 — Final review + validation**: adversarial review running; then authenticated browser walkthrough
-  (needs `claude --chrome` restart) + go-live checklist.
+- ✅ **Wave 9 — Final review + fixes** (`9e6b5c5e`): adversarial review found 6 blockers + 7 highs; all fixed +
+  re-confirmed against the committed code. Confirmation verdict: **GO — 11/11 blockers CLOSED, 0 still open.**
+  - Compliance: `isSuppressedByEmail` (fail-closed) gates all 11 lead-facing send paths; CI gate hard-fails on
+    any non-internal baseline entry (baseline pruned to 16 internal-only).
+  - RBAC/concurrency: bulk ids-mode scope-clamped at enqueue + worker; atomic `crm_claim_bulk_job`
+    (FOR UPDATE SKIP LOCKED + 4-min lease); per-(job,person) email idempotency; `listCrmPeople` self-scoping;
+    workflow/automation CRUD superuser-gated.
+  - Lead capture: `sendEvent` returns native personId → LP enrichment + 5-min expired task run natively;
+    `trackSignedInUser` native fallback; `ensureNativeLead` merges tags on reuse.
+
+## Tracked hardening follow-ups (non-blocking — surfaced by the review, not go-live blockers)
+
+1. **Gmail-send gate coverage** — `ci:email-send-gated` SEND_FNS only tracks `sendEmail`/`sendBatchEmails`; the
+   3 Gmail lead-sends (createGmailDraft/sendGmailMessage) ARE gated today but not mechanically enforced. Extend
+   the gate (watch for repo-wide Gmail sends when doing it).
+2. **`scopeBroker` fail-open for an unmapped non-superuser** — returns `null` (unrestricted) if a
+   broker/report_viewer email isn't in `CRM_BROKER_BY_EMAIL`. Latent (all 3 brokers mapped today). Make it
+   fail-closed (match-nothing sentinel) — needs a type/contract change across consumers, do it deliberately.
+3. **`setCrmSequenceStatusAction` (activate/pause)** — CRM-access not superuser, unlike the other sequence
+   lifecycle actions. Decide the intended policy (broker-pausable vs owner-only) and align.
+4. **CMA slug routes** (`/api/cma/[slug]/email`, `/gmail-draft`) accept an arbitrary `to` — suppression-safe
+   (every recipient gated) but add route auth.
+5. **`isSuppressedByEmail` case-sensitivity** — jsonb email match is exact-lowercase; native writes lowercase,
+   but confirm the FUB-mirror writer lowercases emails.
+
+## GO-LIVE remaining step (Matt)
+
+The authenticated **browser walkthrough** of the real admin surfaces — needs the Claude-for-Chrome bridge
+(`claude --chrome` in a fresh session; the binary is already 2.1.191). Everything else (build, migrations,
+2143+ tests, all gates, the adversarial review + fix confirmation) is done.
