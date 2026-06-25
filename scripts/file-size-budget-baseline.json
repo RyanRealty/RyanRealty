@@ -15,7 +15,7 @@
     "app/admin/(protected)/deals/page.tsx": 657,
     "app/admin/(protected)/people/[fubPersonId]/page.tsx": 727,
     "app/admin/(protected)/reports/lead-flow/page.tsx": 629,
-    "app/admin/console/leads/[id]/page.tsx": 866,
+    "app/admin/console/leads/[id]/page.tsx": 869,
     "app/api/meta/lead-webhook/route.ts": 920,
     "app/api/social/publish/route.ts": 783,
     "app/cities/[slug]/page.tsx": 626,

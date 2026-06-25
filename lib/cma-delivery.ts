@@ -668,7 +668,7 @@ export function composeCmaEmail(params: {
   const high = formatUsd(cma.valueHigh)
   const range = low !== '—' && high !== '—' ? ` (range ${low}–${high})` : ''
 
-  const subject = `Your Bend home value — ${fullAddress}`
+  const subject = `Your Bend home value for ${fullAddress}`
 
   const text = [
     greeting,

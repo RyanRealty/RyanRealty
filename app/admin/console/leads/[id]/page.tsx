@@ -325,10 +325,13 @@ export default async function ConsoleLeadPage({
   ])
 
   // A CMA queued and awaiting broker review (status 'ready') → NextStepCard shows
-  // "Review & Send CMA" instead of "Send CMA". From the already-loaded deliveries.
-  const reviewableCma = (full.cmaDeliveries ?? []).find(
-    (d) => String((d as { status?: string }).status ?? '') === 'ready',
-  ) as { id?: string } | undefined
+  // "Review & Send CMA" instead of "Send CMA". Only when the home-driven next step
+  // is actually CMA (the contact owns a home) — otherwise a stale, never-sent CMA
+  // draft from a past request would hijack a non-owner's "Send newsletter" step.
+  const reviewableCma =
+    nextStep.step.kind === 'cma'
+      ? ((full.cmaDeliveries ?? []).find((d) => String((d as { status?: string }).status ?? '') === 'ready') as { id?: string } | undefined)
+      : undefined
 
   // Owned home.
   const geo = full.geo as { city?: string; neighborhood?: string; subdivision?: string; formatted_address?: string; source_address?: string; latitude?: number; longitude?: number; owner_type?: string } | null

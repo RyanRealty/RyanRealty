@@ -45,7 +45,7 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;"
 
 /** Plain-text fallback footer (links spelled out, CAN-SPAM postal line). */
 export function newsletterTextFooter(unsubscribeUrl: string): string {
-  return `\n\n—\nRyan Realty · Bend, Oregon · ryan-realty.com\nUnsubscribe: ${unsubscribeUrl}`
+  return `\n\n--\nRyan Realty · Bend, Oregon · ryan-realty.com\nUnsubscribe: ${unsubscribeUrl}`
 }
 
 function escapeHtml(s: string): string {

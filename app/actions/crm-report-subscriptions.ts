@@ -38,8 +38,10 @@ import {
 export type CrmReportSubscriptionResult = { ok: true; message?: string } | { ok: false; error: string }
 
 function revalidateContact(personId: number) {
-  revalidatePath('/admin/crm')
-  revalidatePath(`/admin/crm/${personId}`)
+  // The contact record card lives at /admin/console/leads/[id]; the old
+  // /admin/crm/[id] route was a redirect stub. Revalidate the real page so the
+  // toggle action (which has no redirect mask) refreshes the card.
+  revalidatePath(`/admin/console/leads/${personId}`)
 }
 
 /**

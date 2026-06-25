@@ -9,10 +9,13 @@
  * When a CMA is already queued awaiting broker review (the `pending` prop), the
  * card switches to a "Review & Send CMA" state and posts to pending.sendAction.
  *
- * Presentational + form-only. Actions are server actions passed in as props;
- * this island never queries the database.
+ * Presentational + form-only. Actions are server actions passed in as props and
+ * handed DIRECTLY to <form action={...}> so Next runs them natively and handles
+ * their redirect() — mirroring EmailComposer/SmsComposer on this surface. (A
+ * hand-rolled startTransition wrapper around a redirecting action can swallow the
+ * NEXT_REDIRECT, so we avoid it.) useFormStatus drives the pending label.
  */
-import { useTransition } from 'react'
+import { useFormStatus } from 'react-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -36,6 +39,16 @@ export type NextStepCardProps = {
   className?: string
 }
 
+/** Submit button whose label reflects the parent form's pending state. */
+function SubmitButton({ idle, busy }: { idle: string; busy: string }) {
+  const { pending } = useFormStatus()
+  return (
+    <Button type="submit" disabled={pending} className="min-h-11 w-full sm:w-auto">
+      {pending ? busy : idle}
+    </Button>
+  )
+}
+
 export default function NextStepCard({
   step,
   cmaAction,
@@ -43,14 +56,6 @@ export default function NextStepCard({
   pending,
   className,
 }: NextStepCardProps) {
-  const [isPending, startTransition] = useTransition()
-
-  function run(action: (fd: FormData) => Promise<void>, fd: FormData) {
-    startTransition(async () => {
-      await action(fd)
-    })
-  }
-
   // A CMA queued and awaiting review takes priority over the generic next step.
   const reviewing = pending && pending.kind === 'cma'
 
@@ -58,30 +63,21 @@ export default function NextStepCard({
 
   if (reviewing) {
     actionNode = (
-      <form
-        action={(fd) => run(pending!.sendAction, fd)}
-        className="w-full"
-      >
+      <form action={pending!.sendAction} className="w-full">
         <input type="hidden" name="deliveryId" value={pending!.deliveryId} />
-        <Button type="submit" disabled={isPending} className="min-h-11 w-full sm:w-auto">
-          {isPending ? 'Sending' : 'Review & Send CMA'}
-        </Button>
+        <SubmitButton idle="Review & Send CMA" busy="Sending" />
       </form>
     )
   } else if (step.kind === 'cma' && cmaAction) {
     actionNode = (
-      <form action={(fd) => run(cmaAction, fd)} className="w-full">
-        <Button type="submit" disabled={isPending} className="min-h-11 w-full sm:w-auto">
-          {isPending ? 'Building' : 'Send CMA'}
-        </Button>
+      <form action={cmaAction} className="w-full">
+        <SubmitButton idle="Send CMA" busy="Building" />
       </form>
     )
   } else if (step.kind === 'newsletter' && newsletterAction) {
     actionNode = (
-      <form action={(fd) => run(newsletterAction, fd)} className="w-full">
-        <Button type="submit" disabled={isPending} className="min-h-11 w-full sm:w-auto">
-          {isPending ? 'Sending' : 'Send newsletter'}
-        </Button>
+      <form action={newsletterAction} className="w-full">
+        <SubmitButton idle="Send newsletter" busy="Sending" />
       </form>
     )
   }
