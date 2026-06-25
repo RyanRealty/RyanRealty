@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.622.0 (2026-06-25)
+
+### Features
+- feat(crm): Wave 4 — saved views / smart lists + audience bus + record-card custom fields
+
+---
+
+
 ## v1.621.0 (2026-06-25)
 
 ### Features
