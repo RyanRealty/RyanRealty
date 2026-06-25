@@ -2,7 +2,8 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { normalizeEmail, normalizePhone } from './resolvePersonIdentity'
 import { buildNativePersonRow } from './nativeCreate'
-import type { CrmBrokerSlug } from '@/lib/crm/constants'
+import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
+import { pickRoutedBroker } from '@/lib/crm/lead-routing'
 
 /**
  * Native-capture fallback on a FUB push failure (CONTACT360 Phase 0.2 — stop a
@@ -33,6 +34,11 @@ import type { CrmBrokerSlug } from '@/lib/crm/constants'
 
 /** Default-broker rule for an unstaffed native fallback lead (routes to Matt). */
 const DEFAULT_BROKER: CrmBrokerSlug = 'matt'
+
+/** Coerce a routed slug to a known CRM broker, failing safe to the default (Matt). */
+function coerceBroker(slug: string): CrmBrokerSlug {
+  return (CRM_BROKERS as readonly string[]).includes(slug) ? (slug as CrmBrokerSlug) : DEFAULT_BROKER
+}
 
 export type EnsureNativeLeadInput = {
   name?: string | null
@@ -182,12 +188,16 @@ export async function ensureNativeLead(input: EnsureNativeLeadInput): Promise<En
   const { first, last } = splitName(input.name)
   const emailObjs = normalizedEmail ? [{ value: normalizedEmail, type: 'Primary', isPrimary: 1 }] : []
   const phoneObjs = normalizedPhone ? [{ value: normalizedPhone, type: 'Mobile', isPrimary: normalizedEmail ? 0 : 1 }] : []
+  // Broker: an explicit assignedBroker (e.g. an ?agent= attributed Rebecca/Paul
+  // ad lead) always wins. Otherwise route through the lead-routing engine, whose
+  // live behavior is all-to-Matt (seeded strategy) until an owner flips it.
+  const routedBroker = input.assignedBroker ?? coerceBroker(await pickRoutedBroker({ source: input.source }))
   const personRow = buildNativePersonRow({
     name: nativeLeadName(input.name, normalizedEmail, normalizedPhone),
     first_name: first,
     last_name: last,
     source: input.source,
-    assignedBroker: input.assignedBroker ?? DEFAULT_BROKER,
+    assignedBroker: routedBroker,
     emails: emailObjs,
     phones: phoneObjs,
     tags: input.tags,

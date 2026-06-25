@@ -10,6 +10,7 @@ import { getCrmReportAreas } from '@/lib/data/crm/getCrmReportAreas'
 import { getCrmFieldDefinitions } from '@/lib/data/crm/getCrmFieldDefinitions'
 import { getCrmSuppressions } from '@/lib/data/crm/getCrmSuppressions'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
+import { getCrmAssignmentConfig } from '@/lib/data/crm/getCrmAssignmentConfig'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -38,7 +39,7 @@ export default async function CrmSettingsPage() {
 
   // Pull a count per catalog (each reader fails soft to []), so the hub renders
   // even if a migration has not been applied yet.
-  const [stages, tags, templates, segments, areas, fields, suppressions, brokers] = await Promise.all([
+  const [stages, tags, templates, segments, areas, fields, suppressions, brokers, routing] = await Promise.all([
     getCrmStages(),
     getCrmTags(),
     getCrmTemplatesAdmin(),
@@ -47,7 +48,14 @@ export default async function CrmSettingsPage() {
     getCrmFieldDefinitions(),
     getCrmSuppressions({ limit: 1 }),
     getCrmBrokers(),
+    getCrmAssignmentConfig(),
   ])
+
+  const ROUTING_LABEL: Record<string, string> = {
+    all_to_one: 'all to one',
+    round_robin: 'round robin',
+    by_source: 'by source',
+  }
 
   const cards: Array<{
     href: string
@@ -111,6 +119,13 @@ export default async function CrmSettingsPage() {
       description: 'The CRM broker roster used for assignment and round-robin routing.',
       count: brokers.length,
       countLabel: brokers.length === 1 ? 'broker' : 'brokers',
+    },
+    {
+      href: '/admin/crm/settings/assignment',
+      title: 'Lead routing',
+      description: 'How a new lead is assigned to a broker. The live default routes every lead to Matt.',
+      count: routing.rules.length,
+      countLabel: ROUTING_LABEL[routing.strategy] ?? routing.strategy,
     },
   ]
 

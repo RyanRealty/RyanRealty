@@ -1,62 +1,244 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { getCrmAccess, listCrmConversations } from '@/app/actions/crm'
+import { getCrmAccess, sendCrmSmsAction, sendCrmEmailAction } from '@/app/actions/crm'
+import {
+  setConversationStateAction,
+  bulkConversationStateAction,
+  markAllReadAction,
+} from '@/app/actions/crm-inbox'
 import { scopeBroker } from '@/lib/crm/scope'
-import { timelineEmailBody } from '@/lib/crm/email-body'
+import {
+  getInboxQueue,
+  getConversationThread,
+  type InboxScope,
+  type ConversationStatus,
+} from '@/lib/data/crm/getInboxQueue'
+import { getSendTarget } from '@/lib/data/crm/getSendTarget'
+import { createServiceClient } from '@/lib/supabase/service'
+import { CRM_MAILBOXES } from '@/lib/crm/gmail'
+import { getSignatureForMailbox } from '@/lib/crm/email-signature'
+import { formatDateTime } from '@/lib/format/date'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
-import InboxSegments, { type InboxItem } from '@/components/admin/InboxSegments'
+import InboxQueue from '@/components/admin/crm/inbox/InboxQueue'
+import InboxThread, { type FormattedThreadItem } from '@/components/admin/crm/inbox/InboxThread'
+import InlineReply from '@/components/admin/crm/inbox/InlineReply'
+import ThreadStatusControl from '@/components/admin/crm/inbox/ThreadStatusControl'
 
 export const metadata = { title: 'Inbox | CRM | Admin' }
 export const dynamic = 'force-dynamic'
 
-const KIND_LABEL: Record<string, string> = {
-  email_in: '📥 Email', sms_in: '💬 Text', call: '📞 Call', voicemail: '🎙 Voicemail',
-  email_out: '📤 Email', sms_out: '📲 Text',
+const SCOPES: { key: InboxScope; label: string }[] = [
+  { key: 'mine', label: 'Mine' },
+  { key: 'unread', label: 'Unread' },
+  { key: 'all', label: 'All' },
+  { key: 'closed', label: 'Closed' },
+]
+
+function isScope(v: string | undefined): v is InboxScope {
+  return v === 'mine' || v === 'unread' || v === 'all' || v === 'closed'
 }
 
-export default async function CrmInboxPage() {
+export default async function CrmInboxPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ scope?: string; c?: string }>
+}) {
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
-  // GAP-4: scope the Inbox + Sent tabs to the caller's own contacts server-side.
-  const scope = scopeBroker(access)
-  const rows = await listCrmConversations(150, scope)
-  const slug = access.brokerSlug
 
-  // Shape each row for the client segments view (body trimmed server-side so the
-  // client never imports the email-body util).
-  const disp = (r: (typeof rows)[number]): InboxItem => ({
-    id: r.id,
-    personId: r.person_id,
-    name: r.person?.name ?? `Contact #${r.person_id}`,
-    stage: r.person?.stage ?? '',
-    kind: r.kind,
-    kindLabel: KIND_LABEL[r.kind] ?? r.kind,
-    title: r.title,
-    preview: r.body ? timelineEmailBody(r.body).slice(0, 300) : null,
-    ts: r.ts,
-  })
-  const inbox = rows.filter((r) => r.direction === 'in').map(disp)
-  // Assigned = inbound for the acting broker; a pure superuser (no slug) sees
-  // every assigned conversation.
-  const assigned = rows
-    .filter((r) => r.direction === 'in' && (slug ? r.assignedBroker === slug : r.assignedBroker != null))
-    .map(disp)
-  const sent = rows.filter((r) => r.direction === 'out').map(disp)
+  const sp = await searchParams
+  const scope: InboxScope = isScope(sp.scope) ? sp.scope : 'mine'
+  const brokerScope = scopeBroker(access)
+  const openId = sp.c && Number.isFinite(Number(sp.c)) ? Number(sp.c) : null
+
+  const { conversations, counts } = await getInboxQueue({ scope, brokerScope, limit: 100 })
+
+  // ── Server actions bound for the client controls ──────────────────────────
+  async function bulkTriage(
+    personIds: number[],
+    status: ConversationStatus,
+  ): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    const res = await bulkConversationStateAction(personIds, status)
+    return res.ok ? { ok: true } : { ok: false, error: res.error }
+  }
+  async function markRead(): Promise<void> {
+    'use server'
+    await markAllReadAction()
+  }
+
+  // ── Open conversation pane ────────────────────────────────────────────────
+  let openPane: {
+    personId: number
+    name: string
+    status: ConversationStatus
+    items: FormattedThreadItem[]
+    canText: boolean
+    canEmail: boolean
+    signatureHtml: string | null
+  } | null = null
+
+  if (openId) {
+    const sb = createServiceClient()
+    const { data: person } = await sb
+      .from('crm_people')
+      .select('id,name,emails,assigned_broker')
+      .eq('id', openId)
+      .maybeSingle()
+    if (person) {
+      const [thread, target, stateRow] = await Promise.all([
+        getConversationThread(openId, 100),
+        getSendTarget(openId),
+        sb.from('crm_conversation_state').select('status').eq('person_id', openId).maybeSingle(),
+      ])
+      const emails = (person.emails as Array<{ value?: string }> | null) ?? []
+      const canEmail = emails.some((e) => Boolean(e.value))
+      const canText = Boolean(target?.phone)
+      const status: ConversationStatus =
+        (stateRow.data?.status as ConversationStatus | undefined) ?? 'unread'
+      // Signature mailbox follows the acting broker, defaulting to the first mailbox.
+      const actingSlug = access.brokerSlug ?? (person.assigned_broker as string | null) ?? 'matt'
+      const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
+      const signature = await getSignatureForMailbox(mailbox.email)
+      openPane = {
+        personId: openId,
+        name: person.name ?? `Contact #${openId}`,
+        status,
+        items: thread.map((it) => ({ ...it, tsLabel: formatDateTime(it.ts) })),
+        canText,
+        canEmail,
+        signatureHtml: signature?.html ?? null,
+      }
+    }
+  }
+
+  async function sendSmsForm(personId: number, formData: FormData): Promise<void> {
+    'use server'
+    formData.set('personId', String(personId))
+    const r = await sendCrmSmsAction(formData)
+    if (!r.ok) redirect(`/admin/crm/inbox?c=${personId}&error=${encodeURIComponent(r.error ?? 'Text not sent')}`)
+    redirect(`/admin/crm/inbox?c=${personId}`)
+  }
+  async function sendEmailForm(personId: number, formData: FormData): Promise<void> {
+    'use server'
+    formData.set('personId', String(personId))
+    const r = await sendCrmEmailAction(formData)
+    if (!r.ok) redirect(`/admin/crm/inbox?c=${personId}&error=${encodeURIComponent(r.error ?? 'Email not sent')}`)
+    redirect(`/admin/crm/inbox?c=${personId}`)
+  }
+  async function setStatusFor(
+    personId: number,
+    status: ConversationStatus,
+  ): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    const res = await setConversationStateAction(personId, status)
+    return res.ok ? { ok: true } : { ok: false, error: res.error }
+  }
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-3 py-8 sm:px-6">
+    <main className="mx-auto w-full max-w-7xl px-3 py-8 sm:px-6">
       <div className="mb-1 text-sm text-muted-foreground">
-        <Link href="/admin/crm" className="inline-flex min-h-10 items-center hover:text-foreground">← Back to CRM</Link>
+        <Link href="/admin/crm" className="inline-flex min-h-10 items-center hover:text-foreground">
+          Back to CRM
+        </Link>
       </div>
-      <h1 className="text-2xl font-bold text-foreground">Inbox</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Conversations across every contact. Gmail sync runs every 15 minutes; texts and voicemail join once Twilio is live.
-      </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Inbox</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Triage every conversation. Reply inline, mark handled, or close. Texts and emails route through the
+            suppression-checked send path.
+          </p>
+        </div>
+        <form action={markRead}>
+          <Button type="submit" size="sm" variant="outline" className="h-10 sm:h-9">
+            Mark all read
+          </Button>
+        </form>
+      </div>
 
-      <ConsoleSection title="Conversations" className="mt-6">
-        <InboxSegments inbox={inbox} assigned={assigned} sent={sent} />
-      </ConsoleSection>
-    </div>
+      {/* Scope tabs */}
+      <div className="mt-6 -mx-3 flex gap-2 overflow-x-auto no-scrollbar px-3 sm:mx-0 sm:px-0">
+        {SCOPES.map((s) => {
+          const count = counts[s.key]
+          const active = scope === s.key
+          return (
+            <Button
+              key={s.key}
+              asChild
+              size="sm"
+              variant={active ? 'default' : 'outline'}
+              className="h-10 shrink-0 gap-1.5 sm:h-9"
+            >
+              <Link href={`/admin/crm/inbox?scope=${s.key}${openId ? `&c=${openId}` : ''}`}>
+                {s.label}
+                <span className="tabular-nums opacity-80">{count}</span>
+              </Link>
+            </Button>
+          )
+        })}
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-2">
+          <ConsoleSection title="Conversations">
+            <InboxQueue
+              conversations={conversations}
+              activePersonId={openId}
+              scope={scope}
+              bulkAction={bulkTriage}
+              formatTs={formatDateTime}
+            />
+          </ConsoleSection>
+        </div>
+
+        <div className="lg:col-span-3">
+          {openPane ? (
+            <Card>
+              <CardHeader className="gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <CardTitle className="text-base">
+                    <Link href={`/admin/crm/${openPane.personId}`} className="text-primary hover:underline">
+                      {openPane.name}
+                    </Link>
+                  </CardTitle>
+                  <Link
+                    href={`/admin/crm/inbox?scope=${scope}`}
+                    className="text-sm text-muted-foreground hover:text-foreground"
+                  >
+                    Close pane
+                  </Link>
+                </div>
+                <ThreadStatusControl
+                  status={openPane.status}
+                  setStatusAction={setStatusFor.bind(null, openPane.personId)}
+                />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <InboxThread items={openPane.items} personName={openPane.name} />
+                <div className="border-t border-border pt-4">
+                  <InlineReply
+                    smsAction={sendSmsForm.bind(null, openPane.personId)}
+                    emailAction={sendEmailForm.bind(null, openPane.personId)}
+                    signatureHtml={openPane.signatureHtml}
+                    canText={openPane.canText}
+                    canEmail={openPane.canEmail}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="py-16 text-center text-sm text-muted-foreground">
+                Pick a conversation to read the thread and reply.
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    </main>
   )
 }

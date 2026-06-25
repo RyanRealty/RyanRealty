@@ -13,6 +13,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/crm-task-reminders",
+      "schedule": "0 13 * * *"
+    },
+    {
       "path": "/api/cron/crm-gmail-sync",
       "schedule": "9,24,39,54 * * * *"
     },

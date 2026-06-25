@@ -22,6 +22,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { addPersonTags, assignPersonToUser, setPersonCustomFields, postLeadOriginNote } from '@/lib/followupboss'
 import { getFubApiKey } from '@/lib/crm/fub-env'
+import { pickRoutedBroker } from '@/lib/crm/lead-routing'
+import { FUB_USER_ID_BY_BROKER } from '@/lib/crm/constants'
 import type { LeadOriginContext } from '@/lib/fub-lead-origin-note'
 
 export type LeadAudience = 'seller' | 'buyer'
@@ -74,20 +76,21 @@ function getServiceSupabase() {
 }
 
 /**
- * Broker assignment — ALL inbound leads route to Matt.
+ * Broker assignment — routed through the lead-routing engine (Wave 7).
  *
- * Per Matt's 2026-05-17 directive: "no round robin. I will get all listings
- * and leads." Round-robin code was previously here; removed. Rebecca remains
- * in the FUB "Seller Leads" group and can have leads manually reassigned via
- * the FUB UI, but every NEW LP / contact-form / FB-ad submission auto-routes
- * to Matt.
+ * The routing ENGINE (lib/crm/lead-routing.ts) is the source of truth for which
+ * broker earns a lead. Its LIVE behavior is unchanged from Matt's 2026-05-17
+ * directive ("I will get all listings and leads") because the seeded routing
+ * strategy is all_to_one with default_broker 'matt'. Flipping the strategy to
+ * round_robin or by_source (from the settings UI) distributes leads with NO
+ * deploy. pickRoutedBroker fails safe to 'matt' on any error.
  *
- * If the policy ever changes, restore the round-robin lookup against the
- * marketing_assignments ledger here. The ledger keeps recording every
- * assignment for audit + future flexibility.
+ * The marketing_assignments ledger keeps recording every assignment for audit.
  */
-async function pickBroker(_audience: LeadAudience, _tier: 'hot' | 'warm' | 'nurture'): Promise<{ broker: BrokerSlug; userId: number }> {
-  return { broker: 'matt', userId: FUB_USER_MATT }
+async function pickBroker(audience: LeadAudience, _tier: 'hot' | 'warm' | 'nurture'): Promise<{ broker: BrokerSlug; userId: number }> {
+  const slug = await pickRoutedBroker({ source: audience })
+  const broker = (slug in FUB_USER_ID_BY_BROKER ? slug : 'matt') as BrokerSlug
+  return { broker, userId: FUB_USER_ID_BY_BROKER[broker] ?? FUB_USER_MATT }
 }
 
 async function recordAssignment(params: {

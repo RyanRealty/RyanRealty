@@ -13,6 +13,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { DEFAULT_DESK_BROKER, brokerForTwilioNumber, verifiedTwilioParams } from '@/lib/crm/twilio'
 import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
+import { markConversationUnreadOnInbound } from '@/app/actions/crm-inbox'
 import { addSuppression, removeSuppression } from '@/lib/crm/suppressions'
 import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import { CRM_MAILBOXES, sendCrmEmail } from '@/lib/crm/gmail'
@@ -83,6 +84,10 @@ export async function POST(request: Request) {
       },
       { onConflict: 'dedupe_key', ignoreDuplicates: true },
     )
+
+    // Reset the inbox conversation to "unread" so the new inbound surfaces in the
+    // triage queue (Wave 7). Idempotent; never sends a message.
+    await markConversationUnreadOnInbound(match.personId)
 
     // HELP keyword → carrier-required help reply (does not change subscription).
     if (HELP_WORDS.has(firstToken)) {

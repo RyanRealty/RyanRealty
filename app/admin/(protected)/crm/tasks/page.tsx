@@ -1,120 +1,176 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
-import { completeCrmTaskAction, listCrmOpenTasks, type CrmOpenTask } from '@/app/actions/crm'
-import { CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
-import { Badge } from '@/components/ui/badge'
+import { redirect } from 'next/navigation'
+import {
+  getCrmAccess,
+  addCrmTaskAction,
+  completeCrmTaskAction,
+} from '@/app/actions/crm'
+import {
+  updateCrmTaskAction,
+  reassignCrmTaskAction,
+  snoozeCrmTaskAction,
+  deleteCrmTaskAction,
+  bulkCompleteTasksAction,
+} from '@/app/actions/crm-tasks'
+import { scopeBroker } from '@/lib/crm/scope'
+import { getTaskQueue, getCrmTaskTypes, type TaskQueueView } from '@/lib/data/crm/getTaskQueue'
+import { formatDateTime } from '@/lib/format/date'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
+import TaskQueue, { type TaskActions } from '@/components/admin/crm/tasks/TaskQueue'
+import NewTaskDialog from '@/components/admin/crm/tasks/NewTaskDialog'
 
 export const metadata = { title: 'Tasks | CRM | Admin' }
 export const dynamic = 'force-dynamic'
 
-async function completeTaskForm(taskId: number, personId: number | null, formData: FormData): Promise<void> {
-  'use server'
-  formData.set('taskId', String(taskId))
-  if (personId) formData.set('personId', String(personId))
-  const r = await completeCrmTaskAction(formData)
-  if (!r.ok) console.error('[crm] completeTask failed:', r.error)
+const VIEWS: { key: TaskQueueView; label: string }[] = [
+  { key: 'today', label: 'Today' },
+  { key: 'overdue', label: 'Overdue' },
+  { key: 'upcoming', label: 'Upcoming' },
+  { key: 'completed', label: 'Completed' },
+]
+
+function isView(v: string | undefined): v is TaskQueueView {
+  return v === 'today' || v === 'overdue' || v === 'upcoming' || v === 'completed'
 }
 
-function fmtDue(iso: string | null): string {
-  if (!iso) return 'No due date'
-  const d = new Date(iso)
-  return d.toLocaleString('en-US', {
-    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
-    timeZone: 'America/Los_Angeles',
-  })
-}
+export default async function CrmTasksPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string; type?: string }>
+}) {
+  const access = await getCrmAccess()
+  if (!access) redirect('/admin/access-denied')
 
-function groupTasks(tasks: CrmOpenTask[]) {
-  const now = Date.now()
-  const endOfToday = new Date()
-  endOfToday.setHours(23, 59, 59, 999)
-  const overdue: CrmOpenTask[] = []
-  const today: CrmOpenTask[] = []
-  const upcoming: CrmOpenTask[] = []
-  const someday: CrmOpenTask[] = []
-  for (const t of tasks) {
-    if (!t.due_at) { someday.push(t); continue }
-    const due = new Date(t.due_at).getTime()
-    if (due < now) overdue.push(t)
-    else if (due <= endOfToday.getTime()) today.push(t)
-    else upcoming.push(t)
+  const sp = await searchParams
+  const view: TaskQueueView = isView(sp.view) ? sp.view : 'today'
+  const typeFilter = sp.type && sp.type.trim() ? sp.type.trim() : null
+  const brokerScope = scopeBroker(access)
+  const canReassign = access.role === 'superuser'
+
+  // A stable "now" computed server-side — never new Date() at render in a client.
+  const now = new Date()
+  const [{ rows, counts }, taskTypes] = await Promise.all([
+    getTaskQueue({ brokerScope, view, type: typeFilter, now }),
+    getCrmTaskTypes(),
+  ])
+
+  // ── Server-action wrappers (uniform { ok, error } for the client) ──────────
+  async function completeTask(taskId: number, personId: number | null): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    const fd = new FormData()
+    fd.set('taskId', String(taskId))
+    if (personId) fd.set('personId', String(personId))
+    const r = await completeCrmTaskAction(fd)
+    return r.ok ? { ok: true } : { ok: false, error: r.error }
   }
-  return [
-    { label: 'Overdue', tasks: overdue, tone: 'text-destructive' },
-    { label: 'Today', tasks: today, tone: 'text-warning' },
-    { label: 'Upcoming', tasks: upcoming, tone: 'text-foreground' },
-    { label: 'No due date', tasks: someday, tone: 'text-muted-foreground' },
-  ].filter((g) => g.tasks.length > 0)
-}
+  async function bulkComplete(ids: number[]): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    const r = await bulkCompleteTasksAction(ids)
+    return r.ok ? { ok: true } : { ok: false, error: r.error }
+  }
+  async function snooze(id: number, days: number): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    const r = await snoozeCrmTaskAction(id, days)
+    return r.ok ? { ok: true } : { ok: false, error: r.error }
+  }
+  async function remove(id: number): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    const r = await deleteCrmTaskAction(id)
+    return r.ok ? { ok: true } : { ok: false, error: r.error }
+  }
+  async function update(input: {
+    id: number
+    name?: string
+    type?: string
+    dueAt?: string | null
+  }): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    const r = await updateCrmTaskAction(input)
+    return r.ok ? { ok: true } : { ok: false, error: r.error }
+  }
+  async function reassign(id: number, broker: string): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    const r = await reassignCrmTaskAction(id, broker)
+    return r.ok ? { ok: true } : { ok: false, error: r.error }
+  }
+  async function createTask(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    const r = await addCrmTaskAction(formData)
+    return r.ok ? { ok: true } : { ok: false, error: r.error }
+  }
 
-export default async function CrmTasksPage({ searchParams }: { searchParams: Promise<{ broker?: string }> }) {
-  const { broker } = await searchParams
-  const tasks = await listCrmOpenTasks(broker || undefined)
-  const groups = groupTasks(tasks)
+  const actions: TaskActions = { complete: completeTask, bulkComplete, snooze, remove, update, reassign }
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-3 py-6 sm:px-6 sm:py-8">
+    <main className="mx-auto w-full max-w-4xl px-3 py-6 sm:px-6 sm:py-8">
       <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Tasks</h1>
-          <p className="text-sm text-muted-foreground">{tasks.length} open across the book</p>
+          <p className="text-sm text-muted-foreground">Every task across the book, by when it is due.</p>
         </div>
-        {/* Broker filter — single horizontal-scroll strip on phones, wraps on desktop */}
-        <div className="-mx-3 flex gap-2 overflow-x-auto no-scrollbar px-3 sm:mx-0 sm:flex-wrap sm:gap-1.5 sm:overflow-visible sm:px-0">
-          <Button asChild size="sm" variant={!broker ? 'default' : 'outline'} className="h-10 shrink-0 sm:h-7">
-            <Link href="/admin/crm/tasks">All</Link>
-          </Button>
-          {CRM_BROKERS.map((b) => (
-            <Button key={b} asChild size="sm" variant={broker === b ? 'default' : 'outline'} className="h-10 shrink-0 sm:h-7">
-              <Link href={`/admin/crm/tasks?broker=${b}`}>{CRM_BROKER_DISPLAY[b] ?? b}</Link>
-            </Button>
-          ))}
-        </div>
+        <NewTaskDialog taskTypes={taskTypes} createAction={createTask} />
       </div>
 
-      <ConsoleSection title="Open tasks" count={tasks.length > 0 ? `(${tasks.length})` : undefined}>
-        {groups.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            Nothing open. New tasks land here the moment a lead acts or a follow-up comes due.
-          </p>
-        ) : (
-          <div className="space-y-6">
-            {groups.map((g) => (
-              <section key={g.label}>
-                <h2 className={`mb-2 text-sm font-semibold uppercase tracking-wide ${g.tone}`}>
-                  {g.label} <span className="tabular-nums">({g.tasks.length})</span>
-                </h2>
-                <div className="space-y-2">
-                  {g.tasks.map((t) => (
-                    <Card key={t.id}>
-                      <CardContent className="flex items-center justify-between gap-3 p-3 sm:p-4">
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-medium text-foreground">{t.name}</div>
-                          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                            {t.person?.name && t.person_id ? (
-                              <Link href={`/admin/crm/${t.person_id}`} className="font-medium text-primary hover:underline">
-                                {t.person.name}
-                              </Link>
-                            ) : null}
-                            <span className="tabular-nums">{fmtDue(t.due_at)}</span>
-                            {t.type ? <Badge variant="outline" className="text-xs">{t.type}</Badge> : null}
-                            {t.assigned_broker ? <span>{CRM_BROKER_DISPLAY[t.assigned_broker as keyof typeof CRM_BROKER_DISPLAY] ?? t.assigned_broker}</span> : null}
-                          </div>
-                        </div>
-                        <form action={completeTaskForm.bind(null, t.id, t.person_id)} className="shrink-0">
-                          <Button type="submit" size="sm" variant="outline" className="h-10 px-4 sm:h-7 sm:px-2.5">Done</Button>
-                        </form>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </section>
+      {/* View tabs */}
+      <div className="-mx-3 flex gap-2 overflow-x-auto no-scrollbar px-3 sm:mx-0 sm:flex-wrap sm:px-0">
+        {VIEWS.map((v) => {
+          const active = view === v.key
+          const count = counts[v.key]
+          return (
+            <Button
+              key={v.key}
+              asChild
+              size="sm"
+              variant={active ? 'default' : 'outline'}
+              className="h-10 shrink-0 gap-1.5 sm:h-9"
+            >
+              <Link href={`/admin/crm/tasks?view=${v.key}${typeFilter ? `&type=${encodeURIComponent(typeFilter)}` : ''}`}>
+                {v.label}
+                <span className="tabular-nums opacity-80">{count}</span>
+              </Link>
+            </Button>
+          )
+        })}
+      </div>
+
+      {/* Type filter */}
+      {taskTypes.length > 0 ? (
+        <div className="-mx-3 mt-3 flex gap-2 overflow-x-auto no-scrollbar px-3 sm:mx-0 sm:flex-wrap sm:px-0">
+          <Button
+            asChild
+            size="sm"
+            variant={!typeFilter ? 'secondary' : 'ghost'}
+            className="h-9 shrink-0 sm:h-8"
+          >
+            <Link href={`/admin/crm/tasks?view=${view}`}>All types</Link>
+          </Button>
+          {taskTypes
+            .filter((t) => t.isActive || t.key === typeFilter)
+            .map((t) => (
+              <Button
+                key={t.key}
+                asChild
+                size="sm"
+                variant={typeFilter === t.key ? 'secondary' : 'ghost'}
+                className="h-9 shrink-0 sm:h-8"
+              >
+                <Link href={`/admin/crm/tasks?view=${view}&type=${encodeURIComponent(t.key)}`}>{t.label}</Link>
+              </Button>
             ))}
-          </div>
-        )}
+        </div>
+      ) : null}
+
+      <ConsoleSection title="Task queue" className="mt-6">
+        <TaskQueue
+          rows={rows}
+          view={view}
+          taskTypes={taskTypes}
+          canReassign={canReassign}
+          actions={actions}
+          formatDue={formatDateTime}
+        />
       </ConsoleSection>
     </main>
   )
