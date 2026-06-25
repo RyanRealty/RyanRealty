@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.626.3 (2026-06-25)
+
+### Maintenance
+- docs(crm): Wave 9 GO verdict (11/11 blockers closed) + tracked hardening follow-ups
+
+---
+
+
 ## v1.626.2 (2026-06-25)
 
 ### Bug Fixes
