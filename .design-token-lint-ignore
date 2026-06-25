@@ -174,6 +174,11 @@ app/admin/(protected)/crm/sequences/page.tsx
 app/admin/(protected)/crm/approvals/page.tsx
 app/admin/(protected)/crm/workflows/page.tsx
 app/admin/(protected)/sign-off/page.tsx
+# Email reporting filter form: native <select>/<input> in a GET filter form — the
+# Radix Select primitive cannot submit a value through a native <form method=GET>,
+# so the server-component filter bar uses native form controls (same exception
+# class as app/admin/(protected)/crm/page.tsx above).
+app/admin/(protected)/reports/emails/page.tsx
 # Admin sidebar: sticky-below-61px-header needs h-[calc(100vh-61px)] — no
 # locked-ladder step for viewport-minus-header heights (same exception class
 # as the admin report/chart pages above).

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyEmailToken } from '@/lib/email-tracking'
 import { createServiceClient } from '@/lib/supabase/service'
+import { recordEmailEvent, sendTypeFromEmailKey } from '@/lib/crm/email-events'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -43,6 +44,21 @@ export async function GET(req: NextRequest) {
         },
       })
       if (error) console.warn('[track/open] insert error:', error.message)
+
+      // Also record into the unified email_events store (the single source the
+      // engagement reporting reads from). The token carries personId + emailKey
+      // but no recipient email — recordEmailEvent resolves the recipient
+      // best-effort from the person and anchors the dedupe key on the person, so
+      // a pixel that fires many times collapses to ONE open row. Non-blocking:
+      // a reporting-side failure must never break the pixel response.
+      const res = await recordEmailEvent({
+        personId: ctx.personId,
+        sendType: sendTypeFromEmailKey(ctx.emailKey),
+        event: 'open',
+        emailKey: ctx.emailKey || null,
+        subject: ctx.label || null,
+      })
+      if (!res.ok) console.warn('[track/open] email_events error:', res.error)
     }
   } catch (err) {
     console.warn('[track/open] log failed:', err)

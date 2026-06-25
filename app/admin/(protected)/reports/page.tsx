@@ -13,6 +13,7 @@ const REPORT_TILES = [
   { href: '/admin/reports/leads', title: 'Lead analytics', desc: 'Funnel, scoring distribution, and high-intent actions.' },
   { href: '/admin/reports/lead-flow', title: 'Lead-flow report', desc: 'GA4 sessions to form submits to broker assignments to CMAs, with wiring health per LP.' },
   { href: '/admin/reports/traffic-sources', title: 'Traffic sources', desc: 'Where every visitor came from. The GBP attribution gap and channels to tag.' },
+  { href: '/admin/reports/emails', title: 'Email reporting', desc: 'Sent-email log and open, click, and bounce rates from the unified email-events store.' },
   { href: '/admin/analytics/action-required', title: 'Action required', desc: 'Hot leads to call now, warm prospects active, anonymous high-engagement for retargeting.' },
   { href: '/admin/people', title: 'People index', desc: 'Every known FUB person seen on the site or assigned in the last 90 days.' },
   { href: '/admin/analytics/meta-health', title: 'Meta health', desc: 'Pixel firing, lead-form inventory, webhook status, recent leads, action items.' },

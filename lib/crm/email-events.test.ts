@@ -5,11 +5,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // (buildDedupeKey, normalizeEvent) are unaffected by these mocks.
 const mockInsert = vi.fn()
 const mockGetPersonIds = vi.fn()
+const mockGetPrimaryEmail = vi.fn()
 vi.mock('@/lib/data/crm/insertEmailEvent', () => ({
   insertEmailEvent: (...args: unknown[]) => mockInsert(...args),
 }))
 vi.mock('@/lib/data/crm/getPersonIdsByEmail', () => ({
   getPersonIdsByEmail: (...args: unknown[]) => mockGetPersonIds(...args),
+}))
+vi.mock('@/lib/data/crm/getPersonPrimaryEmail', () => ({
+  getPersonPrimaryEmail: (...args: unknown[]) => mockGetPrimaryEmail(...args),
 }))
 
 import {
@@ -17,6 +21,7 @@ import {
   normalizeEvent,
   recordEmailEvent,
   resolvePersonIdByEmail,
+  sendTypeFromEmailKey,
 } from './email-events'
 
 describe('buildDedupeKey (idempotency)', () => {
@@ -47,6 +52,48 @@ describe('buildDedupeKey (idempotency)', () => {
   it('falls back to "none" anchor when neither messageId nor emailKey exists', () => {
     const k = buildDedupeKey({ event: 'sent', recipientEmail: 'a@b.com' })
     expect(k).toBe('none:sent:a@b.com')
+  })
+
+  it('anchors on the person (p:<id>) when no recipient is known (Gmail rail)', () => {
+    const k = buildDedupeKey({ emailKey: 'newsletter:42', event: 'open', personId: 42 })
+    expect(k).toBe('newsletter:42:open:p:42')
+  })
+
+  it('keeps a person-anchored open idempotent across many pixel fires', () => {
+    const a = buildDedupeKey({ emailKey: 'cma:deer', event: 'open', personId: 7 })
+    const b = buildDedupeKey({ emailKey: 'cma:deer', event: 'open', personId: 7 })
+    expect(a).toBe(b)
+  })
+
+  it('prefers the recipient over the person id when both are present', () => {
+    const k = buildDedupeKey({ messageId: 'm1', event: 'open', recipientEmail: 'a@b.com', personId: 42 })
+    expect(k).toBe('m1:open:a@b.com')
+  })
+})
+
+describe('sendTypeFromEmailKey (emailKey prefix inference)', () => {
+  it('maps each known prefix to its send type', () => {
+    expect(sendTypeFromEmailKey('newsletter:2026-06')).toBe('newsletter')
+    expect(sendTypeFromEmailKey('campaign:spring')).toBe('campaign')
+    expect(sendTypeFromEmailKey('cma:cma-62285-deer')).toBe('cma')
+    expect(sendTypeFromEmailKey('market-report:bend')).toBe('market-report')
+    expect(sendTypeFromEmailKey('alert:new-listing')).toBe('alert')
+    expect(sendTypeFromEmailKey('seq:69:2')).toBe('sequence')
+    expect(sendTypeFromEmailKey('sequence:69:2')).toBe('sequence')
+    expect(sendTypeFromEmailKey('manual:42:1700')).toBe('one-off')
+  })
+
+  it('is case-insensitive and whitespace-tolerant on the prefix', () => {
+    expect(sendTypeFromEmailKey('  Newsletter:x ')).toBe('newsletter')
+    expect(sendTypeFromEmailKey('CMA:y')).toBe('cma')
+  })
+
+  it('falls back to "other" for an unknown / prefix-less / empty key', () => {
+    expect(sendTypeFromEmailKey('welcome:1')).toBe('other')
+    expect(sendTypeFromEmailKey('justastring')).toBe('other')
+    expect(sendTypeFromEmailKey('')).toBe('other')
+    expect(sendTypeFromEmailKey(null)).toBe('other')
+    expect(sendTypeFromEmailKey(undefined)).toBe('other')
   })
 })
 
@@ -116,6 +163,7 @@ describe('recordEmailEvent', () => {
   beforeEach(() => {
     mockInsert.mockReset()
     mockGetPersonIds.mockReset()
+    mockGetPrimaryEmail.mockReset()
   })
 
   it('writes a normalized row and reports inserted=true (the new-row path)', async () => {
@@ -174,10 +222,52 @@ describe('recordEmailEvent', () => {
     expect(mockInsert).not.toHaveBeenCalled()
   })
 
-  it('rejects a missing recipient', async () => {
+  it('rejects a missing recipient when no personId is supplied', async () => {
     const res = await recordEmailEvent({ recipientEmail: '  ', sendType: 'other', event: 'sent' })
     expect(res.ok).toBe(false)
-    if (!res.ok) expect(res.error).toContain('recipientEmail required')
+    if (!res.ok) expect(res.error).toContain('recipientEmail or personId required')
+  })
+
+  it('Gmail rail: accepts a personId with NO recipient, resolves the email best-effort', async () => {
+    mockGetPrimaryEmail.mockResolvedValue('lead@example.com')
+    mockInsert.mockResolvedValue({ ok: true, inserted: true })
+    const res = await recordEmailEvent({
+      personId: 42,
+      sendType: 'newsletter',
+      event: 'open',
+      emailKey: 'newsletter:2026-06',
+      subject: 'June market update',
+    })
+    expect(res).toEqual({ ok: true, inserted: true, event: 'open', personId: 42 })
+    // Person resolved by id, never re-resolved from an email.
+    expect(mockGetPersonIds).not.toHaveBeenCalled()
+    const row = mockInsert.mock.calls[0][0]
+    expect(row.person_id).toBe(42)
+    expect(row.recipient_email).toBe('lead@example.com')
+    // Recipient known -> dedupe anchored on the email.
+    expect(row.dedupe_key).toBe('newsletter:2026-06:open:lead@example.com')
+  })
+
+  it('Gmail rail: still records (recipient empty) when the person has no email on file', async () => {
+    mockGetPrimaryEmail.mockResolvedValue(null)
+    mockInsert.mockResolvedValue({ ok: true, inserted: true })
+    const res = await recordEmailEvent({ personId: 7, sendType: 'cma', event: 'click', emailKey: 'cma:deer' })
+    expect(res.ok).toBe(true)
+    const row = mockInsert.mock.calls[0][0]
+    expect(row.person_id).toBe(7)
+    expect(row.recipient_email).toBe('')
+    // No recipient -> dedupe anchored on the person.
+    expect(row.dedupe_key).toBe('cma:deer:click:p:7')
+  })
+
+  it('Gmail rail: a pixel firing twice dedupes to ONE open row (same key)', async () => {
+    mockGetPrimaryEmail.mockResolvedValue('a@b.com')
+    mockInsert.mockResolvedValueOnce({ ok: true, inserted: true }).mockResolvedValueOnce({ ok: true, inserted: false })
+    const first = await recordEmailEvent({ personId: 9, sendType: 'newsletter', event: 'open', emailKey: 'newsletter:x' })
+    const second = await recordEmailEvent({ personId: 9, sendType: 'newsletter', event: 'open', emailKey: 'newsletter:x' })
+    expect(first.ok && first.inserted).toBe(true)
+    expect(second.ok && (second as { inserted: boolean }).inserted).toBe(false)
+    expect(mockInsert.mock.calls[0][0].dedupe_key).toBe(mockInsert.mock.calls[1][0].dedupe_key)
   })
 
   it('propagates a DAL write failure as a result flag (never throws)', async () => {

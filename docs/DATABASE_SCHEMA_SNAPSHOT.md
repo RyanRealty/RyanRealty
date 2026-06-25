@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-25T17:01:36.193Z
+**Generated:** 2026-06-25T17:26:10.757Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -300,7 +300,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 591,139**
+### `listing_tile_mv` · **rows ≈ 591,320**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -1534,6 +1534,23 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `is_shared` | boolean | no | false |
 | `is_protected` | boolean | no | false |
 | `updated_at` | timestamp with time zone | no | now() |
+
+### `crm_scheduled_sends`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `kind` | text | no | 'email-cohort'::text |
+| `selection` | jsonb | no |  |
+| `params` | jsonb | no | '{}'::jsonb |
+| `actor_email` | text | no |  |
+| `broker_scope` | text | yes |  |
+| `scheduled_at` | timestamp with time zone | no |  |
+| `status` | text | no | 'scheduled'::text |
+| `bulk_job_id` | bigint | yes |  |
+| `error` | text | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `enqueued_at` | timestamp with time zone | yes |  |
 
 ### `crm_sequence_enrollments`
 

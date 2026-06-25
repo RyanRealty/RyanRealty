@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyEmailToken } from '@/lib/email-tracking'
 import { createServiceClient } from '@/lib/supabase/service'
+import { recordEmailEvent, sendTypeFromEmailKey } from '@/lib/crm/email-events'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -27,6 +28,22 @@ export async function GET(req: NextRequest) {
         payload: { emailKey: ctx.emailKey, label: ctx.label ?? null, url: target },
       })
       if (error) console.warn('[track/click] insert error:', error.message)
+
+      // Also record into the unified email_events store (the single source the
+      // engagement reporting reads from). Token carries personId + emailKey but
+      // no recipient email — recordEmailEvent resolves the recipient best-effort
+      // and anchors the dedupe key on the person, so repeat clicks of the same
+      // link collapse to ONE click row. Non-blocking: a reporting-side failure
+      // must never break the 302 redirect.
+      const res = await recordEmailEvent({
+        personId: ctx.personId,
+        sendType: sendTypeFromEmailKey(ctx.emailKey),
+        event: 'click',
+        emailKey: ctx.emailKey || null,
+        subject: ctx.label || null,
+        meta: { url: target },
+      })
+      if (!res.ok) console.warn('[track/click] email_events error:', res.error)
     } catch (err) {
       console.warn('[track/click] log failed:', err)
     }

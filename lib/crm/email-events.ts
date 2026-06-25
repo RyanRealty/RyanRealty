@@ -44,8 +44,15 @@ export type EmailSendType =
 export type RecordEmailEventInput = {
   /** Provider message id (Resend email_id, Gmail message id). */
   messageId?: string | null
-  /** Recipient address. Required — the event is keyed on it when no person resolves. */
-  recipientEmail: string
+  /**
+   * Recipient address. Optional ONLY when a positive personId is supplied (the
+   * Gmail open/click rail signs personId + emailKey into the pixel token but
+   * never the recipient email). With a personId we resolve the recipient
+   * best-effort from the person's primary email and anchor the dedupe key on the
+   * person instead. Without a personId this is required — the event is keyed on
+   * it when no person resolves.
+   */
+  recipientEmail?: string | null
   /** Pre-resolved crm_people id. When omitted, resolved fail-closed from the email. */
   personId?: number | null
   broker?: string | null
@@ -126,16 +133,60 @@ export function normalizeEvent(raw: string | null | undefined): EmailEvent | nul
  * exists, the emailKey (per-send instrumentation key) anchors the dedupe instead
  * so a pixel-only open is still idempotent; with neither, the key falls back to
  * the bare event+recipient (best-effort de-dup for anonymous sends).
+ *
+ * The Gmail open/click rail has no recipient email in its signed token — only a
+ * personId + emailKey. For that path the dedupe target is the PERSON (`p:<id>`)
+ * rather than the email, so a pixel that fires many times still collapses to one
+ * open row even though the recipient is unknown / resolved only best-effort.
  */
 export function buildDedupeKey(opts: {
   messageId?: string | null
   emailKey?: string | null
   event: EmailEvent
-  recipientEmail: string
+  recipientEmail?: string | null
+  personId?: number | null
 }): string {
   const anchor = (opts.messageId || opts.emailKey || 'none').trim()
-  const recipient = opts.recipientEmail.trim().toLowerCase()
-  return `${anchor}:${opts.event}:${recipient}`
+  const recipient = (opts.recipientEmail ?? '').trim().toLowerCase()
+  // Prefer the recipient as the dedupe target; fall back to the person id when no
+  // recipient is known (the Gmail tracker rail), so the key stays deterministic.
+  const target =
+    recipient || (typeof opts.personId === 'number' && Number.isFinite(opts.personId) ? `p:${opts.personId}` : '')
+  return `${anchor}:${opts.event}:${target}`
+}
+
+/**
+ * Infer the send type from an instrumentation emailKey's prefix. The tracker
+ * rail signs an emailKey like `newsletter:...`, `cma:cma-62285-deer`, `seq:69:2`
+ * into the open/click token; the prefix before the first colon tells us what
+ * kind of send produced the event. Unknown / prefix-less keys fall back to
+ * 'other'. Pure — exported for the unit test.
+ */
+export function sendTypeFromEmailKey(emailKey: string | null | undefined): EmailSendType {
+  const prefix = String(emailKey ?? '').trim().toLowerCase().split(':')[0]
+  switch (prefix) {
+    case 'newsletter':
+      return 'newsletter'
+    case 'campaign':
+      return 'campaign'
+    case 'cma':
+      return 'cma'
+    case 'market-report':
+    case 'market':
+    case 'report':
+      return 'market-report'
+    case 'alert':
+      return 'alert'
+    case 'seq':
+    case 'sequence':
+      return 'sequence'
+    case 'one-off':
+    case 'oneoff':
+    case 'manual':
+      return 'one-off'
+    default:
+      return 'other'
+  }
 }
 
 // ── Orchestration ────────────────────────────────────────────────────────────
@@ -164,16 +215,27 @@ export async function resolvePersonIdByEmail(email: string): Promise<number | nu
 export async function recordEmailEvent(
   input: RecordEmailEventInput,
 ): Promise<RecordEmailEventResult> {
-  const recipient = (input.recipientEmail ?? '').trim().toLowerCase()
-  if (!recipient) return { ok: false, error: 'recipientEmail required' }
-
   const event = normalizeEvent(input.event)
   if (!event) return { ok: false, error: `unrecognized event: ${input.event}` }
 
-  // Resolve the person fail-closed unless the caller already supplied one.
+  const hasPersonId = typeof input.personId === 'number' && Number.isFinite(input.personId) && input.personId > 0
+  let recipient = (input.recipientEmail ?? '').trim().toLowerCase()
+
+  // A recipient is required UNLESS a positive personId is supplied (the Gmail
+  // open/click rail signs personId + emailKey but not the recipient email). With
+  // a personId we resolve the recipient best-effort from the person's primary
+  // email so the row still carries an address when one is on file.
+  if (!recipient && !hasPersonId) return { ok: false, error: 'recipientEmail or personId required' }
+
+  // Resolve the person: a caller-supplied positive id wins; otherwise resolve
+  // fail-closed from the recipient email.
   let personId: number | null = null
-  if (typeof input.personId === 'number' && Number.isFinite(input.personId)) {
-    personId = input.personId
+  if (hasPersonId) {
+    personId = input.personId as number
+    if (!recipient) {
+      const { getPersonPrimaryEmail } = await import('@/lib/data/crm/getPersonPrimaryEmail')
+      recipient = ((await getPersonPrimaryEmail(personId)) ?? '').trim().toLowerCase()
+    }
   } else {
     personId = await resolvePersonIdByEmail(recipient)
   }
@@ -184,6 +246,7 @@ export async function recordEmailEvent(
     emailKey: input.emailKey ?? null,
     event,
     recipientEmail: recipient,
+    personId,
   })
 
   const { insertEmailEvent } = await import('@/lib/data/crm/insertEmailEvent')

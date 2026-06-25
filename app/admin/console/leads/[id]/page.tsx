@@ -44,6 +44,8 @@ import { getContactMemberships } from '@/lib/data/crm/getContactMemberships'
 import { MembershipToggles } from '@/components/admin/crm/MembershipToggles'
 import { getContactActivityFeed } from '@/lib/data/crm/getContactActivityFeed'
 import ContactActivityFeed from '@/components/admin/crm/ContactActivityFeed'
+import { getContactEmailEngagement } from '@/lib/data/crm/getContactEmailEngagement'
+import ContactEmailEngagement from '@/components/admin/crm/ContactEmailEngagement'
 import { getContactBehaviorSummary } from '@/lib/data/crm/getContactBehaviorSummary'
 import ContactBehaviorPanel from '@/components/admin/crm/ContactBehaviorPanel'
 import { getContactRelationships } from '@/lib/data/crm/getContactRelationships'
@@ -309,7 +311,7 @@ export default async function ConsoleLeadPage({
   const personEmails = (person.emails ?? []).map((e) => e.value).filter((v): v is string => Boolean(v))
 
   // What they're shopping for — saved searches + the homes they're watching (live MLS) + newsletter status.
-  const [savedSearches, viewedListings, membership, contactMemberships, activityFeed, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, firstTouch, fieldDefs] = await Promise.all([
+  const [savedSearches, viewedListings, membership, contactMemberships, activityFeed, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, firstTouch, fieldDefs, emailEngagementSummary] = await Promise.all([
     getGuestSearchAlertsForLead({ fubPersonId: person.fub_legacy_id, emails: personEmails }),
     getViewedListingsForLead(person.fub_legacy_id),
     getNewsletterMembershipForLead({ crmPersonId: person.id, emails: personEmails }),
@@ -325,6 +327,8 @@ export default async function ConsoleLeadPage({
     listAvailableMarketReportAreas(),
     getFirstTouchAttribution({ emails: personEmails, fubPersonId: person.fub_legacy_id }),
     getCrmFieldDefinitions(),
+    // Wave 5: per-contact email engagement, read from the unified email_events store.
+    getContactEmailEngagement(person.id),
   ])
 
   // A CMA queued and awaiting broker review (status 'ready') → NextStepCard shows
@@ -596,6 +600,10 @@ export default async function ConsoleLeadPage({
               </form>
             </CardContent>
           </Card>
+
+          {/* Email engagement — opens, clicks, deliverability — from the unified
+              email_events store (Resend webhook + Gmail tracker rails). */}
+          <ContactEmailEngagement engagement={emailEngagementSummary} />
           </>
         }
         tasks={
