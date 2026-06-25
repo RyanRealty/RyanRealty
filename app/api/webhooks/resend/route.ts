@@ -3,6 +3,7 @@ import { recordNewsletterEvent } from '@/lib/data'
 import { getPersonIdsByEmail } from '@/lib/data/crm/getPersonIdsByEmail'
 import { addSuppression } from '@/lib/crm/suppressions'
 import { createServiceClient } from '@/lib/supabase/service'
+import { recordEmailEvent } from '@/lib/crm/email-events'
 import { verifySvixSignature, isFreshTimestamp, classifyResendEvent, type ResendEventType } from '@/lib/crm/resend-webhook'
 
 /** Resend event type -> crm_timeline kind. The lead page renders these on the
@@ -88,6 +89,18 @@ export async function POST(request: NextRequest) {
       : null
     const sb = createServiceClient()
     for (const email of event.recipients) {
+      // Unified email_events store (Wave 1): one idempotent, normalized row per
+      // lifecycle event — the single source of truth for all email reporting.
+      // recordEmailEvent resolves the person + dedupes on (messageId+event+email).
+      await recordEmailEvent({
+        messageId: emailId,
+        recipientEmail: email,
+        sendType: 'other',
+        event: payload.type ?? event.type,
+        subject,
+        occurredAt: event.isoTs,
+        meta: event.clickUrl ? { clickUrl: event.clickUrl } : undefined,
+      })
       const personIds = await getPersonIdsByEmail(email)
       for (const personId of personIds) {
         const urlKey = event.clickUrl ? `:${event.clickUrl.slice(0, 80)}` : ''
