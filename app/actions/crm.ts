@@ -18,7 +18,6 @@ import {
   addPersonTags,
   assignPersonToUser,
   completeFubTask,
-  createRealtimeTask,
   replacePersonTags,
   updatePersonAutomationState,
 } from '@/lib/followupboss'
@@ -1156,24 +1155,21 @@ export async function addCrmTaskAction(formData: FormData): Promise<CrmActionRes
   const person = await getPersonCore(personId)
   if (!person) return { ok: false, error: 'Person not found' }
 
-  if (person.fub_legacy_id) {
-    const ok = await createRealtimeTask({
-      personId: person.fub_legacy_id,
-      taskName: name,
-      taskType: (['Follow Up', 'Call', 'Text', 'Email'].includes(type) ? type : 'Follow Up') as 'Follow Up' | 'Call' | 'Text' | 'Email',
-      dueInMinutes: Math.round(dueHours * 60),
-    })
-    if (!ok) return { ok: false, error: 'FUB task create failed' }
-    // mirror layer writes the local task row
-  } else {
-    const sb = createServiceClient()
-    const { error } = await sb.from('crm_tasks').insert({
-      person_id: personId, name, type,
-      due_at: new Date(Date.now() + dueHours * 3600 * 1000).toISOString(),
-      origin: 'app',
-    })
-    if (error) return { ok: false, error: error.message }
-  }
+  // FUB DECOMMISSIONED (2026-06-24): always write the task natively. The old
+  // fub_legacy_id branch routed through the now-dead FUB API (createRealtimeTask)
+  // and returned WITHOUT writing a local crm_tasks row — so task creation was
+  // silently broken for the ~18K imported (fub_legacy_id) contacts. crm_tasks is
+  // the system of record now.
+  const sb = createServiceClient()
+  const { error } = await sb.from('crm_tasks').insert({
+    person_id: personId,
+    name,
+    type,
+    due_at: new Date(Date.now() + dueHours * 3600 * 1000).toISOString(),
+    assigned_broker: access.access.brokerSlug ?? null,
+    origin: 'app',
+  })
+  if (error) return { ok: false, error: error.message }
   revalidateCrm(personId)
   return { ok: true }
 }
