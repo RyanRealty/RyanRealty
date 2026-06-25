@@ -80,6 +80,13 @@ export type BulkActionsProps = {
   onClear: () => void
   /** The active list filter, so "select all matching" can carry it to the server. */
   activeFilters: LegacyFilters
+  /**
+   * The active saved view id (from ?view=), or null. When set, the "all matching"
+   * scope targets the WHOLE view via { mode: 'view', viewId } so the audience
+   * resolves through the view's stored AST (scope-clamped at run time) rather than
+   * re-deriving from the legacy filter bag. Null falls back to Wave-3 behavior.
+   */
+  activeViewId?: number | null
   /** Total contacts matching the active filter (server count) — the "all N" label. */
   matchingTotal: number
   /** Whether the caller may reassign brokers (superuser only). */
@@ -142,7 +149,7 @@ const NEWSLETTER_SEGMENTS: BulkPickerOption[] = [
 
 export default function BulkActions(props: BulkActionsProps) {
   const {
-    selectedIds, onClear, activeFilters, matchingTotal, canAssignBroker,
+    selectedIds, onClear, activeFilters, activeViewId, matchingTotal, canAssignBroker,
     brokers, stages, tags, reportAreas, emailTemplates, sequences,
   } = props
 
@@ -181,11 +188,19 @@ export default function BulkActions(props: BulkActionsProps) {
   // filtered list the operator can "select all" of).
   if (!hasIds && !hasMatching) return null
 
+  // The "all matching" selection. When a saved view is active, the whole view is
+  // the audience (resolved through its stored AST, scope-clamped at run time);
+  // otherwise the active legacy filter bag is upgraded to an AST server-side.
+  const matchingSelection = (): BulkActionSelection =>
+    activeViewId != null
+      ? { mode: 'view', viewId: activeViewId }
+      : { mode: 'matching', filters: activeFilters }
+
   // The selection the active scope produces for an action / preflight.
   const buildSelection = (): BulkActionSelection =>
     scope === 'ids'
       ? { mode: 'ids', ids: selectedIds }
-      : { mode: 'matching', filters: activeFilters }
+      : matchingSelection()
 
   const resetForm = () => {
     setBroker(''); setTag(''); setStage(''); setSequenceId(''); setTemplateId('')
@@ -243,7 +258,7 @@ export default function BulkActions(props: BulkActionsProps) {
     const selection: BulkActionSelection =
       nextScope === 'ids'
         ? { mode: 'ids', ids: selectedIds }
-        : { mode: 'matching', filters: activeFilters }
+        : matchingSelection()
     startTransition(async () => {
       const res = await bulkPreflightCount(selection, kind)
       setPreflightLoading(false)
@@ -373,7 +388,7 @@ export default function BulkActions(props: BulkActionsProps) {
               onClick={() => switchScope('matching')}
               disabled={!hasMatching || isPending}
             >
-              All {matchingTotal.toLocaleString('en-US')} matching
+              {activeViewId != null ? 'Whole view' : 'All'} {matchingTotal.toLocaleString('en-US')}
             </Button>
           </div>
 
@@ -446,7 +461,7 @@ export default function BulkActions(props: BulkActionsProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ids">{idCount} selected</SelectItem>
-                  <SelectItem value="matching">All {matchingTotal.toLocaleString('en-US')} matching</SelectItem>
+                  <SelectItem value="matching">{activeViewId != null ? 'Whole view' : 'All'} {matchingTotal.toLocaleString('en-US')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

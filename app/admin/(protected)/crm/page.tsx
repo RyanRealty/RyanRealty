@@ -1,7 +1,8 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { getCrmAccess, getCrmOverview, listBrokerLicenses, listCrmPeople, listCrmSavedViews, listCrmSequences } from '@/app/actions/crm'
+import { getCrmAccess, getCrmOverview, listBrokerLicenses, listCrmPeople, listCrmSequences } from '@/app/actions/crm'
+import { getCrmSavedViews } from '@/lib/data/crm/getCrmSavedViews'
 import { scopeBroker } from '@/lib/crm/scope'
 import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import { getCrmStages } from '@/lib/data/crm/getCrmStages'
@@ -11,6 +12,7 @@ import { getCrmTemplatesAdmin } from '@/lib/data/crm/getCrmTemplatesAdmin'
 import { Badge } from '@/components/ui/badge'
 import ContactsSearch from '@/components/admin/crm/ContactsSearch'
 import BulkAssignWrapper, { type BulkAssignRow } from '@/components/admin/crm/BulkAssignWrapper'
+import SavedViewSidebar, { type SavedViewItem } from '@/components/admin/crm/SavedViewSidebar'
 import { Button } from '@/components/ui/button'
 import { KpiStrip } from '@/components/console/KpiStrip'
 import { formatDate } from '@/lib/format/date'
@@ -51,7 +53,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
   const isMyLeads = !!access.brokerSlug && effectiveBroker === access.brokerSlug
 
   const [views, overview, result, licenses, stageRows, tagRows, areaRows, templateRows, sequenceRows] = await Promise.all([
-    listCrmSavedViews(),
+    getCrmSavedViews(access),
     getCrmOverview(scope),
     listCrmPeople({ q: sp.q, stage: sp.stage, broker: effectiveBroker, tag: sp.tag, view: sp.view, page }),
     listBrokerLicenses(),
@@ -111,6 +113,26 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
   // Reassign is an owner op (mirrors assignCrmBrokerAction) — superuser only.
   const canAssignBroker = access.role === 'superuser'
 
+  // The active saved view (from ?view=). When set, the bulk bar's "whole view"
+  // scope targets it as an audience via the audience bus ({ mode: 'view', viewId }).
+  const activeViewId = sp.view ? Number(sp.view) || null : null
+  // The views the caller may see (system / own / shared), each with a live scoped
+  // count, handed to the sidebar. Strip the server-only annotations down to what
+  // the client island needs.
+  const savedViewItems: SavedViewItem[] = views.map((v) => ({
+    id: v.id,
+    name: v.name,
+    description: v.description,
+    ast: v.ast,
+    isShared: v.isShared,
+    isProtected: v.isProtected,
+    isSystem: v.isSystem,
+    isOwn: v.isOwn,
+    count: v.count,
+  }))
+  // "Save current filter" is only meaningful when a filter is actually applied.
+  const hasActiveFilter = Boolean(activeFilters.q || activeFilters.stage || activeFilters.broker || (activeFilters.tagsAny?.length))
+
   // Pickers — active rows only; fall back to the stage const if the config table
   // is empty so the stage picker is never blank.
   const stagePicker = stageRows.filter((s) => s.isActive).map((s) => ({ key: s.key, label: s.label }))
@@ -169,7 +191,8 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
       </div>
 
 
-      {/* Saved views — horizontal-scroll strip on phones, wraps on desktop */}
+      {/* Quick scope chips — My leads / All contacts (the broker book toggle). The
+          named smart lists moved into the sidebar below. */}
       <div className="mt-6 -mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:px-0">
         {access.brokerSlug ? (
           <>
@@ -191,71 +214,75 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
             </Badge>
           </Link>
         )}
-        {views.map((v) => (
-          <Link key={v.id} href={`/admin/crm?view=${v.id}`} className="shrink-0">
-            <Badge variant={sp.view === String(v.id) ? 'default' : 'outline'} className="cursor-pointer px-3 py-1.5">
-              {v.name}
-            </Badge>
-          </Link>
-        ))}
       </div>
 
-      {/* Search — filters live as you type */}
-      <div className="mt-4">
-        <ContactsSearch initial={sp.q ?? ''} />
-      </div>
+      {/* Sidebar (smart lists) + list. Stacks on phones, two columns on desktop. */}
+      <div className="mt-6 flex flex-col gap-6 md:flex-row">
+        <SavedViewSidebar
+          views={savedViewItems}
+          activeViewId={activeViewId}
+          activeFilters={activeFilters}
+          hasActiveFilter={hasActiveFilter}
+        />
 
-      {/* Filters — full-width selects stack on phones, inline on desktop */}
-      <form method="GET" action="/admin/crm" className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-        {sp.view ? <input type="hidden" name="view" value={sp.view} /> : null}
-        {sp.q ? <input type="hidden" name="q" value={sp.q} /> : null}
-        <select
-          name="stage"
-          defaultValue={sp.stage ?? ''}
-          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground sm:h-9 sm:w-auto"
-        >
-          <option value="">All stages</option>
-          {CRM_STAGES.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-        <select
-          name="broker"
-          defaultValue={effectiveBroker ?? 'all'}
-          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground sm:h-9 sm:w-auto"
-        >
-          <option value="all">All brokers</option>
-          {CRM_BROKERS.map((b) => (
-            <option key={b} value={b}>{CRM_BROKER_DISPLAY[b]}</option>
-          ))}
-        </select>
-        <div className="flex items-center gap-3">
-          <Button type="submit" size="sm" className="h-10 sm:h-7">Apply</Button>
-          <Link href="/admin/crm" className="flex h-10 items-center text-sm text-muted-foreground hover:text-foreground sm:h-7">Clear</Link>
-          {appliedView ? (
-            <span className="text-sm text-muted-foreground">
-              View: <span className="font-medium text-foreground">{appliedView.name}</span>
-            </span>
-          ) : null}
-        </div>
-      </form>
+        <div className="min-w-0 flex-1">
+          {/* Search — filters live as you type */}
+          <div>
+            <ContactsSearch initial={sp.q ?? ''} />
+          </div>
 
-      {/* Selectable contacts list + sticky bulk-action bar (client island) */}
-      <BulkAssignWrapper
-        rows={bulkRows}
-        activeFilters={activeFilters}
-        matchingTotal={matchingTotal}
-        canAssignBroker={canAssignBroker}
-        brokers={brokerOptions}
-        stages={stageOptions}
-        tags={tagOptions}
-        reportAreas={areaOptions}
-        emailTemplates={templateOptions}
-        sequences={sequenceOptions}
-      />
+          {/* Filters — full-width selects stack on phones, inline on desktop */}
+          <form method="GET" action="/admin/crm" className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            {sp.view ? <input type="hidden" name="view" value={sp.view} /> : null}
+            {sp.q ? <input type="hidden" name="q" value={sp.q} /> : null}
+            <select
+              name="stage"
+              defaultValue={sp.stage ?? ''}
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground sm:h-9 sm:w-auto"
+            >
+              <option value="">All stages</option>
+              {CRM_STAGES.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+            <select
+              name="broker"
+              defaultValue={effectiveBroker ?? 'all'}
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground sm:h-9 sm:w-auto"
+            >
+              <option value="all">All brokers</option>
+              {CRM_BROKERS.map((b) => (
+                <option key={b} value={b}>{CRM_BROKER_DISPLAY[b]}</option>
+              ))}
+            </select>
+            <div className="flex items-center gap-3">
+              <Button type="submit" size="sm" className="h-10 sm:h-7">Apply</Button>
+              <Link href="/admin/crm" className="flex h-10 items-center text-sm text-muted-foreground hover:text-foreground sm:h-7">Clear</Link>
+              {appliedView ? (
+                <span className="text-sm text-muted-foreground">
+                  View: <span className="font-medium text-foreground">{appliedView.name}</span>
+                </span>
+              ) : null}
+            </div>
+          </form>
 
-      {/* Pagination */}
-      <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+          {/* Selectable contacts list + sticky bulk-action bar (client island) */}
+          <BulkAssignWrapper
+            rows={bulkRows}
+            activeFilters={activeFilters}
+            activeViewId={activeViewId}
+            matchingTotal={matchingTotal}
+            canAssignBroker={canAssignBroker}
+            brokers={brokerOptions}
+            stages={stageOptions}
+            tags={tagOptions}
+            reportAreas={areaOptions}
+            emailTemplates={templateOptions}
+            sequences={sequenceOptions}
+          />
+
+          {/* Pagination */}
+          <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
         <span className="tabular-nums">
           {total === 0 ? '0' : `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)}`} of {total.toLocaleString('en-US')}
         </span>
@@ -266,6 +293,8 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
           {page < lastPage ? (
             <Link href={pageHref(page + 1)}><Button variant="outline" size="sm" className="h-10 px-4 md:h-7 md:px-2.5">Next</Button></Link>
           ) : null}
+            </div>
+          </div>
         </div>
       </div>
     </main>

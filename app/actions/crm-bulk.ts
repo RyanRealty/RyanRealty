@@ -23,12 +23,17 @@
  *     the UI shows "412 selected, 38 will be skipped" before the job is enqueued;
  *     the worker still isSuppressed-checks every contact at send time.
  *
- * The selection contract (also the contract the bulk bar in Phase B wires to):
+ * The selection contract (also the contract the bulk bar + saved-view sidebar
+ * wire to):
  *   BulkActionSelection =
  *     | { mode: 'ids';     ids: number[] }          // an explicit checkbox set
  *     | { mode: 'matching'; filters: LegacyFilters } // "select all matching <filter>"
+ *     | { mode: 'view';    viewId: number }          // "email/assign/enroll this saved view"
  * The action upgrades a 'matching' selection to a CrmSegment AST and stores
- * { ast } so the worker resolves it under the FROZEN broker scope at run time.
+ * { ast }; a 'view' selection LOADS the saved view's segment and ALSO stores
+ * { ast } — so a saved-view audience and a matching audience resolve through the
+ * EXACT same worker path. The worker is never changed: it only ever sees an
+ * { ids } or { ast } job.
  *
  * DAL boundary (G1): the only raw .from() read in this file is inside
  * bulkPreflightCount, which compiles the SAME segment the job will run via
@@ -54,6 +59,7 @@ import {
   type LegacyFilters,
 } from '@/lib/crm/segment-ast'
 import { TAG_CHANNEL } from '@/lib/crm/suppressions'
+import { getSavedViewSegment } from '@/lib/data/crm/getSavedViewSegment'
 import { buildCrmPeopleQuery } from '@/lib/data/crm/buildCrmPeopleQuery'
 import { createServiceClient } from '@/lib/supabase/service'
 
@@ -62,12 +68,16 @@ import { createServiceClient } from '@/lib/supabase/service'
 export type BulkEnqueueResult = { ok: true; jobId: number } | { ok: false; error: string }
 
 /**
- * What the bulk bar sends. Either the explicit checkbox id set, or "select all
- * matching" the active list filter (which becomes an AST the worker resolves).
+ * What the bulk bar + saved-view sidebar send. Either the explicit checkbox id
+ * set, "select all matching" the active list filter (which becomes an AST the
+ * worker resolves), or a saved VIEW by id (whose stored segment becomes the SAME
+ * { ast } shape — so the sidebar's "email/assign/enroll this view" buttons funnel
+ * straight into the existing enqueue actions with { mode: 'view', viewId }).
  */
 export type BulkActionSelection =
   | { mode: 'ids'; ids: number[] }
   | { mode: 'matching'; filters: LegacyFilters }
+  | { mode: 'view'; viewId: number }
 
 /** The bulk job kinds these actions enqueue (1:1 with a worker handler). */
 export type BulkKind =
@@ -117,11 +127,15 @@ export const EMAIL_SUPPRESS_TAGS: readonly string[] = TAG_CHANNEL.filter(
 // ── Selection building (PURE, exported for tests) ────────────────────────────
 
 /**
- * Turn the bulk bar's selection into a frozen BulkSelection for the job row.
+ * Turn an ids/matching selection into a frozen BulkSelection for the job row.
  *   - 'ids'      -> { ids: deduped, positive integers }
  *   - 'matching' -> { ast: validated CrmSegment from upgradeLegacyFilters }
  * Throws on an empty/invalid selection so a no-op job is never enqueued. PURE —
  * no I/O, so the worker resolves the AST later under the FROZEN broker scope.
+ *
+ * 'view' is NOT handled here (it needs a saved-view read); resolveBulkSelection
+ * loads the view's segment and funnels it back through this builder. A 'view'
+ * passed to the pure builder throws rather than silently producing a no-op.
  */
 export function buildBulkSelection(selection: BulkActionSelection): BulkSelection {
   if (selection.mode === 'ids') {
@@ -131,11 +145,45 @@ export function buildBulkSelection(selection: BulkActionSelection): BulkSelectio
     if (ids.length === 0) throw new Error('No contacts selected')
     return { ids }
   }
-  // 'matching' — upgrade the active list filter onto the one AST shape, validate
-  // it, and store { ast }. The worker resolves it to ids under job.broker_scope.
-  const ast = upgradeLegacyFilters(selection.filters ?? {})
-  validateSegment(ast)
-  return { ast }
+  if (selection.mode === 'matching') {
+    // Upgrade the active list filter onto the one AST shape, validate it, and
+    // store { ast }. The worker resolves it to ids under job.broker_scope.
+    const ast = upgradeLegacyFilters(selection.filters ?? {})
+    validateSegment(ast)
+    return { ast }
+  }
+  // 'view' must be resolved via resolveBulkSelection (it reads the saved view).
+  throw new Error('A saved view selection must be resolved before building')
+}
+
+/**
+ * Resolve ANY selection (including a saved view) to a frozen BulkSelection.
+ *
+ * For 'view' it loads the saved view's stored segment (prefers the native `ast`
+ * column, falls back to upgrading the legacy `filter` bag via savedViewToSegment),
+ * validates it, and stores { ast } on the job — so the worker resolves a
+ * saved-view audience through the EXACT same { ast } path as a matching audience.
+ * The view is NOT inlined to an id list at enqueue time: storing { ast } keeps the
+ * audience live + scope-clamped at run time, identical to "select all matching".
+ *
+ * ids / matching pass straight through the pure builder.
+ */
+export async function resolveBulkSelection(
+  selection: BulkActionSelection,
+): Promise<BulkSelection> {
+  if (selection.mode === 'view') {
+    const viewId = Number(selection.viewId)
+    if (!Number.isFinite(viewId) || viewId <= 0) throw new Error('A saved view is required')
+    // getSavedViewSegment owns the raw crm_saved_views read (DAL boundary) and
+    // recovers the segment (ast column, else upgraded legacy filter). Storing the
+    // resolved { ast } keeps the worker resolving a view exactly like a matching
+    // selection (it never sees a viewId).
+    const ast = await getSavedViewSegment(viewId)
+    if (!ast) throw new Error('That saved view no longer exists')
+    validateSegment(ast)
+    return { ast }
+  }
+  return buildBulkSelection(selection)
 }
 
 /** Read the segment out of a built selection (for the preflight count). PURE. */
@@ -165,7 +213,7 @@ async function enqueue(
 
   let built: BulkSelection
   try {
-    built = buildBulkSelection(selection)
+    built = await resolveBulkSelection(selection)
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Invalid selection' }
   }
@@ -316,10 +364,13 @@ export type BulkPreflightResult =
  * "412 selected, 38 will be skipped".
  *
  * Both counts run under the caller's FROZEN scope via buildCrmPeopleQuery (the one
- * resolver), so an ids-mode selection and a matching-mode selection are counted by
- * the SAME compiler the worker will run — the preview can never disagree with the
- * job. For an ids-mode selection the count is constrained to the explicit id set
- * AND the scope (so a restricted broker's count excludes ids outside their book).
+ * resolver), so an ids-mode, matching-mode, and view-mode selection are counted by
+ * the SAME compiler the worker will run, and the preview can never disagree with
+ * the job. A view-mode selection resolves to its stored { ast } first
+ * (resolveBulkSelection), so "email this saved view" previews the exact cohort the
+ * job will touch. For an ids-mode selection the count is constrained to the
+ * explicit id set AND the scope (so a restricted broker's count excludes ids
+ * outside their book).
  *
  * The suppression estimate counts contacts in the cohort that carry an
  * email-channel suppressing TAG. It is an ESTIMATE (the worker's per-row
@@ -335,7 +386,7 @@ export async function bulkPreflightCount(
 
   let built: BulkSelection
   try {
-    built = buildBulkSelection(selection)
+    built = await resolveBulkSelection(selection)
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Invalid selection' }
   }

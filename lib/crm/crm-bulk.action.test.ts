@@ -64,12 +64,31 @@ function makeCountQuery(isSupp: boolean) {
   ;(chain as { then: unknown }).then = (resolve: (v: unknown) => unknown) => resolve(result)
   return chain
 }
+// The saved-view row resolveBulkSelection({mode:'view'}) reads. Tests set it.
+let savedViewRow: { id?: number; ast?: unknown; filter?: unknown } | null = null
+let savedViewError: string | null = null
+function makeSavedViewQuery() {
+  const chain: Record<string, unknown> = {}
+  chain.select = () => chain
+  chain.eq = () => chain
+  chain.maybeSingle = () =>
+    Promise.resolve(
+      savedViewError
+        ? { data: null, error: { message: savedViewError } }
+        : { data: savedViewRow, error: null },
+    )
+  return chain
+}
 vi.mock('@/lib/supabase/service', () => ({
-  createServiceClient: () => ({ from: () => makeCountQuery(false) }),
+  createServiceClient: () => ({
+    from: (table: string) =>
+      table === 'crm_saved_views' ? makeSavedViewQuery() : makeCountQuery(false),
+  }),
 }))
 
 import {
   buildBulkSelection,
+  resolveBulkSelection,
   isProtectedBulkTag,
   EMAIL_SUPPRESS_TAGS,
   bulkAssignBrokerAction,
@@ -91,6 +110,8 @@ beforeEach(() => {
   countError = null
   seenIn.length = 0
   sawOverlaps = false
+  savedViewRow = null
+  savedViewError = null
 })
 afterEach(() => vi.clearAllMocks())
 
@@ -294,5 +315,79 @@ describe('bulkPreflightCount', () => {
     expect(EMAIL_SUPPRESS_TAGS).toContain('compliance:hard-stop')
     expect(EMAIL_SUPPRESS_TAGS).toContain('do_not_email')
     expect(EMAIL_SUPPRESS_TAGS).toContain('unsubscribed')
+  })
+})
+
+// ── saved-view selection ({mode:'view'}) resolution ──────────────────────────
+
+describe('resolveBulkSelection (saved view)', () => {
+  it('view-mode loads the stored ast and returns { ast }', async () => {
+    savedViewRow = {
+      id: 7,
+      ast: { type: 'group', op: 'and', nodes: [{ field: 'stage', value: 'Lead' }] },
+    }
+    const built = await resolveBulkSelection({ mode: 'view', viewId: 7 })
+    expect(built).toEqual({ ast: savedViewRow.ast })
+  })
+
+  it('view-mode upgrades a legacy filter-only view to { ast }', async () => {
+    savedViewRow = { id: 3, filter: { stage: 'Pending' } }
+    const built = await resolveBulkSelection({ mode: 'view', viewId: 3 })
+    expect(built).toHaveProperty('ast')
+    if ('ast' in built) {
+      expect((built.ast as { nodes: unknown[] }).nodes).toEqual([{ field: 'stage', value: 'Pending' }])
+    }
+  })
+
+  it('view-mode throws on a missing view', async () => {
+    savedViewRow = null
+    await expect(resolveBulkSelection({ mode: 'view', viewId: 999 })).rejects.toThrow(/no longer exists/)
+  })
+
+  it('the pure builder refuses a view selection (must be resolved first)', () => {
+    expect(() => buildBulkSelection({ mode: 'view', viewId: 1 })).toThrow(/resolved/)
+  })
+})
+
+// ── {viewId} enqueue path stores { ast } on the job ──────────────────────────
+
+describe('enqueue with a saved-view selection stores { ast }', () => {
+  it('bulkEmailCohortAction(view) enqueues { ast } so the worker resolves it the same way', async () => {
+    savedViewRow = {
+      id: 9,
+      ast: { type: 'group', op: 'and', nodes: [{ field: 'tag', op: 'has', value: 'seller-lead' }] },
+    }
+    const res = await bulkEmailCohortAction(
+      { mode: 'view', viewId: 9 },
+      { subject: 'Spring update', body: 'Hi' },
+    )
+    expect(res).toEqual({ ok: true, jobId: 100 })
+    expect(enqueued).toHaveLength(1)
+    expect(enqueued[0].kind).toBe('email-cohort')
+    // Crucially: the job carries { ast }, NOT { viewId } — the worker is unchanged.
+    expect(enqueued[0].selection).toEqual({ ast: savedViewRow.ast })
+  })
+
+  it('a restricted broker enqueuing a view job freezes their own scope', async () => {
+    access = { email: 'paul@ryan-realty.com', role: 'broker', brokerSlug: 'paul' }
+    savedViewRow = { id: 2, filter: { stage: 'Lead' } }
+    const res = await bulkAddTagAction({ mode: 'view', viewId: 2 }, 'follow-up')
+    expect(res.ok).toBe(true)
+    expect(enqueued[0].brokerScope).toBe('paul')
+    expect(enqueued[0].selection).toHaveProperty('ast')
+  })
+
+  it('a view-mode preflight count resolves the view ast under scope', async () => {
+    totalCount = 55
+    savedViewRow = { id: 4, ast: { type: 'group', op: 'and', nodes: [] } }
+    const res = await bulkPreflightCount({ mode: 'view', viewId: 4 }, 'crm:add-tag')
+    expect(res).toEqual({ ok: true, total: 55, suppressedEstimate: 0 })
+  })
+
+  it('a missing view surfaces a stable enqueue error (no job)', async () => {
+    savedViewRow = null
+    const res = await bulkEmailCohortAction({ mode: 'view', viewId: 404 }, { subject: 's', body: 'b' })
+    expect(res.ok).toBe(false)
+    expect(enqueued).toHaveLength(0)
   })
 })

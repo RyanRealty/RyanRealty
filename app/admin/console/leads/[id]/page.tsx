@@ -27,6 +27,8 @@ import { getContactNextStep } from '@/app/actions/contact-next-step'
 import { startCmaForContactAction, sendCmaForContactAction } from '@/app/actions/contact-cma'
 import { sendNewsletterToContactAction } from '@/app/actions/contact-newsletter'
 import { getContactReportSubscription, listAvailableMarketReportAreas } from '@/lib/data/crm/getContactReportSubscriptions'
+import { getCrmFieldDefinitions } from '@/lib/data/crm/getCrmFieldDefinitions'
+import CustomFieldsPanel from '@/components/admin/crm/CustomFieldsPanel'
 import { setReportSubscriptionAction } from '@/app/actions/crm-report-subscriptions'
 import { getFirstTouchAttribution } from '@/lib/data/crm/getFirstTouchAttribution'
 import SourceBadge from '@/components/admin/crm/SourceBadge'
@@ -307,7 +309,7 @@ export default async function ConsoleLeadPage({
   const personEmails = (person.emails ?? []).map((e) => e.value).filter((v): v is string => Boolean(v))
 
   // What they're shopping for — saved searches + the homes they're watching (live MLS) + newsletter status.
-  const [savedSearches, viewedListings, membership, contactMemberships, activityFeed, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, firstTouch] = await Promise.all([
+  const [savedSearches, viewedListings, membership, contactMemberships, activityFeed, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, firstTouch, fieldDefs] = await Promise.all([
     getGuestSearchAlertsForLead({ fubPersonId: person.fub_legacy_id, emails: personEmails }),
     getViewedListingsForLead(person.fub_legacy_id),
     getNewsletterMembershipForLead({ crmPersonId: person.id, emails: personEmails }),
@@ -322,6 +324,7 @@ export default async function ConsoleLeadPage({
     getContactReportSubscription(person.id),
     listAvailableMarketReportAreas(),
     getFirstTouchAttribution({ emails: personEmails, fubPersonId: person.fub_legacy_id }),
+    getCrmFieldDefinitions(),
   ])
 
   // A CMA queued and awaiting broker review (status 'ready') → NextStepCard shows
@@ -492,6 +495,11 @@ export default async function ConsoleLeadPage({
           <RelationshipsPanel personId={person.id} relationships={relationships} />
         </CardContent>
       </Card>
+
+      {/* ── Custom fields — the FUB person-record custom-field section, typed +
+           grouped from the field registry (read-only v1). Renders null when the
+           contact has no displayable custom fields. ── */}
+      <CustomFieldsPanel custom={person.custom} defs={fieldDefs} />
 
       {/* ── Recent activity glance (full unified feed lives in the Activity tab) ── */}
       {activityFeed.length > 0 ? (

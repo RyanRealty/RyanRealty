@@ -53,6 +53,8 @@ export type BulkAssignWrapperProps = {
   rows: BulkAssignRow[]
   /** Active list filter, so "select all matching" carries it to the server. */
   activeFilters: LegacyFilters
+  /** Active saved view id (from ?view=), or null — targets the whole view as audience. */
+  activeViewId?: number | null
   /** Total contacts matching the active filter (server count). */
   matchingTotal: number
   /** Whether the caller may reassign brokers (superuser only). */
@@ -66,7 +68,7 @@ export type BulkAssignWrapperProps = {
 }
 
 export default function BulkAssignWrapper({
-  rows, activeFilters, matchingTotal, canAssignBroker,
+  rows, activeFilters, activeViewId, matchingTotal, canAssignBroker,
   brokers, stages, tags, reportAreas, emailTemplates, sequences,
 }: BulkAssignWrapperProps) {
   const [selected, setSelected] = useState<Set<number>>(new Set())
@@ -237,6 +239,7 @@ export default function BulkAssignWrapper({
         selectedIds={selectedIds}
         onClear={clear}
         activeFilters={activeFilters}
+        activeViewId={activeViewId}
         matchingTotal={matchingTotal}
         canAssignBroker={canAssignBroker}
         brokers={brokers}
