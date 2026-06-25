@@ -122,7 +122,7 @@ export function PhotoGalleryLightbox({
         <DialogContent
           showCloseButton={false}
           aria-label="Photo gallery"
-          className="max-w-none w-screen h-dvh bg-transparent border-0 p-0 shadow-none rounded-none ring-0 flex flex-col items-stretch justify-between gap-0 translate-x-0 translate-y-0 top-0 left-0"
+          className="max-w-none sm:max-w-none w-screen h-dvh bg-transparent border-0 p-0 shadow-none rounded-none ring-0 flex flex-col items-stretch justify-between gap-0 translate-x-0 translate-y-0 top-0 left-0"
         >
           {/* Header: counter + close */}
           <div className="flex shrink-0 items-center justify-between px-4 pt-4 sm:px-6">
@@ -155,12 +155,17 @@ export function PhotoGalleryLightbox({
             >
               {'‹'}
             </Button>
-            <div className="relative h-[min(78vh,900px)] w-[min(95vw,1400px)]">
+            {/* Fill the whole stage via absolute inset-0 — a percentage-height
+                child (h-full) collapses inside this flex-grow parent, but an
+                absolutely-positioned box fills it reliably. object-contain keeps
+                the aspect ratio, so the photo is as large as the screen allows
+                instead of being capped at 1400px and looking tiny on big monitors. */}
+            <div className="absolute inset-0">
               <Image
                 src={current.url}
                 alt={altText}
                 fill
-                sizes="95vw"
+                sizes="100vw"
                 priority
                 className="object-contain"
               />
