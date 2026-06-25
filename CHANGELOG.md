@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.626.2 (2026-06-25)
+
+### Bug Fixes
+- fix(crm): Wave 9 — close all 6 review blockers + 7 highs (compliance, RBAC, concurrency, lead capture)
+
+---
+
+
 ## v1.626.1 (2026-06-25)
 
 ### Maintenance
