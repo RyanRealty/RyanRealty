@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.617.0 (2026-06-25)
+
+### Features
+- feat(crm): complete the contact record card + home-driven next step
+
+---
+
+
 ## v1.616.2 (2026-06-25)
 
 ### Bug Fixes
