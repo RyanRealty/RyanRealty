@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.617.2 (2026-06-25)
+
+### Bug Fixes
+- fix(crm): task creation was silently broken for imported contacts (FUB-cutover regression)
+
+---
+
+
 ## v1.617.1 (2026-06-25)
 
 ### Bug Fixes
