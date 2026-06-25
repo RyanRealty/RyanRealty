@@ -1,0 +1,105 @@
+{
+  "$comment": "Ratchet baseline for check-email-send-gated.mjs. Each key is an UNGATED sendEmail/sendBatchEmails call site (<file>:<line>) that is NOT preceded by an isSuppressed() check in its function. The list may only SHRINK. To clear an entry: gate the send (add isSuppressed) and remove the line, then run node scripts/check-email-send-gated.mjs --write. NEVER add a new entry to silence a new send, gate it instead. kind=internal: a genuinely-internal or transactional send (broker alert, admin notice, the broker's own digest) with no lead recipient to suppress; permanently allowlisted. kind=lead-todo: a lead or client-facing send that SHOULD be gated; Wave 5 fixes it and prunes the entry.",
+  "sites": {
+    "app/actions/admin-email.ts:11": {
+      "kind": "lead-todo",
+      "reason": "Admin-composed send to an arbitrary `to` address that could be a lead. Per the audit this currently sends with NO suppression check. Wave 5: gate on the recipient's crm_person before send."
+    },
+    "app/actions/contact-cma.ts:326": {
+      "kind": "lead-todo",
+      "reason": "Sends the CMA to row.lead_email (a lead). Routes through prepareDeliverableEmail (inbox-placement preflight only, NOT a suppression check). Wave 5: add isSuppressed(crmPersonId, 'email') before send."
+    },
+    "app/actions/saved-search-alerts.ts:218": {
+      "kind": "lead-todo",
+      "reason": "Saved-search digest to a subscriber email. Has List-Unsubscribe header but no isSuppressed check. Wave 5: gate on the linked crm_person."
+    },
+    "app/actions/saved-search-alerts.ts:342": {
+      "kind": "lead-todo",
+      "reason": "Saved-search digest (logged-out token path) to row.email. No isSuppressed check. Wave 5: gate on the linked crm_person."
+    },
+    "app/api/cma-drafts/[id]/send/route.ts:92": {
+      "kind": "lead-todo",
+      "reason": "Sends a CMA draft to the lead. Wave 5: gate on the CMA's crm_person before send."
+    },
+    "app/api/cma/[slug]/email/route.ts:130": {
+      "kind": "lead-todo",
+      "reason": "Emails a finalized CMA to the lead. Wave 5: gate on the CMA's crm_person before send."
+    },
+    "app/api/cma/[slug]/gmail-draft/route.ts:154": {
+      "kind": "lead-todo",
+      "reason": "Resend fallback that emails the CMA to the lead when the Gmail-draft path is unavailable. Wave 5: gate on the CMA's crm_person before send."
+    },
+    "app/api/cron/daily-broker-digest/route.ts:143": {
+      "kind": "internal",
+      "reason": "Internal: one digest email per BROKER (Matt/Rebecca/Paul), not a lead. No consent record applies; permanently allowlisted."
+    },
+    "app/api/cron/marketing-optimization-report/route.ts:172": {
+      "kind": "internal",
+      "reason": "Internal: weekly marketing-optimization report to the brokerage's own inbox, not a lead. Permanently allowlisted."
+    },
+    "app/api/cron/weekly-pipeline-digest/route.ts:265": {
+      "kind": "internal",
+      "reason": "Internal: weekly pipeline digest to the broker, not a lead. Permanently allowlisted."
+    },
+    "app/home-valuation/actions.ts:177": {
+      "kind": "internal",
+      "reason": "Internal: new-lead notification to ADMIN_EMAIL (the brokerage), not the lead. Permanently allowlisted."
+    },
+    "app/home-valuation/actions.ts:242": {
+      "kind": "lead-todo",
+      "reason": "Sends the auto-generated CMA PDF to the seller lead. Wave 5: gate on the lead's crm_person before send."
+    },
+    "app/home-valuation/actions.ts:265": {
+      "kind": "lead-todo",
+      "reason": "Same-second acknowledgment to the seller lead when no CMA was produced. Wave 5: gate on the lead's crm_person before send."
+    },
+    "lib/cma-deliver.ts:337": {
+      "kind": "lead-todo",
+      "reason": "Delivers the CMA to the client. Wave 5: gate on the CMA's crm_person before send."
+    },
+    "lib/cma-deliver.ts:396": {
+      "kind": "internal",
+      "reason": "Internal: notifies Matt that a CMA was delivered, not the client. Permanently allowlisted."
+    },
+    "lib/cma-delivery.ts:373": {
+      "kind": "lead-todo",
+      "reason": "Delivers the CMA to the client. Wave 5: gate on the CMA's crm_person before send."
+    },
+    "lib/cma-request.ts:408": {
+      "kind": "lead-todo",
+      "reason": "Client-facing CMA-request email. Wave 5: gate on the linked crm_person before send."
+    },
+    "lib/cma-request.ts:479": {
+      "kind": "lead-todo",
+      "reason": "Client-facing CMA-request email (second path). Wave 5: gate on the linked crm_person before send."
+    },
+    "lib/expired-alert.ts:108": {
+      "kind": "internal",
+      "reason": "Internal: expired-listing alert to Matt's inbox (MATT_ALERT_EMAIL), not the homeowner. Permanently allowlisted."
+    },
+    "lib/fsbo-alert.ts:113": {
+      "kind": "internal",
+      "reason": "Internal: FSBO alert to Matt's inbox (MATT_ALERT_EMAIL), not the homeowner. Permanently allowlisted."
+    },
+    "lib/marketing-brain/daily-digest.ts:123": {
+      "kind": "internal",
+      "reason": "Internal: marketing-brain daily digest to Matt's inbox (MATT_ALERT_EMAIL), not a lead. Permanently allowlisted."
+    },
+    "lib/seller-lead-alert.ts:109": {
+      "kind": "internal",
+      "reason": "Internal: new seller-lead alert to Matt's inbox (MATT_ALERT_EMAIL), not the lead. Permanently allowlisted."
+    },
+    "lib/tc/signing-emails.ts:102": {
+      "kind": "lead-todo",
+      "reason": "Transactional signing notification to a deal party. Wave 5: confirm signing recipients are exempt or gate on their crm_person."
+    },
+    "lib/tc/signing-emails.ts:53": {
+      "kind": "lead-todo",
+      "reason": "Transactional e-signature request to a deal party (signer). Wave 5: confirm signing recipients are exempt or gate on their crm_person."
+    },
+    "lib/tc/signing-emails.ts:77": {
+      "kind": "lead-todo",
+      "reason": "Transactional signing-progress notification to a deal party. Wave 5: confirm signing recipients are exempt or gate on their crm_person."
+    }
+  }
+}

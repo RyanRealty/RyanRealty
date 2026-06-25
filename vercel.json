@@ -5,6 +5,10 @@
       "schedule": "3,18,33,48 * * * *"
     },
     {
+      "path": "/api/cron/crm-bulk-worker",
+      "schedule": "*/2 * * * *"
+    },
+    {
       "path": "/api/cron/crm-gmail-sync",
       "schedule": "9,24,39,54 * * * *"
     },

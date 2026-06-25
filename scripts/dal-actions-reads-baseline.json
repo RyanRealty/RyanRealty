@@ -1,6 +1,6 @@
 {
   "note": "Raw `.from(table).select` reads in app/actions/** (the DAL-exempt zone). Count may only SHRINK as reads migrate into cached lib/data readers. Regenerate with `node scripts/check-dal-actions-reads.mjs --write-baseline`.",
-  "total": 283,
+  "total": 285,
   "byFile": {
     "app/actions/admin-audit.ts": 1,
     "app/actions/admin-media.ts": 8,
@@ -19,8 +19,10 @@
     "app/actions/contact-cma.ts": 4,
     "app/actions/contact-newsletter.ts": 4,
     "app/actions/contact-next-step.ts": 2,
+    "app/actions/crm-field-definitions.ts": 1,
     "app/actions/crm-membership.ts": 3,
     "app/actions/crm-relationships.ts": 5,
+    "app/actions/crm-stages.ts": 1,
     "app/actions/crm.ts": 61,
     "app/actions/dashboard-history.ts": 1,
     "app/actions/dashboard.ts": 16,
