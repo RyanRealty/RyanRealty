@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.620.0 (2026-06-25)
+
+### Features
+- feat(crm): wire the Resend webhook into the unified email_events store
+
+---
+
+
 ## v1.619.0 (2026-06-25)
 
 ### Features
