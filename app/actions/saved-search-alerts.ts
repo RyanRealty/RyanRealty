@@ -7,6 +7,7 @@ import { listingDetailPath } from '@/lib/slug'
 import { buildSearchUrlFromFilters } from '@/lib/search-filters'
 import { getActiveGuestSearchAlerts, markGuestAlertNotified } from '@/lib/data/leads/guestSearchAlerts'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
+import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { attributeUrl } from '@/lib/crm/attributed-links'
 import { BRAND } from '@/lib/brand/contact'
 import { findPersonByEmail } from '@/lib/followupboss'
@@ -194,8 +195,21 @@ export async function runSavedSearchAlerts(options?: {
       }
 
       // Resolve the FUB id (by account email) so email-click links log
-      // "Visited Website" + "Viewed Property" on their FUB timeline.
+      // "Visited Website" + "Viewed Property" on their FUB timeline. This is
+      // also the recipient id used for the compliance check below.
       const fuid = (await findPersonByEmail(toEmail))?.id ?? null
+
+      // Compliance (mirror the guest path): skip anyone hard-stopped or
+      // suppressed for email. The signed-in account opted in, but a later
+      // opt-out / suppression / protected compliance tag wins. Fails closed.
+      if (fuid && (await isHardStopped(fuid))) {
+        summary.skipped += 1
+        continue
+      }
+      if ((await isSuppressedByEmail(toEmail, 'email')).suppressed) {
+        summary.skipped += 1
+        continue
+      }
 
       const topRows = fresh.slice(0, 3)
       const bodyLines = topRows.map((row, index) => {
@@ -215,6 +229,12 @@ export async function runSavedSearchAlerts(options?: {
       const oneClickUrl = `${siteUrl}/api/alerts/unsubscribe?token=${encodeURIComponent(search.unsubscribe_token ?? '')}`
 
       if (!dryRun) {
+        // Final suppression gate in the send scope (fails closed). Redundant
+        // with the skip above, kept so the send is gated in its own scope.
+        if ((await isSuppressedByEmail(toEmail, 'email')).suppressed) {
+          summary.skipped += 1
+          continue
+        }
         const emailResult = await sendEmail({
           to: toEmail,
           subject: `Listings for ${label}`,
@@ -339,6 +359,12 @@ export async function runGuestSearchAlerts(options?: {
       const oneClickUrl = `${siteUrl}/api/alerts/unsubscribe?token=${encodeURIComponent(row.unsubscribe_token)}`
 
       if (!dryRun) {
+        // Suppression gate in the send scope (fails closed) — alongside the
+        // isHardStopped check above, covers email-keyed opt-outs + protected tags.
+        if ((await isSuppressedByEmail(row.email, 'email')).suppressed) {
+          summary.skipped += 1
+          continue
+        }
         const emailResult = await sendEmail({
           to: row.email,
           subject: `Listings for ${label}`,

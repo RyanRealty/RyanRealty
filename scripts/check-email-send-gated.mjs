@@ -242,16 +242,20 @@ export function enclosingScope(source, targetLine) {
 }
 
 /**
- * Decide whether a send site is gated: is there an isSuppressed(...) call within
- * the enclosing scope, at or before the send line? (At-or-before lets a guard
- * like `if ((await isSuppressed(id,'email')).suppressed) return` precede the
- * send on a later line, which is the canonical pattern.)
+ * Decide whether a send site is gated: is there an isSuppressed(...) /
+ * isSuppressedByEmail(...) call within the enclosing scope, at or before the
+ * send line? (At-or-before lets a guard like
+ * `if ((await isSuppressed(id,'email')).suppressed) return` precede the send on
+ * a later line, which is the canonical pattern.) isSuppressedByEmail is the
+ * person-id-less variant used where only the recipient email is known.
  */
+const GATE_RE = /\bisSuppressed(?:ByEmail)?\s*\(/
+
 export function isGated(source, sendLine) {
   const { start, end } = enclosingScope(source, sendLine)
   const lines = source.split('\n')
   for (let i = start - 1; i < Math.min(end, sendLine); i++) {
-    if (/\bisSuppressed\s*\(/.test(lines[i])) return true
+    if (GATE_RE.test(lines[i])) return true
   }
   return false
 }
@@ -335,9 +339,33 @@ if (isMain) {
   }
 
   const baseline = loadBaseline()
-  const allowed = new Set(Object.keys(baseline.sites ?? {}))
+  const sitesObj = baseline.sites ?? {}
+  const allowed = new Set(Object.keys(sitesObj))
   const novel = found.filter((k) => !allowed.has(k))
   const fixed = [...allowed].filter((k) => !found.includes(k))
+
+  // Meta-assertion (Cluster A blocker 7): every lead/client-facing marketing
+  // send is now gated through the suppression chokepoint, so NO kind=lead-todo
+  // entry may remain in the baseline. Only kind=internal (a genuinely-internal
+  // or 1:1 transactional send with no marketable lead recipient) is allowed.
+  // A lead-todo entry means a lead send is sitting ungated in the allowlist
+  // instead of being gated — fail the build until it is gated or reclassified.
+  const leadTodos = Object.entries(sitesObj)
+    .filter(([, v]) => (v && v.kind) !== 'internal')
+    .map(([k, v]) => `${k} (kind: ${(v && v.kind) ?? 'unset'})`)
+  if (leadTodos.length) {
+    console.error(
+      `\n✗ email-send-gated: ${leadTodos.length} baseline entr${leadTodos.length === 1 ? 'y is' : 'ies are'} not kind=internal:\n`,
+    )
+    for (const k of leadTodos) console.error(`  • ${k}`)
+    console.error(
+      '\n  Every lead/client-facing send must be GATED through isSuppressed / isSuppressedByEmail,\n' +
+        '  not allowlisted. Gate the send and remove its entry, OR if it has no marketable lead\n' +
+        '  recipient (broker/admin alert, 1:1 transactional notice) reclassify it to kind:internal\n' +
+        '  with a reason that names the recipient.',
+    )
+    process.exit(1)
+  }
 
   if (novel.length) {
     console.error(`\n✗ email-send-gated: ${novel.length} NEW ungated email send(s):\n`)

@@ -34,11 +34,22 @@ vi.mock('@/lib/crm/bulk-jobs', () => ({
 // A tiny thenable Supabase double for the preflight counts. The last filter in
 // the chain decides which canned count comes back: an .overlaps() call (the
 // suppression sub-query) returns suppressedCount; otherwise totalCount.
+//
+// It ALSO serves the ids-mode enqueue pre-clamp, which routes through
+// resolveAudienceIds -> buildCrmPeopleQuery as a ROW read (.select('id') then
+// await -> { data: [...] }). When `clampReturnsIds` is set the row read returns
+// those ids (the in-scope subset); otherwise it echoes back the .in() ids (a
+// superuser / no-op clamp). The discriminator: a query that ever called
+// .select('id') as a NON-count read resolves to { data } not { count }.
 let totalCount = 0
 let suppressedCount = 0
 let countError: string | null = null
 const seenIn: number[][] = []
 let sawOverlaps = false
+// When non-null, the ids-mode pre-clamp row read returns exactly these ids
+// (simulating a scope intersection that drops foreign ids). Null = echo the
+// requested ids back (no clamp / superuser).
+let clampReturnsIds: number[] | null = null
 
 function makeCountQuery(isSupp: boolean) {
   const result = {
@@ -46,22 +57,39 @@ function makeCountQuery(isSupp: boolean) {
     error: countError ? { message: countError } : null,
   }
   const chain: Record<string, unknown> = {}
+  let isCountHead = false
+  let isIdRowRead = false
+  let lastIn: number[] | null = null
   const ret = () => chain
-  chain.select = ret
+  chain.select = (_cols?: unknown, opts?: { head?: boolean }) => {
+    // countOnly path passes { head: true }; a bare .select('id') is the row read.
+    if (opts?.head) isCountHead = true
+    else isIdRowRead = true
+    return chain
+  }
   chain.eq = ret
   chain.order = ret
   chain.range = ret
   chain.or = ret
   chain.in = (_c: string, ids: number[]) => {
     seenIn.push(ids)
+    lastIn = ids
     return chain
   }
   chain.overlaps = () => {
     sawOverlaps = true
     return makeCountQuery(true)
   }
-  // Thenable: awaiting the query resolves to { count, error }.
-  ;(chain as { then: unknown }).then = (resolve: (v: unknown) => unknown) => resolve(result)
+  // Thenable: a count-head read resolves to { count }; an id row read resolves to
+  // { data: [{id}] } (the resolveAudienceIds pre-clamp path).
+  ;(chain as { then: unknown }).then = (resolve: (v: unknown) => unknown) => {
+    if (isIdRowRead && !isCountHead) {
+      if (countError) return resolve({ data: null, error: { message: countError } })
+      const ids = clampReturnsIds ?? lastIn ?? []
+      return resolve({ data: ids.map((id) => ({ id })), error: null })
+    }
+    return resolve(result)
+  }
   return chain
 }
 // The saved-view row resolveBulkSelection({mode:'view'}) reads. Tests set it.
@@ -110,6 +138,7 @@ beforeEach(() => {
   countError = null
   seenIn.length = 0
   sawOverlaps = false
+  clampReturnsIds = null
   savedViewRow = null
   savedViewError = null
 })
@@ -215,6 +244,39 @@ describe('broker scope is frozen at enqueue', () => {
     expect(enqueued[0].kind).toBe('crm:add-tag')
     expect(enqueued[0].params).toEqual({ tag: 'follow-up' })
     expect(enqueued[0].selection).toHaveProperty('ast')
+  })
+})
+
+// ── ids-mode scope clamp at ENQUEUE (Cluster B blocker 1) ────────────────────
+
+describe('ids-mode selection is scope-clamped at enqueue', () => {
+  it('a restricted broker enqueuing an ids set freezes ONLY the in-scope ids', async () => {
+    access = { email: 'paul@ryan-realty.com', role: 'broker', brokerSlug: 'paul' }
+    // The selection includes id 99 which is OUTSIDE paul's book; the scope read
+    // returns only the in-scope subset (1, 2). The frozen job must carry [1, 2].
+    clampReturnsIds = [1, 2]
+    const res = await bulkAddTagAction({ mode: 'ids', ids: [1, 2, 99] }, 'follow-up')
+    expect(res.ok).toBe(true)
+    expect(enqueued).toHaveLength(1)
+    expect(enqueued[0].brokerScope).toBe('paul')
+    // 99 is dropped — the foreign id never lands on the frozen job.
+    expect(enqueued[0].selection).toEqual({ ids: [1, 2] })
+  })
+
+  it('refuses the job when NONE of the ids are in the caller book', async () => {
+    access = { email: 'paul@ryan-realty.com', role: 'broker', brokerSlug: 'paul' }
+    clampReturnsIds = [] // every requested id is outside paul's book
+    const res = await bulkAddTagAction({ mode: 'ids', ids: [99, 100] }, 'follow-up')
+    expect(res.ok).toBe(false)
+    expect(enqueued).toHaveLength(0)
+  })
+
+  it('a superuser ids set passes through unchanged (echoed back)', async () => {
+    access = { email: 'matt@ryan-realty.com', role: 'superuser', brokerSlug: 'matt' }
+    const res = await bulkSetStageAction({ mode: 'ids', ids: [5, 6, 7] }, 'Pending')
+    expect(res.ok).toBe(true)
+    expect(enqueued[0].brokerScope).toBeNull()
+    expect(enqueued[0].selection).toEqual({ ids: [5, 6, 7] })
   })
 })
 

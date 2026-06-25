@@ -862,13 +862,18 @@ export async function updatePersonAutomationState(params: {
  * Send an event to FollowUp Boss (creates or updates the person and triggers automations).
  * Use type "Registration" for sign-ups; FUB matches by email to avoid duplicates.
  */
-export async function sendEvent(params: SendEventParams): Promise<{ ok: true; status: number } | { ok: false; status?: number; error?: string }> {
+export async function sendEvent(params: SendEventParams): Promise<{ ok: true; status: number; personId: number | null } | { ok: false; status?: number; error?: string }> {
   // FUB DECOMMISSIONED (cutover 2026-06-24): capture natively instead of POSTing
   // to Follow Up Boss. A lead-bearing event creates/reuses a crm_people lead with
   // inferred audience + source tags; an anonymous tracking event (no email/phone)
   // resolves to nothing (ensureNativeLead skips it). Every former sendEvent caller
   // now writes to the in-house CRM with zero FUB traffic — no per-caller change.
   // First-party visitor_sessions covers page-view tracking the old events carried.
+  //
+  // Returns the native crm_people personId so LP enrichment can run against it.
+  // ensureNativeLead returns personId=0 when it skips (anonymous tracking event
+  // with no email/phone), which we surface as null. Callers gate enrichment on a
+  // positive id, mirroring the old "resolve the FUB person id" pattern.
   try {
     const email = params.person?.emails?.[0]?.value ?? null
     const phone = params.person?.phones?.[0]?.value ?? null
@@ -886,8 +891,8 @@ export async function sendEvent(params: SendEventParams): Promise<{ ok: true; st
     const slug = params.brokerAttribution?.brokerSlug
     const assignedBroker = slug === 'matt' || slug === 'rebecca' || slug === 'paul' ? slug : undefined
     const { ensureNativeLead } = await import('@/lib/data/crm/ensureNativeLead')
-    await ensureNativeLead({ name, email, phone, source: params.source, tags, assignedBroker })
-    return { ok: true, status: 200 }
+    const native = await ensureNativeLead({ name, email, phone, source: params.source, tags, assignedBroker })
+    return { ok: true, status: 200, personId: native.personId > 0 ? native.personId : null }
   } catch (err) {
     console.error('[sendEvent → native] capture failed:', err)
     return { ok: false, error: 'native capture failed' }
@@ -909,8 +914,6 @@ export async function trackSignedInUser(params: {
   /** UTM/referrer attribution for the visitor's first identification. */
   campaign?: { source?: string; medium?: string; campaign?: string; term?: string; content?: string }
 }): Promise<void> {
-  const auth = getAuth()
-  if (!auth) return
   const email = params.email?.trim()
   if (!email) return
 
@@ -926,6 +929,23 @@ export async function trackSignedInUser(params: {
     firstName = firstName ?? parts[0]
     lastName = lastName ?? (parts.length > 1 ? parts.slice(1).join(' ') : '')
   }
+
+  // FUB-independent native fallback (cutover 2026-06-24): the legacy guard here
+  // was `if (!getAuth()) return`, which short-circuited every sign-up/sign-in now
+  // that the FUB key is gone — so a Google sign-in produced no tracked lead at
+  // all. Capture natively first so every authenticated visitor always yields a
+  // crm_people lead, then continue the legacy FUB path only when a key still
+  // exists (a no-op after cutover, kept for a clean rollback).
+  const fullName = [firstName, lastName].filter(Boolean).join(' ').trim() || params.fullName?.trim() || null
+  try {
+    const { ensureNativeLead } = await import('@/lib/data/crm/ensureNativeLead')
+    await ensureNativeLead({ name: fullName, email, source: 'website-signup', tags: ['source:website-signup'] })
+  } catch (err) {
+    console.warn('[trackSignedInUser] native capture failed:', err)
+  }
+
+  const auth = getAuth()
+  if (!auth) return
 
   const existing = await findPersonByEmail(email)
   const person: FubEventPerson = existing

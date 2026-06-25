@@ -4,17 +4,13 @@ import { createClient } from '@supabase/supabase-js'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import {
   sendEvent,
-  addPersonTags,
-  createRealtimeTask,
   findPersonByEmail,
-  assignPersonToUser,
-  setPersonCustomFields,
-  postLeadOriginNote,
   type FubEventPerson,
 } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { saveAnonymousPartialAddress } from '@/lib/data'
-import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
+import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
+import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
 import { createCmaRequest } from '@/lib/cma-request'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
 import { geocodeAndTagLead } from '@/lib/lead-geocode'
@@ -206,21 +202,20 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
         : undefined,
     })
     if (!eventResult.ok) {
-      console.warn('[fsbo-lp] FUB sendEvent failed:', eventResult.error)
+      console.warn('[fsbo-lp] native capture failed:', eventResult.error)
     }
 
-    // Resolve final FUB person id (in case sendEvent just created it).
-    if (!fubPersonId && email) {
-      const newlyCreated = await findPersonByEmail(email)
-      if (newlyCreated?.id) fubPersonId = newlyCreated.id
+    // ─── Resolve the native CRM person id (post-FUB cutover) ───────────────
+    // sendEvent captures natively and returns the personId — the working id for
+    // all downstream enrichment.
+    if (eventResult.ok && eventResult.personId) {
+      fubPersonId = eventResult.personId
     }
 
-    // ─── Native-capture fallback on a FUB push failure (CONTACT360 Phase 0.2)
-    // If the FUB push FAILED and we still cannot resolve a FUB person id, FUB
-    // is likely down — without this the FSBO lead (a hot seller) would be
-    // dropped entirely. Record it natively in crm_people + crm_contact_points
-    // so a FUB outage never silently loses a lead. The happy path is unchanged.
-    if (!eventResult.ok && !fubPersonId) {
+    // ─── Native-capture fallback ───────────────────────────────────────────
+    // If sendEvent could not resolve a person id, capture the FSBO lead (a hot
+    // seller) directly so it is NEVER dropped. ensureNativeLead is idempotent.
+    if (!fubPersonId) {
       try {
         const native = await ensureNativeLead({
           name,
@@ -228,12 +223,10 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
           phone,
           source: 'fsbo-lp',
           assignedBroker: assignment.broker,
-          tags: ['audience:seller', 'seller:hot', 'source:fsbo-lp', 'intent:fsbo', `broker:${assignment.broker}`, 'fub-fallback'],
+          tags: ['audience:seller', 'seller:hot', 'source:fsbo-lp', 'intent:fsbo', `broker:${assignment.broker}`],
         })
-        if (native.created || native.personId > 0) {
-          console.warn(
-            `[fsbo-lp] FUB push failed; native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
-          )
+        if (native.personId > 0) {
+          fubPersonId = native.personId
         }
       } catch (e) {
         console.warn('[fsbo-lp] native fallback lead failed:', e)
@@ -256,26 +249,11 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
       console.warn(`[fsbo-lp] person ${fubPersonId} is compliance hard-stopped, skipping workflow enrollment`)
     }
 
-    // ─── Tags + assignment + custom fields + enrollment ────────────────────
+    // ─── Native enrichment: tags + broker + custom fields + origin note ────
     if (fubPersonId && !hardStopped) {
       // Canonical kebab-case namespaced tag schema. intent:fsbo routes the
       // CRM auto-enroll into the FSBO Recovery sequence (lib/crm/enroll.ts).
-      await addPersonTags(fubPersonId, [
-        'audience:seller',
-        'seller:hot',
-        'source:fsbo-lp',
-        'intent:fsbo',
-        `broker:${assignment.broker}`,
-      ])
-      await assignPersonToUser(fubPersonId, assignment.userId)
-
-      await setPersonCustomFields(fubPersonId, {
-        customLeadTier: 'hot',
-        customSellerPropertyAddress: parsed.full,
-      })
-
-      // Lead-origin note Matt reads in the FUB timeline.
-      await postLeadOriginNote(fubPersonId, {
+      const originContext: LeadOriginContext = {
         source: 'source:fsbo-lp',
         sourceLabel: 'FSBO landing page',
         landingPage: `${siteUrl}/lp/fsbo`,
@@ -286,17 +264,25 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
         assignedAgent: assignment.broker,
         assignmentReason: 'FSBO LP routing (attributed agent or Matt by default)',
         extra: notes ? `Notes: ${notes}` : undefined,
+      }
+      await enrichNativeLead({
+        personId: fubPersonId,
+        tags: ['audience:seller', 'seller:hot', 'source:fsbo-lp', 'intent:fsbo', `broker:${assignment.broker}`],
+        custom: { leadTier: 'hot', sellerPropertyAddress: parsed.full },
+        assignedBroker: assignment.broker,
+        originNote: { title: 'FSBO LP lead', body: buildLeadOriginNote(originContext) },
       })
 
-      // Geocode + neighborhood/city tags (fire-and-forget).
+      // Geocode + neighborhood/city tags, unioned natively (fire-and-forget).
+      const geoPersonId = fubPersonId
       void geocodeAndTagLead({
-        fubPersonId,
+        fubPersonId: geoPersonId,
         address: parsed.full,
         sourceType: 'lp-form',
         state: parsed.state ?? undefined,
       }).then((geoResult) => {
         if (geoResult.ok && geoResult.tags.length > 0) {
-          return addPersonTags(fubPersonId!, geoResult.tags)
+          return enrichNativeLead({ personId: geoPersonId, tags: geoResult.tags })
         }
       }).catch((e) => console.warn('[fsbo-lp] geocode failed (non-blocking):', e))
 
@@ -325,15 +311,16 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
       )
     }
 
-    // ─── 5-min realtime task. Every FSBO lead is hot ───────────────────────
+    // ─── 5-min hot-lead call task (native crm_tasks). Every FSBO lead is hot ─
     if (fubPersonId) {
       const who = [firstName, lastName].filter(Boolean).join(' ') || email
-      void createRealtimeTask({
+      void createNativeTask({
         personId: fubPersonId,
-        taskName: `Hot FSBO lead, call within 5 min: ${who} (${parsed.full})`,
-        taskType: 'Call',
+        name: `Hot FSBO lead, call within 5 min: ${who} (${parsed.full})`,
+        type: 'Call',
         dueInMinutes: 5,
-      }).catch((e) => console.warn('[fsbo-lp] realtime task error:', e))
+        assignedBroker: assignment.broker,
+      }).catch((e) => console.warn('[fsbo-lp] hot-lead task error:', e))
     }
 
     // ─── Canonical CMA request. The promised free pricing report ───────────

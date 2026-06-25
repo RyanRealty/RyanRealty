@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { renderCmaPdfBuffer, CmaNotFoundError } from '@/lib/cma-pdf'
 import { createGmailDraft } from '@/lib/gmail-draft'
 import { createServiceClient } from '@/lib/supabase/service'
+import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -83,6 +84,17 @@ async function handleDraft(slug: string, body: DraftPayload) {
     return NextResponse.json(
       { error: 'No lead recipient — public.cmas.client_email is empty and no `to` was passed' },
       { status: 400 },
+    )
+  }
+
+  // Suppression chokepoint (fails closed). Gate the LEAD recipient before the
+  // Gmail draft or the Resend fallback can carry the CMA to someone who opted
+  // out. No crm_person_id at this route, so resolve by email.
+  const sup = await isSuppressedByEmail(String(to), 'email')
+  if (sup.suppressed) {
+    return NextResponse.json(
+      { error: 'recipient is suppressed for email', recipient: to, reasons: sup.reasons },
+      { status: 409 },
     )
   }
 

@@ -17,6 +17,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { sendEmail } from '@/lib/resend'
 import { addPersonNote } from '@/lib/followupboss'
 import { verifyDeliveryToken } from '@/lib/cma-delivery-tokens'
+import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -87,6 +88,16 @@ export async function POST(
     )
   }
   const pdfBuffer = Buffer.from(await pdfBlob.arrayBuffer())
+
+  // Suppression chokepoint (fails closed). The row carries no crm_person_id, so
+  // gate on the lead_email — honors the consent record before the CMA goes out.
+  const sup = await isSuppressedByEmail(row.lead_email as string, 'email')
+  if (sup.suppressed) {
+    return NextResponse.json(
+      { error: 'recipient is suppressed for email', reasons: sup.reasons },
+      { status: 409 }
+    )
+  }
 
   // Send.
   const result = await sendEmail({

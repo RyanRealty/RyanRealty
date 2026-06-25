@@ -8,8 +8,16 @@
  * unsubscribed / complained / bounced / compliance:hard-stop contact is skipped
  * and counted, never mailed. CAN-SPAM + List-Unsubscribe come from
  * prepareDeliverableEmail; broker attribution + open/click tracking from
- * attributeOutbound; and one email_events 'sent' row is written per delivered
- * recipient (recordEmailEvent) so the send is measured.
+ * attributeOutbound.
+ *
+ * DOUBLE-SEND SAFETY: between the suppression check and the wire, each recipient is
+ * CLAIMED via an idempotent insert of its `sent` email_events row keyed on a stable
+ * per-(jobId, personId) dedupe key (cohortSendDedupeKey). Two overlapping worker
+ * runs draining the same job build the SAME key — only one insert lands; the other
+ * collapses (inserted=false) and skips the wire. So a cron retry firing mid-run can
+ * never mail the same person twice. The claim row IS the measurement row (one `sent`
+ * per delivered recipient); on a wire failure it is rolled back so a later run can
+ * retry.
  *
  * Gate note (ci:email-send-gated): isSuppressed(...) and sendEmail(...) are both
  * inline in sendOneCohortEmail() — the per-recipient send function — so the static
@@ -30,7 +38,11 @@ import { isSuppressed } from '@/lib/crm/suppressions'
 import { sendEmail } from '@/lib/resend'
 import { prepareDeliverableEmail } from '@/lib/email/prepare'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
-import { recordEmailEvent, type EmailSendType } from '@/lib/crm/email-events'
+import { type EmailSendType } from '@/lib/crm/email-events'
+import {
+  insertEmailEvent,
+  deleteEmailEventByDedupeKey,
+} from '@/lib/data/crm/insertEmailEvent'
 import { renderCrmMerge } from '@/lib/crm/merge'
 import {
   getEmailCohortRecipients,
@@ -117,6 +129,17 @@ export function cohortEmailKey(params: EmailCohortParams, jobId: number): string
   return k || `bulk:email-cohort:${jobId}`
 }
 
+/**
+ * The per-(jobId, personId) idempotency / claim key for a cohort send. STABLE +
+ * independent of any provider message id, so two overlapping worker runs draining
+ * the same job both build the SAME key for the same recipient. The first run's
+ * idempotent insert wins the claim; the second collapses on the unique dedupe_key
+ * and skips the wire send — so an overlapping run can never double-send. PURE.
+ */
+export function cohortSendDedupeKey(jobId: number, personId: number): string {
+  return `bulk:email-cohort:${jobId}:p:${personId}:sent`
+}
+
 /** Empty per-chunk result accumulator. */
 function emptyResult(): BulkResult {
   return { processed: 0, skipped: 0, breakdown: {} }
@@ -133,8 +156,19 @@ type SendOneOutcome =
   | { kind: 'skipped'; bucket: string }
 
 /**
- * Send the cohort email to ONE recipient. Suppression-checked, attributed,
- * CAN-SPAM-prepared, and recorded. Returns an outcome the chunk loop tallies.
+ * Send the cohort email to ONE recipient. Suppression-checked, claimed
+ * (idempotent), attributed, CAN-SPAM-prepared, sent, and recorded. Returns an
+ * outcome the chunk loop tallies.
+ *
+ * Double-send safety (the overlap class): between the suppression check and the
+ * wire send, this CLAIMS the (jobId, personId) via an idempotent insert of the
+ * `sent` email_events row keyed on cohortSendDedupeKey. Two overlapping worker
+ * runs draining the same job build the SAME key for the same recipient — only one
+ * insert lands; the other collapses (inserted=false) and skips the wire send. So a
+ * cron retry firing mid-run can never mail the same person twice. The claim row IS
+ * the measurement row, so no separate `sent` event is written after the send (that
+ * would be a second, differently-keyed row). On a genuine wire failure the claim
+ * is rolled back so a later run can re-attempt.
  *
  * The isSuppressed(...) call and the sendEmail(...) call live together in this
  * one function (the ci:email-send-gated invariant): the gate verifies the
@@ -181,8 +215,32 @@ export async function sendOneCohortEmail(
     personId: recipient.id,
   })
 
-  // 5) SEND.
   const sendType: EmailSendType = params.sendType ?? 'campaign'
+
+  // 5) CLAIM — idempotent insert of the `sent` row BEFORE the wire. If the row
+  //    already exists (another overlapping run got here first), inserted=false and
+  //    we skip the send entirely. The claim doubles as the measurement row.
+  const dedupeKey = cohortSendDedupeKey(ctx.jobId, recipient.id)
+  const claim = await insertEmailEvent({
+    message_id: null,
+    recipient_email: email.toLowerCase(),
+    person_id: recipient.id,
+    broker: recipient.assigned_broker ?? null,
+    send_type: sendType,
+    event: 'sent',
+    email_key: emailKey,
+    subject,
+    occurred_at: new Date().toISOString(),
+    meta: { source: 'bulk:email-cohort', jobId: ctx.jobId },
+    dedupe_key: dedupeKey,
+  })
+  // A failed claim WRITE (DB error) is treated as "do not send" — better to skip
+  // than risk an unrecorded, undeduped send. A successful-but-not-inserted claim
+  // means a sibling run already owns this recipient.
+  if (!claim.ok) return { kind: 'skipped', bucket: 'claim-error' }
+  if (!claim.inserted) return { kind: 'skipped', bucket: 'already-sent' }
+
+  // 6) SEND.
   const fromIdentity = params.fromIdentity?.trim() || undefined
   const res = await sendEmail({
     to: email,
@@ -193,21 +251,10 @@ export async function sendOneCohortEmail(
     headers: prepared.headers,
   })
   if (res.error) {
+    // Roll the claim back so a later run can re-attempt (no false `sent` left).
+    await deleteEmailEventByDedupeKey(dedupeKey)
     return { kind: 'skipped', bucket: 'send-error' }
   }
-
-  // 6) Measure — one email_events 'sent' row per delivered recipient.
-  //    Never throws; a reporting failure must not fail the chunk.
-  await recordEmailEvent({
-    messageId: res.id ?? null,
-    recipientEmail: email,
-    personId: recipient.id,
-    broker: recipient.assigned_broker,
-    sendType,
-    event: 'sent',
-    emailKey,
-    subject,
-  })
 
   return { kind: 'processed' }
 }

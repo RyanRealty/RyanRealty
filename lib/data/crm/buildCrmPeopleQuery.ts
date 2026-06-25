@@ -250,6 +250,11 @@ export function buildCrmPeopleQuery(
     query = query
       .order('last_activity_at', { ascending: false, nullsFirst: false })
       .order('fub_created_at', { ascending: false, nullsFirst: false })
+      // Tie-breaker on the unique id so a paged resolve (>1000 rows, used by the
+      // bulk id-set + audience resolvers) is fully deterministic. Without it,
+      // rows sharing last_activity_at + fub_created_at can reorder between pages,
+      // dropping or duplicating ids across the page boundary.
+      .order('id', { ascending: true })
     const limit = opts.limit
     if (typeof limit === 'number' && limit > 0) {
       const from = opts.offset ?? 0

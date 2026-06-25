@@ -9,10 +9,13 @@
  * whole job. A bulk add of a hard-stop would suppress the entire selection in one
  * shot. The whole chunk is skipped + counted under `refused_protected_tag`.
  *
- * Scope: the worker resolves ids under the job's frozen broker_scope, so a
- * restricted broker's chunk only ever contains their own contacts. No re-check is
- * needed here for a plain non-compliance tag (the single-record path's only guard
- * is requirePersonInScope, already applied at resolution).
+ * Scope: a restricted broker's chunk only ever contains their own contacts
+ * because the scope clamp is applied TWICE before the handler runs — at enqueue
+ * (an ids selection is pre-clamped via resolveAudienceIds; an ast/view selection
+ * resolves under broker_scope) AND defensively in the worker (clampChunkToScope
+ * drops any foreign id from the chunk before dispatch). So this handler does not
+ * re-check scope for a plain non-compliance tag (the single-record path's only
+ * guard is requirePersonInScope, already enforced by both clamps).
  *
  * FUB is decommissioned (2026-06-24) — CRM is the system of record; the
  * single-record path's addPersonTags FUB call is intentionally omitted.

@@ -151,6 +151,23 @@ describe('access gate', () => {
     expect((await updateCrmSequenceStepsAction(1, [])).ok).toBe(false)
     expect((await updateCrmSequenceSettingsAction({ id: 1, name: 'X', stopOnReply: true })).ok).toBe(false)
   })
+
+  it('every action refuses a restricted (non-superuser) broker', async () => {
+    // An authenticated broker who is NOT a superuser must not author workflows.
+    access = { ok: true, access: { email: 'rebecca@ryan-realty.com', role: 'broker', brokerSlug: 'rebecca' } }
+    const create = await createCrmSequenceAction({ name: 'X' })
+    expect(create.ok).toBe(false)
+    if (!create.ok) expect(create.error.toLowerCase()).toContain('owner')
+    expect((await deleteCrmSequenceAction(1)).ok).toBe(false)
+    expect((await duplicateCrmSequenceAction(1)).ok).toBe(false)
+    expect((await archiveCrmSequenceAction(1)).ok).toBe(false)
+    expect((await updateCrmSequenceStepsAction(1, [])).ok).toBe(false)
+    expect((await updateCrmSequenceSettingsAction({ id: 1, name: 'X', stopOnReply: true })).ok).toBe(false)
+    // Nothing was written for any of the refused calls.
+    expect(captured.inserts).toHaveLength(0)
+    expect(captured.updates).toHaveLength(0)
+    expect(captured.deletes).toBe(0)
+  })
 })
 
 describe('createCrmSequenceAction', () => {

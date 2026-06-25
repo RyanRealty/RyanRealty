@@ -1,6 +1,7 @@
 'use server'
 
 import { sendEmail } from '@/lib/resend'
+import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { createClient } from '@supabase/supabase-js'
 
 export async function sendAdminEmail(params: {
@@ -8,6 +9,14 @@ export async function sendAdminEmail(params: {
   subject: string
   body: string
 }): Promise<{ id?: string; error?: string }> {
+  // Suppression chokepoint (fails closed). An admin-composed send can target an
+  // arbitrary address that may be a lead who opted out. Resolve the recipient's
+  // consent record by email before the send and block if suppressed.
+  const sup = await isSuppressedByEmail(params.to.trim(), 'email')
+  if (sup.suppressed) {
+    return { error: `Recipient is suppressed for email and cannot be sent (${sup.reasons.join(', ')})` }
+  }
+
   const result = await sendEmail({
     to: params.to.trim(),
     subject: params.subject.trim(),

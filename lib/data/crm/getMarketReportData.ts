@@ -27,6 +27,19 @@
  * 4-6 balanced, >= 6 buyers. The returned `marketVerdict` is computed FROM the
  * returned `monthsOfSupply`, so the verdict can never contradict the number.
  *
+ * Two MoS bases, and how the displayed numbers self-reconcile: for CITIES the
+ * live `market_pulse_live.monthsOfSupply` wins when present. That figure is the
+ * canonical absorption rate computed by the cache on a 6-MONTH close base
+ * (active / (closed_6mo / 6)). The `soldLast12mo` we ALSO return is the trailing
+ * 12-month close count (the historical-cache figure, used as the email's "homes
+ * sold" line). So for a city, `monthsOfSupply` is NOT `activeListings /
+ * (soldLast12mo / 12)` unless the close pace was steady across the year. This is
+ * intentional: the live 6-month MoS is the fresher, seasonally-current
+ * absorption signal (10-15 min vs 6h), while the 12-month sold count is the more
+ * stable volume figure. For RESORT COMMUNITIES (no live pulse) MoS IS computed
+ * from `soldLast12mo` via `computeMonthsOfSupply`, so there the two reconcile
+ * exactly: monthsOfSupply == activeListings / (soldLast12mo / 12).
+ *
  * Slug resolution: the subscribable areas (lib/data/crm/getContactReportSubscriptions
  * buildMarketReportAreas) are the 7 Central Oregon cities + the 14 resort
  * communities from the registry. A city slug resolves to `geo_type='city'`; any
@@ -210,9 +223,12 @@ export function buildAreaBlock(args: {
     return null
   }
 
-  // MoS: prefer the cache-computed live figure (cities); else compute from the
-  // trailing-12mo absorption rate. Either way the verdict derives from the
-  // final number, so the two can never disagree.
+  // MoS: prefer the cache-computed live figure (cities; a 6-month absorption
+  // base) else compute from the trailing-12mo absorption rate (resort
+  // communities). For a city the live 6-month MoS therefore need not equal
+  // activeListings / (soldLast12mo / 12) — see the module docstring "Two MoS
+  // bases" note. The verdict always derives from the final `monthsOfSupply`, so
+  // the verdict can never disagree with the number shown.
   const liveMos = pulse ? toNum(pulse.monthsOfSupply) : null
   const computedMos = computeMonthsOfSupply(activeListings, soldLast12mo)
   const monthsOfSupply = liveMos != null ? Math.round(liveMos * 10) / 10 : computedMos

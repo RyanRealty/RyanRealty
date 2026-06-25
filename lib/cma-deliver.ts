@@ -28,6 +28,7 @@ import { renderCmaPdfBuffer, CmaNotFoundError } from '@/lib/cma-pdf'
 import { createGmailDraft } from '@/lib/gmail-draft'
 import { instrumentEmailHtml } from '@/lib/email-tracking'
 import { sendEmail } from '@/lib/resend'
+import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { createServiceClient } from '@/lib/supabase/service'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -278,6 +279,21 @@ export async function finalizeAndDeliverCma(
       }
     } catch (e) {
       warnings.push(`cmaLink finalize-stamp failed: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+
+  // ── 3c. Suppression chokepoint (fails closed) ─────────────────────────────
+  // Honor the consent record before the CMA reaches the lead by ANY path (Gmail
+  // draft, the Resend broker fallback, or the Matt notification). Gate on the
+  // resolved CRM person when known, else on the lead email.
+  const sup = recipientPersonId
+    ? await isSuppressed(recipientPersonId, 'email')
+    : await isSuppressedByEmail(leadEmail, 'email')
+  if (sup.suppressed) {
+    return {
+      ok: false,
+      warnings,
+      error: `Lead is suppressed for email (${sup.reasons.join(', ')}). CMA not delivered.`,
     }
   }
 

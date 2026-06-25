@@ -61,6 +61,7 @@ import {
 import { TAG_CHANNEL } from '@/lib/crm/suppressions'
 import { getSavedViewSegment } from '@/lib/data/crm/getSavedViewSegment'
 import { buildCrmPeopleQuery } from '@/lib/data/crm/buildCrmPeopleQuery'
+import { resolveAudienceIds } from '@/lib/crm/audience'
 import { createServiceClient } from '@/lib/supabase/service'
 
 // ── Result + selection types ─────────────────────────────────────────────────
@@ -166,10 +167,19 @@ export function buildBulkSelection(selection: BulkActionSelection): BulkSelectio
  * The view is NOT inlined to an id list at enqueue time: storing { ast } keeps the
  * audience live + scope-clamped at run time, identical to "select all matching".
  *
- * ids / matching pass straight through the pure builder.
+ * For 'ids', when a brokerScope is supplied (the enqueue path always supplies it)
+ * the explicit id set is routed through resolveAudienceIds, which intersects the
+ * ids with the caller's book via buildCrmPeopleQuery's scope clamp. So a stored
+ * ids-mode job is PRE-CLAMPED at enqueue: a restricted broker can never freeze a
+ * foreign id onto a job, even by hand-passing a list of ids outside their scope.
+ * When no scope is supplied (the pure preflight path with its own clamp), ids pass
+ * through the pure builder unchanged.
+ *
+ * 'matching' passes straight through the pure builder.
  */
 export async function resolveBulkSelection(
   selection: BulkActionSelection,
+  brokerScope?: string | null,
 ): Promise<BulkSelection> {
   if (selection.mode === 'view') {
     const viewId = Number(selection.viewId)
@@ -182,6 +192,22 @@ export async function resolveBulkSelection(
     if (!ast) throw new Error('That saved view no longer exists')
     validateSegment(ast)
     return { ast }
+  }
+  // ids-mode at enqueue: pre-clamp the explicit set to the caller's book so the
+  // FROZEN job can never carry a foreign id. resolveAudienceIds compiles an
+  // "everyone" segment under scope and intersects with the ids (the worker's
+  // defensive re-clamp catches anything that slips through later).
+  if (selection.mode === 'ids' && brokerScope !== undefined) {
+    const ids = Array.from(
+      new Set((selection.ids ?? []).filter((n) => Number.isInteger(n) && n > 0)),
+    )
+    if (ids.length === 0) throw new Error('No contacts selected')
+    const sb = createServiceClient()
+    const clamped = await resolveAudienceIds(sb, { ids }, brokerScope)
+    if (clamped.length === 0) {
+      throw new Error('No contacts in your book match that selection')
+    }
+    return { ids: clamped }
   }
   return buildBulkSelection(selection)
 }
@@ -211,16 +237,17 @@ async function enqueue(
   const guardErr = opts?.guard?.(access)
   if (guardErr) return { ok: false, error: guardErr }
 
+  // FROZEN at enqueue: the broker the actor is scoped to right now. A later RBAC
+  // change can never widen the rows this job targets. Resolved BEFORE the
+  // selection so an ids-mode set is pre-clamped to this book at enqueue.
+  const brokerScope = scopeBroker(access)
+
   let built: BulkSelection
   try {
-    built = await resolveBulkSelection(selection)
+    built = await resolveBulkSelection(selection, brokerScope)
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Invalid selection' }
   }
-
-  // FROZEN at enqueue: the broker the actor is scoped to right now. A later RBAC
-  // change can never widen the rows this job targets.
-  const brokerScope = scopeBroker(access)
 
   try {
     const jobId = await enqueueBulkJob({

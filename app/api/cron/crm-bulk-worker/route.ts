@@ -12,6 +12,7 @@
 import { NextResponse } from 'next/server'
 import {
   claimNextChunk,
+  reLeaseBulkJob,
   getBulkHandler,
   markChunkProgress,
   markJob,
@@ -27,7 +28,7 @@ import {
 // set-report-subscription) so getBulkHandler resolves them at runtime.
 import '@/lib/crm/bulk-handlers'
 import { createServiceClient } from '@/lib/supabase/service'
-import { validateSegment } from '@/lib/crm/segment-ast'
+import { validateSegment, EMPTY_SEGMENT } from '@/lib/crm/segment-ast'
 import { buildCrmPeopleQuery } from '@/lib/data/crm/buildCrmPeopleQuery'
 
 /**
@@ -83,6 +84,44 @@ export async function resolveAstToIds(
     if (rows.length < limit) break
   }
   return ids
+}
+
+/**
+ * Defensive per-chunk scope re-clamp for an ids-mode job under a restricted
+ * broker_scope. The enqueue path already pre-clamps an ids selection to the
+ * caller's book (resolveBulkSelection -> resolveAudienceIds), so in the normal
+ * case this is a no-op. It exists as a second wall: if a foreign id ever lands on
+ * a stored ids job (a hand-crafted job row, a future enqueue regression), the
+ * worker re-intersects the chunk with the SAME buildCrmPeopleQuery scope clamp the
+ * list/count use and drops anything outside the book, counting the drops as
+ * skipped so the offset still advances. Superuser jobs (null scope) skip the
+ * round-trip entirely. Injectable fetcher for unit testing without a database.
+ */
+export type ScopeIdFetcher = (
+  chunk: number[],
+  brokerScope: string,
+) => Promise<number[]>
+
+const defaultScopeIdFetcher: ScopeIdFetcher = async (chunk, brokerScope) => {
+  const sb = createServiceClient()
+  const { query } = buildCrmPeopleQuery(sb, EMPTY_SEGMENT, brokerScope, {
+    limit: chunk.length,
+    offset: 0,
+  })
+  const { data, error } = await query.select('id').in('id', chunk)
+  if (error) throw new Error(`scope re-clamp failed: ${error.message}`)
+  return ((data ?? []) as Array<{ id: number }>).map((r) => r.id)
+}
+
+export async function clampChunkToScope(
+  chunk: number[],
+  brokerScope: string | null,
+  fetcher: ScopeIdFetcher = defaultScopeIdFetcher,
+): Promise<{ allowed: number[]; excluded: number }> {
+  if (!brokerScope || chunk.length === 0) return { allowed: chunk, excluded: 0 }
+  const inScope = new Set(await fetcher(chunk, brokerScope))
+  const allowed = chunk.filter((id) => inScope.has(id))
+  return { allowed, excluded: chunk.length - allowed.length }
 }
 
 export const runtime = 'nodejs'
@@ -182,6 +221,33 @@ export async function GET(request: Request) {
         break
       }
 
+      // Re-lease before running the chunk so a multi-chunk drain inside this one
+      // cron run keeps the job exclusively ours (a concurrent worker's claim
+      // SKIP-LOCKs past a live lease). Best-effort — a failed re-lease only
+      // shortens our exclusive window; the atomic claim still prevents a true
+      // double-drain.
+      await reLeaseBulkJob(job.id)
+
+      // Defensive scope re-clamp: drop any chunk id outside the FROZEN
+      // broker_scope (a no-op on the normal pre-clamped path; the second wall
+      // against a foreign id on a stored ids job). Excluded ids count as skipped
+      // so the offset still advances over the full chunk.
+      let allowed = chunk
+      let excludedByScope = 0
+      try {
+        const clamped = await clampChunkToScope(chunk, job.broker_scope)
+        allowed = clamped.allowed
+        excludedByScope = clamped.excluded
+      } catch (e) {
+        await markJob(job.id, {
+          status: 'failed',
+          error: `scope re-clamp failed: ${e instanceof Error ? e.message : String(e)}`,
+        })
+        status = 'error'
+        errorMsg = e instanceof Error ? e.message : String(e)
+        break
+      }
+
       const ctx: BulkContext = {
         jobId: job.id,
         actorEmail: job.actor_email,
@@ -190,7 +256,7 @@ export async function GET(request: Request) {
 
       let result
       try {
-        result = normalizeResult(await handler(chunk, job.params ?? {}, ctx))
+        result = normalizeResult(await handler(allowed, job.params ?? {}, ctx))
       } catch (e) {
         // A handler blow-up fails the job (visible, not silent) rather than
         // looping the same chunk forever.
@@ -201,6 +267,17 @@ export async function GET(request: Request) {
         status = 'error'
         errorMsg = e instanceof Error ? e.message : String(e)
         break
+      }
+
+      // Fold the out-of-scope drops into the chunk result so the offset advances
+      // over the FULL chunk (processed + skipped === chunk.length) and the
+      // breakdown records why.
+      if (excludedByScope > 0) {
+        result.skipped += excludedByScope
+        result.breakdown = {
+          ...result.breakdown,
+          'out-of-scope': (result.breakdown['out-of-scope'] ?? 0) + excludedByScope,
+        }
       }
 
       await markChunkProgress(

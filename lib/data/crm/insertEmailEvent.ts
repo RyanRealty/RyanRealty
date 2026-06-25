@@ -56,3 +56,23 @@ export async function insertEmailEvent(
     return { ok: false, error: e instanceof Error ? e.message : String(e) }
   }
 }
+
+/**
+ * Delete one email_events row by its unique dedupe_key. Used to ROLL BACK a
+ * claim-before-send row when the wire send fails, so a genuine send failure
+ * leaves no false `sent` marker and a later worker run can re-attempt the send.
+ * Service role; never throws (a failed rollback only blocks a retry, it never
+ * double-sends).
+ */
+export async function deleteEmailEventByDedupeKey(
+  dedupeKey: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const sb = createServiceClient()
+    const { error } = await sb.from('email_events').delete().eq('dedupe_key', dedupeKey)
+    if (error) return { ok: false, error: error.message }
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) }
+  }
+}

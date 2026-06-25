@@ -11,6 +11,7 @@ import { CMAPdfDocument } from '@/lib/pdf/cma-pdf'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
+import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { headers } from 'next/headers'
 
 const source = (process.env.NEXT_PUBLIC_SITE_URL ?? 'ryan-realty.com').replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase()
@@ -188,13 +189,27 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
     }).catch(() => {})
   }
 
+  // Suppression chokepoint (fails closed). A seller who opted out of email gets
+  // neither the auto-CMA attachment nor the acknowledgment. The lead is still
+  // captured (FUB + native fallback above) and the broker is still alerted; only
+  // the two LEAD-facing sends below are gated. No crm_person_id here, gate by email.
+  const leadSuppressed = (await isSuppressedByEmail(email, 'email')).suppressed
+
   let cmaSent = false
   try {
-    const propertyId = await findPropertyByAddress({ street: street || null, city, state: state || null, postalCode: postalCode || null })
+    const propertyId = leadSuppressed
+      ? null
+      : await findPropertyByAddress({ street: street || null, city, state: state || null, postalCode: postalCode || null })
     if (propertyId) {
       let cma = await getCachedCMA(propertyId)
       if (!cma) cma = await computeCMA(propertyId)
       if (cma) {
+        // Suppression chokepoint (fails closed) — belt-and-suspenders alongside
+        // the leadSuppressed short-circuit above, so the auto-CMA send is gated
+        // in its own enclosing scope. No crm_person_id here, gate by email.
+        if ((await isSuppressedByEmail(email, 'email')).suppressed) {
+          return { success: true, cmaSent: false, eventId: generateEventId() }
+        }
         void createServiceClient
         const { getPropertyById, getCityListings: getCityListingsDAL } = await import('@/lib/data')
         const pAddr = await getPropertyById(propertyId)
@@ -259,7 +274,10 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
   // value used for the FUB person + the CMA greeting) — this is a transactional
   // Resend send, not a FUB merge tag, because FUB blocks integration emails.
   // reply-to is a monitored inbox so "reply to this email" actually reaches us.
-  if (!cmaSent) {
+  if (!cmaSent && !leadSuppressed) {
+    // Suppression chokepoint (fails closed) — re-check in this scope so the
+    // acknowledgment send is gated independently. No crm_person_id, gate by email.
+    if (!(await isSuppressedByEmail(email, 'email')).suppressed) {
     const firstName = name.split(/\s+/)[0] || ''
     const greeting = firstName ? `Hi ${firstName},` : 'Hi there,'
     await sendEmail({
@@ -282,6 +300,7 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
         'ryan-realty.com',
       ].join('\n'),
     }).catch((err) => console.warn('[valuation] acknowledgment email failed (non-blocking):', err))
+    }
   }
 
   // Send to Meta CAPI for deduplication with browser pixel.

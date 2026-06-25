@@ -145,6 +145,20 @@ export async function listCrmPeople(filters: CrmListFilters): Promise<{
   const sb = createServiceClient()
   const page = Math.max(1, filters.page ?? 1)
 
+  // SELF-SCOPING (HIGH, GAP-D1): this is the primary contacts read, so it must
+  // enforce broker RBAC ITSELF — never trust the page to pass the right
+  // ?broker=. Resolve the caller, derive their scope, and AND it onto
+  // assigned_broker UNCONDITIONALLY. A restricted broker (scope non-null) can
+  // never widen past their own slug — scope overrides any wider filters.broker
+  // the URL tries to pass; a superuser (scope null) falls back to the requested
+  // filter. A caller with no CRM access sees nothing.
+  const access = await getCrmAccess()
+  if (!access) {
+    return { rows: [], total: 0, page, pageSize: PAGE_SIZE, appliedView: null }
+  }
+  const scope = scopeBroker(access)
+  const effectiveBroker = scope ?? filters.broker
+
   let appliedView: CrmSavedView | null = null
   if (filters.view) {
     const { data } = await sb
@@ -161,12 +175,15 @@ export async function listCrmPeople(filters: CrmListFilters): Promise<{
       'id,fub_legacy_id,name,first_name,last_name,stage,source,assigned_broker,tags,emails,phones,last_activity_at,fub_created_at,picture_url',
       { count: 'exact' },
     )
+    // Baseline: never return soft-deleted contacts (matches getCrmStageCounts /
+    // getCrmSavedViewsWithCounts, which already filter deleted=false).
+    .eq('deleted', false)
 
   const stage = filters.stage || appliedView?.filter?.stage
   if (stage) query = query.eq('stage', stage)
   const tagsAny = filters.tag ? [filters.tag] : appliedView?.filter?.tagsAny
   if (tagsAny?.length) query = query.overlaps('tags', tagsAny)
-  if (filters.broker) query = query.eq('assigned_broker', filters.broker)
+  if (effectiveBroker) query = query.eq('assigned_broker', effectiveBroker)
 
   const q = filters.q?.trim()
   if (q) {

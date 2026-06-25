@@ -12,9 +12,15 @@ vi.mock('@/lib/resend', () => ({
   sendEmail: (...args: unknown[]) => mockSendEmail(...args),
 }))
 
-const mockRecordEmailEvent = vi.fn()
-vi.mock('@/lib/crm/email-events', () => ({
-  recordEmailEvent: (...args: unknown[]) => mockRecordEmailEvent(...args),
+// The send now CLAIMS the (jobId, personId) via an idempotent insertEmailEvent
+// BEFORE the wire (the double-send guard), and rolls back via
+// deleteEmailEventByDedupeKey on a wire failure. The claim row IS the `sent`
+// measurement row — there is no separate recordEmailEvent after the send.
+const mockInsertEmailEvent = vi.fn()
+const mockDeleteEmailEvent = vi.fn()
+vi.mock('@/lib/data/crm/insertEmailEvent', () => ({
+  insertEmailEvent: (...args: unknown[]) => mockInsertEmailEvent(...args),
+  deleteEmailEventByDedupeKey: (...args: unknown[]) => mockDeleteEmailEvent(...args),
 }))
 
 const mockGetRecipients = vi.fn()
@@ -45,6 +51,7 @@ import {
   suppressionBucket,
   attributionSlug,
   cohortEmailKey,
+  cohortSendDedupeKey,
   sendOneCohortEmail,
   emailCohortHandler,
   type EmailCohortParams,
@@ -131,22 +138,36 @@ describe('email-cohort pure helpers', () => {
       expect(cohortEmailKey({}, 9)).toBe('bulk:email-cohort:9')
     })
   })
+
+  describe('cohortSendDedupeKey', () => {
+    it('is stable + unique per (jobId, personId)', () => {
+      expect(cohortSendDedupeKey(42, 7)).toBe('bulk:email-cohort:42:p:7:sent')
+      // Same inputs -> same key (two overlapping runs collapse on it).
+      expect(cohortSendDedupeKey(42, 7)).toBe(cohortSendDedupeKey(42, 7))
+      // Different person or job -> different key.
+      expect(cohortSendDedupeKey(42, 8)).not.toBe(cohortSendDedupeKey(42, 7))
+      expect(cohortSendDedupeKey(43, 7)).not.toBe(cohortSendDedupeKey(42, 7))
+    })
+  })
 })
 
-describe('sendOneCohortEmail — suppression + send/record shape', () => {
+describe('sendOneCohortEmail — suppression + claim-before-send + record shape', () => {
   beforeEach(() => {
     mockIsSuppressed.mockReset()
     mockSendEmail.mockReset()
-    mockRecordEmailEvent.mockReset()
-    mockRecordEmailEvent.mockResolvedValue({ ok: true })
+    mockInsertEmailEvent.mockReset()
+    mockDeleteEmailEvent.mockReset()
+    // Default: the claim wins (a fresh row landed).
+    mockInsertEmailEvent.mockResolvedValue({ ok: true, inserted: true })
+    mockDeleteEmailEvent.mockResolvedValue({ ok: true })
   })
 
-  it('skips + buckets a suppressed recipient WITHOUT sending', async () => {
+  it('skips + buckets a suppressed recipient WITHOUT claiming or sending', async () => {
     mockIsSuppressed.mockResolvedValue({ suppressed: true, reasons: ['email:unsubscribed'] })
     const out = await sendOneCohortEmail(recipient(), CONTENT, {}, CTX)
     expect(out).toEqual({ kind: 'skipped', bucket: 'suppressed-unsubscribed' })
+    expect(mockInsertEmailEvent).not.toHaveBeenCalled()
     expect(mockSendEmail).not.toHaveBeenCalled()
-    expect(mockRecordEmailEvent).not.toHaveBeenCalled()
   })
 
   it('skips no-email before checking suppression', async () => {
@@ -156,15 +177,28 @@ describe('sendOneCohortEmail — suppression + send/record shape', () => {
     expect(mockSendEmail).not.toHaveBeenCalled()
   })
 
-  it('sends a merged, attributed, prepared email and records a sent event', async () => {
+  it('claims, then sends a merged, attributed, prepared email (claim IS the sent row)', async () => {
     mockIsSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
     mockSendEmail.mockResolvedValue({ id: 'msg-1' })
 
     const out = await sendOneCohortEmail(recipient(), CONTENT, { fromIdentity: 'x@ryan-realty.com' }, CTX)
     expect(out).toEqual({ kind: 'processed' })
 
-    // isSuppressed checked on the email channel for this person.
     expect(mockIsSuppressed).toHaveBeenCalledWith(7, 'email')
+
+    // The claim row is the idempotent `sent` event keyed per (jobId, personId).
+    expect(mockInsertEmailEvent).toHaveBeenCalledTimes(1)
+    const claimArg = mockInsertEmailEvent.mock.calls[0][0]
+    expect(claimArg).toMatchObject({
+      recipient_email: 'lead@example.com',
+      person_id: 7,
+      broker: 'rebecca',
+      send_type: 'campaign',
+      event: 'sent',
+      email_key: 'bulk:email-cohort:42',
+      subject: 'Hi Jane',
+      dedupe_key: cohortSendDedupeKey(42, 7),
+    })
 
     // sendEmail got the merged subject, the prepared (attributed) html + headers.
     expect(mockSendEmail).toHaveBeenCalledTimes(1)
@@ -175,27 +209,38 @@ describe('sendOneCohortEmail — suppression + send/record shape', () => {
     expect(sendArg.from).toBe('x@ryan-realty.com')
     expect(sendArg.headers).toEqual({ 'List-Unsubscribe': '<u>' })
 
-    // one email_events 'sent' row keyed on the provider message id + person.
-    expect(mockRecordEmailEvent).toHaveBeenCalledTimes(1)
-    const evArg = mockRecordEmailEvent.mock.calls[0][0]
-    expect(evArg).toMatchObject({
-      messageId: 'msg-1',
-      recipientEmail: 'lead@example.com',
-      personId: 7,
-      broker: 'rebecca',
-      sendType: 'campaign',
-      event: 'sent',
-      emailKey: 'bulk:email-cohort:42',
-      subject: 'Hi Jane',
-    })
+    // No rollback on success.
+    expect(mockDeleteEmailEvent).not.toHaveBeenCalled()
   })
 
-  it('skips + buckets send-error and does NOT record a sent event', async () => {
+  it('SKIPS the wire send when the claim already exists (overlapping run)', async () => {
+    mockIsSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    // A sibling run already claimed this recipient -> insert collapses.
+    mockInsertEmailEvent.mockResolvedValue({ ok: true, inserted: false })
+
+    const out = await sendOneCohortEmail(recipient(), CONTENT, {}, CTX)
+    expect(out).toEqual({ kind: 'skipped', bucket: 'already-sent' })
+    // The double-send guard: NO wire send when the claim was already taken.
+    expect(mockSendEmail).not.toHaveBeenCalled()
+    expect(mockDeleteEmailEvent).not.toHaveBeenCalled()
+  })
+
+  it('skips claim-error when the claim WRITE fails (never sends undeduped)', async () => {
+    mockIsSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    mockInsertEmailEvent.mockResolvedValue({ ok: false, error: 'db down' })
+    const out = await sendOneCohortEmail(recipient(), CONTENT, {}, CTX)
+    expect(out).toEqual({ kind: 'skipped', bucket: 'claim-error' })
+    expect(mockSendEmail).not.toHaveBeenCalled()
+  })
+
+  it('rolls the claim back + buckets send-error on a wire failure', async () => {
     mockIsSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
     mockSendEmail.mockResolvedValue({ error: 'Resend down' })
     const out = await sendOneCohortEmail(recipient(), CONTENT, {}, CTX)
     expect(out).toEqual({ kind: 'skipped', bucket: 'send-error' })
-    expect(mockRecordEmailEvent).not.toHaveBeenCalled()
+    // Claim rolled back so a later run can re-attempt — no false `sent` left.
+    expect(mockDeleteEmailEvent).toHaveBeenCalledTimes(1)
+    expect(mockDeleteEmailEvent).toHaveBeenCalledWith(cohortSendDedupeKey(42, 7))
   })
 })
 
@@ -203,10 +248,12 @@ describe('emailCohortHandler — chunk tally', () => {
   beforeEach(() => {
     mockIsSuppressed.mockReset()
     mockSendEmail.mockReset()
-    mockRecordEmailEvent.mockReset()
+    mockInsertEmailEvent.mockReset()
+    mockDeleteEmailEvent.mockReset()
     mockGetRecipients.mockReset()
     mockGetTemplate.mockReset()
-    mockRecordEmailEvent.mockResolvedValue({ ok: true })
+    mockInsertEmailEvent.mockResolvedValue({ ok: true, inserted: true })
+    mockDeleteEmailEvent.mockResolvedValue({ ok: true })
   })
 
   it('returns empty for an empty chunk', async () => {

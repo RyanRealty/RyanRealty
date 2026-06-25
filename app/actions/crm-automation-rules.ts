@@ -36,9 +36,19 @@ function bust() {
   for (const p of REVALIDATE_PATHS) revalidatePath(p)
 }
 
+/**
+ * Mutating an automation rule is an OWNER operation. These rules reshape every
+ * contact that hits a trigger (an assign_broker rule reassigns leads between
+ * brokers, mirroring assignCrmBrokerAction which is superuser-only). A restricted
+ * broker must never be able to create, edit, reorder, toggle, or delete one, so
+ * every CRUD action here requires the superuser role, unconditionally.
+ */
 async function requireAccess(): Promise<ConfigResult> {
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
+  if (access.role !== 'superuser') {
+    return { ok: false, error: 'Not authorized. Only an owner can manage automation rules.' }
+  }
   return { ok: true }
 }
 

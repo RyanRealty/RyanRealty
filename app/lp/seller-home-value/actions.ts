@@ -4,17 +4,13 @@ import { createClient } from '@supabase/supabase-js'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import {
   sendEvent,
-  addPersonTags,
-  createRealtimeTask,
   findPersonByEmail,
-  assignPersonToUser,
-  setPersonCustomFields,
-  postLeadOriginNote,
   type FubEventPerson,
 } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { saveAnonymousPartialAddress } from '@/lib/data'
-import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
+import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
+import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
 import { createCmaRequest } from '@/lib/cma-request'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
 import { geocodeAndTagLead } from '@/lib/lead-geocode'
@@ -108,11 +104,15 @@ export async function saveSellerPartialLead(params: {
       lpSurface: 'seller-lp',
     }).catch(() => {/* swallowed */})
 
-    // Cookie-identified visitor only for the FUB partial event write below.
+    // Cookie-identified visitor only for the partial native capture below.
     // Anonymous visitors already captured via the visitor_events row above.
     const cookiePersonId = await getFubPersonIdFromCookie()
     if (!cookiePersonId) return
 
+    // Partial capture goes native (post-FUB cutover). sendEvent records the
+    // crm_people lead and returns its id. When it resolves a native person,
+    // stamp the partial-source tag natively. A cookie-only event with no email
+    // or phone resolves to no id — the anonymous row above is the record then.
     const eventResult = await sendEvent({
       type: 'Seller Inquiry',
       person: { id: cookiePersonId },
@@ -123,11 +123,13 @@ export async function saveSellerPartialLead(params: {
     })
 
     if (!eventResult.ok) {
-      console.warn('[seller-lp] partial lead sendEvent failed (non-blocking):', eventResult.error)
+      console.warn('[seller-lp] partial lead capture failed (non-blocking):', eventResult.error)
       return
     }
 
-    await addPersonTags(cookiePersonId, ['source:seller-lp-partial'])
+    if (eventResult.personId) {
+      await enrichNativeLead({ personId: eventResult.personId, tags: ['source:seller-lp-partial'] })
+    }
   } catch (e) {
     // Intentionally silent. Partial-lead capture must never affect the UI.
     console.warn('[seller-lp] saveSellerPartialLead swallowed error:', e)
@@ -387,24 +389,21 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     })
 
     if (!eventResult.ok) {
-      console.warn('[seller-lp] FUB sendEvent failed:', eventResult.error)
+      console.warn('[seller-lp] native capture failed:', eventResult.error)
     }
 
-    // ─── Resolve final FUB person id (in case sendEvent just created it) ──
-    if (!fubPersonId && email) {
-      const newlyCreated = await findPersonByEmail(email)
-      if (newlyCreated?.id) {
-        fubPersonId = newlyCreated.id
-      }
+    // ─── Resolve the native CRM person id (post-FUB cutover) ───────────────
+    // sendEvent now captures natively (crm_people) and returns the personId.
+    // That is the working id for ALL downstream enrichment.
+    if (eventResult.ok && eventResult.personId) {
+      fubPersonId = eventResult.personId
     }
 
-    // ─── Native-capture fallback on a FUB push failure (CONTACT360 Phase 0.2)
-    // If the FUB push FAILED and we still cannot resolve a FUB person id, FUB
-    // is likely down — without this the seller lead would be dropped entirely
-    // (no FUB person, no crm_* row). Record it natively in crm_people +
-    // crm_contact_points so a FUB outage never silently loses a lead. The
-    // happy path (eventResult.ok, or a resolved fubPersonId) is unchanged.
-    if (!eventResult.ok && !fubPersonId) {
+    // ─── Native-capture fallback ───────────────────────────────────────────
+    // If sendEvent could not resolve a person id (skipped on a no-key event, or
+    // errored), capture the lead directly so a seller lead is NEVER dropped.
+    // ensureNativeLead is idempotent (email-first find-or-create).
+    if (!fubPersonId) {
       try {
         const native = await ensureNativeLead({
           name,
@@ -412,12 +411,10 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
           phone,
           source: lpSource,
           assignedBroker: assignment.broker,
-          tags: ['audience:seller', tierTag, `source:${lpSource}`, `broker:${assignment.broker}`, 'fub-fallback'],
+          tags: ['audience:seller', tierTag, `source:${lpSource}`, `broker:${assignment.broker}`],
         })
-        if (native.created || native.personId > 0) {
-          console.warn(
-            `[seller-lp] FUB push failed; native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
-          )
+        if (native.personId > 0) {
+          fubPersonId = native.personId
         }
       } catch (e) {
         console.warn('[seller-lp] native fallback lead failed:', e)
@@ -451,10 +448,13 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       console.warn(`[seller-lp] person ${fubPersonId} is compliance hard-stopped, skipping workflow enrollment`)
     }
 
-    // ─── Apply canonical tags + assign broker + write custom fields ───────
+    // ─── Native enrichment: tags + broker + custom fields + origin note ────
+    // The in-house replacement for the dead FUB enrichment chain. Writes
+    // straight to crm_people (tags union, custom jsonb, assigned_broker) and
+    // crm_timeline (origin note) via the DAL.
     if (fubPersonId && !hardStopped) {
-      // 1. Tags — canonical kebab-case namespaced schema (see docs/FUB_SELLER_WORKFLOW_2026-05-17.md §4).
-      // list-now-lp adds seller:listing-intent to distinguish high-intent BOFU leads in FUB.
+      // 1. Canonical kebab-case namespaced tags. list-now-lp adds
+      //    seller:listing-intent for high-intent BOFU leads.
       const tags: string[] = [
         'audience:seller',
         tierTag,                         // seller:hot | seller:warm | seller:nurture
@@ -465,58 +465,25 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         tags.push('seller:listing-intent')
       }
       // Paid-channel attribution — a referer carrying utm_source=facebook means
-      // this visitor arrived from a Meta ad click. Without these tags the FUB
-      // person reads source "Ryan-Realty.com" and paid leads are
-      // indistinguishable from organic site leads in FUB smart lists (the UTM
-      // detail lives only in sourceUrl, which FUB cannot filter on). Mirrors
-      // the lead-webhook's source:fb-ads-* namespace for Lead Ads.
+      // this visitor arrived from a Meta ad click, so the lead is filterable by
+      // paid channel + campaign in the CRM.
       if (originUtmSource === 'facebook') {
         tags.push('channel:fb-ads')
         if (originUtmCampaign) {
           tags.push(`campaign:${originUtmCampaign.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}`)
         }
       }
-      await addPersonTags(fubPersonId, tags)
 
-      // 2. Broker assignment via FUB's assignedUserId.
-      await assignPersonToUser(fubPersonId, assignment.userId)
+      // 2. Custom fields → crm_people.custom jsonb.
+      const custom: Record<string, string> = {
+        moveTimeline: timeline ?? 'unspecified',
+        leadTier: classification,
+        isSellerCurious: classification === 'nurture' ? 'true' : 'false',
+        sellerPropertyAddress: parsed.full,
+      }
 
-      // 3. Custom fields — written via PUT /v1/people/{id} (see lib/followupboss.ts).
-      await setPersonCustomFields(fubPersonId, {
-        customMoveTimeline: timeline ?? 'unspecified',
-        customLeadTier: classification,
-        customIsSellerCurious: classification === 'nurture' ? 'true' : 'false',
-        customSellerPropertyAddress: parsed.full,
-      })
-
-      // 4. Geocode the property address + spatial lookup → apply
-      //    neighborhood / subdivision / city / geo tags. This makes the lead
-      //    filterable in FUB smart lists by neighborhood for targeted
-      //    ad campaigns. Fire-and-forget — never blocks lead capture.
-      void geocodeAndTagLead({
-        fubPersonId,
-        address: parsed.full,
-        sourceType: 'lp-form',
-        state: parsed.state ?? undefined,
-      }).then((geoResult) => {
-        if (geoResult.ok && geoResult.tags.length > 0) {
-          return addPersonTags(fubPersonId!, geoResult.tags)
-        }
-      }).catch((e) => console.warn('[seller-lp] geocode failed (non-blocking):', e))
-
-      // 5. Record the assignment in our local ledger for the next round-robin.
-      await recordSellerAssignment({
-        broker: assignment.broker,
-        userId: assignment.userId,
-        fubPersonId,
-        tier: classification,
-        source: lpSource,
-      })
-
-      // 6. Lead-origin note — the internal FUB timeline note that tells the
-      //    broker WHY this lead came in (source, page, campaign, what they want,
-      //    tier, assignment). Reuses locals already computed above. Never throws
-      //    or blocks (the wrapper try/catches and skips a header-only note).
+      // 3. Lead-origin note → crm_timeline. Tells the broker WHY this lead came
+      //    in (source, page, campaign, what they want, tier, assignment).
       const timelineLabels: Record<SellerLPTimeline, string> = {
         'ready-now': 'ready to sell now',
         'next-3-6': 'in 3 to 6 months',
@@ -524,11 +491,9 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         exploring: 'just exploring',
       }
       const moveTimelineText = timeline ? timelineLabels[timeline] : null
-      await postLeadOriginNote(fubPersonId, {
+      const originContext: LeadOriginContext = {
         source: `source:${lpSource}`,
-        sourceLabel: isListNowLp
-          ? 'Seller LP (List Now / high intent)'
-          : 'Seller LP (Home Value)',
+        sourceLabel: isListNowLp ? 'Seller LP (List Now / high intent)' : 'Seller LP (Home Value)',
         landingPage: isListNowLp ? '/lp/sell-your-home' : '/lp/seller-home-value',
         utmSource: originUtmSource,
         utmMedium: originUtmMedium,
@@ -536,29 +501,58 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         utmContent: originUtmContent,
         audience: 'seller',
         tier: classification,
-        tierReason: moveTimelineText
-          ? `move timeline ${moveTimelineText}`
-          : undefined,
+        tierReason: moveTimelineText ? `move timeline ${moveTimelineText}` : undefined,
         want: moveTimelineText
           ? `home valuation for ${parsed.full}, plans to sell ${moveTimelineText}`
           : `home valuation for ${parsed.full}`,
         assignedAgent: assignment.broker,
         assignmentReason:
-          assignment.userId === FUB_USER_MATT
-            ? 'default routing to Matt'
-            : 'agent attribution cookie',
+          assignment.userId === FUB_USER_MATT ? 'default routing to Matt' : 'agent attribution cookie',
+      }
+
+      await enrichNativeLead({
+        personId: fubPersonId,
+        tags,
+        custom,
+        assignedBroker: assignment.broker,
+        originNote: { title: 'Seller LP lead', body: buildLeadOriginNote(originContext) },
+      })
+
+      // 4. Geocode the address + spatial lookup, then union the resulting
+      //    neighborhood / city / geo tags onto the person natively.
+      //    Fire-and-forget — never blocks lead capture.
+      const geoPersonId = fubPersonId
+      void geocodeAndTagLead({
+        fubPersonId: geoPersonId,
+        address: parsed.full,
+        sourceType: 'lp-form',
+        state: parsed.state ?? undefined,
+      }).then((geoResult) => {
+        if (geoResult.ok && geoResult.tags.length > 0) {
+          return enrichNativeLead({ personId: geoPersonId, tags: geoResult.tags })
+        }
+      }).catch((e) => console.warn('[seller-lp] geocode failed (non-blocking):', e))
+
+      // 5. Local assignment ledger row (dashboards read marketing_assignments).
+      await recordSellerAssignment({
+        broker: assignment.broker,
+        userId: assignment.userId,
+        fubPersonId,
+        tier: classification,
+        source: lpSource,
       })
     }
 
-    // ─── 5-min realtime task for hot leads only ────────────────────────────
+    // ─── 5-min hot-lead call task (native crm_tasks) ───────────────────────
     if (classification === 'hot' && fubPersonId) {
       const who = [firstName, lastName].filter(Boolean).join(' ') || email || 'unknown'
-      void createRealtimeTask({
+      void createNativeTask({
         personId: fubPersonId,
-        taskName: `Hot seller LP lead — call within 5 min: ${who} (${parsed.full})`,
-        taskType: 'Call',
+        name: `Hot seller LP lead - call within 5 min: ${who} (${parsed.full})`,
+        type: 'Call',
         dueInMinutes: 5,
-      }).catch((e) => console.warn('[seller-lp] realtime task error:', e))
+        assignedBroker: assignment.broker,
+      }).catch((e) => console.warn('[seller-lp] hot-lead task error:', e))
     }
 
     // ─── Canonical CMA request — queue the brain action ───────────────────

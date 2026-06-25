@@ -12,8 +12,11 @@
  * matching either a stage `key` or `label` is accepted; the stored value is the
  * canonical `label` (crm_people.stage holds the label string).
  *
- * Scope is applied at id-resolution (worker), so a restricted broker's chunk only
- * contains their own contacts — matching the single-record requirePersonInScope.
+ * Scope is clamped TWICE before this handler runs — at enqueue (an ids selection
+ * is pre-clamped via resolveAudienceIds; an ast/view selection resolves under
+ * broker_scope) AND defensively in the worker (clampChunkToScope drops any foreign
+ * id from the chunk) — so a restricted broker's chunk only contains their own
+ * contacts, matching the single-record requirePersonInScope.
  *
  * The single-record path also fires a Meta CAPI qualified-lead event when a lead
  * crosses INTO a qualifying stage. That is intentionally omitted from the bulk

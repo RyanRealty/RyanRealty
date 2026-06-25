@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { renderCmaPdfBuffer, CmaNotFoundError } from '@/lib/cma-pdf'
 import { sendEmail } from '@/lib/resend'
 import { createServiceClient } from '@/lib/supabase/service'
+import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -126,6 +127,19 @@ async function handleEmail(
       : []
     const toList = Array.isArray(to) ? to : [to]
     const allRecipients = [...toList, ...ccList]
+
+    // Suppression chokepoint (fails closed). No crm_person_id at this route, so
+    // gate every recipient address. A single suppressed address blocks the send
+    // rather than silently mailing a contact that opted out.
+    for (const addr of allRecipients) {
+      const sup = await isSuppressedByEmail(String(addr), 'email')
+      if (sup.suppressed) {
+        return NextResponse.json(
+          { error: 'A recipient is suppressed for email', recipient: addr, reasons: sup.reasons },
+          { status: 409 }
+        )
+      }
+    }
 
     const result = await sendEmail({
       to: allRecipients,

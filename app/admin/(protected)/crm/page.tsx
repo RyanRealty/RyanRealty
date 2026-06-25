@@ -40,8 +40,10 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
   const page = Math.max(1, Number(sp.page ?? '1') || 1)
 
   // GAP-1: the broker-RBAC scope (Option A). A superuser (Matt) → null = sees all
-  // brokers; a restricted broker (Rebecca, Paul) → their own slug. This clamps the
-  // '?broker=all' override server-side: only a superuser may drop the filter.
+  // brokers; a restricted broker (Rebecca, Paul) → their own slug. Used here to
+  // shape the UI (which broker the filter defaults to, the My-leads label). The
+  // ACTUAL enforcement lives in listCrmPeople itself, which self-scopes — so a
+  // restricted broker is constrained regardless of what this page passes.
   const scope = scopeBroker(access)
 
   // Brokers land on THEIR leads by default; '?broker=all' (or the All brokers
@@ -241,8 +243,8 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground sm:h-9 sm:w-auto"
             >
               <option value="">All stages</option>
-              {CRM_STAGES.map((s) => (
-                <option key={s} value={s}>{s}</option>
+              {stageOptions.map((s) => (
+                <option key={s.key} value={s.key}>{s.label}</option>
               ))}
             </select>
             <select

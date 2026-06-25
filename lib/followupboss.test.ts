@@ -56,13 +56,29 @@ describe('sendEvent (native capture, FUB decommissioned)', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('captures natively with mapped fields + source tag, returns the native shape', async () => {
+  it('captures natively with mapped fields + source tag, returns the native shape with personId', async () => {
     const r = await sendEvent({ type: 'Registration', source: 'Buyer LP', person })
-    expect(r).toEqual({ ok: true, status: 200 })
+    expect(r).toEqual({ ok: true, status: 200, personId: 1 })
     expect(ensureNativeLeadMock).toHaveBeenCalledTimes(1)
     const arg = ensureNativeLeadMock.mock.calls[0][0]
     expect(arg).toMatchObject({ name: 'Jane Doe', email: 'jane@example.com', phone: '5415551234', source: 'Buyer LP' })
     expect(arg.tags).toContain('source:Buyer LP')
+  })
+
+  // BLOCKER fix: sendEvent must return the native personId so LP enrichment can
+  // run against it. Previously it returned only { ok, status } and every
+  // enrichment gated on the now-always-null fubPersonId never ran.
+  it('returns the native personId from ensureNativeLead', async () => {
+    ensureNativeLeadMock.mockResolvedValueOnce({ personId: 4242, created: true })
+    const r = await sendEvent({ type: 'Seller Inquiry', source: 'Seller LP', person })
+    expect(r).toEqual({ ok: true, status: 200, personId: 4242 })
+  })
+
+  it('surfaces a skipped native capture (no key) as personId null', async () => {
+    // ensureNativeLead returns personId 0 when it skips (anonymous, no key).
+    ensureNativeLeadMock.mockResolvedValueOnce({ personId: 0, created: false })
+    const r = await sendEvent({ type: 'Viewed Page', source: 'Website', person: {} })
+    expect(r).toEqual({ ok: true, status: 200, personId: null })
   })
 
   it('infers audience:seller from a Seller Inquiry', async () => {

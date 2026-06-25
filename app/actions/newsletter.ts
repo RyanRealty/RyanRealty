@@ -1,7 +1,7 @@
 'use server'
 
 import { getCrmAccess } from '@/app/actions/crm'
-import { isSuppressed } from '@/lib/crm/suppressions'
+import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { sendEmail } from '@/lib/resend'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
@@ -224,9 +224,14 @@ export async function adminSendNewsletterAction(id: string): Promise<{ ok: boole
   const sentIds: string[] = []
 
   for (const r of recipients) {
-    // Honor the suppression chokepoint for linked CRM people (fails closed).
+    // Honor the suppression chokepoint (fails closed). Use the person id when
+    // the subscriber is linked to a CRM person, else resolve by email so an
+    // unlinked subscriber row is still checked against the consent record.
     if (r.crm_person_id) {
       const sup = await isSuppressed(r.crm_person_id, 'email')
+      if (sup.suppressed) { skipped++; continue }
+    } else {
+      const sup = await isSuppressedByEmail(r.email, 'email')
       if (sup.suppressed) { skipped++; continue }
     }
     const u = unsubUrl(r.unsubscribe_token)

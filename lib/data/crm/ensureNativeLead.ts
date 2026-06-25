@@ -174,6 +174,17 @@ export async function ensureNativeLead(input: EnsureNativeLeadInput): Promise<En
   })
 
   if (decision.action === 'reuse') {
+    // REUSE: merge the caller's tags into the existing person + refresh source /
+    // assigned_broker when provided. Without this the second touch from an LP
+    // (the same email/phone re-submitting a different form) would silently drop
+    // the new audience:/source:/intent: tags and the routed broker — the lead
+    // would keep its first-touch attribution forever. Merge, never overwrite the
+    // tag set. Non-fatal on a DB hiccup (the lead already exists).
+    await mergeReuseEnrichment(sb, decision.personId, {
+      tags: input.tags,
+      source: input.source,
+      assignedBroker: input.assignedBroker,
+    })
     return { personId: decision.personId, created: false }
   }
   if (decision.action === 'skip') {
@@ -228,4 +239,183 @@ export async function ensureNativeLead(input: EnsureNativeLeadInput): Promise<En
   }
 
   return { personId, created: true }
+}
+
+/** Dedupe + trim a tag list, dropping empties and over-long tags (FUB parity: <=80). */
+export function cleanTags(tags: Array<string | null | undefined> | undefined): string[] {
+  return Array.from(
+    new Set(
+      (tags ?? [])
+        .map((t) => (typeof t === 'string' ? t.trim() : ''))
+        .filter((t): t is string => t.length > 0 && t.length <= 80),
+    ),
+  )
+}
+
+/**
+ * REUSE-path enrichment: union the new tags onto the existing crm_people.tags
+ * array, and update source / assigned_broker when the caller supplied them. Reads
+ * the current tags first (Postgres text[] has no in-place merge via supabase-js),
+ * then writes the union. Best-effort — logs and swallows on error so a re-submit
+ * never breaks the LP response.
+ */
+async function mergeReuseEnrichment(
+  sb: ReturnType<typeof createServiceClient>,
+  personId: number,
+  input: { tags?: string[]; source?: string; assignedBroker?: CrmBrokerSlug },
+): Promise<void> {
+  const incoming = cleanTags(input.tags)
+  const hasSource = Boolean(input.source?.trim())
+  const hasBroker = Boolean(input.assignedBroker)
+  if (incoming.length === 0 && !hasSource && !hasBroker) return
+
+  try {
+    const { data: existing, error: readError } = await sb
+      .from('crm_people')
+      .select('tags')
+      .eq('id', personId)
+      .maybeSingle()
+    if (readError) {
+      console.warn('[ensureNativeLead] reuse tag read failed:', readError.message)
+      return
+    }
+    const current = Array.isArray(existing?.tags) ? (existing!.tags as string[]) : []
+    const update: Record<string, unknown> = {}
+    if (incoming.length > 0) {
+      const merged = Array.from(new Set([...current, ...incoming]))
+      if (merged.length !== current.length) update.tags = merged
+    }
+    if (hasSource) update.source = input.source!.trim()
+    if (hasBroker) update.assigned_broker = input.assignedBroker
+    if (Object.keys(update).length === 0) return
+    const { error: updateError } = await sb.from('crm_people').update(update).eq('id', personId)
+    if (updateError) {
+      console.warn('[ensureNativeLead] reuse enrichment update failed:', updateError.message)
+    }
+  } catch (err) {
+    console.warn('[ensureNativeLead] reuse enrichment threw:', err instanceof Error ? err.message : String(err))
+  }
+}
+
+export type NativeEnrichmentInput = {
+  personId: number
+  /** Canonical tags to UNION onto crm_people.tags (audience:*, seller:*, etc.). */
+  tags?: string[]
+  /** Custom fields merged into crm_people.custom jsonb (timeline, tier, address). */
+  custom?: Record<string, string | number | boolean | null | undefined>
+  /** Broker to (re)assign the person to (the round-robin / attributed broker). */
+  assignedBroker?: CrmBrokerSlug
+  /** Optional origin note written to crm_timeline as a 'note' row. */
+  originNote?: { title?: string; body: string }
+}
+
+/**
+ * Native lead enrichment — the in-house replacement for the dead FUB enrichment
+ * chain (addPersonTags + assignPersonToUser + setPersonCustomFields +
+ * postLeadOriginNote). Runs on a resolved native person id from the LP paths:
+ *
+ *   1. UNION canonical tags onto crm_people.tags (read-modify-write).
+ *   2. MERGE custom fields into crm_people.custom jsonb (preserve existing keys).
+ *   3. SET assigned_broker (the routed broker — never all-to-Matt by accident).
+ *   4. WRITE an origin note to crm_timeline (the "why this lead came in" entry).
+ *
+ * Best-effort + never throws — a failure here must never fail lead capture. The
+ * crm_people row already exists by the time this runs.
+ *
+ * DAL boundary (G1): the raw .from() writes live here, inside lib/data/.
+ */
+export async function enrichNativeLead(input: NativeEnrichmentInput): Promise<void> {
+  if (!Number.isFinite(input.personId) || input.personId <= 0) return
+  const sb = createServiceClient()
+
+  try {
+    // 1–3: tags union + custom merge + broker assignment in one read-modify-write.
+    const incomingTags = cleanTags(input.tags)
+    const customEntries = Object.entries(input.custom ?? {}).filter(([, v]) => v !== undefined)
+    const hasBroker = Boolean(input.assignedBroker)
+    if (incomingTags.length > 0 || customEntries.length > 0 || hasBroker) {
+      const { data: existing, error: readError } = await sb
+        .from('crm_people')
+        .select('tags, custom')
+        .eq('id', input.personId)
+        .maybeSingle()
+      if (readError) {
+        console.warn('[enrichNativeLead] person read failed:', readError.message)
+      } else {
+        const currentTags = Array.isArray(existing?.tags) ? (existing!.tags as string[]) : []
+        const currentCustom =
+          existing?.custom && typeof existing.custom === 'object' && !Array.isArray(existing.custom)
+            ? (existing.custom as Record<string, unknown>)
+            : {}
+        const update: Record<string, unknown> = {}
+        if (incomingTags.length > 0) {
+          update.tags = Array.from(new Set([...currentTags, ...incomingTags]))
+        }
+        if (customEntries.length > 0) {
+          update.custom = { ...currentCustom, ...Object.fromEntries(customEntries) }
+        }
+        if (hasBroker) update.assigned_broker = input.assignedBroker
+        if (Object.keys(update).length > 0) {
+          const { error: updateError } = await sb
+            .from('crm_people')
+            .update(update)
+            .eq('id', input.personId)
+          if (updateError) console.warn('[enrichNativeLead] person update failed:', updateError.message)
+        }
+      }
+    }
+
+    // 4: origin note → crm_timeline.
+    if (input.originNote?.body?.trim()) {
+      const { error: noteError } = await sb.from('crm_timeline').insert({
+        person_id: input.personId,
+        kind: 'note',
+        title: input.originNote.title?.trim() || 'Lead origin',
+        body: input.originNote.body.trim().slice(0, 4000),
+        broker: input.assignedBroker ?? null,
+        source: 'lp-form',
+      })
+      if (noteError) console.warn('[enrichNativeLead] origin note insert failed:', noteError.message)
+    }
+  } catch (err) {
+    console.warn('[enrichNativeLead] threw:', err instanceof Error ? err.message : String(err))
+  }
+}
+
+export type CreateNativeTaskInput = {
+  personId: number
+  name: string
+  type?: string
+  /** Minutes from now the task is due (e.g. 5 for the hot-lead call task). */
+  dueInMinutes?: number
+  assignedBroker?: CrmBrokerSlug
+}
+
+/**
+ * Create a native crm_tasks row — the in-house replacement for the dead FUB
+ * createRealtimeTask. Used for the 5-minute hot-lead call task on the seller /
+ * FSBO / expired LP paths. Best-effort + never throws.
+ *
+ * DAL boundary (G1): the raw .from() write lives here, inside lib/data/.
+ */
+export async function createNativeTask(input: CreateNativeTaskInput): Promise<void> {
+  if (!Number.isFinite(input.personId) || input.personId <= 0) return
+  const name = input.name?.trim()
+  if (!name) return
+  const dueInMinutes = Number.isFinite(input.dueInMinutes) ? Math.max(1, Number(input.dueInMinutes)) : 5
+  const dueAt = new Date(Date.now() + dueInMinutes * 60 * 1000).toISOString()
+  try {
+    const sb = createServiceClient()
+    const { error } = await sb.from('crm_tasks').insert({
+      person_id: input.personId,
+      name: name.slice(0, 190),
+      type: input.type?.trim() || 'Call',
+      due_at: dueAt,
+      assigned_broker: input.assignedBroker ?? null,
+      origin: 'lp-form',
+    })
+    if (error) console.warn('[createNativeTask] insert failed:', error.message)
+  } catch (err) {
+    console.warn('[createNativeTask] threw:', err instanceof Error ? err.message : String(err))
+  }
 }

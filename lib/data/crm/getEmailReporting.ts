@@ -184,6 +184,53 @@ export type RawEmailEventRow = {
 }
 
 /**
+ * Recover the TRUE send_type for every event by joining lifecycle events back to
+ * the original `sent` row by message_id. PURE — exported for tests.
+ *
+ * The send path (lib/crm/market-report-send.ts, bulk-handlers/email-cohort.ts)
+ * writes the `sent` event with the real send_type ('market-report', 'campaign',
+ * 'sequence', ...). The Resend webhook then writes the delivered/open/click/
+ * bounce/complaint lifecycle events ALL with send_type 'other' (it has no idea
+ * what kind of send produced them). Reporting that trusts each row's stored
+ * send_type therefore sees opens/clicks/bounces as 'other', so a type-filtered
+ * send log or a per-type KPI strip misses the true engagement.
+ *
+ * This builds message_id -> realSendType from any row that carries a concrete
+ * (non-'other', non-empty) send_type, preferring the `sent` event's value, then
+ * overwrites every row sharing that message_id. Rows with no message_id, or
+ * whose message_id never produced a concrete send_type, are returned unchanged.
+ */
+export function recoverSendTypes(rows: RawEmailEventRow[]): RawEmailEventRow[] {
+  const byMessage = new Map<string, string>()
+  for (const r of rows) {
+    const mid = (r.message_id ?? '').trim()
+    if (!mid) continue
+    const st = (r.send_type ?? '').trim()
+    if (!st || st === 'other') continue
+    // The `sent` event is the authoritative source of the send_type; let it win
+    // over any other concrete value seen for the same message.
+    if (r.event === 'sent' || !byMessage.has(mid)) byMessage.set(mid, st)
+  }
+  if (byMessage.size === 0) return rows
+  return rows.map((r) => {
+    const mid = (r.message_id ?? '').trim()
+    const real = mid ? byMessage.get(mid) : undefined
+    return real && real !== (r.send_type ?? '').trim() ? { ...r, send_type: real } : r
+  })
+}
+
+/** Keep only rows whose (recovered) send_type matches the requested filter.
+ *  A null/empty filter is a no-op. PURE — exported for tests. */
+export function filterBySendType(
+  rows: RawEmailEventRow[],
+  sendType: string | null | undefined,
+): RawEmailEventRow[] {
+  const want = (sendType ?? '').trim()
+  if (!want) return rows
+  return rows.filter((r) => (r.send_type ?? '').trim() === want)
+}
+
+/**
  * Collapse a fan of raw events into one log row PER SEND, picking the latest
  * lifecycle event (by EVENT_RANK, tie-broken by occurred_at). PURE — exported
  * for the test. Rows come in newest-first; we keep the highest-ranked event and
@@ -302,10 +349,17 @@ export function summarizeEngagement(rows: RawEmailEventRow[]): EmailEngagementSu
 
 const EMAIL_REPORTING_TAG = 'crm-email-reporting' as const
 
-/** Build a filtered email_events query shared by the readers. */
+/** Build a filtered email_events query shared by the readers.
+ *
+ * NOTE: send_type is deliberately NOT filtered here. Lifecycle events
+ * (open/click/bounce) are stored with send_type 'other' by the webhook; their
+ * true type is recovered in memory via recoverSendTypes (join to the `sent` row
+ * by message_id) and THEN filtered with filterBySendType. Filtering send_type at
+ * the DB level would drop every 'other' lifecycle row before recovery, so a
+ * type-filtered report would show sends with zero opens/clicks. */
 function buildEventsQuery(
   sb: ReturnType<typeof createServiceClient>,
-  params: { broker?: string | null; dateFrom?: string | null; dateTo?: string | null; sendType?: string | null; q?: string | null },
+  params: { broker?: string | null; dateFrom?: string | null; dateTo?: string | null; q?: string | null },
 ) {
   let query = sb
     .from('email_events')
@@ -318,9 +372,6 @@ function buildEventsQuery(
   if (from) query = query.gte('occurred_at', from)
   const to = params.dateTo?.trim()
   if (to) query = query.lte('occurred_at', to)
-
-  const sendType = params.sendType?.trim()
-  if (sendType) query = query.eq('send_type', sendType)
 
   const q = params.q?.trim().toLowerCase()
   if (q) query = query.or(`recipient_email.ilike.%${q}%,subject.ilike.%${q}%`)
@@ -342,10 +393,16 @@ async function readSendLog(params: GetEmailSendLogParams): Promise<EmailSendLogR
     return { rows: [], count: 0, unreadable: true }
   }
 
+  // Recover the true send_type (join lifecycle rows to their `sent` row by
+  // message_id) BEFORE the optional type filter, so the type-filtered send log
+  // shows true open/click/bounce for the selected type instead of dropping them.
+  const recovered = recoverSendTypes(data as RawEmailEventRow[])
+  const scoped = filterBySendType(recovered, params.sendType)
+
   // Collapse the event fan to one row per send, then page in memory. We scan a
   // capped window (SCAN_CAP) so a single page is correct against recent sends;
   // the count is the distinct-send total within that window.
-  const collapsed = collapseSendLog(data as RawEmailEventRow[])
+  const collapsed = collapseSendLog(scoped)
   const page = collapsed.slice(offset, offset + limit)
   return { rows: page, count: collapsed.length, unreadable: false }
 }
@@ -372,7 +429,8 @@ async function readEngagement(params: GetEmailEngagementParams): Promise<EmailEn
       unreadable: true,
     }
   }
-  return summarizeEngagement(data as RawEmailEventRow[])
+  const recovered = recoverSendTypes(data as RawEmailEventRow[])
+  return summarizeEngagement(filterBySendType(recovered, params.sendType))
 }
 
 async function readBrokerEngagement(params: GetEmailEngagementParams): Promise<BrokerEmailEngagementRow[]> {
@@ -386,9 +444,14 @@ async function readBrokerEngagement(params: GetEmailEngagementParams): Promise<B
   if (error) throw new Error(`[getBrokerEmailEngagement] ${error.message}`)
   if (!data) return []
 
+  // Recover true send_type then apply the optional type filter before bucketing,
+  // so per-broker rates reflect the selected send type's real lifecycle events.
+  const recovered = recoverSendTypes(data as RawEmailEventRow[])
+  const scoped = filterBySendType(recovered, params.sendType)
+
   // Bucket the events by broker, then summarize each bucket honestly.
   const buckets = new Map<string, RawEmailEventRow[]>()
-  for (const r of data as RawEmailEventRow[]) {
+  for (const r of scoped) {
     const b = (r.broker ?? '').trim() || '(unattributed)'
     const arr = buckets.get(b)
     if (arr) arr.push(r)

@@ -4,12 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import {
   sendEvent,
-  addPersonTags,
-  createRealtimeTask,
   findPersonByEmail,
-  assignPersonToUser,
-  setPersonCustomFields,
-  postLeadOriginNote,
   type FubEventPerson,
 } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
@@ -18,7 +13,8 @@ import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
-import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
+import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
+import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
 import { cookies, headers } from 'next/headers'
 
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -175,19 +171,19 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
     })
 
     if (!eventResult.ok) {
-      console.warn('[expired-lp] FUB sendEvent failed:', eventResult.error)
+      console.warn('[expired-lp] native capture failed:', eventResult.error)
     }
 
-    if (!fubPersonId && email) {
-      const newlyCreated = await findPersonByEmail(email)
-      if (newlyCreated?.id) fubPersonId = newlyCreated.id
+    // ─── Resolve the native CRM person id (post-FUB cutover) ───────────────
+    if (eventResult.ok && eventResult.personId) {
+      fubPersonId = eventResult.personId
     }
 
-    // ─── Native-capture fallback on a FUB push failure (CONTACT360 Phase 0.2)
-    // FUB down → record the expired-listing lead natively so a hot seller is NEVER
-    // lost (critical for the FollowUpBoss cutover — this LP previously had no
-    // fallback). Routes to the agent-attributed broker. Happy path unchanged.
-    if (!eventResult.ok && !fubPersonId) {
+    // ─── Native-capture fallback ───────────────────────────────────────────
+    // If sendEvent could not resolve a person id, record the expired-listing
+    // lead (a hot seller) directly so it is NEVER lost. ensureNativeLead is
+    // idempotent and routes to the agent-attributed broker.
+    if (!fubPersonId) {
       try {
         const native = await ensureNativeLead({
           name,
@@ -195,12 +191,10 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
           phone,
           source: 'expired-lp',
           assignedBroker: assignment.broker,
-          tags: ['audience:seller', 'seller:hot', 'source:expired-lp', 'intent:expired', `broker:${assignment.broker}`, 'fub-fallback'],
+          tags: ['audience:seller', 'seller:hot', 'source:expired-lp', 'intent:expired', `broker:${assignment.broker}`],
         })
-        if (native.created || native.personId > 0) {
-          console.warn(
-            `[expired-lp] FUB push failed; native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
-          )
+        if (native.personId > 0) {
+          fubPersonId = native.personId
         }
       } catch (e) {
         console.warn('[expired-lp] native fallback lead failed:', e)
@@ -225,10 +219,10 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
       console.warn(`[expired-lp] person ${fubPersonId} is compliance hard-stopped, skipping workflow enrollment`)
     }
 
-    // ─── Apply canonical tags + assign + custom fields ─────────────────────
+    // ─── Native enrichment: tags + broker + custom fields + origin note ────
     if (fubPersonId && !hardStopped) {
       // Expired listings are HOT seller leads — they had real intent recently
-      // (within the last X months) and they're warm to a re-list conversation.
+      // and they're warm to a re-list conversation.
       const tags: string[] = [
         'audience:seller',
         'seller:hot',
@@ -236,13 +230,7 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
         'intent:expired-listing',
         `broker:${assignment.broker}`,
       ]
-      await addPersonTags(fubPersonId, tags)
-      await assignPersonToUser(fubPersonId, assignment.userId)
-
-      // Internal "why this lead came in" note Matt reads in the FUB timeline.
-      // No-op-safe (guards id, skips header-only, swallows errors), so it never
-      // blocks lead creation. Only fields actually present here are passed.
-      await postLeadOriginNote(fubPersonId, {
+      const originContext: LeadOriginContext = {
         source: 'expired-lp',
         sourceLabel: 'Expired listing landing page',
         landingPage: `${siteUrl}/lp/expired-listing`,
@@ -255,12 +243,17 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
         assignedAgent: assignment.broker,
         assignmentReason: 'expired LP routing (attributed agent or Matt by default)',
         extra: notes ? `Notes: ${notes}` : undefined,
-      })
-
-      await setPersonCustomFields(fubPersonId, {
-        customLeadTier: 'hot',
-        customMoveTimeline: 'ready-now',
-        customSellerPropertyAddress: address || 'unspecified',
+      }
+      await enrichNativeLead({
+        personId: fubPersonId,
+        tags,
+        custom: {
+          leadTier: 'hot',
+          moveTimeline: 'ready-now',
+          sellerPropertyAddress: address || 'unspecified',
+        },
+        assignedBroker: assignment.broker,
+        originNote: { title: 'Expired listing LP lead', body: buildLeadOriginNote(originContext) },
       })
 
       // Instant CRM mirror + auto-enroll (kills the 30-min delta-cron lag).
@@ -314,15 +307,16 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
       }
     }
 
-    // ─── 5-min realtime task for ALL expired LP leads (hot category) ──────
+    // ─── 5-min hot-lead call task (native crm_tasks) for ALL expired leads ──
     if (fubPersonId) {
       const who = [firstName, lastName].filter(Boolean).join(' ') || email
-      void createRealtimeTask({
+      void createNativeTask({
         personId: fubPersonId,
-        taskName: `Hot expired-listing lead — call within 5 min: ${who} (${address || 'no address'})`,
-        taskType: 'Call',
+        name: `Hot expired-listing lead - call within 5 min: ${who} (${address || 'no address'})`,
+        type: 'Call',
         dueInMinutes: 5,
-      }).catch((e) => console.warn('[expired-lp] realtime task error:', e))
+        assignedBroker: assignment.broker,
+      }).catch((e) => console.warn('[expired-lp] hot-lead task error:', e))
     }
 
     // ─── Meta CAPI Lead $500 (high-intent seller signal) ──────────────────

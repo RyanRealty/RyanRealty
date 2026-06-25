@@ -56,6 +56,7 @@ import { instrumentEmailHtml } from '@/lib/email-tracking'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { prepareDeliverableEmail } from '@/lib/email/prepare'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
+import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { sendEmail } from '@/lib/resend'
 
 const STORAGE_BUCKET = 'cma-deliveries'
@@ -314,6 +315,16 @@ export async function sendCmaForContactAction(deliveryId: string): Promise<SendC
           label: subject,
         })
       : (row.email_body_html as string)
+
+    // Suppression chokepoint (fails closed). Gate on the resolved CRM person
+    // when known, else on the lead_email. Honors the consent record before the
+    // CMA reaches the wire.
+    const sup = crmPersonId
+      ? await isSuppressed(crmPersonId, 'email')
+      : await isSuppressedByEmail(row.lead_email as string, 'email')
+    if (sup.suppressed) {
+      return { ok: false, error: 'This contact has opted out of email and cannot be sent a CMA.' }
+    }
 
     // Route through the deliverability preflight: multipart text + RFC 8058
     // List-Unsubscribe headers + CAN-SPAM postal footer (CRM cutover 2026-06-24).

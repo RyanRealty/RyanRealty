@@ -6,7 +6,11 @@ import { describe, expect, it, vi } from 'vitest'
 // module imports cleanly under vitest.
 vi.mock('@/lib/supabase/service', () => ({ createServiceClient: () => ({}) }))
 
-import { resolveAstToIds, AST_RESOLVE_PAGE } from '@/app/api/cron/crm-bulk-worker/route'
+import {
+  resolveAstToIds,
+  AST_RESOLVE_PAGE,
+  clampChunkToScope,
+} from '@/app/api/cron/crm-bulk-worker/route'
 
 const EMPTY_AST = { type: 'group', op: 'and', nodes: [] }
 
@@ -59,5 +63,42 @@ describe('resolveAstToIds — paging math', () => {
 
   it('exposes a sane default page size', () => {
     expect(AST_RESOLVE_PAGE).toBeGreaterThanOrEqual(100)
+  })
+})
+
+describe('clampChunkToScope — defensive worker re-clamp (blocker 1, second wall)', () => {
+  it('is a no-op for a superuser (null scope) — never hits the database', async () => {
+    const fetcher = vi.fn()
+    const out = await clampChunkToScope([1, 2, 3], null, fetcher)
+    expect(out).toEqual({ allowed: [1, 2, 3], excluded: 0 })
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+
+  it('is a no-op on an empty chunk', async () => {
+    const fetcher = vi.fn()
+    const out = await clampChunkToScope([], 'paul', fetcher)
+    expect(out).toEqual({ allowed: [], excluded: 0 })
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+
+  it('drops foreign ids and counts them excluded, preserving chunk order', async () => {
+    // The scope read returns only the in-scope subset (1, 3); id 2 + 9 are foreign.
+    const fetcher = vi.fn(async (_chunk: number[], _scope: string) => [3, 1])
+    const out = await clampChunkToScope([1, 2, 3, 9], 'paul', fetcher)
+    expect(out.allowed).toEqual([1, 3]) // original chunk order kept
+    expect(out.excluded).toBe(2)
+    expect(fetcher).toHaveBeenCalledWith([1, 2, 3, 9], 'paul')
+  })
+
+  it('keeps the whole chunk when every id is in scope', async () => {
+    const fetcher = vi.fn(async () => [1, 2, 3])
+    const out = await clampChunkToScope([1, 2, 3], 'rebecca', fetcher)
+    expect(out).toEqual({ allowed: [1, 2, 3], excluded: 0 })
+  })
+
+  it('excludes the whole chunk when nothing is in scope', async () => {
+    const fetcher = vi.fn(async () => [])
+    const out = await clampChunkToScope([1, 2], 'paul', fetcher)
+    expect(out).toEqual({ allowed: [], excluded: 2 })
   })
 })

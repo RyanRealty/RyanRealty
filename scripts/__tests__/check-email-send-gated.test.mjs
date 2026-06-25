@@ -119,6 +119,17 @@ describe('isGated', () => {
     expect(isGated(src, 2)).toBe(false)
   })
 
+  it('treats isSuppressedByEmail as a gate (person-id-less variant)', () => {
+    const src = [
+      'async function send() {',
+      '  const g = await isSuppressedByEmail(email, "email")',
+      '  if (g.suppressed) return',
+      '  await sendEmail({ to })',
+      '}',
+    ].join('\n')
+    expect(isGated(src, 4)).toBe(true)
+  })
+
   it('does NOT count an isSuppressed in a sibling function as gating', () => {
     const src = [
       'function a() {',

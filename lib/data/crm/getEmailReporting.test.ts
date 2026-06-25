@@ -8,6 +8,8 @@ import {
   collapseSendLog,
   summarizeEngagement,
   summarizeCampaign,
+  recoverSendTypes,
+  filterBySendType,
   type RawEmailEventRow,
 } from './getEmailReporting'
 
@@ -176,6 +178,80 @@ describe('summarizeEngagement', () => {
     const s = summarizeEngagement(rows)
     expect(s.opened).toBe(1)
     expect(s.openRate).toBe(1)
+  })
+})
+
+// ── recoverSendTypes — join lifecycle 'other' rows back to the sent row ────────
+
+describe('recoverSendTypes', () => {
+  it('rewrites lifecycle (other) rows to the sent row send_type by message_id', () => {
+    // The webhook writes open/click as 'other'; the sent row carries the truth.
+    const rows = [
+      ev({ message_id: 'm1', event: 'sent', send_type: 'market-report' }),
+      ev({ message_id: 'm1', event: 'open', send_type: 'other' }),
+      ev({ message_id: 'm1', event: 'click', send_type: 'other' }),
+    ]
+    const out = recoverSendTypes(rows)
+    expect(out.map((r) => r.send_type)).toEqual(['market-report', 'market-report', 'market-report'])
+  })
+
+  it('the sent event wins over another concrete value for the same message', () => {
+    const rows = [
+      ev({ message_id: 'm1', event: 'open', send_type: 'campaign' }),
+      ev({ message_id: 'm1', event: 'sent', send_type: 'market-report' }),
+    ]
+    const out = recoverSendTypes(rows)
+    expect(out.every((r) => r.send_type === 'market-report')).toBe(true)
+  })
+
+  it('leaves rows with no message_id, or no recoverable type, unchanged', () => {
+    const rows = [
+      ev({ message_id: null, event: 'open', send_type: 'other' }),
+      ev({ message_id: 'mX', event: 'open', send_type: 'other' }), // no sent row for mX
+    ]
+    const out = recoverSendTypes(rows)
+    expect(out[0].send_type).toBe('other')
+    expect(out[1].send_type).toBe('other')
+  })
+
+  it('returns the same rows when nothing is recoverable', () => {
+    const rows = [ev({ message_id: 'm1', event: 'open', send_type: 'other' })]
+    expect(recoverSendTypes(rows)).toBe(rows)
+  })
+})
+
+// ── filterBySendType — in-memory type filter after recovery ────────────────────
+
+describe('filterBySendType', () => {
+  it('keeps only rows whose send_type matches', () => {
+    const rows = [
+      ev({ message_id: 'm1', event: 'sent', send_type: 'market-report' }),
+      ev({ message_id: 'm2', event: 'sent', send_type: 'campaign' }),
+    ]
+    expect(filterBySendType(rows, 'market-report')).toHaveLength(1)
+    expect(filterBySendType(rows, 'market-report')[0].message_id).toBe('m1')
+  })
+
+  it('is a no-op for a null/empty filter', () => {
+    const rows = [ev({ event: 'sent' })]
+    expect(filterBySendType(rows, null)).toBe(rows)
+    expect(filterBySendType(rows, '')).toBe(rows)
+  })
+
+  it('recovery + filter together keep the lifecycle events of the selected type', () => {
+    // A market-report send with an open; without recovery the open (other) would
+    // be dropped by a market-report filter, hiding the engagement.
+    const rows = [
+      ev({ message_id: 'm1', event: 'sent', send_type: 'market-report' }),
+      ev({ message_id: 'm1', event: 'open', send_type: 'other' }),
+      ev({ message_id: 'm2', event: 'sent', send_type: 'campaign' }),
+    ]
+    const out = filterBySendType(recoverSendTypes(rows), 'market-report')
+    expect(out).toHaveLength(2)
+    const s = summarizeEngagement(out)
+    expect(s.sent).toBe(1)
+    expect(s.opened).toBe(1)
+    expect(s.openRate).toBeNull() // 1 open / 0 deliveries -> honest null
   })
 })
 

@@ -185,41 +185,64 @@ export async function enqueueBulkJob(args: EnqueueArgs): Promise<number> {
 }
 
 /**
- * Claim the next chunk of work for the oldest queued-or-running job. Flips a
- * 'queued' job to 'running' (stamping started_at) before handing back its row and
- * the next chunk of ids. Returns null when there is nothing to do.
+ * The lease a claim stamps on a job, in seconds. A worker holds the job for this
+ * long; an overrun lets another worker re-claim it (the prior worker's writes are
+ * additive + offset-keyed, so a re-claim after an overrun resumes, never doubles).
+ * Kept in lockstep with the default in crm_claim_bulk_job's p_lease_seconds.
+ */
+export const BULK_JOB_LEASE_SECONDS = 240
+
+/**
+ * Atomically claim the next chunk of work for the oldest claimable job.
  *
- * For ast-mode the worker is responsible for resolving + persisting the id set;
- * this helper hands back the job so the worker can do that resolution. For
- * ids-mode it returns the next chunk directly.
+ * Delegates the pick to the SECURITY DEFINER fn crm_claim_bulk_job, which selects
+ * the oldest queued/running job whose lease has expired FOR UPDATE SKIP LOCKED,
+ * stamps a fresh BULK_JOB_LEASE_SECONDS lease, and flips it to running — all in
+ * ONE statement. Two overlapping worker invocations (a cron retry firing mid-run,
+ * two regions) can therefore never grab the same job: the second caller either
+ * claims a DIFFERENT job or gets nothing back. Returns null when there is nothing
+ * claimable.
+ *
+ * For ast-mode the worker resolves + persists the id set; this helper hands back
+ * the job so the worker can do that resolution. For ids-mode it returns the next
+ * chunk directly. Call reLeaseBulkJob before each subsequent chunk to extend the
+ * lease while a job is still draining.
  */
 export async function claimNextChunk(): Promise<
   | { job: BulkJobRow; chunk: number[] }
   | null
 > {
   const sb = createServiceClient()
-  const { data: jobs, error } = await sb
-    .from('crm_bulk_jobs')
-    .select('*')
-    .in('status', ['queued', 'running'])
-    .order('created_at', { ascending: true })
-    .limit(1)
-  if (error) throw new Error(`claimNextChunk read failed: ${error.message}`)
-  const job = (jobs?.[0] as BulkJobRow | undefined) ?? null
+  const { data, error } = await sb.rpc('crm_claim_bulk_job', {
+    p_lease_seconds: BULK_JOB_LEASE_SECONDS,
+  })
+  if (error) throw new Error(`claimNextChunk claim failed: ${error.message}`)
+  const rows = (data as BulkJobRow[] | null) ?? []
+  const job = rows[0] ?? null
   if (!job) return null
-
-  if (job.status === 'queued') {
-    await sb
-      .from('crm_bulk_jobs')
-      .update({ status: 'running', started_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-      .eq('id', job.id)
-    job.status = 'running'
-  }
 
   const ids = selectionIds(job.selection)
   // ids-mode: the chunk is deterministic from processed offset.
   const chunk = ids ? chunkIds(ids, job.processed) : []
   return { job, chunk }
+}
+
+/**
+ * Extend the lease on a job the worker is actively draining. Called once per chunk
+ * after the claim so a multi-chunk drain inside one cron run keeps the job leased
+ * (a second worker can never grab it mid-drain). Best-effort: a failed re-lease
+ * just shortens the window the job stays exclusively ours; the next claim's
+ * SKIP LOCKED still prevents a true double-drain.
+ */
+export async function reLeaseBulkJob(jobId: number): Promise<void> {
+  const sb = createServiceClient()
+  await sb
+    .from('crm_bulk_jobs')
+    .update({
+      locked_until: new Date(Date.now() + BULK_JOB_LEASE_SECONDS * 1000).toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', jobId)
 }
 
 /** Apply a chunk's outcome to a job row (additive processed/skipped/breakdown). */

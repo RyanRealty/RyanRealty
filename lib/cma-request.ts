@@ -19,6 +19,7 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
+import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -420,6 +421,12 @@ async function sendLeadConfirmation(params: {
   subjectAddress: string
   brokerName: string | null
 }): Promise<void> {
+  // Suppression chokepoint (fails closed). A lead who opted out of email never
+  // gets the confirmation by EITHER path (Gmail send-as-matt or Resend
+  // fallback). No crm_person_id here, so gate by email.
+  const sup = await isSuppressedByEmail(params.leadEmail, 'email')
+  if (sup.suppressed) return
+
   const firstName = params.leadName?.split(/\s+/)[0] ?? 'there'
   const brokerFirst = params.brokerName?.split(/\s+/)[0] ?? 'one of our brokers'
   const subject = `We got your home value request — ${params.subjectAddress}`
@@ -470,6 +477,9 @@ async function sendLeadConfirmation(params: {
     replyTo: 'matt@ryan-realty.com',
   })
   if (!gmailRes.ok) {
+    // Suppression chokepoint (fails closed) — re-checked in this scope so the
+    // Resend fallback to the lead is gated independently of the early return.
+    if ((await isSuppressedByEmail(params.leadEmail, 'email')).suppressed) return
     // Graceful fallback so the acknowledgment never silently fails: send via
     // Resend from the verified mail.ryan-realty.com subdomain (display name still
     // reads "Matt Ryan", replies still route to his real inbox).

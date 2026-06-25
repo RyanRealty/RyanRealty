@@ -51,6 +51,77 @@ export async function isSuppressed(personId: number, channel: SendChannel): Prom
 }
 
 /**
+ * Email-keyed suppression check for send paths where no crm_person_id is known
+ * at the call site (a fresh lead, a CMA addressed to a raw lead_email, a
+ * home-valuation acknowledgment). Resolves EVERY crm_person carrying that email
+ * and treats the address as suppressed if ANY of these is true:
+ *
+ *   1. Any matched person is suppressed for the channel (via isSuppressed —
+ *      this also covers the protected compliance tags compliance:hard-stop,
+ *      contact:do-not-text, contact:do-not-call through TAG_CHANNEL).
+ *   2. A protected compliance tag sits on a matched person (belt-and-suspenders;
+ *      isSuppressed already enforces these, kept explicit so the contract is
+ *      readable and survives any future TAG_CHANNEL edit).
+ *   3. A crm_suppressions row exists keyed by that email (value column) with
+ *      channel in ('all', the channel) — covers email-keyed opt-outs written
+ *      before any person row exists (bounce/complaint webhooks, manual entry).
+ *
+ * FAIL-CLOSED: on ANY read error, return suppressed=true. A brand-new email
+ * with no person and no suppression row is NOT suppressed (a fresh opt-in).
+ */
+const PROTECTED_COMPLIANCE_TAGS = new Set([
+  'compliance:hard-stop',
+  'contact:do-not-text',
+  'contact:do-not-call',
+])
+
+export async function isSuppressedByEmail(
+  email: string,
+  channel: SendChannel,
+): Promise<{ suppressed: boolean; reasons: string[] }> {
+  const normalized = (email ?? '').trim().toLowerCase()
+  if (!normalized) {
+    // An empty address can't be verified against the consent record — fail closed.
+    return { suppressed: true, reasons: ['no-email'] }
+  }
+
+  const sb = createServiceClient()
+  const reasons: string[] = []
+
+  // 1 + 2. Resolve every person carrying this email, then run the canonical
+  // per-person check (covers suppression rows AND protected tags) plus an
+  // explicit protected-tag scan.
+  const people = await sb
+    .from('crm_people')
+    .select('id,tags')
+    .contains('emails', [{ value: normalized }])
+  if (people.error) {
+    return { suppressed: true, reasons: ['email-suppression-check-failed: ' + people.error.message] }
+  }
+  for (const p of people.data ?? []) {
+    const tags = ((p.tags as string[] | undefined) ?? []).map((t) => t.toLowerCase())
+    for (const t of tags) {
+      if (PROTECTED_COMPLIANCE_TAGS.has(t)) reasons.push(`tag:${t}`)
+    }
+    const per = await isSuppressed(p.id as number, channel)
+    if (per.suppressed) reasons.push(...per.reasons.map((r) => `person:${p.id}:${r}`))
+  }
+
+  // 3. Email-keyed suppression rows (no person required).
+  const rows = await sb
+    .from('crm_suppressions')
+    .select('channel,reason')
+    .eq('value', normalized)
+    .in('channel', ['all', channel])
+  if (rows.error) {
+    return { suppressed: true, reasons: ['email-suppression-check-failed: ' + rows.error.message] }
+  }
+  for (const r of rows.data ?? []) reasons.push(`email:${r.channel}:${r.reason}`)
+
+  return { suppressed: reasons.length > 0, reasons }
+}
+
+/**
  * Remove a suppression (audit p0.3 — makes "Reply START to resubscribe" real).
  * Scoped by channel + optional reason so a user STARTing only clears their own
  * stop-keyword opt-out, never a compliance do-not-text/hard-stop we set.

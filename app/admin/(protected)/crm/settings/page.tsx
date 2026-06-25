@@ -11,6 +11,7 @@ import { getCrmFieldDefinitions } from '@/lib/data/crm/getCrmFieldDefinitions'
 import { getCrmSuppressions } from '@/lib/data/crm/getCrmSuppressions'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { getCrmAssignmentConfig } from '@/lib/data/crm/getCrmAssignmentConfig'
+import { getMarketReportSubscribers } from '@/lib/data/crm/getMarketReportSubscribers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -39,7 +40,7 @@ export default async function CrmSettingsPage() {
 
   // Pull a count per catalog (each reader fails soft to []), so the hub renders
   // even if a migration has not been applied yet.
-  const [stages, tags, templates, segments, areas, fields, suppressions, brokers, routing] = await Promise.all([
+  const [stages, tags, templates, segments, areas, fields, suppressions, brokers, routing, reportSubs] = await Promise.all([
     getCrmStages(),
     getCrmTags(),
     getCrmTemplatesAdmin(),
@@ -49,6 +50,8 @@ export default async function CrmSettingsPage() {
     getCrmSuppressions({ limit: 1 }),
     getCrmBrokers(),
     getCrmAssignmentConfig(),
+    // Superuser-only hub, so null scope = brokerage-wide subscriber roster.
+    getMarketReportSubscribers(null),
   ])
 
   const ROUTING_LABEL: Record<string, string> = {
@@ -126,6 +129,13 @@ export default async function CrmSettingsPage() {
       description: 'How a new lead is assigned to a broker. The live default routes every lead to Matt.',
       count: routing.rules.length,
       countLabel: ROUTING_LABEL[routing.strategy] ?? routing.strategy,
+    },
+    {
+      href: '/admin/crm/settings/market-reports',
+      title: 'Market-report subscribers',
+      description: 'Who receives the recurring market report, the areas they follow, and how often.',
+      count: reportSubs.length,
+      countLabel: reportSubs.length === 1 ? 'subscriber' : 'subscribers',
     },
   ]
 

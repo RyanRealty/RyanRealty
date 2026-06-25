@@ -41,6 +41,22 @@ import { parseSteps, type Step } from '@/lib/crm/sequence-step-schema'
  *  these exist; archive is the safe alternative. */
 const LIVE_ENROLLMENT_STATUSES = ['running', 'paused_reply'] as const
 
+/**
+ * Authoring a workflow is an OWNER operation. A sequence drives automated
+ * outbound across every enrolled contact (including other brokers' leads), so
+ * create / duplicate / archive / delete / step-rewrite / settings-edit are all
+ * superuser-gated. A restricted broker is refused. Returns the standard result
+ * shape so callers keep their early-return on !ok.
+ */
+async function requireSuperuser(): Promise<CrmActionResult> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  if (access.access.role !== 'superuser') {
+    return { ok: false, error: 'Not authorized. Only an owner can manage workflows.' }
+  }
+  return { ok: true }
+}
+
 /** Revalidate every surface that renders workflows. */
 function revalidateWorkflows(id?: number): void {
   revalidatePath('/admin/crm/sequences')
@@ -88,8 +104,8 @@ export async function createCrmSequenceAction(input: {
   steps?: unknown
   stopOnReply?: boolean
 }): Promise<(CrmActionResult & { id?: number })> {
-  const access = await requireCrmAccess()
-  if (!access.ok) return access
+  const guard = await requireSuperuser()
+  if (!guard.ok) return guard
 
   const name = (input.name ?? '').trim()
   if (!name) return { ok: false, error: 'Name is required' }
@@ -130,8 +146,8 @@ export async function createCrmSequenceAction(input: {
 export async function duplicateCrmSequenceAction(
   id: number,
 ): Promise<(CrmActionResult & { id?: number })> {
-  const access = await requireCrmAccess()
-  if (!access.ok) return access
+  const guard = await requireSuperuser()
+  if (!guard.ok) return guard
   if (!Number.isInteger(id) || id <= 0) return { ok: false, error: 'Bad input' }
 
   const sb = createServiceClient()
@@ -172,8 +188,8 @@ export async function duplicateCrmSequenceAction(
  * workflow can be re-activated via setCrmSequenceStatusAction.
  */
 export async function archiveCrmSequenceAction(id: number): Promise<CrmActionResult> {
-  const access = await requireCrmAccess()
-  if (!access.ok) return access
+  const guard = await requireSuperuser()
+  if (!guard.ok) return guard
   if (!Number.isInteger(id) || id <= 0) return { ok: false, error: 'Bad input' }
 
   const sb = createServiceClient()
@@ -202,8 +218,8 @@ export async function archiveCrmSequenceAction(id: number): Promise<CrmActionRes
  * exactly that case.
  */
 export async function deleteCrmSequenceAction(id: number): Promise<CrmActionResult> {
-  const access = await requireCrmAccess()
-  if (!access.ok) return access
+  const guard = await requireSuperuser()
+  if (!guard.ok) return guard
   if (!Number.isInteger(id) || id <= 0) return { ok: false, error: 'Bad input' }
 
   const sb = createServiceClient()
@@ -254,8 +270,8 @@ export async function updateCrmSequenceSettingsAction(input: {
   description?: string | null
   stopOnReply: boolean
 }): Promise<CrmActionResult> {
-  const access = await requireCrmAccess()
-  if (!access.ok) return access
+  const guard = await requireSuperuser()
+  if (!guard.ok) return guard
   if (!Number.isInteger(input.id) || input.id <= 0) return { ok: false, error: 'Bad input' }
   const name = (input.name ?? '').trim()
   if (!name) return { ok: false, error: 'Name is required' }
@@ -288,8 +304,8 @@ export async function updateCrmSequenceStepsAction(
   id: number,
   steps: unknown,
 ): Promise<CrmActionResult> {
-  const access = await requireCrmAccess()
-  if (!access.ok) return access
+  const guard = await requireSuperuser()
+  if (!guard.ok) return guard
   if (!Number.isInteger(id) || id <= 0) return { ok: false, error: 'Bad input' }
 
   const validated = await validateStepsWithTemplates(steps)
