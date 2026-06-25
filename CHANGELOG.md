@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.618.0 (2026-06-25)
+
+### Features
+- feat(crm): Wave 1 — the five CRM foundations (filter-AST, bulk jobs, email_events, config tables, field registry, suppression gate)
+
+### Maintenance
+- docs(crm): canonical CRM completion plan — locked scope + 9-wave build sequence
+
+---
+
+
 ## v1.617.2 (2026-06-25)
 
 ### Bug Fixes
