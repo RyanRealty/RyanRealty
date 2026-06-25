@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.621.0 (2026-06-25)
+
+### Features
+- feat(crm): Wave 3 — bulk operations (select-all-matching + suppression-safe, 18K-scale)
+
+---
+
+
 ## v1.620.0 (2026-06-25)
 
 ### Features
