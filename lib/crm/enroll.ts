@@ -13,7 +13,16 @@ import { createServiceClient } from '@/lib/supabase/service'
 /** People created before this moment are never auto-enrolled. */
 export const ENROLLMENT_EPOCH = '2026-06-10T00:00:00Z'
 
-/** tag → FUB legacy plan id (the four master sequences). Order matters. */
+/**
+ * tag → FUB legacy plan id (the four master sequences). Order matters.
+ *
+ * This is now only the FAIL-SAFE fallback: the auto-enroll path reads the
+ * UI-configurable crm_automation_rules table first (getCrmAutomationRules,
+ * tag_added → enroll_sequence). If that table read fails or returns no matching
+ * rule the const below still resolves a sequence, so a config-table outage never
+ * silently stops new leads from enrolling. Adding/removing a "tag X → workflow Y"
+ * trigger is a setting in the table, not an edit to this const.
+ */
 const RULES: Array<{ tag: string; fubPlanId: number }> = [
   { tag: 'intent:expired-listing', fubPlanId: 71 },
   { tag: 'intent:fsbo', fubPlanId: 72 },
@@ -40,8 +49,6 @@ export async function autoEnrollPerson(personId: number): Promise<AutoEnrollResu
   if (createdAt < ENROLLMENT_EPOCH) return { enrolled: false, reason: 'pre-epoch contact (historical book)' }
 
   const tags = (person.tags as string[]) ?? []
-  const rule = RULES.find((r) => tags.includes(r.tag))
-  if (!rule) return { enrolled: false, reason: 'no rule matches tags' }
 
   // hard-stop: never enroll
   const { data: hardStop, error: hardStopError } = await sb
@@ -54,13 +61,56 @@ export async function autoEnrollPerson(personId: number): Promise<AutoEnrollResu
   if (hardStopError) return { enrolled: false, reason: 'hard-stop check failed: ' + hardStopError.message }
   if (hardStop?.length) return { enrolled: false, reason: 'hard-stopped' }
 
+  // Resolve the target sequence id. PRIMARY path: the UI-configurable
+  // crm_automation_rules table (tag_added → enroll_sequence). The first active
+  // rule whose tag the person carries wins, taking the rules' position order. The
+  // table read failing OR matching nothing FALLS BACK to the const above so a
+  // config-table outage never silently stops new leads from enrolling.
+  let sequenceId: number | null = null
+  try {
+    const { getActiveRulesForTrigger } = await import('@/lib/data/crm/getCrmAutomationRules')
+    // Pull the matched enroll_sequence action for each tag the person carries,
+    // then honour the rules' own position order so "first matching rule wins".
+    const candidates: Array<{ position: number; sequenceId: number }> = []
+    for (const tag of tags) {
+      const matched = await getActiveRulesForTrigger('tag_added', tag)
+      for (const r of matched) {
+        if (r.actionType !== 'enroll_sequence') continue
+        const id = Number(r.actionValue)
+        if (Number.isInteger(id) && id > 0) candidates.push({ position: r.position, sequenceId: id })
+      }
+    }
+    if (candidates.length) {
+      candidates.sort((a, b) => a.position - b.position)
+      sequenceId = candidates[0].sequenceId
+    }
+  } catch (e) {
+    console.error('[autoEnrollPerson] automation-rules read failed, using fallback const', e)
+  }
+
   // resolve the target sequence (must be active)
-  const { data: seq } = await sb
-    .from('crm_sequences')
-    .select('id,name,status,fub_legacy_plan_id')
-    .eq('fub_legacy_plan_id', rule.fubPlanId)
-    .maybeSingle()
-  if (!seq || seq.status !== 'active') return { enrolled: false, reason: `sequence for plan ${rule.fubPlanId} not active` }
+  type SeqRow = { id: number; name: string; status: string; fub_legacy_plan_id: number | null }
+  let seq: SeqRow | null = null
+  if (sequenceId !== null) {
+    const { data } = await sb
+      .from('crm_sequences')
+      .select('id,name,status,fub_legacy_plan_id')
+      .eq('id', sequenceId)
+      .maybeSingle()
+    seq = (data as SeqRow | null) ?? null
+  } else {
+    // FAIL-SAFE: the const fallback (table read failed or no rule matched).
+    const rule = RULES.find((r) => tags.includes(r.tag))
+    if (!rule) return { enrolled: false, reason: 'no rule matches tags' }
+    const { data } = await sb
+      .from('crm_sequences')
+      .select('id,name,status,fub_legacy_plan_id')
+      .eq('fub_legacy_plan_id', rule.fubPlanId)
+      .maybeSingle()
+    seq = (data as SeqRow | null) ?? null
+  }
+  if (!seq) return { enrolled: false, reason: 'target sequence not found' }
+  if (seq.status !== 'active') return { enrolled: false, reason: `sequence "${seq.name}" is not active` }
 
   // one master sequence per person, ever (any status)
   const { data: masterSeqs } = await sb

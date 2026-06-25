@@ -86,7 +86,7 @@ export type CrmSavedView = {
 
 const PAGE_SIZE = 50
 
-async function requireCrmAccess(): Promise<{ ok: true; access: CrmAccess } | { ok: false; error: string }> {
+export async function requireCrmAccess(): Promise<{ ok: true; access: CrmAccess } | { ok: false; error: string }> {
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
   return { ok: true, access }

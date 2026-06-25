@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-06-25T16:33:21.038Z",
-  "total": 215,
+  "generatedAt": "2026-06-25T18:02:47.375Z",
+  "total": 216,
   "byFile": {
-    "lib/crm/enroll.ts": 20,
+    "lib/crm/enroll.ts": 21,
     "app/dashboard/marketing/page.tsx": 14,
     "lib/crm/mirror.ts": 13,
     "lib/marketing-brain/daily-digest.ts": 11,

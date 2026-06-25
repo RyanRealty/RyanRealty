@@ -1,0 +1,316 @@
+'use server'
+
+/**
+ * Workflow (sequence) LIFECYCLE CRUD — the authoring half of Wave 6.
+ *
+ * The EXECUTION engine (app/api/cron/crm-sequence-engine) and the activate /
+ * pause toggle (setCrmSequenceStatusAction in app/actions/crm.ts) already
+ * exist. This module adds the build-time operations the authoring UI calls:
+ * create, duplicate, archive (soft), delete (guarded), settings edit, and the
+ * step rewrite.
+ *
+ * Contract: every step written to crm_sequences.steps passes parseSteps
+ * (lib/crm/sequence-step-schema) — the SAME schema the engine reads. A
+ * malformed step never reaches the steps jsonb.
+ *
+ * Safety:
+ *  - All actions are access-guarded (requireCrmAccess) and return
+ *    { ok: true } | { ok: false; error } — never throw to the caller.
+ *  - archive is SOFT (status='archived') — an enrolled sequence is never
+ *    hard-deleted out from under its enrollments.
+ *  - delete REFUSES when the sequence has live enrollments (running /
+ *    paused_reply) or is wired as an auto-enroll master (fub_legacy_plan_id),
+ *    so enrollments are never orphaned.
+ *  - updateSteps validates that every templateKey resolves to a LIVE template
+ *    before writing.
+ *
+ * DAL note: these are mutations, so the raw .from() writes live here in the
+ * action (the DAL boundary keeps READS in lib/data/). The reads inside a
+ * mutation guard (enrollment count, template existence) are part of the write
+ * transaction and stay co-located with it.
+ */
+
+import { revalidatePath } from 'next/cache'
+import { createServiceClient } from '@/lib/supabase/service'
+import { requireCrmAccess, type CrmActionResult } from '@/app/actions/crm'
+import { getCrmTemplatesAdmin } from '@/lib/data/crm/getCrmTemplatesAdmin'
+import { parseSteps, type Step } from '@/lib/crm/sequence-step-schema'
+
+/** Enrollment statuses that count as LIVE (the unique active index treats both
+ *  as occupying the person+sequence slot). A delete must refuse while any of
+ *  these exist; archive is the safe alternative. */
+const LIVE_ENROLLMENT_STATUSES = ['running', 'paused_reply'] as const
+
+/** Revalidate every surface that renders workflows. */
+function revalidateWorkflows(id?: number): void {
+  revalidatePath('/admin/crm/sequences')
+  if (id) revalidatePath(`/admin/crm/sequences/${id}`)
+}
+
+/**
+ * Validate a steps payload: shape (parseSteps) THEN that every templateKey
+ * resolves to a live (is_active) template. Returns the parsed steps or an error
+ * string. Pure-ish: only reads the cached template admin list.
+ */
+async function validateStepsWithTemplates(
+  raw: unknown,
+): Promise<{ ok: true; steps: Step[] } | { ok: false; error: string }> {
+  let steps: Step[]
+  try {
+    steps = parseSteps(raw)
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'invalid steps'
+    return { ok: false, error: `Step validation failed. ${msg}` }
+  }
+
+  const usedKeys = [...new Set(steps.map((s) => s.templateKey).filter((k): k is string => !!k))]
+  if (usedKeys.length) {
+    const templates = await getCrmTemplatesAdmin()
+    const liveKeys = new Set(templates.filter((t) => t.isActive).map((t) => t.key))
+    const missing = usedKeys.filter((k) => !liveKeys.has(k))
+    if (missing.length) {
+      return { ok: false, error: `Unknown or inactive template: ${missing.join(', ')}` }
+    }
+  }
+  return { ok: true, steps }
+}
+
+// ── Create ──────────────────────────────────────────────────────────────────
+
+/**
+ * Create a new workflow. Always starts PAUSED (status default) so nothing
+ * fires until a human activates it. Steps are optional (a shell to fill in) and
+ * validated when present.
+ */
+export async function createCrmSequenceAction(input: {
+  name: string
+  description?: string | null
+  steps?: unknown
+  stopOnReply?: boolean
+}): Promise<(CrmActionResult & { id?: number })> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+
+  const name = (input.name ?? '').trim()
+  if (!name) return { ok: false, error: 'Name is required' }
+
+  let steps: Step[] = []
+  if (input.steps !== undefined && input.steps !== null) {
+    const validated = await validateStepsWithTemplates(input.steps)
+    if (!validated.ok) return validated
+    steps = validated.steps
+  }
+
+  const sb = createServiceClient()
+  const { data, error } = await sb
+    .from('crm_sequences')
+    .insert({
+      name,
+      description: input.description?.trim() || null,
+      stop_on_reply: input.stopOnReply ?? true,
+      steps,
+      status: 'paused',
+    })
+    .select('id')
+    .single()
+  if (error) return { ok: false, error: error.message }
+
+  revalidateWorkflows()
+  return { ok: true, id: data.id as number }
+}
+
+// ── Duplicate ─────────────────────────────────────────────────────────────────
+
+/**
+ * Deep-copy an existing workflow into a new PAUSED sequence. The copy never
+ * inherits the source's fub_legacy_plan_id (that column is unique + maps the 4
+ * auto-enroll masters — a duplicate is a hand-built workflow, not a master).
+ * Steps are copied verbatim (already validated when the source was written).
+ */
+export async function duplicateCrmSequenceAction(
+  id: number,
+): Promise<(CrmActionResult & { id?: number })> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, error: 'Bad input' }
+
+  const sb = createServiceClient()
+  const { data: src, error: readErr } = await sb
+    .from('crm_sequences')
+    .select('name,description,stop_on_reply,steps')
+    .eq('id', id)
+    .maybeSingle()
+  if (readErr) return { ok: false, error: readErr.message }
+  if (!src) return { ok: false, error: 'Workflow not found' }
+
+  // Deep clone the steps so the copy shares no reference with the source.
+  const clonedSteps = JSON.parse(JSON.stringify(src.steps ?? [])) as unknown
+
+  const { data, error } = await sb
+    .from('crm_sequences')
+    .insert({
+      name: `${src.name} (copy)`,
+      description: src.description ?? null,
+      stop_on_reply: src.stop_on_reply ?? true,
+      steps: clonedSteps,
+      status: 'paused',
+    })
+    .select('id')
+    .single()
+  if (error) return { ok: false, error: error.message }
+
+  revalidateWorkflows()
+  return { ok: true, id: data.id as number }
+}
+
+// ── Archive (soft) ────────────────────────────────────────────────────────────
+
+/**
+ * Soft-archive a workflow: status='archived'. The engine only processes
+ * enrollments whose sequence is 'active', so archiving immediately halts new
+ * sends without touching the enrollment rows — nothing is orphaned. An archived
+ * workflow can be re-activated via setCrmSequenceStatusAction.
+ */
+export async function archiveCrmSequenceAction(id: number): Promise<CrmActionResult> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, error: 'Bad input' }
+
+  const sb = createServiceClient()
+  const { error } = await sb
+    .from('crm_sequences')
+    .update({ status: 'archived', updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) return { ok: false, error: error.message }
+
+  revalidateWorkflows(id)
+  return { ok: true }
+}
+
+// ── Delete (guarded) ──────────────────────────────────────────────────────────
+
+/**
+ * Hard-delete a workflow — REFUSED when unsafe. A delete is only allowed when:
+ *  - the sequence has NO live enrollments (running / paused_reply), and
+ *  - it is not an auto-enroll master (no fub_legacy_plan_id).
+ * Otherwise the caller is steered to archive. This is the guard that keeps a
+ * delete from orphaning enrollments or breaking an auto-enroll rule.
+ *
+ * Note: crm_sequence_enrollments cascades on delete, so the DB would silently
+ * drop terminal (completed/stopped/suppressed) enrollment history — acceptable,
+ * but a LIVE enrollment would lose its in-flight contact. The guard refuses
+ * exactly that case.
+ */
+export async function deleteCrmSequenceAction(id: number): Promise<CrmActionResult> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, error: 'Bad input' }
+
+  const sb = createServiceClient()
+
+  // Referenced as an auto-enroll master? Never delete — archive instead.
+  const { data: seq, error: seqErr } = await sb
+    .from('crm_sequences')
+    .select('id,fub_legacy_plan_id')
+    .eq('id', id)
+    .maybeSingle()
+  if (seqErr) return { ok: false, error: seqErr.message }
+  if (!seq) return { ok: false, error: 'Workflow not found' }
+  if (seq.fub_legacy_plan_id != null) {
+    return { ok: false, error: 'This is an auto-enroll workflow. Archive it instead of deleting.' }
+  }
+
+  // Live enrollments? Refuse — orphaning an in-flight contact is not allowed.
+  const { count, error: countErr } = await sb
+    .from('crm_sequence_enrollments')
+    .select('id', { count: 'exact', head: true })
+    .eq('sequence_id', id)
+    .in('status', LIVE_ENROLLMENT_STATUSES as unknown as string[])
+  // Fail CLOSED: an unreadable enrollment table must NOT permit a delete.
+  if (countErr) return { ok: false, error: 'Could not verify enrollments. Delete refused.' }
+  if ((count ?? 0) > 0) {
+    return {
+      ok: false,
+      error: `Workflow has ${count} live enrollment${count === 1 ? '' : 's'}. Archive it instead.`,
+    }
+  }
+
+  const { error } = await sb.from('crm_sequences').delete().eq('id', id)
+  if (error) return { ok: false, error: error.message }
+
+  revalidateWorkflows()
+  return { ok: true }
+}
+
+// ── Settings edit ─────────────────────────────────────────────────────────────
+
+/**
+ * Edit a workflow's identity + reply behavior (name, description, stop-on-reply).
+ * Does not touch steps or status — those have dedicated actions.
+ */
+export async function updateCrmSequenceSettingsAction(input: {
+  id: number
+  name: string
+  description?: string | null
+  stopOnReply: boolean
+}): Promise<CrmActionResult> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  if (!Number.isInteger(input.id) || input.id <= 0) return { ok: false, error: 'Bad input' }
+  const name = (input.name ?? '').trim()
+  if (!name) return { ok: false, error: 'Name is required' }
+
+  const sb = createServiceClient()
+  const { error } = await sb
+    .from('crm_sequences')
+    .update({
+      name,
+      description: input.description?.trim() || null,
+      stop_on_reply: input.stopOnReply,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', input.id)
+  if (error) return { ok: false, error: error.message }
+
+  revalidateWorkflows(input.id)
+  return { ok: true }
+}
+
+// ── Step rewrite ──────────────────────────────────────────────────────────────
+
+/**
+ * Rewrite a workflow's steps. Validates SHAPE (parseSteps — same schema the
+ * engine reads) AND that every referenced templateKey resolves to a live
+ * template, then writes the steps jsonb. A malformed payload never lands in the
+ * column, so the engine never dead-ends a live enrollment on a bad step.
+ */
+export async function updateCrmSequenceStepsAction(
+  id: number,
+  steps: unknown,
+): Promise<CrmActionResult> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, error: 'Bad input' }
+
+  const validated = await validateStepsWithTemplates(steps)
+  if (!validated.ok) return validated
+
+  const sb = createServiceClient()
+  // Confirm the target exists before writing (clearer error than a silent no-op).
+  const { data: seq, error: seqErr } = await sb
+    .from('crm_sequences')
+    .select('id')
+    .eq('id', id)
+    .maybeSingle()
+  if (seqErr) return { ok: false, error: seqErr.message }
+  if (!seq) return { ok: false, error: 'Workflow not found' }
+
+  const { error } = await sb
+    .from('crm_sequences')
+    .update({ steps: validated.steps, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) return { ok: false, error: error.message }
+
+  revalidateWorkflows(id)
+  return { ok: true }
+}

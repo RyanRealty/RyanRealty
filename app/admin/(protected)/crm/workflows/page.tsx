@@ -210,10 +210,19 @@ export default async function CrmWorkflowsPage() {
           Back to CRM
         </Link>
       </div>
-      <h1 className="text-2xl font-bold text-foreground">Workflows</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Active leads moving through automated sequences. Each column is a workflow step.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-foreground">Enrollment board</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Active leads moving through automated sequences. Each column is a workflow step.
+          </p>
+        </div>
+        <Link href="/admin/crm/sequences" className="shrink-0">
+          <Button variant="outline" size="sm" className="h-10 md:h-8">
+            Build workflows
+          </Button>
+        </Link>
+      </div>
 
       {/* Summary */}
       <ConsoleSection title="Summary" className="mt-4">
