@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.623.0 (2026-06-25)
+
+### Features
+- feat(crm): Wave 5 — email engine + comms reporting on the unified email_events store
+
+---
+
+
 ## v1.622.0 (2026-06-25)
 
 ### Features
