@@ -20,7 +20,70 @@ import {
   chunkIds,
   isDrained,
   type BulkContext,
+  type BulkSelection,
 } from '@/lib/crm/bulk-jobs'
+// Side-effect import: registers every real bulk mutation handler
+// (crm:assign-broker / add-tag / remove-tag / set-stage / enroll-workflow /
+// set-report-subscription) so getBulkHandler resolves them at runtime.
+import '@/lib/crm/bulk-handlers'
+import { createServiceClient } from '@/lib/supabase/service'
+import { validateSegment } from '@/lib/crm/segment-ast'
+import { buildCrmPeopleQuery } from '@/lib/data/crm/buildCrmPeopleQuery'
+
+/**
+ * Resolve an ast-mode selection to a concrete, ordered id list under the FROZEN
+ * job broker_scope. Pages the resolver in fixed windows so a full-book audience
+ * (~18K) never exceeds PostgREST's single-response row cap. Same compiler the
+ * list view + count + audience use, so the bulk id set can never drift from what
+ * the operator saw on screen. Returns ids in a stable order (the resolver's
+ * last_activity / created ordering) so chunking by offset is deterministic.
+ */
+/** Fetch one page of ids for a segment under scope. Injectable so the paging
+ *  loop is unit-testable without a live database. */
+export type AstPageFetcher = (
+  ast: unknown,
+  brokerScope: string | null,
+  page: { limit: number; offset: number },
+) => Promise<number[]>
+
+/** Default page size for ast resolution — well under PostgREST's response cap. */
+export const AST_RESOLVE_PAGE = 1000
+
+const defaultPageFetcher: AstPageFetcher = async (ast, brokerScope, page) => {
+  const segment = validateSegment(ast)
+  const sb = createServiceClient()
+  // The resolver returns the people-list select; we only read id off each row.
+  // (The compiled query is a filter/transform builder with no .select() to
+  // override, so we take the full select and project id here.)
+  const { query } = buildCrmPeopleQuery(sb, segment, brokerScope, { limit: page.limit, offset: page.offset })
+  const { data, error } = await query
+  if (error) throw new Error(`ast resolution failed: ${error.message}`)
+  return ((data ?? []) as Array<{ id: number }>).map((r) => r.id)
+}
+
+/**
+ * Resolve an ast-mode selection to a concrete, ordered id list by paging the
+ * fetcher in fixed windows until a short (under-full) page signals the end. Pure
+ * given the fetcher — the page math (accumulate across pages, stop on short page)
+ * is what the unit test exercises. Validates the AST up front so a malformed AST
+ * never starts a paging loop.
+ */
+export async function resolveAstToIds(
+  ast: unknown,
+  brokerScope: string | null,
+  opts?: { pageSize?: number; fetcher?: AstPageFetcher },
+): Promise<number[]> {
+  validateSegment(ast)
+  const limit = Math.max(1, opts?.pageSize ?? AST_RESOLVE_PAGE)
+  const fetcher = opts?.fetcher ?? defaultPageFetcher
+  const ids: number[] = []
+  for (let offset = 0; ; offset += limit) {
+    const rows = await fetcher(ast, brokerScope, { limit, offset })
+    for (const id of rows) ids.push(id)
+    if (rows.length < limit) break
+  }
+  return ids
+}
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -70,23 +133,31 @@ export async function GET(request: Request) {
       // Resolve the frozen id set for this job.
       let ids = selectionIds(job.selection)
       if (ids === null) {
-        // ast-mode: resolve the saved-view / filter AST to a concrete id set, then
-        // freeze it onto the job as {ids:[...]} so every subsequent chunk is
-        // deterministic and resumable (identical to ids-mode from here on).
-        //
-        // TODO(wave-3): import buildCrmPeopleQuery from the CRM reads DAL and run
-        // it under the FROZEN job.broker_scope to produce the id list, e.g.
-        //   const resolved = await resolveAstToIds(job.selection.ast, job.broker_scope)
-        //   await markJob(job.id, { selection: { ids: resolved }, total: resolved.length })
-        // buildCrmPeopleQuery is NOT available in this sandbox, so ast-mode jobs
-        // are parked as failed rather than silently doing nothing.
-        await markJob(job.id, {
-          status: 'failed',
-          error: 'ast-mode selection not yet supported (wave-3: wire buildCrmPeopleQuery)',
-        })
-        status = 'error'
-        errorMsg = 'ast-mode not supported yet'
-        break
+        // ast-mode: resolve the saved-view / filter AST to a concrete id set under
+        // the FROZEN job.broker_scope, then freeze it onto the job as {ids:[...]}
+        // so every subsequent chunk is deterministic and resumable (identical to
+        // ids-mode from here on). The same compiler the list/count/audience use,
+        // so the bulk id set can never drift from what the operator saw.
+        const ast = (job.selection as { ast: unknown }).ast
+        let resolved: number[]
+        try {
+          resolved = await resolveAstToIds(ast, job.broker_scope)
+        } catch (e) {
+          await markJob(job.id, {
+            status: 'failed',
+            error: `ast resolution failed: ${e instanceof Error ? e.message : String(e)}`,
+          })
+          status = 'error'
+          errorMsg = e instanceof Error ? e.message : String(e)
+          break
+        }
+        // Freeze the resolved ids + total onto the job. From here every chunk is
+        // sliced from this stable list — resumable across cron runs / redeploys.
+        const frozen: BulkSelection = { ids: resolved }
+        await markJob(job.id, { selection: frozen, total: resolved.length })
+        job.selection = frozen
+        job.total = resolved.length
+        ids = resolved
       }
 
       // Set total on first touch if it was not stamped at enqueue.

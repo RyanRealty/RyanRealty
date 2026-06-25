@@ -1,23 +1,25 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { getCrmAccess, getCrmOverview, listBrokerLicenses, listCrmPeople, listCrmSavedViews } from '@/app/actions/crm'
+import { getCrmAccess, getCrmOverview, listBrokerLicenses, listCrmPeople, listCrmSavedViews, listCrmSequences } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
+import { getCrmStages } from '@/lib/data/crm/getCrmStages'
+import { getCrmTags } from '@/lib/data/crm/getCrmTags'
+import { getCrmReportAreas } from '@/lib/data/crm/getCrmReportAreas'
+import { getCrmTemplatesAdmin } from '@/lib/data/crm/getCrmTemplatesAdmin'
 import { Badge } from '@/components/ui/badge'
 import ContactsSearch from '@/components/admin/crm/ContactsSearch'
 import BulkAssignWrapper, { type BulkAssignRow } from '@/components/admin/crm/BulkAssignWrapper'
 import { Button } from '@/components/ui/button'
 import { KpiStrip } from '@/components/console/KpiStrip'
+import { formatDate } from '@/lib/format/date'
 
 export const metadata = { title: 'Contacts | Admin' }
 export const dynamic = 'force-dynamic'
 
 function fmtDate(iso: string | null): string {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return formatDate(iso)
 }
 
 function primaryContact(items: Array<{ value?: string; isPrimary?: number | boolean }>): string | null {
@@ -48,11 +50,16 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
   const effectiveBroker = scope ?? requestedBroker
   const isMyLeads = !!access.brokerSlug && effectiveBroker === access.brokerSlug
 
-  const [views, overview, result, licenses] = await Promise.all([
+  const [views, overview, result, licenses, stageRows, tagRows, areaRows, templateRows, sequenceRows] = await Promise.all([
     listCrmSavedViews(),
     getCrmOverview(scope),
     listCrmPeople({ q: sp.q, stage: sp.stage, broker: effectiveBroker, tag: sp.tag, view: sp.view, page }),
     listBrokerLicenses(),
+    getCrmStages(),
+    getCrmTags(),
+    getCrmReportAreas(),
+    getCrmTemplatesAdmin(),
+    listCrmSequences(),
   ])
 
   // broker sees their own license; Matt (superuser) sees the whole roster
@@ -90,6 +97,36 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
     last_activity_label: fmtDate(p.last_activity_at),
     created_label: fmtDate(p.fub_created_at),
   }))
+
+  // Bulk-action props. The active list filter (carried to "select all matching"
+  // so the bulk job resolves the whole filtered book server-side, not just the
+  // 50-row page). matchingTotal is the server count already computed above.
+  const activeFilters = {
+    q: sp.q || undefined,
+    stage: sp.stage || undefined,
+    broker: effectiveBroker || undefined,
+    tagsAny: sp.tag ? [sp.tag] : undefined,
+  }
+  const matchingTotal = total
+  // Reassign is an owner op (mirrors assignCrmBrokerAction) — superuser only.
+  const canAssignBroker = access.role === 'superuser'
+
+  // Pickers — active rows only; fall back to the stage const if the config table
+  // is empty so the stage picker is never blank.
+  const stagePicker = stageRows.filter((s) => s.isActive).map((s) => ({ key: s.key, label: s.label }))
+  const stageOptions = stagePicker.length > 0 ? stagePicker : CRM_STAGES.map((s) => ({ key: s, label: s }))
+  // Bulk tag-add/remove never offers protected (compliance / broker) tags.
+  const tagOptions = tagRows
+    .filter((t) => t.isActive && !t.isProtected)
+    .map((t) => ({ key: t.key, label: t.label }))
+  const areaOptions = areaRows.filter((a) => a.isActive).map((a) => ({ key: a.key, label: a.label }))
+  const templateOptions = templateRows
+    .filter((t) => t.isActive)
+    .map((t) => ({ id: t.id, name: t.name, channel: t.channel }))
+  const sequenceOptions = sequenceRows
+    .filter((s) => s.status === 'active')
+    .map((s) => ({ id: s.id, name: s.name }))
+  const brokerOptions = CRM_BROKERS.map((b) => ({ key: b, label: CRM_BROKER_DISPLAY[b] }))
 
   const stats: Array<{ label: string; value: string }> = [
     { label: 'Contacts', value: overview.total.toLocaleString('en-US') },
@@ -203,8 +240,19 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         </div>
       </form>
 
-      {/* Selectable contacts list + sticky bulk-assign bar (client island) */}
-      <BulkAssignWrapper rows={bulkRows} />
+      {/* Selectable contacts list + sticky bulk-action bar (client island) */}
+      <BulkAssignWrapper
+        rows={bulkRows}
+        activeFilters={activeFilters}
+        matchingTotal={matchingTotal}
+        canAssignBroker={canAssignBroker}
+        brokers={brokerOptions}
+        stages={stageOptions}
+        tags={tagOptions}
+        reportAreas={areaOptions}
+        emailTemplates={templateOptions}
+        sequences={sequenceOptions}
+      />
 
       {/* Pagination */}
       <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">

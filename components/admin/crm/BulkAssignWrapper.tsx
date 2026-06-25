@@ -7,7 +7,8 @@
  * (server-queried with the page's filters/search/pagination intact) and renders
  * the whole list itself — mobile cards + desktop table — adding a checkbox per
  * row and a "select all on page" checkbox in the table header. The sticky
- * BulkAssignBar appears whenever at least one row is selected.
+ * BulkActions bar appears whenever there is a selection or a non-empty filtered
+ * list (so "select all matching" is always reachable).
  *
  * Keeping the list inside one client island is the simplest path to shared
  * selection state without server/client row coordination.
@@ -23,7 +24,10 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import StageBadge from '@/components/admin/crm/StageBadge'
-import BulkAssignBar from '@/components/admin/crm/BulkAssignBar'
+import BulkActions, {
+  type BulkPickerOption, type BulkTemplateOption, type BulkSequenceOption,
+} from '@/components/admin/crm/BulkActions'
+import type { LegacyFilters } from '@/lib/crm/segment-ast'
 
 export type BulkAssignRow = {
   id: number
@@ -45,7 +49,26 @@ function fmtPhone(raw: string): string {
   return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`
 }
 
-export default function BulkAssignWrapper({ rows }: { rows: BulkAssignRow[] }) {
+export type BulkAssignWrapperProps = {
+  rows: BulkAssignRow[]
+  /** Active list filter, so "select all matching" carries it to the server. */
+  activeFilters: LegacyFilters
+  /** Total contacts matching the active filter (server count). */
+  matchingTotal: number
+  /** Whether the caller may reassign brokers (superuser only). */
+  canAssignBroker: boolean
+  brokers: BulkPickerOption[]
+  stages: BulkPickerOption[]
+  tags: BulkPickerOption[]
+  reportAreas: BulkPickerOption[]
+  emailTemplates: BulkTemplateOption[]
+  sequences: BulkSequenceOption[]
+}
+
+export default function BulkAssignWrapper({
+  rows, activeFilters, matchingTotal, canAssignBroker,
+  brokers, stages, tags, reportAreas, emailTemplates, sequences,
+}: BulkAssignWrapperProps) {
   const [selected, setSelected] = useState<Set<number>>(new Set())
 
   const toggle = (id: number) => {
@@ -210,7 +233,19 @@ export default function BulkAssignWrapper({ rows }: { rows: BulkAssignRow[] }) {
         </Table>
       </div>
 
-      <BulkAssignBar selectedIds={selectedIds} onClear={clear} />
+      <BulkActions
+        selectedIds={selectedIds}
+        onClear={clear}
+        activeFilters={activeFilters}
+        matchingTotal={matchingTotal}
+        canAssignBroker={canAssignBroker}
+        brokers={brokers}
+        stages={stages}
+        tags={tags}
+        reportAreas={reportAreas}
+        emailTemplates={emailTemplates}
+        sequences={sequences}
+      />
     </>
   )
 }
