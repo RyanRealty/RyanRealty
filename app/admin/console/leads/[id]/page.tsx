@@ -1,6 +1,5 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
-import { Zap } from 'lucide-react'
 import { notFound, redirect } from 'next/navigation'
 import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import {
@@ -12,9 +11,6 @@ import {
   getCrmAccess,
   getCrmEmailTemplates,
   getCrmPersonFull,
-  getNextRecommendation,
-  confirmNextStepAction,
-  skipNextStepAction,
   getCrmSmsTemplates,
   getTwilioSmsStatus,
   removeCrmTagAction,
@@ -23,9 +19,19 @@ import {
   startCrmCallAction,
   updateCrmStageAction,
 } from '@/app/actions/crm'
-import { manualEnrollPerson, listActiveSequences } from '@/lib/crm/enroll'
 import { getNewsletterMembershipForLead } from '@/lib/data'
 import { adminAssignCrmPersonAction, adminAssignSavedSearchAction, adminUpdateSavedSearchAction, adminDeleteSavedSearchAction } from '@/app/actions/newsletter'
+// CRM record-card cutover (2026-06-24): home-driven next step, CMA-from-contact,
+// market-report subscriptions, source badge.
+import { getContactNextStep } from '@/app/actions/contact-next-step'
+import { startCmaForContactAction, sendCmaForContactAction } from '@/app/actions/contact-cma'
+import { sendNewsletterToContactAction } from '@/app/actions/contact-newsletter'
+import { getContactReportSubscription, listAvailableMarketReportAreas } from '@/lib/data/crm/getContactReportSubscriptions'
+import { setReportSubscriptionAction } from '@/app/actions/crm-report-subscriptions'
+import { getFirstTouchAttribution } from '@/lib/data/crm/getFirstTouchAttribution'
+import SourceBadge from '@/components/admin/crm/SourceBadge'
+import ReportSubscriptionsPanel from '@/components/admin/crm/ReportSubscriptionsPanel'
+import NextStepCard from '@/components/admin/crm/NextStepCard'
 import { timelineEmailBody } from '@/lib/crm/email-body'
 import { renderCrmMerge } from '@/lib/crm/merge'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
@@ -121,24 +127,46 @@ async function startCallForm(personId: number, formData: FormData): Promise<void
       : `${BASE}/${personId}?error=${encodeURIComponent(`Call not started — ${r.error ?? 'unknown error'}`)}`,
   )
 }
-async function confirmNextForm(formData: FormData): Promise<void> {
+// ── Home-driven next step (CRM record-card cutover) ──────────────────────────
+async function startCmaForm(personId: number): Promise<void> {
   'use server'
-  const r = await confirmNextStepAction(Number(formData.get('enrollmentId')))
-  if (!r.ok) console.error('[console] confirmNext:', r.error)
+  const r = await startCmaForContactAction(personId)
+  redirect(
+    r.ok
+      ? `${BASE}/${personId}?flash=${encodeURIComponent('CMA queued and building. Review it below, then send.')}`
+      : `${BASE}/${personId}?error=${encodeURIComponent(`CMA not started — ${r.error}`)}`,
+  )
 }
-async function skipNextForm(formData: FormData): Promise<void> {
+async function sendCmaForm(personId: number, formData: FormData): Promise<void> {
   'use server'
-  const r = await skipNextStepAction(Number(formData.get('enrollmentId')))
-  if (!r.ok) console.error('[console] skipNext:', r.error)
+  const deliveryId = String(formData.get('deliveryId') ?? '')
+  const r = await sendCmaForContactAction(deliveryId)
+  redirect(
+    r.ok
+      ? `${BASE}/${personId}?flash=${encodeURIComponent('CMA sent.')}`
+      : `${BASE}/${personId}?error=${encodeURIComponent(`CMA not sent — ${r.error}`)}`,
+  )
 }
-async function manualEnrollForm(formData: FormData): Promise<void> {
+async function sendNewsletterForm(personId: number): Promise<void> {
   'use server'
-  const personId = Number(formData.get('personId'))
-  const sequenceId = Number(formData.get('sequenceId'))
-  if (!sequenceId) redirect(`${BASE}/${personId}?flash=${encodeURIComponent('Pick a workflow first')}`)
-  const r = await manualEnrollPerson(personId, sequenceId)
-  const msg = r.enrolled ? `Enrolled in ${r.sequence}` : `Not enrolled — ${r.reason}`
-  redirect(`${BASE}/${personId}?flash=${encodeURIComponent(msg)}`)
+  const r = await sendNewsletterToContactAction(personId)
+  redirect(
+    r.ok
+      ? `${BASE}/${personId}?flash=${encodeURIComponent('Newsletter sent.')}`
+      : `${BASE}/${personId}?error=${encodeURIComponent(`Newsletter not sent — ${r.error}`)}`,
+  )
+}
+async function setReportSubsForm(personId: number, formData: FormData): Promise<void> {
+  'use server'
+  const isActive = String(formData.get('active') ?? '') === 'on'
+  const frequency = String(formData.get('frequency') ?? 'monthly') as 'weekly' | 'monthly' | 'quarterly'
+  const areas = formData.getAll('areas').map((a) => String(a)).filter(Boolean)
+  const r = await setReportSubscriptionAction(personId, { areas, frequency, isActive })
+  redirect(
+    r.ok
+      ? `${BASE}/${personId}?flash=${encodeURIComponent(r.message ?? 'Market reports updated.')}`
+      : `${BASE}/${personId}?error=${encodeURIComponent(`Market reports not updated — ${r.error}`)}`,
+  )
 }
 async function assignNewsletterForm(formData: FormData): Promise<void> {
   'use server'
@@ -252,13 +280,12 @@ export default async function ConsoleLeadPage({
   if (!Number.isFinite(id) || id <= 0) notFound()
   const { tpl, smsTpl, error: sendError, flash } = await searchParams
 
-  const [crmAccess, full, templates, smsTemplates, twilioStatus, rec] = await Promise.all([
+  const [crmAccess, full, templates, smsTemplates, twilioStatus] = await Promise.all([
     getCrmAccess(),
     getCrmPersonFull(id),
     getCrmEmailTemplates(),
     getCrmSmsTemplates(),
     getTwilioSmsStatus(),
-    getNextRecommendation(id),
   ])
   if (!crmAccess) redirect('/admin/access-denied')
   const person = full.person
@@ -280,17 +307,28 @@ export default async function ConsoleLeadPage({
   const personEmails = (person.emails ?? []).map((e) => e.value).filter((v): v is string => Boolean(v))
 
   // What they're shopping for — saved searches + the homes they're watching (live MLS) + newsletter status.
-  const [savedSearches, viewedListings, membership, activeSequences, contactMemberships, activityFeed, behaviorSummary, relationships, contactAlerts] = await Promise.all([
+  const [savedSearches, viewedListings, membership, contactMemberships, activityFeed, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, firstTouch] = await Promise.all([
     getGuestSearchAlertsForLead({ fubPersonId: person.fub_legacy_id, emails: personEmails }),
     getViewedListingsForLead(person.fub_legacy_id),
     getNewsletterMembershipForLead({ crmPersonId: person.id, emails: personEmails }),
-    listActiveSequences(),
     getContactMemberships(person.id),
     getContactActivityFeed(person.id),
     getContactBehaviorSummary(person.id),
     getContactRelationships(person.id),
     getContactListingAlerts(person.id),
+    // CRM record-card cutover: home-driven next step (owns home → CMA, else → newsletter),
+    // the contact's market-report subscription + available areas, and lead source.
+    getContactNextStep(person.id),
+    getContactReportSubscription(person.id),
+    listAvailableMarketReportAreas(),
+    getFirstTouchAttribution({ emails: personEmails, fubPersonId: person.fub_legacy_id }),
   ])
+
+  // A CMA queued and awaiting broker review (status 'ready') → NextStepCard shows
+  // "Review & Send CMA" instead of "Send CMA". From the already-loaded deliveries.
+  const reviewableCma = (full.cmaDeliveries ?? []).find(
+    (d) => String((d as { status?: string }).status ?? '') === 'ready',
+  ) as { id?: string } | undefined
 
   // Owned home.
   const geo = full.geo as { city?: string; neighborhood?: string; subdivision?: string; formatted_address?: string; source_address?: string; latitude?: number; longitude?: number; owner_type?: string } | null
@@ -401,6 +439,14 @@ export default async function ConsoleLeadPage({
             ))}
           </div>
 
+          {/* Where this lead came from — the source (CRM record-card cutover). */}
+          <div className="mt-3">
+            <SourceBadge
+              source={person.source ?? null}
+              firstTouch={firstTouch ? { source: firstTouch.source, landingPage: firstTouch.landingUrl } : undefined}
+            />
+          </div>
+
           {/* Plugged in — newsletter / workflow / saved searches, folded into the identity panel */}
           <div className="mt-4 border-t border-border pt-3">
             <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Plugged in</div>
@@ -454,51 +500,16 @@ export default async function ConsoleLeadPage({
         </Card>
       ) : null}
 
-      {/* ── Next best action (the mockup hero) — always present ── */}
-      <Card style={{ backgroundColor: 'var(--console-info-soft)', borderColor: 'var(--console-info)' }}>
-        <CardContent className="p-4 sm:p-5">
-          <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4" style={{ color: 'var(--console-info-strong)' }} />
-            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--console-info-strong)' }}>Next best action</span>
-          </div>
-
-          {rec ? (
-            <>
-              <div className="mt-2 text-[15px] font-semibold text-foreground">
-                {rec.channel === 'sms' ? 'Send a text' : rec.channel === 'email' ? 'Send an email' : rec.channel === 'task' ? 'Do this' : 'Next step'} · {rec.sequenceName}
-              </div>
-              {rec.subjectPreview ? <div className="mt-2 break-words text-sm font-medium text-foreground">{rec.subjectPreview}</div> : null}
-              <div className="mt-1.5 whitespace-pre-wrap break-words rounded-lg border border-border bg-card p-3 text-sm text-muted-foreground [overflow-wrap:anywhere]">{rec.bodyPreview}</div>
-              {rec.unresolved.length ? <div className="mt-2 text-xs font-medium text-destructive">Unresolved fields: {rec.unresolved.join(', ')}</div> : null}
-              {rec.holdReason ? <div className="mt-2 text-xs text-muted-foreground">{rec.holdReason}</div> : null}
-              <div className="mt-3 flex flex-wrap gap-2">
-                <form action={confirmNextForm}><input type="hidden" name="enrollmentId" value={rec.enrollmentId} /><Button type="submit" size="sm" disabled={!!rec.holdReason || rec.unresolved.length > 0} className="min-h-10">Confirm &amp; send</Button></form>
-                <form action={skipNextForm}><input type="hidden" name="enrollmentId" value={rec.enrollmentId} /><Button type="submit" size="sm" variant="outline" className="min-h-10">Skip</Button></form>
-              </div>
-            </>
-          ) : activeEnrollments.length > 0 ? (
-            <>
-              <div className="mt-2 text-[15px] font-semibold text-foreground">In {activeEnrollments[0].crm_sequences?.name ?? 'a workflow'} — next touch is scheduled</div>
-              <div className="mt-1 text-sm text-muted-foreground">The engine sends the next step automatically. Nothing to confirm right now.</div>
-            </>
-          ) : (
-            <>
-              <div className="mt-2 text-[15px] font-semibold text-foreground">Put {person.first_name ?? 'this lead'} into a workflow</div>
-              <div className="mt-1 text-sm text-muted-foreground">Pick a workflow and the first touch sends automatically.</div>
-              {activeSequences.length > 0 ? (
-                <form action={manualEnrollForm} className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <input type="hidden" name="personId" value={person.id} />
-                  <Select name="sequenceId">
-                    <SelectTrigger className="h-10 flex-1 bg-card"><SelectValue placeholder="Choose a workflow…" /></SelectTrigger>
-                    <SelectContent>{activeSequences.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Button type="submit" size="sm" className="min-h-10 shrink-0">Enroll</Button>
-                </form>
-              ) : <div className="mt-2 text-xs text-muted-foreground">No active workflows configured.</div>}
-            </>
-          )}
-        </CardContent>
-      </Card>
+      {/* ── Next best action — home-driven (owns a home → Send CMA, else → Send
+           newsletter). Replaces the prior sequence-enrollment recommendation
+           (Matt directive 2026-06-24). CMA is review-first: the button queues +
+           builds, then the card flips to "Review & Send CMA". ── */}
+      <NextStepCard
+        step={nextStep.step}
+        cmaAction={startCmaForm.bind(null, person.id)}
+        newsletterAction={sendNewsletterForm.bind(null, person.id)}
+        pending={reviewableCma?.id ? { kind: 'cma', deliveryId: String(reviewableCma.id), sendAction: sendCmaForm.bind(null, person.id) } : null}
+      />
 
       {/* ── KPI strip — shared console kit (per the picked mockup) ── */}
       <KpiStrip items={[
@@ -639,6 +650,14 @@ export default async function ConsoleLeadPage({
             </CardContent>
           </Card>
 
+          {/* Market reports — distinct subscription: which areas + cadence
+              (CRM record-card cutover). */}
+          <ReportSubscriptionsPanel
+            current={reportSub ? { isActive: reportSub.isActive, areas: reportSub.areas, frequency: reportSub.frequency } : null}
+            areaOptions={reportAreas}
+            setAction={setReportSubsForm.bind(null, person.id)}
+          />
+
           {/* Saved searches */}
           <ContactListingAlertsPanel alerts={contactAlerts} />
           <Card id="saved-searches" className="scroll-mt-20">
@@ -724,7 +743,26 @@ export default async function ConsoleLeadPage({
               <CardHeader className="pb-3"><CardTitle className="flex items-center justify-between text-base"><span>Home they own</span>{geo?.owner_type ? <Badge variant="outline" className="text-[11px]">{geo.owner_type}</Badge> : null}</CardTitle></CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <a href={homeMedia.googleMapsLink} target="_blank" rel="noopener noreferrer" className="block font-medium text-foreground hover:underline">{homeAddress}</a>
-                {homeFacts ? <div className="text-muted-foreground">{[homeFacts.beds ? `${homeFacts.beds} bed` : null, homeFacts.baths ? `${homeFacts.baths} bath` : null, homeFacts.sqft ? `${Math.round(homeFacts.sqft).toLocaleString('en-US')} sqft` : null, homeFacts.yearBuilt ? `built ${homeFacts.yearBuilt}` : null].filter(Boolean).join(' · ')}</div> : null}
+                {(() => {
+                  const neighborhood = geo?.neighborhood ?? geo?.subdivision ?? geo?.city ?? null
+                  const specs = [
+                    homeFacts?.beds ? `${homeFacts.beds} bed` : null,
+                    homeFacts?.baths ? `${homeFacts.baths} bath` : null,
+                    homeFacts?.sqft ? `${Math.round(homeFacts.sqft).toLocaleString('en-US')} sqft` : null,
+                    homeFacts?.yearBuilt ? `built ${homeFacts.yearBuilt}` : null,
+                    neighborhood,
+                  ].filter(Boolean)
+                  // "Price they paid" — only when we have a real matched MLS close.
+                  // No close on record (older / off-market purchase) → omit it.
+                  const paidYear = homeFacts?.closeDate ? new Date(homeFacts.closeDate).getFullYear() : null
+                  const pricePaid = homeFacts?.closePrice && homeFacts.closePrice > 0 ? usd(homeFacts.closePrice) : null
+                  return (
+                    <>
+                      {specs.length ? <div className="text-muted-foreground">{specs.join(' · ')}</div> : null}
+                      {pricePaid ? <div className="font-medium text-foreground">Paid {pricePaid}{paidYear ? ` in ${paidYear}` : ''}</div> : null}
+                    </>
+                  )
+                })()}
                 {homeActiveListing ? (
                   <Alert><AlertTitle className="text-sm">On the market right now</AlertTitle><AlertDescription className="text-sm">{homeActiveListing.status}{usd(homeActiveListing.listPrice) ? ` · ${usd(homeActiveListing.listPrice)}` : ''}{homeActiveListing.listingKey ? <> · <Link href={`/listing/${homeActiveListing.listingKey}`} className="underline">view</Link></> : null}</AlertDescription></Alert>
                 ) : null}

@@ -17,6 +17,8 @@ export default defineConfig({
       'components/site/__tests__/**/*.test.tsx',
       'components/search/__tests__/**/*.test.ts',
       'components/search/__tests__/**/*.test.tsx',
+      'components/admin/crm/**/*.test.ts',
+      'components/admin/crm/**/*.test.tsx',
     ],
     globals: false,
   },

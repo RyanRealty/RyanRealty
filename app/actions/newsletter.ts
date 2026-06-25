@@ -3,6 +3,8 @@
 import { getCrmAccess } from '@/app/actions/crm'
 import { isSuppressed } from '@/lib/crm/suppressions'
 import { sendEmail } from '@/lib/resend'
+import { attributeOutbound } from '@/lib/crm/attributed-links'
+import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { wrapNewsletterHtml, newsletterTextFooter } from '@/lib/email-templates/newsletter-shell'
 import { createSavedSearchForLead, updateSavedSearch, deleteSavedSearchById } from '@/lib/data'
 import {
@@ -212,6 +214,10 @@ export async function adminSendNewsletterAction(id: string): Promise<{ ok: boole
   await updateNewsletter(id, { status: 'sending', recipient_count: recipients.length })
   await updateNewsletter(id, { sent_by: gate.email })
 
+  // Broker attribution: every link in the newsletter carries ?agent=<sender>
+  // so the broker sees opens/clicks routed to them (CRM cutover 2026-06-24).
+  const brokerSlug = CRM_BROKER_BY_EMAIL[gate.email.trim().toLowerCase()] ?? 'matt'
+
   let sent = 0
   let skipped = 0
   let failed = 0
@@ -224,7 +230,10 @@ export async function adminSendNewsletterAction(id: string): Promise<{ ok: boole
       if (sup.suppressed) { skipped++; continue }
     }
     const u = unsubUrl(r.unsubscribe_token)
-    const html = letter.body_html ? wrapNewsletterHtml({ bodyHtml: letter.body_html, previewText: letter.preview_text, unsubscribeUrl: u }) : undefined
+    const rawHtml = letter.body_html ? wrapNewsletterHtml({ bodyHtml: letter.body_html, previewText: letter.preview_text, unsubscribeUrl: u }) : undefined
+    const html = rawHtml
+      ? attributeOutbound(rawHtml, { brokerSlug, personId: r.crm_person_id ?? null, emailKey: `newsletter:${id}`, label: letter.subject })
+      : undefined
     const text = (letter.body_text ?? '') + newsletterTextFooter(u)
     const res = await sendEmail({
       to: r.email,

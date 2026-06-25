@@ -1,5 +1,6 @@
 [
   "app/actions/admin-email.ts",
+  "app/actions/contact-newsletter.ts",
   "app/actions/crm.ts",
   "app/actions/newsletter.ts",
   "app/actions/saved-search-alerts.ts",

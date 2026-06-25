@@ -7,6 +7,7 @@ import { listingDetailPath } from '@/lib/slug'
 import { buildSearchUrlFromFilters } from '@/lib/search-filters'
 import { getActiveGuestSearchAlerts, markGuestAlertNotified } from '@/lib/data/leads/guestSearchAlerts'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
+import { attributeUrl } from '@/lib/crm/attributed-links'
 import { BRAND } from '@/lib/brand/contact'
 import { findPersonByEmail } from '@/lib/followupboss'
 
@@ -106,7 +107,12 @@ function appendTracking(url: string, fubPersonId: number | null): string {
     utm_campaign: 'listing-alerts',
   })
   if (fubPersonId && fubPersonId > 0) params.set('_fuid', String(fubPersonId))
-  return `${url}${url.includes('?') ? '&' : '?'}${params.toString()}`
+  const withUtm = `${url}${url.includes('?') ? '&' : '?'}${params.toString()}`
+  // Broker attribution on every alert link (Matt's rule: saved-search links carry
+  // ?agent=<broker> so the broker sees the click). All leads route to Matt today
+  // (canonical-lead-tagger). If per-contact broker assignment is later adopted,
+  // resolve the recipient's assigned broker here instead of the default desk.
+  return attributeUrl(withUtm, 'matt', fubPersonId)
 }
 
 export async function runSavedSearchAlerts(options?: {
