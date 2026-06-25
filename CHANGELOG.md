@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.625.0 (2026-06-25)
+
+### Features
+- feat(crm): Wave 7 — lead routing engine (dormant) + inbox triage + task lifecycle
+
+---
+
+
 ## v1.624.0 (2026-06-25)
 
 ### Features
