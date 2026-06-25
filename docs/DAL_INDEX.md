@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-06-25T18:32:07.988Z
+**Generated:** 2026-06-25T19:00:58.889Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -600,6 +600,20 @@ Companion files:
 
 ---
 
+### `lib/data/crm/getMarketReportData.ts`
+
+**Exports:** `computeMonthsOfSupply`, `classifyMarketVerdict`, `resolveAreaGeoType`, `buildAreaBlock`, `getMarketReportData`
+
+---
+
+### `lib/data/crm/getMarketReportSubscribers.ts`
+
+**Exports:** `mapMarketReportSubscriberRow`, `getActiveMarketReportSubscriptions`, `getMarketReportSubscribers`
+
+**Tables:** `crm_report_subscriptions`
+
+---
+
 ### `lib/data/crm/getMmsOwnerBroker.ts`
 
 **Exports:** `getMmsOwnerBroker`
@@ -813,6 +827,14 @@ Companion files:
 **Tables:** `crm_people`, `crm_contact_points`, `visitor_identity_map`, `visitor_sessions`
 
 **Selected columns:** `id`, `fub_legacy_id`, `kind`, `value`, `user_id`, `session_id`
+
+---
+
+### `lib/data/crm/stampMarketReportSent.ts`
+
+**Exports:** `stampMarketReportAttempt`, `stampMarketReportSent`
+
+**Tables:** `crm_report_subscriptions`
 
 ---
 
@@ -1445,7 +1467,7 @@ Companion files:
 | `crm_people` | `CRM_PEOPLE_SELECT()`, `buildCrmPeopleQuery()`, `HOT_ANONYMOUS_SOURCE()`, `captureHotAnonymous()`, `decideNativeLeadAction()`, `nativeLeadName()`, `ensureNativeLead()`, `shouldCreatePerson()`, `inboundLeadName()`, `findOrCreatePersonByPhone()`, `AUDIENCE_EXCLUDED_TAG_PATTERNS()`, `isAudienceExcludedByTag()`, `getAudienceEligiblePeople()`, `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `pickPrimary()`, `mapCmaRow()`, `getContactIdentityStrip()`, `humanizeRelationshipType()`, `getContactRelationships()`, `getCrmSignalFreshness()`, `getCrmLeadVolume()`, `getCrmContactTotal()`, `CRM_SUPPRESSIONS_TAG()`, `COMPLIANCE_REASON_MARKERS()`, `isComplianceReason()`, `normalizeSuppressionChannel()`, `clampLimit()`, `clampOffset()`, `resolveSuppressionValue()`, `buildSuppressionRows()`, `getCrmSuppressions()`, `CRM_TAGS_TAG()`, `tallyTagUsage()`, `getCrmTags()`, `firstEmail()`, `getEmailCohortRecipients()`, `getCrmTemplateForSend()`, `getPersonContact()`, `getSendTarget()`, `getSuppressionSignals()`, `getPendingAudienceRemovals()`, `resolvePeopleForRemoval()`, `markAudienceRemovalsProcessed()`, `NATIVE_DEFAULT_BROKER()`, `buildNativePersonRow()`, `nativeCreateGaps()`, `normalizeEmail()`, `normalizePhone()`, `dedupeContactPoints()`, `resolvePersonIdentity()`, `subscribeToNewsletter()`, `unsubscribeNewsletterByToken()`, `setSubscriberStatus()`, `listNewsletterSubscribers()`, `newsletterSubscriberCounts()`, `getActiveSubscribersForSend()`, `markSubscribersSent()`, `createNewsletterDraft()`, `updateNewsletter()`, `listNewsletters()`, `getNewsletter()`, `deleteNewsletterDraft()`, `recordRecipientSend()`, `recordNewsletterEvent()`, `getNewsletterStats()`, `getNewsletterRecipients()`, `getNewsletterMembershipForLead()`, `getCrmPersonContact()` <br /> `lib/data/crm/buildCrmPeopleQuery.ts` · `lib/data/crm/captureHotAnonymous.ts` · `lib/data/crm/ensureNativeLead.ts` · `lib/data/crm/findOrCreatePersonByPhone.ts` · `lib/data/crm/getAudienceEligiblePeople.ts` · `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getContactIdentityStrip.ts` · `lib/data/crm/getContactRelationships.ts` · `lib/data/crm/getCrmSignalFreshness.ts` · `lib/data/crm/getCrmSuppressions.ts` · `lib/data/crm/getCrmTags.ts` · `lib/data/crm/getEmailCohortRecipients.ts` · `lib/data/crm/getPersonContact.ts` · `lib/data/crm/getSendTarget.ts` · `lib/data/crm/getSuppressionSignals.ts` · `lib/data/crm/metaAudienceQueue.ts` · `lib/data/crm/nativeCreate.ts` · `lib/data/crm/resolvePersonIdentity.ts` · `lib/data/newsletter/index.ts` |
 | `crm_relationships` | `humanizeRelationshipType()`, `getContactRelationships()` <br /> `lib/data/crm/getContactRelationships.ts` |
 | `crm_report_areas` | `getCrmReportAreas()` <br /> `lib/data/crm/getCrmReportAreas.ts` |
-| `crm_report_subscriptions` | `REPORT_FREQUENCIES()`, `normalizeReportFrequency()`, `mapReportSubscriptionRow()`, `buildMarketReportAreas()`, `listAvailableMarketReportAreas()`, `getContactReportSubscription()` <br /> `lib/data/crm/getContactReportSubscriptions.ts` |
+| `crm_report_subscriptions` | `REPORT_FREQUENCIES()`, `normalizeReportFrequency()`, `mapReportSubscriptionRow()`, `buildMarketReportAreas()`, `listAvailableMarketReportAreas()`, `getContactReportSubscription()`, `mapMarketReportSubscriberRow()`, `getActiveMarketReportSubscriptions()`, `getMarketReportSubscribers()`, `stampMarketReportAttempt()`, `stampMarketReportSent()` <br /> `lib/data/crm/getContactReportSubscriptions.ts` · `lib/data/crm/getMarketReportSubscribers.ts` · `lib/data/crm/stampMarketReportSent.ts` |
 | `crm_saved_views` | `getCrmSavedViews()`, `getCrmSavedView()`, `SAVED_VIEW_SEGMENT_SELECT()`, `savedViewToSegment()`, `getSavedViewSegment()` <br /> `lib/data/crm/getCrmSavedViews.ts` · `lib/data/crm/getSavedViewSegment.ts` |
 | `crm_sequence_enrollments` | `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `getContactMemberships()`, `setContactListingAlertsPaused()`, `groupEnrollmentStatus()`, `buildWorkflowAnalytics()`, `getWorkflowAnalytics()`, `stepEmailKey()`, `tallyStepEmailSends()`, `tallyCurrentStep()`, `buildStepAnalytics()`, `getWorkflowStepAnalytics()` <br /> `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getContactMemberships.ts` · `lib/data/crm/getWorkflowAnalytics.ts` |
 | `crm_sequences` | `getContactMemberships()`, `setContactListingAlertsPaused()`, `getCrmSequenceForEdit()`, `CRM_TEMPLATES_ADMIN_TAG()`, `tallyTemplateUsage()`, `mapTemplateRow()`, `getCrmTemplatesAdmin()`, `groupEnrollmentStatus()`, `buildWorkflowAnalytics()`, `getWorkflowAnalytics()`, `stepEmailKey()`, `tallyStepEmailSends()`, `tallyCurrentStep()`, `buildStepAnalytics()`, `getWorkflowStepAnalytics()` <br /> `lib/data/crm/getContactMemberships.ts` · `lib/data/crm/getCrmSequenceForEdit.ts` · `lib/data/crm/getCrmTemplatesAdmin.ts` · `lib/data/crm/getWorkflowAnalytics.ts` |

@@ -17,6 +17,10 @@
       "schedule": "0 13 * * *"
     },
     {
+      "path": "/api/cron/crm-market-report-send",
+      "schedule": "0 16 * * *"
+    },
+    {
       "path": "/api/cron/crm-gmail-sync",
       "schedule": "9,24,39,54 * * * *"
     },
