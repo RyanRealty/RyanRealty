@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.626.1 (2026-06-25)
+
+### Maintenance
+- docs(crm): wave progress log — all 8 build waves shipped, Wave 9 review in flight
+
+---
+
+
 ## v1.626.0 (2026-06-25)
 
 ### Features
