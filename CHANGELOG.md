@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.616.2 (2026-06-25)
+
+### Bug Fixes
+- fix(listing): photo lightbox fills the full screen instead of a 384px box
+
+---
+
+
 ## v1.616.1 (2026-06-24)
 
 ### Maintenance
