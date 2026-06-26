@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.638.3 (2026-06-26)
+
+### Bug Fixes
+- fix(crm): add createCrmDeal action to unblock NewDealButton build
+- fix(crm): A3 QA defects — inbox error alert, workflow board error, sequence stage/broker pickers, contact picker, FAB autoOpen
+
+---
+
+
 ## v1.638.2 (2026-06-26)
 
 ### Bug Fixes
