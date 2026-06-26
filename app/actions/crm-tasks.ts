@@ -285,3 +285,27 @@ export async function deleteCrmTaskTypeAction(formData: FormData): Promise<Confi
   if (res.ok) bustTaskTypeCache()
   return res
 }
+
+// ── Contact search for the NewTaskDialog contact picker (D2 fix) ─────────────
+
+export type ContactSearchHit = { id: number; name: string }
+
+export async function searchCrmContactsAction(
+  q: string,
+): Promise<{ ok: true; results: ContactSearchHit[] } | { ok: false; error: string }> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  if (!q.trim()) return { ok: true, results: [] }
+  const sb = createServiceClient()
+  const { data, error } = await sb
+    .from('crm_people')
+    .select('id,name')
+    .ilike('name', `%${q.trim()}%`)
+    .order('last_activity_at', { ascending: false, nullsFirst: false })
+    .limit(10)
+  if (error) return { ok: false, error: error.message }
+  return {
+    ok: true,
+    results: (data ?? []).map((r) => ({ id: r.id as number, name: (r.name as string | null) ?? `#${r.id}` })),
+  }
+}

@@ -19,6 +19,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { CRM_MAILBOXES } from '@/lib/crm/gmail'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
 import { formatDateTime } from '@/lib/format/date'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
@@ -44,13 +45,14 @@ function isScope(v: string | undefined): v is InboxScope {
 export default async function CrmInboxPage({
   searchParams,
 }: {
-  searchParams: Promise<{ scope?: string; c?: string }>
+  searchParams: Promise<{ scope?: string; c?: string; error?: string }>
 }) {
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
 
   const sp = await searchParams
   const scope: InboxScope = isScope(sp.scope) ? sp.scope : 'mine'
+  const sendError = sp.error ? decodeURIComponent(sp.error) : null
   const brokerScope = scopeBroker(access)
   const openId = sp.c && Number.isFinite(Number(sp.c)) ? Number(sp.c) : null
 
@@ -177,6 +179,11 @@ export default async function CrmInboxPage({
 
           {/* Reply composer */}
           <div className="mt-4 border-t border-border pt-4">
+            {sendError ? (
+              <Alert variant="destructive" className="mb-3">
+                <AlertDescription>{sendError}</AlertDescription>
+              </Alert>
+            ) : null}
             <InlineReply
               smsAction={sendSmsForm.bind(null, openPane.personId)}
               emailAction={sendEmailForm.bind(null, openPane.personId)}
@@ -367,6 +374,11 @@ export default async function CrmInboxPage({
 
                 {/* Reply composer pinned to bottom */}
                 <div className="border-t border-border px-4 py-3">
+                  {sendError ? (
+                    <Alert variant="destructive" className="mb-3">
+                      <AlertDescription>{sendError}</AlertDescription>
+                    </Alert>
+                  ) : null}
                   <InlineReply
                     smsAction={sendSmsForm.bind(null, openPane.personId)}
                     emailAction={sendEmailForm.bind(null, openPane.personId)}

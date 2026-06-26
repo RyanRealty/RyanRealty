@@ -10,6 +10,7 @@ import {
   advanceEnrollmentNowAction,
   dismissEnrollmentAction,
 } from '@/app/actions/crm'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -23,35 +24,35 @@ async function approveForm(formData: FormData): Promise<void> {
   'use server'
   const enrollmentId = Number(formData.get('enrollmentId'))
   const r = await approveEnrollmentAction(enrollmentId)
-  if (!r.ok) console.error('[crm] approveEnrollment failed:', r.error)
+  if (!r.ok) redirect(`/admin/crm/workflows?boardError=${encodeURIComponent(r.error ?? 'Approve failed')}`)
 }
 
 async function pauseForm(formData: FormData): Promise<void> {
   'use server'
   const enrollmentId = Number(formData.get('enrollmentId'))
   const r = await pauseEnrollmentAction(enrollmentId)
-  if (!r.ok) console.error('[crm] pauseEnrollment failed:', r.error)
+  if (!r.ok) redirect(`/admin/crm/workflows?boardError=${encodeURIComponent(r.error ?? 'Pause failed')}`)
 }
 
 async function resumeForm(formData: FormData): Promise<void> {
   'use server'
   const enrollmentId = Number(formData.get('enrollmentId'))
   const r = await resumeEnrollmentAction(enrollmentId)
-  if (!r.ok) console.error('[crm] resumeEnrollment failed:', r.error)
+  if (!r.ok) redirect(`/admin/crm/workflows?boardError=${encodeURIComponent(r.error ?? 'Resume failed')}`)
 }
 
 async function advanceForm(formData: FormData): Promise<void> {
   'use server'
   const enrollmentId = Number(formData.get('enrollmentId'))
   const r = await advanceEnrollmentNowAction(enrollmentId)
-  if (!r.ok) console.error('[crm] advanceEnrollmentNow failed:', r.error)
+  if (!r.ok) redirect(`/admin/crm/workflows?boardError=${encodeURIComponent(r.error ?? 'Advance failed')}`)
 }
 
 async function dismissForm(formData: FormData): Promise<void> {
   'use server'
   const enrollmentId = Number(formData.get('enrollmentId'))
   const r = await dismissEnrollmentAction(enrollmentId)
-  if (!r.ok) console.error('[crm] dismissEnrollment failed:', r.error)
+  if (!r.ok) redirect(`/admin/crm/workflows?boardError=${encodeURIComponent(r.error ?? 'Stop failed')}`)
 }
 
 function fmtRelative(iso: string | null): string {
@@ -186,9 +187,16 @@ function EnrollmentCardBody({ en, compact }: { en: Enrollment; compact?: boolean
   )
 }
 
-export default async function CrmWorkflowsPage() {
+export default async function CrmWorkflowsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ boardError?: string }>
+}) {
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
+
+  const sp = await searchParams
+  const boardError = sp.boardError ? decodeURIComponent(sp.boardError) : null
 
   const sequences = await getWorkflowBoard()
 
@@ -223,6 +231,12 @@ export default async function CrmWorkflowsPage() {
           </Button>
         </Link>
       </div>
+
+      {boardError ? (
+        <Alert variant="destructive" className="mt-4">
+          <AlertDescription>{boardError}</AlertDescription>
+        </Alert>
+      ) : null}
 
       {/* Summary */}
       <ConsoleSection title="Summary" className="mt-4">

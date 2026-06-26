@@ -10,14 +10,20 @@ import {
 import { getCrmTemplatesAdmin } from '@/lib/data/crm/getCrmTemplatesAdmin'
 import { getCrmTags } from '@/lib/data/crm/getCrmTags'
 import { getCrmSequenceForEdit } from '@/lib/data/crm/getCrmSequenceForEdit'
+import { getCrmStages } from '@/lib/data/crm/getCrmStages'
+import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { getWorkflowStepAnalytics } from '@/lib/data/crm/getWorkflowAnalytics'
 import { scopeBroker } from '@/lib/crm/scope'
+import { createServiceClient } from '@/lib/supabase/service'
 import type { AnyStepOrCondition, SequenceTrigger } from '@/lib/crm/sequence-step-schema'
 import {
   StepBuilder,
   type TemplateOption,
   type TagOption,
   type StepFunnelRow,
+  type StageOption,
+  type BrokerOption,
+  type SequenceOption,
 } from '@/components/admin/crm/workflows/StepBuilder'
 
 export const metadata = { title: 'Edit workflow | CRM | Admin' }
@@ -37,11 +43,15 @@ export default async function CrmSequenceEditPage({
 
   const broker = scopeBroker(access)
 
-  const [seq, templates, tags, funnel] = await Promise.all([
+  const sb = createServiceClient()
+  const [seq, templates, tags, funnel, stages, brokers, activeSeqsResult] = await Promise.all([
     getCrmSequenceForEdit(id),
     getCrmTemplatesAdmin(),
     getCrmTags(),
     getWorkflowStepAnalytics(id, broker),
+    getCrmStages(),
+    getCrmBrokers(),
+    sb.from('crm_sequences').select('id,name').eq('status', 'active').order('name', { ascending: true }),
   ])
 
   if (!seq) notFound()
@@ -75,6 +85,18 @@ export default async function CrmSequenceEditPage({
   const tagOptions: TagOption[] = tags
     .filter((t) => t.isActive && !t.isProtected)
     .map((t) => ({ key: t.key, label: t.label }))
+
+  const stageOptions: StageOption[] = stages
+    .filter((s) => s.isActive)
+    .map((s) => ({ key: s.key, label: s.label }))
+
+  const brokerOptions: BrokerOption[] = brokers
+    .filter((b) => b.crmActive)
+    .map((b) => ({ slug: b.slug, label: b.name }))
+
+  const sequenceOptions: SequenceOption[] = ((activeSeqsResult.data ?? []) as Array<{ id: number; name: string }>)
+    .filter((s) => s.id !== id)
+    .map((s) => ({ id: s.id, name: s.name }))
 
   const funnelRows: StepFunnelRow[] = funnel.rows.map((r) => ({
     stepIndex: r.stepIndex,
@@ -112,6 +134,9 @@ export default async function CrmSequenceEditPage({
           initialSteps={initialSteps}
           templates={templateOptions}
           tags={tagOptions}
+          stages={stageOptions}
+          brokers={brokerOptions}
+          sequences={sequenceOptions}
           funnel={funnelRows}
           funnelUnreadable={funnel.unreadable}
           initialTriggers={initialTriggers}

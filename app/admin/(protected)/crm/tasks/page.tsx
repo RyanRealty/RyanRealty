@@ -12,6 +12,7 @@ import {
   snoozeCrmTaskAction,
   deleteCrmTaskAction,
   bulkCompleteTasksAction,
+  searchCrmContactsAction,
 } from '@/app/actions/crm-tasks'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getTaskQueue, getCrmTaskTypes, type TaskQueueView } from '@/lib/data/crm/getTaskQueue'
@@ -36,7 +37,7 @@ function isView(v: string | undefined): v is TaskQueueView {
 export default async function CrmTasksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; type?: string }>
+  searchParams: Promise<{ view?: string; type?: string; new?: string }>
 }) {
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
@@ -44,6 +45,7 @@ export default async function CrmTasksPage({
   const sp = await searchParams
   const view: TaskQueueView = isView(sp.view) ? sp.view : 'today'
   const typeFilter = sp.type && sp.type.trim() ? sp.type.trim() : null
+  const autoOpenNew = sp.new === '1'
   const brokerScope = scopeBroker(access)
   const canReassign = access.role === 'superuser'
 
@@ -98,6 +100,10 @@ export default async function CrmTasksPage({
     const r = await addCrmTaskAction(formData)
     return r.ok ? { ok: true } : { ok: false, error: r.error }
   }
+  async function searchContact(q: string) {
+    'use server'
+    return searchCrmContactsAction(q)
+  }
 
   const actions: TaskActions = { complete: completeTask, bulkComplete, snooze, remove, update, reassign }
 
@@ -108,7 +114,12 @@ export default async function CrmTasksPage({
           <h1 className="text-xl font-semibold text-foreground md:text-2xl">Tasks</h1>
           <p className="hidden text-sm text-muted-foreground md:block">Every task across the book, by when it is due.</p>
         </div>
-        <NewTaskDialog taskTypes={taskTypes} createAction={createTask} />
+        <NewTaskDialog
+          taskTypes={taskTypes}
+          createAction={createTask}
+          searchAction={searchContact}
+          autoOpen={autoOpenNew}
+        />
       </div>
 
       {/* View tabs — desktop only; mobile uses CrmSegmented inside TaskQueue */}
