@@ -178,8 +178,9 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         </Link>
       </div>
 
-      {/* Secondary nav — desktop only; phones navigate via the bottom tab bar. */}
-      <nav className="mt-4 hidden gap-2 overflow-x-auto sm:flex-wrap md:flex">
+      {/* Secondary nav — fully retired: the top nav (CRM/Deals dropdowns) + the
+          mobile bottom tab bar cover every destination now (FUB-faithful). */}
+      <nav className="hidden">
         <Link href="/admin/crm/tasks" className="shrink-0"><Button variant="outline" size="sm" className="h-10 md:h-7">Tasks</Button></Link>
         <Link href="/admin/crm/inbox" className="shrink-0"><Button variant="outline" size="sm" className="h-10 md:h-7">Inbox</Button></Link>
         <Link href="/admin/crm/deals" className="shrink-0"><Button variant="outline" size="sm" className="h-10 md:h-7">Pipeline</Button></Link>
@@ -188,8 +189,9 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         <Link href="/admin/crm/workflows" className="shrink-0"><Button variant="outline" size="sm" className="h-10 md:h-7">Workflows</Button></Link>
       </nav>
 
-      {/* Stat / KPI strip — desktop only (FUB's people list leads with the list, not tiles) */}
-      <div className="mt-4 hidden md:block">
+      {/* KPI tiles retired from People — FUB's People list leads with the list, not
+          tiles (the metrics live on the Dashboard). */}
+      <div className="hidden">
         <KpiStrip items={stats} />
       </div>
 
