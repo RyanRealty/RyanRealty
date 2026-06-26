@@ -16,29 +16,13 @@
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { crmAvatarColor, crmInitials } from '@/components/admin/crm/mobile/avatar-utils'
 
 /* ── Avatars ─────────────────────────────────────────────────────────────── */
 
-// FUB-style colorful avatars: a fixed palette, deterministically picked from the
-// name so the same person is always the same color across screens.
-const AVATAR_COLORS = [
-  '#b45309', '#dc2626', '#65a30d', '#0891b2', '#2563eb',
-  '#7c3aed', '#db2777', '#475569', '#0d9488', '#ea580c',
-  '#4f46e5', '#16a34a',
-]
-
-export function crmAvatarColor(seed: string): string {
-  let h = 0
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0
-  return AVATAR_COLORS[h % AVATAR_COLORS.length]
-}
-
-export function crmInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  if (!parts.length) return '?'
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-}
+// Pure color/initials helpers live in avatar-utils (non-client) so server
+// components can use them too; re-exported here for existing client callers.
+export { crmAvatarColor, crmInitials }
 
 export function CrmAvatar({
   name,

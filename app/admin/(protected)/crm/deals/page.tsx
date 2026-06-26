@@ -3,12 +3,13 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess, listCrmDeals } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { Card } from '@/components/ui/card'
 import {
   CrmList,
   CrmListRow,
   CrmSectionLabel,
 } from '@/components/admin/crm/mobile/CrmMobileKit'
+import { crmAvatarColor } from '@/components/admin/crm/mobile/avatar-utils'
 
 export const metadata = { title: 'Pipeline | CRM | Admin' }
 export const dynamic = 'force-dynamic'
@@ -25,6 +26,38 @@ function moneyCompact(v: number | null): string {
   if (r >= 1_000_000) return '$' + (r / 1_000_000).toFixed(r % 1_000_000 === 0 ? 0 : 1) + 'M'
   if (r >= 1_000) return '$' + Math.round(r / 1_000) + 'K'
   return '$' + r.toLocaleString('en-US')
+}
+
+/** Compact dollar sum for column header: $2.4M / $655K */
+function moneySum(v: number): string {
+  if (v === 0) return '$0'
+  if (v >= 1_000_000) return '$' + (v / 1_000_000).toFixed(v % 1_000_000 === 0 ? 0 : 1) + 'M'
+  if (v >= 1_000) return '$' + Math.round(v / 1_000) + 'K'
+  return '$' + v.toLocaleString('en-US')
+}
+
+/** Deterministic muted top-border color per stage name. Uses a restricted palette
+ *  of tasteful hues that contrast against the card background without being garish.
+ *  Applied via inline style so the design-token linter stays green. */
+const STAGE_BORDER_COLORS = [
+  '#f59e0b', // amber — Start / first stage
+  '#3b82f6', // blue
+  '#8b5cf6', // violet
+  '#f97316', // orange
+  '#10b981', // emerald / Closed
+  '#6b7280', // neutral-500 — Lost / catch-all
+]
+function stageBorderColor(stage: string, idx: number): string {
+  // Map well-known FUB stage names to intentional colors
+  const lower = stage.toLowerCase()
+  if (lower.includes('start') || lower.includes('temp')) return STAGE_BORDER_COLORS[0]
+  if (lower.includes('contract')) return STAGE_BORDER_COLORS[1]
+  if (lower.includes('offer')) return STAGE_BORDER_COLORS[2]
+  if (lower.includes('pending')) return STAGE_BORDER_COLORS[3]
+  if (lower.includes('clos')) return STAGE_BORDER_COLORS[4]
+  if (lower.includes('lost')) return STAGE_BORDER_COLORS[5]
+  // fallback: cycle through palette by index
+  return STAGE_BORDER_COLORS[idx % STAGE_BORDER_COLORS.length]
 }
 
 export default async function CrmDealsPage() {
@@ -108,71 +141,128 @@ export default async function CrmDealsPage() {
         )}
       </div>
 
-      {/* ── Desktop: kanban columns (unchanged) ──────────────────────────── */}
+      {/* ── Desktop: FUB-style Kanban board ──────────────────────────────── */}
       <div className="hidden md:block">
+        {deals.length === 0 ? (
+          <Card className="mt-8 px-6 py-12 text-center text-sm text-muted-foreground">
+            No deals yet.
+          </Card>
+        ) : null}
+
         {pipelines.map((pipe) => {
           const rows = deals.filter((d) => (d.pipeline ?? 'Other') === pipe)
           const stages = [...new Set(rows.map((d) => d.stage ?? 'No stage'))]
+
           return (
             <section key={pipe} className="mt-8">
-              <h2 className="text-lg font-semibold text-foreground">{pipe} <span className="font-normal text-muted-foreground">({rows.length})</span></h2>
-              <div className="mt-3 grid gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
-                {stages.map((stage) => (
-                  <ConsoleSection key={stage} title={stage}>
-                    <div className="space-y-2">
-                      {(() => {
-                        const stageRows = rows.filter((d) => (d.stage ?? 'No stage') === stage)
-                        const STAGE_PREVIEW = 8
-                        const preview = stageRows.slice(0, STAGE_PREVIEW)
-                        const rest = stageRows.slice(STAGE_PREVIEW)
-                        const renderCard = (d: (typeof stageRows)[number]) => {
-                          const label = d.name ?? d.person?.name ?? `Deal #${d.id}`
-                          const inner = (
-                            <div className="flex min-h-10 items-center justify-between gap-2">
-                              <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{label}</span>
-                              <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{money(d.value)}</span>
-                            </div>
-                          )
-                          return d.person_id ? (
-                            <Link
-                              key={d.id}
-                              href={`/admin/crm/${d.person_id}`}
-                              className="block rounded-md border border-border px-3 py-2 transition-colors hover:bg-muted/50"
-                            >
-                              {inner}
-                            </Link>
-                          ) : (
-                            <div key={d.id} className="rounded-md border border-border px-3 py-2">
-                              {inner}
-                            </div>
-                          )
-                        }
-                        return (
-                          <>
-                            {preview.map(renderCard)}
-                            {rest.length > 0 ? (
-                              <details className="group space-y-2">
-                                <summary className="flex min-h-10 cursor-pointer list-none items-center text-xs font-medium text-muted-foreground hover:text-foreground">
-                                  See all {stageRows.length} in {stage}
-                                </summary>
-                                <div className="space-y-2">{rest.map(renderCard)}</div>
-                              </details>
-                            ) : null}
-                          </>
-                        )
-                      })()}
-                    </div>
-                  </ConsoleSection>
-                ))}
+              {/* Pipeline label (only when there are multiple pipelines) */}
+              {pipelines.length > 1 ? (
+                <h2 className="mb-3 text-base font-semibold text-foreground">
+                  {pipe}
+                  <span className="ml-2 font-normal text-muted-foreground">({rows.length})</span>
+                </h2>
+              ) : null}
+
+              {/* Horizontal scroll container — contains the overflow, never leaks to the page */}
+              <div className="overflow-x-auto no-scrollbar pb-4">
+                <div className="flex gap-3" style={{ width: 'max-content' }}>
+                  {stages.map((stage, stageIdx) => {
+                    const stageRows = rows.filter((d) => (d.stage ?? 'No stage') === stage)
+                    const totalValue = stageRows.reduce((s, d) => s + (d.value ?? 0), 0)
+                    const borderColor = stageBorderColor(stage, stageIdx)
+
+                    return (
+                      /* Stage column: fixed width, vertical flex, colored top border */
+                      <Card
+                        key={stage}
+                        className="flex w-72 shrink-0 flex-col"
+                        style={{ borderTopWidth: 3, borderTopColor: borderColor }}
+                      >
+                        {/* Column header */}
+                        <div className="flex items-center justify-between px-3 py-3">
+                          <span className="text-sm font-semibold text-foreground">{stage}</span>
+                          <span className="text-xs tabular-nums text-muted-foreground">
+                            {stageRows.length} {stageRows.length === 1 ? 'deal' : 'deals'}
+                            {totalValue > 0 ? <> · <span className="text-success">{moneySum(totalValue)}</span></> : null}
+                          </span>
+                        </div>
+
+                        {/* Divider */}
+                        <div className="mx-3 border-t border-border" />
+
+                        {/* Deal cards */}
+                        <div className="flex flex-col gap-2 p-2">
+                          {stageRows.length === 0 ? (
+                            <p className="py-4 text-center text-xs text-muted-foreground">No deals</p>
+                          ) : null}
+
+                          {stageRows.map((d) => {
+                            const personName = d.person?.name ?? null
+                            const label = d.name ?? personName ?? `Deal #${d.id}`
+                            // Avatar seed: person name gives a stable color tied to the contact
+                            const avatarSeed = personName ?? label
+                            const avatarBg = crmAvatarColor(avatarSeed)
+
+                            const cardInner = (
+                              <div className="rounded-lg border border-border bg-background px-3 py-2.5 transition-colors hover:bg-muted/40">
+                                {/* Address / deal name */}
+                                <p className="truncate text-sm font-medium text-foreground">{label}</p>
+
+                                {/* Price in success color */}
+                                {d.value ? (
+                                  <p className="mt-0.5 text-sm tabular-nums text-success">{money(d.value)}</p>
+                                ) : null}
+
+                                {/* Close date */}
+                                {d.entered_stage_at ? (
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    {new Date(d.entered_stage_at).toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric',
+                                    })}
+                                  </p>
+                                ) : null}
+
+                                {/* Person avatar at bottom (FUB-style) */}
+                                {personName ? (
+                                  <div className="mt-2 flex items-center gap-1.5">
+                                    {/* color is white-on-colored-bg — same inline pattern as CrmMobileKit avatars */}
+                                    <span
+                                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+                                      style={{ backgroundColor: avatarBg, color: 'rgb(255 255 255)' }}
+                                    >
+                                      {personName
+                                        .trim()
+                                        .split(/\s+/)
+                                        .filter(Boolean)
+                                        .map((p) => p[0].toUpperCase())
+                                        .slice(0, 2)
+                                        .join('')}
+                                    </span>
+                                    <span className="truncate text-xs text-muted-foreground">{personName}</span>
+                                  </div>
+                                ) : null}
+                              </div>
+                            )
+
+                            return d.person_id ? (
+                              <Link key={d.id} href={`/admin/crm/${d.person_id}`} className="block">
+                                {cardInner}
+                              </Link>
+                            ) : (
+                              <div key={d.id}>{cardInner}</div>
+                            )
+                          })}
+                        </div>
+                      </Card>
+                    )
+                  })}
+                </div>
               </div>
             </section>
           )
         })}
-        {deals.length === 0 ? (
-          <ConsoleSection title="Pipeline" className="mt-6">
-            <p className="py-6 text-center text-sm text-muted-foreground">No deals yet.</p>
-          </ConsoleSection>
-        ) : null}
       </div>
     </main>
   )
