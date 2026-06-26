@@ -59,3 +59,100 @@ exporting ONLY async functions. Confirmed: all four action files export async-on
 - 2026-06-25 — Discovered all-ERROR prod deploys + root cause. Verified staged fix makes the 4 action
   files async-only. Kicked off real `next build` + read-only audit (use-server sweep / commit plan /
   surface completeness). Added safe dev commands to `.claude/settings.local.json` allowlist.
+- 2026-06-25 — **Build fix shipped** (`adb6a22d` → first GREEN production deploy in the whole history;
+  rebased remote tip also READY). All CRM routes compile. The "95-file use-server sweep" was a FALSE
+  POSITIVE (Next tolerates `export const`/`export type`/sync re-exports in most `'use server'` files —
+  proven by green files that ship them); only the 4 specific CRM modules were real breakers.
+
+## Bugs found + fixed walking the live deploy (none caught by `next build` — all runtime)
+
+1. **Settings hub badges read 0** (`c8919683`) — `getCrmStages/Tags/NewsletterSegments/ReportAreas`
+   read via the anon client; those 4 config tables have RLS on + no anon SELECT policy → PostgREST
+   returns `[]` (no error) → readers fail-soft to empty. Tables actually hold 16/10/4/20 rows. Also
+   zeroed the tag-manager "In use" counts + made record-card pickers fall back to constants. Fix:
+   service client (matches the 3 admin readers that already work; `brokers` was the control — same
+   anon reader, correct count, because it has an anon policy). Subscribers `0` is a truthful empty state.
+2. **`/admin/crm/tasks` hard-crashed** (`fd57c336`) — server page passed `formatDateTime` as a
+   `formatDue` function prop to the client `TaskQueue` → "Functions cannot be passed directly to Client
+   Components". Fix: import the pure formatter inside the client component, drop the prop.
+3. **`/admin/crm/settings` logged a reader error every load** (`fd57c336`) — `getMarketReportSubscribers`
+   used a PostgREST embed (`crm_people!inner`) for a relationship not in the schema cache. Fix: explicit
+   two-query join (subscriptions → people by id), cache-relationship-independent.
+
+## Flagged, NOT auto-fixed (out of this walkthrough's scope / risk-gated)
+
+- **`seller-workflow-pause` cron errors 198×/24h** — `FOLLOWUPBOSS_API_KEY missing` (FUB decommissioned).
+  CRM seller-workflow automation, TCPA/consent-adjacent → surfaced for Matt, not autonomously rewired.
+- Pre-existing public-site noise (not CRM, not this walkthrough): search/listing Supabase `57014`
+  timeouts + stale-MV degradations, `getListingVideos` fetch failures, producer-runtime SKILL/
+  `requires_billing_action`, `refresh-market-stats` bend-undesignated, OG-image edge cases.
+
+## Surfaces verified on the live current deploy
+
+- `/admin/crm` — list (18,205), smart-list saved views (24), stage+broker filters, selection→bulk bar. ✓
+- `/admin/crm/settings` hub + `/stages` (16, CRUD) + `/tags` (10, CRUD, merge, locked compliance). ✓
+  (hub badges fixed pending the `c8919683` deploy)
+- record card `/admin/console/leads/[id]` (redirect from `/admin/crm/[id]`) — stage/assign/email,
+  compliance banner (do-not-call), workflows, custom-field registry (typed, grouped), timeline. ✓
+- `/admin/crm/inbox` — triage (Inbox/Assigned/Sent), real conversations. ✓
+- `/admin/reports/emails` — honest-rate KPIs (dash not false-zero), filters, CSV, empty-state. ✓
+- `/admin/crm/tasks` — fixed (pending `fd57c336` deploy), re-verify after.
+
+## Round 2 — runtime crashes found walking the deployed current code
+
+The build fix got the CRM live; walking the LIVE current code then surfaced runtime bugs that no build catches:
+
+4. **`/admin/crm/tasks` hard-crashed** (`fd57c336`) — server page passed `formatDateTime` as a `formatDue`
+   FUNCTION prop into the client `TaskQueue` → "Functions cannot be passed directly to Client Components."
+   Fix: import the formatter inside the client component, drop the prop.
+5. **`/admin/crm/inbox` conversation crashed** (`05eec39c`) — identical class: `formatTs={formatDateTime}`
+   into the client `InboxQueue`. Fix: same. Swept the whole CRM admin — these two `format*` props were the
+   ONLY server→client sync-function props; every other function prop is a client-internal callback or an
+   async server action. Probed workflows/deals/sequences/approvals live → all clean.
+6. **`/admin/crm/settings` subscribers reader threw every load** (`fd57c336`) — `getMarketReportSubscribers`
+   used a PostgREST embed (`crm_people!inner`) for a relationship absent from the schema cache. Fix: explicit
+   two-query join.
+
+## Final verification on the live deploy (all green)
+
+- Settings hub badges now correct: stages 16, tags 10, segments 4, areas 20 (were all 0). Tag "In use"
+  counts + the record-card market-report AREAS picker (20 areas) populate (same reader fix).
+- `/admin/crm/tasks` renders; Overdue shows 148 real tasks with formatted due dates + Done/Snooze/Edit/Delete.
+- `/admin/crm/inbox` list + conversation thread render; triage actions (Mark handled/Close/Unread) + inline
+  reply on the suppression-checked path.
+- **Guarded send — full end-to-end (throwaway contact `ZZ CRM Test DELETE-ME`, person 52267, `matt+crmtest@`):**
+  - New-contact flow created it (dedup held; one row; Lead + source:Manual entry + matt).
+  - ALLOWED send → `crm_timeline` `email_out` (signature appended) + `email_open` (delivered + open tracked).
+  - Suppressed via the Add-suppression admin (writes a `system` audit row) → record card shows the block banner.
+  - BLOCKED send → URL `error=Email not sent — Blocked by suppression (all:walkthrough test do-not-email)`;
+    NO new `email_out` written. The chokepoint is bulletproof.
+
+## Root cause of the silent-deploy-break (and why every gate was green)
+
+- `next build` in Next 16 defaults to **Turbopack**; CI's `npm run build` runs on push to main and DOES build
+  with Turbopack — so CI would go red on a use-server build break. But pushes go **straight to main** (no PR
+  merge gate), the **pre-push hook only runs tsc** (G46, not a build), and a **red CI / red Vercel deploy on a
+  direct push went unnoticed** while the last good deploy kept serving. Net: build-breaking code reached main
+  and silently never deployed for the entire wave series.
+- The Round-2 crashes are a SECOND class: **runtime** RSC errors (function-prop serialization) that NO build
+  catches — they only 500 at request time, and no test rendered those admin routes.
+
+## Hardening shipped + recommended
+
+- **SHIPPED — `ci:rsc-fn-props` gate** (`scripts/check-rsc-fn-props.mjs`, wired into `ci:gates`): fails if a
+  server component passes a `format*` function as a JSX prop (the exact tasks/inbox crash class). Baseline 0;
+  verified it catches a reintroduction and passes clean. Catches the runtime class no build can.
+- **RECOMMENDED (need Matt's call — workflow friction tradeoff):**
+  1. Add a Turbopack `next build` to the **pre-push** hook (or a required CI status check on main) so a
+     build-breaking commit cannot reach main + silently fail to deploy. This is the single change that would
+     have prevented the whole incident.
+  2. **Deploy-failure alerting** — a check that surfaces when the latest production Vercel deploy is `ERROR`
+     (the failure mode here was "nobody noticed prod stopped updating").
+  3. **Admin-route runtime smoke** — render the key `/admin/crm/*` routes in CI/e2e to catch the RSC runtime
+     class beyond just `format*` props.
+
+## Cleanup / loose ends
+
+- Throwaway test contact `ZZ CRM Test DELETE-ME` (person 52267, `matt+crmtest@ryan-realty.com`) + its
+  suppression remain in prod — clearly labelled, safe to delete; left for Matt (deletes are gated).
+- `seller-workflow-pause` cron still errors on the missing FUB key — flagged, not auto-rewired (TCPA-adjacent).
