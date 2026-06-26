@@ -146,3 +146,26 @@ export async function removeDealFile(
     return { ok: false, error: String(e) }
   }
 }
+
+// ── createCrmDeal ─────────────────────────────────────────────────────────────
+
+export async function createCrmDeal(
+  input: { name: string },
+): Promise<{ ok: true; id: number } | { ok: false; error: string }> {
+  try {
+    await requireAccess()
+    const name = (input.name ?? '').trim()
+    if (!name) return { ok: false, error: 'Deal name is required' }
+    const sb = createServiceClient()
+    const { data, error } = await sb
+      .from('crm_deals')
+      .insert({ name, status: 'active', created_at: new Date().toISOString() })
+      .select('id')
+      .single()
+    if (error) return { ok: false, error: error.message }
+    revalidatePath('/admin/crm/deals')
+    return { ok: true, id: data.id as number }
+  } catch (e) {
+    return { ok: false, error: String(e) }
+  }
+}
