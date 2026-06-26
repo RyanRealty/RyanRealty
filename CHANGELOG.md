@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.626.5 (2026-06-26)
+
+### Bug Fixes
+- fix(crm): config readers used anon client (RLS-blocked) -> silent empty config
+
+---
+
+
 ## v1.626.4 (2026-06-26)
 
 ### Bug Fixes
