@@ -80,6 +80,8 @@ export type BulkActionsProps = {
   selectedIds: number[]
   /** Clear the parent's selection (called after a successful enqueue). */
   onClear: () => void
+  /** Extra classes on the fixed bar root — e.g. lift above the mobile tab bar. */
+  barClassName?: string
   /** The active list filter, so "select all matching" can carry it to the server. */
   activeFilters: LegacyFilters
   /**
@@ -151,7 +153,7 @@ const NEWSLETTER_SEGMENTS: BulkPickerOption[] = [
 
 export default function BulkActions(props: BulkActionsProps) {
   const {
-    selectedIds, onClear, activeFilters, activeViewId, matchingTotal, canAssignBroker,
+    selectedIds, onClear, barClassName, activeFilters, activeViewId, matchingTotal, canAssignBroker,
     brokers, stages, tags, reportAreas, emailTemplates, sequences,
   } = props
 
@@ -369,7 +371,7 @@ export default function BulkActions(props: BulkActionsProps) {
   const isLegacy = open === 'newsletter' || open === 'saved_search'
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/80 sm:px-6">
+    <div className={`fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/80 sm:px-6 ${barClassName ?? ''}`}>
       <div className="mx-auto max-w-screen-2xl">
         <div className="flex flex-wrap items-center gap-2">
           {/* Scope toggle — explicit checkbox set vs "all matching this filter" */}

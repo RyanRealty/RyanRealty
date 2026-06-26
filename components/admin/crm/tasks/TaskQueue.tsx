@@ -7,10 +7,15 @@
  * (complete, snooze, edit, reassign, delete). Every mutation calls the pre-bound
  * server actions passed in; the component holds only selection + edit-dialog UI
  * state.
+ *
+ * Mobile (< md): FUB calendar/agenda layout — CrmSegmented view tabs + grouped
+ * agenda with CrmSectionLabel date headers, CrmList, CrmListRow, and an inline
+ * Done button in the trailing slot. Shared CrmMobileKit; zero desktop changes.
  */
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { CheckCircle2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -35,6 +40,12 @@ import { cn } from '@/lib/utils'
 import { formatDateTime } from '@/lib/format/date'
 import { CRM_BROKERS, CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
 import type { TaskQueueRow, TaskQueueView, CrmTaskType } from '@/lib/data/crm/getTaskQueue'
+import {
+  CrmList,
+  CrmListRow,
+  CrmSegmented,
+  CrmSectionLabel,
+} from '@/components/admin/crm/mobile/CrmMobileKit'
 
 type TaskActionResult = { ok: boolean; error?: string }
 
@@ -51,6 +62,79 @@ function brokerLabel(slug: string | null): string {
   if (!slug) return 'Unassigned'
   return CRM_BROKER_DISPLAY[slug as CrmBrokerSlug] ?? slug
 }
+
+/* ── Mobile agenda helpers ──────────────────────────────────────────────────
+ * Groups a flat list of tasks into [{label, tasks}] buckets keyed by calendar
+ * day. Uses the same TZ the brand uses (America/Los_Angeles) so the day break
+ * matches what a broker in Central Oregon would expect.
+ */
+
+const TZ = 'America/Los_Angeles'
+
+/** e.g. "MONDAY, JUNE 22ND" — FUB-style section header */
+function agendaDateLabel(iso: string | null): string {
+  if (!iso) return 'NO DATE'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return 'NO DATE'
+  const day = new Intl.DateTimeFormat('en-US', {
+    timeZone: TZ, weekday: 'long',
+  }).format(d).toUpperCase()
+  const month = new Intl.DateTimeFormat('en-US', {
+    timeZone: TZ, month: 'long',
+  }).format(d).toUpperCase()
+  const date = new Intl.DateTimeFormat('en-US', {
+    timeZone: TZ, day: 'numeric',
+  }).format(d)
+  // ordinal suffix
+  const n = parseInt(date, 10)
+  const suffix = n === 1 || n === 21 || n === 31 ? 'ST' : n === 2 || n === 22 ? 'ND' : n === 3 || n === 23 ? 'RD' : 'TH'
+  return `${day}, ${month} ${date}${suffix}`
+}
+
+/** "9:30 AM" from an ISO string — shown as the right-side meta on each row. */
+function agendaTimeLabel(iso: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: TZ, hour: 'numeric', minute: '2-digit',
+  }).format(d)
+}
+
+/** YYYY-MM-DD in TZ — the bucket key for grouping. */
+function dayKey(iso: string | null): string {
+  if (!iso) return 'nodate'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return 'nodate'
+  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(d) // yields YYYY-MM-DD
+}
+
+type AgendaGroup = { key: string; label: string; tasks: TaskQueueRow[] }
+
+function groupByDay(rows: TaskQueueRow[], completed: boolean): AgendaGroup[] {
+  const map = new Map<string, AgendaGroup>()
+  for (const t of rows) {
+    const iso = completed ? t.completedAt : t.dueAt
+    const k = dayKey(iso)
+    if (!map.has(k)) {
+      map.set(k, { key: k, label: k === 'nodate' ? 'NO DATE' : agendaDateLabel(iso), tasks: [] })
+    }
+    map.get(k)!.tasks.push(t)
+  }
+  // Sort groups: nodate last, otherwise ascending by day key (YYYY-MM-DD sorts lexicographically)
+  return [...map.values()].sort((a, b) => {
+    if (a.key === 'nodate') return 1
+    if (b.key === 'nodate') return -1
+    return a.key < b.key ? -1 : a.key > b.key ? 1 : 0
+  })
+}
+
+const MOBILE_VIEWS: { value: TaskQueueView; label: string }[] = [
+  { value: 'today', label: 'Today' },
+  { value: 'overdue', label: 'Overdue' },
+  { value: 'upcoming', label: 'Upcoming' },
+  { value: 'completed', label: 'Done' },
+]
 
 export default function TaskQueue({
   rows,
@@ -95,114 +179,215 @@ export default function TaskQueue({
     })
   }
 
+  // ── Mobile: grouped agenda ───────────────────────────────────────────────
+  const agendaGroups = groupByDay(rows, isCompletedView)
+
+  // Stable complete handler for mobile rows (avoids closures inside map)
+  const mobileComplete = useCallback(
+    (t: TaskQueueRow, e: React.MouseEvent) => {
+      e.preventDefault() // don't navigate the row's href
+      e.stopPropagation()
+      run(() => actions.complete(t.id, t.personId))
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pending],
+  )
+
+  const mobileEmpty = (
+    <p className="py-12 text-center text-sm text-muted-foreground">
+      Nothing in this view.
+    </p>
+  )
+
+  // ── Common empty state (desktop) ─────────────────────────────────────────
   if (rows.length === 0) {
     return (
-      <p className="py-10 text-center text-sm text-muted-foreground">
-        Nothing in this view. New tasks land here the moment a lead acts or a follow-up comes due.
-      </p>
+      <>
+        {/* Mobile: show segmented + empty state so tabs still work */}
+        <div className="md:hidden">
+          <CrmSegmented
+            options={MOBILE_VIEWS}
+            value={view}
+            onChange={(v) => router.push(`/admin/crm/tasks?view=${v}`)}
+            className="-mx-3 mb-0"
+          />
+          {mobileEmpty}
+        </div>
+        {/* Desktop */}
+        <p className="hidden py-10 text-center text-sm text-muted-foreground md:block">
+          Nothing in this view. New tasks land here the moment a lead acts or a follow-up comes due.
+        </p>
+      </>
     )
   }
 
   return (
     <div className="space-y-3">
-      {!isCompletedView && selected.size > 0 ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-muted/40 p-2">
-          <span className="px-1 text-sm font-medium tabular-nums text-foreground">{selected.size} selected</span>
-          <Button type="button" size="sm" disabled={pending} onClick={() => run(() => actions.bulkComplete([...selected]))}>
-            Complete selected
-          </Button>
-          <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={() => setSelected(new Set())}>
-            Clear
-          </Button>
-        </div>
-      ) : null}
+      {/* ── MOBILE AGENDA (< md) ─────────────────────────────────────────── */}
+      <div className="md:hidden">
+        {/* Segmented view tabs — drives URL so the server re-fetches */}
+        <CrmSegmented
+          options={MOBILE_VIEWS}
+          value={view}
+          onChange={(v) => router.push(`/admin/crm/tasks?view=${v}`)}
+          className="-mx-3 mb-0"
+        />
 
-      {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
+        {error ? (
+          <p className="mt-3 text-sm font-medium text-destructive">{error}</p>
+        ) : null}
 
-      <div className="space-y-2">
-        {rows.map((t) => (
-          <Card key={t.id}>
-            <CardContent className="flex items-start gap-3 p-3 sm:p-4">
-              {!isCompletedView ? (
-                <div className="pt-0.5">
-                  <Checkbox
-                    checked={selected.has(t.id)}
-                    onCheckedChange={() => toggle(t.id)}
-                    aria-label={`Select ${t.name}`}
-                  />
-                </div>
-              ) : null}
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium text-foreground">{t.name}</div>
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                  {t.personName && t.personId ? (
-                    <a href={`/admin/crm/${t.personId}`} className="font-medium text-primary hover:underline">
-                      {t.personName}
-                    </a>
-                  ) : (
-                    <span>No contact</span>
-                  )}
-                  <span className="tabular-nums">
-                    {isCompletedView ? `Done ${formatDateTime(t.completedAt)}` : formatDateTime(t.dueAt)}
-                  </span>
-                  {t.type ? (
-                    <Badge variant="outline" className="text-xs">
-                      {t.type}
-                    </Badge>
-                  ) : null}
-                  <span>{brokerLabel(t.assignedBroker)}</span>
-                </div>
+        {agendaGroups.length === 0 ? mobileEmpty : (
+          <div className="-mx-3 mt-0 border-t border-border">
+            {agendaGroups.map((group) => (
+              <div key={group.key}>
+                <CrmSectionLabel>{group.label}</CrmSectionLabel>
+                <CrmList>
+                  {group.tasks.map((t) => {
+                    const personName = t.personName ?? 'No contact'
+                    const timeStr = isCompletedView
+                      ? agendaTimeLabel(t.completedAt)
+                      : agendaTimeLabel(t.dueAt)
+                    const subtitle = t.type
+                      ? `${personName} · ${t.type}`
+                      : personName
+
+                    const trailing = isCompletedView ? (
+                      <CheckCircle2 className="h-5 w-5 text-muted-foreground/40" aria-label="Completed" />
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Complete ${t.name}`}
+                        disabled={pending}
+                        onClick={(e) => mobileComplete(t, e)}
+                        className="h-9 w-9 shrink-0 rounded-full"
+                      >
+                        <CheckCircle2 className="h-6 w-6 text-muted-foreground/50" />
+                      </Button>
+                    )
+
+                    return (
+                      <CrmListRow
+                        key={t.id}
+                        href={t.personId ? `/admin/crm/${t.personId}` : undefined}
+                        name={personName}
+                        title={t.name}
+                        subtitle={subtitle}
+                        meta={timeStr || undefined}
+                        trailing={trailing}
+                      />
+                    )
+                  })}
+                </CrmList>
               </div>
-              {!isCompletedView ? (
-                <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-9 px-3 sm:h-8"
-                    disabled={pending}
-                    onClick={() => run(() => actions.complete(t.id, t.personId))}
-                  >
-                    Done
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-9 px-2.5 sm:h-8"
-                    disabled={pending}
-                    onClick={() => run(() => actions.snooze(t.id, 1))}
-                  >
-                    Snooze
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-9 px-2.5 sm:h-8"
-                    disabled={pending}
-                    onClick={() => setEditTask(t)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-9 px-2.5 text-destructive sm:h-8"
-                    disabled={pending}
-                    onClick={() => run(() => actions.remove(t.id))}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-        ))}
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Edit dialog */}
+      {/* ── DESKTOP CARD LIST (≥ md) ─────────────────────────────────────── */}
+      <div className="hidden md:block">
+        {!isCompletedView && selected.size > 0 ? (
+          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-muted/40 p-2">
+            <span className="px-1 text-sm font-medium tabular-nums text-foreground">{selected.size} selected</span>
+            <Button type="button" size="sm" disabled={pending} onClick={() => run(() => actions.bulkComplete([...selected]))}>
+              Complete selected
+            </Button>
+            <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={() => setSelected(new Set())}>
+              Clear
+            </Button>
+          </div>
+        ) : null}
+
+        {error ? <p className="mb-2 text-sm font-medium text-destructive">{error}</p> : null}
+
+        <div className="space-y-2">
+          {rows.map((t) => (
+            <Card key={t.id}>
+              <CardContent className="flex items-start gap-3 p-3 sm:p-4">
+                {!isCompletedView ? (
+                  <div className="pt-0.5">
+                    <Checkbox
+                      checked={selected.has(t.id)}
+                      onCheckedChange={() => toggle(t.id)}
+                      aria-label={`Select ${t.name}`}
+                    />
+                  </div>
+                ) : null}
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium text-foreground">{t.name}</div>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                    {t.personName && t.personId ? (
+                      <a href={`/admin/crm/${t.personId}`} className="font-medium text-primary hover:underline">
+                        {t.personName}
+                      </a>
+                    ) : (
+                      <span>No contact</span>
+                    )}
+                    <span className="tabular-nums">
+                      {isCompletedView ? `Done ${formatDateTime(t.completedAt)}` : formatDateTime(t.dueAt)}
+                    </span>
+                    {t.type ? (
+                      <Badge variant="outline" className="text-xs">
+                        {t.type}
+                      </Badge>
+                    ) : null}
+                    <span>{brokerLabel(t.assignedBroker)}</span>
+                  </div>
+                </div>
+                {!isCompletedView ? (
+                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-9 px-3 sm:h-8"
+                      disabled={pending}
+                      onClick={() => run(() => actions.complete(t.id, t.personId))}
+                    >
+                      Done
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-9 px-2.5 sm:h-8"
+                      disabled={pending}
+                      onClick={() => run(() => actions.snooze(t.id, 1))}
+                    >
+                      Snooze
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-9 px-2.5 sm:h-8"
+                      disabled={pending}
+                      onClick={() => setEditTask(t)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-9 px-2.5 text-destructive sm:h-8"
+                      disabled={pending}
+                      onClick={() => run(() => actions.remove(t.id))}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Edit dialog — shared between mobile and desktop */}
       <Dialog open={editTask !== null} onOpenChange={(o) => !o && setEditTask(null)}>
         <DialogContent>
           {editTask ? (

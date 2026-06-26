@@ -11,6 +11,9 @@
  * Presentation + selection only. Rows are pre-shaped on the server. Clicking a
  * row navigates (via the parent Link) to the same page with ?c=<personId> so the
  * server renders the thread pane.
+ *
+ * Mobile (< md): FUB-style avatar list via CrmMobileKit.
+ * Desktop (≥ md): existing Card rows unchanged.
  */
 
 import { useState, useTransition } from 'react'
@@ -24,6 +27,7 @@ import { cn } from '@/lib/utils'
 import { formatDateTime } from '@/lib/format/date'
 import { CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
 import type { InboxConversation, ConversationStatus, InboxScope } from '@/lib/data/crm/getInboxQueue'
+import { CrmList, CrmListRow } from '@/components/admin/crm/mobile/CrmMobileKit'
 
 type ActionResult = { ok: true } | { ok: false; error: string }
 
@@ -95,71 +99,130 @@ export default function InboxQueue({
     )
   }
 
+  /* ── Shared bulk bar (shown in both mobile and desktop when items selected) ── */
+  const bulkBar = selected.size > 0 ? (
+    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-muted/40 p-2">
+      <span className="px-1 text-sm font-medium text-foreground tabular-nums">{selected.size} selected</span>
+      <Button type="button" size="sm" variant="outline" disabled={pending} onClick={() => runBulk('handled')}>
+        Mark handled
+      </Button>
+      <Button type="button" size="sm" variant="outline" disabled={pending} onClick={() => runBulk('closed')}>
+        Close
+      </Button>
+      <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={() => runBulk('open')}>
+        Reopen
+      </Button>
+      <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={clearSelection}>
+        Clear
+      </Button>
+    </div>
+  ) : null
+
+  const errorBanner = error ? <p className="text-sm font-medium text-destructive">{error}</p> : null
+
   return (
     <div className="space-y-3">
-      {selected.size > 0 ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-muted/40 p-2">
-          <span className="px-1 text-sm font-medium text-foreground tabular-nums">{selected.size} selected</span>
-          <Button type="button" size="sm" variant="outline" disabled={pending} onClick={() => runBulk('handled')}>
-            Mark handled
-          </Button>
-          <Button type="button" size="sm" variant="outline" disabled={pending} onClick={() => runBulk('closed')}>
-            Close
-          </Button>
-          <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={() => runBulk('open')}>
-            Reopen
-          </Button>
-          <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={clearSelection}>
-            Clear
-          </Button>
-        </div>
-      ) : null}
+      {bulkBar}
+      {errorBanner}
 
-      {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
+      {/* ── Mobile list (< md) — FUB-style avatar rows ──────────────────── */}
+      <div className="md:hidden">
+        <CrmList className="-mx-4 border-y border-border bg-card">
+          {conversations.map((c) => {
+            const name = c.name ?? `Contact #${c.personId}`
+            const isActive = c.personId === activePersonId
+            const isUnread = c.status === 'unread'
+            const preview = (c.lastDirection === 'out' ? 'You: ' : '') + (c.snippet ?? 'No message body')
 
-      <div className="space-y-2">
-        {conversations.map((c) => {
-          const isActive = c.personId === activePersonId
-          const isSelected = selected.has(c.personId)
-          return (
-            <Card
-              key={c.personId}
-              className={cn('transition-shadow hover:shadow-md', isActive && 'ring-2 ring-ring')}
-            >
-              <CardContent className="flex items-start gap-3 p-3 sm:p-4">
-                <div className="pt-0.5">
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={() => toggle(c.personId)}
-                    aria-label={`Select ${c.name ?? 'contact'}`}
-                  />
+            /* Right column: timestamp + unread dot */
+            const trailing = (
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <span className="text-xs text-muted-foreground tabular-nums">{formatDateTime(c.lastMessageAt)}</span>
+                <div className="flex items-center gap-1">
+                  {isUnread ? (
+                    <span
+                      className="block h-2 w-2 rounded-full"
+                      style={{ backgroundColor: 'hsl(var(--primary))' }}
+                      aria-label="Unread"
+                    />
+                  ) : null}
+                  {c.needsReply ? (
+                    <span
+                      className="block h-2 w-2 rounded-full"
+                      style={{ backgroundColor: 'hsl(var(--warning))' }}
+                      aria-label="Needs reply"
+                    />
+                  ) : null}
                 </div>
-                <Link href={`/admin/crm/inbox?scope=${scope}&c=${c.personId}`} className="min-w-0 flex-1 text-left">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="truncate text-sm font-semibold text-foreground">
-                      {c.name ?? `Contact #${c.personId}`}
-                    </span>
-                    <Badge className={cn('shrink-0', STATUS_TONE[c.status])}>{STATUS_LABEL[c.status]}</Badge>
-                    {c.needsReply ? (
-                      <Badge variant="outline" className="shrink-0 border-warning text-warning">
-                        Needs reply
-                      </Badge>
-                    ) : null}
+              </div>
+            )
+
+            return (
+              <div
+                key={c.personId}
+                className={cn(isActive && 'bg-accent/40')}
+              >
+                <CrmListRow
+                  href={`/admin/crm/inbox?scope=${scope}&c=${c.personId}`}
+                  name={name}
+                  title={
+                    <span className={cn(isUnread && 'font-bold')}>{name}</span>
+                  }
+                  subtitle={preview}
+                  trailing={trailing}
+                />
+              </div>
+            )
+          })}
+        </CrmList>
+      </div>
+
+      {/* ── Desktop card list (≥ md) — unchanged ────────────────────────── */}
+      <div className="hidden md:block">
+        <div className="space-y-2">
+          {conversations.map((c) => {
+            const isActive = c.personId === activePersonId
+            const isSelected = selected.has(c.personId)
+            return (
+              <Card
+                key={c.personId}
+                className={cn('transition-shadow hover:shadow-md', isActive && 'ring-2 ring-ring')}
+              >
+                <CardContent className="flex items-start gap-3 p-3 sm:p-4">
+                  <div className="pt-0.5">
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggle(c.personId)}
+                      aria-label={`Select ${c.name ?? 'contact'}`}
+                    />
                   </div>
-                  <div className="mt-1 truncate text-sm text-muted-foreground">
-                    {c.lastDirection === 'out' ? 'You: ' : ''}
-                    {c.snippet ?? 'No message body'}
-                  </div>
-                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                    {c.lastKindLabel ? <span>{c.lastKindLabel}</span> : null}
-                    <span className="tabular-nums">{formatDateTime(c.lastMessageAt)}</span>
-                    <span>{brokerLabel(c.assignedBroker)}</span>
-                  </div>
-                </Link>
-              </CardContent>
-            </Card>
-          )
-        })}
+                  <Link href={`/admin/crm/inbox?scope=${scope}&c=${c.personId}`} className="min-w-0 flex-1 text-left">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="truncate text-sm font-semibold text-foreground">
+                        {c.name ?? `Contact #${c.personId}`}
+                      </span>
+                      <Badge className={cn('shrink-0', STATUS_TONE[c.status])}>{STATUS_LABEL[c.status]}</Badge>
+                      {c.needsReply ? (
+                        <Badge variant="outline" className="shrink-0 border-warning text-warning">
+                          Needs reply
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <div className="mt-1 truncate text-sm text-muted-foreground">
+                      {c.lastDirection === 'out' ? 'You: ' : ''}
+                      {c.snippet ?? 'No message body'}
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                      {c.lastKindLabel ? <span>{c.lastKindLabel}</span> : null}
+                      <span className="tabular-nums">{formatDateTime(c.lastMessageAt)}</span>
+                      <span>{brokerLabel(c.assignedBroker)}</span>
+                    </div>
+                  </Link>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

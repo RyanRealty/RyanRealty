@@ -20,6 +20,7 @@ import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import ConsoleCommandPalette from '@/components/console/ConsoleCommandPalette'
 import ConsoleQuickAction from '@/components/console/ConsoleQuickAction'
+import CrmMobileTabBar from '@/components/console/CrmMobileTabBar'
 
 function MenuIcon() {
   return (
@@ -42,11 +43,13 @@ export default function ConsoleShell({
   user,
   brokerLabel,
   navSections,
+  inboxUnread = 0,
   children,
 }: {
   user: { email: string; fullName: string | null; avatarUrl: string | null }
   brokerLabel: string
   navSections: AdminNavSection[]
+  inboxUnread?: number
   children: React.ReactNode
 }) {
   const [open, setOpen] = useState(false)
@@ -109,11 +112,15 @@ export default function ConsoleShell({
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 sm:py-7">{children}</main>
+        <main className="min-w-0 flex-1 px-4 pt-5 pb-24 sm:px-6 sm:pt-7 lg:pb-7">{children}</main>
       </div>
 
-      {/* Global "+" quick-action FAB — rides every console surface, context-aware on a lead */}
+      {/* Global "+" quick-action FAB — rides every console surface, context-aware on a lead.
+          Lifted above the mobile tab bar on phones. */}
       <ConsoleQuickAction />
+
+      {/* FUB-style bottom tab bar — phones only (desktop rail covers nav at lg+) */}
+      <CrmMobileTabBar inboxUnread={inboxUnread} />
 
       {/* Mobile sheet */}
       <Sheet open={open} onOpenChange={setOpen}>

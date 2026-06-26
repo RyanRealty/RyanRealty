@@ -9,6 +9,11 @@
 # @/components/ui design-system components or use Tailwind tokens. Inline brand
 # hex + a system font are the only option for a self-contained HTML document.
 app/api/email/unsubscribe/route.ts
+# CRM mobile kit (FUB-parity primitives, 2026-06-26): the Follow Up Boss look
+# needs 12 distinct colorful avatar fills + colored chat/call/email action circles
+# with white glyphs, plus custom pill/circle button primitives — none expressible
+# in the 2-color brand token system. Same class of exception as the charts below.
+components/admin/crm/mobile/CrmMobileKit.tsx
 components/tools/RentalCalculator.tsx
 components/tools/EquityProjectionChart.client.tsx
 app/actions/generate-market-report.ts

@@ -60,6 +60,36 @@ FUB shows a flat list, we show who's hot right now.
 4. **People: All Lists / Stages** with live counts.
 5. Filters bottom-sheet, calendar, empty states.
 
+## Shipped (2026-06-26) — the missing app shell
+
+Matt resent ~19 FUB screens ("Ui 1"/"Ui 2") and flagged mobile as still clunky.
+Root cause: the 2026-06-16 pass shipped the tabbed detail + FAB + segments but
+**never a bottom tab bar**, so navigation lived in a horizontal-scroll strip +
+hamburger. Fixed:
+
+- ✅ **Bottom tab bar** — `CrmMobileTabBar` in `ConsoleShell` (phone-only,
+  `lg:hidden`): Home · Inbox · People · Deals · Tasks, longest-prefix active
+  match (lead detail + /admin/people light the People tab). The "+" FAB lifts to
+  `bottom-20` above it. Shell gate (`check-admin-mobile-shell`) still holds — the
+  rail + Sheet + AdminNavList are untouched.
+- ✅ **Shared FUB mobile kit** — `components/admin/crm/mobile/CrmMobileKit.tsx`:
+  `CrmAvatar` (12 deterministic colorful fills), `CrmList`/`CrmListRow`,
+  `CrmSegmented`, `CrmSectionLabel`, `CrmDetailRow`, `CrmActionCircle`. One place
+  for the FUB look so screens can't drift. Token-pure except the brand-external
+  avatar/action colors (tracked in `.design-token-lint-ignore`).
+- ✅ **People list** — FUB rows (avatar · name · source · date · chevron),
+  tap-to-open; bulk-select is now an opt-in "Select" mode (the always-on
+  checkboxes are gone), action bar lifts above the tab bar.
+- ✅ **Deals** — desktop kanban → vertical stage groups on a phone
+  (`CrmSectionLabel` per stage), each deal a `CrmListRow` with the price meta.
+- ✅ **Tasks** — FUB agenda: `CrmSegmented` view switch + date-grouped
+  `CrmList`, one-tap complete in the row trailing.
+- ✅ **Inbox** — mobile conversation list rebuilt on `CrmListRow`; underline
+  scope sub-tabs; thread goes full-width on a phone.
+
+All verified at 390px via `verify-admin-mobile.mjs` (zero overflow, no errors);
+`admin-responsive` baseline held at 0, `design-tokens` back at baseline.
+
 ## Shipped (2026-06-16)
 
 - ✅ **#1 Tabbed mobile lead detail** — `LeadTabs` (Overview · Comms · Tasks ·

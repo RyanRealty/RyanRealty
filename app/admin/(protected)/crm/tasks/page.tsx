@@ -112,8 +112,8 @@ export default async function CrmTasksPage({
         <NewTaskDialog taskTypes={taskTypes} createAction={createTask} />
       </div>
 
-      {/* View tabs */}
-      <div className="-mx-3 flex gap-2 overflow-x-auto no-scrollbar px-3 sm:mx-0 sm:flex-wrap sm:px-0">
+      {/* View tabs — desktop only; mobile uses CrmSegmented inside TaskQueue */}
+      <div className="-mx-3 hidden gap-2 overflow-x-auto no-scrollbar px-3 md:flex md:mx-0 md:flex-wrap md:px-0">
         {VIEWS.map((v) => {
           const active = view === v.key
           const count = counts[v.key]
@@ -134,9 +134,9 @@ export default async function CrmTasksPage({
         })}
       </div>
 
-      {/* Type filter */}
+      {/* Type filter — desktop only on mobile to keep phone UI clean */}
       {taskTypes.length > 0 ? (
-        <div className="-mx-3 mt-3 flex gap-2 overflow-x-auto no-scrollbar px-3 sm:mx-0 sm:flex-wrap sm:px-0">
+        <div className="-mx-3 mt-3 hidden gap-2 overflow-x-auto no-scrollbar px-3 md:flex md:mx-0 md:flex-wrap md:px-0">
           <Button
             asChild
             size="sm"

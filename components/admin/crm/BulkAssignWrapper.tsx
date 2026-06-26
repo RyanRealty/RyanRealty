@@ -16,10 +16,10 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { CrmList, CrmListRow } from '@/components/admin/crm/mobile/CrmMobileKit'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
@@ -72,6 +72,9 @@ export default function BulkAssignWrapper({
   brokers, stages, tags, reportAreas, emailTemplates, sequences,
 }: BulkAssignWrapperProps) {
   const [selected, setSelected] = useState<Set<number>>(new Set())
+  // FUB-style: the phone list is tap-to-open by default; bulk selection is a
+  // mode you opt into (keeps the clutter — and the bulk bar — off the daily view).
+  const [selectMode, setSelectMode] = useState(false)
 
   const toggle = (id: number) => {
     setSelected((prev) => {
@@ -99,61 +102,70 @@ export default function BulkAssignWrapper({
 
   return (
     <>
-      {/* People cards — phones (one thumb-tap per contact) */}
-      <div className="mt-4 space-y-2 pb-24 md:hidden">
-        {rows.length === 0 ? (
-          <Card>
-            <CardContent className="py-10 text-center text-sm text-muted-foreground">No contacts match this filter.</CardContent>
-          </Card>
-        ) : (
-          <>
-            <Label className="flex items-center gap-2 px-1 text-xs font-normal text-muted-foreground">
-              <Checkbox
-                checked={allOnPageSelected ? true : someOnPageSelected ? 'indeterminate' : false}
-                onCheckedChange={toggleAllOnPage}
-                aria-label="Select all on page"
-              />
-              Select all on page
-            </Label>
-            {rows.map((p) => (
-              <Card key={p.id} className="transition-colors hover:bg-muted/50">
-                <CardContent className="flex items-center gap-3 p-4">
+      {/* People list — phones (FUB-style: tap a row to open; "Select" for bulk) */}
+      <div className="-mx-4 mt-2 border-y border-border bg-card md:hidden">
+        <div className="flex items-center justify-between px-4 py-2">
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {selectMode && selected.size > 0 ? `${selected.size} selected` : `${rows.length} shown`}
+          </span>
+          {rows.length > 0 ? (
+            selectMode ? (
+              <div className="flex items-center gap-3">
+                <Label className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
                   <Checkbox
-                    checked={selected.has(p.id)}
-                    onCheckedChange={() => toggle(p.id)}
-                    aria-label={`Select ${p.name ?? `contact ${p.id}`}`}
-                    className="shrink-0"
+                    checked={allOnPageSelected ? true : someOnPageSelected ? 'indeterminate' : false}
+                    onCheckedChange={toggleAllOnPage}
+                    aria-label="Select all on page"
                   />
-                  {p.picture_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.picture_url} alt="" className="h-10 w-10 shrink-0 rounded-full border border-border object-cover" referrerPolicy="no-referrer" loading="lazy" />
-                  ) : (
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
-                      {(p.name ?? '?').charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                  <Link href={`/admin/crm/${p.id}`} className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-semibold text-foreground">{p.name ?? `Contact #${p.id}`}</span>
-                      <StageBadge stage={p.stage} className="shrink-0" />
-                    </div>
-                    <div className="mt-1 truncate text-xs text-muted-foreground">
-                      {[p.email, p.phone ? fmtPhone(p.phone) : null].filter(Boolean).join(' · ') || 'No contact info'}
-                    </div>
-                    <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                      <span className="truncate">{p.source ?? ''}</span>
-                      <span className="shrink-0 tabular-nums">{p.last_activity_label}</span>
-                    </div>
-                  </Link>
-                  {p.phone ? (
-                    <Button asChild size="sm" variant="outline" className="h-10 shrink-0 px-4">
-                      <a href={`tel:+1${p.phone.replace(/\D/g, '').slice(-10)}`} aria-label={`Call ${p.name ?? 'contact'}`}>Call</a>
-                    </Button>
-                  ) : null}
-                </CardContent>
-              </Card>
-            ))}
-          </>
+                  All
+                </Label>
+                <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={() => { setSelectMode(false); clear() }}>
+                  Done
+                </Button>
+              </div>
+            ) : (
+              <Button variant="ghost" size="sm" className="h-8 px-2 text-xs text-primary" onClick={() => setSelectMode(true)}>
+                Select
+              </Button>
+            )
+          ) : null}
+        </div>
+        {rows.length === 0 ? (
+          <p className="px-4 py-12 text-center text-sm text-muted-foreground">No contacts match this filter.</p>
+        ) : (
+          <CrmList className="border-t border-border">
+            {rows.map((p) => {
+              const name = p.name ?? `Contact #${p.id}`
+              const subtitle = p.source ?? [p.email, p.phone ? fmtPhone(p.phone) : null].filter(Boolean).join(' · ') ?? null
+              if (selectMode) {
+                return (
+                  <div
+                    key={p.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggle(p.id)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(p.id) } }}
+                    className="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left active:bg-accent/60"
+                  >
+                    <Checkbox checked={selected.has(p.id)} aria-label={`Select ${name}`} className="shrink-0" />
+                    <CrmListRow name={name} src={p.picture_url} title={name} subtitle={subtitle} className="min-w-0 flex-1 gap-3 px-0 py-0" trailing={<StageBadge stage={p.stage} />} />
+                  </div>
+                )
+              }
+              return (
+                <CrmListRow
+                  key={p.id}
+                  href={`/admin/crm/${p.id}`}
+                  name={name}
+                  src={p.picture_url}
+                  title={name}
+                  subtitle={subtitle}
+                  meta={p.last_activity_label}
+                  badge={<StageBadge stage={p.stage} className="shrink-0" />}
+                />
+              )
+            })}
+          </CrmList>
         )}
       </div>
 
@@ -238,6 +250,7 @@ export default function BulkAssignWrapper({
       <BulkActions
         selectedIds={selectedIds}
         onClear={clear}
+        barClassName={`bottom-16 lg:bottom-0${selectMode ? '' : ' max-md:hidden'}`}
         activeFilters={activeFilters}
         activeViewId={activeViewId}
         matchingTotal={matchingTotal}
