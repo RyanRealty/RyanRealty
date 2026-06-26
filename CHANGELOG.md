@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.636.0 (2026-06-26)
+
+### Features
+- feat(crm): Deal record detail (FUB §6)
+- feat(crm): Calendar + Appointments (FUB §5, §8.12)
+- feat(crm): Lead Flow routing + Groups + Ponds (FUB §8.1-8.3)
+
+---
+
+
 ## v1.635.2 (2026-06-26)
 
 ### Maintenance
