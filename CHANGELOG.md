@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.635.1 (2026-06-26)
+
+### Maintenance
+- docs(fub): tracker — core FUB parity shipped; remaining long tail + feature-gaps noted
+
+---
+
+
 ## v1.635.0 (2026-06-26)
 
 ### Features
