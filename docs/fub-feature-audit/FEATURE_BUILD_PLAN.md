@@ -55,5 +55,25 @@ Build agents report the nav/settings entries they need; the orchestrator adds th
 
 ## Git model: build agents do NOT commit/push or stash (shared single working tree). They build disjoint files + apply their own migrations (unique timestamps, own tables only) + browser-validate + report. Orchestrator reviews, git-adds the agent's specific files, commits, pushes serially.
 
+## Status — COMPLETE (all stylable + buildable FUB features shipped)
+- ✅ B2 Lead Flow + Groups + Ponds (wave 1) — tables + resolver (23 tests) + admin UI. Live.
+- ✅ B4 Calendar + Appointments (wave 1) — table + month grid + create-appointment + dashboard KPI. Live.
+- ✅ B5 Deal record (wave 1) — milestone/commission cols + splits/files + detail page. Live.
+- ✅ B1 Automations engine (wave 2) — triggers col + new step channels + if/else conditions + trigger UI + dispatch + Engaged%. Backward-compatible (existing workflows verified). Live.
+- ✅ B3 Templates UX (wave 2) — searchable picker, merge-field picker, folders, perf columns, preview. Live.
+- ✅ B6 Team + Import + My Settings (wave 2) — permissions + Team page; CSV import wizard (unit-tested + smoke-tested); my-settings. Live.
+- ✅ Synthesis — nav (Calendar/Import/My-settings) + settings catalog (Lead Distribution group, Team/Import/Appointments cards).
+- N/A (FUB-product-specific, correctly skipped): Billing, API-keys marketplace, Integrations marketplace, Company settings. Already-done elsewhere: A2P (Twilio), email domain auth (Resend).
+- Each browser-verified at 1440 + mobile; gates green (design-tokens 344, console-kit, nav-reachability, build); migrations applied to hosted Supabase; snapshot + DAL index refreshed.
+
+## Orchestration note (lesson)
+6 parallel build agents in ONE shared working tree: they delivered, but concurrently they
+git-staged each other's files, raised 5 gate baselines, refreshed the snapshot, and 2 edited
+the same lib/crm/merge.ts. The orchestrator must NOT trust the staged state — unstage, rebuild,
+verify baseline bumps are legitimate (no egregious patterns), reconcile collisions, and
+browser-validate per-feature before committing. For true isolation, worktrees would be cleaner,
+but the repo mandates a single main checkout — so disjoint-file partitioning + central git is
+the model. It worked, but required hands-on reconciliation.
+
 ## Log
-- 2026-06-26: Master goal set. Phase D discovery done (5 agents). Synthesis above. Dispatching Phase B builds in waves of 3.
+- 2026-06-26: Master goal set. Phase D discovery (5 agents) → synthesis. Phase B builds in 2 waves of 3 (commits 992965ff→81767771). Phase V browser-validated each. Phase R review done. COMPLETE.
