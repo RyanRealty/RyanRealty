@@ -69,7 +69,7 @@ export default async function CrmSettingsPage() {
     href: string
     title: string
     description: string
-    count: number
+    count?: number
     countLabel: string
     icon: string
   }
@@ -132,8 +132,41 @@ export default async function CrmSettingsPage() {
       ],
     },
     {
+      label: 'Lead Distribution',
+      cards: [
+        {
+          href: '/admin/crm/settings/lead-flows',
+          title: 'Lead Flows',
+          description: 'Per-source routing: send each lead source to a broker, Group, or Pond, with conditional rules that run before the global default.',
+          countLabel: 'configure',
+          icon: '⑃',
+        },
+        {
+          href: '/admin/crm/settings/groups',
+          title: 'Groups',
+          description: 'Named broker pools for round-robin or first-to-claim distribution.',
+          countLabel: 'manage',
+          icon: '◇',
+        },
+        {
+          href: '/admin/crm/settings/ponds',
+          title: 'Ponds',
+          description: 'Shared lead pools that any member can claim from — for nurture and farm leads.',
+          countLabel: 'manage',
+          icon: '≈',
+        },
+      ],
+    },
+    {
       label: 'Account',
       cards: [
+        {
+          href: '/admin/crm/settings/appointments',
+          title: 'Appointment types & outcomes',
+          description: 'The type and outcome labels used when scheduling on the calendar.',
+          countLabel: 'configure',
+          icon: '◷',
+        },
         {
           href: '/admin/crm/settings/brokers',
           title: 'Brokers',
@@ -233,7 +266,7 @@ function SettingCardLink({
     href: string
     title: string
     description: string
-    count: number
+    count?: number
     countLabel: string
     icon: string
   }
@@ -260,7 +293,7 @@ function SettingCardLink({
         <div className="flex items-start justify-between gap-2">
           <span className="text-sm font-semibold text-foreground leading-snug">{card.title}</span>
           <Badge variant="outline" className="shrink-0 tabular-nums text-xs">
-            {card.count.toLocaleString('en-US')}&nbsp;{card.countLabel}
+            {card.count !== undefined ? <>{card.count.toLocaleString('en-US')}&nbsp;</> : null}{card.countLabel}
           </Badge>
         </div>
         <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{card.description}</p>

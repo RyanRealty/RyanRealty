@@ -5,7 +5,7 @@ export type AdminIconName =
   | 'dashboard' | 'inbox' | 'flame' | 'clipboard-check' | 'pen-line' | 'list-todo' | 'user-plus'
   | 'users' | 'layers' | 'mail' | 'gauge'
   | 'handshake' | 'dollar' | 'wallet' | 'file-text'
-  | 'home' | 'clock' | 'file-search' | 'search'
+  | 'home' | 'clock' | 'file-search' | 'search' | 'calendar'
   | 'bar-chart' | 'pie-chart' | 'megaphone' | 'filter' | 'trophy' | 'coins'
   | 'trending-up' | 'globe' | 'map-pin' | 'activity' | 'target' | 'badge-check'
   | 'map' | 'building' | 'files' | 'folder-open' | 'images' | 'image' | 'camera'
@@ -145,6 +145,7 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
     ...has(people, '/admin/crm'), // Contacts
     ...has(today, '/admin/crm/inbox'),
     ...has(today, '/admin/crm/tasks'),
+    item('/admin/crm/calendar', 'Calendar', 'calendar'),
     ...has(today, '/admin/analytics/action-required'), // Hot leads
     ...has(today, '/admin/crm/approvals'),
     ...has(people, '/admin/crm/new'),
