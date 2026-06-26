@@ -433,27 +433,38 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const limiter = pickLimiter(pathname)
   if (limiter) {
     const ip = getIp(request)
-    const { success, limit, remaining, reset } = await limiter.limit(ip)
+    // Fail OPEN: if the limiter backend (Upstash) is down or over its monthly
+    // request quota, limiter.limit() throws. A rate limiter must never take the
+    // API offline — when its backend errors, allow the request through rather
+    // than 500-ing every /api/* call. (Quota/outage is surfaced via logs.)
+    let limited: { success: boolean; limit: number; remaining: number; reset: number } | null = null
+    try {
+      limited = await limiter.limit(ip)
+    } catch (err) {
+      console.error('[middleware] rate-limiter unavailable, failing open:', err instanceof Error ? err.message : err)
+    }
 
-    if (!success) {
+    if (limited && !limited.success) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
         {
           status: 429,
           headers: {
-            'X-RateLimit-Limit': String(limit),
-            'X-RateLimit-Remaining': String(remaining),
-            'X-RateLimit-Reset': String(reset),
-            'Retry-After': String(Math.ceil((reset - Date.now()) / 1000)),
+            'X-RateLimit-Limit': String(limited.limit),
+            'X-RateLimit-Remaining': String(limited.remaining),
+            'X-RateLimit-Reset': String(limited.reset),
+            'Retry-After': String(Math.ceil((limited.reset - Date.now()) / 1000)),
           },
         },
       )
     }
 
     const response = buildNextResponse(pathname, request)
-    response.headers.set('X-RateLimit-Limit', String(limit))
-    response.headers.set('X-RateLimit-Remaining', String(remaining))
-    response.headers.set('X-RateLimit-Reset', String(reset))
+    if (limited) {
+      response.headers.set('X-RateLimit-Limit', String(limited.limit))
+      response.headers.set('X-RateLimit-Remaining', String(limited.remaining))
+      response.headers.set('X-RateLimit-Reset', String(limited.reset))
+    }
     return response
   }
 
