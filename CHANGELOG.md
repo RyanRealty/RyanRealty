@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.630.0 (2026-06-26)
+
+### Features
+- feat(admin): restructure main menu to Dashboard/CRM/Deals/Reports/Admin + horizontal logo
+
+---
+
+
 ## v1.629.2 (2026-06-26)
 
 ### Bug Fixes
