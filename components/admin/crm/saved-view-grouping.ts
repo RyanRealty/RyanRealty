@@ -48,6 +48,46 @@ export function groupSavedViews(views: SavedViewItem[]): {
 }
 
 /**
+ * Keywords that identify neighborhood/area system lists (FUB "Neighborhoods" collection).
+ * Any system list whose name contains one of these (case-insensitive) lands in the
+ * Neighborhoods collection; everything else lands in Pipeline.
+ */
+const NEIGHBORHOOD_KEYWORDS = [
+  'tetherow', 'sunriver', 'pronghorn', 'black butte', 'northwest crossing', 'vandevert',
+  'awbrey', 'shevlin', 'tumalo', 'bend', 'redmond', 'sisters', 'la pine',
+  'neighborhood', 'area', 'community',
+]
+
+export type SystemCollection = {
+  label: string
+  views: SavedViewItem[]
+}
+
+/**
+ * Split the system views into FUB-style named collections.
+ * Returns a Pipeline collection (workflow/stage lists) and a Neighborhoods
+ * collection (geography-keyed lists), dropping empty collections.
+ */
+export function groupSystemByCollection(systemViews: SavedViewItem[]): SystemCollection[] {
+  const pipeline: SavedViewItem[] = []
+  const neighborhoods: SavedViewItem[] = []
+  for (const v of systemViews) {
+    const lower = v.name.toLowerCase()
+    if (NEIGHBORHOOD_KEYWORDS.some((kw) => lower.includes(kw))) {
+      neighborhoods.push(v)
+    } else {
+      pipeline.push(v)
+    }
+  }
+  const result: SystemCollection[] = []
+  if (pipeline.length > 0) result.push({ label: 'Pipeline', views: pipeline })
+  if (neighborhoods.length > 0) result.push({ label: 'Neighborhoods', views: neighborhoods })
+  // Fallback: if somehow none matched, put everything in Pipeline
+  if (result.length === 0 && systemViews.length > 0) result.push({ label: 'Pipeline', views: systemViews })
+  return result
+}
+
+/**
  * Build a preview AST from the active legacy filter bag, for the save-dialog blurb.
  * Mirrors upgradeLegacyFilters' AND-of-conditions shape, but each tag is its own
  * has-condition (the dialog only needs a human label, not the OR-grouping the

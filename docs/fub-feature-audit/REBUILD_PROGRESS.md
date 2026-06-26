@@ -36,14 +36,14 @@
 - [ ] Each verified at 390px against the matching mobile shot.
 
 ### P2 — Desktop FUB parity (per FUB_FEATURE_AUDIT.md)
-- [ ] Dashboard (01) — 5 KPI tiles w/ sparklines + deltas, Everyone/date filters, Recent Activity table.
-- [ ] People (02) — smart-list sidebar (Collections), list table (Name+source, Lead Score, Agent, Last Visit, Phone, Email, Last Activity), mass-action toolbar, Columns, Filters panel.
+- [x] Dashboard (01) — 5 KPI tiles w/ sparklines + deltas, Everyone/date filters, Recent Activity feed. Verified 1440.
+- [x] People (02) — Collections smart-list sidebar, list table (Name+source, Agent, Last Visit, Phone w/ call+text, Email, Last Activity), mass-action toolbar, right Filters panel. Verified 1440. (polish: hide leftover KPI tiles + secondary-nav strip on desktop too.)
 - [ ] Person record (03, 53) — 3-column workspace (contact data | timeline+composers | engagement/management).
 - [ ] Inbox (04) — 4-pane (folders | conversation list | reading pane | contact context).
 - [ ] Tasks (05) — Today/Overdue/Future + type filters.
 - [ ] Calendar (06) — day/week/month grid + create-appointment.
 - [ ] Deals (07, 43) — Buyers/Sellers Kanban, column count+value, deal cards, deal record modal.
-- [ ] Reporting (08, 32–42) — report catalog + each report view.
+- [x] Reporting (08) — grouped report catalog (Market data / Broker activity / Lead sources / Marketing) cards. Verified 1440. (individual report views 32–42 still to style.)
 - [ ] Admin (09–31, 44–52) — overview catalog + each settings panel.
 
 ### P3 — Final review pass

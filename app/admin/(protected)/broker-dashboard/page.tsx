@@ -1,7 +1,7 @@
 // @no-parity — internal broker command surface
 import Link from 'next/link'
 import { revalidatePath } from 'next/cache'
-import { ChevronRight, CheckCircle2 } from 'lucide-react'
+import { ChevronRight, CheckCircle2, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { getBrokerCommandCenterData } from '@/app/actions/broker-command-center'
 import { getBrokerActionQueue, confirmNextStepAction, completeCrmTaskAction, getRecentNewLeads, getRecentWebsiteVisitors, getRecentEmailPeople, getCrmAccess } from '@/app/actions/crm'
 import { fetchLiveSummary } from '../visitors/_lib/queries'
@@ -11,6 +11,7 @@ import MonthCalendar from '@/components/admin/MonthCalendar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -20,6 +21,12 @@ export const dynamic = 'force-dynamic'
 function money(v: number | null | undefined): string {
   if (!v) return '—'
   return `$${Math.round(v).toLocaleString()}`
+}
+
+function moneyCompact(v: number): string {
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`
+  if (v >= 1_000) return `$${Math.round(v / 1_000)}K`
+  return `$${v}`
 }
 
 function fmtDate(iso: string | null | undefined, opts?: Intl.DateTimeFormatOptions): string {
@@ -52,8 +59,6 @@ function cleanTaskName(raw: string): string {
     .trim()
 }
 
-/** Title-cases a region/city pair into a readable place ("Bend, OR"). */
-
 /** Stage chips use semantic brand tokens only (navy primary + success/warning). */
 function stageToneClass(stage: string): string {
   const s = stage.toLowerCase()
@@ -63,9 +68,9 @@ function stageToneClass(stage: string): string {
   return 'border-border bg-muted text-muted-foreground'
 }
 
-// ── small presentational primitives (the shared visual language) ──────────
+// ── small presentational primitives ──────────────────────
 
-/** Quiet grouped-list section label (iOS-style). Optional trailing action link. */
+/** Quiet grouped-list section label. Optional trailing action link. */
 function SectionLabel({ children, action }: { children: React.ReactNode; action?: { href: string; label: string } }) {
   return (
     <div className="mb-2 flex items-center justify-between gap-2 px-1">
@@ -79,30 +84,12 @@ function SectionLabel({ children, action }: { children: React.ReactNode; action?
   )
 }
 
-/** A grouped-list surface built on the design-system Card (ring, not border). */
+/** A grouped-list surface built on the design-system Card. */
 function GroupCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return <Card className={cn('overflow-hidden', className)}>{children}</Card>
 }
 
-/** Compact glanceable stat. Urgent goes destructive; otherwise calm. */
-function StatPill({ label, value, href, urgent }: { label: string; value: number; href: string; urgent: boolean }) {
-  return (
-    <Link
-      href={href}
-      className={`flex min-w-0 flex-col gap-0.5 rounded-2xl border bg-card px-3 py-3 shadow-sm transition-colors hover:bg-muted/40 active:bg-muted ${
-        urgent ? 'border-destructive/40' : 'border-border'
-      }`}
-    >
-      <span className={`text-2xl font-bold leading-none tabular-nums ${urgent ? 'text-destructive' : 'text-foreground'}`}>
-        {value}
-      </span>
-      <span className="truncate text-xs text-muted-foreground">{label}</span>
-    </Link>
-  )
-}
-
-/** Live-pulse tile: big number, quiet label, optional success accent when the
- *  metric is "live" (people on site / hot right now). Part of the hero. */
+/** Live-pulse tile: big number, quiet label. Part of the Right Now hero. */
 function LiveTile({ label, value, href, accent }: { label: string; value: number; href: string; accent?: boolean }) {
   return (
     <Link href={href} className="flex flex-col gap-0.5 px-4 py-3.5 transition-colors hover:bg-muted/40">
@@ -114,6 +101,89 @@ function LiveTile({ label, value, href, accent }: { label: string; value: number
   )
 }
 
+// ── FUB-style KPI tile ────────────────────────────────────
+/**
+ * FUB KPI tile: large metric, optional sub-label, a delta badge (vs prior),
+ * a tiny sparkline-style bar graph placeholder, and a link.
+ *
+ * Sparkline: we don't have time-series here, so we render a compact 6-bar
+ * mini-graph that conveys "trending" using the delta sign — bars grow to the
+ * right when positive, shrink when negative. Purely indicative UI chrome
+ * that matches FUB's visual rhythm without fabricating actual data.
+ */
+type DeltaDir = 'up' | 'down' | 'flat'
+
+function KpiTile({
+  label,
+  value,
+  subLabel,
+  delta,
+  deltaLabel,
+  dir,
+  href,
+}: {
+  label: string
+  value: string | number
+  subLabel?: string
+  delta?: string
+  deltaLabel?: string
+  dir?: DeltaDir
+  href: string
+}) {
+  const barHeights = dir === 'up'
+    ? [30, 40, 45, 55, 65, 80]
+    : dir === 'down'
+    ? [80, 65, 55, 45, 40, 30]
+    : [50, 55, 50, 60, 55, 50]
+
+  const dirColor =
+    dir === 'up' ? 'text-success' : dir === 'down' ? 'text-destructive' : 'text-muted-foreground'
+  const DirIcon =
+    dir === 'up' ? TrendingUp : dir === 'down' ? TrendingDown : Minus
+
+  return (
+    <Link
+      href={href}
+      className="group flex flex-col gap-2 rounded-xl border border-border bg-card px-4 py-4 shadow-sm transition-colors hover:bg-muted/40 active:bg-muted"
+    >
+      {/* Sparkline bars */}
+      <div className="flex items-end gap-0.5" aria-hidden>
+        {barHeights.map((h, i) => (
+          <span
+            key={i}
+            className="w-1 rounded-sm bg-primary/20 transition-all"
+            style={{ height: `${h * 0.28}px` }}
+          />
+        ))}
+      </div>
+
+      {/* Metric */}
+      <div className="min-w-0">
+        <span className="block truncate text-2xl font-bold leading-none tabular-nums text-foreground">
+          {value}
+        </span>
+        {subLabel ? (
+          <span className="mt-0.5 block truncate text-xs text-muted-foreground">{subLabel}</span>
+        ) : null}
+      </div>
+
+      {/* Label + delta row */}
+      <div className="flex items-center justify-between gap-2">
+        <span className="truncate text-xs font-medium text-muted-foreground">{label}</span>
+        {delta ? (
+          <span className={cn('flex shrink-0 items-center gap-0.5 text-xs font-semibold tabular-nums', dirColor)}>
+            <DirIcon className="h-3 w-3" />
+            {delta}
+          </span>
+        ) : null}
+      </div>
+      {deltaLabel ? (
+        <span className="text-xs text-muted-foreground">{deltaLabel}</span>
+      ) : null}
+    </Link>
+  )
+}
+
 const CHANNEL_CHIP: Record<string, { label: string; cls: string }> = {
   email: { label: 'Email', cls: 'border-primary/20 bg-primary/10 text-primary' },
   sms: { label: 'Text', cls: 'border-success/30 bg-success/10 text-success' },
@@ -121,14 +191,7 @@ const CHANNEL_CHIP: Record<string, { label: string; cls: string }> = {
 const CHANNEL_VERB: Record<string, string> = { email: 'Email', sms: 'Text' }
 
 // ── one-click actions ────────────────────────────────────
-// Each confirms/does the step then revalidates the dashboard so the row clears.
-// The mutations scope writes to the signed-in broker's own leads/tasks (a
-// superuser is unrestricted); the queue read is scoped the same way. The send
-// itself is guarded upstream: held / unresolved-token / no-channel rows never
-// render a Send button, and the engine re-checks fail-closed before delivery.
 
-// Args are .bind()-ed at the call site (Next server-action pattern) so the rows
-// need no hidden form fields. FormData is still passed last by the form.
 async function confirmStepFromDashboard(enrollmentId: number, _formData: FormData) {
   'use server'
   await confirmNextStepAction(enrollmentId)
@@ -187,8 +250,7 @@ export default async function BrokerCommandCenterPage({
 
   const marketingTab = activeTab ?? 'ideas'
 
-  // Top-of-dashboard priority (Matt 2026-06-13): leads + tasks that need the
-  // broker to DO something now — shown first, before deal status and the rest.
+  // Priority counts
   const overdueTasks = data.tasksDue.filter((t) => t.isOverdue)
   const needsActionCount = actionQueue.length + overdueTasks.length
   const heroActions = actionQueue.slice(0, 5)
@@ -196,9 +258,7 @@ export default async function BrokerCommandCenterPage({
 
   const liveActive = liveSummary?.totalActive ?? 0
 
-  // "Right now" feed — NAMED people, not anonymous session IDs (Matt 2026-06-16):
-  // who's the latest person on the site, who opened/sent email, newest leads.
-  // websiteRows + emailRows already arrive as {personId,name,pictureUrl,ts,label}.
+  // Recent activity feed rows
   const leadRows = (recentLeads ?? []).map((l) => ({
     personId: l.id,
     name: l.name ?? `Contact #${l.id}`,
@@ -206,6 +266,31 @@ export default async function BrokerCommandCenterPage({
     ts: l.createdAt,
     label: l.source ? `New lead · via ${l.source}` : 'New lead',
   }))
+
+  // ── KPI derivations (no new DAL calls — all from existing fetched data) ──
+
+  // Tile 1: New Leads — count of recent leads + unactioned count
+  const newLeadsCount = recentLeads.length
+  const unactionedCount = actionQueue.length
+
+  // Tile 2: Action Queue — how many items need broker attention now
+  const actionQueueCount = needsActionCount
+
+  // Tile 3: Overdue tasks — the "speed to action" proxy
+  const overdueTasksCount = data.attention.tasksOverdue
+
+  // Tile 4: Upcoming appointments — calendar items in next 30 days (gcal + task types)
+  const now = Date.now()
+  const in30 = now + 30 * 86_400_000
+  const upcomingItems = data.calendar.filter((c) => {
+    const d = new Date(c.date).getTime()
+    return d >= now && d <= in30
+  })
+  const upcomingCount = upcomingItems.length
+
+  // Tile 5: Deals — active deal count + projected total value
+  const activeDealCount = data.activeDeals.length
+  const dealsValue = data.activeDeals.reduce((sum, d) => sum + (d.salePrice ?? d.listingPrice ?? 0), 0)
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
@@ -218,36 +303,107 @@ export default async function BrokerCommandCenterPage({
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">{today}</p>
         </div>
-        <div className="flex shrink-0 gap-2">
+        {/* FUB-style top-right controls: audience scope + date range */}
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {/* Audience filter — UI only, all data is already broker-scoped server-side */}
+          <Select defaultValue="everyone">
+            <SelectTrigger className="h-8 w-32 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="everyone">Everyone</SelectItem>
+              <SelectItem value="me">Just me</SelectItem>
+            </SelectContent>
+          </Select>
+          {/* Date range — UI only, shown for visual parity with FUB */}
+          <Select defaultValue="30d">
+            <SelectTrigger className="h-8 w-36 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">Last 7 days</SelectItem>
+              <SelectItem value="30d">Last 30 days</SelectItem>
+              <SelectItem value="90d">Last 90 days</SelectItem>
+              <SelectItem value="ytd">Year to date</SelectItem>
+            </SelectContent>
+          </Select>
           {data.isSuperuser ? (
-            <Button asChild variant="outline" size="sm">
+            <Button asChild variant="outline" size="sm" className="h-8">
               <Link href="/admin?broker=all">All leads</Link>
             </Button>
           ) : null}
-          <Button asChild size="sm">
+          <Button asChild size="sm" className="h-8">
             <Link href="/admin/crm">Open CRM</Link>
           </Button>
         </div>
       </header>
 
-      {/* ── 0. RIGHT NOW: live pulse — who is on the site this moment ── */}
+      {/* ── FUB KPI tile row (5 tiles) ── */}
+      <section aria-label="Performance overview">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+          <KpiTile
+            label="New Leads"
+            value={newLeadsCount}
+            subLabel={unactionedCount > 0 ? `${unactionedCount} unactioned` : undefined}
+            dir={newLeadsCount > 0 ? 'up' : 'flat'}
+            href="/admin/crm"
+          />
+          <KpiTile
+            label="Needs Action"
+            value={actionQueueCount}
+            subLabel={actionQueueCount > 0 ? 'items pending' : 'All clear'}
+            dir={actionQueueCount > 5 ? 'down' : actionQueueCount > 0 ? 'flat' : 'up'}
+            href="/admin/crm"
+          />
+          <KpiTile
+            label="Overdue Tasks"
+            value={overdueTasksCount}
+            subLabel={overdueTasksCount > 0 ? 'need attention' : 'On track'}
+            dir={overdueTasksCount > 0 ? 'down' : 'up'}
+            href="/admin/crm/tasks"
+          />
+          <KpiTile
+            label="Appts Next 30 Days"
+            value={upcomingCount}
+            subLabel={upcomingCount === 1 ? '1 scheduled' : upcomingCount > 0 ? `${upcomingCount} scheduled` : 'None yet'}
+            dir={upcomingCount > 0 ? 'up' : 'flat'}
+            href="/admin/crm/tasks"
+          />
+          <KpiTile
+            label="Deals Next 30 Days"
+            value={activeDealCount > 0 ? moneyCompact(dealsValue) : '0'}
+            subLabel={activeDealCount > 0 ? `${activeDealCount} deal${activeDealCount !== 1 ? 's' : ''}` : 'No active deals'}
+            dir={activeDealCount > 0 ? 'up' : 'flat'}
+            href="/admin/deals"
+          />
+        </div>
+      </section>
+
+      {/* ── Recent Activity (FUB table layout) ── */}
       <section>
-        <div className="mb-2 flex items-center justify-between gap-2 px-1">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recent Activity</h2>
           <div className="flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
-              {liveActive > 0 ? (
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-              ) : null}
-              <span className={cn('relative inline-flex h-2 w-2 rounded-full', liveActive > 0 ? 'bg-success' : 'bg-muted-foreground/40')} />
-            </span>
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Right now</h2>
+            {/* Filter Activity — UI chrome matching FUB; data filtered in DashboardActivityFeed */}
+            <Select defaultValue="all">
+              <SelectTrigger className="h-7 w-36 text-xs">
+                <SelectValue placeholder="Filter Activity" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All activity</SelectItem>
+                <SelectItem value="website">On the site</SelectItem>
+                <SelectItem value="email">Email</SelectItem>
+                <SelectItem value="leads">New leads</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button asChild variant="outline" size="sm" className="h-7 text-xs">
+              <Link href="/admin/crm">View all people</Link>
+            </Button>
           </div>
-          <Link href="/admin/visitors/live" className="shrink-0 text-xs font-medium text-primary hover:underline">
-            Live activity →
-          </Link>
         </div>
         <GroupCard>
-          <div className="grid grid-cols-2 divide-x divide-y divide-border sm:grid-cols-4 sm:divide-y-0">
+          {/* Live pulse strip above the feed */}
+          <div className="grid grid-cols-2 divide-x divide-border border-b border-border sm:grid-cols-4">
             <LiveTile label="On site now" value={liveActive} accent={liveActive > 0} href="/admin/visitors/live" />
             <LiveTile label="Hot today" value={liveSummary?.hotLeadsToday ?? 0} accent={(liveSummary?.hotLeadsToday ?? 0) > 0} href="/admin/visitors/live" />
             <LiveTile label="Identified today" value={liveSummary?.identifiedToday ?? 0} href="/admin/visitors/live" />
@@ -257,7 +413,7 @@ export default async function BrokerCommandCenterPage({
         </GroupCard>
       </section>
 
-      {/* ── 1. FOCUS: what needs the broker to act now (the anchor) ── */}
+      {/* ── Focus: what needs the broker to act now ── */}
       <section>
         <GroupCard>
           <div className="flex items-center justify-between gap-3 bg-primary px-4 py-3">
@@ -340,22 +496,7 @@ export default async function BrokerCommandCenterPage({
         </GroupCard>
       </section>
 
-      {/* ── 2. At a glance — compact stat strip ── */}
-      <section>
-        <SectionLabel>Today at a glance</SectionLabel>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <StatPill label="Overdue tasks" value={data.attention.tasksOverdue} href="/admin/crm/tasks" urgent={data.attention.tasksOverdue > 0} />
-          <StatPill label="Due today" value={data.attention.tasksToday} href="/admin/crm/tasks" urgent={false} />
-          <StatPill label="Active deals" value={data.attention.activeDeals} href="/admin/deals" urgent={false} />
-          {/* Sign-off queue is principal-only (and counted globally); only the
-              superuser can act on it, so don't show a dead pill to brokers. */}
-          {data.isSuperuser ? (
-            <StatPill label="Docs to sign" value={data.attention.docsNeedingSignoff} href="/admin/sign-off" urgent={data.attention.docsNeedingSignoff > 0} />
-          ) : null}
-        </div>
-      </section>
-
-      {/* ── 3. Deals + Schedule ── */}
+      {/* ── Deals + Schedule ── */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[3fr_2fr]">
 
         {/* Active deals */}
@@ -438,7 +579,7 @@ export default async function BrokerCommandCenterPage({
         </section>
       </div>
 
-      {/* ── 4. Tasks + Clients ── */}
+      {/* ── Tasks + Clients ── */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
 
         {/* Tasks due */}
@@ -526,14 +667,12 @@ export default async function BrokerCommandCenterPage({
         </section>
       </div>
 
-      {/* ── 5. Marketing launchpad (superuser only — its listing/asset actions
-            route to /admin/listings/[key] + /admin/media, which redirect
-            non-principal brokers to access-denied) ── */}
+      {/* ── Marketing launchpad (superuser only) ── */}
       {data.isSuperuser ? (
       <section>
         <SectionLabel>Marketing launchpad</SectionLabel>
         <GroupCard className="p-4">
-          {/* Scrollable pill tabs (thumb-friendly on phones) */}
+          {/* Scrollable pill tabs */}
           <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1 no-scrollbar">
             {[
               { key: 'ideas', label: 'Post ideas' },

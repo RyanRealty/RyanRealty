@@ -39,6 +39,7 @@ import { cn } from '@/lib/utils'
 import { describeSegment, type LegacyFilters } from '@/lib/crm/segment-ast'
 import {
   groupSavedViews,
+  groupSystemByCollection,
   legacyToPreview,
   type SavedViewItem,
 } from '@/components/admin/crm/saved-view-grouping'
@@ -88,6 +89,7 @@ export default function SavedViewSidebar({
   const [error, setError] = useState<string | null>(null)
 
   const { system: systemViews, mine: myViews, shared: sharedViews } = groupSavedViews(views)
+  const systemCollections = groupSystemByCollection(systemViews)
 
   const openSave = () => {
     setName(''); setDescription(''); setError(null)
@@ -151,47 +153,88 @@ export default function SavedViewSidebar({
   }
 
   return (
-    <aside className="w-full md:w-64 md:shrink-0">
+    <aside className="w-full md:w-56 md:shrink-0">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Smart lists</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">People</h2>
         <Button
           size="sm"
-          variant="outline"
-          className="h-8"
+          variant="ghost"
+          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
           onClick={openSave}
           disabled={!hasActiveFilter || isPending}
           title={hasActiveFilter ? 'Save the active filter as a view' : 'Apply a filter first'}
         >
-          <Plus className="mr-1 h-4 w-4" aria-hidden />
-          Save view
+          <Plus className="mr-1 h-3 w-3" aria-hidden />
+          Save
         </Button>
       </div>
 
       {/* On phones the groups stack and stay scrollable inside a bounded box; on
           desktop the sidebar simply flows in the column. */}
-      <div className="mt-3 max-h-96 space-y-4 overflow-y-auto no-scrollbar md:max-h-none md:overflow-visible">
-        <ViewGroup
-          title="System lists"
-          views={systemViews}
-          activeViewId={activeViewId}
-          isPending={isPending}
-        />
-        <ViewGroup
-          title="My views"
-          views={myViews}
-          activeViewId={activeViewId}
-          isPending={isPending}
-          onRename={openRename}
-          onDelete={openDelete}
-          onShare={toggleShare}
-          emptyHint="Save a filter to make your first view."
-        />
-        <ViewGroup
-          title="Shared with you"
-          views={sharedViews}
-          activeViewId={activeViewId}
-          isPending={isPending}
-        />
+      <div className="mt-2 max-h-96 overflow-y-auto no-scrollbar md:max-h-none md:overflow-visible">
+
+        {/* Desktop: FUB-style COLLECTIONS grouping (system lists split into Pipeline / Neighborhoods) */}
+        <div className="hidden md:block">
+          {systemCollections.length > 0 ? (
+            <div className="space-y-3">
+              <p className="px-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Collections</p>
+              {systemCollections.map((col) => (
+                <ViewGroup
+                  key={col.label}
+                  title={col.label}
+                  views={col.views}
+                  activeViewId={activeViewId}
+                  isPending={isPending}
+                  collectionStyle
+                />
+              ))}
+            </div>
+          ) : null}
+          <div className="mt-3 space-y-3">
+            <ViewGroup
+              title="My views"
+              views={myViews}
+              activeViewId={activeViewId}
+              isPending={isPending}
+              onRename={openRename}
+              onDelete={openDelete}
+              onShare={toggleShare}
+              emptyHint="Save a filter to make your first view."
+            />
+            <ViewGroup
+              title="Shared with you"
+              views={sharedViews}
+              activeViewId={activeViewId}
+              isPending={isPending}
+            />
+          </div>
+        </div>
+
+        {/* Mobile: flat list (original layout) */}
+        <div className="space-y-4 md:hidden">
+          <ViewGroup
+            title="System lists"
+            views={systemViews}
+            activeViewId={activeViewId}
+            isPending={isPending}
+          />
+          <ViewGroup
+            title="My views"
+            views={myViews}
+            activeViewId={activeViewId}
+            isPending={isPending}
+            onRename={openRename}
+            onDelete={openDelete}
+            onShare={toggleShare}
+            emptyHint="Save a filter to make your first view."
+          />
+          <ViewGroup
+            title="Shared with you"
+            views={sharedViews}
+            activeViewId={activeViewId}
+            isPending={isPending}
+          />
+        </div>
       </div>
 
       {/* Save / rename dialog */}
@@ -285,16 +328,23 @@ type ViewGroupProps = {
   onDelete?: (view: SavedViewItem) => void
   onShare?: (view: SavedViewItem) => void
   emptyHint?: string
+  /** Desktop: renders as a FUB-style indented collection (smaller label, no icon lock). */
+  collectionStyle?: boolean
 }
 
 function ViewGroup({
-  title, views, activeViewId, isPending, onRename, onDelete, onShare, emptyHint,
+  title, views, activeViewId, isPending, onRename, onDelete, onShare, emptyHint, collectionStyle,
 }: ViewGroupProps) {
   if (views.length === 0 && !emptyHint) return null
   return (
     <div>
-      <p className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</p>
-      <ul className="mt-1.5 space-y-0.5">
+      <p className={cn(
+        'px-1 font-medium uppercase tracking-wide text-muted-foreground',
+        collectionStyle ? 'text-xs tracking-widest' : 'text-xs',
+      )}>
+        {title}
+      </p>
+      <ul className="mt-1 space-y-px">
         {views.length === 0 && emptyHint ? (
           <li className="px-2 py-1.5 text-xs text-muted-foreground">{emptyHint}</li>
         ) : null}
@@ -304,7 +354,8 @@ function ViewGroup({
             <li key={view.id} className="group/view">
               <div
                 className={cn(
-                  'flex items-center gap-1 rounded-md px-1.5 py-1 transition-colors',
+                  'flex items-center gap-1 rounded-md transition-colors',
+                  collectionStyle ? 'px-2 py-1' : 'px-1.5 py-1',
                   active ? 'bg-primary/10' : 'hover:bg-muted/60',
                 )}
               >
@@ -313,16 +364,23 @@ function ViewGroup({
                   className="flex min-w-0 flex-1 items-center gap-1.5"
                   title={describeSegment(view.ast)}
                 >
-                  {view.isProtected ? (
+                  {view.isProtected && !collectionStyle ? (
                     <Lock className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden />
                   ) : null}
-                  <span className={cn('truncate text-sm', active ? 'font-semibold text-foreground' : 'text-foreground')}>
+                  <span className={cn(
+                    'truncate',
+                    'text-sm',
+                    active ? 'font-semibold text-foreground' : 'text-foreground',
+                  )}>
                     {view.name}
                   </span>
                 </Link>
-                <Badge variant={active ? 'default' : 'outline'} className="shrink-0 tabular-nums">
+                <span className={cn(
+                  'shrink-0 tabular-nums text-xs',
+                  active ? 'font-semibold text-foreground' : 'text-muted-foreground',
+                )}>
                   {fmtCount(view.count)}
-                </Badge>
+                </span>
                 {onRename || onDelete || onShare ? (
                   <div className="ml-0.5 flex shrink-0 items-center opacity-0 transition-opacity focus-within:opacity-100 group-hover/view:opacity-100">
                     {onShare ? (

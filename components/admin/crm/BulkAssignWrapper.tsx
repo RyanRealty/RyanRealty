@@ -169,79 +169,121 @@ export default function BulkAssignWrapper({
         )}
       </div>
 
-      {/* People table — desktop */}
-      <div className="mt-4 hidden overflow-hidden rounded-lg border border-border bg-card pb-0 md:block">
+      {/* People table — desktop (FUB column order: Name+source, Agent, Last Visit, Phone, Email, Last Activity) */}
+      <div className="mt-4 hidden overflow-x-auto no-scrollbar rounded-lg border border-border bg-card md:block">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-10">
+            <TableRow className="border-b border-border">
+              <TableHead className="w-10 pl-3">
                 <Checkbox
                   checked={allOnPageSelected ? true : someOnPageSelected ? 'indeterminate' : false}
                   onCheckedChange={toggleAllOnPage}
                   aria-label="Select all on page"
                 />
               </TableHead>
-              <TableHead className="text-xs font-medium uppercase text-muted-foreground">Name</TableHead>
-              <TableHead className="text-xs font-medium uppercase text-muted-foreground">Stage</TableHead>
-              <TableHead className="text-xs font-medium uppercase text-muted-foreground">Tags</TableHead>
-              <TableHead className="text-xs font-medium uppercase text-muted-foreground">Broker</TableHead>
-              <TableHead className="text-xs font-medium uppercase text-muted-foreground">Contact</TableHead>
-              <TableHead className="text-xs font-medium uppercase text-muted-foreground">Source</TableHead>
-              <TableHead className="text-xs font-medium uppercase text-muted-foreground">Last activity</TableHead>
-              <TableHead className="text-xs font-medium uppercase text-muted-foreground">Created</TableHead>
+              <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Name</TableHead>
+              <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Agent</TableHead>
+              <TableHead className="whitespace-nowrap text-xs font-medium uppercase tracking-wide text-muted-foreground">Last Visit</TableHead>
+              <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Phone</TableHead>
+              <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Email</TableHead>
+              <TableHead className="whitespace-nowrap text-xs font-medium uppercase tracking-wide text-muted-foreground">Last Activity</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
                   No contacts match this filter.
                 </TableCell>
               </TableRow>
             ) : (
-              rows.map((p) => (
-                <TableRow key={p.id} data-state={selected.has(p.id) ? 'selected' : undefined}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selected.has(p.id)}
-                      onCheckedChange={() => toggle(p.id)}
-                      aria-label={`Select ${p.name ?? `contact ${p.id}`}`}
-                    />
-                  </TableCell>
-                  <TableCell className="text-sm font-medium text-foreground">
-                    <Link href={`/admin/crm/${p.id}`} className="flex items-center gap-2.5 hover:underline">
-                      {p.picture_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.picture_url} alt="" className="h-8 w-8 shrink-0 rounded-full border border-border object-cover" referrerPolicy="no-referrer" loading="lazy" />
-                      ) : (
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-                          {(p.name ?? '?').charAt(0).toUpperCase()}
+              rows.map((p) => {
+                const displayPhone = p.phone ? fmtPhone(p.phone) : null
+                return (
+                  <TableRow key={p.id} data-state={selected.has(p.id) ? 'selected' : undefined} className="group/row">
+                    <TableCell className="pl-3">
+                      <Checkbox
+                        checked={selected.has(p.id)}
+                        onCheckedChange={() => toggle(p.id)}
+                        aria-label={`Select ${p.name ?? `contact ${p.id}`}`}
+                      />
+                    </TableCell>
+
+                    {/* Name + source beneath */}
+                    <TableCell className="min-w-40">
+                      <Link href={`/admin/crm/${p.id}`} className="flex items-center gap-2.5 hover:underline">
+                        {p.picture_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={p.picture_url} alt="" className="h-8 w-8 shrink-0 rounded-full border border-border object-cover" referrerPolicy="no-referrer" loading="lazy" />
+                        ) : (
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
+                            {(p.name ?? '?').charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium text-foreground">
+                            {p.name ?? `Contact #${p.id}`}
+                          </span>
+                          {p.source ? (
+                            <span className="block truncate text-xs text-muted-foreground">{p.source}</span>
+                          ) : null}
                         </span>
+                      </Link>
+                    </TableCell>
+
+                    {/* Agent (assigned broker) */}
+                    <TableCell className="text-sm text-muted-foreground">
+                      {p.assigned_broker ?? <span className="text-muted-foreground/40">—</span>}
+                    </TableCell>
+
+                    {/* Last Visit — we use last_activity_label as the closest proxy */}
+                    <TableCell className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
+                      {p.last_activity_label || <span className="text-muted-foreground/40">—</span>}
+                    </TableCell>
+
+                    {/* Phone with click-to-call + click-to-text icon buttons */}
+                    <TableCell className="min-w-32">
+                      {displayPhone ? (
+                        <span className="flex items-center gap-1.5">
+                          <span className="text-xs tabular-nums text-foreground">{displayPhone}</span>
+                          <a
+                            href={`tel:${p.phone}`}
+                            aria-label={`Call ${p.name ?? 'contact'}`}
+                            className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover/row:opacity-100 focus:opacity-100"
+                          >
+                            {/* phone handset icon */}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 5.61 5.61l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                          </a>
+                          <a
+                            href={`sms:${p.phone}`}
+                            aria-label={`Text ${p.name ?? 'contact'}`}
+                            className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover/row:opacity-100 focus:opacity-100"
+                          >
+                            {/* message bubble icon */}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                          </a>
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground/40 text-xs">—</span>
                       )}
-                      {p.name ?? `Contact #${p.id}`}
-                    </Link>
-                  </TableCell>
-                  <TableCell><StageBadge stage={p.stage} /></TableCell>
-                  <TableCell className="max-w-xs">
-                    <div className="flex flex-wrap gap-1">
-                      {p.tags.slice(0, 3).map((t) => (
-                        <Badge key={t} variant="outline" className="text-xs">{t}</Badge>
-                      ))}
-                      {p.tags.length > 3 ? (
-                        <span className="text-xs text-muted-foreground">+{p.tags.length - 3}</span>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{p.assigned_broker ?? '—'}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    <div>{p.email ?? '—'}</div>
-                    <div>{p.phone ?? ''}</div>
-                  </TableCell>
-                  <TableCell className="max-w-36 truncate text-xs text-muted-foreground">{p.source ?? '—'}</TableCell>
-                  <TableCell className="text-xs tabular-nums text-muted-foreground">{p.last_activity_label}</TableCell>
-                  <TableCell className="text-xs tabular-nums text-muted-foreground">{p.created_label}</TableCell>
-                </TableRow>
-              ))
+                    </TableCell>
+
+                    {/* Email */}
+                    <TableCell className="max-w-44 truncate text-xs text-muted-foreground">
+                      {p.email ? (
+                        <a href={`mailto:${p.email}`} className="hover:underline">{p.email}</a>
+                      ) : (
+                        <span className="text-muted-foreground/40">—</span>
+                      )}
+                    </TableCell>
+
+                    {/* Last Activity */}
+                    <TableCell className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
+                      {p.last_activity_label || <span className="text-muted-foreground/40">—</span>}
+                    </TableCell>
+                  </TableRow>
+                )
+              })
             )}
           </TableBody>
         </Table>

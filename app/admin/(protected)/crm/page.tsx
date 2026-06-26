@@ -219,8 +219,11 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         )}
       </div>
 
-      {/* Sidebar (smart lists) + list. Stacks on phones, two columns on desktop. */}
-      <div className="mt-6 flex flex-col gap-6 md:flex-row">
+      {/* ── DESKTOP: 3-column layout (sidebar | table+toolbar | filter panel) ──
+          ── MOBILE:  single column (sidebar above table, no right panel) ────── */}
+      <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-start">
+
+        {/* LEFT: smart-list sidebar */}
         <SavedViewSidebar
           views={savedViewItems}
           activeViewId={activeViewId}
@@ -228,20 +231,19 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
           hasActiveFilter={hasActiveFilter}
         />
 
+        {/* CENTRE: search bar + toolbar row + table + pagination */}
         <div className="min-w-0 flex-1">
-          {/* Search — filters live as you type */}
-          <div>
-            <ContactsSearch initial={sp.q ?? ''} />
-          </div>
+          {/* Search (both breakpoints) */}
+          <ContactsSearch initial={sp.q ?? ''} />
 
-          {/* Filters — full-width selects stack on phones, inline on desktop */}
-          <form method="GET" action="/admin/crm" className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          {/* Mobile-only filters (inline selects, stacked) */}
+          <form method="GET" action="/admin/crm" className="mt-2 flex flex-col gap-2 md:hidden">
             {sp.view ? <input type="hidden" name="view" value={sp.view} /> : null}
             {sp.q ? <input type="hidden" name="q" value={sp.q} /> : null}
             <select
               name="stage"
               defaultValue={sp.stage ?? ''}
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground sm:h-9 sm:w-auto"
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
             >
               <option value="">All stages</option>
               {stageOptions.map((s) => (
@@ -251,7 +253,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
             <select
               name="broker"
               defaultValue={effectiveBroker ?? 'all'}
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground sm:h-9 sm:w-auto"
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
             >
               <option value="all">All brokers</option>
               {CRM_BROKERS.map((b) => (
@@ -259,15 +261,35 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
               ))}
             </select>
             <div className="flex items-center gap-3">
-              <Button type="submit" size="sm" className="h-10 sm:h-7">Apply</Button>
-              <Link href="/admin/crm" className="flex h-10 items-center text-sm text-muted-foreground hover:text-foreground sm:h-7">Clear</Link>
-              {appliedView ? (
-                <span className="text-sm text-muted-foreground">
-                  View: <span className="font-medium text-foreground">{appliedView.name}</span>
-                </span>
-              ) : null}
+              <Button type="submit" size="sm" className="h-10">Apply</Button>
+              <Link href="/admin/crm" className="flex h-10 items-center text-sm text-muted-foreground hover:text-foreground">Clear</Link>
             </div>
           </form>
+
+          {/* Desktop toolbar row: "Showing N people" + action icons + Columns/Me/Filters */}
+          <div className="mt-2 hidden items-center justify-between gap-3 md:flex">
+            <span className="text-sm text-muted-foreground tabular-nums">
+              Showing <span className="font-medium text-foreground">{total.toLocaleString('en-US')}</span> people
+              {appliedView ? (
+                <> · view: <span className="font-medium text-foreground">{appliedView.name}</span></>
+              ) : null}
+            </span>
+            {/* Mass-action icon toolbar (FUB: Email, Assign, Tag, Delete, Export) */}
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Email selected" title="Email selected">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Assign selected" title="Assign selected">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Tag selected" title="Tag selected">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Export selected" title="Export">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              </Button>
+            </div>
+          </div>
 
           {/* Selectable contacts list + sticky bulk-action bar (client island) */}
           <BulkAssignWrapper
@@ -286,19 +308,73 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
 
           {/* Pagination */}
           <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-        <span className="tabular-nums">
-          {total === 0 ? '0' : `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)}`} of {total.toLocaleString('en-US')}
-        </span>
-        <div className="flex gap-2">
-          {page > 1 ? (
-            <Link href={pageHref(page - 1)}><Button variant="outline" size="sm" className="h-10 px-4 md:h-7 md:px-2.5">Previous</Button></Link>
-          ) : null}
-          {page < lastPage ? (
-            <Link href={pageHref(page + 1)}><Button variant="outline" size="sm" className="h-10 px-4 md:h-7 md:px-2.5">Next</Button></Link>
-          ) : null}
+            <span className="tabular-nums">
+              {total === 0 ? '0' : `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)}`} of {total.toLocaleString('en-US')}
+            </span>
+            <div className="flex gap-2">
+              {page > 1 ? (
+                <Link href={pageHref(page - 1)}><Button variant="outline" size="sm" className="h-10 px-4 md:h-7 md:px-2.5">Previous</Button></Link>
+              ) : null}
+              {page < lastPage ? (
+                <Link href={pageHref(page + 1)}><Button variant="outline" size="sm" className="h-10 px-4 md:h-7 md:px-2.5">Next</Button></Link>
+              ) : null}
             </div>
           </div>
         </div>
+
+        {/* RIGHT: filter panel — desktop only (FUB "Filters" rail) */}
+        <aside className="hidden w-52 shrink-0 md:block">
+          <div className="rounded-lg border border-border bg-card p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Filters</p>
+            <form method="GET" action="/admin/crm" className="mt-3 flex flex-col gap-3">
+              {sp.view ? <input type="hidden" name="view" value={sp.view} /> : null}
+              {sp.q ? <input type="hidden" name="q" value={sp.q} /> : null}
+
+              {/* Add a filter label — mirrors FUB's empty-state phrasing */}
+              {!sp.stage && !sp.broker ? (
+                <p className="text-xs text-muted-foreground">No filters added yet.</p>
+              ) : null}
+
+              <div className="flex flex-col gap-1">
+                <label htmlFor="desk-stage" className="text-xs font-medium text-muted-foreground">Stage</label>
+                <select
+                  id="desk-stage"
+                  name="stage"
+                  defaultValue={sp.stage ?? ''}
+                  className="h-9 w-full rounded-md border border-input bg-background px-2.5 text-sm text-foreground"
+                >
+                  <option value="">All stages</option>
+                  {stageOptions.map((s) => (
+                    <option key={s.key} value={s.key}>{s.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label htmlFor="desk-broker" className="text-xs font-medium text-muted-foreground">Agent</label>
+                <select
+                  id="desk-broker"
+                  name="broker"
+                  defaultValue={effectiveBroker ?? 'all'}
+                  className="h-9 w-full rounded-md border border-input bg-background px-2.5 text-sm text-foreground"
+                >
+                  <option value="all">All agents</option>
+                  {CRM_BROKERS.map((b) => (
+                    <option key={b} value={b}>{CRM_BROKER_DISPLAY[b]}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <Button type="submit" size="sm" className="h-8 flex-1">Apply</Button>
+                <Link href="/admin/crm">
+                  <Button type="button" variant="outline" size="sm" className="h-8">Clear</Button>
+                </Link>
+              </div>
+            </form>
+          </div>
+        </aside>
+
       </div>
     </main>
   )
