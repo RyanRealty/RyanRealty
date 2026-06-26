@@ -11,7 +11,7 @@ export default async function AdminCustomReportPage() {
         <span className="mx-2">/</span>
         <span className="text-primary">Custom report builder</span>
       </nav>
-      <h1 className="text-2xl font-bold text-primary">Custom report builder</h1>
+      <h1 className="text-2xl font-semibold text-foreground">Custom report builder</h1>
       <p className="mt-2 text-muted-foreground">
         Build a report for any location and any date range. Choose what data to include: summary metrics, price bands, time series, and pending/closed sales. No presets — select city, optional subdivision, and exact start and end dates.
       </p>

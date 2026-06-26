@@ -5,7 +5,7 @@ export default async function AdminMarketReportPage() {
   const { cities } = await getReportCities()
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <h1 className="text-2xl font-bold text-foreground">Market Report Generator</h1>
+      <h1 className="text-2xl font-semibold text-foreground">Market report generator</h1>
       <p className="mt-2 text-muted-foreground">
         Select an area and time period. Stats are pre-computed by the reporting/compute-market-stats job (after sync and daily at 2 AM).
       </p>
