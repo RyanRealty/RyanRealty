@@ -1,6 +1,6 @@
 import 'server-only'
 import { unstable_cache } from 'next/cache'
-import { supabaseAnon } from '@/lib/data/client'
+import { createServiceClient } from '@/lib/supabase/service'
 
 /**
  * getCrmNewsletterSegments — the cached read side of the crm_newsletter_segments
@@ -31,8 +31,7 @@ export type CrmNewsletterSegment = {
 
 export const getCrmNewsletterSegments = unstable_cache(
   async (): Promise<CrmNewsletterSegment[]> => {
-    const sb = supabaseAnon()
-    if (!sb) return []
+    const sb = createServiceClient()
     const { data, error } = await sb
       .from('crm_newsletter_segments')
       .select('key,label,position,is_active,is_protected')

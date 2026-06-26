@@ -1,6 +1,6 @@
 import 'server-only'
 import { unstable_cache } from 'next/cache'
-import { supabaseAnon } from '@/lib/data/client'
+import { createServiceClient } from '@/lib/supabase/service'
 
 /**
  * getCrmStages — the cached read side of the crm_stages config table.
@@ -27,8 +27,7 @@ export type CrmStage = {
 
 export const getCrmStages = unstable_cache(
   async (): Promise<CrmStage[]> => {
-    const sb = supabaseAnon()
-    if (!sb) return []
+    const sb = createServiceClient()
     const { data, error } = await sb
       .from('crm_stages')
       .select('key,label,position,is_active,is_protected')

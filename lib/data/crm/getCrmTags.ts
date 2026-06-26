@@ -1,6 +1,6 @@
 import 'server-only'
 import { unstable_cache } from 'next/cache'
-import { supabaseAnon } from '@/lib/data/client'
+import { createServiceClient } from '@/lib/supabase/service'
 
 /**
  * getCrmTags — the cached read side of the crm_tags TAXONOMY plus the live usage
@@ -68,8 +68,7 @@ export function tallyTagUsage(peopleTags: ReadonlyArray<readonly string[] | null
 
 export const getCrmTags = unstable_cache(
   async (): Promise<CrmTag[]> => {
-    const sb = supabaseAnon()
-    if (!sb) return []
+    const sb = createServiceClient()
 
     const { data: taxonomy, error: taxErr } = await sb
       .from('crm_tags')

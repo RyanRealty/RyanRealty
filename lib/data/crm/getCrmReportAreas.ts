@@ -1,6 +1,6 @@
 import 'server-only'
 import { unstable_cache } from 'next/cache'
-import { supabaseAnon } from '@/lib/data/client'
+import { createServiceClient } from '@/lib/supabase/service'
 
 /**
  * getCrmReportAreas — the cached read side of the crm_report_areas config table.
@@ -32,8 +32,7 @@ export type CrmReportArea = {
 
 export const getCrmReportAreas = unstable_cache(
   async (): Promise<CrmReportArea[]> => {
-    const sb = supabaseAnon()
-    if (!sb) return []
+    const sb = createServiceClient()
     const { data, error } = await sb
       .from('crm_report_areas')
       .select('key,label,position,is_active,is_protected')
