@@ -51,5 +51,13 @@
 - [ ] One dedicated end-to-end review over every screen vs its reference.
 - [ ] Production-grade checks: no overflow, gates green, e2e works, a real user can use it.
 
+## Remaining (long tail — for the next pass; same pattern: ref PNG → rebuild → browser-verify at 1440+375 → gates → commit)
+- Individual report detail views (FUB 32–42) — style each report page under /admin/reports/* + /admin/analytics/*.
+- Deal-record modal (FUB deal detail) — clicking a deal card; ours links to the contact.
+- Mobile contact-detail tab labels — audit deliberately mapped our Overview/Comms/Tasks/Watching/Workflow to FUB Info/Comms/Homes/Notes; revisit only if Matt wants exact labels.
+- **FUB admin panels that are FEATURES we don't have** (these are build-new, not restyle): Lead Flow router, Groups, Ponds, Action Plans, Automations visual builder, Email/Text Template library + editor, Team mgmt, Import wizard, Phone Numbers, Company settings, API keys, Integrations marketplace, Business Registration, Billing, Email Domain Auth, My Settings/Devices/Power-Ups. Flag each as feature-gap vs styling-gap before building.
+- Calendar (FUB 06) — no /admin/calendar route exists; dashboard MonthCalendar is the closest. Build the route if Matt wants the full calendar.
+
 ## Log (newest first)
-- 2026-06-26: Started P0. Reviewed FUB refs (dashboard/people/person-record/inbox/deals/reporting/admin). Logo asset confirmed. Tracker created.
+- 2026-06-26 (cont.): Shipped P0 shell (5-group menu Dashboard/CRM/Deals/Reports/Admin, horizontal logo, FUB navy top nav) + P2 desktop parity for Dashboard, People, Reports, Inbox, Deals, Person record (3-col), Admin settings catalog, Tasks, and config subpages (stages/tags/custom-fields/segments/areas). Each browser-verified at 1440 + mobile, gates green, committed + pushed (commits 9acac609 → 604f5932). Pattern: ref PNG → subagent rebuild → my in-browser review (caught + fixed a Deals server/client crash + a console-kit regression) → gates → commit.
+- 2026-06-26: Started P0. Reviewed FUB refs. Logo asset confirmed. Tracker created.
