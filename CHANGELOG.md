@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.626.6 (2026-06-26)
+
+### Bug Fixes
+- fix(crm): tasks page crash + settings subscribers broken join (runtime errors)
+
+---
+
+
 ## v1.626.5 (2026-06-26)
 
 ### Bug Fixes
