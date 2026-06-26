@@ -171,6 +171,10 @@
     {
       "path": "/api/cron/meta-audience-sync",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/deploy-health",
+      "schedule": "7,37 * * * *"
     }
   ]
 }

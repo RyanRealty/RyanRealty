@@ -37,6 +37,10 @@
       "kind": "internal",
       "reason": "Internal: new-CMA-request notification to the assigned broker (sendBrokerNotification), not the lead. The lead confirmation (sendLeadConfirmation) is gated by isSuppressedByEmail."
     },
+    "lib/deploy-health-alert.ts:53": {
+      "kind": "internal",
+      "reason": "Internal: ops alert to MATT_ALERT_EMAIL when production has fallen behind main (a stuck/failed deploy). No lead recipient. Permanently allowlisted."
+    },
     "lib/expired-alert.ts:108": {
       "kind": "internal",
       "reason": "Internal: expired-listing alert to Matt's inbox (MATT_ALERT_EMAIL), not the homeowner. Permanently allowlisted."

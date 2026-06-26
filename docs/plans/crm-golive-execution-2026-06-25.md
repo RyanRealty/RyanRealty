@@ -137,7 +137,29 @@ The build fix got the CRM live; walking the LIVE current code then surfaced runt
 - The Round-2 crashes are a SECOND class: **runtime** RSC errors (function-prop serialization) that NO build
   catches — they only 500 at request time, and no test rendered those admin routes.
 
-## Hardening shipped + recommended
+## Hardening — all three recommendations SHIPPED (2026-06-26)
+
+1. **Pre-push Turbopack build gate (G47)** — `.husky/pre-push` now runs `npm run build` (Turbopack, what
+   Vercel runs) after the tsc check, so a use-server/RSC build break **cannot reach `main`** in the first
+   place. Skips when the push touches no buildable code (docs/json only) to keep doc pushes fast;
+   `SKIP_LOCAL_GATES=1` bypasses. This is the single change that would have prevented the whole incident.
+2. **Deploy-failure alert cron** — `app/api/cron/deploy-health/route.ts` (+ `lib/deploy-health-alert.ts`),
+   scheduled `7,37 * * * *` in `vercel.json`. Runs ON the live deploy, so its baked-in
+   `VERCEL_GIT_COMMIT_SHA` IS the live commit; compares it to GitHub `main` HEAD (public API, **no Vercel
+   token needed**) and emails Matt (via Resend, baselined internal send) if prod is behind past a 20-min
+   grace window — i.e. a deploy is stuck/ERROR. Self-failures (GitHub down, no SHA) never alert.
+3. **Admin-route runtime smoke** — `scripts/admin-route-smoke.mjs` (`npm run e2e:admin-smoke`) fetches every
+   `/admin/crm/*` + `/admin/reports/emails` route with an admin cookie and fails on any error boundary
+   (the runtime crash class no build catches). OPT-IN: **skips cleanly (exit 0) without `ADMIN_SMOKE_COOKIE`**,
+   so it is safe in CI as-is. ACTIVATION (Matt): set `ADMIN_SMOKE_COOKIE` (a logged-in admin Cookie header,
+   refreshed when the session rotates) — or wire a CI step that logs a CI-only admin account in and captures
+   the cookie — then run it post-deploy. `redirect: 'manual'` means a stale cookie fails loudly (never a
+   false green).
+
+Verified: tsc clean; `ci:rsc-fn-props`, `ci:email-send-gated` (17 internal allowlisted), `ci:gates-wired`
+(107 files, 0 orphaned) all green; admin-smoke skip path exits 0.
+
+## Earlier-shipped gate
 
 - **SHIPPED — `ci:rsc-fn-props` gate** (`scripts/check-rsc-fn-props.mjs`, wired into `ci:gates`): fails if a
   server component passes a `format*` function as a JSX prop (the exact tasks/inbox crash class). Baseline 0;

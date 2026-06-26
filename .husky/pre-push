@@ -3,18 +3,13 @@
 
 # G46 — commit self-containment gate
 #
-# This is the ONLY check that runs here.  The old body (ci:gates) was
-# replaced because ci:gates operates on the working tree — it can silently
-# pass when the commit is broken (working tree has symbols the commit lacks).
-#
 # check-commit-compiles.mjs materializes the actual HEAD tree into a temp dir
 # (git archive HEAD | tar -x), symlinks node_modules, and type-checks it in
 # isolation.  This is tree-state-INDEPENDENT: it sees exactly what was
 # committed, nothing more.
 #
 # ci:gates still runs in GitHub Actions CI on every push, so the full suite
-# is not skipped — it just runs at the right moment (after code lands) rather
-# than on the working tree before push.
+# is not skipped — it just runs at the right moment (after code lands).
 #
 # SKIP_LOCAL_GATES=1 bypasses this hook (same escape hatch as before).
 
@@ -23,4 +18,38 @@ if [ "$SKIP_LOCAL_GATES" = "1" ]; then
   exit 0
 fi
 
-node scripts/check-commit-compiles.mjs --head
+node scripts/check-commit-compiles.mjs --head || exit 1
+
+# G47 — production build gate (Turbopack, matches Vercel)
+#
+# WHY: a "use server" / RSC build break passes tsc (G46 above), ci:gates, AND a
+# webpack build, but FAILS the Turbopack build Vercel runs (Next 16 defaults to
+# Turbopack) — then silently never deploys while the last good deploy keeps
+# serving. This broke production for the entire CRM Wave 3->9 series with every
+# gate green. tsc cannot catch this class; only an actual Turbopack build can.
+# Pushes go straight to main (no PR), so this local hook is the only pre-main
+# chokepoint. (See docs/plans/crm-golive-execution-2026-06-25.md.)
+#
+# Skips when the push touches no buildable code (docs / json / changelog only)
+# so doc pushes stay fast. SKIP_LOCAL_GATES=1 bypasses everything.
+
+if git rev-parse --abbrev-ref @{u} >/dev/null 2>&1; then
+  CHANGED=$(git diff --name-only @{u}..HEAD 2>/dev/null)
+else
+  CHANGED="__force_build__"   # no upstream tracking — build to be safe
+fi
+
+if [ -z "$CHANGED" ]; then
+  echo "Pre-push: nothing ahead of upstream — skipping build."
+elif [ "$CHANGED" = "__force_build__" ] || printf '%s\n' "$CHANGED" | grep -qE '\.(ts|tsx|js|jsx|mjs|cjs|css)$|(^|/)next\.config|(^|/)package\.json|(^|/)tsconfig'; then
+  echo "Pre-push: production build (Turbopack, matches Vercel) — catches use-server/RSC breaks tsc misses…"
+  npm run build || {
+    echo ""
+    echo "✗ next build FAILED — this commit would ERROR on Vercel and silently never deploy."
+    echo "  Fix the build before pushing. SKIP_LOCAL_GATES=1 bypasses (only if you know why)."
+    exit 1
+  }
+  echo "✓ next build OK"
+else
+  echo "Pre-push: only non-buildable files changed — skipping build."
+fi
