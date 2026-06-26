@@ -20,7 +20,16 @@ import { createServiceClient } from '@/lib/supabase/service'
  * fallback const takes over rather than the whole new-lead flow crashing.
  */
 
-export type CrmTriggerType = 'tag_added' | 'stage_changed' | 'source_is' | 'inactivity'
+export type CrmTriggerType =
+  | 'tag_added'
+  | 'stage_changed'
+  | 'source_is'
+  | 'inactivity'
+  | 'deal_stage_changed'
+  | 'inquiry'
+  | 'property_saved'
+  | 'calendar_date'
+  | 'appointment'
 export type CrmActionType = 'enroll_sequence' | 'add_tag' | 'set_stage' | 'assign_broker'
 
 export type CrmAutomationRule = {
@@ -48,7 +57,17 @@ type RawRule = {
   position: number
 }
 
-const TRIGGER_TYPES: readonly CrmTriggerType[] = ['tag_added', 'stage_changed', 'source_is', 'inactivity']
+const TRIGGER_TYPES: readonly CrmTriggerType[] = [
+  'tag_added',
+  'stage_changed',
+  'source_is',
+  'inactivity',
+  'deal_stage_changed',
+  'inquiry',
+  'property_saved',
+  'calendar_date',
+  'appointment',
+]
 const ACTION_TYPES: readonly CrmActionType[] = ['enroll_sequence', 'add_tag', 'set_stage', 'assign_broker']
 
 /** Narrow a raw string to a known trigger type (the CHECK guarantees it, but a

@@ -5,13 +5,14 @@ import { getCrmAccess } from '@/app/actions/crm'
 import {
   updateCrmSequenceStepsAction,
   updateCrmSequenceSettingsAction,
+  updateCrmSequenceTriggersAction,
 } from '@/app/actions/crm-sequences'
 import { getCrmTemplatesAdmin } from '@/lib/data/crm/getCrmTemplatesAdmin'
 import { getCrmTags } from '@/lib/data/crm/getCrmTags'
 import { getCrmSequenceForEdit } from '@/lib/data/crm/getCrmSequenceForEdit'
 import { getWorkflowStepAnalytics } from '@/lib/data/crm/getWorkflowAnalytics'
 import { scopeBroker } from '@/lib/crm/scope'
-import type { Step } from '@/lib/crm/sequence-step-schema'
+import type { AnyStepOrCondition, SequenceTrigger } from '@/lib/crm/sequence-step-schema'
 import {
   StepBuilder,
   type TemplateOption,
@@ -47,7 +48,7 @@ export default async function CrmSequenceEditPage({
 
   // ── Server-action adapters bound to this sequence id ────────────────────────
 
-  async function saveSteps(steps: Step[]) {
+  async function saveSteps(steps: AnyStepOrCondition[]) {
     'use server'
     return updateCrmSequenceStepsAction(id, steps)
   }
@@ -60,6 +61,11 @@ export default async function CrmSequenceEditPage({
       description: input.description,
       stopOnReply: input.stopOnReply,
     })
+  }
+
+  async function saveTriggers(triggers: SequenceTrigger[]) {
+    'use server'
+    return updateCrmSequenceTriggersAction(id, triggers)
   }
 
   const templateOptions: TemplateOption[] = templates
@@ -77,7 +83,8 @@ export default async function CrmSequenceEditPage({
     emailsSent: r.emailsSent,
   }))
 
-  const initialSteps = (Array.isArray(seq.steps) ? seq.steps : []) as Step[]
+  const initialSteps = (Array.isArray(seq.steps) ? seq.steps : []) as AnyStepOrCondition[]
+  const initialTriggers = (Array.isArray(seq.triggers) ? seq.triggers : []) as SequenceTrigger[]
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
@@ -107,7 +114,8 @@ export default async function CrmSequenceEditPage({
           tags={tagOptions}
           funnel={funnelRows}
           funnelUnreadable={funnel.unreadable}
-          actions={{ saveSteps, saveSettings }}
+          initialTriggers={initialTriggers}
+          actions={{ saveSteps, saveSettings, saveTriggers }}
         />
       </div>
     </main>

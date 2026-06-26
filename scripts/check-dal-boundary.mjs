@@ -96,6 +96,11 @@ const WRITE_PATH_PREFIXES = [
   // consumer page, so consumer-read protection is unaffected. Matches the target
   // architecture in docs/plans/TC_ARCHITECTURE_REVIEW.md §4.1.
   'lib/tc/',
+  // The CRM domain layer (lib/crm/) owns sequence-engine runtime state-machine
+  // mutations (trigger-dispatch, enrollment side-effects). Server-only, never
+  // consumer-facing, same exemption pattern as lib/tc/. Added 2026-06-27 when
+  // fireTrigger was extracted as a shared library callable from multiple action paths.
+  'lib/crm/',
 ]
 
 // Default-deny (audit p2.1): flag `.from('<table>')` for ANY lowercase snake_case

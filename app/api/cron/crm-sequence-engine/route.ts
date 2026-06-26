@@ -25,6 +25,9 @@ import { isSuppressed } from '@/lib/crm/suppressions'
 import { attributeSiteLinks, renderCrmMerge, referencesCmaLink, findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { sendSmsViaMessagingService, getA2pCampaignStatus } from '@/lib/crm/twilio'
 import { addPersonTags, replacePersonTags } from '@/lib/followupboss'
+import { isConditionNode, type AnyStepOrCondition } from '@/lib/crm/sequence-step-schema'
+import { resolveConditionPath } from '@/lib/crm/conditions-eval'
+import { manualEnrollPerson } from '@/lib/crm/enroll'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -89,6 +92,10 @@ type Step = {
    *  (A2P not live and no iMessage relay) — "optional email or text". */
   fallbackEmailSubject?: string
   fallbackEmailBody?: string
+  /** v2 action channels — change_stage / add_note / reassign / run_automation */
+  value?: string
+  /** v2 condition node marker — discriminated by type === 'condition' */
+  type?: string
 }
 
 function renderMerge(text: string, person: { first_name?: string | null; name?: string | null; custom?: Record<string, unknown>; assigned_broker?: string | null; fub_legacy_id?: number | null }): string {
@@ -143,7 +150,36 @@ export async function GET(request: Request) {
         }
       }
 
-      const step = (seq.steps ?? [])[en.step_index]
+      // ── Condition node resolution ────────────────────────────────────────
+      // A 'condition' node (type === 'condition') is not an execution step —
+      // it is a branching decision. The engine evaluates it, splices the
+      // chosen path into the remaining steps, and then re-reads the step at
+      // the same index (which is now the first step of the chosen path).
+      // This is done in a loop so nested conditions resolve correctly.
+      let rawSteps = (seq.steps ?? []) as AnyStepOrCondition[]
+      let condIterations = 0
+      while (condIterations < 10) {
+        const candidate = rawSteps[en.step_index] as AnyStepOrCondition | undefined
+        if (!candidate || !isConditionNode(candidate)) break
+        const { data: condPerson } = await sb
+          .from('crm_people')
+          .select('stage,tags,source')
+          .eq('id', en.person_id)
+          .single()
+        const chosen = resolveConditionPath(candidate, condPerson ?? {})
+        // Splice: replace the condition node with the chosen path's steps
+        rawSteps = [
+          ...rawSteps.slice(0, en.step_index),
+          ...chosen,
+          ...rawSteps.slice(en.step_index + 1),
+        ]
+        // Write the materialized steps back so the advance logic uses the same
+        // array. We do NOT persist this to the DB (the steps column stays the
+        // authoritative tree); the flattening is purely in-memory for this tick.
+        condIterations++
+      }
+
+      const step = rawSteps[en.step_index] as Step | undefined
       if (!step || !step.channel) {
         await finish({ status: 'stopped' })
         await log(`Sequence "${seq.name}" stopped — step ${en.step_index} missing or not normalized`)
@@ -196,7 +232,7 @@ export async function GET(request: Request) {
               await log(`Sequence "${seq.name}" step ${en.step_index} skipped — ${to} already received ${step.templateKey} via a sibling person row`)
               skippedDupEmail++
               const nextIdx = en.step_index + 1
-              const nxt = (seq.steps ?? [])[nextIdx] as Step | undefined
+              const nxt = rawSteps[nextIdx] as Step | undefined
               if (!nxt) { await finish({ status: 'completed', step_index: nextIdx }); completed++ }
               else {
                 const dMs = ((nxt.delayDays ?? 0) * 86400 + (nxt.delayMinutes ?? 0) * 60) * 1000
@@ -412,6 +448,71 @@ export async function GET(request: Request) {
           if (step.removeTags?.length) await replacePersonTags(person.fub_legacy_id, next)
           else if (step.addTags?.length) await addPersonTags(person.fub_legacy_id, step.addTags)
         }
+
+      // ── v2 channels ────────────────────────────────────────────────────────
+
+      } else if (step.channel === 'change_stage') {
+        const stage = (step.value ?? '').trim()
+        if (!stage) {
+          await finish({ status: 'stopped' })
+          await log(`Sequence "${seq.name}" stopped — change_stage step has no value`)
+          errored++
+          continue
+        }
+        await sb.from('crm_people').update({ stage, updated_at: new Date().toISOString() }).eq('id', person.id)
+        await sb.from('crm_timeline').insert({
+          person_id: person.id, kind: 'stage_change',
+          title: `Stage updated by workflow "${seq.name}": ${stage}`,
+          source: 'sequence',
+        })
+
+      } else if (step.channel === 'add_note') {
+        const noteText = (step.value ?? '').trim()
+        if (!noteText) {
+          await finish({ status: 'stopped' })
+          await log(`Sequence "${seq.name}" stopped — add_note step has no text`)
+          errored++
+          continue
+        }
+        const renderedNote = renderMerge(noteText, person)
+        await sb.from('crm_timeline').insert({
+          person_id: person.id, kind: 'note',
+          title: 'Note added by workflow',
+          body: renderedNote,
+          source: 'sequence',
+          broker: person.assigned_broker ?? null,
+        })
+
+      } else if (step.channel === 'reassign') {
+        const broker = (step.value ?? '').trim()
+        if (!broker) {
+          await finish({ status: 'stopped' })
+          await log(`Sequence "${seq.name}" stopped — reassign step has no broker`)
+          errored++
+          continue
+        }
+        await sb.from('crm_people').update({ assigned_broker: broker, updated_at: new Date().toISOString() }).eq('id', person.id)
+        await sb.from('crm_timeline').insert({
+          person_id: person.id, kind: 'system',
+          title: `Reassigned by workflow "${seq.name}" to ${broker}`,
+          source: 'sequence',
+        })
+
+      } else if (step.channel === 'run_automation') {
+        const targetId = Number(step.value)
+        if (!Number.isInteger(targetId) || targetId <= 0) {
+          await finish({ status: 'stopped' })
+          await log(`Sequence "${seq.name}" stopped — run_automation step has invalid sequence id`)
+          errored++
+          continue
+        }
+        // Fire-and-don't-block: enroll the person in the target sequence.
+        // If they are already enrolled the enroll guard returns enrolled:false — fine.
+        const enrollResult = await manualEnrollPerson(person.id, targetId, `seq:${seq.name}`)
+        await log(
+          `Workflow "${seq.name}" triggered automation: ${enrollResult.enrolled ? `enrolled in #${targetId}` : `skipped (${(enrollResult as { reason?: string }).reason ?? 'already enrolled'})`}`,
+        )
+
       } else {
         await finish({ status: 'stopped' })
         await log(`Sequence "${seq.name}" stopped — unknown channel "${step.channel}"`)
@@ -419,9 +520,10 @@ export async function GET(request: Request) {
         continue
       }
 
-      // advance
+      // advance — use the (possibly condition-flattened) rawSteps array so the
+      // delay of the next step is read from the materialized path, not the tree.
       const nextIndex = en.step_index + 1
-      const nextStep = (seq.steps ?? [])[nextIndex] as Step | undefined
+      const nextStep = rawSteps[nextIndex] as Step | undefined
       if (!nextStep) {
         await finish({ status: 'completed', step_index: nextIndex })
         await log(`Sequence "${seq.name}" completed`)

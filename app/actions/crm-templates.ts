@@ -116,6 +116,39 @@ export async function updateTemplateAction(id: number, input: CrmTemplateInput):
   return { ok: true, id: tplId, message: 'Template saved' }
 }
 
+/**
+ * Rename a template category across all templates that share the old name.
+ * Blank newName collapses them to Uncategorized (sets category = null).
+ * Superuser-only because renaming affects every template in the category.
+ */
+export async function renameCategoryAction(
+  oldName: string,
+  newName: string,
+): Promise<CrmTemplateResult> {
+  const guard = await requireSuperuser()
+  if (!guard.ok) return guard
+
+  const old = (oldName ?? '').trim()
+  if (!old) return { ok: false, error: 'Old category name is required' }
+
+  const next = (newName ?? '').trim() || null // blank → null (Uncategorized)
+
+  const sb = createServiceClient()
+  const { error } = await sb
+    .from('crm_templates')
+    .update({ category: next, updated_at: new Date().toISOString() })
+    .eq('category', old)
+  if (error) return { ok: false, error: error.message }
+
+  revalidateTag(CRM_TEMPLATES_ADMIN_TAG, 'max')
+  return {
+    ok: true,
+    message: next
+      ? `Category renamed from "${old}" to "${next}"`
+      : `Category "${old}" cleared (templates moved to Uncategorized)`,
+  }
+}
+
 /** Soft-enable/disable a template (hides it from pickers without deleting). */
 export async function setTemplateActiveAction(id: number, isActive: boolean): Promise<CrmTemplateResult> {
   const guard = await requireAdmin()

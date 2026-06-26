@@ -83,6 +83,11 @@ const TRIGGER_TYPES = [
   { value: 'stage_changed', label: 'Stage changed' },
   { value: 'source_is', label: 'Source is' },
   { value: 'inactivity', label: 'Inactive for N days' },
+  { value: 'deal_stage_changed', label: 'Deal stage changed' },
+  { value: 'inquiry', label: 'Inquiry submitted' },
+  { value: 'property_saved', label: 'Property saved' },
+  { value: 'calendar_date', label: 'Calendar date' },
+  { value: 'appointment', label: 'Appointment' },
 ] as const
 
 const ACTION_TYPES = [

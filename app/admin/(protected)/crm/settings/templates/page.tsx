@@ -30,6 +30,7 @@ export default async function CrmTemplatesSettingsPage() {
     category: t.category,
     isActive: t.isActive,
     usage: t.usage,
+    perf: t.perf ?? null,
   }))
 
   return (

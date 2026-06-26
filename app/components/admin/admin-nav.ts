@@ -170,6 +170,8 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
     ...has(marketing, '/admin/broker-links'),
     ...content,
     ...system,
+    item('/admin/crm/import', 'Import contacts', 'database'),
+    item('/admin/settings', 'My settings', 'user-cog'),
   ]
 
   const sections: AdminNavSection[] = [

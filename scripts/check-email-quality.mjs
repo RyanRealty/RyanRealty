@@ -36,6 +36,8 @@ const NON_SENDER = new Set([
   'lib/crm/gmail.ts',
   'lib/email/prepare.ts',
   'lib/email/deliverability.ts',
+  // Internal infrastructure alerts — not marketing/automated sends
+  'lib/deploy-health-alert.ts',
 ])
 
 const SEND_CALL = /\bsendEmail\s*\(|\bsendBatchEmails\s*\(|\bsendCrmEmail\s*\(/

@@ -34,7 +34,7 @@ describe('mapTemplateRow', () => {
       category: 'buyer',
       is_active: true,
     }
-    expect(mapTemplateRow(row, 3)).toEqual({
+    expect(mapTemplateRow(row, 3, null)).toEqual({
       id: 7,
       key: 'email-welcome',
       channel: 'email',
@@ -44,6 +44,7 @@ describe('mapTemplateRow', () => {
       category: 'buyer',
       isActive: true,
       usage: 3,
+      perf: null,
     })
   })
 
@@ -58,7 +59,7 @@ describe('mapTemplateRow', () => {
       category: null,
       is_active: false,
     }
-    const m = mapTemplateRow(row, 0)
+    const m = mapTemplateRow(row, 0, null)
     expect(m.channel).toBe('email')
     expect(m.subject).toBeNull()
     expect(m.body).toBe('')

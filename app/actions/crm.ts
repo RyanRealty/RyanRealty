@@ -553,7 +553,16 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
     // Instrument open/click like the sequence engine so the conversation
     // engagement panel ("Opened N×") works for manually-composed emails too.
     // label MUST equal the subject — the panel keys engagement on the email title.
-    track: { personId, emailKey: `manual:${personId}:${Date.now()}`, label: mergedSubject },
+    // Stamp tpl:<key> when a template was used so email_events rows are
+    // queryable per-template in getTemplatePerformance / perf columns.
+    track: {
+      personId,
+      emailKey: (() => {
+        const tplKey = String(formData.get('tplKey') ?? '').trim()
+        return tplKey ? `tpl:${tplKey}:${personId}:${Date.now()}` : `manual:${personId}:${Date.now()}`
+      })(),
+      label: mergedSubject,
+    },
   })
   if (!sent.ok) return { ok: false, error: sent.error }
 
@@ -821,24 +830,24 @@ export async function listCrmDeals(brokerSlug?: string | null): Promise<CrmDealR
   }))
 }
 
-export async function getCrmEmailTemplates(): Promise<Array<{ key: string; name: string; subject: string | null; body: string }>> {
+export async function getCrmEmailTemplates(): Promise<Array<{ key: string; name: string; subject: string | null; body: string; category: string | null }>> {
   const sb = createServiceClient()
   const { data } = await sb
     .from('crm_templates')
-    .select('key,name,subject,body')
+    .select('key,name,subject,body,category')
     .eq('channel', 'email')
     .order('name')
-  return (data ?? []) as Array<{ key: string; name: string; subject: string | null; body: string }>
+  return (data ?? []) as Array<{ key: string; name: string; subject: string | null; body: string; category: string | null }>
 }
 
-export async function getCrmSmsTemplates(): Promise<Array<{ key: string; name: string; body: string }>> {
+export async function getCrmSmsTemplates(): Promise<Array<{ key: string; name: string; body: string; category: string | null }>> {
   const sb = createServiceClient()
   const { data } = await sb
     .from('crm_templates')
-    .select('key,name,body')
+    .select('key,name,body,category')
     .eq('channel', 'sms')
     .order('name')
-  return (data ?? []) as Array<{ key: string; name: string; body: string }>
+  return (data ?? []) as Array<{ key: string; name: string; body: string; category: string | null }>
 }
 
 // A2P campaign status changes on a multi-day carrier-review cadence — a live
@@ -1101,6 +1110,14 @@ export async function updateCrmStageAction(formData: FormData): Promise<CrmActio
   if (person.fub_legacy_id) {
     await updatePersonAutomationState({ personId: person.fub_legacy_id, stage })
   }
+  // Automation trigger dispatch: fire stage_changed so any crm_automation_rules
+  // rows or sequence-level triggers that match this stage can enroll the person.
+  // Non-blocking — a trigger failure must never abort the stage update.
+  void import('@/lib/crm/trigger-dispatch').then(({ fireTrigger }) =>
+    fireTrigger('stage_changed', stage, personId).catch((e) =>
+      console.warn('[crm] trigger-dispatch stage_changed failed:', e),
+    ),
+  )
   // CRM→CAPI qualified loop: a lead crossing INTO a qualifying stage (from a
   // non-qualifying one) fires a Meta quality event so Meta learns which leads
   // convert. Fire-and-forget + dry-run-safe (gated by META_CAPI_QUALIFIED_ENABLED);

@@ -161,6 +161,21 @@ export default async function CrmSettingsPage() {
       label: 'Account',
       cards: [
         {
+          href: '/admin/crm/settings/team',
+          title: 'Team',
+          description: 'Per-broker permissions: export access, lead-routing pause, role, and last-seen activity.',
+          count: brokers.length,
+          countLabel: brokers.length === 1 ? 'member' : 'members',
+          icon: '◎',
+        },
+        {
+          href: '/admin/crm/import',
+          title: 'Import contacts',
+          description: 'Upload a CSV to add or update contacts in bulk. Deduplicates by email and merges tags.',
+          countLabel: 'wizard',
+          icon: '↑',
+        },
+        {
           href: '/admin/crm/settings/appointments',
           title: 'Appointment types & outcomes',
           description: 'The type and outcome labels used when scheduling on the calendar.',

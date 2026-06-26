@@ -34,7 +34,7 @@ import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireCrmAccess, type CrmActionResult } from '@/app/actions/crm'
 import { getCrmTemplatesAdmin } from '@/lib/data/crm/getCrmTemplatesAdmin'
-import { parseSteps, type Step } from '@/lib/crm/sequence-step-schema'
+import { parseSteps, parseSequenceTriggers, isConditionNode, type Step, type AnyStepOrCondition, type SequenceTrigger } from '@/lib/crm/sequence-step-schema'
 
 /** Enrollment statuses that count as LIVE (the unique active index treats both
  *  as occupying the person+sequence slot). A delete must refuse while any of
@@ -70,8 +70,8 @@ function revalidateWorkflows(id?: number): void {
  */
 async function validateStepsWithTemplates(
   raw: unknown,
-): Promise<{ ok: true; steps: Step[] } | { ok: false; error: string }> {
-  let steps: Step[]
+): Promise<{ ok: true; steps: AnyStepOrCondition[] } | { ok: false; error: string }> {
+  let steps: AnyStepOrCondition[]
   try {
     steps = parseSteps(raw)
   } catch (e) {
@@ -79,7 +79,12 @@ async function validateStepsWithTemplates(
     return { ok: false, error: `Step validation failed. ${msg}` }
   }
 
-  const usedKeys = [...new Set(steps.map((s) => s.templateKey).filter((k): k is string => !!k))]
+  const usedKeys = [...new Set(
+    steps
+      .filter((s): s is Step => !isConditionNode(s))
+      .map((s) => s.templateKey)
+      .filter((k): k is string => !!k)
+  )]
   if (usedKeys.length) {
     const templates = await getCrmTemplatesAdmin()
     const liveKeys = new Set(templates.filter((t) => t.isActive).map((t) => t.key))
@@ -110,7 +115,7 @@ export async function createCrmSequenceAction(input: {
   const name = (input.name ?? '').trim()
   if (!name) return { ok: false, error: 'Name is required' }
 
-  let steps: Step[] = []
+  let steps: AnyStepOrCondition[] = []
   if (input.steps !== undefined && input.steps !== null) {
     const validated = await validateStepsWithTemplates(input.steps)
     if (!validated.ok) return validated
@@ -289,6 +294,48 @@ export async function updateCrmSequenceSettingsAction(input: {
   if (error) return { ok: false, error: error.message }
 
   revalidateWorkflows(input.id)
+  return { ok: true }
+}
+
+// ── Triggers rewrite ─────────────────────────────────────────────────────────
+
+/**
+ * Rewrite a workflow's triggers array. Validates each trigger shape then writes
+ * the `triggers` jsonb column. The steps column is not touched. Empty array is
+ * valid (manual-enroll-only workflow).
+ */
+export async function updateCrmSequenceTriggersAction(
+  id: number,
+  triggers: unknown,
+): Promise<CrmActionResult> {
+  const guard = await requireSuperuser()
+  if (!guard.ok) return guard
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, error: 'Bad input' }
+
+  let parsed: SequenceTrigger[]
+  try {
+    parsed = parseSequenceTriggers(triggers)
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'invalid triggers'
+    return { ok: false, error: `Trigger validation failed. ${msg}` }
+  }
+
+  const sb = createServiceClient()
+  const { data: seq, error: seqErr } = await sb
+    .from('crm_sequences')
+    .select('id')
+    .eq('id', id)
+    .maybeSingle()
+  if (seqErr) return { ok: false, error: seqErr.message }
+  if (!seq) return { ok: false, error: 'Workflow not found' }
+
+  const { error } = await sb
+    .from('crm_sequences')
+    .update({ triggers: parsed, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) return { ok: false, error: error.message }
+
+  revalidateWorkflows(id)
   return { ok: true }
 }
 

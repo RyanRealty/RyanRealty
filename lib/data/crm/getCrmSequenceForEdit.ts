@@ -25,6 +25,8 @@ export type CrmSequenceEditRow = {
   stopOnReply: boolean
   fubLegacyPlanId: number | null
   steps: unknown[]
+  /** v2: sequence-level triggers array. Empty = manual-enroll-only. */
+  triggers: unknown[]
 }
 
 export async function getCrmSequenceForEdit(id: number): Promise<CrmSequenceEditRow | null> {
@@ -32,7 +34,7 @@ export async function getCrmSequenceForEdit(id: number): Promise<CrmSequenceEdit
   const sb = createServiceClient()
   const { data, error } = await sb
     .from('crm_sequences')
-    .select('id,name,description,status,stop_on_reply,fub_legacy_plan_id,steps')
+    .select('id,name,description,status,stop_on_reply,fub_legacy_plan_id,steps,triggers')
     .eq('id', id)
     .maybeSingle()
   if (error || !data) {
@@ -47,5 +49,6 @@ export async function getCrmSequenceForEdit(id: number): Promise<CrmSequenceEdit
     stopOnReply: data.stop_on_reply !== false,
     fubLegacyPlanId: data.fub_legacy_plan_id == null ? null : Number(data.fub_legacy_plan_id),
     steps: Array.isArray(data.steps) ? (data.steps as unknown[]) : [],
+    triggers: Array.isArray(data.triggers) ? (data.triggers as unknown[]) : [],
   }
 }

@@ -92,6 +92,12 @@ export type WorkflowAnalyticsRow = {
   stopped: number
   /** status = awaiting_broker | awaiting_broker_next. */
   awaitingBroker: number
+  /**
+   * Count of enrollments where the enrolled person has at least one email open
+   * or reply in email_events keyed to this sequence. NULL when the email_events
+   * read was unavailable (distinguished from a true 0 — §0 rule: unreadable ≠ 0).
+   */
+  engaged: number | null
 }
 
 export type WorkflowAnalyticsResult = {
@@ -132,6 +138,7 @@ export function buildWorkflowAnalytics(
       completed: 0,
       stopped: 0,
       awaitingBroker: 0,
+      engaged: null, // filled in by the caller after email_events read
     })
   }
   for (const e of enrollments) {
@@ -195,7 +202,30 @@ async function readWorkflowAnalytics(broker: string | null): Promise<WorkflowAna
     status: String(e.status),
   }))
 
-  return { rows: buildWorkflowAnalytics(sequences, enrollments), unreadable: false }
+  const rows = buildWorkflowAnalytics(sequences, enrollments)
+
+  // Engaged count: for each sequence, count distinct person_ids that have an
+  // email_events row with event 'opened' or 'replied' keyed to this sequence
+  // (emailKey prefix `seq:<name>:`). Best-effort — a read failure leaves
+  // engaged = null (not a fake 0, per §0).
+  try {
+    for (const row of rows) {
+      const prefix = `seq:${row.name}:`
+      const { count, error: evErr } = await sb
+        .from('email_events')
+        .select('person_id', { count: 'exact', head: true })
+        .in('event', ['opened', 'replied'])
+        .like('email_key', `${prefix}%`)
+      if (!evErr) {
+        row.engaged = count ?? 0
+      }
+      // if evErr: leave engaged = null (honest unreadable)
+    }
+  } catch {
+    // Non-fatal: engaged stays null for all rows
+  }
+
+  return { rows, unreadable: false }
 }
 
 /**

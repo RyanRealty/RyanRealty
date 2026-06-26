@@ -4,9 +4,13 @@
  * CRM SMS composer with a phone-style preview of exactly what will be sent.
  * Merge tokens are resolved server-side before the initial body lands here,
  * so the bubble shows the final text with real values.
+ *
+ * MergeFieldPicker added: click a chip to insert the token at cursor position
+ * in the body textarea.
  */
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
+import { MergeFieldPicker, insertAtCursor } from '@/components/admin/crm/MergeFieldPicker'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
@@ -26,12 +30,30 @@ export function SmsComposer(props: {
   sendAction: (formData: FormData) => Promise<void>
 }) {
   const [body, setBody] = useState(props.initialBody)
+  const bodyRef = useRef<HTMLTextAreaElement>(null)
   const { chars, segments } = segmentInfo(body)
   const unresolved = useMemo(() => findUnresolvedMergeTokens(body), [body])
 
+  function handleInsertToken(token: string) {
+    const el = bodyRef.current
+    if (!el) {
+      setBody((b) => b + token)
+      return
+    }
+    const next = insertAtCursor(el, token)
+    setBody(next)
+    const pos = (el.selectionStart ?? 0) + token.length
+    requestAnimationFrame(() => {
+      el.focus()
+      el.setSelectionRange(pos, pos)
+    })
+  }
+
   return (
     <form action={props.sendAction} className="space-y-2">
+      <MergeFieldPicker channel="sms" onInsert={handleInsertToken} />
       <Textarea
+        ref={bodyRef}
         name="body"
         rows={4}
         placeholder="Message. Sends from Ryan Realty via Twilio."

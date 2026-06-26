@@ -1,3 +1,27 @@
+/**
+ * MERGE_TOKENS — the canonical list of every token renderCrmMerge resolves.
+ * Exported so UI components (MergeFieldPicker, TemplateEditor) can render a
+ * click-to-insert chip palette without duplicating the token list.
+ *
+ * group:
+ *   'contact'  — person fields (first name, etc.)
+ *   'property' — address/property fields
+ *   'cma'      — CMA delivery links
+ */
+export type MergeToken = {
+  token: string
+  label: string
+  group: 'contact' | 'property' | 'cma'
+}
+
+export const MERGE_TOKENS: MergeToken[] = [
+  { token: '%contact_first_name%', label: 'First name', group: 'contact' },
+  { token: '%customSellerPropertyAddress%', label: 'Seller property address', group: 'property' },
+  { token: '%customPropertyAddress%', label: 'Property address', group: 'property' },
+  { token: '%address%', label: 'Address (short)', group: 'property' },
+  { token: '%cma_link%', label: 'CMA link', group: 'cma' },
+]
+
 export function renderCrmMerge(
   text: string,
   person: { first_name?: string | null; name?: string | null; custom?: Record<string, unknown> },

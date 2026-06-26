@@ -54,6 +54,7 @@ import { getContactListingAlerts } from '@/lib/data/crm/getContactListingAlerts'
 import { ContactListingAlertsPanel } from '@/components/admin/crm/ContactListingAlertsPanel'
 import { EmailComposer } from '@/components/admin/crm/EmailComposer'
 import { SmsComposer } from '@/components/admin/crm/SmsComposer'
+import { TemplatePickerNav } from '@/components/admin/crm/TemplatePickerNav'
 import ConversationThread, { isConversationEvent } from '@/components/admin/crm/ConversationThread'
 import { ListingStatusPill, StatusPill } from '@/components/console/StatusPill'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
@@ -546,10 +547,12 @@ export default async function ConsoleLeadPage({
                 <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email {primaryEmail ? `· ${primaryEmail}` : ''}</div>
                 {primaryEmail ? (
                   <>
-                    <form method="GET" className="flex items-center gap-2">
-                      <Select name="tpl" defaultValue={tpl ?? 'blank'}><SelectTrigger className="h-9 flex-1"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="blank">Blank email</SelectItem>{templates.map((t) => <SelectItem key={t.key} value={t.key}>{t.name}</SelectItem>)}</SelectContent></Select>
-                      <Button type="submit" size="sm" variant="outline" className="min-h-[40px] shrink-0 sm:min-h-0">Load</Button>
-                    </form>
+                    <TemplatePickerNav
+                      templates={templates}
+                      channel="email"
+                      currentKey={tpl ?? null}
+                      className="w-full"
+                    />
                     {(emailInitialSubject || emailInitialBody) ? (
                       <div className="rounded-lg border border-border bg-muted/40 p-3">
                         <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Preview · exactly what sends</div>
@@ -558,7 +561,7 @@ export default async function ConsoleLeadPage({
                         {signature?.html ? <div className="mt-2 border-t border-border pt-2 text-xs text-muted-foreground" dangerouslySetInnerHTML={{ __html: signature.html }} /> : null}
                       </div>
                     ) : null}
-                    <EmailComposer key={tpl ?? 'blank'} initialSubject={emailInitialSubject} initialBody={emailInitialBody} signatureHtml={signature?.html ?? null} sendAction={sendEmailForm.bind(null, person.id)} />
+                    <EmailComposer key={tpl ?? 'blank'} initialSubject={emailInitialSubject} initialBody={emailInitialBody} signatureHtml={signature?.html ?? null} sendAction={sendEmailForm.bind(null, person.id)} tplKey={tpl ?? null} />
                   </>
                 ) : <p className="text-sm text-muted-foreground">No email address on file.</p>}
               </div>
@@ -573,11 +576,12 @@ export default async function ConsoleLeadPage({
                 ) : null}
                 {primaryPhone ? (
                   <>
-                    <form method="GET" className="flex items-center gap-2">
-                      <input type="hidden" name="tpl" value={tpl ?? ''} />
-                      <Select name="smsTpl" defaultValue={smsTpl ?? 'blank'}><SelectTrigger className="h-9 flex-1"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="blank">Blank text</SelectItem>{smsTemplates.map((t) => <SelectItem key={t.key} value={t.key}>{t.name}</SelectItem>)}</SelectContent></Select>
-                      <Button type="submit" size="sm" variant="outline" className="min-h-[40px] shrink-0 sm:min-h-0">Load</Button>
-                    </form>
+                    <TemplatePickerNav
+                      templates={smsTemplates}
+                      channel="sms"
+                      currentKey={smsTpl ?? null}
+                      className="w-full"
+                    />
                     {smsInitialBody ? (
                       <div className="rounded-lg border border-border bg-muted/40 p-3">
                         <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Preview · exactly what sends</div>
