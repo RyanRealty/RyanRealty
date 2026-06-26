@@ -61,6 +61,8 @@ export type AppointmentSheetProps = {
   isSuperuser: boolean
   createAction: (formData: FormData) => Promise<{ ok: boolean; error?: string; id?: number }>
   updateAction: (id: number, formData: FormData) => Promise<{ ok: boolean; error?: string }>
+  /** Delete action — only called in edit mode with a two-step confirmation. */
+  deleteAction?: (id: number) => Promise<{ ok: boolean; error?: string }>
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -101,10 +103,12 @@ export default function AppointmentSheet({
   isSuperuser,
   createAction,
   updateAction,
+  deleteAction,
 }: AppointmentSheetProps) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
 
   const isEdit = !!appointment
 
@@ -166,6 +170,7 @@ export default function AppointmentSheet({
       }
       setError(null)
       setGuestSearch('')
+      setDeleteConfirm(false)
     }
     prevOpen.current = open
   }, [open, appointment, initialDate, currentBrokerSlug])
@@ -185,6 +190,7 @@ export default function AppointmentSheet({
     if (personId)  fd.set('personId',  personId)
     fd.set('guestPersonIds', JSON.stringify(guestIds))
     fd.set('brokerSlug', brokerSlug)
+    if (isEdit) fd.set('inviteSent', String(inviteSent))
 
     startTransition(async () => {
       let res: { ok: boolean; error?: string }
@@ -207,6 +213,21 @@ export default function AppointmentSheet({
     setGuestIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     )
+  }
+
+  // ── Delete (two-step) ───────────────────────────────────────────────────────
+  const handleDelete = () => {
+    if (!deleteAction || !appointment) return
+    startTransition(async () => {
+      const res = await deleteAction(appointment.id)
+      if (!res.ok) {
+        setError(res.error ?? 'Could not delete appointment')
+        setDeleteConfirm(false)
+        return
+      }
+      onOpenChange(false)
+      router.refresh()
+    })
   }
 
   const activeTypes    = types.filter((t) => t.active)
@@ -461,9 +482,8 @@ export default function AppointmentSheet({
                 id="appt-invite"
                 checked={inviteSent}
                 onCheckedChange={setInviteSent}
-                disabled
               />
-              <Label htmlFor="appt-invite" className="text-muted-foreground">
+              <Label htmlFor="appt-invite" className="cursor-pointer">
                 Invitation sent
               </Label>
             </div>
@@ -477,13 +497,41 @@ export default function AppointmentSheet({
 
         {/* Footer */}
         <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border px-5 py-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            {/* Two-step delete — only in edit mode, only if deleteAction is wired */}
+            {isEdit && deleteAction && (
+              deleteConfirm ? (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  disabled={pending}
+                  onClick={handleDelete}
+                  className="h-9"
+                >
+                  {pending ? 'Deleting…' : 'Confirm delete'}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={pending}
+                  onClick={() => setDeleteConfirm(true)}
+                  className="h-9 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  Delete
+                </Button>
+              )
+            )}
+          </div>
           <Button
             type="button"
             disabled={pending || !title.trim()}

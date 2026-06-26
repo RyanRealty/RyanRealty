@@ -4,6 +4,7 @@ import { getCrmAccess } from '@/app/actions/crm'
 import {
   createAppointmentAction,
   updateAppointmentAction,
+  deleteAppointmentAction,
 } from '@/app/actions/appointments'
 import { scopeBroker } from '@/lib/crm/scope'
 import {
@@ -20,7 +21,11 @@ import type { ContactOption } from './AppointmentSheet'
 export const metadata = { title: 'Calendar | CRM | Admin' }
 export const dynamic = 'force-dynamic'
 
-export default async function CrmCalendarPage() {
+export default async function CrmCalendarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string }>
+}) {
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
 
@@ -28,12 +33,18 @@ export default async function CrmCalendarPage() {
   const brokerScope  = scopeBroker(access)
   const currentSlug  = access.brokerSlug ?? 'matt'
 
-  // Current month window
-  const now       = new Date()
-  const year      = now.getUTCFullYear()
-  const month     = now.getUTCMonth() + 1
-  const monthIso  = `${year}-${String(month).padStart(2, '0')}-01`
-  const todayIso  = now.toISOString().slice(0, 10)
+  const now      = new Date()
+  const todayIso = now.toISOString().slice(0, 10)
+
+  // ── Resolve displayed month from ?month=YYYY-MM or fall back to today ──────
+  const sp = await searchParams
+  const rawMonth = sp.month ?? ''
+  const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/
+  const displayYM = MONTH_RE.test(rawMonth) ? rawMonth : todayIso.slice(0, 7)
+  const [yearStr, monthStr] = displayYM.split('-')
+  const year  = Number(yearStr)
+  const month = Number(monthStr)
+  const monthIso = `${displayYM}-01`
 
   // First + last day of the month
   const from = monthIso.slice(0, 7) + '-01'
@@ -82,6 +93,11 @@ export default async function CrmCalendarPage() {
     return updateAppointmentAction(id, fd)
   }
 
+  async function del(id: number): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    return deleteAppointmentAction(id)
+  }
+
   return (
     <main className="mx-auto w-full max-w-5xl px-3 py-6 sm:px-6 sm:py-8">
       {/* Page header */}
@@ -113,6 +129,7 @@ export default async function CrmCalendarPage() {
           isSuperuser={isSuperuser}
           createAction={create}
           updateAction={update}
+          deleteAction={del}
         />
       </ConsoleSection>
     </main>

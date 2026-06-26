@@ -34,12 +34,16 @@ export function DealMilestones({ dealId, initial }: Props) {
     possession: initial.possession ?? '',
   })
   const [errors, setErrors] = useState<Partial<Record<MilestoneKey, string>>>({})
-  const [isPending, startTransition] = useTransition()
+  // Per-field pending key instead of a shared boolean — D7
+  const [pendingKey, setPendingKey] = useState<MilestoneKey | null>(null)
+  const [, startTransition] = useTransition()
 
   function handleBlur(key: MilestoneKey) {
     const val = values[key]
+    setPendingKey(key)
     startTransition(async () => {
       const res = await updateCrmDeal(dealId, { [key]: val || null })
+      setPendingKey(null)
       if (!res.ok) {
         setErrors((e) => ({ ...e, [key]: res.error }))
       } else {
@@ -54,27 +58,33 @@ export function DealMilestones({ dealId, initial }: Props) {
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {MILESTONES.map((m) => (
-        <div key={m.key} className="flex flex-col gap-1">
-          <Label htmlFor={`ms-${m.key}`} className="text-xs text-muted-foreground">
-            {m.label}
-          </Label>
-          <Input
-            id={`ms-${m.key}`}
-            type="date"
-            value={values[m.key]}
-            disabled={isPending}
-            onChange={(e) =>
-              setValues((v) => ({ ...v, [m.key]: e.target.value }))
-            }
-            onBlur={() => handleBlur(m.key)}
-            className="h-8 text-sm"
-          />
-          {errors[m.key] ? (
-            <p className="text-xs text-destructive">{errors[m.key]}</p>
-          ) : null}
-        </div>
-      ))}
+      {MILESTONES.map((m) => {
+        const isSaving = pendingKey === m.key
+        return (
+          <div key={m.key} className="flex flex-col gap-1">
+            <Label htmlFor={`ms-${m.key}`} className="text-xs text-muted-foreground">
+              {m.label}
+              {isSaving && (
+                <span className="ml-1.5 text-xs text-muted-foreground/60">saving…</span>
+              )}
+            </Label>
+            <Input
+              id={`ms-${m.key}`}
+              type="date"
+              value={values[m.key]}
+              disabled={isSaving}
+              onChange={(e) =>
+                setValues((v) => ({ ...v, [m.key]: e.target.value }))
+              }
+              onBlur={() => handleBlur(m.key)}
+              className="h-8 text-sm"
+            />
+            {errors[m.key] ? (
+              <p className="text-xs text-destructive">{errors[m.key]}</p>
+            ) : null}
+          </div>
+        )
+      })}
     </div>
   )
 }

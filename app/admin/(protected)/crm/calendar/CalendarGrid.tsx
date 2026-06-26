@@ -3,23 +3,22 @@
 /**
  * CalendarGrid — the interactive month grid for /admin/crm/calendar.
  *
- * FUB layout:
- *   - Left mini-month nav (skip on mobile — grid IS the mini-month at narrow)
- *   - Main month grid with appointment dots
- *   - Selected-day agenda list on the right
- *   - "+" button per day or global triggers AppointmentSheet
- *
- * Appointments data is passed from the server page. The grid only navigates
- * within the current session (no URL state for month — the server page renders
- * the current month; month navigation would require a query param which we can
- * add later if needed). For now: the server page supplies the current month and
- * the client can pick any day.
+ * Month navigation via ?month=YYYY-MM query param (D2).
+ * Broker filter for superusers via client-side Select (D6).
  */
 
 import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import AppointmentSheet, { type ContactOption } from './AppointmentSheet'
 import type { AppointmentRow, AppointmentType, AppointmentOutcome } from '@/lib/data/crm/getAppointments'
@@ -43,6 +42,7 @@ type Props = {
   isSuperuser: boolean
   createAction: (fd: FormData) => Promise<{ ok: boolean; error?: string; id?: number }>
   updateAction: (id: number, fd: FormData) => Promise<{ ok: boolean; error?: string }>
+  deleteAction: (id: number) => Promise<{ ok: boolean; error?: string }>
 }
 
 // ── Time formatting ───────────────────────────────────────────────────────────
@@ -60,6 +60,18 @@ function fmtTime(iso: string, allDay: boolean): string {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+// ── Month shift helper ────────────────────────────────────────────────────────
+
+function shiftMonth(monthIso: string, delta: number): string {
+  const [y, m] = monthIso.split('-').map(Number)
+  const date = new Date(Date.UTC(y, m - 1 + delta, 1))
+  const ny = date.getUTCFullYear()
+  const nm = date.getUTCMonth() + 1
+  return `${ny}-${String(nm).padStart(2, '0')}`
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export default function CalendarGrid({
   appointments,
   todayIso,
@@ -72,11 +84,18 @@ export default function CalendarGrid({
   isSuperuser,
   createAction,
   updateAction,
+  deleteAction,
 }: Props) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
   const [selectedDate, setSelectedDate] = useState<string>(todayIso)
   const [sheetOpen, setSheetOpen]       = useState(false)
   const [sheetDate, setSheetDate]       = useState<string | null>(null)
   const [editAppt, setEditAppt]         = useState<AppointmentRow | null>(null)
+
+  // ── Broker filter (superuser only, client-side) ────────────────────────────
+  const [filterSlug, setFilterSlug] = useState<string>('all')
 
   // ── Calendar math ─────────────────────────────────────────────────────────
   const [yearStr, monthStr] = monthIso.split('-')
@@ -98,9 +117,32 @@ export default function CalendarGrid({
     timeZone: 'UTC',
   })
 
-  // ── Group appointments by date ─────────────────────────────────────────────
+  // ── Current month check (for "Today" button) ──────────────────────────────
+  const currentMonthYM = monthIso.slice(0, 7) // YYYY-MM
+  const todayYM        = todayIso.slice(0, 7)  // YYYY-MM
+  const isCurrentMonth = currentMonthYM === todayYM
+
+  // ── Month nav ─────────────────────────────────────────────────────────────
+  const navigate = (delta: number) => {
+    const next = shiftMonth(monthIso, delta)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('month', next)
+    router.push(`?${params.toString()}`)
+  }
+
+  const goToday = () => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('month')
+    router.push(`?${params.toString()}`)
+  }
+
+  // ── Group appointments by date (respecting broker filter) ─────────────────
+  const filteredAppts = isSuperuser && filterSlug !== 'all'
+    ? appointments.filter((a) => a.brokerSlug === filterSlug)
+    : appointments
+
   const byDate = new Map<string, AppointmentRow[]>()
-  for (const appt of appointments) {
+  for (const appt of filteredAppts) {
     const d = appt.startAt.slice(0, 10)
     if (!byDate.has(d)) byDate.set(d, [])
     byDate.get(d)!.push(appt)
@@ -131,16 +173,72 @@ export default function CalendarGrid({
   return (
     <>
       {/* ── Month header ── */}
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-foreground">{monthLabel}</h2>
-        <Button
-          size="sm"
-          className="h-8 gap-1.5"
-          onClick={() => openCreate(todayIso)}
-        >
-          <span className="text-base leading-none" aria-hidden>+</span>
-          New appointment
-        </Button>
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        {/* Left: month label + prev/today/next */}
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => navigate(-1)}
+            aria-label="Previous month"
+          >
+            ‹
+          </Button>
+          <h2 className="w-36 text-center text-sm font-semibold text-foreground">
+            {monthLabel}
+          </h2>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => navigate(1)}
+            aria-label="Next month"
+          >
+            ›
+          </Button>
+          {!isCurrentMonth && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 text-xs"
+              onClick={goToday}
+            >
+              Today
+            </Button>
+          )}
+        </div>
+
+        {/* Right: broker filter (superuser only) + new appointment */}
+        <div className="flex items-center gap-2">
+          {isSuperuser && (
+            <Select value={filterSlug} onValueChange={setFilterSlug}>
+              <SelectTrigger className="h-8 w-36 text-xs">
+                <SelectValue placeholder="All brokers" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All brokers</SelectItem>
+                {brokerSlugs.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Button
+            size="sm"
+            className="h-8 gap-1.5"
+            onClick={() => openCreate(todayIso)}
+          >
+            <span className="text-base leading-none" aria-hidden>+</span>
+            <span className="hidden sm:inline">New appointment</span>
+            <span className="sm:hidden">New</span>
+          </Button>
+        </div>
       </div>
 
       {/* ── Main layout: grid + right-side agenda ── */}
@@ -209,6 +307,7 @@ export default function CalendarGrid({
                   <AgendaRow
                     key={appt.id}
                     appt={appt}
+                    showBroker={isSuperuser}
                     onEdit={() => openEdit(appt)}
                   />
                 ))
@@ -232,6 +331,7 @@ export default function CalendarGrid({
         isSuperuser={isSuperuser}
         createAction={createAction}
         updateAction={updateAction}
+        deleteAction={deleteAction}
       />
     </>
   )
@@ -319,9 +419,11 @@ function DayCell({
 
 function AgendaRow({
   appt,
+  showBroker,
   onEdit,
 }: {
   appt: AppointmentRow
+  showBroker: boolean
   onEdit: () => void
 }) {
   return (
@@ -350,6 +452,12 @@ function AgendaRow({
           )}
           {appt.outcomeName && (
             <span className="text-xs text-muted-foreground">· {appt.outcomeName}</span>
+          )}
+          {/* Broker label — superuser multi-broker view */}
+          {showBroker && appt.brokerSlug && (
+            <Badge variant="secondary" className="h-4 px-1.5 text-xs capitalize">
+              {appt.brokerSlug}
+            </Badge>
           )}
         </div>
       </div>

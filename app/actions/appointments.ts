@@ -176,6 +176,7 @@ export async function updateAppointmentAction(
   const outcomeIdRaw = formData.get('outcomeId') as string | null
   const personIdRaw  = formData.get('personId')  as string | null
   const guestIdsRaw  = formData.get('guestPersonIds') as string | null
+  const inviteSentRaw = formData.get('inviteSent') as string | null
 
   if (!title) return { ok: false, error: 'Title is required' }
   if (!startRaw || !endRaw) return { ok: false, error: 'Start and end are required' }
@@ -218,6 +219,7 @@ export async function updateAppointmentAction(
       outcome_id: outcomeId,
       person_id: personId,
       guest_person_ids: guestPersonIds,
+      invite_sent: inviteSentRaw === 'true',
     })
     .eq('id', id)
 

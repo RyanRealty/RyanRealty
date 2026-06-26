@@ -54,10 +54,15 @@ export function DealCommission({
 
   function handleAddSplit() {
     setSplitError(null)
+    const pctNum = Number(newPct)
+    if (!newPct.trim() || isNaN(pctNum) || pctNum <= 0 || pctNum > 100) {
+      setSplitError('Split % must be between 0 and 100')
+      return
+    }
     startTransition(async () => {
       const res = await addDealSplit(dealId, {
         broker_slug: newSlug,
-        split_pct: Number(newPct) || 0,
+        split_pct: pctNum,
         split_dollars: newDollars ? Number(newDollars) : null,
         notes: newNotes || null,
       })
