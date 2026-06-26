@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.638.5 (2026-06-26)
+
+### Bug Fixes
+- fix(crm): A4 calendar/deals — delete appt, month nav, invite switch, split guard, broker filter, per-field milestone pending (FIX-4 redo)
+
+---
+
+
 ## v1.638.4 (2026-06-26)
 
 ### Bug Fixes
