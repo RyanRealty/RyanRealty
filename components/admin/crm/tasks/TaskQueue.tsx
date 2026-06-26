@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { formatDateTime } from '@/lib/format/date'
 import { CRM_BROKERS, CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
 import type { TaskQueueRow, TaskQueueView, CrmTaskType } from '@/lib/data/crm/getTaskQueue'
 
@@ -57,14 +58,12 @@ export default function TaskQueue({
   taskTypes,
   canReassign,
   actions,
-  formatDue,
 }: {
   rows: TaskQueueRow[]
   view: TaskQueueView
   taskTypes: CrmTaskType[]
   canReassign: boolean
   actions: TaskActions
-  formatDue: (iso: string | null) => string
 }) {
   const router = useRouter()
   const [selected, setSelected] = useState<Set<number>>(new Set())
@@ -144,7 +143,7 @@ export default function TaskQueue({
                     <span>No contact</span>
                   )}
                   <span className="tabular-nums">
-                    {isCompletedView ? `Done ${formatDue(t.completedAt)}` : formatDue(t.dueAt)}
+                    {isCompletedView ? `Done ${formatDateTime(t.completedAt)}` : formatDateTime(t.dueAt)}
                   </span>
                   {t.type ? (
                     <Badge variant="outline" className="text-xs">

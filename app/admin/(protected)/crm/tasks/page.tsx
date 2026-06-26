@@ -15,7 +15,6 @@ import {
 } from '@/app/actions/crm-tasks'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getTaskQueue, getCrmTaskTypes, type TaskQueueView } from '@/lib/data/crm/getTaskQueue'
-import { formatDateTime } from '@/lib/format/date'
 import { Button } from '@/components/ui/button'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 import TaskQueue, { type TaskActions } from '@/components/admin/crm/tasks/TaskQueue'
@@ -169,7 +168,6 @@ export default async function CrmTasksPage({
           taskTypes={taskTypes}
           canReassign={canReassign}
           actions={actions}
-          formatDue={formatDateTime}
         />
       </ConsoleSection>
     </main>
