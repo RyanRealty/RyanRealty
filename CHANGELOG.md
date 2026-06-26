@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.638.1 (2026-06-26)
+
+### Maintenance
+- docs(fub): feature-build COMPLETE — all 6 builds shipped + orchestration lesson
+
+---
+
+
 ## v1.638.0 (2026-06-26)
 
 ### Features
