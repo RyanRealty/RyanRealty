@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.635.2 (2026-06-26)
+
+### Maintenance
+- style(admin): normalize report-page headings to FUB (sentence case, semibold, token)
+
+---
+
+
 ## v1.635.1 (2026-06-26)
 
 ### Maintenance
