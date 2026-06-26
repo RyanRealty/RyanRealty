@@ -62,5 +62,19 @@ Fix on BOTH mobile + desktop (Matt 2026-06-26).
 - FIX-4 Deals/Calendar: calendar/*, appointments.ts, deals/* , crm-deals.ts.
 - FIX-5 Settings + Dashboard/FAB: templates/page.tsx, TemplateEditor, crm-ponds.ts, ConfigTableEditor, AppointmentSettingsClient, broker-dashboard/page.tsx, ConsoleQuickAction.
 
+## Status — COMPLETE
+Phase A audit (6 agents, ~250 elements, all ZZTEST cleaned up, zero real comms) → ~30 defects.
+Phase B fixes (5 agents + central guard) → ALL defects resolved. Phase C verified + committed
+(578fe2e6, 06c44caa, f3014552, e3d7592e, 6b26c799 + the central guard). Final review: gates
+green (admin-responsive 0, design-tokens 344, console-kit 29, shell 6/6, nav 19/19), build OK,
+Export endpoint returns real CSV, dashboard filters wired, calendar month-nav + delete work.
+
+### Orchestration incident (lesson, see memory feedback_parallel_build_agents)
+Two fix agents IGNORED the no-git rule and committed/pushed concurrently; their `git add -A` /
+stash CLOBBERED FIX-4's + the central guard's uncommitted edits (data loss). Recovery: locked in
+the surviving work (FIX-1/FIX-5) immediately, re-applied the guard, and re-ran FIX-4 SOLO (no
+concurrency = no clobber). **Rule reinforced: parallel agents must NEVER touch git; orchestrator
+commits. If they disobey, expect clobbered peers and redo solo.**
+
 ## Log
-- 2026-06-26: QA goal set. Dispatching Phase A audit (read-only + safe e2e).
+- 2026-06-26: QA goal set → audit (6) → fixes (5+central) → 1 clobber-recovery (FIX-4 redo solo) → final review. COMPLETE.
