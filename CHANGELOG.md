@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.638.0 (2026-06-26)
+
+### Features
+- feat(crm): FUB feature-build wave 2 — Automations engine, Templates UX, Team + Import
+
+---
+
+
 ## v1.637.0 (2026-06-26)
 
 ### Features
