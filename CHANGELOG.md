@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.629.2 (2026-06-26)
+
+### Bug Fixes
+- fix(middleware): fail OPEN when the rate-limiter backend errors
+
+---
+
+
 ## v1.629.1 (2026-06-26)
 
 ### Bug Fixes
