@@ -119,7 +119,7 @@ export default async function CrmDealsPage() {
                             return (
                               <CrmListRow
                                 key={d.id}
-                                href={d.person_id ? `/admin/crm/${d.person_id}` : undefined}
+                                href={`/admin/crm/deals/${d.id}`}
                                 name={avatarSeed}
                                 title={dealName}
                                 subtitle={subtitle}
@@ -247,12 +247,10 @@ export default async function CrmDealsPage() {
                               </div>
                             )
 
-                            return d.person_id ? (
-                              <Link key={d.id} href={`/admin/crm/${d.person_id}`} className="block">
+                            return (
+                              <Link key={d.id} href={`/admin/crm/deals/${d.id}`} className="block">
                                 {cardInner}
                               </Link>
-                            ) : (
-                              <div key={d.id}>{cardInner}</div>
                             )
                           })}
                         </div>
