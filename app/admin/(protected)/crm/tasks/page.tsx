@@ -106,8 +106,8 @@ export default async function CrmTasksPage({
     <main className="mx-auto w-full max-w-4xl px-3 py-6 sm:px-6 sm:py-8">
       <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Tasks</h1>
-          <p className="text-sm text-muted-foreground">Every task across the book, by when it is due.</p>
+          <h1 className="text-xl font-semibold text-foreground md:text-2xl">Tasks</h1>
+          <p className="hidden text-sm text-muted-foreground md:block">Every task across the book, by when it is due.</p>
         </div>
         <NewTaskDialog taskTypes={taskTypes} createAction={createTask} />
       </div>

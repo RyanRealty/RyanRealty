@@ -161,24 +161,25 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
   ]
 
   return (
-    <main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6">
-      {/* Title + primary action — primary action stays prominent on phones */}
+    <main className="mx-auto max-w-[1600px] px-4 pb-8 pt-2 sm:px-6 sm:py-8">
+      {/* Title + primary action. On phones FUB keeps this minimal — a compact title,
+          no console description, no New-contact button (the global "+" FAB covers it). */}
       <div className="flex flex-wrap items-start justify-between gap-3 md:items-end">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-foreground">Contacts</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h1 className="text-xl font-bold text-foreground md:text-2xl">Contacts</h1>
+          <p className="mt-1 hidden text-sm text-muted-foreground md:block">
             {isMyLeads ? `Showing your leads (${CRM_BROKER_DISPLAY[access.brokerSlug!]})` : 'Ryan Realty contact database'}
             {' · synced with FUB during the parallel run'}
             {overview.lastDeltaSync ? ` · last sync ${fmtDate(overview.lastDeltaSync)}` : ''}
           </p>
         </div>
-        <Link href="/admin/crm/new" className="shrink-0">
+        <Link href="/admin/crm/new" className="hidden shrink-0 md:block">
           <Button size="sm" className="h-10 md:h-7">New contact</Button>
         </Link>
       </div>
 
-      {/* Secondary nav — single horizontal-scroll strip on phones (no ragged wrap) */}
-      <nav className="mt-4 -mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:px-0">
+      {/* Secondary nav — desktop only; phones navigate via the bottom tab bar. */}
+      <nav className="mt-4 hidden gap-2 overflow-x-auto sm:flex-wrap md:flex">
         <Link href="/admin/crm/tasks" className="shrink-0"><Button variant="outline" size="sm" className="h-10 md:h-7">Tasks</Button></Link>
         <Link href="/admin/crm/inbox" className="shrink-0"><Button variant="outline" size="sm" className="h-10 md:h-7">Inbox</Button></Link>
         <Link href="/admin/crm/deals" className="shrink-0"><Button variant="outline" size="sm" className="h-10 md:h-7">Pipeline</Button></Link>
@@ -187,15 +188,15 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         <Link href="/admin/crm/workflows" className="shrink-0"><Button variant="outline" size="sm" className="h-10 md:h-7">Workflows</Button></Link>
       </nav>
 
-      {/* Stat / KPI strip */}
-      <div className="mt-4">
+      {/* Stat / KPI strip — desktop only (FUB's people list leads with the list, not tiles) */}
+      <div className="mt-4 hidden md:block">
         <KpiStrip items={stats} />
       </div>
 
 
       {/* Quick scope chips — My leads / All contacts (the broker book toggle). The
           named smart lists moved into the sidebar below. */}
-      <div className="mt-6 -mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:px-0">
+      <div className="mt-4 -mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:mt-6 sm:flex-wrap sm:px-0">
         {access.brokerSlug ? (
           <>
             <Link href="/admin/crm" className="shrink-0">

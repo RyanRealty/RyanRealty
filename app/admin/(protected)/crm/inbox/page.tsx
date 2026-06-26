@@ -189,13 +189,8 @@ export default async function CrmInboxPage({
       ) : (
         /* Mobile list view (< md) — no open conversation */
         <div className="md:hidden">
-          <div className="mb-1 text-sm text-muted-foreground">
-            <Link href="/admin/crm" className="inline-flex min-h-10 items-center hover:text-foreground">
-              Back to CRM
-            </Link>
-          </div>
           <div className="flex items-center justify-between gap-3">
-            <h1 className="text-2xl font-bold text-foreground">Inbox</h1>
+            <h1 className="text-xl font-bold text-foreground">Inbox</h1>
             <form action={markRead}>
               <Button type="submit" size="sm" variant="outline">
                 Mark all read
