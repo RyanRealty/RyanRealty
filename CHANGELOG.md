@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.631.0 (2026-06-26)
+
+### Features
+- feat(admin): FUB-style dark horizontal top nav on desktop (replaces left rail)
+
+---
+
+
 ## v1.630.0 (2026-06-26)
 
 ### Features
