@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.638.6 (2026-06-26)
+
+### Maintenance
+- docs(qa): CRM functional QA COMPLETE — all defects fixed + verified
+
+---
+
+
 ## v1.638.5 (2026-06-26)
 
 ### Bug Fixes
