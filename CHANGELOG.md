@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.635.0 (2026-06-26)
+
+### Features
+- feat(admin): desktop FUB parity — Tasks + settings config tables (P2 wave 4)
+
+---
+
+
 ## v1.634.1 (2026-06-26)
 
 ### Maintenance
