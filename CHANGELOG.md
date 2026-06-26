@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.637.0 (2026-06-26)
+
+### Features
+- feat(admin): wire new features into nav + settings catalog
+
+---
+
+
 ## v1.636.0 (2026-06-26)
 
 ### Features
