@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.629.0 (2026-06-26)
+
+### Features
+- feat(crm): FUB-style mobile UI — bottom tab bar + shared mobile kit + reworked screens
+
+---
+
+
 ## v1.628.0 (2026-06-26)
 
 ### Features
