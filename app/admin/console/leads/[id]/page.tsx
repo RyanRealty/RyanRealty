@@ -30,6 +30,7 @@ import { getContactReportSubscription, listAvailableMarketReportAreas } from '@/
 import { getCrmFieldDefinitions } from '@/lib/data/crm/getCrmFieldDefinitions'
 import CustomFieldsPanel from '@/components/admin/crm/CustomFieldsPanel'
 import { setReportSubscriptionAction } from '@/app/actions/crm-report-subscriptions'
+import { saveContactCustomFieldsAction } from '@/app/actions/contact-custom-fields'
 import { getFirstTouchAttribution } from '@/lib/data/crm/getFirstTouchAttribution'
 import SourceBadge from '@/components/admin/crm/SourceBadge'
 import ReportSubscriptionsPanel from '@/components/admin/crm/ReportSubscriptionsPanel'
@@ -75,10 +76,12 @@ export const dynamic = 'force-dynamic'
 const BASE = '/admin/console/leads'
 
 // ── Server-action form wrappers (return to the console route) ────────────────
-async function addNoteForm(formData: FormData): Promise<void> {
+async function addNoteForm(personId: number, formData: FormData): Promise<void> {
   'use server'
+  formData.set('personId', String(personId))
   const r = await addCrmNoteAction(formData)
-  if (!r.ok) console.error('[console] addNote:', r.error)
+  if (!r.ok) redirect(`${BASE}/${personId}?error=${encodeURIComponent(`Note not saved — ${r.error ?? 'unknown error'}`)}`)
+  else redirect(`${BASE}/${personId}?flash=${encodeURIComponent('Note saved.')}`)
 }
 async function updateStageForm(formData: FormData): Promise<void> {
   'use server'
@@ -109,6 +112,20 @@ async function assignBrokerForm(formData: FormData): Promise<void> {
   'use server'
   const r = await assignCrmBrokerAction(formData)
   if (!r.ok) console.error('[console] assignBroker:', r.error)
+}
+async function enrollWorkflowForm(personId: number, formData: FormData): Promise<void> {
+  'use server'
+  const sequenceId = Number(formData.get('sequenceId'))
+  if (!Number.isFinite(sequenceId) || sequenceId <= 0) {
+    redirect(`${BASE}/${personId}?error=${encodeURIComponent('Please choose a workflow to enroll in.')}`)
+  }
+  const { setSequenceEnrollment } = await import('@/app/actions/crm-membership')
+  const r = await setSequenceEnrollment({ personId, sequenceId, enrolled: true })
+  redirect(
+    r.ok
+      ? `${BASE}/${personId}?flash=${encodeURIComponent(r.message ?? 'Enrolled in workflow.')}`
+      : `${BASE}/${personId}?error=${encodeURIComponent(`Not enrolled — ${r.error ?? 'unknown error'}`)}`,
+  )
 }
 async function sendEmailForm(personId: number, formData: FormData): Promise<void> {
   'use server'
@@ -195,6 +212,19 @@ async function assignSavedSearchForm(formData: FormData): Promise<void> {
   if (Number.isFinite(minBeds) && minBeds > 0) filters.beds = minBeds
   formData.set('filters', JSON.stringify(filters))
   const r = await adminAssignSavedSearchAction(formData)
+  if (r.ok && Number.isFinite(personId) && personId > 0) {
+    const { createServiceClient } = await import('@/lib/supabase/service')
+    const { getCrmAccess } = await import('@/app/actions/crm')
+    const [sb, access] = [createServiceClient(), await getCrmAccess()]
+    const name = String(formData.get('name') ?? 'Saved search').trim() || 'Saved search'
+    await sb.from('crm_timeline').insert({
+      person_id: personId,
+      kind: 'system',
+      title: `Saved search "${name}" added by ${access?.email ?? 'broker'}`,
+      source: 'app',
+      broker: access?.brokerSlug ?? null,
+    })
+  }
   const msg = r.ok ? 'Saved search assigned' : `Not assigned — ${r.error ?? 'unknown error'}`
   redirect(`${BASE}/${personId}?flash=${encodeURIComponent(msg)}`)
 }
@@ -213,6 +243,19 @@ async function updateSavedSearchForm(formData: FormData): Promise<void> {
   if (Number.isFinite(minBeds) && minBeds > 0) filters.beds = minBeds
   formData.set('filters', JSON.stringify(filters))
   const r = await adminUpdateSavedSearchAction(formData)
+  if (r.ok && Number.isFinite(personId) && personId > 0) {
+    const { createServiceClient } = await import('@/lib/supabase/service')
+    const { getCrmAccess } = await import('@/app/actions/crm')
+    const [sb, access] = [createServiceClient(), await getCrmAccess()]
+    const name = String(formData.get('name') ?? 'Saved search').trim() || 'Saved search'
+    await sb.from('crm_timeline').insert({
+      person_id: personId,
+      kind: 'system',
+      title: `Saved search "${name}" updated by ${access?.email ?? 'broker'}`,
+      source: 'app',
+      broker: access?.brokerSlug ?? null,
+    })
+  }
   const msg = r.ok ? 'Saved search updated' : `Not updated — ${r.error ?? 'unknown error'}`
   redirect(`${BASE}/${personId}?flash=${encodeURIComponent(msg)}`)
 }
@@ -220,7 +263,19 @@ async function deleteSavedSearchForm(formData: FormData): Promise<void> {
   'use server'
   const personId = Number(formData.get('personId'))
   const id = String(formData.get('id') ?? '')
-  await adminDeleteSavedSearchAction(id)
+  const r = await adminDeleteSavedSearchAction(id)
+  if (r.ok && Number.isFinite(personId) && personId > 0) {
+    const { createServiceClient } = await import('@/lib/supabase/service')
+    const { getCrmAccess } = await import('@/app/actions/crm')
+    const [sb, access] = [createServiceClient(), await getCrmAccess()]
+    await sb.from('crm_timeline').insert({
+      person_id: personId,
+      kind: 'system',
+      title: `Saved search removed by ${access?.email ?? 'broker'}`,
+      source: 'app',
+      broker: access?.brokerSlug ?? null,
+    })
+  }
   redirect(`${BASE}/${personId}?flash=${encodeURIComponent('Saved search removed')}`)
 }
 
@@ -474,8 +529,22 @@ export default async function ConsoleLeadPage({
               )}
               {activeEnrollments.length > 0 ? (
                 <StatusPill tone="info" label={`In ${activeEnrollments[0].crm_sequences?.name ?? 'a workflow'}`} />
+              ) : contactMemberships.sequences.length > 0 ? (
+                <form action={enrollWorkflowForm.bind(null, person.id)} className="inline-flex items-center gap-1.5">
+                  <Select name="sequenceId">
+                    <SelectTrigger className="h-8 w-40 text-xs">
+                      <SelectValue placeholder="Choose workflow" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {contactMemberships.sequences.map((s) => (
+                        <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button type="submit" size="sm" variant="outline" className="h-8 px-3 text-xs">Enroll</Button>
+                </form>
               ) : (
-                <span className="inline-flex min-h-8 items-center rounded-full bg-secondary px-3 text-xs font-medium text-muted-foreground">No workflow</span>
+                <span className="inline-flex min-h-8 items-center rounded-full bg-secondary px-3 text-xs font-medium text-muted-foreground">No workflows</span>
               )}
               <a href="#saved-searches" className="inline-flex min-h-8 items-center rounded-full border border-border bg-secondary px-3 text-xs font-medium text-secondary-foreground hover:border-foreground">
                 {savedSearches.length > 0 ? `${savedSearches.length} saved search${savedSearches.length === 1 ? '' : 'es'}` : 'No saved searches'}
@@ -504,7 +573,7 @@ export default async function ConsoleLeadPage({
       {/* ── Custom fields — the FUB person-record custom-field section, typed +
            grouped from the field registry (read-only v1). Renders null when the
            contact has no displayable custom fields. ── */}
-      <CustomFieldsPanel custom={person.custom} defs={fieldDefs} />
+      <CustomFieldsPanel personId={person.id} custom={person.custom} defs={fieldDefs} />
 
       {/* ── Recent activity glance (full unified feed lives in the Activity tab) ── */}
       {activityFeed.length > 0 ? (
@@ -596,9 +665,8 @@ export default async function ConsoleLeadPage({
               <Separator />
 
               {/* Note */}
-              <form action={addNoteForm} className="space-y-2">
+              <form action={addNoteForm.bind(null, person.id)} className="space-y-2">
                 <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Add a note</div>
-                <input type="hidden" name="personId" value={person.id} />
                 <Textarea name="body" placeholder="Logs to the timeline" rows={2} />
                 <div className="flex justify-end"><Button type="submit" size="sm" className="min-h-[40px] sm:min-h-0">Save note</Button></div>
               </form>

@@ -69,13 +69,29 @@ export function LeadTabs({
   const [active, setActive] = useState<LeadTabKey>('overview')
 
   useEffect(() => {
-    const sync = () => {
-      const key = HASH_TO_TAB[window.location.hash.replace(/^#/, '')]
-      if (key) setActive(key)
+    const sync = (scrollToHash?: boolean) => {
+      const hash = window.location.hash.replace(/^#/, '')
+      const key = HASH_TO_TAB[hash]
+      if (key) {
+        setActive(key)
+        // On mobile the target element is hidden until the active-tab CSS change
+        // is applied. Use a micro-task + two-frame delay so the DOM has finished
+        // painting before we call scrollIntoView — otherwise scroll fires against
+        // a display:none element and silently no-ops.
+        if (scrollToHash && hash) {
+          const doScroll = () => {
+            const el = document.getElementById(hash)
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }
+          // First rAF: React re-render scheduled. Second rAF: DOM updated.
+          requestAnimationFrame(() => requestAnimationFrame(doScroll))
+        }
+      }
     }
     sync()
-    window.addEventListener('hashchange', sync)
-    return () => window.removeEventListener('hashchange', sync)
+    const onHashChange = () => sync(true)
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
   const slot = (key: LeadTabKey) => cn(active === key ? 'flex' : 'hidden', 'flex-col gap-4 lg:flex')
