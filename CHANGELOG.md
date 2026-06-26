@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.634.0 (2026-06-26)
+
+### Features
+- feat(admin): desktop FUB parity — Person record 3-column + Admin catalog (P2 wave 3)
+
+---
+
+
 ## v1.633.0 (2026-06-26)
 
 ### Features
