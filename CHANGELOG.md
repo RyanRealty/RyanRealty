@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.632.0 (2026-06-26)
+
+### Features
+- feat(admin): desktop FUB parity — Dashboard, People, Reports (P2 wave 1)
+
+---
+
+
 ## v1.631.0 (2026-06-26)
 
 ### Features
