@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.629.1 (2026-06-26)
+
+### Bug Fixes
+- fix(crm): strip console chrome on mobile so CRM screens match the FUB reference
+
+---
+
+
 ## v1.629.0 (2026-06-26)
 
 ### Features
