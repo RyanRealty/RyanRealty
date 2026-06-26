@@ -22,7 +22,7 @@
 - [x] Restructure `buildAdminNav` → 5 groups: **Dashboard · CRM · Deals · Reports · Admin** (filter-based remap; all role gates preserved). Verified in rail at 1440px.
 - [x] Horizontal logo in `ConsoleShell` (rail + mobile header); removed "RR Console" wordmark.
 - [x] Mobile bottom tab bar = daily drivers (Home/Inbox/People/Deals/Tasks) — FUB keeps mobile tabs = daily drivers, distinct from the desktop top menu. Left as-is.
-- [ ] **Desktop top nav as a FUB-style horizontal bar** (currently a grouped left rail; FUB uses a dark horizontal top bar with dropdowns). → P2.
+- [x] **Desktop top nav = FUB-style dark navy horizontal bar** (`ConsoleTopNav`): white logo + Dashboard · CRM▾ · Deals · Reports▾ · Admin▾ + search + View site + avatar. Replaced the left rail at lg+. Mobile keeps header + sheet + bottom tab bar. Shell gate updated to lock the new architecture. Verified 1440 + 375.
 - [x] Test: real browser desktop (1440) + gates green (mobile-shell, nav-reachability 19/19, responsive 0, tokens baseline). Committed.
 
 ### P1 — Mobile FUB parity (must be 100% before desktop sign-off)

@@ -28,8 +28,13 @@ import { readFileSync } from 'node:fs'
 const checks = [
   {
     file: 'components/console/ConsoleShell.tsx',
-    must: [/hidden[^"']*lg:flex|lg:flex[^"']*hidden/, /AdminNavList/, /SheetContent/],
-    why: 'console shell must hide the rail below lg, render the shared nav, and provide a mobile Sheet',
+    must: [/ConsoleTopNav/, /AdminNavList/, /SheetContent/, /lg:hidden/],
+    why: 'console shell must render the FUB desktop top nav (lg+), the shared nav in a mobile Sheet, and a mobile header hidden at lg',
+  },
+  {
+    file: 'components/console/ConsoleTopNav.tsx',
+    must: [/hidden[^"']*lg:flex|lg:flex[^"']*hidden/, /buildAdminNav|AdminNavSection/],
+    why: 'desktop top nav must be lg-only and driven by the single buildAdminNav source',
   },
   {
     file: 'app/admin/(protected)/layout.tsx',

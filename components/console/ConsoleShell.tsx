@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import ConsoleCommandPalette from '@/components/console/ConsoleCommandPalette'
 import ConsoleQuickAction from '@/components/console/ConsoleQuickAction'
 import CrmMobileTabBar from '@/components/console/CrmMobileTabBar'
+import ConsoleTopNav from '@/components/console/ConsoleTopNav'
 
 function MenuIcon() {
   return (
@@ -56,64 +57,34 @@ export default function ConsoleShell({
   const initials = (user.fullName ?? user.email ?? '?').trim().charAt(0).toUpperCase()
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      {/* Desktop rail */}
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
-        <div className="flex h-14 shrink-0 items-center border-b border-sidebar-border px-4">
-          <Wordmark />
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          <AdminNavList sections={navSections} />
-        </div>
-        <div className="shrink-0 border-t border-sidebar-border p-3">
-          <div className="flex items-center gap-2.5 rounded-md px-2 py-1.5">
-            {user.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" referrerPolicy="no-referrer" />
-            ) : (
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground">{initials}</span>
-            )}
-            <div className="min-w-0">
-              <div className="truncate text-sm font-medium text-foreground">{user.fullName ?? 'Signed in'}</div>
-              <div className="truncate text-xs text-muted-foreground">{brokerLabel}</div>
-            </div>
-          </div>
-        </div>
-      </aside>
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
+      {/* Desktop: FUB-style dark horizontal top nav (lg+) */}
+      <ConsoleTopNav sections={navSections} user={user} />
 
-      {/* Main column */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border bg-background/90 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/75 sm:px-5">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => setOpen(true)}
-            className="h-10 w-10 p-0 text-muted-foreground hover:bg-accent hover:text-foreground lg:hidden"
-            aria-label="Open navigation"
-          >
-            <MenuIcon />
-          </Button>
-          <div className="lg:hidden"><Wordmark /></div>
-          <div className="ml-1 hidden lg:block"><ConsoleCommandPalette /></div>
-          <div className="ml-auto flex items-center gap-1.5">
-            <div className="lg:hidden"><ConsoleCommandPalette /></div>
-            <a
-              href="/"
-              className="hidden h-9 items-center rounded-md border border-border px-3 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground sm:inline-flex"
-            >
-              View site
-            </a>
-            {user.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover lg:hidden" referrerPolicy="no-referrer" />
-            ) : (
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground lg:hidden">{initials}</span>
-            )}
-          </div>
-        </header>
+      {/* Mobile / tablet header (< lg) — hamburger + logo + search + avatar */}
+      <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border bg-background/90 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/75 sm:px-5 lg:hidden">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => setOpen(true)}
+          className="h-10 w-10 p-0 text-muted-foreground hover:bg-accent hover:text-foreground"
+          aria-label="Open navigation"
+        >
+          <MenuIcon />
+        </Button>
+        <Wordmark />
+        <div className="ml-auto flex items-center gap-1.5">
+          <ConsoleCommandPalette />
+          {user.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={user.avatarUrl} alt="" title={brokerLabel} className="h-8 w-8 rounded-full object-cover" referrerPolicy="no-referrer" />
+          ) : (
+            <span title={brokerLabel} className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground">{initials}</span>
+          )}
+        </div>
+      </header>
 
-        <main className="min-w-0 flex-1 px-4 pt-5 pb-24 sm:px-6 sm:pt-7 lg:pb-7">{children}</main>
-      </div>
+      <main className="min-w-0 flex-1 px-4 pt-5 pb-24 sm:px-6 sm:pt-7 lg:px-8 lg:pb-8">{children}</main>
 
       {/* Global "+" quick-action FAB — rides every console surface, context-aware on a lead.
           Lifted above the mobile tab bar on phones. */}
