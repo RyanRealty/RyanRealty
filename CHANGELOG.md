@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.626.7 (2026-06-26)
+
+### Bug Fixes
+- fix(crm): inbox conversation view crashed (function prop to client component)
+
+---
+
+
 ## v1.626.6 (2026-06-26)
 
 ### Bug Fixes
