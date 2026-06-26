@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.638.2 (2026-06-26)
+
+### Bug Fixes
+- fix(crm): A2 contact detail — all 5 QA defects resolved
+
+---
+
+
 ## v1.638.1 (2026-06-26)
 
 ### Maintenance
