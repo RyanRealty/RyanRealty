@@ -48,7 +48,8 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { cn } from '@/lib/utils'
+import { Card } from '@/components/ui/card'
+import { Pencil, Trash2, GripVertical } from 'lucide-react'
 import {
   moveInList,
   parseOptions,
@@ -207,12 +208,16 @@ export function CustomFieldEditor({
 
   return (
     <div className="space-y-4">
+      {/* FUB-style header: count left, primary action right */}
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          {rows.length} {rows.length === 1 ? 'field' : 'fields'}
-        </p>
-        <Button size="sm" onClick={openCreate} disabled={pending}>
-          Add field
+        <h2 className="text-lg font-semibold text-foreground">
+          {rows.length.toLocaleString('en-US')}{' '}
+          <span className="font-normal text-muted-foreground">
+            {rows.length === 1 ? 'Custom field' : 'Custom fields'}
+          </span>
+        </h2>
+        <Button onClick={openCreate} disabled={pending}>
+          + Add custom field
         </Button>
       </div>
 
@@ -222,83 +227,89 @@ export function CustomFieldEditor({
         </Alert>
       ) : null}
 
-      <div className="rounded-xl border border-border bg-card overflow-x-auto no-scrollbar">
+      {/* Desktop table */}
+      <div className="hidden md:block overflow-x-auto no-scrollbar rounded-lg border border-border bg-card">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-1/4">Label</TableHead>
-              <TableHead className="w-1/5">Key</TableHead>
-              <TableHead className="w-1/6">Type</TableHead>
-              <TableHead className="w-1/6">Group</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="w-8 px-2" />
+              <TableHead>Field name</TableHead>
+              <TableHead className="w-24">Type</TableHead>
+              <TableHead className="w-28">Group</TableHead>
+              <TableHead className="w-20 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
-                  No custom fields yet. Add the first one above.
+                <TableCell colSpan={5} className="py-12 text-center text-sm text-muted-foreground">
+                  No custom fields yet. Add the first one.
                 </TableCell>
               </TableRow>
             ) : (
               rows.map((row, idx) => (
-                <TableRow key={row.id}>
+                <TableRow key={row.id} className="group">
+                  <TableCell className="w-8 px-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-muted-foreground opacity-0 group-hover:opacity-100 disabled:opacity-0 transition-opacity"
+                      disabled={pending || idx === 0}
+                      aria-label={`Move ${row.label} up`}
+                      onClick={() => submitReorder(row.id, -1)}
+                    >
+                      <GripVertical className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+
                   <TableCell className="font-medium text-foreground">
                     <span className="inline-flex items-center gap-2">
                       {row.label}
                       {row.isProtected ? (
-                        <Badge variant="outline" className="text-xs uppercase tracking-wide">
+                        <Badge variant="outline" className="text-xs">
                           System
                         </Badge>
                       ) : null}
                     </span>
                   </TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">{row.key}</TableCell>
+
                   <TableCell>
-                    <Badge variant="outline" className="text-xs uppercase tracking-wide">
+                    <Badge variant="outline" className="text-xs uppercase">
                       {row.type}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{row.fieldGroup ?? '—'}</TableCell>
+
+                  <TableCell className="text-sm text-muted-foreground">
+                    {row.fieldGroup ?? '—'}
+                  </TableCell>
+
                   <TableCell className="text-right">
                     <div className="inline-flex items-center gap-1">
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 px-2"
-                        disabled={pending || idx === 0}
-                        aria-label={`Move ${row.label} up`}
-                        onClick={() => submitReorder(row.id, -1)}
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                        disabled={pending}
+                        aria-label={`Edit ${row.label}`}
+                        onClick={() => openEdit(row)}
                       >
-                        ↑
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-2"
-                        disabled={pending || idx === rows.length - 1}
-                        aria-label={`Move ${row.label} down`}
-                        onClick={() => submitReorder(row.id, 1)}
-                      >
-                        ↓
-                      </Button>
-                      <Button variant="outline" size="sm" className="h-8" disabled={pending} onClick={() => openEdit(row)}>
-                        Edit
+                        <Pencil className="h-4 w-4" />
                       </Button>
                       {row.isProtected ? (
-                        <span className="px-2 text-xs text-muted-foreground">Locked</span>
+                        <span className="w-8" />
                       ) : (
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 text-destructive hover:text-destructive"
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                           disabled={pending}
+                          aria-label={`Delete ${row.label}`}
                           onClick={() => {
                             setDeleteRow(row)
                             setNote(null)
                           }}
                         >
-                          Delete
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
@@ -308,6 +319,48 @@ export function CustomFieldEditor({
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-2">
+        {rows.map((row) => (
+          <Card
+            key={row.id}
+            className="flex items-center justify-between gap-3 px-4 py-3"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-foreground">{row.label}</p>
+              <p className="text-xs text-muted-foreground uppercase">{row.type}</p>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                disabled={pending}
+                aria-label={`Edit ${row.label}`}
+                onClick={() => openEdit(row)}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              {!row.isProtected && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                  disabled={pending}
+                  aria-label={`Delete ${row.label}`}
+                  onClick={() => {
+                    setDeleteRow(row)
+                    setNote(null)
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </Card>
+        ))}
       </div>
 
       {/* Create / edit dialog */}

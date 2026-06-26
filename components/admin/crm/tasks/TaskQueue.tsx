@@ -18,7 +18,7 @@ import { useRouter } from 'next/navigation'
 import { CheckCircle2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -214,9 +214,13 @@ export default function TaskQueue({
           {mobileEmpty}
         </div>
         {/* Desktop */}
-        <p className="hidden py-10 text-center text-sm text-muted-foreground md:block">
-          Nothing in this view. New tasks land here the moment a lead acts or a follow-up comes due.
-        </p>
+        <div className="hidden md:block">
+          <Card>
+            <p className="py-12 text-center text-sm text-muted-foreground">
+              Nothing in this view. New tasks land here the moment a lead acts or a follow-up comes due.
+            </p>
+          </Card>
+        </div>
       </>
     )
   }
@@ -287,11 +291,11 @@ export default function TaskQueue({
         )}
       </div>
 
-      {/* ── DESKTOP CARD LIST (≥ md) ─────────────────────────────────────── */}
+      {/* ── DESKTOP ROW LIST (≥ md) ──────────────────────────────────────── */}
       <div className="hidden md:block">
         {!isCompletedView && selected.size > 0 ? (
-          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-muted/40 p-2">
-            <span className="px-1 text-sm font-medium tabular-nums text-foreground">{selected.size} selected</span>
+          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2">
+            <span className="text-sm font-medium tabular-nums text-foreground">{selected.size} selected</span>
             <Button type="button" size="sm" disabled={pending} onClick={() => run(() => actions.bulkComplete([...selected]))}>
               Complete selected
             </Button>
@@ -303,47 +307,72 @@ export default function TaskQueue({
 
         {error ? <p className="mb-2 text-sm font-medium text-destructive">{error}</p> : null}
 
-        <div className="space-y-2">
-          {rows.map((t) => (
-            <Card key={t.id}>
-              <CardContent className="flex items-start gap-3 p-3 sm:p-4">
+        {/* Single card wrapping all rows — FUB-style table list */}
+        <Card>
+          <div className="divide-y divide-border">
+            {rows.map((t) => (
+              <div key={t.id} className="group flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
+                {/* Checkbox */}
                 {!isCompletedView ? (
-                  <div className="pt-0.5">
-                    <Checkbox
-                      checked={selected.has(t.id)}
-                      onCheckedChange={() => toggle(t.id)}
-                      aria-label={`Select ${t.name}`}
-                    />
-                  </div>
-                ) : null}
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-foreground">{t.name}</div>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                    {t.personName && t.personId ? (
-                      <a href={`/admin/crm/${t.personId}`} className="font-medium text-primary hover:underline">
-                        {t.personName}
-                      </a>
-                    ) : (
-                      <span>No contact</span>
-                    )}
-                    <span className="tabular-nums">
-                      {isCompletedView ? `Done ${formatDateTime(t.completedAt)}` : formatDateTime(t.dueAt)}
-                    </span>
-                    {t.type ? (
-                      <Badge variant="outline" className="text-xs">
-                        {t.type}
-                      </Badge>
-                    ) : null}
-                    <span>{brokerLabel(t.assignedBroker)}</span>
-                  </div>
+                  <Checkbox
+                    checked={selected.has(t.id)}
+                    onCheckedChange={() => toggle(t.id)}
+                    aria-label={`Select ${t.name}`}
+                    className="shrink-0"
+                  />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-muted-foreground/40" aria-label="Completed" />
+                )}
+
+                {/* Person column */}
+                <div className="w-36 shrink-0 truncate">
+                  {t.personName && t.personId ? (
+                    <a
+                      href={`/admin/crm/${t.personId}`}
+                      className="text-sm font-medium text-primary hover:underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {t.personName}
+                    </a>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">No contact</span>
+                  )}
                 </div>
+
+                {/* Task name — grows to fill */}
+                <div className="min-w-0 flex-1 truncate text-sm text-foreground">
+                  {t.name}
+                </div>
+
+                {/* Type badge */}
+                {t.type ? (
+                  <Badge variant="outline" className="shrink-0 text-xs">
+                    {t.type}
+                  </Badge>
+                ) : (
+                  <span className="w-16 shrink-0" />
+                )}
+
+                {/* Due / done date */}
+                <span className="w-36 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                  {isCompletedView
+                    ? formatDateTime(t.completedAt)
+                    : formatDateTime(t.dueAt)}
+                </span>
+
+                {/* Broker */}
+                <span className="w-20 shrink-0 truncate text-right text-xs text-muted-foreground">
+                  {brokerLabel(t.assignedBroker)}
+                </span>
+
+                {/* Row actions — visible on hover */}
                 {!isCompletedView ? (
-                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                  <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
-                      className="h-9 px-3 sm:h-8"
+                      className="h-7 px-2.5 text-xs"
                       disabled={pending}
                       onClick={() => run(() => actions.complete(t.id, t.personId))}
                     >
@@ -353,7 +382,7 @@ export default function TaskQueue({
                       type="button"
                       size="sm"
                       variant="ghost"
-                      className="h-9 px-2.5 sm:h-8"
+                      className="h-7 px-2 text-xs"
                       disabled={pending}
                       onClick={() => run(() => actions.snooze(t.id, 1))}
                     >
@@ -363,7 +392,7 @@ export default function TaskQueue({
                       type="button"
                       size="sm"
                       variant="ghost"
-                      className="h-9 px-2.5 sm:h-8"
+                      className="h-7 px-2 text-xs"
                       disabled={pending}
                       onClick={() => setEditTask(t)}
                     >
@@ -373,18 +402,20 @@ export default function TaskQueue({
                       type="button"
                       size="sm"
                       variant="ghost"
-                      className="h-9 px-2.5 text-destructive sm:h-8"
+                      className="h-7 px-2 text-xs text-destructive"
                       disabled={pending}
                       onClick={() => run(() => actions.remove(t.id))}
                     >
                       Delete
                     </Button>
                   </div>
-                ) : null}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                ) : (
+                  <div className="w-32 shrink-0" />
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
       </div>
 
       {/* Edit dialog — shared between mobile and desktop */}

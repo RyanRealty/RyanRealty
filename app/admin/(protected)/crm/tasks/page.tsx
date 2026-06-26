@@ -15,7 +15,6 @@ import {
 } from '@/app/actions/crm-tasks'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getTaskQueue, getCrmTaskTypes, type TaskQueueView } from '@/lib/data/crm/getTaskQueue'
-import { Button } from '@/components/ui/button'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 import TaskQueue, { type TaskActions } from '@/components/admin/crm/tasks/TaskQueue'
 import NewTaskDialog from '@/components/admin/crm/tasks/NewTaskDialog'
@@ -113,53 +112,74 @@ export default async function CrmTasksPage({
       </div>
 
       {/* View tabs — desktop only; mobile uses CrmSegmented inside TaskQueue */}
-      <div className="-mx-3 hidden gap-2 overflow-x-auto no-scrollbar px-3 md:flex md:mx-0 md:flex-wrap md:px-0">
-        {VIEWS.map((v) => {
-          const active = view === v.key
-          const count = counts[v.key]
-          return (
-            <Button
-              key={v.key}
-              asChild
-              size="sm"
-              variant={active ? 'default' : 'outline'}
-              className="h-10 shrink-0 gap-1.5 sm:h-9"
-            >
-              <Link href={`/admin/crm/tasks?view=${v.key}${typeFilter ? `&type=${encodeURIComponent(typeFilter)}` : ''}`}>
-                {v.label}
-                <span className="tabular-nums opacity-80">{count}</span>
-              </Link>
-            </Button>
-          )
-        })}
-      </div>
-
-      {/* Type filter — desktop only on mobile to keep phone UI clean */}
-      {taskTypes.length > 0 ? (
-        <div className="-mx-3 mt-3 hidden gap-2 overflow-x-auto no-scrollbar px-3 md:flex md:mx-0 md:flex-wrap md:px-0">
-          <Button
-            asChild
-            size="sm"
-            variant={!typeFilter ? 'secondary' : 'ghost'}
-            className="h-9 shrink-0 sm:h-8"
-          >
-            <Link href={`/admin/crm/tasks?view=${view}`}>All types</Link>
-          </Button>
-          {taskTypes
-            .filter((t) => t.isActive || t.key === typeFilter)
-            .map((t) => (
-              <Button
-                key={t.key}
-                asChild
-                size="sm"
-                variant={typeFilter === t.key ? 'secondary' : 'ghost'}
-                className="h-9 shrink-0 sm:h-8"
-              >
-                <Link href={`/admin/crm/tasks?view=${view}&type=${encodeURIComponent(t.key)}`}>{t.label}</Link>
-              </Button>
-            ))}
+      <div className="hidden md:block">
+        {/* FUB-style underline tab bar */}
+        <div className="-mx-3 overflow-x-auto no-scrollbar px-3 md:mx-0 md:px-0">
+          <div className="flex border-b border-border">
+            {VIEWS.map((v) => {
+              const active = view === v.key
+              const count = counts[v.key]
+              return (
+                <Link
+                  key={v.key}
+                  href={`/admin/crm/tasks?view=${v.key}${typeFilter ? `&type=${encodeURIComponent(typeFilter)}` : ''}`}
+                  className={[
+                    'relative flex shrink-0 items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors',
+                    active
+                      ? 'text-foreground after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primary'
+                      : 'text-muted-foreground hover:text-foreground',
+                  ].join(' ')}
+                >
+                  {v.label}
+                  {count > 0 ? (
+                    <span className={[
+                      'tabular-nums text-xs',
+                      active ? 'text-foreground' : 'text-muted-foreground',
+                    ].join(' ')}>
+                      {count}
+                    </span>
+                  ) : null}
+                </Link>
+              )
+            })}
+          </div>
         </div>
-      ) : null}
+
+        {/* Type filter chip row */}
+        {taskTypes.length > 0 ? (
+          <div className="-mx-3 mt-2.5 overflow-x-auto no-scrollbar px-3 md:mx-0 md:px-0">
+            <div className="flex flex-wrap gap-1.5">
+              <Link
+                href={`/admin/crm/tasks?view=${view}`}
+                className={[
+                  'inline-flex h-7 items-center rounded-full px-3 text-xs font-medium transition-colors',
+                  !typeFilter
+                    ? 'bg-secondary text-secondary-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                ].join(' ')}
+              >
+                All types
+              </Link>
+              {taskTypes
+                .filter((t) => t.isActive || t.key === typeFilter)
+                .map((t) => (
+                  <Link
+                    key={t.key}
+                    href={`/admin/crm/tasks?view=${view}&type=${encodeURIComponent(t.key)}`}
+                    className={[
+                      'inline-flex h-7 items-center rounded-full px-3 text-xs font-medium transition-colors',
+                      typeFilter === t.key
+                        ? 'bg-secondary text-secondary-foreground'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                    ].join(' ')}
+                  >
+                    {t.label}
+                  </Link>
+                ))}
+            </div>
+          </div>
+        ) : null}
+      </div>
 
       <ConsoleSection title="Task queue" className="mt-6">
         <TaskQueue

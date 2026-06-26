@@ -40,7 +40,8 @@
 - [x] People (02) — Collections smart-list sidebar, list table (Name+source, Agent, Last Visit, Phone w/ call+text, Email, Last Activity), mass-action toolbar, right Filters panel. Verified 1440. (polish: hide leftover KPI tiles + secondary-nav strip on desktop too.)
 - [x] Person record (03) — desktop 3-column workspace via LeadTabs (left identity/details/memberships | middle composers+timeline | right tasks/watching/workflow). Mobile tabs intact. Verified 1440.
 - [x] Inbox (04) — 4-pane on desktop (folders rail | conversation list | reading pane | contact panel). Verified 1440.
-- [ ] Tasks (05) — Today/Overdue/Future + type filters. (mobile done; desktop list ok, light polish)
+- [x] Tasks (05) — desktop FUB underline tabs (Today/Overdue/Upcoming/Completed) + type-chip filters + clean task-row table. Verified 1440.
+- [x] Admin config subpages (20/21/22) — Stages, Tags, Custom Fields, Segments, Areas restyled to FUB tables (Name/Used/Status/Actions) via the shared ConfigTableEditor/TagTaxonomyEditor/CustomFieldEditor. Verified Tags 1440.
 - [ ] Calendar (06) — day/week/month grid + create-appointment. (no /admin/calendar route yet — dashboard MonthCalendar exists)
 - [x] Deals (07) — desktop Kanban: colored stage columns, "N deals · $value" headers, deal cards (address/price/close/avatar). Verified 1440. (deal-record modal + Sellers tab styling still to refine.)
 - [x] Reporting (08) — grouped report catalog (Market data / Broker activity / Lead sources / Marketing) cards. Verified 1440. (individual report views 32–42 still to style.)

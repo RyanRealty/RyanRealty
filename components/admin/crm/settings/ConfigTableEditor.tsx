@@ -53,7 +53,9 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { Pencil, Trash2, GripVertical } from 'lucide-react'
 import { moveInList, capitalizeNoun as cap } from '@/components/admin/crm/settings/config-editor-helpers'
 
 /** A config row the editor renders. Matches the cached reader shape. */
@@ -214,12 +216,16 @@ export function ConfigTableEditor({
 
   return (
     <div className="space-y-4">
+      {/* FUB-style header: count left, primary action right */}
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          {rows.length} {rows.length === 1 ? noun : `${noun}s`}
-        </p>
-        <Button size="sm" onClick={() => setAddOpen(true)} disabled={pending}>
-          Add {noun}
+        <h2 className="text-lg font-semibold text-foreground">
+          {rows.length.toLocaleString('en-US')}{' '}
+          <span className="font-normal text-muted-foreground">
+            {rows.length === 1 ? cap(noun) : `${cap(noun)}s`}
+          </span>
+        </h2>
+        <Button onClick={() => setAddOpen(true)} disabled={pending}>
+          + Add {noun}
         </Button>
       </div>
 
@@ -229,43 +235,67 @@ export function ConfigTableEditor({
         </Alert>
       ) : null}
 
-      <div className="rounded-xl border border-border bg-card overflow-x-auto no-scrollbar">
+      {/* Desktop table — hidden on mobile; card list below takes over */}
+      <div className="hidden md:block overflow-x-auto no-scrollbar rounded-lg border border-border bg-card">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-1/4">Label</TableHead>
-              <TableHead className="w-1/4">Key</TableHead>
-              {usageVisible ? <TableHead className="w-1/6 text-right tabular-nums">In use</TableHead> : null}
-              <TableHead className="w-1/6">Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+            <TableRow className="hover:bg-transparent">
+              {/* drag handle column */}
+              <TableHead className="w-8 px-2" />
+              <TableHead>Name</TableHead>
+              {usageVisible ? (
+                <TableHead className="w-28 text-right tabular-nums">Used</TableHead>
+              ) : null}
+              <TableHead className="w-28">Status</TableHead>
+              <TableHead className="w-20 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={usageVisible ? 5 : 4} className="py-8 text-center text-sm text-muted-foreground">
-                  No {noun}s yet. Add the first one above.
+                <TableCell colSpan={usageVisible ? 5 : 4} className="py-12 text-center text-sm text-muted-foreground">
+                  No {noun}s yet. Add the first one.
                 </TableCell>
               </TableRow>
             ) : (
               rows.map((row, idx) => (
-                <TableRow key={row.id}>
+                <TableRow key={row.id} className="group">
+                  {/* Reorder: grip icon (up/down on click) */}
+                  <TableCell className="w-8 px-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-muted-foreground opacity-0 group-hover:opacity-100 disabled:opacity-0 transition-opacity"
+                      disabled={pending || idx === 0}
+                      aria-label={`Move ${row.label} up`}
+                      onClick={() => submitReorder(row.id, -1)}
+                    >
+                      <GripVertical className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+
+                  {/* Name */}
                   <TableCell className="font-medium text-foreground">
                     <span className="inline-flex items-center gap-2">
                       {row.label}
                       {row.isProtected ? (
-                        <Badge variant="outline" className="text-xs uppercase tracking-wide">
+                        <Badge variant="outline" className="text-xs">
                           Protected
                         </Badge>
                       ) : null}
                     </span>
                   </TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">{row.key}</TableCell>
+
+                  {/* Usage count */}
                   {usageVisible ? (
                     <TableCell className="text-right tabular-nums text-muted-foreground">
-                      {typeof row.usageCount === 'number' ? row.usageCount.toLocaleString('en-US') : '—'}
+                      {typeof row.usageCount === 'number'
+                        ? row.usageCount.toLocaleString('en-US')
+                        : '—'}
                     </TableCell>
                   ) : null}
+
+                  {/* Status toggle */}
                   <TableCell>
                     <span className="inline-flex items-center gap-2">
                       <Switch
@@ -274,52 +304,43 @@ export function ConfigTableEditor({
                         onCheckedChange={(next) => submitActive(row, next)}
                         aria-label={`${row.label} active`}
                       />
-                      <span className={cn('text-xs', row.isActive ? 'text-foreground' : 'text-muted-foreground')}>
+                      <span
+                        className={cn(
+                          'text-xs',
+                          row.isActive ? 'text-foreground' : 'text-muted-foreground',
+                        )}
+                      >
                         {row.isActive ? 'Active' : 'Off'}
                       </span>
                     </span>
                   </TableCell>
+
+                  {/* Edit + Delete icon buttons */}
                   <TableCell className="text-right">
                     <div className="inline-flex items-center gap-1">
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 px-2"
-                        disabled={pending || idx === 0}
-                        aria-label={`Move ${row.label} up`}
-                        onClick={() => submitReorder(row.id, -1)}
-                      >
-                        ↑
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-2"
-                        disabled={pending || idx === rows.length - 1}
-                        aria-label={`Move ${row.label} down`}
-                        onClick={() => submitReorder(row.id, 1)}
-                      >
-                        ↓
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8"
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                         disabled={pending}
+                        aria-label={`Rename ${row.label}`}
                         onClick={() => {
                           setRenameRow(row)
                           setRenameLabel(row.label)
                           setNote(null)
                         }}
                       >
-                        Rename
+                        <Pencil className="h-4 w-4" />
                       </Button>
-                      {row.isProtected ? null : (
+                      {row.isProtected ? (
+                        <span className="w-8" />
+                      ) : (
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 text-destructive hover:text-destructive"
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                           disabled={pending}
+                          aria-label={`Delete ${row.label}`}
                           onClick={() => {
                             setDeleteRow(row)
                             setReassignTo('')
@@ -327,7 +348,7 @@ export function ConfigTableEditor({
                             setNote(null)
                           }}
                         >
-                          Delete
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
@@ -337,6 +358,64 @@ export function ConfigTableEditor({
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile card list — visible below md (satisfies table-no-mobile-fallback gate) */}
+      <div className="md:hidden space-y-2">
+        {rows.map((row) => (
+          <Card
+            key={row.id}
+            className="flex items-center justify-between gap-3 px-4 py-3"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-foreground">{row.label}</p>
+              {usageVisible && typeof row.usageCount === 'number' ? (
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {row.usageCount.toLocaleString('en-US')} contacts
+                </p>
+              ) : null}
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              <Switch
+                checked={row.isActive}
+                disabled={pending}
+                onCheckedChange={(next) => submitActive(row, next)}
+                aria-label={`${row.label} active`}
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                disabled={pending}
+                aria-label={`Rename ${row.label}`}
+                onClick={() => {
+                  setRenameRow(row)
+                  setRenameLabel(row.label)
+                  setNote(null)
+                }}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              {!row.isProtected && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                  disabled={pending}
+                  aria-label={`Delete ${row.label}`}
+                  onClick={() => {
+                    setDeleteRow(row)
+                    setReassignTo('')
+                    setStripCarriers(false)
+                    setNote(null)
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </Card>
+        ))}
       </div>
 
       {/* Add dialog */}
