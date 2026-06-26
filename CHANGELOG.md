@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.628.0 (2026-06-26)
+
+### Features
+- feat(ci/ops): three guards so a broken build can never silently fail to deploy again
+
+---
+
+
 ## v1.627.0 (2026-06-26)
 
 ### Features
