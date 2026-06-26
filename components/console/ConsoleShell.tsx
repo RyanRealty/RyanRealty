@@ -32,9 +32,9 @@ function MenuIcon() {
 
 function Wordmark() {
   return (
-    <Link href="/admin" className="flex items-center gap-2.5 px-1">
-      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground">RR</span>
-      <span className="text-sm font-semibold tracking-tight text-foreground">Console</span>
+    <Link href="/admin" className="flex items-center px-1" aria-label="Ryan Realty">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/images/brand/logo-horizontal-navy-transparent.png" alt="Ryan Realty" className="h-7 w-auto" />
     </Link>
   )
 }

@@ -132,14 +132,51 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
     )
   }
 
+  // ── Regroup into the 5 top-level menus (Matt directive 2026-06-26):
+  //    Dashboard · CRM · Deals · Reports · Admin. Filter-based remap so every
+  //    role gate above is preserved (an item only exists if its role check
+  //    passed). The flat per-job arrays are the source; they fan into 5 groups. ──
+  const has = (arr: AdminNavItem[], href: string) => arr.filter((i) => i.href === href)
+  const exclude = (arr: AdminNavItem[], hrefs: string[]) => arr.filter((i) => !hrefs.includes(i.href))
+
+  const dashboardItems = has(today, '/admin/broker-dashboard')
+
+  const crmItems: AdminNavItem[] = [
+    ...has(people, '/admin/crm'), // Contacts
+    ...has(today, '/admin/crm/inbox'),
+    ...has(today, '/admin/crm/tasks'),
+    ...has(today, '/admin/analytics/action-required'), // Hot leads
+    ...has(today, '/admin/crm/approvals'),
+    ...has(people, '/admin/crm/new'),
+    ...has(people, '/admin/email/compose'),
+    ...has(marketing, '/admin/newsletters'),
+    ...has(listings, '/admin/cmas'),
+  ]
+
+  const dealsItems: AdminNavItem[] = [
+    ...has(people, '/admin/crm/deals'), // Pipeline
+    ...transactions, // Transactions, Signing, Commissions, Financials, Forms
+    ...has(today, '/admin/sign-off'),
+  ]
+
+  const reportsItems = marketing.filter((i) =>
+    /\/admin\/(analytics|reports|optimization|visitors|fub-attribution)/.test(i.href),
+  )
+
+  const adminItems: AdminNavItem[] = [
+    ...exclude(listings, ['/admin/cmas']), // Listings, Expired, Search
+    ...has(marketing, '/admin/approval-queue'),
+    ...has(marketing, '/admin/broker-links'),
+    ...content,
+    ...system,
+  ]
+
   const sections: AdminNavSection[] = [
-    { label: 'Today', items: today, defaultOpen: true },
-    { label: 'People', items: people, defaultOpen: true },
-    { label: 'Transactions', items: transactions, defaultOpen: true },
-    { label: 'Listings', items: listings, defaultOpen: true },
-    { label: 'Marketing', items: marketing, defaultOpen: false },
-    { label: 'Content', items: content, defaultOpen: false },
-    { label: 'System', items: system, defaultOpen: false },
+    { label: 'Dashboard', items: dashboardItems, defaultOpen: true },
+    { label: 'CRM', items: crmItems, defaultOpen: true },
+    { label: 'Deals', items: dealsItems, defaultOpen: true },
+    { label: 'Reports', items: reportsItems, defaultOpen: false },
+    { label: 'Admin', items: adminItems, defaultOpen: false },
   ]
   return sections.filter((s) => s.items.length > 0)
 }
