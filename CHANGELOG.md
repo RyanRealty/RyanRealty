@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.634.1 (2026-06-26)
+
+### Maintenance
+- refactor(admin): retire People secondary-nav + KPI tiles (FUB-faithful)
+
+---
+
+
 ## v1.634.0 (2026-06-26)
 
 ### Features
