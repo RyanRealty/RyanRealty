@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.638.4 (2026-06-26)
+
+### Bug Fixes
+- fix(crm): QA pass — contacts/bulk (FIX-1), settings + dashboard/FAB (FIX-5), sequence-status owner guard
+
+---
+
+
 ## v1.638.3 (2026-06-26)
 
 ### Bug Fixes
