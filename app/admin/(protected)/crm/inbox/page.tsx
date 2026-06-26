@@ -190,7 +190,6 @@ export default async function CrmInboxPage({
               activePersonId={openId}
               scope={scope}
               bulkAction={bulkTriage}
-              formatTs={formatDateTime}
             />
           </ConsoleSection>
         </div>

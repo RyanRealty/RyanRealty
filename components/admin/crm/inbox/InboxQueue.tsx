@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
+import { formatDateTime } from '@/lib/format/date'
 import { CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
 import type { InboxConversation, ConversationStatus, InboxScope } from '@/lib/data/crm/getInboxQueue'
 
@@ -50,13 +51,11 @@ export default function InboxQueue({
   activePersonId,
   scope,
   bulkAction,
-  formatTs,
 }: {
   conversations: InboxConversation[]
   activePersonId: number | null
   scope: InboxScope
   bulkAction: (personIds: number[], status: ConversationStatus) => Promise<{ ok: boolean; error?: string }>
-  formatTs: (iso: string | null) => string
 }) {
   const router = useRouter()
   const [selected, setSelected] = useState<Set<number>>(new Set())
@@ -153,7 +152,7 @@ export default function InboxQueue({
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                     {c.lastKindLabel ? <span>{c.lastKindLabel}</span> : null}
-                    <span className="tabular-nums">{formatTs(c.lastMessageAt)}</span>
+                    <span className="tabular-nums">{formatDateTime(c.lastMessageAt)}</span>
                     <span>{brokerLabel(c.assignedBroker)}</span>
                   </div>
                 </Link>
