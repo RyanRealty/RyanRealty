@@ -5,6 +5,7 @@ import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { getGcalEvents, type GcalEvent } from '@/lib/google-calendar'
+import { getAppointments } from '@/lib/data/crm/getAppointments'
 
 function sb() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -81,6 +82,7 @@ export type BrokerCommandCenterData = {
     tasksToday: number
     activeDeals: number
     docsNeedingSignoff: number
+    apptNext30Days: number
   }
   activeDeals: CommandDeal[]
   tasksDue: CommandTask[]
@@ -271,6 +273,15 @@ export async function getBrokerCommandCenterData(): Promise<BrokerCommandCenterD
     tags: Array.isArray(c.tags) ? (c.tags as string[]) : [],
   }))
 
+  // 4a. CRM appointments (next 30 days from crm_appointments)
+  const apptFrom = now.toISOString().slice(0, 10)
+  const apptTo   = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  const crmAppointments = await getAppointments({
+    brokerScope: isSuperuser ? null : (crmSlug ?? null),
+    from: apptFrom,
+    to: apptTo,
+  }).catch(() => [])
+
   // 4. Google Calendar events (DWD — auto-connected via service account impersonation)
   const { connected: gcalConnected, events: gcalEvents } = broker.email
     ? await getGcalEvents(broker.email).catch(() => ({ connected: false, events: [] }))
@@ -313,6 +324,18 @@ export async function getBrokerCommandCenterData(): Promise<BrokerCommandCenterD
         gcalLink: null,
       })
     }
+  }
+
+  // CRM appointments → CalendarItem
+  for (const appt of crmAppointments) {
+    calendar.push({
+      date: appt.startAt.slice(0, 10),
+      label: appt.title,
+      sublabel: appt.typeName ?? appt.personName ?? 'Appointment',
+      type: 'gcal', // reuse 'gcal' type so MonthCalendar shows the 📅 icon
+      href: '/admin/crm/calendar',
+      gcalLink: null,
+    })
   }
 
   for (const ev of gcalEvents) {
@@ -364,6 +387,7 @@ export async function getBrokerCommandCenterData(): Promise<BrokerCommandCenterD
       tasksToday: todayCount,
       activeDeals: activeDeals.length,
       docsNeedingSignoff: envelopeCount ?? 0,
+      apptNext30Days: crmAppointments.length,
     },
     activeDeals,
     tasksDue,
