@@ -11,7 +11,6 @@ import MonthCalendar from '@/components/admin/MonthCalendar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -212,7 +211,7 @@ async function completeTaskFromDashboard(taskId: number, personId: number | null
 export default async function BrokerCommandCenterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>
+  searchParams: Promise<{ tab?: string; days?: string; broker?: string }>
 }) {
   const feedAccess = await getCrmAccess()
   const feedSlug = feedAccess?.brokerSlug ?? null
@@ -224,7 +223,9 @@ export default async function BrokerCommandCenterPage({
     getRecentEmailPeople(feedSlug, 12).catch(() => []),
     getRecentNewLeads(12).catch(() => []),
   ])
-  const { tab: activeTab } = await searchParams
+  const { tab: activeTab, days: activeDays, broker: activeBroker } = await searchParams
+  const selectedDays = activeDays ?? '30d'
+  const selectedBroker = activeBroker ?? 'everyone'
 
   if (!data) {
     return (
@@ -303,30 +304,47 @@ export default async function BrokerCommandCenterPage({
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">{today}</p>
         </div>
-        {/* FUB-style top-right controls: audience scope + date range */}
+        {/* URL-driven controls: audience scope + date range pill tabs */}
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {/* Audience filter — UI only, all data is already broker-scoped server-side */}
-          <Select defaultValue="everyone">
-            <SelectTrigger className="h-8 w-32 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="everyone">Everyone</SelectItem>
-              <SelectItem value="me">Just me</SelectItem>
-            </SelectContent>
-          </Select>
-          {/* Date range — UI only, shown for visual parity with FUB */}
-          <Select defaultValue="30d">
-            <SelectTrigger className="h-8 w-36 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7d">Last 7 days</SelectItem>
-              <SelectItem value="30d">Last 30 days</SelectItem>
-              <SelectItem value="90d">Last 90 days</SelectItem>
-              <SelectItem value="ytd">Year to date</SelectItem>
-            </SelectContent>
-          </Select>
+          {data.isSuperuser ? (
+            <div className="flex items-center rounded-lg border border-border bg-muted p-0.5">
+              {(['everyone', 'me'] as const).map((v) => (
+                <Link
+                  key={v}
+                  href={`/admin/broker-dashboard?broker=${v}&days=${selectedDays}`}
+                  className={cn(
+                    'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                    selectedBroker === v
+                      ? 'bg-card text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {v === 'everyone' ? 'Everyone' : 'Just me'}
+                </Link>
+              ))}
+            </div>
+          ) : null}
+          <div className="flex items-center rounded-lg border border-border bg-muted p-0.5">
+            {([
+              { v: '7d', label: '7d' },
+              { v: '30d', label: '30d' },
+              { v: '90d', label: '90d' },
+              { v: 'ytd', label: 'YTD' },
+            ] as const).map(({ v, label }) => (
+              <Link
+                key={v}
+                href={`/admin/broker-dashboard?days=${v}&broker=${selectedBroker}`}
+                className={cn(
+                  'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                  selectedDays === v
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
           {data.isSuperuser ? (
             <Button asChild variant="outline" size="sm" className="h-8">
               <Link href="/admin?broker=all">All leads</Link>
@@ -383,23 +401,9 @@ export default async function BrokerCommandCenterPage({
       <section>
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recent Activity</h2>
-          <div className="flex items-center gap-2">
-            {/* Filter Activity — UI chrome matching FUB; data filtered in DashboardActivityFeed */}
-            <Select defaultValue="all">
-              <SelectTrigger className="h-7 w-36 text-xs">
-                <SelectValue placeholder="Filter Activity" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All activity</SelectItem>
-                <SelectItem value="website">On the site</SelectItem>
-                <SelectItem value="email">Email</SelectItem>
-                <SelectItem value="leads">New leads</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button asChild variant="outline" size="sm" className="h-7 text-xs">
-              <Link href="/admin/crm">View all people</Link>
-            </Button>
-          </div>
+          <Button asChild variant="outline" size="sm" className="h-7 text-xs">
+            <Link href="/admin/crm">View all people</Link>
+          </Button>
         </div>
         <GroupCard>
           {/* Live pulse strip above the feed */}
@@ -706,10 +710,10 @@ export default async function BrokerCommandCenterPage({
                   <p className="text-xs text-muted-foreground">{money(listing.listPrice)}</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Button asChild size="sm" variant="outline" className="text-xs">
-                      <Link href={`/admin/listings/${listing.listingKey}`}>Listing reel</Link>
+                      <Link href={`/admin/media?listing=${listing.listingKey}`}>Listing reel</Link>
                     </Button>
                     <Button asChild size="sm" variant="outline" className="text-xs">
-                      <Link href={`/admin/listings/${listing.listingKey}`}>IG carousel</Link>
+                      <Link href={`/admin/media?listing=${listing.listingKey}`}>IG carousel</Link>
                     </Button>
                   </div>
                 </div>

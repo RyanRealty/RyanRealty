@@ -13,7 +13,7 @@
  * Keeping the list inside one client island is the simplest path to shared
  * selection state without server/client row coordination.
  */
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -26,6 +26,7 @@ import {
 import StageBadge from '@/components/admin/crm/StageBadge'
 import BulkActions, {
   type BulkPickerOption, type BulkTemplateOption, type BulkSequenceOption,
+  type BulkActionsHandle,
 } from '@/components/admin/crm/BulkActions'
 import type { LegacyFilters } from '@/lib/crm/segment-ast'
 
@@ -65,16 +66,19 @@ export type BulkAssignWrapperProps = {
   reportAreas: BulkPickerOption[]
   emailTemplates: BulkTemplateOption[]
   sequences: BulkSequenceOption[]
+  /** Pre-built export URL for the active filters — download href for the export button. */
+  exportHref: string
 }
 
 export default function BulkAssignWrapper({
   rows, activeFilters, activeViewId, matchingTotal, canAssignBroker,
-  brokers, stages, tags, reportAreas, emailTemplates, sequences,
+  brokers, stages, tags, reportAreas, emailTemplates, sequences, exportHref,
 }: BulkAssignWrapperProps) {
   const [selected, setSelected] = useState<Set<number>>(new Set())
   // FUB-style: the phone list is tap-to-open by default; bulk selection is a
   // mode you opt into (keeps the clutter — and the bulk bar — off the daily view).
   const [selectMode, setSelectMode] = useState(false)
+  const bulkActionsRef = useRef<BulkActionsHandle>(null)
 
   const toggle = (id: number) => {
     setSelected((prev) => {
@@ -169,8 +173,41 @@ export default function BulkAssignWrapper({
         )}
       </div>
 
-      {/* People table — desktop (FUB column order: Name+source, Agent, Last Visit, Phone, Email, Last Activity) */}
-      <div className="mt-4 hidden overflow-x-auto no-scrollbar rounded-lg border border-border bg-card md:block">
+      {/* Desktop mass-action icon toolbar (Email, Assign, Tag, Export) */}
+      <div className="hidden items-center justify-end gap-1 md:flex">
+        <Button
+          variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground"
+          aria-label="Email selected" title="Email selected"
+          onClick={() => bulkActionsRef.current?.openAction('email_cohort')}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        </Button>
+        <Button
+          variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground"
+          aria-label="Reassign broker" title="Reassign broker"
+          onClick={() => bulkActionsRef.current?.openAction('assign_broker')}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </Button>
+        <Button
+          variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground"
+          aria-label="Add tag" title="Add tag"
+          onClick={() => bulkActionsRef.current?.openAction('add_tag')}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
+        </Button>
+        <a
+          href={exportHref}
+          download
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          aria-label="Export contacts as CSV" title="Export contacts as CSV"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+        </a>
+      </div>
+
+      {/* People table — desktop (FUB column order: Name+source, Agent, Created, Phone, Email, Last Activity) */}
+      <div className="mt-2 hidden overflow-x-auto no-scrollbar rounded-lg border border-border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow className="border-b border-border">
@@ -183,7 +220,7 @@ export default function BulkAssignWrapper({
               </TableHead>
               <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Name</TableHead>
               <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Agent</TableHead>
-              <TableHead className="whitespace-nowrap text-xs font-medium uppercase tracking-wide text-muted-foreground">Last Visit</TableHead>
+              <TableHead className="whitespace-nowrap text-xs font-medium uppercase tracking-wide text-muted-foreground">Created</TableHead>
               <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Phone</TableHead>
               <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Email</TableHead>
               <TableHead className="whitespace-nowrap text-xs font-medium uppercase tracking-wide text-muted-foreground">Last Activity</TableHead>
@@ -236,9 +273,9 @@ export default function BulkAssignWrapper({
                       {p.assigned_broker ?? <span className="text-muted-foreground/40">—</span>}
                     </TableCell>
 
-                    {/* Last Visit — we use last_activity_label as the closest proxy */}
+                    {/* Created — distinct from Last Activity */}
                     <TableCell className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
-                      {p.last_activity_label || <span className="text-muted-foreground/40">—</span>}
+                      {p.created_label || <span className="text-muted-foreground/40">—</span>}
                     </TableCell>
 
                     {/* Phone with click-to-call + click-to-text icon buttons */}
@@ -290,6 +327,7 @@ export default function BulkAssignWrapper({
       </div>
 
       <BulkActions
+        ref={bulkActionsRef}
         selectedIds={selectedIds}
         onClear={clear}
         barClassName={`bottom-16 lg:bottom-0${selectMode ? '' : ' max-md:hidden'}`}

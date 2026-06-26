@@ -29,7 +29,7 @@
  * subscription has its own double-opt-in path).
  */
 
-import { useState, useTransition } from 'react'
+import { forwardRef, useImperativeHandle, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, X, ChevronDown } from 'lucide-react'
 import {
@@ -41,6 +41,7 @@ import {
   bulkSetReportSubscriptionAction,
   bulkEmailCohortAction,
   bulkPreflightCount,
+  bulkDeleteAction,
 } from '@/app/actions/crm-bulk'
 import type {
   BulkActionSelection,
@@ -120,6 +121,7 @@ type ActionId =
   | 'email_cohort'
   | 'newsletter'
   | 'saved_search'
+  | 'delete_contacts'
 
 // The bulk-job kind each action maps to (legacy two have no job kind).
 const ACTION_KIND: Partial<Record<ActionId, BulkKind>> = {
@@ -130,6 +132,7 @@ const ACTION_KIND: Partial<Record<ActionId, BulkKind>> = {
   enroll_workflow: 'crm:enroll-workflow',
   set_report_subscription: 'crm:set-report-subscription',
   email_cohort: 'email-cohort',
+  delete_contacts: 'crm:delete',
 }
 
 const ACTION_TITLE: Record<ActionId, string> = {
@@ -142,7 +145,11 @@ const ACTION_TITLE: Record<ActionId, string> = {
   email_cohort: 'Email this cohort',
   newsletter: 'Add to newsletter',
   saved_search: 'Assign a saved search',
+  delete_contacts: 'Delete contacts',
 }
+
+/** Imperative handle exposed via forwardRef so the icon toolbar can open actions. */
+export type BulkActionsHandle = { openAction: (id: ActionId) => void }
 
 const NEWSLETTER_SEGMENTS: BulkPickerOption[] = [
   { key: 'general', label: 'General' },
@@ -151,7 +158,7 @@ const NEWSLETTER_SEGMENTS: BulkPickerOption[] = [
   { key: 'past-client', label: 'Past client' },
 ]
 
-export default function BulkActions(props: BulkActionsProps) {
+const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function BulkActions(props, ref) {
   const {
     selectedIds, onClear, barClassName, activeFilters, activeViewId, matchingTotal, canAssignBroker,
     brokers, stages, tags, reportAreas, emailTemplates, sequences,
@@ -184,13 +191,12 @@ export default function BulkActions(props: BulkActionsProps) {
   const [segment, setSegment] = useState('general')
   const [ssName, setSsName] = useState('')
 
+  // Result feedback for legacy actions (newsletter / saved_search) that return counts.
+  const [legacyResult, setLegacyResult] = useState<{ assigned: number; skipped: number } | null>(null)
+
   const idCount = selectedIds.length
   const hasIds = idCount > 0
   const hasMatching = matchingTotal > 0
-
-  // Bar shows whenever there is anything to act on (a checkbox set OR a non-empty
-  // filtered list the operator can "select all" of).
-  if (!hasIds && !hasMatching) return null
 
   // The "all matching" selection. When a saved view is active, the whole view is
   // the audience (resolved through its stored AST, scope-clamped at run time);
@@ -216,6 +222,7 @@ export default function BulkActions(props: BulkActionsProps) {
     setOpen(null)
     setError(null)
     setPreflight(null)
+    setLegacyResult(null)
     resetForm()
   }
 
@@ -223,15 +230,24 @@ export default function BulkActions(props: BulkActionsProps) {
     setOpen(id)
     setError(null)
     setPreflight(null)
+    setLegacyResult(null)
     resetForm()
     const kind = ACTION_KIND[id]
     if (!kind) {
-      // Legacy actions act on ids only; force ids scope and skip the preflight.
+      // Legacy actions (newsletter, saved_search, delete_contacts) act on ids only.
       setScope('ids')
       return
     }
     runPreflight(kind)
   }
+
+  // Expose openAction so BulkAssignWrapper's icon toolbar can trigger actions.
+  // Must be declared after openAction to satisfy the reference, and before any
+  // conditional return so React's hooks rules are satisfied.
+  useImperativeHandle(ref, () => ({ openAction }), [])
+
+  // Bar shows only when there is something to act on. Placed AFTER all hooks.
+  if (!hasIds && !hasMatching) return null
 
   const runPreflight = (kind: BulkKind) => {
     setPreflightLoading(true)
@@ -340,7 +356,8 @@ export default function BulkActions(props: BulkActionsProps) {
           )
           if (!res.ok) { setError(res.error ?? 'Could not add to the newsletter'); return }
           setError(null)
-          closeDialog(); onClear()
+          setLegacyResult({ assigned: res.assigned ?? 0, skipped: res.skipped ?? 0 })
+          onClear()
           startTransition(() => router.refresh())
           return
         }
@@ -350,8 +367,13 @@ export default function BulkActions(props: BulkActionsProps) {
           const res = await adminBulkAssignSavedSearchAction(selectedIds, name, {})
           if (!res.ok) { setError(res.error ?? 'Could not assign the saved search'); return }
           setError(null)
-          closeDialog(); onClear()
+          setLegacyResult({ assigned: res.assigned ?? 0, skipped: res.skipped ?? 0 })
+          onClear()
           startTransition(() => router.refresh())
+          return
+        }
+        case 'delete_contacts': {
+          onEnqueued(await bulkDeleteAction(buildSelection()))
           return
         }
       }
@@ -369,6 +391,7 @@ export default function BulkActions(props: BulkActionsProps) {
 
   const actingCount = scope === 'ids' ? idCount : matchingTotal
   const isLegacy = open === 'newsletter' || open === 'saved_search'
+  const isDelete = open === 'delete_contacts'
 
   return (
     <div className={`fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/80 sm:px-6 ${barClassName ?? ''}`}>
@@ -419,6 +442,17 @@ export default function BulkActions(props: BulkActionsProps) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem disabled={!hasIds} onSelect={() => openAction('newsletter')}>Add to newsletter</DropdownMenuItem>
                 <DropdownMenuItem disabled={!hasIds} onSelect={() => openAction('saved_search')}>Assign a saved search</DropdownMenuItem>
+                {canAssignBroker ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onSelect={() => openAction('delete_contacts')}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      Delete contacts
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -445,13 +479,17 @@ export default function BulkActions(props: BulkActionsProps) {
           <DialogHeader>
             <DialogTitle>{open ? ACTION_TITLE[open] : ''}</DialogTitle>
             <DialogDescription>
-              {isLegacy
-                ? `Acts on the ${idCount} selected ${idCount === 1 ? 'contact' : 'contacts'}.`
-                : preflightLoading
-                  ? 'Counting the cohort'
-                  : preflight
-                    ? `${preflight.total.toLocaleString('en-US')} ${preflight.total === 1 ? 'contact' : 'contacts'}${preflight.skip > 0 ? `, ${preflight.skip.toLocaleString('en-US')} will be skipped (suppressed)` : ''}.`
-                    : `Acts on ${actingCount.toLocaleString('en-US')} ${actingCount === 1 ? 'contact' : 'contacts'}.`}
+              {legacyResult
+                ? `Done. ${legacyResult.assigned} added, ${legacyResult.skipped} skipped.`
+                : isDelete
+                  ? `This will soft-delete the selected contacts — they will disappear from all lists. This cannot be undone in bulk.`
+                  : isLegacy
+                    ? `Acts on the ${idCount} selected ${idCount === 1 ? 'contact' : 'contacts'}.`
+                    : preflightLoading
+                      ? 'Counting the cohort'
+                      : preflight
+                        ? `${preflight.total.toLocaleString('en-US')} ${preflight.total === 1 ? 'contact' : 'contacts'}${preflight.skip > 0 ? `, ${preflight.skip.toLocaleString('en-US')} will be skipped (suppressed)` : ''}.`
+                        : `Acts on ${actingCount.toLocaleString('en-US')} ${actingCount === 1 ? 'contact' : 'contacts'}.`}
             </DialogDescription>
           </DialogHeader>
 
@@ -565,17 +603,30 @@ export default function BulkActions(props: BulkActionsProps) {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" size="sm" onClick={closeDialog} disabled={isPending}>Cancel</Button>
-            <Button size="sm" onClick={run} disabled={isPending}>
-              {isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden /> : null}
-              Run
-            </Button>
+            {legacyResult ? (
+              <Button variant="outline" size="sm" onClick={closeDialog}>Close</Button>
+            ) : (
+              <>
+                <Button variant="outline" size="sm" onClick={closeDialog} disabled={isPending}>Cancel</Button>
+                <Button
+                  size="sm"
+                  variant={isDelete ? 'destructive' : 'default'}
+                  onClick={run}
+                  disabled={isPending}
+                >
+                  {isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden /> : null}
+                  {isDelete ? 'Delete' : 'Run'}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   )
-}
+})
+
+export default BulkActions
 
 /** A small labeled select used by most action forms. */
 function FormSelect({

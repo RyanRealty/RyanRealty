@@ -268,29 +268,14 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
             </div>
           </form>
 
-          {/* Desktop toolbar row: "Showing N people" + action icons + Columns/Me/Filters */}
-          <div className="mt-2 hidden items-center justify-between gap-3 md:flex">
+          {/* Desktop toolbar row: "Showing N people" count (icon toolbar lives in BulkAssignWrapper) */}
+          <div className="mt-2 hidden items-center gap-3 md:flex">
             <span className="text-sm text-muted-foreground tabular-nums">
               Showing <span className="font-medium text-foreground">{total.toLocaleString('en-US')}</span> people
               {appliedView ? (
                 <> · view: <span className="font-medium text-foreground">{appliedView.name}</span></>
               ) : null}
             </span>
-            {/* Mass-action icon toolbar (FUB: Email, Assign, Tag, Delete, Export) */}
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Email selected" title="Email selected">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Assign selected" title="Assign selected">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Tag selected" title="Tag selected">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Export selected" title="Export">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-              </Button>
-            </div>
           </div>
 
           {/* Selectable contacts list + sticky bulk-action bar (client island) */}
@@ -306,6 +291,15 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
             reportAreas={areaOptions}
             emailTemplates={templateOptions}
             sequences={sequenceOptions}
+            exportHref={(() => {
+              const p = new URLSearchParams()
+              if (sp.q) p.set('q', sp.q)
+              if (sp.stage) p.set('stage', sp.stage)
+              if (sp.tag) p.set('tag', sp.tag)
+              if (effectiveBroker) p.set('broker', effectiveBroker)
+              const qs = p.toString()
+              return `/api/admin/crm/export${qs ? `?${qs}` : ''}`
+            })()}
           />
 
           {/* Pagination */}

@@ -1005,6 +1005,9 @@ export async function listCrmSequences(): Promise<CrmSequenceRow[]> {
 export async function setCrmSequenceStatusAction(formData: FormData): Promise<CrmActionResult> {
   const access = await requireCrmAccess()
   if (!access.ok) return access
+  // Pause/Activate is an owner op — matches every other sequence mutation
+  // (a restricted broker must not toggle a shared outbound nurture sequence).
+  if (access.access.role !== 'superuser') return { ok: false, error: 'Only an owner can pause or activate a workflow.' }
   const sequenceId = Number(formData.get('sequenceId'))
   const status = String(formData.get('status') ?? '')
   if (!sequenceId || !['active', 'paused'].includes(status)) return { ok: false, error: 'Bad input' }

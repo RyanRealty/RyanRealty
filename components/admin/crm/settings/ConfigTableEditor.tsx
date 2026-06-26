@@ -55,7 +55,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-import { Pencil, Trash2, GripVertical } from 'lucide-react'
+import { Pencil, Trash2, ChevronUp, ChevronDown } from 'lucide-react'
 import { moveInList, capitalizeNoun as cap } from '@/components/admin/crm/settings/config-editor-helpers'
 
 /** A config row the editor renders. Matches the cached reader shape. */
@@ -240,8 +240,8 @@ export function ConfigTableEditor({
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              {/* drag handle column */}
-              <TableHead className="w-8 px-2" />
+              {/* reorder column */}
+              <TableHead className="w-12 px-1" />
               <TableHead>Name</TableHead>
               {usageVisible ? (
                 <TableHead className="w-28 text-right tabular-nums">Used</TableHead>
@@ -260,18 +260,30 @@ export function ConfigTableEditor({
             ) : (
               rows.map((row, idx) => (
                 <TableRow key={row.id} className="group">
-                  {/* Reorder: grip icon (up/down on click) */}
-                  <TableCell className="w-8 px-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-muted-foreground opacity-0 group-hover:opacity-100 disabled:opacity-0 transition-opacity"
-                      disabled={pending || idx === 0}
-                      aria-label={`Move ${row.label} up`}
-                      onClick={() => submitReorder(row.id, -1)}
-                    >
-                      <GripVertical className="h-4 w-4" />
-                    </Button>
+                  {/* Reorder: stacked up/down chevrons */}
+                  <TableCell className="w-12 px-1">
+                    <div className="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-8 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                        disabled={pending || idx === 0}
+                        aria-label={`Move ${row.label} up`}
+                        onClick={() => submitReorder(row.id, -1)}
+                      >
+                        <ChevronUp className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-8 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                        disabled={pending || idx === rows.length - 1}
+                        aria-label={`Move ${row.label} down`}
+                        onClick={() => submitReorder(row.id, 1)}
+                      >
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </TableCell>
 
                   {/* Name */}
@@ -362,7 +374,7 @@ export function ConfigTableEditor({
 
       {/* Mobile card list — visible below md (satisfies table-no-mobile-fallback gate) */}
       <div className="md:hidden space-y-2">
-        {rows.map((row) => (
+        {rows.map((row, idx) => (
           <Card
             key={row.id}
             className="flex items-center justify-between gap-3 px-4 py-3"
@@ -376,6 +388,29 @@ export function ConfigTableEditor({
               ) : null}
             </div>
             <div className="flex shrink-0 items-center gap-1">
+              {/* Reorder up/down on mobile */}
+              <div className="flex flex-col">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 w-7 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                  disabled={pending || idx === 0}
+                  aria-label={`Move ${row.label} up`}
+                  onClick={() => submitReorder(row.id, -1)}
+                >
+                  <ChevronUp className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 w-7 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                  disabled={pending || idx === rows.length - 1}
+                  aria-label={`Move ${row.label} down`}
+                  onClick={() => submitReorder(row.id, 1)}
+                >
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </Button>
+              </div>
               <Switch
                 checked={row.isActive}
                 disabled={pending}

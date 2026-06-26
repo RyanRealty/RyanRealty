@@ -15,6 +15,7 @@
  * Design-system only.
  */
 import { useRef, useState, useTransition } from 'react'
+import { Pencil } from 'lucide-react'
 import {
   Accordion,
   AccordionContent,
@@ -85,6 +86,7 @@ export type TemplateEditorActions = {
   update: (id: number, input: TemplateInput) => Promise<ActionResult>
   setActive: (id: number, isActive: boolean) => Promise<ActionResult>
   remove: (id: number) => Promise<ActionResult>
+  renameCategory?: (oldName: string, newName: string) => Promise<ActionResult>
 }
 
 type FormState = {
@@ -123,6 +125,20 @@ export function TemplateEditor({
   const [form, setForm] = useState<FormState>(EMPTY)
   const [deleteRow, setDeleteRow] = useState<TemplateRow | null>(null)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
+
+  // Folder rename state
+  const [renameCatOld, setRenameCatOld] = useState<string | null>(null)
+  const [renameCatNew, setRenameCatNew] = useState('')
+
+  function submitRenameCategory() {
+    if (!renameCatOld || !actions.renameCategory) return
+    const next = renameCatNew.trim()
+    run(
+      () => actions.renameCategory!(renameCatOld, next),
+      next ? `Folder renamed to "${next}"` : 'Templates moved to Uncategorized',
+      () => { setRenameCatOld(null); setRenameCatNew('') },
+    )
+  }
 
   function run(action: () => Promise<ActionResult>, fallbackOk: string, onOk?: () => void) {
     setNote(null)
@@ -247,7 +263,7 @@ export function TemplateEditor({
             <AccordionItem
               key={cat}
               value={cat}
-              className="rounded-xl border border-border bg-card overflow-hidden"
+              className="group rounded-xl border border-border bg-card overflow-hidden"
             >
               <AccordionTrigger className="px-4 py-3 hover:no-underline">
                 <span className="flex items-center gap-2 text-sm font-medium">
@@ -255,6 +271,23 @@ export function TemplateEditor({
                   <Badge variant="secondary" className="tabular-nums text-xs">
                     {catRows.length}
                   </Badge>
+                  {actions.renameCategory && cat !== 'Uncategorized' ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Rename folder ${cat}`}
+                      className="ml-1 h-5 w-5 p-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 focus:opacity-100"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setRenameCatOld(cat)
+                        setRenameCatNew(cat)
+                        setNote(null)
+                      }}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                  ) : null}
                 </span>
               </AccordionTrigger>
               <AccordionContent className="p-0">
@@ -471,6 +504,44 @@ export function TemplateEditor({
             </Button>
             <Button onClick={submitForm} disabled={pending}>
               {editId == null ? 'Create template' : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Folder rename dialog */}
+      <Dialog
+        open={renameCatOld !== null}
+        onOpenChange={(o) => { if (!o && !pending) { setRenameCatOld(null); setRenameCatNew('') } }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename folder</DialogTitle>
+            <DialogDescription>
+              All templates in &ldquo;{renameCatOld}&rdquo; will move to the new folder name.
+              Leave blank to move them to Uncategorized.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="rename-cat-input">New folder name</Label>
+            <Input
+              id="rename-cat-input"
+              value={renameCatNew}
+              onChange={(e) => setRenameCatNew(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') submitRenameCategory() }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => { setRenameCatOld(null); setRenameCatNew('') }}
+              disabled={pending}
+            >
+              Cancel
+            </Button>
+            <Button onClick={submitRenameCategory} disabled={pending}>
+              Rename
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -34,6 +34,7 @@ import { setStageHandler } from './set-stage'
 import { enrollWorkflowHandler } from './enroll-workflow'
 import { setReportSubscriptionHandler } from './set-report-subscription'
 import { registerEmailCohortHandler } from './email-cohort'
+import { deleteContactsHandler } from './delete'
 
 registerBulkHandler('crm:assign-broker', assignBrokerHandler)
 registerBulkHandler('crm:add-tag', addTagHandler)
@@ -41,6 +42,7 @@ registerBulkHandler('crm:remove-tag', removeTagHandler)
 registerBulkHandler('crm:set-stage', setStageHandler)
 registerBulkHandler('crm:enroll-workflow', enrollWorkflowHandler)
 registerBulkHandler('crm:set-report-subscription', setReportSubscriptionHandler)
+registerBulkHandler('crm:delete', deleteContactsHandler)
 
 // The email-cohort SEND handler is owned by a sibling agent and exposes an
 // explicit registration fn so it never has to edit this index. Wire it here so

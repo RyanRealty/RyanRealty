@@ -316,6 +316,21 @@ export async function bulkEmailCohortAction(
  * isSuppressed also reads crm_suppressions rows + fails closed on an unreadable
  * table), deliberately conservative-but-fast for a synchronous preview.
  */
+/**
+ * Soft-delete a selection of contacts (sets deleted=true so they vanish from all
+ * lists). Owner-only: only a superuser (no broker scope restriction) may delete.
+ */
+export async function bulkDeleteAction(
+  selection: BulkActionSelection,
+): Promise<BulkEnqueueResult> {
+  return enqueue('crm:delete', selection, {}, {
+    guard: (access) =>
+      scopeBroker(access) !== null
+        ? 'Not authorized. Only an owner can delete contacts in bulk'
+        : null,
+  })
+}
+
 export async function bulkPreflightCount(
   selection: BulkActionSelection,
   kind: BulkKind,

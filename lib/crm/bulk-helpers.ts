@@ -38,6 +38,7 @@ export type BulkKind =
   | 'crm:set-stage'
   | 'crm:enroll-workflow'
   | 'crm:set-report-subscription'
+  | 'crm:delete'
   | 'email-cohort'
 
 // ── Protected-tag policy (PURE, exported for tests) ──────────────────────────

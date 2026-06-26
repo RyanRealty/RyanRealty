@@ -54,9 +54,13 @@ export async function updatePondAction(formData: FormData): Promise<CrmPondsResu
   if (!Number.isFinite(id) || id <= 0) return { ok: false, error: 'Missing pond id' }
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
   const name = String(formData.get('name') ?? '').trim()
-  const pondLeadSlug = String(formData.get('pond_lead_slug') ?? '').trim()
+  // Only write pond_lead_slug when the field was explicitly submitted and non-empty.
+  // A name-only blur sends no pond_lead_slug field, so rawSlug is null → skip the
+  // update and preserve whatever slug the pond already has in the database.
+  const rawSlug = formData.get('pond_lead_slug')
+  const pondLeadSlug = rawSlug !== null ? String(rawSlug).trim() : null
   if (name) update.name = name
-  if (pondLeadSlug !== undefined) update.pond_lead_slug = pondLeadSlug
+  if (pondLeadSlug !== null && pondLeadSlug !== '') update.pond_lead_slug = pondLeadSlug
   const sb = createServiceClient()
   const { error } = await sb.from('crm_ponds').update(update).eq('id', id)
   if (error) return { ok: false, error: error.message }

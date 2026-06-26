@@ -5,6 +5,14 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 import {
   createAppointmentTypeAction,
@@ -65,6 +73,15 @@ function LookupSection({
   const [newName, setNewName] = useState('')
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  // Confirm-before-delete state
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return
+    const id = deleteTarget.id
+    setDeleteTarget(null)
+    startTransition(() => onDelete(id))
+  }
 
   const handleAdd = () => {
     if (!newName.trim()) return
@@ -111,7 +128,7 @@ function LookupSection({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => startTransition(() => onDelete(item.id))}
+                  onClick={() => setDeleteTarget({ id: item.id, name: item.name })}
                   className="h-auto px-2 py-0.5 text-xs text-muted-foreground hover:text-destructive"
                   aria-label={`Delete ${item.name}`}
                 >
@@ -142,6 +159,28 @@ function LookupSection({
         </Button>
       </div>
       {error && <p className="mt-1.5 text-xs text-destructive">{error}</p>}
+
+      {/* Delete confirm dialog */}
+      <Dialog open={deleteTarget !== null} onOpenChange={(o) => { if (!o && !pending) setDeleteTarget(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete &ldquo;{deleteTarget?.name}&rdquo;?</DialogTitle>
+            <DialogDescription>
+              This removes the item permanently. Any appointments already logged with this{' '}
+              {title.toLowerCase().includes('outcome') ? 'outcome' : 'type'} keep their existing
+              value, but the option will no longer appear in the picker.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={pending}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={pending}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </ConsoleSection>
   )
 }

@@ -33,14 +33,17 @@ type Item = { label: string; href: string; icon: React.ComponentType<{ className
 const GLOBAL: Item[] = [
   { label: 'New contact', href: '/admin/crm/new', icon: UserPlus },
   { label: 'New task', href: '/admin/crm/tasks', icon: CheckSquare },
-  { label: 'New deal', href: '/admin/crm/deals', icon: Briefcase },
+  { label: 'View pipeline', href: '/admin/crm/deals', icon: Briefcase },
   { label: 'Compose email', href: '/admin/email/compose', icon: PenSquare },
   { label: 'Start a CMA', href: '/admin/cmas', icon: Calculator },
   { label: 'Workflows', href: '/admin/crm/sequences', icon: ListChecks },
 ]
 
 function leadIdFrom(pathname: string): number | null {
-  const m = pathname.match(/^\/admin\/console\/leads\/(\d+)$/)
+  // Match both the console shell (/admin/console/leads/:id) and the CRM shell
+  // (/admin/crm/:id) so the FAB shows lead-scoped actions regardless of which
+  // route the broker arrived from (dashboard action-queue links use /admin/crm/:id).
+  const m = pathname.match(/^\/admin\/(?:console\/leads|crm)\/(\d+)$/)
   return m ? Number(m[1]) : null
 }
 

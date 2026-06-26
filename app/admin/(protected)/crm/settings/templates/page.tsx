@@ -7,6 +7,7 @@ import {
   updateTemplateAction,
   setTemplateActiveAction,
   deleteTemplateAction,
+  renameCategoryAction,
 } from '@/app/actions/crm-templates'
 import { SettingsSubpageShell } from '@/components/admin/crm/settings/SettingsSubpageShell'
 import { TemplateEditor, type TemplateRow } from '@/components/admin/crm/settings/TemplateEditor'
@@ -45,6 +46,7 @@ export default async function CrmTemplatesSettingsPage() {
           update: updateTemplateAction,
           setActive: setTemplateActiveAction,
           remove: deleteTemplateAction,
+          renameCategory: renameCategoryAction,
         }}
       />
     </SettingsSubpageShell>
