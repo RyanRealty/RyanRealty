@@ -38,7 +38,7 @@
 ### P2 — Desktop FUB parity (per FUB_FEATURE_AUDIT.md)
 - [x] Dashboard (01) — 5 KPI tiles w/ sparklines + deltas, Everyone/date filters, Recent Activity feed. Verified 1440.
 - [x] People (02) — Collections smart-list sidebar, list table (Name+source, Agent, Last Visit, Phone w/ call+text, Email, Last Activity), mass-action toolbar, right Filters panel. Verified 1440. (polish: hide leftover KPI tiles + secondary-nav strip on desktop too.)
-- [ ] Person record (03, 53) — 3-column workspace (contact data | timeline+composers | engagement/management).
+- [x] Person record (03) — desktop 3-column workspace via LeadTabs (left identity/details/memberships | middle composers+timeline | right tasks/watching/workflow). Mobile tabs intact. Verified 1440.
 - [x] Inbox (04) — 4-pane on desktop (folders rail | conversation list | reading pane | contact panel). Verified 1440.
 - [ ] Tasks (05) — Today/Overdue/Future + type filters. (mobile done; desktop list ok, light polish)
 - [ ] Calendar (06) — day/week/month grid + create-appointment. (no /admin/calendar route yet — dashboard MonthCalendar exists)

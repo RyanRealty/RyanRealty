@@ -10,6 +10,7 @@ import {
   CrmSectionLabel,
 } from '@/components/admin/crm/mobile/CrmMobileKit'
 import { crmAvatarColor } from '@/components/admin/crm/mobile/avatar-utils'
+import { ConsoleSection } from '@/components/console/ConsoleSection'
 
 export const metadata = { title: 'Pipeline | CRM | Admin' }
 export const dynamic = 'force-dynamic'
@@ -74,7 +75,7 @@ export default async function CrmDealsPage() {
       <div className="mb-1 hidden text-sm text-muted-foreground md:block">
         <Link href="/admin/crm" className="inline-flex min-h-10 items-center hover:text-foreground">← Back to CRM</Link>
       </div>
-      <h1 className="text-xl font-bold text-foreground md:text-2xl">Pipeline</h1>
+      <h1 className="text-xl font-bold text-foreground md:hidden">Pipeline</h1>
       <p className="mt-1 hidden text-sm text-muted-foreground md:block">
         Pre-contract pipeline imported from FUB. Vault remains the system of record once a transaction opens.
       </p>
@@ -142,9 +143,9 @@ export default async function CrmDealsPage() {
       </div>
 
       {/* ── Desktop: FUB-style Kanban board ──────────────────────────────── */}
-      <div className="hidden md:block">
+      <ConsoleSection title="Pipeline" className="mt-3 hidden md:block">
         {deals.length === 0 ? (
-          <Card className="mt-8 px-6 py-12 text-center text-sm text-muted-foreground">
+          <Card className="mt-2 px-6 py-12 text-center text-sm text-muted-foreground">
             No deals yet.
           </Card>
         ) : null}
@@ -263,7 +264,7 @@ export default async function CrmDealsPage() {
             </section>
           )
         })}
-      </div>
+      </ConsoleSection>
     </main>
   )
 }

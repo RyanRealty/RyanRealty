@@ -140,22 +140,37 @@ export function LeadTabs({
       </div>
 
       {/* ── Light grouped body ── */}
+      {/*
+       * Desktop (lg+): true 3-column FUB workspace.
+       *   LEFT   — identity / contact data (overview)
+       *   MIDDLE — composers + timeline (comms → activity)
+       *   RIGHT  — action management (tasks → watching → workflow)
+       *
+       * Mobile (< lg): single focused tab via slot() — unchanged.
+       * The slot() helper already emits `lg:flex` on every key so all
+       * columns are visible at lg+; the CSS grid positions them.
+       */}
       <div className="mx-auto max-w-6xl px-4 pt-4 sm:px-6">
-        <div className="flex flex-col gap-4">
+        {/* Mobile: single-column stacking (slot() controls visibility).
+            Desktop: 3-column grid — left 1fr · middle 1.4fr · right 1fr */}
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start lg:gap-4">
+
+          {/* LEFT — contact identity, details, source, memberships */}
           <div className={slot('overview')}>{overview}</div>
 
-          <div className="lg:grid lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:gap-4">
-            <div className="flex flex-col gap-4">
-              <div className={slot('comms')}>{comms}</div>
-              <div className={slot('tasks')}>{tasks}</div>
-            </div>
-            <div className="flex flex-col gap-4">
-              <div className={slot('watching')}>{watching}</div>
-              <div className={slot('workflow')}>{workflow}</div>
-            </div>
+          {/* MIDDLE — action bar / composers then full activity timeline */}
+          <div className="lg:flex lg:flex-col lg:gap-4">
+            <div className={slot('comms')}>{comms}</div>
+            <div className={slot('activity')}>{activity}</div>
           </div>
 
-          <div className={slot('activity')}>{activity}</div>
+          {/* RIGHT — tasks, watching / saved searches, workflow / tags */}
+          <div className="lg:flex lg:flex-col lg:gap-4">
+            <div className={slot('tasks')}>{tasks}</div>
+            <div className={slot('watching')}>{watching}</div>
+            <div className={slot('workflow')}>{workflow}</div>
+          </div>
+
         </div>
       </div>
     </div>

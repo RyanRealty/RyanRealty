@@ -12,9 +12,9 @@ import { getCrmSuppressions } from '@/lib/data/crm/getCrmSuppressions'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { getCrmAssignmentConfig } from '@/lib/data/crm/getCrmAssignmentConfig'
 import { getMarketReportSubscribers } from '@/lib/data/crm/getMarketReportSubscribers'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 export const metadata = { title: 'CRM settings | Admin' }
 export const dynamic = 'force-dynamic'
@@ -32,6 +32,10 @@ export const dynamic = 'force-dynamic'
  * Access: superuser only. The destructive config here (deleting a stage, merging
  * a tag, lifting a compliance suppression) can reshape every contact, so the hub
  * itself is owner-gated; restricted brokers are redirected.
+ *
+ * Layout: FUB-style grouped catalog — section headers with a responsive card
+ * grid underneath. Each card = setting name + one-line description + live count
+ * + chevron. Groups: Customize · Follow Up · Account · Compliance.
  */
 export default async function CrmSettingsPage() {
   const access = await getCrmAccess()
@@ -60,92 +64,133 @@ export default async function CrmSettingsPage() {
     by_source: 'by source',
   }
 
-  const cards: Array<{
+  /** A single settings panel link inside the catalog. */
+  type SettingCard = {
     href: string
     title: string
     description: string
     count: number
     countLabel: string
-  }> = [
+    icon: string
+  }
+
+  /** Top-level group of related settings panels. */
+  type SettingGroup = {
+    label: string
+    cards: SettingCard[]
+  }
+
+  const groups: SettingGroup[] = [
     {
-      href: '/admin/crm/settings/stages',
-      title: 'Pipeline stages',
-      description: 'The funnel stages a contact moves through. Add, rename, reorder, or retire a stage.',
-      count: stages.length,
-      countLabel: stages.length === 1 ? 'stage' : 'stages',
+      label: 'Customize',
+      cards: [
+        {
+          href: '/admin/crm/settings/stages',
+          title: 'Pipeline stages',
+          description: 'Add, rename, reorder, or retire the funnel stages a contact moves through.',
+          count: stages.length,
+          countLabel: stages.length === 1 ? 'stage' : 'stages',
+          icon: '◈',
+        },
+        {
+          href: '/admin/crm/settings/tags',
+          title: 'Tags',
+          description: 'Rename or merge tags across every contact. Compliance tags are protected.',
+          count: tags.length,
+          countLabel: tags.length === 1 ? 'tag' : 'tags',
+          icon: '⊞',
+        },
+        {
+          href: '/admin/crm/settings/custom-fields',
+          title: 'Custom fields',
+          description: 'The typed fields on the contact card Details section and the saved-view filter builder.',
+          count: fields.length,
+          countLabel: fields.length === 1 ? 'field' : 'fields',
+          icon: '⊟',
+        },
+      ],
     },
     {
-      href: '/admin/crm/settings/tags',
-      title: 'Tags',
-      description: 'The tag taxonomy. Rename or merge across every contact. Compliance tags are protected.',
-      count: tags.length,
-      countLabel: tags.length === 1 ? 'tag' : 'tags',
+      label: 'Follow Up',
+      cards: [
+        {
+          href: '/admin/crm/settings/templates',
+          title: 'Email & SMS templates',
+          description: 'The reusable copy the composer and sequence steps draw from. Edited copy runs the voice gate.',
+          count: templates.length,
+          countLabel: templates.length === 1 ? 'template' : 'templates',
+          icon: '✉',
+        },
+        {
+          href: '/admin/crm/settings/segments',
+          title: 'Newsletter segments',
+          description: 'The audience segments the newsletter targets. Move subscribers when a segment is retired.',
+          count: segments.length,
+          countLabel: segments.length === 1 ? 'segment' : 'segments',
+          icon: '⊕',
+        },
+      ],
     },
     {
-      href: '/admin/crm/settings/templates',
-      title: 'Email & SMS templates',
-      description: 'The reusable copy the composer and sequence steps draw from. Edited copy runs the voice gate.',
-      count: templates.length,
-      countLabel: templates.length === 1 ? 'template' : 'templates',
+      label: 'Account',
+      cards: [
+        {
+          href: '/admin/crm/settings/brokers',
+          title: 'Brokers',
+          description: 'The CRM broker roster used for assignment and round-robin routing.',
+          count: brokers.length,
+          countLabel: brokers.length === 1 ? 'broker' : 'brokers',
+          icon: '◎',
+        },
+        {
+          href: '/admin/crm/settings/assignment',
+          title: 'Lead routing',
+          description: 'How a new lead is assigned to a broker. The live default routes every lead to Matt.',
+          count: routing.rules.length,
+          countLabel: ROUTING_LABEL[routing.strategy] ?? routing.strategy,
+          icon: '⇄',
+        },
+        {
+          href: '/admin/crm/settings/areas',
+          title: 'Market-report areas',
+          description: 'The areas a contact can subscribe to market reports for. Scrubbed cleanly on delete.',
+          count: areas.length,
+          countLabel: areas.length === 1 ? 'area' : 'areas',
+          icon: '⊙',
+        },
+        {
+          href: '/admin/crm/settings/market-reports',
+          title: 'Market-report subscribers',
+          description: 'Who receives the recurring market report, the areas they follow, and how often.',
+          count: reportSubs.length,
+          countLabel: reportSubs.length === 1 ? 'subscriber' : 'subscribers',
+          icon: '◉',
+        },
+      ],
     },
     {
-      href: '/admin/crm/settings/segments',
-      title: 'Newsletter segments',
-      description: 'The audience segments the newsletter targets. Move subscribers when a segment is retired.',
-      count: segments.length,
-      countLabel: segments.length === 1 ? 'segment' : 'segments',
-    },
-    {
-      href: '/admin/crm/settings/areas',
-      title: 'Market-report areas',
-      description: 'The areas a contact can subscribe to market reports for. Scrubbed cleanly on delete.',
-      count: areas.length,
-      countLabel: areas.length === 1 ? 'area' : 'areas',
-    },
-    {
-      href: '/admin/crm/settings/custom-fields',
-      title: 'Custom fields',
-      description: 'The typed fields on the contact card Details section and the saved-view filter builder.',
-      count: fields.length,
-      countLabel: fields.length === 1 ? 'field' : 'fields',
-    },
-    {
-      href: '/admin/crm/settings/suppression',
-      title: 'Suppression list',
-      description: 'Who is blocked from email, SMS, or calls and why. Add a block or lift one with an audit trail.',
-      count: suppressions.count,
-      countLabel: suppressions.count === 1 ? 'suppression' : 'suppressions',
-    },
-    {
-      href: '/admin/crm/settings/brokers',
-      title: 'Brokers',
-      description: 'The CRM broker roster used for assignment and round-robin routing.',
-      count: brokers.length,
-      countLabel: brokers.length === 1 ? 'broker' : 'brokers',
-    },
-    {
-      href: '/admin/crm/settings/assignment',
-      title: 'Lead routing',
-      description: 'How a new lead is assigned to a broker. The live default routes every lead to Matt.',
-      count: routing.rules.length,
-      countLabel: ROUTING_LABEL[routing.strategy] ?? routing.strategy,
-    },
-    {
-      href: '/admin/crm/settings/market-reports',
-      title: 'Market-report subscribers',
-      description: 'Who receives the recurring market report, the areas they follow, and how often.',
-      count: reportSubs.length,
-      countLabel: reportSubs.length === 1 ? 'subscriber' : 'subscribers',
+      label: 'Compliance',
+      cards: [
+        {
+          href: '/admin/crm/settings/suppression',
+          title: 'Suppression list',
+          description: 'Who is blocked from email, SMS, or calls and why. Add a block or lift one with an audit trail.',
+          count: suppressions.count,
+          countLabel: suppressions.count === 1 ? 'suppression' : 'suppressions',
+          icon: '⊗',
+        },
+      ],
     },
   ]
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      {/* Page header */}
       <div className="flex flex-wrap items-start justify-between gap-3 md:items-end">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-foreground">CRM settings</h1>
+          <h1 className="text-2xl font-bold text-foreground">Admin overview</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Every building block of the CRM, editable here. No SQL required.
+            Every CRM building block, editable here. No SQL required.
           </p>
         </div>
         <Link href="/admin/crm" className="shrink-0">
@@ -155,26 +200,79 @@ export default async function CrmSettingsPage() {
         </Link>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {cards.map((c) => (
-          <Link key={c.href} href={c.href} className="block">
-            <Card className="h-full transition-shadow hover:shadow-md">
-              <CardHeader>
-                <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="text-base">{c.title}</CardTitle>
-                  <Badge variant="outline" className="shrink-0 tabular-nums">
-                    {c.count.toLocaleString('en-US')} {c.countLabel}
-                  </Badge>
-                </div>
-                <CardDescription>{c.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <span className="text-sm font-medium text-primary">Manage {c.title.toLowerCase()} &rarr;</span>
-              </CardContent>
-            </Card>
-          </Link>
+      {/* Grouped catalog */}
+      <div className="mt-8 space-y-10">
+        {groups.map((group) => (
+          <section key={group.label} aria-labelledby={`section-${group.label.toLowerCase().replace(/\s+/g, '-')}`}>
+            {/* Section label — FUB-style: small-caps, tracked, muted */}
+            <h2
+              id={`section-${group.label.toLowerCase().replace(/\s+/g, '-')}`}
+              className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground"
+            >
+              {group.label}
+            </h2>
+
+            {/* Card grid */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {group.cards.map((card) => (
+                <SettingCardLink key={card.href} card={card} />
+              ))}
+            </div>
+          </section>
         ))}
       </div>
     </main>
+  )
+}
+
+/** Individual settings panel card — icon + title + description + count + chevron. */
+function SettingCardLink({
+  card,
+}: {
+  card: {
+    href: string
+    title: string
+    description: string
+    count: number
+    countLabel: string
+    icon: string
+  }
+}) {
+  return (
+    <Link
+      href={card.href}
+      className={cn(
+        'group flex items-start gap-4 rounded-xl border border-border bg-card px-5 py-4',
+        'transition-shadow hover:shadow-md',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+      )}
+    >
+      {/* Icon well */}
+      <span
+        aria-hidden="true"
+        className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-base text-muted-foreground"
+      >
+        {card.icon}
+      </span>
+
+      {/* Body */}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <span className="text-sm font-semibold text-foreground leading-snug">{card.title}</span>
+          <Badge variant="outline" className="shrink-0 tabular-nums text-xs">
+            {card.count.toLocaleString('en-US')}&nbsp;{card.countLabel}
+          </Badge>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{card.description}</p>
+      </div>
+
+      {/* Trailing chevron */}
+      <span
+        aria-hidden="true"
+        className="mt-0.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+      >
+        ›
+      </span>
+    </Link>
   )
 }
