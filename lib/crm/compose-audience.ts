@@ -22,7 +22,7 @@
  * Everything here is pure (no I/O) so it is unit-tested directly.
  */
 
-import type { BulkActionSelection } from '@/app/actions/crm-bulk'
+import type { BulkActionSelection } from '@/lib/crm/bulk-helpers'
 import { checkTemplateVoice } from '@/lib/crm/templateVoiceCheck'
 
 /** The audience the compose surface targets. Discriminated by `kind`. */

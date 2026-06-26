@@ -60,6 +60,8 @@ vi.mock('@/lib/supabase/service', () => ({ createServiceClient: () => makeSb() }
 import {
   buildSuppressionAuditRow,
   checkComplianceLiftAllowed,
+} from '@/lib/crm/suppression-helpers'
+import {
   addSuppressionAction,
   liftSuppressionAction,
 } from '@/app/actions/crm-suppressions'

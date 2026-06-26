@@ -30,10 +30,8 @@ import {
   validateCreateInput,
   buildUpdatePatch,
   type CrmFieldDefinitionInput,
+  type CrmFieldDefinitionResult,
 } from '@/lib/crm/fieldDefinitionValidation'
-
-export type CrmFieldDefinitionResult = { ok: true; id?: number; message?: string } | { ok: false; error: string }
-export type { CrmFieldDefinitionInput }
 
 async function requireSuperuser(): Promise<{ ok: true } | { ok: false; error: string }> {
   const access = await getCrmAccess()

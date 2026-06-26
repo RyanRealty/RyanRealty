@@ -28,9 +28,8 @@ import {
   bulkPreflightCount,
   bulkEmailCohortAction,
   resolveBulkSelection,
-  type BulkEnqueueResult,
-  type BulkPreflightResult,
 } from '@/app/actions/crm-bulk'
+import type { BulkEnqueueResult, BulkPreflightResult } from '@/lib/crm/bulk-helpers'
 import {
   getComposeAudienceOptions,
   type ComposeAudienceOptions,

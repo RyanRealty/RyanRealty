@@ -13,6 +13,11 @@
 import { validateChannel } from '@/lib/crm/templateReferences'
 import { checkTemplateVoice } from '@/lib/crm/templateVoiceCheck'
 
+/** Result of a template mutation action. */
+export type CrmTemplateResult =
+  | { ok: true; id?: number; message?: string }
+  | { ok: false; error: string }
+
 export type CrmTemplateInput = {
   channel: string
   name: string

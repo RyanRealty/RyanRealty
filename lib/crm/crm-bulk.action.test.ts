@@ -116,9 +116,11 @@ vi.mock('@/lib/supabase/service', () => ({
 
 import {
   buildBulkSelection,
-  resolveBulkSelection,
   isProtectedBulkTag,
   EMAIL_SUPPRESS_TAGS,
+} from '@/lib/crm/bulk-helpers'
+import {
+  resolveBulkSelection,
   bulkAssignBrokerAction,
   bulkAddTagAction,
   bulkRemoveTagAction,

@@ -40,10 +40,8 @@ import {
   slugifyTemplateKey,
   validateTemplateInput,
   type CrmTemplateInput,
+  type CrmTemplateResult,
 } from '@/lib/crm/templateValidation'
-
-export type CrmTemplateResult = { ok: true; id?: number; message?: string } | { ok: false; error: string }
-export type { CrmTemplateInput }
 
 async function requireAdmin(): Promise<{ ok: true } | { ok: false; error: string }> {
   const access = await getCrmAccess()

@@ -41,10 +41,12 @@ import {
   bulkSetReportSubscriptionAction,
   bulkEmailCohortAction,
   bulkPreflightCount,
-  type BulkActionSelection,
-  type BulkKind,
-  type BulkEnqueueResult,
 } from '@/app/actions/crm-bulk'
+import type {
+  BulkActionSelection,
+  BulkKind,
+  BulkEnqueueResult,
+} from '@/lib/crm/bulk-helpers'
 import {
   adminBulkAssignNewsletterAction,
   adminBulkAssignSavedSearchAction,

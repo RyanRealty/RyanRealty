@@ -15,6 +15,11 @@ import {
   type CrmFieldOption,
 } from '@/lib/data/crm/getCrmFieldDefinitions'
 
+/** Result of a field-definition mutation action. */
+export type CrmFieldDefinitionResult =
+  | { ok: true; id?: number; message?: string }
+  | { ok: false; error: string }
+
 /** Input for creating or updating a field definition. */
 export type CrmFieldDefinitionInput = {
   key?: string
