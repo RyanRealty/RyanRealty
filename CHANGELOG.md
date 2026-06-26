@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.626.4 (2026-06-26)
+
+### Bug Fixes
+- fix(crm): make use-server action modules build (production deploy was broken since Wave 3)
+
+---
+
+
 ## v1.626.3 (2026-06-25)
 
 ### Maintenance
