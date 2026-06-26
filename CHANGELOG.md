@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.627.0 (2026-06-26)
+
+### Features
+- feat(ci): gate against passing functions from server to client components
+
+---
+
+
 ## v1.626.7 (2026-06-26)
 
 ### Bug Fixes
