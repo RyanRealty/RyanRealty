@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.633.0 (2026-06-26)
+
+### Features
+- feat(admin): desktop FUB parity — Inbox 4-pane + Deals Kanban (P2 wave 2)
+
+---
+
+
 ## v1.632.0 (2026-06-26)
 
 ### Features
