@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.644.0 (2026-06-27)
+
+### Features
+- feat(communities): add 4 resort/golf communities (multi-subdivision aware) + sync report areas
+
+---
+
+
 ## v1.643.0 (2026-06-27)
 
 ### Features
