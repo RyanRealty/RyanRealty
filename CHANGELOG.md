@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.638.8 (2026-06-27)
+
+### Bug Fixes
+- fix(admin): functional QA pass over the rest of the admin (non-CRM)
+
+---
+
+
 ## v1.638.7 (2026-06-27)
 
 ### Bug Fixes
