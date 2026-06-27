@@ -64,9 +64,13 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .wrap{width:100%;max-width:1500px;margin:0 auto;padding:0 18px;}
 @media(min-width:760px){.kb-root .wrap{padding:0 40px;}}
 @media(min-width:1200px){.kb-root .wrap{padding:0 56px;}}
-.kb-root .reveal-line{display:block;clip-path:inset(-0.5em 0 0 0);}
+/* Vertical room top AND bottom so the tall uppercase Amboqia glyphs (with their
+   line-height:.86) are not cropped on mobile — the old `inset(... 0)` clipped the
+   bottom. The reveal-inner starts translated fully below the mask, so the extra
+   bottom room never reveals pre-animation text. */
+.kb-root .reveal-line{display:block;clip-path:inset(-0.6em 0 -0.45em 0);}
 .kb-root .reveal-inner{display:block;will-change:transform;}
-.kb-root .reveal-mask{clip-path:inset(-0.5em 0 0 0);display:inline-block;vertical-align:top;}
+.kb-root .reveal-mask{clip-path:inset(-0.6em 0 -0.45em 0);display:inline-block;vertical-align:top;}
 .kb-root .display, .kb-root .hero-h, .kb-root .hero-h .ln, .kb-root .town-name, .kb-root .comm-name, .kb-root .team-name, .kb-root .ww-name, .kb-root .k-val, .kb-root .sell-h, .kb-root .sec-head *{overflow:visible;}
 .kb-root .topbar{
   position:fixed;top:0;left:0;right:0;z-index:90;
