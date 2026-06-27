@@ -79,12 +79,20 @@ export function KbHero({
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const ctx = gsap.context(() => {
       const lines = gsap.utils.toArray<HTMLElement>('.hero-h .reveal-inner')
+      // The reveal-mask clip is only needed WHILE the lines slide up. Once they
+      // land, drop the clip entirely so the tall Amboqia glyphs are never cropped
+      // (the static clip-path was too tight for some caps/devices — Matt's bug).
+      const clearMaskClip = () => {
+        document.querySelectorAll<HTMLElement>('.hero-h .reveal-mask, .hero-h .reveal-line')
+          .forEach((m) => { m.style.clipPath = 'none' })
+      }
       if (reduce) {
         gsap.set(lines, { yPercent: 0, opacity: 1 })
+        clearMaskClip()
         return
       }
       gsap.set(lines, { yPercent: 115 })
-      gsap.to(lines, { yPercent: 0, duration: 1.1, ease: 'power4.out', stagger: 0.085, delay: 0.15 })
+      gsap.to(lines, { yPercent: 0, duration: 1.1, ease: 'power4.out', stagger: 0.085, delay: 0.15, onComplete: clearMaskClip })
       gsap.from('.hero-tag, .hero-sub-row, .hero-search-wrap', {
         opacity: 0, y: 16, duration: 0.8, ease: 'power3.out', stagger: 0.08, delay: 0.5,
       })
