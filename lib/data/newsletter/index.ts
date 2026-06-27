@@ -160,9 +160,26 @@ export async function getActiveSubscribersForSend(args: { segment?: NewsletterSe
 > {
   const sb = createServiceClient()
   let query = sb.from(SUBS).select('id, email, name, crm_person_id, unsubscribe_token').eq('status', 'active')
-  if (args.segment && args.segment !== 'general') query = query.eq('segment', args.segment)
+  // A targeted send filters to its segment — INCLUDING 'general'. Audience 'all'
+  // passes segment=undefined (everyone); only that reaches every subscriber. (Was
+  // leaking: 'general' previously skipped the filter and went to buyer/seller too.)
+  if (args.segment) query = query.eq('segment', args.segment)
   const { data } = await query.limit(Math.min(10000, args.limit ?? 5000))
   return (data ?? []) as Array<Pick<NewsletterSubscriber, 'id' | 'email' | 'name' | 'crm_person_id' | 'unsubscribe_token'>>
+}
+
+/**
+ * Mirror a hard bounce / spam complaint onto the subscriber row so counts and
+ * the admin view reflect reality (the suppression table already stops sends;
+ * this keeps subscriber status honest). Only ever moves an ACTIVE subscriber to
+ * a terminal status — never reactivates.
+ */
+export async function setSubscriberStatusByEmail(email: string, status: 'bounced' | 'complained'): Promise<void> {
+  const e = email.trim().toLowerCase()
+  if (!e) return
+  const sb = createServiceClient()
+  await sb.from(SUBS).update({ status, updated_at: new Date().toISOString() })
+    .eq('email', e).eq('status', 'active')
 }
 
 /** Stamp last_sent_at for a batch after a send. */

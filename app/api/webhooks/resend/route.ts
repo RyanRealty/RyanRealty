@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { recordNewsletterEvent } from '@/lib/data'
+import { recordNewsletterEvent, setSubscriberStatusByEmail } from '@/lib/data'
 import { getPersonIdsByEmail } from '@/lib/data/crm/getPersonIdsByEmail'
 import { addSuppression } from '@/lib/crm/suppressions'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -121,7 +121,10 @@ export async function POST(request: NextRequest) {
 
   // CRM suppression on hard bounce / complaint.
   if (event.suppressEmail && event.suppressReason) {
+    const subStatus = event.type === 'complained' ? 'complained' : 'bounced'
     for (const email of event.recipients) {
+      // Keep the subscriber row honest (suppression already stops sends).
+      await setSubscriberStatusByEmail(email, subStatus)
       const personIds = await getPersonIdsByEmail(email)
       for (const personId of personIds) {
         await addSuppression({

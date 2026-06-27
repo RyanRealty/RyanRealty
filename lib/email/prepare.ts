@@ -28,7 +28,7 @@ import { buildUnsubscribeUrl } from './unsubscribe-token'
  * BROKERAGE_POSTAL_ADDRESS before bulk sends (flagged to Matt).
  */
 export const BROKERAGE_POSTAL_ADDRESS =
-  process.env.BROKERAGE_POSTAL_ADDRESS?.trim() || 'Ryan Realty, Bend, OR 97701'
+  process.env.BROKERAGE_POSTAL_ADDRESS?.trim() || 'Ryan Realty, 115 NW Oregon Ave #2, Bend, OR 97703'
 
 export interface PrepareEmailInput {
   subject: string

@@ -569,6 +569,7 @@ export {
   subscribeToNewsletter,
   unsubscribeNewsletterByToken,
   setSubscriberStatus,
+  setSubscriberStatusByEmail,
   listNewsletterSubscribers,
   newsletterSubscriberCounts,
   getActiveSubscribersForSend,

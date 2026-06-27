@@ -17,6 +17,9 @@ import NewsletterDraftActions from '../NewsletterDraftActions'
 
 export const metadata = { title: 'Newsletter | Admin' }
 export const dynamic = 'force-dynamic'
+// The "Send now" action loops subscribers; give it room past the 60s default.
+// (At larger list sizes the next step is Resend's batch API.)
+export const maxDuration = 300
 
 const AUDIENCE_LABELS: Record<string, string> = {
   all: 'All subscribers',

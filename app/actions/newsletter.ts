@@ -6,6 +6,7 @@ import { sendEmail } from '@/lib/resend'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { wrapNewsletterHtml, newsletterTextFooter } from '@/lib/email-templates/newsletter-shell'
+import { checkNewsletterVoice } from '@/lib/email/voice-precheck'
 import { createSavedSearchForLead, updateSavedSearch, deleteSavedSearchById } from '@/lib/data'
 import {
   subscribeToNewsletter,
@@ -205,6 +206,11 @@ export async function adminSendNewsletterAction(id: string): Promise<{ ok: boole
   if (!letter) return { ok: false, error: 'not_found' }
   if (letter.status === 'sent' || letter.status === 'sending') return { ok: false, error: 'already_sent' }
   if (!letter.body_html && !letter.body_text) return { ok: false, error: 'empty_body' }
+
+  // Brand-voice hard-fail gate. A newsletter is public copy but the CI voice gate
+  // skips app/admin/, so check here before a single send goes out.
+  const voice = checkNewsletterVoice({ subject: letter.subject, bodyHtml: letter.body_html, bodyText: letter.body_text })
+  if (!voice.ok) return { ok: false, error: `Brand-voice check failed. Fix before sending: ${voice.violations.join('; ')}` }
 
   const segment = letter.audience.startsWith('segment:') ? (letter.audience.slice('segment:'.length) as NewsletterSegment) : undefined
   const recipients = await getActiveSubscribersForSend({ segment })
