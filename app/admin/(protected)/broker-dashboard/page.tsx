@@ -304,8 +304,10 @@ export default async function BrokerCommandCenterPage({
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">{today}</p>
         </div>
-        {/* URL-driven controls: audience scope + date range pill tabs */}
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
+        {/* URL-driven controls: audience scope + date range pill tabs.
+            No shrink-0: on a phone the group must wrap within the viewport
+            (shrink-0 forced its full ~494px width → 120px overflow at 390px). */}
+        <div className="flex flex-wrap items-center gap-2">
           {data.isSuperuser ? (
             <div className="flex items-center rounded-lg border border-border bg-muted p-0.5">
               {(['everyone', 'me'] as const).map((v) => (
