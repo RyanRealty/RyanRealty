@@ -113,9 +113,9 @@ export function KbHero({
           </div>
         ) : null}
         <div className="hero-tag eyebrow"><span className="dot" /> {eyebrow}</div>
-        <h1 className="hero-h display">
-          <span className="reveal-mask"><span className="ln reveal-inner">{titleTop}</span></span>
-          <span className="reveal-mask"><span className="ln indent reveal-inner">{titleBottom}</span></span>
+        <h1 className="hero-h display" aria-label={`${titleTop} ${titleBottom}`}>
+          <span className="reveal-mask" aria-hidden="true"><span className="ln reveal-inner">{titleTop}</span></span>
+          <span className="reveal-mask" aria-hidden="true"><span className="ln indent reveal-inner">{titleBottom}</span></span>
         </h1>
         {showSearch ? (
         <div className="hero-search-wrap">

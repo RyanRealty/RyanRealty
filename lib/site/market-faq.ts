@@ -8,6 +8,10 @@ import { formatPrice } from '@/lib/format/money'
  * pass a verified fallback (e.g. a resort community's activeCount + medianPrice,
  * the same numbers the page lede already displays) when no pulse row exists.
  * Every field is optional + null-guarded so partial inputs are safe.
+ *
+ * Extended fields (all optional) enable community pages to add up to 4 extra
+ * grounded questions beyond the 4 core market stats. Every field is §0-strict:
+ * if the value is null/undefined, no question is emitted. Nothing is fabricated.
  */
 export type MarketFaqInput = {
   activeCount?: number | null
@@ -15,6 +19,19 @@ export type MarketFaqInput = {
   monthsOfSupply?: number | null
   medianDaysToPending?: number | null
   refreshedAt?: string | null
+  /** Median days on market from market_stats_cache (rolling 365d). Emits a DOM question
+   *  when medianDaysToPending is null (community has no pulse row). If both are present,
+   *  only medianDaysToPending is used so we don't show two nearly-identical questions. */
+  medianDaysOnMarket?: number | null
+  /** Homes sold in the last 12 months (market_stats_cache soldCount). */
+  soldCount12mo?: number | null
+  /** The alias subdivision names that make up this community (registry).
+   *  Emits a "what areas/subdivisions" question when there are 2+ aliases. */
+  subdivisionAliases?: string[] | null
+  /** Annual HOA estimate for THIS community (top-level registry hoa_annual_estimate)
+   *  OR the lowest sub-neighborhood estimate (sub_neighborhoods[*].hoa_annual_estimate).
+   *  Only emit when the figure is a direct registry value — never estimated. */
+  hoaAnnualEstimate?: number | null
 }
 
 /**
@@ -76,6 +93,8 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
 
   if (!pulse) return { faqs, datasetVariables, asOfIso: iso, asOfLabel: label }
 
+  // ── Core market stats (up to 4 questions) ──────────────────────────────────
+
   if (pulse.medianListPrice != null && pulse.medianListPrice > 0) {
     faqs.push({
       question: `What is the median home price in ${geoName}?`,
@@ -101,12 +120,53 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
     datasetVariables.push({ name: 'Months of Supply', value: mos })
   }
 
+  // Days question: prefer medianDaysToPending (pulse, days-to-pending) over
+  // medianDaysOnMarket (stats cache, days-on-market). Only emit one so the FAQ
+  // does not show two nearly-identical time-to-sell questions. (§0)
   if (pulse.medianDaysToPending != null && pulse.medianDaysToPending > 0) {
     faqs.push({
       question: `How long do homes take to sell in ${geoName}?`,
       answer: `Single-family homes in ${geoName} took a median of ${pulse.medianDaysToPending} days to go pending${asOf}.`,
     })
     datasetVariables.push({ name: 'Median Days to Pending', value: pulse.medianDaysToPending, unitText: 'days' })
+  } else if (pulse.medianDaysOnMarket != null && pulse.medianDaysOnMarket > 0) {
+    faqs.push({
+      question: `How long do homes stay on the market in ${geoName}?`,
+      answer: `Single-family homes in ${geoName} had a median of ${pulse.medianDaysOnMarket} days on market over the past 12 months${asOf}.`,
+    })
+    datasetVariables.push({ name: 'Median Days on Market', value: pulse.medianDaysOnMarket, unitText: 'days' })
+  }
+
+  // ── Extended community-specific questions (§0: only when data exists) ───────
+
+  // Homes sold in the past 12 months — answered from market_stats_cache soldCount.
+  if (pulse.soldCount12mo != null && pulse.soldCount12mo > 0) {
+    faqs.push({
+      question: `How many homes sold in ${geoName} in the last year?`,
+      answer: `${pulse.soldCount12mo} single-family homes sold in ${geoName} over the past 12 months${asOf}.`,
+    })
+    datasetVariables.push({ name: 'Homes Sold (12 months)', value: pulse.soldCount12mo })
+  }
+
+  // Subdivisions / areas that make up this community — answered from the registry.
+  // Only emit when there are 2+ distinct aliases (a single-alias community has
+  // nothing interesting to list). Cap display at 6 so the answer stays readable.
+  const aliases = (pulse.subdivisionAliases ?? []).filter(Boolean)
+  if (aliases.length >= 2) {
+    const display = aliases.slice(0, 6)
+    const more = aliases.length > 6 ? ` and ${aliases.length - 6} more` : ''
+    faqs.push({
+      question: `What neighborhoods and subdivisions are in ${geoName}?`,
+      answer: `${geoName} includes ${display.join(', ')}${more}. Homes across these subdivisions are marketed under the ${geoName} community umbrella on the MLS.`,
+    })
+  }
+
+  // HOA estimate — only from direct registry data, never fabricated.
+  if (pulse.hoaAnnualEstimate != null && pulse.hoaAnnualEstimate > 0) {
+    faqs.push({
+      question: `Does ${geoName} have an HOA?`,
+      answer: `Yes. Estimated annual HOA fees in ${geoName} start around $${pulse.hoaAnnualEstimate.toLocaleString('en-US')}. Exact fees vary by lot, phase, and membership level. Verify current amounts with the HOA before any purchase.`,
+    })
   }
 
   return { faqs, datasetVariables, asOfIso: iso, asOfLabel: label }

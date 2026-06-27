@@ -182,8 +182,10 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/<CommunityPageTracker/)
     expect(src).toMatch(/<KbSectionTracker pageType="community"/)
     expect(src).toMatch(/<MetadataBlock schemas=\{communitySchemas\}/)
-    // resilient JSON-LD: snapshot/community fallback so it survives a pulse timeout
-    expect(src).toMatch(/pulse \?\? \{/)
+    // resilient JSON-LD: per-field snapshot/community fallback so the FAQ + Dataset
+    // survive a pulse timeout (field-level pattern carries the extra grounded FAQ
+    // fields pulse alone lacks — soldCount, subdivisions, HOA).
+    expect(src).toMatch(/medianListPrice: pulse\?\.medianListPrice \?\? snapshot/)
   })
 
   it('D96 — community resort count + listings are ALIAS-AWARE (Widgi shows ~48, not 0) (§0)', () => {

@@ -193,12 +193,37 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!community) notFound()
   const desc =
     community.activeCount > 0
-      ? `${community.activeCount} homes for sale in ${community.name}. Live single-family market stats, open houses, and recent activity for ${community.name} in ${community.city}, Oregon, from a local brokerage.`
-      : `Explore ${community.name} in ${community.city}, Oregon. Live single-family market data and recent activity from a local brokerage.`
+      ? `${community.activeCount} homes for sale in ${community.name}. Live single-family market stats, open houses, and recent activity for ${community.name} in ${community.city}, OR, from a local brokerage.`
+      : `Explore ${community.name} in ${community.city}, OR. Live single-family market data and recent activity from a local brokerage.`
+
+  // OG image: use the community's curated KB hero photo when one exists, else the
+  // generic branded card. Both paths are absolute at render time via pageMetadata.
+  // KB hero paths verified to exist in public/images/kb/ — see RESORT_IMG above. (§0)
+  const KB_HERO: Record<string, string> = {
+    tetherow: '/images/kb/tetherow-golf-aerial.jpg',
+    'broken-top': '/images/kb/broken-top.jpg',
+    'northwest-crossing': '/images/kb/northwest-crossing.jpg',
+    'caldera-springs': '/images/kb/caldera-springs.jpg',
+    'three-rivers': '/images/kb/three-rivers.jpg',
+    'vandevert-ranch': '/images/kb/vandevert-ranch.jpg',
+  }
+  const COMMUNITY_HERO: Record<string, string> = {
+    'broken-top': '/images/communities/broken-top.jpg',
+    'caldera-springs': '/images/communities/caldera-springs.jpg',
+    'northwest-crossing': '/images/communities/northwest-crossing.jpg',
+    'three-rivers': '/images/communities/three-rivers.jpg',
+    'vandevert-ranch': '/images/communities/vandevert-ranch.jpg',
+  }
+  const ogImage = KB_HERO[slug] ?? COMMUNITY_HERO[slug] ?? undefined
+
   return pageMetadata({
-    title: `${community.name} Homes for Sale | ${community.city}, Oregon`,
+    // Target ≤60 chars before the layout template appends " | Ryan Realty — …"
+    // Format: "[Community] Homes for Sale | [City], OR"
+    // The cleanTitle helper in page-metadata.ts strips the brand suffix and caps at 60.
+    title: `${community.name} Homes for Sale | ${community.city}, OR`,
     description: desc,
     path: `/communities/${slug}`,
+    ogImage,
   })
 }
 
@@ -588,10 +613,41 @@ export default async function CommunityDetailPage({ params }: Props) {
   // has no row. Fall back to the always-present community snapshot (active SFR +
   // median list), then to the community detail values, so the schema survives a
   // timeout. Every figure stays verified (§0).
-  const marketFaqInput: MarketFaqInput = pulse ?? {
-    activeCount: snapshot?.activeSfrCount ?? community.activeCount ?? null,
-    medianListPrice: snapshot?.medianListPrice ?? community.medianPrice ?? null,
-    refreshedAt: snapshot?.refreshedAt,
+  //
+  // FIX (NWX count): always use `activeCount` (alias-aware, de-duped, matches the
+  // hero and the city ledger) rather than `pulse.activeCount` which is the raw
+  // neighborhood row count and undercounts resorts with many MLS alias names.
+  // The alias-aware count is the single authoritative figure for this page. (§0)
+  //
+  // HOA: prefer the top-level registry entry's hoa_annual_estimate; fall back to
+  // the lowest sub-neighborhood hoa_annual_estimate when the parent has none. Only
+  // from the registry — never from pulse or invented. (§0)
+  const registryHoa = registryEntry?.hoa_annual_estimate ?? null
+  const subNeighborhoodMinHoa =
+    !registryHoa && registryEntry?.sub_neighborhoods?.length
+      ? Math.min(
+          ...registryEntry.sub_neighborhoods
+            .map((s) => s.hoa_annual_estimate ?? Infinity)
+            .filter((n) => n < Infinity),
+        ) || null
+      : null
+  const faqHoaEstimate = registryHoa ?? (subNeighborhoodMinHoa !== null && isFinite(subNeighborhoodMinHoa) ? subNeighborhoodMinHoa : null)
+
+  const marketFaqInput: MarketFaqInput = {
+    // Alias-aware active count (the same number the hero shows). (§0 / NWX fix)
+    activeCount,
+    medianListPrice: pulse?.medianListPrice ?? snapshot?.medianListPrice ?? community.medianPrice ?? null,
+    monthsOfSupply: pulse?.monthsOfSupply ?? null,
+    // Prefer pulse days-to-pending; fall back to stats cache DOM (12-month rolling).
+    medianDaysToPending: pulse?.medianDaysToPending ?? null,
+    medianDaysOnMarket: stats?.medianDaysOnMarket ?? null,
+    refreshedAt: pulse?.refreshedAt ?? snapshot?.refreshedAt ?? null,
+    // Extended fields — community-specific grounded questions.
+    soldCount12mo: stats?.soldCount ?? null,
+    subdivisionAliases: registryEntry?.subdivision_aliases?.length
+      ? registryEntry.subdivision_aliases
+      : null,
+    hoaAnnualEstimate: faqHoaEstimate,
   }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(community.name, marketFaqInput)
   const hasMap = mapFeatures.length > 0 || Boolean(mapPolygons)
@@ -661,8 +717,8 @@ export default async function CommunityDetailPage({ params }: Props) {
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
           }}
           eyebrow={communityLabel}
-          titleTop="Homes in"
-          titleBottom={community.name}
+          titleTop={community.name}
+          titleBottom="Homes for Sale"
           lead={`in ${community.name}, ${cityName}, with the live market behind every one.`}
           videoSrc={null}
           posterSrc={heroPhoto}
@@ -702,7 +758,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           showRegionMarkers={false}
           polygons={mapPolygons}
           eyebrow={community.name}
-          title={`Homes in\n${community.name}`}
+          title={`${community.name}\nHomes for Sale`}
           subtitle={`Every active single-family listing in ${community.name}, on the real terrain. Click any dot for the price, the beds, and the street.`}
         />
         <KbCommunities communities={communityItems} eyebrow={`${cityName} · Communities`} />

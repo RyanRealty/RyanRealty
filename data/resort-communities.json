@@ -203,33 +203,12 @@
         43.8505
       ],
       "subdivision_aliases": [
-        "Caldera Springs",
-        "Powder Village Condo",
-        "Business Park",
-        "Sunriver Business Pa",
-        "Compound Condominium"
+        "Caldera Springs"
       ],
-      "child_count": 4,
+      "child_count": 0,
       "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
-        "children_with_pct": [
-          {
-            "name": "Powder Village Condo",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Business Park",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Sunriver Business Pa",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Compound Condominium",
-            "pct_inside": 100.0
-          }
-        ]
+        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test. Corrected 2026-06-27: removed Powder Village Condo (condo community, PropertyType=A avg close $288K, geographically adjacent but distinct), Business Park, Sunriver Business Pa (commercial, 0 active SFR), Compound Condominium (0 active SFR). These were incorrectly assigned by spatial proximity; they are Sunriver-area subdivisions, not Caldera Springs residential phases. Caldera Springs = 29 active SFR, avg list $2.05M (verified live MLS 2026-06-27).",
+        "children_with_pct": []
       }
     },
     {
@@ -273,7 +252,6 @@
         "SkylinC",
         "Quelah Estates",
         "Aspen Meadows",
-        "Pace Estate",
         "Camp Abbot Hangars",
         "Sunriver Lodge"
       ],
@@ -630,8 +608,6 @@
       ],
       "subdivision_aliases": [
         "Widgi Creek",
-        "Inn Of The 7th",
-        "7th Mtn Golf Village",
         "PointsWest",
         "Elkai Woods",
         "Milepost 1"

@@ -6,8 +6,8 @@ import { resortActiveSfrCounts, resortLabelToSlug, resortTilesForSlug } from '..
 describe('resortActiveSfrCounts', () => {
   it('counts Widgi Creek via its alias subdivisions, not the literal name', () => {
     const tiles = [
-      { subdivisionName: 'Inn Of The 7th Mountain', propertyType: 'A' },
-      { subdivisionName: '7th Mtn Golf Village', propertyType: 'A' },
+      { subdivisionName: 'PointsWest', propertyType: 'A' },
+      { subdivisionName: 'Milepost 1', propertyType: 'A' },
       { subdivisionName: 'Elkai Woods', propertyType: 'A' },
       { subdivisionName: 'Widgi Creek', propertyType: 'A' }, // literal, also counts
     ]
@@ -48,10 +48,10 @@ describe('resortActiveSfrCounts', () => {
 
   it('resortTilesForSlug returns the alias-matched tiles for one resort (count == tiles)', () => {
     const tiles = [
-      { subdivisionName: 'Inn Of The 7th Mountain', propertyType: 'A', listingKey: '1' },
+      { subdivisionName: 'PointsWest', propertyType: 'A', listingKey: '1' },
       { subdivisionName: 'Elkai Woods', propertyType: 'A', listingKey: '2' },
       { subdivisionName: 'Tetherow', propertyType: 'A', listingKey: '3' }, // different resort
-      { subdivisionName: 'Inn Of The 7th', propertyType: 'C', listingKey: '4' }, // condo, skip
+      { subdivisionName: 'Milepost 1', propertyType: 'C', listingKey: '4' }, // condo, skip
       { subdivisionName: 'Somewhere Else', propertyType: 'A', listingKey: '5' },
     ]
     const widgi = resortTilesForSlug('bend', 'widgi-creek', tiles)
