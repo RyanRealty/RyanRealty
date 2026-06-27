@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.640.0 (2026-06-27)
+
+### Features
+- feat(site): public-website audit remediation — tracking, SEO, indexability
+
+---
+
+
 ## v1.639.0 (2026-06-27)
 
 ### Features
