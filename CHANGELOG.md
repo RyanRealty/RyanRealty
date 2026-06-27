@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.649.0 (2026-06-27)
+
+### Features
+- feat(communities): add Crooked River Ranch (Awbrey Butte stays a Bend neighborhood)
+
+---
+
+
 ## v1.648.1 (2026-06-27)
 
 ### Bug Fixes
