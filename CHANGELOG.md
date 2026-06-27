@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.647.0 (2026-06-27)
+
+### Features
+- feat(seo): community pages — school district section + FAQ (§0, district-only, no invented schools)
+
+---
+
+
 ## v1.646.0 (2026-06-27)
 
 ### Features
