@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.649.1 (2026-06-27)
+
+### Bug Fixes
+- fix(communities): map crooked-river-ranch -> Terrebonne in RESORT_SLUG_TO_CITY
+
+---
+
+
 ## v1.649.0 (2026-06-27)
 
 ### Features
