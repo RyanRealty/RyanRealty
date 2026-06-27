@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.649.3 (2026-06-27)
+
+### Bug Fixes
+- fix(kb): H1 cropping — clear the reveal clip on completion + generous static room
+
+---
+
+
 ## v1.649.2 (2026-06-27)
 
 ### Bug Fixes
