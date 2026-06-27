@@ -36,8 +36,8 @@ describe('crm_report_areas seed', () => {
     expect(seeded).toEqual(built)
   })
 
-  it('seeds 20 areas (7 cities + 13 resort communities)', () => {
-    expect(readSeededRows()).toHaveLength(20)
+  it('seeds 24 areas (7 cities + 17 resort communities)', () => {
+    expect(readSeededRows()).toHaveLength(24)
   })
 
   it('protects Bend, the report engine anchor geography', () => {

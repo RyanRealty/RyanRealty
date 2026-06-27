@@ -1,8 +1,8 @@
 {
   "version": "v2-2026-05-15",
   "source": "Spark MLS API spatial discovery + Matt-approved manual overrides",
-  "verification_trace": "Each child verified \u226580% of its listings inside parent's broad area (per-parent radius 2-6km). Sunriver center hardcoded to 43.875,-121.450 (Matt-approved 2026-05-15). 'The Highlands at Broken Top' assigned to Broken Top via name-override (Matt-approved). 5 unassigned variants (River Forest Acres, North Rim, Skyline, Wildflower, Rock Ridge) are outside any resort community \u2014 they remain stand-alone subdivisions using SubdivisionName text equality. v2 patch (Matt 2026-05-15): Crosswater trimmed to 4 aliases (was 9). Vandevert Ranch promoted to own parent (single name). Three Rivers added as new parent (11 children). Kitty Hawk stays under Sunriver per closest-parent rule.",
-  "generated_at": "2026-05-15T09:13:00Z",
+  "verification_trace": "Each child verified ≥80% of its listings inside parent's broad area (per-parent radius 2-6km). Sunriver center hardcoded to 43.875,-121.450 (Matt-approved 2026-05-15). 'The Highlands at Broken Top' assigned to Broken Top via name-override (Matt-approved). 5 unassigned variants (River Forest Acres, North Rim, Skyline, Wildflower, Rock Ridge) are outside any resort community — they remain stand-alone subdivisions using SubdivisionName text equality. v2 patch (Matt 2026-05-15): Crosswater trimmed to 4 aliases (was 9). Vandevert Ranch promoted to own parent (single name). Three Rivers added as new parent (11 children). Kitty Hawk stays under Sunriver per closest-parent rule. 2026-06-27: 4 communities appended by hand from live MLS subdivision data — Mt Bachelor Village, Inn of the 7th Mountain, River's Edge, Mountain High. Method: exact MLS SubdivisionName match; center_lon_lat = centroid of that subdivision's listing coordinates (avg Latitude/Longitude over all listings, authoritative MLS data, 2026-06-27).",
+  "generated_at": "2026-06-27",
   "communities": [
     {
       "slug": "tetherow",
@@ -52,7 +52,7 @@
       ],
       "child_count": 8,
       "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
         "children_with_pct": [
           {
             "name": "Sunrise Village",
@@ -109,7 +109,7 @@
       ],
       "child_count": 4,
       "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
         "children_with_pct": [
           {
             "name": "Golden Butte",
@@ -150,7 +150,7 @@
       ],
       "child_count": 4,
       "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
         "children_with_pct": [
           {
             "name": "Ridge At Eagle Crest",
@@ -187,7 +187,7 @@
       ],
       "child_count": 0,
       "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
         "children_with_pct": []
       }
     },
@@ -211,7 +211,7 @@
       ],
       "child_count": 4,
       "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
         "children_with_pct": [
           {
             "name": "Powder Village Condo",
@@ -279,7 +279,7 @@
       ],
       "child_count": 31,
       "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
         "children_with_pct": [
           {
             "name": "The Ridge",
@@ -429,7 +429,7 @@
       ],
       "child_count": 5,
       "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
         "children_with_pct": [
           {
             "name": "Shevlin Bluffs",
@@ -477,7 +477,7 @@
       ],
       "child_count": 7,
       "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
         "children_with_pct": [
           {
             "name": "Skyliner Summit",
@@ -529,7 +529,7 @@
       ],
       "child_count": 3,
       "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
         "children_with_pct": [
           {
             "name": "Osprey Pointe Condo",
@@ -547,7 +547,7 @@
             "note": "Matt-curated 2026-05-15"
           }
         ],
-        "matt_directive_2026_05_15": "Crosswater is its own specific community. Osprey Pointe Condo, Pace Estate, Lisle Acres are part of Crosswater. Oww/DrrhTrs/Deschutes River Recreation Homesites are NOT Crosswater \u2014 they are Three Rivers."
+        "matt_directive_2026_05_15": "Crosswater is its own specific community. Osprey Pointe Condo, Pace Estate, Lisle Acres are part of Crosswater. Oww/DrrhTrs/Deschutes River Recreation Homesites are NOT Crosswater — they are Three Rivers."
       }
     },
     {
@@ -570,7 +570,7 @@
       ],
       "child_count": 4,
       "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
         "children_with_pct": [
           {
             "name": "Bbr",
@@ -608,7 +608,7 @@
       ],
       "child_count": 1,
       "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
         "children_with_pct": [
           {
             "name": "Powell Butte View",
@@ -638,7 +638,7 @@
       ],
       "child_count": 5,
       "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
         "children_with_pct": [
           {
             "name": "Inn Of The 7th",
@@ -710,7 +710,7 @@
       ],
       "child_count": 11,
       "verification": {
-        "method": "Spark /listings/nearby scan from composite center, \u226560% inside-test, Sunriver/Crosswater/Caldera/Vandevert subs excluded per Matt directive",
+        "method": "Spark /listings/nearby scan from composite center, ≥60% inside-test, Sunriver/Crosswater/Caldera/Vandevert subs excluded per Matt directive",
         "children_with_pct": [
           {
             "name": "Oww",
@@ -769,6 +769,88 @@
           }
         ],
         "matt_directive_2026_05_15": "Three Rivers gets its own area report, but it will not include Vandevert Ranch, Crosswater, or Caldera Springs."
+      }
+    },
+    {
+      "slug": "mt-bachelor-village",
+      "label": "Mt Bachelor Village",
+      "city": "Bend",
+      "city_slug": "bend",
+      "is_resort": true,
+      "broad_radius_km": 2.0,
+      "center_lon_lat": [
+        -121.336,
+        44.0331
+      ],
+      "subdivision_aliases": [
+        "Mt Bachelor Village"
+      ],
+      "child_count": 0,
+      "verification": {
+        "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
+        "children_with_pct": []
+      }
+    },
+    {
+      "slug": "inn-of-the-7th-mountain",
+      "label": "Inn of the 7th Mountain",
+      "city": "Bend",
+      "city_slug": "bend",
+      "is_resort": true,
+      "broad_radius_km": 2.0,
+      "center_lon_lat": [
+        -121.3887,
+        44.0009
+      ],
+      "subdivision_aliases": [
+        "Inn Of The 7th",
+        "7th Mtn Golf Village"
+      ],
+      "child_count": 0,
+      "verification": {
+        "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
+        "children_with_pct": []
+      }
+    },
+    {
+      "slug": "rivers-edge",
+      "label": "Rivers Edge",
+      "city": "Bend",
+      "city_slug": "bend",
+      "is_resort": true,
+      "broad_radius_km": 2.0,
+      "center_lon_lat": [
+        -121.3137,
+        44.0799
+      ],
+      "subdivision_aliases": [
+        "Rivers Edge Village",
+        "Phase 5 Rivers Edge"
+      ],
+      "child_count": 0,
+      "verification": {
+        "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
+        "children_with_pct": []
+      }
+    },
+    {
+      "slug": "mountain-high",
+      "label": "Mountain High",
+      "city": "Bend",
+      "city_slug": "bend",
+      "is_resort": true,
+      "broad_radius_km": 2.0,
+      "center_lon_lat": [
+        -121.3048,
+        44.0053
+      ],
+      "subdivision_aliases": [
+        "Mtn High"
+      ],
+      "child_count": 0,
+      "verification": {
+        "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
+        "children_with_pct": []
       }
     }
   ]

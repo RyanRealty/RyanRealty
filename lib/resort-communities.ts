@@ -20,6 +20,7 @@ const RESORT_CITY_SUBDIVISIONS: { city: string; subdivision: string }[] = [
   { city: 'Bend', subdivision: 'Mountain High' },
   { city: 'Bend', subdivision: 'Seventh Mountain' },
   { city: 'Bend', subdivision: 'Mt. Bachelor Village' },
+  { city: 'Bend', subdivision: 'Inn Of The 7th Mountain' },
   // Sunriver and La Pine
   { city: 'Sunriver', subdivision: 'Sunriver' },
   { city: 'Sunriver', subdivision: 'Sunriver Resort' },
