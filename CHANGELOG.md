@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.639.0 (2026-06-27)
+
+### Features
+- feat(newsletter): best-practice hardening (CAN-SPAM, voice gate, segments, bounces)
+
+---
+
+
 ## v1.638.11 (2026-06-27)
 
 ### Bug Fixes
