@@ -63,7 +63,12 @@ export const revalidate = 21_600
 export const metadata: Metadata = {
   title: cfg.meta.title,
   description: cfg.meta.description,
-  alternates: { canonical: cfg.meta.canonical },
+  // Canonical points at the systematic community hub so this paid LP does not
+  // compete organically with /communities/tetherow for "tetherow homes for sale"
+  // (resolves the keyword cannibalization GSC flagged — both were indexable and
+  // splitting authority, leaving the query stuck on page 2). The LP still serves
+  // ad traffic; Google consolidates the ranking signal onto the community page.
+  alternates: { canonical: 'https://ryan-realty.com/communities/tetherow' },
   openGraph: {
     title: cfg.meta.title,
     description: cfg.meta.description,

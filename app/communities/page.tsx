@@ -334,7 +334,7 @@ export default async function CommunitiesPage() {
                           className="underline-offset-4 hover:underline"
                           style={{ color: 'var(--navy)' }}
                         >
-                          {r.name} guide
+                          {r.name} homes for sale
                         </a>
                         <a
                           href={`/homes-for-sale/${r.citySlug}`}
