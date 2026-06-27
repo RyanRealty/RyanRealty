@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.643.0 (2026-06-27)
+
+### Features
+- feat(seo): resolve community cannibalization + keyword internal anchors
+
+---
+
+
 ## v1.642.0 (2026-06-27)
 
 ### Features
