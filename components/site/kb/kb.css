@@ -1556,3 +1556,49 @@ html.lenis, html.lenis body{height:auto;}
 }
 .kb-root .schools-cta:hover{background:var(--cream);color:var(--navy);}
 .kb-root .schools-cta-arrow{margin-left:6px;font-size:.9em;}
+
+/* ===== Community page: listing-alert capture (KbCommunityAlerts) =====
+   Navy background, cream text — mirrors the KB hero register. Sits above
+   KbSell in the section stack so buyers get an alert path without having to
+   scroll past the seller CTA. ===== */
+.kb-root .comm-alerts{background:var(--navy);color:var(--cream);padding:52px 0 56px;}
+.kb-root .comm-alerts-inner{max-width:var(--wrap);margin:0 auto;padding:0 var(--gutter,24px);}
+.kb-root .comm-alerts-copy{max-width:52ch;margin-bottom:28px;}
+.kb-root .comm-alerts-h{font-size:clamp(2.2rem,8vw,4.8rem);line-height:.9;margin-bottom:14px;color:var(--cream);}
+.kb-root .comm-alerts-p{font-size:clamp(.95rem,2.2vw,1.1rem);font-weight:500;line-height:1.5;color:var(--cream-70);max-width:44ch;margin-bottom:0;}
+.kb-root .comm-alerts-form{display:flex;align-items:center;gap:8px;max-width:480px;margin-bottom:12px;flex-wrap:wrap;}
+.kb-root .comm-alerts-input{flex:1;min-width:200px;background:rgba(250,248,244,.08);border:1.5px solid var(--cream-40);color:var(--cream);font-family:inherit;font-size:15px;}
+.kb-root .comm-alerts-input::placeholder{color:var(--cream-muted);}
+.kb-root .comm-alerts-input:focus{border-color:var(--cream);outline:none;}
+.kb-root .comm-alerts-btn{background:var(--cream);color:var(--navy);border-color:var(--cream);font-weight:700;flex-shrink:0;}
+.kb-root .comm-alerts-btn:hover:not(:disabled){background:transparent;color:var(--cream);border-color:var(--cream);}
+.kb-root .comm-alerts-btn:disabled{opacity:.55;cursor:not-allowed;}
+.kb-root .comm-alerts-error{font-size:.82rem;color:rgba(255,100,100,.9);margin-top:6px;}
+.kb-root .comm-alerts-fine{font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--cream-muted);margin-top:8px;}
+.kb-root .comm-alerts-icon{width:28px;height:28px;color:var(--cream);margin-bottom:12px;}
+.kb-root .comm-alerts-confirm{font-size:clamp(1rem,2.4vw,1.2rem);font-weight:500;color:var(--cream);max-width:44ch;}
+@media(min-width:760px){.kb-root .comm-alerts-inner{display:flex;align-items:flex-start;gap:60px;justify-content:space-between;}.kb-root .comm-alerts-copy{margin-bottom:0;flex:1;}.kb-root .comm-alerts-form-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;}}
+
+/* ===== Community page: buyer CTA block (KbBuyCta) =====
+   Cream background, navy text — mirrors KbSell's inverted palette so the
+   two sections together read as one dual-audience paired block (buyer above,
+   seller below). Hard 1px rule top-border separates from the section above. ===== */
+.kb-root .buy-cta{background:var(--cream);color:var(--navy);padding:52px 0 56px;border-top:1px solid var(--navy-12);}
+.kb-root .buy-cta-copy{max-width:var(--wrap);margin:0 auto;padding:0 var(--gutter,24px);max-width:680px;}
+.kb-root .buy-cta-h{font-size:clamp(2.4rem,9vw,5.2rem);line-height:.9;margin-bottom:14px;color:var(--navy);}
+.kb-root .buy-cta-p{font-size:clamp(.95rem,2.2vw,1.1rem);font-weight:500;line-height:1.5;color:var(--navy-70);max-width:48ch;margin-bottom:24px;}
+.kb-root .buy-cta-btns{display:flex;gap:12px;flex-wrap:wrap;}
+.kb-root .buy-cta .btn{background:var(--navy);color:var(--cream);border-color:var(--navy);}
+.kb-root .buy-cta .btn:hover{background:transparent;color:var(--navy);}
+.kb-root .buy-cta .btn.ghost{background:transparent;color:var(--navy);border-color:var(--navy);}
+.kb-root .buy-cta .btn.ghost:hover{background:var(--navy);color:var(--cream);}
+
+/* ===== Community page: second-home / STR note (resort pages only) =====
+   Low-key informational block. Generic framing only — no specific STR rules,
+   permit claims, or income figures (§0 hard rule). ===== */
+.kb-root .comm-str-note{background:var(--cream);color:var(--navy);border-top:1px solid var(--navy-12);padding:28px 0 32px;}
+.kb-root .comm-str-note-inner{max-width:var(--wrap);margin:0 auto;padding:0 var(--gutter,24px);display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;}
+.kb-root .comm-str-label{font-size:.65rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--navy-70);flex-shrink:0;padding-top:3px;}
+.kb-root .comm-str-text{font-size:.88rem;font-weight:500;line-height:1.55;color:var(--navy-70);max-width:64ch;}
+.kb-root .comm-str-text a{color:var(--navy);font-weight:700;text-decoration:underline;text-underline-offset:2px;text-decoration-thickness:1px;transition:opacity .18s;}
+.kb-root .comm-str-text a:hover{opacity:.65;}

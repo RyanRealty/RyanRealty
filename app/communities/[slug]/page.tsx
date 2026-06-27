@@ -62,7 +62,7 @@ import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { resortActiveSfrCounts, cityResorts, resortTilesForSlug } from '@/lib/kb/resort-active-counts'
 import { getDistrictForCity } from '@/data/co-schools'
-import { listingTileHref } from '@/lib/slug'
+import { listingTileHref, homesForSalePath } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { CONTACT } from '@/lib/brand/contact'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
@@ -87,6 +87,8 @@ import { KbArticles } from '@/components/site/kb/KbArticles'
 import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
 import { KbTeam } from '@/components/site/kb/KbTeam.client'
 import { KbSell } from '@/components/site/kb/KbSell.client'
+import { KbBuyCta } from '@/components/site/kb/KbBuyCta.client'
+import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
 import { KbSchools } from '@/components/site/kb/KbSchools'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -864,6 +866,43 @@ export default async function CommunityDetailPage({ params }: Props) {
         />
         <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
         <KbTeam />
+        {/* Buyer CTA — surfaces a direct "See all homes" path and contact link so
+            buyers get equal weight alongside the seller valuation block below.
+            listingsHref: homesForSalePath builds the canonical /homes-for-sale/[city]
+            URL. community.subdivision is the MLS name; for resorts, the registry
+            aliases make the search inclusive of all tagged sub-neighborhoods. (§0) */}
+        <KbBuyCta
+          communityName={community.name}
+          listingsHref={homesForSalePath(cityName, community.subdivision)}
+          contactHref={`/contact?inquiryType=Buying&message=${encodeURIComponent(`Interested in ${community.name} — please get in touch.`)}`}
+        />
+        {/* Listing-alert email capture — reuses submitSearchAlertSignup + the
+            guest_search_alerts table (same path as SearchAlertCapture on /search).
+            City + subdivision prefilled from community data so the alert matches
+            what the visitor is looking at. No new backend. (§0) */}
+        <KbCommunityAlerts
+          communityName={community.name}
+          city={cityName}
+          subdivision={community.subdivision}
+        />
+        {/* Second-home / investment note — resort pages only. Generic framing:
+            confirms the community is a popular second-home / vacation destination
+            and that STR potential exists and varies by HOA. No specific STR rules,
+            permit caps, occupancy limits, or income figures (§0 hard rule). (§0) */}
+        {isResort ? (
+          <div className="comm-str-note" aria-label={`${community.name} second home information`}>
+            <div className="comm-str-note-inner">
+              <span className="comm-str-label">Second homes</span>
+              <p className="comm-str-text">
+                {community.name} attracts both primary-residence and second-home buyers. Short-term rental potential in master-planned and resort communities like this one varies by HOA rules, community covenants, and Oregon regulations.{' '}
+                <a href={`/contact?inquiryType=Buying&message=${encodeURIComponent(`I have questions about short-term rental rules in ${community.name}.`)}`}>
+                  Reach out for current rental guidelines
+                </a>
+                {' '}before making any assumptions about permitted use or income potential.
+              </p>
+            </div>
+          </div>
+        ) : null}
         <KbSell
           data={{
             medianListPrice,
