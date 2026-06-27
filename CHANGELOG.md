@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.646.0 (2026-06-27)
+
+### Features
+- feat(seo): community pages — geo schema, all-community OG, map, phone, freshness, alt, LCP
+
+---
+
+
 ## v1.645.0 (2026-06-27)
 
 ### Features
