@@ -384,8 +384,8 @@ export default async function SubdivisionPage({ params }: Props) {
             medianDaysToPending: null,
           }}
           eyebrow={eyebrow}
-          titleTop="Homes in"
-          titleBottom={displayName}
+          titleTop={displayName}
+          titleBottom="Homes for Sale"
           lead={lede}
           videoSrc={null}
           posterSrc={posterSrc}

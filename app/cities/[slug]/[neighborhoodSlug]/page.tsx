@@ -477,8 +477,8 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
           }}
           eyebrow={neighborhoodLabel}
-          titleTop="Homes in"
-          titleBottom={neighborhood.name}
+          titleTop={neighborhood.name}
+          titleBottom="Homes for Sale"
           lead={`in ${neighborhood.name}, ${cityName}, with the live market behind every one.`}
           videoSrc={null}
           posterSrc={heroPhoto}

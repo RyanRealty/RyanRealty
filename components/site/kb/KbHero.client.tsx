@@ -62,6 +62,18 @@ export function KbHero({
   const root = useRef<HTMLElement>(null)
   const router = useRouter()
   const [q, setQ] = useState('')
+  // Responsive search placeholder: the full natural-language example clips in the
+  // narrow mobile input (search icon + mic + Search button eat the width), which
+  // showed as "...in Be" cut off. Default to the short form (SSR + mobile), expand
+  // on >= 640px.
+  const [searchPlaceholder, setSearchPlaceholder] = useState('3 bed under $800k')
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 640px)')
+    const apply = () => setSearchPlaceholder(mq.matches ? '3 bed under $800k in Bend with a shop' : '3 bed under $800k')
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
 
   useEffect(() => {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -144,7 +156,7 @@ export function KbHero({
               type="text"
               autoComplete="off"
               aria-label="Search homes in plain language"
-              placeholder="3 bed under $800k in Bend with a shop"
+              placeholder={searchPlaceholder}
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />

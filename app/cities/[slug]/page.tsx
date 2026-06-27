@@ -547,8 +547,8 @@ export default async function CityDetailPage({ params }: Props) {
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
           }}
           eyebrow={`${cityName} · Oregon`}
-          titleTop="Homes in"
-          titleBottom={cityName}
+          titleTop={cityName}
+          titleBottom="Homes for Sale"
           lead={`in ${cityName}, Oregon, with the live market behind every one.`}
           videoSrc={heroVideoSrc}
           posterSrc={heroPosterSrc}
