@@ -32,6 +32,16 @@ export type MarketFaqInput = {
    *  OR the lowest sub-neighborhood estimate (sub_neighborhoods[*].hoa_annual_estimate).
    *  Only emit when the figure is a direct registry value — never estimated. */
   hoaAnnualEstimate?: number | null
+  /**
+   * Verified school district name for the community's city (e.g. "Bend-La Pine Schools").
+   * Sourced from data/co-schools.ts DISTRICT_CITIES + DISTRICTS constants — the only
+   * registry this data may come from (§0: never invented, never guessed from memory).
+   * When present, emits a schools FAQ. When null/undefined, no FAQ is emitted.
+   */
+  schoolDistrictName?: string | null
+  /** districtSlug matching the districtSlug in co-schools.ts (e.g. "bend-la-pine").
+   *  Used to construct the /schools anchor link. */
+  schoolDistrictSlug?: string | null
 }
 
 /**
@@ -166,6 +176,18 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
     faqs.push({
       question: `Does ${geoName} have an HOA?`,
       answer: `Yes. Estimated annual HOA fees in ${geoName} start around $${pulse.hoaAnnualEstimate.toLocaleString('en-US')}. Exact fees vary by lot, phase, and membership level. Verify current amounts with the HOA before any purchase.`,
+    })
+  }
+
+  // Schools FAQ — only when the community's district is known from the verified registry
+  // (data/co-schools.ts getDistrictForCity). Attendance-zone schools vary by address
+  // within a district and are NOT listed here because we have no per-address boundary data.
+  // The answer names the verified district and links to /schools for the full list. (§0)
+  if (pulse.schoolDistrictName && pulse.schoolDistrictSlug) {
+    const districtName = pulse.schoolDistrictName
+    faqs.push({
+      question: `What school district serves ${geoName}?`,
+      answer: `Homes in ${geoName} are served by ${districtName}. The specific elementary, middle, and high school assigned to a home depends on its address within the district. Visit our schools page for the full list of schools in the district.`,
     })
   }
 

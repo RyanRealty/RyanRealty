@@ -905,3 +905,25 @@ export function findSchoolByName(name: string | null | undefined): CoSchool | un
 export function citiesForSchool(school: CoSchool): string[] {
   return DISTRICT_CITIES[school.districtSlug] ?? [school.city]
 }
+
+/**
+ * Resolve a city name to its canonical school district info.
+ *
+ * Source-of-truth: the DISTRICTS constant above, keyed by districtSlug.
+ * The city→district mapping is verified (header comment, 2026-06-03).
+ * Returns undefined when the city is not in the Central Oregon service area.
+ *
+ * Per §0: this function ONLY returns what is in the verified registry.
+ * Never call this for a city not explicitly listed in DISTRICT_CITIES.
+ */
+export function getDistrictForCity(cityName: string): { district: string; districtSlug: string } | undefined {
+  const normalized = cityName.trim()
+  for (const [districtSlug, cities] of Object.entries(DISTRICT_CITIES)) {
+    if (cities.some((c) => c.toLowerCase() === normalized.toLowerCase())) {
+      // Resolve the district display name from the DISTRICTS constant.
+      const districtEntry = Object.values(DISTRICTS).find((d) => d.districtSlug === districtSlug)
+      if (districtEntry) return { district: districtEntry.district, districtSlug }
+    }
+  }
+  return undefined
+}

@@ -61,6 +61,7 @@ import { communityImage, cityHero, GOLF_COMMUNITY_IMAGES } from '@/lib/geo-image
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { resortActiveSfrCounts, cityResorts, resortTilesForSlug } from '@/lib/kb/resort-active-counts'
+import { getDistrictForCity } from '@/data/co-schools'
 import { listingTileHref } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { CONTACT } from '@/lib/brand/contact'
@@ -86,6 +87,7 @@ import { KbArticles } from '@/components/site/kb/KbArticles'
 import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
 import { KbTeam } from '@/components/site/kb/KbTeam.client'
 import { KbSell } from '@/components/site/kb/KbSell.client'
+import { KbSchools } from '@/components/site/kb/KbSchools'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { FAQBlock } from '@/components/site/FAQBlock'
@@ -642,6 +644,12 @@ export default async function CommunityDetailPage({ params }: Props) {
       : null
   const faqHoaEstimate = registryHoa ?? (subNeighborhoodMinHoa !== null && isFinite(subNeighborhoodMinHoa) ? subNeighborhoodMinHoa : null)
 
+  // School district — resolved from the verified city→district registry in
+  // data/co-schools.ts. This is the ONLY source allowed (§0). getDistrictForCity()
+  // returns undefined for cities outside the Central Oregon service area, in which
+  // case the schools section + FAQ are silently omitted rather than fabricated.
+  const schoolDistrictInfo = getDistrictForCity(cityName)
+
   const marketFaqInput: MarketFaqInput = {
     // Alias-aware active count (the same number the hero shows). (§0 / NWX fix)
     activeCount,
@@ -657,6 +665,9 @@ export default async function CommunityDetailPage({ params }: Props) {
       ? registryEntry.subdivision_aliases
       : null,
     hoaAnnualEstimate: faqHoaEstimate,
+    // Schools district from verified registry — null when city is not in service area. (§0)
+    schoolDistrictName: schoolDistrictInfo?.district ?? null,
+    schoolDistrictSlug: schoolDistrictInfo?.districtSlug ?? null,
   }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(community.name, marketFaqInput)
   // Fix 4: hasMap is true whenever we have listing pins, a polygon, OR registry
@@ -829,6 +840,14 @@ export default async function CommunityDetailPage({ params }: Props) {
           heading="Latest market activity"
           viewAllHref="/housing-market"
           viewAllLabel="Full market pulse"
+        />
+        {/* Schools district — sourced exclusively from data/co-schools.ts
+            getDistrictForCity(). Specific school names/attendance zones are NOT
+            shown because per-address boundary data is not in the system. (§0) */}
+        <KbSchools
+          communityName={community.name}
+          districtName={schoolDistrictInfo?.district ?? null}
+          districtSlug={schoolDistrictInfo?.districtSlug ?? null}
         />
         <KbArticles
           posts={articlePosts}
