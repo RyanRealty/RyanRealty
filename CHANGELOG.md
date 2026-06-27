@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.640.2 (2026-06-27)
+
+### Bug Fixes
+- fix(tracking): fire visitor_event once per pathname (real double-fire cause)
+
+---
+
+
 ## v1.640.1 (2026-06-27)
 
 ### Bug Fixes
