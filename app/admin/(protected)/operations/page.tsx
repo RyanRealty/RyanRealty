@@ -92,7 +92,7 @@ export default async function AdminDashboardPage() {
   ]
 
   return (
-    <main className="mx-auto max-w-screen-2xl px-4 py-8 sm:px-6">
+    <main className="mx-auto max-w-screen-2xl overflow-x-clip px-4 py-8 sm:px-6">
       <header>
         <h1 className="text-2xl font-bold text-foreground">Operations command center</h1>
         <p className="mt-1 text-sm text-muted-foreground">
