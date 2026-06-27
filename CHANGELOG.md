@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.638.9 (2026-06-27)
+
+### Bug Fixes
+- fix(admin): clip 15px mobile overflow on /admin/operations
+
+---
+
+
 ## v1.638.8 (2026-06-27)
 
 ### Bug Fixes
