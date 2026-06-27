@@ -216,6 +216,12 @@ type Props = { userId?: string | null; userEmail?: string | null }
 export default function VisitTracker({ userId, userEmail }: Props) {
   const pathname = usePathname()
   const tracked = useRef<string | null>(null)
+  // Separate dedupe for the visitor_events write, keyed by pathname ONLY. The
+  // session wrapper renders with userId=null then re-renders once /api/auth/me
+  // resolves the real id; the visitor_event payload is keyed by sessionId (not
+  // userId), so it must fire once per pathname or the null->id re-render would
+  // double-count every page/property view for a logged-in visitor.
+  const firedVisitorPath = useRef<string | null>(null)
   const returnTracked = useRef(false)
 
   useEffect(() => {
@@ -229,23 +235,30 @@ export default function VisitTracker({ userId, userEmail }: Props) {
     if (pathname?.startsWith('/admin')) return
     const visitId = getOrCreateVisitId()
     if (!visitId || !pathname) return
+    // Legacy visits table (kept for backward-compat with existing reports) —
+    // keyed by pathname+userId so a login re-associates the visit.
     const key = pathname + (userId ?? 'anon')
-    if (tracked.current === key) return
-    tracked.current = key
-    // Legacy visits table (kept for backward-compat with existing reports)
-    trackVisit({
-      visitId,
-      path: pathname,
-      referrer: typeof document !== 'undefined' ? document.referrer || undefined : undefined,
-      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
-      userId: userId ?? undefined,
-    })
+    if (tracked.current !== key) {
+      tracked.current = key
+      trackVisit({
+        visitId,
+        path: pathname,
+        referrer: typeof document !== 'undefined' ? document.referrer || undefined : undefined,
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+        userId: userId ?? undefined,
+      })
+    }
     // New unified visitor_sessions / visitor_events tables — feeds the
     // /admin/visitors/live + /admin/analytics/funnel-breakdown dashboards
     // and the hot-lead scoring cron. Listing pages get the higher-weight
-    // event_type so the score reflects engagement intensity correctly.
-    const det = detectListing(pathname)
-    fireVisitorEvent(pathname, det.isListing ? 'listing_view' : 'page_view', det.mls)
+    // event_type so the score reflects engagement intensity correctly. Fired
+    // once per pathname (see firedVisitorPath) so the userId resolution does not
+    // double-count the view.
+    if (firedVisitorPath.current !== pathname) {
+      firedVisitorPath.current = pathname
+      const det = detectListing(pathname)
+      fireVisitorEvent(pathname, det.isListing ? 'listing_view' : 'page_view', det.mls)
+    }
   }, [pathname, userId])
 
   useEffect(() => {
@@ -265,25 +278,29 @@ export default function VisitTracker({ userId, userEmail }: Props) {
   useEffect(() => {
     const onConsent = () => {
       if (hasAnalyticsConsent() && pathname) {
-        // Only fire if the main effect did NOT already track this view (consent was
-        // off at load and just got granted). Without this guard, an auto-grant on
-        // load double-fires the event and doubles property-view counts.
+        // Consent was off at load and just got granted — fire the view the main
+        // effect had to skip. Guard each write with its own ref so this never
+        // double-counts what the main effect already recorded.
         const key = pathname + (userId ?? 'anon')
-        if (tracked.current === key) return
-        tracked.current = key
-        const visitId = getOrCreateVisitId()
-        if (visitId) {
-          trackVisit({
-            visitId,
-            path: pathname,
-            referrer: document.referrer || undefined,
-            userAgent: navigator.userAgent,
-            userId: userId ?? undefined,
-          })
+        if (tracked.current !== key) {
+          tracked.current = key
+          const visitId = getOrCreateVisitId()
+          if (visitId) {
+            trackVisit({
+              visitId,
+              path: pathname,
+              referrer: document.referrer || undefined,
+              userAgent: navigator.userAgent,
+              userId: userId ?? undefined,
+            })
+          }
         }
         // Mirror to the new visitor_events pipeline on the consent flip too.
-        const det = detectListing(pathname)
-        fireVisitorEvent(pathname, det.isListing ? 'listing_view' : 'page_view', det.mls)
+        if (firedVisitorPath.current !== pathname) {
+          firedVisitorPath.current = pathname
+          const det = detectListing(pathname)
+          fireVisitorEvent(pathname, det.isListing ? 'listing_view' : 'page_view', det.mls)
+        }
       }
     }
     window.addEventListener('cookie-consent', onConsent)
