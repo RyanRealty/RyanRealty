@@ -338,6 +338,7 @@ export default async function SocialChannelsPage({
           Who is showing up from Facebook, Instagram, TikTok, YouTube, LinkedIn, X, Pinterest, Threads, Reddit, and Snapchat. Real-time from <code>visitor_sessions</code> plus a GA4 cross-reference for the last 30 days.
         </p>
         <DateRangePicker current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
+        <p className="text-xs text-muted-foreground">Date range applies to GA4 data only. The real-time visitor session tables above always show the full available history.</p>
       </header>
 
       <Suspense fallback={<Skeleton className="h-24 w-full" />}>

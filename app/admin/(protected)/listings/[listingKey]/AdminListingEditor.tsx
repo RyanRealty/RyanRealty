@@ -8,6 +8,7 @@ import {
   reorderAdminListingPhotos,
   setAdminListingHeroPhoto,
   updateAdminListingEditableData,
+  updateAdminListingMediaSuppressed,
   type AdminListingEditable,
 } from '@/app/actions/admin-listing-detail'
 import { Button } from '@/components/ui/button'
@@ -31,6 +32,8 @@ export default function AdminListingEditor({ initialData }: Props) {
   const [adminNotes, setAdminNotes] = useState(initialData.adminNotes ?? '')
   const [marketingHeadline, setMarketingHeadline] = useState(initialData.marketingHeadline ?? '')
   const [featured, setFeatured] = useState(initialData.featured)
+  // P1-4: media suppression toggle state
+  const [mediaSuppressed, setMediaSuppressed] = useState(initialData.mediaSuppressed)
   const [photos, setPhotos] = useState(initialData.photos)
   const [newPhotoUrl, setNewPhotoUrl] = useState('')
   const [newPhotoCaption, setNewPhotoCaption] = useState('')
@@ -73,6 +76,27 @@ export default function AdminListingEditor({ initialData }: Props) {
         return
       }
       setMessage({ type: 'ok', text: 'Listing changes saved.' })
+    })
+  }
+
+  function toggleMediaSuppressed(next: boolean) {
+    setMessage(null)
+    startTransition(async () => {
+      const result = await updateAdminListingMediaSuppressed({
+        listingKey: initialData.listingKey,
+        mediaSuppressed: next,
+      })
+      if (!result.ok) {
+        setMessage({ type: 'err', text: result.error })
+        return
+      }
+      setMediaSuppressed(next)
+      setMessage({
+        type: 'ok',
+        text: next
+          ? 'Media suppressed. Owner photos are now hidden from the public site.'
+          : 'Media suppression removed. Owner photos are visible on the public site.',
+      })
     })
   }
 
@@ -238,6 +262,57 @@ export default function AdminListingEditor({ initialData }: Props) {
               {message.text}
             </p>
           )}
+        </CardContent>
+      </Card>
+
+      {/* P1-4: Media suppression toggle — owner photo-removal mechanism */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Media suppression</CardTitle>
+          <CardDescription>
+            When enabled, all owner photos are removed from the public site immediately. This is the durable, sync-proof gate described in the listing media suppression reference.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-start gap-4 rounded-lg border border-border p-4">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <p className="text-sm font-medium text-foreground">
+                {mediaSuppressed ? 'Photos suppressed — hidden from public site' : 'Photos visible on public site'}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {mediaSuppressed
+                  ? 'Owner requested removal. The listing still appears in search but all photos return empty.'
+                  : 'No suppression active. Photos display normally.'}
+              </p>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              {mediaSuppressed ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isPending}
+                  onClick={() => toggleMediaSuppressed(false)}
+                >
+                  {isPending ? 'Updating…' : 'Remove suppression'}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  disabled={isPending}
+                  onClick={() => {
+                    if (window.confirm('Suppress all media for this listing? Photos will be hidden from the public site immediately.')) {
+                      toggleMediaSuppressed(true)
+                    }
+                  }}
+                >
+                  {isPending ? 'Updating…' : 'Suppress media'}
+                </Button>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
 

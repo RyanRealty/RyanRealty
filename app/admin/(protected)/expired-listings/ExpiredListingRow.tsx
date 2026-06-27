@@ -46,6 +46,8 @@ function hasContact(row: Row): boolean {
 function useContactEditor(row: Row) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  // P2-3 fix: add error state so save failures surface in the UI instead of silently discarding.
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [ownerName, setOwnerName] = useState(row.owner_name ?? '')
   const [contactPhone, setContactPhone] = useState(row.contact_phone ?? '')
   const [contactEmail, setContactEmail] = useState(row.contact_email ?? '')
@@ -54,6 +56,7 @@ function useContactEditor(row: Row) {
 
   async function handleSave() {
     setSaving(true)
+    setSaveError(null)
     try {
       const res = await updateExpiredListingContact(row.id, {
         owner_name: ownerName || null,
@@ -65,7 +68,12 @@ function useContactEditor(row: Row) {
       if (res.ok) {
         setEditing(false)
         window.location.reload()
+      } else {
+        // P2-3: surface the error instead of silently dropping it
+        setSaveError(res.error ?? 'Failed to save contact. Please try again.')
       }
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'An unexpected error occurred.')
     } finally {
       setSaving(false)
     }
@@ -75,6 +83,7 @@ function useContactEditor(row: Row) {
     editing,
     setEditing,
     saving,
+    saveError,
     handleSave,
     ownerName,
     setOwnerName,
@@ -139,6 +148,9 @@ function ContactEditFields(e: ReturnType<typeof useContactEditor>) {
           Cancel
         </Button>
       </div>
+      {e.saveError && (
+        <p className="text-sm text-destructive" role="alert">{e.saveError}</p>
+      )}
     </div>
   )
 }

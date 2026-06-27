@@ -23,6 +23,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
 import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
+import { DateRangePicker } from '../_components/DateRangePicker'
+import { resolveDateRange } from '../_lib/queries'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -270,10 +272,12 @@ function generateInsights(buckets: IntentBucket[], funnels: SourceFunnel[]): Ins
   return out
 }
 
-async function FunnelContent() {
+async function FunnelContent({ range }: { range: { startDate: string; endDate: string } }) {
   const supabase = getServiceSupabase()
-  const lookbackDays = 30
-  const cutoff = new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000).toISOString()
+  const cutoff = `${range.startDate}T00:00:00.000Z`
+  const lookbackDays = Math.round(
+    (new Date(range.endDate).getTime() - new Date(range.startDate).getTime()) / (24 * 60 * 60 * 1000)
+  ) + 1
 
   const { data, error } = await supabase
     .from('visitor_sessions')
@@ -292,7 +296,7 @@ async function FunnelContent() {
     return (
       <Card>
         <CardContent className="p-8 text-center text-sm text-muted-foreground">
-          No visitor sessions in the last {lookbackDays} days yet. Once the WordPress snippet starts firing tracked events to /api/visitors/track, sessions appear here and the funnel populates in real time.
+          No visitor sessions from {cutoff.slice(0, 10)} to {range.endDate} yet. Once the WordPress snippet starts firing tracked events to /api/visitors/track, sessions appear here and the funnel populates in real time.
         </CardContent>
       </Card>
     )
@@ -313,7 +317,7 @@ async function FunnelContent() {
       {/* 0. Glanceable summary band */}
       <DashboardSummaryStrip
         stats={[
-          { label: 'Sessions (30d)', value: formatInt(totalSessions) },
+          { label: `Sessions (${lookbackDays}d)`, value: formatInt(totalSessions) },
           { label: 'Identified', value: formatInt(totalIdentified), caption: formatPct(totalIdentified, totalSessions) },
           { label: 'Hot leads', value: formatInt(totalHot), caption: formatPct(totalHot, totalSessions) },
           { label: 'Seller intent', value: sellerBucket ? formatInt(sellerBucket.count) : '0' },
@@ -324,7 +328,7 @@ async function FunnelContent() {
 
       {/* 1. Insights — top of page so it cannot be missed */}
       <Card>
-        <CardHeader><CardTitle>What the data says (last {lookbackDays} days)</CardTitle></CardHeader>
+        <CardHeader><CardTitle>What the data says ({range.startDate} to {range.endDate})</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {insights.map((ins, i) => (
             <Alert key={i} variant={ins.severity === 'critical' ? 'destructive' : 'default'}>
@@ -423,7 +427,9 @@ async function FunnelContent() {
   )
 }
 
-export default async function FunnelBreakdownPage(_: { searchParams: Promise<SearchParams> }) {
+export default async function FunnelBreakdownPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const sp = normalizeParams(await searchParams)
+  const range = resolveDateRange(sp)
   return (
     <div className="space-y-6">
       <header className="space-y-2">
@@ -431,10 +437,11 @@ export default async function FunnelBreakdownPage(_: { searchParams: Promise<Sea
         <p className="text-sm text-muted-foreground">
           Where visitors enter the funnel, where they drop out, and what to do about it. Powered by visitor_sessions + visitor_events (the real-time tables, not GA4). Updates the moment events land.
         </p>
+        <DateRangePicker current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
       </header>
 
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
-        <FunnelContent />
+        <FunnelContent range={range} />
       </Suspense>
     </div>
   )

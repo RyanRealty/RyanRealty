@@ -32,6 +32,8 @@ export type AdminEditableListingRow = {
   ListPrice: number | null
   StandardStatus: string | null
   details: ListingDetailsJson | null
+  // P1-4: media suppression flag for the owner photo-removal mechanism
+  media_suppressed: boolean | null
 }
 
 /** Look up a listing row by ListingKey then ListNumber, returning the wide editable shape. */
@@ -43,16 +45,17 @@ export async function getAdminEditableListingRow(
   const key = String(listingKeyOrNumber ?? '').trim()
   if (!key) return null
 
+  // P1-4: include media_suppressed so the admin editor can display and toggle it.
   const byListingKey = await sb
     .from('listings')
-    .select('ListingKey, ListNumber, ListPrice, StandardStatus, details')
+    .select('ListingKey, ListNumber, ListPrice, StandardStatus, details, media_suppressed')
     .eq('ListingKey', key)
     .maybeSingle()
   if (byListingKey.data) return byListingKey.data as AdminEditableListingRow
 
   const byListNumber = await sb
     .from('listings')
-    .select('ListingKey, ListNumber, ListPrice, StandardStatus, details')
+    .select('ListingKey, ListNumber, ListPrice, StandardStatus, details, media_suppressed')
     .eq('ListNumber', key)
     .maybeSingle()
   if (byListNumber.data) return byListNumber.data as AdminEditableListingRow

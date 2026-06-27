@@ -40,7 +40,7 @@ export async function POST(
           .update({
             status: 'approved',
             approved_at: new Date().toISOString(),
-            approved_by: 'matt',
+            approved_by: user.email,
           })
           .eq('id', id)
         if (error) throw error
@@ -56,7 +56,7 @@ export async function POST(
           .update({
             status: 'approved',
             approved_at: new Date().toISOString(),
-            approved_by: 'matt',
+            approved_by: user.email,
             scheduled_for: new Date(body.scheduled_for).toISOString(),
           })
           .eq('id', id)
@@ -79,7 +79,7 @@ export async function POST(
         const existingComments = (Array.isArray(existing?.comments) ? existing.comments : []) as unknown[]
         const newComment = {
           id: crypto.randomUUID(),
-          author: 'matt',
+          author: user.email,
           body: body.change_body.trim(),
           posted_at: new Date().toISOString(),
           type: 'change_request',
@@ -132,7 +132,7 @@ export async function POST(
             producer_slug: slug,
             request_type: 'duplicate_with_changes',
             request_text: body.notes?.trim() ?? 'Duplicate with changes requested from approval queue.',
-            requester: 'matt',
+            requester: user.email,
             status: 'pending',
           })
           if (error) throw error

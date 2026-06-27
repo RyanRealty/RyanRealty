@@ -15,9 +15,18 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
 import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
+import { DateRangePicker } from '../_components/DateRangePicker'
+import { resolveDateRange } from '../_lib/queries'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+type SearchParams = Record<string, string | string[] | undefined>
+function normalizeParams(sp: SearchParams): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = {}
+  for (const [k, v] of Object.entries(sp)) out[k] = Array.isArray(v) ? v[0] : v
+  return out
+}
 
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -42,9 +51,11 @@ function isoWeekStart(dateStr: string): string {
 
 type DailyRow = { date: string; value: number; campaign?: string; scope_id?: string; metadata?: Record<string, unknown> | null }
 
-async function CostPerLead() {
+async function CostPerLead({ range }: { range: { startDate: string; endDate: string } }) {
   const supabase = getServiceSupabase()
-  const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  const cutoff = range.startDate
+  const sinceTs = `${range.startDate}T00:00:00.000Z`
+  const endTs = `${range.endDate}T23:59:59.999Z`
 
   // Pull all the relevant rows in parallel.
   // Spend pulls BOTH Meta + Google Ads so cost-per-lead is computed against
@@ -67,10 +78,11 @@ async function CostPerLead() {
       .select('date, value')
       .eq('channel', 'fub').eq('scope', 'account').eq('metric', 'new_leads')
       .gte('date', cutoff),
-    // From visitor_sessions: identified-from-FB count per day (last 90 days)
+    // From visitor_sessions: identified-from-FB count per day
     supabase.from('visitor_sessions')
       .select('first_seen_at, utm_source, identified_at, hot_lead_fired_at')
-      .gte('first_seen_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
+      .gte('first_seen_at', sinceTs)
+      .lte('first_seen_at', endTs)
       .limit(20000),
     supabase.from('marketing_channel_daily')
       .select('date, value')
@@ -83,6 +95,8 @@ async function CostPerLead() {
   ])
 
   if (spendRes.error) return <Card><CardContent className="p-6 text-sm text-destructive">spend read failed: {spendRes.error.message}</CardContent></Card>
+
+  const sessionsCapped = (identifiedRes.data ?? []).length === 20000
 
   // ─── Per-week roll-up: spend (Meta + Google), qualified leads, identified ────
   // metaSpend + googleSpend tracked separately so the table shows per-platform.
@@ -168,6 +182,11 @@ async function CostPerLead() {
 
   return (
     <>
+      {sessionsCapped && (
+        <p className="text-xs text-warning">
+          Showing first 20,000 visitor sessions — result capped. Narrow the date range to see complete data.
+        </p>
+      )}
       <DashboardSummaryStrip
         stats={[
           { label: 'Cost / qualified lead (wk)', value: last7Cpl == null ? null : formatUsd(last7Cpl), caption: last4Cpl != null ? `4-wk avg ${formatUsd(last4Cpl)}` : undefined },
@@ -255,7 +274,9 @@ async function CostPerLead() {
   )
 }
 
-export default async function CostPerLeadPage() {
+export default async function CostPerLeadPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const sp = normalizeParams(await searchParams)
+  const range = resolveDateRange(sp)
   return (
     <div className="space-y-6">
       <header className="space-y-2">
@@ -263,10 +284,11 @@ export default async function CostPerLeadPage() {
         <p className="text-sm text-muted-foreground">
           The number that decides whether to scale or kill paid spend. Joins Meta Ads spend with FUB qualified seller leads, week by week. Brackets cost-per-lead so you see at-a-glance which weeks were healthy.
         </p>
+        <DateRangePicker current={sp.range ?? '90d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
       </header>
 
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
-        <CostPerLead />
+        <CostPerLead range={range} />
       </Suspense>
     </div>
   )

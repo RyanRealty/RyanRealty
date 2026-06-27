@@ -50,9 +50,18 @@ import { Separator } from '@/components/ui/separator'
 import { getGA4Summary, type GA4Summary } from '@/app/actions/ga4-report'
 import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
 import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
+import { DateRangePicker } from '@/app/admin/(protected)/analytics/_components/DateRangePicker'
+import { resolveDateRange } from '@/app/admin/(protected)/analytics/_lib/queries'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+type SearchParams = Record<string, string | string[] | undefined>
+function normalizeParams(sp: SearchParams): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = {}
+  for (const [k, v] of Object.entries(sp)) out[k] = Array.isArray(v) ? v[0] : v
+  return out
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -115,24 +124,26 @@ type GbpDaily = { metric: string; value: number; date: string }
 
 // ─── Content ──────────────────────────────────────────────────────────────
 
-async function TrafficSourcesContent() {
-  const lookbackDays = 30
+async function TrafficSourcesContent({ range }: { range: { startDate: string; endDate: string } }) {
   const supabase = getServiceSupabase()
-  const sinceIso = new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000).toISOString()
-  const sinceDate = sinceIso.slice(0, 10)
+  const sinceIso = `${range.startDate}T00:00:00.000Z`
+  const untilIso = `${range.endDate}T23:59:59.999Z`
+  const sinceDate = range.startDate
 
   // Parallel fetch: GA4 + visits + visitor_sessions + GBP totals.
   const [ga4Result, visitsRes, sessionsRes, gbpRes] = await Promise.all([
-    getGA4Summary(`${lookbackDays}daysAgo`, 'today'),
+    getGA4Summary(range.startDate, range.endDate),
     supabase
       .from('visits')
       .select('path, referrer')
       .gte('created_at', sinceIso)
+      .lte('created_at', untilIso)
       .limit(50000),
     supabase
       .from('visitor_sessions')
       .select('utm_source, utm_medium, utm_campaign, utm_content, referrer, landing_page, source_domain')
       .gte('first_seen_at', sinceIso)
+      .lte('first_seen_at', untilIso)
       .limit(20000),
     supabase
       .from('marketing_channel_daily')
@@ -241,7 +252,7 @@ async function TrafficSourcesContent() {
       {/* 1. Hero metrics — glanceable KPI band */}
       <DashboardSummaryStrip
         stats={[
-          { label: 'GA4 sessions (30d)', value: formatInt(ga4Sessions), caption: `${formatInt(ga4Users)} unique users` },
+          { label: `GA4 sessions (${range.startDate} to ${range.endDate})`, value: formatInt(ga4Sessions), caption: `${formatInt(ga4Users)} unique users` },
           { label: 'Visits captured', value: formatInt(visitsCount), caption: 'visits table (first-party)' },
           { label: 'First-touch sessions', value: formatInt(sessions.length), caption: 'visitor_sessions w/ attribution' },
           { label: 'GBP website clicks', value: formatInt(gbpWebsiteClicks), caption: `${formatInt(gbpCallClicks)} calls · ${formatInt(gbpDirectionsClicks)} directions` },
@@ -309,7 +320,7 @@ async function TrafficSourcesContent() {
                 </CardContent>
               </Card>
             )}
-            empty={<>No source rows from GA4 in the last 30 days. Confirm the GA4 Data API connection on the analytics overview.</>}
+            empty={<>No source rows from GA4 for {range.startDate} to {range.endDate}. Confirm the GA4 Data API connection on the analytics overview.</>}
           />
         </section>
       )}
@@ -343,7 +354,7 @@ async function TrafficSourcesContent() {
               </CardContent>
             </Card>
           )}
-          empty={<>No first-touch sessions in the last 30 days. The WordPress + Next.js tracking snippet has to fire for these to populate.</>}
+          empty={<>No first-touch sessions for {range.startDate} to {range.endDate}. The WordPress + Next.js tracking snippet has to fire for these to populate.</>}
         />
       </section>
 
@@ -376,7 +387,7 @@ async function TrafficSourcesContent() {
               </CardContent>
             </Card>
           )}
-          empty={<>No visits in the last 30 days.</>}
+          empty={<>No visits for {range.startDate} to {range.endDate}.</>}
         />
       </section>
 
@@ -465,7 +476,9 @@ async function TrafficSourcesContent() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────
 
-export default async function TrafficSourcesReportPage() {
+export default async function TrafficSourcesReportPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const sp = normalizeParams(await searchParams)
+  const range = resolveDateRange(sp)
   return (
     <div className="space-y-6">
       <header className="space-y-2">
@@ -473,10 +486,11 @@ export default async function TrafficSourcesReportPage() {
         <p className="text-sm text-muted-foreground">
           Where every visitor came from. Joins GA4 with our own <code className="rounded bg-muted px-1">visits</code> + <code className="rounded bg-muted px-1">visitor_sessions</code> tables so you can spot the gaps between what each platform reports as outbound clicks and what GA4 actually attributes. Includes a list of platforms you should tag with canonical UTMs.
         </p>
+        <DateRangePicker current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
       </header>
 
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
-        <TrafficSourcesContent />
+        <TrafficSourcesContent range={range} />
       </Suspense>
     </div>
   )

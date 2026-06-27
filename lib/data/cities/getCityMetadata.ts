@@ -6,6 +6,7 @@
  */
 
 import { supabaseAnon } from '@/lib/data/client'
+import { createServiceClient } from '@/lib/supabase/service'
 
 export type CityMetadata = {
   name: string
@@ -113,25 +114,27 @@ export async function getAllCommunitiesForAdminUpload(): Promise<Array<{
   }>
 }
 
-/** Generic update of a hero-bearing entity row by id (cities | neighborhoods | communities). */
+/** Generic update of a hero-bearing entity row by id (cities | neighborhoods | communities).
+ * P0-2 fix: uses service-role client so is_super_admin() RLS policies pass for admin writes.
+ */
 export async function updateHeroEntityById(
   table: 'cities' | 'neighborhoods' | 'communities',
   id: string,
   updates: Record<string, string>
 ): Promise<{ ok: boolean; error?: string }> {
-  const sb = supabaseAnon()
-  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const sb = createServiceClient()
   const { error } = await sb.from(table).update(updates).eq('id', id)
   return error ? { ok: false, error: error.message } : { ok: true }
 }
 
-/** Insert a new city / neighborhood / community row from area-guide upload. */
+/** Insert a new city / neighborhood / community row from area-guide upload.
+ * P0-2 fix: uses service-role client so is_super_admin() RLS policies pass for admin writes.
+ */
 export async function insertHeroEntityRow(
   table: 'cities' | 'neighborhoods' | 'communities',
   row: Record<string, unknown>
 ): Promise<{ id: string; name: string; slug: string } | null> {
-  const sb = supabaseAnon()
-  if (!sb) return null
+  const sb = createServiceClient()
   const { data, error } = await sb
     .from(table)
     .insert(row)
@@ -146,6 +149,7 @@ export async function getPageImageUrlsForPage(
   pageType: string,
   pageId: string
 ): Promise<string[]> {
+  // Read-only; anon client is fine here (page_images readable without admin role).
   const sb = supabaseAnon()
   if (!sb) return []
   const { data } = await sb
@@ -158,14 +162,14 @@ export async function getPageImageUrlsForPage(
     .filter(Boolean)
 }
 
+/** P0-2 fix: uses service-role client so is_super_admin() RLS policies pass for admin writes. */
 export async function insertPageImageRow(row: {
   page_type: string
   page_id: string
   image_url: string
   source: string
 }): Promise<{ ok: boolean; error?: string }> {
-  const sb = supabaseAnon()
-  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const sb = createServiceClient()
   const { error } = await sb.from('page_images').insert(row)
   return error ? { ok: false, error: error.message } : { ok: true }
 }

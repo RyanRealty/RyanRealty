@@ -1,5 +1,5 @@
-// /admin/analytics/google-search - surfaces 60 days of GSC data already
-// ingesting into marketing_channel_daily. Top queries, top pages, easy wins.
+// /admin/analytics/google-search - surfaces GSC data from marketing_channel_daily.
+// Top queries, top pages, easy wins.
 import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -7,9 +7,18 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
 import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
+import { DateRangePicker } from '../_components/DateRangePicker'
+import { resolveDateRange } from '../_lib/queries'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+type SearchParams = Record<string, string | string[] | undefined>
+function normalizeParams(sp: SearchParams): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = {}
+  for (const [k, v] of Object.entries(sp)) out[k] = Array.isArray(v) ? v[0] : v
+  return out
+}
 
 function sup() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -27,12 +36,13 @@ const stripP = (s: string) => { try { return new URL(s).pathname || '/' } catch 
 type Agg = { clicks: number; impressions: number; ctrSum: number; ctrN: number; posSum: number; posN: number }
 type Row = { key: string; clicks: number; impressions: number; ctr: number; position: number }
 
-async function aggBy(scope: 'campaign' | 'page', sinceDate: string): Promise<Row[]> {
-  const { data } = await sup().from('marketing_channel_daily')
+async function aggBy(scope: 'campaign' | 'page', sinceDate: string, untilDate?: string): Promise<Row[]> {
+  const q = sup().from('marketing_channel_daily')
     .select('scope_id, metric, value')
     .eq('channel', 'gsc').eq('scope', scope)
     .in('metric', ['clicks', 'impressions', 'ctr', 'position'])
     .gte('date', sinceDate).limit(50000)
+  const { data } = await (untilDate ? q.lte('date', untilDate) : q)
   const m = new Map<string, Agg>()
   for (const raw of (data ?? [])) {
     const r = raw as { scope_id: string; metric: string; value: number }
@@ -53,10 +63,9 @@ async function aggBy(scope: 'campaign' | 'page', sinceDate: string): Promise<Row
   }))
 }
 
-async function HeadlineKpis() {
-  const since = new Date(Date.now() - 30 * 86400e3).toISOString().slice(0, 10)
+async function HeadlineKpis({ sinceDate, endDate }: { sinceDate: string; endDate: string }) {
   const { data: cur } = await sup().from('marketing_channel_daily').select('metric, value')
-    .eq('channel', 'gsc').eq('scope', 'account').gte('date', since)
+    .eq('channel', 'gsc').eq('scope', 'account').gte('date', sinceDate).lte('date', endDate)
   const acc = { clicks: 0, impressions: 0, ctrSum: 0, ctrN: 0, posSum: 0, posN: 0 }
   for (const r of (cur ?? []) as Array<{ metric: string; value: number }>) {
     const v = Number(r.value) || 0
@@ -74,8 +83,8 @@ async function HeadlineKpis() {
   return (
     <DashboardSummaryStrip
       stats={[
-        { label: 'Clicks (30d)', value: fmt(c.clicks) },
-        { label: 'Impressions (30d)', value: fmt(c.impressions) },
+        { label: `Clicks (${sinceDate} to ${endDate})`, value: fmt(c.clicks) },
+        { label: 'Impressions', value: fmt(c.impressions) },
         { label: 'Avg CTR', value: pct(c.ctr) },
         { label: 'Avg position', value: pos(c.pos) },
       ]}
@@ -83,14 +92,13 @@ async function HeadlineKpis() {
   )
 }
 
-async function TopQueries() {
-  const since = new Date(Date.now() - 30 * 86400e3).toISOString().slice(0, 10)
-  const rows = await aggBy('campaign', since)
+async function TopQueries({ sinceDate, endDate }: { sinceDate: string; endDate: string }) {
+  const rows = await aggBy('campaign', sinceDate, endDate)
   const top = rows.sort((a, b) => b.clicks - a.clicks)
   return (
     <section className="space-y-2">
       <div className="space-y-1">
-        <h2 className="text-base font-semibold text-foreground">Top queries by clicks (30d)</h2>
+        <h2 className="text-base font-semibold text-foreground">Top queries by clicks</h2>
         <p className="text-xs text-muted-foreground">What people typed in Google that brought them to ryan-realty.com. Average position 1-10 is page one; 11-20 is page two.</p>
       </div>
       <TableWithMobileCards
@@ -118,15 +126,14 @@ async function TopQueries() {
             </CardContent>
           </Card>
         )}
-        empty={<>No GSC query data in the last 30 days. The GSC snapshot cron has a 2-3 day processing lag, so very recent ranges can be empty.</>}
+        empty={<>No GSC query data for this date range. The GSC snapshot cron has a 2-3 day processing lag, so very recent ranges can be empty.</>}
       />
     </section>
   )
 }
 
-async function OpportunityQueries() {
-  const since = new Date(Date.now() - 30 * 86400e3).toISOString().slice(0, 10)
-  const rows = await aggBy('campaign', since)
+async function OpportunityQueries({ sinceDate, endDate }: { sinceDate: string; endDate: string }) {
+  const rows = await aggBy('campaign', sinceDate, endDate)
   // High impressions, low CTR, decent rank (page 1 or 2). Easy SEO wins.
   const opp = rows
     .filter((r) => r.impressions >= 30 && r.ctr < 0.02 && r.position > 0 && r.position <= 20)
@@ -174,14 +181,13 @@ async function OpportunityQueries() {
   )
 }
 
-async function TopPages() {
-  const since = new Date(Date.now() - 30 * 86400e3).toISOString().slice(0, 10)
-  const rows = await aggBy('page', since)
+async function TopPages({ sinceDate, endDate }: { sinceDate: string; endDate: string }) {
+  const rows = await aggBy('page', sinceDate, endDate)
   const top = rows.sort((a, b) => b.clicks - a.clicks)
   return (
     <section className="space-y-2">
       <div className="space-y-1">
-        <h2 className="text-base font-semibold text-foreground">Top pages by clicks (30d)</h2>
+        <h2 className="text-base font-semibold text-foreground">Top pages by clicks</h2>
         <p className="text-xs text-muted-foreground">Which pages on ryan-realty.com pulled the most organic traffic from Google.</p>
       </div>
       <TableWithMobileCards
@@ -206,25 +212,28 @@ async function TopPages() {
             </CardContent>
           </Card>
         )}
-        empty={<>No GSC page data in the last 30 days.</>}
+        empty={<>No GSC page data for this date range.</>}
       />
     </section>
   )
 }
 
-export default async function GscPage() {
+export default async function GscPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const sp = normalizeParams(await searchParams)
+  const range = resolveDateRange(sp)
   return (
     <div className="space-y-6">
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold text-foreground">Google Search</h1>
         <p className="text-sm text-muted-foreground">
-          What people search to find Ryan Realty, which pages rank for what, and where the easy SEO wins are. Sourced from the GSC snapshot cron, last 30 days. GSC data has a 2-3 day processing lag.
+          What people search to find Ryan Realty, which pages rank for what, and where the easy SEO wins are. Sourced from the GSC snapshot cron. GSC data has a 2-3 day processing lag.
         </p>
+        <DateRangePicker current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
       </header>
-      <Suspense fallback={<Skeleton className="h-24 w-full" />}><HeadlineKpis /></Suspense>
-      <Suspense fallback={<Skeleton className="h-96 w-full" />}><OpportunityQueries /></Suspense>
-      <Suspense fallback={<Skeleton className="h-96 w-full" />}><TopQueries /></Suspense>
-      <Suspense fallback={<Skeleton className="h-96 w-full" />}><TopPages /></Suspense>
+      <Suspense fallback={<Skeleton className="h-24 w-full" />}><HeadlineKpis sinceDate={range.startDate} endDate={range.endDate} /></Suspense>
+      <Suspense fallback={<Skeleton className="h-96 w-full" />}><OpportunityQueries sinceDate={range.startDate} endDate={range.endDate} /></Suspense>
+      <Suspense fallback={<Skeleton className="h-96 w-full" />}><TopQueries sinceDate={range.startDate} endDate={range.endDate} /></Suspense>
+      <Suspense fallback={<Skeleton className="h-96 w-full" />}><TopPages sinceDate={range.startDate} endDate={range.endDate} /></Suspense>
     </div>
   )
 }

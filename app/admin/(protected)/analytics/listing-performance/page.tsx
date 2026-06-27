@@ -13,9 +13,18 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
 import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
+import { DateRangePicker } from '../_components/DateRangePicker'
+import { resolveDateRange } from '../_lib/queries'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+type SearchParams = Record<string, string | string[] | undefined>
+function normalizeParams(sp: SearchParams): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = {}
+  for (const [k, v] of Object.entries(sp)) out[k] = Array.isArray(v) ? v[0] : v
+  return out
+}
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -30,27 +39,30 @@ function fmtUsd(n: number | null): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 }
 
-async function ListingLeaderboard() {
+async function ListingLeaderboard({ range }: { range: { startDate: string; endDate: string } }) {
   const supabase = getSupabase()
-  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  const since = `${range.startDate}T00:00:00.000Z`
+  const until = `${range.endDate}T23:59:59.999Z`
 
-  // Pull listing_view events from the last 30 days, then aggregate in JS
+  // Pull listing_view events for the selected range, then aggregate in JS
   const { data: events, error } = await supabase
     .from('visitor_events')
     .select('session_id, listing_mls, listing_street, listing_city, listing_state, listing_price, page_url, event_at, source_domain')
     .eq('event_type', 'listing_view')
     .not('listing_mls', 'is', null)
     .gte('event_at', since)
+    .lte('event_at', until)
     .limit(50000)
   if (error) {
     return <Card><CardContent className="p-6 text-sm text-destructive">Could not load listing events: {error.message}</CardContent></Card>
   }
   const evRows = (events ?? []) as Array<{ session_id: string; listing_mls: string; listing_street: string | null; listing_city: string | null; listing_state: string | null; listing_price: number | null; page_url: string; event_at: string; source_domain: string }>
+  const eventsCapped = evRows.length === 50000
   if (evRows.length === 0) {
     return (
       <Card>
         <CardContent className="p-6 text-sm text-muted-foreground">
-          No listing-detail page views captured in the last 30 days yet. Once visitors browse listings with consent granted, the leaderboard fills in. Listing views weight 10 points each in the engagement score.
+          No listing-detail page views captured for {range.startDate} to {range.endDate} yet. Once visitors browse listings with consent granted, the leaderboard fills in. Listing views weight 10 points each in the engagement score.
         </CardContent>
       </Card>
     )
@@ -144,10 +156,15 @@ async function ListingLeaderboard() {
 
   return (
     <div className="space-y-6">
+      {eventsCapped && (
+        <p className="text-xs text-warning">
+          Showing first 50,000 events — result capped. Narrow the date range to see complete data.
+        </p>
+      )}
       <DashboardSummaryStrip
         stats={[
           { label: 'Listings viewed', value: fmtInt(rows.length) },
-          { label: 'Total views (30d)', value: fmtInt(totalViews) },
+          { label: `Total views (${range.startDate} to ${range.endDate})`, value: fmtInt(totalViews) },
           { label: 'Identified', value: fmtInt(totalIdentified) },
           { label: 'Hot leads', value: fmtInt(totalHot), tone: totalHot > 0 ? 'success' : 'default' },
         ]}
@@ -155,7 +172,7 @@ async function ListingLeaderboard() {
 
       <section className="space-y-2">
         <div className="space-y-1">
-          <h2 className="text-base font-semibold text-foreground">Listing performance (last 30 days)</h2>
+          <h2 className="text-base font-semibold text-foreground">Listing performance ({range.startDate} to {range.endDate})</h2>
           <p className="text-xs text-muted-foreground">
             Ranked by total views. Identify rate is the share of unique visitors who signed in or converted while viewing this listing. Hot column is sessions that crossed score 100 anywhere in the funnel and viewed this listing along the way.
           </p>
@@ -212,18 +229,21 @@ async function ListingLeaderboard() {
   )
 }
 
-export default async function ListingPerformancePage() {
+export default async function ListingPerformancePage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const sp = normalizeParams(await searchParams)
+  const range = resolveDateRange(sp)
   return (
     <div className="space-y-6">
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold text-foreground">Listing performance</h1>
         <p className="text-sm text-muted-foreground">
-          Which listings drive the most engagement, and which converted visitors into identified leads. Sourced from <code>visitor_events</code> where event_type = listing_view, last 30 days.
+          Which listings drive the most engagement, and which converted visitors into identified leads. Sourced from <code>visitor_events</code> where event_type = listing_view.
         </p>
+        <DateRangePicker current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
       </header>
 
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
-        <ListingLeaderboard />
+        <ListingLeaderboard range={range} />
       </Suspense>
     </div>
   )

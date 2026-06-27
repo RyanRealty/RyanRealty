@@ -38,9 +38,18 @@ import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
 import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
 import { getGA4Summary, type GA4Summary } from '@/app/actions/ga4-report'
 import { countCmasInRange } from '@/lib/data/sync/syncWrites'
+import { DateRangePicker } from '@/app/admin/(protected)/analytics/_components/DateRangePicker'
+import { resolveDateRange } from '@/app/admin/(protected)/analytics/_lib/queries'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+type SearchParams = Record<string, string | string[] | undefined>
+function normalizeParams(sp: SearchParams): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = {}
+  for (const [k, v] of Object.entries(sp)) out[k] = Array.isArray(v) ? v[0] : v
+  return out
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -178,11 +187,12 @@ function statusLabel(s: WiringStatus): string {
 
 // ─── The async data content ───────────────────────────────────────────────
 
-async function LeadFlowContent() {
-  const lookbackDays = 30
-  const cutoffIso = isoNDaysAgo(lookbackDays)
-  const startDate = `${lookbackDays}daysAgo`
-  const endDate = 'today'
+async function LeadFlowContent({ range }: { range: { startDate: string; endDate: string } }) {
+  const cutoffIso = `${range.startDate}T00:00:00.000Z`
+  const startDate = range.startDate
+  const endDate = range.endDate
+  const lookbackDays = Math.round((new Date(range.endDate).getTime() - new Date(range.startDate).getTime()) / (24 * 60 * 60 * 1000)) + 1
+  const windowLabel = `${range.startDate} to ${range.endDate}`
 
   const supabase = getServiceSupabase()
 
@@ -322,17 +332,17 @@ async function LeadFlowContent() {
       {/* 1. Hero metrics */}
       <DashboardSummaryStrip
         stats={[
-          { label: 'Sessions (30d)', value: formatInt(ga4Sessions), caption: 'GA4, all sources' },
-          { label: 'Lead events (30d)', value: formatInt(ga4LeadEvents), caption: 'GA4 generate_lead + siblings' },
-          { label: 'Broker assignments (30d)', value: formatInt(totalAssignments), caption: 'marketing_assignments rows' },
-          { label: 'CMAs created (30d)', value: formatInt(cmaCount), caption: 'cmas table inserts' },
+          { label: `Sessions (${windowLabel})`, value: formatInt(ga4Sessions), caption: 'GA4, all sources' },
+          { label: `Lead events (${windowLabel})`, value: formatInt(ga4LeadEvents), caption: 'GA4 generate_lead + siblings' },
+          { label: `Broker assignments (${windowLabel})`, value: formatInt(totalAssignments), caption: 'marketing_assignments rows' },
+          { label: `CMAs created (${windowLabel})`, value: formatInt(cmaCount), caption: 'cmas table inserts' },
         ]}
       />
 
       {/* 2. End-to-end funnel */}
       <Card>
         <CardHeader>
-          <CardTitle>End-to-end funnel (30 days)</CardTitle>
+          <CardTitle>End-to-end funnel ({windowLabel})</CardTitle>
           <p className="text-xs text-muted-foreground">
             Visitor → engaged → form submit → broker assigned → CMA. Sessions and engagement come from GA4. Submits come from valuation_requests + listing_inquiries. Assignments and CMAs from Supabase canonical tables.
           </p>
@@ -368,7 +378,7 @@ async function LeadFlowContent() {
                 </CardContent>
               </Card>
             )}
-            empty={<>No funnel data in the last 30 days.</>}
+            empty={<>No funnel data for {windowLabel}.</>}
           />
           <p className="mt-3 text-xs text-muted-foreground">
             Sessions-to-assignment conversion rate: <span className="font-medium text-foreground">{formatPct(totalAssignments, ga4Sessions)}</span>. Industry benchmark for real-estate sites with mixed paid + organic traffic is 0.5%–2%; below 0.3% usually means wiring gaps or page-friction issues, not traffic quality.
@@ -456,7 +466,7 @@ async function LeadFlowContent() {
                   </CardContent>
                 </Card>
               )}
-              empty={<>No GA4 lead sources in the last 30 days.</>}
+              empty={<>No GA4 lead sources for {windowLabel}.</>}
             />
           </CardContent>
         </Card>
@@ -466,7 +476,7 @@ async function LeadFlowContent() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Assignments by broker (30d)</CardTitle>
+            <CardTitle>Assignments by broker ({windowLabel})</CardTitle>
           </CardHeader>
           <CardContent>
             <TableWithMobileCards
@@ -493,7 +503,7 @@ async function LeadFlowContent() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Assignments by audience (30d)</CardTitle>
+            <CardTitle>Assignments by audience ({windowLabel})</CardTitle>
           </CardHeader>
           <CardContent>
             <TableWithMobileCards
@@ -546,7 +556,7 @@ async function LeadFlowContent() {
             </>
           ) : (
             <div className="rounded-lg border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-              No assignments recorded in the last 30 days.
+              No assignments recorded for {windowLabel}.
             </div>
           )}
         </CardContent>
@@ -556,7 +566,7 @@ async function LeadFlowContent() {
       {ga4 && ga4.topLeadEvents.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Top GA4 lead-event names (30d)</CardTitle>
+            <CardTitle>Top GA4 lead-event names ({windowLabel})</CardTitle>
             <p className="text-xs text-muted-foreground">
               How the generate_lead family events broke down by name. Use this to spot duplicate naming or events that should be consolidated.
             </p>
@@ -579,7 +589,7 @@ async function LeadFlowContent() {
                   </CardContent>
                 </Card>
               )}
-              empty={<>No GA4 lead-event names in the last 30 days.</>}
+              empty={<>No GA4 lead-event names for {windowLabel}.</>}
             />
           </CardContent>
         </Card>
@@ -601,7 +611,7 @@ async function LeadFlowContent() {
           <strong className="text-foreground">Wiring helpers:</strong> <code className="rounded bg-muted px-1">lib/lead-tracking.ts</code> (fireLeadGenerated), <code className="rounded bg-muted px-1">lib/canonical-lead-tagger.ts</code> (canonicallyTagLead), <code className="rounded bg-muted px-1">lib/ga4-measurement-protocol.ts</code> (fireGa4Event).
         </p>
         <p>
-          <strong className="text-foreground">Methodology:</strong> Sessions counted from GA4 Data API for the property the service account has access to. Lead events filtered to <code className="rounded bg-muted px-1">generate_lead</code>, <code className="rounded bg-muted px-1">listing_inquiry</code>, <code className="rounded bg-muted px-1">home_valuation_cta_click</code>, plus the legacy event names (<code className="rounded bg-muted px-1">contact_agent</code>, <code className="rounded bg-muted px-1">valuation_requested</code>, etc.). Assignments come from <code className="rounded bg-muted px-1">marketing_assignments</code> filtered on <code className="rounded bg-muted px-1">assigned_at &gt;= now() - 30 days</code>.
+          <strong className="text-foreground">Methodology:</strong> Sessions counted from GA4 Data API for the property the service account has access to. Lead events filtered to <code className="rounded bg-muted px-1">generate_lead</code>, <code className="rounded bg-muted px-1">listing_inquiry</code>, <code className="rounded bg-muted px-1">home_valuation_cta_click</code>, plus the legacy event names (<code className="rounded bg-muted px-1">contact_agent</code>, <code className="rounded bg-muted px-1">valuation_requested</code>, etc.). Assignments come from <code className="rounded bg-muted px-1">marketing_assignments</code> filtered on <code className="rounded bg-muted px-1">assigned_at &gt;= {range.startDate}</code>.
         </p>
       </div>
     </div>
@@ -610,7 +620,9 @@ async function LeadFlowContent() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────
 
-export default async function LeadFlowReportPage() {
+export default async function LeadFlowReportPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const sp = normalizeParams(await searchParams)
+  const range = resolveDateRange(sp)
   return (
     <div className="space-y-6">
       <header className="space-y-2">
@@ -618,10 +630,11 @@ export default async function LeadFlowReportPage() {
         <p className="text-sm text-muted-foreground">
           End-to-end visibility from GA4 session to broker-assigned lead. Joins GA4 Data API with the Supabase canonical tables (marketing_assignments, valuation_requests, listing_inquiries, cmas). Use the wiring-health section to spot lead surfaces with traffic but no recorded leads.
         </p>
+        <DateRangePicker current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
       </header>
 
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
-        <LeadFlowContent />
+        <LeadFlowContent range={range} />
       </Suspense>
     </div>
   )

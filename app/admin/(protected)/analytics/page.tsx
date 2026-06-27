@@ -367,33 +367,16 @@ async function BehaviorTab({ range }: { range: { startDate: string; endDate: str
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Scroll-depth funnel (estimated)</CardTitle>
+          <CardTitle className="text-base">Scroll-depth events</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="mb-3 text-xs text-muted-foreground">
-            Distribution across milestones is estimated from the aggregate scroll_depth event count. A future iteration will pull the per-milestone breakdown directly via the GA4 percent_scrolled param.
+            Total scroll_depth events fired in this range. GA4 does not expose per-milestone breakdowns via the Data API aggregation used here — only the aggregate count is real.
           </p>
-          {d.scrollDepths.every((s) => s.eventCount === 0) ? (
+          {d.scrollTotal === 0 ? (
             <p className="text-sm text-muted-foreground">No scroll_depth events in this range.</p>
           ) : (
-            <div className="overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="whitespace-nowrap">Milestone</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">Events (est.)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {d.scrollDepths.map((s) => (
-                  <TableRow key={s.milestone}>
-                    <TableCell className="font-medium whitespace-nowrap">{s.milestone}%</TableCell>
-                    <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(s.eventCount)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            </div>
+            <p className="text-2xl font-semibold tabular-nums">{formatInt(d.scrollTotal)}</p>
           )}
         </CardContent>
       </Card>

@@ -185,29 +185,30 @@ export type BehaviorData = {
     users: number
     avgEngagementTimeSeconds: number
   }[]
-  scrollDepths: { milestone: 25 | 50 | 75 | 100; eventCount: number }[]
+  /**
+   * Aggregate scroll_depth event count from GA4 topEvents.
+   * Per-milestone breakdown (25/50/75/100%) is NOT available in the existing
+   * GA4 report and has been intentionally removed (D12 data-accuracy fix —
+   * the prior code fabricated per-milestone ratios, violating §0).
+   * Surface this total only; label it clearly in the UI.
+   */
+  scrollTotal: number
 }
 
 export async function fetchBehavior(range: DateRange): Promise<BehaviorData> {
   const summaryRes = await getGA4SummaryCached(range.startDate, range.endDate)
-  if (!summaryRes.ok) return { pages: [], scrollDepths: [] }
+  if (!summaryRes.ok) return { pages: [], scrollTotal: 0 }
   const d = summaryRes.data
 
-  // scroll_depth events live in topEvents (aggregate). We don't have the
-  // per-milestone breakdown in the existing GA4 report — surface the total
-  // and label it. A future iteration adds per-milestone via a new GA4 call
-  // dimensioned by event_param `percent_scrolled`.
+  // scroll_depth events live in topEvents (aggregate). The per-milestone
+  // breakdown (25/50/75/100%) requires a separate GA4 report dimensioned by
+  // event_param `percent_scrolled` that is not yet wired. We expose ONLY the
+  // aggregate total so no fabricated numbers appear in the UI. (D12 fix)
   const scrollTotal = d.topEvents.find((e) => e.eventName === 'scroll_depth')?.eventCount ?? 0
-  const scrollDepths: { milestone: 25 | 50 | 75 | 100; eventCount: number }[] = [
-    { milestone: 25, eventCount: Math.round(scrollTotal * 0.45) },
-    { milestone: 50, eventCount: Math.round(scrollTotal * 0.28) },
-    { milestone: 75, eventCount: Math.round(scrollTotal * 0.17) },
-    { milestone: 100, eventCount: Math.round(scrollTotal * 0.10) },
-  ]
 
   return {
     pages: d.topPages.slice(0, 20),
-    scrollDepths,
+    scrollTotal,
   }
 }
 

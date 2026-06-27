@@ -210,3 +210,15 @@ export async function saveGuide(input: {
   if (error) return { ok: false, error: error.message }
   return { ok: true }
 }
+
+/** P1-2: Delete a guide by id. Superuser-only operation (called from admin UI). */
+export async function deleteGuide(id: string): Promise<{ ok: boolean; error?: string }> {
+  if (!id?.trim()) return { ok: false, error: 'No guide id provided.' }
+  const supabase = createServiceClient()
+  const { error } = await supabase.from('guides').delete().eq('id', id)
+  if (error) {
+    console.error('[deleteGuide]', error)
+    return { ok: false, error: error.message }
+  }
+  return { ok: true }
+}

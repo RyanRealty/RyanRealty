@@ -1,5 +1,6 @@
 'use server'
 
+import { createServiceClient } from '@/lib/supabase/service'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { logAdminAction } from '@/app/actions/log-admin-action'
@@ -25,6 +26,8 @@ export type AdminListingEditable = {
   adminNotes: string | null
   marketingHeadline: string | null
   featured: boolean
+  // P1-4: media suppression flag — gates getListingPhotos/getListingVideos/getListingDetail.photoUrl
+  mediaSuppressed: boolean
   photos: ListingPhotoRow[]
 }
 
@@ -63,6 +66,8 @@ export async function getAdminListingEditableData(listingKey: string): Promise<A
     adminNotes: typeof overrides.admin_notes === 'string' ? overrides.admin_notes : null,
     marketingHeadline: typeof overrides.marketing_headline === 'string' ? overrides.marketing_headline : null,
     featured: overrides.featured === true,
+    // P1-4: pass media_suppressed through so the editor can display and toggle it
+    mediaSuppressed: listing.media_suppressed === true,
     photos,
   }
 }
@@ -209,5 +214,44 @@ export async function reorderAdminListingPhotos(input: {
     resourceId: key,
     details: { reordered_count: input.orderedPhotoIds.length },
   })
+  return { ok: true }
+}
+
+/**
+ * P1-4: Toggle the media_suppressed flag on a listing.
+ * When true, getListingPhotos() + getListingDetail.photoUrl() return null/empty
+ * — the owner-photo-removal mechanism per MEMORY.md reference_listing_media_suppression.md.
+ * Superuser-only. Logged to admin_actions audit trail.
+ */
+export async function updateAdminListingMediaSuppressed(input: {
+  listingKey: string
+  mediaSuppressed: boolean
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const access = await requireSuperuser()
+  if (!access.ok) return { ok: false, error: access.error }
+
+  const key = normalizeListingKey(input.listingKey)
+  if (!key) return { ok: false, error: 'No listing key provided.' }
+
+  const supabase = createServiceClient()
+  const { error } = await supabase
+    .from('listings')
+    .update({ media_suppressed: input.mediaSuppressed })
+    .or(`"ListingKey".eq.${key},"ListNumber".eq.${key}`)
+
+  if (error) {
+    console.error('[updateAdminListingMediaSuppressed]', error)
+    return { ok: false, error: error.message }
+  }
+
+  await logAdminAction({
+    adminEmail: access.adminEmail,
+    role: access.role,
+    actionType: 'update',
+    resourceType: 'listing',
+    resourceId: key,
+    details: { media_suppressed: input.mediaSuppressed },
+  })
+
   return { ok: true }
 }

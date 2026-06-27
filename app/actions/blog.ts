@@ -192,12 +192,13 @@ export async function getRelatedBlogPosts(
 export async function getAdminBlogPosts(): Promise<BlogPostWithAuthor[]> {
   const supabase = getServiceSupabase()
   if (!supabase) return []
+  // P1-1 fix: include content and tags so the edit form can pre-populate them.
   const { data } = await supabase
     .from('blog_posts')
-    .select('id, title, slug, excerpt, category, hero_image_url, published_at, author_broker_id, seo_title, seo_description')
+    .select('id, title, slug, content, excerpt, category, tags, hero_image_url, published_at, author_broker_id, seo_title, seo_description')
     .order('published_at', { ascending: false, nullsFirst: true })
     .limit(500)
-  return ((data ?? []) as BlogPostRow[]).map((p) => ({
+  return ((data ?? []) as (BlogPostRow & { content?: string | null; tags?: string[] | null })[]).map((p) => ({
     ...p,
     author_name: null,
     author_slug: null,
@@ -244,6 +245,10 @@ export async function saveBlogPost(input: {
     console.error('[saveBlogPost]', error)
     return { ok: false, error: error.message }
   }
+  // Revalidate public and admin blog routes after save/update
+  const { revalidatePath } = await import('next/cache')
+  revalidatePath('/blog')
+  revalidatePath('/admin/blog')
   return { ok: true }
 }
 

@@ -143,7 +143,11 @@ export default async function TcFormsPage({ searchParams }: Props) {
                             Open blank
                           </a>
                         </Button>
-                      ) : null}
+                      ) : (
+                        <div className="mt-3 flex h-11 w-full items-center justify-center rounded-md border border-border bg-muted/30 px-3">
+                          <span className="text-xs text-muted-foreground">Blank unavailable</span>
+                        </div>
+                      )}
                     </div>
                   ))}
 
@@ -222,7 +226,13 @@ export default async function TcFormsPage({ searchParams }: Props) {
                                 Open
                               </a>
                             ) : (
-                              '—'
+                              <Badge
+                                variant="outline"
+                                className="text-xs text-muted-foreground"
+                                aria-label="Blank PDF not yet available for this form"
+                              >
+                                Unavailable
+                              </Badge>
                             )}
                           </TableCell>
                         </TableRow>

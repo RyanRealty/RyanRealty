@@ -232,6 +232,40 @@ async function MetaHealthContent() {
     actions.push({ severity: 'info', message: 'All Meta infrastructure checks pass.' })
   }
 
+  // D11 — detect Meta token errors and surface a clear hero alert instead
+  // of silently showing empty tables.
+  const pageError = (page as { error?: { message: string; code?: number } }).error
+  const tokenMissing = !TOKEN
+
+  if (tokenMissing || pageError) {
+    const msg = tokenMissing
+      ? 'META_PAGE_ACCESS_TOKEN is not set in environment variables.'
+      : `Meta API error (code ${pageError?.code ?? '?'}): ${pageError?.message ?? 'unknown error'}.`
+    const isExpired = pageError?.message?.toLowerCase().includes('expired') || pageError?.message?.toLowerCase().includes('invalid')
+    return (
+      <div className="space-y-6">
+        <Alert variant="destructive">
+          <AlertDescription className="space-y-2 text-sm">
+            <p>
+              <strong>Meta connection error.</strong> {msg}
+              {isExpired && (
+                <> The page access token has expired or been revoked. Reconnect it via{' '}
+                  <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" className="font-medium underline hover:no-underline">
+                    Meta Graph API Explorer
+                  </a>{' '}
+                  and update the <code>META_PAGE_ACCESS_TOKEN</code> environment variable.
+                </>
+              )}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Once the token is refreshed, reload this page. No Meta infrastructure data is available until the token is valid.
+            </p>
+          </AlertDescription>
+        </Alert>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Hero metrics */}

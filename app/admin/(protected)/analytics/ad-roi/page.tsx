@@ -25,24 +25,25 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
 import { KpiCard } from '../_components/KpiCard'
 import { formatInt, formatUsd } from '../_lib/formatters'
+import { DateRangePicker } from '../_components/DateRangePicker'
+import { resolveDateRange } from '../_lib/queries'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-const WINDOW_DAYS = 90
+type SearchParams = Record<string, string | string[] | undefined>
+
+function normalizeParams(sp: SearchParams): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = {}
+  for (const [k, v] of Object.entries(sp)) out[k] = Array.isArray(v) ? v[0] : v
+  return out
+}
 
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url?.trim() || !key?.trim()) throw new Error('Supabase service role not configured')
   return createClient(url, key)
-}
-
-function isoDaysAgo(days: number): string {
-  return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-}
-function tsDaysAgo(days: number): string {
-  return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
 }
 function daysSince(dateStr: string): number {
   const then = new Date(`${dateStr}T00:00:00Z`).getTime()
@@ -83,10 +84,11 @@ type SessionRow = {
   hot_lead_fired_at: string | null
 }
 
-async function AdRoi() {
+async function AdRoi({ range }: { range: { startDate: string; endDate: string } }) {
   const supabase = getServiceSupabase()
-  const sinceDate = isoDaysAgo(WINDOW_DAYS)
-  const sinceTs = tsDaysAgo(WINDOW_DAYS)
+  const sinceDate = range.startDate
+  const sinceTs = `${range.startDate}T00:00:00.000Z`
+  const windowLabel = `${range.startDate} to ${range.endDate}`
 
   const [
     metaAcctRes,
@@ -127,6 +129,7 @@ async function AdRoi() {
     supabase.from('visitor_sessions')
       .select('first_seen_at, utm_source, utm_campaign, identified_at, fub_person_id, hot_lead_fired_at')
       .gte('first_seen_at', sinceTs)
+      .lte('first_seen_at', `${range.endDate}T23:59:59.999Z`)
       .limit(20000),
     // Facebook lead-form submissions captured (count only).
     supabase.from('processed_meta_leads')
@@ -187,6 +190,7 @@ async function AdRoi() {
 
   // ── Sessions by channel ──────────────────────────────────────────────────────
   const sessions = (sessionsRes.data ?? []) as SessionRow[]
+  const sessionsCapped = sessions.length === 20000
   type ChannelAgg = { sessions: number; identified: number; hot: number }
   const byChannel = new Map<string, ChannelAgg>()
   let totalSessions = 0, totalIdentified = 0, totalHot = 0, paidSessions = 0
@@ -236,8 +240,8 @@ async function AdRoi() {
           <ul className="ml-4 list-disc space-y-1 text-muted-foreground">
             <li>
               {totalSpend > 0
-                ? <>You have spent <strong className="text-foreground tabular-nums">{formatUsd(totalSpend)}</strong> on ads that we can see ({formatUsd(metaSpend)} Meta, {formatUsd(googleSpend)} Google) in the last {WINDOW_DAYS} days.</>
-                : <>No ad spend has synced in the last {WINDOW_DAYS} days.</>}
+                ? <>You have spent <strong className="text-foreground tabular-nums">{formatUsd(totalSpend)}</strong> on ads that we can see ({formatUsd(metaSpend)} Meta, {formatUsd(googleSpend)} Google) ({windowLabel}).</>
+                : <>No ad spend has synced ({windowLabel}).</>}
               {' '}
               {spendHealthy
                 ? <>Spend is syncing daily.</>
@@ -248,7 +252,7 @@ async function AdRoi() {
             <li>
               {totalSessions > 0
                 ? <><strong className="text-foreground tabular-nums">{formatInt(totalSessions)}</strong> people visited the site, <strong className="text-foreground tabular-nums">{formatInt(paidSessions)}</strong> of them from a paid channel.</>
-                : <>No site visitors recorded in the last {WINDOW_DAYS} days.</>}
+                : <>No site visitors recorded ({windowLabel}).</>}
               {' '}
               {identityWorking
                 ? <><strong className="text-foreground tabular-nums">{formatInt(totalIdentified)}</strong> of them have been matched to a real person in Follow Up Boss.</>
@@ -265,7 +269,7 @@ async function AdRoi() {
 
       {/* ── Money funnel KPIs ────────────────────────────────────────────────── */}
       <div>
-        <h2 className="mb-2 text-sm font-medium text-muted-foreground">The money funnel (last {WINDOW_DAYS} days)</h2>
+        <h2 className="mb-2 text-sm font-medium text-muted-foreground">The money funnel ({windowLabel})</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <KpiCard label="Ad spend (tracked)" value={formatUsd(totalSpend)} hint={`${formatUsd(metaSpend)} Meta · ${formatUsd(googleSpend)} Google`} />
           <KpiCard label="Visitors from paid ads" value={formatInt(paidSessions)} hint={`of ${formatInt(totalSessions)} total visitors`} />
@@ -289,8 +293,13 @@ async function AdRoi() {
         <div className="space-y-1">
           <h2 className="text-base font-semibold text-foreground">Where your visitors come from</h2>
           <p className="text-xs text-muted-foreground">
-            Every site session in the last {WINDOW_DAYS} days, grouped by the channel that sent it. &quot;Matched to a name&quot; is the count we tied to a real person in Follow Up Boss. That column is the heart of putting a name to a number.
+            Every site session ({windowLabel}), grouped by the channel that sent it. &quot;Matched to a name&quot; is the count we tied to a real person in Follow Up Boss. That column is the heart of putting a name to a number.
           </p>
+          {sessionsCapped && (
+            <p className="text-xs text-warning">
+              Showing first 20,000 sessions — result capped. Narrow the date range to see complete data.
+            </p>
+          )}
         </div>
         <TableWithMobileCards
           rows={channelRows.map(([ch, agg]) => {
@@ -321,7 +330,7 @@ async function AdRoi() {
               </CardContent>
             </Card>
           )}
-          empty={<>No site visitors recorded in the last {WINDOW_DAYS} days. Once the tracking snippet fires on the site, channels appear here.</>}
+          empty={<>No site visitors recorded ({windowLabel}). Once the tracking snippet fires on the site, channels appear here.</>}
         />
         {earliestSession && (
           <p className="text-xs text-muted-foreground">
@@ -357,7 +366,7 @@ async function AdRoi() {
                 </CardContent>
               </Card>
             )}
-            empty={<>No Meta ad spend synced in the last {WINDOW_DAYS} days.</>}
+            empty={<>No Meta ad spend synced ({windowLabel}).</>}
           />
         </section>
 
@@ -383,7 +392,7 @@ async function AdRoi() {
                 </CardContent>
               </Card>
             )}
-            empty={<>No per-campaign spend in the last {WINDOW_DAYS} days. Campaign rows appear once the Meta spend sync writes campaign-scope data.</>}
+            empty={<>No per-campaign spend ({windowLabel}). Campaign rows appear once the Meta spend sync writes campaign-scope data.</>}
           />
         </section>
       </div>
@@ -411,7 +420,7 @@ async function AdRoi() {
                 </CardContent>
               </Card>
             )}
-            empty={<>No days with recorded spend in the last {WINDOW_DAYS} days.</>}
+            empty={<>No days with recorded spend ({windowLabel}).</>}
           />
         </section>
       )}
@@ -497,7 +506,9 @@ async function AdRoi() {
   )
 }
 
-export default function AdRoiPage() {
+export default async function AdRoiPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const sp = normalizeParams(await searchParams)
+  const range = resolveDateRange(sp)
   return (
     <div className="space-y-6">
       <header className="space-y-2">
@@ -505,10 +516,11 @@ export default function AdRoiPage() {
         <p className="text-sm text-muted-foreground">
           Is your ad money turning into real leads, are you wasting it, and what is your return? This page joins what you spend with who actually comes in, and tells you in plain words. It is honest about what the data can and cannot prove yet.
         </p>
+        <DateRangePicker current={sp.range ?? '90d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
       </header>
 
       <Suspense fallback={<Skeleton className="h-[40rem] w-full" />}>
-        <AdRoi />
+        <AdRoi range={range} />
       </Suspense>
     </div>
   )

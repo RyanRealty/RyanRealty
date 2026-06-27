@@ -325,7 +325,16 @@ export async function generateAndStoreBanner(entity: BannerEntity): Promise<{ ok
     entity.entityType === 'city'
       ? getBannerSearchQuery('city', entity.displayName)
       : getBannerSearchQuery('subdivision', entity.displayName, entity.city, entity.isResort)
-  const { url } = await getOrCreatePlaceBanner(entity.entityType, entity.entityKey, searchQuery)
+
+  // P0-1 fix: use fetchPlacePhoto → downloadAndStoreBanner (same pattern as
+  // refreshPlaceBanner) instead of getOrCreatePlaceBanner which only reads back
+  // an existing row and returns null for any entity that has no banner yet.
+  const page = Math.floor(Math.random() * 3) + 1
+  const photo = await fetchPlacePhoto(searchQuery, { page })
+  if (!photo?.url) {
+    return { ok: false, error: 'No photo found. Set UNSPLASH_ACCESS_KEY in .env.local.' }
+  }
+  const url = await downloadAndStoreBanner(entity.entityType, entity.entityKey, photo.url, photo.attribution)
   if (url) {
     await logBannerAudit('create', {
       entityType: entity.entityType,
@@ -336,7 +345,7 @@ export async function generateAndStoreBanner(entity: BannerEntity): Promise<{ ok
     })
     return { ok: true, url }
   }
-  return { ok: false, error: 'No photo found. Set UNSPLASH_ACCESS_KEY in .env.local.' }
+  return { ok: false, error: 'Failed to save image to storage.' }
 }
 
 /**

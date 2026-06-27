@@ -15,9 +15,18 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
 import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
+import { DateRangePicker } from '../_components/DateRangePicker'
+import { resolveDateRange } from '../_lib/queries'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+type SearchParams = Record<string, string | string[] | undefined>
+function normalizeParams(sp: SearchParams): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = {}
+  for (const [k, v] of Object.entries(sp)) out[k] = Array.isArray(v) ? v[0] : v
+  return out
+}
 
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -55,9 +64,10 @@ type LpRow = {
   topCityCounts: Map<string, number>
 }
 
-async function LpLeaderboard() {
+async function LpLeaderboard({ range }: { range: { startDate: string; endDate: string } }) {
   const supabase = getServiceSupabase()
-  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  const cutoff = `${range.startDate}T00:00:00.000Z`
+  const until = `${range.endDate}T23:59:59.999Z`
 
   // Pull sessions whose first-touch landing page is an LP (or hits one of
   // our LP slugs). We classify the variant from `landing_page` then aggregate
@@ -66,6 +76,7 @@ async function LpLeaderboard() {
     .from('visitor_sessions')
     .select('session_id, landing_page, utm_source, utm_medium, utm_campaign, identified_at, hot_lead_fired_at, engagement_score, ip_city')
     .gte('first_seen_at', cutoff)
+    .lte('first_seen_at', until)
     .limit(10000)
   if (error) {
     return <Card><CardContent className="p-6 text-sm text-destructive">Could not load sessions: {error.message}</CardContent></Card>
@@ -149,7 +160,7 @@ async function LpLeaderboard() {
 
       <section className="space-y-2">
         <div className="space-y-1">
-          <h2 className="text-base font-semibold text-foreground">Landing-page conversion leaderboard (last 30 days)</h2>
+          <h2 className="text-base font-semibold text-foreground">Landing-page conversion leaderboard ({range.startDate} to {range.endDate})</h2>
           <p className="text-xs text-muted-foreground">
             Ranked by identify rate (visitors who signed in or submitted a form). Identify rate is what tells you whether the LP works. Hot rate is the broker-action signal — sessions that crossed score 100 and fired a FUB task.
           </p>
@@ -225,18 +236,21 @@ async function LpLeaderboard() {
   )
 }
 
-export default async function LpLeaderboardPage() {
+export default async function LpLeaderboardPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const sp = normalizeParams(await searchParams)
+  const range = resolveDateRange(sp)
   return (
     <div className="space-y-6">
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold text-foreground">LP conversion leaderboard</h1>
         <p className="text-sm text-muted-foreground">
-          Which landing page actually converts. Pulled directly from <code>visitor_sessions</code> with the landing page mapped back to its LP variant slug. Last 30 days, ranked by identify rate.
+          Which landing page actually converts. Pulled directly from <code>visitor_sessions</code> with the landing page mapped back to its LP variant slug. Ranked by identify rate.
         </p>
+        <DateRangePicker current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
       </header>
 
       <Suspense fallback={<Skeleton className="h-64 w-full" />}>
-        <LpLeaderboard />
+        <LpLeaderboard range={range} />
       </Suspense>
     </div>
   )

@@ -3,9 +3,18 @@ import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { DateRangePicker } from '../_components/DateRangePicker'
+import { resolveDateRange } from '../_lib/queries'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+type SearchParams = Record<string, string | string[] | undefined>
+function normalizeParams(sp: SearchParams): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = {}
+  for (const [k, v] of Object.entries(sp)) out[k] = Array.isArray(v) ? v[0] : v
+  return out
+}
 
 function sup() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -38,11 +47,14 @@ async function fetchPeriod(sinceDate: string, untilDate?: string) {
   return out
 }
 
-async function Headlines() {
-  const since = new Date(Date.now() - 30 * 86400e3).toISOString().slice(0, 10)
-  const sincePrior = new Date(Date.now() - 60 * 86400e3).toISOString().slice(0, 10)
-  const untilPrior = since
-  const [cur, prior] = await Promise.all([fetchPeriod(since), fetchPeriod(sincePrior, untilPrior)])
+async function Headlines({ startDate, endDate }: { startDate: string; endDate: string }) {
+  // Compute prior period of same length for comparison
+  const startMs = new Date(`${startDate}T00:00:00Z`).getTime()
+  const endMs = new Date(`${endDate}T00:00:00Z`).getTime()
+  const windowMs = endMs - startMs
+  const priorEndDate = startDate
+  const priorStartDate = new Date(startMs - windowMs).toISOString().slice(0, 10)
+  const [cur, prior] = await Promise.all([fetchPeriod(startDate, endDate), fetchPeriod(priorStartDate, priorEndDate)])
   const totalImpressions = (cur.business_impressions_desktop_search || 0) + (cur.business_impressions_mobile_search || 0)
     + (cur.business_impressions_desktop_maps || 0) + (cur.business_impressions_mobile_maps || 0)
   const priorImpressions = (prior.business_impressions_desktop_search || 0) + (prior.business_impressions_mobile_search || 0)
@@ -60,25 +72,24 @@ async function Headlines() {
   function T(cur: number, prior: number, betterUp = true) {
     const t = delta(cur, prior); if (!t) return null
     const good = betterUp ? t.up : !t.up
-    return <p className={`text-xs tabular-nums ${good ? 'text-green-600' : 'text-destructive'}`}>{t.arrow} {t.pct} vs prior 30d</p>
+    return <p className={`text-xs tabular-nums ${good ? 'text-green-600' : 'text-destructive'}`}>{t.arrow} {t.pct} vs prior period</p>
   }
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Total impressions (30d)</p><p className="mt-1 text-2xl font-semibold tabular-nums">{fmt(totalImpressions)}</p>{T(totalImpressions, priorImpressions)}</CardContent></Card>
-      <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Actions taken (30d)</p><p className="mt-1 text-2xl font-semibold tabular-nums">{fmt(actions)}</p>{T(actions, priorActions)}</CardContent></Card>
+      <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Total impressions</p><p className="mt-1 text-2xl font-semibold tabular-nums">{fmt(totalImpressions)}</p>{T(totalImpressions, priorImpressions)}</CardContent></Card>
+      <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Actions taken</p><p className="mt-1 text-2xl font-semibold tabular-nums">{fmt(actions)}</p>{T(actions, priorActions)}</CardContent></Card>
       <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Action rate</p><p className="mt-1 text-2xl font-semibold tabular-nums">{(actionRate * 100).toFixed(2)}%</p>{T(actionRate, priorActionRate)}</CardContent></Card>
-      <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Phone calls (30d)</p><p className="mt-1 text-2xl font-semibold tabular-nums">{fmt(cur.call_clicks || 0)}</p>{T(cur.call_clicks || 0, prior.call_clicks || 0)}</CardContent></Card>
+      <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Phone calls</p><p className="mt-1 text-2xl font-semibold tabular-nums">{fmt(cur.call_clicks || 0)}</p>{T(cur.call_clicks || 0, prior.call_clicks || 0)}</CardContent></Card>
     </div>
   )
 }
 
-async function MetricBreakdown() {
-  const since = new Date(Date.now() - 30 * 86400e3).toISOString().slice(0, 10)
-  const cur = await fetchPeriod(since)
+async function MetricBreakdown({ startDate, endDate }: { startDate: string; endDate: string }) {
+  const cur = await fetchPeriod(startDate, endDate)
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Full metric breakdown (last 30 days)</CardTitle>
+        <CardTitle>Full metric breakdown ({startDate} to {endDate})</CardTitle>
         <p className="text-xs text-muted-foreground">Every GBP signal we collect. Mobile Search impressions usually dominates for local real estate (most &ldquo;realtor near me&rdquo; searches happen on phone).</p>
       </CardHeader>
       <CardContent>
@@ -96,17 +107,20 @@ async function MetricBreakdown() {
   )
 }
 
-export default async function GbpPage() {
+export default async function GbpPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const sp = normalizeParams(await searchParams)
+  const range = resolveDateRange(sp)
   return (
     <div className="space-y-6">
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold text-foreground">Google Business Profile</h1>
         <p className="text-sm text-muted-foreground">
-          What Google Maps + local Search is doing for Ryan Realty. Profile impressions, calls, direction requests, website clicks. Last 30 days with prior-30-day comparison.
+          What Google Maps + local Search is doing for Ryan Realty. Profile impressions, calls, direction requests, website clicks. Comparison to the prior period of equal length.
         </p>
+        <DateRangePicker current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
       </header>
-      <Suspense fallback={<Skeleton className="h-24 w-full" />}><Headlines /></Suspense>
-      <Suspense fallback={<Skeleton className="h-64 w-full" />}><MetricBreakdown /></Suspense>
+      <Suspense fallback={<Skeleton className="h-24 w-full" />}><Headlines startDate={range.startDate} endDate={range.endDate} /></Suspense>
+      <Suspense fallback={<Skeleton className="h-64 w-full" />}><MetricBreakdown startDate={range.startDate} endDate={range.endDate} /></Suspense>
     </div>
   )
 }

@@ -1,6 +1,7 @@
 'use server'
 
 import type { ListingTileRow } from './listings'
+import type { GetListingTilesFilter } from '@/lib/data/listings/getListingTiles'
 
 const SELECT =
   'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, StandardStatus, ModificationTimestamp, OnMarketDate'
@@ -20,16 +21,18 @@ export async function getAdminListingsPage(
   }
   void SELECT
   // DAL: admin listings list via listing_tile_mv. Filters: status bucket +
-  // free-text searchQuery. Result count derived from result.length given the
-  // MV-sized result set is small enough for admin paging.
-  const { getListingTiles } = await import('@/lib/data')
-  const dalStatus =
+  // free-text searchQuery.
+  // P2-1 fix: use getListingTilesCount() for the true total instead of
+  // tiles.length (which was always ≤ pageSize, permanently stuck on page 1).
+  const { getListingTiles, getListingTilesCount } = await import('@/lib/data')
+  const dalStatus = (
     status === 'Active' ? 'active' :
     status === 'Pending' ? 'pending-only' :
     status === 'Closed' ? 'closed' :
     'all'
+  ) as 'active' | 'pending-only' | 'closed' | 'all'
   const from = page * pageSize
-  const tiles = await getListingTiles({
+  const filter: GetListingTilesFilter = {
     status: dalStatus,
     searchQuery: search?.trim() ? search.trim() : undefined,
     // scope:'all' — the admin listing browser intentionally covers the full
@@ -37,12 +40,21 @@ export async function getAdminListingsPage(
     // rows admins may need to inspect; audit P0-3).
     scope: 'all',
     sort: 'newest',
-    limit: from + pageSize,
-  })
-  const rows = tiles.slice(from, from + pageSize).map((t) => ({
+    limit: pageSize,
+    offset: from,
+  }
+  const [tiles, total] = await Promise.all([
+    getListingTiles(filter),
+    getListingTilesCount(filter),
+  ])
+  const rows = tiles.map((t) => ({
     ListingKey: t.listingKey,
     ListNumber: t.listNumber,
     ListPrice: t.listPrice,
+    // P2-2 fix: include beds/baths in the row mapping (were missing, causing
+    // BedroomsTotal and BathroomsTotal to always show — on every listing).
+    BedroomsTotal: t.beds,
+    BathroomsTotal: t.baths,
     StreetNumber: t.streetNumber,
     StreetName: t.streetName,
     City: t.city,
@@ -55,5 +67,5 @@ export async function getAdminListingsPage(
     CloseDate: t.closeDate,
     PhotoURL: t.photoUrl,
   })) as unknown as AdminListingRow[]
-  return { rows, total: tiles.length }
+  return { rows, total }
 }
