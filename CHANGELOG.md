@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.638.7 (2026-06-27)
+
+### Bug Fixes
+- fix(admin): dashboard filter-pill group overflowed 120px on mobile
+
+---
+
+
 ## v1.638.6 (2026-06-26)
 
 ### Maintenance
