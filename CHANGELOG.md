@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.648.0 (2026-06-27)
+
+### Features
+- feat(seo): community pages — buyer CTA, email/listing-alert capture, generic STR note
+
+---
+
+
 ## v1.647.0 (2026-06-27)
 
 ### Features
