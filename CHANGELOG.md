@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.638.10 (2026-06-27)
+
+### Bug Fixes
+- fix(reports): §0 — admin market report computed a wrong, non-SFR median
+
+---
+
+
 ## v1.638.9 (2026-06-27)
 
 ### Bug Fixes
