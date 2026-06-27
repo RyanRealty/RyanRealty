@@ -265,6 +265,12 @@ export default function VisitTracker({ userId, userEmail }: Props) {
   useEffect(() => {
     const onConsent = () => {
       if (hasAnalyticsConsent() && pathname) {
+        // Only fire if the main effect did NOT already track this view (consent was
+        // off at load and just got granted). Without this guard, an auto-grant on
+        // load double-fires the event and doubles property-view counts.
+        const key = pathname + (userId ?? 'anon')
+        if (tracked.current === key) return
+        tracked.current = key
         const visitId = getOrCreateVisitId()
         if (visitId) {
           trackVisit({
