@@ -1,9 +1,10 @@
 'use server'
 
 import { cookies } from 'next/headers'
-import { sendEvent } from '@/lib/followupboss'
+import { sendEvent, findPersonByEmail } from '@/lib/followupboss'
 import { fireGa4Event, readGa4ClientIdFromCookies } from '@/lib/ga4-measurement-protocol'
-import { backfillSessionToFub } from '@/lib/visitor-backfill'
+import { backfillSessionToFub, stitchVisitorIdentity } from '@/lib/visitor-backfill'
+import { createClient } from '@/lib/supabase/server'
 
 const FUB_CID_COOKIE = 'fub_cid'
 const COOKIE_MAX_AGE = 90 * 24 * 60 * 60 // 90 days
@@ -73,6 +74,65 @@ export async function identifyFubFromEmailClick(
   }
 
   return { ok: true }
+}
+
+/**
+ * Bridge a SIGNED-IN visitor's session to their known identity — the "Continue
+ * with Google" / email-link / password counterpart to identifyFubFromEmailClick.
+ *
+ * The OAuth callback runs server-side and never sees the client's rr_session_id
+ * (localStorage), so it cannot replay the browsing history. This action runs from
+ * the client AFTER sign-in, carrying that session_id, and:
+ *   1. Resolves the user SERVER-SIDE from the Supabase session (never trusts a
+ *      client-passed email) and looks up their FUB person by email.
+ *   2. Stamps the fub_cid cookie so every FUTURE event on this browser attributes
+ *      to the person (forward attribution).
+ *   3. Replays this browser's prior anonymous browsing history into FUB and marks
+ *      the visitor session identified (backfillSessionToFub) — match identity to
+ *      the activity they already did while anonymous.
+ *   4. Also stitches by rr_vid so sessions without a client session_id are caught.
+ *
+ * Idempotent (backfillSessionToFub dedupes on pushed_to_fub_at; the cookie
+ * short-circuits re-bridging). Never throws — must not break a page load.
+ */
+export async function identifyAuthenticatedSession(
+  sessionId?: string,
+): Promise<{ ok: boolean; bridged: boolean }> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const email = user?.email?.trim().toLowerCase()
+    if (!email) return { ok: true, bridged: false } // anonymous — nothing to bridge
+
+    const person = await findPersonByEmail(email)
+    const provider = (user?.app_metadata?.provider as string | undefined) ?? ''
+    const via = provider === 'google' ? 'google' : provider === 'facebook' ? 'facebook' : 'magic_link'
+    const rrVid = (await cookies()).get('rr_vid')?.value ?? null
+
+    if (person?.id) {
+      const cookieStore = await cookies()
+      cookieStore.set(FUB_CID_COOKIE, String(person.id), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: COOKIE_MAX_AGE,
+        path: '/',
+      })
+      if (sessionId && UUID_V4_RE.test(sessionId)) {
+        await backfillSessionToFub({ sessionId, fubPersonId: person.id, email, identifiedVia: via })
+      }
+      // rr_vid catches this browser's other sessions (no client session_id).
+      await stitchVisitorIdentity({ rrVid, fubPersonId: person.id, email, userId: user.id, sessionId: sessionId ?? null, source: 'auth_session' })
+      return { ok: true, bridged: true }
+    }
+
+    // Known email but not yet a FUB contact: still record the identity graph +
+    // mark the session identified by rr_vid so it is not anonymous.
+    await stitchVisitorIdentity({ rrVid, email, userId: user.id, sessionId: sessionId ?? null, source: 'auth_session' })
+    return { ok: true, bridged: false }
+  } catch {
+    return { ok: false, bridged: false }
+  }
 }
 
 /**
