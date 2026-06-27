@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.642.0 (2026-06-27)
+
+### Features
+- feat(tracking): bridge authenticated sessions to identity + replay history
+
+---
+
+
 ## v1.641.1 (2026-06-27)
 
 ### Bug Fixes
