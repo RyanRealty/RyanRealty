@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.638.11 (2026-06-27)
+
+### Bug Fixes
+- fix(newsletter): wire configurable BROKERAGE_POSTAL_ADDRESS into the footer
+
+---
+
+
 ## v1.638.10 (2026-06-27)
 
 ### Bug Fixes
