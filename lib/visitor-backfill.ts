@@ -75,6 +75,30 @@ export async function stitchVisitorIdentity(params: {
   } catch {
     /* never block the caller (sign-in / tracking) on a graph write */
   }
+
+  // Flip this browser's anonymous sessions to identified (not anonymous). The
+  // OAuth callback has the durable rr_vid cookie but NOT the client-side
+  // session_id (localStorage), so stitch the session(s) by rr_vid here — this is
+  // what turns a signed-in (Google / email / form) visitor's session from
+  // anonymous to known in visitor_sessions + the /admin/visitors view. Only
+  // fills a NULL identified_at so a re-identify keeps the original timestamp.
+  if (params.fubPersonId != null || params.email) {
+    const sessionPatch: Record<string, unknown> = {
+      identified_at: new Date().toISOString(),
+      identified_via: params.source,
+    }
+    if (params.fubPersonId != null) sessionPatch.fub_person_id = params.fubPersonId
+    if (params.email) sessionPatch.identified_email = params.email.toLowerCase()
+    try {
+      await supabase
+        .from('visitor_sessions')
+        .update(sessionPatch)
+        .eq('rr_vid', params.rrVid)
+        .is('identified_at', null)
+    } catch {
+      /* never block sign-in on a session-stitch write */
+    }
+  }
 }
 
 // Categories worth replaying to FUB. We skip 'home', 'about', 'blog', 'other'
