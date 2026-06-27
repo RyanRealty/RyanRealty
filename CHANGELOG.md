@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.648.1 (2026-06-27)
+
+### Bug Fixes
+- fix(kb): mobile search placeholder clipped + 'Homes in X' -> 'X Homes for Sale' on city/subdivision pages
+
+---
+
+
 ## v1.648.0 (2026-06-27)
 
 ### Features
