@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.645.0 (2026-06-27)
+
+### Features
+- feat(seo): community template upgrades + /explore redirect fix + alias mismatches
+
+---
+
+
 ## v1.644.0 (2026-06-27)
 
 ### Features
