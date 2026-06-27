@@ -30,6 +30,7 @@ const RESORT_SLUG_TO_CITY: Record<string, string> = {
   'inn-of-the-7th-mountain': 'Bend',
   'rivers-edge':      'Bend',
   'mountain-high':    'Bend',
+  'crooked-river-ranch': 'Terrebonne',
   sunriver:           'Sunriver',
   crosswater:         'Sunriver',
   'caldera-springs':  'Sunriver',
