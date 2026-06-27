@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.640.1 (2026-06-27)
+
+### Bug Fixes
+- fix(tracking): dedupe property-view event on consent auto-grant
+
+---
+
+
 ## v1.640.0 (2026-06-27)
 
 ### Features
