@@ -7,6 +7,7 @@
  */
 
 import { EMAIL_BORDER } from '@/lib/email/brand'
+import { BROKERAGE_POSTAL_ADDRESS } from '@/lib/email/prepare'
 
 const NAVY = '#102742'
 const CREAM = '#faf8f4'
@@ -33,7 +34,7 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;"
         ${args.bodyHtml}
       </td></tr>
       <tr><td style="padding:20px 32px 28px;border-top:1px solid #eee;color:${MUTED};font-size:12px;line-height:1.6;">
-        Ryan Realty &middot; Bend, Oregon &middot; <a href="https://ryan-realty.com" style="color:${MUTED};">ryan-realty.com</a><br>
+        ${escapeHtml(BROKERAGE_POSTAL_ADDRESS)} &middot; <a href="https://ryan-realty.com" style="color:${MUTED};">ryan-realty.com</a><br>
         You're receiving this because you subscribed to Ryan Realty updates.
         <a href="${args.unsubscribeUrl}" style="color:${MUTED};text-decoration:underline;">Unsubscribe</a>.
       </td></tr>
@@ -45,7 +46,7 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;"
 
 /** Plain-text fallback footer (links spelled out, CAN-SPAM postal line). */
 export function newsletterTextFooter(unsubscribeUrl: string): string {
-  return `\n\n--\nRyan Realty · Bend, Oregon · ryan-realty.com\nUnsubscribe: ${unsubscribeUrl}`
+  return `\n\n--\n${BROKERAGE_POSTAL_ADDRESS} · ryan-realty.com\nUnsubscribe: ${unsubscribeUrl}`
 }
 
 function escapeHtml(s: string): string {
