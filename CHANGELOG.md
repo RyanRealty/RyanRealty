@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.641.0 (2026-06-27)
+
+### Features
+- feat(crm): contact Comms tab leads with the chronological conversation
+
+---
+
+
 ## v1.640.2 (2026-06-27)
 
 ### Bug Fixes
