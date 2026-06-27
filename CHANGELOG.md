@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.641.1 (2026-06-27)
+
+### Bug Fixes
+- fix(tracking): mark the visitor session identified on sign-in (Google/email/form)
+
+---
+
+
 ## v1.641.0 (2026-06-27)
 
 ### Features
