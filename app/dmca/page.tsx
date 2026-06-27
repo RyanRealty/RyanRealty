@@ -4,13 +4,17 @@ import { H1, H2 } from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
-const contactEmail = process.env.NEXT_PUBLIC_SITE_OWNER_EMAIL ?? 'legal@ryanrealty.com'
+const contactEmail = process.env.NEXT_PUBLIC_SITE_OWNER_EMAIL ?? 'admin@ryan-realty.com'
 
 export const metadata: Metadata = {
   title: 'DMCA Policy',
   description: 'DMCA notice and takedown procedure for Ryan Realty.',
   alternates: { canonical: `${siteUrl}/dmca` },
   openGraph: {
+    title: 'DMCA Policy | Ryan Realty',
+    description: 'DMCA notice and takedown procedure for Ryan Realty.',
+    url: `${siteUrl}/dmca`,
+    type: 'website',
     images: [{ url: ogImage, width: 1200, height: 630 }],
   },
   twitter: { card: 'summary_large_image', images: [ogImage] },

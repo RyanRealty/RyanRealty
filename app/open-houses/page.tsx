@@ -29,6 +29,7 @@ import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import TrackSearchView from '@/components/tracking/TrackSearchView'
 import '@/components/site/kb/kb.css'
 
 export const revalidate = 60
@@ -174,6 +175,7 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
     <main className="kb-root">
       <KbNav />
       <KbSectionTracker pageType="open-houses" />
+      <TrackSearchView resultsCount={openHouseCount} />
       <MetadataBlock schemas={schemas} />
       {/* Preserved Event ItemList JSON-LD from the original page */}
       {eventJsonLd ? (

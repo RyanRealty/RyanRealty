@@ -19,8 +19,8 @@ export default async function AuthErrorPage({ searchParams }: Props) {
     next && next.startsWith('/admin')
       ? `/admin/login${next !== '/admin' ? `?next=${encodeURIComponent(next)}` : ''}`
       : next && next.startsWith('/')
-        ? `/?next=${encodeURIComponent(next)}`
-        : '/'
+        ? `/login?next=${encodeURIComponent(next)}`
+        : '/login'
   return (
     <main className="mx-auto max-w-lg px-4 py-16 text-center">
       <H1 className="text-xl text-foreground">Sign-in issue</H1>

@@ -11,6 +11,10 @@ export const metadata: Metadata = {
   description: 'Ryan Realty commitment to web accessibility and how to report issues.',
   alternates: { canonical: `${siteUrl}/accessibility` },
   openGraph: {
+    title: 'Accessibility Statement | Ryan Realty',
+    description: 'Ryan Realty commitment to web accessibility and how to report issues.',
+    url: `${siteUrl}/accessibility`,
+    type: 'website',
     images: [{ url: ogImage, width: 1200, height: 630 }],
   },
   twitter: { card: 'summary_large_image', images: [ogImage] },

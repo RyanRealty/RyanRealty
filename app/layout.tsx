@@ -140,9 +140,10 @@ export default function RootLayout({
           <HideOnLP>
             <InstallPrompt />
           </HideOnLP>
-          <HideOnLP>
-            <VisitTrackerWithSession />
-          </HideOnLP>
+          {/* Visitor tracking runs on EVERY public route, including /lp/* landing
+              pages (so paid-traffic conversions tie to a tracked session). The
+              tracker self-skips /admin internally. */}
+          <VisitTrackerWithSession />
           {/* High-intent micro-event capture (tel:, mailto:, form_start).
               Runs on every page including LPs because form_start on a seller
               LP is one of the strongest pre-submit intent signals we have. */}

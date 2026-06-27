@@ -20,6 +20,7 @@
 
 import type { Metadata } from 'next'
 import MortgageCalculator from './MortgageCalculator'
+import { getCalculatorDefaults } from '@/lib/data'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
@@ -68,11 +69,18 @@ const softwareLd = {
 }
 
 export default async function MortgageCalculatorPage({ searchParams }: Props) {
-  const sp = await searchParams
+  const [sp, calcDefaults] = await Promise.all([searchParams, getCalculatorDefaults()])
   const initialPrice = sp.price ? parseInt(sp.price, 10) : undefined
   const initialDown = sp.down != null ? parseInt(sp.down, 10) : undefined
-  const initialRate = sp.rate != null ? parseFloat(sp.rate) : undefined
+  // URL param takes precedence; fall back to app_config mortgage_rate
+  const initialRate = sp.rate != null ? parseFloat(sp.rate) : calcDefaults.mortgageRate
   const initialTerm = sp.term != null ? parseInt(sp.term, 10) : undefined
+
+  // Derive dollar-amount defaults from app_config rate percentages.
+  // Base: default home price ($500k) — matches the component's fallback.
+  const defaultHomePrice = initialPrice ?? 500000
+  const defaultPropertyTaxYear = Math.round((defaultHomePrice * calcDefaults.taxRatePct) / 100 / 50) * 50
+  const defaultInsuranceYear = Math.round((defaultHomePrice * calcDefaults.insuranceRatePct) / 100 / 50) * 50
 
   return (
     <main className="kb-root">
@@ -136,6 +144,8 @@ export default async function MortgageCalculatorPage({ searchParams }: Props) {
                 initialDownPaymentPct={initialDown}
                 initialInterestRate={initialRate}
                 initialLoanTermYears={initialTerm}
+                initialPropertyTaxYear={defaultPropertyTaxYear}
+                initialInsuranceYear={defaultInsuranceYear}
               />
             </div>
           </div>
@@ -152,10 +162,10 @@ export default async function MortgageCalculatorPage({ searchParams }: Props) {
             <div className="ov-prose" style={{ paddingTop: 24, color: 'var(--navy)' }}>
               <p style={{ fontSize: 'clamp(1rem,1.5vw,1.15rem)', lineHeight: 1.6, marginBottom: 16 }}>
                 Enter the home price and down payment percentage to set the loan amount. Adjust the interest
-                rate and loan term to match the scenario you want to model. The property tax field defaults to
-                $5,000 per year and the home insurance field defaults to $1,500 per year. Both are editable
-                assumptions. PMI applies automatically when the down payment is below 20 percent and is
-                calculated at 0.5 percent of the loan amount per year.
+                rate and loan term to match the scenario you want to model. The property tax and home insurance
+                fields default to Central Oregon estimates and are editable assumptions. PMI applies automatically
+                when the down payment is below 20 percent and is calculated at 0.5 percent of the loan amount
+                per year.
               </p>
               <p style={{ fontSize: 'clamp(1rem,1.5vw,1.15rem)', lineHeight: 1.6, marginBottom: 16 }}>
                 The monthly total is an estimate, not a lender quote. Your actual payment will reflect the

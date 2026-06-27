@@ -46,6 +46,8 @@ import { TextMattCTA as _TextMattCTAImport } from '@/components/site/listing-det
 import ListingMobileContactBar from '@/components/site/listing-detail/ListingMobileContactBar.client'
 import ListingTracker from '@/components/listing/ListingTracker'
 import { ListingAttribution } from '@/components/listing/ListingAttribution'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
+import type { SchemaInput } from '@/lib/site/json-ld'
 // KB (kinetic-brutalist) shell — Phase 9 page-class migration. Wraps the
 // existing listing-detail composition (ListingDetailShell + its parity-
 // required sections) in the same chrome the homepage/city/community pages
@@ -466,8 +468,97 @@ export default async function ListingDetailPage({ params }: PageProps) {
     />
   ) : null
 
+  // -------------------------------------------------------------------------
+  // JSON-LD — RealEstateListing + BreadcrumbList.
+  // Values come exclusively from the already-fetched listing object (§0).
+  // Media suppression: listing.photoUrl is already null when suppressed, and
+  // photos[] comes from getListingPhotos which also respects the flag —
+  // so we use the same gated sources here without any additional guard.
+  // -------------------------------------------------------------------------
+  // Canonical path — same helper + same inputs the generateMetadata export uses
+  // so the JSON-LD url matches the sitemap + canonical link exactly.
+  const canonicalSubdivisionForLd =
+    listing.subdivisionName && listing.subdivisionName !== 'N/A' ? listing.subdivisionName : null
+  const canonicalPath = listingDetailPath(
+    listing.listingKey,
+    {
+      streetNumber: listing.streetNumber,
+      streetName: listing.streetName,
+      city: listing.city,
+      state: null,
+      postalCode: listing.postalCode,
+    },
+    {
+      city: listing.boundaryCity ?? listing.city,
+      neighborhood: listing.boundaryNeighborhood,
+      subdivision: canonicalSubdivisionForLd,
+    },
+    { mlsNumber: listing.listNumber },
+  )
+
+  const listingJsonLdSchemas: SchemaInput[] = [
+    {
+      type: 'breadcrumb',
+      items: [
+        { name: 'Home', url: '/' },
+        { name: 'Homes for sale', url: '/homes-for-sale' },
+        ...(listing.city && listing.citySlug
+          ? [{ name: listing.city, url: `/cities/${listing.citySlug}` }]
+          : []),
+        {
+          name: street || `Listing ${listingKey}`,
+          url: canonicalPath,
+        },
+      ],
+    },
+    {
+      type: 'realEstateListing',
+      name: street
+        ? `${street}, ${listing.city ?? ''}, OR ${listing.postalCode ?? ''}`.trim().replace(/,\s*$/, '')
+        : `Listing ${listingKey}`,
+      description: listingShareSummary({
+        price: listing.listPrice,
+        beds: listing.beds,
+        baths: listing.baths,
+        sqft: listing.sqft ?? listing.totalLivingAreaSqFt,
+        address: street || undefined,
+        city: street ? undefined : (listing.city ?? undefined),
+      }) || undefined,
+      url: canonicalPath,
+      address: {
+        street: street || undefined,
+        city: listing.city ?? undefined,
+        state: 'OR',
+        postalCode: listing.postalCode ?? undefined,
+        country: 'US',
+      },
+      geo:
+        listing.lat != null && listing.lng != null
+          ? { lat: listing.lat, lng: listing.lng }
+          : undefined,
+      beds: listing.beds ?? undefined,
+      baths: listing.baths ?? undefined,
+      livingAreaSqft: (listing.sqft ?? listing.totalLivingAreaSqFt) ?? undefined,
+      lotSizeSqft: listing.lotSizeSqft ?? undefined,
+      yearBuilt: listing.yearBuilt ?? undefined,
+      listPrice: listing.listPrice ?? undefined,
+      // Photos: already gated by media_suppressed in getListingPhotos().
+      // Cap at 5 per schema.org convention (matching the builder's own slice).
+      photos: photos.length > 0 ? photos.slice(0, 5).map((p) => p.url) : undefined,
+      listingAgent: ctaBroker
+        ? {
+            name: ctaBroker.fullName,
+            email: ctaBroker.email ?? undefined,
+            telephone: ctaBroker.phoneDirect ?? undefined,
+          }
+        : undefined,
+      availability: listing.status ?? undefined,
+    },
+  ]
+
   return (
     <main className="kb-root">
+      <MetadataBlock schemas={listingJsonLdSchemas} />
       <KbNav />
       <ListingTracker
         listingKey={listing.listingKey}

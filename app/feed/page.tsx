@@ -3,6 +3,7 @@ import { getCentralOregonVideosHubListings } from '../actions/videos'
 import { VideoFeedClient, type VideoFeedItem } from '@/components/site/VideoFeedClient'
 import { listingDetailPath } from '@/lib/slug'
 import { normalizeEmbed } from '@/lib/video-embed'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 
 /** Drop MLS placeholder tokens (N/A) and collapse whitespace in an address. */
 function cleanAddress(raw: string | null): string {
@@ -97,6 +98,7 @@ export default async function FeedPage({
 
   return (
     <main className="bg-primary">
+      <KbSectionTracker pageType="feed" />
       <VideoFeedClient items={items} startKey={startKey} />
     </main>
   )

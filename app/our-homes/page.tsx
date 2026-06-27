@@ -26,7 +26,7 @@
 
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { getListingsWithAdvanced, type ListingTileRow } from '@/app/actions/listings'
+import { getBrokerageListings, type ListingTileRow } from '@/app/actions/listings'
 import { listingDetailPath, listingsBrowsePath } from '@/lib/slug'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
@@ -93,10 +93,10 @@ function tileToFeaturedItem(listing: ListingTileRow): KbFeaturedItem {
 const SHOWN_LISTINGS = 12
 
 export default async function OurHomesPage() {
-  const { listings } = await getListingsWithAdvanced({
-    limit: 24,
-    sort: 'newest',
-  })
+  // getBrokerageListings filters to ListOfficeName ILIKE '%Ryan Realty%' (cached 5 min).
+  // getListingsWithAdvanced has no brokerage filter and would return all-MLS listings,
+  // which would misrepresent the page as Ryan Realty inventory (§0 violation).
+  const listings = await getBrokerageListings()
 
   const items = listings.map(tileToFeaturedItem)
   const shownItems = items.slice(0, SHOWN_LISTINGS)

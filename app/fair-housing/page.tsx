@@ -13,6 +13,10 @@ export const metadata: Metadata = {
   description: 'Ryan Realty commitment to Equal Housing Opportunity and fair housing laws.',
   alternates: { canonical: `${siteUrl}/fair-housing` },
   openGraph: {
+    title: 'Fair Housing | Ryan Realty',
+    description: 'Ryan Realty commitment to Equal Housing Opportunity and fair housing laws.',
+    url: `${siteUrl}/fair-housing`,
+    type: 'website',
     images: [{ url: ogImage, width: 1200, height: 630 }],
   },
   twitter: { card: 'summary_large_image', images: [ogImage] },

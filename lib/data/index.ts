@@ -593,5 +593,9 @@ export { saveAnonymousPartialAddress } from '@/lib/data/leads/saveAnonymousParti
 export type { AnonymousPartialAddressInput } from '@/lib/data/leads/saveAnonymousPartialAddress'
 export { pauseSavedSearchByToken } from '@/lib/data/savedSearches'
 
+// Calculator defaults from app_config (mortgage rate, tax rate, insurance rate)
+export { getCalculatorDefaults } from '@/lib/data/config'
+export type { CalculatorDefaults } from '@/lib/data/config'
+
 // Cache helpers ----------------------------------------------------
 export { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'

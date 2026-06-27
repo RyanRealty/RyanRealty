@@ -23,6 +23,7 @@
 
 import type { Metadata } from 'next'
 import RentalCalculator from '@/components/tools/RentalCalculator'
+import { getCalculatorDefaults } from '@/lib/data'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
@@ -84,12 +85,13 @@ const FAQ: { q: string; a: string }[] = [
 ]
 
 export default async function RentalPropertyCalculatorPage({ searchParams }: Props) {
-  const sp = await searchParams
+  const [sp, calcDefaults] = await Promise.all([searchParams, getCalculatorDefaults()])
   const initialPrice = sp.price ? parseInt(sp.price, 10) : undefined
   const initialRent = sp.rent ? parseInt(sp.rent, 10) : undefined
   const initialPropertyTaxesYear = sp.taxes ? parseInt(sp.taxes, 10) : undefined
   const initialDownPaymentPct = sp.down != null ? parseInt(sp.down, 10) : undefined
-  const initialInterestRate = sp.rate != null ? parseFloat(sp.rate) : undefined
+  // URL param takes precedence; fall back to app_config mortgage_rate
+  const initialInterestRate = sp.rate != null ? parseFloat(sp.rate) : calcDefaults.mortgageRate
 
   const toolUrl = `${siteUrl}/tools/rental-property-calculator`
   const softwareLd = {

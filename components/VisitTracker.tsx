@@ -48,8 +48,35 @@ function getOrCreateSessionId(): string | null {
  * scoring trigger weighs the event correctly. Mirrors the WP snippet's
  * categorizePage() so both sources feed the same taxonomy.
  */
+/**
+ * Detect a listing-detail view and extract its MLS number from the path.
+ * Handles BOTH the legacy `/listing/{key}` URL and the canonical SEO URL
+ * `/homes-for-sale/{city}/{...area}/{street}-{mls}` that Google + every internal
+ * link now use. The canonical city/subdivision SEARCH paths (`/homes-for-sale/bend`,
+ * `/homes-for-sale/bend/sunriver`) are NOT listing details — a listing segment is
+ * distinguished by a trailing 6+ digit MLS number that a place slug never has.
+ * Without this, property views fired a generic page_view and the CRM never learned
+ * which property a visitor looked at.
+ */
+function detectListing(pathname: string): { isListing: boolean; mls: string | null } {
+  const p = (pathname || '/').toLowerCase().replace(/\/+$/, '')
+  const segs = p.split('/').filter(Boolean)
+  // Legacy /listing/{key} (excluding the by-address / by-key resolver prefixes).
+  if (segs[0] === 'listing' && segs[1] && segs[1] !== 'by-address' && segs[1] !== 'by-key') {
+    return { isListing: true, mls: decodeURIComponent(segs[1]) }
+  }
+  // Canonical /homes-for-sale/{city}/.../{street}-{mls} — needs city + a listing
+  // segment (>= 3 parts) whose final token ends in a 6+ digit MLS number.
+  if (segs[0] === 'homes-for-sale' && segs.length >= 3) {
+    const m = segs[segs.length - 1].match(/(\d{6,})$/)
+    if (m) return { isListing: true, mls: m[1] }
+  }
+  return { isListing: false, mls: null }
+}
+
 function categorizePage(pathname: string): string {
   const p = (pathname || '/').toLowerCase()
+  if (detectListing(p).isListing) return 'listing_detail'
   if (/^\/listing\/[^/]+/.test(p)) return 'listing_detail'
   if (/^\/(search|listings|properties)/.test(p)) return 'search'
   if (/^\/lp\/seller-home-value|^\/home-valuation|^\/sell(\/|$)/.test(p)) return 'seller_intent'
@@ -136,7 +163,7 @@ function captureSource(): { campaign?: { source?: string; medium?: string; campa
  * intent_tags. Server-side consent gate refuses 'declined' events even if
  * something here misbehaves.
  */
-function fireVisitorEvent(pathname: string, eventType: 'page_view' | 'listing_view') {
+function fireVisitorEvent(pathname: string, eventType: 'page_view' | 'listing_view', listingMls?: string | null) {
   const sessionId = getOrCreateSessionId()
   if (!sessionId) return
   const consent = consentLevel()
@@ -149,6 +176,9 @@ function fireVisitorEvent(pathname: string, eventType: 'page_view' | 'listing_vi
     pageUrl: typeof window !== 'undefined' ? window.location.href : pathname,
     pageTitle: typeof document !== 'undefined' ? document.title.slice(0, 200) : undefined,
     pageCategory: categorizePage(pathname),
+    // Identifies WHICH property was viewed — the server writes visitor_events.listing_mls
+    // and fires trackListingView() to Follow Up Boss so the CRM logs the property view.
+    listing: listingMls ? { mlsNumber: listingMls } : undefined,
     campaign,
     fbclid,
     referrer,
@@ -195,6 +225,8 @@ export default function VisitTracker({ userId, userEmail }: Props) {
     // Respects an explicit prior decision (essential/declined not overridden).
     autoGrantConsentForAdTraffic()
     if (!hasAnalyticsConsent()) return
+    // The public visitor pipeline never tracks internal admin pages.
+    if (pathname?.startsWith('/admin')) return
     const visitId = getOrCreateVisitId()
     if (!visitId || !pathname) return
     const key = pathname + (userId ?? 'anon')
@@ -212,8 +244,8 @@ export default function VisitTracker({ userId, userEmail }: Props) {
     // /admin/visitors/live + /admin/analytics/funnel-breakdown dashboards
     // and the hot-lead scoring cron. Listing pages get the higher-weight
     // event_type so the score reflects engagement intensity correctly.
-    const isListingDetail = /^\/listing\/[^/]+/i.test(pathname)
-    fireVisitorEvent(pathname, isListingDetail ? 'listing_view' : 'page_view')
+    const det = detectListing(pathname)
+    fireVisitorEvent(pathname, det.isListing ? 'listing_view' : 'page_view', det.mls)
   }, [pathname, userId])
 
   useEffect(() => {
@@ -244,8 +276,8 @@ export default function VisitTracker({ userId, userEmail }: Props) {
           })
         }
         // Mirror to the new visitor_events pipeline on the consent flip too.
-        const isListingDetail = /^\/listing\/[^/]+/i.test(pathname)
-        fireVisitorEvent(pathname, isListingDetail ? 'listing_view' : 'page_view')
+        const det = detectListing(pathname)
+        fireVisitorEvent(pathname, det.isListing ? 'listing_view' : 'page_view', det.mls)
       }
     }
     window.addEventListener('cookie-consent', onConsent)

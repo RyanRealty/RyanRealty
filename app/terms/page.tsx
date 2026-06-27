@@ -10,6 +10,10 @@ export const metadata: Metadata = {
   description: 'Terms of service and use for Ryan Realty website and MLS data.',
   alternates: { canonical: `${siteUrl}/terms` },
   openGraph: {
+    title: 'Terms of Service | Ryan Realty',
+    description: 'Terms of service and use for Ryan Realty website and MLS data.',
+    url: `${siteUrl}/terms`,
+    type: 'website',
     images: [{ url: ogImage, width: 1200, height: 630 }],
   },
   twitter: { card: 'summary_large_image', images: [ogImage] },

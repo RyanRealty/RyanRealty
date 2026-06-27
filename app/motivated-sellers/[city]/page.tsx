@@ -35,6 +35,7 @@ import Link from 'next/link'
 import { getMotivatedListings, type MotivatedListing } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
+import { listingDetailPath } from '@/lib/slug'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { CONTACT } from '@/lib/brand/contact'
@@ -44,6 +45,7 @@ import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { kbMoneyFull } from '@/components/site/kb/types'
 import '@/components/site/kb/kb.css'
 
@@ -89,7 +91,12 @@ function getCityName(slug: string): string {
 function MotivatedTile({ listing }: { listing: MotivatedListing }) {
   const key = (listing.listingKey ?? listing.listNumber ?? '').toString()
   if (!key) return null
-  const href = `/listing/${encodeURIComponent(key)}`
+  const href = listingDetailPath(
+    key,
+    { streetNumber: listing.streetNumber, streetName: listing.streetName, city: listing.city, postalCode: listing.postalCode },
+    { city: listing.city, subdivision: listing.subdivisionName },
+    { mlsNumber: listing.listNumber },
+  )
   const addressLine =
     [listing.streetNumber, listing.streetName].filter(Boolean).join(' ') || 'Address on request'
   const cityParts: string[] = []
@@ -195,6 +202,7 @@ export default async function MotivatedSellersCityPage({ params }: Props) {
     <main className="kb-root">
       <KbNav />
       <KbSectionTracker pageType="motivated-sellers-city" />
+      <TrackSearchView city={cityName} resultsCount={listings.length} />
       <MetadataBlock schemas={schemas} />
 
       <KbBreadcrumb overlay

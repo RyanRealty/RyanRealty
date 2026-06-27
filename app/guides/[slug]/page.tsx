@@ -25,6 +25,9 @@ import AdUnit from '@/components/AdUnit'
 import HomeValuationCta from '@/components/HomeValuationCta'
 import CityClusterNav from '@/components/CityClusterNav'
 import { getGuideBySlug, getPublishedGuides } from '@/lib/data'
+import { getSession } from '@/app/actions/auth'
+import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { generateBreadcrumbSchema, generateBlogSchema } from '@/lib/structured-data'
 import { cityEntityKey } from '@/lib/slug'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
@@ -38,35 +41,49 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const guide = await getGuideBySlug(slug)
   if (!guide) return {}
+  const _siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const _ogImage = `${_siteUrl}/api/og?type=default`
   return {
     title: guide.title,
     description: guide.meta_description ?? undefined,
-    alternates: { canonical: `/guides/${guide.slug}` },
+    alternates: { canonical: `${_siteUrl}/guides/${guide.slug}` },
     openGraph: {
       title: guide.title,
       description: guide.meta_description ?? undefined,
-      url: `/guides/${guide.slug}`,
+      url: `${_siteUrl}/guides/${guide.slug}`,
       type: 'article',
-      images: ['/api/og?type=default'],
+      images: [{ url: _ogImage, width: 1200, height: 630 }],
     },
     twitter: {
       card: 'summary_large_image',
       title: guide.title,
       description: guide.meta_description ?? undefined,
-      images: ['/api/og?type=default'],
+      images: [_ogImage],
     },
   }
 }
 
 export default async function GuideDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const guide = await getGuideBySlug(slug)
+  const [guide, session, fubPersonId] = await Promise.all([
+    getGuideBySlug(slug),
+    getSession(),
+    getFubPersonIdFromCookie(),
+  ])
   if (!guide) notFound()
   const related = (await getPublishedGuides(200))
     .filter((row) => row.slug !== guide.slug && (row.city === guide.city || row.category === guide.category))
     .slice(0, 4)
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+
+  // F12: track page view in FUB CRM, mirroring the pattern used in /blog/[slug]
+  trackPageViewIfPossible({
+    sessionUser: session?.user ?? undefined,
+    fubPersonId,
+    pageUrl: `${siteUrl}/guides/${encodeURIComponent(guide.slug)}`,
+    pageTitle: `${guide.title} | Ryan Realty Guides`,
+  })
 
   // Article JSON-LD built from live guide data — no fabricated fields.
   // generateBlogSchema emits BlogPosting which is a sub-type of Article; the

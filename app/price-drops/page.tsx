@@ -52,6 +52,7 @@ import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.c
 import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import TrackSearchView from '@/components/tracking/TrackSearchView'
 import type { KbFeaturedItem } from '@/components/site/kb/types'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { CONTACT } from '@/lib/brand/contact'
@@ -139,7 +140,12 @@ function dropToCardData(drop: PriceDrop) {
 
   return {
     listingKey: drop.listingKey,
-    href: `/listing/${encodeURIComponent(drop.listingKey)}`,
+    href: listingDetailPath(
+      drop.listingKey,
+      { streetNumber: drop.streetNumber, streetName: drop.streetName, city: drop.city, postalCode: drop.postalCode },
+      { city: drop.city, subdivision: drop.subdivisionName },
+      { mlsNumber: drop.listNumber },
+    ),
     photoUrl: drop.photoUrl ?? null,
     price: drop.listPrice,
     addressLine,
@@ -333,6 +339,7 @@ export default async function PriceDropsRegionPage() {
     <main className="kb-root">
       <KbNav />
       <KbSectionTracker pageType="price-drops" />
+      <TrackSearchView resultsCount={total} />
       <MetadataBlock schemas={schemas} />
       <KbBreadcrumb overlay
         trail={[
@@ -438,7 +445,12 @@ export default async function PriceDropsRegionPage() {
                   )}
                 </div>
                 <Link
-                  href={`/listing/${encodeURIComponent(featured.listingKey)}`}
+                  href={listingDetailPath(
+                    featured.listingKey,
+                    { streetNumber: featured.streetNumber, streetName: featured.streetName, city: featured.city, postalCode: featured.postalCode },
+                    { city: featured.city, subdivision: featured.subdivisionName },
+                    { mlsNumber: featured.listNumber },
+                  )}
                   className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
                 >
                   View listing

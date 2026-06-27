@@ -20,6 +20,9 @@
 
 import type { Metadata } from 'next'
 import { getPublishedGuides } from '@/lib/data'
+import { getSession } from '@/app/actions/auth'
+import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
@@ -34,33 +37,49 @@ import '@/components/site/kb/kb.css'
 // guides query is slow enough at build time that the static export windows out.
 export const dynamic = 'force-dynamic'
 
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const ogImage = `${siteUrl}/api/og?type=default`
+
+// C3: use absolute URLs for OG/Twitter images so social scrapers resolve them correctly.
 export const metadata: Metadata = {
   title: 'Real Estate Guides',
   description: 'Local buying and selling guides for Bend and Central Oregon.',
-  alternates: { canonical: '/guides' },
+  alternates: { canonical: `${siteUrl}/guides` },
   openGraph: {
-    title: 'Real Estate Guides',
+    title: 'Real Estate Guides | Ryan Realty',
     description: 'Local buying and selling guides for Bend and Central Oregon.',
-    url: '/guides',
+    url: `${siteUrl}/guides`,
     type: 'website',
-    images: ['/api/og?type=default'],
+    images: [{ url: ogImage, width: 1200, height: 630, alt: 'Ryan Realty guides' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Real Estate Guides',
+    title: 'Real Estate Guides | Ryan Realty',
     description: 'Local buying and selling guides for Bend and Central Oregon.',
-    images: ['/api/og?type=default'],
+    images: [ogImage],
   },
 }
 
 export default async function GuidesIndexPage() {
-  const guides = await getPublishedGuides(12)
+  // F12: fetch session + FUB identity in parallel with guides, then track page view
+  const [guides, session, fubPersonId] = await Promise.all([
+    getPublishedGuides(12),
+    getSession(),
+    getFubPersonIdFromCookie(),
+  ])
+  trackPageViewIfPossible({
+    sessionUser: session?.user ?? undefined,
+    fubPersonId,
+    pageUrl: `${siteUrl}/guides`,
+    pageTitle: 'Guides | Ryan Realty',
+  })
+
   const collectionJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
     name: 'Ryan Realty Guides',
     description: 'Local buying and selling guides for Bend and Central Oregon.',
-    url: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/guides`,
+    url: `${siteUrl}/guides`,
   }
   const grouped = new Map<string, typeof guides>()
   for (const guide of guides) {
@@ -82,8 +101,8 @@ export default async function GuidesIndexPage() {
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(
             generateBreadcrumbSchema([
-              { name: 'Home', url: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com' },
-              { name: 'Guides', url: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/guides` },
+              { name: 'Home', url: siteUrl },
+              { name: 'Guides', url: `${siteUrl}/guides` },
             ])
           ),
         }}

@@ -299,7 +299,7 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
                               {new Date(post.published_at).toLocaleDateString('en-US')}
                             </time>
                           )}
-                          <span>{estimateReadTime(null)} min read</span>
+                          <span>{estimateReadTime(post.excerpt)} min read</span>
                         </div>
                         <span className="art-read">
                           Read the guide <span className="arr">&rarr;</span>
@@ -358,22 +358,17 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
                   Popular posts
                 </h3>
                 <ul className="mt-4 flex list-none flex-col" style={{ borderTop: `1px solid ${NAVY_12}` }}>
-                  {popularSlugs.slice(0, 5).map((slug) => {
-                    const title = slug
-                      .replace(/-/g, ' ')
-                      .replace(/\b\w/g, (c) => c.toUpperCase())
-                    return (
-                      <li key={slug} style={{ borderBottom: `1px solid ${NAVY_12}` }}>
-                        <Link
-                          href={`/blog/${slug}`}
-                          className="block py-3.5 text-base font-semibold transition-[padding] hover:pl-2 focus-visible:pl-2 focus-visible:outline-none"
-                          style={{ color: NAVY }}
-                        >
-                          {title}
-                        </Link>
-                      </li>
-                    )
-                  })}
+                  {popularSlugs.slice(0, 5).map((post) => (
+                    <li key={post.slug} style={{ borderBottom: `1px solid ${NAVY_12}` }}>
+                      <Link
+                        href={`/blog/${post.slug}`}
+                        className="block py-3.5 text-base font-semibold transition-[padding] hover:pl-2 focus-visible:pl-2 focus-visible:outline-none"
+                        style={{ color: NAVY }}
+                      >
+                        {post.title}
+                      </Link>
+                    </li>
+                  ))}
                 </ul>
               </aside>
             ) : null}

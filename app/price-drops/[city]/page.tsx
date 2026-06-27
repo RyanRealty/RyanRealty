@@ -44,6 +44,7 @@ import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.c
 import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import TrackSearchView from '@/components/tracking/TrackSearchView'
 import type { KbFeaturedItem } from '@/components/site/kb/types'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { CONTACT } from '@/lib/brand/contact'
@@ -153,7 +154,12 @@ function dropToCardData(drop: PriceDrop) {
 
   return {
     listingKey: drop.listingKey,
-    href: `/listing/${encodeURIComponent(drop.listingKey)}`,
+    href: listingDetailPath(
+      drop.listingKey,
+      { streetNumber: drop.streetNumber, streetName: drop.streetName, city: drop.city, postalCode: drop.postalCode },
+      { city: drop.city, subdivision: drop.subdivisionName },
+      { mlsNumber: drop.listNumber },
+    ),
     photoUrl: drop.photoUrl ?? null,
     price: drop.listPrice,
     addressLine,
@@ -304,6 +310,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
     <main className="kb-root">
       <KbNav />
       <KbSectionTracker pageType="price-drops-city" />
+      <TrackSearchView city={cityName} resultsCount={total} />
       <MetadataBlock schemas={schemas} />
       <KbBreadcrumb overlay
         trail={[

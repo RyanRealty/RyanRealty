@@ -21,6 +21,10 @@ type Props = {
   initialDownPaymentPct?: number
   initialInterestRate?: number
   initialLoanTermYears?: number
+  /** Annual property tax estimate (dollars). Sourced from app_config default_tax_rate_pct × default home price. */
+  initialPropertyTaxYear?: number
+  /** Annual homeowners insurance estimate (dollars). Sourced from app_config insurance_rate_pct × default home price. */
+  initialInsuranceYear?: number
 }
 
 export default function MortgageCalculator({
@@ -28,6 +32,8 @@ export default function MortgageCalculator({
   initialDownPaymentPct,
   initialInterestRate,
   initialLoanTermYears,
+  initialPropertyTaxYear,
+  initialInsuranceYear,
 }: Props) {
   const [homePrice, setHomePrice] = useState(
     initialHomePrice && initialHomePrice > 0 ? initialHomePrice : 500000
@@ -47,8 +53,12 @@ export default function MortgageCalculator({
       ? initialLoanTermYears
       : 30
   )
-  const [propertyTaxYear, setPropertyTaxYear] = useState(5000)
-  const [insuranceYear, setInsuranceYear] = useState(1500)
+  const [propertyTaxYear, setPropertyTaxYear] = useState(
+    initialPropertyTaxYear != null && initialPropertyTaxYear >= 0 ? initialPropertyTaxYear : 5000
+  )
+  const [insuranceYear, setInsuranceYear] = useState(
+    initialInsuranceYear != null && initialInsuranceYear >= 0 ? initialInsuranceYear : 1500
+  )
 
   const { downPayment, loanAmount, monthlyPrincipalInterest, monthlyTax, monthlyInsurance, monthlyTotal, pmi } =
     useMemo(() => {

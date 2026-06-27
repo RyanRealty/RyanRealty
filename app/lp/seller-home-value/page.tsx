@@ -15,6 +15,7 @@ import {
 import LandingPageTracker from '@/components/LandingPageTracker'
 import SellerLPForm from './SellerLPForm'
 import { TESTIMONIALS } from '@/lib/testimonials'
+import { CONTACT } from '@/lib/brand/contact'
 import {
   getBendMarketSnapshot,
   getOurListings,
@@ -34,10 +35,13 @@ export const metadata: Metadata = {
   },
 }
 
-// Ryan Realty brand line — paid-traffic / cold-contact surfaces.
-// Dotted format per brand voice spec (CLAUDE.md §3): 541.703.3095
-const BROKER_PHONE = '541.703.3095'
-const BROKER_PHONE_TEL = '+15417033095'
+// Ryan Realty brand FUB line — dotted format per brand voice spec (CLAUDE.md §3).
+// Source of truth: lib/brand/contact.ts CONTACT.phoneFub / phoneFubTel
+const BROKER_PHONE = CONTACT.phoneFub
+const BROKER_PHONE_TEL = CONTACT.phoneFubTel
+
+// Canonical site URL — same pattern used across all other pages.
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 // Em-dash as a data placeholder for unavailable values — the one allowed use
 // per the brand spec ("Unavailable → em-dash"). Escaped so the punctuation
@@ -163,7 +167,7 @@ export default async function SellerHomeValuePage({
     '@context': 'https://schema.org',
     '@type': 'RealEstateAgent',
     name: 'Ryan Realty LLC',
-    image: 'https://seller.ryan-realty.com/images/brokers/ryan-matt.png',
+    image: `${siteUrl}/images/brokers/ryan-matt.png`,
     telephone: BROKER_PHONE_TEL,
     address: {
       '@type': 'PostalAddress',

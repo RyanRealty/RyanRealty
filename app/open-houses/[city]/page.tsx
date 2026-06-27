@@ -36,6 +36,7 @@ import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import TrackSearchView from '@/components/tracking/TrackSearchView'
 import '@/components/site/kb/kb.css'
 
 export const dynamicParams = true
@@ -197,6 +198,7 @@ export default async function OpenHousesCityPage({
     <main className="kb-root">
       <KbNav />
       <KbSectionTracker pageType="open-houses-city" />
+      <TrackSearchView city={cityName} resultsCount={openHouseCount} />
       <MetadataBlock schemas={schemas} />
       {/* Preserved Event ItemList JSON-LD from the original city page */}
       {eventJsonLd ? (

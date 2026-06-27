@@ -23,7 +23,7 @@ export default function robots(): MetadataRoute.Robots {
         // Twitterbot, Slackbot, LinkedInBot, Discordbot, WhatsApp) fetch it to
         // render link-preview cards. A longer Allow beats the /api/ Disallow.
         allow: ['/', '/api/og'],
-        disallow: ['/admin/', '/dashboard/', '/account/', '/api/', '/auth/', '/mockup-preview/'],
+        disallow: ['/admin/', '/dashboard/', '/account/', '/api/', '/auth/', '/mockup-preview/', '/dev/'],
       },
       // AI retrieval / answer crawlers — these drive live citations (allow all).
       { userAgent: 'OAI-SearchBot', allow: '/' }, // ChatGPT search citations

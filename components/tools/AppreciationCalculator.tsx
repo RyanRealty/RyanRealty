@@ -9,9 +9,26 @@ function currency(value: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
 }
 
-export default function AppreciationCalculator() {
+// Named constant so the stale-rate risk is visible and easy to update.
+// No app_config key covers appreciation rate — this is a historical-average
+// scenario default, not a live market rate.
+const DEFAULT_APPRECIATION_RATE_PCT = 4.5
+
+type Props = {
+  /** Override the default annual appreciation rate. Useful if a future
+   *  app_config key is added (e.g. "local_appreciation_rate_pct"). */
+  initialAnnualRate?: number
+}
+
+export default function AppreciationCalculator({ initialAnnualRate }: Props) {
   const [purchasePrice, setPurchasePrice] = useState('550000')
-  const [annualRate, setAnnualRate] = useState('4.5')
+  const [annualRate, setAnnualRate] = useState(
+    String(
+      initialAnnualRate != null && initialAnnualRate > 0
+        ? initialAnnualRate
+        : DEFAULT_APPRECIATION_RATE_PCT
+    )
+  )
   const [yearsHeld, setYearsHeld] = useState('5')
 
   const result = useMemo(() => {

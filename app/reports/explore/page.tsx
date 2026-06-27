@@ -29,6 +29,8 @@ import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
+import type { SchemaInput } from '@/lib/site/json-ld'
 import '@/components/site/kb/kb.css'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -89,8 +91,30 @@ export default async function ExplorePage({ searchParams }: Props) {
   const pageTitle = 'Explore Market Data | Ryan Realty'
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
 
+  // JSON-LD: WebPage + BreadcrumbList.
+  // This is a CollectionPage (interactive tool that aggregates market data).
+  const exploreSchemas: SchemaInput[] = [
+    {
+      type: 'breadcrumb',
+      items: [
+        { name: 'Home', url: '/' },
+        { name: 'Market reports', url: '/housing-market/reports' },
+        { name: 'Explore market data', url: '/housing-market/explore' },
+      ],
+    },
+    {
+      type: 'webPage',
+      name: 'Explore Market Data',
+      description:
+        'Interactive market explorer: filter by city and date range, view key metrics, price bands, and trends. Share your view via link, email, or social.',
+      url: '/housing-market/explore',
+      pageType: 'CollectionPage',
+    },
+  ]
+
   return (
     <main className="kb-root">
+      <MetadataBlock schemas={exploreSchemas} />
       <KbNav />
       <KbSectionTracker pageType="market-reports" />
       <KbBreadcrumb

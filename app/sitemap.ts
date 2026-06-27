@@ -71,19 +71,28 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     // the Next.js dynamic route + ISR exemplar.
     { url: `${baseUrl}/lp/tetherow/`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
     { url: `${baseUrl}/buy`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
-    // Buyer listing-alerts LP — the buyer lead-capture counterpart to the seller
-    // valuation LP. Previously absent from the sitemap (orphaned from organic
-    // discovery); now crawlable.
-    { url: `${baseUrl}/lp/buyer-listing-alerts`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
-    // FSBO LP — free pricing-report capture for for-sale-by-owner sellers
-    // (approved Figma LP 3, built 2026-06-12).
-    { url: `${baseUrl}/lp/fsbo`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    // Sell + buy intent pages (indexable, proper metadata) — added so the
+    // long-tail intent landing pages are crawlable.
+    { url: `${baseUrl}/sell/for-sale-by-owner`, lastModified: now, changeFrequency: 'monthly', priority: 0.55 },
+    { url: `${baseUrl}/sell/expired-listings`, lastModified: now, changeFrequency: 'monthly', priority: 0.55 },
+    { url: `${baseUrl}/sell/inherited-home`, lastModified: now, changeFrequency: 'monthly', priority: 0.55 },
+    { url: `${baseUrl}/buy/first-time-home-buyer`, lastModified: now, changeFrequency: 'monthly', priority: 0.55 },
+    { url: `${baseUrl}/buy/relocation`, lastModified: now, changeFrequency: 'monthly', priority: 0.55 },
+    { url: `${baseUrl}/buy/investment`, lastModified: now, changeFrequency: 'monthly', priority: 0.55 },
+    // central-oregon-golf LP is indexable content (organic golf-community SEO).
+    { url: `${baseUrl}/lp/central-oregon-golf`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${baseUrl}/lp/bend/`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: `${baseUrl}/lp/tetherow/heath/`, lastModified: now, changeFrequency: 'daily', priority: 0.7 },
     { url: `${baseUrl}/our-homes`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
-    { url: `${baseUrl}/compare`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+    // NOTE: /compare, /lp/fsbo, /lp/buyer-listing-alerts removed from the sitemap —
+    // they declare robots:{index:false}, so listing them only wasted crawl budget
+    // and triggered Search Console "submitted but noindex" warnings. To make the
+    // two LPs organically discoverable, remove their page-level noindex instead.
     { url: `${baseUrl}/videos`, lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
     { url: `${baseUrl}/resources`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${baseUrl}/faq`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${baseUrl}/pulse`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
+    { url: `${baseUrl}/feed`, lastModified: now, changeFrequency: 'daily', priority: 0.55 },
     { url: `${baseUrl}/tools/mortgage-calculator`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${baseUrl}/tools/rental-property-calculator`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${baseUrl}/tools/appreciation`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },

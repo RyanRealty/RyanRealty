@@ -8,6 +8,8 @@
  * The 142-component inventory is in out/visual-review/component-inventory.html.
  */
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import { getCrmAccess } from '@/app/actions/crm'
 import ComponentGalleryClient from './ComponentGalleryClient'
 
 export const metadata: Metadata = {
@@ -15,6 +17,11 @@ export const metadata: Metadata = {
   robots: 'noindex, nofollow',
 }
 
-export default function ComponentGalleryPage() {
+// Internal-only gallery. Gate on admin access so it is not reachable by the
+// public in production (noindex alone does not prevent direct access). The
+// session read also opts the route out of static prerender.
+export default async function ComponentGalleryPage() {
+  const access = await getCrmAccess()
+  if (!access) notFound()
   return <ComponentGalleryClient />
 }
