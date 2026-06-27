@@ -828,6 +828,24 @@
         "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
         "children_with_pct": []
       }
+    },
+    {
+      "slug": "crooked-river-ranch",
+      "label": "Crooked River Ranch",
+      "city": "Terrebonne",
+      "city_slug": "terrebonne",
+      "is_resort": false,
+      "broad_radius_km": 3.0,
+      "center_lon_lat": [
+        -121.2811,
+        44.4268
+      ],
+      "subdivision_aliases": [
+        "Crooked River Ranch"
+      ],
+      "verification": {
+        "method": "Exact MLS SubdivisionName match; centroid from listing coords (live MLS 2026-06-27). Large rural planned community (Terrebonne), not a resort (is_resort=false)."
+      }
     }
   ]
 }

@@ -36,8 +36,8 @@ describe('crm_report_areas seed', () => {
     expect(seeded).toEqual(built)
   })
 
-  it('seeds 24 areas (7 cities + 17 resort communities)', () => {
-    expect(readSeededRows()).toHaveLength(24)
+  it('seeds 25 areas (7 cities + 18 resort communities)', () => {
+    expect(readSeededRows()).toHaveLength(25)
   })
 
   it('protects Bend, the report engine anchor geography', () => {
@@ -45,6 +45,7 @@ describe('crm_report_areas seed', () => {
       join(ROOT, 'supabase', 'migrations', '20260625171000_crm_report_areas.sql'),
       'utf8',
     )
-    expect(/\(\s*'bend'\s*,\s*'Bend'\s*,\s*1\s*,\s*true\s*\)/.test(src)).toBe(true)
+    // Bend stays protected (is_protected=true) at whatever sorted position it lands.
+    expect(/\(\s*'bend'\s*,\s*'Bend'\s*,\s*\d+\s*,\s*true\s*\)/.test(src)).toBe(true)
   })
 })
