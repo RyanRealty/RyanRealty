@@ -63,6 +63,7 @@ import { buildYearSeries } from '@/lib/kb/year-series'
 import { resortActiveSfrCounts, cityResorts, resortTilesForSlug } from '@/lib/kb/resort-active-counts'
 import { listingTileHref } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { CONTACT } from '@/lib/brand/contact'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -214,12 +215,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     'three-rivers': '/images/communities/three-rivers.jpg',
     'vandevert-ranch': '/images/communities/vandevert-ranch.jpg',
   }
-  const ogImage = KB_HERO[slug] ?? COMMUNITY_HERO[slug] ?? undefined
+  // Fix 7: every community gets a community-specific OG image.
+  // Priority: curated KB hero photo > curated community folder photo >
+  // generated card via /api/og?type=community&name=...&city=... (covers all others).
+  // The generated card renders the community name + city on the brand background so
+  // no community falls through to the generic /api/og?type=default card. (§0)
+  const ogImage =
+    KB_HERO[slug] ??
+    COMMUNITY_HERO[slug] ??
+    `/api/og?type=community&name=${encodeURIComponent(community.name)}&city=${encodeURIComponent(community.city)}`
 
   return pageMetadata({
-    // Target ≤60 chars before the layout template appends " | Ryan Realty — …"
+    // Fix 2: Title ≤60 chars — community override (not the global template).
     // Format: "[Community] Homes for Sale | [City], OR"
-    // The cleanTitle helper in page-metadata.ts strips the brand suffix and caps at 60.
+    // cleanTitle in page-metadata.ts strips any trailing brand suffix + caps at 60.
     title: `${community.name} Homes for Sale | ${community.city}, OR`,
     description: desc,
     path: `/communities/${slug}`,
@@ -650,7 +659,23 @@ export default async function CommunityDetailPage({ params }: Props) {
     hoaAnnualEstimate: faqHoaEstimate,
   }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(community.name, marketFaqInput)
-  const hasMap = mapFeatures.length > 0 || Boolean(mapPolygons)
+  // Fix 4: hasMap is true whenever we have listing pins, a polygon, OR registry
+  // coordinates (even a centered-marker map is a real map). Guarantees the
+  // JSON-LD hasMap URL is emitted and the map section renders for every community.
+  const hasMap = mapFeatures.length > 0 || Boolean(mapPolygons) || Boolean(registryEntry?.center_lon_lat)
+
+  // Fix 1: geo coordinates from the registry entry's center_lon_lat (lng, lat order).
+  // Only emit when the registry has this community (all 18 resort/community entries do).
+  // Never hardcode — sourced from registryEntry.center_lon_lat at page render time. (§0)
+  const placeGeo =
+    registryEntry?.center_lon_lat
+      ? { lat: registryEntry.center_lon_lat[1], lng: registryEntry.center_lon_lat[0] }
+      : undefined
+
+  // Fix 1: containedInPlace — use the city, not the community itself (avoids
+  // circular "Sunriver contained in Sunriver"). A community is contained in
+  // its city; the city name is always present from community.city. (§0)
+  const placeContainedIn = cityName !== community.name ? cityName : 'Deschutes County'
 
   const communitySchemas: SchemaInput[] = [
     {
@@ -668,8 +693,11 @@ export default async function CommunityDetailPage({ params }: Props) {
       name: community.name,
       description: `${community.name}, a community in ${cityName}, Oregon. Homes for sale and live single-family market data.`,
       url: `/communities/${slug}`,
+      // Fix 1: GeoCoordinates from registry center_lon_lat — never hardcoded. (§0)
+      geo: placeGeo,
       address: { city: cityName, state: 'OR', country: 'US' },
-      containedInPlace: cityName,
+      // Fix 1: contain in city (not the community itself — avoids circular ref). (§0)
+      containedInPlace: placeContainedIn,
       hasMap: hasMap ? `/communities/${slug}` : undefined,
       additionalProperty: datasetVariables.length > 0 ? datasetVariables : undefined,
     },
@@ -722,6 +750,8 @@ export default async function CommunityDetailPage({ params }: Props) {
           lead={`in ${community.name}, ${cityName}, with the live market behind every one.`}
           videoSrc={null}
           posterSrc={heroPhoto}
+          // Fix 6: descriptive alt text for the hero image. (§0)
+          posterAlt={`${community.name} in ${cityName}, Oregon`}
           mediaCaption={mediaCaption}
         />
         {/* Rich resort/golf/master-planned depth (overview · amenities · golf ·
@@ -751,6 +781,24 @@ export default async function CommunityDetailPage({ params }: Props) {
         />
         <KbFeatured items={featuredItems} eyebrow={`${community.name} · For sale`} />
         <KbTicker items={tickerItems} />
+        {/* Fix 3: Visible freshness signal — "Market data updated [Month Year]" crawled
+            by search engines as a freshness signal and surfaced near the stats.
+            asOfLabel is the real refreshedAt / snapshot timestamp, never invented. (§0) */}
+        {asOfLabel ? (
+          <p className="community-freshness-signal" aria-label={`Market data freshness: ${asOfLabel}`}>
+            Market data updated {asOfLabel}
+          </p>
+        ) : null}
+        {/* Fix 5: Brand phone — visible on every community page, above the fold in
+            the content flow. Uses CONTACT.phoneDirect (the canonical Twilio line,
+            the public brokerage number — same as the footer). Sourced from
+            lib/brand/contact.ts (never hardcoded). (§0) */}
+        <p className="community-contact-line">
+          Questions about {community.name}?{' '}
+          <a href={`tel:${CONTACT.phoneDirectTel}`} className="community-contact-phone">
+            {CONTACT.phoneDirect}
+          </a>
+        </p>
         <KbListingMap
           geojson={mapGeo}
           totalActive={activeCount || mapFeatures.length}
@@ -760,6 +808,9 @@ export default async function CommunityDetailPage({ params }: Props) {
           eyebrow={community.name}
           title={`${community.name}\nHomes for Sale`}
           subtitle={`Every active single-family listing in ${community.name}, on the real terrain. Click any dot for the price, the beds, and the street.`}
+          // Fix 4: registry center_lon_lat ensures the map renders even when
+          // this community has no active listings (empty geojson features). (§0)
+          centerLonLat={registryEntry?.center_lon_lat ?? undefined}
         />
         <KbCommunities communities={communityItems} eyebrow={`${cityName} · Communities`} />
         {/* Per-location area guide video — self-hides when this community has no

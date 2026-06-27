@@ -1484,3 +1484,34 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .listing-mobile-cta-actions .lmc-icon:active{background:rgba(16,39,66,.08);}
 .kb-root .listing-mobile-cta-actions .lmc-tour{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 13px;background:var(--navy);color:var(--cream);font-size:.74rem;font-weight:700;letter-spacing:.03em;white-space:nowrap;}
 .kb-root .listing-mobile-cta-actions .lmc-tour:active{opacity:.9;}
+
+/* ===== Community page: freshness signal + contact line (Fix 3 + Fix 5) =====
+   Both render between the Market HUD and the listing map. Small, honest metadata
+   lines — crawlable by search engines as freshness and contact signals. ===== */
+.kb-root .community-freshness-signal{
+  max-width:var(--wrap);
+  margin:0 auto;
+  padding:0.35rem calc(var(--gutter,24px) * 1) 0;
+  font-size:0.7rem;
+  font-weight:600;
+  letter-spacing:0.09em;
+  text-transform:uppercase;
+  color:rgba(16,39,66,0.45);
+}
+.kb-root .community-contact-line{
+  max-width:var(--wrap);
+  margin:0 auto;
+  padding:0.55rem calc(var(--gutter,24px) * 1) 0.9rem;
+  font-size:0.82rem;
+  color:rgba(16,39,66,0.65);
+}
+.kb-root .community-contact-phone{
+  color:var(--navy);
+  font-weight:600;
+  text-decoration:underline;
+  text-underline-offset:2px;
+  text-decoration-thickness:1px;
+}
+.kb-root .community-contact-phone:hover{
+  color:rgba(16,39,66,0.75);
+}

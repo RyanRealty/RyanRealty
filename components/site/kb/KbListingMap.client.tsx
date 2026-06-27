@@ -90,6 +90,7 @@ export function KbListingMap({
   eyebrow = 'Central Oregon',
   title = 'Every home\nfor sale',
   subtitle = 'Every active listing across the six cities, on the real terrain. Click any dot for the price, the beds, and the street.',
+  centerLonLat,
 }: {
   geojson: KbMapGeo
   totalActive: number
@@ -102,6 +103,14 @@ export function KbListingMap({
   eyebrow?: string
   title?: string
   subtitle?: string
+  /**
+   * Fix 4: fallback center [lng, lat] used when fitToFeatures=true but there are
+   * no listing features or polygon to derive bounds from. Ensures every community
+   * renders a map centered on its location (registry center_lon_lat) rather than
+   * falling through to the full-region REGION_BOUNDS view. Never drawn as a pin —
+   * just sets the viewport center at zoom 13. (§0 — from registry, not hardcoded)
+   */
+  centerLonLat?: [number, number]
 }) {
   const el = useRef<HTMLDivElement>(null)
   const countEl = useRef<HTMLElement>(null)
@@ -133,11 +142,17 @@ export function KbListingMap({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any
 
+      // Fix 4: when fitToFeatures=true but no features exist, fall back to the
+      // registry center (a ~1.5km box around the community center) so the map
+      // is always scoped to the community, not the full Central Oregon region.
+      const centerFallbackBounds: [[number, number], [number, number]] | null = centerLonLat
+        ? [[centerLonLat[0] - 0.012, centerLonLat[1] - 0.008], [centerLonLat[0] + 0.012, centerLonLat[1] + 0.008]]
+        : null
       const initialBounds =
         (fitToFeatures
           ? polygons && polygons.features.length
             ? polygonBounds(polygons)
-            : featureBounds(geojson)
+            : featureBounds(geojson) ?? centerFallbackBounds
           : null) ?? REGION_BOUNDS
       map = new maplibregl.Map({
         container: el.current,

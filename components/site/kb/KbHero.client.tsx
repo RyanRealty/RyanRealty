@@ -27,6 +27,12 @@ type KbHeroProps = {
   videoSrc?: string | null
   /** Poster / fallback still. */
   posterSrc?: string
+  /**
+   * Fix 6: descriptive alt text for the hero poster image.
+   * Passed by the community/city page as "[Community] in [City], Oregon".
+   * When absent, the image is treated as decorative (alt="").
+   */
+  posterAlt?: string
   /** Honest label shown over the hero when the poster is a regional fallback, not a verified city photo. */
   mediaCaption?: string
   /**
@@ -48,6 +54,7 @@ export function KbHero({
   lead = 'across six cities, from the Deschutes to Smith Rock.',
   videoSrc = '/videos/hero-optimized.mp4',
   posterSrc = '/images/hero/hero-old-mill-master-4k.jpg',
+  posterAlt,
   mediaCaption,
   portraitSrc,
   showSearch = true,
@@ -99,8 +106,16 @@ export function KbHero({
             <source src={videoSrc} type="video/mp4" />
           </video>
         ) : (
+          // Fix 6: descriptive alt text (posterAlt from the page).
+          // Fix 8: fetchPriority high so the LCP hero is the browser top-priority
+          // image request and is not starved by font preloads.
           // eslint-disable-next-line @next/next/no-img-element
-          <img className="hero-video" src={posterSrc} alt="" />
+          <img
+            className="hero-video"
+            src={posterSrc}
+            alt={posterAlt ?? ''}
+            fetchPriority="high"
+          />
         )}
         {mediaCaption ? <span className="hero-caption">{mediaCaption}</span> : null}
       </div>
