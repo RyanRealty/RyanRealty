@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.649.2 (2026-06-27)
+
+### Bug Fixes
+- fix(kb): H1 glyphs cropped on mobile — give reveal-mask vertical room
+
+---
+
+
 ## v1.649.1 (2026-06-27)
 
 ### Bug Fixes
