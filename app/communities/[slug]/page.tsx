@@ -52,6 +52,7 @@ import {
   getAreaGuideVideo,
 } from '@/lib/data'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
+import { getCommunitySeoAbout } from '@/lib/community-seo-content'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
@@ -421,7 +422,10 @@ export default async function CommunityDetailPage({ params }: Props) {
   // Verified facts only — em-dash when a figure is unavailable (§0). No invented
   // numbers. The registry/description prose drives the paragraphs; the facts
   // strip pulls only DAL-sourced values.
-  const aboutParagraphs: string[] = [
+  // Deep, sourced About prose for the top-SEO-opportunity resort communities
+  // (lib/community-seo-content.ts) overrides the thin default description so these
+  // pages climb for "[community] homes for sale". Falls back to the registry desc.
+  const aboutParagraphs: string[] = getCommunitySeoAbout(slug) ?? [
     community.description ?? registryEntry?.description ?? '',
   ].filter((p): p is string => Boolean(p && p.trim().length > 0))
   const aboutFacts: { label: string; value: string }[] = [
