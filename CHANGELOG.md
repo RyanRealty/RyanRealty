@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.649.7 (2026-06-28)
+
+### Bug Fixes
+- fix(crm): smart-list edit/delete/share controls were unreachable
+
+---
+
+
 ## v1.649.6 (2026-06-28)
 
 ### Bug Fixes
