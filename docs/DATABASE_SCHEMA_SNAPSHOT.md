@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-28T05:34:03.127Z
+**Generated:** 2026-06-28T14:31:15.144Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -303,7 +303,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 592,039**
+### `listing_tile_mv` · **rows ≈ 597,086**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -416,7 +416,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 19,229**
+### `market_stats_cache` · **rows ≈ 18,912**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -572,6 +572,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `notify_deal_activity` | boolean | no | true |
 | `notify_task_due` | boolean | no | true |
 | `email_signature` | text | yes |  |
+| `notify_sms` | boolean | no | false |
 
 ## App + analytics
 
@@ -705,7 +706,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `owner_lookup_attempts` | integer | yes | 0 |
 | `last_owner_lookup_at` | timestamp with time zone | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 118**
+### `marketing_brain_actions` · **rows ≈ 119**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|

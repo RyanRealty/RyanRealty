@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-06-28T05:34:03.188Z
+**Generated:** 2026-06-28T14:31:15.209Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -320,7 +320,7 @@ Companion files:
 
 **Tables:** `brokers`
 
-**Selected columns:** `email`, `twilio_number`, `forward_to_cell`
+**Selected columns:** `email`, `twilio_number`, `forward_to_cell`, `notify_sms`
 
 **TTL windows:** `CACHE_WINDOWS.brokers`
 
