@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.649.8 (2026-06-28)
+
+### Bug Fixes
+- fix(infra): rate limiter fails open when Upstash is down / over quota
+
+---
+
+
 ## v1.649.7 (2026-06-28)
 
 ### Bug Fixes
