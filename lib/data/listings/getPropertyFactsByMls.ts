@@ -79,6 +79,9 @@ export async function getPropertyFactsByMls(mlsNumber: string): Promise<ListingP
     .from('listings')
     .select('year_built, property_sub_type, PropertyType, sewer, water, association_yn, hoa_monthly')
     .eq('ListNumber', k)
+    // IDX compliance: no facts for seller internet opt-outs / non-IDX listings.
+    .not('permit_internet_yn', 'is', false)
+    .not('idx_participant', 'is', false)
     .maybeSingle()
   if (!data) return null
 

@@ -120,11 +120,18 @@ const DETAIL_SELECT = [
   'lot_features',
   'fencing',
   'direction_faces',
+  // IDX compliance: seller internet opt-out + IDX participation. A listing the
+  // seller withheld from internet display (ODS Rule B/G) must 404, not render.
+  'permit_internet_yn',
+  'idx_participant',
 ].join(',')
 
 type ListingRow = {
   ListingKey: string
   ListNumber: string | null
+  // IDX compliance — seller internet opt-out / IDX participation flags.
+  permit_internet_yn: boolean | null
+  idx_participant: boolean | null
   StandardStatus: ListingStatus
   ListPrice: number | null
   OriginalListPrice: number | null
@@ -394,6 +401,12 @@ async function fetchByColumn(
       .abortSignal(AbortSignal.timeout(LISTING_FETCH_TIMEOUT_MS))
     if (error) return { row: null, error }
     const row = Array.isArray(data) && data.length > 0 ? (data[0] as unknown as ListingRow) : null
+    // IDX compliance (ODS Rule B/G, NAR 7.58): a listing whose seller opted out
+    // of internet display, or whose listing broker is not an IDX participant,
+    // must NOT be publicly displayed. Treat as a genuine miss → notFound().
+    if (row && (row.permit_internet_yn === false || row.idx_participant === false)) {
+      return { row: null, error: null }
+    }
     return { row, error: null }
   } catch (err) {
     // AbortError (timeout) or a thrown network failure — treat as transient so

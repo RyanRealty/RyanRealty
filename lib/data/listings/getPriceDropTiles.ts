@@ -81,6 +81,8 @@ export async function getBrokerageListingTiles(options: {
     .from('listings')
     .select(PROJECTION)
     .ilike('ListOfficeName', `%${options.officeName.trim()}%`)
+    .not('permit_internet_yn', 'is', false) // IDX: seller internet opt-out
+    .not('idx_participant', 'is', false) // IDX: listing broker not a participant
     .not('StandardStatus', 'ilike', '%Cancel%')
     .not('StandardStatus', 'ilike', '%Withdraw%')
     .not('PhotoURL', 'is', null)
@@ -101,6 +103,8 @@ export async function getPriceDropTiles(options?: {
     .from('listings')
     .select(PROJECTION)
     .or(ACTIVE_OR)
+    .not('permit_internet_yn', 'is', false) // IDX: seller internet opt-out
+    .not('idx_participant', 'is', false) // IDX: listing broker not a participant
     .not('ListPrice', 'is', null)
     .gt('price_drop_count', 0)
     .order('total_price_change_pct', { ascending: true })

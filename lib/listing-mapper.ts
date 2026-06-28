@@ -505,6 +505,16 @@ export function sparkToListingRow(
     property_attached_yn: toBool(pick(fields, 'PropertyAttachedYN')),
     foundation_details: toText(pick(fields, 'FoundationDetails')),
 
+    // --- IDX compliance flags (ODS Rule B/G, NAR 7.58) ---
+    // The full Spark replication feed includes listings a seller opted out of
+    // internet display (PermitInternetYN=false) and listings whose broker is not
+    // an IDX participant (IDXParticipant=false). Persisting these on every sync
+    // keeps the public-display filters (MV + getListingDetail) honoring an
+    // opt-out that lands AFTER a listing is already in the table.
+    permit_internet_yn: toBool(pick(fields, 'PermitInternetYN')),
+    permit_address_internet_yn: toBool(pick(fields, 'PermitAddressInternetYN')),
+    idx_participant: toBool(pick(fields, 'IDXParticipant')),
+
     // --- Tier 2: Structure & Dimensions ---
     building_area_total: buildingAreaTotal,
     above_grade_finished_area: aboveGrade,

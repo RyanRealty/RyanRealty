@@ -92,6 +92,9 @@ async function _getUpcomingOpenHousesUncached(options: {
     .from('listings')
     .select('ListingKey, City, OpenHouses')
     .eq('StandardStatus', 'Active')
+    // IDX compliance: exclude seller internet opt-outs + non-IDX listings.
+    .not('permit_internet_yn', 'is', false)
+    .not('idx_participant', 'is', false)
     .not('OpenHouses', 'is', null)
     .neq('OpenHouses', '[]')
     // Exclude builder spec / model homes. They list "open houses" with

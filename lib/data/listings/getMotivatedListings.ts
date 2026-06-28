@@ -350,6 +350,9 @@ async function fetchMotivatedListings(
     .select(PROJECTION)
     .in('StandardStatus', ACTIVE_STATUSES)
     .eq('PropertyType', 'A') // SFR only
+    // IDX compliance: exclude seller internet opt-outs + non-IDX listings.
+    .not('permit_internet_yn', 'is', false)
+    .not('idx_participant', 'is', false)
     .not('PhotoURL', 'is', null) // must have a photo
     .gte('BedroomsTotal', 1) // exclude raw land parcels
     .limit(OVERFETCH)
