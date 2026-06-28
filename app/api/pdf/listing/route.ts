@@ -24,7 +24,11 @@ export async function POST(request: Request) {
 
   const { getListingRawRowByKey, getListingDetailPhotos, getListingDetailAgents } = await import('@/lib/data')
   const listing = await getListingRawRowByKey(listingKey)
-  if (!listing) {
+  // IDX compliance (ODS Rule B/G, NAR 7.58): never render a PDF for a listing the
+  // seller withheld from internet display, or whose broker is not an IDX participant.
+  // This is a public, unauthenticated endpoint, so the guard lives here.
+  const lr = listing as Record<string, unknown> | null
+  if (!lr || lr.permit_internet_yn === false || lr.idx_participant === false) {
     return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
   }
   const [photos, agents] = await Promise.all([

@@ -382,7 +382,7 @@ function ViewGroup({
                   {fmtCount(view.count)}
                 </span>
                 {onRename || onDelete || onShare ? (
-                  <div className="ml-0.5 flex shrink-0 items-center opacity-0 transition-opacity focus-within:opacity-100 group-hover/view:opacity-100">
+                  <div className="ml-0.5 flex shrink-0 items-center opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 focus-within:opacity-100 group-hover/view:opacity-100">
                     {onShare ? (
                       <Button
                         size="icon"
