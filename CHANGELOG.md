@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.651.0 (2026-06-28)
+
+### Features
+- feat(buyer-lp): live 'Active in Bend right now' homes rail — prove the inventory before the ask
+
+---
+
+
 ## v1.650.2 (2026-06-28)
 
 ### Maintenance
