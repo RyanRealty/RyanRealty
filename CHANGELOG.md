@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.649.4 (2026-06-28)
+
+### Bug Fixes
+- fix(idx): honor seller internet opt-out — stop displaying PermitInternetYN=false listings
+
+---
+
+
 ## v1.649.3 (2026-06-27)
 
 ### Bug Fixes
