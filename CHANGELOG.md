@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.650.2 (2026-06-28)
+
+### Maintenance
+- chore(docs): refresh schema snapshot for brokers.notify_sms
+
+---
+
+
 ## v1.650.1 (2026-06-28)
 
 ### Bug Fixes
