@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.652.0 (2026-06-28)
+
+### Features
+- feat(seo): deep sourced 'About' content for Broken Top, Tetherow, Black Butte Ranch, Brasada Ranch
+
+---
+
+
 ## v1.651.0 (2026-06-28)
 
 ### Features
