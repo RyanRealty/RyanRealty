@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.650.1 (2026-06-28)
+
+### Bug Fixes
+- fix(crm): admin sweep — brokers/team/import settings tables unusable on mobile
+
+---
+
+
 ## v1.650.0 (2026-06-28)
 
 ### Features
