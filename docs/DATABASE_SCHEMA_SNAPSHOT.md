@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-26T17:58:45.648Z
+**Generated:** 2026-06-28T05:34:03.127Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -219,6 +219,9 @@ Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case co
 | `boundary_neighborhood` | text | yes |  |
 | `boundary_subdivision` | text | yes |  |
 | `media_suppressed` | boolean | no | false |
+| `permit_internet_yn` | boolean | yes |  |
+| `permit_address_internet_yn` | boolean | yes |  |
+| `idx_participant` | boolean | yes |  |
 
 ### `open_houses` · **rows ≈ 20**
 
@@ -300,7 +303,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 590,767**
+### `listing_tile_mv` · **rows ≈ 592,039**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -344,7 +347,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 76,133**
+### `similar_listings_mv` · **rows ≈ 76,153**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 
@@ -413,7 +416,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 18,748**
+### `market_stats_cache` · **rows ≈ 19,229**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -658,7 +661,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 59**
+### `expired_listings` · **rows ≈ 61**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -702,7 +705,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `owner_lookup_attempts` | integer | yes | 0 |
 | `last_owner_lookup_at` | timestamp with time zone | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 117**
+### `marketing_brain_actions` · **rows ≈ 118**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
