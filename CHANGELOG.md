@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.649.6 (2026-06-28)
+
+### Bug Fixes
+- fix(idx,crm): guard public listing-PDF route against opt-outs + show smart-list actions on touch
+
+---
+
+
 ## v1.649.5 (2026-06-28)
 
 ### Maintenance
