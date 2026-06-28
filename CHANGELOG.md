@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.650.0 (2026-06-28)
+
+### Features
+- feat(crm): per-broker SMS notification opt-in (default off)
+
+---
+
+
 ## v1.649.9 (2026-06-28)
 
 ### Bug Fixes
