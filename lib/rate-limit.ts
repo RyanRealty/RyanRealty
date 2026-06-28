@@ -96,7 +96,18 @@ export async function checkRateLimit(
   if (!limiter) return { limited: false }
 
   const ip = getClientIp(request)
-  const { success, limit, remaining, reset } = await limiter.limit(ip)
+  // Fail OPEN if Upstash is unavailable or over its monthly request quota — match
+  // the edge middleware's behavior. Rate limiting is a best-effort abuse guard, not
+  // a correctness gate, so a limiter outage must never 500 a real request (it was
+  // taking down CMA/listing PDFs, AI, and semantic search when the quota was hit).
+  let limitResult: Awaited<ReturnType<typeof limiter.limit>>
+  try {
+    limitResult = await limiter.limit(ip)
+  } catch (err) {
+    console.error('[rate-limit] limiter unavailable, failing open:', err instanceof Error ? err.message : err)
+    return { limited: false }
+  }
+  const { success, limit, remaining, reset } = limitResult
 
   if (!success) {
     return {
