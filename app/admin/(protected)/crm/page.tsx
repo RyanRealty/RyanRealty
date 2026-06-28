@@ -231,6 +231,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
           activeViewId={activeViewId}
           activeFilters={activeFilters}
           hasActiveFilter={hasActiveFilter}
+          canManageSystem={access.role === 'superuser'}
         />
 
         {/* CENTRE: search bar + toolbar row + table + pagination */}

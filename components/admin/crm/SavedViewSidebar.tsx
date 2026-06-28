@@ -64,6 +64,13 @@ export type SavedViewSidebarProps = {
   activeFilters: LegacyFilters
   /** True when the active filter bag holds something worth saving. */
   hasActiveFilter: boolean
+  /**
+   * True when the viewer may manage the org/system lists (owner_email = NULL).
+   * Per canEditView, a superuser (Matt) may rename / re-share / delete the seeds;
+   * non-superusers see them read-only. Drives whether the System-list groups get
+   * edit controls.
+   */
+  canManageSystem?: boolean
 }
 
 function fmtCount(count: number | null): string {
@@ -72,7 +79,7 @@ function fmtCount(count: number | null): string {
 }
 
 export default function SavedViewSidebar({
-  views, activeViewId, activeFilters, hasActiveFilter,
+  views, activeViewId, activeFilters, hasActiveFilter, canManageSystem = false,
 }: SavedViewSidebarProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -185,6 +192,9 @@ export default function SavedViewSidebar({
                   views={col.views}
                   activeViewId={activeViewId}
                   isPending={isPending}
+                  onRename={canManageSystem ? openRename : undefined}
+                  onDelete={canManageSystem ? openDelete : undefined}
+                  onShare={canManageSystem ? toggleShare : undefined}
                   collectionStyle
                 />
               ))}
@@ -217,6 +227,9 @@ export default function SavedViewSidebar({
             views={systemViews}
             activeViewId={activeViewId}
             isPending={isPending}
+            onRename={canManageSystem ? openRename : undefined}
+            onDelete={canManageSystem ? openDelete : undefined}
+            onShare={canManageSystem ? toggleShare : undefined}
           />
           <ViewGroup
             title="My views"
@@ -382,7 +395,7 @@ function ViewGroup({
                   {fmtCount(view.count)}
                 </span>
                 {onRename || onDelete || onShare ? (
-                  <div className="ml-0.5 flex shrink-0 items-center opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 focus-within:opacity-100 group-hover/view:opacity-100">
+                  <div className="ml-0.5 flex shrink-0 items-center">
                     {onShare ? (
                       <Button
                         size="icon"
