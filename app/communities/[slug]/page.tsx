@@ -425,9 +425,17 @@ export default async function CommunityDetailPage({ params }: Props) {
   // Deep, sourced About prose for the top-SEO-opportunity resort communities
   // (lib/community-seo-content.ts) overrides the thin default description so these
   // pages climb for "[community] homes for sale". Falls back to the registry desc.
-  const aboutParagraphs: string[] = getCommunitySeoAbout(slug) ?? [
+  const seoAbout = getCommunitySeoAbout(slug)
+  const aboutParagraphs: string[] = seoAbout ?? [
     community.description ?? registryEntry?.description ?? '',
   ].filter((p): p is string => Boolean(p && p.trim().length > 0))
+  // When a richContent config exists (KbResortOverview carries the overview and
+  // suppresses the data-driven About), feed the deep sourced prose into its overview
+  // in place so it shows on those pages too. richContent is a fresh per-request object,
+  // so mutating aboutProse is safe and keeps the content={richContent} contract (D100).
+  if (richContent && seoAbout) {
+    richContent.aboutProse = seoAbout
+  }
   const aboutFacts: { label: string; value: string }[] = [
     { label: 'Active single-family', value: activeCount.toLocaleString('en-US') },
     ...(medianListPrice != null ? [{ label: 'Median list', value: fmtK(medianListPrice) ?? '—' }] : []),
