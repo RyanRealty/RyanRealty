@@ -296,13 +296,13 @@ export function TemplateEditor({
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-1/3">Name</TableHead>
-                        <TableHead className="w-1/8">Channel</TableHead>
-                        <TableHead className="w-1/12 text-right tabular-nums">In use</TableHead>
+                        <TableHead className="hidden w-1/8 md:table-cell">Channel</TableHead>
+                        <TableHead className="hidden w-1/12 text-right tabular-nums md:table-cell">In use</TableHead>
                         {hasPerf ? (
                           <>
-                            <TableHead className="w-1/12 text-right tabular-nums">Sends</TableHead>
-                            <TableHead className="w-1/12 text-right tabular-nums">Open%</TableHead>
-                            <TableHead className="w-1/12 text-right tabular-nums">Click%</TableHead>
+                            <TableHead className="hidden w-1/12 text-right tabular-nums md:table-cell">Sends</TableHead>
+                            <TableHead className="hidden w-1/12 text-right tabular-nums md:table-cell">Open%</TableHead>
+                            <TableHead className="hidden w-1/12 text-right tabular-nums md:table-cell">Click%</TableHead>
                           </>
                         ) : null}
                         <TableHead className="w-1/8">Status</TableHead>
@@ -312,35 +312,45 @@ export function TemplateEditor({
                     <TableBody>
                       {catRows.map((row) => (
                         <TableRow key={row.id}>
-                          <TableCell className="font-medium text-foreground">{row.name}</TableCell>
-                          <TableCell>
+                          <TableCell className="font-medium text-foreground">
+                            <button
+                              type="button"
+                              className="block max-w-[44vw] truncate text-left hover:underline disabled:no-underline md:max-w-none"
+                              disabled={pending}
+                              onClick={() => openEdit(row)}
+                              title={row.name}
+                            >
+                              {row.name}
+                            </button>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
                             <Badge variant="outline" className="uppercase text-xs tracking-wide">
                               {row.channel}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right tabular-nums text-muted-foreground">
+                          <TableCell className="hidden text-right tabular-nums text-muted-foreground md:table-cell">
                             {row.usage.toLocaleString('en-US')}
                           </TableCell>
                           {hasPerf ? (
                             row.channel === 'email' ? (
                               <>
-                                <TableCell className="text-right tabular-nums text-muted-foreground">
+                                <TableCell className="hidden text-right tabular-nums text-muted-foreground md:table-cell">
                                   {row.perf?.sent != null && row.perf.sent > 0
                                     ? row.perf.sent.toLocaleString('en-US')
                                     : '—'}
                                 </TableCell>
-                                <TableCell className="text-right tabular-nums text-muted-foreground">
+                                <TableCell className="hidden text-right tabular-nums text-muted-foreground md:table-cell">
                                   {fmtPct(row.perf?.openPct)}
                                 </TableCell>
-                                <TableCell className="text-right tabular-nums text-muted-foreground">
+                                <TableCell className="hidden text-right tabular-nums text-muted-foreground md:table-cell">
                                   {fmtPct(row.perf?.clickPct)}
                                 </TableCell>
                               </>
                             ) : (
                               <>
-                                <TableCell />
-                                <TableCell />
-                                <TableCell />
+                                <TableCell className="hidden md:table-cell" />
+                                <TableCell className="hidden md:table-cell" />
+                                <TableCell className="hidden md:table-cell" />
                               </>
                             )
                           ) : null}
@@ -354,7 +364,7 @@ export function TemplateEditor({
                               />
                               <span
                                 className={cn(
-                                  'text-xs',
+                                  'hidden text-xs sm:inline',
                                   row.isActive ? 'text-foreground' : 'text-muted-foreground',
                                 )}
                               >
@@ -364,10 +374,12 @@ export function TemplateEditor({
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="inline-flex items-center gap-1">
+                              {/* Mobile opens the editor by tapping the name (above); the
+                                  explicit Edit button is a desktop convenience. */}
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-8"
+                                className="hidden h-8 md:inline-flex"
                                 disabled={pending}
                                 onClick={() => openEdit(row)}
                               >

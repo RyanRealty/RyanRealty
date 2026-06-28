@@ -42,6 +42,13 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
+import { MoreVertical } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { sequenceStatusMeta } from './step-display'
 
@@ -162,11 +169,11 @@ export function WorkflowList({
             <TableRow>
               <TableHead className="w-1/4">Workflow</TableHead>
               <TableHead className="w-1/6">Status</TableHead>
-              <TableHead className="text-right tabular-nums">Steps</TableHead>
-              <TableHead className="text-right tabular-nums">Enrolled</TableHead>
-              <TableHead className="text-right tabular-nums">Active</TableHead>
-              <TableHead className="text-right tabular-nums">Waiting</TableHead>
-              <TableHead className="text-right tabular-nums">Done</TableHead>
+              <TableHead className="hidden text-right tabular-nums md:table-cell">Steps</TableHead>
+              <TableHead className="hidden text-right tabular-nums md:table-cell">Enrolled</TableHead>
+              <TableHead className="hidden text-right tabular-nums md:table-cell">Active</TableHead>
+              <TableHead className="hidden text-right tabular-nums md:table-cell">Waiting</TableHead>
+              <TableHead className="hidden text-right tabular-nums md:table-cell">Done</TableHead>
               <TableHead className="text-right">Manage</TableHead>
             </TableRow>
           </TableHeader>
@@ -186,7 +193,8 @@ export function WorkflowList({
                       <Button
                         type="button"
                         variant="link"
-                        className="h-auto p-0 text-left font-medium"
+                        className="block h-auto max-w-[32vw] truncate p-0 text-left font-medium md:max-w-none"
+                        title={row.name}
                         onClick={() => router.push(`/admin/crm/sequences/${row.id}/edit`)}
                       >
                         {row.name}
@@ -195,13 +203,51 @@ export function WorkflowList({
                     <TableCell>
                       <StatusBadge status={row.status} />
                     </TableCell>
-                    <TableCell className="text-right tabular-nums text-muted-foreground">{row.stepCount}</TableCell>
-                    <TableCell className="text-right tabular-nums text-foreground">{row.enrolled}</TableCell>
-                    <TableCell className="text-right tabular-nums text-foreground">{row.active}</TableCell>
-                    <TableCell className="text-right tabular-nums text-foreground">{row.awaitingBroker}</TableCell>
-                    <TableCell className="text-right tabular-nums text-muted-foreground">{row.completed}</TableCell>
+                    <TableCell className="hidden text-right tabular-nums text-muted-foreground md:table-cell">{row.stepCount}</TableCell>
+                    <TableCell className="hidden text-right tabular-nums text-foreground md:table-cell">{row.enrolled}</TableCell>
+                    <TableCell className="hidden text-right tabular-nums text-foreground md:table-cell">{row.active}</TableCell>
+                    <TableCell className="hidden text-right tabular-nums text-foreground md:table-cell">{row.awaitingBroker}</TableCell>
+                    <TableCell className="hidden text-right tabular-nums text-muted-foreground md:table-cell">{row.completed}</TableCell>
                     <TableCell className="text-right">
-                      <div className="inline-flex flex-wrap items-center justify-end gap-1">
+                      {/* Mobile: a single overflow menu — the inline button row
+                          doesn't fit a phone, so it gets clipped off-screen. */}
+                      <div className="flex justify-end md:hidden">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" disabled={pending} aria-label={`Manage ${row.name}`}>
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => router.push(`/admin/crm/sequences/${row.id}/edit`)}>
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              disabled={row.status === 'archived'}
+                              onSelect={() => run(() => actions.setStatus(row.id, isActive ? 'paused' : 'active'), isActive ? 'Workflow paused' : 'Workflow activated')}
+                            >
+                              {isActive ? 'Pause' : 'Activate'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => run(() => actions.duplicate(row.id), 'Workflow duplicated')}>
+                              Duplicate
+                            </DropdownMenuItem>
+                            {row.status === 'archived' ? null : (
+                              <DropdownMenuItem onSelect={() => run(() => actions.archive(row.id), 'Workflow archived')}>
+                                Archive
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                              disabled={row.isAutoEnrollMaster}
+                              className="text-destructive focus:text-destructive"
+                              onSelect={() => { setDeleteRow(row); setNote(null) }}
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                      {/* Desktop: the full inline button row. */}
+                      <div className="hidden md:flex md:flex-wrap md:items-center md:justify-end md:gap-1">
                         <Button
                           variant="outline"
                           size="sm"
