@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.652.1 (2026-06-28)
+
+### Bug Fixes
+- fix(seo): deep About prose now shows on Broken Top, Black Butte Ranch, Tetherow too
+
+---
+
+
 ## v1.652.0 (2026-06-28)
 
 ### Features
