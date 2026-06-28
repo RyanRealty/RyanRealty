@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.649.5 (2026-06-28)
+
+### Maintenance
+- chore(docs): refresh schema snapshot + DAL index for IDX opt-out columns
+
+---
+
+
 ## v1.649.4 (2026-06-28)
 
 ### Bug Fixes
