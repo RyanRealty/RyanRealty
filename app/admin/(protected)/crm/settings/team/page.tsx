@@ -125,17 +125,17 @@ export default async function TeamSettingsPage() {
       title="Team"
       description="All admin users and their CRM permissions. Toggle export access and lead-routing pause state. Edit identity fields (name, phone, Twilio number) via the broker profile."
     >
-      <div className="mt-4 rounded-xl border border-border bg-card overflow-x-auto no-scrollbar">
+      <div className="mt-4 rounded-xl border border-border bg-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="min-w-[160px]">Name / Email</TableHead>
-              <TableHead className="w-28">Role</TableHead>
-              <TableHead className="w-24 text-center">CRM active</TableHead>
-              <TableHead className="w-24 text-center">Routing</TableHead>
-              <TableHead className="w-28 text-center">Can export</TableHead>
-              <TableHead className="w-28 text-center">Pause leads</TableHead>
-              <TableHead className="min-w-[130px]">Last seen</TableHead>
+              <TableHead className="min-w-[112px]">Name / Email</TableHead>
+              <TableHead className="hidden w-28 md:table-cell">Role</TableHead>
+              <TableHead className="hidden w-24 text-center md:table-cell">CRM active</TableHead>
+              <TableHead className="hidden w-24 text-center md:table-cell">Routing</TableHead>
+              <TableHead className="w-20 text-center text-xs md:text-sm">Export</TableHead>
+              <TableHead className="w-20 text-center text-xs md:text-sm">Pause</TableHead>
+              <TableHead className="hidden min-w-[130px] md:table-cell">Last seen</TableHead>
               <TableHead className="w-16"></TableHead>
             </TableRow>
           </TableHeader>
@@ -155,28 +155,30 @@ export default async function TeamSettingsPage() {
                 <TableRow key={row.email}>
                   {/* Name / Email */}
                   <TableCell>
-                    <div className="font-medium text-foreground text-sm">
+                    <div className="max-w-[108px] truncate font-medium text-foreground text-sm md:max-w-none">
                       {row.brokerName ?? '—'}
                     </div>
-                    <div className="text-xs text-muted-foreground">{row.email}</div>
+                    <div className="max-w-[108px] truncate text-xs text-muted-foreground md:max-w-none" title={row.email}>
+                      {row.email}
+                    </div>
                   </TableCell>
 
                   {/* Role badge */}
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <Badge variant={roleVariant(row.role)} className="text-xs capitalize">
                       {row.role}
                     </Badge>
                   </TableCell>
 
                   {/* CRM active — read-only here; edit at /admin/crm/settings/brokers */}
-                  <TableCell className="text-center">
+                  <TableCell className="hidden text-center md:table-cell">
                     <span className={`text-xs font-medium ${row.crmActive ? 'text-foreground' : 'text-muted-foreground'}`}>
                       {row.crmActive ? 'Yes' : 'No'}
                     </span>
                   </TableCell>
 
                   {/* Routing eligible — read-only here */}
-                  <TableCell className="text-center">
+                  <TableCell className="hidden text-center md:table-cell">
                     <span className={`text-xs font-medium ${row.routingEligible ? 'text-foreground' : 'text-muted-foreground'}`}>
                       {row.routingEligible ? 'Yes' : 'No'}
                     </span>
@@ -215,7 +217,7 @@ export default async function TeamSettingsPage() {
                   </TableCell>
 
                   {/* Last seen */}
-                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                  <TableCell className="hidden text-xs text-muted-foreground whitespace-nowrap md:table-cell">
                     {fmtLastSeen(row.lastSeenAt, row.lastSeenPlatform)}
                   </TableCell>
 

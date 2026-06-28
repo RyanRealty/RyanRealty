@@ -49,13 +49,13 @@ export default async function CrmBrokersSettingsPage() {
       title="Brokers"
       description="The CRM broker roster used for assignment and round-robin lead routing. Toggle a broker in or out of the CRM, and whether they receive routed leads."
     >
-      <div className="mt-4 rounded-xl border border-border bg-card overflow-x-auto no-scrollbar">
+      <div className="mt-4 rounded-xl border border-border bg-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-1/5">Slug</TableHead>
+              <TableHead className="hidden w-1/5 md:table-cell">Slug</TableHead>
               <TableHead className="w-1/4">Name</TableHead>
-              <TableHead className="w-1/4">Email</TableHead>
+              <TableHead className="hidden w-1/4 md:table-cell">Email</TableHead>
               <TableHead className="w-1/6">CRM active</TableHead>
               <TableHead className="w-1/6">Routing</TableHead>
             </TableRow>
@@ -70,9 +70,9 @@ export default async function CrmBrokersSettingsPage() {
             ) : (
               brokers.map((b) => (
                 <TableRow key={b.slug}>
-                  <TableCell className="font-mono text-xs text-muted-foreground">{b.slug}</TableCell>
+                  <TableCell className="hidden font-mono text-xs text-muted-foreground md:table-cell">{b.slug}</TableCell>
                   <TableCell className="font-medium text-foreground">{b.name || '—'}</TableCell>
-                  <TableCell className="text-muted-foreground">{b.email ?? '—'}</TableCell>
+                  <TableCell className="hidden text-muted-foreground md:table-cell">{b.email ?? '—'}</TableCell>
                   <TableCell>
                     <form action={toggleActive}>
                       <Input type="hidden" name="crmSlug" value={b.slug} readOnly />

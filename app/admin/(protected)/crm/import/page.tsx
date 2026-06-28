@@ -62,36 +62,36 @@ export default async function ImportListPage() {
             No imports yet. Upload a CSV to get started.
           </div>
         ) : (
-          <div className="rounded-xl border border-border bg-card overflow-x-auto no-scrollbar">
+          <div className="rounded-xl border border-border bg-card overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">#</TableHead>
+                  <TableHead className="hidden w-12 md:table-cell">#</TableHead>
                   <TableHead>Started</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Rows</TableHead>
-                  <TableHead className="text-right">Imported</TableHead>
-                  <TableHead className="text-right">Skipped</TableHead>
-                  <TableHead className="text-right">Errors</TableHead>
-                  <TableHead>Finished</TableHead>
+                  <TableHead className="hidden text-right md:table-cell">Rows</TableHead>
+                  <TableHead className="hidden text-right md:table-cell">Imported</TableHead>
+                  <TableHead className="hidden text-right md:table-cell">Skipped</TableHead>
+                  <TableHead className="hidden text-right md:table-cell">Errors</TableHead>
+                  <TableHead className="hidden md:table-cell">Finished</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {jobs.map((job) => (
                   <TableRow key={job.id}>
-                    <TableCell className="font-mono text-xs text-muted-foreground">{job.id}</TableCell>
+                    <TableCell className="hidden font-mono text-xs text-muted-foreground md:table-cell">{job.id}</TableCell>
                     <TableCell className="text-sm">{fmtDate(job.startedAt)}</TableCell>
                     <TableCell>
                       <Badge variant={statusVariant(job.status)} className="text-xs capitalize">
                         {job.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right text-sm">{job.rowCount ?? '—'}</TableCell>
-                    <TableCell className="text-right text-sm text-success">{job.counts.imported}</TableCell>
-                    <TableCell className="text-right text-sm text-muted-foreground">{job.counts.skipped}</TableCell>
-                    <TableCell className="text-right text-sm text-destructive">{job.counts.errors}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{fmtDate(job.finishedAt)}</TableCell>
+                    <TableCell className="hidden text-right text-sm md:table-cell">{job.rowCount ?? '—'}</TableCell>
+                    <TableCell className="hidden text-right text-sm text-success md:table-cell">{job.counts.imported}</TableCell>
+                    <TableCell className="hidden text-right text-sm text-muted-foreground md:table-cell">{job.counts.skipped}</TableCell>
+                    <TableCell className="hidden text-right text-sm text-destructive md:table-cell">{job.counts.errors}</TableCell>
+                    <TableCell className="hidden text-sm text-muted-foreground md:table-cell">{fmtDate(job.finishedAt)}</TableCell>
                     <TableCell>
                       <Link href={`/admin/crm/import/${job.id}`}>
                         <Button variant="ghost" size="sm" className="text-xs h-7">
