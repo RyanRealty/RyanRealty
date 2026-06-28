@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.649.9 (2026-06-28)
+
+### Bug Fixes
+- fix(crm): email templates + workflows were unmanageable on mobile
+
+---
+
+
 ## v1.649.8 (2026-06-28)
 
 ### Bug Fixes
