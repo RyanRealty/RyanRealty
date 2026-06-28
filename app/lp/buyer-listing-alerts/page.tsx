@@ -11,7 +11,8 @@ import {
 import BuyerLPForm from './BuyerLPForm'
 import { CONTACT } from '@/lib/brand/contact'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
-import { getAllCommunitySnapshots, getGeoSnapshot } from '@/lib/data'
+import { getAllCommunitySnapshots, getGeoSnapshot, getListingTiles } from '@/lib/data'
+import { listingTileHref } from '@/lib/slug'
 import { communityImage, SUNRIVER_DESCHUTES_PHOTO } from '@/lib/geo-images'
 import { TESTIMONIALS } from '@/lib/testimonials'
 import { ReviewStrip } from '@/components/landing/ReviewCard'
@@ -124,12 +125,15 @@ export default async function BuyerLPPage() {
   // per-community active/pending counts (geo_snapshot_mv). Both via existing
   // DAL functions, both graceful-null. CLAUDE.md §0 Data Accuracy: live
   // values or the em-dash placeholder, never an invented number.
-  const [bendPulse, communitySnapshots, sunriverCitySnap] = await Promise.all([
+  const [bendPulse, communitySnapshots, sunriverCitySnap, liveBendRaw] = await Promise.all([
     getMarketPulse({ geoType: 'city', geoSlug: 'bend' }),
     getAllCommunitySnapshots().catch(() => []),
     // Sunriver proper is a CITY in geo_snapshot_mv (no community row exists
     // for it) — pull its city snapshot for the Sunriver tile counts.
     getGeoSnapshot({ geoType: 'city', geoKey: 'sunriver' }).catch(() => null),
+    // Live Bend homes for the "prove the inventory before the ask" rail. Reads
+    // listing_tile_mv via the DAL — already opt-out / non-IDX filtered (§0 + IDX).
+    getListingTiles({ city: 'Bend', status: 'active', sort: 'newest', limit: 18 }).catch(() => []),
   ])
   const activeCount = bendPulse?.activeCount ?? null
 
@@ -161,6 +165,40 @@ export default async function BuyerLPPage() {
       pending: counts != null && counts.pending > 0 ? counts.pending : null,
     }
   })
+
+  // Live Bend homes rail — proof of fresh inventory before the ask. §0: real
+  // active listings (opt-out / non-IDX filtered MV), real price + beds, photo
+  // required. Rounded to the nearest thousand per brand currency rule.
+  const fmtK = (n: number | null): string =>
+    n != null ? '$' + (Math.round(n / 1000) * 1000).toLocaleString('en-US') : 'Call for price'
+  const liveBendCards = (liveBendRaw ?? [])
+    .filter((l) => typeof l.photoUrl === 'string' && l.photoUrl.trim() !== '' && l.listPrice != null)
+    .slice(0, 6)
+    .map((l) => {
+      const address = [l.streetNumber, l.streetName].filter(Boolean).join(' ').trim() || 'Bend, Oregon'
+      const meta = [
+        l.beds != null ? `${Math.round(l.beds)} bd` : null,
+        l.baths != null ? `${l.baths} ba` : null,
+        l.sqft != null ? `${l.sqft.toLocaleString('en-US')} sqft` : null,
+      ].filter(Boolean).join('  ·  ')
+      return {
+        key: l.listingKey,
+        href: listingTileHref({
+          listingKey: l.listingKey,
+          listNumber: l.listNumber,
+          streetNumber: l.streetNumber,
+          streetName: l.streetName,
+          city: l.city,
+          subdivisionName: l.subdivisionName,
+        }),
+        photo: l.photoUrl as string,
+        alt: `${address} in Bend, Oregon`,
+        price: fmtK(l.listPrice),
+        address,
+        cityLine: [l.city ? `${l.city}, OR` : 'Bend, OR', l.subdivisionName].filter(Boolean).join(' · '),
+        meta,
+      }
+    })
 
   // Market authority band — 3 live stat cards from the Bend pulse.
   const authorityStats: Array<{ value: string; label: string; sub: string }> = [
@@ -227,7 +265,7 @@ export default async function BuyerLPPage() {
       </header>
 
       {/* ─── HERO — canonical Old Mill photo, navy scrim, 3-field form card ── */}
-      <section className="relative isolate border-b-[3px] border-[#102742]">
+      <section id="alerts" className="relative isolate border-b-[3px] border-[#102742] scroll-mt-16">
         <Image
           src="/images/hero/hero-old-mill-master-4k.jpg"
           alt=""
@@ -305,6 +343,68 @@ export default async function BuyerLPPage() {
           </div>
         </div>
       </section>
+
+      {/* ─── S1b · Live in Bend right now — prove the inventory before the ask ── */}
+      {liveBendCards.length > 0 ? (
+        <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
+          <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
+            <ScrollReveal>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
+                Active in Bend right now
+              </p>
+              <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
+                New homes hit the market every week
+              </h2>
+              <p className="mt-4 max-w-2xl text-base text-[#102742]/70">
+                These are live in Bend today, pulled straight from the MLS. Homes like these reach
+                your inbox the morning they list. No portal delay, no pay-to-rank ranking.
+              </p>
+            </ScrollReveal>
+            <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {liveBendCards.map((c, i) => (
+                <ScrollReveal key={c.key} delayMs={(i % 3) * 75}>
+                  <a
+                    href={c.href}
+                    className="group block overflow-hidden border-[3px] border-[#102742] bg-[#102742] text-[#faf8f4] transition-transform duration-300 hover:-translate-y-1"
+                  >
+                    <div className="relative aspect-[4/3] w-full overflow-hidden">
+                      <Image
+                        src={c.photo}
+                        alt={c.alt}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <p className="font-display text-2xl leading-none">{c.price}</p>
+                      <p className="mt-2 text-sm text-[#faf8f4]/90">{c.address}</p>
+                      <p className="text-xs text-[#faf8f4]/70">{c.cityLine}</p>
+                      {c.meta ? (
+                        <p className="mt-3 text-[0.7rem] uppercase tracking-widest text-[#faf8f4]/70">{c.meta}</p>
+                      ) : null}
+                    </div>
+                  </a>
+                </ScrollReveal>
+              ))}
+            </div>
+            <div className="mt-10 flex flex-wrap items-center gap-4">
+              <a
+                href="#alerts"
+                className="inline-flex items-center gap-2 border-[3px] border-[#102742] bg-[#102742] px-6 py-3 text-sm font-semibold uppercase tracking-widest text-[#faf8f4] transition-colors hover:bg-[#102742]/85"
+              >
+                Start your alerts
+              </a>
+              <a
+                href="/homes-for-sale/bend"
+                className="text-sm font-semibold uppercase tracking-widest text-[#102742] underline-offset-4 hover:underline"
+              >
+                See all active Bend homes
+              </a>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {/* ─── S2 · Trust strip band (cream) ─────────────────────────────────── */}
       <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
