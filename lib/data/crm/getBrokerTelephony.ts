@@ -15,7 +15,7 @@ import { CRM_BROKER_BY_EMAIL, type CrmBrokerSlug } from '@/lib/crm/constants'
  * Twilio line resolves to the broker who owns that line, regardless of who the
  * caller is.
  */
-export type BrokerTelephonyEntry = { twilioNumber: string | null; forwardToCell: string | null }
+export type BrokerTelephonyEntry = { twilioNumber: string | null; forwardToCell: string | null; smsOptIn: boolean }
 export type BrokerTelephony = {
   bySlug: Partial<Record<CrmBrokerSlug, BrokerTelephonyEntry>>
   /** normalized last-10 of each broker's twilio_number → CRM slug */
@@ -34,16 +34,16 @@ export const getBrokerTelephony = unstable_cache(
     if (!sb) return out
     const { data, error } = await sb
       .from('brokers')
-      .select('email, twilio_number, forward_to_cell')
+      .select('email, twilio_number, forward_to_cell, notify_sms')
       .eq('is_active', true)
     if (error || !data) {
       if (error) console.error('[getBrokerTelephony]', error.message)
       return out
     }
-    for (const row of data as Array<{ email: string | null; twilio_number: string | null; forward_to_cell: string | null }>) {
+    for (const row of data as Array<{ email: string | null; twilio_number: string | null; forward_to_cell: string | null; notify_sms: boolean | null }>) {
       const slug = CRM_BROKER_BY_EMAIL[String(row.email ?? '').trim().toLowerCase()]
       if (!slug) continue
-      out.bySlug[slug] = { twilioNumber: row.twilio_number ?? null, forwardToCell: row.forward_to_cell ?? null }
+      out.bySlug[slug] = { twilioNumber: row.twilio_number ?? null, forwardToCell: row.forward_to_cell ?? null, smsOptIn: row.notify_sms === true }
       const t10 = last10(row.twilio_number)
       if (t10) out.byTwilioLast10[t10] = slug
     }

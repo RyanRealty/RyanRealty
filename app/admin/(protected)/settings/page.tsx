@@ -29,7 +29,7 @@ export default async function MySettingsPage() {
   const sb = createServiceClient()
   const { data: broker } = await sb
     .from('brokers')
-    .select('id, display_name, email, notify_new_leads, notify_deal_activity, notify_task_due, email_signature')
+    .select('id, display_name, email, notify_new_leads, notify_deal_activity, notify_task_due, notify_sms, email_signature')
     .eq('email', email)
     .maybeSingle()
 
@@ -51,6 +51,7 @@ export default async function MySettingsPage() {
           notifyNewLeads={broker.notify_new_leads ?? true}
           notifyDealActivity={broker.notify_deal_activity ?? true}
           notifyTaskDue={broker.notify_task_due ?? true}
+          notifySms={broker.notify_sms ?? false}
           emailSignature={broker.email_signature ?? ''}
         />
       )}

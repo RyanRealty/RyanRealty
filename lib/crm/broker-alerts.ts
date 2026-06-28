@@ -17,6 +17,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { recentHealthAlertExists, insertHealthAlert } from '@/lib/data/crm/healthAlertQueue'
+import { getBrokerTelephony } from '@/lib/data/crm/getBrokerTelephony'
 
 const ALERT_PHONE_BY_BROKER: Record<string, string | undefined> = {
   matt: process.env.TWILIO_FORWARD_MATT,
@@ -128,6 +129,13 @@ export async function queueBrokerAlert(params: {
     const broker = params.broker && ALERT_PHONE_BY_BROKER[params.broker] ? params.broker : 'matt'
     const toPhone = ALERT_PHONE_BY_BROKER[broker]
     if (!toPhone) return false
+
+    // Per-broker SMS opt-in — default OFF (Matt 2026-06-28). The mac-mini poller
+    // texts every crm_broker_alerts row, so an opted-out broker is gated HERE at
+    // queue time. Email + dashboard alert paths are separate and unaffected. (Ops
+    // health alerts use queueBrokerHealthAlert and are intentionally NOT gated.)
+    const tel = await getBrokerTelephony()
+    if (!tel.bySlug[broker as keyof typeof tel.bySlug]?.smsOptIn) return false
 
     // dedupe gate — first writer wins
     const { error: dedupeErr } = await sb.from('crm_timeline').insert({

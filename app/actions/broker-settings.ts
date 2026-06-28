@@ -12,6 +12,7 @@
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getCrmAccess } from '@/app/actions/crm'
+import { cacheTag } from '@/lib/data/cache/unstable-cache'
 
 export type BrokerSettingsResult = { ok: true } | { ok: false; error: string }
 
@@ -19,11 +20,15 @@ export type BrokerSettingsPayload = {
   notify_new_leads?: boolean
   notify_deal_activity?: boolean
   notify_task_due?: boolean
+  /** Opt-in for SMS lead/activity alerts (default OFF). Gates queueBrokerAlert. */
+  notify_sms?: boolean
   email_signature?: string
 }
 
 function bust(brokerId: string) {
   revalidateTag('broker-settings', 'max')
+  // getBrokerTelephony (the SMS opt-in source for queueBrokerAlert) is tagged here.
+  revalidateTag(cacheTag.brokers, 'max')
   revalidatePath('/admin/settings')
   revalidatePath(`/admin/brokers/edit?id=${brokerId}`)
 }
@@ -63,6 +68,7 @@ export async function saveBrokerSettingsAction(
   if (typeof payload.notify_new_leads === 'boolean') update.notify_new_leads = payload.notify_new_leads
   if (typeof payload.notify_deal_activity === 'boolean') update.notify_deal_activity = payload.notify_deal_activity
   if (typeof payload.notify_task_due === 'boolean') update.notify_task_due = payload.notify_task_due
+  if (typeof payload.notify_sms === 'boolean') update.notify_sms = payload.notify_sms
   if (typeof payload.email_signature === 'string') update.email_signature = payload.email_signature.slice(0, 4000)
 
   if (Object.keys(update).length === 0) return { ok: true }

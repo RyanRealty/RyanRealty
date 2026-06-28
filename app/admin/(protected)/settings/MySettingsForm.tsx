@@ -20,6 +20,7 @@ type Props = {
   notifyNewLeads: boolean
   notifyDealActivity: boolean
   notifyTaskDue: boolean
+  notifySms: boolean
   emailSignature: string
 }
 
@@ -29,11 +30,13 @@ export default function MySettingsForm({
   notifyNewLeads: initNewLeads,
   notifyDealActivity: initDealActivity,
   notifyTaskDue: initTaskDue,
+  notifySms: initSms,
   emailSignature: initSig,
 }: Props) {
   const [notifyNewLeads, setNotifyNewLeads] = useState(initNewLeads)
   const [notifyDealActivity, setNotifyDealActivity] = useState(initDealActivity)
   const [notifyTaskDue, setNotifyTaskDue] = useState(initTaskDue)
+  const [notifySms, setNotifySms] = useState(initSms)
   const [emailSignature, setEmailSignature] = useState(initSig)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
@@ -46,6 +49,7 @@ export default function MySettingsForm({
       notify_new_leads: notifyNewLeads,
       notify_deal_activity: notifyDealActivity,
       notify_task_due: notifyTaskDue,
+      notify_sms: notifySms,
       email_signature: emailSignature,
     })
     setSaving(false)
@@ -86,6 +90,14 @@ export default function MySettingsForm({
           description="Alert when a task assigned to you is due or overdue."
           checked={notifyTaskDue}
           onChange={setNotifyTaskDue}
+        />
+        <Separator />
+        <NotifToggle
+          id="notify-sms"
+          label="Text me these alerts (SMS)"
+          description="Off by default. When on, your lead and activity alerts are also sent to your cell by text."
+          checked={notifySms}
+          onChange={setNotifySms}
         />
       </section>
 
