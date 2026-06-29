@@ -20,6 +20,23 @@ Legend: **FUB** = what the FUB app does (the target) · **Ours** = current Ryan 
 - **C9 (labels)** — contact tabs relabeled to FUB: **Info · Comms · Tasks · Homes ·
   Workflow · Activity** (keys unchanged; hash routing intact).
 
+## ✅ Shipped 2026-06-29 (pass 2 — Matt directive: "make ours identical to FUB, ours is clunky")
+
+- **Info tab decluttered to FUB structure** — removed the redundant big
+  Call/Text/Email buttons, the inline Stage/Assign dropdown+button forms, the
+  standalone Source badge, and the "Plugged in" block. Info is now: Phone
+  numbers · Emails · Details (Assigned/Stage/Source/Tags) · Memberships ·
+  Relationships · Custom fields. Verified at 375px.
+- **Call/Text/Email consolidated into the + button** — added "Call" to the
+  context-aware + quick-action sheet (was Send text/email/note); call/text/email
+  now all live in the + + the per-number icons (FUB pattern), not scattered.
+
+### Follow-up (cheap, non-breaking warnings introduced by the declutter)
+- Remove now-dead fetches/defs in `app/admin/console/leads/[id]/page.tsx`:
+  `membership` + `firstTouch` (in the 14-way Promise.all destructure),
+  `activeEnrollments`, and the `assignNewsletterForm` / `enrollWorkflowForm`
+  server-action defs. ESLint warnings only; removing trims 2 dead queries/page.
+
 ## ⏭️ Remaining (next session — roughly highest-value first)
 
 - **C10 deal pill data** — surface the contact's open-deal value to fill the pill
