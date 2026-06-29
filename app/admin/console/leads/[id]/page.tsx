@@ -55,6 +55,7 @@ import { SmsComposer } from '@/components/admin/crm/SmsComposer'
 import { TemplatePickerNav } from '@/components/admin/crm/TemplatePickerNav'
 import ConversationFeed from '@/components/admin/crm/ConversationFeed'
 import ViewedHomeCard from '@/components/admin/crm/ViewedHomeCard'
+import AutoSubmitSelect from '@/components/admin/crm/AutoSubmitSelect'
 import { isConversationEvent } from '@/components/admin/crm/ConversationThread'
 import { StatusPill } from '@/components/console/StatusPill'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
@@ -504,24 +505,27 @@ export default async function ConsoleLeadPage({
             <ul className="mt-1.5 divide-y divide-border overflow-hidden rounded-lg border border-border">
               <li className="flex items-center justify-between gap-2 bg-card px-3 py-1.5">
                 <span className="shrink-0 text-sm text-muted-foreground">Assigned to</span>
-                <form action={assignBrokerForm} className="flex items-center gap-1">
+                <form action={assignBrokerForm} className="flex items-center">
                   <input type="hidden" name="personId" value={person.id} />
-                  <Select name="broker" defaultValue={person.assigned_broker ?? undefined}>
-                    <SelectTrigger className="h-8 w-auto gap-1 border-0 bg-transparent px-1 text-sm font-medium text-foreground shadow-none focus:ring-0"><SelectValue placeholder="Unassigned" /></SelectTrigger>
-                    <SelectContent>{CRM_BROKERS.map((b) => <SelectItem key={b} value={b}>{CRM_BROKER_DISPLAY[b]}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Button type="submit" size="sm" variant="ghost" className="h-7 px-2 text-xs text-muted-foreground">Save</Button>
+                  <AutoSubmitSelect
+                    name="broker"
+                    defaultValue={person.assigned_broker ?? undefined}
+                    placeholder="Unassigned"
+                    aria-label="Assigned broker"
+                    options={CRM_BROKERS.map((b) => ({ value: b, label: CRM_BROKER_DISPLAY[b] }))}
+                  />
                 </form>
               </li>
               <li className="flex items-center justify-between gap-2 bg-card px-3 py-1.5">
                 <span className="shrink-0 text-sm text-muted-foreground">Stage</span>
-                <form action={updateStageForm} className="flex items-center gap-1">
+                <form action={updateStageForm} className="flex items-center">
                   <input type="hidden" name="personId" value={person.id} />
-                  <Select name="stage" defaultValue={person.stage}>
-                    <SelectTrigger className="h-8 w-auto gap-1 border-0 bg-transparent px-1 text-sm font-medium text-foreground shadow-none focus:ring-0"><SelectValue /></SelectTrigger>
-                    <SelectContent>{CRM_STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Button type="submit" size="sm" variant="ghost" className="h-7 px-2 text-xs text-muted-foreground">Save</Button>
+                  <AutoSubmitSelect
+                    name="stage"
+                    defaultValue={person.stage}
+                    aria-label="Stage"
+                    options={CRM_STAGES.map((s) => ({ value: s, label: s }))}
+                  />
                 </form>
               </li>
               <li className="flex items-center justify-between gap-2 bg-card px-3 py-2">
