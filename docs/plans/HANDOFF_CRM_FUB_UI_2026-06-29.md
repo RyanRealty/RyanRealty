@@ -36,8 +36,8 @@ So: **faithfully CLONE the Follow Up Boss mobile app UI, screen by screen.** Ide
 
 1. ~~Homes tab~~ ✅ done (pass 4).
 2. ~~People lists — avatars + person-first~~ ✅ done (pass 5). Remaining refinement: the FUB "New Leads / Emails / Website" segmented tabs (deferred — needs Matt's call on "Emails" tab semantics + a `listCrmPeople` DAL change).
-3. **Filter sheet** — full-screen FUB filter (segmented Current/Archived/All + Everyone/Me/Team scoping). Screen: `ui1_5831`.
-4. **Top bar** — persistent "Everyone ▾" scope switcher + notification bell. Screen: `ui2_5821`.
+3. ~~Filter sheet~~ ✅ done (pass 6) — `BrokerScopeSheet` (Everyone/Me/Team + headshots + search) replaces the mobile "All brokers" select on `/admin/crm`. Current/Archived/All segment deferred to a future Deals filter. Component is reusable for #4.
+4. **Top bar** — persistent "Everyone ▾" scope switcher (mount `BrokerScopeSheet`) + notification bell. Screen: `ui2_5821`.
 5. ~~Cleanup~~ ✅ done — dropped dead `membership`/`firstTouch`/`activeEnrollments` + unused form defs in the `[id]` page.
 
 ## Workflow rules (binding)

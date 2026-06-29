@@ -88,6 +88,22 @@ Legend: **FUB** = what the FUB app does (the target) · **Ours** = current Ryan 
   modes — a DAL change on the core people query. Person-first ordering (the heart
   of B5) is delivered; the tabs are a refinement to spec with Matt.
 
+## ✅ Shipped 2026-06-29 (pass 6 — Filter sheet)
+
+- **B8 (scope picker)** — new `components/admin/crm/BrokerScopeSheet.tsx`: a
+  full-screen FUB scope sheet (Everyone · Me · TEAM MEMBERS with broker headshots
+  + search), cloning ui1_5831's scope list. Replaced the clunky mobile "All
+  brokers" `<select>` on `/admin/crm` with the sheet trigger ("Everyone ▾").
+  Selecting a scope navigates with the `broker` param, carrying the active
+  q/stage/tag/view filters; the trigger reflects current scope; current scope
+  shows a check. Verified end-to-end at 375px (open → pick Paul → ?broker=paul →
+  trigger updates). Component is reusable — the top-bar switcher (A2) will mount
+  the same sheet. Design-token total held at 352.
+- **Note:** FUB's "Current / Archived / All" status segment is deal-status-
+  specific (no people-list analog), so it's intentionally omitted here; it
+  belongs on a future Deals filter sheet (the deals page currently auto-scopes
+  with no filter UI).
+
 ## ⏭️ Remaining (next session — roughly highest-value first)
 
 - **People feed tabs** — New Leads / Emails / Website segmented control (see Deferred above).
@@ -138,7 +154,7 @@ Legend: **FUB** = what the FUB app does (the target) · **Ours** = current Ryan 
 
 7. **List header.** FUB list headers show "`<N> people`" and "Last updated: just now", plus a scope sub-line ("Everyone ▾"). Ours shows the list name + count. Add the "N people / last updated" header + scope line.
 
-8. **Filter sheet (e.g. Filter Deals).**
+8. **Filter sheet (e.g. Filter Deals).** ✅ DONE (pass 6, scope picker) — `BrokerScopeSheet` clones ui1_5831's Everyone/Me/Team scope list for the people-list agent filter. The Current/Archived/All status segment is deferred to a future Deals filter (deal-specific).
    - FUB: a dedicated filter sheet — `Cancel / Filter Deals`, segmented **Current · Archived · All**, "Showing deals for: Everyone", search, then Everyone / Me / **TEAM MEMBERS** (avatars). Same pattern for the Automations picker (`Cancel / Automations / Select` + a flat searchable list).
    - Ours: filters are inline dropdowns (All stages / All brokers).
    - Gap: adopt FUB's full-screen filter sheet pattern with the segmented status control + team-member scoping.

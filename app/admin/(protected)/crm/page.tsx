@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import ContactsSearch from '@/components/admin/crm/ContactsSearch'
 import BulkAssignWrapper, { type BulkAssignRow } from '@/components/admin/crm/BulkAssignWrapper'
 import SavedViewSidebar, { type SavedViewItem } from '@/components/admin/crm/SavedViewSidebar'
+import BrokerScopeSheet from '@/components/admin/crm/BrokerScopeSheet'
 import { Button } from '@/components/ui/button'
 import { KpiStrip } from '@/components/console/KpiStrip'
 import { formatDate } from '@/lib/format/date'
@@ -28,6 +29,13 @@ function primaryContact(items: Array<{ value?: string; isPrimary?: number | bool
   if (!items?.length) return null
   const primary = items.find((i) => i.isPrimary)
   return (primary ?? items[0])?.value ?? null
+}
+
+/** Broker slug → web headshot (transparent PNG mirror in public/images/brokers). */
+const BROKER_HEADSHOT: Record<string, string> = {
+  matt: '/images/brokers/ryan-matt.png',
+  rebecca: '/images/brokers/peterson-rebecca.png',
+  paul: '/images/brokers/stevenson-paul.png',
 }
 
 type SearchParams = { q?: string; stage?: string; broker?: string; tag?: string; view?: string; page?: string }
@@ -239,35 +247,36 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
           {/* Search (both breakpoints) */}
           <ContactsSearch initial={sp.q ?? ''} />
 
-          {/* Mobile-only filters (inline selects, stacked) */}
-          <form method="GET" action="/admin/crm" className="mt-2 flex flex-col gap-2 md:hidden">
-            {sp.view ? <input type="hidden" name="view" value={sp.view} /> : null}
-            {sp.q ? <input type="hidden" name="q" value={sp.q} /> : null}
-            <select
-              name="stage"
-              defaultValue={sp.stage ?? ''}
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
-            >
-              <option value="">All stages</option>
-              {stageOptions.map((s) => (
-                <option key={s.key} value={s.key}>{s.label}</option>
-              ))}
-            </select>
-            <select
-              name="broker"
-              defaultValue={effectiveBroker ?? 'all'}
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
-            >
-              <option value="all">All brokers</option>
-              {CRM_BROKERS.map((b) => (
-                <option key={b} value={b}>{CRM_BROKER_DISPLAY[b]}</option>
-              ))}
-            </select>
-            <div className="flex items-center gap-3">
-              <Button type="submit" size="sm" className="h-10">Apply</Button>
-              <Link href="/admin/crm" className="flex h-10 items-center text-sm text-muted-foreground hover:text-foreground">Clear</Link>
-            </div>
-          </form>
+          {/* Mobile-only filters. Agent scope uses the FUB full-screen picker
+              (Everyone / Me / Team + avatars); stage stays an inline select with
+              Apply. */}
+          <div className="mt-2 flex flex-col gap-2 md:hidden">
+            <BrokerScopeSheet
+              brokers={CRM_BROKERS.map((slug) => ({ slug, label: CRM_BROKER_DISPLAY[slug], headshot: BROKER_HEADSHOT[slug] ?? null }))}
+              current={effectiveBroker ?? 'all'}
+              myBrokerSlug={access.brokerSlug ?? null}
+              carry={{ q: sp.q, stage: sp.stage, tag: sp.tag, view: sp.view }}
+            />
+            <form method="GET" action="/admin/crm" className="flex flex-col gap-2">
+              {sp.view ? <input type="hidden" name="view" value={sp.view} /> : null}
+              {sp.q ? <input type="hidden" name="q" value={sp.q} /> : null}
+              {effectiveBroker ? <input type="hidden" name="broker" value={effectiveBroker} /> : null}
+              <select
+                name="stage"
+                defaultValue={sp.stage ?? ''}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
+              >
+                <option value="">All stages</option>
+                {stageOptions.map((s) => (
+                  <option key={s.key} value={s.key}>{s.label}</option>
+                ))}
+              </select>
+              <div className="flex items-center gap-3">
+                <Button type="submit" size="sm" className="h-10">Apply</Button>
+                <Link href="/admin/crm" className="flex h-10 items-center text-sm text-muted-foreground hover:text-foreground">Clear</Link>
+              </div>
+            </form>
+          </div>
 
           {/* Desktop toolbar row: "Showing N people" count (icon toolbar lives in BulkAssignWrapper) */}
           <div className="mt-2 hidden items-center gap-3 md:flex">
