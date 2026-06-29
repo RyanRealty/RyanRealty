@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.665.0 (2026-06-29)
+
+### Features
+- feat(crm): clone FUB Homes tab — property-inquiry cards
+
+---
+
+
 ## v1.664.0 (2026-06-29)
 
 ### Features
