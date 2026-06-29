@@ -75,6 +75,8 @@ for (const [id, path_, validate] of [
   ['cron.auto-enroll', '/api/cron/crm-auto-enroll', (d) => d.ok === true],
   ['cron.sequence-engine', '/api/cron/crm-sequence-engine', (d) => d.ok === true && d.errored === 0],
   ['cron.gmail-sync', '/api/cron/crm-gmail-sync?pages=1', (d) => d.ok === true],
+  // Portal lead intake (FUB cutover): Zillow/Realtor lead emails → native leads.
+  ['cron.portal-lead-intake', '/api/cron/crm-portal-lead-intake', (d) => d.ok === true],
 ]) {
   await tryCheck(id, async () => {
     const res = await fetch(SITE + path_, { headers: CRON_AUTH, signal: AbortSignal.timeout(290000) });
