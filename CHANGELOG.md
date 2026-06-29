@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.657.1 (2026-06-29)
+
+### Maintenance
+- docs(crm): FUB mobile UI discrepancy audit (2026-06-29)
+
+---
+
+
 ## v1.657.0 (2026-06-29)
 
 ### Features
