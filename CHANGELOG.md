@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.668.2 (2026-06-29)
+
+### Maintenance
+- docs(crm): mark FUB-clone handoff complete (passes 1-7 + review)
+
+---
+
+
 ## v1.668.1 (2026-06-29)
 
 ### Bug Fixes
