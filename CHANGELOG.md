@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.658.0 (2026-06-29)
+
+### Features
+- feat(crm): native portal lead intake (Zillow/Realtor) for FUB cutover
+
+---
+
+
 ## v1.657.3 (2026-06-29)
 
 ### Maintenance
