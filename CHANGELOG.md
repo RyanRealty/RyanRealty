@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.670.2 (2026-06-29)
+
+### Bug Fixes
+- fix(crm): revalidate after newsletter send + record DB-audit resolutions
+
+---
+
+
 ## v1.670.1 (2026-06-29)
 
 ### Bug Fixes
