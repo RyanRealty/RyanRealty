@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.657.3 (2026-06-29)
+
+### Maintenance
+- docs(crm): FUB cutover readiness verdict (2026-06-29) — green, 1 item for Matt
+
+---
+
+
 ## v1.657.2 (2026-06-29)
 
 ### Bug Fixes
