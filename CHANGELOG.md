@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.661.0 (2026-06-29)
+
+### Features
+- feat(crm): FUB tab labels (Info/Homes) + audit progress tracking
+
+---
+
+
 ## v1.660.0 (2026-06-29)
 
 ### Features
