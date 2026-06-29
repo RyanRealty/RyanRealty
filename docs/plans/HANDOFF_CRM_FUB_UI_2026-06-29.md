@@ -2,6 +2,25 @@
 
 **Read this first. Self-contained: a fresh session resumes with zero prior context.**
 
+## STATUS: handoff complete (passes 1–7 shipped + final review done)
+
+All seven planned screens are cloned, verified at 375px, and on `main` (origin
+`0 0`). Passes 3–7 shipped this session: Comms tab, Homes tab, dead-code cleanup,
+person-first people list + avatars, filter sheet, top-bar scope switcher, plus a
+heading-display gate-scope fix. Two items are **intentionally deferred** (not
+omissions — each needs a product decision, documented in the audit):
+1. **People feed "New Leads / Emails / Website" tabs** — needs a `listCrmPeople`
+   DAL change + Matt's call on "Emails"-tab semantics. Person-first ordering (the
+   heart of it) is shipped; the tabs are a refinement.
+2. **Top-bar notification bell** — no distinct notifications center exists; Inbox +
+   Activity are already bottom-tab destinations, so a bell would duplicate a tab or
+   be hollow. Revisit when a real alerts inbox exists.
+
+Pre-existing gate reds inherited (NOT from this work, held flat): `ci:design-tokens`
+352 vs 344 (across luxury-homes / TemplateEditor / WorkflowList / crm settings —
+unrelated files); `ci:hydration-safety` VisitTracker Date.now (unrelated tracking
+code). Both are separate cleanup efforts.
+
 - **HEAD:** `12806b37` on `main`, synced with origin (`0 0`). Working tree clean except pre-existing untracked `_`-prefixed scratch scripts + three `supabase/migrations/20260623*tc_*.sql` (not ours, leave them).
 - **Repo:** `/Users/matthewryan/RyanRealty` · single-branch `main` · Next.js App Router + Supabase (`dwvlophlbvvygjfxcrhm`).
 
