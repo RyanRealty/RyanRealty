@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.667.0 (2026-06-29)
+
+### Features
+- feat(crm): FUB agent-scope filter sheet on the people list
+
+---
+
+
 ## v1.666.0 (2026-06-29)
 
 ### Features
