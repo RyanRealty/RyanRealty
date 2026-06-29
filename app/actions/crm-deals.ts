@@ -12,6 +12,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { dealInScope } from '@/lib/crm/deal-scope'
+import { getDealScopeRow } from '@/lib/data/crm/getDealScopeRow'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
 
 export type DealActionResult = { ok: true } | { ok: false; error: string }
@@ -34,17 +35,9 @@ async function requireAccess() {
  */
 async function requireDealInScope(dealId: number, scoped: CrmBrokerSlug | null): Promise<DealActionResult> {
   if (scoped === null) return { ok: true }
-  const sb = createServiceClient()
-  const { data: deal } = await sb
-    .from('crm_deals')
-    .select('id,assigned_broker,crm_people(assigned_broker)')
-    .eq('id', dealId)
-    .maybeSingle()
-  if (!deal) return { ok: false, error: 'Deal not found' }
-  // A to-one embed types as an array under the generated client; normalize both.
-  const cp = (deal as unknown as { crm_people: { assigned_broker: string | null } | { assigned_broker: string | null }[] | null }).crm_people
-  const personRow = Array.isArray(cp) ? (cp[0] ?? null) : cp
-  if (!dealInScope(scoped, deal.assigned_broker ?? null, personRow?.assigned_broker ?? null)) {
+  const row = await getDealScopeRow(dealId)
+  if (!row) return { ok: false, error: 'Deal not found' }
+  if (!dealInScope(scoped, row.assignedBroker, row.personBroker)) {
     return { ok: false, error: 'Not authorized for this deal' }
   }
   return { ok: true }
