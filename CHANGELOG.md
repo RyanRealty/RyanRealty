@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.666.0 (2026-06-29)
+
+### Features
+- feat(crm): person-first people list + avatars everywhere (FUB)
+
+---
+
+
 ## v1.665.1 (2026-06-29)
 
 ### Maintenance
