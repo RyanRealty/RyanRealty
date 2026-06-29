@@ -21,17 +21,19 @@ at Supabase); authorization enforced in app code via `requireCrmAccess` /
 
 ## Findings (prioritized)
 
-### CRITICAL — fix
+### CRITICAL — ✅ FIXED (2026-06-29)
 
-- **[F1–F6] `app/actions/crm-deals.ts` — no broker-scope guard on ANY deal
-  mutation.** `updateCrmDeal`, `createCrmDeal`, `addDealSplit`, `removeDealSplit`,
-  `addDealFile`, `removeDealFile` check only `getCrmAccess()`. No
-  `requireDealInScope()`. A restricted broker can edit any deal's value, commission
-  splits, close dates, assigned_broker, and files — including another broker's.
-  Financial data. **Fix: add `requireDealInScope(dealId, access)` (deal's
-  `assigned_broker` must match `scopeBroker`, owner bypasses) and call it in each
-  action before mutating.** Note `createCrmDeal` starts a deal with no
-  `assigned_broker` (unowned) — set it to the caller's broker on create.
+- **[F1–F6] `app/actions/crm-deals.ts` — no broker-scope guard on deal mutations.**
+  RESOLVED. Added `requireDealInScope(dealId, scopeBroker(access))` (backed by the
+  pure, unit-tested `lib/crm/deal-scope.ts` `dealInScope()`) and called it before
+  the write in all six actions: `updateCrmDeal`, `addDealSplit`, `removeDealSplit`,
+  `addDealFile`, `removeDealFile`. Owner/superuser bypasses; a restricted broker is
+  refused unless the deal's own `assigned_broker` OR its linked person's
+  `assigned_broker` matches their slug (mirrors `listCrmDeals` GAP-7 person-scope).
+  `createCrmDeal` now sets `assigned_broker` to the creating broker so new deals
+  aren't unowned orphans (fixes F6). 5 unit tests in `lib/crm/deal-scope.test.ts`;
+  guard data-read verified against a throwaway `paul` deal (refused for `rebecca`,
+  allowed for `paul`/owner).
 
 ### MEDIUM — fix or confirm
 
