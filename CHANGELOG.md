@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.653.0 (2026-06-29)
+
+### Features
+- feat(seo): luxury homes Bend landing page (targets 'luxury homes bend oregon')
+
+---
+
+
 ## v1.652.1 (2026-06-28)
 
 ### Bug Fixes
