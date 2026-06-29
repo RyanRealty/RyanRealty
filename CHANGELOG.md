@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.656.0 (2026-06-29)
+
+### Features
+- feat(crm): Activity tab — include/exclude each activity type
+
+---
+
+
 ## v1.655.0 (2026-06-29)
 
 ### Features
