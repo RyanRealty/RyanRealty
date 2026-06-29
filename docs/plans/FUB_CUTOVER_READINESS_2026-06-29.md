@@ -30,21 +30,25 @@ Battery: **32 pass · 1 warn (anthropic-credits, marketing-only) · 0 fail.**
   (Web Inquiry Option 01, Nurture Contact Generic) — moot after disconnect, but
   stops the bad sends until then.
 
-## ⚠️ One item for Matt to confirm BEFORE the disconnect
+## Portal leads (Zillow / Realtor.com) — native intake BUILT ✅, one portal-side step for Matt
 
-**Portal direct-integration leads (Zillow Premier Agent / Realtor.com).** There is
-**no native CRM intake path** for these: no portal email parser, and `gmail-sync`
-only attaches mail to existing contacts (it won't create a lead from a portal
-notification). No active portal *lead* emails were found in Matt's inbox in the
-last 10 days (only consumer marketing + FUB digests), so this may already be a
-non-issue. BUT if a paid Zillow/Realtor feed routes leads **directly into FUB via
-FUB's API integration** (which wouldn't appear in Gmail), those leads will drop
-at disconnect.
+Matt confirmed active Zillow Premier Agent + Realtor.com feeds (low volume — last
+Zillow lead Dec 2025, last Realtor Feb 2026). They flowed in via FUB's portal
+integrations, which die at cutover. Built the native replacement:
 
-- **If Matt has an active Zillow/Realtor → FUB feed:** re-point it before tomorrow
-  (portal → a lead email address we parse → `ensureNativeLead`, or a portal
-  webhook). Flag it and I'll build the parser tonight.
-- **If not:** nothing to do — all live sources are native.
+- `lib/crm/portal-lead-parser.ts` (+ 9 passing tests) — detects the portal by
+  sender, ignores consumer-marketing blasts, extracts name/email/phone/property.
+- `/api/cron/crm-portal-lead-intake` (every 15 min, verified live `ok:true`) —
+  scans matt@ryan-realty.com for portal lead emails → `ensureNativeLead`
+  (source-tagged, routed to Matt) + a per-lead timeline note (idempotent on Gmail
+  id). SAFETY NET: a portal email with neither email nor phone alerts Matt with
+  the raw subject — never silently dropped.
+- e2e battery now guards it (`cron.portal-lead-intake`), 33 pass / 0 fail.
+
+**Matt's one portal-side step before disconnect:** in Zillow Premier Agent AND
+Realtor.com settings, set the lead-delivery email to **matt@ryan-realty.com**
+(currently they deliver into FUB). Then portal leads land in the CRM natively.
+The parser is built to the standard formats; it tunes on the first real sample.
 
 ## Non-blocking cleanup (post-cutover)
 - `meta/lead-webhook` and a few readers still make FUB REST calls (legacy
