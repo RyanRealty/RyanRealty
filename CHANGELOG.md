@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.670.1 (2026-06-29)
+
+### Bug Fixes
+- fix(crm): broker-scope guard on all deal mutations (CRITICAL)
+
+---
+
+
 ## v1.670.0 (2026-06-29)
 
 ### Features
