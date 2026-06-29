@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.672.0 (2026-06-29)
+
+### Features
+- feat(crm): broker-scope the Activity feed + compact filter dropdowns
+
+---
+
+
 ## v1.671.1 (2026-06-29)
 
 ### Maintenance
