@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.665.1 (2026-06-29)
+
+### Maintenance
+- chore(crm): drop dead code in lead detail page
+
+---
+
+
 ## v1.665.0 (2026-06-29)
 
 ### Features
