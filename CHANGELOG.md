@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.653.1 (2026-06-29)
+
+### Maintenance
+- docs(handoff): 2026-06-28 session — IDX compliance + CRM mobile + growth/SEO; next = subdivision SEO batch
+
+---
+
+
 ## v1.653.0 (2026-06-29)
 
 ### Features
