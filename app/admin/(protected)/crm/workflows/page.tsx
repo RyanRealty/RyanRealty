@@ -99,8 +99,6 @@ type Enrollment = {
 // stacked list so the action forms aren't duplicated. `compact` keeps the dense
 // kanban sizing; the mobile list uses larger, thumb-friendly controls.
 function EnrollmentCardBody({ en, compact }: { en: Enrollment; compact?: boolean }) {
-  const btnClass = compact ? 'h-6 px-2 text-[11px]' : 'h-10 flex-1 px-3 text-sm'
-  const formClass = compact ? undefined : 'flex-1'
   return (
     <>
       <div className="flex items-start justify-between gap-1">
@@ -134,55 +132,39 @@ function EnrollmentCardBody({ en, compact }: { en: Enrollment; compact?: boolean
             : null}
       </div>
 
-      {/* Action row */}
-      <div className={compact ? 'mt-2 flex flex-wrap gap-1' : 'mt-3 flex flex-wrap gap-2'}>
-        {en.status === 'awaiting_broker' ? (
-          <form action={approveForm} className={formClass}>
-            <input type="hidden" name="enrollmentId" value={en.enrollmentId} />
-            <Button type="submit" size="sm" variant="default" className={btnClass}>
-              Approve
-            </Button>
-          </form>
-        ) : null}
-
-        {en.status === 'running' ? (
-          <>
-            <form action={pauseForm} className={formClass}>
-              <input type="hidden" name="enrollmentId" value={en.enrollmentId} />
-              <Button type="submit" size="sm" variant="outline" className={btnClass}>
-                Pause
-              </Button>
-            </form>
-            <form action={advanceForm} className={formClass}>
-              <input type="hidden" name="enrollmentId" value={en.enrollmentId} />
-              <Button type="submit" size="sm" variant="outline" className={btnClass}>
-                Run next now
-              </Button>
-            </form>
-          </>
-        ) : null}
-
-        {(en.status === 'paused' || en.status === 'paused_reply') ? (
-          <form action={resumeForm} className={formClass}>
-            <input type="hidden" name="enrollmentId" value={en.enrollmentId} />
-            <Button type="submit" size="sm" variant="outline" className={btnClass}>
-              Resume
-            </Button>
-          </form>
-        ) : null}
-
-        <form action={dismissForm} className={formClass}>
-          <input type="hidden" name="enrollmentId" value={en.enrollmentId} />
-          <Button
-            type="submit"
-            size="sm"
-            variant="outline"
-            className={cn(btnClass, 'text-muted-foreground')}
-          >
-            Stop
-          </Button>
-        </form>
-      </div>
+      {/* Action row — one clear PRIMARY action; secondary actions demoted to a
+          quieter row below (FUB hierarchy, no button sprawl). */}
+      {(() => {
+        const primary =
+          en.status === 'awaiting_broker' ? { action: approveForm, label: 'Approve' }
+          : en.status === 'running' ? { action: pauseForm, label: 'Pause' }
+          : (en.status === 'paused' || en.status === 'paused_reply') ? { action: resumeForm, label: 'Resume' }
+          : null
+        const secondary = [
+          en.status === 'running' ? { action: advanceForm, label: 'Run next now' } : null,
+          { action: dismissForm, label: 'Stop' },
+        ].filter((s): s is { action: typeof dismissForm; label: string } => s !== null)
+        const primaryBtn = compact ? 'h-6 w-full px-2 text-[11px]' : 'h-10 w-full px-3 text-sm'
+        const secondaryBtn = compact ? 'h-6 w-full px-2 text-[11px]' : 'h-9 w-full px-3 text-sm'
+        return (
+          <div className={compact ? 'mt-2 flex flex-col gap-1' : 'mt-3 flex flex-col gap-2'}>
+            {primary ? (
+              <form action={primary.action}>
+                <input type="hidden" name="enrollmentId" value={en.enrollmentId} />
+                <Button type="submit" size="sm" variant="default" className={primaryBtn}>{primary.label}</Button>
+              </form>
+            ) : null}
+            <div className={compact ? 'flex gap-1' : 'flex gap-2'}>
+              {secondary.map((s) => (
+                <form key={s.label} action={s.action} className="flex-1">
+                  <input type="hidden" name="enrollmentId" value={en.enrollmentId} />
+                  <Button type="submit" size="sm" variant="outline" className={cn(secondaryBtn, s.label === 'Stop' && 'text-muted-foreground')}>{s.label}</Button>
+                </form>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
     </>
   )
 }
