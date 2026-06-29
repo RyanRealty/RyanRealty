@@ -47,6 +47,8 @@ export function LeadTabs({
   stage,
   live,
   ownerName,
+  lastCommLabel,
+  dealValueLabel,
   backHref,
   fubHref,
   flushTop = true,
@@ -62,6 +64,10 @@ export function LeadTabs({
   stage: string
   live?: boolean
   ownerName?: string | null
+  /** FUB-parity: "Last communication May 21" under the name. Null hides it. */
+  lastCommLabel?: string | null
+  /** FUB-parity: green deal-value pill (e.g. "$655K") near the stage. Null hides it. */
+  dealValueLabel?: string | null
   backHref: string
   fubHref?: string | null
   flushTop?: boolean
@@ -119,12 +125,16 @@ export function LeadTabs({
               </span>
             )}
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h1 className="truncate text-xl font-semibold tracking-tight">{name}</h1>
                 {live ? <StatusPill tone="success" label="On site" pulse /> : null}
+                {dealValueLabel ? (
+                  <span className="rounded-full bg-success px-2 py-0.5 text-xs font-semibold text-success-foreground">{dealValueLabel}</span>
+                ) : null}
               </div>
               <div className="mt-0.5 truncate text-sm text-primary-foreground/55">
                 {ownerName ? `Owner · ${ownerName}` : 'Unassigned'}
+                {lastCommLabel ? <span className="text-primary-foreground/40"> · Last contact {lastCommLabel}</span> : null}
               </div>
             </div>
             <StagePill stage={stage} />
