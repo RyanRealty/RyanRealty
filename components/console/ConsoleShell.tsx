@@ -13,7 +13,8 @@
  */
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
+import { usePathname } from 'next/navigation'
 import type { AdminNavSection } from '@/app/components/admin/admin-nav'
 import AdminNavList from '@/app/components/admin/AdminNavList'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
@@ -22,6 +23,7 @@ import ConsoleCommandPalette from '@/components/console/ConsoleCommandPalette'
 import ConsoleQuickAction from '@/components/console/ConsoleQuickAction'
 import CrmMobileTabBar from '@/components/console/CrmMobileTabBar'
 import ConsoleTopNav from '@/components/console/ConsoleTopNav'
+import TopBarScope from '@/components/console/TopBarScope'
 
 function MenuIcon() {
   return (
@@ -43,18 +45,24 @@ function Wordmark() {
 export default function ConsoleShell({
   user,
   brokerLabel,
+  brokerSlug,
   navSections,
   inboxUnread = 0,
   children,
 }: {
   user: { email: string; fullName: string | null; avatarUrl: string | null }
   brokerLabel: string
+  brokerSlug?: string | null
   navSections: AdminNavSection[]
   inboxUnread?: number
   children: React.ReactNode
 }) {
   const [open, setOpen] = useState(false)
   const initials = (user.fullName ?? user.email ?? '?').trim().charAt(0).toUpperCase()
+  const pathname = usePathname() ?? ''
+  // The FUB scope switcher is meaningful only on the contacts list, where the
+  // ?broker= param drives the feed. Elsewhere the wordmark shows.
+  const onContactsList = pathname === '/admin/crm'
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
@@ -72,7 +80,13 @@ export default function ConsoleShell({
         >
           <MenuIcon />
         </Button>
-        <Wordmark />
+        {onContactsList ? (
+          <Suspense fallback={<Wordmark />}>
+            <TopBarScope myBrokerSlug={brokerSlug ?? null} />
+          </Suspense>
+        ) : (
+          <Wordmark />
+        )}
         <div className="ml-auto flex items-center gap-1.5">
           <ConsoleCommandPalette />
           {user.avatarUrl ? (

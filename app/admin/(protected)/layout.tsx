@@ -56,6 +56,7 @@ export default async function AdminProtectedLayout({
             null,
         }}
         brokerLabel={brokerLabel}
+        brokerSlug={slug}
         navSections={buildAdminNav(adminRole.role, adminRole.brokerId)}
       >
         {children}

@@ -104,6 +104,26 @@ Legend: **FUB** = what the FUB app does (the target) · **Ours** = current Ryan 
   belongs on a future Deals filter sheet (the deals page currently auto-scopes
   with no filter UI).
 
+## ✅ Shipped 2026-06-29 (pass 7 — Top bar scope switcher)
+
+- **A2 (scope switcher)** — the mobile admin top bar now pins the FUB
+  "Everyone ▾" agent-scope switcher on the contacts list (`/admin/crm`),
+  replacing the wordmark there (FUB ui2_5821). `components/console/TopBarScope.tsx`
+  reads the current scope from the URL and mounts the shared `BrokerScopeSheet`
+  (same Everyone/Me/Team picker as the page filter), isolated behind a
+  `<Suspense>` boundary (useSearchParams) and gated to `/admin/crm` only — every
+  other admin page keeps its wordmark. `brokerSlug` is plumbed layout →
+  `ConsoleShell` for "Me". Verified at 375px: switcher shows on contacts, opens
+  the sheet; wordmark intact + no error on `/admin/crm/deals`. Design-token total
+  held at 352.
+- **A2 (notification bell) — intentionally NOT built.** Our only "notification"
+  destinations are the **Inbox** and **Activity** surfaces, both already pinned in
+  the bottom tab bar. A top-bar bell would route to one of those (duplicating a
+  tab) or to nothing — adding chrome clutter, the opposite of the "make it clean"
+  directive. FUB has a bell because FUB has a distinct notifications center; we
+  don't. Revisit if/when a dedicated notifications/alerts inbox exists (the
+  `healthAlertQueue` / contact-alerts signals could seed one).
+
 ## ⏭️ Remaining (next session — roughly highest-value first)
 
 - **People feed tabs** — New Leads / Emails / Website segmented control (see Deferred above).
@@ -130,10 +150,9 @@ Legend: **FUB** = what the FUB app does (the target) · **Ours** = current Ryan 
    - Ours: `Home · Inbox · People · Deals · Activity` (Activity last, no Calendar, has Home).
    - Gap: order differs; FUB has **Calendar** in the bar, we don't; FUB puts **Activity** in slot 2; FUB's Inbox carries an unread **count badge** (e.g. "30"). Decide whether to match FUB's 5 exactly (Inbox/Activity/Calendar/People/Deals) or keep Home.
 
-2. **Top app bar.**
-   - FUB: avatar (left) · scope switcher "**Everyone ▾**" (center) · bell (notifications) · search. The scope switcher (Everyone/Me/Team member) is global and persistent.
-   - Ours: hamburger · logo · search · avatar. No persistent **Everyone ▾ scope switcher**, no **notification bell**.
-   - Gap: add the persistent scope switcher and a notifications bell to the mobile top bar.
+2. **Top app bar.** ✅ scope switcher DONE (pass 7); bell intentionally skipped.
+   - FUB: avatar (left) · scope switcher "**Everyone ▾**" (center) · bell (notifications) · search.
+   - Ours: the mobile top bar now pins the "Everyone ▾" scope switcher on `/admin/crm` (`TopBarScope` → `BrokerScopeSheet`). Bell skipped — no distinct notifications center; Inbox + Activity are already bottom-tab destinations, so a bell would duplicate a tab or be hollow. See pass-7 note above.
 
 3. **Floating "+" action button.** FUB has a blue FAB on every contact + list screen (quick add note/call/text/email/task). Ours has a blue FAB too ✓ — verify it opens the same quick-create sheet.
 
