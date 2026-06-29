@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.654.0 (2026-06-29)
+
+### Features
+- feat(seo): deep sourced About prose for 10 resort communities
+
+---
+
+
 ## v1.653.2 (2026-06-29)
 
 ### Maintenance
