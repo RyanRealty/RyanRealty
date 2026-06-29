@@ -469,37 +469,10 @@ export default async function ConsoleLeadPage({
       {/* ── Quick actions + stage/owner + contacts ── */}
       <Card>
         <CardContent className="p-4 sm:p-5">
-          <div className="flex gap-2">
-            {primaryPhone ? (
-              <form action={startCallForm.bind(null, person.id)} className="flex-1">
-                <Button type="submit" className="min-h-11 w-full" title="Rings your phone first, then connects to the lead — recorded and logged">Call</Button>
-              </form>
-            ) : null}
-            {primaryPhone ? <Button asChild variant="outline" className="min-h-11 flex-1"><a href="#comms">Text</a></Button> : null}
-            {primaryEmail ? <Button asChild variant="outline" className="min-h-11 flex-1"><a href="#comms">Email</a></Button> : null}
-          </div>
-
-          {/* Inline stage + broker + contact points */}
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <form action={updateStageForm} className="flex items-center gap-2">
-              <input type="hidden" name="personId" value={person.id} />
-              <Select name="stage" defaultValue={person.stage}>
-                <SelectTrigger className="h-10 flex-1"><SelectValue /></SelectTrigger>
-                <SelectContent>{CRM_STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-              </Select>
-              <Button type="submit" size="sm" variant="outline" className="min-h-[40px] shrink-0">Set stage</Button>
-            </form>
-            <form action={assignBrokerForm} className="flex items-center gap-2">
-              <input type="hidden" name="personId" value={person.id} />
-              <Select name="broker" defaultValue={person.assigned_broker ?? undefined}>
-                <SelectTrigger className="h-10 flex-1"><SelectValue placeholder="Unassigned" /></SelectTrigger>
-                <SelectContent>{CRM_BROKERS.map((b) => <SelectItem key={b} value={b}>{CRM_BROKER_DISPLAY[b]}</SelectItem>)}</SelectContent>
-              </Select>
-              <Button type="submit" size="sm" variant="outline" className="min-h-[40px] shrink-0">Assign</Button>
-            </form>
-          </div>
-          {/* Phone numbers + Emails — FUB-style: every value listed, each with its
-              own quick actions (call/text per number, email per address). */}
+          {/* FUB pattern: call/text/email live in the per-number icons below + the
+              + compose button — no redundant top action buttons or dropdowns. */}
+          {/* Phone numbers + Emails — every value listed, each with its own quick
+              actions (call/text per number, email per address). */}
           {full.contactPoints.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">No contact info on file.</p>
           ) : (
@@ -550,52 +523,47 @@ export default async function ConsoleLeadPage({
             </div>
           )}
 
-          {/* Where this lead came from — the source (CRM record-card cutover). */}
-          <div className="mt-3">
-            <SourceBadge
-              source={person.source ?? null}
-              firstTouch={firstTouch ? { source: firstTouch.source, landingPage: firstTouch.landingUrl } : undefined}
-            />
+          {/* Details — FUB Info-tab rows: assigned, stage, source, tags. */}
+          <div className="mt-4">
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Details</div>
+            <ul className="mt-1.5 divide-y divide-border overflow-hidden rounded-lg border border-border">
+              <li className="flex items-center justify-between gap-2 bg-card px-3 py-1.5">
+                <span className="shrink-0 text-sm text-muted-foreground">Assigned to</span>
+                <form action={assignBrokerForm} className="flex items-center gap-1">
+                  <input type="hidden" name="personId" value={person.id} />
+                  <Select name="broker" defaultValue={person.assigned_broker ?? undefined}>
+                    <SelectTrigger className="h-8 w-auto gap-1 border-0 bg-transparent px-1 text-sm font-medium text-foreground shadow-none focus:ring-0"><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                    <SelectContent>{CRM_BROKERS.map((b) => <SelectItem key={b} value={b}>{CRM_BROKER_DISPLAY[b]}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Button type="submit" size="sm" variant="ghost" className="h-7 px-2 text-xs text-muted-foreground">Save</Button>
+                </form>
+              </li>
+              <li className="flex items-center justify-between gap-2 bg-card px-3 py-1.5">
+                <span className="shrink-0 text-sm text-muted-foreground">Stage</span>
+                <form action={updateStageForm} className="flex items-center gap-1">
+                  <input type="hidden" name="personId" value={person.id} />
+                  <Select name="stage" defaultValue={person.stage}>
+                    <SelectTrigger className="h-8 w-auto gap-1 border-0 bg-transparent px-1 text-sm font-medium text-foreground shadow-none focus:ring-0"><SelectValue /></SelectTrigger>
+                    <SelectContent>{CRM_STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Button type="submit" size="sm" variant="ghost" className="h-7 px-2 text-xs text-muted-foreground">Save</Button>
+                </form>
+              </li>
+              <li className="flex items-center justify-between gap-2 bg-card px-3 py-2">
+                <span className="text-sm text-muted-foreground">Source</span>
+                <span className="truncate text-sm font-medium text-foreground">{person.source ?? '—'}</span>
+              </li>
+              {Array.isArray(person.tags) && person.tags.length > 0 ? (
+                <li className="flex items-start justify-between gap-3 bg-card px-3 py-2">
+                  <span className="shrink-0 text-sm text-muted-foreground">Tags</span>
+                  <span className="text-right text-sm font-medium text-foreground">{person.tags.slice(0, 10).join(', ')}</span>
+                </li>
+              ) : null}
+            </ul>
           </div>
 
-          {/* Plugged in — newsletter / workflow / saved searches, folded into the identity panel */}
-          <div className="mt-4 border-t border-border pt-3">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Plugged in</div>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              {membership.subscribed ? (
-                <StatusPill tone="success" label={`Newsletter${membership.segment ? ` · ${membership.segment}` : ''}`} />
-              ) : (
-                <form action={assignNewsletterForm} className="inline-flex">
-                  <input type="hidden" name="personId" value={person.id} />
-                  <button type="submit" disabled={!primaryEmail} title={primaryEmail ? undefined : 'No email on file'} className="inline-flex min-h-8 items-center gap-1 rounded-full border border-dashed border-border px-3 text-xs font-medium text-muted-foreground hover:border-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50">
-                    + Newsletter
-                  </button>
-                </form>
-              )}
-              {activeEnrollments.length > 0 ? (
-                <StatusPill tone="info" label={`In ${activeEnrollments[0].crm_sequences?.name ?? 'a workflow'}`} />
-              ) : contactMemberships.sequences.length > 0 ? (
-                <form action={enrollWorkflowForm.bind(null, person.id)} className="inline-flex items-center gap-1.5">
-                  <Select name="sequenceId">
-                    <SelectTrigger className="h-8 w-40 text-xs">
-                      <SelectValue placeholder="Choose workflow" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {contactMemberships.sequences.map((s) => (
-                        <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button type="submit" size="sm" variant="outline" className="h-8 px-3 text-xs">Enroll</Button>
-                </form>
-              ) : (
-                <span className="inline-flex min-h-8 items-center rounded-full bg-secondary px-3 text-xs font-medium text-muted-foreground">No workflows</span>
-              )}
-              <a href="#saved-searches" className="inline-flex min-h-8 items-center rounded-full border border-border bg-secondary px-3 text-xs font-medium text-secondary-foreground hover:border-foreground">
-                {savedSearches.length > 0 ? `${savedSearches.length} saved search${savedSearches.length === 1 ? '' : 'es'}` : 'No saved searches'}
-              </a>
-            </div>
-          </div>
+          {/* "Plugged in" removed — newsletter/workflow live in the Memberships card
+              below + the Workflow tab (FUB-clean Info tab). */}
         </CardContent>
       </Card>
 
