@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.668.1 (2026-06-29)
+
+### Bug Fixes
+- fix(ci): scope heading-display gate out of the console admin chrome
+
+---
+
+
 ## v1.668.0 (2026-06-29)
 
 ### Features
