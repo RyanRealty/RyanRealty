@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.663.1 (2026-06-29)
+
+### Maintenance
+- chore(crm): drop unused SourceBadge import + record Info-tab FUB-clone progress
+
+---
+
+
 ## v1.663.0 (2026-06-29)
 
 ### Features
