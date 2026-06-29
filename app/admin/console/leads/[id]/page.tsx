@@ -68,6 +68,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
+import { Phone as PhoneIcon, MessageSquare, Mail as MailIcon } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 export const metadata = { title: 'Lead · Console' }
@@ -460,7 +461,7 @@ export default async function ConsoleLeadPage({
         live={isLiveNow}
         ownerName={person.assigned_broker ? (CRM_BROKER_DISPLAY[person.assigned_broker as keyof typeof CRM_BROKER_DISPLAY] ?? person.assigned_broker) : null}
         backHref={BASE}
-        fubHref={person.fub_legacy_id ? `https://ryan-realty.followupboss.com/2/people/view/${person.fub_legacy_id}` : null}
+        fubHref={null}
         flushTop={!hasAlerts}
         overview={
           <>
@@ -496,14 +497,57 @@ export default async function ConsoleLeadPage({
               <Button type="submit" size="sm" variant="outline" className="min-h-[40px] shrink-0">Assign</Button>
             </form>
           </div>
-          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
-            {full.contactPoints.length === 0 ? <span className="text-muted-foreground">No contact info on file.</span> : full.contactPoints.slice(0, 4).map((cp) => (
-              <a key={cp.id} href={cp.kind === 'email' ? `mailto:${cp.value}` : `tel:+1${cp.value}`} className="text-foreground hover:underline">
-                {cp.kind === 'phone' ? fmtPhone(cp.value) : cp.value}
-                <span className="ml-1 text-xs text-muted-foreground">{cp.is_primary ? 'primary' : cp.kind}</span>
-              </a>
-            ))}
-          </div>
+          {/* Phone numbers + Emails — FUB-style: every value listed, each with its
+              own quick actions (call/text per number, email per address). */}
+          {full.contactPoints.length === 0 ? (
+            <p className="mt-3 text-sm text-muted-foreground">No contact info on file.</p>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {full.contactPoints.some((c) => c.kind === 'phone') ? (
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Phone numbers</div>
+                  <ul className="mt-1.5 divide-y divide-border overflow-hidden rounded-lg border border-border">
+                    {full.contactPoints.filter((c) => c.kind === 'phone').map((cp) => (
+                      <li key={cp.id} className="flex items-center justify-between gap-3 bg-card px-3 py-2">
+                        <a href={`tel:+1${cp.value}`} className="min-w-0 truncate text-sm tabular-nums text-foreground hover:underline">
+                          {fmtPhone(cp.value)}
+                          {cp.is_primary ? <span className="ml-1.5 text-xs text-muted-foreground">primary</span> : null}
+                        </a>
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <Button asChild size="icon" variant="outline" className="h-8 w-8" title="Text">
+                            <a href="#comms" aria-label="Text this number"><MessageSquare className="h-4 w-4" /></a>
+                          </Button>
+                          <form action={startCallForm.bind(null, person.id)}>
+                            <Button type="submit" size="icon" className="h-8 w-8" title="Call — rings your phone first, then connects (recorded)" aria-label="Call this number">
+                              <PhoneIcon className="h-4 w-4" />
+                            </Button>
+                          </form>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {full.contactPoints.some((c) => c.kind === 'email') ? (
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Emails</div>
+                  <ul className="mt-1.5 divide-y divide-border overflow-hidden rounded-lg border border-border">
+                    {full.contactPoints.filter((c) => c.kind === 'email').map((cp) => (
+                      <li key={cp.id} className="flex items-center justify-between gap-3 bg-card px-3 py-2">
+                        <a href={`mailto:${cp.value}`} className="min-w-0 truncate text-sm text-foreground hover:underline">
+                          {cp.value}
+                          {cp.is_primary ? <span className="ml-1.5 text-xs text-muted-foreground">primary</span> : null}
+                        </a>
+                        <Button asChild size="icon" variant="outline" className="h-8 w-8 shrink-0" title="Email">
+                          <a href="#comms" aria-label="Email this address"><MailIcon className="h-4 w-4" /></a>
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          )}
 
           {/* Where this lead came from — the source (CRM record-card cutover). */}
           <div className="mt-3">
