@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.657.0 (2026-06-29)
+
+### Features
+- feat(crm): mobile bottom bar — swap Tasks for Activity
+
+---
+
+
 ## v1.656.0 (2026-06-29)
 
 ### Features
