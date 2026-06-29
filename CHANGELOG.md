@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.671.1 (2026-06-29)
+
+### Maintenance
+- refactor(crm): move deal scope-check read into the DAL
+
+---
+
+
 ## v1.671.0 (2026-06-29)
 
 ### Features
