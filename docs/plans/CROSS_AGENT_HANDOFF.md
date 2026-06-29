@@ -1,3 +1,5 @@
+> **Newest, complete, self-contained handoff: [`HANDOFF_2026-06-28.md`](./HANDOFF_2026-06-28.md) — a fresh session should start there.** The block below is a summary of the same session.
+
 # CROSS-AGENT HANDOFF — IDX compliance + CRM mobile + Growth/SEO (2026-06-28)
 
 **Date:** 2026-06-28 · **HEAD:** `467b44d1` on `main` (in sync with origin) · **Branch:** `main`
