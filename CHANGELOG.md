@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.670.0 (2026-06-29)
+
+### Features
+- feat(crm): clean the Tasks add-form on mobile
+
+---
+
+
 ## v1.669.0 (2026-06-29)
 
 ### Features
