@@ -13,10 +13,8 @@
  *
  * Empty state when there is no behavior yet. Mobile-first stack.
  */
-import Link from 'next/link'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 import { Badge } from '@/components/ui/badge'
-import { listingDetailPath } from '@/lib/slug'
 import { cn } from '@/lib/utils'
 import type { ContactBehaviorSummary } from '@/lib/data/crm/getContactBehaviorSummary'
 
@@ -38,12 +36,11 @@ export default function ContactBehaviorPanel({
 }: {
   summary: ContactBehaviorSummary
 }) {
-  const { lastSeenAt, sessions30d, topListingsViewed, topSearches, intentSignals } = summary
+  const { lastSeenAt, sessions30d, topSearches, intentSignals } = summary
 
   const hasAnything =
     Boolean(lastSeenAt) ||
     sessions30d > 0 ||
-    topListingsViewed.length > 0 ||
     topSearches.length > 0 ||
     intentSignals.length > 0
 
@@ -72,44 +69,8 @@ export default function ContactBehaviorPanel({
             </div>
           ) : null}
 
-          {/* Homes they viewed */}
-          {topListingsViewed.length > 0 ? (
-            <div className="space-y-2">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Homes viewed
-              </div>
-              <ul className="space-y-1.5">
-                {topListingsViewed.map((l) => {
-                  const label = l.address ?? `Listing ${l.listingKey}`
-                  const href = l.listingKey
-                    ? listingDetailPath(l.listingKey, null, null, { mlsNumber: l.listingKey })
-                    : null
-                  return (
-                    <li
-                      key={l.listingKey}
-                      className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 sm:min-h-0"
-                    >
-                      {href ? (
-                        <Link
-                          href={href}
-                          className="min-w-0 flex-1 truncate text-sm font-medium text-foreground hover:underline"
-                        >
-                          {label}
-                        </Link>
-                      ) : (
-                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                          {label}
-                        </span>
-                      )}
-                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                        {l.views} {l.views === 1 ? 'view' : 'views'}
-                      </span>
-                    </li>
-                  )
-                })}
-              </ul>
-            </div>
-          ) : null}
+          {/* Homes viewed now render as FUB-style property cards in the Homes
+              tab's Activity section (ViewedHomeCard) — no duplicate list here. */}
 
           {/* Searches they ran */}
           {topSearches.length > 0 ? (

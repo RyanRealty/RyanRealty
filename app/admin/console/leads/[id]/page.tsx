@@ -56,8 +56,9 @@ import { EmailComposer } from '@/components/admin/crm/EmailComposer'
 import { SmsComposer } from '@/components/admin/crm/SmsComposer'
 import { TemplatePickerNav } from '@/components/admin/crm/TemplatePickerNav'
 import ConversationFeed from '@/components/admin/crm/ConversationFeed'
+import ViewedHomeCard from '@/components/admin/crm/ViewedHomeCard'
 import { isConversationEvent } from '@/components/admin/crm/ConversationThread'
-import { ListingStatusPill, StatusPill } from '@/components/console/StatusPill'
+import { StatusPill } from '@/components/console/StatusPill'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 import { KpiStrip } from '@/components/console/KpiStrip'
 import { LeadTabs } from '@/components/console/LeadTabs'
@@ -735,37 +736,17 @@ export default async function ConsoleLeadPage({
         watching={
           <>
           <ContactBehaviorPanel summary={behaviorSummary} />
-          {/* Watching — live homes from their site behavior */}
+          {/* Homes — the live homes this lead is shopping, as FUB-style property
+              cards (photo · activity badge · price · beds/baths · address · MLS#
+              · view count). Clones the FUB Homes tab (Matt 2026-06-29, ui1_5835);
+              price + status are live from listing_tile_mv. */}
           <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-base">Watching <span className="font-normal text-muted-foreground">({viewedListings.length})</span></CardTitle></CardHeader>
-            <CardContent className="space-y-2">
+            <CardHeader className="pb-3"><CardTitle className="text-base">Activity <span className="font-normal text-muted-foreground">({viewedListings.length})</span></CardTitle></CardHeader>
+            <CardContent className="space-y-3">
               {viewedListings.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No homes viewed yet. Listings this lead opens on the site show up here with live status.</p>
               ) : viewedListings.slice(0, 6).map((l) => (
-                <div key={l.listingKey} className="flex items-center gap-3 rounded-lg border border-border p-2">
-                  {l.photoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={l.photoUrl} alt="" className="h-12 w-16 shrink-0 rounded-md border border-border object-cover" loading="lazy" />
-                  ) : (
-                    <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded-md border border-border bg-muted text-xs text-muted-foreground">—</div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      {l.listingKey ? (
-                        <Link href={`/listing/${l.listingKey}`} className="truncate text-sm font-medium text-foreground hover:underline">{l.address}</Link>
-                      ) : (
-                        <span className="truncate text-sm font-medium text-foreground">{l.address}</span>
-                      )}
-                      <ListingStatusPill status={l.status} />
-                    </div>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
-                      <span className="tabular-nums">{usd(l.listPrice) ?? 'Price n/a'}</span>
-                      <span>·</span>
-                      <span className="tabular-nums">{l.views} view{l.views === 1 ? '' : 's'}</span>
-                      {l.saved ? <><span>·</span><span style={{ color: 'var(--console-info-strong)' }}>saved</span></> : null}
-                    </div>
-                  </div>
-                </div>
+                <ViewedHomeCard key={l.listingKey} home={l} />
               ))}
             </CardContent>
           </Card>

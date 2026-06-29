@@ -54,6 +54,21 @@ Legend: **FUB** = what the FUB app does (the target) · **Ours** = current Ryan 
   multi-line, left-aligned tappable row). Design-token total held at 352 (no
   regression). The composer ("Send a message") stays in its card below the feed.
 
+## ✅ Shipped 2026-06-29 (pass 4 — Homes tab)
+
+- **C21** — Homes tab cloned to FUB property cards. New
+  `components/admin/crm/ViewedHomeCard.tsx` renders each shopped home as a
+  vertical card: photo (16:9) with an activity badge overlay (`<Badge>` default
+  navy — "Saved" / "Viewed", honest vs FUB's inquiry-only "Property Inquiry"),
+  price + live MLS status pill, beds/baths, linked address, MLS#, and 👁 view
+  count. Replaced the cramped horizontal "Watching" rows. Also removed the now-
+  redundant "Homes viewed" sub-list from `ContactBehaviorPanel` (the cards own it
+  with richer detail) — trimmed its unused `Link` / `listingDetailPath` imports.
+  Verified at 375px on lead 13168. Design-token total held at 352 (Badge swap
+  kept it off the ignore-list). Data note: viewed-homes count comes from
+  `getViewedListingsForLead` (session→event join); off-market keys not in
+  `listing_tile_mv` fall back to price-n/a + "Listing" honestly.
+
 ## ⏭️ Remaining (next session — roughly highest-value first)
 
 - **C10 deal pill data** — surface the contact's open-deal value to fill the pill
@@ -148,7 +163,7 @@ Ours: `/admin/console/leads/[id]`.
 
 20. **Comms tab.** ✅ DONE (pass 3, 2026-06-29 — see Shipped above). FUB: chronological message list — each row = channel icon (blue mail / blue text bubble) + subject/name + preview + date + open-count ("1 open · Last opened …") + unread count chip. Ours now matches via `ConversationFeed.tsx`. Remaining nicety: the gray thread-count chip (FUB groups a thread; we render per-message, so no count chip yet).
 
-21. **Homes tab.** FUB: **ACTIVITY / SEE ALL** + property cards (photo, "Property Inquiry" badge, price, beds/baths, address, MLS#, "👁 N views"). Ours: "Watching" tab — verify it renders the same card with view counts + inquiry badge.
+21. **Homes tab.** ✅ DONE (pass 4, 2026-06-29 — see Shipped above). FUB: **ACTIVITY / SEE ALL** + property cards (photo, "Property Inquiry" badge, price, beds/baths, address, MLS#, "👁 N views"). Ours now renders FUB property cards via `ViewedHomeCard.tsx`. Badge labels the activity we actually track (Saved/Viewed), not an unverified inquiry.
 
 22. **PLUGGED IN / Memberships.** Ours has a "PLUGGED IN" block (Newsletter, Choose workflow + Enroll, saved searches) and "Memberships/Workflows" — FUB has no direct equivalent (it uses Action Plans/Automations). Keep, but make sure enroll/automation maps to the Automations picker pattern (screen ui1_5836).
 

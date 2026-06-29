@@ -28,9 +28,13 @@ So: **faithfully CLONE the Follow Up Boss mobile app UI, screen by screen.** Ide
 
 - **Comms tab** cloned to FUB row anatomy. New `components/admin/crm/ConversationFeed.tsx` (client, tap-to-expand) replaces the chat-bubble `ConversationThread` in the comms slot of `app/admin/console/leads/[id]/page.tsx`. Row = channel icon · descriptor · participant · 2-line preview · `MMM d` date · email open-count; expands for full body + MMS + call recording. Allow-listed in `.design-token-lint-ignore` (raw row button), design-token total held at 352. Verified at 375px on lead 13014.
 
+## ✅ Done (pass 4 — Homes tab)
+
+- **Homes tab** cloned to FUB property cards. New `components/admin/crm/ViewedHomeCard.tsx` (photo · navy `<Badge>` Saved/Viewed · price · live status pill · beds/baths · linked address · MLS# · 👁 views) replaces the cramped "Watching" rows in the watching slot of `app/admin/console/leads/[id]/page.tsx`. Removed the redundant "Homes viewed" list from `ContactBehaviorPanel`. Design-token total held at 352. Verified at 375px on lead 13168.
+
 ## ⏭️ Next, priority order (clone each against the FUB screenshots; verify at 375px; commit per screen)
 
-1. **Homes tab** — FUB property-inquiry cards (photo · "Property Inquiry" badge · price · beds/baths · MLS · "👁 N views"). Screen: `ui1_5835`. Our slot = "Homes" (was "watching"): viewed listings + saved searches.
+1. ~~Homes tab~~ ✅ done above — FUB property-inquiry cards (photo · "Property Inquiry" badge · price · beds/baths · MLS · "👁 N views"). Screen: `ui1_5835`. Our slot = "Homes" (was "watching"): viewed listings + saved searches.
 3. **People lists** — avatars on every row + the FUB "New Leads / Emails / Website" person-first feed. Screens: `ui1_5830/5832`, `ui2_5821`. Components: contacts list under `/admin/crm`, `ContactsSearch`, `SavedViewSidebar`.
 4. **Filter sheet** — full-screen FUB filter (segmented Current/Archived/All + Everyone/Me/Team scoping). Screen: `ui1_5831`.
 5. **Top bar** — persistent "Everyone ▾" scope switcher + notification bell. Screen: `ui2_5821`.
