@@ -9,6 +9,35 @@ Legend: **FUB** = what the FUB app does (the target) · **Ours** = current Ryan 
 
 ---
 
+## ✅ Shipped 2026-06-29 (verified at 375px)
+
+- **C11/C12** — Contact Info tab now renders FUB-style **Phone numbers** + **Emails**
+  sections: every value listed, each row with its own quick-action icons (call +
+  text per number, mail per email). Dropped the "Open in FUB" header link.
+- **C10** — Contact header shows the **last-communication** line
+  ("Owner · Matt · Last contact May 27"); green **deal-value pill** slot wired in
+  `LeadTabs` (renders when deal data is surfaced).
+- **C9 (labels)** — contact tabs relabeled to FUB: **Info · Comms · Tasks · Homes ·
+  Workflow · Activity** (keys unchanged; hash routing intact).
+
+## ⏭️ Remaining (next session — roughly highest-value first)
+
+- **C10 deal pill data** — surface the contact's open-deal value to fill the pill
+  (fetch from `crm_deals`; the `dealValueLabel` prop is ready).
+- **C13** — recent-messages preview card on the Info tab.
+- **C16-19** — Financing/Lender, Background, Inquiries, Custom Fields rows on Info
+  (some already exist under other tabs — reconcile, don't duplicate).
+- **B4/B6** — avatars (initials/photo) on people-list + saved-view rows.
+- **A2** — persistent "Everyone ▾" scope switcher + notification bell in the
+  mobile top bar.
+- **B5/B8** — person-first list landing + full-screen filter sheet (Current/
+  Archived/All + team scoping).
+- **A1 bottom bar** — NOTE: deliberately Home/Inbox/People/Deals/Activity per
+  Matt's 2026-06-26 directive, not FUB's exact Inbox/Activity/Calendar/People/Deals.
+  Leave as-is unless Matt revisits.
+
+---
+
 ## A. Global / chrome
 
 1. **Bottom tab bar — labels + order.**

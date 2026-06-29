@@ -32,11 +32,13 @@ const HASH_TO_TAB: Record<string, LeadTabKey> = {
   activity: 'activity',
 }
 
+// Labels follow the FUB contact tabs (Info · Comms · Homes · …). Keys are stable
+// (hash routing + slots depend on them); only the visible labels track FUB.
 const TABS: { key: LeadTabKey; label: string }[] = [
-  { key: 'overview', label: 'Overview' },
+  { key: 'overview', label: 'Info' },
   { key: 'comms', label: 'Comms' },
   { key: 'tasks', label: 'Tasks' },
-  { key: 'watching', label: 'Watching' },
+  { key: 'watching', label: 'Homes' },
   { key: 'workflow', label: 'Workflow' },
   { key: 'activity', label: 'Activity' },
 ]
