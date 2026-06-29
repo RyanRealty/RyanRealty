@@ -20,7 +20,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import {
-  Plus, MessageSquare, Mail, StickyNote, CheckSquare, Workflow, Calculator,
+  Plus, Phone, MessageSquare, Mail, StickyNote, CheckSquare, Workflow, Calculator,
   UserPlus, Briefcase, PenSquare, ListChecks, Zap, X,
 } from 'lucide-react'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
@@ -96,6 +96,7 @@ export default function ConsoleQuickAction() {
   // Lead-scoped actions deep-link into that lead's own tab (LeadTabs reads the hash).
   const leadActions: Item[] = leadId
     ? [
+        { label: 'Call', href: '#overview', icon: Phone },
         { label: 'Send text', href: '#comms', icon: MessageSquare },
         { label: 'Send email', href: '#comms', icon: Mail },
         { label: 'Add note', href: '#comms', icon: StickyNote },
