@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.671.0 (2026-06-29)
+
+### Features
+- feat(crm): declutter workflow enrollment card actions (FUB hierarchy)
+
+---
+
+
 ## v1.670.2 (2026-06-29)
 
 ### Bug Fixes
