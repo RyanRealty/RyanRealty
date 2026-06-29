@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.657.2 (2026-06-29)
+
+### Bug Fixes
+- fix(crm-e2e): retire FUB-sync checks + refresh consent check for cutover
+
+---
+
+
 ## v1.657.1 (2026-06-29)
 
 ### Maintenance
