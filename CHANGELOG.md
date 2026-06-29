@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.663.2 (2026-06-29)
+
+### Maintenance
+- docs(crm): handoff for fresh session — FUB-clone UI, Comms tab next
+
+---
+
+
 ## v1.663.1 (2026-06-29)
 
 ### Maintenance
