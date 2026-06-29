@@ -1,3 +1,38 @@
+# CROSS-AGENT HANDOFF — IDX compliance + CRM mobile + Growth/SEO (2026-06-28)
+
+**Date:** 2026-06-28 · **HEAD:** `467b44d1` on `main` (in sync with origin) · **Branch:** `main`
+
+> This is the current authoritative handoff. The 2026-06-13 full-audit block below is history.
+
+## Shipped this session (all on `main`, pushed, builds green)
+
+1. **IDX seller opt-out compliance (the big one).** Our Spark feed is the full Member/replication feed, so it includes 43 active listings flagged `PermitInternetYN=false` (seller opted out of internet display) + 29 with `IDXParticipant=false`. They were rendering publicly (confirmed a live address in a page title/OG). Fix: migration `20260627150000` adds `permit_internet_yn`/`permit_address_internet_yn`/`idx_participant` to `listings` + backfills; `listing_tile_mv` + `similar_listings_mv` rebuilt with an opt-out filter; `getListingDetail` 404s opt-outs; `getMotivatedListings`/`getPriceDropTiles`/`getPropertyFactsByMls`/`getUpcomingOpenHouses` + the public `/api/pdf/listing` route filter them; `lib/listing-mapper.ts` persists the flags on every sync. **0 opt-outs in either MV; verified live.**
+2. **CRM mobile usability.** Smart lists (controls were `opacity-0` hover-only + org lists rendered read-only — superuser now gets edit/delete/share; `SavedViewSidebar.tsx`), email templates + workflows (off-screen action controls → column-collapse + a `⋮` kebab on mobile), and the admin sweep (`/admin/crm/settings/brokers`, `/team`, `/import` tables). All verified at 375px.
+3. **Per-broker SMS notification opt-in**, default OFF. `brokers.notify_sms` (migration `20260628140000`), gates `queueBrokerAlert` (lib/crm/broker-alerts.ts), toggle in `/admin/settings` (My Settings). Ops/health alerts to Matt are NOT gated.
+4. **Rate limiter fail-open** (lib/rate-limit.ts) — Upstash hit its monthly quota and was 500ing CMA/listing PDFs, AI, semantic search.
+5. **Buyer LP** — live "Active in Bend right now" homes rail (prove value before the ask; `app/lp/buyer-listing-alerts/page.tsx`).
+6. **SEO content.** 4 resort-community pages deepened with sourced 350-word About sections (`lib/community-seo-content.ts`, rendered via `aboutParagraphs` + a `richContent.aboutProse` in-place override in `app/communities/[slug]/page.tsx`). New `/luxury-homes-bend` page (`app/luxury-homes-bend/page.tsx`, in sitemap).
+
+## NEXT — start here
+
+1. **The 393-subdivision SEO long tail (biggest lever).** Routes are `dynamicParams=true` (every subdivision HAS a page), but only ~33 curated communities/neighborhoods are in the sitemap with rich content. **393 subdivisions have 3+ active listings** (real demand) but thin auto-pages Google mostly never indexes. PLAN: rank subdivisions by `active_inventory × GSC impressions`, batch the top ~15–20 through the SAME pipeline that did the 4 communities — parallel `general-purpose` research agents → §0-sourced ~350-word drafts + source traces → review → add to `lib/community-seo-content.ts` + the sitemap. The §0 + brand-voice agent prompt is proven (see this session's 4-community agents: cite official sources, OMIT anything unverifiable, no em-dashes/semicolons/banned words).
+2. **Measure** the 4 community pages + luxury page in GSC in 2–4 weeks. Query `marketing_channel_daily WHERE channel='gsc' AND scope='campaign'` for the target queries (Brasada was pos 9.8, Tetherow 12.8, Broken Top 13.4, Black Butte 18.0, luxury homes bend 10.9). Did they climb?
+3. **#1 long-term traffic lever: turn on consistent content publishing.** The marketing engine is built but has shipped ~0 posts (producer freeze). Even 3 quality pieces/week compounds. Get 10 real posts through approve→publish→measure to justify unfreezing.
+
+## Open / unverified
+
+- **Upstash quota:** fail-open fix shipped, but rate-limiting is effectively OFF until the monthly quota resets or Matt upgrades the Upstash plan (billing decision).
+- **Anonymous-session consumer path:** identity-stitching code (`identifyAuthenticatedSession`, OAuth callback, `rr_vid` stitch) is correct + deployed, but never end-to-end tested with a real non-admin Google sign-in (admins are correctly skipped; the preview had no consent cookie). 0 google-identified sessions in data is likely "no consumer sign-ins yet," not broken — confirm with one real consumer sign-in.
+- **`/luxury-homes-bend`:** built + deployed but not yet visually verified on prod (the headless preview can't render its scroll sections). Curl-check it shows real luxury listings.
+- Diagnostic: site traffic is ~190 sessions/30d, 66% direct — acquisition (organic search + social) is the gap; that's why (1) and (3) above matter most.
+
+## Growth diagnostic data (for the next session)
+
+- Traffic sources 30d: direct 126, google 33, gbp 16, facebook 12, rest ~3.
+- SEO quick-win queries (page 2, real impressions, 0 clicks): the 4 communities above + "luxury homes bend oregon" (44 impr, pos 10.9) — the luxury page now targets the last one.
+
+---
+
 # CROSS-AGENT HANDOFF — Full Codebase Audit
 
 **Date:** 2026-06-13
