@@ -1,7 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { getCrmAccess } from '@/app/actions/crm'
+import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
+import { scopeBroker, isPersonInScope } from '@/lib/crm/scope'
+import { resolveLeadAssignedBroker, getGuestAlertLead } from '@/lib/data/crm/leadAssignedBroker'
 import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { sendEmail } from '@/lib/resend'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
@@ -53,6 +55,21 @@ async function requireAdmin(): Promise<{ ok: true; email: string } | { ok: false
   const access = await getCrmAccess()
   if (!access) return { ok: false }
   return { ok: true, email: access.email }
+}
+
+/**
+ * Saved-search (guest_search_alerts) broker-scope guard. Returns true (DENY) only
+ * when a restricted broker is acting on a lead that resolves to a DIFFERENT
+ * broker. Owner/superuser, a non-CRM admin, the broker's own lead, or an
+ * unresolvable/new lead all pass (false). Authorization read lives in the DAL.
+ */
+async function leadOutOfScope(lead: { email?: string | null; fubLegacyId?: number | null }): Promise<boolean> {
+  const access = await getCrmAccess()
+  const slug = access ? scopeBroker(access) : null
+  if (!slug) return false
+  const { found, assignedBroker } = await resolveLeadAssignedBroker(lead)
+  if (!found) return false
+  return !isPersonInScope(slug, assignedBroker)
 }
 
 // ── ADMIN: subscriber management + assignment ────────────────────────────────
@@ -114,6 +131,7 @@ export async function adminAssignSavedSearchAction(formData: FormData): Promise<
   const email = String(formData.get('email') ?? '').trim().toLowerCase()
   if (!email) return { ok: false, error: 'no_email' }
   const fubPersonId = Number(formData.get('fubPersonId')) || null
+  if (await leadOutOfScope({ email, fubLegacyId: fubPersonId })) return { ok: false, error: 'unauthorized' }
   const name = String(formData.get('name') ?? 'Saved search').trim() || 'Saved search'
   let filters: Record<string, unknown> = {}
   try { filters = JSON.parse(String(formData.get('filters') ?? '{}')) } catch { filters = {} }
@@ -126,6 +144,8 @@ export async function adminUpdateSavedSearchAction(formData: FormData): Promise<
   if (!gate.ok) return { ok: false, error: 'unauthorized' }
   const id = String(formData.get('id') ?? '').trim()
   if (!id) return { ok: false, error: 'no_id' }
+  const lead = await getGuestAlertLead(id)
+  if (lead && (await leadOutOfScope(lead))) return { ok: false, error: 'unauthorized' }
   const name = String(formData.get('name') ?? 'Saved search').trim() || 'Saved search'
   let filters: Record<string, unknown> = {}
   try { filters = JSON.parse(String(formData.get('filters') ?? '{}')) } catch { filters = {} }
@@ -136,6 +156,8 @@ export async function adminUpdateSavedSearchAction(formData: FormData): Promise<
 export async function adminDeleteSavedSearchAction(id: string): Promise<{ ok: boolean }> {
   const gate = await requireAdmin()
   if (!gate.ok) return { ok: false }
+  const lead = await getGuestAlertLead(id)
+  if (lead && (await leadOutOfScope(lead))) return { ok: false }
   return deleteSavedSearchById(id)
 }
 
@@ -143,10 +165,13 @@ export async function adminDeleteSavedSearchAction(id: string): Promise<{ ok: bo
 export async function adminBulkAssignSavedSearchAction(personIds: number[], name: string, filters: Record<string, unknown>): Promise<{ ok: boolean; assigned: number; skipped: number; error?: string }> {
   const gate = await requireAdmin()
   if (!gate.ok) return { ok: false, assigned: 0, skipped: 0, error: 'unauthorized' }
+  const access = await getCrmAccess()
   const hash = stableHash(filters)
   let assigned = 0
   let skipped = 0
   for (const pid of personIds.slice(0, 2000)) {
+    // Restricted broker: silently skip leads outside their scope (owner short-circuits).
+    if (access && !(await requirePersonInScope(pid, access)).ok) { skipped++; continue }
     const contact = await getCrmPersonContact(pid)
     if (!contact) { skipped++; continue }
     const r = await createSavedSearchForLead({ email: contact.email, fubPersonId: null, name, filters, filtersHash: hash, origin: 'broker', assignedBy: gate.email, frequency: 'weekly' })

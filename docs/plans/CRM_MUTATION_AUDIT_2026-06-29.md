@@ -44,13 +44,19 @@ at Supabase); authorization enforced in app code via `requireCrmAccess` /
   **defensive per-chunk scope re-clamp** (lines 90–122) that re-intersects each
   chunk with the same scope query and skips out-of-scope ids. A restricted broker
   cannot mutate contacts outside their scope through the bulk path. No fix needed.
-- **[O6–O9] `app/actions/newsletter.ts` — saved-search CRUD lacks per-person scope
-  (NOT fixed; documented).** These use the `requireAdmin()` guard (not
-  `getCrmAccess`/`requirePersonInScope`), so any admin can assign/edit/delete a
-  lead's property alerts regardless of broker ownership. Lower practical severity
-  than deals (property alerts, not financials) and the fix means reconciling two
-  guard models. Left for a focused follow-up rather than an autonomous refactor of
-  the admin-guard path. Owner (Matt) is unaffected.
+- **[O6–O9] `app/actions/newsletter.ts` — saved-search CRUD per-person scope — ✅
+  FIXED (2026-06-29).** (Correction: these write to `guest_search_alerts`, not
+  `saved_searches` — the alert links to a lead by `email` + `fub_person_id`.)
+  Added a `leadOutOfScope()` guard to `adminAssignSavedSearchAction`,
+  `adminUpdateSavedSearchAction`, `adminDeleteSavedSearchAction` and a per-id
+  `requirePersonInScope` to `adminBulkAssignSavedSearchAction`: a restricted broker
+  is refused (or silently skipped, bulk) when the lead resolves to a different
+  broker; owner/superuser and unresolvable/new leads pass. The ownership read is
+  the DAL `lib/data/crm/leadAssignedBroker.ts` (`resolveLeadAssignedBroker` by
+  fub_legacy_id or email-jsonb containment, + `getGuestAlertLead`), keeping the
+  action free of raw reads. Email-containment resolution verified against a live
+  lead; owner path is a provable no-op. Two guard models reconciled (requireAdmin
+  gate kept, getCrmAccess scope added).
 
 ### MINOR / informational
 
