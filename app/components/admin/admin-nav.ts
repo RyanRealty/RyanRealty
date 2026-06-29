@@ -143,6 +143,7 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
 
   const crmItems: AdminNavItem[] = [
     ...has(people, '/admin/crm'), // Contacts
+    item('/admin/crm/activity', 'Activity', 'activity'),
     ...has(today, '/admin/crm/inbox'),
     ...has(today, '/admin/crm/tasks'),
     item('/admin/crm/calendar', 'Calendar', 'calendar'),

@@ -14,6 +14,7 @@ import {
   Activity,
   ArrowDownLeft,
   ArrowUpRight,
+  EyeOff,
   FileText,
   Globe,
   Mail,
@@ -21,6 +22,7 @@ import {
   MessageSquare,
   Milestone,
   Phone,
+  UserPlus,
   Voicemail,
   type LucideIcon,
 } from 'lucide-react'
@@ -30,6 +32,7 @@ import { groupByDay, relativeTime } from '@/lib/format/activity-feed'
 
 /** One icon per category, plus a couple of kind-level overrides for nicer reads. */
 function iconFor(item: ActivityFeedItem): LucideIcon {
+  if (item.kind === 'lead_created') return UserPlus
   if (item.kind === 'voicemail') return Voicemail
   if (item.kind === 'email_open') return MailOpen
   const byCategory: Record<ActivityCategory, LucideIcon> = {
@@ -122,6 +125,11 @@ export default function ContactActivityFeed({ items }: { items: ActivityFeedItem
                     {item.snippet ? (
                       <p className="mt-0.5 line-clamp-2 break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
                         {item.snippet}
+                      </p>
+                    ) : item.contentHidden ? (
+                      <p className="mt-0.5 inline-flex items-center gap-1 text-xs italic text-muted-foreground">
+                        <EyeOff className="h-3 w-3" aria-hidden />
+                        Content not synced from Follow Up Boss
                       </p>
                     ) : null}
 

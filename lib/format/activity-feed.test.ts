@@ -69,6 +69,7 @@ describe('groupByDay', () => {
       source: 'app',
       recordingSid: null,
       recordingDurationSec: null,
+      contentHidden: false,
     }
   }
 

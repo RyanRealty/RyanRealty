@@ -62,10 +62,21 @@ describe('getContactActivityFeed pure helpers (2.1)', () => {
         source: 'twilio',
         recordingSid: null,
         recordingDurationSec: null,
+        contentHidden: false,
       })
     })
     it('defaults source to app when missing', () => {
       expect(toFeedItem({ id: 1, ts: 't', kind: 'note', body: 'x' }).source).toBe('app')
+    })
+    it('classifies new email_in / web_event / lead_created kinds', () => {
+      expect(classifyTimelineKind('email_in')).toEqual({ category: 'email', direction: 'in', label: 'Email received' })
+      expect(classifyTimelineKind('web_event')).toEqual({ category: 'web', direction: null, label: 'Website activity' })
+      expect(classifyTimelineKind('lead_created')).toEqual({ category: 'milestone', direction: 'in', label: 'New lead' })
+    })
+    it('flags FUB-redacted content as contentHidden', () => {
+      const hidden = toFeedItem({ id: 9, ts: 't', kind: 'email_out', body: null, payload: { contentHidden: true }, source: 'fub-import' })
+      expect(hidden.contentHidden).toBe(true)
+      expect(hidden.snippet).toBeNull()
     })
   })
 })

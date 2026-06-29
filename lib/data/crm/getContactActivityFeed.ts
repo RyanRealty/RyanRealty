@@ -30,6 +30,12 @@ export type ActivityFeedItem = {
   /** Twilio recording for a call/voicemail — drives the inline <audio> player. */
   recordingSid: string | null
   recordingDurationSec: number | null
+  /** True when the row is a FUB-imported message whose body FUB redacted at the
+   *  API ([CONTENT HIDDEN]). The event is correctly associated to the lead, but
+   *  the content is unavailable until the FUB integration is registered for
+   *  content access (see scripts/crm-import-fub-comms.mjs). The UI labels these
+   *  rather than rendering a blank, so a redacted message never reads as empty. */
+  contentHidden: boolean
 }
 
 type KindMeta = { category: ActivityCategory; direction: 'in' | 'out' | null; label: string }
@@ -38,6 +44,9 @@ const KIND_MAP: Record<string, KindMeta> = {
   sms_in: { category: 'message', direction: 'in', label: 'Text received' },
   sms_out: { category: 'message', direction: 'out', label: 'Text sent' },
   email_out: { category: 'email', direction: 'out', label: 'Email sent' },
+  // email_in was missing — inbound FUB/Gmail emails fell through to 'other' and
+  // mis-rendered as "Email in". Classify it as an inbound email. (no-drop-off fix)
+  email_in: { category: 'email', direction: 'in', label: 'Email received' },
   email: { category: 'email', direction: null, label: 'Email' },
   email_open: { category: 'email', direction: 'in', label: 'Email opened' },
   email_click: { category: 'email', direction: 'in', label: 'Email link clicked' },
@@ -46,9 +55,16 @@ const KIND_MAP: Record<string, KindMeta> = {
   note: { category: 'note', direction: null, label: 'Note' },
   system: { category: 'system', direction: null, label: 'System update' },
   stage_change: { category: 'milestone', direction: null, label: 'Stage changed' },
+  // lead_created — the "New lead" activity event (FUB-parity). Backfilled for
+  // every contact from fub_created_at/created_at and written going forward when a
+  // lead is first captured, so the global Activity feed has a uniform new-lead row.
+  lead_created: { category: 'milestone', direction: 'in', label: 'New lead' },
   home_valuation: { category: 'milestone', direction: null, label: 'Home valuation requested' },
   subscribe_report: { category: 'milestone', direction: null, label: 'Subscribed to a market report' },
   parsed_intent: { category: 'web', direction: null, label: 'Website intent detected' },
+  // web_event was missing — the 14.8K FUB site-activity rows fell through to
+  // 'other' and mis-rendered as "Web event". Classify as website activity. (fix)
+  web_event: { category: 'web', direction: null, label: 'Website activity' },
 }
 
 function humanizeKind(kind: string): string {
@@ -79,6 +95,7 @@ export function toFeedItem(row: Record<string, unknown>): ActivityFeedItem {
   const recordingSid = recRaw && /^RE[a-f0-9]{32}$/.test(recRaw) ? recRaw : null
   const durRaw = payload.recordingDurationSec
   const recordingDurationSec = typeof durRaw === 'number' && Number.isFinite(durRaw) ? durRaw : null
+  const contentHidden = payload.contentHidden === true
   return {
     id: Number(row.id),
     ts: String(row.ts ?? ''),
@@ -95,6 +112,7 @@ export function toFeedItem(row: Record<string, unknown>): ActivityFeedItem {
     source: String(row.source ?? 'app'),
     recordingSid,
     recordingDurationSec,
+    contentHidden,
   }
 }
 
