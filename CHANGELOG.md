@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.653.2 (2026-06-29)
+
+### Maintenance
+- docs(handoff): complete self-contained 2026-06-28 session handoff
+
+---
+
+
 ## v1.653.1 (2026-06-29)
 
 ### Maintenance
