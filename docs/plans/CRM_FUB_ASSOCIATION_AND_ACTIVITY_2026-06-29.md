@@ -53,9 +53,12 @@ bodies; only emails/texts are redacted.
 ## 2. Global Activity tab (FUB Activity-tab parity) — SHIPPED
 
 `/admin/crm/activity` — a CRM-wide, newest-first activity stream across all
-contacts, filterable **All / Email / Website / New leads**, each row linking to
-the contact. Day-grouped, with direction, broker, category, relative time, inline
-call recordings, and the redacted-content label.
+contacts. **Independent include/exclude toggle chips** for each activity type —
+**Emails · Texts · Calls · Notes · Website · New leads · Updates** — all on by
+default, with Clear all / Select all (so you can show any combination, e.g.
+emails + texts but not website). Each row links to the contact. Day-grouped, with
+direction, broker, category, relative time, inline call recordings, and the
+redacted-content label. Deep-linkable via `?types=email,sms,website`.
 
 - **DAL:** `lib/data/crm/getGlobalActivityFeed.ts` (one indexed query over
   `crm_timeline` joined to contact names, cursor-paginated on `ts`).

@@ -1,27 +1,26 @@
 'use server'
 
 /**
- * Server action backing the global CRM Activity tab's "Load more" pagination.
- * Access-guarded the same way as the rest of the CRM (getCrmAccess). Returns the
- * next page of the cross-contact activity feed for the given filter + cursor.
+ * Server action backing the global CRM Activity tab: re-fetches the feed when
+ * the user toggles activity types, and pages "Load more". Access-guarded the
+ * same way as the rest of the CRM (getCrmAccess).
  */
 import { getCrmAccess } from '@/app/actions/crm'
 import {
   getGlobalActivityFeed,
-  type GlobalActivityFilter,
+  ALL_ACTIVITY_TYPE_KEYS,
   type GlobalActivityResult,
 } from '@/lib/data/crm/getGlobalActivityFeed'
 
-const FILTERS: GlobalActivityFilter[] = ['all', 'email', 'website', 'new_leads']
+const VALID = new Set<string>(ALL_ACTIVITY_TYPE_KEYS)
 
 export async function loadGlobalActivity(input: {
-  filter?: string
+  types?: string[]
   before?: string | null
 }): Promise<GlobalActivityResult> {
   const access = await getCrmAccess()
   if (!access) return { items: [], nextCursor: null }
-  const filter = (FILTERS as string[]).includes(input.filter ?? '')
-    ? (input.filter as GlobalActivityFilter)
-    : 'all'
-  return getGlobalActivityFeed({ filter, before: input.before ?? null, limit: 50 })
+  // Sanitize to known type keys. `types` undefined = all; explicit [] = none.
+  const types = Array.isArray(input.types) ? input.types.filter((t) => VALID.has(t)) : ALL_ACTIVITY_TYPE_KEYS
+  return getGlobalActivityFeed({ types, before: input.before ?? null, limit: 50 })
 }

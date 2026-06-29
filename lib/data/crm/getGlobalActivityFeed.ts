@@ -1,21 +1,45 @@
 /**
  * getGlobalActivityFeed — the CRM-wide activity stream (FUB "Activity" tab parity).
  *
- * Where getContactActivityFeed reads one person's crm_timeline, this reads the
- * timeline across ALL contacts, joins each row to its contact's name, and lets
- * the Activity page filter by what FUB surfaces: Email, Website, and New Leads
- * (plus All). Newest-first, cursor-paginated on `ts` so "load more" is stable.
+ * Reads the timeline across ALL contacts, joins each row to its contact's name,
+ * and lets the Activity page include/exclude activity TYPES (emails, texts,
+ * website visits, calls, notes, new leads, updates) as independent toggles.
+ * Newest-first, cursor-paginated on `ts` so "load more" is stable.
  *
  * No drop-off: every row is a real crm_timeline event already associated to a
  * crm_people lead (person_id is NOT NULL). New-lead events are first-class
- * timeline rows (kind='lead_created'), so the feed is one uniform, indexed query
- * rather than a UNION across tables.
+ * timeline rows (kind='lead_created'), so the feed is one uniform, indexed query.
  */
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { toFeedItem, type ActivityFeedItem } from './getContactActivityFeed'
 
-export type GlobalActivityFilter = 'all' | 'email' | 'website' | 'new_leads'
+/**
+ * The toggleable activity types shown on the Activity tab. Each maps to the set
+ * of crm_timeline `kind`s it covers. The union of the selected types' kinds is
+ * what the feed query filters on. Order = display order of the toggle chips.
+ */
+export const ACTIVITY_TYPES = [
+  { key: 'email', label: 'Emails', kinds: ['email_in', 'email_out', 'email_open', 'email_click', 'email'] },
+  { key: 'sms', label: 'Texts', kinds: ['sms_in', 'sms_out'] },
+  { key: 'call', label: 'Calls', kinds: ['call', 'voicemail'] },
+  { key: 'note', label: 'Notes', kinds: ['note'] },
+  { key: 'website', label: 'Website', kinds: ['web_event', 'parsed_intent'] },
+  { key: 'new_leads', label: 'New leads', kinds: ['lead_created'] },
+  { key: 'updates', label: 'Updates', kinds: ['stage_change', 'home_valuation', 'subscribe_report'] },
+] as const
+
+export type ActivityTypeKey = (typeof ACTIVITY_TYPES)[number]['key']
+export const ALL_ACTIVITY_TYPE_KEYS: ActivityTypeKey[] = ACTIVITY_TYPES.map((t) => t.key)
+
+const KINDS_BY_TYPE = new Map<string, readonly string[]>(ACTIVITY_TYPES.map((t) => [t.key, t.kinds]))
+
+/** Resolve a set of selected type keys to the union of crm_timeline kinds. */
+export function kindsForTypes(types: readonly string[]): string[] {
+  const out = new Set<string>()
+  for (const t of types) for (const k of KINDS_BY_TYPE.get(t) ?? []) out.add(k)
+  return [...out]
+}
 
 export type GlobalActivityItem = ActivityFeedItem & {
   personId: number
@@ -24,41 +48,27 @@ export type GlobalActivityItem = ActivityFeedItem & {
   href: string
 }
 
-// Kind sets per filter tab. `all` is an explicit allow-list of human-meaningful
-// activity (it excludes internal 'system' automation logs — sequence ticks,
-// auto-enroll, broker alerts — which are noise in an activity feed).
-const EMAIL = ['email_in', 'email_out', 'email_open', 'email_click', 'email']
-const WEBSITE = ['web_event', 'parsed_intent']
-const NEW_LEADS = ['lead_created']
-const MESSAGE = ['sms_in', 'sms_out']
-const CALL = ['call', 'voicemail']
-const MILESTONE = ['stage_change', 'home_valuation', 'subscribe_report']
-const NOTE = ['note']
-const ALL = [...EMAIL, ...WEBSITE, ...NEW_LEADS, ...MESSAGE, ...CALL, ...MILESTONE, ...NOTE]
-
-const KIND_SET: Record<GlobalActivityFilter, string[]> = {
-  all: ALL,
-  email: EMAIL,
-  website: WEBSITE,
-  new_leads: NEW_LEADS,
-}
-
 export type GlobalActivityResult = { items: GlobalActivityItem[]; nextCursor: string | null }
 
 export async function getGlobalActivityFeed(opts: {
-  filter?: GlobalActivityFilter
+  /** Selected type keys. Omitted = all types. Empty array = nothing selected. */
+  types?: readonly string[]
   limit?: number
   /** ISO timestamp cursor — return rows strictly older than this (for "load more"). */
   before?: string | null
 } = {}): Promise<GlobalActivityResult> {
-  const safeFilter: GlobalActivityFilter = opts.filter && opts.filter in KIND_SET ? opts.filter : 'all'
+  const selected = opts.types ?? ALL_ACTIVITY_TYPE_KEYS
+  const kinds = kindsForTypes(selected)
+  // Nothing selected → nothing to show (the UI prompts to pick at least one type).
+  if (kinds.length === 0) return { items: [], nextCursor: null }
+
   const limit = Math.min(Math.max(opts.limit ?? 50, 1), 200)
   const sb = createServiceClient()
 
   let q = sb
     .from('crm_timeline')
     .select('id,ts,kind,title,body,payload,broker,source,person_id')
-    .in('kind', KIND_SET[safeFilter])
+    .in('kind', kinds)
     .order('ts', { ascending: false })
     .limit(limit + 1)
   if (opts.before) q = q.lt('ts', opts.before)
