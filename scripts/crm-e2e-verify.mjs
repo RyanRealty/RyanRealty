@@ -67,7 +67,11 @@ await tryCheck('data.sequences-active', async () => {
 
 // ── 2. PRODUCTION CRON ROUTES (live invocation) ───────────────────────────
 for (const [id, path_, validate] of [
-  ['cron.fub-delta', '/api/cron/crm-fub-delta', (d) => d.ok === true],
+  // NOTE: cron.fub-delta + fresh.fub-delta removed 2026-06-29 — the FUB sync
+  // routes were intentionally deleted at cutover prep (commit 60f3d787); FUB is
+  // disconnected and inbound lead intake is now native (crm_people born with
+  // fub_legacy_id NULL). Re-adding a FUB-sync check would assert a function we
+  // deliberately retired.
   ['cron.auto-enroll', '/api/cron/crm-auto-enroll', (d) => d.ok === true],
   ['cron.sequence-engine', '/api/cron/crm-sequence-engine', (d) => d.ok === true && d.errored === 0],
   ['cron.gmail-sync', '/api/cron/crm-gmail-sync?pages=1', (d) => d.ok === true],
@@ -80,11 +84,7 @@ for (const [id, path_, validate] of [
 }
 
 // ── 3. SYNC FRESHNESS + COVERAGE ───────────────────────────────────────────
-await tryCheck('fresh.fub-delta', async () => {
-  const { data } = await sb.from('crm_imports').select('finished_at,status').eq('source', 'fub-delta').order('id', { ascending: false }).limit(1).maybeSingle();
-  const ok = data && data.status === 'done' && minutesAgo(data.finished_at) < 45;
-  check('fresh.fub-delta', ok ? 'PASS' : 'FAIL', data ? `${Math.round(minutesAgo(data.finished_at))}m ago` : 'no runs');
-});
+// fresh.fub-delta removed 2026-06-29 (FUB disconnected at cutover; see note above).
 await tryCheck('fresh.gmail-cursor', async () => {
   const { data } = await sb.from('crm_imports').select('finished_at,source').like('source', 'gmail:%').order('id', { ascending: false }).limit(1).maybeSingle();
   const ok = data && minutesAgo(data.finished_at) < 30;
@@ -218,24 +218,32 @@ await tryCheck('twilio.a2p-campaign', async () => {
 // URL list in sync with CTA_URLS in scripts/crm-a2p-resubmit.mjs +
 // COMPLIANCE_VERIFICATION_PATHS in middleware.ts.
 await tryCheck('web.compliance-cta-reachable', async () => {
-  const urls = [
-    `${SITE}/contact`, `${SITE}/sell/valuation`, `${SITE}/lp/seller-home-value`,
-    `${SITE}/lp/sell-your-home`, `${SITE}/lp/buyer-listing-alerts`, `${SITE}/lp/expired-listing`,
-  ];
   const ua = { 'User-Agent': 'python-requests/2.31.0' };
+  // Canonical SMS consent text (SmsConsentDisclosure.tsx SMS_CONSENT_TEXT). Updated
+  // 2026-06-23 to the carrier-approved checkbox wording; keep this snippet in lock-step.
+  const CONSENT = 'I agree to receive text messages from Ryan Realty about my request';
+  // Single-step forms render the consent in initial SSR — carrier-verifiable by URL.
+  const ssrForms = [`${SITE}/contact`, `${SITE}/sell/valuation`, `${SITE}/lp/buyer-listing-alerts`];
+  // Multi-step forms collect the phone + render the consent on step 2 (qualify);
+  // initial SSR can't show it, so assert reachability only (disclosure is wired in
+  // SellerLPForm/ExpiredLPForm right beside the phone field, verified in source).
+  const multiStep = [`${SITE}/lp/seller-home-value`, `${SITE}/lp/sell-your-home`, `${SITE}/lp/expired-listing`];
   const problems = [];
-  for (const url of urls) {
+  for (const url of ssrForms) {
     const res = await fetch(url, { headers: ua, redirect: 'follow' });
     const html = res.ok ? await res.text() : '';
-    if (!res.ok || !html.includes('you agree to receive calls and texts from Ryan Realty'))
-      problems.push(`${url.replace(SITE, '')}:${res.status}`);
+    if (!res.ok || !html.includes(CONSENT)) problems.push(`${url.replace(SITE, '')}:${res.status} (consent text)`);
+  }
+  for (const url of multiStep) {
+    const res = await fetch(url, { headers: ua, redirect: 'follow' });
+    if (!res.ok) problems.push(`${url.replace(SITE, '')}:${res.status} (unreachable)`);
   }
   const priv = await fetch(`${SITE}/privacy`, { headers: ua, redirect: 'follow' });
   const privHtml = priv.ok ? await priv.text() : '';
   if (!priv.ok || !privHtml.includes('No mobile information will be shared with third parties'))
     problems.push(`/privacy:${priv.status} (mobile-data clause)`);
   check('web.compliance-cta-reachable', problems.length === 0 ? 'PASS' : 'FAIL',
-    problems.length ? 'reviewer-UA blocked or consent text missing: ' + problems.join(', ') : '7 URLs verifiable with HTTP-library UA');
+    problems.length ? 'consent/reachability issue: ' + problems.join(', ') : 'consent on SSR forms + privacy clause + multi-step reachable');
 });
 
 // ── 6. GMAIL (send-as capability per broker) ──────────────────────────────
