@@ -702,10 +702,10 @@ export default async function ConsoleLeadPage({
                 <input type="hidden" name="personId" value={person.id} />
                 <Input name="name" placeholder="New task" className="h-9 flex-1 text-sm" />
                 <div className="flex gap-2">
-                  <Select name="type" defaultValue="Follow Up"><SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger><SelectContent>{['Follow Up', 'Call', 'Text', 'Email'].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
-                  <Select name="dueHours" defaultValue="24"><SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="1">in 1 hour</SelectItem><SelectItem value="4">in 4 hours</SelectItem><SelectItem value="24">tomorrow</SelectItem><SelectItem value="72">in 3 days</SelectItem><SelectItem value="168">in a week</SelectItem></SelectContent></Select>
+                  <Select name="type" defaultValue="Follow Up"><SelectTrigger className="h-9 flex-1 sm:w-32"><SelectValue /></SelectTrigger><SelectContent>{['Follow Up', 'Call', 'Text', 'Email'].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
+                  <Select name="dueHours" defaultValue="24"><SelectTrigger className="h-9 flex-1 sm:w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="1">in 1 hour</SelectItem><SelectItem value="4">in 4 hours</SelectItem><SelectItem value="24">tomorrow</SelectItem><SelectItem value="72">in 3 days</SelectItem><SelectItem value="168">in a week</SelectItem></SelectContent></Select>
                 </div>
-                <Button type="submit" size="sm" variant="outline" className="min-h-[40px] sm:min-h-0">Add</Button>
+                <Button type="submit" size="sm" variant="outline" className="min-h-[40px] w-full sm:min-h-0 sm:w-auto">Add</Button>
               </form>
             </CardContent>
           </Card>
