@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.672.1 (2026-06-29)
+
+### Bug Fixes
+- fix(crm): broker-scope guard on saved-search (guest alert) CRUD
+
+---
+
+
 ## v1.672.0 (2026-06-29)
 
 ### Features
