@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.662.0 (2026-06-29)
+
+### Features
+- feat(crm): FUB-clone the contact Info tab — strip the clutter
+
+---
+
+
 ## v1.661.0 (2026-06-29)
 
 ### Features
