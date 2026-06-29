@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.664.0 (2026-06-29)
+
+### Features
+- feat(crm): clone FUB Comms tab — chronological message-row feed
+
+---
+
+
 ## v1.663.2 (2026-06-29)
 
 ### Maintenance
