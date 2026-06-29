@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.663.0 (2026-06-29)
+
+### Features
+- feat(crm): add Call to the + quick-action (call/text/email all in the +)
+
+---
+
+
 ## v1.662.0 (2026-06-29)
 
 ### Features
