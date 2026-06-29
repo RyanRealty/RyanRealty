@@ -19,8 +19,7 @@ import {
   startCrmCallAction,
   updateCrmStageAction,
 } from '@/app/actions/crm'
-import { getNewsletterMembershipForLead } from '@/lib/data'
-import { adminAssignCrmPersonAction, adminAssignSavedSearchAction, adminUpdateSavedSearchAction, adminDeleteSavedSearchAction } from '@/app/actions/newsletter'
+import { adminAssignSavedSearchAction, adminUpdateSavedSearchAction, adminDeleteSavedSearchAction } from '@/app/actions/newsletter'
 // CRM record-card cutover (2026-06-24): home-driven next step, CMA-from-contact,
 // market-report subscriptions, source badge.
 import { getContactNextStep } from '@/app/actions/contact-next-step'
@@ -31,7 +30,6 @@ import { getCrmFieldDefinitions } from '@/lib/data/crm/getCrmFieldDefinitions'
 import CustomFieldsPanel from '@/components/admin/crm/CustomFieldsPanel'
 import { setReportSubscriptionAction } from '@/app/actions/crm-report-subscriptions'
 import { saveContactCustomFieldsAction } from '@/app/actions/contact-custom-fields'
-import { getFirstTouchAttribution } from '@/lib/data/crm/getFirstTouchAttribution'
 import ReportSubscriptionsPanel from '@/components/admin/crm/ReportSubscriptionsPanel'
 import NextStepCard from '@/components/admin/crm/NextStepCard'
 import { timelineEmailBody } from '@/lib/crm/email-body'
@@ -115,20 +113,6 @@ async function assignBrokerForm(formData: FormData): Promise<void> {
   const r = await assignCrmBrokerAction(formData)
   if (!r.ok) console.error('[console] assignBroker:', r.error)
 }
-async function enrollWorkflowForm(personId: number, formData: FormData): Promise<void> {
-  'use server'
-  const sequenceId = Number(formData.get('sequenceId'))
-  if (!Number.isFinite(sequenceId) || sequenceId <= 0) {
-    redirect(`${BASE}/${personId}?error=${encodeURIComponent('Please choose a workflow to enroll in.')}`)
-  }
-  const { setSequenceEnrollment } = await import('@/app/actions/crm-membership')
-  const r = await setSequenceEnrollment({ personId, sequenceId, enrolled: true })
-  redirect(
-    r.ok
-      ? `${BASE}/${personId}?flash=${encodeURIComponent(r.message ?? 'Enrolled in workflow.')}`
-      : `${BASE}/${personId}?error=${encodeURIComponent(`Not enrolled — ${r.error ?? 'unknown error'}`)}`,
-  )
-}
 async function sendEmailForm(personId: number, formData: FormData): Promise<void> {
   'use server'
   formData.set('personId', String(personId))
@@ -191,13 +175,6 @@ async function setReportSubsForm(personId: number, formData: FormData): Promise<
       ? `${BASE}/${personId}?flash=${encodeURIComponent(r.message ?? 'Market reports updated.')}`
       : `${BASE}/${personId}?error=${encodeURIComponent(`Market reports not updated — ${r.error}`)}`,
   )
-}
-async function assignNewsletterForm(formData: FormData): Promise<void> {
-  'use server'
-  const personId = Number(formData.get('personId'))
-  const r = await adminAssignCrmPersonAction(personId)
-  const msg = r.ok ? 'Added to the newsletter' : `Not added — ${r.error ?? 'unknown error'}`
-  redirect(`${BASE}/${personId}?flash=${encodeURIComponent(msg)}`)
 }
 async function assignSavedSearchForm(formData: FormData): Promise<void> {
   'use server'
@@ -369,21 +346,19 @@ export default async function ConsoleLeadPage({
   const personEmails = (person.emails ?? []).map((e) => e.value).filter((v): v is string => Boolean(v))
 
   // What they're shopping for — saved searches + the homes they're watching (live MLS) + newsletter status.
-  const [savedSearches, viewedListings, membership, contactMemberships, activityFeed, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, firstTouch, fieldDefs, emailEngagementSummary] = await Promise.all([
+  const [savedSearches, viewedListings, contactMemberships, activityFeed, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, fieldDefs, emailEngagementSummary] = await Promise.all([
     getGuestSearchAlertsForLead({ fubPersonId: person.fub_legacy_id, emails: personEmails }),
     getViewedListingsForLead(person.fub_legacy_id),
-    getNewsletterMembershipForLead({ crmPersonId: person.id, emails: personEmails }),
     getContactMemberships(person.id),
     getContactActivityFeed(person.id),
     getContactBehaviorSummary(person.id),
     getContactRelationships(person.id),
     getContactListingAlerts(person.id),
     // CRM record-card cutover: home-driven next step (owns home → CMA, else → newsletter),
-    // the contact's market-report subscription + available areas, and lead source.
+    // the contact's market-report subscription + available areas.
     getContactNextStep(person.id),
     getContactReportSubscription(person.id),
     listAvailableMarketReportAreas(),
-    getFirstTouchAttribution({ emails: personEmails, fubPersonId: person.fub_legacy_id }),
     getCrmFieldDefinitions(),
     // Wave 5: per-contact email engagement, read from the unified email_events store.
     getContactEmailEngagement(person.id),
@@ -420,7 +395,6 @@ export default async function ConsoleLeadPage({
   const activityLog = full.timeline.filter((t) => !isConversationEvent(t.kind) && t.kind !== 'email_open' && t.kind !== 'email_click')
   const openTasks = full.tasks.filter((t) => !t.completed_at)
   const doneTasks = full.tasks.filter((t) => t.completed_at)
-  const activeEnrollments = full.enrollments.filter((e) => e.status === 'running' || e.status === 'paused')
   const customEntries = Object.entries(person.custom ?? {}).filter(([, v]) => v !== null && v !== '' && v !== undefined)
 
   const emailEngagement: Record<string, { opens: number; lastOpen: string | null; clicks: number }> = {}
