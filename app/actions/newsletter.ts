@@ -1,5 +1,6 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { getCrmAccess } from '@/app/actions/crm'
 import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { sendEmail } from '@/lib/resend'
@@ -263,6 +264,9 @@ export async function adminSendNewsletterAction(id: string): Promise<{ ok: boole
   const iso = new Date().toISOString()
   await markSubscribersSent(sentIds, iso)
   await updateNewsletter(id, { status: failed > 0 && sent === 0 ? 'failed' : 'sent', sent_count: sent, failed_count: failed, sent_at: iso })
+
+  // Reflect the sent/failed status in the admin newsletters list without a manual reload (O13).
+  revalidatePath('/admin/newsletters')
 
   return { ok: true, sent, skipped, failed }
 }

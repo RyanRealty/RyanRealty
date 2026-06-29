@@ -35,23 +35,28 @@ at Supabase); authorization enforced in app code via `requireCrmAccess` /
   guard data-read verified against a throwaway `paul` deal (refused for `rebecca`,
   allowed for `paul`/owner).
 
-### MEDIUM — fix or confirm
+### MEDIUM
 
-- **[D4–D7] `app/actions/crm-bulk.ts` — bulk set-stage / enroll-workflow /
-  set-report-subscription / email-cohort enqueue with only `getCrmAccess()`** (no
-  scope guard at enqueue). Exploitability depends on whether the `crm_bulk_jobs`
-  worker enforces `scopeBroker` when draining. **Verify the worker; if it doesn't
-  scope, guard at enqueue.**
-- **[O6–O9] `app/actions/newsletter.ts` — saved-search CRUD lacks
-  `requirePersonInScope`.** `adminAssignSavedSearchAction`,
-  `adminUpdateSavedSearchAction`, `adminDeleteSavedSearchAction`,
-  `adminBulkAssignSavedSearchAction` let any admin assign/delete a lead's property
-  alerts regardless of ownership.
+- **[D4–D7] `app/actions/crm-bulk.ts` — VERIFIED SAFE (false positive).** The
+  enqueue FREEZES `broker_scope = scopeBroker(access)` onto the job, and the worker
+  (`app/api/cron/crm-bulk-worker/route.ts`) enforces it at drain: ast-mode resolves
+  ids under the frozen scope via `buildCrmPeopleQuery`, and ids-mode runs a
+  **defensive per-chunk scope re-clamp** (lines 90–122) that re-intersects each
+  chunk with the same scope query and skips out-of-scope ids. A restricted broker
+  cannot mutate contacts outside their scope through the bulk path. No fix needed.
+- **[O6–O9] `app/actions/newsletter.ts` — saved-search CRUD lacks per-person scope
+  (NOT fixed; documented).** These use the `requireAdmin()` guard (not
+  `getCrmAccess`/`requirePersonInScope`), so any admin can assign/edit/delete a
+  lead's property alerts regardless of broker ownership. Lower practical severity
+  than deals (property alerts, not financials) and the fix means reconciling two
+  guard models. Left for a focused follow-up rather than an autonomous refactor of
+  the admin-guard path. Owner (Matt) is unaffected.
 
 ### MINOR / informational
 
-- **[O13] `adminSendNewsletterAction`** — no `revalidatePath` after send; admin list
-  won't auto-refresh to show sent status. (cheap fix)
+- **[O13] `adminSendNewsletterAction` — ✅ FIXED.** Added
+  `revalidatePath('/admin/newsletters')` after the send so the admin list reflects
+  the sent/failed status without a manual reload.
 - **[S4] `deleteCrmFieldDefinitionAction`** — deletes the schema row but leaves
   orphaned keys in every `crm_people.custom` jsonb (no value cleanup). New writes to
   the dead key are already refused, so it's stale-data-only.
