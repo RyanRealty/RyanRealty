@@ -46,9 +46,12 @@ import { join, resolve, relative } from 'node:path'
 const ROOT = resolve(new URL('.', import.meta.url).pathname, '..')
 const BASELINE_PATH = join(ROOT, 'scripts/heading-display-baseline.json')
 const SCAN_DIRS = ['app', 'components']
-// Skip non-brand-facing trees: admin/account/dashboard internals (don't need the
-// display face), render trees, and the mockup preview. Public site pages only.
-const SKIP_SEGMENTS = ['node_modules', '.next', 'mockup-preview', 'admin', 'account', 'dashboard']
+// Skip non-brand-facing trees: admin/account/dashboard/console internals (don't
+// need the display face), render trees, and the mockup preview. Public site pages
+// only. `console` is the neutral admin chrome (ConsoleShell + components/console/*),
+// explicitly NOT brand-font-styled per Matt's 2026-06-15 directive — same class as
+// `admin`, so it belongs in the skip list.
+const SKIP_SEGMENTS = ['node_modules', '.next', 'mockup-preview', 'admin', 'account', 'dashboard', 'console']
 
 const args = new Set(process.argv.slice(2))
 const REPORT = args.has('--report')
