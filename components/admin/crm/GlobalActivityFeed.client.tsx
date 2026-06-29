@@ -11,11 +11,16 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import {
-  Activity, ArrowDownLeft, ArrowUpRight, EyeOff, FileText, Globe, Mail, MailOpen,
-  MessageSquare, Milestone, Phone, UserPlus, Voicemail, type LucideIcon,
+  Activity, ArrowDownLeft, ArrowUpRight, ChevronDown, EyeOff, FileText, Globe, Mail, MailOpen,
+  MessageSquare, Milestone, Phone, SlidersHorizontal, UserPlus, Users, Voicemail, type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuCheckboxItem, DropdownMenuItem,
+  DropdownMenuRadioGroup, DropdownMenuRadioItem,
+} from '@/components/ui/dropdown-menu'
 import type { ActivityCategory } from '@/lib/data/crm/getContactActivityFeed'
 import type { GlobalActivityItem } from '@/lib/data/crm/getGlobalActivityFeed'
 import { groupByDay, relativeTime } from '@/lib/format/activity-feed'
@@ -46,25 +51,33 @@ function DirectionTag({ direction }: { direction: GlobalActivityItem['direction'
   return null
 }
 
+type BrokerOption = { value: string; label: string }
+
 export default function GlobalActivityFeed({
   initialItems,
   initialCursor,
   allTypes,
   initialSelected,
+  brokerOptions = [],
+  initialBroker = 'all',
 }: {
   initialItems: GlobalActivityItem[]
   initialCursor: string | null
   allTypes: TypeChip[]
   initialSelected: string[]
+  /** Broker scope options — empty for a restricted broker (locked to their leads). */
+  brokerOptions?: BrokerOption[]
+  initialBroker?: string
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set(initialSelected))
+  const [broker, setBroker] = useState<string>(initialBroker)
   const [items, setItems] = useState<GlobalActivityItem[]>(initialItems)
   const [cursor, setCursor] = useState<string | null>(initialCursor)
   const [pending, startTransition] = useTransition()
 
-  function refetch(next: Set<string>) {
+  function refetch(nextTypes: Set<string>, nextBroker: string) {
     startTransition(async () => {
-      const res = await loadGlobalActivity({ types: [...next] })
+      const res = await loadGlobalActivity({ types: [...nextTypes], broker: nextBroker })
       setItems(res.items)
       setCursor(res.nextCursor)
     })
@@ -75,19 +88,24 @@ export default function GlobalActivityFeed({
     if (next.has(key)) next.delete(key)
     else next.add(key)
     setSelected(next)
-    refetch(next)
+    refetch(next, broker)
   }
 
   function setAll(on: boolean) {
     const next = on ? new Set(allTypes.map((t) => t.key)) : new Set<string>()
     setSelected(next)
-    refetch(next)
+    refetch(next, broker)
+  }
+
+  function pickBroker(value: string) {
+    setBroker(value)
+    refetch(selected, value)
   }
 
   function loadMore() {
     if (!cursor) return
     startTransition(async () => {
-      const res = await loadGlobalActivity({ types: [...selected], before: cursor })
+      const res = await loadGlobalActivity({ types: [...selected], broker, before: cursor })
       setItems((prev) => [...prev, ...res.items])
       setCursor(res.nextCursor)
     })
@@ -95,54 +113,62 @@ export default function GlobalActivityFeed({
 
   const allOn = selected.size === allTypes.length
   const noneOn = selected.size === 0
+  const typesLabel = noneOn ? 'No types' : allOn ? 'All types' : `${selected.size} type${selected.size === 1 ? '' : 's'}`
+  const brokerLabel = brokerOptions.find((b) => b.value === broker)?.label ?? 'Everyone'
   const now = Date.now()
   const groups = groupByDay(items, now)
 
   return (
     <div>
-      {/* Include / exclude activity types. Each chip is an independent toggle. */}
-      <div className="mb-6 border-b border-border pb-4">
-        <div className="flex flex-wrap items-center gap-2">
-          {allTypes.map((t) => {
-            const on = selected.has(t.key)
-            return (
-              <Button
+      {/* Compact filter row: a multi-select Types dropdown + (owner only) a broker
+          scope dropdown. Replaces the old chip sprawl. */}
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button type="button" variant="outline" size="sm" disabled={pending} className="gap-2">
+              <SlidersHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden />
+              {typesLabel}
+              <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-52">
+            <DropdownMenuLabel>Activity types</DropdownMenuLabel>
+            {allTypes.map((t) => (
+              <DropdownMenuCheckboxItem
                 key={t.key}
-                type="button"
-                variant={on ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => toggle(t.key)}
-                aria-pressed={on}
-                disabled={pending}
-                className={cn('gap-1.5 rounded-full', !on && 'text-muted-foreground')}
+                checked={selected.has(t.key)}
+                onCheckedChange={() => toggle(t.key)}
+                onSelect={(e) => e.preventDefault()}
               >
-                <span
-                  className={cn(
-                    'flex h-3.5 w-3.5 items-center justify-center rounded-sm border text-xs leading-none',
-                    on ? 'border-primary-foreground/70 bg-primary-foreground/20' : 'border-border',
-                  )}
-                  aria-hidden
-                >
-                  {on ? '✓' : ''}
-                </span>
                 {t.label}
+              </DropdownMenuCheckboxItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setAll(!allOn) }}>
+              {allOn ? 'Clear all' : 'Select all'}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {brokerOptions.length > 0 ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="outline" size="sm" disabled={pending} className="gap-2">
+                <Users className="h-4 w-4 text-muted-foreground" aria-hidden />
+                {brokerLabel}
+                <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
               </Button>
-            )
-          })}
-          <Button
-            type="button"
-            variant="link"
-            size="sm"
-            onClick={() => setAll(!allOn)}
-            disabled={pending}
-            className="ml-1 h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
-          >
-            {allOn ? 'Clear all' : 'Select all'}
-          </Button>
-        </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          {noneOn ? 'No types selected.' : allOn ? 'Showing all activity.' : `Showing ${selected.size} of ${allTypes.length} types.`}
-        </p>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuLabel>Show activity for</DropdownMenuLabel>
+              <DropdownMenuRadioGroup value={broker} onValueChange={pickBroker}>
+                {brokerOptions.map((b) => (
+                  <DropdownMenuRadioItem key={b.value} value={b.value}>{b.label}</DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
       </div>
 
       {noneOn ? (

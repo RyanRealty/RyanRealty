@@ -56,6 +56,12 @@ export async function getGlobalActivityFeed(opts: {
   limit?: number
   /** ISO timestamp cursor — return rows strictly older than this (for "load more"). */
   before?: string | null
+  /**
+   * Restrict to activity on contacts assigned to this broker slug (the lead's
+   * `crm_people.assigned_broker`). Null/undefined = all brokers. Mirrors
+   * listCrmDeals' person-scope so the Activity feed honors broker ownership.
+   */
+  brokerScope?: string | null
 } = {}): Promise<GlobalActivityResult> {
   const selected = opts.types ?? ALL_ACTIVITY_TYPE_KEYS
   const kinds = kindsForTypes(selected)
@@ -65,19 +71,28 @@ export async function getGlobalActivityFeed(opts: {
   const limit = Math.min(Math.max(opts.limit ?? 50, 1), 200)
   const sb = createServiceClient()
 
+  // When scoped, an inner embed on crm_people filters timeline rows to the
+  // broker's contacts; unscoped (owner) keeps the lean no-embed query.
+  const scope = opts.brokerScope ?? null
+  const select = scope
+    ? 'id,ts,kind,title,body,payload,broker,source,person_id,crm_people!inner(assigned_broker)'
+    : 'id,ts,kind,title,body,payload,broker,source,person_id'
+
   let q = sb
     .from('crm_timeline')
-    .select('id,ts,kind,title,body,payload,broker,source,person_id')
+    .select(select)
     .in('kind', kinds)
     .order('ts', { ascending: false })
     .limit(limit + 1)
+  if (scope) q = q.eq('crm_people.assigned_broker', scope)
   if (opts.before) q = q.lt('ts', opts.before)
 
   const { data, error } = await q
   if (error || !data) return { items: [], nextCursor: null }
 
-  const hasMore = data.length > limit
-  const page = (data as Array<Record<string, unknown>>).slice(0, limit)
+  const rows = data as unknown as Array<Record<string, unknown>>
+  const hasMore = rows.length > limit
+  const page = rows.slice(0, limit)
 
   // Batch-resolve contact names (no N+1, no FK-embed dependency).
   const personIds = [...new Set(page.map((r) => Number(r.person_id)).filter((n) => Number.isFinite(n) && n > 0))]
