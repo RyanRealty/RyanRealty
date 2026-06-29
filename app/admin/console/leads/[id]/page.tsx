@@ -55,7 +55,8 @@ import { ContactListingAlertsPanel } from '@/components/admin/crm/ContactListing
 import { EmailComposer } from '@/components/admin/crm/EmailComposer'
 import { SmsComposer } from '@/components/admin/crm/SmsComposer'
 import { TemplatePickerNav } from '@/components/admin/crm/TemplatePickerNav'
-import ConversationThread, { isConversationEvent } from '@/components/admin/crm/ConversationThread'
+import ConversationFeed from '@/components/admin/crm/ConversationFeed'
+import { isConversationEvent } from '@/components/admin/crm/ConversationThread'
 import { ListingStatusPill, StatusPill } from '@/components/console/StatusPill'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 import { KpiStrip } from '@/components/console/KpiStrip'
@@ -619,17 +620,18 @@ export default async function ConsoleLeadPage({
         }
         comms={
           <>
-          {/* Conversation — every message type (calls, texts, emails, notes) in
-              one chronological stream. This is the primary comms view (Matt
-              2026-06-27); the composer to reply sits directly below it. */}
+          {/* Comms feed — every message (calls, texts, emails) as a FUB-style
+              chronological row list, newest first: channel icon · subject/
+              descriptor · participant · 2-line preview · date · email open-count.
+              Rows expand on tap for the full body, MMS, and call recordings.
+              Identical-to-FUB clone (Matt 2026-06-29); composer sits below. */}
           {(() => {
             const convo = full.timeline.filter((t) => isConversationEvent(t.kind)).slice(0, 40).map((t) => ({ id: t.id, ts: t.ts, kind: t.kind, title: t.title, body: t.body, broker: t.broker, payload: t.payload }))
             if (convo.length === 0) return null
             return (
               <Card id="conversation" className="scroll-mt-20">
-                <CardHeader className="pb-3"><CardTitle className="text-base">Conversation</CardTitle></CardHeader>
-                <CardContent>
-                  <ConversationThread events={convo} engagement={emailEngagement} personName={person.first_name ?? person.name ?? 'this contact'} />
+                <CardContent className="px-4">
+                  <ConversationFeed events={convo} engagement={emailEngagement} personName={person.first_name ?? person.name ?? 'this contact'} />
                 </CardContent>
               </Card>
             )

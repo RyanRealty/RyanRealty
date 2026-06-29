@@ -37,6 +37,23 @@ Legend: **FUB** = what the FUB app does (the target) · **Ours** = current Ryan 
   `activeEnrollments`, and the `assignNewsletterForm` / `enrollWorkflowForm`
   server-action defs. ESLint warnings only; removing trims 2 dead queries/page.
 
+## ✅ Shipped 2026-06-29 (pass 3 — Comms tab)
+
+- **C20** — Comms tab cloned to the FUB row anatomy. Replaced the chat-bubble
+  `ConversationThread` (inbound-left/outbound-right stream) with the new
+  `components/admin/crm/ConversationFeed.tsx`: a chronological message-row list,
+  newest first, edge-to-edge with hairline dividers. Each row = channel icon
+  (Mail / MessageSquare / Phone / Voicemail in `text-primary`) · subject-or-
+  descriptor ("matt texted Kevin" / "Kevin texted you" / "Outbound call") ·
+  optional participant line · 2-line preview clamp · right-aligned `MMM d` date ·
+  email open-count line (`MailOpen` + "N opens · Last opened …" in `text-success`).
+  Rows expand on tap to reveal the full body, MMS attachments, and call
+  recordings (richer than FUB's collapsed rows). Verified at 375px on lead 13014.
+  Raw `<button>` row is allow-listed in `.design-token-lint-ignore` (same
+  exception class as CrmMobileKit — no `<Button>` equivalent for a full-bleed,
+  multi-line, left-aligned tappable row). Design-token total held at 352 (no
+  regression). The composer ("Send a message") stays in its card below the feed.
+
 ## ⏭️ Remaining (next session — roughly highest-value first)
 
 - **C10 deal pill data** — surface the contact's open-deal value to fill the pill
@@ -129,7 +146,7 @@ Ours: `/admin/console/leads/[id]`.
 
 19. **Custom fields.** FUB: **CUSTOM FIELDS** ("Add Custom Fields…"). Ours: not surfaced on mobile. Add.
 
-20. **Comms tab.** FUB: chronological message list — each row = channel icon (blue mail / blue text bubble) + subject/name + preview + date + open-count ("1 open · Last opened …") + unread count chip. Ours has a Comms tab — verify it matches this row anatomy (icon, preview, open tracking).
+20. **Comms tab.** ✅ DONE (pass 3, 2026-06-29 — see Shipped above). FUB: chronological message list — each row = channel icon (blue mail / blue text bubble) + subject/name + preview + date + open-count ("1 open · Last opened …") + unread count chip. Ours now matches via `ConversationFeed.tsx`. Remaining nicety: the gray thread-count chip (FUB groups a thread; we render per-message, so no count chip yet).
 
 21. **Homes tab.** FUB: **ACTIVITY / SEE ALL** + property cards (photo, "Property Inquiry" badge, price, beds/baths, address, MLS#, "👁 N views"). Ours: "Watching" tab — verify it renders the same card with view counts + inquiry badge.
 
