@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.669.0 (2026-06-29)
+
+### Features
+- feat(crm): FUB inline-edit for Assigned/Stage (drop Save buttons)
+
+---
+
+
 ## v1.668.2 (2026-06-29)
 
 ### Maintenance
