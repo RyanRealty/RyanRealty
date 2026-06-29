@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.660.0 (2026-06-29)
+
+### Features
+- feat(crm): contact header — last-communication line + deal-pill slot (FUB parity)
+
+---
+
+
 ## v1.659.0 (2026-06-29)
 
 ### Features
