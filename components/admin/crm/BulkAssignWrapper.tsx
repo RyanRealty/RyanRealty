@@ -19,7 +19,7 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { CrmList, CrmListRow } from '@/components/admin/crm/mobile/CrmMobileKit'
+import { CrmList, CrmListRow, CrmAvatar } from '@/components/admin/crm/mobile/CrmMobileKit'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
@@ -249,14 +249,7 @@ export default function BulkAssignWrapper({
                     {/* Name + source beneath */}
                     <TableCell className="min-w-40">
                       <Link href={`/admin/crm/${p.id}`} className="flex items-center gap-2.5 hover:underline">
-                        {p.picture_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={p.picture_url} alt="" className="h-8 w-8 shrink-0 rounded-full border border-border object-cover" referrerPolicy="no-referrer" loading="lazy" />
-                        ) : (
-                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-                            {(p.name ?? '?').charAt(0).toUpperCase()}
-                          </span>
-                        )}
+                        <CrmAvatar name={p.name ?? `Contact #${p.id}`} src={p.picture_url} size={32} />
                         <span className="min-w-0">
                           <span className="block truncate text-sm font-medium text-foreground">
                             {p.name ?? `Contact #${p.id}`}

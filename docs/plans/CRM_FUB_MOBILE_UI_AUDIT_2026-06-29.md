@@ -69,8 +69,28 @@ Legend: **FUB** = what the FUB app does (the target) · **Ours** = current Ryan 
   `getViewedListingsForLead` (session→event join); off-market keys not in
   `listing_tile_mv` fall back to price-n/a + "Listing" honestly.
 
+## ✅ Shipped 2026-06-29 (pass 5 — People list: person-first + avatars)
+
+- **B4/B6** — avatars on every people row. Mobile rows already render the
+  FUB colored-initials/photo `CrmAvatar` via `CrmListRow`. Brought the **desktop**
+  table to parity: `BulkAssignWrapper` now uses `<CrmAvatar name src size={32} />`
+  instead of the plain gray first-letter fallback.
+- **B5 (person-first landing)** — the mobile `/admin/crm` was list-first (scroll
+  past 9 system-list rows to reach people). Collapsed the mobile smart-lists into
+  a `<details>` "Smart lists ▾" disclosure (collapsed by default) in
+  `SavedViewSidebar`, so the people feed (avatar · name · stage badge · source ·
+  date · chevron) is person-first with lists one tap away — FUB ui2_5821 pattern.
+  Verified at 375px (collapsed → people first; tap → full SYSTEM LISTS).
+- **Deferred (needs Matt's call on semantics):** the FUB "New Leads / Emails /
+  Website" segmented tabs. These are activity-type filters over the person feed;
+  "New leads" (by `fub_created_at`) and "Website" (visitor_sessions) map cleanly,
+  but "Emails" needs an email-activity join and `listCrmPeople` gains 3 filter
+  modes — a DAL change on the core people query. Person-first ordering (the heart
+  of B5) is delivered; the tabs are a refinement to spec with Matt.
+
 ## ⏭️ Remaining (next session — roughly highest-value first)
 
+- **People feed tabs** — New Leads / Emails / Website segmented control (see Deferred above).
 - **C10 deal pill data** — surface the contact's open-deal value to fill the pill
   (fetch from `crm_deals`; the `dealValueLabel` prop is ready).
 - **C13** — recent-messages preview card on the Info tab.
@@ -101,7 +121,7 @@ Legend: **FUB** = what the FUB app does (the target) · **Ours** = current Ryan 
 
 3. **Floating "+" action button.** FUB has a blue FAB on every contact + list screen (quick add note/call/text/email/task). Ours has a blue FAB too ✓ — verify it opens the same quick-create sheet.
 
-4. **Avatars everywhere.** FUB shows a **circular avatar on every person row and header** — a photo when present, else colored initials (per-person color). Ours: present on the contact header, but **the list/saved-view rows have no avatars**. Add avatars to every people row.
+4. **Avatars everywhere.** ✅ DONE (pass 5). FUB shows a **circular avatar on every person row** (photo, else colored initials). Mobile rows already used `CrmAvatar`; desktop table now does too (`BulkAssignWrapper`).
 
 ---
 

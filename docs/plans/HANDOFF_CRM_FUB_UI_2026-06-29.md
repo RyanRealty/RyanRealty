@@ -34,11 +34,11 @@ So: **faithfully CLONE the Follow Up Boss mobile app UI, screen by screen.** Ide
 
 ## ⏭️ Next, priority order (clone each against the FUB screenshots; verify at 375px; commit per screen)
 
-1. ~~Homes tab~~ ✅ done above — FUB property-inquiry cards (photo · "Property Inquiry" badge · price · beds/baths · MLS · "👁 N views"). Screen: `ui1_5835`. Our slot = "Homes" (was "watching"): viewed listings + saved searches.
-3. **People lists** — avatars on every row + the FUB "New Leads / Emails / Website" person-first feed. Screens: `ui1_5830/5832`, `ui2_5821`. Components: contacts list under `/admin/crm`, `ContactsSearch`, `SavedViewSidebar`.
-4. **Filter sheet** — full-screen FUB filter (segmented Current/Archived/All + Everyone/Me/Team scoping). Screen: `ui1_5831`.
-5. **Top bar** — persistent "Everyone ▾" scope switcher + notification bell. Screen: `ui2_5821`.
-6. **Cleanup (warnings only):** in `app/admin/console/leads/[id]/page.tsx`, remove now-dead `membership` + `firstTouch` (14-way Promise.all destructure), `activeEnrollments`, and the unused `assignNewsletterForm` / `enrollWorkflowForm` server-action defs (trims 2 dead queries/page).
+1. ~~Homes tab~~ ✅ done (pass 4).
+2. ~~People lists — avatars + person-first~~ ✅ done (pass 5). Remaining refinement: the FUB "New Leads / Emails / Website" segmented tabs (deferred — needs Matt's call on "Emails" tab semantics + a `listCrmPeople` DAL change).
+3. **Filter sheet** — full-screen FUB filter (segmented Current/Archived/All + Everyone/Me/Team scoping). Screen: `ui1_5831`.
+4. **Top bar** — persistent "Everyone ▾" scope switcher + notification bell. Screen: `ui2_5821`.
+5. ~~Cleanup~~ ✅ done — dropped dead `membership`/`firstTouch`/`activeEnrollments` + unused form defs in the `[id]` page.
 
 ## Workflow rules (binding)
 

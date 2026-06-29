@@ -25,7 +25,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Loader2, Plus, Pencil, Trash2, Share2, Lock } from 'lucide-react'
+import { Loader2, Plus, Pencil, Trash2, Share2, Lock, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -220,34 +220,42 @@ export default function SavedViewSidebar({
           </div>
         </div>
 
-        {/* Mobile: flat list (original layout) */}
-        <div className="space-y-4 md:hidden">
-          <ViewGroup
-            title="System lists"
-            views={systemViews}
-            activeViewId={activeViewId}
-            isPending={isPending}
-            onRename={canManageSystem ? openRename : undefined}
-            onDelete={canManageSystem ? openDelete : undefined}
-            onShare={canManageSystem ? toggleShare : undefined}
-          />
-          <ViewGroup
-            title="My views"
-            views={myViews}
-            activeViewId={activeViewId}
-            isPending={isPending}
-            onRename={openRename}
-            onDelete={openDelete}
-            onShare={toggleShare}
-            emptyHint="Save a filter to make your first view."
-          />
-          <ViewGroup
-            title="Shared with you"
-            views={sharedViews}
-            activeViewId={activeViewId}
-            isPending={isPending}
-          />
-        </div>
+        {/* Mobile: smart lists collapse into a disclosure so the people feed is
+            person-first (FUB pattern: the lists are one tap away, not scrolled
+            past). Collapsed by default; opens in place. */}
+        <details className="group md:hidden">
+          <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-foreground">
+            <span>Smart lists</span>
+            <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
+          </summary>
+          <div className="space-y-4 pt-3">
+            <ViewGroup
+              title="System lists"
+              views={systemViews}
+              activeViewId={activeViewId}
+              isPending={isPending}
+              onRename={canManageSystem ? openRename : undefined}
+              onDelete={canManageSystem ? openDelete : undefined}
+              onShare={canManageSystem ? toggleShare : undefined}
+            />
+            <ViewGroup
+              title="My views"
+              views={myViews}
+              activeViewId={activeViewId}
+              isPending={isPending}
+              onRename={openRename}
+              onDelete={openDelete}
+              onShare={toggleShare}
+              emptyHint="Save a filter to make your first view."
+            />
+            <ViewGroup
+              title="Shared with you"
+              views={sharedViews}
+              activeViewId={activeViewId}
+              isPending={isPending}
+            />
+          </div>
+        </details>
       </div>
 
       {/* Save / rename dialog */}
