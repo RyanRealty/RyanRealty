@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.668.0 (2026-06-29)
+
+### Features
+- feat(crm): pin FUB scope switcher in the mobile top bar
+
+---
+
+
 ## v1.667.0 (2026-06-29)
 
 ### Features
