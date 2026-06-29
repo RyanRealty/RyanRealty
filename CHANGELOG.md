@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.655.0 (2026-06-29)
+
+### Features
+- feat(crm): global Activity tab + FUB message association integrity
+
+---
+
+
 ## v1.654.0 (2026-06-29)
 
 ### Features
