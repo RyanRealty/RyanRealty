@@ -15,7 +15,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Inbox, Users, Layers, ListTodo } from 'lucide-react'
+import { Home, Inbox, Users, Layers, Activity } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Tab = {
@@ -36,7 +36,7 @@ const TABS: Tab[] = [
     also: ['/admin/console/leads', '/admin/people'],
   },
   { href: '/admin/crm/deals', label: 'Deals', icon: Layers },
-  { href: '/admin/crm/tasks', label: 'Tasks', icon: ListTodo },
+  { href: '/admin/crm/activity', label: 'Activity', icon: Activity },
 ]
 
 /** Longest-prefix match so /admin/crm/inbox lights Inbox, not People. */
