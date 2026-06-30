@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.681.0 (2026-06-30)
+
+### Features
+- feat(crm): block spam numbers — inbound reject + StirVerstat flag + one-tap block
+
+---
+
+
 ## v1.680.6 (2026-06-30)
 
 ### Bug Fixes
