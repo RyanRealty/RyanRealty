@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.678.0 (2026-06-30)
+
+### Features
+- feat(crm): native group MMS send via Twilio Conversations
+
+---
+
+
 ## v1.677.0 (2026-06-30)
 
 ### Features
