@@ -648,7 +648,7 @@ export default async function ConsoleLeadPage({
                         {signature?.html ? <div className="mt-2 border-t border-border pt-2 text-xs text-muted-foreground" dangerouslySetInnerHTML={{ __html: signature.html }} /> : null}
                       </div>
                     ) : null}
-                    <EmailComposer key={tpl ?? 'blank'} initialSubject={emailInitialSubject} initialBody={emailInitialBody} signatureHtml={signature?.html ?? null} sendAction={sendEmailForm.bind(null, person.id)} tplKey={tpl ?? null} />
+                    <EmailComposer key={tpl ?? 'blank'} initialSubject={emailInitialSubject} initialBody={emailInitialBody} signatureHtml={signature?.html ?? null} sendAction={sendEmailForm.bind(null, person.id)} tplKey={tpl ?? null} toLabel={person.name ? `${person.name} · ${primaryEmail}` : primaryEmail} />
                   </>
                 ) : <p className="text-sm text-muted-foreground">No email address on file.</p>}
               </div>

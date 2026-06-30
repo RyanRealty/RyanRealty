@@ -28,6 +28,8 @@ export function EmailComposer(props: {
   sendAction: (formData: FormData) => Promise<void>
   /** Template key that was loaded — stamped on email_events for per-template reporting. */
   tplKey?: string | null
+  /** Recipient shown in the FUB-style "To" row (the lead's name + email). */
+  toLabel?: string | null
 }) {
   const [subject, setSubject] = useState(props.initialSubject)
   const [body, setBody] = useState(props.initialBody)
@@ -60,6 +62,12 @@ export function EmailComposer(props: {
     <form action={props.sendAction} className="space-y-2">
       {/* Hidden field carries the template key for email_events stamping. */}
       {props.tplKey ? <input type="hidden" name="tplKey" value={props.tplKey} /> : null}
+      {props.toLabel ? (
+        <div className="flex items-center gap-2 border-b border-border pb-2 text-sm">
+          <span className="text-muted-foreground">To</span>
+          <span className="truncate font-medium text-foreground">{props.toLabel}</span>
+        </div>
+      ) : null}
       <Input name="subject" placeholder="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
       <div className="flex items-center gap-2">
         <Button type="button" size="sm" variant={tab === 'preview' ? 'default' : 'ghost'} onClick={() => setTab('preview')}>
