@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.684.0 (2026-06-30)
+
+### Features
+- feat(crm): contact quick-action chips — newsletter/automations/searches/reports
+
+---
+
+
 ## v1.683.0 (2026-06-30)
 
 ### Features
