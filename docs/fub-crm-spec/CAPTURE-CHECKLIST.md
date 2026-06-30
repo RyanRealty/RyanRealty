@@ -1,0 +1,484 @@
+# Capture Checklist — gaps to grab before FUB access ends
+
+> Generated 2026-06-30 by the coverage-gap audit (9 agents cross-referencing the spec + docs against every captured screen/GIF/API export).
+> **Coverage: 259 features covered · 67 partial · 193 missing.** Below are the **core-priority** gaps (deferred Deals/Billing/API and nice-to-have states are in the appendix). Many "missing" items are interaction micro-states; the **whole-screen** ones are flagged 🟥 and come first per area.
+
+**Tip:** a screen-recording (GIF) per area captures most of these at once. You do NOT need to capture anything already in `api-export/` (stages, custom fields, pipelines, users, action-plan steps — those are data).
+
+> ✅ **CAPTURED 2026-06-30:** the highest-build-value subset (Automation editor, Templates, Calendar+Tasks, Inbox/comms, Contact detail, Admin config) is recorded as 7 GIFs in [`recordings/`](recordings/) — see [`recordings/README.md`](recordings/README.md) for the file→gap map. **Reporting was skipped (already captured in a prior pass).** Group 8 (mobile / native iOS app) is NOT browser-capturable and remains open.
+
+## Reporting  (10 core gaps)
+
+- [ ] 🟥 **Agent Activity — '+ Add Column' picker panel (opens from KPI row trailing pseudo-tile and table header trailing column)**
+    - _Open Reporting > Agent Activity. Click the '+ Add Column' button at the right end of the KPI card row. Screenshot the column picker panel showing available metric options (e.g., Leads Not Called, Avg Speed to Action, Response Rate fields). Then close and click '+ Add Column' at the right end of the table header and screenshot that picker too — confirm if they are the same panel._
+- [ ] 🟥 **Agent Activity — 'Closed Deals by Agent' alternate view (via 'Show me' → 'which team member has closed the most deals'): agent | closed deals | commission columns**
+    - _Open Reporting > Agent Activity. Click the 'Show me' page title. Select 'which team member has closed the most deals'. Screenshot the resulting view showing the pivoted table (Agent / Closed Deals / Commission Earned columns) and the updated KPI tiles and chart._
+- [ ] 🟥 **Lead Sources — all 5 non-default 'Show me' views: Unacted Leads, Contact Attempts, Lead Responses, Deal Performance, Website Activity (each with unique column sets)**
+    - _Open Reporting > Lead Sources. Click the 'Show me' title and cycle through each of the 5 non-default views one at a time. For each, screenshot the resulting report table showing the column headers and at least the first data row (or empty state). Five screenshots total: Unacted Leads, Contact Attempts, Lead Responses, Deal Performance, Website Activity._
+- [ ] 🟥 **Call Logs sub-report — record-level table (Agent/Inbox, Type icons for inbound/outbound/voicemail/missed, Person link, Time, Duration, Inbox, Play/Download actions)**
+    - _Open Reporting > Calls. Click the 'Show me' page title and select 'Call Logs'. Screenshot the resulting record-level table showing call rows with Type icons (inbound/outbound arrows, voicemail/missed indicators), Duration column, and the listen/download action icons. Try date range 'This Year' to get populated rows. Also screenshot a row where the play button is visible to confirm audio playback UI._
+- [ ] 🟥 **Deals Report — stage pill checkbox toggle (unchecking a stage removes those deals from chart and table dynamically)**
+    - _Open Reporting > Deals. Uncheck one of the stage pills (e.g., 'Closed') in the funnel strip. Screenshot the state where that stage is unchecked and the chart/table below have updated to exclude those deals. Then re-check it._
+- [ ] 🟥 **Batch Emails — per-campaign detail page (clicking '(Details)' → aggregate stats + per-recipient table with sent/opened/clicked/unsubscribed/bounced per contact)**
+    - _Open Reporting > Batch Emails. Click '(Details)' next to any 'Finished' campaign (e.g., 'A neighbor update — 56628 Sunstone Loop'). Screenshot the per-campaign detail page showing: aggregate stats section (Recipients, Sent, Opens %, Clicks %, Unsubscribes %, Bounces %) AND the per-recipient table below with at least 3 rows visible._
+- [ ] 🟥 **Agent Goals — goal-setting modal/flow (clicking 'Set goal' link — commission target input, save action)**
+    - _Open Reporting > Agent Goals. Click the 'Set goal' blue inline link for any agent (e.g., Matt Ryan). Screenshot the modal or panel that opens showing the commission goal input field and save/cancel controls._
+- [ ] 🟥 **Export column selection dialog — opened via ↓ Export icon on any report, showing column checkboxes and 'Export to CSV' button**
+    - _Open Reporting > Agent Activity. Click the ↓ (downward arrow) Export icon in the filter controls row. Screenshot the column selection dialog that opens showing checkboxes for each available column (New Leads, Initially Assigned Leads, Calls, Emails, Texts, Notes, Tasks Completed, etc.) and the 'Export to CSV' confirm button. Do NOT click Export to CSV._
+- [ ] 🟧 **Cache notice banner — 'Reporting results may be cached for up to 10 minutes. [Refresh results.]' inline link — appears on all data reports**
+    - _Open Reporting > Agent Activity. Before data loads, or once loaded, zoom to 150% and screenshot the ~2 lines of text immediately below the filter controls row where the cache banner renders. Confirm the 'Refresh results.' inline link is readable._
+- [ ] 🟧 **'Show me [X] ▾' interactive page title — dropdown open state, listing all alternate views (key: Lead Sources 6-view dropdown)**
+    - _Open Reporting > Lead Sources. Click the blue underlined 'total lead count and total activity by lead source' text in the page H1. Screenshot the open dropdown listing all 6 view options (Total Lead Count, Unacted Leads, Contact Attempts, Lead Responses, Deal Performance, Website Activity)._
+
+## Automations, Action Plans & Templates  (25 core gaps)
+
+- [ ] 🟥 **Automations list — 3-dot Actions row menu open (Edit / Duplicate / Move to Folder / Delete)**
+    - _Open Admin > Automations, hover over any automation row, click the 3-dot or icon button in the Actions column. Screenshot the dropdown menu showing all options (Edit, Duplicate, Move to Folder, Delete)._
+- [ ] 🟥 **Automations list — Linked Automations pill dropdown open ('Using: N ▾' showing referenced automation names)**
+    - _Open Admin > Automations, find a row where Linked Automations shows 'Using: 1' or higher (e.g., any automation that uses a 'Run Automation' step), click the pill/chevron. Screenshot the dropdown listing the referenced automation names._
+- [ ] 🟥 **Visual editor — Right config panel: Create Task (task type enum, description, assignee, due date offset)**
+    - _Open Admin > Automations > Buyer LP Nurture (or any automation with a Create Task step, e.g., Buyer LP Nurture has one at day 0). Click the Create Task step card on the canvas. Screenshot the full right config panel showing all fields: task type dropdown (Follow Up/Call/Email/Text/Showing/Closing/Open House/Thank You), note/description field, assignee picker, due date offset._
+- [ ] 🟥 **Visual editor — Right config panel: Time Delay (number input + unit select: days/hours/minutes)**
+    - _Open any automation that has a time delay step (orange badge on canvas connector). Click the orange badge or the delay element between two step cards. Screenshot the right config panel showing the number input and days/hours/minutes unit selector._
+- [ ] 🟥 **Visual editor — Right config panel: Conditions (filter builder with all filter categories — same UI as Smart Lists)**
+    - _Open an automation that has a Conditions step, or drag a Conditions tile from the left palette onto the canvas. Click the Conditions card. Screenshot the right config panel showing the filter builder UI (condition category dropdowns, operator selectors, value fields)._
+- [ ] 🟥 **Visual editor — Right config panel: Reassign Agent or Lender (target selector: specific agent / round-robin group / pond / FTC; optionally remove lender toggle)**
+    - _Open an automation that has a Reassign step, or add a 'Reassign Agent or Lender' step from the palette. Click it. Screenshot the right config panel showing the assignment target options and any lender-remove toggle._
+- [ ] 🟥 **Visual editor — Right config panel: Add Tags / Remove Tags (multi-select tag picker)**
+    - _Open an automation with an Add Tags or Remove Tags step, or add one from the palette. Click it. Screenshot the right config panel showing the tag multi-select picker (with search, and how selected tags are displayed)._
+- [ ] 🟥 **Visual editor — Right config panel: Add Note (textarea + notification toggle)**
+    - _Open an automation with an Add Note step, or add one from the palette. Click it. Screenshot the right config panel showing the note textarea and any notification settings (notify assigned agent/lenders/collaborators)._
+- [ ] 🟥 **Visual editor — Right config panel: Change Stage (single-select stage picker)**
+    - _Open an automation with a Change Stage step, or add one from the palette. Click it. Screenshot the right config panel showing the stage dropdown/picker with all available pipeline stages listed._
+- [ ] 🟥 **Visual editor — Right config panel: Run Automation (picker showing active automations in account)**
+    - _Open an automation with a Run Automation step (Post Closing Plan chains to Start Post Closing Follow Up), or add one from the palette. Click it. Screenshot the right config panel showing the automation picker dropdown with the list of active automations available to select._
+- [ ] 🟥 **Visual editor — Right config panel: Pause Action Plans (toggle: pause all vs. pause specific named plan)**
+    - _Add a 'Pause Action Plans' step from the palette to any automation canvas. Click it. Screenshot the right config panel showing the all-or-specific toggle and the plan-name picker that appears when 'specific' is selected._
+- [ ] 🟥 **Visual editor — Right config panel: Pause Automations (toggle: pause all vs. pause specific automation)**
+    - _Add a 'Pause Automations' step from the palette to any automation canvas. Click it. Screenshot the right config panel showing the all-or-specific toggle and the automation picker._
+- [ ] 🟥 **Visual editor — Right config panel: Add Collaborators / Remove Collaborators (multi-select team member picker)**
+    - _Add an 'Add Collaborators' or 'Remove Collaborators' step from the palette. Click it. Screenshot the right config panel showing the team member multi-select picker._
+- [ ] 🟥 **Action Plan plan-level settings form — Name input + 3 checkboxes (Auto-pause on lead response, Include all email addresses, Share with everyone) + folder assignment**
+    - _Open Admin > Action Plans (/2/action-plans). Click the edit icon (pencil) or the name link on any of the 7 action plans to open its settings/edit form. Screenshot the form showing all plan-level settings: Name field, Auto-pause on lead response checkbox, Include all email addresses checkbox, Share with everyone checkbox, and folder assignment control._
+- [ ] 🟥 **Text Template Performance Score — scored state (integer + percentile format, e.g. '87 (87%)') and color coding (green/warning/red by tier)**
+    - _This may not be capturable in the RR account if no templates have 7+ days of send history. If any template shows a numeric score (not Pending), screenshot that row. Otherwise, note this as data-only coverage: the spec defines the format as '[integer] ([percentile]%)' with green ≥75, warning 40-74, red <40._
+- [ ] 🟥 **Email template data — template names, subjects, body content, folder assignments, automation/action-plan usage counts**
+    - _Cannot capture via API (endpoint returns 403). For content parity: open Admin > Email Templates > My Email Templates, use the admin2 GIF email template area already captured. Individual template bodies are visible only by opening each edit modal — prioritize capturing the BL-01 through BL-06 series (Buyer Lead drip) and EXP-1 through EXP-7 (Expired series) since these are the active automation-linked templates. Open each edit modal and screenshot the body._
+- [ ] 🟥 **Text template data — template names and body content (14 templates)**
+    - _Cannot capture via API (endpoint returns 403). Open Admin > Text Templates > My Text Templates. For each of the 14 templates, open the edit modal and screenshot the body field. Priority: 'New Lead – Initial reach out', 'EXP-TO – Expired listing personal intro', 'FSBO – For Sale By Owner intro', and the 3 most recently used per the Sent count column._
+- [ ] 🟧 **Visual editor — Left palette Triggers tab (all 9 trigger types listed: Stage Changed, Tag Added, Deal Stage Changed, Property Saved, Property Viewed, New Inquiry, Calendar Date, Appointment, Manual)**
+    - _Open Admin > Automations, open any automation for editing. In the left palette, click the 'Triggers' tab. Screenshot the full list of all 9 trigger types visible in the palette._
+- [ ] 🟧 **Automations tile on contact right rail — with an active enrollment showing the automation name, current status, and pause/stop controls**
+    - _Go to any contact that is currently enrolled in an automation (e.g., search for a contact whose automation Started count > 0). On the contact profile right rail, find the Automations tile. Screenshot it showing an active enrollment row with the automation name, status (Running/Paused), and the pause/stop icon controls._
+- [ ] 🟧 **Action Plan step editor — Add Step interface (step type picker + configuration for a non-email step type, e.g. Create Task or Add Tag)**
+    - _In the Action Plan detail page for any plan, click '+ Add Step' or click on an existing task/tag step. Screenshot the step configuration panel showing step type selector and all configurable fields for a non-email step (task type, description, day offset, etc.)._
+- [ ] 🟧 **Email Templates top-level folder list page (3 folders: All Email Templates / My Email Templates / Used by Action Plans, with template counts and edit/delete icons)**
+    - _Navigate to Admin > Email Templates (/2/email-templates). If you land inside a folder, click the 'Email Templates' breadcrumb to go to the top-level folder list. Screenshot the page showing '3 Email Template Folders' header and the 3 folder rows with their template counts._
+- [ ] 🟧 **Merge Field dropdown in email template editor — open state showing all categories (Contact, Company, Agent, Lender, Sender, Property, Last Viewed, Lead Source, Other, Custom Fields)**
+    - _Open the Edit Email Template modal for any template (Admin > Email Templates > pencil icon). Click the 'Merge Fields ▾' button next to the Subject field. Screenshot the full dropdown showing all category sections and the individual tokens under each category, scrolling down to show Custom Fields at the bottom._
+- [ ] 🟧 **Text Templates top-level folder list page (2 folders: All Text Templates / My Text Templates)**
+    - _Navigate to Admin > Text Templates (/2/text-templates). Screenshot the top-level page showing '2 Text Template Folders' header and both folder rows with template counts and action icons._
+- [ ] 🟧 **Merge Field dropdown in text template editor — open state showing all token categories**
+    - _Open the Edit Text Template modal for any template (e.g., 'Crossroads'). Click the 'Merge Fields ▾' button above the textarea. Screenshot the full dropdown showing all categories and individual tokens (Contact, Company, Agent, Lender, Sender, Property, Last Viewed, Lead Source, Other, Custom Fields)._
+- [ ] 🟧 **Mobile — Text compose with Templates button and template picker open (showing template names, Score, preview line)**
+    - _On iOS FUB app, open any contact's text conversation. In the compose window, tap the 'Templates' button (lower left). Screenshot the template picker showing the list of text templates with their names, Score indicators (Pending or numeric), and body preview text. Also screenshot the Merge Fields option if visible._
+
+## Tasks & Calendar  (18 core gaps)
+
+- [ ] 🟥 **Tasks — Today's Tasks tab (section header 'Today's Tasks', ascending date groups, no bulk-clear link)**
+    - _Open FUB → Tasks → click 'Today's Tasks' tab. Screenshot the full page showing the section header, date groups in ascending order, and confirm there is no 'Clear My' link._
+- [ ] 🟥 **Tasks — Agent scope 'Me ▾' dropdown open (list of agents selectable)**
+    - _On Tasks page (any tab), click the 'Me ▾' dropdown in the sub-tab toolbar. Screenshot the open picker showing available agents and 'All' option._
+- [ ] 🟥 **Tasks — Task row expand / right-panel detail (clicking » chevron populates left panel with contact/task detail)**
+    - _On Tasks → Overdue, click the » (double-chevron) icon on any task row. Screenshot the left panel after it populates with the task/contact detail card._
+- [ ] 🟥 **Tasks — Task creation modal (all fields: type, description, due date, due time, remind, assignee)**
+    - _Open any person detail, scroll to the Tasks section in the right rail, click the + icon. Screenshot the full task creation modal showing all fields including the type dropdown, due date/time pickers, remind-before field, and assignee._
+- [ ] 🟥 **Tasks — 'Clear My Overdue Tasks' confirmation dialog (count shown, irreversible warning)**
+    - _On Tasks → Overdue, click 'Clear My Overdue Tasks' (right side of list header). Screenshot the confirmation dialog showing the task count BEFORE clicking confirm. Do NOT confirm — close the dialog._
+- [ ] 🟥 **Tasks — Quick Follow-Up Task (lightning bolt on person detail → day-option selector)**
+    - _Open any person detail page. Find and click the lightning bolt icon (Quick Follow-Up shortcut). Screenshot the day-selection modal/dropdown that appears showing the preset follow-up timing options._
+- [ ] 🟥 **Calendar — Week view (7-column grid, All Day row, hourly time slots with events)**
+    - _Open Calendar, click 'Week' in the view switcher. Screenshot the full 7-column weekly grid, ideally a week with at least 2–3 visible events to show color-coded blocks in correct columns._
+- [ ] 🟥 **Create Appointment modal — 'All day event' checked state (time pickers hidden, date-only fields remain)**
+    - _Open Create Appointment modal (+ button on Calendar). Check the 'All day event' checkbox. Screenshot showing the time pickers have disappeared and only date fields + remaining fields are visible._
+- [ ] 🟥 **Create Appointment modal — Type dropdown open (showing configured appointment types list)**
+    - _In the Create Appointment modal, click the 'Set type' dropdown. Screenshot the open dropdown showing all configured appointment types (Follow Up, Call, Showing, etc.)._
+- [ ] 🟥 **Existing appointment click-to-edit (appointment detail/edit modal opened from calendar grid)**
+    - _On Calendar, click any existing appointment event block (timed or all-day). Screenshot the appointment detail or edit modal that opens, showing all editable fields including the Outcome dropdown and the 'Send invitation' checkbox state._
+- [ ] 🟥 **Appointment — Setting outcome after creation (Outcome dropdown populated, outcome selected)**
+    - _Open an existing appointment (click it on Calendar or via a contact's right rail). Click the Outcome dropdown. Screenshot showing the 3 configured outcomes (the API export lists 3 outcomes) before selecting one._
+- [ ] 🟥 **Admin → Appointments settings page (appointment types list + outcomes list + add/edit/reorder controls)**
+    - _Go to Admin (top nav) → find 'Appointments' in the left nav or sub-menu. Screenshot the full page showing the two configured appointment types (API export confirms 2) and three outcomes (API confirms 3) with their names, order handles, and edit/delete controls._
+- [ ] 🟥 **Notification Settings — task/appointment toggles ('When assigned a task' + 'When a task is due')**
+    - _Click the Bell icon (top right) → Settings Gear → Notification Settings. Screenshot the full notification settings panel showing all 5 channel toggles and the task-specific triggers ('When assigned a task', 'When a task is due')._
+- [ ] 🟥 **Mobile iOS — Contact detail / Calendar tab (populated with at least one appointment)**
+    - _On iPhone FUB app, open any contact who has an upcoming appointment. Tap the Calendar tab. Screenshot showing the appointment listed with pink circle indicator, date/time, and type._
+- [ ] 🟥 **Mobile iOS — Standalone task list view (main Tasks page showing task rows with orange checkbox icons)**
+    - _On iPhone FUB app, navigate to the main Tasks list (not embedded in a contact — look for a Tasks tab in the bottom nav or hamburger menu). Screenshot showing task rows with the orange checkbox icon, contact names, descriptions, and due times._
+- [ ] 🟥 **Mobile iOS — Create/Schedule Appointment modal from calendar**
+    - _On iPhone FUB app, go to Calendar tab → tap the + icon (lower right). Screenshot the 'Schedule Appointment' creation form showing all available fields (title, date/time, contacts, type, notes, send invitation)._
+- [ ] 🟥 **API export — tasks live data (BLOCKED: GET /v1/tasks returns 403/404)**
+    - _No direct capture possible (API blocked). The task schema is fully documented in spec §1.11. As a substitute: on Tasks → Overdue, use browser DevTools → Network tab, filter by 'tasks', reload the page, screenshot the raw JSON response from the FUB tasks API call to capture the actual field names and values FUB uses internally._
+- [ ] 🟧 **Calendar — 'Everyone ▾' agent filter dropdown open (full list of team members selectable)**
+    - _On Calendar, click the 'Everyone ▼' dropdown in the main calendar header. Screenshot the open picker showing individual agents and any team options._
+
+## Inbox & Communications  (24 core gaps)
+
+- [ ] 🟥 **Folder tree — Drafts folder view (auto-saved unsent messages)**
+    - _In FUB, start composing an email reply, do NOT send, then navigate away so the draft auto-saves. Return to Inbox > My Inbox > Drafts folder. Screenshot the Drafts folder thread list showing at least one draft entry; then click the draft to open it and screenshot the reading pane showing the unsent compose body._
+- [ ] 🟥 **Bulk select mode (Select conversations → mass mark read/close/assign)**
+    - _In Inbox > My Inbox thread list, click the 'Select' toggle (or hover a thread row to reveal checkbox). Select 3+ threads. Screenshot the bulk-select toolbar showing checkboxes on rows, and the Actions dropdown with options: mark read, mark unread, close, reopen, assign._
+- [ ] 🟥 **SMS / text thread reading pane — bubble layout (desktop)**
+    - _In Inbox > My Inbox, find or open an active SMS/text thread (not email). Screenshot the reading pane showing the bubble conversation layout with outbound messages right-aligned navy and inbound messages left-aligned. If no SMS thread exists in My Inbox, find one in Company inbox or create a test text._
+- [ ] 🟥 **Inline compose — schedule send (clock icon date/time picker)**
+    - _With email compose open in the inbox (click Reply on any email thread), click the clock/schedule icon next to the Send button. Screenshot the date/time picker popover showing quick-pick options (Next morning, Next afternoon) and a custom date+time input._
+- [ ] 🟥 **@mention picker in note tray (typing @ opens agent list)**
+    - _Click into the 'Write a note or @mention someone' note input in any open inbox thread. Type '@' to trigger the mention picker. Screenshot the dropdown showing agent usernames/avatars. Optionally also screenshot with a team or pond option visible._
+- [ ] 🟥 **Notification Center panel (bell icon dropdown — 4 types: Property Inquiry / New Registration / @Mentions / Lead Activity)**
+    - _Click the notification bell icon in the FUB top-right nav bar. Screenshot the full Notification Center panel showing: unread notifications with blue dot indicators, the four notification type sections (Property Inquiry, New Registration, @Mentions, Lead Activity), the 'Mark All As Read' button, and the settings gear icon._
+- [ ] 🟥 **Notification settings panel (Bell > Gear — Activity / Team Inbox / Pond categories)**
+    - _Click the notification bell > click the Settings Gear icon inside the notification panel. Screenshot the Notification Settings page showing all three categories (Activity, Team Inbox, Pond) with their individual toggles for each channel (Notification Bell, Desktop, Mobile Push, Text, Email)._
+- [ ] 🟥 **A2P Business Registration status page (Admin > Business Registration)**
+    - _Navigate to Admin > Business Registration (or search for 'Business Registration' in admin nav). Screenshot the full page showing the current registration status (for Ryan Realty this should be 'Fully Registered' in green), all the status states visible, the registered business details, and the EIN/address fields. This page documents the A2P gate — critical compliance reference._
+- [ ] 🟥 **SMS quiet hours — queued text state display (queued, not sent)**
+    - _Send a test text to a contact at a time during quiet hours (9 PM–8 AM in your timezone), OR find an existing queued text in any contact's timeline or inbox. Screenshot the SMS thread/timeline showing the queued message with a 'Queued — delivering at 8:00 AM' (or equivalent pending) status indicator rather than 'Sent'. If no live quiet-hours window is available, look in Sent folder for any message with a pending/queued indicator._
+- [ ] 🟥 **Carrier filter warning badge (orange '30007' error indicator on failed SMS)**
+    - _Find a contact whose sent text received a carrier filtering error (look for contacts where the message shows an orange warning badge in the inbox thread or timeline). Screenshot the orange '30007 carrier filtered' badge on the message with the text 'The contact's mobile provider filtered your text before it could be delivered.' If no live example exists, this may need to be mocked._
+- [ ] 🟥 **Opted-out phone number display (orange on contact sidebar)**
+    - _Find a contact who has replied STOP or been marked as text opt-out (check contacts with the 'do-not-text' or opt-out tag). Open their inbox thread or profile. Screenshot the contact sidebar showing the phone number displayed in orange with an orange pill/badge marker next to it. Also screenshot if a send attempt shows the block error message._
+- [ ] 🟥 **Outgoing calls setting — calling method picker (Internet / Mobile / Ask Each Time)**
+    - _Navigate to Profile Image > My Settings > Outgoing Calls (or the Calling section within My Settings). Screenshot the Calling Method dropdown showing all three options: Always Use Internet, Always Use Mobile Phone, Ask Me Each Time — with the current selection indicated._
+- [ ] 🟥 **Email connection status in My Settings (connected email, hazard indicator, share toggle)**
+    - _Navigate to Profile Image > My Settings > Email section. Screenshot showing: the connected Gmail/M365 address, connection status (green connected or hazard warning icon), 'Share your emails with your team' toggle, 'Import Signature' button, and the disconnect option._
+- [ ] 🟥 **Mobile — Assigned sub-tab in My Inbox (iOS)**
+    - _In the FUB iOS app, open Inbox, tap the Assigned sub-tab. Screenshot both states: (a) empty state if no assigned threads exist, and (b) a thread list if assigned threads are present. The swipe-right-to-assign gesture should also be demonstrated: swipe right on a conversation to trigger the assign flow and screenshot the assign sheet._
+- [ ] 🟥 **Mobile — Inbox filter sheet (three-line menu > Emails / Texts / Calls / Inbox Apps)**
+    - _In the FUB iOS app Inbox view, tap the three-line (hamburger) filter icon in the upper right of the conversation list. Screenshot the filter sheet fully open showing channel options: All Types, Emails, Texts, Calls, Inbox Apps (if available). Then tap Texts to filter and screenshot the filtered list state._
+- [ ] 🟥 **Admin > Phone Numbers list (company number + user numbers + team inbox numbers)**
+    - _Navigate to Admin > Phone Numbers (this tab appears only when calling add-on is enabled). Screenshot the full Phone Numbers page showing the Company Number row, any user virtual numbers, and team inbox numbers — with their labels, types, status (active/warming), and available actions (Swap Number, etc.)._
+- [ ] 🟧 **Inline compose — Send ▾ split button with 'Send and Close' dropdown option**
+    - _With an email thread open and compose area expanded (click Reply), click the dropdown arrow (▾) on the right side of the Send button. Screenshot the split-button dropdown fully expanded showing 'Send and Close' (and any other compound actions like 'Send and Archive')._
+- [ ] 🟧 **Inline compose — template picker (Templates button opens searchable list)**
+    - _In email compose (Reply on any inbox thread), click the 'Templates' button in the compose footer (not the quick pill row). Screenshot the full template picker panel/dropdown showing a searchable list of saved email templates with folder organization._
+- [ ] 🟧 **Inline compose — merge fields dropdown (Ω icon, full taxonomy)**
+    - _In email compose, click the merge field inserter button (Ω or 'Merge Fields' dropdown). Screenshot the full dropdown showing all categories: CONTACT, AGENT, LENDER, SENDER, PROPERTY, LAST VIEWED, LEAD SOURCE, OTHER, CUSTOM — with field tokens visible under each category._
+- [ ] 🟧 **Inline compose — SMS compose toolbar (character counter, emoji, media, template)**
+    - _Open a text/SMS thread in the inbox and click into the compose area. Screenshot the full SMS compose toolbar showing: template icon, image/media icon, emoji icon, the character counter (e.g. 0/320), and the Send Text + clock schedule icon. Then type 300+ characters to trigger the orange character warning and screenshot that state._
+- [ ] 🟧 **Team Inbox config modal — phone routing, press-1-to-answer, voicemail greeting, office hours**
+    - _In Inbox > Gear icon > Manage All Team Inboxes, click Edit (pencil icon) on the Company inbox row. Screenshot the full Team Inbox edit configuration panel showing all fields: Name, Phone Numbers, call routing team members with Ring Desktop/Ring Mobile/Press 1 toggles, Connected Email, Voicemail greeting, and missed call handling options._
+- [ ] 🟧 **Call recording playback in timeline (play button, download, AI summary)**
+    - _Find a contact with a recorded outbound or inbound call in their inbox thread or profile timeline (look in Closed folder or on any contact's activity feed). Screenshot the call timeline entry showing: play button, download button (or three-dot menu with download), call duration, and if available the AI call summary/transcript text block below the audio controls._
+- [ ] 🟧 **Email signature settings (My Settings > Signature — HTML block with broker headshot)**
+    - _Navigate to Profile Image > My Settings > Email Signature section. Screenshot the Signature editor panel showing the full HTML signature being edited, the 'Import Signature' button, and the saved signature preview including the broker headshot, name, title, phone, website, Google reviews link, and Ryan Realty wordmark logo._
+- [ ] 🟧 **Mobile — Call log / voicemail in activity feed (iOS)**
+    - _In the FUB iOS app, open the Activity Feed and tap the Calls sub-tab (phone icon). Screenshot the calls/voicemail feed showing call log entries with: contact name, call direction (inbound/outbound), duration, call outcome label (Missed, Connected, Voicemail), and the play button for any voicemail entries. Also screenshot a missed call notification entry._
+
+## Contact / Person Detail  (25 core gaps)
+
+- [ ] 🟥 **Inbound email timeline card — 'Received' state showing From address, collapsed preview, Reply/Forward controls**
+    - _Find a contact who has sent at least one inbound reply email; scroll the timeline to a 'Received' email card and screenshot both collapsed and expanded states (showing 'From: [email]', the body, and the Reply / Forward links)_
+- [ ] 🟥 **Web activity timeline card ('Lead returned to website. Follow up now.' with page URL and timestamp; icon color; no expand)**
+    - _Open a contact with known website activity (Matthew Ryan self-contact shot-60 shows 22 website-activity events); scroll to the Activity tab in the timeline, screenshot at least one web activity card showing the URL and 'Follow up now.' text_
+- [ ] 🟥 **Logged call timeline card (duration, outcome enum: Answered/Left Voicemail/No Answer/Do Not Call, notes, agent attribution)**
+    - _Switch to the Calls filter tab on any contact that has logged calls (or use the Log Call form to create one); screenshot the rendered call card showing duration, outcome pill, call notes, and agent name_
+- [ ] 🟥 **Stage change timeline card ('Stage changed from [Old] to [New] by [Agent]', amber icon, non-editable)**
+    - _Change any contact's stage (e.g., Lead → Active Client), then look in the timeline under 'All' or use Filters > Change Log; screenshot the auto-generated stage-change card showing old stage, new stage, agent name, and timestamp_
+- [ ] 🟥 **Email compose — Merge Fields dropdown open state (all token categories: CONTACT/COMPANY/AGENT/LENDER/SENDER/PROPERTY/LAST VIEWED/LEAD SOURCE/OTHER/CUSTOM with token list)**
+    - _Open email compose on any contact, click the 'Merge Fields' dropdown in the upper-right of the compose area, screenshot showing all token categories and available merge tokens_
+- [ ] 🟥 **Log Call modal — full form (phone number selector, duration input, outcome dropdown: Answered/Left Voicemail/No Answer/Wrong Number/Do Not Contact, notes textarea, Log Call button)**
+    - _Click 'Log Call' in the action bar on any contact, screenshot the full Log Call form showing: phone selector pre-filled with primary number, duration input, outcome/disposition dropdown (opened to show all options), notes textarea, and the 'Log Call' submit button_
+- [ ] 🟥 **Text compose — after-hours queuing banner ('This message will be queued and sent at 8:00 AM')**
+    - _After 9 PM local time, open Text compose on any contact with a valid phone; screenshot the after-hours banner that appears in the compose area warning the message will queue until 8 AM_
+- [ ] 🟥 **Text compose — opt-out/unsubscribed state (contact's phone number displayed in orange, compose panel blocked with 'This contact has opted out of text messages.')**
+    - _Find a contact who has texted STOP (check for contacts tagged with opt-out indicators); screenshot the Text compose tab showing the blocked compose state with the orange phone number and opt-out message, or screenshot the contact sidebar showing the phone number rendered in orange_
+- [ ] 🟥 **Right rail — Task creation modal (from '+' button in Tasks section: date/type/notes/assigned-agent fields)**
+    - _On any contact, click the '+' blue circle in the Tasks section of the right rail, screenshot the task creation form showing all fields (type/title, due date, assignee, notes) before saving_
+- [ ] 🟥 **Mobile Log Call screen (phone selector, outcome picker, duration, notes, Save button)**
+    - _On mobile FUB iOS, open any contact, tap the phone/call icon or Log Call action, screenshot the log call form showing: phone number selector, call outcome dropdown (with all options visible), duration field, notes field, and the Save/submit button_
+- [ ] 🟧 **Email addresses — read mode (clickable blue link) and inline-edit active state (input + green check / red X confirm/cancel, '+ add another email')**
+    - _Open any contact with an email, click the email address to enter inline edit mode, screenshot showing the text input + green ✓ + red ✗ buttons before saving_
+- [ ] 🟧 **Address section — empty 'Add address' placeholder and inline-edit active state (Street/City/State/Zip/Country inputs + ✓/✗)**
+    - _Open any contact, click 'Add address', screenshot the expanded address form (all fields + ✓/✗ controls) before saving_
+- [ ] 🟧 **Relationships section — populated state showing linked person rows (name, relationship type, phone)**
+    - _Find a contact with at least one relationship (or add one via 'Add relationship' then screenshot), capture the Relationships section showing the linked person's name, relationship type label, and phone_
+- [ ] 🟧 **Custom Fields — individual select-type dropdown interaction (click field → inline dropdown opens with 'Select an Option' + configured choices + ✓/✗)**
+    - _On any contact, expand Custom Fields, click a 'Select an Option' dropdown field (e.g. 'Marital Status' or 'Gender'), screenshot showing the inline dropdown with all choices visible and the green ✓ / red ✗ controls_
+- [ ] 🟧 **Background section — empty 'Add background' placeholder and populated multi-line text state**
+    - _Find (or create) a contact with background text filled in; screenshot the Background section in read mode showing the multi-line text content_
+- [ ] 🟧 **Delete person link (visible at bottom of sidebar, owner/admin only) + confirmation dialog**
+    - _As the account owner, click the 'Delete person' red link at the bottom of any contact's sidebar, screenshot the confirmation dialog that appears (do NOT confirm — just screenshot then cancel)_
+- [ ] 🟧 **Note card in timeline — rendered card showing agent avatar, 'Note by [Agent Name]', date, full note body text (close-up, not just the compose disabled state)**
+    - _Find or create a contact with a manual note in the timeline; switch to the Notes filter tab and screenshot the rendered note card showing the agent avatar, name attribution, date/time, and note body text_
+- [ ] 🟧 **Text (SMS) timeline cards — outbound card ('Text to [Name]' + body), inbound card ('Text from [Name]' + body)**
+    - _Switch to the Texts filter tab on any contact with SMS history; screenshot one outbound card ('Text to …') and one inbound card ('Text from …') showing the message body and purple chat icon_
+- [ ] 🟧 **Create Note compose panel — empty/disabled state (button greyed when textarea empty) + @mention typeahead dropdown (typing '@' opens team member list)**
+    - _Open Create Note on any contact, type '@' in the textarea, screenshot the team-member typeahead dropdown that appears showing the 3 brokers_
+- [ ] 🟧 **Email compose — schedule-send clock icon + datetime picker open (pre-set options 'Next morning'/'Next afternoon' + custom date/time picker)**
+    - _Open email compose, click the clock/schedule icon, screenshot the schedule-send dropdown showing the preset time options and the custom date-time picker_
+- [ ] 🟧 **Email compose — full template picker (Templates tab expanded, showing template library with name/preview/shared badge columns)**
+    - _Open email compose on any contact, click the 'Templates' tab/button at the bottom of the compose area, screenshot the full template library picker showing at least several email template rows_
+- [ ] 🟧 **Right rail — Appointments widget empty state + Appointment creation modal (date/time, type, linked contact, notes fields)**
+    - _On any contact, click the '+' blue circle in the Appointments section, screenshot the appointment creation form showing all fields (date/time picker, appointment type dropdown, notes)_
+- [ ] 🟧 **Right rail — Files widget two-option '+' dropdown (Upload File(s) / Add Link sub-menu), empty state with 'No files yet, drag some here', and populated file item row (filename, download/delete icons, hover attribution)**
+    - _Upload any small file to the Files section of any contact, then screenshot the populated Files section showing a file row with the filename, file size, download (↓) and delete (🗑) icons, and the date/time attribution_
+- [ ] 🟧 **Right rail — Collaborators modal (auto-focused search, broker checklist excluding assigned agent, Cancel/Save footer) + Collaborators section populated state (showing collaborator name chips in rail)**
+    - _Add a collaborator to any contact via the modal (shot-22 is done), then screenshot the right-rail Collaborators section itself showing the collaborator's name/avatar in the section body (the non-modal view)_
+- [ ] 🟧 **Mobile Contact Detail — Calendar tab populated state (showing upcoming appointments/tasks linked to this contact)**
+    - _Find a contact with upcoming appointments or tasks; navigate to their mobile Contact Detail > Calendar tab and screenshot the populated view showing appointment/task rows with dates and titles_
+
+## Deals & Pipelines  (21 core gaps)
+
+- [ ] 🟥 **Deal detail modal — Sellers pipeline deal (house icon on commission field vs money icon on Buyers; 'Lost / Terminated' stage breadcrumb)**
+    - _On the Sellers Kanban (/2/deals/2), click the '363 Sw Bluff Dr #208' card in the Lost / Terminated column (or any Sellers deal card). Screenshot the full deal detail modal showing the house icon on the commission row and the 'Sellers > Lost / Terminated' breadcrumb._
+- [ ] 🟥 **Deal detail modal — date picker open (clicking an empty 'Add [date]' link)**
+    - _Open any deal detail modal. Click 'Add earnest money due date' (or any empty date field). Screenshot the date picker UI while it is open inline in the modal._
+- [ ] 🟥 **Deal detail modal — People search dialog (clicking the PEOPLE + button to link a contact)**
+    - _Open any deal detail modal. Click the blue + button next to the PEOPLE field. Screenshot the people-search dialog/dropdown that appears._
+- [ ] 🟥 **Deal detail modal — Team agent search dialog (clicking the TEAM + button to link a broker)**
+    - _Open any deal detail modal. Click the blue + button next to the TEAM field. Screenshot the agent/broker search dialog that appears._
+- [ ] 🟥 **Deal detail modal — Commission split % input mode (when commission_value is set, agent/team splits become percentage inputs)**
+    - _Open a deal detail modal that has a commission_value set (e.g. 2732 NW Ordway, $22,000). Click 'Add team split' or click the existing split amount to edit it. Screenshot the SPLITS field showing the percentage input UI (the % vs $ input toggle behavior when commission_value > 0)._
+- [ ] 🟥 **Add Deal form — modal/flow opened from stage + button (required fields: name, stage; optional: price, close date, contacts, commission, team)**
+    - _On the Buyers Kanban, click the blue + circle button in the 'Pending' column header. Screenshot the Add Deal form/modal in its empty state showing all available fields._
+- [ ] 🟥 **Add a stage — inline form or modal for creating a new stage (name input, color picker, is_closed_stage checkbox)**
+    - _On the Buyers Kanban, scroll the board horizontally to the far right until the 'Add a stage' text link is visible past the Lost column. Click it. Screenshot the stage creation form/modal showing the name field, color picker, and 'Mark as closed' checkbox._
+- [ ] 🟥 **Stage edit window — hover pencil reveal on column header, then edit window open (rename, color change, is_closed_stage toggle, delete)**
+    - _On any Kanban, hover over a stage column header (e.g. 'Pending') until the pencil edit icon appears. Click it. Screenshot the stage edit window open, showing the name field, color palette, 'Mark deals in this stage as closed for reporting' checkbox, and delete option._
+- [ ] 🟥 **Deal card hover state — archive option appearing on hover of the upper-right corner of a card**
+    - _On the Buyers Kanban, hover over the upper-right corner of any deal card until the archive option/icon appears. Screenshot showing the hover state with the archive affordance visible._
+- [ ] 🟥 **Archived deals view — Kanban with 'Archived' filter applied (deals that are status=archived)**
+    - _On the Buyers Kanban, click 'Current deals ▾' and select 'Archived'. Screenshot the board in the archived deals view (even if it shows an empty state for all columns)._
+- [ ] 🟥 **Deals Report — Sellers pipeline view (switching pipeline dropdown from Buyers to Sellers)**
+    - _Navigate to Reporting > Deals. Click the 'Buyers ▾' pipeline dropdown and select 'Sellers'. Screenshot the Deals Report showing Sellers pipeline stage KPI tiles, chart, and table (7 stages instead of 6)._
+- [ ] 🟥 **Deals Report — deal name link navigating to full-page deal detail (not the Kanban modal)**
+    - _On the Deals Report table, click a deal name teal link (e.g. '2732 NW Ordway'). Screenshot the resulting page — this may be a full-page deal view rather than the modal shown from the Kanban board._
+- [ ] 🟥 **Custom deal fields admin — Admin > Deals settings > + Add Custom Field (type selector: text/date/number/dropdown; hide_if_empty/read_only/is_recurring toggles)**
+    - _Navigate to the Deals module, click the gear icon ⚙ to reach Manage Pipelines, then find the custom fields entry point (may be a link in the settings page or under Admin). Click '+ Add Custom Field'. Screenshot the custom field creation form showing the type dropdown (text/date/number/dropdown) and the toggle options (hide_if_empty, read_only, is_recurring)._
+- [ ] 🟥 **Mobile iOS — Deals tab main view (Kanban list or native list of deals)**
+    - _In the FUB iOS app, tap the Deals tab in the bottom tab bar. Screenshot the main Deals view (list or Kanban) before opening any filter. Show the deals with their stage labels, prices, and count._
+- [ ] 🟥 **Mobile iOS — Deal detail view (tapping a deal card on the mobile Deals tab)**
+    - _In the FUB iOS app, tap the Deals tab, then tap any deal card. Screenshot the deal detail screen showing the address, price, commission, dates, people, team, and any edit controls._
+- [ ] 🟧 **Buyers Kanban — 6th card in Closed column (3480 SW 45th Street, scrolled below fold)**
+    - _Open FUB at /2/deals/1. Scroll the Closed column downward (the column is independently vertically scrollable) until the 6th card (3480 SW 45th Street, $650K) is visible. Screenshot the Closed column with all 6 cards showing._
+- [ ] 🟧 **Pipeline sub-bar — 'Current deals' dropdown open (options: Current / Archived / All)**
+    - _On the Buyers Kanban (/2/deals/1), click the 'Current deals ▾' dropdown button in the sub-bar toolbar. Screenshot with the dropdown open showing all three options (Current deals / Archived / All)._
+- [ ] 🟧 **Pipeline sub-bar — 'Everyone' agent filter dropdown open (options: Everyone / Me / Matt Ryan / Paul Stevenson / Rebecca Peterson)**
+    - _On the Buyers Kanban, click the 'Everyone ▾' (or 'Me ▾') dropdown button in the toolbar. Screenshot with the agent list expanded showing all team member options._
+- [ ] 🟧 **Deal detail modal — custom fields expanded ('Show all fields' accordion open)**
+    - _Open any deal detail modal. Click the 'Show all fields' teal link at the bottom of the left column to expand the custom fields accordion. Screenshot the modal with the accordion open (even if no custom fields are defined, capture the empty expanded state)._
+- [ ] 🟧 **Deals Report — stage KPI tile checkbox toggling (unchecking a stage to filter it out of the chart)**
+    - _On the Deals Report page, uncheck one of the stage KPI tile checkboxes (e.g. uncheck 'Lost'). Screenshot showing that stage tile with an unchecked checkbox and the chart updated to exclude that stage's data._
+- [ ] 🟧 **Deals Report — time-range dropdown options (All time ▾ expanded: Last 30 days / This Year / YTD / All Time / custom)**
+    - _On the Deals Report page, click the 'All time ▾' dropdown at the top-right of the chart. Screenshot with the time-range options expanded._
+
+## Admin, Settings & Integrations  (32 core gaps)
+
+- [ ] 🟥 **Add Stage modal — Name + Description fields, one-time form**
+    - _Open Admin > Custom Stages. Click 'Add Stage'. Screenshot the modal with empty Name + Description fields visible. Cancel without saving._
+- [ ] 🟥 **Delete Stage — blocked-deletion modal with reassignment target selector (stage has contacts)**
+    - _On Admin > Custom Stages, click the trash icon on any non-protected stage that has a People count > 0 (e.g. 'C - Cold 6+ Months', 46 people). Screenshot the reassignment prompt modal. Cancel without deleting._
+- [ ] 🟥 **Auto-tagging configuration panel — 6 configurable rules, master toggle, 'Update Auto-tagging' save button**
+    - _On Admin > Tags, click the 'Turn on auto-tagging new leads' blue link. Screenshot the full auto-tagging config panel showing all 6 rule toggles and the master toggle. Close without changing anything._
+- [ ] 🟥 **Edit Tag modal — rename a tag name inline**
+    - _On Admin > Tags, click the pencil icon on any low-use tag (Used = 0 or 1). Screenshot the edit modal with the name field visible. Cancel without saving._
+- [ ] 🟥 **Add Custom Field modal — Name input, Type selector (Text/Number/Date/Dropdown), type-conditional extras (isRecurring for Date, Choices for Dropdown), immutable-type warning**
+    - _On Admin > Custom Fields, click 'Add Custom Field'. Screenshot the modal in its default state. Then select Type=Date and screenshot the recurring option. Then select Type=Dropdown and screenshot the choices input. Cancel without saving._
+- [ ] 🟥 **Add / Edit Pond modal — Name, Pond Lead Agent selector, Team Members multi-select**
+    - _On Admin > Ponds, click '+ Add Pond'. Screenshot the modal showing the Name field, Pond Lead Agent selector, and Team Members multi-select. Then also click the Edit (pencil) on the existing 'Out Of State Home Owners' pond and screenshot the populated edit modal. Cancel both without saving._
+- [ ] 🟥 **Lead Flow initial text configuration panel — message body, delay field, quiet-hours note, 'Add initial text message' link on rule**
+    - _On the Advanced Rules editor for Ryan-Realty.com, click '+ Add initial text message' on the Default Rule. Screenshot the initial text panel showing the message body field, delay setting, and any quiet-hours disclaimer. Cancel without saving._
+- [ ] 🟥 **Lead Flow Add source modal — source type selector (My Website / Facebook / Zapier / Custom API / Lead Provider), delivery method options**
+    - _On Admin > Lead Flow, click '+ Add Lead Flow' (or equivalent add-source button). Screenshot the modal showing all source type options. Cancel without saving._
+- [ ] 🟥 **Lead Flow Archive options — 'Just Archive' vs 'Archive and Ignore' distinction on a source**
+    - _On Admin > Lead Flow, click the Archive button or option on any source (e.g. 'Expired Listing' with 0 leads). Screenshot the confirmation dialog or dropdown showing 'Just Archive' and 'Archive and Ignore' as distinct choices. Cancel without archiving._
+- [ ] 🟥 **Add / Edit Group modal — Name, User type (Agents/Lenders), Members multi-select, Assignment method (Round Robin / First to Claim), FTC-specific fields (claim window, fallback 1, fallback 2)**
+    - _On Admin > Groups, click the Edit (pencil) on 'Team Ryan'. Screenshot the edit modal showing all fields. Then click '+ Add Group' (if available) and switch Assignment Method to First to Claim — screenshot the FTC-specific fields (claim window, fallback selectors). Cancel both without saving._
+- [ ] 🟥 **Company Settings — Spam label calling protection '(Change)' modal — edit legal entity name (≤15 chars for carriers)**
+    - _On Admin > Company Settings, click '(Change)' next to the Spam label calling protection field (shows 'Ryan Realty LLC'). Screenshot the modal/inline editor for changing the legal entity name. Cancel without saving._
+- [ ] 🟥 **Block List sub-page — email + phone number block list management interface**
+    - _On Admin > Company Settings, click 'Manage block list settings'. Screenshot the block list sub-page showing the email and phone block list inputs and any existing blocked entries._
+- [ ] 🟥 **Business Registration status page — status badge (one of: Not Started / Submitted to FUB / Passed FUB / Rejected / Fully Registered), EIN form fields, registration requirements**
+    - _On Admin > Company Settings, click 'View Business Registration' (green pill button top-right). Screenshot the full Business Registration page showing the current status badge, any pre-filled fields, and the registration requirements list. Also accessible via Admin > Overview > Business Registration card._
+- [ ] 🟥 **Add Team Members invite modal — Name, Email, Phone, Role fields, billing confirmation note**
+    - _On Admin > Team, click '+ Add Team Members'. Screenshot the invite modal showing Name/Email/Phone/Role fields. If a billing confirmation screen appears, screenshot that too. Cancel without sending._
+- [ ] 🟥 **Delete Team Member confirmation modal — data outcomes summary (lead reassignment, tag auto-applied, template deletion, 30-day phone grace period)**
+    - _On Admin > Team, click 'Delete' on Paul Stevenson's row. Screenshot the full confirmation modal showing the data outcome warnings (reassign leads, auto-tag, templates deleted, phone grace period, etc.) and the reassign-to agent selector. Cancel without deleting._
+- [ ] 🟥 **Email Domain Authentication sub-tab — domain verification flow, DKIM/SPF/DMARC record status**
+    - _Navigate to Admin > Email Domain Authentication tab. Screenshot the full page showing ryan-realty.com domain status, verification record instructions (DKIM/SPF/DMARC), and any verified/unverified badges._
+- [ ] 🟥 **My Settings — Personal Information section (Name, Phone mobile, Login email, Timezone, Avatar upload)**
+    - _Click avatar → My Settings. Screenshot the Personal Information section with all 5 fields visible (Name, Phone, Login Email, Timezone dropdown, Avatar upload). Scroll if needed. Do not change any values._
+- [ ] 🟥 **My Settings — Notifications section (Daily Hot Sheet checkbox + 'Manage Notification Settings' link)**
+    - _Click avatar → My Settings → Notifications section. Screenshot showing the 'Receive daily hot sheet emails' checkbox state and the 'Manage Notification Settings' link._
+- [ ] 🟥 **Notification Settings Matrix — full page with 3 sections (Activity, Team Inbox, Pond), event rows × 5 channel columns (Bell/Desktop Push/Mobile Push/Text/Email), individual toggle states**
+    - _Click avatar → My Settings → Notifications → 'Manage Notification Settings'. Screenshot the complete Notification Settings page showing all event rows across all 3 sections (Activity, Team Inbox, Pond) with all 5 channel columns. Scroll to capture all rows. Do not change any toggles._
+- [ ] 🟥 **My Settings — Calling sections: My Number (FUB virtual number, Mute Sound Effects, Test Call), Incoming Calls (ring sequence, mobile ring time, voicemail greeting), Outgoing Calls (outbound number, calling method)**
+    - _Click avatar → My Settings. Scroll to the calling sections. Screenshot 'My Number' showing the assigned FUB phone number. Screenshot 'Incoming Calls' showing the ring sequence radio options, mobile ring time, and voicemail greeting upload. Screenshot 'Outgoing Calls' showing the outbound number selector and calling method. Do not change any settings._
+- [ ] 🟥 **My Devices panel — table of registered mobile devices with Send Test Notification and Remove buttons**
+    - _Click avatar → My Devices. Screenshot the full panel showing all registered iOS/Android devices with their device name, platform icon, last-active timestamp, Send Test Notification button, and Remove button. If empty, screenshot the empty state._
+- [ ] 🟥 **Power-Ups page — grid of all 13 feature tiles with enabled/disabled toggles, plan badges, owner-only restrictions**
+    - _Click avatar → Power-Ups. Screenshot the full Power-Ups page showing all feature tiles (Agent Action Plans, Agent Automations, Blur Mode, Call Recording, Enforce Google Sign-In, etc.) with their current ON/OFF state and any plan-upgrade badges. Scroll to capture all tiles._
+- [ ] 🟥 **Create API Key modal — Name input, 'Generate Key' CTA, one-time full-key reveal with copy-to-clipboard and 'won't see again' warning**
+    - _On Admin > API, click 'Create API Key'. Screenshot the modal with the Name field. Enter a test name (e.g. 'TEST-DELETE-ME') and click Generate/Create. Screenshot the one-time key reveal screen showing the full key + copy button + warning text. Copy the key, then delete this test key immediately after via the trash icon._
+- [ ] 🟥 **Delete API Key confirmation dialog — 'Any integration using it will immediately lose access. This cannot be undone.' Cancel / Delete buttons**
+    - _On Admin > API, click the trash icon on the test key created in the previous step (or CLAUDE COWORK key if test key already deleted). Screenshot the confirmation dialog with the warning text and Cancel/Delete buttons. Click Cancel._
+- [ ] 🟧 **Custom Fields ▾ sub-tab dropdown — People fields vs. Deal fields namespace switcher**
+    - _On Admin > Custom Fields, click the ▾ dropdown indicator on the Custom Fields tab in the sub-nav. Screenshot the expanded dropdown showing the People / Deal fields sub-options._
+- [ ] 🟧 **Lead Flow Advanced Rules editor — full-page route, ordered rule list, per-rule stats, 'Copy From Other Lead Flows' button, 3 configured rules for Ryan-Realty.com**
+    - _On Admin > Lead Flow, click 'View Advanced Rules (3)' on Ryan-Realty.com. Take a static screenshot of the full Advanced Rules editor page showing all 3 rules with their conditions, distribution targets, and per-rule lead count + last-lead stats._
+- [ ] 🟧 **Role inline dropdown on Team table — ▾ caret for Admin/Agent rows, dropdown options visible**
+    - _On Admin > Team, click the role dropdown (▾ caret) on Rebecca Peterson's row (shows 'Admin ▾'). Screenshot the open dropdown showing all role options. Close without changing._
+- [ ] 🟧 **Phone Numbers admin sub-tab — phone number list, manage/add phone numbers UI**
+    - _Navigate to Admin > Phone Numbers tab. Take a full static screenshot of the page showing any assigned virtual numbers, their assignment to team members, and the add/manage controls._
+- [ ] 🟧 **My Settings — Email section (connected email + provider badge, Share Emails toggle, Share Calendar toggle, email signature editor with Matt's full signature)**
+    - _Click avatar → My Settings → Email section. Screenshot the full Email section showing: connected email account (matt@ryan-realty.com, Google), Share Emails and Share Calendar toggles, and the email signature editor with Matt's full signature (headshot, name, title, phone, links, compliance footer)._
+- [ ] 🟧 **Pixel page — two-panel layout (left: logo/category/go-back; right: Description/Tracking/CTA tabs)**
+    - _Navigate to Admin > Integrations > Pixel (or Admin > Pixel card on Overview). Take a static screenshot of the full two-panel layout showing the left info panel and the right tab panel with all three sub-tab labels visible._
+- [ ] 🟧 **Integrations catalog grid — 15 tiles across 2 sections (Email Marketing: Mailchimp/BombBomb/SendGrid; Integrations: 12 tiles), green connected badges on Pixel + Facebook**
+    - _Navigate to Admin > All Integrations (or Admin > Integrations tab). Take a static screenshot of the full integrations grid showing both sections (Email Marketing + Integrations) with all tile logos, category labels, and the green connected checkmarks on Pixel and Facebook tiles._
+- [ ] 🟧 **Facebook Integration detail — connected status banner ('You are connected to Matt Ryan on Facebook'), 3-step instructions, async FACEBOOK PAGES loading, Disconnect button**
+    - _On the Integrations grid, click the Facebook tile. Navigate to the Settings tab. Screenshot the full detail page: left panel (Facebook logo/category/go-back), right panel (connected status banner, 3-step instructions, FACEBOOK PAGES section loading state or populated pages, Disconnect button)._
+
+## People, Contacts & Smart Lists  (9 core gaps)
+
+- [ ] 🟥 **Column Chooser — Texts right pane: 5 fields (Last Text, Last Text Sent, Last Text Received, Texts Sent, Texts Received)**
+    - _Open any smart list, click 'Columns ▾', in the left pane click 'Texts', screenshot the right pane showing all 5 text column options with their checkboxes and current checked/unchecked state_
+- [ ] 🟥 **Column Chooser — Website Activity right pane: 5 fields (Properties Viewed, Properties Saved, Pages Viewed, Last Visit, Visits)**
+    - _In the Column Chooser, click 'Website activity' in the left pane, screenshot the right pane showing all 5 fields with their current check states_
+- [ ] 🟥 **Manage Lists — 'Actions ▾' blue button dropdown open: create options (New Smart List / New Collection / etc.)**
+    - _On Manage Lists page, click the blue 'Actions ▾' button in the top-right, screenshot the resulting dropdown showing all available action items (New Smart List, New Collection, and any others)_
+- [ ] 🟥 **Manage Lists — 'Shared with everyone' link → sharing modal or panel: shows agent checkboxes, 'Share with everyone' option, and current sharing state**
+    - _On Manage Lists page, click the blue 'Shared with everyone' link on any Pipeline smart list row, screenshot the sharing modal or panel that opens showing the Search input, 'Share with everyone' checkbox, AGENTS section with the 3 broker checkboxes, and the 'Deselect all agents' link_
+- [ ] 🟧 **Filter panel — Date/recency filter expanded: 'was more than N [unit] ago' operator with numeric input field + time-unit dropdown (minutes/hours/days/weeks/months/years)**
+    - _Open Hot/Weekly smart list, click any collapsed date filter row in the right panel (e.g. 'Last Text Sent more than 7 days ago') to expand it, screenshot the full expanded editor showing the 'was more than' radio selected, the '7' numeric input field, and the 'days' unit dropdown — all in the same frame_
+- [ ] 🟧 **Filter panel — Agent filter expanded: 'includes any of' mode; avatar-preceded team member picker with Matt Ryan selected**
+    - _Open 'All Expireds' smart list, click the collapsed 'Agent includes any of: Matt Ryan' filter row in the right panel to expand it, screenshot the expanded editor showing the 'includes any of' mode and the avatar + name list of team members with Matt Ryan checked_
+- [ ] 🟧 **Bulk action bar — idle selected state: 'Selected N people — Deselect all' text visible + view toggle + '...' trigger + tag icon; NO dropdown open yet**
+    - _On Pronghorn smart list, check 2-3 row checkboxes to activate bulk selection, then screenshot WITHOUT clicking the '...' or tag icon — capture just the 'Selected 3 people — Deselect all' bar plus the icon row in its resting state_
+- [ ] 🟧 **Manage Lists — collection header 'Only Me' eye-slash toggle: both off (default, showing all-team totals) and on (activated, showing current-user-only totals)**
+    - _On Manage Lists page, click the 'Only Me' eye-slash toggle on the Pipeline collection header, screenshot the result showing the toggle in its active/on state with the Totals column updated to show Matt Ryan's contacts only (smaller numbers than the full totals)_
+- [ ] 🟧 **Save New Smart List modal — create-new empty state: blank name field, blank description, 'This smart list is private' notice, all agent checkboxes unchecked**
+    - _On Manage Lists page, click 'Actions ▾' → 'New Smart List' (or equivalent new-list trigger that opens the modal in empty state), screenshot the modal before typing anything — showing blank name field, empty description, and 'This smart list is private' notice with all agent checkboxes unchecked_
+
+## Mobile App (all surfaces)  (20 core gaps)
+
+- [ ] 🟥 **Activity — team filter picker sheet ('Everyone ▾' in header opens agent-select sheet)**
+    - _Open FUB iOS app → tap Activity tab → tap 'Everyone ▾' dropdown in the header → screenshot the bottom sheet that slides up showing All Team / individual broker filter options with checkmarks_
+- [ ] 🟥 **Inbox — scope picker sheet ('My Inbox ▾' opens My / Team / All options sheet)**
+    - _Open FUB iOS → Inbox tab → tap 'My Inbox ▾' in the header title area → screenshot the picker sheet showing My Inbox / Team Inbox / All Inbox options with current selection checkmarked_
+- [ ] 🟥 **Inbox — type filter sheet (filter conversations by email / text / call / inbox-app type)**
+    - _Open FUB iOS → Inbox tab → look for a filter or funnel icon near the header or list top → tap it → screenshot the filter sheet showing communication type options (Email, Text, Call, etc.)_
+- [ ] 🟥 **People — search overlay (search icon tap opens full-screen search with keyboard)**
+    - _Open FUB iOS → People tab → tap the magnifying glass / search icon in the header → screenshot the search overlay with the text field focused and keyboard visible_
+- [ ] 🟥 **Contact Detail — Calendar tab populated (date-badge rows: ContactCalendarEventRow with date pill, title, contact, type label, time)**
+    - _Find a FUB iOS contact that has at least one task or appointment scheduled (e.g. Matt Ryan self-contact or any active pipeline contact) → open Contact Detail → tap Calendar sub-tab → screenshot the populated list with at least one event row visible_
+- [ ] 🟥 **Contact Detail — FAB quick-action sheet (all 6 options: Make a Call / Send Text / Send Email / Add Note / Add Task / Schedule Appointment)**
+    - _Open FUB iOS → navigate to any contact detail (any tab) → tap the blue + FAB button → screenshot the bottom action sheet that slides up showing all 6 quick-action options before selecting any_
+- [ ] 🟥 **Contact Detail — Edit form (inline edit mode after tapping 'Edit' in header: fields become editable inputs)**
+    - _Open FUB iOS → any Contact Detail Info tab → tap 'Edit' button in the top-right of the nav bar → screenshot the edit mode with inline input fields, first-name / last-name inputs, email and phone fields in edit state_
+- [ ] 🟥 **Add Person / New Contact sheet (create-contact form from FAB or People tab)**
+    - _Open FUB iOS → from the People tab or any root tab → tap the FAB (+) → tap 'Add a Person' (or equivalent option) → screenshot the new contact creation form showing name / phone / email fields and Save button_
+- [ ] 🟥 **Calendar — task create bottom sheet (form: task type, contact link, due date/time, notes, assignee, Save button)**
+    - _Open FUB iOS → Calendar tab → tap the blue + FAB → if a picker appears choose 'Task' (or 'Add Task') → screenshot the create-task bottom sheet with all form fields visible before filling anything in_
+- [ ] 🟥 **Calendar — appointment create bottom sheet (form: title, contact, date/time, duration, notes, appointment type, assignee)**
+    - _Open FUB iOS → Calendar tab → tap the blue + FAB → choose 'Appointment' (or 'Schedule Appointment') → screenshot the create-appointment sheet with all fields before filling in_
+- [ ] 🟥 **Tasks — dedicated tasks list screen (Today / Overdue / Future sub-tabs, task rows with contact name, type icon, due time, assignee badge)**
+    - _Open FUB iOS → Calendar tab → if there is a 'Tasks' button or sub-section header that links to a standalone tasks view, tap it; alternatively look for a segmented Today/Overdue/Future tab bar in the Calendar screen's task area → screenshot the Tasks list with the Overdue tab active showing overdue task rows_
+- [ ] 🟥 **Notifications screen (in-app bell full-screen list: unread / read notification rows with contact name, event type, timestamp)**
+    - _Open FUB iOS → tap the bell icon in the top-right of any root-tab header → screenshot the full notifications list screen, ideally with at least one unread notification visible (red indicator)_
+- [ ] 🟥 **Call initiation / dialer screen (active call UI: contact name, duration counter, mute/speaker/hold/keypad/end-call controls)**
+    - _Open FUB iOS → open any contact with a phone number → tap the phone/call button → screenshot the in-app call screen immediately after the call connects or during the dialing state (before hanging up)_
+- [ ] 🟥 **In-house Home Dashboard — Needs Your Action section populated (task rows with contact name, type icon, due date visible, not empty state)**
+    - _Open ryan-realty.com in Mobile Safari while logged in as a broker who has pending tasks → tap Home tab → scroll to 'Needs Your Action' section → screenshot the section with at least one real task row visible (if no tasks exist, create a test task in FUB first)_
+- [ ] 🟥 **In-house Inbox mobile (conversation list on Inbox tab in the in-house web app at Mobile Safari)**
+    - _Open ryan-realty.com in Mobile Safari → tap Inbox tab in the bottom bar → screenshot the full conversation list (if it shows a mobile-responsive inbox list or redirects to contact comms, capture that state)_
+- [ ] 🟥 **In-house People tab mobile (contact list or smart-list index in the in-house web app on Mobile Safari)**
+    - _Open ryan-realty.com in Mobile Safari → tap People tab → screenshot the people list or smart-list index as rendered on a 390pt-wide mobile viewport_
+- [ ] 🟥 **In-house Activity tab mobile (activity feed in the in-house web app on Mobile Safari)**
+    - _Open ryan-realty.com in Mobile Safari → tap Activity tab → screenshot the activity feed as it renders on mobile (check if it shows sub-tabs or a flat list)_
+- [ ] 🟧 **Inbox — Assigned sub-tab active state (conversations assigned to broker, may be empty)**
+    - _Open FUB iOS → Inbox tab → tap 'Assigned' in the segmented tab strip → screenshot the resulting conversation list (populated or empty state, both valid)_
+- [ ] 🟧 **People — Stages tab active (contacts grouped or listed by pipeline stage)**
+    - _Open FUB iOS → People tab → tap 'Stages' in the sub-tab strip → screenshot the resulting view showing contacts organized by stage_
+- [ ] 🟧 **Contact Detail — Plans / Automations tab full view (active action plans enrolled for contact, plan name rows with step count)**
+    - _Find a FUB iOS contact with an active action plan enrolled → open Contact Detail → swipe sub-tab strip to the last tab (labeled 'Automations' or 'Plans') → screenshot the tab view showing enrolled plan name, step progress, and pause/stop controls_
+
+---
+## Appendix — deferred + nice-to-have (76 items)
+_Deals/Billing/API detail states and polish states — capture only if time permits._
+
+- [ ] (deferred) [Admin, Settings & Integrations] Import admin sub-tab — CSV import flow, field mapping step
+- [ ] (deferred) [Admin, Settings & Integrations] Billing page — Grow plan $828/yr × 3 seats, CANCELLED status, subscription details
+- [ ] (nice-to-have) [Admin, Settings & Integrations] Add Appointment Type / Add Outcome modal — Name field only
+- [ ] (nice-to-have) [Admin, Settings & Integrations] My Settings — vCard section (vCard preview + Edit vCard button)
+- [ ] (nice-to-have) [Admin, Settings & Integrations] IDX Integrations page — tier listing (Tier 1 API-integrated providers, Tier 2 email-parsing providers, Tier 3 custom)
+- [ ] (nice-to-have) [Automations, Action Plans & Templates] Automations list — Create Folder modal (name input + Save button)
+- [ ] (nice-to-have) [Automations, Action Plans & Templates] Automations list — Create Automation name dialog (first step before editor opens)
+- [ ] (nice-to-have) [Automations, Action Plans & Templates] Visual editor — Import All Steps feature (option to copy all steps from an existing active automation)
+- [ ] (nice-to-have) [Automations, Action Plans & Templates] Add Email Template modal (blank form — same fields as Edit minus metadata line and usage notice)
+- [ ] (nice-to-have) [Automations, Action Plans & Templates] Email Template usage popover — eye (👁) icon clicked on Automations or Action Plans count cell, showing list of referencing automations/action plans by name
+- [ ] (nice-to-have) [Automations, Action Plans & Templates] Add Text Template modal (blank form)
+- [ ] (nice-to-have) [Automations, Action Plans & Templates] Text Template — 'Needs Review' badge state (high carrier filtering rate on a template)
+- [ ] (deferred) [Contact / Person Detail] A2P 10DLC registration gate — all status states (Not Started / Under FUB Review / Submitted to Carriers / Rejected / Fully Registered) replacing text compose
+- [ ] (nice-to-have) [Contact / Person Detail] Groups section — expanded state showing group membership content
+- [ ] (nice-to-have) [Contact / Person Detail] Queued text timeline card (after-hours pending state: 'Queued text — sends at 8:00 AM', Cancel link)
+- [ ] (nice-to-have) [Contact / Person Detail] Voicemail timeline card (audio player inline, duration, transcription if available)
+- [ ] (nice-to-have) [Contact / Person Detail] Text compose — schedule-send clock icon + 24-hour picker
+- [ ] (nice-to-have) [Contact / Person Detail] Right rail — AgentFire FUB Widget expanded state (website activity data: listings viewed, searches, page visits, or empty-integration state)
+- [ ] (nice-to-have) [Contact / Person Detail] Right rail — section drag-to-reorder (drag handle icon on section title, reorder in progress)
+- [ ] (deferred) [Deals & Pipelines] Deals Leaderboard — Reporting > Leaderboard > 'Show Me: Deals Leaderboard' (ranking by total price in closed-stage deals, timeframe selector, fullscreen mode)
+- [ ] (deferred) [Deals & Pipelines] Closed deal report by agent — Reporting > Agent Activity > 'Which team member has closed the most deals'
+- [ ] (deferred) [Deals & Pipelines] Closed deal report by lead source — Reporting > Lead Sources > 'show me which lead source has the most closed deals'
+- [ ] (deferred) [Deals & Pipelines] Agent Goal Report — commission section showing 'Commission Earned' YTD and 'Pending Commission' fields derived from deals
+- [ ] (deferred) [Deals & Pipelines] Mobile iOS — Add Deal / create deal on iOS (from Quick Actions or from Deals tab + button)
+- [ ] (nice-to-have) [Deals & Pipelines] Dashboard widget — 'Deals closing in 30 days' count on the main FUB dashboard
+- [ ] (nice-to-have) [Deals & Pipelines] 'How Deals work' help modal — opened from the ℹ button in the sub-bar
+- [ ] (nice-to-have) [Deals & Pipelines] Deal drag-and-drop between stage columns — visual drag state
+- [ ] (deferred) [Inbox & Communications] Batch email compose UI (from People list > select contacts > Batch Email)
+- [ ] (deferred) [Inbox & Communications] Batch Email report view (Reporting > Batch Emails — table with Opens/Clicks/Bounces columns)
+- [ ] (deferred) [Inbox & Communications] Text Reporting view (Reporting > Texts — Delivery Rate / Opt-Outs / Carrier Filtered)
+- [ ] (deferred) [Inbox & Communications] Inbox Apps section in inbox left panel (APP badge channel entries — Zillow Messages etc.)
+- [ ] (deferred) [Inbox & Communications] Call list session UI (desktop calling-add-on only — auto-dial queue with notes panel)
+- [ ] (deferred) [Inbox & Communications] Warm transfer flow (desktop — hold → dial agent → merge/complete options)
+- [ ] (nice-to-have) [Inbox & Communications] Contact sidebar — collapsed state (toggle to maximize reading pane)
+- [ ] (nice-to-have) [Inbox & Communications] Presence indicator (other team member viewing same thread — visible in thread list row)
+- [ ] (nice-to-have) [Inbox & Communications] Call recording Power-Up toggle (Profile > Power-Ups)
+- [ ] (nice-to-have) [Inbox & Communications] Domain Authentication admin page (SPF/DKIM/DMARC setup via Entri)
+- [ ] (nice-to-have) [Inbox & Communications] Text template performance score display (percentile, Pending, Needs Review states)
+- [ ] (nice-to-have) [Inbox & Communications] Smart Messages (AI reply suggestions) — desktop compose panel with suggestion chips
+- [ ] (nice-to-have) [Inbox & Communications] Smart Summary (AI lead overview on Person detail — Activity Summary + Suggested Tasks)
+- [ ] (nice-to-have) [Inbox & Communications] Mobile — Drafts sub-tab in My Inbox (iOS)
+- [ ] (nice-to-have) [Inbox & Communications] Mobile — Swipe-left to close conversation (iOS gesture in inbox)
+- [ ] (deferred) [Mobile App (all surfaces)] Deals — main pipeline view (kanban columns or list view of active deals)
+- [ ] (deferred) [Mobile App (all surfaces)] Deals — deal detail screen (single deal: address, price, status, timeline, contacts, docs)
+- [ ] (deferred) [Mobile App (all surfaces)] In-house Deals tab mobile (pipeline or list view in the in-house web app on Mobile Safari)
+- [ ] (nice-to-have) [Mobile App (all surfaces)] Inbox — row swipe actions (swipe left = Close, swipe right = Assign or Done)
+- [ ] (nice-to-have) [Mobile App (all surfaces)] Notification bell badge (red count badge on bell icon in header when unread notifications exist)
+- [ ] (nice-to-have) [Mobile App (all surfaces)] Post-call log prompt (note + outcome entry sheet that appears after ending a call)
+- [ ] (deferred) [People, Contacts & Smart Lists] Column Chooser — Deals right pane: 3 fields (Deal Stage, Deal Close Date, Deal Price)
+- [ ] (deferred) [People, Contacts & Smart Lists] Column Chooser — Inbox Apps right pane: 6 fields (Last Inbox App Message through Inbox App Messages Received)
+- [ ] (nice-to-have) [People, Contacts & Smart Lists] Filter panel — 'Add a filter' typeahead showing non-Details category groups (CALLS / TEXTS / WEBSITE ACTIVITY / INBOX APPS sections visible)
+- [ ] (nice-to-have) [People, Contacts & Smart Lists] Smart list description 'More' clicked — expanded full text visible with 'Less' link
+- [ ] (nice-to-have) [People, Contacts & Smart Lists] Column preset selector — dropdown open showing all available preset names (e.g. 'Out Of State Home Owners' and any other presets)
+- [ ] (nice-to-have) [People, Contacts & Smart Lists] Group-By picker open + resulting grouped table view (sticky group headers with per-group counts; dimensions: Agent / Portal / Connections)
+- [ ] (nice-to-have) [People, Contacts & Smart Lists] Manage Lists — drag handle reorder in action (within a collection)
+- [ ] (nice-to-have) [People, Contacts & Smart Lists] Manage Lists — 'Best Practice Lists (21)' tab content: FUB template lists with descriptions and 'Add to my lists' / copy action buttons
+- [ ] (nice-to-have) [People, Contacts & Smart Lists] Save New Smart List modal — emoji picker panel open (emoji grid/categories visible after clicking the emoji picker button)
+- [ ] (nice-to-have) [People, Contacts & Smart Lists] Mobile — 'All People' flat contact list (if distinct from the Smart Lists tab — i.e., a flat people list not filtered into any smart list)
+- [ ] (deferred) [Reporting] Texts Report — per-number stats table (Texts Sent, Received, Delivery Rate with tier color coding, Opt-Outs, Carrier Filtered, Other Errors)
+- [ ] (deferred) [Reporting] Appointments Report — 9-column table (Title, People, Team, Created By, Date/Time, Type, Outcome, Contact Lead Source, Marketing Source) with 4-filter controls
+- [ ] (deferred) [Reporting] Properties Report — map pin click popup (address + inquiry count tooltip/popup) and map interactive state
+- [ ] (deferred) [Reporting] Properties Report — Zip Codes view (via 'Show me' → Zip Codes: list ranked by inquiry count per zip, map pins at zip-level)
+- [ ] (deferred) [Reporting] Marketing UTM Report — fully loaded data state (table with Platform / Leads / Appointments / Deals Closed / Deal Value rows, All Touch vs First Touch toggle, date filter)
+- [ ] (deferred) [Reporting] Activity Leaderboard — ranked agent list with point totals, point breakdown, date range selector (Today/Week/Month/Year/Custom), team selector, fullscreen button
+- [ ] (deferred) [Reporting] Deals Leaderboard — ranked by total closed deal value, pipeline filter, people filter, exclusion filter, fullscreen mode
+- [ ] (nice-to-have) [Reporting] Agent Activity — 'Compare to previous period' dual-trace chart state (checkbox enabled, prior period range label shown, two overlaid traces)
+- [ ] (nice-to-have) [Reporting] Lead Sources — delete source label flow: trash icon hover state on row, confirmation dialog before deletion
+- [ ] (nice-to-have) [Reporting] Agent Goals — personal goals section (individual agent view with freeform goals: drag handles, emoji, checkbox completion, delete icon, reorder state)
+- [ ] (nice-to-have) [Reporting] Weekly Business Insights email config section in Admin > Company Settings (recipient list field, add-by-email input, industry prerequisite)
+- [ ] (nice-to-have) [Reporting] Mobile — FUB iOS Reporting tab or any reporting screen (if it exists in the mobile app)
+- [ ] (deferred) [Tasks & Calendar] Google Calendar sync settings in My Settings (connection status, OAuth indicator, privacy toggle)
+- [ ] (deferred) [Tasks & Calendar] Appointment Reminder Text Power-Up toggle in Admin (enable/disable, timing rules shown)
+- [ ] (nice-to-have) [Tasks & Calendar] Tasks — Future tab populated (tasks with no due date mixed with future-dated tasks)
+- [ ] (nice-to-have) [Tasks & Calendar] Tasks — 'Show Completed' filter active (completed tasks visible inline with strikethrough/muted styling)
+- [ ] (nice-to-have) [Tasks & Calendar] Calendar — Month view 'N More' overflow expanded (popover or day-drill showing all events for a dense date)
+- [ ] (nice-to-have) [Tasks & Calendar] Calendar — Sidebar Filters tab (calendar-specific event type filter panel)

@@ -1,0 +1,162 @@
+[
+ {
+  "id": 50,
+  "name": "Seller Prospect",
+  "orderWeight": 1000,
+  "isProtected": false,
+  "pipelineId": null,
+  "description": "",
+  "systems": [],
+  "peopleCount": 7523
+ },
+ {
+  "id": 2,
+  "name": "Lead",
+  "orderWeight": 2000,
+  "isProtected": true,
+  "pipelineId": null,
+  "description": "Not spoken to yet and not categorized (default stage for new people)",
+  "systems": [],
+  "peopleCount": 8243
+ },
+ {
+  "id": 40,
+  "name": "A - Hot 1-3 Months",
+  "orderWeight": 3000,
+  "isProtected": false,
+  "pipelineId": null,
+  "description": "",
+  "systems": [],
+  "peopleCount": 2
+ },
+ {
+  "id": 41,
+  "name": "B - Warm 3-6 Months",
+  "orderWeight": 4000,
+  "isProtected": false,
+  "pipelineId": null,
+  "description": "",
+  "systems": [],
+  "peopleCount": 0
+ },
+ {
+  "id": 42,
+  "name": "C - Cold 6+ Months",
+  "orderWeight": 5000,
+  "isProtected": false,
+  "pipelineId": null,
+  "description": "",
+  "systems": [],
+  "peopleCount": 46
+ },
+ {
+  "id": 43,
+  "name": "Renter - future buyer",
+  "orderWeight": 6000,
+  "isProtected": false,
+  "pipelineId": null,
+  "description": "",
+  "systems": [],
+  "peopleCount": 0
+ },
+ {
+  "id": 17,
+  "name": "Active Client",
+  "orderWeight": 7000,
+  "isProtected": false,
+  "pipelineId": null,
+  "description": "Currently working with",
+  "systems": [],
+  "peopleCount": 8
+ },
+ {
+  "id": 14,
+  "name": "Pending",
+  "orderWeight": 8000,
+  "isProtected": false,
+  "pipelineId": null,
+  "description": "Current deal pending",
+  "systems": [],
+  "peopleCount": 0
+ },
+ {
+  "id": 15,
+  "name": "Past Client",
+  "orderWeight": 9000,
+  "isProtected": false,
+  "pipelineId": null,
+  "description": "Worked with in the past and not currently back in the market",
+  "systems": [],
+  "peopleCount": 21
+ },
+ {
+  "id": 16,
+  "name": "Sphere",
+  "orderWeight": 10000,
+  "isProtected": false,
+  "pipelineId": null,
+  "description": "Personal relationships not currently in the market",
+  "systems": [],
+  "peopleCount": 0
+ },
+ {
+  "id": 44,
+  "name": "Archive",
+  "orderWeight": 11000,
+  "isProtected": false,
+  "pipelineId": null,
+  "description": "",
+  "systems": [],
+  "peopleCount": 2
+ },
+ {
+  "id": 8,
+  "name": "Closed",
+  "orderWeight": 12000,
+  "isProtected": true,
+  "pipelineId": null,
+  "description": "Closed deal or post-closing",
+  "systems": [],
+  "peopleCount": 0
+ },
+ {
+  "id": 11,
+  "name": "Trash",
+  "orderWeight": 13000,
+  "isProtected": true,
+  "pipelineId": null,
+  "description": "No longer working with",
+  "systems": [],
+  "peopleCount": 47
+ },
+ {
+  "id": 45,
+  "name": "Real Estate Agent",
+  "orderWeight": 14000,
+  "isProtected": false,
+  "pipelineId": null,
+  "description": "",
+  "systems": [],
+  "peopleCount": 2342
+ },
+ {
+  "id": 46,
+  "name": "Vendor",
+  "orderWeight": 15000,
+  "isProtected": false,
+  "pipelineId": null,
+  "description": "",
+  "systems": [],
+  "peopleCount": 1
+ },
+ {
+  "id": 13,
+  "name": "Nurture",
+  "orderWeight": 26000,
+  "isProtected": false,
+  "pipelineId": null,
+  "description": "Ready to buy or sell in more than three months",
+  "systems": [],
+  "peopleCount": 0
+ }
+]

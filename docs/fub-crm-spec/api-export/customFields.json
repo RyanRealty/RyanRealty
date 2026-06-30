@@ -1,0 +1,585 @@
+[
+ {
+  "id": 72,
+  "name": "customRecentlyDivorced",
+  "label": "Recently Divorced",
+  "type": "text",
+  "orderWeight": 1000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 71,
+  "name": "customRecentlyMoved",
+  "label": "Recently Moved",
+  "type": "text",
+  "orderWeight": 2000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 70,
+  "name": "customEnrichmentProvider",
+  "label": "Enrichment Provider",
+  "type": "text",
+  "orderWeight": 3000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 69,
+  "name": "customPhoneType",
+  "label": "Phone Type",
+  "type": "text",
+  "orderWeight": 4000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 68,
+  "name": "customNetWorthRange",
+  "label": "Net Worth Range",
+  "type": "text",
+  "orderWeight": 5000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 67,
+  "name": "customIncomeRange",
+  "label": "Income Range",
+  "type": "text",
+  "orderWeight": 6000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 66,
+  "name": "customOccupation",
+  "label": "Occupation",
+  "type": "text",
+  "orderWeight": 7000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 65,
+  "name": "customHasChildren",
+  "label": "Has Children",
+  "type": "text",
+  "orderWeight": 8000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 64,
+  "name": "customHouseholdSize",
+  "label": "Household Size",
+  "type": "number",
+  "orderWeight": 9000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 63,
+  "name": "customMaritalStatus",
+  "label": "Marital Status",
+  "type": "text",
+  "orderWeight": 10000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 62,
+  "name": "customGender",
+  "label": "Gender",
+  "type": "text",
+  "orderWeight": 11000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 61,
+  "name": "customBirthday",
+  "label": "Birthday",
+  "type": "date",
+  "orderWeight": 12000,
+  "hideIfEmpty": false,
+  "readOnly": false,
+  "isRecurring": false
+ },
+ {
+  "id": 60,
+  "name": "customOwnerAgeRange",
+  "label": "Owner Age Range",
+  "type": "text",
+  "orderWeight": 13000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 59,
+  "name": "customOwnerAge",
+  "label": "Owner Age",
+  "type": "number",
+  "orderWeight": 14000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 58,
+  "name": "customIncludeInFBCAS",
+  "label": "Include In FB CAS",
+  "type": "text",
+  "orderWeight": 15000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 57,
+  "name": "customRealtorLicenseType",
+  "label": "Realtor License Type",
+  "type": "text",
+  "orderWeight": 16000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 56,
+  "name": "customRealtorLicense",
+  "label": "Realtor License",
+  "type": "text",
+  "orderWeight": 17000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 55,
+  "name": "customBrokerage",
+  "label": "Brokerage",
+  "type": "text",
+  "orderWeight": 18000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 54,
+  "name": "customClassification",
+  "label": "Classification",
+  "type": "text",
+  "orderWeight": 19000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 53,
+  "name": "customSellerScoreBand",
+  "label": "Seller Score Band",
+  "type": "text",
+  "orderWeight": 20000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 52,
+  "name": "customSellerScore",
+  "label": "Seller Score",
+  "type": "number",
+  "orderWeight": 21000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 51,
+  "name": "customYearBuilt",
+  "label": "Year Built",
+  "type": "number",
+  "orderWeight": 22000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 50,
+  "name": "customLotAcres",
+  "label": "Lot Acres",
+  "type": "number",
+  "orderWeight": 23000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 49,
+  "name": "customBuildingSqft",
+  "label": "Building Sqft",
+  "type": "number",
+  "orderWeight": 24000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 48,
+  "name": "customBaths",
+  "label": "Baths",
+  "type": "number",
+  "orderWeight": 25000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 47,
+  "name": "customBedrooms",
+  "label": "Bedrooms",
+  "type": "number",
+  "orderWeight": 26000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 46,
+  "name": "customPlannedCommunity",
+  "label": "Planned Community",
+  "type": "text",
+  "orderWeight": 27000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 45,
+  "name": "customNeighborhood",
+  "label": "Neighborhood",
+  "type": "text",
+  "orderWeight": 28000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 44,
+  "name": "customSubdivision",
+  "label": "Subdivision",
+  "type": "text",
+  "orderWeight": 29000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 43,
+  "name": "customAPN",
+  "label": "APN",
+  "type": "text",
+  "orderWeight": 30000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 42,
+  "name": "customLastPurchaseDate",
+  "label": "Last Purchase Date",
+  "type": "date",
+  "orderWeight": 31000,
+  "hideIfEmpty": false,
+  "readOnly": false,
+  "isRecurring": false
+ },
+ {
+  "id": 41,
+  "name": "customEquityPct",
+  "label": "Equity Pct",
+  "type": "number",
+  "orderWeight": 32000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 40,
+  "name": "customEstimatedMarketValue",
+  "label": "Estimated Market Value",
+  "type": "number",
+  "orderWeight": 33000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 39,
+  "name": "customPurchaseYear",
+  "label": "Purchase Year",
+  "type": "number",
+  "orderWeight": 34000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 38,
+  "name": "customBuyerMoveTimeline",
+  "label": "Buyer Move Timeline",
+  "type": "text",
+  "orderWeight": 35000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 37,
+  "name": "customBuyerBedsMin",
+  "label": "Buyer Beds Min",
+  "type": "number",
+  "orderWeight": 36000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 36,
+  "name": "customBuyerSearchAreas",
+  "label": "Buyer Search Areas",
+  "type": "text",
+  "orderWeight": 37000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 35,
+  "name": "customBuyerBudgetMax",
+  "label": "Buyer Budget Max",
+  "type": "number",
+  "orderWeight": 38000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 34,
+  "name": "customBuyerBudgetMin",
+  "label": "Buyer Budget Min",
+  "type": "number",
+  "orderWeight": 39000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 33,
+  "name": "customCMAPDFURL",
+  "label": "CMA PDF URL",
+  "type": "text",
+  "orderWeight": 40000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 32,
+  "name": "customCMADeliveredAt",
+  "label": "CMA Delivered At",
+  "type": "date",
+  "orderWeight": 41000,
+  "hideIfEmpty": false,
+  "readOnly": false,
+  "isRecurring": false
+ },
+ {
+  "id": 31,
+  "name": "customSellerPropertyAddress",
+  "label": "Seller Property Address",
+  "type": "text",
+  "orderWeight": 42000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 30,
+  "name": "customIsSellerCurious",
+  "label": "Is Seller Curious",
+  "type": "text",
+  "orderWeight": 43000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 29,
+  "name": "customLeadTier",
+  "label": "Lead Tier",
+  "type": "text",
+  "orderWeight": 44000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 28,
+  "name": "customMoveTimeline",
+  "label": "Move Timeline",
+  "type": "text",
+  "orderWeight": 45000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 26,
+  "name": "customListingStatusDisplay",
+  "label": "Listing Status (Display)",
+  "type": "text",
+  "orderWeight": 46000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 25,
+  "name": "customListingExpiredDateDisplay",
+  "label": "Listing Expired Date (Display)",
+  "type": "text",
+  "orderWeight": 47000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 24,
+  "name": "customListingDaysOnMarket",
+  "label": "Listing Days on Market",
+  "type": "number",
+  "orderWeight": 48000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 23,
+  "name": "customOriginalListPrice",
+  "label": "Original List Price",
+  "type": "number",
+  "orderWeight": 49000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 22,
+  "name": "customMLSNumber",
+  "label": "MLS Number",
+  "type": "text",
+  "orderWeight": 50000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 21,
+  "name": "customListingStatus",
+  "label": "Listing Status",
+  "type": "text",
+  "orderWeight": 51000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 20,
+  "name": "customListingExpiredDate",
+  "label": "Listing Expired Date",
+  "type": "date",
+  "orderWeight": 52000,
+  "hideIfEmpty": false,
+  "readOnly": false,
+  "isRecurring": false
+ },
+ {
+  "id": 19,
+  "name": "customPropertyType",
+  "label": "Property Type",
+  "type": "text",
+  "orderWeight": 53000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 18,
+  "name": "customEquityPercent",
+  "label": "Equity Percent",
+  "type": "number",
+  "orderWeight": 54000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 17,
+  "name": "customYearsOwned",
+  "label": "Years Owned",
+  "type": "number",
+  "orderWeight": 55000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 16,
+  "name": "customOrganization",
+  "label": "Organization",
+  "type": "text",
+  "orderWeight": 56000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 15,
+  "name": "customPurchaseDate",
+  "label": "Purchase Date",
+  "type": "date",
+  "orderWeight": 57000,
+  "hideIfEmpty": false,
+  "readOnly": false,
+  "isRecurring": false
+ },
+ {
+  "id": 14,
+  "name": "customPurchasePrice",
+  "label": "Purchase Price",
+  "type": "number",
+  "orderWeight": 58000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 13,
+  "name": "customMarketValue",
+  "label": "Market Value",
+  "type": "number",
+  "orderWeight": 59000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 12,
+  "name": "customLeadScore",
+  "label": "Lead Score",
+  "type": "number",
+  "orderWeight": 60000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 7,
+  "name": "customOpenHouseAddress",
+  "label": "Open House Address",
+  "type": "text",
+  "orderWeight": 61000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ },
+ {
+  "id": 5,
+  "name": "customHomeAnniversary",
+  "label": "Home Anniversary",
+  "type": "date",
+  "orderWeight": 62000,
+  "hideIfEmpty": false,
+  "readOnly": false,
+  "isRecurring": false
+ },
+ {
+  "id": 3,
+  "name": "customClosingAnniversary",
+  "label": "Closing Anniversary",
+  "type": "date",
+  "orderWeight": 64000,
+  "hideIfEmpty": false,
+  "readOnly": false,
+  "isRecurring": true
+ },
+ {
+  "id": 1,
+  "name": "customWebsite",
+  "label": "Website",
+  "type": "text",
+  "orderWeight": 63000,
+  "hideIfEmpty": false,
+  "readOnly": false
+ }
+]

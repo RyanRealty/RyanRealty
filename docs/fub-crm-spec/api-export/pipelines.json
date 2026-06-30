@@ -1,0 +1,122 @@
+[
+ {
+  "id": 1,
+  "name": "Buyers",
+  "description": "A pipeline for buyers",
+  "orderWeight": 1000,
+  "stages": [
+   {
+    "id": 47,
+    "name": "Start (temp stage)",
+    "color": "#F3B942",
+    "description": "",
+    "orderWeight": 1000,
+    "closedStage": false
+   },
+   {
+    "id": 19,
+    "name": "Buyer Contract",
+    "color": "#ffad81",
+    "description": "",
+    "orderWeight": 2000,
+    "closedStage": false
+   },
+   {
+    "id": 21,
+    "name": "Offer",
+    "color": "#819cff",
+    "description": "",
+    "orderWeight": 3000,
+    "closedStage": false
+   },
+   {
+    "id": 23,
+    "name": "Pending",
+    "color": "#ffcc44",
+    "description": "",
+    "orderWeight": 4000,
+    "closedStage": false
+   },
+   {
+    "id": 25,
+    "name": "Closed",
+    "color": "#4ad09f",
+    "description": "",
+    "orderWeight": 5000,
+    "closedStage": true
+   },
+   {
+    "id": 39,
+    "name": "Lost",
+    "color": "#ff8181",
+    "description": "",
+    "orderWeight": 6000,
+    "closedStage": false
+   }
+  ]
+ },
+ {
+  "id": 2,
+  "name": "Sellers",
+  "description": "A pipeline for sellers",
+  "orderWeight": 2000,
+  "stages": [
+   {
+    "id": 48,
+    "name": "Start (temp stage)",
+    "color": "#F3B942",
+    "description": "",
+    "orderWeight": 1000,
+    "closedStage": false
+   },
+   {
+    "id": 49,
+    "name": "Pre-Listing",
+    "color": "#819cff",
+    "description": "",
+    "orderWeight": 2000,
+    "closedStage": false
+   },
+   {
+    "id": 20,
+    "name": "Listed",
+    "color": "#ffad81",
+    "description": "",
+    "orderWeight": 3000,
+    "closedStage": false
+   },
+   {
+    "id": 22,
+    "name": "Offer",
+    "color": "#819cff",
+    "description": "",
+    "orderWeight": 4000,
+    "closedStage": false
+   },
+   {
+    "id": 24,
+    "name": "Pending",
+    "color": "#ffcc44",
+    "description": "",
+    "orderWeight": 6000,
+    "closedStage": false
+   },
+   {
+    "id": 26,
+    "name": "Closed",
+    "color": "#4ad09f",
+    "description": "",
+    "orderWeight": 8000,
+    "closedStage": true
+   },
+   {
+    "id": 28,
+    "name": "Lost / Terminated",
+    "color": "#ff8181",
+    "description": "",
+    "orderWeight": 9000,
+    "closedStage": false
+   }
+  ]
+ }
+]

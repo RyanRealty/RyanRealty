@@ -1,0 +1,426 @@
+{
+ "id": 40,
+ "created": "2025-09-25T21:22:00Z",
+ "updated": "2026-05-21T15:53:49Z",
+ "createdById": -1,
+ "updatedById": 1,
+ "name": "*KTS AP Need to know if buyer, seller, buyer/seller, luxury etc.",
+ "status": "Deleted",
+ "imported": true,
+ "edited": false,
+ "version": 8,
+ "stopOnContacted": true,
+ "isDefaultBuyerPlan": false,
+ "isDefaultSellerPlan": false,
+ "sharedActionPlanId": 4333,
+ "delaySmsMinutes": 0,
+ "number": "",
+ "sendToAll": false,
+ "sharedToAccount": true,
+ "isUsed": false,
+ "categories": [
+  {
+   "id": 4,
+   "name": "KTS Action Plans"
+  }
+ ],
+ "contactsRunningCount": 0,
+ "leadFlowIds": [],
+ "initialTextMessageEnabled": false,
+ "initialTextMessage": null,
+ "stepCount": 1,
+ "steps": [
+  {
+   "id": 663,
+   "action": "createTask",
+   "position": 1,
+   "runAfterDays": 0,
+   "tags": [],
+   "collaborators": [],
+   "taskName": "Add buyer, seller, or buyer/seller or other conditional tag for automation - see cheat sheet",
+   "taskType": "Follow Up",
+   "stageId": null,
+   "assignedUserId": -1,
+   "emailTemplateId": null,
+   "stopActionPlanId": null,
+   "noteDesc": null,
+   "noteNotifiers": null
+  }
+ ],
+ "emailTemplates": [
+  {
+   "id": 677,
+   "name": "BL-01 Your Bend search is set up"
+  },
+  {
+   "id": 678,
+   "name": "BL-02 Two things that move buyers ahead"
+  },
+  {
+   "id": 679,
+   "name": "BL-03 What to know about your top areas"
+  },
+  {
+   "id": 680,
+   "name": "BL-04 What's moving in your budget range"
+  },
+  {
+   "id": 681,
+   "name": "BL-05 Are your search areas still right"
+  },
+  {
+   "id": 720,
+   "name": "BL-06 Sticking with you for the long game"
+  },
+  {
+   "id": 682,
+   "name": "BL-S1 Buyer SMS Confirmation"
+  },
+  {
+   "id": 683,
+   "name": "BL-S2 Buyer SMS Check-in"
+  },
+  {
+   "id": 686,
+   "name": "EXP-1 Expired Five reasons listings stall"
+  },
+  {
+   "id": 687,
+   "name": "EXP-2 Expired Whats closing in your neighborhood"
+  },
+  {
+   "id": 688,
+   "name": "EXP-3 Expired Personal letter intro (under 750K)"
+  },
+  {
+   "id": 689,
+   "name": "EXP-4 Expired Whenever youre ready"
+  },
+  {
+   "id": 690,
+   "name": "EXP-5 Expired Mid-quarter market read"
+  },
+  {
+   "id": 691,
+   "name": "EXP-7 Expired Moving to quarterly list"
+  },
+  {
+   "id": 692,
+   "name": "FSBO-1 Five things FSBOs in Bend miss"
+  },
+  {
+   "id": 693,
+   "name": "FSBO-2 Comps from your area"
+  },
+  {
+   "id": 694,
+   "name": "FSBO-3 Personal letter intro (under 750K)"
+  },
+  {
+   "id": 695,
+   "name": "FSBO-4 Quick check on the FSBO"
+  },
+  {
+   "id": 696,
+   "name": "FSBO-5 Mid-quarter market"
+  },
+  {
+   "id": 697,
+   "name": "FSBO-7 Moving to quarterly list"
+  },
+  {
+   "id": 702,
+   "name": "NHD-01 Neighborhood January"
+  },
+  {
+   "id": 703,
+   "name": "NHD-02 Neighborhood February"
+  },
+  {
+   "id": 704,
+   "name": "NHD-03 Neighborhood March"
+  },
+  {
+   "id": 705,
+   "name": "NHD-04 Neighborhood April"
+  },
+  {
+   "id": 706,
+   "name": "NHD-05 Neighborhood May"
+  },
+  {
+   "id": 707,
+   "name": "NHD-06 Neighborhood June"
+  },
+  {
+   "id": 708,
+   "name": "NHD-07 Neighborhood July"
+  },
+  {
+   "id": 709,
+   "name": "NHD-08 Neighborhood August"
+  },
+  {
+   "id": 710,
+   "name": "NHD-09 Neighborhood September"
+  },
+  {
+   "id": 711,
+   "name": "NHD-10 Neighborhood October"
+  },
+  {
+   "id": 712,
+   "name": "NHD-11 Neighborhood November"
+  },
+  {
+   "id": 713,
+   "name": "NHD-12 Neighborhood December year-end"
+  },
+  {
+   "id": 698,
+   "name": "OOS-1 Where the Bend market sits Q1"
+  },
+  {
+   "id": 699,
+   "name": "OOS-2 Resort and STR performance Q2"
+  },
+  {
+   "id": 700,
+   "name": "OOS-3 Equity and tax Q3"
+  },
+  {
+   "id": 701,
+   "name": "OOS-4 Year-end and next year Q4"
+  },
+  {
+   "id": 672,
+   "name": "SL-01 Seller LP Confirmation"
+  },
+  {
+   "id": 673,
+   "name": "SL-02 A few thoughts"
+  },
+  {
+   "id": 674,
+   "name": "SL-03 What's happening in %customNeighborhood%"
+  },
+  {
+   "id": 675,
+   "name": "SL-04 Three questions before you list"
+  },
+  {
+   "id": 676,
+   "name": "SL-05 Still thinking about selling"
+  },
+  {
+   "id": 684,
+   "name": "SL-S1 Seller SMS Confirmation"
+  },
+  {
+   "id": 685,
+   "name": "SL-S2 Seller SMS Check-in"
+  },
+  {
+   "id": 714,
+   "name": "SPH-1 Sphere January"
+  },
+  {
+   "id": 715,
+   "name": "SPH-2 Sphere March"
+  },
+  {
+   "id": 716,
+   "name": "SPH-3 Sphere May"
+  },
+  {
+   "id": 717,
+   "name": "SPH-4 Sphere July"
+  },
+  {
+   "id": 718,
+   "name": "SPH-5 Sphere September"
+  },
+  {
+   "id": 719,
+   "name": "SPH-6 Sphere November"
+  },
+  {
+   "id": 633,
+   "name": "zzzArchived Ryan Realty - Expired 1"
+  },
+  {
+   "id": 634,
+   "name": "zzzArchived Ryan Realty - Expired 2"
+  },
+  {
+   "id": 635,
+   "name": "zzzArchived Ryan Realty - Expired 3"
+  },
+  {
+   "id": 636,
+   "name": "zzzArchived Ryan Realty - Expired 4"
+  },
+  {
+   "id": 637,
+   "name": "zzzArchived Ryan Realty - Expired 5"
+  },
+  {
+   "id": 643,
+   "name": "zzzArchived Ryan Realty - Nurture Contact 1"
+  },
+  {
+   "id": 652,
+   "name": "zzzArchived Ryan Realty - Nurture Contact 10"
+  },
+  {
+   "id": 653,
+   "name": "zzzArchived Ryan Realty - Nurture Contact 11"
+  },
+  {
+   "id": 654,
+   "name": "zzzArchived Ryan Realty - Nurture Contact 12"
+  },
+  {
+   "id": 644,
+   "name": "zzzArchived Ryan Realty - Nurture Contact 2"
+  },
+  {
+   "id": 645,
+   "name": "zzzArchived Ryan Realty - Nurture Contact 3"
+  },
+  {
+   "id": 646,
+   "name": "zzzArchived Ryan Realty - Nurture Contact 4"
+  },
+  {
+   "id": 647,
+   "name": "zzzArchived Ryan Realty - Nurture Contact 5"
+  },
+  {
+   "id": 648,
+   "name": "zzzArchived Ryan Realty - Nurture Contact 6"
+  },
+  {
+   "id": 649,
+   "name": "zzzArchived Ryan Realty - Nurture Contact 7"
+  },
+  {
+   "id": 650,
+   "name": "zzzArchived Ryan Realty - Nurture Contact 8"
+  },
+  {
+   "id": 651,
+   "name": "zzzArchived Ryan Realty - Nurture Contact 9"
+  },
+  {
+   "id": 638,
+   "name": "zzzArchived Ryan Realty - Remote Home Sale 1"
+  },
+  {
+   "id": 660,
+   "name": "zzzArchived Ryan Realty - Remote Home Sale 10"
+  },
+  {
+   "id": 639,
+   "name": "zzzArchived Ryan Realty - Remote Home Sale 2"
+  },
+  {
+   "id": 640,
+   "name": "zzzArchived Ryan Realty - Remote Home Sale 3"
+  },
+  {
+   "id": 641,
+   "name": "zzzArchived Ryan Realty - Remote Home Sale 4"
+  },
+  {
+   "id": 642,
+   "name": "zzzArchived Ryan Realty - Remote Home Sale 5"
+  },
+  {
+   "id": 656,
+   "name": "zzzArchived Ryan Realty - Remote Home Sale 6"
+  },
+  {
+   "id": 657,
+   "name": "zzzArchived Ryan Realty - Remote Home Sale 7"
+  },
+  {
+   "id": 658,
+   "name": "zzzArchived Ryan Realty - Remote Home Sale 8"
+  },
+  {
+   "id": 659,
+   "name": "zzzArchived Ryan Realty - Remote Home Sale 9"
+  }
+ ],
+ "stages": [
+  {
+   "id": 2,
+   "name": "Lead"
+  },
+  {
+   "id": 8,
+   "name": "Closed"
+  },
+  {
+   "id": 11,
+   "name": "Trash"
+  },
+  {
+   "id": 13,
+   "name": "Nurture"
+  },
+  {
+   "id": 14,
+   "name": "Pending"
+  },
+  {
+   "id": 15,
+   "name": "Past Client"
+  },
+  {
+   "id": 16,
+   "name": "Sphere"
+  },
+  {
+   "id": 17,
+   "name": "Active Client"
+  },
+  {
+   "id": 40,
+   "name": "A - Hot 1-3 Months"
+  },
+  {
+   "id": 41,
+   "name": "B - Warm 3-6 Months"
+  },
+  {
+   "id": 42,
+   "name": "C - Cold 6+ Months"
+  },
+  {
+   "id": 43,
+   "name": "Renter - future buyer"
+  },
+  {
+   "id": 44,
+   "name": "Archive"
+  },
+  {
+   "id": 45,
+   "name": "Real Estate Agent"
+  },
+  {
+   "id": 46,
+   "name": "Vendor"
+  },
+  {
+   "id": 50,
+   "name": "Seller Prospect"
+  }
+ ],
+ "canBeShared": false,
+ "updateAvailable": false,
+ "sharedBy": "Kee Technology",
+ "sharedCategoryId": 18
+}

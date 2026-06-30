@@ -1,0 +1,134 @@
+[
+ {
+  "id": 3,
+  "created": "2025-06-30T15:04:22Z",
+  "updated": "2026-01-22T00:58:13Z",
+  "name": "Paul Stevenson",
+  "firstName": "Paul",
+  "lastName": "Stevenson",
+  "email": "paul@ryan-realty.com",
+  "phone": "5419776841",
+  "role": "Agent",
+  "status": "Active",
+  "timezone": "America/Los_Angeles",
+  "beta": true,
+  "picture": {
+   "original": "https://s.followupboss.com/public_attachments/458cd9ba-3097-4f28-890e-04e384a5ae2b.jpg",
+   "162x162": "https://s.followupboss.com/pictures/34cf9fe0-6762-42aa-a873-ce0180d8ea2e.jpg",
+   "60x60": "https://s.followupboss.com/pictures/2d5406cf-8469-40d0-8057-e293192896a8.jpg",
+   "40x40": "https://s.followupboss.com/pictures/61608539-6aaf-4237-abfb-b5d86f06d66b.jpg",
+   "30x30": "https://s.followupboss.com/pictures/98485933-8eeb-4b97-9175-3f3426597b0e.jpg",
+   "26x26": "https://s.followupboss.com/pictures/a6153f0e-1a7b-4992-91cd-1afe086d5aa7.jpg"
+  },
+  "pauseLeadDistribution": false,
+  "lastSeenIos": "2026-03-06T14:00:24Z",
+  "lastSeenAndroid": null,
+  "lastSeenFub2": "2026-01-23T05:01:38Z",
+  "canExport": false,
+  "canCreateApiKeys": true,
+  "acceptedShowingtimeConsent": false,
+  "acceptedShowingtimeConsentV2": false,
+  "fuid": "fau_iIyy3XJxqI5",
+  "isOwner": false,
+  "groups": [],
+  "leadEmailAddress": "ryan.realty1@followupboss.me",
+  "mlsMemberships": []
+ },
+ {
+  "id": 2,
+  "created": "2025-06-30T15:04:21Z",
+  "updated": "2026-02-26T18:34:56Z",
+  "name": "Rebecca Peterson",
+  "firstName": "Rebecca",
+  "lastName": "Peterson",
+  "email": "rebeccapeterson@ryan-realty.com",
+  "phone": "4153089087",
+  "role": "Broker",
+  "status": "Active",
+  "timezone": "America/Los_Angeles",
+  "beta": true,
+  "picture": {
+   "original": "https://s.followupboss.com/public_attachments/9eb0582c-0b0d-4dec-9ab4-c4e82acb76fb.jpeg",
+   "162x162": "https://s.followupboss.com/pictures/fa802045-2488-4d10-93a0-2328567946d9.jpeg",
+   "60x60": "https://s.followupboss.com/pictures/58239de5-bab3-4cf7-89d7-8ebc84bf4c17.jpeg",
+   "40x40": "https://s.followupboss.com/pictures/9b550244-db75-4cb0-8a8c-c3b9f3287e3c.jpeg",
+   "30x30": "https://s.followupboss.com/pictures/1c7a8b4a-f484-47ff-877a-db4dcdc1e576.jpeg",
+   "26x26": "https://s.followupboss.com/pictures/b9cf7c9d-0fe8-4591-a5f5-f8a0da067fc4.jpeg"
+  },
+  "pauseLeadDistribution": false,
+  "lastSeenIos": "2026-06-15T08:22:48Z",
+  "lastSeenAndroid": null,
+  "lastSeenFub2": "2026-02-26T18:35:32Z",
+  "canExport": false,
+  "canCreateApiKeys": true,
+  "acceptedShowingtimeConsent": false,
+  "acceptedShowingtimeConsentV2": false,
+  "fuid": "fau_fw22xv4OrB0",
+  "isOwner": false,
+  "groups": [
+   {
+    "id": 1,
+    "name": "Team Ryan"
+   },
+   {
+    "id": 2,
+    "name": "Seller Leads"
+   }
+  ],
+  "leadEmailAddress": "rebecca.peterson1@followupboss.me",
+  "mlsMemberships": []
+ },
+ {
+  "id": 1,
+  "created": "2025-06-30T14:50:43Z",
+  "updated": "2026-06-30T13:23:54Z",
+  "name": "Matt Ryan",
+  "firstName": "Matt",
+  "lastName": "Ryan",
+  "email": "matt@ryan-realty.com",
+  "phone": "5412136706",
+  "role": "Broker",
+  "status": "Active",
+  "timezone": "America/Los_Angeles",
+  "beta": true,
+  "picture": {
+   "original": "https://s.followupboss.com/public_attachments/2ab864eb-191e-4729-a55e-c584e9e32429.jpg",
+   "162x162": "https://s.followupboss.com/pictures/beef5f9c-b467-44ad-97c9-53b20c39e517.jpg",
+   "60x60": "https://s.followupboss.com/pictures/584f10f0-8510-42e1-94bd-26ca875c0f08.jpg",
+   "40x40": "https://s.followupboss.com/pictures/f7044b08-d8f7-4e5e-8c3c-44f1cf1dc750.jpg",
+   "30x30": "https://s.followupboss.com/pictures/6d2e7d47-7387-4cd5-a5a4-c42a4be783e6.jpg",
+   "26x26": "https://s.followupboss.com/pictures/6dde8fee-f4bf-41a9-95c5-cc689f232c95.jpg"
+  },
+  "pauseLeadDistribution": false,
+  "lastSeenIos": "2026-06-30T21:12:58Z",
+  "lastSeenAndroid": null,
+  "lastSeenFub2": "2026-06-30T15:08:44Z",
+  "canExport": true,
+  "canCreateApiKeys": true,
+  "acceptedShowingtimeConsent": false,
+  "acceptedShowingtimeConsentV2": false,
+  "fuid": "fau_rOMMtaylX9k",
+  "isOwner": true,
+  "groups": [
+   {
+    "id": 1,
+    "name": "Team Ryan"
+   },
+   {
+    "id": 2,
+    "name": "Seller Leads"
+   }
+  ],
+  "leadEmailAddress": "ryan.realty@followupboss.me",
+  "mlsMemberships": [
+   {
+    "id": 7333,
+    "ouid": "T00000038",
+    "mlsMemberId": "c10676",
+    "status": "verified",
+    "mlsName": null,
+    "mlsLogoUrl": null
+   }
+  ]
+ }
+]

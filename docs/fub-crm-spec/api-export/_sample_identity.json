@@ -1,0 +1,21 @@
+{
+ "account": {
+  "id": 1980916597,
+  "domain": "ryan-realty",
+  "name": "Ryan Realty",
+  "owner": {
+   "name": "Matt Ryan",
+   "email": "matt@ryan-realty.com"
+  }
+ },
+ "user": {
+  "id": 1,
+  "name": "Matt Ryan",
+  "email": "matt@ryan-realty.com",
+  "fuid": "fau_rOMMtaylX9k",
+  "role": "Broker",
+  "isOwner": true,
+  "isAdmin": true,
+  "isLender": false
+ }
+}

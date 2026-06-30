@@ -1,0 +1,496 @@
+{
+ "_metadata": {
+  "collection": "deals",
+  "offset": 0,
+  "limit": 10,
+  "total": 20,
+  "next": "eyJzaW5jZUlkIjoxM30",
+  "nextLink": "https://api.followupboss.com/v1/deals?limit=10&next=eyJzaW5jZUlkIjoxM30"
+ },
+ "deals": [
+  {
+   "id": 22,
+   "name": "61260 Sunflower Ln",
+   "type": 0,
+   "status": "Active",
+   "price": 500000,
+   "createdAt": "2026-02-05T17:32:35Z",
+   "orderWeight": null,
+   "description": "",
+   "projectedCloseDate": "2026-02-26T08:00:00Z",
+   "pipelineId": 1,
+   "pipelineName": "Buyers",
+   "stageId": 39,
+   "stageName": "Lost",
+   "enteredStageAt": "2026-02-26T18:09:46Z",
+   "commissionValue": 0,
+   "agentCommission": 0,
+   "teamCommission": 0,
+   "timeToClose": 38,
+   "earnestMoneyDueDate": "2026-02-11T08:00:00Z",
+   "mutualAcceptanceDate": null,
+   "dueDiligenceDate": null,
+   "finalWalkThroughDate": null,
+   "possessionDate": null,
+   "customListPrice": null,
+   "people": [
+    {
+     "id": 21800,
+     "name": "Niki Checketts",
+     "avatar": ""
+    }
+   ],
+   "users": [
+    {
+     "id": 2,
+     "name": "Rebecca Peterson",
+     "picture": {
+      "original": "https://s.followupboss.com/public_attachments/9eb0582c-0b0d-4dec-9ab4-c4e82acb76fb.jpeg",
+      "162x162": "https://s.followupboss.com/pictures/fa802045-2488-4d10-93a0-2328567946d9.jpeg",
+      "60x60": "https://s.followupboss.com/pictures/58239de5-bab3-4cf7-89d7-8ebc84bf4c17.jpeg",
+      "40x40": "https://s.followupboss.com/pictures/9b550244-db75-4cb0-8a8c-c3b9f3287e3c.jpeg",
+      "30x30": "https://s.followupboss.com/pictures/1c7a8b4a-f484-47ff-877a-db4dcdc1e576.jpeg",
+      "26x26": "https://s.followupboss.com/pictures/b9cf7c9d-0fe8-4591-a5f5-f8a0da067fc4.jpeg"
+     }
+    }
+   ]
+  },
+  {
+   "id": 21,
+   "name": "19571 SW Simpson Ave",
+   "type": 0,
+   "status": "Active",
+   "price": 735000,
+   "createdAt": "2026-02-05T17:23:55Z",
+   "orderWeight": 1000,
+   "description": "",
+   "projectedCloseDate": "2026-03-20T07:00:00Z",
+   "pipelineId": 1,
+   "pipelineName": "Buyers",
+   "stageId": 23,
+   "stageName": "Pending",
+   "enteredStageAt": "2026-02-05T17:23:55Z",
+   "commissionValue": 9187,
+   "agentCommission": 8268,
+   "teamCommission": 0,
+   "timeToClose": 50,
+   "earnestMoneyDueDate": "2026-02-09T08:00:00Z",
+   "mutualAcceptanceDate": "2026-02-04T08:00:00Z",
+   "dueDiligenceDate": "2026-02-18T08:00:00Z",
+   "finalWalkThroughDate": "2026-03-17T07:00:00Z",
+   "possessionDate": "2026-03-20T07:00:00Z",
+   "customListPrice": null,
+   "people": [
+    {
+     "id": 21824,
+     "name": "Todd Maynes",
+     "avatar": ""
+    }
+   ],
+   "users": [
+    {
+     "id": 2,
+     "name": "Rebecca Peterson",
+     "picture": {
+      "original": "https://s.followupboss.com/public_attachments/9eb0582c-0b0d-4dec-9ab4-c4e82acb76fb.jpeg",
+      "162x162": "https://s.followupboss.com/pictures/fa802045-2488-4d10-93a0-2328567946d9.jpeg",
+      "60x60": "https://s.followupboss.com/pictures/58239de5-bab3-4cf7-89d7-8ebc84bf4c17.jpeg",
+      "40x40": "https://s.followupboss.com/pictures/9b550244-db75-4cb0-8a8c-c3b9f3287e3c.jpeg",
+      "30x30": "https://s.followupboss.com/pictures/1c7a8b4a-f484-47ff-877a-db4dcdc1e576.jpeg",
+      "26x26": "https://s.followupboss.com/pictures/b9cf7c9d-0fe8-4591-a5f5-f8a0da067fc4.jpeg"
+     }
+    }
+   ]
+  },
+  {
+   "id": 20,
+   "name": "2680 Nordic Ave",
+   "type": 0,
+   "status": "Active",
+   "price": 1350000,
+   "createdAt": "2025-08-27T15:30:12Z",
+   "orderWeight": null,
+   "description": "",
+   "projectedCloseDate": "2025-10-10T07:00:00Z",
+   "pipelineId": 1,
+   "pipelineName": "Buyers",
+   "stageId": 25,
+   "stageName": "Closed",
+   "enteredStageAt": "2025-10-13T16:13:23Z",
+   "commissionValue": 33750,
+   "agentCommission": 30375,
+   "teamCommission": 0,
+   "timeToClose": 100,
+   "earnestMoneyDueDate": null,
+   "mutualAcceptanceDate": null,
+   "dueDiligenceDate": null,
+   "finalWalkThroughDate": null,
+   "possessionDate": null,
+   "customListPrice": null,
+   "people": [
+    {
+     "id": 8312,
+     "name": "Elsa Uchikawa",
+     "avatar": ""
+    },
+    {
+     "id": 8317,
+     "name": "Saku Uchikawa",
+     "avatar": ""
+    }
+   ],
+   "users": [
+    {
+     "id": 2,
+     "name": "Rebecca Peterson",
+     "picture": {
+      "original": "https://s.followupboss.com/public_attachments/9eb0582c-0b0d-4dec-9ab4-c4e82acb76fb.jpeg",
+      "162x162": "https://s.followupboss.com/pictures/fa802045-2488-4d10-93a0-2328567946d9.jpeg",
+      "60x60": "https://s.followupboss.com/pictures/58239de5-bab3-4cf7-89d7-8ebc84bf4c17.jpeg",
+      "40x40": "https://s.followupboss.com/pictures/9b550244-db75-4cb0-8a8c-c3b9f3287e3c.jpeg",
+      "30x30": "https://s.followupboss.com/pictures/1c7a8b4a-f484-47ff-877a-db4dcdc1e576.jpeg",
+      "26x26": "https://s.followupboss.com/pictures/b9cf7c9d-0fe8-4591-a5f5-f8a0da067fc4.jpeg"
+     }
+    }
+   ]
+  },
+  {
+   "id": 19,
+   "name": "703 SW 7th",
+   "type": 0,
+   "status": "Active",
+   "price": 355000,
+   "createdAt": "2025-08-27T15:05:59Z",
+   "orderWeight": null,
+   "description": "",
+   "projectedCloseDate": "2025-09-30T16:57:53Z",
+   "pipelineId": 1,
+   "pipelineName": "Buyers",
+   "stageId": 25,
+   "stageName": "Closed",
+   "enteredStageAt": "2025-09-30T16:57:53Z",
+   "commissionValue": 8875,
+   "agentCommission": 0,
+   "teamCommission": 0,
+   "timeToClose": 92,
+   "earnestMoneyDueDate": null,
+   "mutualAcceptanceDate": null,
+   "dueDiligenceDate": null,
+   "finalWalkThroughDate": null,
+   "possessionDate": null,
+   "customListPrice": null,
+   "people": [
+    {
+     "id": 8088,
+     "name": "Todd Chester",
+     "avatar": ""
+    }
+   ],
+   "users": [
+    {
+     "id": 1,
+     "name": "Matt Ryan",
+     "picture": {
+      "original": "https://s.followupboss.com/public_attachments/2ab864eb-191e-4729-a55e-c584e9e32429.jpg",
+      "162x162": "https://s.followupboss.com/pictures/beef5f9c-b467-44ad-97c9-53b20c39e517.jpg",
+      "60x60": "https://s.followupboss.com/pictures/584f10f0-8510-42e1-94bd-26ca875c0f08.jpg",
+      "40x40": "https://s.followupboss.com/pictures/f7044b08-d8f7-4e5e-8c3c-44f1cf1dc750.jpg",
+      "30x30": "https://s.followupboss.com/pictures/6d2e7d47-7387-4cd5-a5a4-c42a4be783e6.jpg",
+      "26x26": "https://s.followupboss.com/pictures/6dde8fee-f4bf-41a9-95c5-cc689f232c95.jpg"
+     }
+    }
+   ]
+  },
+  {
+   "id": 18,
+   "name": "61271 Kwinnum Dr",
+   "type": 0,
+   "status": "Active",
+   "price": 750000,
+   "createdAt": "2025-08-27T14:57:47Z",
+   "orderWeight": null,
+   "description": "",
+   "projectedCloseDate": "2025-08-27T14:58:03Z",
+   "pipelineId": 1,
+   "pipelineName": "Buyers",
+   "stageId": 25,
+   "stageName": "Closed",
+   "enteredStageAt": "2025-08-27T14:58:03Z",
+   "commissionValue": 16875,
+   "agentCommission": 15188,
+   "teamCommission": 0,
+   "timeToClose": 56,
+   "earnestMoneyDueDate": null,
+   "mutualAcceptanceDate": null,
+   "dueDiligenceDate": null,
+   "finalWalkThroughDate": null,
+   "possessionDate": null,
+   "customListPrice": null,
+   "people": [
+    {
+     "id": 8332,
+     "name": "Lauren Koehn",
+     "avatar": ""
+    },
+    {
+     "id": 8333,
+     "name": "Kurtis Koehn",
+     "avatar": ""
+    }
+   ],
+   "users": [
+    {
+     "id": 2,
+     "name": "Rebecca Peterson",
+     "picture": {
+      "original": "https://s.followupboss.com/public_attachments/9eb0582c-0b0d-4dec-9ab4-c4e82acb76fb.jpeg",
+      "162x162": "https://s.followupboss.com/pictures/fa802045-2488-4d10-93a0-2328567946d9.jpeg",
+      "60x60": "https://s.followupboss.com/pictures/58239de5-bab3-4cf7-89d7-8ebc84bf4c17.jpeg",
+      "40x40": "https://s.followupboss.com/pictures/9b550244-db75-4cb0-8a8c-c3b9f3287e3c.jpeg",
+      "30x30": "https://s.followupboss.com/pictures/1c7a8b4a-f484-47ff-877a-db4dcdc1e576.jpeg",
+      "26x26": "https://s.followupboss.com/pictures/b9cf7c9d-0fe8-4591-a5f5-f8a0da067fc4.jpeg"
+     }
+    }
+   ]
+  },
+  {
+   "id": 17,
+   "name": "534 Crowson Rd",
+   "type": 0,
+   "status": "Active",
+   "price": 1050000,
+   "createdAt": "2025-08-27T14:49:48Z",
+   "orderWeight": 500,
+   "description": "",
+   "projectedCloseDate": "2025-04-30T07:00:00Z",
+   "pipelineId": 2,
+   "pipelineName": "Sellers",
+   "stageId": 26,
+   "stageName": "Closed",
+   "enteredStageAt": "2025-08-27T14:50:02Z",
+   "commissionValue": 10500,
+   "agentCommission": 10500,
+   "teamCommission": 0,
+   "timeToClose": -61,
+   "earnestMoneyDueDate": null,
+   "mutualAcceptanceDate": null,
+   "dueDiligenceDate": null,
+   "finalWalkThroughDate": null,
+   "possessionDate": null,
+   "customListPrice": null,
+   "people": [
+    {
+     "id": 8079,
+     "name": "Matt Hogge",
+     "avatar": ""
+    },
+    {
+     "id": 8334,
+     "name": "Abby Hogge",
+     "avatar": "https://s.followupboss.com/pictures/57468d1bed59a527bd3a6cf61cdd3829.jpg"
+    }
+   ],
+   "users": [
+    {
+     "id": 1,
+     "name": "Matt Ryan",
+     "picture": {
+      "original": "https://s.followupboss.com/public_attachments/2ab864eb-191e-4729-a55e-c584e9e32429.jpg",
+      "162x162": "https://s.followupboss.com/pictures/beef5f9c-b467-44ad-97c9-53b20c39e517.jpg",
+      "60x60": "https://s.followupboss.com/pictures/584f10f0-8510-42e1-94bd-26ca875c0f08.jpg",
+      "40x40": "https://s.followupboss.com/pictures/f7044b08-d8f7-4e5e-8c3c-44f1cf1dc750.jpg",
+      "30x30": "https://s.followupboss.com/pictures/6d2e7d47-7387-4cd5-a5a4-c42a4be783e6.jpg",
+      "26x26": "https://s.followupboss.com/pictures/6dde8fee-f4bf-41a9-95c5-cc689f232c95.jpg"
+     }
+    }
+   ]
+  },
+  {
+   "id": 16,
+   "name": "2732 NW Ordway",
+   "type": 0,
+   "status": "Active",
+   "price": 880000,
+   "createdAt": "2025-08-27T14:39:42Z",
+   "orderWeight": null,
+   "description": "",
+   "projectedCloseDate": "2025-06-09T07:00:00Z",
+   "pipelineId": 1,
+   "pipelineName": "Buyers",
+   "stageId": 25,
+   "stageName": "Closed",
+   "enteredStageAt": "2025-08-27T14:40:29Z",
+   "commissionValue": 22000,
+   "agentCommission": 22000,
+   "teamCommission": 0,
+   "timeToClose": -23,
+   "earnestMoneyDueDate": null,
+   "mutualAcceptanceDate": null,
+   "dueDiligenceDate": null,
+   "finalWalkThroughDate": null,
+   "possessionDate": null,
+   "customListPrice": null,
+   "people": [
+    {
+     "id": 8315,
+     "name": "Stepen Graham",
+     "avatar": ""
+    }
+   ],
+   "users": [
+    {
+     "id": 1,
+     "name": "Matt Ryan",
+     "picture": {
+      "original": "https://s.followupboss.com/public_attachments/2ab864eb-191e-4729-a55e-c584e9e32429.jpg",
+      "162x162": "https://s.followupboss.com/pictures/beef5f9c-b467-44ad-97c9-53b20c39e517.jpg",
+      "60x60": "https://s.followupboss.com/pictures/584f10f0-8510-42e1-94bd-26ca875c0f08.jpg",
+      "40x40": "https://s.followupboss.com/pictures/f7044b08-d8f7-4e5e-8c3c-44f1cf1dc750.jpg",
+      "30x30": "https://s.followupboss.com/pictures/6d2e7d47-7387-4cd5-a5a4-c42a4be783e6.jpg",
+      "26x26": "https://s.followupboss.com/pictures/6dde8fee-f4bf-41a9-95c5-cc689f232c95.jpg"
+     }
+    }
+   ]
+  },
+  {
+   "id": 15,
+   "name": "54474 Huntington Rd",
+   "type": 0,
+   "status": "Active",
+   "price": 580000,
+   "createdAt": "2025-08-27T14:36:11Z",
+   "orderWeight": 500,
+   "description": "",
+   "projectedCloseDate": "2025-01-08T08:00:00Z",
+   "pipelineId": 2,
+   "pipelineName": "Sellers",
+   "stageId": 26,
+   "stageName": "Closed",
+   "enteredStageAt": "2025-08-27T14:36:20Z",
+   "commissionValue": 10200,
+   "agentCommission": 0,
+   "teamCommission": 0,
+   "timeToClose": -173,
+   "earnestMoneyDueDate": null,
+   "mutualAcceptanceDate": null,
+   "dueDiligenceDate": null,
+   "finalWalkThroughDate": null,
+   "possessionDate": null,
+   "customListPrice": null,
+   "people": [
+    {
+     "id": 8238,
+     "name": "Edward Fess",
+     "avatar": ""
+    },
+    {
+     "id": 8239,
+     "name": "Helen Fess",
+     "avatar": ""
+    }
+   ],
+   "users": [
+    {
+     "id": 1,
+     "name": "Matt Ryan",
+     "picture": {
+      "original": "https://s.followupboss.com/public_attachments/2ab864eb-191e-4729-a55e-c584e9e32429.jpg",
+      "162x162": "https://s.followupboss.com/pictures/beef5f9c-b467-44ad-97c9-53b20c39e517.jpg",
+      "60x60": "https://s.followupboss.com/pictures/584f10f0-8510-42e1-94bd-26ca875c0f08.jpg",
+      "40x40": "https://s.followupboss.com/pictures/f7044b08-d8f7-4e5e-8c3c-44f1cf1dc750.jpg",
+      "30x30": "https://s.followupboss.com/pictures/6d2e7d47-7387-4cd5-a5a4-c42a4be783e6.jpg",
+      "26x26": "https://s.followupboss.com/pictures/6dde8fee-f4bf-41a9-95c5-cc689f232c95.jpg"
+     }
+    }
+   ]
+  },
+  {
+   "id": 14,
+   "name": "1050 NE Butler Market #2",
+   "type": 0,
+   "status": "Active",
+   "price": 299000,
+   "createdAt": "2025-08-27T14:30:23Z",
+   "orderWeight": 500,
+   "description": "Cash Deal",
+   "projectedCloseDate": "2025-06-13T07:00:00Z",
+   "pipelineId": 2,
+   "pipelineName": "Sellers",
+   "stageId": 26,
+   "stageName": "Closed",
+   "enteredStageAt": "2025-08-27T14:30:33Z",
+   "commissionValue": 1000,
+   "agentCommission": 0,
+   "teamCommission": 0,
+   "timeToClose": -17,
+   "earnestMoneyDueDate": null,
+   "mutualAcceptanceDate": null,
+   "dueDiligenceDate": null,
+   "finalWalkThroughDate": null,
+   "possessionDate": null,
+   "customListPrice": null,
+   "people": [
+    {
+     "id": 8088,
+     "name": "Todd Chester",
+     "avatar": ""
+    }
+   ],
+   "users": [
+    {
+     "id": 1,
+     "name": "Matt Ryan",
+     "picture": {
+      "original": "https://s.followupboss.com/public_attachments/2ab864eb-191e-4729-a55e-c584e9e32429.jpg",
+      "162x162": "https://s.followupboss.com/pictures/beef5f9c-b467-44ad-97c9-53b20c39e517.jpg",
+      "60x60": "https://s.followupboss.com/pictures/584f10f0-8510-42e1-94bd-26ca875c0f08.jpg",
+      "40x40": "https://s.followupboss.com/pictures/f7044b08-d8f7-4e5e-8c3c-44f1cf1dc750.jpg",
+      "30x30": "https://s.followupboss.com/pictures/6d2e7d47-7387-4cd5-a5a4-c42a4be783e6.jpg",
+      "26x26": "https://s.followupboss.com/pictures/6dde8fee-f4bf-41a9-95c5-cc689f232c95.jpg"
+     }
+    }
+   ]
+  },
+  {
+   "id": 13,
+   "name": "64350 Old Bend Redmond Hwy",
+   "type": 0,
+   "status": "Active",
+   "price": 1030000,
+   "createdAt": "2025-08-06T12:16:08Z",
+   "orderWeight": 2000,
+   "description": "",
+   "projectedCloseDate": "2025-09-25T07:00:00Z",
+   "pipelineId": 2,
+   "pipelineName": "Sellers",
+   "stageId": 26,
+   "stageName": "Closed",
+   "enteredStageAt": "2025-09-30T16:58:16Z",
+   "commissionValue": 25875,
+   "agentCommission": 25000,
+   "teamCommission": 0,
+   "timeToClose": 50,
+   "earnestMoneyDueDate": null,
+   "mutualAcceptanceDate": null,
+   "dueDiligenceDate": null,
+   "finalWalkThroughDate": null,
+   "possessionDate": null,
+   "customListPrice": null,
+   "people": [],
+   "users": [
+    {
+     "id": 1,
+     "name": "Matt Ryan",
+     "picture": {
+      "original": "https://s.followupboss.com/public_attachments/2ab864eb-191e-4729-a55e-c584e9e32429.jpg",
+      "162x162": "https://s.followupboss.com/pictures/beef5f9c-b467-44ad-97c9-53b20c39e517.jpg",
+      "60x60": "https://s.followupboss.com/pictures/584f10f0-8510-42e1-94bd-26ca875c0f08.jpg",
+      "40x40": "https://s.followupboss.com/pictures/f7044b08-d8f7-4e5e-8c3c-44f1cf1dc750.jpg",
+      "30x30": "https://s.followupboss.com/pictures/6d2e7d47-7387-4cd5-a5a4-c42a4be783e6.jpg",
+      "26x26": "https://s.followupboss.com/pictures/6dde8fee-f4bf-41a9-95c5-cc689f232c95.jpg"
+     }
+    }
+   ]
+  }
+ ]
+}

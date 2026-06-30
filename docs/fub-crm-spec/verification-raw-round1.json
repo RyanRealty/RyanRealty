@@ -1,0 +1,134 @@
+{
+"tally": {
+"total": 57,
+"VERIFIED": 45,
+"WRONG": 10,
+"UNVERIFIABLE": 2,
+"byTier": {
+"A_screenshot": {
+"VERIFIED": 31,
+"WRONG": 2,
+"UNVERIFIABLE": 1
+},
+"B_docs": {
+"VERIFIED": 8,
+"WRONG": 3,
+"UNVERIFIABLE": 1
+},
+"C_code": {
+"VERIFIED": 6,
+"WRONG": 5,
+"UNVERIFIABLE": 0
+}
+}
+},
+"verifiedRate": 79,
+"wrongs": [
+{
+"id": 8,
+"tier": "A_screenshot",
+"section": "14-admin-config-stages-tags-fields-leadflow.md",
+"claim": "The Admin Overview hub has exactly 21 cards in 5 sections: Lead Distribution (3), Follow Up (4), Account (8), Integrations (2), Customize (4)",
+"correct": "21 cards in 5 sections: Lead Distribution (3), Follow Up (4), Account (6), Integrations (4), Customize (4)",
+"severity": "material",
+"evidence": "shot-33_full.png and all four quadrant images show the Admin Overview hub with 21 cards across 5 sections, but the per-section breakdown differs from the claim. Account section contains exactly 6 cards (Business Registration, Team, Import, Phone Numbers, Company, Email Domain Authentication) \u2014 not 8. Integrations section contains exactly 4 cards (API Keys & Lead Email, Pixel, IDX Integrations, All Integrations) \u2014 not 2. Lead Distribution (3), Follow Up (4), and Customize (4) are correct. Actual distribution: Lead Distribution(3) + Follow Up(4) + Account(6) + Integrations(4) + Customize(4) = 21."
+},
+{
+"id": 20,
+"tier": "A_screenshot",
+"section": "25-mobile-contact-detail.md",
+"claim": "Phone row SMS action button is a 40 pt circle with background color #7b7ec8 (purple); Call action button is a 40 pt circle with background color #3dc896 (green)",
+"correct": "SMS button: #7595e8 (blue-lavender/periwinkle); Call button: #4ad09f (teal-green/mint)",
+"severity": "minor",
+"evidence": "Pixel sampling of mob-02_t.png (the top band showing the phone row clearly at high resolution) reveals:\n\nSMS (message) button dominant fill color: #7595e8 \u2014 a bright blue-lavender (R=117, G=149, B=232), confirmed across 4,370 pixels in the button zone. The spec claims #7b7ec8 (R=123, G=126, B=200), a more muted, red-leaning purple. The green channel diverges by 23 units and the blue channel by 32 units \u2014 a clearly different hue.\n\nCall button dominant fill color: #4ad09f \u2014 a teal-green/mint (R=74, G=208, B=159), confirmed solid across the entire 5\u00d75 center sample. The spec claims #3dc896 (R=61, G=200, B=150) \u2014 the same teal-green family but measurably lighter and more saturated in the actual screenshot (R off by 13, G off by 8, B off by 9).\n\nBoth circles are present and do appear to be ~40pt in diameter, and the hues (purple-ish for SMS, green for Call) are directionally correct \u2014 but both specific hex values are wrong."
+},
+{
+"id": 26,
+"tier": "B_docs",
+"section": "13-email-and-text-templates.md",
+"claim": "Max automated emails per contact per day: 4 (hard platform limit regardless of how many action plans are enrolled simultaneously; excess queued to next day)",
+"correct": "Max automated emails per contact per day: 4 (hard platform limit). Excess emails FAIL TO SEND permanently \u2014 they are not queued to the next day. Error returned: \"This person has already received the maximum amount of automated emails today.\"",
+"severity": "material",
+"evidence": "The FUB help article \"Why did my action plan email fail to send?\" (help.followupboss.com/hc/en-us/articles/4402377886743) confirms the 4-email-per-contact-per-day hard limit is real, but directly contradicts what happens to excess emails. The page states verbatim: \"If a person receives more than 4 emails sent by action plans in one day, those emails will fail to send with the following message: 'This person has already received the maximum amount of automated emails today.'\" Excess emails are DROPPED (fail to send), not queued to the next day. There is no automatic retry or queue-to-tomorrow behavior described anywhere in the documentation."
+},
+{
+"id": 33,
+"tier": "B_docs",
+"section": "18-integrations-pixel-and-api.md",
+"claim": "Webhook limit: 2 webhooks per event type per account; webhook endpoint must respond within 10 seconds with a 2XX status; retry schedule on failure: 1 min \u2192 5 min \u2192 5 min \u2192 10 min \u2192 30 min; webhooks auto-disabled after >50% failure over 48 hours that do not recover within 1 week",
+"correct": "2 webhooks per event per system (registered API integration), not per account. A single FUB account with multiple registered systems can have more than 2 webhooks per event type in total (2 per system \u00d7 N systems).",
+"severity": "material",
+"evidence": "The FUB webhooks-guide page (docs.followupboss.com/reference/webhooks-guide) states verbatim: \"There is a limit of two web hooks per event per system which can be registered.\" The word \"system\" refers to a registered API integration/client, not the FUB account as a whole. Multiple integrations on the same account can each register up to 2 webhooks per event type independently. The spec says \"per account,\" which would incorrectly imply a hard global cap of 2 per event type across all integrations on the account. The remaining sub-claims are all exactly confirmed: 10-second response timeout with 2XX status, retry schedule 1 min \u2192 5 min \u2192 5 min \u2192 10 min \u2192 30 min, and auto-disable after >50% failure over 48 hours if not recovered within 1 week."
+},
+{
+"id": 35,
+"tier": "B_docs",
+"section": "19-billing-and-subscription.md",
+"claim": "Grow plan per-seat annual price: $828/yr per user (observed live on Ryan Realty account); Calling add-on on Grow plan: $39/user/month per enabled user; Calling add-on free trial: 14 days, up to 20 users per account, available once every 6 months",
+"correct": "Grow plan annual billing price: $58/month billed annually = $696/yr per user. The $828/yr figure is the monthly billing rate ($69/mo) annualized \u2014 not the annual plan rate. Calling add-on on monthly billing: $39/user/month; on annual billing: $33/user/month. Trial terms are correct: 14 days, up to 20 users, once every 6 months.",
+"severity": "minor",
+"evidence": "The followupboss.com/pricing page shows the Grow plan at $69/month (monthly billing) or $58/month billed annually. The \"annual price\" (annual billing plan) is $58 \u00d7 12 = $696/yr per user \u2014 NOT $828/yr. The $828/yr figure equals $69 \u00d7 12 (monthly rate annualized), which is what Ryan Realty would pay per year if on a monthly billing plan, not the annual plan price. The calling add-on at $39/user/month is confirmed for monthly billing (annual billing rate is $33/user/month per the pricing page). The trial terms are fully verified: 14 days, up to 20 users per account, available once every 6 months (confirmed verbatim by the FUB help article \"How can I try the FUB Calling for free?\")."
+},
+{
+"id": 38,
+"tier": "C_code",
+"section": "21-gap-map-vs-inhouse-crm.md",
+"claim": "`crm_saved_views` table has columns: id, name, description, filter, sort, ast, is_shared, is_protected, owner, owner_email",
+"correct": "id, name, description, filter, sort, shared, owner, position, created_at, ast, owner_email, is_shared, is_protected, updated_at",
+"severity": "material",
+"evidence": "docs/DATABASE_SCHEMA_SNAPSHOT.md lines 1708-1725 show crm_saved_views has 14 columns: id, name, description, filter, sort, shared, owner, position, created_at, ast, owner_email, is_shared, is_protected, updated_at. The spec lists only 10 and omits four real columns: `shared` (boolean, default true \u2014 distinct from `is_shared`), `position` (integer, default 0), `created_at` (timestamptz), and `updated_at` (timestamptz)."
+},
+{
+"id": 41,
+"tier": "C_code",
+"section": "21-gap-map-vs-inhouse-crm.md",
+"claim": "`crm-sequence-engine` cron runs every 5 minutes and `crm-auto-enroll` cron runs every 10 minutes",
+"correct": "Both crm-sequence-engine and crm-auto-enroll run every 15 minutes (not 5 and 10 minutes respectively)",
+"severity": "material",
+"evidence": "vercel.json shows: crm-sequence-engine schedule = \"13,28,43,58 * * * *\" (every 15 minutes, not 5); crm-auto-enroll schedule = \"4,19,34,49 * * * *\" (every 15 minutes, not 10). The crm-auto-enroll route.ts file also documents \"Every 15 min\" in its opening comment (line 7). Both claimed intervals are wrong."
+},
+{
+"id": 43,
+"tier": "C_code",
+"section": "21-gap-map-vs-inhouse-crm.md",
+"claim": "`crm_broker_alerts` table has columns: id, broker, to_phone, body, person_id, status, channel, sent_at, error, attempts",
+"correct": "id, created_at, broker, to_phone, body, person_id, status, channel, sent_at, error, attempts",
+"severity": "minor",
+"evidence": "docs/DATABASE_SCHEMA_SNAPSHOT.md lines 1429-1443 show `crm_broker_alerts` has 11 columns: id, created_at, broker, to_phone, body, person_id, status, channel, sent_at, error, attempts. The claim lists only 10, omitting `created_at` (timestamp with time zone, not nullable, default now()) which is the second column after `id`."
+},
+{
+"id": 45,
+"tier": "C_code",
+"section": "21-gap-map-vs-inhouse-crm.md",
+"claim": "`crm-gmail-sync` cron runs every 15 minutes and handles two-way email sync for matt@, rebeccapeterson@, and paul@ryan-realty.com",
+"correct": "The cron is one-way ingest (Gmail \u2192 CRM timeline). Two-way email capability (send from CRM) is provided by `sendCrmEmail()` in lib/crm/gmail.ts, invoked from a separate endpoint, not this cron.",
+"severity": "minor",
+"evidence": "The route at app/api/cron/crm-gmail-sync/route.ts is one-way ingest only, not two-way. Its GET handler calls only `syncMailboxWindow`, which uses `getGmailFor(mailboxEmail, READONLY)` \u2014 read-only Gmail scope \u2014 and the route header explicitly says \"pulls all three broker mailboxes into the unified timeline.\" The vercel.json schedule `\"9,24,39,54 * * * *\"` (every 15 minutes) and the three mailboxes (matt@ryan-realty.com, rebeccapeterson@ryan-realty.com, paul@ryan-realty.com via CRM_MAILBOXES) are both correct. Only the \"two-way\" characterization is wrong: outbound send (`sendCrmEmail()`) exists in lib/crm/gmail.ts but is a separate function invoked from a different route, not by this cron."
+},
+{
+"id": 47,
+"tier": "C_code",
+"section": "21-gap-map-vs-inhouse-crm.md",
+"claim": "`admin_roles` table (NOT a `crm_*` table) has columns: id, email, role, broker_id, can_export, pause_leads, last_seen_at, last_seen_platform",
+"correct": "id, email, role, broker_id, user_id, created_at, updated_at, can_export, pause_leads, last_seen_at, last_seen_platform",
+"severity": "minor",
+"evidence": "docs/DATABASE_SCHEMA_SNAPSHOT.md lines 815-829 show the `admin_roles` table has 11 columns, not 8. The spec lists: id, email, role, broker_id, can_export, pause_leads, last_seen_at, last_seen_platform. The snapshot additionally shows: `user_id` (uuid, nullable), `created_at` (timestamptz, non-nullable, default now()), and `updated_at` (timestamptz, non-nullable, default now()). The table is correctly identified as non-crm_* named. All 8 listed columns do exist but the column enumeration is incomplete."
+}
+],
+"unverifiable": [
+{
+"id": 16,
+"tier": "A_screenshot",
+"section": "25-mobile-contact-detail.md",
+"claim": "Contact Detail sub-tab strip renders 6 tabs in order: Info \u00b7 Comms \u00b7 Homes \u00b7 Notes \u00b7 Calendar \u00b7 Auto\u2026 (Automations truncated); strip is horizontally scrollable",
+"severity": "minor"
+},
+{
+"id": 27,
+"tier": "B_docs",
+"section": "13-email-and-text-templates.md",
+"claim": "Scheduled text cap: 50 per 24 hours, team-wide (applies to all schedule-sent texts across the team)",
+"severity": "material"
+}
+]
+}

@@ -1,0 +1,226 @@
+{
+ "_metadata": {
+  "collection": "appointments",
+  "offset": 0,
+  "limit": 5,
+  "total": 7,
+  "next": "eyJzaW5jZUlkIjozfQ",
+  "nextLink": "https://api.followupboss.com/v1/appointments?limit=5&next=eyJzaW5jZUlkIjozfQ"
+ },
+ "appointments": [
+  {
+   "id": 125,
+   "created": "2026-02-04T20:40:33Z",
+   "updated": "2026-02-04T20:40:33Z",
+   "createdById": 2,
+   "updatedById": 2,
+   "title": "Sunflower Offer Expires",
+   "description": "",
+   "start": "2026-02-07T04:00:00Z",
+   "end": "2026-02-07T04:30:00Z",
+   "timezone": "America/Los_Angeles",
+   "allDay": false,
+   "originFub": true,
+   "location": "",
+   "invitees": [
+    {
+     "userId": 2,
+     "personId": null,
+     "relationshipId": null,
+     "name": "Rebecca Peterson",
+     "email": "rebeccapeterson@ryan-realty.com",
+     "picture": {
+      "original": "https://s.followupboss.com/public_attachments/9eb0582c-0b0d-4dec-9ab4-c4e82acb76fb.jpeg",
+      "162x162": "https://s.followupboss.com/pictures/fa802045-2488-4d10-93a0-2328567946d9.jpeg",
+      "60x60": "https://s.followupboss.com/pictures/58239de5-bab3-4cf7-89d7-8ebc84bf4c17.jpeg",
+      "40x40": "https://s.followupboss.com/pictures/9b550244-db75-4cb0-8a8c-c3b9f3287e3c.jpeg",
+      "30x30": "https://s.followupboss.com/pictures/1c7a8b4a-f484-47ff-877a-db4dcdc1e576.jpeg",
+      "26x26": "https://s.followupboss.com/pictures/b9cf7c9d-0fe8-4591-a5f5-f8a0da067fc4.jpeg"
+     }
+    },
+    {
+     "userId": null,
+     "personId": 21800,
+     "relationshipId": null,
+     "name": "Niki Checketts",
+     "email": "niki.checketts@gmail.com"
+    }
+   ],
+   "typeId": null,
+   "outcomeId": null,
+   "isEditable": true,
+   "detailsVisible": true,
+   "type": null,
+   "outcome": null,
+   "isDeletable": true
+  },
+  {
+   "id": 118,
+   "created": "2026-01-16T15:57:45Z",
+   "updated": "2026-01-16T15:57:45Z",
+   "createdById": 3,
+   "updatedById": 3,
+   "title": "seller appt",
+   "description": "",
+   "start": "2026-01-17T19:00:00Z",
+   "end": "2026-01-17T19:30:00Z",
+   "timezone": null,
+   "allDay": false,
+   "originFub": true,
+   "location": "",
+   "invitees": [
+    {
+     "userId": 3,
+     "personId": null,
+     "relationshipId": null,
+     "name": "Paul Stevenson",
+     "email": "paul@ryan-realty.com",
+     "picture": {
+      "original": "https://s.followupboss.com/public_attachments/458cd9ba-3097-4f28-890e-04e384a5ae2b.jpg",
+      "162x162": "https://s.followupboss.com/pictures/34cf9fe0-6762-42aa-a873-ce0180d8ea2e.jpg",
+      "60x60": "https://s.followupboss.com/pictures/2d5406cf-8469-40d0-8057-e293192896a8.jpg",
+      "40x40": "https://s.followupboss.com/pictures/61608539-6aaf-4237-abfb-b5d86f06d66b.jpg",
+      "30x30": "https://s.followupboss.com/pictures/98485933-8eeb-4b97-9175-3f3426597b0e.jpg",
+      "26x26": "https://s.followupboss.com/pictures/a6153f0e-1a7b-4992-91cd-1afe086d5aa7.jpg"
+     }
+    }
+   ],
+   "typeId": 2,
+   "outcomeId": null,
+   "isEditable": true,
+   "detailsVisible": true,
+   "type": "Listing",
+   "outcome": null,
+   "isDeletable": true
+  },
+  {
+   "id": 20,
+   "created": "2025-06-30T15:04:22Z",
+   "updated": "2025-06-30T15:04:22Z",
+   "createdById": 1,
+   "updatedById": 1,
+   "title": "Webinar - Follow Up Boss 20-minute Bootcamp",
+   "description": "https://www.followupboss.com/webinars\n\nJoin our 20-minute training to learn tips, tricks, and best practices on how to get started with Follow Up Boss.\n\nWhat you'll learn:\n- Best daily workflow practices\n- How to get your contacts in one place\n- Best practices for tracking lead follow-up\n- How to engage leads through texting, calling and email\n- How to use Smart Lists to optimize your follow-up\n            ",
+   "start": "2025-07-02T17:00:00Z",
+   "end": "2025-07-02T17:20:00Z",
+   "timezone": null,
+   "allDay": false,
+   "originFub": true,
+   "location": "",
+   "invitees": [
+    {
+     "userId": 3,
+     "personId": null,
+     "relationshipId": null,
+     "name": "Paul Stevenson",
+     "email": "paul@ryan-realty.com",
+     "picture": {
+      "original": "https://s.followupboss.com/public_attachments/458cd9ba-3097-4f28-890e-04e384a5ae2b.jpg",
+      "162x162": "https://s.followupboss.com/pictures/34cf9fe0-6762-42aa-a873-ce0180d8ea2e.jpg",
+      "60x60": "https://s.followupboss.com/pictures/2d5406cf-8469-40d0-8057-e293192896a8.jpg",
+      "40x40": "https://s.followupboss.com/pictures/61608539-6aaf-4237-abfb-b5d86f06d66b.jpg",
+      "30x30": "https://s.followupboss.com/pictures/98485933-8eeb-4b97-9175-3f3426597b0e.jpg",
+      "26x26": "https://s.followupboss.com/pictures/a6153f0e-1a7b-4992-91cd-1afe086d5aa7.jpg"
+     }
+    }
+   ],
+   "typeId": null,
+   "outcomeId": null,
+   "isEditable": true,
+   "detailsVisible": true,
+   "type": null,
+   "outcome": null,
+   "isDeletable": true
+  },
+  {
+   "id": 19,
+   "created": "2025-06-30T15:04:21Z",
+   "updated": "2025-06-30T15:04:21Z",
+   "createdById": 1,
+   "updatedById": 1,
+   "title": "Webinar - Follow Up Boss 20-minute Bootcamp",
+   "description": "https://www.followupboss.com/webinars\n\nJoin our 20-minute training to learn tips, tricks, and best practices on how to get started with Follow Up Boss.\n\nWhat you'll learn:\n- Best daily workflow practices\n- How to get your contacts in one place\n- Best practices for tracking lead follow-up\n- How to engage leads through texting, calling and email\n- How to use Smart Lists to optimize your follow-up\n            ",
+   "start": "2025-07-02T17:00:00Z",
+   "end": "2025-07-02T17:20:00Z",
+   "timezone": null,
+   "allDay": false,
+   "originFub": true,
+   "location": "",
+   "invitees": [
+    {
+     "userId": 2,
+     "personId": null,
+     "relationshipId": null,
+     "name": "Rebecca Peterson",
+     "email": "rebeccapeterson@ryan-realty.com",
+     "picture": {
+      "original": "https://s.followupboss.com/public_attachments/9eb0582c-0b0d-4dec-9ab4-c4e82acb76fb.jpeg",
+      "162x162": "https://s.followupboss.com/pictures/fa802045-2488-4d10-93a0-2328567946d9.jpeg",
+      "60x60": "https://s.followupboss.com/pictures/58239de5-bab3-4cf7-89d7-8ebc84bf4c17.jpeg",
+      "40x40": "https://s.followupboss.com/pictures/9b550244-db75-4cb0-8a8c-c3b9f3287e3c.jpeg",
+      "30x30": "https://s.followupboss.com/pictures/1c7a8b4a-f484-47ff-877a-db4dcdc1e576.jpeg",
+      "26x26": "https://s.followupboss.com/pictures/b9cf7c9d-0fe8-4591-a5f5-f8a0da067fc4.jpeg"
+     }
+    }
+   ],
+   "typeId": null,
+   "outcomeId": null,
+   "isEditable": true,
+   "detailsVisible": true,
+   "type": null,
+   "outcome": null,
+   "isDeletable": true
+  },
+  {
+   "id": 3,
+   "created": "2025-06-30T14:51:16Z",
+   "updated": "2025-06-30T14:51:16Z",
+   "createdById": 1,
+   "updatedById": 1,
+   "title": "Final showing of 412 7th St",
+   "description": "Dan Corkill wants another look at the property.",
+   "start": "2025-06-30T12:00:00Z",
+   "end": "2025-06-30T12:30:00Z",
+   "timezone": "America/Los_Angeles",
+   "allDay": false,
+   "originFub": true,
+   "location": "412 7th St, Brooklyn, NY 11215",
+   "invitees": [
+    {
+     "userId": 1,
+     "personId": null,
+     "relationshipId": null,
+     "name": "Matt Ryan",
+     "email": "matt@ryan-realty.com",
+     "picture": {
+      "original": "https://s.followupboss.com/public_attachments/2ab864eb-191e-4729-a55e-c584e9e32429.jpg",
+      "162x162": "https://s.followupboss.com/pictures/beef5f9c-b467-44ad-97c9-53b20c39e517.jpg",
+      "60x60": "https://s.followupboss.com/pictures/584f10f0-8510-42e1-94bd-26ca875c0f08.jpg",
+      "40x40": "https://s.followupboss.com/pictures/f7044b08-d8f7-4e5e-8c3c-44f1cf1dc750.jpg",
+      "30x30": "https://s.followupboss.com/pictures/6d2e7d47-7387-4cd5-a5a4-c42a4be783e6.jpg",
+      "26x26": "https://s.followupboss.com/pictures/6dde8fee-f4bf-41a9-95c5-cc689f232c95.jpg"
+     }
+    },
+    {
+     "userId": null,
+     "personId": 1,
+     "relationshipId": null,
+     "name": "Dan Corkill",
+     "email": null,
+     "picture": {
+      "small": "https://s.followupboss.com/pictures/dan.gif"
+     }
+    }
+   ],
+   "typeId": null,
+   "outcomeId": null,
+   "externalEventLink": null,
+   "externalCalendarId": null,
+   "isEditable": true,
+   "detailsVisible": true,
+   "type": null,
+   "outcome": null,
+   "isDeletable": true
+  }
+ ]
+}

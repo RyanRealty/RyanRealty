@@ -1,0 +1,98 @@
+[
+ {
+  "id": 12,
+  "created": "2025-06-30T14:51:13Z",
+  "name": "Stay In Touch",
+  "isFub2": false,
+  "description": null,
+  "defaultSmartListId": null
+ },
+ {
+  "id": 11,
+  "created": "2025-06-30T14:51:13Z",
+  "name": "Email Activity",
+  "isFub2": false,
+  "description": null,
+  "defaultSmartListId": null
+ },
+ {
+  "id": 10,
+  "created": "2025-06-30T14:51:13Z",
+  "name": "IDX Activity",
+  "isFub2": false,
+  "description": null,
+  "defaultSmartListId": null
+ },
+ {
+  "id": 9,
+  "created": "2025-06-30T14:51:13Z",
+  "name": "Sphere",
+  "isFub2": false,
+  "description": null,
+  "defaultSmartListId": null
+ },
+ {
+  "id": 8,
+  "created": "2025-06-30T14:51:13Z",
+  "name": "Past Clients",
+  "isFub2": false,
+  "description": null,
+  "defaultSmartListId": null
+ },
+ {
+  "id": 7,
+  "created": "2025-06-30T14:51:13Z",
+  "name": "Closed",
+  "isFub2": false,
+  "description": null,
+  "defaultSmartListId": null
+ },
+ {
+  "id": 6,
+  "created": "2025-06-30T14:51:13Z",
+  "name": "Pending",
+  "isFub2": false,
+  "description": null,
+  "defaultSmartListId": null
+ },
+ {
+  "id": 5,
+  "created": "2025-06-30T14:51:13Z",
+  "name": "Sellers",
+  "isFub2": false,
+  "description": null,
+  "defaultSmartListId": null
+ },
+ {
+  "id": 4,
+  "created": "2025-06-30T14:51:13Z",
+  "name": "Buyers",
+  "isFub2": false,
+  "description": null,
+  "defaultSmartListId": null
+ },
+ {
+  "id": 3,
+  "created": "2025-06-30T14:51:13Z",
+  "name": "Nurture",
+  "isFub2": false,
+  "description": null,
+  "defaultSmartListId": null
+ },
+ {
+  "id": 2,
+  "created": "2025-06-30T14:51:13Z",
+  "name": "Hot Prospects",
+  "isFub2": false,
+  "description": null,
+  "defaultSmartListId": null
+ },
+ {
+  "id": 1,
+  "created": "2025-06-30T14:51:13Z",
+  "name": "Leads",
+  "isFub2": false,
+  "description": null,
+  "defaultSmartListId": null
+ }
+]

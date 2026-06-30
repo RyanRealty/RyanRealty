@@ -1,0 +1,49 @@
+{
+ "tally": {
+  "total": 62,
+  "VERIFIED": 57,
+  "WRONG": 3,
+  "UNVERIFIABLE": 2
+ },
+ "rate": 92,
+ "wrongs": [
+  {
+   "id": 9,
+   "section": "\u00a713.2.4 Template Performance Score",
+   "severity": "minor",
+   "claim": "Template Performance Score uses a 30-day rolling window (not a lifetime aggregate)",
+   "correct": "FUB tracks BOTH a 30-day rolling window (primary benchmark percentile score) AND an all-time lifetime aggregate in parallel \u2014 every column shows both views in real-time. The score is not exclusively 30-day; lifetime data is always present alongside it.",
+   "evidence": "The live FUB help article (https://help.followupboss.com/hc/en-us/articles/4402380231959-Text-Template-Performance-Score) states: \"All columns update in real-time for both the running 30-day and all-time performance for each text template.\" The primary benchmark score does use a 30-day rolling window, but FUB simultaneously exposes an all-time lifetime aggregate alongside it \u2014 the spec's parenthetical \"(not a lifetime aggregate)\" directly contradicts the live documentation."
+  },
+  {
+   "id": 18,
+   "section": "Security / Spam Label Calling Protection",
+   "severity": "minor",
+   "claim": "Spam Label Calling Protection uses the first 15 characters of the legal business name from Business Registration; it is not available for Canadian numbers.",
+   "correct": "Spam Label Calling Protection uses the first 15 characters of the legal business name from Business Registration (confirmed). For Canadian numbers: it is not available for Canadian numbers calling other Canadian numbers, but it CAN be applied when a Canadian account is calling US numbers \u2014 the spec's blanket \"not available for Canadian numbers\" is incorrect.",
+   "evidence": "The live article at https://help.followupboss.com/hc/en-us/articles/31510509488535-Spam-Label-Calling-Protection confirms the 15-character / Business Registration detail exactly. However, the Canadian-number restriction is stated with a material exception the spec omits: \"Spam Label Calling Protection is not available on Canadian numbers. If a Canadian account is calling US numbers, Spam Label Calling Protection can be applied.\" The spec's flat statement \"not available for Canadian numbers\" contradicts this \u2014 a Canadian account calling US numbers IS eligible."
+  },
+  {
+   "id": 48,
+   "section": "\u00a72.5 Total Annual Payment \u2014 Computed from observed values",
+   "severity": "minor",
+   "claim": "Annual discount observed on Ryan Realty's account: $414 (gross $2,484 \u2212 net $2,070), representing approximately 2 months free",
+   "correct": "Annual net for 3 Grow-plan users at published rates: $2,088/year (3 \u00d7 $58 \u00d7 12); annual savings: $396 (not $414). The \"approximately 2 months free\" framing is accurate FUB language, but strictly applied the actual discount is ~1.91 months (FUB rounds the per-user annual rate to $58, not the exact 10/12 \u00d7 $69 = $57.50 that the spec used).",
+   "evidence": "FUB's live pricing page (https://www.followupboss.com/pricing) confirms \"Get 2 Months Free\" on annual billing. Grow Plan: $69/month/user monthly, $58/month/user annual. For 3 users (the only published configuration yielding the spec's $2,484 gross: 3 \u00d7 $69 \u00d7 12), the published annual price is 3 \u00d7 $58 \u00d7 12 = $2,088/year \u2014 not $2,070. Savings = $396, not $414. The spec's $2,070 figure was computed by applying exact 2-months-free math (10/12 \u00d7 $2,484 = $2,070) rather than FUB's published per-user annual rate ($58/user, which rounds up from the strict $57.50). The help center article (https://help.followupboss.com/hc/en-us/articles/4402370662935) does use \"savings of 2 months\" language, so the framing is genuine FUB marketing \u2014 but the dollar amounts are $18 off."
+  }
+ ],
+ "unver": [
+  {
+   "id": 3,
+   "section": "\u00a713.4.5 Text send limits",
+   "severity": "material",
+   "claim": "Scheduled text cap: 50 text messages per 24-hour period, team-wide"
+  },
+  {
+   "id": 25,
+   "section": "\u00a717.3.7 Scheduled text messages / \u00a717.7 Batch Channel-Level Limits Summary Table",
+   "severity": "material",
+   "claim": "The team-wide cap on scheduled text messages is 50 per 24-hour period across all brokers combined."
+  }
+ ]
+}

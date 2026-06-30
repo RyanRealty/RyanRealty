@@ -1,0 +1,98 @@
+[
+ {
+  "id": 2,
+  "name": "Seller Leads",
+  "type": "Agent",
+  "distribution": "round-robin",
+  "defaultUserId": null,
+  "defaultPondId": null,
+  "defaultGroupId": null,
+  "claimWindow": 1800,
+  "hideName": 0,
+  "hideSource": 0,
+  "nextRoundRobinUser": null,
+  "isPrimary": false,
+  "users": [
+   {
+    "id": 1,
+    "name": "Matt Ryan",
+    "firstName": "Matt",
+    "lastName": "Ryan",
+    "role": "Broker",
+    "picture": {
+     "original": "https://s.followupboss.com/public_attachments/2ab864eb-191e-4729-a55e-c584e9e32429.jpg",
+     "162x162": "https://s.followupboss.com/pictures/beef5f9c-b467-44ad-97c9-53b20c39e517.jpg",
+     "60x60": "https://s.followupboss.com/pictures/584f10f0-8510-42e1-94bd-26ca875c0f08.jpg",
+     "40x40": "https://s.followupboss.com/pictures/f7044b08-d8f7-4e5e-8c3c-44f1cf1dc750.jpg",
+     "30x30": "https://s.followupboss.com/pictures/6d2e7d47-7387-4cd5-a5a4-c42a4be783e6.jpg",
+     "26x26": "https://s.followupboss.com/pictures/6dde8fee-f4bf-41a9-95c5-cc689f232c95.jpg"
+    },
+    "pauseLeadDistribution": false
+   },
+   {
+    "id": 2,
+    "name": "Rebecca Peterson",
+    "firstName": "Rebecca",
+    "lastName": "Peterson",
+    "role": "Broker",
+    "picture": {
+     "original": "https://s.followupboss.com/public_attachments/9eb0582c-0b0d-4dec-9ab4-c4e82acb76fb.jpeg",
+     "162x162": "https://s.followupboss.com/pictures/fa802045-2488-4d10-93a0-2328567946d9.jpeg",
+     "60x60": "https://s.followupboss.com/pictures/58239de5-bab3-4cf7-89d7-8ebc84bf4c17.jpeg",
+     "40x40": "https://s.followupboss.com/pictures/9b550244-db75-4cb0-8a8c-c3b9f3287e3c.jpeg",
+     "30x30": "https://s.followupboss.com/pictures/1c7a8b4a-f484-47ff-877a-db4dcdc1e576.jpeg",
+     "26x26": "https://s.followupboss.com/pictures/b9cf7c9d-0fe8-4591-a5f5-f8a0da067fc4.jpeg"
+    },
+    "pauseLeadDistribution": false
+   }
+  ]
+ },
+ {
+  "id": 1,
+  "name": "Team Ryan",
+  "type": "Agent",
+  "distribution": "round-robin",
+  "defaultUserId": null,
+  "defaultPondId": null,
+  "defaultGroupId": null,
+  "claimWindow": 1800,
+  "hideName": 0,
+  "hideSource": 0,
+  "nextRoundRobinUser": null,
+  "isPrimary": true,
+  "users": [
+   {
+    "id": 1,
+    "name": "Matt Ryan",
+    "firstName": "Matt",
+    "lastName": "Ryan",
+    "role": "Broker",
+    "picture": {
+     "original": "https://s.followupboss.com/public_attachments/2ab864eb-191e-4729-a55e-c584e9e32429.jpg",
+     "162x162": "https://s.followupboss.com/pictures/beef5f9c-b467-44ad-97c9-53b20c39e517.jpg",
+     "60x60": "https://s.followupboss.com/pictures/584f10f0-8510-42e1-94bd-26ca875c0f08.jpg",
+     "40x40": "https://s.followupboss.com/pictures/f7044b08-d8f7-4e5e-8c3c-44f1cf1dc750.jpg",
+     "30x30": "https://s.followupboss.com/pictures/6d2e7d47-7387-4cd5-a5a4-c42a4be783e6.jpg",
+     "26x26": "https://s.followupboss.com/pictures/6dde8fee-f4bf-41a9-95c5-cc689f232c95.jpg"
+    },
+    "pauseLeadDistribution": false
+   },
+   {
+    "id": 2,
+    "name": "Rebecca Peterson",
+    "firstName": "Rebecca",
+    "lastName": "Peterson",
+    "role": "Broker",
+    "picture": {
+     "original": "https://s.followupboss.com/public_attachments/9eb0582c-0b0d-4dec-9ab4-c4e82acb76fb.jpeg",
+     "162x162": "https://s.followupboss.com/pictures/fa802045-2488-4d10-93a0-2328567946d9.jpeg",
+     "60x60": "https://s.followupboss.com/pictures/58239de5-bab3-4cf7-89d7-8ebc84bf4c17.jpeg",
+     "40x40": "https://s.followupboss.com/pictures/9b550244-db75-4cb0-8a8c-c3b9f3287e3c.jpeg",
+     "30x30": "https://s.followupboss.com/pictures/1c7a8b4a-f484-47ff-877a-db4dcdc1e576.jpeg",
+     "26x26": "https://s.followupboss.com/pictures/b9cf7c9d-0fe8-4591-a5f5-f8a0da067fc4.jpeg"
+    },
+    "pauseLeadDistribution": false
+   }
+  ]
+ }
+]

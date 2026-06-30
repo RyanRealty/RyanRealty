@@ -1,0 +1,12 @@
+[
+ {
+  "id": 1,
+  "name": "Out Of State Home Owners",
+  "userId": 1,
+  "userIds": [
+   1,
+   2,
+   3
+  ]
+ }
+]
