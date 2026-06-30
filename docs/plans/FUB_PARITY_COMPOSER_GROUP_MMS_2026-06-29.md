@@ -47,6 +47,27 @@ text/email composer + group-MMS thread, driven by Matt's FUB screenshots
   derived from it. Relationships render via `related_name` + correct label.
 - **Relationship linking is now a name search** (commit bd664e76) — no more contact-id.
 
+## ✅ Telephony + contact-page parity (2026-06-30)
+
+- **Contact page is FUB-tabbed on desktop** (commit 990e6926). The real "legacy UI"
+  Matt saw: `/admin/crm/[id]` (where 25+ links point) redirects to the contact-360
+  page, which on desktop hid the tabs and dumped every section into a cramped
+  3-column grid. Now the tabs show on every breakpoint and one focused section
+  renders, centered in a max-w-3xl column — the FUB experience mobile already had.
+- **Spam blocking** (commit acf1d362). `crm_blocked_numbers` table; inbound voice
+  webhook hard-rejects blocked callers, inbound SMS drops their texts. StirVerstat
+  (SHAKEN/STIR) low-attestation calls are flagged `spamSuspected` on the timeline
+  (optional auto-reject via `CRM_AUTO_BLOCK_SPAM_CALLS`). Comms feed shows a
+  "Possible spam" badge + a one-tap "Block this number" on inbound calls/voicemails.
+- **Caller-ID names via Lookup** (commit 24fe75d3). New inbound-call leads get their
+  CNAM name + line type from Twilio Lookup via `after()` (never blocks the dial);
+  placeholder "Call lead 555…" names are replaced with the real name.
+- **VM/call transcripts: already working** — 17 of 18 recordings transcribed
+  (ElevenLabs scribe → `crm_timeline.body`), and they render in the Comms feed. The
+  earlier "0 transcripts" reading was a query bug (looked in payload, not body).
+- **Outbound caller ID: already correct** — calls go out from the broker's own
+  business line, which is the callerId the lead sees.
+
 ## ⏳ Needs a live test (Matt's real phones — I can't do this autonomously)
 
 - **Group MMS delivery**: confirm two real mobile numbers actually receive ONE group
