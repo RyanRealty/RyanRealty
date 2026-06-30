@@ -51,6 +51,11 @@ export function LeadTabs({
   ownerName,
   lastCommLabel,
   dealValueLabel,
+  email,
+  phone,
+  quickActions,
+  homeCard,
+  defaultTab = 'overview',
   backHref,
   fubHref,
   flushTop = true,
@@ -70,11 +75,19 @@ export function LeadTabs({
   lastCommLabel?: string | null
   /** FUB-parity: green deal-value pill (e.g. "$655K") near the stage. Null hides it. */
   dealValueLabel?: string | null
+  /** Primary email + phone shown beside the name in the header. */
+  email?: string | null
+  phone?: string | null
+  /** Quick-action chip row (newsletter / automations / saved searches / reports). */
+  quickActions?: React.ReactNode
+  /** Owned-home card, rendered between the header and the comms feed. */
+  homeCard?: React.ReactNode
+  defaultTab?: LeadTabKey
   backHref: string
   fubHref?: string | null
   flushTop?: boolean
 } & Record<LeadTabKey, React.ReactNode>) {
-  const [active, setActive] = useState<LeadTabKey>('overview')
+  const [active, setActive] = useState<LeadTabKey>(defaultTab)
 
   useEffect(() => {
     const sync = (scrollToHash?: boolean) => {
@@ -119,29 +132,33 @@ export function LeadTabs({
             ) : null}
           </div>
 
-          <div className="flex items-center gap-3 pb-3.5">
+          {/* Identity — big PFP (~1/3 width on mobile) + name/email/phone. The row
+              never wraps: the PFP is shrink-0, the text column truncates instead. */}
+          <div className="flex items-start gap-4 pb-3.5">
             {pictureUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={pictureUrl} alt="" className="h-14 w-14 shrink-0 rounded-full object-cover ring-1 ring-primary-foreground/20" referrerPolicy="no-referrer" />
+              <img src={pictureUrl} alt="" className="aspect-square w-1/3 max-w-[150px] shrink-0 rounded-2xl object-cover ring-1 ring-primary-foreground/20" referrerPolicy="no-referrer" />
             ) : (
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15 text-lg font-semibold text-primary-foreground">
+              <span className="flex aspect-square w-1/3 max-w-[150px] shrink-0 items-center justify-center rounded-2xl bg-primary-foreground/15 text-4xl font-semibold text-primary-foreground">
                 {(name ?? '?').charAt(0).toUpperCase()}
               </span>
             )}
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="truncate text-xl font-semibold tracking-tight">{name}</h1>
+                <h1 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">{name}</h1>
                 {live ? <StatusPill tone="success" label="On site" pulse /> : null}
                 {dealValueLabel ? (
                   <span className="rounded-full bg-success px-2 py-0.5 text-xs font-semibold text-success-foreground">{dealValueLabel}</span>
                 ) : null}
               </div>
-              <div className="mt-0.5 truncate text-sm text-primary-foreground/55">
-                {ownerName ? `Owner · ${ownerName}` : 'Unassigned'}
-                {lastCommLabel ? <span className="text-primary-foreground/40"> · Last contact {lastCommLabel}</span> : null}
+              {email ? <div className="mt-1 truncate text-sm text-primary-foreground/75">{email}</div> : null}
+              {phone ? <div className="truncate text-sm tabular-nums text-primary-foreground/75">{phone}</div> : null}
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <StagePill stage={stage} />
+                {ownerName ? <span className="text-xs text-primary-foreground/45">{ownerName}</span> : null}
+                {lastCommLabel ? <span className="text-xs text-primary-foreground/40">Last contact {lastCommLabel}</span> : null}
               </div>
             </div>
-            <StagePill stage={stage} />
           </div>
 
           {/* Tabs — visible on every breakpoint (FUB is tabbed on desktop too). */}
@@ -174,6 +191,10 @@ export function LeadTabs({
           column that aligns with the identity band above — the FUB contact page,
           not a 3-column dashboard dump. */}
       <div className="mx-auto max-w-3xl px-4 pt-4 sm:px-6">
+        {/* Contact-level quick actions + owned-home card sit above every tab, so
+            the landing view is: header → actions → home → comms. */}
+        {quickActions ? <div className="pb-4">{quickActions}</div> : null}
+        {homeCard ? <div className="pb-4">{homeCard}</div> : null}
         <div className={slot('overview')}>{overview}</div>
         <div className={slot('comms')}>{comms}</div>
         <div className={slot('activity')}>{activity}</div>

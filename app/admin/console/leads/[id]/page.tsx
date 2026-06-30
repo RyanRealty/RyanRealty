@@ -453,6 +453,9 @@ export default async function ConsoleLeadPage({
         live={isLiveNow}
         ownerName={person.assigned_broker ? (CRM_BROKER_DISPLAY[person.assigned_broker as keyof typeof CRM_BROKER_DISPLAY] ?? person.assigned_broker) : null}
         lastCommLabel={person.last_activity_at ? new Date(person.last_activity_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }) : null}
+        email={primaryEmail}
+        phone={primaryPhone ? fmtPhone(primaryPhone) : null}
+        defaultTab="comms"
         backHref={BASE}
         fubHref={null}
         flushTop={!hasAlerts}
