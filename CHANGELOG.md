@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.686.0 (2026-06-30)
+
+### Features
+- feat(crm): rebuild the Info tab to match FUB's grouped-list layout
+
+---
+
+
 ## v1.685.2 (2026-06-30)
 
 ### Maintenance
