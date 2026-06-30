@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.682.1 (2026-06-30)
+
+### Maintenance
+- docs(crm): record contact-page desktop fix + spam blocking + caller-ID work
+
+---
+
+
 ## v1.682.0 (2026-06-30)
 
 ### Features
