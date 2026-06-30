@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.676.0 (2026-06-30)
+
+### Features
+- feat(crm): group text — quick-add linked people to an SMS
+
+---
+
+
 ## v1.675.0 (2026-06-30)
 
 ### Features
