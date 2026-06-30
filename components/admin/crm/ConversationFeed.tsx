@@ -8,8 +8,9 @@
  * rest and expand on tap to reveal the full body, MMS attachments, and call
  * recordings (features FUB's collapsed rows don't carry, surfaced on demand).
  */
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { Mail, MailOpen, MessageSquare, Phone, Voicemail } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { timelineEmailBody } from '@/lib/crm/email-body'
 
 export type ConversationEvent = {
@@ -83,14 +84,32 @@ export default function ConversationFeed({
   events,
   personName,
   engagement,
+  personId,
+  initialCursor = null,
 }: {
   events: ConversationEvent[]
   personName: string
   engagement?: Record<string, EmailEngagement>
+  /** Enables the "load older messages" pager (full history, not just the latest). */
+  personId?: number
+  initialCursor?: string | null
 }) {
   const [openId, setOpenId] = useState<number | null>(null)
+  const [items, setItems] = useState<ConversationEvent[]>(events)
+  const [cursor, setCursor] = useState<string | null>(initialCursor)
+  const [pending, startTransition] = useTransition()
 
-  if (events.length === 0) {
+  function loadOlder() {
+    if (!personId || !cursor) return
+    startTransition(async () => {
+      const { loadContactConversation } = await import('@/app/actions/crm-conversation')
+      const res = await loadContactConversation(personId, cursor)
+      setItems((prev) => [...prev, ...res.items])
+      setCursor(res.nextCursor)
+    })
+  }
+
+  if (items.length === 0) {
     return (
       <p className="py-10 text-center text-sm text-muted-foreground">
         No texts or emails with {personName} yet. Start one below.
@@ -99,8 +118,9 @@ export default function ConversationFeed({
   }
 
   return (
+    <>
     <ul className="divide-y divide-border">
-      {events.map((e) => {
+      {items.map((e) => {
         const { Icon, title, participant } = rowMeta(e, personName)
         const preview = (e.body ? timelineEmailBody(e.body) : '') || ''
         const expanded = openId === e.id
@@ -175,5 +195,13 @@ export default function ConversationFeed({
         )
       })}
     </ul>
+    {cursor ? (
+      <div className="pt-2 text-center">
+        <Button variant="outline" size="sm" onClick={loadOlder} disabled={pending}>
+          {pending ? 'Loading…' : 'Load older messages'}
+        </Button>
+      </div>
+    ) : null}
+    </>
   )
 }

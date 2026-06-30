@@ -55,6 +55,7 @@ import { SmsComposer } from '@/components/admin/crm/SmsComposer'
 import { getLeadSmsRecipients } from '@/lib/data/crm/getLeadSmsRecipients'
 import { TemplatePickerNav } from '@/components/admin/crm/TemplatePickerNav'
 import ConversationFeed from '@/components/admin/crm/ConversationFeed'
+import { getContactConversation } from '@/lib/data/crm/getContactConversation'
 import ViewedHomeCard from '@/components/admin/crm/ViewedHomeCard'
 import AutoSubmitSelect from '@/components/admin/crm/AutoSubmitSelect'
 import { isConversationEvent } from '@/components/admin/crm/ConversationThread'
@@ -366,6 +367,11 @@ export default async function ConsoleLeadPage({
     getContactEmailEngagement(person.id),
   ])
 
+  // Full Comms thread (every text + email + call), newest first, paginated —
+  // NOT capped to the latest 40 of the 100-row timeline (which hid old messages
+  // and group texts on long-running contacts).
+  const conversation = await getContactConversation(person.id, { limit: 50 })
+
   // Group-text recipients: the lead + every linked person (spouse, …) with a
   // phone, so the SMS composer can quick-add them without typing.
   const smsRecipients = await getLeadSmsRecipients(
@@ -615,12 +621,17 @@ export default async function ConsoleLeadPage({
               Rows expand on tap for the full body, MMS, and call recordings.
               Identical-to-FUB clone (Matt 2026-06-29); composer sits below. */}
           {(() => {
-            const convo = full.timeline.filter((t) => isConversationEvent(t.kind)).slice(0, 40).map((t) => ({ id: t.id, ts: t.ts, kind: t.kind, title: t.title, body: t.body, broker: t.broker, payload: t.payload }))
-            if (convo.length === 0) return null
+            if (conversation.items.length === 0) return null
             return (
               <Card id="conversation" className="scroll-mt-20">
                 <CardContent className="px-4">
-                  <ConversationFeed events={convo} engagement={emailEngagement} personName={person.first_name ?? person.name ?? 'this contact'} />
+                  <ConversationFeed
+                    events={conversation.items}
+                    initialCursor={conversation.nextCursor}
+                    personId={person.id}
+                    engagement={emailEngagement}
+                    personName={person.first_name ?? person.name ?? 'this contact'}
+                  />
                 </CardContent>
               </Card>
             )
