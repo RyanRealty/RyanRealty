@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.675.0 (2026-06-30)
+
+### Features
+- feat(crm): make the broker dashboard the FUB person feed
+
+---
+
+
 ## v1.674.0 (2026-06-30)
 
 ### Features
