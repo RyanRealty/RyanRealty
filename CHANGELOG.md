@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.683.0 (2026-06-30)
+
+### Features
+- feat(crm): redesign contact header — big PFP + name/email/phone, comms first
+
+---
+
+
 ## v1.682.1 (2026-06-30)
 
 ### Maintenance
