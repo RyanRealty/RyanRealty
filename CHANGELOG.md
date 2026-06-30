@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.687.0 (2026-06-30)
+
+### Features
+- feat(crm): FUB desktop dashboard — KPI cards + identical Recent Activity table
+
+---
+
+
 ## v1.686.2 (2026-06-30)
 
 ### Bug Fixes
