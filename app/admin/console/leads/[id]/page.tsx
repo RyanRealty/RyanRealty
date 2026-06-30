@@ -1,5 +1,4 @@
 // @no-parity — internal admin surface, no public mockup contract
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import {
@@ -40,7 +39,6 @@ import { CRM_MAILBOXES } from '@/lib/crm/gmail'
 import { getOwnedHomeMatches, getGuestSearchAlertsForLead, getViewedListingsForLead, type OwnedHomeMatch } from '@/lib/data'
 import { getOwnedHomeMedia } from '@/lib/crm/owned-home-media'
 import { getContactMemberships } from '@/lib/data/crm/getContactMemberships'
-import { MembershipToggles } from '@/components/admin/crm/MembershipToggles'
 import { ContactQuickActions } from '@/components/admin/crm/ContactQuickActions'
 import { getContactActivityFeed } from '@/lib/data/crm/getContactActivityFeed'
 import ContactActivityFeed from '@/components/admin/crm/ContactActivityFeed'
@@ -596,13 +594,8 @@ export default async function ConsoleLeadPage({
         </CardContent>
       </Card>
 
-      {/* ── Memberships: one-click toggles (workflow / newsletter / listing alerts) ── */}
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-base">Memberships</CardTitle></CardHeader>
-        <CardContent className="p-4 pt-0 sm:p-5 sm:pt-0">
-          <MembershipToggles personId={person.id} memberships={contactMemberships} />
-        </CardContent>
-      </Card>
+      {/* Memberships card removed — newsletter / automations / saved searches /
+          market reports are now the quick-action chips in the header. */}
 
       {/* ── Relationships: link/unlink related contacts (spouse, co-buyer, referrer) ── */}
       <Card>
@@ -871,44 +864,9 @@ export default async function ConsoleLeadPage({
           </Card>
 
 
-          {/* Home they own */}
-          {homeAddress && homeMedia ? (
-            <Card>
-              <CardHeader className="pb-3"><CardTitle className="flex items-center justify-between text-base"><span>Home they own</span>{geo?.owner_type ? <Badge variant="outline" className="text-[11px]">{geo.owner_type}</Badge> : null}</CardTitle></CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <a href={homeMedia.googleMapsLink} target="_blank" rel="noopener noreferrer" className="block font-medium text-foreground hover:underline">{homeAddress}</a>
-                {(() => {
-                  const neighborhood = geo?.neighborhood ?? geo?.subdivision ?? geo?.city ?? null
-                  const specs = [
-                    homeFacts?.beds ? `${homeFacts.beds} bed` : null,
-                    homeFacts?.baths ? `${homeFacts.baths} bath` : null,
-                    homeFacts?.sqft ? `${Math.round(homeFacts.sqft).toLocaleString('en-US')} sqft` : null,
-                    homeFacts?.yearBuilt ? `built ${homeFacts.yearBuilt}` : null,
-                    neighborhood,
-                  ].filter(Boolean)
-                  // "Price they paid" — only when we have a real matched MLS close.
-                  // No close on record (older / off-market purchase) → omit it.
-                  const paidYear = homeFacts?.closeDate ? new Date(homeFacts.closeDate).getFullYear() : null
-                  const pricePaid = homeFacts?.closePrice && homeFacts.closePrice > 0 ? usd(homeFacts.closePrice) : null
-                  return (
-                    <>
-                      {specs.length ? <div className="text-muted-foreground">{specs.join(' · ')}</div> : null}
-                      {pricePaid ? <div className="font-medium text-foreground">Paid {pricePaid}{paidYear ? ` in ${paidYear}` : ''}</div> : null}
-                    </>
-                  )
-                })()}
-                {homeActiveListing ? (
-                  <Alert><AlertTitle className="text-sm">On the market right now</AlertTitle><AlertDescription className="text-sm">{homeActiveListing.status}{usd(homeActiveListing.listPrice) ? ` · ${usd(homeActiveListing.listPrice)}` : ''}{homeActiveListing.listingKey ? <> · <Link href={`/listing/${homeActiveListing.listingKey}`} className="underline">view</Link></> : null}</AlertDescription></Alert>
-                ) : null}
-                {(homeMedia.streetViewUrl || homeMlsPhoto) ? (
-                  <div className={`grid gap-2 ${homeMedia.streetViewUrl && homeMlsPhoto ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                    {homeMedia.streetViewUrl ? (/* eslint-disable-next-line @next/next/no-img-element */ <img src={homeMedia.streetViewUrl} alt="" className="aspect-[2/1] w-full rounded-md border border-border object-cover" loading="lazy" />) : null}
-                    {homeMlsPhoto ? (/* eslint-disable-next-line @next/next/no-img-element */ <img src={homeMlsPhoto} alt="" className="aspect-[2/1] w-full rounded-md border border-border object-cover" loading="lazy" />) : null}
-                  </div>
-                ) : null}
-              </CardContent>
-            </Card>
-          ) : null}
+          {/* "Home they own" card removed — the owned-home card (thumbnail +
+              address + Generate comp) now sits in the always-visible landing
+              header via LeadTabs homeCard. */}
           </>
         }
         workflow={
