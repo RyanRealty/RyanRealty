@@ -14,6 +14,7 @@ import ContactsSearch from '@/components/admin/crm/ContactsSearch'
 import BulkAssignWrapper, { type BulkAssignRow } from '@/components/admin/crm/BulkAssignWrapper'
 import SavedViewSidebar, { type SavedViewItem } from '@/components/admin/crm/SavedViewSidebar'
 import BrokerScopeSheet from '@/components/admin/crm/BrokerScopeSheet'
+import InstantFilterSelect from '@/components/admin/crm/InstantFilterSelect'
 import { Button } from '@/components/ui/button'
 import { KpiStrip } from '@/components/console/KpiStrip'
 import { formatDate } from '@/lib/format/date'
@@ -247,9 +248,9 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
           {/* Search (both breakpoints) */}
           <ContactsSearch initial={sp.q ?? ''} />
 
-          {/* Mobile-only filters. Agent scope uses the FUB full-screen picker
-              (Everyone / Me / Team + avatars); stage stays an inline select with
-              Apply. */}
+          {/* Mobile-only filters — both apply instantly on change (no Apply button).
+              Agent scope = the FUB picker (Everyone / Me / Team + avatars); stage =
+              an instant select. */}
           <div className="mt-2 flex flex-col gap-2 md:hidden">
             <BrokerScopeSheet
               brokers={CRM_BROKERS.map((slug) => ({ slug, label: CRM_BROKER_DISPLAY[slug], headshot: BROKER_HEADSHOT[slug] ?? null }))}
@@ -257,25 +258,14 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
               myBrokerSlug={access.brokerSlug ?? null}
               carry={{ q: sp.q, stage: sp.stage, tag: sp.tag, view: sp.view }}
             />
-            <form method="GET" action="/admin/crm" className="flex flex-col gap-2">
-              {sp.view ? <input type="hidden" name="view" value={sp.view} /> : null}
-              {sp.q ? <input type="hidden" name="q" value={sp.q} /> : null}
-              {effectiveBroker ? <input type="hidden" name="broker" value={effectiveBroker} /> : null}
-              <select
-                name="stage"
-                defaultValue={sp.stage ?? ''}
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
-              >
-                <option value="">All stages</option>
-                {stageOptions.map((s) => (
-                  <option key={s.key} value={s.key}>{s.label}</option>
-                ))}
-              </select>
-              <div className="flex items-center gap-3">
-                <Button type="submit" size="sm" className="h-10">Apply</Button>
-                <Link href="/admin/crm" className="flex h-10 items-center text-sm text-muted-foreground hover:text-foreground">Clear</Link>
-              </div>
-            </form>
+            <InstantFilterSelect
+              paramName="stage"
+              current={sp.stage ?? ''}
+              allLabel="All stages"
+              aria-label="Stage"
+              options={stageOptions.map((s) => ({ value: s.key, label: s.label }))}
+              carry={{ q: sp.q, broker: effectiveBroker ?? undefined, tag: sp.tag, view: sp.view }}
+            />
           </div>
 
           {/* Desktop toolbar row: "Showing N people" count (icon toolbar lives in BulkAssignWrapper) */}
@@ -328,56 +318,42 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
           </div>
         </div>
 
-        {/* RIGHT: filter panel — desktop only (FUB "Filters" rail) */}
+        {/* RIGHT: filter panel — desktop only. Both filters apply instantly on
+            change (no Apply button). */}
         <aside className="hidden w-52 shrink-0 md:block">
           <div className="rounded-lg border border-border bg-card p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Filters</p>
-            <form method="GET" action="/admin/crm" className="mt-3 flex flex-col gap-3">
-              {sp.view ? <input type="hidden" name="view" value={sp.view} /> : null}
-              {sp.q ? <input type="hidden" name="q" value={sp.q} /> : null}
-
-              {/* Add a filter label — mirrors FUB's empty-state phrasing */}
-              {!sp.stage && !sp.broker ? (
-                <p className="text-xs text-muted-foreground">No filters added yet.</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Filters</p>
+              {(sp.stage || sp.broker || sp.q || sp.tag) ? (
+                <Link href="/admin/crm" className="text-xs text-muted-foreground hover:text-foreground">Clear</Link>
               ) : null}
-
+            </div>
+            <div className="mt-3 flex flex-col gap-3">
               <div className="flex flex-col gap-1">
-                <label htmlFor="desk-stage" className="text-xs font-medium text-muted-foreground">Stage</label>
-                <select
-                  id="desk-stage"
-                  name="stage"
-                  defaultValue={sp.stage ?? ''}
-                  className="h-9 w-full rounded-md border border-input bg-background px-2.5 text-sm text-foreground"
-                >
-                  <option value="">All stages</option>
-                  {stageOptions.map((s) => (
-                    <option key={s.key} value={s.key}>{s.label}</option>
-                  ))}
-                </select>
+                <span className="text-xs font-medium text-muted-foreground">Stage</span>
+                <InstantFilterSelect
+                  paramName="stage"
+                  current={sp.stage ?? ''}
+                  allLabel="All stages"
+                  aria-label="Stage"
+                  className="h-9"
+                  options={stageOptions.map((s) => ({ value: s.key, label: s.label }))}
+                  carry={{ q: sp.q, broker: effectiveBroker ?? undefined, tag: sp.tag, view: sp.view }}
+                />
               </div>
-
               <div className="flex flex-col gap-1">
-                <label htmlFor="desk-broker" className="text-xs font-medium text-muted-foreground">Agent</label>
-                <select
-                  id="desk-broker"
-                  name="broker"
-                  defaultValue={effectiveBroker ?? 'all'}
-                  className="h-9 w-full rounded-md border border-input bg-background px-2.5 text-sm text-foreground"
-                >
-                  <option value="all">All agents</option>
-                  {CRM_BROKERS.map((b) => (
-                    <option key={b} value={b}>{CRM_BROKER_DISPLAY[b]}</option>
-                  ))}
-                </select>
+                <span className="text-xs font-medium text-muted-foreground">Agent</span>
+                <InstantFilterSelect
+                  paramName="broker"
+                  current={effectiveBroker ?? 'all'}
+                  allLabel="All agents"
+                  aria-label="Agent"
+                  className="h-9"
+                  options={CRM_BROKERS.map((b) => ({ value: b, label: CRM_BROKER_DISPLAY[b] }))}
+                  carry={{ q: sp.q, stage: sp.stage, tag: sp.tag, view: sp.view }}
+                />
               </div>
-
-              <div className="flex gap-2 pt-1">
-                <Button type="submit" size="sm" className="h-8 flex-1">Apply</Button>
-                <Link href="/admin/crm">
-                  <Button type="button" variant="outline" size="sm" className="h-8">Clear</Button>
-                </Link>
-              </div>
-            </form>
+            </div>
           </div>
         </aside>
 
