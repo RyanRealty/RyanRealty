@@ -411,6 +411,14 @@ export default async function ConsoleLeadPage({
     const created = full.timeline.find((t) => t.kind === 'lead_created')?.ts ?? null
     return created ? new Date(created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }) : null
   })()
+  // Display name: many imported leads have a placeholder name like
+  // "Lead someone@example.com". Strip the "Lead " prefix so the header shows the
+  // address cleanly instead of the ugly placeholder, and drop the duplicate email
+  // line when the name already IS the email.
+  const rawName = person.name ?? `Contact #${person.id}`
+  const nameIsPlaceholderEmail = /^lead\s+\S+@\S+$/i.test(rawName)
+  const displayName = nameIsPlaceholderEmail ? rawName.replace(/^lead\s+/i, '') : rawName
+  const headerEmail = primaryEmail && primaryEmail !== displayName ? primaryEmail : null
   const openTasks = full.tasks.filter((t) => !t.completed_at)
   const doneTasks = full.tasks.filter((t) => t.completed_at)
   const customEntries = Object.entries(person.custom ?? {}).filter(([, v]) => v !== null && v !== '' && v !== undefined)
@@ -448,13 +456,13 @@ export default async function ConsoleLeadPage({
       ) : null}
 
       <LeadTabs
-        name={person.name ?? `Contact #${person.id}`}
+        name={displayName}
         pictureUrl={person.picture_url}
         stage={person.stage}
         live={isLiveNow}
         ownerName={person.assigned_broker ? (CRM_BROKER_DISPLAY[person.assigned_broker as keyof typeof CRM_BROKER_DISPLAY] ?? person.assigned_broker) : null}
         lastCommLabel={person.last_activity_at ? new Date(person.last_activity_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }) : null}
-        email={primaryEmail}
+        email={headerEmail}
         phone={primaryPhone ? fmtPhone(primaryPhone) : null}
         defaultTab="comms"
         quickActions={
