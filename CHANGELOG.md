@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.672.2 (2026-06-30)
+
+### Bug Fixes
+- fix(crm): drop the per-row broker label from the Activity feed
+
+---
+
+
 ## v1.672.1 (2026-06-29)
 
 ### Bug Fixes
