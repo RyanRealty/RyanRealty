@@ -52,6 +52,10 @@ export async function POST(request: Request) {
   const params = verified.params
 
   const from = params.From ?? ''
+  // Block gate: a blocked/spam number's texts are dropped silently (no log, no
+  // alert, empty 200 so Twilio doesn't retry).
+  const { isNumberBlocked } = await import('@/lib/data/crm/getBlockedNumber')
+  if (await isNumberBlocked(from)) return twiml()
   const to = params.To ?? ''
   const body = (params.Body ?? '').trim()
   const sid = params.MessageSid ?? `unknown-${Date.now()}`

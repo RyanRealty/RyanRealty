@@ -9,8 +9,9 @@
  * recordings (features FUB's collapsed rows don't carry, surfaced on demand).
  */
 import { useState, useTransition } from 'react'
-import { Mail, MailOpen, MessageSquare, Phone, Voicemail } from 'lucide-react'
+import { Mail, MailOpen, MessageSquare, Phone, ShieldAlert, Voicemail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { blockCrmNumber } from '@/app/actions/crm-block'
 import { timelineEmailBody } from '@/lib/crm/email-body'
 
 export type ConversationEvent = {
@@ -98,6 +99,18 @@ export default function ConversationFeed({
   const [items, setItems] = useState<ConversationEvent[]>(events)
   const [cursor, setCursor] = useState<string | null>(initialCursor)
   const [pending, startTransition] = useTransition()
+  // Inbound spam blocking: numbers blocked this session + the one in flight.
+  const [blocked, setBlocked] = useState<Set<string>>(new Set())
+  const [blockPending, setBlockPending] = useState<string | null>(null)
+
+  function blockNumber(phone: string) {
+    setBlockPending(phone)
+    startTransition(async () => {
+      const r = await blockCrmNumber(phone, { reason: 'spam' })
+      if (r.ok) setBlocked((prev) => new Set(prev).add(phone))
+      setBlockPending(null)
+    })
+  }
 
   function loadOlder() {
     if (!personId || !cursor) return
@@ -132,6 +145,11 @@ export default function ConversationFeed({
 
         const media = mediaOf(e.payload)
         const recordingSid = recordingSidOf(e.payload)
+        const spamSuspected = Boolean(e.payload && e.payload.spamSuspected === true)
+        // Only inbound calls/voicemails carry an external caller to block — on an
+        // outbound call `fromNumber` is OUR broker line, so never offer to block it.
+        const isInbound = e.kind === 'voicemail' || (e.kind === 'call' && e.payload?.direction !== 'out')
+        const callerNumber = isInbound && e.payload && typeof e.payload.fromNumber === 'string' ? e.payload.fromNumber : null
 
         return (
           <li key={e.id}>
@@ -144,7 +162,14 @@ export default function ConversationFeed({
               <Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">{title}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
+                    {title}
+                    {spamSuspected ? (
+                      <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-warning/15 px-2 py-0.5 align-middle text-[11px] font-medium text-warning">
+                        <ShieldAlert className="h-3 w-3" aria-hidden /> Possible spam
+                      </span>
+                    ) : null}
+                  </span>
                   <span className="shrink-0 text-xs text-muted-foreground">{fmtDate(e.ts)}</span>
                 </div>
                 {participant ? <div className="truncate text-sm text-foreground">{participant}</div> : null}
@@ -187,6 +212,19 @@ export default function ConversationFeed({
                   <audio controls preload="none" src={`/api/admin/crm/recording/${recordingSid}`} className="h-8 w-full max-w-sm">
                     <track kind="captions" />
                   </audio>
+                ) : null}
+                {callerNumber && (e.kind === 'call' || e.kind === 'voicemail') ? (
+                  <Button
+                    type="button"
+                    variant={spamSuspected ? 'destructive' : 'outline'}
+                    size="sm"
+                    disabled={blockPending === callerNumber || blocked.has(callerNumber)}
+                    onClick={(ev) => { ev.stopPropagation(); blockNumber(callerNumber) }}
+                    className="h-8 gap-1.5"
+                  >
+                    <ShieldAlert className="h-3.5 w-3.5" aria-hidden />
+                    {blocked.has(callerNumber) ? 'Blocked' : blockPending === callerNumber ? 'Blocking…' : 'Block this number'}
+                  </Button>
                 ) : null}
                 <div className="text-xs text-muted-foreground">{fmtDateTime(e.ts)}</div>
               </div>

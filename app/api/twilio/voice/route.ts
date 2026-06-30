@@ -28,8 +28,14 @@ import {
   verifiedTwilioParams,
 } from '@/lib/crm/twilio'
 import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
+import { isNumberBlocked, isStirSpamSuspected } from '@/lib/data/crm/getBlockedNumber'
 import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
+
+/** Reject TwiML — a blocked/spam caller is hung up on, never ringing a broker. */
+function rejectResponse(): NextResponse {
+  return xml('<?xml version="1.0" encoding="UTF-8"?>\n<Response><Reject reason="rejected"/></Response>')
+}
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -57,6 +63,16 @@ export async function POST(request: Request) {
   const site = TWILIO_PUBLIC_ORIGIN
   const from = params.From ?? ''
   const dialed = params.To ?? ''
+
+  // 0. Spam / block gate. A manually-blocked number is always rejected before it
+  //    can ring a broker. StirVerstat (SHAKEN/STIR) flags low-attestation calls —
+  //    the same signal carriers use to label "Spam Likely"; we tag every call with
+  //    it so a broker can one-tap block, and optionally auto-reject when
+  //    CRM_AUTO_BLOCK_SPAM_CALLS=true.
+  const stirVerstat = params.StirVerstat ?? null
+  const spamSuspected = isStirSpamSuspected(stirVerstat)
+  if (await isNumberBlocked(from)) return rejectResponse()
+  if (spamSuspected && process.env.CRM_AUTO_BLOCK_SPAM_CALLS === 'true') return rejectResponse()
 
   // 1. Who owns the DIALED line? (null = shared marketing line / unrecognized.)
   const dialedBroker = await brokerForTwilioNumber(dialed)
@@ -94,7 +110,7 @@ export async function POST(request: Request) {
           person_id: match.personId,
           kind: 'call',
           title: 'Inbound call',
-          payload: { fromNumber: from, toNumber: dialed, callSid: params.CallSid ?? null, forwardedTo: target, dialedBroker, forwardingBroker, recordingConsent: 'announced' },
+          payload: { fromNumber: from, toNumber: dialed, callSid: params.CallSid ?? null, forwardedTo: target, dialedBroker, forwardingBroker, recordingConsent: 'announced', stirVerstat, spamSuspected },
           broker: forwardingBroker,
           source: 'twilio',
           dedupe_key: params.CallSid ? `twilio:call:${params.CallSid}:p${match.personId}` : null,
