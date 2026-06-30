@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.685.2 (2026-06-30)
+
+### Maintenance
+- docs(crm): contact-header redesign progress + verification
+
+---
+
+
 ## v1.685.1 (2026-06-30)
 
 ### Maintenance
