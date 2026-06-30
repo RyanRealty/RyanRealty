@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.680.1 (2026-06-30)
+
+### Bug Fixes
+- fix(crm): Comms tab shows the FULL message history, not just the last 40
+
+---
+
+
 ## v1.680.0 (2026-06-30)
 
 ### Features
