@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.680.2 (2026-06-30)
+
+### Bug Fixes
+- fix(crm): normalize FUB relationship kinds so labels render (not "Other")
+
+---
+
+
 ## v1.680.1 (2026-06-30)
 
 ### Bug Fixes
