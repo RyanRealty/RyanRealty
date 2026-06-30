@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.685.0 (2026-06-30)
+
+### Features
+- feat(crm): owned-home card on the contact landing — thumbnail + Generate comp
+
+---
+
+
 ## v1.684.0 (2026-06-30)
 
 ### Features
