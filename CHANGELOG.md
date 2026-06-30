@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.687.1 (2026-06-30)
+
+### Maintenance
+- docs(crm): comprehensive FUB CRM spec — desktop + mobile, API export, verified
+
+---
+
+
 ## v1.687.0 (2026-06-30)
 
 ### Features
