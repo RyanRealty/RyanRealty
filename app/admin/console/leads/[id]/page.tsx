@@ -32,6 +32,7 @@ import { setReportSubscriptionAction } from '@/app/actions/crm-report-subscripti
 import { saveContactCustomFieldsAction } from '@/app/actions/contact-custom-fields'
 import ReportSubscriptionsPanel from '@/components/admin/crm/ReportSubscriptionsPanel'
 import NextStepCard from '@/components/admin/crm/NextStepCard'
+import { OwnedHomeCard } from '@/components/admin/crm/OwnedHomeCard'
 import { timelineEmailBody } from '@/lib/crm/email-body'
 import { renderCrmMerge } from '@/lib/crm/merge'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
@@ -467,6 +468,24 @@ export default async function ConsoleLeadPage({
             reportAreas={reportAreas}
             reportSetAction={setReportSubsForm.bind(null, person.id)}
           />
+        }
+        homeCard={
+          nextStep.ownsHome && homeAddress ? (
+            <OwnedHomeCard
+              address={homeAddress}
+              photoUrl={homeMlsPhoto ?? homeMedia?.streetViewUrl ?? null}
+              factsLine={[
+                homeFacts?.beds ? `${homeFacts.beds} bed` : null,
+                homeFacts?.baths ? `${homeFacts.baths} bath` : null,
+                homeFacts?.sqft ? `${Math.round(homeFacts.sqft).toLocaleString('en-US')} sqft` : null,
+              ].filter(Boolean).join(' · ') || null}
+              mapsLink={homeMedia?.googleMapsLink ?? null}
+              onMarket={homeActiveListing ? `${homeActiveListing.status}${usd(homeActiveListing.listPrice) ? ` · ${usd(homeActiveListing.listPrice)}` : ''}` : null}
+              reviewDeliveryId={reviewableCma?.id ? String(reviewableCma.id) : null}
+              generateAction={startCmaForm.bind(null, person.id)}
+              sendAction={sendCmaForm.bind(null, person.id)}
+            />
+          ) : null
         }
         backHref={BASE}
         fubHref={null}

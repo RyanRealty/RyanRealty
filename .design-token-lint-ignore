@@ -28,6 +28,9 @@ components/admin/crm/ConversationFeed.tsx
 # form field has no shadcn equivalent; same exception class as the hero-search
 # raw inputs already allow-listed below.
 components/admin/crm/SmsComposer.tsx
+# Owned-home card (2026-06-30): a hidden <input> carries the CMA deliveryId into
+# the "Send to lead" form action. No shadcn equivalent for a hidden field.
+components/admin/crm/OwnedHomeCard.tsx
 # Deals/Pipeline Kanban (FUB-parity desktop, 2026-06-26): the FUB kanban board
 # uses a 6-color stage-indicator palette for column top borders (amber/blue/violet/
 # orange/emerald/neutral). These are stored as JS constants applied via inline
