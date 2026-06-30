@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.677.0 (2026-06-30)
+
+### Features
+- feat(crm): FUB chat-style SMS input bar
+
+---
+
+
 ## v1.676.0 (2026-06-30)
 
 ### Features
