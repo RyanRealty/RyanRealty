@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.686.2 (2026-06-30)
+
+### Bug Fixes
+- fix(crm): clean placeholder 'Lead <email>' names in inbox + activity feeds
+
+---
+
+
 ## v1.686.1 (2026-06-30)
 
 ### Bug Fixes
