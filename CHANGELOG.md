@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.682.0 (2026-06-30)
+
+### Features
+- feat(crm): resolve inbound caller names via Twilio Lookup (CNAM)
+
+---
+
+
 ## v1.681.0 (2026-06-30)
 
 ### Features
