@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.680.6 (2026-06-30)
+
+### Bug Fixes
+- fix(crm): contact page is FUB-tabbed on desktop, not a 3-column dump
+
+---
+
+
 ## v1.680.5 (2026-06-30)
 
 ### Maintenance
