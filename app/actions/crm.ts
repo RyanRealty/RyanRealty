@@ -900,6 +900,52 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   let sentCount = 0
   let lastError: string | null = null
 
+  // Native group MMS: 2+ recipients → ONE shared group thread (everyone sees
+  // everyone) via Twilio Conversations. Falls through to the per-recipient
+  // broadcast below if the group can't be formed (a member out of scope /
+  // suppressed / no phone, no broker proxy number, or Twilio rejects a binding).
+  if (recipientIds.length >= 2) {
+    const primaryTarget = await getSendTarget(personId)
+    const slug = access.access.brokerSlug ?? (primaryTarget?.person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
+    const proxy = await brokerTwilioNumber(slug)
+    if (proxy && primaryTarget) {
+      const members: Array<{ rid: number; phone: string }> = []
+      let blocked = false
+      for (const rid of recipientIds) {
+        if (rid !== personId) {
+          const s = await requirePersonInScope(rid, access.access)
+          if (!s.ok) { blocked = true; break }
+        }
+        const t = await getSendTarget(rid)
+        if (!t || !t.phone) { blocked = true; break }
+        if ((await isSuppressed(rid, 'sms')).suppressed) { blocked = true; break }
+        members.push({ rid, phone: t.phone })
+      }
+      if (!blocked && members.length >= 2) {
+        const mergedBody = attributeSiteLinks(renderCrmMerge(body, primaryTarget.person), slug, primaryTarget.person.fub_legacy_id as number | null)
+        const { sendGroupMms } = await import('@/lib/crm/twilio-conversations')
+        const group = await sendGroupMms({
+          proxy,
+          participants: members.map((m) => m.phone),
+          body: mergedBody,
+          friendlyName: `Group · ${primaryTarget.person.name ?? personId}`,
+        })
+        if (group.ok) {
+          for (const m of members) {
+            await sb.from('crm_timeline').insert({
+              person_id: m.rid, kind: 'sms_out', title: 'Group text sent', body: mergedBody,
+              payload: { conversationSid: group.conversationSid, messageSid: group.messageSid, groupTo: members.map((x) => x.phone) },
+              broker: slug, source: 'app', dedupe_key: `twilio:${group.messageSid}:p${m.rid}`,
+            })
+          }
+          members.forEach((m) => revalidateCrm(m.rid))
+          return { ok: true }
+        }
+        console.warn('[crm] group MMS failed, falling back to broadcast:', group.error)
+      }
+    }
+  }
+
   for (const rid of recipientIds) {
     // Every recipient (including extras) must be in the broker's scope.
     if (rid !== personId) {
