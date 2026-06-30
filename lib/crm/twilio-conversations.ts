@@ -23,6 +23,19 @@ function headers(): Record<string, string> {
   return { Authorization: authHeader(), 'Content-Type': 'application/x-www-form-urlencoded' }
 }
 
+/**
+ * Twilio Conversations requires strict E.164 (+1XXXXXXXXXX) for every
+ * MessagingBinding.Address and ProxyAddress. getSendTarget returns bare 10-digit
+ * phones (e.g. "5416109091"), which the plain SMS API tolerates but Conversations
+ * rejects — so without this every participant binding silently fails and the
+ * caller falls back to 1:1 broadcast. Normalize here at the Twilio boundary.
+ */
+function toE164(phone: string | null | undefined): string | null {
+  const digits = String(phone ?? '').replace(/\D/g, '')
+  const ten = digits.length >= 10 ? digits.slice(-10) : null
+  return ten ? `+1${ten}` : null
+}
+
 async function deleteConversation(sid: string): Promise<void> {
   try {
     await fetch(`${BASE}/Conversations/${sid}`, { method: 'DELETE', headers: { Authorization: authHeader() } })
@@ -43,8 +56,10 @@ export async function sendGroupMms(params: {
   body: string
   friendlyName?: string
 }): Promise<GroupMmsResult> {
-  const participants = [...new Set(params.participants.filter(Boolean))]
-  if (participants.length < 2) return { ok: false, error: 'group needs 2+ participants' }
+  const proxy = toE164(params.proxy)
+  const participants = [...new Set(params.participants.map(toE164).filter((p): p is string => Boolean(p)))]
+  if (!proxy) return { ok: false, error: 'invalid proxy number' }
+  if (participants.length < 2) return { ok: false, error: 'group needs 2+ valid participant numbers' }
   if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
     return { ok: false, error: 'twilio credentials missing' }
   }
@@ -67,7 +82,7 @@ export async function sendGroupMms(params: {
       const partRes = await fetch(`${BASE}/Conversations/${conversationSid}/Participants`, {
         method: 'POST',
         headers: headers(),
-        body: new URLSearchParams({ 'MessagingBinding.Address': phone, 'MessagingBinding.ProxyAddress': params.proxy }),
+        body: new URLSearchParams({ 'MessagingBinding.Address': phone, 'MessagingBinding.ProxyAddress': proxy }),
       })
       const part = (await partRes.json()) as { sid?: string; message?: string }
       if (!part.sid) {
@@ -80,7 +95,7 @@ export async function sendGroupMms(params: {
     const msgRes = await fetch(`${BASE}/Conversations/${conversationSid}/Messages`, {
       method: 'POST',
       headers: headers(),
-      body: new URLSearchParams({ Author: params.proxy, Body: params.body }),
+      body: new URLSearchParams({ Author: proxy, Body: params.body }),
     })
     const msg = (await msgRes.json()) as { sid?: string; message?: string }
     if (!msg.sid) {
