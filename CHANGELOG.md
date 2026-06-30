@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.674.0 (2026-06-30)
+
+### Features
+- feat(crm): clean the broker dashboard — drop overdue tasks, fix mobile
+
+---
+
+
 ## v1.673.0 (2026-06-30)
 
 ### Features
