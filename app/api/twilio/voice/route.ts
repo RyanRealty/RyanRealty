@@ -19,6 +19,7 @@
  */
 
 import { NextResponse } from 'next/server'
+import { after } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import {
   TWILIO_PUBLIC_ORIGIN,
@@ -29,6 +30,7 @@ import {
 } from '@/lib/crm/twilio'
 import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
 import { isNumberBlocked, isStirSpamSuspected } from '@/lib/data/crm/getBlockedNumber'
+import { lookupCaller } from '@/lib/crm/lookup'
 import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
 
@@ -134,6 +136,30 @@ export async function POST(request: Request) {
     } catch (e) {
       console.error('[twilio/voice] timeline/alert write failed (continuing):', e)
     }
+  }
+
+  // 4b. Caller-ID enrichment for a brand-new lead: resolve the caller's name
+  //     (CNAM) + line type via Twilio Lookup AFTER the response, so the dial is
+  //     never delayed. Only overwrites a placeholder name ("Call lead 555…").
+  if (match && created) {
+    const personId = match.personId
+    const callerPhone = from
+    after(async () => {
+      try {
+        const { callerName, lineType, carrier } = await lookupCaller(callerPhone)
+        if (!callerName && !lineType) return
+        const sb = createServiceClient()
+        const { data: row } = await sb.from('crm_people').select('name,custom').eq('id', personId).maybeSingle()
+        const cur = String(row?.name ?? '')
+        const isPlaceholder = !cur || /^call lead\b/i.test(cur) || /^\+?\d[\d\s().-]+$/.test(cur)
+        const update: Record<string, unknown> = {}
+        if (callerName && isPlaceholder) update.name = callerName
+        if (lineType) update.custom = { ...((row?.custom as Record<string, unknown> | null) ?? {}), line_type: lineType, carrier }
+        if (Object.keys(update).length) await sb.from('crm_people').update(update).eq('id', personId)
+      } catch (e) {
+        console.error('[twilio/voice] caller lookup enrichment failed:', e)
+      }
+    })
   }
 
   // 5. No forward number resolved → voicemail rather than a dropped/misrouted call.
