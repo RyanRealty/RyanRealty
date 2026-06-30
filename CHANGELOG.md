@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.685.1 (2026-06-30)
+
+### Maintenance
+- refactor(crm): remove the dumb Memberships card + duplicate home card
+
+---
+
+
 ## v1.685.0 (2026-06-30)
 
 ### Features
