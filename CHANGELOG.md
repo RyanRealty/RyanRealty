@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.686.1 (2026-06-30)
+
+### Bug Fixes
+- fix(crm): clean up placeholder 'Lead <email>' names in the contact header
+
+---
+
+
 ## v1.686.0 (2026-06-30)
 
 ### Features
