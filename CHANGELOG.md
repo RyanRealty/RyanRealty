@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.680.3 (2026-06-30)
+
+### Maintenance
+- docs(crm): record Comms full-history + FUB relationship/message reconciliation
+
+---
+
+
 ## v1.680.2 (2026-06-30)
 
 ### Bug Fixes
