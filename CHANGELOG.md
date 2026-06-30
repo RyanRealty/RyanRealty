@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.680.5 (2026-06-30)
+
+### Maintenance
+- docs(crm): Twilio feature research — Lookup, Conversational Intelligence, Branded Calling, etc.
+
+---
+
+
 ## v1.680.4 (2026-06-30)
 
 ### Bug Fixes
