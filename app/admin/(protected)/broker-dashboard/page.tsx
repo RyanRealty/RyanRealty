@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { revalidatePath } from 'next/cache'
 import { ChevronRight, CheckCircle2, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { getBrokerCommandCenterData } from '@/app/actions/broker-command-center'
-import { getBrokerActionQueue, confirmNextStepAction, completeCrmTaskAction, getRecentNewLeads, getRecentWebsiteVisitors, getRecentEmailPeople, getCrmAccess } from '@/app/actions/crm'
+import { getBrokerActionQueue, confirmNextStepAction, getRecentNewLeads, getRecentWebsiteVisitors, getRecentEmailPeople, getCrmAccess } from '@/app/actions/crm'
 import { fetchLiveSummary } from '../visitors/_lib/queries'
 import { ActionSubmitButton } from '@/components/admin/ActionSubmitButton'
 import DashboardActivityFeed from '@/components/admin/DashboardActivityFeed'
@@ -51,13 +51,6 @@ function greet(): string {
 
 /** Strip FUB import noise from a task name: bracketed listing keys
  *  [20230223...] and trailing legal-entity tails (· GROVE NWX PHASE 2 LLC). */
-function cleanTaskName(raw: string): string {
-  return raw
-    .replace(/\s*\[[0-9]{10,}\]/g, '')
-    .replace(/\s*·\s*[A-Z0-9 ]+\b(LLC|INC|TRUST|LP|LLP)\b.*$/i, '')
-    .trim()
-}
-
 /** Stage chips use semantic brand tokens only (navy primary + success/warning). */
 function stageToneClass(stage: string): string {
   const s = stage.toLowerCase()
@@ -197,14 +190,6 @@ async function confirmStepFromDashboard(enrollmentId: number, _formData: FormDat
   revalidatePath('/admin/broker-dashboard')
 }
 
-async function completeTaskFromDashboard(taskId: number, personId: number | null, _formData: FormData) {
-  'use server'
-  const fd = new FormData()
-  fd.set('taskId', String(taskId))
-  if (personId != null) fd.set('personId', String(personId))
-  await completeCrmTaskAction(fd)
-  revalidatePath('/admin/broker-dashboard')
-}
 
 // ── component ────────────────────────────────────────────
 
@@ -251,11 +236,12 @@ export default async function BrokerCommandCenterPage({
 
   const marketingTab = activeTab ?? 'ideas'
 
-  // Priority counts
-  const overdueTasks = data.tasksDue.filter((t) => t.isOverdue)
-  const needsActionCount = actionQueue.length + overdueTasks.length
-  const heroActions = actionQueue.slice(0, 5)
-  const heroOverdue = overdueTasks.slice(0, Math.max(0, 5 - actionQueue.length))
+  // Priority counts. Overdue tasks are intentionally NOT surfaced on the
+  // dashboard (Matt directive 2026-06-29) — the action queue is what needs action.
+  const needsActionCount = actionQueue.length
+  const heroActions = actionQueue.slice(0, 6)
+  // Tasks shown on the dashboard exclude overdue (today + upcoming only).
+  const upcomingTasks = data.tasksDue.filter((t) => !t.isOverdue)
 
   const liveActive = liveSummary?.totalActive ?? 0
 
@@ -277,9 +263,6 @@ export default async function BrokerCommandCenterPage({
   // Tile 2: Action Queue — how many items need broker attention now
   const actionQueueCount = needsActionCount
 
-  // Tile 3: Overdue tasks — the "speed to action" proxy
-  const overdueTasksCount = data.attention.tasksOverdue
-
   // Tile 4: Upcoming appointments — calendar items in next 30 days (gcal + task types)
   const now = Date.now()
   const in30 = now + 30 * 86_400_000
@@ -290,8 +273,13 @@ export default async function BrokerCommandCenterPage({
   const upcomingCount = upcomingItems.length
 
   // Tile 5: Deals — active deal count + projected total value
-  const activeDealCount = data.activeDeals.length
-  const dealsValue = data.activeDeals.reduce((sum, d) => sum + (d.salePrice ?? d.listingPrice ?? 0), 0)
+  // "Active" excludes dead deals — a canceled/lost/withdrawn cycle from months
+  // ago is not active and shouldn't clutter the dashboard or inflate the count.
+  const liveDeals = data.activeDeals.filter(
+    (d) => !/cancel|lost|withdrawn|dead|terminated/i.test(`${d.stage} ${d.stageDetail ?? ''}`),
+  )
+  const activeDealCount = liveDeals.length
+  const dealsValue = liveDeals.reduce((sum, d) => sum + (d.salePrice ?? d.listingPrice ?? 0), 0)
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
@@ -360,13 +348,13 @@ export default async function BrokerCommandCenterPage({
 
       {/* ── FUB KPI tile row (5 tiles) ── */}
       <section aria-label="Performance overview">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <KpiTile
             label="New Leads"
             value={newLeadsCount}
             subLabel={unactionedCount > 0 ? `${unactionedCount} unactioned` : undefined}
             dir={newLeadsCount > 0 ? 'up' : 'flat'}
-            href="/admin/crm"
+            href="/admin/crm/activity?types=new_leads"
           />
           <KpiTile
             label="Needs Action"
@@ -374,13 +362,6 @@ export default async function BrokerCommandCenterPage({
             subLabel={actionQueueCount > 0 ? 'items pending' : 'All clear'}
             dir={actionQueueCount > 5 ? 'down' : actionQueueCount > 0 ? 'flat' : 'up'}
             href="/admin/crm"
-          />
-          <KpiTile
-            label="Overdue Tasks"
-            value={overdueTasksCount}
-            subLabel={overdueTasksCount > 0 ? 'need attention' : 'On track'}
-            dir={overdueTasksCount > 0 ? 'down' : 'up'}
-            href="/admin/crm/tasks"
           />
           <KpiTile
             label="Appts Next 30 Days"
@@ -394,7 +375,7 @@ export default async function BrokerCommandCenterPage({
             value={activeDealCount > 0 ? moneyCompact(dealsValue) : '0'}
             subLabel={activeDealCount > 0 ? `${activeDealCount} deal${activeDealCount !== 1 ? 's' : ''}` : 'No active deals'}
             dir={activeDealCount > 0 ? 'up' : 'flat'}
-            href="/admin/deals"
+            href="/admin/crm/deals"
           />
         </div>
       </section>
@@ -431,7 +412,7 @@ export default async function BrokerCommandCenterPage({
                 </span>
               ) : null}
             </div>
-            {needsActionCount > heroActions.length + heroOverdue.length ? (
+            {needsActionCount > heroActions.length ? (
               <Link href="/admin/crm" className="shrink-0 text-xs font-medium text-primary-foreground/80 hover:text-primary-foreground">
                 See all →
               </Link>
@@ -476,27 +457,6 @@ export default async function BrokerCommandCenterPage({
                   </div>
                 )
               })}
-              {heroOverdue.map((t) => (
-                <div key={`t-${t.id}`} className="flex min-h-14 items-center gap-3 px-4 py-2.5">
-                  <span className="shrink-0 rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1 text-xs font-semibold text-destructive">
-                    Overdue
-                  </span>
-                  <Link
-                    href={t.personId ? `/admin/crm/${t.personId}` : '/admin/crm/tasks'}
-                    className="-my-2.5 min-w-0 flex-1 py-2.5 transition-opacity hover:opacity-70"
-                  >
-                    <span className="block truncate text-sm font-semibold text-foreground">
-                      {cleanTaskName(t.name)}{t.personName ? ` · ${t.personName}` : ''}
-                    </span>
-                    <span className="block truncate text-xs text-muted-foreground">
-                      {t.dueAt ? `Due ${fmtDate(t.dueAt)}` : 'No due date'}{t.type ? ` · ${t.type}` : ''}
-                    </span>
-                  </Link>
-                  <form action={completeTaskFromDashboard.bind(null, t.id, t.personId)}>
-                    <ActionSubmitButton variant="outline" pendingLabel="…" ariaLabel={`Mark done: ${t.name}`}>Done</ActionSubmitButton>
-                  </form>
-                </div>
-              ))}
             </div>
           )}
         </GroupCard>
@@ -509,11 +469,11 @@ export default async function BrokerCommandCenterPage({
         <section>
           <SectionLabel action={{ href: '/admin/deals', label: 'All deals' }}>Active deals</SectionLabel>
           <GroupCard>
-            {data.activeDeals.length === 0 ? (
+            {liveDeals.length === 0 ? (
               <p className="px-4 py-10 text-center text-sm text-muted-foreground">No active transactions right now.</p>
             ) : (
               <div className="divide-y divide-border">
-                {data.activeDeals.slice(0, 3).map((deal) => {
+                {liveDeals.slice(0, 3).map((deal) => {
                   const pct = deal.checklistTotal > 0
                     ? Math.round((deal.checklistComplete / deal.checklistTotal) * 100)
                     : 0
@@ -592,13 +552,13 @@ export default async function BrokerCommandCenterPage({
         <section>
           <SectionLabel action={{ href: '/admin/crm/tasks', label: 'All tasks' }}>Tasks due</SectionLabel>
           <GroupCard>
-            {data.tasksDue.length === 0 ? (
+            {upcomingTasks.length === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-muted-foreground">All caught up. No tasks due.</p>
             ) : (
               <div className="divide-y divide-border">
-                {data.tasksDue.slice(0, 4).map((task) => (
+                {upcomingTasks.slice(0, 4).map((task) => (
                   <div key={task.id} className="flex items-center gap-3 px-4 py-2.5">
-                    <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs ${task.isOverdue ? 'border-destructive text-destructive' : 'border-border text-muted-foreground'}`}>
+                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-border text-xs text-muted-foreground">
                       ✓
                     </div>
                     <div className="min-w-0 flex-1">
@@ -611,8 +571,8 @@ export default async function BrokerCommandCenterPage({
                         </p>
                       ) : null}
                     </div>
-                    <span className={`shrink-0 text-xs tabular-nums ${task.isOverdue ? 'font-semibold text-destructive' : 'text-muted-foreground'}`}>
-                      {task.dueAt ? fmtDate(task.dueAt) : '—'}{task.isOverdue ? ' ⚠' : ''}
+                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                      {task.dueAt ? fmtDate(task.dueAt) : '—'}
                     </span>
                   </div>
                 ))}
