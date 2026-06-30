@@ -10,6 +10,7 @@
  */
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { cleanContactName } from '@/lib/crm/display-name'
 import {
   Activity, ArrowDownLeft, ArrowUpRight, ChevronDown, EyeOff, FileText, Globe, Mail, MailOpen,
   MessageSquare, Milestone, Phone, SlidersHorizontal, UserPlus, Users, Voicemail, type LucideIcon,
@@ -200,7 +201,7 @@ export default function GlobalActivityFeed({
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                           <Link href={item.href} className="text-sm font-semibold text-foreground underline-offset-2 hover:underline">
-                            {item.personName}
+                            {cleanContactName(item.personName)}
                           </Link>
                           <span className="text-sm text-muted-foreground">{item.label}</span>
                           <span className="text-xs tabular-nums text-muted-foreground">{stamp}</span>

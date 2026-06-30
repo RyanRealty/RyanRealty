@@ -18,6 +18,7 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { cleanContactName } from '@/lib/crm/display-name'
 import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -129,7 +130,7 @@ export default function InboxQueue({
       <div className="md:hidden">
         <CrmList className="-mx-4 border-y border-border bg-card">
           {conversations.map((c) => {
-            const name = c.name ?? `Contact #${c.personId}`
+            const name = cleanContactName(c.name, c.personId)
             const isActive = c.personId === activePersonId
             const isUnread = c.status === 'unread'
             const preview = (c.lastDirection === 'out' ? 'You: ' : '') + (c.snippet ?? 'No message body')
@@ -199,7 +200,7 @@ export default function InboxQueue({
                   <Link href={`/admin/crm/inbox?scope=${scope}&c=${c.personId}`} className="min-w-0 flex-1 text-left">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="truncate text-sm font-semibold text-foreground">
-                        {c.name ?? `Contact #${c.personId}`}
+                        {cleanContactName(c.name, c.personId)}
                       </span>
                       <Badge className={cn('shrink-0', STATUS_TONE[c.status])}>{STATUS_LABEL[c.status]}</Badge>
                       {c.needsReply ? (
