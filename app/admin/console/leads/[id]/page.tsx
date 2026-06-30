@@ -52,6 +52,7 @@ import { getContactListingAlerts } from '@/lib/data/crm/getContactListingAlerts'
 import { ContactListingAlertsPanel } from '@/components/admin/crm/ContactListingAlertsPanel'
 import { EmailComposer } from '@/components/admin/crm/EmailComposer'
 import { SmsComposer } from '@/components/admin/crm/SmsComposer'
+import { getLeadSmsRecipients } from '@/lib/data/crm/getLeadSmsRecipients'
 import { TemplatePickerNav } from '@/components/admin/crm/TemplatePickerNav'
 import ConversationFeed from '@/components/admin/crm/ConversationFeed'
 import ViewedHomeCard from '@/components/admin/crm/ViewedHomeCard'
@@ -365,6 +366,15 @@ export default async function ConsoleLeadPage({
     getContactEmailEngagement(person.id),
   ])
 
+  // Group-text recipients: the lead + every linked person (spouse, …) with a
+  // phone, so the SMS composer can quick-add them without typing.
+  const smsRecipients = await getLeadSmsRecipients(
+    person.id,
+    relationships
+      .filter((r) => r.relatedPersonId !== null)
+      .map((r) => ({ relatedPersonId: r.relatedPersonId as number, label: r.label })),
+  )
+
   // A CMA queued and awaiting broker review (status 'ready') → NextStepCard shows
   // "Review & Send CMA" instead of "Send CMA". Only when the home-driven next step
   // is actually CMA (the contact owns a home) — otherwise a stale, never-sent CMA
@@ -665,7 +675,7 @@ export default async function ConsoleLeadPage({
                         <div className="mt-1 whitespace-pre-wrap break-words text-sm text-foreground">{smsInitialBody}</div>
                       </div>
                     ) : null}
-                    <SmsComposer key={smsTpl ?? 'blank'} initialBody={smsInitialBody} sendAction={sendSmsForm.bind(null, person.id)} />
+                    <SmsComposer key={smsTpl ?? 'blank'} initialBody={smsInitialBody} sendAction={sendSmsForm.bind(null, person.id)} recipients={smsRecipients} primaryPersonId={person.id} />
                   </>
                 ) : <p className="text-sm text-muted-foreground">No phone number on file.</p>}
               </div>

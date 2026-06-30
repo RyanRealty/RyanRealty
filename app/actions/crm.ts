@@ -876,47 +876,62 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   const scoped = await requirePersonInScope(personId, access.access)
   if (!scoped.ok) return scoped
 
-  const sb = createServiceClient()
-  const { getSendTarget } = await import('@/lib/data/crm/getSendTarget')
-  const target = await getSendTarget(personId)
-  if (!target) return { ok: false, error: 'Person not found' }
-  const person = target.person
-  const to = target.phone
-  if (!to) return { ok: false, error: 'No phone number on file' }
+  // Group text: the broker can quick-add other people linked to the lead (e.g. a
+  // spouse) in the composer. `recipientIds` is a comma-separated list of extra
+  // crm_people ids; the same message goes to each and is logged on each timeline.
+  const extraIds = String(formData.get('recipientIds') ?? '')
+    .split(',').map((s) => Number(s.trim())).filter((n) => Number.isFinite(n) && n > 0 && n !== personId)
+  const recipientIds = [personId, ...Array.from(new Set(extraIds))]
 
-  const { isSuppressed } = await import('@/lib/crm/suppressions')
-  const gate = await isSuppressed(personId, 'sms')
-  if (gate.suppressed) return { ok: false, error: `Blocked by suppression (${gate.reasons.join(', ')})` }
-
-  // TCPA quiet hours: block 9pm to 8am Pacific unless the broker explicitly
-  // overrides (a deliberate reply to an active conversation). The automated
-  // sequence engine is hard-gated; a manual reply may override with intent.
+  // TCPA quiet hours: one time-based check for the whole send. Block 9pm–8am
+  // Pacific unless the broker explicitly overrides (a deliberate manual reply).
   const { inSmsQuietHours } = await import('@/lib/crm/quiet-hours')
   const override = String(formData.get('overrideQuietHours') ?? '') === '1'
   if (inSmsQuietHours() && !override) {
     return { ok: false, error: 'Quiet hours (TCPA): texts pause 9pm to 8am Pacific. Call instead, or check "send anyway" to override.' }
   }
 
+  const sb = createServiceClient()
+  const { getSendTarget } = await import('@/lib/data/crm/getSendTarget')
+  const { isSuppressed } = await import('@/lib/crm/suppressions')
   const { renderCrmMerge, attributeSiteLinks } = await import('@/lib/crm/merge')
-  const smsBrokerSlug = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
-  const mergedBody = attributeSiteLinks(renderCrmMerge(body, person), smsBrokerSlug, person.fub_legacy_id as number | null)
-  // Send from the broker's OWN Twilio business line so the lead sees a
-  // consistent number (the one they texted), not a random pooled sender. Falls
-  // back to the A2P messaging service if the broker has no number configured.
   const { sendSms, sendSmsViaMessagingService, brokerTwilioNumber } = await import('@/lib/crm/twilio')
-  const fromNumber = await brokerTwilioNumber(smsBrokerSlug)
-  const sent = fromNumber
-    ? await sendSms({ from: fromNumber, to, body: mergedBody })
-    : await sendSmsViaMessagingService({ to, body: mergedBody })
-  if (!sent.ok) return { ok: false, error: sent.error }
 
-  const actingSlug = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
-  await sb.from('crm_timeline').insert({
-    person_id: personId, kind: 'sms_out', title: 'Text sent', body: mergedBody,
-    payload: { twilioSid: sent.sid, to },
-    broker: actingSlug, source: 'app', dedupe_key: `twilio:${sent.sid}:p${personId}`,
-  })
-  revalidateCrm(personId)
+  let sentCount = 0
+  let lastError: string | null = null
+
+  for (const rid of recipientIds) {
+    // Every recipient (including extras) must be in the broker's scope.
+    if (rid !== personId) {
+      const s = await requirePersonInScope(rid, access.access)
+      if (!s.ok) { lastError = 'A recipient is outside your scope'; continue }
+    }
+    const target = await getSendTarget(rid)
+    if (!target || !target.phone) { lastError = 'No phone number on file'; continue }
+    const gate = await isSuppressed(rid, 'sms')
+    if (gate.suppressed) { lastError = `Blocked by suppression (${gate.reasons.join(', ')})`; continue }
+
+    const person = target.person
+    const to = target.phone
+    const slug = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
+    const mergedBody = attributeSiteLinks(renderCrmMerge(body, person), slug, person.fub_legacy_id as number | null)
+    // Send from the broker's OWN Twilio business line, else the A2P service.
+    const fromNumber = await brokerTwilioNumber(slug)
+    const sent = fromNumber
+      ? await sendSms({ from: fromNumber, to, body: mergedBody })
+      : await sendSmsViaMessagingService({ to, body: mergedBody })
+    if (!sent.ok) { lastError = sent.error; continue }
+
+    await sb.from('crm_timeline').insert({
+      person_id: rid, kind: 'sms_out', title: 'Text sent', body: mergedBody,
+      payload: { twilioSid: sent.sid, to },
+      broker: slug, source: 'app', dedupe_key: `twilio:${sent.sid}:p${rid}`,
+    })
+    sentCount++
+  }
+
+  if (sentCount === 0) return { ok: false, error: lastError ?? 'No recipient could be texted' }
+  recipientIds.forEach((rid) => revalidateCrm(rid))
   return { ok: true }
 }
 

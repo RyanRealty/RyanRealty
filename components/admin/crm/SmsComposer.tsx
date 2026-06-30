@@ -25,14 +25,32 @@ function segmentInfo(text: string): { chars: number; segments: number } {
   return { chars, segments: chars <= single ? 1 : Math.ceil(chars / multi) }
 }
 
+export type SmsRecipient = { personId: number; name: string; phone: string; relation: string }
+
 export function SmsComposer(props: {
   initialBody: string
   sendAction: (formData: FormData) => Promise<void>
+  /** The lead + linked people (spouse, …) the broker can add to a group text. */
+  recipients?: SmsRecipient[]
+  primaryPersonId?: number
 }) {
   const [body, setBody] = useState(props.initialBody)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
   const { chars, segments } = segmentInfo(body)
   const unresolved = useMemo(() => findUnresolvedMergeTokens(body), [body])
+
+  const recipients = props.recipients ?? []
+  // The lead is always a recipient; extras (relationships) start off, tap to add.
+  const [selectedExtra, setSelectedExtra] = useState<Set<number>>(new Set())
+  function toggleExtra(id: number) {
+    setSelectedExtra((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+  const extraIds = [...selectedExtra].join(',')
 
   function handleInsertToken(token: string) {
     const el = bodyRef.current
@@ -51,6 +69,32 @@ export function SmsComposer(props: {
 
   return (
     <form action={props.sendAction} className="space-y-2">
+      {/* Recipients — the lead is always on; tap a linked person (spouse, …) to
+          add them to the same text. No typing needed. */}
+      {recipients.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-0.5 text-xs font-medium text-muted-foreground">To</span>
+          {recipients.map((r) => {
+            const isPrimary = r.personId === props.primaryPersonId
+            const on = isPrimary || selectedExtra.has(r.personId)
+            return (
+              <Button
+                key={r.personId}
+                type="button"
+                size="sm"
+                variant={on ? 'default' : 'outline'}
+                disabled={isPrimary}
+                onClick={() => toggleExtra(r.personId)}
+                className="h-7 rounded-full px-3 text-xs disabled:opacity-100"
+                title={r.phone}
+              >
+                {on && !isPrimary ? '✓ ' : ''}{r.name}{r.relation !== 'Primary' ? ` · ${r.relation}` : ''}
+              </Button>
+            )
+          })}
+          <input type="hidden" name="recipientIds" value={extraIds} />
+        </div>
+      ) : null}
       <MergeFieldPicker channel="sms" onInsert={handleInsertToken} />
       <Textarea
         ref={bodyRef}
