@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.673.0 (2026-06-30)
+
+### Features
+- feat(crm): instant contacts filters (remove the Apply button)
+
+---
+
+
 ## v1.672.2 (2026-06-30)
 
 ### Bug Fixes
