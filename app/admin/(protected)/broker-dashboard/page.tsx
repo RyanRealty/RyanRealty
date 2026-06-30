@@ -6,6 +6,9 @@ import { getBrokerCommandCenterData } from '@/app/actions/broker-command-center'
 import { getBrokerActionQueue, confirmNextStepAction, getRecentNewLeads, getRecentWebsiteVisitors, getRecentEmailPeople, getCrmAccess } from '@/app/actions/crm'
 import { ActionSubmitButton } from '@/components/admin/ActionSubmitButton'
 import DashboardActivityFeed from '@/components/admin/DashboardActivityFeed'
+import { DashboardActivityTable } from '@/components/admin/DashboardActivityTable'
+import { getDashboardRecentActivity } from '@/lib/data/crm/getDashboardRecentActivity'
+import { getDashboardKpis } from '@/lib/data/crm/getDashboardKpis'
 import MonthCalendar from '@/components/admin/MonthCalendar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -110,6 +113,12 @@ export default async function BrokerCommandCenterPage({
   const selectedDays = activeDays ?? '30d'
   const selectedBroker = activeBroker ?? 'everyone'
 
+  // FUB desktop dashboard data: the Recent Activity table rows + real KPI counts.
+  const [activityRows, kpis] = await Promise.all([
+    getDashboardRecentActivity(feedSlug, 12).catch(() => []),
+    getDashboardKpis(feedSlug, actionQueue.length).catch(() => ({ newLeads30d: 0, unactioned: actionQueue.length })),
+  ])
+
   if (!data) {
     return (
       <div className="mx-auto max-w-5xl">
@@ -152,7 +161,7 @@ export default async function BrokerCommandCenterPage({
   )
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
+    <div className="mx-auto max-w-5xl space-y-8 lg:max-w-7xl">
 
       {/* ── Header — slim: greeting + the Everyone / Just me scope toggle (FUB
           "Everyone ▾"). No date pills / KPI controls — the feed is the page. ── */}
@@ -180,13 +189,40 @@ export default async function BrokerCommandCenterPage({
         ) : null}
       </header>
 
-      {/* ── FUB home: the person feed IS the dashboard (New Leads · Emails ·
-          Website). Matt directive 2026-06-29 + screenshot. No KPI tiles, no
-          live-pulse strip — just the feed, like FUB. ── */}
-      <section aria-label="Recent activity">
+      {/* ── Mobile: the FUB person feed IS the dashboard (New Leads · Emails ·
+          Website). ── */}
+      <section aria-label="Recent activity" className="lg:hidden">
         <GroupCard>
           <DashboardActivityFeed website={websiteRows} emails={emailRows} newLeads={leadRows} />
         </GroupCard>
+      </section>
+
+      {/* ── Desktop: the FUB desktop dashboard — KPI-card row + Recent Activity
+          table (Name · Email · Phone · Last Activity · Time · Stage · Assigned),
+          identical to FUB. Matt directive 2026-06-30 + screenshots. ── */}
+      <section className="hidden lg:block">
+        <div className="grid grid-cols-5 gap-4">
+          {[
+            { label: 'New Leads', value: String(kpis.newLeads30d), sub: `${kpis.unactioned} unactioned` },
+            { label: 'Needs Action', value: String(needsActionCount), sub: needsActionCount === 0 ? 'all caught up' : 'to act on' },
+            { label: 'Tasks Due', value: String(upcomingTasks.length), sub: 'upcoming' },
+            { label: 'Appts (30 days)', value: String(data.calendar.length), sub: 'scheduled' },
+            { label: 'Active Deals', value: String(liveDeals.length), sub: money(liveDeals.reduce((s, d) => s + (d.salePrice ?? 0), 0)) },
+          ].map((k) => (
+            <Card key={k.label} className="p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{k.label}</p>
+              <p className="mt-2 text-3xl font-bold tabular-nums text-foreground">{k.value}</p>
+              <p className="mt-1 truncate text-xs text-muted-foreground">{k.sub}</p>
+            </Card>
+          ))}
+        </div>
+
+        <div className="mt-6">
+          <SectionLabel action={{ href: '/admin/crm', label: 'View all people' }}>Recent Activity</SectionLabel>
+          <GroupCard>
+            <DashboardActivityTable rows={activityRows} />
+          </GroupCard>
+        </div>
       </section>
 
       {/* ── Focus: what needs the broker to act now ── */}
