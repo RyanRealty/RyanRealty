@@ -68,6 +68,22 @@ async function* fubPages(basePath, collectionKey, { maxPages = Infinity, limit =
 // ── mappers ────────────────────────────────────────────────────────────────
 const BROKER_BY_FUB_USER = { 1: 'matt', 2: 'rebecca', 3: 'paul' };
 
+// FUB free-text relationship type → our RELATIONSHIP_TYPES vocab (lib/crm/relationships.ts)
+// so the RelationshipsPanel renders a real label instead of falling back to "Other".
+function mapRelationshipType(t) {
+  const s = String(t ?? '').trim().toLowerCase();
+  if (!s) return 'other';
+  if (/(spouse|wife|husband)/.test(s)) return 'spouse';
+  if (/partner/.test(s)) return 'partner';
+  if (/(son|daughter|child|kid)/.test(s)) return 'child';
+  if (/(mother|father|parent|mom|dad)/.test(s)) return 'parent';
+  if (/(brother|sister|sibling)/.test(s)) return 'sibling';
+  if (/(co.?buyer|cobuyer)/.test(s)) return 'co-buyer';
+  if (/assistant/.test(s)) return 'assistant';
+  if (/refer/.test(s)) return 'referrer';
+  return 'other';
+}
+
 function normalizePhone(v) {
   const d = String(v ?? '').replace(/\D/g, '');
   if (d.length >= 10) return d.slice(-10); // canonical US 10-digit match key
@@ -268,7 +284,7 @@ async function importRelationships() {
       const rows = items.map((r) => ({
         person_id: FUB_TO_CRM.get(r.personId) ?? null,
         related_person_id: FUB_TO_CRM.get(r.relatedPersonId) ?? null,
-        related_name: r.name ?? null, kind: r.type ?? null, fub_legacy_id: r.id,
+        related_name: r.name ?? null, kind: mapRelationshipType(r.type), fub_legacy_id: r.id,
       })).filter((r) => r.person_id);
       if (rows.length) {
         const { error } = await sb.from('crm_relationships').upsert(rows, { onConflict: 'fub_legacy_id' });
