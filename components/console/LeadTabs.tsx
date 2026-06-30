@@ -102,14 +102,16 @@ export function LeadTabs({
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
-  const slot = (key: LeadTabKey) => cn(active === key ? 'flex' : 'hidden', 'flex-col gap-4 lg:flex')
+  // One focused section at a time on EVERY breakpoint — the FUB contact page is
+  // tabbed on desktop too, not a 3-column dump. Only the active tab renders.
+  const slot = (key: LeadTabKey) => cn(active === key ? 'flex' : 'hidden', 'flex-col gap-4')
 
   return (
     // Break out of the main's padding so the dark band is full-bleed to the top.
     <div className={cn('-mx-4 sm:-mx-6', flushTop && '-mt-5 sm:-mt-7')}>
       {/* ── Dark identity header band ── */}
       <div className="bg-primary text-primary-foreground">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6">
           <div className="flex items-center justify-between py-2.5 text-xs">
             <Link href={backHref} className="inline-flex min-h-8 items-center text-primary-foreground/70 transition-colors hover:text-primary-foreground">← Leads</Link>
             {fubHref ? (
@@ -142,8 +144,8 @@ export function LeadTabs({
             <StagePill stage={stage} />
           </div>
 
-          {/* Tabs — phone only (desktop shows every section in one scroll). */}
-          <div className="no-scrollbar -mb-px flex gap-5 overflow-x-auto lg:hidden" role="tablist" aria-label="Lead sections">
+          {/* Tabs — visible on every breakpoint (FUB is tabbed on desktop too). */}
+          <div className="no-scrollbar -mb-px flex gap-5 overflow-x-auto" role="tablist" aria-label="Lead sections">
             {TABS.map((t) => (
               <button
                 key={t.key}
@@ -168,38 +170,16 @@ export function LeadTabs({
       </div>
 
       {/* ── Light grouped body ── */}
-      {/*
-       * Desktop (lg+): true 3-column FUB workspace.
-       *   LEFT   — identity / contact data (overview)
-       *   MIDDLE — composers + timeline (comms → activity)
-       *   RIGHT  — action management (tasks → watching → workflow)
-       *
-       * Mobile (< lg): single focused tab via slot() — unchanged.
-       * The slot() helper already emits `lg:flex` on every key so all
-       * columns are visible at lg+; the CSS grid positions them.
-       */}
-      <div className="mx-auto max-w-6xl px-4 pt-4 sm:px-6">
-        {/* Mobile: single-column stacking (slot() controls visibility).
-            Desktop: 3-column grid — left 1fr · middle 1.4fr · right 1fr */}
-        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start lg:gap-4">
-
-          {/* LEFT — contact identity, details, source, memberships */}
-          <div className={slot('overview')}>{overview}</div>
-
-          {/* MIDDLE — action bar / composers then full activity timeline */}
-          <div className="lg:flex lg:flex-col lg:gap-4">
-            <div className={slot('comms')}>{comms}</div>
-            <div className={slot('activity')}>{activity}</div>
-          </div>
-
-          {/* RIGHT — tasks, watching / saved searches, workflow / tags */}
-          <div className="lg:flex lg:flex-col lg:gap-4">
-            <div className={slot('tasks')}>{tasks}</div>
-            <div className={slot('watching')}>{watching}</div>
-            <div className={slot('workflow')}>{workflow}</div>
-          </div>
-
-        </div>
+      {/* One focused section per tab on every breakpoint, centered in a readable
+          column that aligns with the identity band above — the FUB contact page,
+          not a 3-column dashboard dump. */}
+      <div className="mx-auto max-w-3xl px-4 pt-4 sm:px-6">
+        <div className={slot('overview')}>{overview}</div>
+        <div className={slot('comms')}>{comms}</div>
+        <div className={slot('activity')}>{activity}</div>
+        <div className={slot('tasks')}>{tasks}</div>
+        <div className={slot('watching')}>{watching}</div>
+        <div className={slot('workflow')}>{workflow}</div>
       </div>
     </div>
   )
