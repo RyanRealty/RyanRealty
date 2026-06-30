@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.680.0 (2026-06-30)
+
+### Features
+- feat(crm): link relationships by NAME, not a contact id
+
+---
+
+
 ## v1.679.1 (2026-06-30)
 
 ### Maintenance
