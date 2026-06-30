@@ -15,6 +15,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { CrmAvatar } from '@/components/admin/crm/mobile/CrmMobileKit'
 import { cn } from '@/lib/utils'
 
 export type ActivityRow = { personId: number; name: string; pictureUrl: string | null; ts: string; label: string }
@@ -38,50 +39,48 @@ export default function DashboardActivityFeed({
   emails: ActivityRow[]
   newLeads: ActivityRow[]
 }) {
-  const [seg, setSeg] = useState<Segment>('website')
+  // FUB home order: New Leads · Emails · Website, New Leads first + default.
+  const [seg, setSeg] = useState<Segment>('leads')
   const lists: Record<Segment, ActivityRow[]> = { website, emails, leads: newLeads }
-  const tabs: { key: Segment; label: string; count: number }[] = [
-    { key: 'website', label: 'On the site', count: website.length },
-    { key: 'emails', label: 'Email', count: emails.length },
-    { key: 'leads', label: 'New leads', count: newLeads.length },
+  const tabs: { key: Segment; label: string }[] = [
+    { key: 'leads', label: 'New Leads' },
+    { key: 'emails', label: 'Emails' },
+    { key: 'website', label: 'Website' },
   ]
   const rows = lists[seg]
 
   return (
-    <div className="border-t border-border">
-      <div className="no-scrollbar flex gap-1 overflow-x-auto px-3 py-2.5" role="tablist" aria-label="Activity">
+    <div>
+      {/* FUB underline tabs */}
+      <div className="flex border-b border-border" role="tablist" aria-label="Activity">
         {tabs.map((t) => (
           <Button
             key={t.key}
             type="button"
             role="tab"
             aria-selected={seg === t.key}
-            variant={seg === t.key ? 'default' : 'secondary'}
-            size="sm"
+            variant="ghost"
             onClick={() => setSeg(t.key)}
-            className="shrink-0 gap-1.5 whitespace-nowrap rounded-full"
+            className={cn(
+              'h-auto flex-1 rounded-none border-b-2 py-3 text-sm font-medium hover:bg-transparent',
+              seg === t.key ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground',
+            )}
           >
             {t.label}
-            <span className={cn('tabular-nums', seg === t.key ? 'text-primary-foreground/80' : 'text-muted-foreground/70')}>{t.count}</span>
           </Button>
         ))}
       </div>
 
       {rows.length === 0 ? (
-        <p className="border-t border-border px-4 py-6 text-center text-sm text-muted-foreground">
+        <p className="px-4 py-10 text-center text-sm text-muted-foreground">
           {seg === 'website' ? 'No identified visitors yet. Named people show here as soon as a contact clicks a link in your email or text.' : seg === 'emails' ? 'No recent email activity from your contacts.' : 'No new leads yet.'}
         </p>
       ) : (
-        <ul className="divide-y divide-border border-t border-border">
+        <ul className="divide-y divide-border">
           {rows.map((r) => (
             <li key={`${r.personId}-${r.ts}`}>
-              <Link href={`/admin/console/leads/${r.personId}`} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/40">
-                {r.pictureUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={r.pictureUrl} alt="" referrerPolicy="no-referrer" className="h-9 w-9 shrink-0 rounded-full border border-border object-cover" />
-                ) : (
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground">{(r.name ?? '?').charAt(0).toUpperCase()}</span>
-                )}
+              <Link href={`/admin/console/leads/${r.personId}`} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/40">
+                <CrmAvatar name={r.name} src={r.pictureUrl} size={40} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium text-foreground">{r.name}</span>
                   <span className="block truncate text-xs text-muted-foreground">{r.label}</span>

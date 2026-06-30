@@ -130,8 +130,7 @@ export default function ConversationFeed({
                 {participant ? <div className="truncate text-sm text-foreground">{participant}</div> : null}
                 {preview ? (
                   <div className={expanded ? 'mt-0.5 whitespace-pre-wrap break-words text-sm text-muted-foreground' : 'mt-0.5 line-clamp-2 text-sm text-muted-foreground'}>
-                    {expanded ? preview.slice(0, 4000) : preview}
-                    {expanded && preview.length > 4000 ? '…' : ''}
+                    {preview}
                   </div>
                 ) : null}
                 {opened ? (

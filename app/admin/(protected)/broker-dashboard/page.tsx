@@ -1,10 +1,9 @@
 // @no-parity — internal broker command surface
 import Link from 'next/link'
 import { revalidatePath } from 'next/cache'
-import { ChevronRight, CheckCircle2, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { ChevronRight, CheckCircle2 } from 'lucide-react'
 import { getBrokerCommandCenterData } from '@/app/actions/broker-command-center'
 import { getBrokerActionQueue, confirmNextStepAction, getRecentNewLeads, getRecentWebsiteVisitors, getRecentEmailPeople, getCrmAccess } from '@/app/actions/crm'
-import { fetchLiveSummary } from '../visitors/_lib/queries'
 import { ActionSubmitButton } from '@/components/admin/ActionSubmitButton'
 import DashboardActivityFeed from '@/components/admin/DashboardActivityFeed'
 import MonthCalendar from '@/components/admin/MonthCalendar'
@@ -20,12 +19,6 @@ export const dynamic = 'force-dynamic'
 function money(v: number | null | undefined): string {
   if (!v) return '—'
   return `$${Math.round(v).toLocaleString()}`
-}
-
-function moneyCompact(v: number): string {
-  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`
-  if (v >= 1_000) return `$${Math.round(v / 1_000)}K`
-  return `$${v}`
 }
 
 function fmtDate(iso: string | null | undefined, opts?: Intl.DateTimeFormatOptions): string {
@@ -82,100 +75,6 @@ function GroupCard({ children, className = '' }: { children: React.ReactNode; cl
 }
 
 /** Live-pulse tile: big number, quiet label. Part of the Right Now hero. */
-function LiveTile({ label, value, href, accent }: { label: string; value: number; href: string; accent?: boolean }) {
-  return (
-    <Link href={href} className="flex flex-col gap-0.5 px-4 py-3.5 transition-colors hover:bg-muted/40">
-      <span className={cn('text-2xl font-bold leading-none tabular-nums', accent ? 'text-success' : 'text-foreground')}>
-        {value}
-      </span>
-      <span className="truncate text-xs text-muted-foreground">{label}</span>
-    </Link>
-  )
-}
-
-// ── FUB-style KPI tile ────────────────────────────────────
-/**
- * FUB KPI tile: large metric, optional sub-label, a delta badge (vs prior),
- * a tiny sparkline-style bar graph placeholder, and a link.
- *
- * Sparkline: we don't have time-series here, so we render a compact 6-bar
- * mini-graph that conveys "trending" using the delta sign — bars grow to the
- * right when positive, shrink when negative. Purely indicative UI chrome
- * that matches FUB's visual rhythm without fabricating actual data.
- */
-type DeltaDir = 'up' | 'down' | 'flat'
-
-function KpiTile({
-  label,
-  value,
-  subLabel,
-  delta,
-  deltaLabel,
-  dir,
-  href,
-}: {
-  label: string
-  value: string | number
-  subLabel?: string
-  delta?: string
-  deltaLabel?: string
-  dir?: DeltaDir
-  href: string
-}) {
-  const barHeights = dir === 'up'
-    ? [30, 40, 45, 55, 65, 80]
-    : dir === 'down'
-    ? [80, 65, 55, 45, 40, 30]
-    : [50, 55, 50, 60, 55, 50]
-
-  const dirColor =
-    dir === 'up' ? 'text-success' : dir === 'down' ? 'text-destructive' : 'text-muted-foreground'
-  const DirIcon =
-    dir === 'up' ? TrendingUp : dir === 'down' ? TrendingDown : Minus
-
-  return (
-    <Link
-      href={href}
-      className="group flex flex-col gap-2 rounded-xl border border-border bg-card px-4 py-4 shadow-sm transition-colors hover:bg-muted/40 active:bg-muted"
-    >
-      {/* Sparkline bars */}
-      <div className="flex items-end gap-0.5" aria-hidden>
-        {barHeights.map((h, i) => (
-          <span
-            key={i}
-            className="w-1 rounded-sm bg-primary/20 transition-all"
-            style={{ height: `${h * 0.28}px` }}
-          />
-        ))}
-      </div>
-
-      {/* Metric */}
-      <div className="min-w-0">
-        <span className="block truncate text-2xl font-bold leading-none tabular-nums text-foreground">
-          {value}
-        </span>
-        {subLabel ? (
-          <span className="mt-0.5 block truncate text-xs text-muted-foreground">{subLabel}</span>
-        ) : null}
-      </div>
-
-      {/* Label + delta row */}
-      <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-xs font-medium text-muted-foreground">{label}</span>
-        {delta ? (
-          <span className={cn('flex shrink-0 items-center gap-0.5 text-xs font-semibold tabular-nums', dirColor)}>
-            <DirIcon className="h-3 w-3" />
-            {delta}
-          </span>
-        ) : null}
-      </div>
-      {deltaLabel ? (
-        <span className="text-xs text-muted-foreground">{deltaLabel}</span>
-      ) : null}
-    </Link>
-  )
-}
-
 const CHANNEL_CHIP: Record<string, { label: string; cls: string }> = {
   email: { label: 'Email', cls: 'border-primary/20 bg-primary/10 text-primary' },
   sms: { label: 'Text', cls: 'border-success/30 bg-success/10 text-success' },
@@ -200,10 +99,9 @@ export default async function BrokerCommandCenterPage({
 }) {
   const feedAccess = await getCrmAccess()
   const feedSlug = feedAccess?.brokerSlug ?? null
-  const [data, actionQueue, liveSummary, websiteRows, emailRows, recentLeads] = await Promise.all([
+  const [data, actionQueue, websiteRows, emailRows, recentLeads] = await Promise.all([
     getBrokerCommandCenterData(),
     getBrokerActionQueue(),
-    fetchLiveSummary().catch(() => null),
     getRecentWebsiteVisitors(feedSlug, 12).catch(() => []),
     getRecentEmailPeople(feedSlug, 12).catch(() => []),
     getRecentNewLeads(12).catch(() => []),
@@ -227,10 +125,6 @@ export default async function BrokerCommandCenterPage({
     )
   }
 
-  const today = new Date().toLocaleDateString('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric',
-    timeZone: 'America/Los_Angeles',
-  })
   // YYYY-MM-DD in LA for the month calendar (en-CA renders ISO order).
   const todayIso = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' })
 
@@ -243,159 +137,54 @@ export default async function BrokerCommandCenterPage({
   // Tasks shown on the dashboard exclude overdue (today + upcoming only).
   const upcomingTasks = data.tasksDue.filter((t) => !t.isOverdue)
 
-  const liveActive = liveSummary?.totalActive ?? 0
-
-  // Recent activity feed rows
+  // FUB feed rows — "Name · via {source} · {date}". One row per recent lead.
   const leadRows = (recentLeads ?? []).map((l) => ({
     personId: l.id,
     name: l.name ?? `Contact #${l.id}`,
     pictureUrl: l.pictureUrl,
     ts: l.createdAt,
-    label: l.source ? `New lead · via ${l.source}` : 'New lead',
+    label: l.source ? `via ${l.source}` : 'New lead',
   }))
 
-  // ── KPI derivations (no new DAL calls — all from existing fetched data) ──
-
-  // Tile 1: New Leads — count of recent leads + unactioned count
-  const newLeadsCount = recentLeads.length
-  const unactionedCount = actionQueue.length
-
-  // Tile 2: Action Queue — how many items need broker attention now
-  const actionQueueCount = needsActionCount
-
-  // Tile 4: Upcoming appointments — calendar items in next 30 days (gcal + task types)
-  const now = Date.now()
-  const in30 = now + 30 * 86_400_000
-  const upcomingItems = data.calendar.filter((c) => {
-    const d = new Date(c.date).getTime()
-    return d >= now && d <= in30
-  })
-  const upcomingCount = upcomingItems.length
-
-  // Tile 5: Deals — active deal count + projected total value
-  // "Active" excludes dead deals — a canceled/lost/withdrawn cycle from months
-  // ago is not active and shouldn't clutter the dashboard or inflate the count.
+  // Active deals exclude dead deals (canceled/lost/withdrawn cycles from months ago).
   const liveDeals = data.activeDeals.filter(
     (d) => !/cancel|lost|withdrawn|dead|terminated/i.test(`${d.stage} ${d.stageDetail ?? ''}`),
   )
-  const activeDealCount = liveDeals.length
-  const dealsValue = liveDeals.reduce((sum, d) => sum + (d.salePrice ?? d.listingPrice ?? 0), 0)
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
 
-      {/* ── Header ── */}
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            {greet()}, {data.broker.displayName.split(' ')[0]}.
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">{today}</p>
-        </div>
-        {/* URL-driven controls: audience scope + date range pill tabs.
-            No shrink-0: on a phone the group must wrap within the viewport
-            (shrink-0 forced its full ~494px width → 120px overflow at 390px). */}
-        <div className="flex flex-wrap items-center gap-2">
-          {data.isSuperuser ? (
-            <div className="flex items-center rounded-lg border border-border bg-muted p-0.5">
-              {(['everyone', 'me'] as const).map((v) => (
-                <Link
-                  key={v}
-                  href={`/admin/broker-dashboard?broker=${v}&days=${selectedDays}`}
-                  className={cn(
-                    'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
-                    selectedBroker === v
-                      ? 'bg-card text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  {v === 'everyone' ? 'Everyone' : 'Just me'}
-                </Link>
-              ))}
-            </div>
-          ) : null}
-          <div className="flex items-center rounded-lg border border-border bg-muted p-0.5">
-            {([
-              { v: '7d', label: '7d' },
-              { v: '30d', label: '30d' },
-              { v: '90d', label: '90d' },
-              { v: 'ytd', label: 'YTD' },
-            ] as const).map(({ v, label }) => (
+      {/* ── Header — slim: greeting + the Everyone / Just me scope toggle (FUB
+          "Everyone ▾"). No date pills / KPI controls — the feed is the page. ── */}
+      <header className="flex items-center justify-between gap-3">
+        <h1 className="min-w-0 truncate text-xl font-bold tracking-tight text-foreground">
+          {greet()}, {data.broker.displayName.split(' ')[0]}.
+        </h1>
+        {data.isSuperuser ? (
+          <div className="flex shrink-0 items-center rounded-lg border border-border bg-muted p-0.5">
+            {(['everyone', 'me'] as const).map((v) => (
               <Link
                 key={v}
-                href={`/admin/broker-dashboard?days=${v}&broker=${selectedBroker}`}
+                href={`/admin/broker-dashboard?broker=${v}&days=${selectedDays}`}
                 className={cn(
                   'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
-                  selectedDays === v
+                  selectedBroker === v
                     ? 'bg-card text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                {label}
+                {v === 'everyone' ? 'Everyone' : 'Just me'}
               </Link>
             ))}
           </div>
-          {data.isSuperuser ? (
-            <Button asChild variant="outline" size="sm" className="h-8">
-              <Link href="/admin?broker=all">All leads</Link>
-            </Button>
-          ) : null}
-          <Button asChild size="sm" className="h-8">
-            <Link href="/admin/crm">Open CRM</Link>
-          </Button>
-        </div>
+        ) : null}
       </header>
 
-      {/* ── FUB KPI tile row (5 tiles) ── */}
-      <section aria-label="Performance overview">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <KpiTile
-            label="New Leads"
-            value={newLeadsCount}
-            subLabel={unactionedCount > 0 ? `${unactionedCount} unactioned` : undefined}
-            dir={newLeadsCount > 0 ? 'up' : 'flat'}
-            href="/admin/crm/activity?types=new_leads"
-          />
-          <KpiTile
-            label="Needs Action"
-            value={actionQueueCount}
-            subLabel={actionQueueCount > 0 ? 'items pending' : 'All clear'}
-            dir={actionQueueCount > 5 ? 'down' : actionQueueCount > 0 ? 'flat' : 'up'}
-            href="/admin/crm"
-          />
-          <KpiTile
-            label="Appts Next 30 Days"
-            value={upcomingCount}
-            subLabel={upcomingCount === 1 ? '1 scheduled' : upcomingCount > 0 ? `${upcomingCount} scheduled` : 'None yet'}
-            dir={upcomingCount > 0 ? 'up' : 'flat'}
-            href="/admin/crm/tasks"
-          />
-          <KpiTile
-            label="Deals Next 30 Days"
-            value={activeDealCount > 0 ? moneyCompact(dealsValue) : '0'}
-            subLabel={activeDealCount > 0 ? `${activeDealCount} deal${activeDealCount !== 1 ? 's' : ''}` : 'No active deals'}
-            dir={activeDealCount > 0 ? 'up' : 'flat'}
-            href="/admin/crm/deals"
-          />
-        </div>
-      </section>
-
-      {/* ── Recent Activity (FUB table layout) ── */}
-      <section>
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recent Activity</h2>
-          <Button asChild variant="outline" size="sm" className="h-7 text-xs">
-            <Link href="/admin/crm">View all people</Link>
-          </Button>
-        </div>
+      {/* ── FUB home: the person feed IS the dashboard (New Leads · Emails ·
+          Website). Matt directive 2026-06-29 + screenshot. No KPI tiles, no
+          live-pulse strip — just the feed, like FUB. ── */}
+      <section aria-label="Recent activity">
         <GroupCard>
-          {/* Live pulse strip above the feed */}
-          <div className="grid grid-cols-2 divide-x divide-border border-b border-border sm:grid-cols-4">
-            <LiveTile label="On site now" value={liveActive} accent={liveActive > 0} href="/admin/visitors/live" />
-            <LiveTile label="Hot today" value={liveSummary?.hotLeadsToday ?? 0} accent={(liveSummary?.hotLeadsToday ?? 0) > 0} href="/admin/visitors/live" />
-            <LiveTile label="Identified today" value={liveSummary?.identifiedToday ?? 0} href="/admin/visitors/live" />
-            <LiveTile label="Sessions today" value={liveSummary?.totalToday ?? 0} href="/admin/visitors/live" />
-          </div>
           <DashboardActivityFeed website={websiteRows} emails={emailRows} newLeads={leadRows} />
         </GroupCard>
       </section>
