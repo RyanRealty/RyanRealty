@@ -25,6 +25,28 @@ text/email composer + group-MMS thread, driven by Matt's FUB screenshots
     to `+15417033095` + post a group message — all accepted, then cleaned up. Our 4
     numbers are MMS-capable; a Default Conversations Service exists.
 
+## ✅ FUB relationships + messages → CRM (reconciliation, 2026-06-29)
+
+- **Comms tab now shows the FULL history** (commit 178efc1b). Was capped at the
+  latest 40 of a 100-row timeline window — older texts/emails (incl. group texts)
+  looked lost. New `getContactConversation` DAL + `loadContactConversation` action +
+  a "Load older messages" pager walk the whole history, newest first, texts + emails
+  + calls interleaved. Verified on lead 13014 (423 texts + 120 emails): 50 → 100 →…
+- **Messages are fully synced** — spot-checked Kevin Hoffman: FUB 423 texts = our 423;
+  emails 120 (≥ FUB's 100, we also hold Gmail-synced). Totals: 2,850 texts, 41,748
+  emails in `crm_timeline`. No destructive migration was run — nothing deleted.
+  Group texts are stored per-participant as `sms_in/out` rows, so they're preserved
+  and now visible via the full-history Comms tab.
+- **Relationships imported + labels fixed** (commit 84be3855). 29/30 FUB
+  `peopleRelationships` in `crm_relationships`; the 1 skip is a related person whose
+  FUB contact isn't in our CRM. Kinds were raw FUB strings (Spouse/Husband/Wife/
+  Daughter/"") → none matched our vocab → all rendered "Other". Normalized to
+  spouse(9)/child(1)/other(19) in both the main import and a one-off remap.
+  `related_person_id` stays null by design — FUB's endpoint exposes the related
+  person's info but no usable counterparty id, so a second-contact link can't be
+  derived from it. Relationships render via `related_name` + correct label.
+- **Relationship linking is now a name search** (commit bd664e76) — no more contact-id.
+
 ## ⏳ Needs a live test (Matt's real phones — I can't do this autonomously)
 
 - **Group MMS delivery**: confirm two real mobile numbers actually receive ONE group
