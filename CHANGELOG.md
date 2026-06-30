@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.679.1 (2026-06-30)
+
+### Maintenance
+- docs(crm): FUB composer + group-MMS progress + remaining increments
+
+---
+
+
 ## v1.679.0 (2026-06-30)
 
 ### Features
