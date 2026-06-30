@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.679.0 (2026-06-30)
+
+### Features
+- feat(crm): FUB "To" row on the email composer
+
+---
+
+
 ## v1.678.0 (2026-06-30)
 
 ### Features
