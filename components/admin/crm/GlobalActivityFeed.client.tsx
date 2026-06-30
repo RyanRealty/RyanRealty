@@ -221,10 +221,13 @@ export default function GlobalActivityFeed({
                           </audio>
                         ) : null}
 
+                        {/* No per-row broker label: the feed is already scoped to the
+                            selected agent's leads, and item.broker is who PERFORMED the
+                            action (a teammate / blast), which reads as "everyone's
+                            activity" on a scoped view. */}
                         <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
                           {item.direction ? <DirectionTag direction={item.direction} /> : null}
                           {item.direction ? <span aria-hidden>·</span> : null}
-                          {item.broker ? <><span>{item.broker}</span><span aria-hidden>·</span></> : null}
                           <span className="capitalize">{item.category}</span>
                         </div>
                       </div>
