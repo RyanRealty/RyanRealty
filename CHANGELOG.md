@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.680.4 (2026-06-30)
+
+### Bug Fixes
+- fix(crm): group MMS — normalize participant/proxy phones to E.164
+
+---
+
+
 ## v1.680.3 (2026-06-30)
 
 ### Maintenance
