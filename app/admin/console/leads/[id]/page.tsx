@@ -40,6 +40,7 @@ import { getOwnedHomeMatches, getGuestSearchAlertsForLead, getViewedListingsForL
 import { getOwnedHomeMedia } from '@/lib/crm/owned-home-media'
 import { getContactMemberships } from '@/lib/data/crm/getContactMemberships'
 import { MembershipToggles } from '@/components/admin/crm/MembershipToggles'
+import { ContactQuickActions } from '@/components/admin/crm/ContactQuickActions'
 import { getContactActivityFeed } from '@/lib/data/crm/getContactActivityFeed'
 import ContactActivityFeed from '@/components/admin/crm/ContactActivityFeed'
 import { getContactEmailEngagement } from '@/lib/data/crm/getContactEmailEngagement'
@@ -456,6 +457,17 @@ export default async function ConsoleLeadPage({
         email={primaryEmail}
         phone={primaryPhone ? fmtPhone(primaryPhone) : null}
         defaultTab="comms"
+        quickActions={
+          <ContactQuickActions
+            personId={person.id}
+            newsletterSubscribed={contactMemberships.newsletter.subscribed}
+            automations={contactMemberships.sequences}
+            savedSearches={contactAlerts.map((a) => ({ id: a.id, label: a.label, url: a.url, active: a.active }))}
+            reportSub={reportSub ? { isActive: reportSub.isActive, areas: reportSub.areas, frequency: reportSub.frequency } : null}
+            reportAreas={reportAreas}
+            reportSetAction={setReportSubsForm.bind(null, person.id)}
+          />
+        }
         backHref={BASE}
         fubHref={null}
         flushTop={!hasAlerts}
