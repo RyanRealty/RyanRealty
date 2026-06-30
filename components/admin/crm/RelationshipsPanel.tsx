@@ -18,7 +18,8 @@
  * contact's numeric id with a small helper note. When a contact-search picker
  * action lands, swap the id Input for it without touching the actions.
  */
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
+import { X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,6 +27,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { linkContacts, unlinkContacts } from '@/app/actions/crm-relationships'
+import { searchCrmContactsAction, type ContactSearchHit } from '@/app/actions/crm-tasks'
 import { RELATIONSHIP_TYPES, RELATIONSHIP_LABELS, type RelationshipType } from '@/lib/crm/relationships'
 import type { ContactRelationship } from '@/lib/data/crm/getContactRelationships'
 
@@ -41,9 +43,34 @@ export function RelationshipsPanel({
 }) {
   const [rows, setRows] = useState<ContactRelationship[]>(relationships)
   const [type, setType] = useState<RelationshipType>('spouse')
-  const [relatedId, setRelatedId] = useState('')
   const [pending, startTransition] = useTransition()
   const [note, setNote] = useState<Note>(null)
+
+  // Contact name search (replaces the old "enter the contact id" input).
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<ContactSearchHit[]>([])
+  const [selected, setSelected] = useState<ContactSearchHit | null>(null)
+  const [searching, setSearching] = useState(false)
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function onSearch(value: string) {
+    setQuery(value)
+    if (debounce.current) clearTimeout(debounce.current)
+    const q = value.trim()
+    if (q.length < 2) { setResults([]); return }
+    setSearching(true)
+    debounce.current = setTimeout(async () => {
+      const r = await searchCrmContactsAction(q)
+      setResults(r.ok ? r.results.filter((hit) => hit.id !== personId) : [])
+      setSearching(false)
+    }, 250)
+  }
+
+  function pick(hit: ContactSearchHit) {
+    setSelected(hit)
+    setQuery('')
+    setResults([])
+  }
 
   /**
    * Optimistically apply a UI change, dispatch the action, and revert + surface
@@ -78,32 +105,31 @@ export function RelationshipsPanel({
   }
 
   function onAdd() {
-    const toPersonId = Number(relatedId.trim())
-    if (!Number.isInteger(toPersonId) || toPersonId <= 0) {
-      setNote({ tone: 'err', text: 'Enter the related contact id (a positive whole number).' })
+    if (!selected) {
+      setNote({ tone: 'err', text: 'Search for a contact by name and pick one to link.' })
       return
     }
+    const toPersonId = selected.id
     if (toPersonId === personId) {
       setNote({ tone: 'err', text: 'A contact cannot be linked to itself.' })
       return
     }
-    // Temporary client row reflects the new link until the next server load
-    // (the action writes the real reciprocal + snapshot name server-side).
+    const picked = selected
     const optimistic: ContactRelationship = {
       id: -toPersonId,
       relatedPersonId: toPersonId,
-      name: `Contact #${toPersonId}`,
+      name: picked.name,
       type,
       label: RELATIONSHIP_LABELS[type],
     }
     dispatch(
       () => {
         setRows((rs) => [...rs, optimistic])
-        setRelatedId('')
+        setSelected(null)
       },
       () => setRows((rs) => rs.filter((r) => r.id !== optimistic.id)),
       () => linkContacts({ fromPersonId: personId, toPersonId, type }),
-      `Linked Contact #${toPersonId} as ${RELATIONSHIP_LABELS[type]}`,
+      `Linked ${picked.name} as ${RELATIONSHIP_LABELS[type]}`,
     )
   }
 
@@ -153,21 +179,52 @@ export function RelationshipsPanel({
             </Select>
           </div>
           <div className="flex-1 space-y-1">
-            <Label htmlFor="rel-id" className="text-xs text-muted-foreground">Related contact id</Label>
-            <Input
-              id="rel-id"
-              type="number"
-              inputMode="numeric"
-              value={relatedId}
-              onChange={(e) => setRelatedId(e.target.value)}
-              placeholder="e.g. 4821"
-              className="h-10 tabular-nums"
-            />
+            <Label htmlFor="rel-search" className="text-xs text-muted-foreground">Contact</Label>
+            {selected ? (
+              <div className="flex h-10 items-center justify-between gap-2 rounded-md border border-input bg-muted/40 px-3">
+                <span className="truncate text-sm font-medium text-foreground">{selected.name}</span>
+                <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setSelected(null)} aria-label="Clear selected contact">
+                  <X className="h-4 w-4" aria-hidden />
+                </Button>
+              </div>
+            ) : (
+              <div className="relative">
+                <Input
+                  id="rel-search"
+                  value={query}
+                  onChange={(e) => onSearch(e.target.value)}
+                  placeholder="Search contacts by name…"
+                  className="h-10"
+                  autoComplete="off"
+                />
+                {query.trim().length >= 2 ? (
+                  <div className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md border border-border bg-popover shadow-md">
+                    {searching ? (
+                      <p className="px-3 py-2 text-xs text-muted-foreground">Searching…</p>
+                    ) : results.length === 0 ? (
+                      <p className="px-3 py-2 text-xs text-muted-foreground">No contacts found.</p>
+                    ) : (
+                      results.map((hit) => (
+                        <Button
+                          key={hit.id}
+                          type="button"
+                          variant="ghost"
+                          onClick={() => pick(hit)}
+                          className="h-auto w-full justify-start rounded-none px-3 py-2 text-sm font-normal"
+                        >
+                          {hit.name}
+                        </Button>
+                      ))
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
           <Button
             type="button"
             size="sm"
-            disabled={pending}
+            disabled={pending || !selected}
             onClick={onAdd}
             className="min-h-11 shrink-0 sm:min-h-10"
           >
@@ -175,7 +232,7 @@ export function RelationshipsPanel({
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Use the related contact&apos;s id (the number in their profile url). The reverse link is created on both records automatically.
+          Search by name and pick a contact. The reverse link is created on both records automatically.
         </p>
       </div>
 
