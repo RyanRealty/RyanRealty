@@ -30,7 +30,6 @@ import CustomFieldsPanel from '@/components/admin/crm/CustomFieldsPanel'
 import { setReportSubscriptionAction } from '@/app/actions/crm-report-subscriptions'
 import { saveContactCustomFieldsAction } from '@/app/actions/contact-custom-fields'
 import ReportSubscriptionsPanel from '@/components/admin/crm/ReportSubscriptionsPanel'
-import NextStepCard from '@/components/admin/crm/NextStepCard'
 import { OwnedHomeCard } from '@/components/admin/crm/OwnedHomeCard'
 import { timelineEmailBody } from '@/lib/crm/email-body'
 import { renderCrmMerge } from '@/lib/crm/merge'
@@ -40,8 +39,8 @@ import { getOwnedHomeMatches, getGuestSearchAlertsForLead, getViewedListingsForL
 import { getOwnedHomeMedia } from '@/lib/crm/owned-home-media'
 import { getContactMemberships } from '@/lib/data/crm/getContactMemberships'
 import { ContactQuickActions } from '@/components/admin/crm/ContactQuickActions'
+import { ContactInfoTab } from '@/components/admin/crm/ContactInfoTab'
 import { getContactActivityFeed } from '@/lib/data/crm/getContactActivityFeed'
-import ContactActivityFeed from '@/components/admin/crm/ContactActivityFeed'
 import { getContactEmailEngagement } from '@/lib/data/crm/getContactEmailEngagement'
 import ContactEmailEngagement from '@/components/admin/crm/ContactEmailEngagement'
 import { getContactBehaviorSummary } from '@/lib/data/crm/getContactBehaviorSummary'
@@ -57,11 +56,9 @@ import { TemplatePickerNav } from '@/components/admin/crm/TemplatePickerNav'
 import ConversationFeed from '@/components/admin/crm/ConversationFeed'
 import { getContactConversation } from '@/lib/data/crm/getContactConversation'
 import ViewedHomeCard from '@/components/admin/crm/ViewedHomeCard'
-import AutoSubmitSelect from '@/components/admin/crm/AutoSubmitSelect'
 import { isConversationEvent } from '@/components/admin/crm/ConversationThread'
 import { StatusPill } from '@/components/console/StatusPill'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
-import { KpiStrip } from '@/components/console/KpiStrip'
 import { LeadTabs } from '@/components/console/LeadTabs'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -70,7 +67,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
-import { Phone as PhoneIcon, MessageSquare, Mail as MailIcon } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 export const metadata = { title: 'Lead · Console' }
@@ -410,6 +406,11 @@ export default async function ConsoleLeadPage({
 
   const webEvents = full.timeline.filter((t) => t.kind === 'web_event').slice(0, 6)
   const activityLog = full.timeline.filter((t) => !isConversationEvent(t.kind) && t.kind !== 'email_open' && t.kind !== 'email_click')
+  // Inquiry date for the Info tab "Inquiries" section — when the lead was created.
+  const inquiryDate = (() => {
+    const created = full.timeline.find((t) => t.kind === 'lead_created')?.ts ?? null
+    return created ? new Date(created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }) : null
+  })()
   const openTasks = full.tasks.filter((t) => !t.completed_at)
   const doneTasks = full.tasks.filter((t) => t.completed_at)
   const customEntries = Object.entries(person.custom ?? {}).filter(([, v]) => v !== null && v !== '' && v !== undefined)
@@ -490,154 +491,26 @@ export default async function ConsoleLeadPage({
         flushTop={!hasAlerts}
         overview={
           <>
-      {/* ── Quick actions + stage/owner + contacts ── */}
-      <Card>
-        <CardContent className="p-4 sm:p-5">
-          {/* FUB pattern: call/text/email live in the per-number icons below + the
-              + compose button — no redundant top action buttons or dropdowns. */}
-          {/* Phone numbers + Emails — every value listed, each with its own quick
-              actions (call/text per number, email per address). */}
-          {full.contactPoints.length === 0 ? (
-            <p className="mt-3 text-sm text-muted-foreground">No contact info on file.</p>
-          ) : (
-            <div className="mt-4 space-y-3">
-              {full.contactPoints.some((c) => c.kind === 'phone') ? (
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Phone numbers</div>
-                  <ul className="mt-1.5 divide-y divide-border overflow-hidden rounded-lg border border-border">
-                    {full.contactPoints.filter((c) => c.kind === 'phone').map((cp) => (
-                      <li key={cp.id} className="flex items-center justify-between gap-3 bg-card px-3 py-2">
-                        <a href={`tel:+1${cp.value}`} className="min-w-0 truncate text-sm tabular-nums text-foreground hover:underline">
-                          {fmtPhone(cp.value)}
-                          {cp.is_primary ? <span className="ml-1.5 text-xs text-muted-foreground">primary</span> : null}
-                        </a>
-                        <div className="flex shrink-0 items-center gap-1.5">
-                          <Button asChild size="icon" variant="outline" className="h-8 w-8" title="Text">
-                            <a href="#comms" aria-label="Text this number"><MessageSquare className="h-4 w-4" /></a>
-                          </Button>
-                          <form action={startCallForm.bind(null, person.id)}>
-                            <Button type="submit" size="icon" className="h-8 w-8" title="Call — rings your phone first, then connects (recorded)" aria-label="Call this number">
-                              <PhoneIcon className="h-4 w-4" />
-                            </Button>
-                          </form>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-              {full.contactPoints.some((c) => c.kind === 'email') ? (
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Emails</div>
-                  <ul className="mt-1.5 divide-y divide-border overflow-hidden rounded-lg border border-border">
-                    {full.contactPoints.filter((c) => c.kind === 'email').map((cp) => (
-                      <li key={cp.id} className="flex items-center justify-between gap-3 bg-card px-3 py-2">
-                        <a href={`mailto:${cp.value}`} className="min-w-0 truncate text-sm text-foreground hover:underline">
-                          {cp.value}
-                          {cp.is_primary ? <span className="ml-1.5 text-xs text-muted-foreground">primary</span> : null}
-                        </a>
-                        <Button asChild size="icon" variant="outline" className="h-8 w-8 shrink-0" title="Email">
-                          <a href="#comms" aria-label="Email this address"><MailIcon className="h-4 w-4" /></a>
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </div>
-          )}
-
-          {/* Details — FUB Info-tab rows: assigned, stage, source, tags. */}
-          <div className="mt-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Details</div>
-            <ul className="mt-1.5 divide-y divide-border overflow-hidden rounded-lg border border-border">
-              <li className="flex items-center justify-between gap-2 bg-card px-3 py-1.5">
-                <span className="shrink-0 text-sm text-muted-foreground">Assigned to</span>
-                <form action={assignBrokerForm} className="flex items-center">
-                  <input type="hidden" name="personId" value={person.id} />
-                  <AutoSubmitSelect
-                    name="broker"
-                    defaultValue={person.assigned_broker ?? undefined}
-                    placeholder="Unassigned"
-                    aria-label="Assigned broker"
-                    options={CRM_BROKERS.map((b) => ({ value: b, label: CRM_BROKER_DISPLAY[b] }))}
-                  />
-                </form>
-              </li>
-              <li className="flex items-center justify-between gap-2 bg-card px-3 py-1.5">
-                <span className="shrink-0 text-sm text-muted-foreground">Stage</span>
-                <form action={updateStageForm} className="flex items-center">
-                  <input type="hidden" name="personId" value={person.id} />
-                  <AutoSubmitSelect
-                    name="stage"
-                    defaultValue={person.stage}
-                    aria-label="Stage"
-                    options={CRM_STAGES.map((s) => ({ value: s, label: s }))}
-                  />
-                </form>
-              </li>
-              <li className="flex items-center justify-between gap-2 bg-card px-3 py-2">
-                <span className="text-sm text-muted-foreground">Source</span>
-                <span className="truncate text-sm font-medium text-foreground">{person.source ?? '—'}</span>
-              </li>
-              {Array.isArray(person.tags) && person.tags.length > 0 ? (
-                <li className="flex items-start justify-between gap-3 bg-card px-3 py-2">
-                  <span className="shrink-0 text-sm text-muted-foreground">Tags</span>
-                  <span className="text-right text-sm font-medium text-foreground">{person.tags.slice(0, 10).join(', ')}</span>
-                </li>
-              ) : null}
-            </ul>
-          </div>
-
-          {/* "Plugged in" removed — newsletter/workflow live in the Memberships card
-              below + the Workflow tab (FUB-clean Info tab). */}
-        </CardContent>
-      </Card>
-
-      {/* Memberships card removed — newsletter / automations / saved searches /
-          market reports are now the quick-action chips in the header. */}
-
-      {/* ── Relationships: link/unlink related contacts (spouse, co-buyer, referrer) ── */}
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-base">Relationships</CardTitle></CardHeader>
-        <CardContent className="p-4 pt-0 sm:p-5 sm:pt-0">
-          <RelationshipsPanel personId={person.id} relationships={relationships} />
-        </CardContent>
-      </Card>
-
-      {/* ── Custom fields — the FUB person-record custom-field section, typed +
-           grouped from the field registry (read-only v1). Renders null when the
-           contact has no displayable custom fields. ── */}
-      <CustomFieldsPanel personId={person.id} custom={person.custom} defs={fieldDefs} />
-
-      {/* ── Recent activity glance (full unified feed lives in the Activity tab) ── */}
-      {activityFeed.length > 0 ? (
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-base">Recent activity</CardTitle></CardHeader>
-          <CardContent className="p-4 pt-0 sm:p-5 sm:pt-0">
-            <ContactActivityFeed items={activityFeed.slice(0, 8)} />
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {/* ── Next best action — home-driven (owns a home → Send CMA, else → Send
-           newsletter). Replaces the prior sequence-enrollment recommendation
-           (Matt directive 2026-06-24). CMA is review-first: the button queues +
-           builds, then the card flips to "Review & Send CMA". ── */}
-      <NextStepCard
-        step={nextStep.step}
-        cmaAction={startCmaForm.bind(null, person.id)}
-        newsletterAction={sendNewsletterForm.bind(null, person.id)}
-        pending={reviewableCma?.id ? { kind: 'cma', deliveryId: String(reviewableCma.id), sendAction: sendCmaForm.bind(null, person.id) } : null}
+      {/* FUB-parity Info tab: clean iOS grouped sections (Phone · Emails ·
+          Relationships · Details · Inquiries · Custom fields). Newsletter /
+          automations / CMA / KPIs live in the header chips + home card, not here. */}
+      <ContactInfoTab
+        personId={person.id}
+        phones={full.contactPoints.filter((c) => c.kind === 'phone').map((c) => ({ id: c.id, display: fmtPhone(c.value), tel: `tel:+1${c.value}`, isPrimary: !!c.is_primary }))}
+        emails={full.contactPoints.filter((c) => c.kind === 'email').map((c) => ({ id: c.id, value: c.value, isPrimary: !!c.is_primary }))}
+        assignedBroker={person.assigned_broker}
+        stage={person.stage}
+        source={person.source}
+        tags={Array.isArray(person.tags) ? person.tags : []}
+        brokerOptions={CRM_BROKERS.map((b) => ({ value: b, label: CRM_BROKER_DISPLAY[b] }))}
+        stageOptions={[...CRM_STAGES]}
+        assignBrokerAction={assignBrokerForm}
+        updateStageAction={updateStageForm}
+        startCallAction={startCallForm.bind(null, person.id)}
+        inquiry={person.source ? { source: person.source, date: inquiryDate } : null}
+        relationshipsNode={<RelationshipsPanel personId={person.id} relationships={relationships} />}
+        customFieldsNode={Object.keys((person.custom as Record<string, unknown> | null) ?? {}).length > 0 ? <CustomFieldsPanel personId={person.id} custom={person.custom} defs={fieldDefs} /> : null}
       />
-
-      {/* ── KPI strip — shared console kit (per the picked mockup) ── */}
-      <KpiStrip items={[
-        { label: 'Homes viewed', value: viewedListings.length },
-        { label: 'Saved searches', value: savedSearches.length },
-        { label: 'Web sessions', value: full.visitorSessions },
-        { label: 'Open tasks', value: openTasks.length },
-      ]} />
           </>
         }
         comms={
