@@ -174,7 +174,7 @@ Marketing UTM report (visitor_sessions UTM — Overview links it; build or mark)
   sub-flows (office-hours editor, subdomain change, spam-label modal, block-list page) render read-only
   "coming soon" per §15.9.
 
-### Deals drag-to-restage (delivery order #3) — ✅ built + deployed (drag needs Matt's physical test)
+### Deals drag-to-restage (delivery order #3) — ✅ DONE + verified (Matt confirmed drag saves 2026-07-01)
 - `/admin/crm/deals` — commit e2fc5e3a. Buyers/Sellers pipeline switcher + per-pipeline stage columns from
   lib/crm/deal-pipelines.ts (mirrors api-export pipelines.json byte-for-byte). @dnd-kit drag-to-restage →
   restageCrmDeal server action (crm_deals.stage + entered_stage_at + deal_stage_change audit row, broker-
