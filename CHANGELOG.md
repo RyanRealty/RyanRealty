@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.689.1 (2026-07-01)
+
+### Maintenance
+- chore(fub): reliable serial text re-pull (full per-contact pagination)
+
+---
+
+
 ## v1.689.0 (2026-07-01)
 
 ### Features
