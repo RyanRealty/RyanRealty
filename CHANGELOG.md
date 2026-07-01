@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.687.2 (2026-07-01)
+
+### Maintenance
+- chore(fub): complete FUB data export tool (pre-cancellation backup)
+
+---
+
+
 ## v1.687.1 (2026-06-30)
 
 ### Maintenance
