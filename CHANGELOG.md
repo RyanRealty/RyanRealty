@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.688.1 (2026-07-01)
+
+### Bug Fixes
+- fix(fub): paginate per-contact messages in export (was truncating at 100)
+
+---
+
+
 ## v1.688.0 (2026-07-01)
 
 ### Features
