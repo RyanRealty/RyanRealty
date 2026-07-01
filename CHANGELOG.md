@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.693.0 (2026-07-01)
+
+### Features
+- feat(crm): Company Settings page — FUB parity delivery #2
+
+---
+
+
 ## v1.692.1 (2026-07-01)
 
 ### Bug Fixes
