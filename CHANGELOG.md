@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.694.0 (2026-07-01)
+
+### Features
+- feat(crm): Deals drag-to-restage + per-pipeline stages (§10)
+
+---
+
+
 ## v1.693.2 (2026-07-01)
 
 ### Maintenance
