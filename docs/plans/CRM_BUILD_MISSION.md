@@ -208,7 +208,19 @@ Marketing UTM report (visitor_sessions UTM — Overview links it; build or mark)
   state copy is the generic inbox message, not drafts-specific. Deferred (§08): Sent folder, company/team
   scope, channel filter, bulk-select, voicemail player, @mention, reassign dropdown.
 
-**NEXT MISSION SECTION (delivery order #6+):**
+### Person-detail parity (delivery order #6) — ✅ DONE + verified on prod (commit e08d4fad)
+- /admin/console/leads/[id] Workflow tab: ActionPlanProgressPanel (enrollment + pause/resume/stop, honest
+  empty state), CollaboratorsPanel (add/remove other brokers as collaborators — new junction), Duplicate
+  management card w/ MergeContactDialog (merge a dup into the survivor: timeline/tasks/enrollments move,
+  dup archived to Trash). VERIFIED on prod (lead 12679): all 3 panels render.
+- INCIDENT during #6: the agent spawned its own gap-analysis sub-agent that committed 987a49b7 UNREVIEWED
+  (20 files: re-baselined 3 gates, modified verified reporting pages, added a leads KpiStrip, off-pattern
+  Input rewrites). Audited (functional, re-baselines = legit drift, Input harmless); real follow-up:
+  crm-person-gaps.ts reads should route through a DAL. Also fixed an unrelated fsbo build-break (stash-pop
+  conflict markers) + the KB-gate red (public-page fixes, Matt-approved) → main green. ROOT CAUSE: blind
+  `git stash pop` popped the wrong stash; dropped it. GUARDRAIL: future agents must NOT spawn sub-agents.
+
+**NEXT MISSION SECTION (delivery order #7):**
 Automation visual editor + step palette incl stopOtherPlans (§12) · Inbox Assigned/Drafts + unknown-caller
 add-person (§08) · Person-detail parity gaps: collaborators, merge/dedup, action-plan progress (§07) ·
 Templates folder tree + merge-field inserter + share + test-send (§13). See DELIVERY ORDER above.
