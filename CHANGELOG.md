@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.697.1 (2026-07-01)
+
+### Bug Fixes
+- fix(ci): clear gate regressions from §07 background-agent delivery (admin + infra)
+
+---
+
+
 ## v1.697.0 (2026-07-01)
 
 ### Features
