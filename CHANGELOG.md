@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.700.1 (2026-07-01)
+
+### Maintenance
+- docs: cross-agent handoff — CRM mobile track session 2026-07-01 (M1 + shell + interactive detail)
+
+---
+
+
 ## v1.700.0 (2026-07-01)
 
 ### Features
