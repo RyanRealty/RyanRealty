@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.693.1 (2026-07-01)
+
+### Bug Fixes
+- fix(crm): PropertiesMap uses guarded getBaseMapOptions (ci:maps-safety)
+
+---
+
+
 ## v1.693.0 (2026-07-01)
 
 ### Features
