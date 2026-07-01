@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.700.3 (2026-07-01)
+
+### Other
+- plan(crm): bake in MECHANICAL ENFORCEMENT — parity gate + verify-screenshot gate per screen
+
+---
+
+
 ## v1.700.2 (2026-07-01)
 
 ### Other
