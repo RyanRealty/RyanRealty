@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.692.1 (2026-07-01)
+
+### Bug Fixes
+- fix(crm): Properties report map — render GoogleMapsBootstrap in-component
+
+---
+
+
 ## v1.692.0 (2026-07-01)
 
 ### Features
