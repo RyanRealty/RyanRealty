@@ -230,3 +230,22 @@ app/components/admin/AdminMobileTabBar.tsx
 # class as the V3 hero search above. Each KB island is listed as added.
 components/site/kb/
 app/concept/kb/
+
+# Agent Activity area chart (CRM reporting, 2026-07-01): recharts SVG linearGradient
+# stopColor + Area stroke/fill/dot props require literal hex. Same exception class as
+# EquityProjectionChart.client.tsx and PriceHistoryScrubber.client.tsx.
+app/admin/(protected)/crm/reporting/agent-activity/AgentActivityChart.tsx
+
+# Luxury homes Bend SEO LP (2026-07-01): KB-register landing page uses inline
+# brand hex (#102742, #faf8f4) + KB tracking/leading overrides — same exception
+# class as app/lp/sell-your-home/page.tsx and other KB-register LPs above.
+app/luxury-homes-bend/page.tsx
+
+# CRM TemplateEditor + WorkflowList (admin-only, 2026-07-01): both use vw-based
+# max-w-[Xvw] for responsive column truncation in table cells (md:max-w-none
+# collapses on desktop). No locked-ladder equivalent for vw units. TemplateEditor
+# also uses a raw <button> as an inline table-cell text trigger — the <Button>
+# primitive's inline-flex centering breaks text-flow here. Same exception class
+# as AdminSidebar (h-[calc(100vh-61px)]) and AdminMobileTabBar (pb-[env(...)]).
+components/admin/crm/settings/TemplateEditor.tsx
+components/admin/crm/workflows/WorkflowList.tsx

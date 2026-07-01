@@ -62,7 +62,7 @@ export default async function ImportListPage() {
             No imports yet. Upload a CSV to get started.
           </div>
         ) : (
-          <div className="rounded-xl border border-border bg-card overflow-x-auto">
+          <div className="no-scrollbar rounded-xl border border-border bg-card overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

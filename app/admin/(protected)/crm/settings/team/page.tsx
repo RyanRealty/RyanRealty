@@ -125,7 +125,7 @@ export default async function TeamSettingsPage() {
       title="Team"
       description="All admin users and their CRM permissions. Toggle export access and lead-routing pause state. Edit identity fields (name, phone, Twilio number) via the broker profile."
     >
-      <div className="mt-4 rounded-xl border border-border bg-card overflow-x-auto">
+      <div className="no-scrollbar mt-4 rounded-xl border border-border bg-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

@@ -43,11 +43,33 @@ export type AgentActivityRow = {
 
 export type AgentActivityTotals = Omit<AgentActivityRow, 'brokerSlug' | 'brokerName' | 'avatarUrl'>
 
+/** Per-day aggregate for the time-series chart and KPI sparklines */
+export type TimeSeriesPoint = {
+  date: string  // YYYY-MM-DD
+  newLeads: number
+  calls: number
+  emails: number
+  texts: number
+  notes: number
+  tasksCompleted: number
+  appointmentsSet: number
+  appointments: number
+}
+
 export type AgentActivityResult = {
   rows: AgentActivityRow[]
+  /** Totals for the current period (all scoped brokers combined) */
   totals: AgentActivityTotals
+  /** Totals for the immediately preceding period of equal duration (for KPI delta) */
+  previousTotals: AgentActivityTotals
+  /** Per-day time series for the current period (all scoped brokers combined) */
+  timeSeries: TimeSeriesPoint[]
+  /** Per-day time series for the previous period (for compare-to-previous overlay) */
+  prevTimeSeries: TimeSeriesPoint[]
   dateStart: string
   dateEnd: string
+  prevDateStart: string
+  prevDateEnd: string
 }
 
 // ── Date range resolver ────────────────────────────────────────────────────────
@@ -93,6 +115,22 @@ export function resolveDateRange(
   return { start: start.toISOString(), end: endIso }
 }
 
+/**
+ * Compute the preceding period of equal length immediately before the given window.
+ * E.g., if current = Jun 1–30 (2,592,000 s), previous = May 2–31.
+ */
+function resolvePreviousPeriod(start: string, end: string): { prevStart: string; prevEnd: string } {
+  const startMs = new Date(start).getTime()
+  const endMs = new Date(end).getTime()
+  const durationMs = endMs - startMs
+  const prevEndMs = startMs - 1  // 1 ms before current period starts
+  const prevStartMs = prevEndMs - durationMs
+  return {
+    prevStart: new Date(prevStartMs).toISOString(),
+    prevEnd: new Date(prevEndMs).toISOString(),
+  }
+}
+
 // ── Broker headshot map ───────────────────────────────────────────────────────
 
 const BROKER_HEADSHOT: Record<string, string> = {
@@ -109,11 +147,91 @@ const TEXT_KINDS = ['sms_out', 'sms_in']
 const NOTE_KINDS = ['note']
 const ALL_ACTIVITY_KINDS = [...CALL_KINDS, ...EMAIL_KINDS, ...TEXT_KINDS, ...NOTE_KINDS]
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Whether an ISO timestamp falls within [start, end] (string comparison is safe for ISO 8601). */
+function inRange(ts: string, start: string, end: string): boolean {
+  return ts >= start && ts <= end
+}
+
+const EMPTY_TOTALS: AgentActivityTotals = {
+  newLeads: 0, initiallyAssignedLeads: 0, currentlyAssignedLeads: 0,
+  calls: 0, emails: 0, texts: 0, notes: 0,
+  tasksCompleted: 0, appointmentsSet: 0, appointments: 0,
+}
+
+/**
+ * Build a per-day TimeSeriesPoint[] for the given period from pre-fetched raw data.
+ * Only events with timestamps in [rangeStart, rangeEnd] are counted.
+ */
+function buildTimeSeries(
+  timelineEvents: Array<{ ts: string; kind: string }>,
+  leads: Array<{ created_at: string }>,
+  tasks: Array<{ completed_at: string | null }>,
+  appts: Array<{ start_at: string }>,
+  rangeStart: string,
+  rangeEnd: string,
+): TimeSeriesPoint[] {
+  // Initialise a map entry for every calendar day in the range
+  const points = new Map<string, TimeSeriesPoint>()
+
+  const startD = new Date(rangeStart)
+  const endD = new Date(rangeEnd)
+  // Normalise to UTC midnight so date arithmetic is stable
+  const cur = new Date(Date.UTC(startD.getUTCFullYear(), startD.getUTCMonth(), startD.getUTCDate()))
+  const endDay = new Date(Date.UTC(endD.getUTCFullYear(), endD.getUTCMonth(), endD.getUTCDate()))
+
+  while (cur <= endDay) {
+    const key = cur.toISOString().slice(0, 10)
+    points.set(key, {
+      date: key,
+      newLeads: 0, calls: 0, emails: 0, texts: 0,
+      notes: 0, tasksCompleted: 0, appointmentsSet: 0, appointments: 0,
+    })
+    cur.setUTCDate(cur.getUTCDate() + 1)
+  }
+
+  for (const ev of timelineEvents) {
+    if (!inRange(ev.ts, rangeStart, rangeEnd)) continue
+    const day = ev.ts.slice(0, 10)
+    const p = points.get(day)
+    if (!p) continue
+    if (CALL_KINDS.includes(ev.kind)) p.calls++
+    else if (EMAIL_KINDS.includes(ev.kind)) p.emails++
+    else if (TEXT_KINDS.includes(ev.kind)) p.texts++
+    else if (NOTE_KINDS.includes(ev.kind)) p.notes++
+  }
+
+  for (const lead of leads) {
+    if (!inRange(lead.created_at, rangeStart, rangeEnd)) continue
+    const day = lead.created_at.slice(0, 10)
+    const p = points.get(day)
+    if (p) p.newLeads++
+  }
+
+  for (const task of tasks) {
+    if (!task.completed_at || !inRange(task.completed_at, rangeStart, rangeEnd)) continue
+    const day = task.completed_at.slice(0, 10)
+    const p = points.get(day)
+    if (p) p.tasksCompleted++
+  }
+
+  for (const appt of appts) {
+    if (!inRange(appt.start_at, rangeStart, rangeEnd)) continue
+    const day = appt.start_at.slice(0, 10)
+    const p = points.get(day)
+    if (p) { p.appointmentsSet++; p.appointments++ }
+  }
+
+  return Array.from(points.values())
+}
+
 // ── Core reader (uncached) ────────────────────────────────────────────────────
 
 async function readAgentActivity(params: AgentActivityParams): Promise<AgentActivityResult> {
   const sb = createServiceClient()
   const { start, end } = resolveDateRange(params.datePreset, params.dateStart, params.dateEnd)
+  const { prevStart, prevEnd } = resolvePreviousPeriod(start, end)
 
   // 1. Broker roster — only CRM-active brokers with a crm_slug
   const { data: brokerRows, error: brokerError } = await sb
@@ -138,128 +256,125 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
 
   const brokerSlugs = scopedBrokers.map((b) => b.crm_slug)
 
-  const emptyTotals: AgentActivityTotals = {
-    newLeads: 0, initiallyAssignedLeads: 0, currentlyAssignedLeads: 0,
-    calls: 0, emails: 0, texts: 0, notes: 0,
-    tasksCompleted: 0, appointmentsSet: 0, appointments: 0,
-  }
-
   if (brokerSlugs.length === 0) {
-    return { rows: [], totals: emptyTotals, dateStart: start, dateEnd: end }
+    return {
+      rows: [],
+      totals: { ...EMPTY_TOTALS },
+      previousTotals: { ...EMPTY_TOTALS },
+      timeSeries: [],
+      prevTimeSeries: [],
+      dateStart: start,
+      dateEnd: end,
+      prevDateStart: prevStart,
+      prevDateEnd: prevEnd,
+    }
   }
 
-  // 3. Parallel data fetch
-  //    a) New leads per broker: crm_people.created_at in range, assigned_broker=slug
-  //    b) Timeline events in range for scoped brokers
-  //    c) Tasks completed in range for scoped brokers
-  //    d) Appointments in range for scoped brokers
+  // 3. Parallel data fetch — all queries span the COMBINED period (prevStart → end)
+  //    so we can split current vs. previous in JS with a single round-trip each.
+  const [leadsResult, timelineResult, tasksResult, apptsResult] = await Promise.all([
+    // a) All leads in combined period for scoped brokers
+    sb
+      .from('crm_people')
+      .select('created_at,assigned_broker')
+      .in('assigned_broker', brokerSlugs)
+      .eq('deleted', false)
+      .gte('created_at', prevStart)
+      .lte('created_at', end),
 
-  const [newLeadCounts, timelineResult, tasksResult, apptsResult] = await Promise.all([
-    // a) New lead counts (one count query per broker — manageable for 3 brokers)
-    Promise.all(
-      brokerSlugs.map(async (slug) => {
-        const { count } = await sb
-          .from('crm_people')
-          .select('id', { count: 'exact', head: true })
-          .eq('assigned_broker', slug)
-          .eq('deleted', false)
-          .gte('created_at', start)
-          .lte('created_at', end)
-        return { slug, count: count ?? 0 }
-      }),
-    ),
-    // b) Timeline events (kind = call/voicemail/email_*/sms_*/note, broker set)
+    // b) Timeline events in combined period for scoped brokers
     sb
       .from('crm_timeline')
-      .select('kind,broker')
-      .gte('ts', start)
+      .select('ts,kind,broker')
+      .gte('ts', prevStart)
       .lte('ts', end)
       .in('kind', ALL_ACTIVITY_KINDS)
       .in('broker', brokerSlugs)
-      .neq('source', 'sequence'),  // Exclude automated sequence messages
-    // c) Tasks completed
+      .neq('source', 'sequence'),
+
+    // c) Tasks completed in combined period for scoped brokers
     sb
       .from('crm_tasks')
-      .select('assigned_broker')
-      .gte('completed_at', start)
+      .select('completed_at,assigned_broker')
+      .gte('completed_at', prevStart)
       .lte('completed_at', end)
       .in('assigned_broker', brokerSlugs),
-    // d) Appointments (broker_slug = creator, person_id NOT NULL per inclusion rule)
+
+    // d) Appointments in combined period for scoped brokers
     sb
       .from('crm_appointments')
-      .select('broker_slug')
-      .gte('start_at', start)
+      .select('start_at,broker_slug')
+      .gte('start_at', prevStart)
       .lte('start_at', end)
       .not('person_id', 'is', null)
       .in('broker_slug', brokerSlugs),
   ])
 
-  // 4. Index new lead counts
-  const newLeadsBySlug = new Map<string, number>()
-  for (const { slug, count } of newLeadCounts) {
-    newLeadsBySlug.set(slug, count)
-  }
+  const leads = leadsResult.data ?? []
+  const timelineEvents = (timelineResult.data ?? []) as Array<{ ts: string; kind: string; broker: string | null }>
+  const tasks = (tasksResult.data ?? []) as Array<{ completed_at: string | null; assigned_broker: string | null }>
+  const appts = (apptsResult.data ?? []) as Array<{ start_at: string; broker_slug: string | null }>
 
-  // 5. Aggregate timeline events by broker
+  // 4. Partition into current vs previous period
+  const curLeads = leads.filter((l) => inRange(l.created_at, start, end)) as Array<{ created_at: string; assigned_broker: string | null }>
+  const prevLeads = leads.filter((l) => inRange(l.created_at, prevStart, prevEnd)) as Array<{ created_at: string; assigned_broker: string | null }>
+  const curTimeline = timelineEvents.filter((e) => inRange(e.ts, start, end))
+  const prevTimeline = timelineEvents.filter((e) => inRange(e.ts, prevStart, prevEnd))
+  const curTasks = tasks.filter((t) => t.completed_at && inRange(t.completed_at, start, end))
+  const prevTasks = tasks.filter((t) => t.completed_at && inRange(t.completed_at, prevStart, prevEnd))
+  const curAppts = appts.filter((a) => inRange(a.start_at, start, end))
+  const prevAppts = appts.filter((a) => inRange(a.start_at, prevStart, prevEnd))
+
+  // 5. Build per-broker aggregates for CURRENT period
+  const newLeadsByBroker = new Map<string, number>()
   const callsByBroker = new Map<string, number>()
   const emailsByBroker = new Map<string, number>()
   const textsByBroker = new Map<string, number>()
   const notesByBroker = new Map<string, number>()
-
-  for (const row of timelineResult.data ?? []) {
-    const slug = row.broker as string | null
-    if (!slug) continue
-    const kind = row.kind as string
-    if (CALL_KINDS.includes(kind)) {
-      callsByBroker.set(slug, (callsByBroker.get(slug) ?? 0) + 1)
-    } else if (EMAIL_KINDS.includes(kind)) {
-      emailsByBroker.set(slug, (emailsByBroker.get(slug) ?? 0) + 1)
-    } else if (TEXT_KINDS.includes(kind)) {
-      textsByBroker.set(slug, (textsByBroker.get(slug) ?? 0) + 1)
-    } else if (NOTE_KINDS.includes(kind)) {
-      notesByBroker.set(slug, (notesByBroker.get(slug) ?? 0) + 1)
-    }
-  }
-
-  // 6. Aggregate tasks by broker
   const tasksByBroker = new Map<string, number>()
-  for (const row of tasksResult.data ?? []) {
-    const slug = row.assigned_broker as string | null
-    if (!slug) continue
-    tasksByBroker.set(slug, (tasksByBroker.get(slug) ?? 0) + 1)
-  }
-
-  // 7. Aggregate appointments by broker (broker_slug = creator)
   const apptsByBroker = new Map<string, number>()
-  for (const row of apptsResult.data ?? []) {
-    const slug = row.broker_slug as string | null
+
+  for (const l of curLeads) {
+    if (l.assigned_broker) newLeadsByBroker.set(l.assigned_broker, (newLeadsByBroker.get(l.assigned_broker) ?? 0) + 1)
+  }
+  for (const ev of curTimeline) {
+    const slug = ev.broker
     if (!slug) continue
-    apptsByBroker.set(slug, (apptsByBroker.get(slug) ?? 0) + 1)
+    if (CALL_KINDS.includes(ev.kind)) callsByBroker.set(slug, (callsByBroker.get(slug) ?? 0) + 1)
+    else if (EMAIL_KINDS.includes(ev.kind)) emailsByBroker.set(slug, (emailsByBroker.get(slug) ?? 0) + 1)
+    else if (TEXT_KINDS.includes(ev.kind)) textsByBroker.set(slug, (textsByBroker.get(slug) ?? 0) + 1)
+    else if (NOTE_KINDS.includes(ev.kind)) notesByBroker.set(slug, (notesByBroker.get(slug) ?? 0) + 1)
+  }
+  for (const t of curTasks) {
+    if (t.assigned_broker) tasksByBroker.set(t.assigned_broker, (tasksByBroker.get(t.assigned_broker) ?? 0) + 1)
+  }
+  for (const a of curAppts) {
+    if (a.broker_slug) apptsByBroker.set(a.broker_slug, (apptsByBroker.get(a.broker_slug) ?? 0) + 1)
   }
 
-  // 8. Build typed rows
+  // 6. Build typed rows (current period per-broker)
   const rows: AgentActivityRow[] = scopedBrokers.map((b) => {
     const slug = b.crm_slug
-    const newLeads = newLeadsBySlug.get(slug) ?? 0
+    const newLeads = newLeadsByBroker.get(slug) ?? 0
     const apptsSet = apptsByBroker.get(slug) ?? 0
     return {
       brokerSlug: slug,
       brokerName: b.display_name ?? slug,
       avatarUrl: BROKER_HEADSHOT[slug] ?? b.photo_url ?? null,
       newLeads,
-      initiallyAssignedLeads: newLeads,  // V1 approximation: no history table
-      currentlyAssignedLeads: newLeads,  // V1 approximation: same query
+      initiallyAssignedLeads: newLeads,
+      currentlyAssignedLeads: newLeads,
       calls: callsByBroker.get(slug) ?? 0,
       emails: emailsByBroker.get(slug) ?? 0,
       texts: textsByBroker.get(slug) ?? 0,
       notes: notesByBroker.get(slug) ?? 0,
       tasksCompleted: tasksByBroker.get(slug) ?? 0,
       appointmentsSet: apptsSet,
-      appointments: apptsSet,  // V1: same as appointmentsSet (no broker-invitees field)
+      appointments: apptsSet,
     }
   })
 
-  // 9. Compute column totals
+  // 7. Compute current period totals
   const totals: AgentActivityTotals = rows.reduce(
     (acc, r) => ({
       newLeads: acc.newLeads + r.newLeads,
@@ -273,10 +388,56 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
       appointmentsSet: acc.appointmentsSet + r.appointmentsSet,
       appointments: acc.appointments + r.appointments,
     }),
-    { ...emptyTotals },
+    { ...EMPTY_TOTALS },
   )
 
-  return { rows, totals, dateStart: start, dateEnd: end }
+  // 8. Compute previous period totals (all scoped brokers combined)
+  let prevNewLeadsTotal = 0
+  let prevCallsTotal = 0
+  let prevEmailsTotal = 0
+  let prevTextsTotal = 0
+  let prevNotesTotal = 0
+  let prevTasksTotal = 0
+  let prevApptsTotal = 0
+
+  for (const l of prevLeads) { if (l.assigned_broker) prevNewLeadsTotal++ }
+  for (const ev of prevTimeline) {
+    if (CALL_KINDS.includes(ev.kind)) prevCallsTotal++
+    else if (EMAIL_KINDS.includes(ev.kind)) prevEmailsTotal++
+    else if (TEXT_KINDS.includes(ev.kind)) prevTextsTotal++
+    else if (NOTE_KINDS.includes(ev.kind)) prevNotesTotal++
+  }
+  for (const _t of prevTasks) { prevTasksTotal++ }
+  for (const _a of prevAppts) { prevApptsTotal++ }
+
+  const previousTotals: AgentActivityTotals = {
+    newLeads: prevNewLeadsTotal,
+    initiallyAssignedLeads: prevNewLeadsTotal,
+    currentlyAssignedLeads: prevNewLeadsTotal,
+    calls: prevCallsTotal,
+    emails: prevEmailsTotal,
+    texts: prevTextsTotal,
+    notes: prevNotesTotal,
+    tasksCompleted: prevTasksTotal,
+    appointmentsSet: prevApptsTotal,
+    appointments: prevApptsTotal,
+  }
+
+  // 9. Build time series for current and previous periods
+  const timeSeries = buildTimeSeries(curTimeline, curLeads, curTasks, curAppts, start, end)
+  const prevTimeSeries = buildTimeSeries(prevTimeline, prevLeads, prevTasks, prevAppts, prevStart, prevEnd)
+
+  return {
+    rows,
+    totals,
+    previousTotals,
+    timeSeries,
+    prevTimeSeries,
+    dateStart: start,
+    dateEnd: end,
+    prevDateStart: prevStart,
+    prevDateEnd: prevEnd,
+  }
 }
 
 // ── Cached public API ─────────────────────────────────────────────────────────
@@ -306,7 +467,7 @@ export async function getAgentActivityReport(
   const cached = unstable_cache(
     () => readAgentActivity(params),
     [
-      'crm-agent-activity-v1',
+      'crm-agent-activity-v2',
       params.brokerSlug ?? 'all',
       params.datePreset,
       params.dateStart ?? 'none',

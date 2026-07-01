@@ -49,7 +49,7 @@ export default async function CrmBrokersSettingsPage() {
       title="Brokers"
       description="The CRM broker roster used for assignment and round-robin lead routing. Toggle a broker in or out of the CRM, and whether they receive routed leads."
     >
-      <div className="mt-4 rounded-xl border border-border bg-card overflow-x-auto">
+      <div className="no-scrollbar mt-4 rounded-xl border border-border bg-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

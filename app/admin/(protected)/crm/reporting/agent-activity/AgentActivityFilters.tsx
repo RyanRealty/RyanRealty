@@ -1,6 +1,14 @@
 'use client'
 import { useRouter, usePathname } from 'next/navigation'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Download } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 
 type Broker = { slug: string; label: string }
 
@@ -8,10 +16,17 @@ interface Props {
   currentBroker: string
   currentDate: string
   currentView: string
+  currentCols?: string
   brokers: Broker[]
 }
 
-export default function AgentActivityFilters({ currentBroker, currentDate, currentView, brokers }: Props) {
+export default function AgentActivityFilters({
+  currentBroker,
+  currentDate,
+  currentView,
+  currentCols,
+  brokers,
+}: Props) {
   const router = useRouter()
   const pathname = usePathname()
 
@@ -20,13 +35,35 @@ export default function AgentActivityFilters({ currentBroker, currentDate, curre
       broker: currentBroker,
       date: currentDate,
       view: currentView,
+      ...(currentCols ? { cols: currentCols } : {}),
       ...updates,
     })
     router.push(`${pathname}?${params.toString()}`)
   }
 
+  // Build the CSV export URL from current filter state
+  const exportParams = new URLSearchParams({
+    broker: currentBroker,
+    date: currentDate,
+    ...(currentCols ? { cols: currentCols } : {}),
+  })
+  const exportHref = `/admin/crm/reporting/agent-activity/export?${exportParams.toString()}`
+
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-2">
+      {/* Export / download button */}
+      <Button
+        variant="outline"
+        size="icon"
+        className="h-8 w-8"
+        aria-label="Download CSV"
+        asChild
+      >
+        <a href={exportHref} download>
+          <Download className="h-3.5 w-3.5" />
+        </a>
+      </Button>
+
       {/* Agent selector */}
       <Select value={currentBroker} onValueChange={(v) => navigate({ broker: v })}>
         <SelectTrigger className="h-8 w-36 text-xs">
