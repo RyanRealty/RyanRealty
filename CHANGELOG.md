@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.699.2 (2026-07-01)
+
+### Maintenance
+- docs(crm): M1 mobile contact detail verified on prod — progress + token note
+
+### Other
+- plan(crm): close mobile-track screen gaps + add email open/click tracking task
+
+---
+
+
 ## v1.699.1 (2026-07-01)
 
 ### Bug Fixes
