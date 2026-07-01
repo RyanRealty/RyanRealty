@@ -112,6 +112,51 @@ DEFERRED (do NOT build unless told): Deals reporting beyond pipeline, Billing, p
 
 ---
 
+# TASK: Email open + click tracking (CRM-sent only) — wire the existing shells to real data (added 2026-07-01)
+
+## Decision (Matt, 2026-07-01)
+Track opens + clicks for emails sent THROUGH THE CRM only (which send via each broker's Gmail API,
+`gmail.users.messages.send` in `lib/crm/gmail.ts:361`). Emails composed DIRECTLY in gmail.com are OUT OF
+SCOPE — they can't be tracked without a Gmail add-on/extension, and Matt has decided all trackable email
+goes through the CRM. Every open/click must be tied to the `crm_people` contact.
+
+## Verified current state (2026-07-01, by query — do NOT assume it works)
+- The feature is a BUILT SHELL with ZERO real data. `crm_timeline` email_out = **39,693** sent; `email_events`
+  = **3 rows total** (1 sent + 2 open, all a 2026-06-30 test); **0 click events**; `newsletter_recipients` = 0.
+- Already EXISTS (the receiving + display side): `email_events` table (cols: message_id, recipient_email,
+  person_id, broker, event, email_key, subject, occurred_at, meta), `lib/email-tracking.ts`, DAL
+  `lib/data/crm/getContactEmailEngagement.ts` (returns sent/opens/clicks/bounces/lastOpenAt/lastClickAt), and
+  the UI: `components/admin/crm/ContactEmailEngagement.tsx` (Opens/Clicks stats + Last open/Last click) +
+  `ConversationFeed.tsx` (per-email "opened · N clicks · Last opened <date>") + the mobile comms tab.
+- MISSING (the gap = the whole task): the send path in `lib/crm/gmail.ts` / `lib/crm/email-body.ts` does NOT
+  inject a tracking pixel or rewrite links, and there are no confirmed `/open` + `/click` endpoints writing to
+  `email_events`. So nothing flows in.
+
+## Build (the wiring)
+1. **At send time** (`lib/crm/gmail.ts` sendCrmEmail / email-body): before building the raw MIME, (a) inject a
+   1×1 tracking pixel `<img src="https://ryan-realty.com/api/email/open?k=<token>">` at the end of the HTML body,
+   and (b) rewrite every `<a href>` to `https://ryan-realty.com/api/email/click?k=<token>&u=<encoded-url>`. The
+   `<token>` encodes/looks up `person_id` + `email_key` + `broker` (signed/opaque, not guessable).
+2. **`/api/email/open`**: on GET, decode token, insert an `email_events` row `event='open'` (idempotent per
+   person+email_key so repeat loads don't inflate), return a 1×1 transparent GIF. Never error the pixel.
+3. **`/api/email/click`**: on GET, decode token, insert `event='click'`, then 302-redirect to the original URL.
+4. Tie every event to `person_id` (from the token). The DAL + UI already consume `email_events` — no UI change
+   needed beyond confirming it renders real counts.
+5. Respect compliance: do not add tracking to unsubscribe/compliance links; honor suppression already gated
+   upstream. Pixel/redirect endpoints are public (no auth) but only accept valid signed tokens.
+
+## DEFINITION OF DONE (verify for real — the agent verifies, not Matt)
+1. Send a REAL test email through the CRM composer to a mailbox you control. Confirm an `email_events` row
+   `event='sent'` (or the existing timeline) + the pixel + rewritten links are in the delivered HTML (view source).
+2. OPEN that email → within ~1 min an `email_events` `event='open'` row exists tied to the right `person_id`,
+   and the contact's Comms feed / ContactEmailEngagement shows "Last opened <date>" with REAL data (screenshot it).
+3. CLICK a link in it → `event='click'` row + the contact shows the click count + "Last click", and the click
+   redirects to the correct destination.
+4. tsc + ci:gates green. Idempotent opens (reload doesn't double-count). No raw `.from('email_events')` outside
+   `lib/data/`. Do not claim done without the screenshots showing REAL open+click data on a contact.
+
+---
+
 # MOBILE DELIVERY TRACK — build the CRM's mobile views to match the FUB-iOS screens (added 2026-07-01)
 
 > **This track was MISSING from the original plan and that is a planning failure.** The delivery order above
@@ -189,7 +234,22 @@ the reference → iterate to ZERO diffs → `parity.json` → gates → the DONE
 side-by-side. Only then move to the next item.
 
 ## PROGRESS (mobile)
-- (none yet — M1 Contact Detail is next; the current `/admin/console/leads/[id]` mobile layout does NOT match §25)
+- **M1 Mobile Contact Detail** ✅ SHIPPED + VERIFIED on prod (commits 36b06ebe + 2492cc32, 2026-07-01).
+  `/admin/console/leads/[id]` renders the §25 layout at < md and standalone in a forced 390px frame under
+  `?view=mobile` (the verification affordance — automation browser can't shrink below 768px). Verified by
+  agent side-by-side vs §25 in Matt's authed prod browser (lead 12679): header (§25.3 back/Edit row, 56pt
+  avatar, name, "Last communication Jun 1" FUB date convention, price pill conditional), tab strip (§25.4,
+  5 tabs, in-place swap, console-info underline, Edit only on Info), Info tab all 10 §25.5 sections in
+  AC-INFO-1 order (SMS #7595e8 / Call #4ad09f / Email #4ab8e8 circles, TEXT ALL/EMAIL ALL conditionals,
+  DETAILS 6 rows, TRANSFER TO LENDER, Registration inquiry w/ via-source, CUSTOM FIELDS w/ EDIT ALL...,
+  ADDRESS w/ diamond nav icon), Comms (§25.6 via FUB-matched ConversationFeed), Homes empty state (§25.7.1),
+  Notes (§25.8 add-note row, broker-headshot cards, cleaned FUB `<br/>` bodies, composer sheet), Calendar
+  empty state + add-task sheet (§25.9), per-tab FAB (§25.12). Desktop layout verified unchanged.
+  TOKEN NOTE: console-root's `--accent` is a near-white neutral — FUB teal accents map to
+  `var(--console-info)` (the sanctioned console link accent), not `bg-accent`.
+  DEFERRED to M7 (pickers/sheets): §25.10 Tags list sub-screen, §25.11 Address/Map sub-screen, header
+  inline-Edit mode, FAB action sheets (FAB renders, per-tab sheets pending), Info-row tap-to-edit pickers.
+  mob-45/46/47 are inhouse-web CURRENT-STATE captures (baseline docs), not FUB build targets.
 
 ## START NOW
 Read the spec (1–5), fresh-read the current CRM code (backend to reuse vs UI to replace),
