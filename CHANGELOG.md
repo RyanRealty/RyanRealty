@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.697.2 (2026-07-01)
+
+### Bug Fixes
+- fix(seo): green the KB gates — luxury-homes-bend to KB shell, communities marker
+
+---
+
+
 ## v1.697.1 (2026-07-01)
 
 ### Bug Fixes
