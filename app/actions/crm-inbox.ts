@@ -37,6 +37,8 @@ import {
   isAssignableBroker,
   type ConversationStatus,
 } from '@/lib/data/crm/getInboxQueue'
+import { isValidDraftChannel, upsertDraft, deleteDraft } from '@/lib/data/crm/drafts'
+import { nameUnknownCallerContact } from '@/lib/data/crm/addUnknownCallerContact'
 
 export type InboxActionResult = { ok: true } | { ok: false; error: string }
 
@@ -269,5 +271,105 @@ export async function markConversationUnreadOnInbound(
   // A race could have inserted the row between our update + insert; treat a
   // unique-violation as success (the row now exists in the desired state).
   if (insErr && insErr.code !== '23505') return { ok: false, error: insErr.message }
+  return { ok: true }
+}
+
+// ── Drafts (Inbox "Drafts" folder — started-but-unsent replies) ──────────────
+//
+// A draft is stored text ONLY. It never sends. When the broker actually sends
+// the reply, the send routes through the existing suppression-gated actions
+// (sendCrmSmsAction / sendCrmEmailAction) and the matching draft is deleted.
+// These actions are admin + scope guarded like every other inbox mutation.
+
+/**
+ * Save (upsert) a started-but-unsent reply for a conversation, owned by the
+ * acting broker + channel. Reads `body` (+ `subject` for email) from the compose
+ * FormData so it can be a `formAction` on the composer form. An empty draft is a
+ * delete (nothing to keep). Scope-guarded to the acting broker's own contacts.
+ */
+export async function saveDraftAction(
+  personId: number,
+  channel: string,
+  formData: FormData,
+): Promise<InboxActionResult> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
+  const id = Number(personId)
+  if (!Number.isFinite(id) || id <= 0) return { ok: false, error: 'A contact is required' }
+  if (!isValidDraftChannel(channel)) return { ok: false, error: 'Invalid channel' }
+  const scoped = await requirePersonInScope(id, access)
+  if (!scoped.ok) return scoped
+
+  const body = String(formData.get('body') ?? '')
+  const subject = channel === 'email' ? (String(formData.get('subject') ?? '').trim() || null) : null
+
+  // Nothing worth keeping — treat Save-with-empty as a discard.
+  if (!body.trim() && !(subject ?? '').trim()) {
+    const del = await deleteDraft(id, access.brokerSlug, channel)
+    if (!del.ok) return del
+    revalidateInbox(id)
+    return { ok: true }
+  }
+
+  const res = await upsertDraft({ personId: id, brokerSlug: access.brokerSlug, channel, subject, body })
+  if (!res.ok) return res
+  revalidateInbox(id)
+  return { ok: true }
+}
+
+/**
+ * Discard a conversation's draft for the acting broker + channel. Called by the
+ * "Discard draft" control and after a successful send (the reply is now a real
+ * message). A missing draft is a no-op success. Scope-guarded.
+ */
+export async function discardDraftAction(
+  personId: number,
+  channel: string,
+): Promise<InboxActionResult> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
+  const id = Number(personId)
+  if (!Number.isFinite(id) || id <= 0) return { ok: false, error: 'A contact is required' }
+  if (!isValidDraftChannel(channel)) return { ok: false, error: 'Invalid channel' }
+  const scoped = await requirePersonInScope(id, access)
+  if (!scoped.ok) return scoped
+
+  const res = await deleteDraft(id, access.brokerSlug, channel)
+  if (!res.ok) return res
+  revalidateInbox(id)
+  return { ok: true }
+}
+
+// ── Unknown-caller Add Person (name a placeholder inbound contact — spec §9) ──
+
+/**
+ * Name an unknown-caller conversation. The inbound webhooks already created a
+ * crm_people row for the number with a phone-derived placeholder name; this NAMES
+ * that row (first/last/name + optional email) so the thread shows a real contact
+ * instead of the raw number (AC-19/AC-20). It never creates a duplicate person and
+ * never sends anything. Admin + scope guarded to the acting broker's own contact.
+ */
+export async function addUnknownCallerPersonAction(
+  personId: number,
+  firstName: string,
+  lastName: string,
+  email: string,
+): Promise<InboxActionResult> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
+  const id = Number(personId)
+  if (!Number.isFinite(id) || id <= 0) return { ok: false, error: 'A contact is required' }
+  const scoped = await requirePersonInScope(id, access)
+  if (!scoped.ok) return scoped
+
+  const res = await nameUnknownCallerContact({
+    personId: id,
+    firstName: String(firstName ?? ''),
+    lastName: String(lastName ?? ''),
+    email: String(email ?? '') || null,
+    broker: access.brokerSlug,
+  })
+  if (!res.ok) return { ok: false, error: res.error }
+  revalidateInbox(id)
   return { ok: true }
 }

@@ -6,6 +6,9 @@ import {
   setConversationStateAction,
   bulkConversationStateAction,
   markAllReadAction,
+  saveDraftAction,
+  discardDraftAction,
+  addUnknownCallerPersonAction,
 } from '@/app/actions/crm-inbox'
 import { scopeBroker } from '@/lib/crm/scope'
 import {
@@ -14,7 +17,9 @@ import {
   type InboxScope,
   type ConversationStatus,
 } from '@/lib/data/crm/getInboxQueue'
+import { getDraftsForPerson } from '@/lib/data/crm/drafts'
 import { getSendTarget } from '@/lib/data/crm/getSendTarget'
+import { isUnknownCaller } from '@/lib/crm/display-name'
 import { createServiceClient } from '@/lib/supabase/service'
 import { CRM_MAILBOXES } from '@/lib/crm/gmail'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
@@ -26,6 +31,7 @@ import { ConsoleSection } from '@/components/console/ConsoleSection'
 import InboxQueue from '@/components/admin/crm/inbox/InboxQueue'
 import InboxThread, { type FormattedThreadItem } from '@/components/admin/crm/inbox/InboxThread'
 import InlineReply from '@/components/admin/crm/inbox/InlineReply'
+import AddPersonForm from '@/components/admin/crm/inbox/AddPersonForm'
 import ThreadStatusControl from '@/components/admin/crm/inbox/ThreadStatusControl'
 
 export const metadata = { title: 'Inbox | CRM | Admin' }
@@ -33,13 +39,22 @@ export const dynamic = 'force-dynamic'
 
 const SCOPES: { key: InboxScope; label: string }[] = [
   { key: 'mine', label: 'Mine' },
+  { key: 'assigned', label: 'Assigned' },
+  { key: 'drafts', label: 'Drafts' },
   { key: 'unread', label: 'Unread' },
   { key: 'all', label: 'All' },
   { key: 'closed', label: 'Closed' },
 ]
 
 function isScope(v: string | undefined): v is InboxScope {
-  return v === 'mine' || v === 'unread' || v === 'all' || v === 'closed'
+  return (
+    v === 'mine' ||
+    v === 'assigned' ||
+    v === 'drafts' ||
+    v === 'unread' ||
+    v === 'all' ||
+    v === 'closed'
+  )
 }
 
 export default async function CrmInboxPage({
@@ -54,9 +69,11 @@ export default async function CrmInboxPage({
   const scope: InboxScope = isScope(sp.scope) ? sp.scope : 'mine'
   const sendError = sp.error ? decodeURIComponent(sp.error) : null
   const brokerScope = scopeBroker(access)
+  // The acting user's own slug drives the Assigned folder + draft ownership.
+  const actingBroker = access.brokerSlug
   const openId = sp.c && Number.isFinite(Number(sp.c)) ? Number(sp.c) : null
 
-  const { conversations, counts } = await getInboxQueue({ scope, brokerScope, limit: 100 })
+  const { conversations, counts } = await getInboxQueue({ scope, brokerScope, actingBroker, limit: 100 })
 
   // ── Server actions bound for the client controls ──────────────────────────
   async function bulkTriage(
@@ -81,6 +98,17 @@ export default async function CrmInboxPage({
     canText: boolean
     canEmail: boolean
     signatureHtml: string | null
+    /** True when the contact is still an unidentified inbound caller (Add Person). */
+    isUnknown: boolean
+    /** Best phone on file (for the Add Person "Search Google" link). */
+    phone: string | null
+    /** Prefill for a saved SMS draft on this conversation, or '' when none. */
+    draftSmsBody: string
+    hasTextDraft: boolean
+    /** Prefill for a saved email draft, or '' when none. */
+    draftEmailSubject: string
+    draftEmailBody: string
+    hasEmailDraft: boolean
   } | null = null
 
   if (openId) {
@@ -91,10 +119,11 @@ export default async function CrmInboxPage({
       .eq('id', openId)
       .maybeSingle()
     if (person) {
-      const [thread, target, stateRow] = await Promise.all([
+      const [thread, target, stateRow, drafts] = await Promise.all([
         getConversationThread(openId, 100),
         getSendTarget(openId),
         sb.from('crm_conversation_state').select('status').eq('person_id', openId).maybeSingle(),
+        getDraftsForPerson(openId, actingBroker),
       ])
       const emails = (person.emails as Array<{ value?: string }> | null) ?? []
       const canEmail = emails.some((e) => Boolean(e.value))
@@ -113,6 +142,13 @@ export default async function CrmInboxPage({
         canText,
         canEmail,
         signatureHtml: signature?.html ?? null,
+        isUnknown: isUnknownCaller(person.name as string | null),
+        phone: target?.phone || null,
+        draftSmsBody: drafts.text?.body ?? '',
+        hasTextDraft: Boolean(drafts.text),
+        draftEmailSubject: drafts.email?.subject ?? '',
+        draftEmailBody: drafts.email?.body ?? '',
+        hasEmailDraft: Boolean(drafts.email),
       }
     }
   }
@@ -121,15 +157,38 @@ export default async function CrmInboxPage({
     'use server'
     formData.set('personId', String(personId))
     const r = await sendCrmSmsAction(formData)
-    if (!r.ok) redirect(`/admin/crm/inbox?c=${personId}&error=${encodeURIComponent(r.error ?? 'Text not sent')}`)
-    redirect(`/admin/crm/inbox?c=${personId}`)
+    if (!r.ok) redirect(`/admin/crm/inbox?scope=${scope}&c=${personId}&error=${encodeURIComponent(r.error ?? 'Text not sent')}`)
+    // The reply is now a real message — clear any saved text draft.
+    await discardDraftAction(personId, 'text')
+    redirect(`/admin/crm/inbox?scope=${scope}&c=${personId}`)
   }
   async function sendEmailForm(personId: number, formData: FormData): Promise<void> {
     'use server'
     formData.set('personId', String(personId))
     const r = await sendCrmEmailAction(formData)
-    if (!r.ok) redirect(`/admin/crm/inbox?c=${personId}&error=${encodeURIComponent(r.error ?? 'Email not sent')}`)
-    redirect(`/admin/crm/inbox?c=${personId}`)
+    if (!r.ok) redirect(`/admin/crm/inbox?scope=${scope}&c=${personId}&error=${encodeURIComponent(r.error ?? 'Email not sent')}`)
+    await discardDraftAction(personId, 'email')
+    redirect(`/admin/crm/inbox?scope=${scope}&c=${personId}`)
+  }
+  async function saveDraftForm(
+    personId: number,
+    channel: 'text' | 'email',
+    formData: FormData,
+  ): Promise<void> {
+    'use server'
+    const r = await saveDraftAction(personId, channel, formData)
+    if (!r.ok) redirect(`/admin/crm/inbox?scope=${scope}&c=${personId}&error=${encodeURIComponent(r.error ?? 'Draft not saved')}`)
+    redirect(`/admin/crm/inbox?scope=${scope}&c=${personId}`)
+  }
+  async function addPersonFor(
+    personId: number,
+    firstName: string,
+    lastName: string,
+    email: string,
+  ): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    const res = await addUnknownCallerPersonAction(personId, firstName, lastName, email)
+    return res.ok ? { ok: true } : { ok: false, error: res.error }
   }
   async function setStatusFor(
     personId: number,
@@ -177,6 +236,13 @@ export default async function CrmInboxPage({
             <InboxThread items={openPane.items} personName={openPane.name} />
           </div>
 
+          {/* Unknown caller — Add Person (inline, above the composer on phones) */}
+          {openPane.isUnknown ? (
+            <div className="mt-4">
+              <AddPersonForm phone={openPane.phone} addAction={addPersonFor.bind(null, openPane.personId)} />
+            </div>
+          ) : null}
+
           {/* Reply composer */}
           <div className="mt-4 border-t border-border pt-4">
             {sendError ? (
@@ -190,6 +256,13 @@ export default async function CrmInboxPage({
               signatureHtml={openPane.signatureHtml}
               canText={openPane.canText}
               canEmail={openPane.canEmail}
+              initialSmsBody={openPane.draftSmsBody}
+              initialEmailSubject={openPane.draftEmailSubject}
+              initialEmailBody={openPane.draftEmailBody}
+              hasTextDraft={openPane.hasTextDraft}
+              hasEmailDraft={openPane.hasEmailDraft}
+              saveSmsDraftAction={saveDraftForm.bind(null, openPane.personId, 'text')}
+              saveEmailDraftAction={saveDraftForm.bind(null, openPane.personId, 'email')}
             />
           </div>
         </div>
@@ -328,7 +401,7 @@ export default async function CrmInboxPage({
               </h1>
               {counts[scope] > 0 ? (
                 <p className="text-xs text-muted-foreground tabular-nums">
-                  {counts[scope]} unread
+                  {counts[scope]} {scope === 'unread' ? 'unread' : scope === 'drafts' ? 'drafts' : 'conversations'}
                 </p>
               ) : null}
             </div>
@@ -385,6 +458,13 @@ export default async function CrmInboxPage({
                     signatureHtml={openPane.signatureHtml}
                     canText={openPane.canText}
                     canEmail={openPane.canEmail}
+                    initialSmsBody={openPane.draftSmsBody}
+                    initialEmailSubject={openPane.draftEmailSubject}
+                    initialEmailBody={openPane.draftEmailBody}
+                    hasTextDraft={openPane.hasTextDraft}
+                    hasEmailDraft={openPane.hasEmailDraft}
+                    saveSmsDraftAction={saveDraftForm.bind(null, openPane.personId, 'text')}
+                    saveEmailDraftAction={saveDraftForm.bind(null, openPane.personId, 'email')}
                   />
                 </div>
               </div>
@@ -399,6 +479,11 @@ export default async function CrmInboxPage({
           <div className="hidden lg:block lg:overflow-y-auto lg:py-4">
             {openPane ? (
               <div className="space-y-4 px-4">
+                {/* Unknown caller — Add Person (inline flyout, not a dialog) */}
+                {openPane.isUnknown ? (
+                  <AddPersonForm phone={openPane.phone} addAction={addPersonFor.bind(null, openPane.personId)} />
+                ) : null}
+
                 {/* Contact mini-card */}
                 <div>
                   <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

@@ -31,6 +31,8 @@ export type SmsRecipient = { personId: number; name: string; phone: string; rela
 export function SmsComposer(props: {
   initialBody: string
   sendAction: (formData: FormData) => Promise<void>
+  /** Optional: persist the current body as an unsent Inbox draft (formAction override). */
+  saveDraftAction?: (formData: FormData) => Promise<void>
   /** The lead + linked people (spouse, …) the broker can add to a group text. */
   recipients?: SmsRecipient[]
   primaryPersonId?: number
@@ -145,11 +147,25 @@ export function SmsComposer(props: {
           <Checkbox id="overrideQuietHours" name="overrideQuietHours" value="1" />
           Send anyway (quiet hours)
         </label>
-        {body.trim() ? (
-          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-            {chars} · {segments} {segments === 1 ? 'segment' : 'segments'}
-          </span>
-        ) : null}
+        <div className="flex shrink-0 items-center gap-3">
+          {props.saveDraftAction ? (
+            <Button
+              type="submit"
+              formAction={props.saveDraftAction}
+              variant="ghost"
+              size="sm"
+              disabled={!body.trim()}
+              className="h-7 px-2 text-xs"
+            >
+              Save draft
+            </Button>
+          ) : null}
+          {body.trim() ? (
+            <span className="text-xs tabular-nums text-muted-foreground">
+              {chars} · {segments} {segments === 1 ? 'segment' : 'segments'}
+            </span>
+          ) : null}
+        </div>
       </div>
     </form>
   )

@@ -8,6 +8,11 @@
  * sendCrmEmailAction), passed in pre-bound from the server page. This component
  * NEVER introduces a new send path; it only chooses which existing composer to
  * show. The composers (SmsComposer / EmailComposer) own the preview + the form.
+ *
+ * Drafts (delivery #5): when a saved draft exists for the open conversation, the
+ * page passes its body/subject as the initial value and the matching channel is
+ * pre-selected. Each composer also gets an optional saveDraftAction so the broker
+ * can persist an unsent reply (stored text only — no send).
  */
 
 import { useState } from 'react'
@@ -23,14 +28,32 @@ export default function InlineReply({
   signatureHtml,
   canText,
   canEmail,
+  initialSmsBody = '',
+  initialEmailSubject = '',
+  initialEmailBody = '',
+  saveSmsDraftAction,
+  saveEmailDraftAction,
+  hasTextDraft = false,
+  hasEmailDraft = false,
 }: {
   smsAction: (formData: FormData) => Promise<void>
   emailAction: (formData: FormData) => Promise<void>
   signatureHtml: string | null
   canText: boolean
   canEmail: boolean
+  initialSmsBody?: string
+  initialEmailSubject?: string
+  initialEmailBody?: string
+  saveSmsDraftAction?: (formData: FormData) => Promise<void>
+  saveEmailDraftAction?: (formData: FormData) => Promise<void>
+  hasTextDraft?: boolean
+  hasEmailDraft?: boolean
 }) {
-  const [channel, setChannel] = useState<Channel>(canText ? 'text' : 'email')
+  // A saved draft on a channel pre-selects it so the broker lands on the reply
+  // they started; otherwise text is the default when available.
+  const [channel, setChannel] = useState<Channel>(
+    hasTextDraft && canText ? 'text' : hasEmailDraft && canEmail ? 'email' : canText ? 'text' : 'email',
+  )
 
   if (!canText && !canEmail) {
     return (
@@ -50,7 +73,7 @@ export default function InlineReply({
             variant={channel === 'text' ? 'default' : 'ghost'}
             onClick={() => setChannel('text')}
           >
-            Text
+            Text{hasTextDraft ? ' · draft' : ''}
           </Button>
         ) : null}
         {canEmail ? (
@@ -60,16 +83,22 @@ export default function InlineReply({
             variant={channel === 'email' ? 'default' : 'ghost'}
             onClick={() => setChannel('email')}
           >
-            Email
+            Email{hasEmailDraft ? ' · draft' : ''}
           </Button>
         ) : null}
       </div>
 
       {channel === 'text' && canText ? (
-        <SmsComposer initialBody="" sendAction={smsAction} />
+        <SmsComposer initialBody={initialSmsBody} sendAction={smsAction} saveDraftAction={saveSmsDraftAction} />
       ) : null}
       {channel === 'email' && canEmail ? (
-        <EmailComposer initialSubject="" initialBody="" signatureHtml={signatureHtml} sendAction={emailAction} />
+        <EmailComposer
+          initialSubject={initialEmailSubject}
+          initialBody={initialEmailBody}
+          signatureHtml={signatureHtml}
+          sendAction={emailAction}
+          saveDraftAction={saveEmailDraftAction}
+        />
       ) : null}
     </div>
   )

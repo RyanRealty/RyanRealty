@@ -28,6 +28,7 @@ import {
   classifyTimelineKind,
   type ActivityFeedItem,
 } from '@/lib/data/crm/getContactActivityFeed'
+import { listDraftsByPerson } from '@/lib/data/crm/drafts'
 
 /** The four triage buckets a conversation moves through. */
 export type ConversationStatus = 'unread' | 'open' | 'handled' | 'closed'
@@ -55,8 +56,17 @@ export function isAssignableBroker(broker: string | null): broker is CrmBrokerSl
   return (CRM_BROKERS as readonly string[]).includes(broker)
 }
 
-/** A scope selector the inbox page exposes as tabs. */
-export type InboxScope = 'mine' | 'all' | 'unread' | 'closed'
+/**
+ * A folder the inbox page exposes as tabs. The FUB five-folder model
+ * (spec §3.3) plus the working-set tabs the in-house inbox already shipped:
+ *   - 'mine'     conversations in the acting broker's working set (existing)
+ *   - 'assigned' explicitly assigned to the acting broker (assigned_broker = me)
+ *   - 'drafts'   conversations with a started-but-unsent draft owned by me
+ *   - 'unread'   status === 'unread' (existing)
+ *   - 'all'      every non-closed conversation in scope (existing)
+ *   - 'closed'   status === 'closed' (existing)
+ */
+export type InboxScope = 'mine' | 'assigned' | 'drafts' | 'all' | 'unread' | 'closed'
 
 /** A single conversation row in the inbox queue. */
 export type InboxConversation = {
@@ -77,6 +87,8 @@ export type InboxConversation = {
   lastOutboundAt: string | null
   /** True when the newest inbound is newer than the newest outbound (waiting on us). */
   needsReply: boolean
+  /** True when the acting broker has a started-but-unsent draft on this conversation. */
+  hasDraft: boolean
 };
 
 /** The inbox queue payload: the conversations plus the per-tab counts. */
@@ -84,6 +96,8 @@ export type InboxQueue = {
   conversations: InboxConversation[]
   counts: {
     mine: number
+    assigned: number
+    drafts: number
     all: number
     unread: number
     closed: number
@@ -121,25 +135,43 @@ export function needsReply(
 }
 
 /**
- * Pure: does a conversation belong in the given scope tab?
- *   - 'all'    every non-closed conversation in the broker's scope
- *   - 'mine'   conversations assigned to the scoped broker (or, for a superuser
- *              with no slug, every non-closed conversation — same as 'all')
- *   - 'unread' status === 'unread'
- *   - 'closed' status === 'closed'
- * 'closed' conversations are hidden from 'all' and 'mine' (an inbox shows the
- * working set, not the archive).
+ * Pure: does a conversation belong in the given folder?
+ *   - 'all'      every non-closed conversation in the broker's scope
+ *   - 'mine'     conversations assigned to the scoped broker (or, for a superuser
+ *                with no slug, every non-closed conversation — same as 'all')
+ *   - 'assigned' non-closed conversations whose assigned_broker is the acting
+ *                broker (FUB "Assigned" folder). Unlike 'mine', a superuser sees
+ *                only conversations assigned to their OWN slug here, so it is a
+ *                real filter for the owner too. Falls back to brokerScope when no
+ *                acting broker is supplied.
+ *   - 'drafts'   conversations carrying a started-but-unsent draft owned by me
+ *   - 'unread'   status === 'unread'
+ *   - 'closed'   status === 'closed'
+ * 'closed' conversations are hidden from 'all', 'mine', and 'assigned' (an inbox
+ * shows the working set, not the archive).
  */
 export function matchesScope(
   scope: InboxScope,
-  conv: { status: ConversationStatus; assignedBroker: string | null },
+  conv: { status: ConversationStatus; assignedBroker: string | null; hasDraft?: boolean },
   brokerScope: string | null,
+  actingBroker?: string | null,
 ): boolean {
   switch (scope) {
     case 'closed':
       return conv.status === 'closed'
     case 'unread':
       return conv.status === 'unread'
+    case 'drafts':
+      return conv.hasDraft === true
+    case 'assigned': {
+      if (conv.status === 'closed') return false
+      // "Assigned to me" keys on the acting broker's own slug; fall back to the
+      // scope slug for a restricted broker (same value) and match nothing when
+      // neither identifies a broker.
+      const me = actingBroker ?? brokerScope
+      if (!me) return false
+      return conv.assignedBroker === me
+    }
     case 'mine':
       if (conv.status === 'closed') return false
       // A superuser (no slug) has no "mine" distinction — everything is theirs.
@@ -196,6 +228,12 @@ type QueueParams = {
   scope: InboxScope
   /** scopeBroker(access) — null = superuser (all brokers), a slug = that broker only. */
   brokerScope: string | null
+  /**
+   * The acting user's OWN broker slug (access.brokerSlug). Drives the 'assigned'
+   * folder (assigned_broker = me) and 'drafts' ownership — a superuser still has
+   * a slug here (matt), unlike brokerScope which is null for them.
+   */
+  actingBroker?: string | null
   limit?: number
   offset?: number
 }
@@ -210,6 +248,7 @@ type QueueParams = {
  */
 export async function getInboxQueue(params: QueueParams): Promise<InboxQueue> {
   const { scope, brokerScope } = params
+  const actingBroker = params.actingBroker ?? null
   const limit = Math.min(Math.max(params.limit ?? 50, 1), 200)
   const offset = Math.max(params.offset ?? 0, 0)
   const sb = createServiceClient()
@@ -251,23 +290,50 @@ export async function getInboxQueue(params: QueueParams): Promise<InboxQueue> {
     }
   }
 
-  const personIds = [...byPerson.keys()]
-  if (personIds.length === 0) {
-    return { conversations: [], counts: { mine: 0, all: 0, unread: 0, closed: 0 } }
+  // Draft summaries owned by the acting broker fold into the queue: they set the
+  // hasDraft flag (Drafts-folder membership) and may introduce a conversation
+  // that carries a draft but has no timeline messages yet.
+  const draftsByPerson = await listDraftsByPerson(actingBroker)
+
+  const timelinePersonIds = [...byPerson.keys()]
+  const allPersonIds = Array.from(new Set([...timelinePersonIds, ...draftsByPerson.keys()]))
+  if (allPersonIds.length === 0) {
+    return {
+      conversations: [],
+      counts: { mine: 0, assigned: 0, drafts: 0, all: 0, unread: 0, closed: 0 },
+    }
   }
 
-  // Overlay the triage state for every conversation in the working set.
+  // Overlay the triage state for every conversation in the working set
+  // (timeline-derived + draft-only persons).
   const { data: stateRows } = await sb
     .from('crm_conversation_state')
     .select('person_id,status,assigned_broker,last_inbound_at,last_outbound_at')
-    .in('person_id', personIds)
+    .in('person_id', allPersonIds)
   const stateByPerson = new Map<number, { status: string | null; assigned_broker: string | null; last_inbound_at: string | null; last_outbound_at: string | null }>()
   for (const s of (stateRows ?? []) as Array<{ person_id: number; status: string | null; assigned_broker: string | null; last_inbound_at: string | null; last_outbound_at: string | null }>) {
     stateByPerson.set(s.person_id, s)
   }
 
+  // A draft can exist for a contact with no timeline message (a reply started in
+  // a brand-new thread). Fetch just those persons so the Drafts folder can render
+  // a row. Drafts are already the acting broker's own, so no extra scope filter.
+  const draftOnlyIds = [...draftsByPerson.keys()].filter((id) => !byPerson.has(id))
+  const draftOnlyPeople = new Map<number, { name: string | null; pictureUrl: string | null; assignedBroker: string | null }>()
+  if (draftOnlyIds.length > 0) {
+    const { data: people } = await sb
+      .from('crm_people')
+      .select('id,name,picture_url,assigned_broker,deleted')
+      .in('id', draftOnlyIds)
+    for (const p of (people ?? []) as Array<{ id: number; name: string | null; picture_url: string | null; assigned_broker: string | null; deleted: boolean }>) {
+      if (p.deleted) continue
+      draftOnlyPeople.set(p.id, { name: p.name, pictureUrl: p.picture_url, assignedBroker: p.assigned_broker })
+    }
+  }
+
   // Build the full conversation list (pre-filter), then scope + page.
   const all: InboxConversation[] = []
+  // 1) timeline-derived conversations
   for (const [personId, { person, rows }] of byPerson) {
     const derived = deriveConversationFromMessages(rows)
     const state = stateByPerson.get(personId)
@@ -289,20 +355,44 @@ export async function getInboxQueue(params: QueueParams): Promise<InboxQueue> {
       lastInboundAt,
       lastOutboundAt,
       needsReply: needsReply(status, lastInboundAt, lastOutboundAt),
+      hasDraft: draftsByPerson.has(personId),
+    })
+  }
+  // 2) draft-only conversations (a draft exists but no message is in the timeline)
+  for (const [personId, person] of draftOnlyPeople) {
+    const state = stateByPerson.get(personId)
+    const status = effectiveStatus(state?.status)
+    const summary = draftsByPerson.get(personId)
+    all.push({
+      personId,
+      name: person.name,
+      pictureUrl: person.pictureUrl,
+      assignedBroker: state?.assigned_broker ?? person.assignedBroker,
+      status,
+      snippet: 'Draft, not sent',
+      lastKindLabel: 'Draft',
+      lastDirection: null,
+      lastMessageAt: summary?.updatedAt ?? null,
+      lastInboundAt: state?.last_inbound_at ?? null,
+      lastOutboundAt: state?.last_outbound_at ?? null,
+      needsReply: false,
+      hasDraft: true,
     })
   }
 
-  // Per-tab counts across the full scoped working set.
+  // Per-folder counts across the full scoped working set.
   const counts = {
-    mine: all.filter((c) => matchesScope('mine', c, brokerScope)).length,
-    all: all.filter((c) => matchesScope('all', c, brokerScope)).length,
-    unread: all.filter((c) => matchesScope('unread', c, brokerScope)).length,
-    closed: all.filter((c) => matchesScope('closed', c, brokerScope)).length,
+    mine: all.filter((c) => matchesScope('mine', c, brokerScope, actingBroker)).length,
+    assigned: all.filter((c) => matchesScope('assigned', c, brokerScope, actingBroker)).length,
+    drafts: all.filter((c) => matchesScope('drafts', c, brokerScope, actingBroker)).length,
+    all: all.filter((c) => matchesScope('all', c, brokerScope, actingBroker)).length,
+    unread: all.filter((c) => matchesScope('unread', c, brokerScope, actingBroker)).length,
+    closed: all.filter((c) => matchesScope('closed', c, brokerScope, actingBroker)).length,
   }
 
-  // Filter to the requested tab, sort newest message first, then page.
+  // Filter to the requested folder, sort newest message first, then page.
   const filtered = all
-    .filter((c) => matchesScope(scope, c, brokerScope))
+    .filter((c) => matchesScope(scope, c, brokerScope, actingBroker))
     .sort((a, b) => (b.lastMessageAt ?? '').localeCompare(a.lastMessageAt ?? ''))
   const conversations = filtered.slice(offset, offset + limit)
 

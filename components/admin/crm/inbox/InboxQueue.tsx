@@ -208,6 +208,9 @@ export default function InboxQueue({
                           Needs reply
                         </Badge>
                       ) : null}
+                      {c.hasDraft ? (
+                        <Badge variant="outline" className="shrink-0">Draft</Badge>
+                      ) : null}
                     </div>
                     <div className="mt-1 truncate text-sm text-muted-foreground">
                       {c.lastDirection === 'out' ? 'You: ' : ''}

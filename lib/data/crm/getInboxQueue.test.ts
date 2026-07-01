@@ -76,6 +76,25 @@ describe('getInboxQueue pure helpers (Wave 7 inbox triage)', () => {
       expect(matchesScope('mine', rebeccaOpen, 'matt')).toBe(false)
       expect(matchesScope('mine', closed, 'matt')).toBe(false)
     })
+    it('assigned: keys on the acting broker even for a superuser (null scope)', () => {
+      // A superuser (brokerScope null) still filters Assigned by their own slug.
+      expect(matchesScope('assigned', mattOpen, null, 'matt')).toBe(true)
+      expect(matchesScope('assigned', rebeccaOpen, null, 'matt')).toBe(false)
+      expect(matchesScope('assigned', closed, null, 'matt')).toBe(false)
+    })
+    it('assigned: falls back to the scope slug when no acting broker is supplied', () => {
+      expect(matchesScope('assigned', mattOpen, 'matt')).toBe(true)
+      expect(matchesScope('assigned', rebeccaOpen, 'matt')).toBe(false)
+    })
+    it('assigned: matches nothing when neither identifies a broker', () => {
+      expect(matchesScope('assigned', mattOpen, null, null)).toBe(false)
+    })
+    it('drafts: only conversations carrying a draft', () => {
+      expect(matchesScope('drafts', { ...mattOpen, hasDraft: true }, null, 'matt')).toBe(true)
+      expect(matchesScope('drafts', { ...mattOpen, hasDraft: false }, null, 'matt')).toBe(false)
+      // a closed conversation can still hold a draft — drafts ignores status
+      expect(matchesScope('drafts', { ...closed, hasDraft: true }, null, 'matt')).toBe(true)
+    })
   })
 
   describe('deriveConversationFromMessages', () => {

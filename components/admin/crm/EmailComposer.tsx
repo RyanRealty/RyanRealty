@@ -26,6 +26,8 @@ export function EmailComposer(props: {
   initialBody: string
   signatureHtml: string | null
   sendAction: (formData: FormData) => Promise<void>
+  /** Optional: persist the current subject + body as an unsent Inbox draft (formAction override). */
+  saveDraftAction?: (formData: FormData) => Promise<void>
   /** Template key that was loaded — stamped on email_events for per-template reporting. */
   tplKey?: string | null
   /** Recipient shown in the FUB-style "To" row (the lead's name + email). */
@@ -105,7 +107,14 @@ export function EmailComposer(props: {
       ) : null}
       <div className="flex items-center justify-between gap-4">
         <span className="text-xs text-muted-foreground">Your signature and the Oregon agency disclosure link are added to every send.</span>
-        <Button type="submit" size="sm">Send email</Button>
+        <div className="flex items-center gap-2">
+          {props.saveDraftAction ? (
+            <Button type="submit" formAction={props.saveDraftAction} variant="ghost" size="sm" disabled={!subject.trim() && !body.trim()}>
+              Save draft
+            </Button>
+          ) : null}
+          <Button type="submit" size="sm">Send email</Button>
+        </div>
       </div>
     </form>
   )
