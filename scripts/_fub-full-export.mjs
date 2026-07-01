@@ -28,6 +28,7 @@ const AUTH = 'Basic ' + Buffer.from(KEY + ':').toString('base64')
 const HEADERS = { Authorization: AUTH, 'X-System': SYS, 'X-System-Key': SK, Accept: 'application/json' }
 
 const BULK_ONLY = process.argv.includes('--bulk')
+const MESSAGES_ONLY = process.argv.includes('--messages-only')
 const DIR = path.join(os.homedir(), `fub-backup-${new Date().toISOString().slice(0, 10)}`)
 fs.mkdirSync(DIR, { recursive: true })
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -96,20 +97,27 @@ async function main() {
   const manifest = { startedAt: new Date().toISOString(), dir: DIR, counts: {} }
   log(`FUB export → ${DIR}`)
 
-  // 1. Bulk collections.
-  for (const [ep, key] of COLLECTIONS) {
-    const rows = await pullCollection(ep, key)
-    fs.writeFileSync(path.join(DIR, `${ep}.json`), JSON.stringify(rows, null, 2))
-    manifest.counts[ep] = rows.length
-    log(`✓ ${ep}: ${rows.length}`)
-    await sleep(400)
+  let people
+  if (MESSAGES_ONLY) {
+    // Re-pull only the per-person messages (bulk already downloaded). Load the
+    // people list from the existing export so we have the IDs.
+    people = JSON.parse(fs.readFileSync(path.join(DIR, 'people.json'), 'utf8'))
+    log(`messages-only: loaded ${people.length} people from disk`)
+  } else {
+    // 1. Bulk collections.
+    for (const [ep, key] of COLLECTIONS) {
+      const rows = await pullCollection(ep, key)
+      fs.writeFileSync(path.join(DIR, `${ep}.json`), JSON.stringify(rows, null, 2))
+      manifest.counts[ep] = rows.length
+      log(`✓ ${ep}: ${rows.length}`)
+      await sleep(400)
+    }
+    // 2. People (the big one) — save + keep IDs for the message pull.
+    people = await pullCollection('people?fields=allFields', 'people')
+    fs.writeFileSync(path.join(DIR, 'people.json'), JSON.stringify(people, null, 2))
+    manifest.counts.people = people.length
+    log(`✓ people: ${people.length}`)
   }
-
-  // 2. People (the big one) — save + keep IDs for the message pull.
-  const people = await pullCollection('people?fields=allFields', 'people')
-  fs.writeFileSync(path.join(DIR, 'people.json'), JSON.stringify(people, null, 2))
-  manifest.counts.people = people.length
-  log(`✓ people: ${people.length}`)
 
   if (!BULK_ONLY) {
     // 3. Per-person emails + text messages (need personId). Resumable via progress file.
@@ -125,16 +133,25 @@ async function main() {
     for (let i = 0; i < ids.length; i += CONC) {
       const batch = ids.slice(i, i + CONC).filter((id) => !done.has(id))
       await Promise.all(batch.map(async (id) => {
-        const em = await fub(`emails?personId=${id}&limit=100`)
-        if (em && !em.__http && (em.emails?.length)) {
+        // Paginate ALL of a person's emails (high-volume contacts have >100 —
+        // limit=100 alone would truncate them). Loop the next cursor.
+        let en = null
+        do {
+          const em = await fub(`emails?personId=${id}&limit=100${en ? `&next=${encodeURIComponent(en)}` : ''}`)
+          if (!em || em.__http || !em.emails?.length) break
           for (const e of em.emails) fs.appendFileSync(emailsFile, JSON.stringify(e) + '\n')
           emailCount += em.emails.length
-        }
-        const tx = await fub(`textMessages?personId=${id}&limit=100`)
-        if (tx && !tx.__http && (tx.textmessages?.length)) {
+          en = em._metadata?.next ?? null
+        } while (en)
+        // Paginate ALL of a person's text messages.
+        let tn = null
+        do {
+          const tx = await fub(`textMessages?personId=${id}&limit=100${tn ? `&next=${encodeURIComponent(tn)}` : ''}`)
+          if (!tx || tx.__http || !tx.textmessages?.length) break
           for (const t of tx.textmessages) fs.appendFileSync(textsFile, JSON.stringify(t) + '\n')
           textCount += tx.textmessages.length
-        }
+          tn = tx._metadata?.next ?? null
+        } while (tn)
         done.add(id)
       }))
       processed += batch.length
