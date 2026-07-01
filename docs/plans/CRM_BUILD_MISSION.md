@@ -174,7 +174,18 @@ Marketing UTM report (visitor_sessions UTM — Overview links it; build or mark)
   sub-flows (office-hours editor, subdomain change, spam-label modal, block-list page) render read-only
   "coming soon" per §15.9.
 
-**NEXT MISSION SECTION (delivery order #3+):** Deals drag-to-restage + per-pipeline stages (§10) ·
+### Deals drag-to-restage (delivery order #3) — ✅ built + deployed (drag needs Matt's physical test)
+- `/admin/crm/deals` — commit e2fc5e3a. Buyers/Sellers pipeline switcher + per-pipeline stage columns from
+  lib/crm/deal-pipelines.ts (mirrors api-export pipelines.json byte-for-byte). @dnd-kit drag-to-restage →
+  restageCrmDeal server action (crm_deals.stage + entered_stage_at + deal_stage_change audit row, broker-
+  scoped, no-op + unknown-stage guarded). Deal cards: price/commission/projected-close/avatars. Unknown
+  stages → Unsorted column. RENDER verified on prod (both pipelines, real cards). DRAG gesture NOT auto-
+  verifiable (dnd-kit needs real pointermove events; computer tool's left_click_drag doesn't trigger it,
+  granular mouse-down unsupported) — code-verified + standard lib; Matt confirms the physical drag in 5s.
+  Deferred (not in #3): §4.2 toolbar filters, Manage-Pipelines settings, Add-Stage, §11 deal-detail modal,
+  touch-DnD (mobile is tap-to-open), multi-contact avatar cluster (awaits deal_people junction §20).
+
+**NEXT MISSION SECTION (delivery order #4+):**
 Automation visual editor + step palette incl stopOtherPlans (§12) · Inbox Assigned/Drafts + unknown-caller
 add-person (§08) · Person-detail parity gaps: collaborators, merge/dedup, action-plan progress (§07) ·
 Templates folder tree + merge-field inserter + share + test-send (§13). See DELIVERY ORDER above.
