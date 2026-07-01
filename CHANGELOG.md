@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.690.0 (2026-07-01)
+
+### Features
+- feat(crm): Reporting suite — Calls, Lead Sources, Batch Emails, Agent Goals
+
+---
+
+
 ## v1.689.3 (2026-07-01)
 
 ### Bug Fixes
