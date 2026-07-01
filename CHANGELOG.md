@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.689.3 (2026-07-01)
+
+### Bug Fixes
+- fix(crm): Agent Activity — New Leads counts lead_created events, not import date
+
+---
+
+
 ## v1.689.2 (2026-07-01)
 
 ### Bug Fixes
