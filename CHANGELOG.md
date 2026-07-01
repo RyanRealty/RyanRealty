@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.700.0 (2026-07-01)
+
+### Features
+- feat(crm-mobile): interactive lead detail + CRM menu completeness
+
+---
+
+
 ## v1.699.3 (2026-07-01)
 
 ### Bug Fixes
