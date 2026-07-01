@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.694.1 (2026-07-01)
+
+### Maintenance
+- docs(crm): mission progress — Deals restage (delivery #3) built+deployed
+
+---
+
+
 ## v1.694.0 (2026-07-01)
 
 ### Features
