@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.693.2 (2026-07-01)
+
+### Maintenance
+- docs(crm): mission progress — reporting suite (12) + Company Settings done
+
+---
+
+
 ## v1.693.1 (2026-07-01)
 
 ### Bug Fixes
