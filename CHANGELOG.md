@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.698.2 (2026-07-01)
+
+### Other
+- plan(crm): add MOBILE DELIVERY TRACK (M1-M7) to the CRM build mission
+
+---
+
+
 ## v1.698.1 (2026-07-01)
 
 ### Maintenance
