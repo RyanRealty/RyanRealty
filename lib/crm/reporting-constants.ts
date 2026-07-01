@@ -122,3 +122,113 @@ export const METRIC_OPTIONS: Array<{ key: MetricKey; label: string }> = [
 export const METRIC_LABELS: Record<MetricKey, string> = Object.fromEntries(
   METRIC_OPTIONS.map(({ key, label }) => [key, label]),
 ) as Record<MetricKey, string>
+
+// ── Reporting Hub card data ────────────────────────────────────────────────────
+//
+// Shared between the Overview hub (reporting/page.tsx) and the Overview report
+// (reporting/overview/page.tsx).  Lives here — a non-'use client' module — so
+// both server pages and 'use client' components can import without hitting the
+// Next.js server-boundary restriction.
+//
+// NOTE: reporting/page.tsx keeps its own local copies of these arrays (no change
+// needed there).  These exports are for overview/page.tsx and any future consumer.
+
+export type ReportHubCard = {
+  icon: string
+  title: string
+  description: string
+  href: string
+}
+
+export const HUB_AGENT_REPORTS: ReportHubCard[] = [
+  {
+    icon: '📊',
+    title: 'Agent Activity',
+    description: 'See the number of leads per agent alongside stats on follow up.',
+    href: '/admin/crm/reporting/agent-activity',
+  },
+  {
+    icon: '📞',
+    title: 'Calls',
+    description: 'See calls made, conversations, missed calls, talk time and more by agent.',
+    href: '/admin/crm/reporting/calls',
+  },
+  {
+    icon: '📋',
+    title: 'Call Logs',
+    description: 'See and listen to recent inbound and outbound calls.',
+    href: '/admin/crm/reporting/calls?view=logs',
+  },
+  {
+    icon: '💬',
+    title: 'Texts',
+    description: 'See text message delivery rates and other stats by phone number.',
+    href: '/admin/crm/reporting/texts',
+  },
+  {
+    icon: '📅',
+    title: 'Appointments',
+    description: 'See a list of appointments & outcomes with details on lead source and agent.',
+    href: '/admin/crm/reporting/appointments',
+  },
+  {
+    icon: '💰',
+    title: 'Deals',
+    description: 'See a list of deals with commissions by deal stage and lead source.',
+    href: '/admin/crm/reporting/deals',
+  },
+  {
+    icon: '📝',
+    title: 'Agent Goals',
+    description: 'Manage annual commission and personal goals for each agent.',
+    href: '/admin/crm/reporting/agent-goals',
+  },
+]
+
+export const HUB_LEAD_SOURCE_REPORTS: ReportHubCard[] = [
+  {
+    icon: '📈',
+    title: 'Source Report',
+    description: 'See your top lead providers and sources of appointments.',
+    href: '/admin/crm/reporting/lead-sources',
+  },
+  {
+    icon: '🚀',
+    title: 'Speed To Lead',
+    description: 'See how quickly you follow up by source and follow up type.',
+    href: '/admin/crm/reporting/lead-sources?view=speed',
+  },
+  {
+    icon: '📱',
+    title: 'Contact Attempts',
+    description: 'See how many times you follow up on average by source.',
+    href: '/admin/crm/reporting/lead-sources?view=attempts',
+  },
+  {
+    icon: '🤓',
+    title: 'Closed Deals By Source',
+    description: 'See which lead source has the most closed deals, commission and conversion rate %.',
+    href: '/admin/crm/reporting/lead-sources?view=deals',
+  },
+]
+
+export const HUB_MARKETING_REPORTS: ReportHubCard[] = [
+  {
+    icon: '💌',
+    title: 'Batch Emails',
+    description: 'See the results of your email campaigns, opens & clicks.',
+    href: '/admin/crm/reporting/batch-emails',
+  },
+  {
+    icon: '🏠',
+    title: 'Properties',
+    description: 'See which properties and zipcodes have the most inquiries.',
+    href: '/admin/crm/reporting/properties',
+  },
+  {
+    icon: '🔍',
+    title: 'Marketing UTM Report',
+    description: 'See advanced UTM and campaign metrics and appointments & deals.',
+    href: '/admin/crm/reporting/marketing',
+  },
+]
