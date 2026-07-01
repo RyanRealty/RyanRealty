@@ -291,6 +291,16 @@ the reference → iterate to ZERO diffs → `parity.json` → gates → the DONE
 side-by-side. Only then move to the next item.
 
 ## PROGRESS (mobile)
+- **M5 (core) People root + Activity sub-tabs** ✅ SHIPPED + VERIFIED on prod (commit e319433e, 2026-07-01).
+  `/admin/crm` at < md = §24 People tab (mob-09/10): All Lists|Stages strip, 58pt smart-list rows w/ live
+  scoped counts ('8.3k' abbreviation, 0 renders), list mode w/ back row + '{N} people' count bar + 44pt-avatar
+  contact rows → M1 detail; agent-scope sheet; desktop unchanged. `/admin/crm/activity` < md = §24 strip
+  (All·New Leads·Emails·Website) pinning the feed type — verified live (New Leads tab → lead_created only).
+  Locked by 3 new ci:crm-mobile-track SHIPPED contracts. STILL PENDING in M5: swipe-left row actions,
+  long-press multi-select, team-filter header sheet, broker-dashboard/mob-44 parity (M8).
+- **M1 interactivity + menu (74e3b602) + shell chrome (0cc81ea9)** ✅ — see the M-track gate's SHIPPED list;
+  DETAILS pickers (assign/stage/tags/collaborators, live tag round-trip verified), add phone/email
+  (addCrmContactPointAction), tab-bar suppression on pushed detail, single FAB, CRM menu completeness.
 - **M1 Mobile Contact Detail** ✅ SHIPPED + VERIFIED on prod (commits 36b06ebe + 2492cc32, 2026-07-01).
   `/admin/console/leads/[id]` renders the §25 layout at < md and standalone in a forced 390px frame under
   `?view=mobile` (the verification affordance — automation browser can't shrink below 768px). Verified by
