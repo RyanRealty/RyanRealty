@@ -1,0 +1,26 @@
+[
+  {
+    "_comment": "CRM screen registry — the source of truth for scripts/check-crm-screen-parity.mjs. Every CRM screen (desktop screen-NN + mobile mob-NN) gets an entry. status='done' is MECHANICALLY enforced: the route must import every requiredComponent AND its verify screenshot must exist on disk, or the build goes red. NOTHING is 'done' until it's proven. Seeded as 'todo' because the earlier gap-fill build was never verified against these references — no CRM screen currently has mechanical proof. The rebuild flips each to 'done' ONLY with its contract + committed screenshot.",
+    "id": "_meta"
+  },
+
+  { "id": "person-detail-desktop", "specRef": "docs/fub-crm-spec/07a-person-detail-sidebar-and-inline-edit.md", "route": "app/admin/console/leads/[id]/page.tsx", "status": "todo", "requiredComponents": [], "verify": "docs/fub-crm-spec/_verify/screen-person-detail-desktop.png" },
+  { "id": "person-detail-mobile", "specRef": "docs/fub-crm-spec/25-mobile-contact-detail.md", "route": "app/admin/console/leads/[id]/mobile-detail.tsx", "status": "todo", "requiredComponents": [], "verify": "docs/fub-crm-spec/_verify/mob-contact-detail.png" },
+  { "id": "inbox-desktop", "specRef": "docs/fub-crm-spec/08-inbox.md", "route": "app/admin/(protected)/crm/inbox/page.tsx", "status": "todo", "requiredComponents": [], "verify": "docs/fub-crm-spec/_verify/screen-inbox-desktop.png" },
+  { "id": "inbox-mobile", "specRef": "docs/fub-crm-spec/26-mobile-inbox-and-conversations.md", "route": "app/admin/(protected)/crm/inbox/page.tsx", "status": "todo", "requiredComponents": [], "verify": "docs/fub-crm-spec/_verify/mob-inbox.png" },
+  { "id": "contacts-list-desktop", "specRef": "docs/fub-crm-spec/05-people-list-and-bulk-actions.md", "route": "app/admin/(protected)/crm/page.tsx", "status": "todo", "requiredComponents": [], "verify": "docs/fub-crm-spec/_verify/screen-contacts-list.png" },
+  { "id": "deals-desktop", "specRef": "docs/fub-crm-spec/10-deals-pipelines.md", "route": "app/admin/(protected)/crm/deals/page.tsx", "status": "todo", "requiredComponents": [], "verify": "docs/fub-crm-spec/_verify/screen-deals.png" },
+  { "id": "automations-desktop", "specRef": "docs/fub-crm-spec/12-action-plans-and-automations.md", "route": "app/admin/(protected)/crm/sequences/page.tsx", "status": "todo", "requiredComponents": [], "verify": "docs/fub-crm-spec/_verify/screen-automations.png" },
+  { "id": "templates-desktop", "specRef": "docs/fub-crm-spec/13-email-and-text-templates.md", "route": "app/admin/(protected)/crm/settings/templates/page.tsx", "status": "todo", "requiredComponents": [], "verify": "docs/fub-crm-spec/_verify/screen-templates.png" },
+  { "id": "company-settings-desktop", "specRef": "docs/fub-crm-spec/15-admin-company-team-and-roles.md", "route": "app/admin/(protected)/crm/settings/company/page.tsx", "status": "todo", "requiredComponents": [], "verify": "docs/fub-crm-spec/_verify/screen-company-settings.png" },
+  { "id": "tasks-calendar-desktop", "specRef": "docs/fub-crm-spec/09-tasks-and-calendar.md", "route": "app/admin/(protected)/crm/calendar/page.tsx", "status": "todo", "requiredComponents": [], "verify": "docs/fub-crm-spec/_verify/screen-tasks-calendar.png" },
+  { "id": "reporting-desktop", "specRef": "docs/fub-crm-spec/11-reporting.md", "route": "app/admin/(protected)/crm/reporting/agent-activity/page.tsx", "status": "todo", "requiredComponents": [], "verify": "docs/fub-crm-spec/_verify/screen-reporting-agent-activity.png" },
+
+  { "id": "mobile-shell", "specRef": "docs/fub-crm-spec/23-mobile-architecture-and-navigation.md", "route": "components/console/CrmMobileTabBar.tsx", "status": "todo", "requiredComponents": [], "verify": "docs/fub-crm-spec/_verify/mob-shell.png" },
+  { "id": "mobile-compose", "specRef": "docs/fub-crm-spec/27-mobile-compose-email-text-call.md", "route": "app/admin/(protected)/crm/inbox/page.tsx", "status": "todo", "requiredComponents": [], "verify": "docs/fub-crm-spec/_verify/mob-compose.png" },
+  { "id": "mobile-activity-people", "specRef": "docs/fub-crm-spec/24-mobile-activity-people-and-smartlists.md", "route": "app/admin/(protected)/crm/page.tsx", "status": "todo", "requiredComponents": [], "verify": "docs/fub-crm-spec/_verify/mob-activity-people.png" },
+  { "id": "mobile-calendar-tasks", "specRef": "docs/fub-crm-spec/29-mobile-calendar-and-tasks.md", "route": "app/admin/(protected)/crm/calendar/page.tsx", "status": "todo", "requiredComponents": [], "verify": "docs/fub-crm-spec/_verify/mob-calendar-tasks.png" },
+  { "id": "mobile-pickers", "specRef": "docs/fub-crm-spec/28-mobile-pickers-modals-and-action-sheets.md", "route": "app/admin/console/leads/[id]/mobile-detail.tsx", "status": "todo", "requiredComponents": [], "verify": "docs/fub-crm-spec/_verify/mob-pickers.png" },
+  { "id": "mobile-dashboard", "specRef": "docs/fub-crm-spec/mobile-screens/screen-44.md", "route": "app/admin/(protected)/broker-dashboard/page.tsx", "status": "todo", "requiredComponents": [], "verify": "docs/fub-crm-spec/_verify/mob-dashboard.png" },
+  { "id": "mobile-settings", "specRef": "docs/fub-crm-spec/mobile-screens/screen-06.md", "route": "app/admin/(protected)/settings/page.tsx", "status": "todo", "requiredComponents": [], "verify": "docs/fub-crm-spec/_verify/mob-settings.png" }
+]
