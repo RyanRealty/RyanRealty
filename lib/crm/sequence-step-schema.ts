@@ -14,10 +14,14 @@
  *   fallbackEmailSubject?, fallbackEmailBody?  (sms → email fallback)
  *
  * v2 channels (new — additive):
- *   'change_stage'  value = stage key (moves crm_people.stage)
- *   'add_note'      value = note text (inserts crm_timeline note)
- *   'reassign'      value = broker slug (updates assigned_broker)
- *   'run_automation' value = sequence id (enrolls person in another sequence)
+ *   'change_stage'      value = stage key (moves crm_people.stage)
+ *   'add_note'          value = note text (inserts crm_timeline note)
+ *   'reassign'          value = broker slug (updates assigned_broker)
+ *   'run_automation'    value = sequence id (enrolls person in another sequence)
+ *   'stop_other_plans'  no value required — pauses every OTHER running enrollment
+ *                       for this contact (except the current one). Useful as a
+ *                       guard step to prevent two drip sequences competing for
+ *                       the same person. FUB parity: "Pause All Other Action Plans".
  *
  * v2 conditions node (optional, recursive):
  *   { type: 'condition', field, op, value, truePath: Step[], falsePath: Step[] }
@@ -34,7 +38,7 @@
 import { z } from 'zod'
 
 /** The channels the engine knows how to execute. */
-export const STEP_CHANNELS = ['email', 'sms', 'task', 'tag', 'change_stage', 'add_note', 'reassign', 'run_automation'] as const
+export const STEP_CHANNELS = ['email', 'sms', 'task', 'tag', 'change_stage', 'add_note', 'reassign', 'run_automation', 'stop_other_plans'] as const
 export type StepChannel = (typeof STEP_CHANNELS)[number]
 
 /** Original v1 channels — kept for backward compat guards. */
@@ -233,6 +237,10 @@ export const EMPTY_STEP: Record<StepChannel, Step> = {
   add_note: { channel: 'add_note', delayDays: 0, value: '' },
   reassign: { channel: 'reassign', delayDays: 0, value: '' },
   run_automation: { channel: 'run_automation', delayDays: 0, value: '' },
+  /** stop_other_plans has no required config — the engine pauses all other running
+   *  enrollments for this person at execution time. value is unused but kept so
+   *  the Step union type is satisfied (value is optional on the base schema). */
+  stop_other_plans: { channel: 'stop_other_plans', delayDays: 0 },
 }
 
 /**

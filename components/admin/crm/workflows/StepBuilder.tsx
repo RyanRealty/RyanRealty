@@ -121,10 +121,11 @@ const V2_CHANNEL_LABELS: Partial<Record<StepChannel, string>> = {
   add_note: 'Add note',
   reassign: 'Reassign broker',
   run_automation: 'Start another workflow',
+  stop_other_plans: 'Pause other workflows',
 }
 
 export function StepBuilder({
-  sequenceId,
+  sequenceId: _sequenceId,
   initialName,
   initialDescription,
   initialStopOnReply,
@@ -241,7 +242,7 @@ export function StepBuilder({
     setTriggers((prev) => prev.filter((_, i) => i !== idx))
   }
 
-  function run(action: () => Promise<ActionResult>, okText: string) {
+  function _run(action: () => Promise<ActionResult>, okText: string) {
     setNote(null)
     startTransition(async () => {
       const r = await action()
@@ -355,7 +356,7 @@ export function StepBuilder({
           <CardContent className="p-4">
             {triggers.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No triggers — this workflow starts only when a broker manually enrolls someone.
+                No triggers. This workflow starts only when a broker manually enrolls someone.
               </p>
             ) : (
               <div className="flex flex-wrap gap-2">
@@ -743,7 +744,7 @@ function ConditionEditor({
           className="flex h-auto w-full items-center justify-between px-0 text-sm font-medium text-foreground hover:bg-transparent"
           onClick={() => setShowTrue((v) => !v)}
         >
-          <span>IF TRUE — {node.truePath.length} step{node.truePath.length !== 1 ? 's' : ''}</span>
+          <span>IF TRUE: {node.truePath.length} step{node.truePath.length !== 1 ? 's' : ''}</span>
           <span aria-hidden>{showTrue ? '▲' : '▼'}</span>
         </Button>
         {showTrue ? (
@@ -764,7 +765,7 @@ function ConditionEditor({
           className="flex h-auto w-full items-center justify-between px-0 text-sm font-medium text-foreground hover:bg-transparent"
           onClick={() => setShowFalse((v) => !v)}
         >
-          <span>IF FALSE (ELSE) — {node.falsePath.length} step{node.falsePath.length !== 1 ? 's' : ''}</span>
+          <span>IF FALSE (ELSE): {node.falsePath.length} step{node.falsePath.length !== 1 ? 's' : ''}</span>
           <span aria-hidden>{showFalse ? '▲' : '▼'}</span>
         </Button>
         {showFalse ? (
@@ -815,7 +816,7 @@ function SubPathEditor({
   return (
     <div className="space-y-2 pt-1">
       {path.length === 0 ? (
-        <p className="text-xs text-muted-foreground">(empty — add steps below)</p>
+        <p className="text-xs text-muted-foreground">(empty, add steps below)</p>
       ) : (
         path.map((s, i) => {
           if (isConditionNode(s)) {
@@ -905,6 +906,11 @@ function SubStepInlineEditor({
         disabled={disabled}
         onChange={(e) => onPatch({ value: e.target.value })}
       />
+    )
+  }
+  if (step.channel === 'stop_other_plans') {
+    return (
+      <span className="text-xs text-muted-foreground">Pauses all other active workflows for this contact.</span>
     )
   }
   // tag — simplified (add only in branch editor)
@@ -1202,6 +1208,22 @@ function StepEditor({
           ) : null}
         </div>
         <DelayField idx={idx} value={step.delayDays} disabled={disabled} onChange={(d) => onPatch({ delayDays: d })} />
+      </div>
+    )
+  }
+
+  if (step.channel === 'stop_other_plans') {
+    return (
+      <div className="space-y-3">
+        <DelayField idx={idx} value={step.delayDays} disabled={disabled} onChange={(d) => onPatch({ delayDays: d })} />
+        <div className="rounded-lg border border-border bg-secondary/30 p-3">
+          <p className="text-sm font-medium text-foreground">Pause all other active workflows</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            When this step executes, every other running workflow enrollment for this contact is
+            paused. Use this as a guard to prevent two drip sequences competing for the same person.
+            The current workflow continues normally.
+          </p>
+        </div>
       </div>
     )
   }

@@ -19,6 +19,8 @@ export type DisplayStep = {
   addTags?: string[] | null
   removeTags?: string[] | null
   confirm?: boolean | null
+  /** v2 channels carry their config in `value`. */
+  value?: string | null
 }
 
 /** Human label for a channel (sentence case, no jargon). */
@@ -32,6 +34,18 @@ export function channelLabel(channel: string): string {
       return 'Task'
     case 'tag':
       return 'Tags'
+    case 'change_stage':
+      return 'Change stage'
+    case 'add_note':
+      return 'Add note'
+    case 'reassign':
+      return 'Reassign broker'
+    case 'run_automation':
+      return 'Start another workflow'
+    case 'stop_other_plans':
+      return 'Pause other workflows'
+    case 'condition':
+      return 'Condition (IF/ELSE)'
     default:
       return channel
   }
@@ -60,6 +74,22 @@ export function stepSummary(
       ...(step.addTags ?? []).map((t) => `add ${t}`),
     ]
     return parts.length ? `Tags · ${parts.join(', ')}` : 'Tags · (none)'
+  }
+  if (step.channel === 'change_stage') {
+    return step.value ? `Change stage → ${step.value}` : 'Change stage'
+  }
+  if (step.channel === 'add_note') {
+    const preview = (step.value ?? '').slice(0, 40)
+    return preview ? `Note · ${preview}${step.value && step.value.length > 40 ? '…' : ''}` : 'Add note'
+  }
+  if (step.channel === 'reassign') {
+    return step.value ? `Reassign → ${step.value}` : 'Reassign broker'
+  }
+  if (step.channel === 'run_automation') {
+    return step.value ? `Start workflow #${step.value}` : 'Start another workflow'
+  }
+  if (step.channel === 'stop_other_plans') {
+    return 'Pause all other active workflows'
   }
   return channelLabel(step.channel)
 }

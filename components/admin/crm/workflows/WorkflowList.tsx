@@ -49,8 +49,14 @@ import {
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
 import { MoreVertical } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { sequenceStatusMeta } from './step-display'
+
+/**
+ * The plan type identifies which of the four auto-enroll master workflows this is.
+ * FUB plan IDs: 69=seller, 70=buyer, 71=expired, 72=fsbo.
+ * null = a hand-built workflow (not an auto-enroll master).
+ */
+export type WorkflowPlanType = 'buyer' | 'seller' | 'expired' | 'fsbo' | null
 
 export type WorkflowRow = {
   id: number
@@ -59,6 +65,8 @@ export type WorkflowRow = {
   stepCount: number
   /** True when this is an auto-enroll master (fub_legacy_plan_id set) — never deletable. */
   isAutoEnrollMaster: boolean
+  /** Identifies which master plan type this is (null for regular workflows). */
+  planType: WorkflowPlanType
   enrolled: number
   active: number
   completed: number
@@ -190,15 +198,29 @@ export function WorkflowList({
                 return (
                   <TableRow key={row.id}>
                     <TableCell className="font-medium text-foreground">
-                      <Button
-                        type="button"
-                        variant="link"
-                        className="block h-auto max-w-[32vw] truncate p-0 text-left font-medium md:max-w-none"
-                        title={row.name}
-                        onClick={() => router.push(`/admin/crm/sequences/${row.id}/edit`)}
-                      >
-                        {row.name}
-                      </Button>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Button
+                          type="button"
+                          variant="link"
+                          className="block h-auto max-w-[32vw] truncate p-0 text-left font-medium md:max-w-none"
+                          title={row.name}
+                          onClick={() => router.push(`/admin/crm/sequences/${row.id}/edit`)}
+                        >
+                          {row.name}
+                        </Button>
+                        {row.planType === 'buyer' && (
+                          <Badge variant="secondary" className="shrink-0 text-xs">Default buyer</Badge>
+                        )}
+                        {row.planType === 'seller' && (
+                          <Badge variant="secondary" className="shrink-0 text-xs">Default seller</Badge>
+                        )}
+                        {row.planType === 'expired' && (
+                          <Badge variant="secondary" className="shrink-0 text-xs">Default expired</Badge>
+                        )}
+                        {row.planType === 'fsbo' && (
+                          <Badge variant="secondary" className="shrink-0 text-xs">Default FSBO</Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={row.status} />

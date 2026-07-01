@@ -27,7 +27,7 @@ import { scopeBroker } from '@/lib/crm/scope'
 import { CRM_BROKERS, CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
 import { Button } from '@/components/ui/button'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
-import { WorkflowList, type WorkflowRow } from '@/components/admin/crm/workflows/WorkflowList'
+import { WorkflowList, type WorkflowRow, type WorkflowPlanType } from '@/components/admin/crm/workflows/WorkflowList'
 import {
   AutomationRulesManager,
   type RuleRow,
@@ -106,6 +106,19 @@ export default async function CrmSequencesPage() {
 
   const analyticsById = new Map(analytics.rows.map((r) => [r.id, r]))
 
+  /** Map FUB legacy plan IDs to canonical plan types for badge rendering.
+   *  These IDs come from the FUB API export (enroll.ts RULES constant):
+   *  69 = seller master, 70 = buyer master, 71 = expired, 72 = fsbo. */
+  function planTypeFromFubId(fubId: number | null | undefined): WorkflowPlanType {
+    switch (fubId) {
+      case 69: return 'seller'
+      case 70: return 'buyer'
+      case 71: return 'expired'
+      case 72: return 'fsbo'
+      default: return null
+    }
+  }
+
   const rows: WorkflowRow[] = sequences.map((s) => {
     const a = analyticsById.get(s.id)
     return {
@@ -114,6 +127,7 @@ export default async function CrmSequencesPage() {
       status: s.status,
       stepCount: Array.isArray(s.steps) ? s.steps.length : 0,
       isAutoEnrollMaster: s.fub_legacy_plan_id != null,
+      planType: planTypeFromFubId(s.fub_legacy_plan_id),
       enrolled: a?.enrolled ?? 0,
       active: a?.active ?? 0,
       completed: a?.completed ?? 0,

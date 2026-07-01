@@ -119,7 +119,8 @@ export async function GET(request: Request) {
     .limit(BATCH)
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
 
-  let executed = 0, paused = 0, completed = 0, skippedSms = 0, skippedDupEmail = 0, suppressed = 0, errored = 0, queuedSms = 0
+  let executed = 0, paused = 0, completed = 0, skippedDupEmail = 0, suppressed = 0, errored = 0, queuedSms = 0
+  const skippedSms = 0 // reserved for future direct-SMS skip tracking; currently unused
 
   // A2P campaign status — one Twilio call per run. Until VERIFIED, SMS steps
   // queue visibly (timeline row with the rendered text) instead of erroring,
@@ -512,6 +513,36 @@ export async function GET(request: Request) {
         await log(
           `Workflow "${seq.name}" triggered automation: ${enrollResult.enrolled ? `enrolled in #${targetId}` : `skipped (${(enrollResult as { reason?: string }).reason ?? 'already enrolled'})`}`,
         )
+
+      } else if (step.channel === 'stop_other_plans') {
+        // FUB parity: "Pause All Other Action Plans". Pauses every OTHER running
+        // enrollment for this contact (excludes the current enrollment `en.id`).
+        // Uses status='paused' (the broker-paused state) so the enrollments are
+        // surfaced clearly in the enrollment board and can be manually resumed.
+        // This enrollment continues normally — only OTHERS are paused.
+        const PAUSEABLE_STATUSES = ['running', 'awaiting_broker', 'awaiting_broker_next'] as const
+        const { data: otherEnrollments, error: otherErr } = await sb
+          .from('crm_sequence_enrollments')
+          .select('id')
+          .eq('person_id', person.id)
+          .neq('id', en.id)
+          .in('status', PAUSEABLE_STATUSES as unknown as string[])
+        if (otherErr) {
+          // Fail-safe: do not stop the current workflow on a read failure here.
+          // Log and continue — the step is considered "done" even if we couldn't
+          // pause siblings (better than stopping the primary drip).
+          await log(`Workflow "${seq.name}" stop_other_plans read error — ${otherErr.message}`)
+        } else if ((otherEnrollments ?? []).length > 0) {
+          const pauseIds = (otherEnrollments ?? []).map((e) => e.id as number)
+          await sb
+            .from('crm_sequence_enrollments')
+            .update({ status: 'paused', updated_at: new Date().toISOString() })
+            .in('id', pauseIds)
+          await log(
+            `Workflow "${seq.name}" paused ${pauseIds.length} other active workflow${pauseIds.length === 1 ? '' : 's'} for this contact`,
+          )
+        }
+        // Zero other running enrollments = a no-op; no log needed.
 
       } else {
         await finish({ status: 'stopped' })
