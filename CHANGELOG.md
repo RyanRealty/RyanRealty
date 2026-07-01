@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.698.1 (2026-07-01)
+
+### Maintenance
+- docs(crm): Templates (#7) verified — CRM BUILD COMPLETE, all 7 sections shipped
+
+---
+
+
 ## v1.698.0 (2026-07-01)
 
 ### Features
