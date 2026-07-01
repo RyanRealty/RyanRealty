@@ -110,6 +110,81 @@ acceptance checklist ticked + gates green. Nothing else counts as "done."
 7. Templates: folder tree + merge-field inserter + share + test-send (§13).
 DEFERRED (do NOT build unless told): Deals reporting beyond pipeline, Billing, public API.
 
+---
+
+# MOBILE DELIVERY TRACK — build the CRM's mobile views to match the FUB-iOS screens (added 2026-07-01)
+
+> **This track was MISSING from the original plan and that is a planning failure.** The delivery order above
+> (0–7) was desktop-only. The 60 analyzed FUB-iOS mobile screens (`docs/fub-crm-spec/mobile-screens/`) plus the
+> mobile module sections (§23–§30) were referenced as reading material but never turned into build items — so
+> the mobile surfaces (starting with the contact detail) were never built to match and there was nothing for
+> the verification step to check them against. This track fixes that. **Same methodology, same Definition of
+> Done, same constraints as the desktop track. No mobile screen is "done" without a side-by-side against its
+> mobile reference — a render-check is NOT acceptance.**
+
+## What "mobile" means here
+The in-house CRM is a responsive Next.js web app (not a native app). "Build the mobile pages" = make each CRM
+surface's **mobile-viewport layout (390px width — the FUB-iOS 390×844pt logical width)** visually match its
+FUB-iOS reference. The existing routes (e.g. `/admin/console/leads/[id]`) get their MOBILE layout rebuilt to
+match; the desktop layout is preserved via responsive breakpoints. `30-mobile-inhouse-web-current-state.md`
+documents the current in-house mobile web vs FUB — the exact delta this track closes. Native-iOS-app build is
+OUT of scope.
+
+## SOURCE OF TRUTH (read per item — same discipline as desktop)
+1. The mobile module section for the item (§23–§30).
+2. The specific `mobile-screens/screen-NN.md` analyses it covers — each carries pt-level y-bands, every region,
+   color, tab, and field. **That analysis IS the reference.**
+3. `30-mobile-inhouse-web-current-state.md` — current in-house state + the FUB delta.
+- **Reference-image note:** the original PNG screenshots (IMG_*.PNG) are NOT in the repo — only the pixel-level
+  per-screen analyses. The side-by-side reference is that documented layout; where an actual image comparison is
+  needed, Matt supplies the screenshot or it is captured from the FUB iOS app.
+
+## DEFINITION OF DONE — PER MOBILE SCREEN (the gate — identical rigor to the desktop DoD above)
+A mobile screen is done ONLY when EVERY item passes, each backed by an artifact:
+1. **RENDERS** at 390px width in a real browser; every region renders; no console errors; loads timely.
+2. **VISUAL MATCH (the core gate)** — screenshot the built page at 390px and compare SIDE-BY-SIDE against the
+   mobile reference (the `mobile-screens/screen-NN.md` documented regions + y-band order + every field). Every
+   region, tab, field, control, label, order, and spacing must match. The ONLY allowed differences are the
+   intentional brand token swaps (FUB slate/teal → Ryan Realty navy `#102742` / cream `#faf8f4`, Geist +
+   Amboqia). Iterate build → screenshot → compare until ZERO structural/content diffs. **The matching
+   screenshot IS the acceptance artifact. A description is NOT acceptance.**
+3. **PARITY GATE** — a `parity.json` for the mobile route; `ci:mockup-parity` passes.
+4. **SPEC ACCEPTANCE** — every field/tab/control the §-section enumerates is present and wired to real crm_* data.
+5. **GATES + TESTS** pass.
+6. **REAL DATA** — every value traces to live crm_* data. No mock/placeholder.
+
+## NON-NEGOTIABLE CONSTRAINTS (same as desktop)
+Design-system components only (`@/components/ui`, Ryan tokens). DAL-first. §0 data accuracy. Compliance sacred
+(send paths keep suppression/quiet-hours). Broker scope at the data layer. The mobile layout must match the
+FUB-iOS STRUCTURE (bottom tab bar, header, tab rows, action sheets, field grouping) re-skinned to the brand —
+not a loose "it's responsive" approximation.
+
+## DELIVERY ORDER (mobile) — gap-first, Contact Detail FIRST (the one that's visibly wrong)
+- **M1. Mobile Contact Detail / Lead Profile — ALL tabs** (Info · Comms · Homes · Notes · Calendar) + the
+  header/avatar/quick-actions/stage, at 390px. §25 + screens mob-02/03/04/12/13/14/16/17/18/25/26/27/28/29/30/
+  31/33/37/50/51/52/53/55/56/59/60. **START HERE — this is what Matt flagged. Route: `/admin/console/leads/[id]`.**
+- **M2. Mobile shell + navigation** — bottom tab bar, header, app chrome, the mobile frame every screen sits in
+  (§23; mob-01 frame).
+- **M3. Mobile Inbox & conversation threads** — inbox sub-tabs (My / Sent / Closed), SMS + email threads
+  (§26; mob-07/21/22/23/24/38/42/49). Route: `/admin/crm/inbox`.
+- **M4. Mobile Compose** — email / text / call / AI compose sheets (§27; mob-39/40/41/43/48/57/58).
+- **M5. Mobile Activity feed / People / Smart Lists** (§24; mob-01/05/09/10/32). Routes: `/admin/crm`,
+  `/admin/crm/activity`.
+- **M6. Mobile Calendar & Tasks** (§29; mob-08/31). Routes: `/admin/crm/calendar`, `/admin/crm/tasks`.
+- **M7. Mobile Pickers / modals / action sheets** — assign-to, stage, source, time-frame, automations
+  (§28; mob-11/15/34/35/36/54).
+- **NOT IN SCOPE:** mob-19 (Instagram) + mob-20 (stock portfolio) are other-app reference shots, skip. Native
+  iOS app is out of scope (this is the responsive web).
+
+## BUILD METHOD (mobile — same vertical-slice discipline as desktop)
+Per item, one vertical slice: read the reference (§-section + the mob-NN analyses) → rebuild the MOBILE layout of
+the existing route to match at 390px (preserve desktop via breakpoints) → screenshot at 390px → side-by-side vs
+the reference → iterate to ZERO diffs → `parity.json` → gates → the DONE bar → commit → show Matt the
+side-by-side. Only then move to the next item.
+
+## PROGRESS (mobile)
+- (none yet — M1 Contact Detail is next; the current `/admin/console/leads/[id]` mobile layout does NOT match §25)
+
 ## START NOW
 Read the spec (1–5), fresh-read the current CRM code (backend to reuse vs UI to replace),
 pre-flight the dev server + Supabase migration path + Chrome automation, then build slice 0
