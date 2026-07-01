@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.700.2 (2026-07-01)
+
+### Other
+- plan(crm): email tracking = all send paths (Gmail+Resend), merge-field root cause, M8/M9
+
+---
+
+
 ## v1.700.1 (2026-07-01)
 
 ### Maintenance
