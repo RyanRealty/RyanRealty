@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.699.1 (2026-07-01)
+
+### Bug Fixes
+- fix(crm-mobile): M1 verification round 1 — note-body <br/> markup, broker headshots, FUB date convention
+
+---
+
+
 ## v1.699.0 (2026-07-01)
 
 ### Features
