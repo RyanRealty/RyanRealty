@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.691.0 (2026-07-01)
+
+### Features
+- feat(crm): Reporting suite — Overview hub, Texts, Appointments reports
+
+---
+
+
 ## v1.690.1 (2026-07-01)
 
 ### Bug Fixes
