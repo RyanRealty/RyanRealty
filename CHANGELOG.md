@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.701.1 (2026-07-01)
+
+### Maintenance
+- docs(crm): M5 core (people root + activity sub-tabs) verified on prod — progress
+
+---
+
+
 ## v1.701.0 (2026-07-01)
 
 ### Features
