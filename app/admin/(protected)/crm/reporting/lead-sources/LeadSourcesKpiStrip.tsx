@@ -8,22 +8,13 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-import { COL_LABELS, ALL_COL_KEYS, type ColKey } from '@/lib/crm/reporting-constants'
+import { COL_LABELS, ALL_COL_KEYS, type ColKey, LS_COL_KEYS } from '@/lib/crm/reporting-constants'
 import type { LeadSourcesTotals, TimeSeriesPoint } from '@/lib/data/crm/getLeadSourcesReport'
 
-// ── Lead Sources column set (subset of ALL_COL_KEYS) ─────────────────────────
-// No 'initially_assigned', 'currently_assigned', or 'appts_set' — Lead Sources
-// report uses the 7-column layout shown in the FUB reference (Screen 5).
-
-export const LS_COL_KEYS: readonly ColKey[] = [
-  'new_leads',
-  'calls',
-  'emails',
-  'texts',
-  'notes',
-  'tasks_completed',
-  'appointments',
-] as const
+// LS_COL_KEYS is imported above from @/lib/crm/reporting-constants (a plain shared
+// module) and used within this component. page.tsx imports LS_COL_KEYS directly
+// from reporting-constants — not from this 'use client' file — so the server
+// component never crosses the 'use client' boundary.
 
 const COL_TO_TOTAL: Record<ColKey, keyof LeadSourcesTotals> = {
   new_leads: 'newLeads',

@@ -73,6 +73,22 @@ export const COL_TO_METRIC_FIELD: Record<ColKey, string> = {
   appointments: 'appointments',
 }
 
+/**
+ * Lead Sources column set — the 7 metrics shown on the Lead Sources report.
+ * Intentionally lives in this shared (non-'use client') module so both the
+ * server page.tsx and the 'use client' LeadSourcesKpiStrip can import it
+ * without hitting Next.js's 'use client' boundary restriction.
+ */
+export const LS_COL_KEYS: readonly ColKey[] = [
+  'new_leads',
+  'calls',
+  'emails',
+  'texts',
+  'notes',
+  'tasks_completed',
+  'appointments',
+] as const
+
 /** Parse the ?cols= URL param into an array of valid ColKey values */
 export function parseColsParam(raw: string | undefined): ColKey[] {
   if (!raw) return [...ALL_COL_KEYS]

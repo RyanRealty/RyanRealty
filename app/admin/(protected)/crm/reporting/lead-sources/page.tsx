@@ -6,7 +6,7 @@ import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getLeadSourcesReport } from '@/lib/data/crm/getLeadSourcesReport'
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
-import { ALL_COL_KEYS, type ColKey } from '@/lib/crm/reporting-constants'
+import { ALL_COL_KEYS, type ColKey, LS_COL_KEYS } from '@/lib/crm/reporting-constants'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import LeadSourcesFilters from './LeadSourcesFilters'
 import { AgentActivityChart } from '../agent-activity/AgentActivityChart'
-import { LeadSourcesKpiStrip, LS_COL_KEYS } from './LeadSourcesKpiStrip'
+import { LeadSourcesKpiStrip } from './LeadSourcesKpiStrip'
 
 export const metadata = { title: 'Lead Sources | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
