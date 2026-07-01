@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.689.2 (2026-07-01)
+
+### Bug Fixes
+- fix(crm): Agent Activity report — real counts, dates, sparklines, y-axis
+
+---
+
+
 ## v1.689.1 (2026-07-01)
 
 ### Maintenance
