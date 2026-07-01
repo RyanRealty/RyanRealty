@@ -71,24 +71,26 @@ function computeDelta(
 
 // ── Sparkline ──────────────────────────────────────────────────────────────────
 
-function Sparkline({ data }: { data: number[] }) {
+function Sparkline({ data, id }: { data: number[]; id: string }) {
   const chartData = data.map((v) => ({ v }))
+  const gradId = `sparkGrad-${id}`
   return (
     <div className="mt-2 h-8 w-full">
       <ResponsiveContainer width="100%" height="100%">
+        {/* .design-token-lint-ignore — recharts SVG attrs; hex required by recharts API */}
         <AreaChart data={chartData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
           <defs>
-            <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.2} />
-              <stop offset="95%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0} />
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#102742" stopOpacity={0.18} />
+              <stop offset="95%" stopColor="#102742" stopOpacity={0} />
             </linearGradient>
           </defs>
           <Area
             type="monotone"
             dataKey="v"
-            stroke="hsl(var(--muted-foreground))"
+            stroke="#102742"
             strokeWidth={1.5}
-            fill="url(#sparkGrad)"
+            fill={`url(#${gradId})`}
             dot={false}
             isAnimationActive={false}
           />
@@ -101,6 +103,7 @@ function Sparkline({ data }: { data: number[] }) {
 // ── KPI Tile ───────────────────────────────────────────────────────────────────
 
 interface KpiTileProps {
+  id: string
   label: string
   value: number
   previousValue: number
@@ -110,6 +113,7 @@ interface KpiTileProps {
 }
 
 function KpiTile({
+  id,
   label,
   value,
   previousValue,
@@ -169,7 +173,7 @@ function KpiTile({
       )}
 
       {/* Sparkline */}
-      <Sparkline data={sparkData} />
+      <Sparkline data={sparkData} id={id} />
     </Card>
   )
 }
@@ -291,6 +295,7 @@ export function AgentActivityKpiStrip({
         return (
           <KpiTile
             key={def.key}
+            id={def.key}
             label={def.label}
             value={totals[totalField] as number}
             previousValue={previousTotals[totalField] as number}

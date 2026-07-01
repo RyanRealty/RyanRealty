@@ -231,10 +231,11 @@ app/components/admin/AdminMobileTabBar.tsx
 components/site/kb/
 app/concept/kb/
 
-# Agent Activity area chart (CRM reporting, 2026-07-01): recharts SVG linearGradient
-# stopColor + Area stroke/fill/dot props require literal hex. Same exception class as
-# EquityProjectionChart.client.tsx and PriceHistoryScrubber.client.tsx.
+# Agent Activity area chart + KPI sparklines (CRM reporting, 2026-07-01): recharts SVG
+# linearGradient stopColor + Area stroke/fill/dot props require literal hex. Same
+# exception class as EquityProjectionChart.client.tsx and PriceHistoryScrubber.client.tsx.
 app/admin/(protected)/crm/reporting/agent-activity/AgentActivityChart.tsx
+app/admin/(protected)/crm/reporting/agent-activity/AgentActivityKpiStrip.tsx
 
 # Luxury homes Bend SEO LP (2026-07-01): KB-register landing page uses inline
 # brand hex (#102742, #faf8f4) + KB tracking/leading overrides — same exception

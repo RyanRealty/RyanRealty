@@ -163,6 +163,8 @@ const EMPTY_TOTALS: AgentActivityTotals = {
 /**
  * Build a per-day TimeSeriesPoint[] for the given period from pre-fetched raw data.
  * Only events with timestamps in [rangeStart, rangeEnd] are counted.
+ * Note: raw rows may be capped at the Supabase max_rows limit; the time series
+ * reflects the shape of available data (not exact per-day totals for high-volume periods).
  */
 function buildTimeSeries(
   timelineEvents: Array<{ ts: string; kind: string }>,
@@ -270,111 +272,189 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
     }
   }
 
-  // 3. Parallel data fetch — all queries span the COMBINED period (prevStart → end)
-  //    so we can split current vs. previous in JS with a single round-trip each.
-  const [leadsResult, timelineResult, tasksResult, apptsResult] = await Promise.all([
-    // a) All leads in combined period for scoped brokers
-    sb
-      .from('crm_people')
-      .select('created_at,assigned_broker')
-      .in('assigned_broker', brokerSlugs)
-      .eq('deleted', false)
-      .gte('created_at', prevStart)
-      .lte('created_at', end),
+  // 3. All queries run in maximum parallelism via four independent groups.
+  //
+  //    Group A — 7 COUNT-only queries for the PREVIOUS period totals.
+  //              Uses { count: 'exact', head: true } so Supabase returns the real
+  //              database COUNT(*) in the response header — never capped by max_rows.
+  //
+  //    Group B — Per-broker COUNT-only queries for the CURRENT period.
+  //              Up to 3 brokers × 7 metrics = 21 queries, all run in parallel.
+  //              Gives exact per-broker values for the breakdown table; totals
+  //              are derived by summing across brokers.
+  //
+  //    Group C — Raw-row queries for the CURRENT period time series (sparklines + chart).
+  //              Rows may be capped by the Supabase max_rows setting; these give
+  //              sparkline shape, not exact per-day totals on high-volume periods.
+  //
+  //    Group D — Raw-row queries for the PREVIOUS period time series (compare overlay).
+  //
+  const [
+    prevTotalsGroup,
+    perBrokerGroup,
+    curTsGroup,
+    prevTsGroup,
+  ] = await Promise.all([
 
-    // b) Timeline events in combined period for scoped brokers
-    sb
-      .from('crm_timeline')
-      .select('ts,kind,broker')
-      .gte('ts', prevStart)
-      .lte('ts', end)
-      .in('kind', ALL_ACTIVITY_KINDS)
-      .in('broker', brokerSlugs)
-      .neq('source', 'sequence'),
+    // ── Group A: Previous period totals (7 COUNT queries) ──────────────────
+    Promise.all([
+      // a0: new leads (previous)
+      sb.from('crm_people').select('id', { count: 'exact', head: true })
+        .in('assigned_broker', brokerSlugs).eq('deleted', false)
+        .gte('created_at', prevStart).lte('created_at', prevEnd),
+      // a1: calls (previous)
+      sb.from('crm_timeline').select('id', { count: 'exact', head: true })
+        .in('broker', brokerSlugs).in('kind', CALL_KINDS).neq('source', 'sequence')
+        .gte('ts', prevStart).lte('ts', prevEnd),
+      // a2: emails (previous)
+      sb.from('crm_timeline').select('id', { count: 'exact', head: true })
+        .in('broker', brokerSlugs).in('kind', EMAIL_KINDS).neq('source', 'sequence')
+        .gte('ts', prevStart).lte('ts', prevEnd),
+      // a3: texts (previous)
+      sb.from('crm_timeline').select('id', { count: 'exact', head: true })
+        .in('broker', brokerSlugs).in('kind', TEXT_KINDS).neq('source', 'sequence')
+        .gte('ts', prevStart).lte('ts', prevEnd),
+      // a4: notes (previous)
+      sb.from('crm_timeline').select('id', { count: 'exact', head: true })
+        .in('broker', brokerSlugs).in('kind', NOTE_KINDS).neq('source', 'sequence')
+        .gte('ts', prevStart).lte('ts', prevEnd),
+      // a5: tasks completed (previous)
+      sb.from('crm_tasks').select('id', { count: 'exact', head: true })
+        .in('assigned_broker', brokerSlugs)
+        .gte('completed_at', prevStart).lte('completed_at', prevEnd),
+      // a6: appointments (previous)
+      sb.from('crm_appointments').select('id', { count: 'exact', head: true })
+        .in('broker_slug', brokerSlugs).not('person_id', 'is', null)
+        .gte('start_at', prevStart).lte('start_at', prevEnd),
+    ] as const),
 
-    // c) Tasks completed in combined period for scoped brokers
-    sb
-      .from('crm_tasks')
-      .select('completed_at,assigned_broker')
-      .gte('completed_at', prevStart)
-      .lte('completed_at', end)
-      .in('assigned_broker', brokerSlugs),
+    // ── Group B: Per-broker current period counts ──────────────────────────
+    Promise.all(
+      scopedBrokers.map((b) => {
+        const slug = b.crm_slug
+        return Promise.all([
+          // b0: new leads
+          sb.from('crm_people').select('id', { count: 'exact', head: true })
+            .eq('assigned_broker', slug).eq('deleted', false)
+            .gte('created_at', start).lte('created_at', end),
+          // b1: calls
+          sb.from('crm_timeline').select('id', { count: 'exact', head: true })
+            .eq('broker', slug).in('kind', CALL_KINDS).neq('source', 'sequence')
+            .gte('ts', start).lte('ts', end),
+          // b2: emails
+          sb.from('crm_timeline').select('id', { count: 'exact', head: true })
+            .eq('broker', slug).in('kind', EMAIL_KINDS).neq('source', 'sequence')
+            .gte('ts', start).lte('ts', end),
+          // b3: texts
+          sb.from('crm_timeline').select('id', { count: 'exact', head: true })
+            .eq('broker', slug).in('kind', TEXT_KINDS).neq('source', 'sequence')
+            .gte('ts', start).lte('ts', end),
+          // b4: notes
+          sb.from('crm_timeline').select('id', { count: 'exact', head: true })
+            .eq('broker', slug).in('kind', NOTE_KINDS).neq('source', 'sequence')
+            .gte('ts', start).lte('ts', end),
+          // b5: tasks completed
+          sb.from('crm_tasks').select('id', { count: 'exact', head: true })
+            .eq('assigned_broker', slug)
+            .gte('completed_at', start).lte('completed_at', end),
+          // b6: appointments
+          sb.from('crm_appointments').select('id', { count: 'exact', head: true })
+            .eq('broker_slug', slug).not('person_id', 'is', null)
+            .gte('start_at', start).lte('start_at', end),
+        ] as const)
+      })
+    ),
 
-    // d) Appointments in combined period for scoped brokers
-    sb
-      .from('crm_appointments')
-      .select('start_at,broker_slug')
-      .gte('start_at', prevStart)
-      .lte('start_at', end)
-      .not('person_id', 'is', null)
-      .in('broker_slug', brokerSlugs),
+    // ── Group C: Current period raw rows for sparklines + chart ───────────
+    Promise.all([
+      sb.from('crm_people').select('created_at,assigned_broker')
+        .in('assigned_broker', brokerSlugs).eq('deleted', false)
+        .gte('created_at', start).lte('created_at', end),
+      sb.from('crm_timeline').select('ts,kind,broker')
+        .in('broker', brokerSlugs).in('kind', ALL_ACTIVITY_KINDS)
+        .neq('source', 'sequence').gte('ts', start).lte('ts', end),
+      sb.from('crm_tasks').select('completed_at,assigned_broker')
+        .in('assigned_broker', brokerSlugs)
+        .gte('completed_at', start).lte('completed_at', end),
+      sb.from('crm_appointments').select('start_at,broker_slug')
+        .in('broker_slug', brokerSlugs).not('person_id', 'is', null)
+        .gte('start_at', start).lte('start_at', end),
+    ] as const),
+
+    // ── Group D: Previous period raw rows for compare overlay ─────────────
+    Promise.all([
+      sb.from('crm_people').select('created_at,assigned_broker')
+        .in('assigned_broker', brokerSlugs).eq('deleted', false)
+        .gte('created_at', prevStart).lte('created_at', prevEnd),
+      sb.from('crm_timeline').select('ts,kind,broker')
+        .in('broker', brokerSlugs).in('kind', ALL_ACTIVITY_KINDS)
+        .neq('source', 'sequence').gte('ts', prevStart).lte('ts', prevEnd),
+      sb.from('crm_tasks').select('completed_at,assigned_broker')
+        .in('assigned_broker', brokerSlugs)
+        .gte('completed_at', prevStart).lte('completed_at', prevEnd),
+      sb.from('crm_appointments').select('start_at,broker_slug')
+        .in('broker_slug', brokerSlugs).not('person_id', 'is', null)
+        .gte('start_at', prevStart).lte('start_at', prevEnd),
+    ] as const),
   ])
 
-  const leads = leadsResult.data ?? []
-  const timelineEvents = (timelineResult.data ?? []) as Array<{ ts: string; kind: string; broker: string | null }>
-  const tasks = (tasksResult.data ?? []) as Array<{ completed_at: string | null; assigned_broker: string | null }>
-  const appts = (apptsResult.data ?? []) as Array<{ start_at: string; broker_slug: string | null }>
+  // 4. Unpack previous-period totals (from count queries — exact values)
+  const [
+    { count: prevNewLeadsCount },
+    { count: prevCallsCount },
+    { count: prevEmailsCount },
+    { count: prevTextsCount },
+    { count: prevNotesCount },
+    { count: prevTasksCount },
+    { count: prevApptsCount },
+  ] = prevTotalsGroup
 
-  // 4. Partition into current vs previous period
-  const curLeads = leads.filter((l) => inRange(l.created_at, start, end)) as Array<{ created_at: string; assigned_broker: string | null }>
-  const prevLeads = leads.filter((l) => inRange(l.created_at, prevStart, prevEnd)) as Array<{ created_at: string; assigned_broker: string | null }>
-  const curTimeline = timelineEvents.filter((e) => inRange(e.ts, start, end))
-  const prevTimeline = timelineEvents.filter((e) => inRange(e.ts, prevStart, prevEnd))
-  const curTasks = tasks.filter((t) => t.completed_at && inRange(t.completed_at, start, end))
-  const prevTasks = tasks.filter((t) => t.completed_at && inRange(t.completed_at, prevStart, prevEnd))
-  const curAppts = appts.filter((a) => inRange(a.start_at, start, end))
-  const prevAppts = appts.filter((a) => inRange(a.start_at, prevStart, prevEnd))
-
-  // 5. Build per-broker aggregates for CURRENT period
-  const newLeadsByBroker = new Map<string, number>()
-  const callsByBroker = new Map<string, number>()
-  const emailsByBroker = new Map<string, number>()
-  const textsByBroker = new Map<string, number>()
-  const notesByBroker = new Map<string, number>()
-  const tasksByBroker = new Map<string, number>()
-  const apptsByBroker = new Map<string, number>()
-
-  for (const l of curLeads) {
-    if (l.assigned_broker) newLeadsByBroker.set(l.assigned_broker, (newLeadsByBroker.get(l.assigned_broker) ?? 0) + 1)
-  }
-  for (const ev of curTimeline) {
-    const slug = ev.broker
-    if (!slug) continue
-    if (CALL_KINDS.includes(ev.kind)) callsByBroker.set(slug, (callsByBroker.get(slug) ?? 0) + 1)
-    else if (EMAIL_KINDS.includes(ev.kind)) emailsByBroker.set(slug, (emailsByBroker.get(slug) ?? 0) + 1)
-    else if (TEXT_KINDS.includes(ev.kind)) textsByBroker.set(slug, (textsByBroker.get(slug) ?? 0) + 1)
-    else if (NOTE_KINDS.includes(ev.kind)) notesByBroker.set(slug, (notesByBroker.get(slug) ?? 0) + 1)
-  }
-  for (const t of curTasks) {
-    if (t.assigned_broker) tasksByBroker.set(t.assigned_broker, (tasksByBroker.get(t.assigned_broker) ?? 0) + 1)
-  }
-  for (const a of curAppts) {
-    if (a.broker_slug) apptsByBroker.set(a.broker_slug, (apptsByBroker.get(a.broker_slug) ?? 0) + 1)
+  const previousTotals: AgentActivityTotals = {
+    newLeads: prevNewLeadsCount ?? 0,
+    initiallyAssignedLeads: prevNewLeadsCount ?? 0,
+    currentlyAssignedLeads: prevNewLeadsCount ?? 0,
+    calls: prevCallsCount ?? 0,
+    emails: prevEmailsCount ?? 0,
+    texts: prevTextsCount ?? 0,
+    notes: prevNotesCount ?? 0,
+    tasksCompleted: prevTasksCount ?? 0,
+    appointmentsSet: prevApptsCount ?? 0,
+    appointments: prevApptsCount ?? 0,
   }
 
-  // 6. Build typed rows (current period per-broker)
-  const rows: AgentActivityRow[] = scopedBrokers.map((b) => {
-    const slug = b.crm_slug
-    const newLeads = newLeadsByBroker.get(slug) ?? 0
-    const apptsSet = apptsByBroker.get(slug) ?? 0
+  // 5. Build per-broker rows from count results (exact, not capped)
+  const rows: AgentActivityRow[] = scopedBrokers.map((b, i) => {
+    const [
+      { count: newLeadsCnt },
+      { count: callsCnt },
+      { count: emailsCnt },
+      { count: textsCnt },
+      { count: notesCnt },
+      { count: tasksCnt },
+      { count: apptsCnt },
+    ] = perBrokerGroup[i]
+
+    const newLeads = newLeadsCnt ?? 0
+    const apptsSet = apptsCnt ?? 0
+
     return {
-      brokerSlug: slug,
-      brokerName: b.display_name ?? slug,
-      avatarUrl: BROKER_HEADSHOT[slug] ?? b.photo_url ?? null,
+      brokerSlug: b.crm_slug,
+      brokerName: b.display_name ?? b.crm_slug,
+      avatarUrl: BROKER_HEADSHOT[b.crm_slug] ?? b.photo_url ?? null,
       newLeads,
       initiallyAssignedLeads: newLeads,
       currentlyAssignedLeads: newLeads,
-      calls: callsByBroker.get(slug) ?? 0,
-      emails: emailsByBroker.get(slug) ?? 0,
-      texts: textsByBroker.get(slug) ?? 0,
-      notes: notesByBroker.get(slug) ?? 0,
-      tasksCompleted: tasksByBroker.get(slug) ?? 0,
+      calls: callsCnt ?? 0,
+      emails: emailsCnt ?? 0,
+      texts: textsCnt ?? 0,
+      notes: notesCnt ?? 0,
+      tasksCompleted: tasksCnt ?? 0,
       appointmentsSet: apptsSet,
       appointments: apptsSet,
     }
   })
 
-  // 7. Compute current period totals
+  // 6. Current period totals — sum per-broker rows (exact because count queries)
   const totals: AgentActivityTotals = rows.reduce(
     (acc, r) => ({
       newLeads: acc.newLeads + r.newLeads,
@@ -391,39 +471,20 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
     { ...EMPTY_TOTALS },
   )
 
-  // 8. Compute previous period totals (all scoped brokers combined)
-  let prevNewLeadsTotal = 0
-  let prevCallsTotal = 0
-  let prevEmailsTotal = 0
-  let prevTextsTotal = 0
-  let prevNotesTotal = 0
-  let prevTasksTotal = 0
-  let prevApptsTotal = 0
+  // 7. Build time series from raw rows (for sparkline shape and chart)
+  const [curLeadsRes, curTimelineRes, curTasksRes, curApptsRes] = curTsGroup
+  const [prevLeadsRes, prevTimelineRes, prevTasksRes, prevApptsRes] = prevTsGroup
 
-  for (const l of prevLeads) { if (l.assigned_broker) prevNewLeadsTotal++ }
-  for (const ev of prevTimeline) {
-    if (CALL_KINDS.includes(ev.kind)) prevCallsTotal++
-    else if (EMAIL_KINDS.includes(ev.kind)) prevEmailsTotal++
-    else if (TEXT_KINDS.includes(ev.kind)) prevTextsTotal++
-    else if (NOTE_KINDS.includes(ev.kind)) prevNotesTotal++
-  }
-  for (const _t of prevTasks) { prevTasksTotal++ }
-  for (const _a of prevAppts) { prevApptsTotal++ }
+  const curLeads = (curLeadsRes.data ?? []) as Array<{ created_at: string; assigned_broker: string | null }>
+  const curTimeline = (curTimelineRes.data ?? []) as Array<{ ts: string; kind: string; broker: string | null }>
+  const curTasks = (curTasksRes.data ?? []) as Array<{ completed_at: string | null; assigned_broker: string | null }>
+  const curAppts = (curApptsRes.data ?? []) as Array<{ start_at: string; broker_slug: string | null }>
 
-  const previousTotals: AgentActivityTotals = {
-    newLeads: prevNewLeadsTotal,
-    initiallyAssignedLeads: prevNewLeadsTotal,
-    currentlyAssignedLeads: prevNewLeadsTotal,
-    calls: prevCallsTotal,
-    emails: prevEmailsTotal,
-    texts: prevTextsTotal,
-    notes: prevNotesTotal,
-    tasksCompleted: prevTasksTotal,
-    appointmentsSet: prevApptsTotal,
-    appointments: prevApptsTotal,
-  }
+  const prevLeads = (prevLeadsRes.data ?? []) as Array<{ created_at: string; assigned_broker: string | null }>
+  const prevTimeline = (prevTimelineRes.data ?? []) as Array<{ ts: string; kind: string; broker: string | null }>
+  const prevTasks = (prevTasksRes.data ?? []) as Array<{ completed_at: string | null; assigned_broker: string | null }>
+  const prevAppts = (prevApptsRes.data ?? []) as Array<{ start_at: string; broker_slug: string | null }>
 
-  // 9. Build time series for current and previous periods
   const timeSeries = buildTimeSeries(curTimeline, curLeads, curTasks, curAppts, start, end)
   const prevTimeSeries = buildTimeSeries(prevTimeline, prevLeads, prevTasks, prevAppts, prevStart, prevEnd)
 
@@ -454,6 +515,14 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
  *   - crm_tasks (tasks completed, filtered by completed_at + assigned_broker)
  *   - crm_appointments (appointments, filtered by start_at + broker_slug)
  *
+ * Count approach (Defect 1 fix — 2026-07-01):
+ *   All KPI aggregate totals and per-broker breakdown values use
+ *   { count: 'exact', head: true } queries that return the real database
+ *   COUNT(*) via the Content-Range response header.  This bypasses the
+ *   Supabase max_rows limit (default 1000) that previously caused every
+ *   count > 1000 to report exactly "1,000".  Raw-row queries are retained
+ *   only for the sparkline / chart time-series shape.
+ *
  * V1 approximations (documented):
  *   - initiallyAssignedLeads = newLeads (no crm_lead_assignments history table yet)
  *   - currentlyAssignedLeads = newLeads (same)
@@ -467,7 +536,7 @@ export async function getAgentActivityReport(
   const cached = unstable_cache(
     () => readAgentActivity(params),
     [
-      'crm-agent-activity-v2',
+      'crm-agent-activity-v3',
       params.brokerSlug ?? 'all',
       params.datePreset,
       params.dateStart ?? 'none',

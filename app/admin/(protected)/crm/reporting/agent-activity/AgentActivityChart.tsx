@@ -42,7 +42,11 @@ function fmtAxisDate(iso: string): string {
 }
 
 function fmtLongDate(iso: string): string {
-  const d = new Date(iso + 'T00:00:00Z')
+  // iso may be a full ISO timestamp (from prevDateStart/prevDateEnd, e.g. "2025-06-30T23:59:59.999Z")
+  // OR a date-only string (from chart tooltip labels, e.g. "2025-06-15").
+  // Use new Date(iso) directly — appending 'T00:00:00Z' to a string that already
+  // has a time component produces an invalid date (the "Invalid Date" bug).
+  const d = new Date(iso)
   return d.toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'long',
@@ -217,7 +221,7 @@ export function AgentActivityChart({ timeSeries, prevTimeSeries, prevDateStart, 
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={chartData}
-              margin={{ top: 4, right: 4, bottom: 0, left: -8 }}
+              margin={{ top: 4, right: 4, bottom: 0, left: 4 }}
             >
               <defs>
                 <linearGradient id="aa-grad-current" x1="0" y1="0" x2="0" y2="1">
@@ -252,7 +256,7 @@ export function AgentActivityChart({ timeSeries, prevTimeSeries, prevDateStart, 
                 tickLine={false}
                 axisLine={false}
                 allowDecimals={false}
-                width={32}
+                width={48}
               />
               <Tooltip
                 contentStyle={{
