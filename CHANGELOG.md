@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.700.4 (2026-07-01)
+
+### Other
+- gate(crm-mobile): G-mobile-track — the M-track is machine-enforced, not prose
+
+---
+
+
 ## v1.700.3 (2026-07-01)
 
 ### Other
