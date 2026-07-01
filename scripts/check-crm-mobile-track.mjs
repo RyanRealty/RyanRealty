@@ -59,17 +59,25 @@ const SHIPPED = [
   },
 ]
 
-/** PENDING — the remaining debt. An item ships by moving to SHIPPED with real
- *  markers. This list may ONLY shrink (reviewer-checked against the plan). */
+/** PENDING — the remaining debt. Matt directive 2026-07-01: "EVERY crm page."
+ *  Scope = every CRM route in the app (enumerated below, grouped by the
+ *  M-track item that covers it), each to its §23–§30 / mob-NN reference with
+ *  every control working, verified at 390px, real data. An item ships by
+ *  moving to SHIPPED with real markers. This list may ONLY shrink. */
 const PENDING = [
-  'M2 rest — pull-to-refresh, sheet swipe-down dismiss (§23 AC 20–21)',
-  'M3 mobile inbox — sub-tabs + threads at <md (§26; /admin/crm/inbox)',
-  'M4 mobile compose — email/text/call sheets (§27)',
-  'M5 mobile home dashboard + people list + activity feed (§24; /admin/crm, /admin/crm/activity, /admin/broker-dashboard)',
-  'M6 mobile calendar + tasks (§29; /admin/crm/calendar, /admin/crm/tasks)',
-  'M7 remaining pickers — Source, Time frame, relationships, §25.10 tags full-screen, §25.11 address map, header Edit mode, per-tab FAB sheets',
-  'M8 mobile Home Dashboard parity (mob-44)',
-  'M9 mobile Settings (mob-06)',
+  'M2 rest — pull-to-refresh, sheet swipe-down dismiss (§23 AC 20–21) [shell, all routes]',
+  'M3 mobile inbox — sub-tabs + threads (§26): /admin/crm/inbox',
+  'M4 mobile compose — email/text/call sheets (§27) [lead detail + inbox]',
+  'M5 mobile people/home/activity (§24): /admin/crm · /admin/crm/activity · /admin/broker-dashboard · /admin/console · /admin/console/leads · /admin/crm/new · /admin/crm/approvals',
+  'M6 mobile calendar + tasks (§29): /admin/crm/calendar · /admin/crm/tasks',
+  'M7 remaining pickers — Source, Time frame, relationships, §25.10 tags full-screen, §25.11 address map, header Edit mode, per-tab FAB sheets [lead detail]',
+  'M8 mobile Home Dashboard parity (mob-44): /admin/broker-dashboard',
+  'M9 mobile Settings (mob-06): /admin/crm/settings + all 16 sub-pages (appointments · areas · assignment · brokers · company · custom-fields · groups · lead-flows · market-reports · ponds · segments · stages · suppression · tags · team · templates)',
+  'M10 mobile deals (§10/FUB §12i): /admin/crm/deals · /admin/crm/deals/[id]',
+  'M11 mobile workflows/automations: /admin/crm/sequences · /admin/crm/sequences/[id]/edit · /admin/crm/workflows · /admin/crm/automations',
+  'M12 mobile reporting suite (12 reports usable at 390px): /admin/crm/reporting + agent-activity · agent-goals · appointments · batch-emails · call-logs · calls · contact-attempts · lead-sources · overview · properties · speed-to-lead · texts',
+  'M13 mobile import: /admin/crm/import + [id] · new · new/map · new/preview',
+  'M14 mobile CRM health: /admin/crm/health',
 ]
 
 const fails = []
