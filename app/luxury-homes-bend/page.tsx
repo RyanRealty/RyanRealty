@@ -1,4 +1,5 @@
 // @no-parity — SEO landing, no public mockup contract.
+// @no-breadcrumb — standalone search-intent landing page, no breadcrumb hierarchy.
 //
 // Targets "luxury homes bend oregon" (GSC: page-2 ranker, real impressions, no
 // dedicated strong page). Content is data-driven from the opt-out / non-IDX
@@ -9,8 +10,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { getListingTiles, getListingTilesCount } from '@/lib/data'
 import { listingTileHref } from '@/lib/slug'
-import SiteHeader from '@/components/site/SiteHeader'
-import SiteFooter from '@/components/site/SiteFooter'
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 
 export const revalidate = 900
 
@@ -78,7 +80,8 @@ export default async function LuxuryHomesBendPage() {
 
   return (
     <div className="kb-root min-h-screen bg-[#faf8f4] text-[#102742]">
-      <SiteHeader />
+      <KbNav />
+      <KbSectionTracker pageType="luxury-homes-bend" />
 
       {/* Hero */}
       <section className="relative isolate border-b-[3px] border-[#102742]">
@@ -161,7 +164,7 @@ export default async function LuxuryHomesBendPage() {
         </div>
       </section>
 
-      <SiteFooter />
+      <KbFooter towns={[]} />
     </div>
   )
 }

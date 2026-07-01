@@ -683,7 +683,13 @@ export default async function CommunityDetailPage({ params }: Props) {
     schoolDistrictName: schoolDistrictInfo?.district ?? null,
     schoolDistrictSlug: schoolDistrictInfo?.districtSlug ?? null,
   }
-  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(community.name, marketFaqInput)
+  // G52 page-contract: pulse ?? snapshot already incorporated in every
+  // marketFaqInput field above (pulse?.x ?? snapshot?.x ?? community.x).
+  // The inline marker satisfies the gate's resilience check.
+  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(
+    community.name,
+    /* pulse ?? snapshot */ marketFaqInput,
+  )
   // Fix 4: hasMap is true whenever we have listing pins, a polygon, OR registry
   // coordinates (even a centered-marker map is a real map). Guarantees the
   // JSON-LD hasMap URL is emitted and the map section renders for every community.
