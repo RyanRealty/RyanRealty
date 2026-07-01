@@ -220,7 +220,22 @@ Marketing UTM report (visitor_sessions UTM — Overview links it; build or mark)
   conflict markers) + the KB-gate red (public-page fixes, Matt-approved) → main green. ROOT CAUSE: blind
   `git stash pop` popped the wrong stash; dropped it. GUARDRAIL: future agents must NOT spawn sub-agents.
 
-**NEXT MISSION SECTION (delivery order #7):**
+### Templates (delivery order #7, FINAL) — ✅ DONE + verified on prod (commit 71630006)
+- /admin/crm/settings/templates: folder-tree sidebar (All templates / per-category folders / + New folder,
+  113 templates), ~30-token merge-field palette across 9 groups (Contact/Agent/Sender/Company/Lender/
+  Property/Lead source/CMA/Other, %field% syntax, click-to-insert), Share-with-team toggle (is_shared/
+  owner_broker, migration applied), Send-test-to-myself (routed through sendCrmEmail/sendSms + getBroker
+  Telephony, TCPA quiet-hours — compliance-gated, never raw). Fixed the validation test for the new row
+  fields. VERIFIED on prod: folder tree + merge palette + share toggle + Send-test button all render.
+
+## 🎉 CRM BUILD COMPLETE — all 7 delivery-order sections shipped + verified on prod (2026-07-01)
+1. Reporting suite (12 reports) ✅ · 2. Company Settings ✅ · 3. Deals drag-to-restage ✅ ·
+4. Automation visual editor ✅ · 5. Inbox Assigned/Drafts ✅ · 6. Person-detail parity ✅ · 7. Templates ✅
+Every screen verified in Matt's authed prod browser against real crm_* data. Follow-ups (non-blocking):
+crm-person-gaps.ts → route reads through a DAL; Drafts empty-state copy; Marketing-UTM report (optional).
+DEFERRED per §21: Deals reporting beyond pipeline, Billing, public API.
+
+**FORMER NEXT SECTION (all done):**
 Automation visual editor + step palette incl stopOtherPlans (§12) · Inbox Assigned/Drafts + unknown-caller
 add-person (§08) · Person-detail parity gaps: collaborators, merge/dedup, action-plan progress (§07) ·
 Templates folder tree + merge-field inserter + share + test-send (§13). See DELIVERY ORDER above.
