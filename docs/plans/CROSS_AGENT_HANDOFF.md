@@ -1,4 +1,29 @@
-> **Newest, complete, self-contained handoff: [`HANDOFF_2026-06-28.md`](./HANDOFF_2026-06-28.md) — a fresh session should start there.** The block below is a summary of the same session.
+> **Newest, complete, self-contained handoff: [`HANDOFF_2026-06-28.md`](./HANDOFF_2026-06-28.md)** — but read the block below FIRST; it is newer (2026-07-01).
+
+# CROSS-AGENT HANDOFF — CRM MOBILE TRACK M1 + shell fixes + interactive lead detail (2026-07-01)
+
+**HEAD:** `74e3b602` on `main` (pushed; deployed + verified on prod) · plan: `docs/plans/CRM_BUILD_MISSION.md` MOBILE DELIVERY TRACK
+
+## Shipped this session (each slice deployed + verified in Matt's authed prod browser)
+
+1. **M1 mobile contact detail** (`/admin/console/leads/[id]` at <md + `?view=mobile` 390px verification frame). §25 layout: navy header, Info·Comms·Homes·Notes·Calendar, all 10 Info sections, notes w/ broker headshots + cleaned FUB `<br/>` bodies, FUB date convention. Commits `36b06ebe`+`2492cc32`.
+2. **Shell fixes (§23 M2 slice 1, `0cc81ea9`):** bottom tab bar suppressed on pushed detail (mob-02) via `components/console/pushed-detail.ts`; single FAB (removed M1's inert dup; ConsoleQuickAction drops to bottom-6 on detail); header wordmark centered (mob-44).
+3. **Interactive lead detail + menu (`74e3b602`)** — Matt: "you just made a shell" / "menu points to wrong pages". DETAILS rows open real §23.8 picker sheets (Assigned-to, Stage, Tags editor §25.10 w/ add+remove — VERIFIED live round-trip, Collaborators toggle); Add phone/Add email sheets → NEW `addCrmContactPointAction` (crm_contact_points, validation, dedupe, timeline audit); SMS circle live. Menu: CRM group gains Reporting/Workflows/Templates/CRM settings (`app/components/admin/admin-nav.ts`) — all verified resolving.
+
+## Key gotchas for the next agent
+
+- **console-root tokens:** `--accent` is a near-white neutral inside `.console-root` — FUB teal/blue accents map to `var(--console-info)` (inline style, sanctioned), NEVER `bg-accent`/`text-accent-foreground`.
+- **Verify at 390px:** automation browser can't resize <768. Use `?view=mobile` on the lead detail; phone-only chrome (tab bar, FAB) is route-conditional so DOM-checkable at any width. Radix sheets open fine via real clicks.
+- **git:** NEVER chain `git stash push … && … && git stash pop` — a no-op push makes pop grab an ancient stash (happened this session; recovered via reset --hard, memory `feedback_never_chain_stash_pop`). A CONCURRENT session edits `docs/plans/CRM_BUILD_MISSION.md` — don't commit its dirt.
+- Design-token gate: mobile FUB-parity components are ignore-listed (documented exception class in `.design-token-lint-ignore`).
+
+## NEXT (mobile track, in order)
+
+1. **M2 rest:** pull-to-refresh; §23.8 sheet swipe-down; hamburger sheet is desktop-nav-heavy — consider CRM-first mobile ordering.
+2. **M3 mobile inbox** (§26), **M4 compose** (§27), **M5 home/people/activity** (§24 — what Matt sees as "old" on his phone), **M6 calendar/tasks** (§29), **M7 remaining pickers** (Source/Time frame/relationships, §25.10 tags full-screen, §25.11 address map, header Edit mode, per-tab FAB sheets).
+3. Also open: email open/click tracking task (in CRM_BUILD_MISSION.md, other session may own it).
+
+---
 
 # CROSS-AGENT HANDOFF — IDX compliance + CRM mobile + Growth/SEO (2026-06-28)
 
