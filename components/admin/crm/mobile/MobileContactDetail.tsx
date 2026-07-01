@@ -21,7 +21,7 @@
  */
 
 import { useState } from 'react'
-import { ChevronLeft, Plus } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { CrmAvatar } from '@/components/admin/crm/mobile/CrmMobileKit'
@@ -70,16 +70,6 @@ function formatPrice(n: number): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
   if (n >= 1_000) return `$${Math.round(n / 1_000)}K`
   return `$${Math.round(n).toLocaleString('en-US')}`
-}
-
-/* ── FAB labels per tab ─────────────────────────────────────────────────────── */
-
-const FAB_LABELS: Record<MobileTabKey, string> = {
-  info: 'Quick actions',
-  comms: 'Compose',
-  homes: 'Add property inquiry',
-  notes: 'Add note',
-  calendar: 'Add appointment or task',
 }
 
 /* ── Main component ─────────────────────────────────────────────────────────── */
@@ -215,18 +205,9 @@ export function MobileContactDetail({
         ))}
       </div>
 
-      {/* §25.12 FAB — 56 pt circle, bg-primary, white +, bottom-right */}
-      <button
-        type="button"
-        aria-label={FAB_LABELS[active]}
-        className="fixed bottom-6 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-lg"
-        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
-        onClick={() => {
-          /* TODO: per-tab FAB action sheets (§25.12) */
-        }}
-      >
-        <Plus className="text-primary-foreground" size={24} strokeWidth={2.5} />
-      </button>
+      {/* §25.12 FAB — provided by the shell's ConsoleQuickAction (single FAB
+          rule; it drops to bottom-6 on pushed detail via isPushedDetailPath).
+          Rendering a second one here produced two stacked + buttons on phones. */}
     </div>
   )
 }

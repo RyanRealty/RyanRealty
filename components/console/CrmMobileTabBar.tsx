@@ -17,6 +17,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Inbox, Users, Layers, Activity } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { isPushedDetailPath } from '@/components/console/pushed-detail'
 
 type Tab = {
   href: string
@@ -55,6 +56,10 @@ function activeHref(pathname: string): string {
 export default function CrmMobileTabBar({ inboxUnread = 0 }: { inboxUnread?: number }) {
   const pathname = usePathname() ?? ''
   const active = activeHref(pathname)
+
+  // §23 §9c: the tab bar is suppressed on pushed detail views (contact/deal
+  // detail) — FUB renders it only at each tab's root depth [OBSERVED mob-02].
+  if (isPushedDetailPath(pathname)) return null
 
   return (
     <nav

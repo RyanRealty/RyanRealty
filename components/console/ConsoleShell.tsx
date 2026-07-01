@@ -80,14 +80,18 @@ export default function ConsoleShell({
         >
           <MenuIcon />
         </Button>
-        {onContactsList ? (
-          <Suspense fallback={<Wordmark />}>
-            <TopBarScope myBrokerSlug={brokerSlug ?? null} />
-          </Suspense>
-        ) : (
-          <Wordmark />
-        )}
-        <div className="ml-auto flex items-center gap-1.5">
+        {/* §23.2b (mob-44): wordmark centered between hamburger and the
+            search/avatar cluster. The contacts list swaps in the scope picker. */}
+        <div className="flex min-w-0 flex-1 items-center justify-center">
+          {onContactsList ? (
+            <Suspense fallback={<Wordmark />}>
+              <TopBarScope myBrokerSlug={brokerSlug ?? null} />
+            </Suspense>
+          ) : (
+            <Wordmark />
+          )}
+        </div>
+        <div className="flex items-center gap-1.5">
           <ConsoleCommandPalette />
           {user.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element

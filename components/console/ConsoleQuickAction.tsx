@@ -26,6 +26,7 @@ import {
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { getNextRecommendation, type CrmNextRec } from '@/app/actions/crm'
 import { cn } from '@/lib/utils'
+import { isPushedDetailPath } from '@/components/console/pushed-detail'
 
 type Item = { label: string; href: string; icon: React.ComponentType<{ className?: string }> }
 
@@ -112,7 +113,12 @@ export default function ConsoleQuickAction() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Quick actions"
-        className="fixed bottom-20 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 lg:bottom-5"
+        className={cn(
+          'fixed right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 lg:bottom-5',
+          // §23 §9c: the tab bar is suppressed on pushed detail views, so the
+          // FAB drops to the corner there (single FAB per §25.12 / mob-02).
+          isPushedDetailPath(pathname) ? 'bottom-6' : 'bottom-20',
+        )}
         style={{ backgroundColor: 'var(--console-info)' }}
       >
         <Plus className="h-6 w-6" />
