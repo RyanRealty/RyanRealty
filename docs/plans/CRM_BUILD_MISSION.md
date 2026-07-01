@@ -68,6 +68,27 @@ screen done, and do not move on, until all are checked:
 Per-slice report = files changed + the rendered screenshot + the visual-diff result + spec
 acceptance checklist ticked + gates green. Nothing else counts as "done."
 
+## MECHANICAL ENFORCEMENT — gates, not prose (this DoD above is prose and prose gets SKIPPED)
+The last build shipped unverified because the DoD was prose an agent could ignore. Enforcement here
+is MECHANICAL — a red build, not a paragraph. These gates are REQUIRED and go in `ci:gates`:
+1. **`ci:crm-screen-parity`** — every CRM screen route (each `app/admin/**/page.tsx` in the CRM IA,
+   desktop AND the mobile `?view=mobile` components) MUST have a `parity.json` listing the sections/
+   components its spec reference requires; the gate fails the build if a CRM route has NO parity.json,
+   OR if the built page doesn't import every component the contract names. → No screen can ship without
+   a structural contract that matches its spec. (Extends the existing `scripts/check-mockup-parity.mjs`.)
+2. **`ci:crm-screen-verified`** — every CRM screen MUST commit its verification screenshot to
+   `docs/fub-crm-spec/_verify/<screen>.png` (desktop at the reference viewport; mobile at 390px). The
+   gate fails if a screen's route/components changed since its screenshot was last committed (stale or
+   missing artifact). → No "done" without a fresh artifact on disk.
+3. **Honest limit:** CI can mechanically enforce (1) structure-present and (2) artifact-exists-and-fresh.
+   It CANNOT auto-judge pixel match — that final visual check is a vision/human spot-check of the
+   COMMITTED `_verify/<screen>.png` files. But that reduces trust to "spot-check the committed
+   screenshots," not "believe the agent's word." A screen with no parity.json or a stale screenshot =
+   RED build = literally cannot be merged/deployed as done.
+BUILD THESE GATES FIRST (before/with slice 0), add them to `package.json` `ci:gates`, and generate a
+parity.json per screen from its spec reference as you build. A CRM screen with no contract + no
+committed screenshot must fail CI.
+
 ## NON-NEGOTIABLE CONSTRAINTS (from CLAUDE.md)
 - Design system: build EVERY control from `@/components/ui/` with Ryan Realty tokens. No
   hand-rolled raw HTML controls. Do NOT copy FUB's blue/teal.
