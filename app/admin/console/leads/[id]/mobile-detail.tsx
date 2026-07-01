@@ -1,0 +1,184 @@
+/**
+ * §25 Mobile Contact Detail — data mapping + assembly for /admin/console/leads/[id].
+ *
+ * Renders at < md (and standalone under ?view=mobile, the 390px verification
+ * affordance — the automation browser can't shrink below 768px, so the forced
+ * frame is how the side-by-side against docs/fub-crm-spec/25-mobile-contact-detail.md
+ * gets captured). Extracted from page.tsx to keep the page inside its size budget.
+ *
+ * Server module — receives the page's already-fetched data + bound server
+ * actions; no data fetching of its own.
+ */
+
+import { formatDate } from '@/lib/format/date'
+import { CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
+import type { CrmPersonFull } from '@/app/actions/crm'
+import type { ConversationMessage } from '@/lib/data/crm/getContactConversation'
+import type { EmailEngagement } from '@/components/admin/crm/ConversationFeed'
+import type { ContactRelationship } from '@/lib/data/crm/getContactRelationships'
+import type { ContactCollaborator } from '@/lib/data/crm/getContactCollaborators'
+import type { ViewedListing } from '@/lib/data/crm/getViewedListings'
+import { MobileContactDetail } from '@/components/admin/crm/mobile/MobileContactDetail'
+import { MobileInfoTab } from '@/components/admin/crm/mobile/MobileInfoTab'
+import { MobileCommsTab } from '@/components/admin/crm/mobile/MobileCommsTab'
+import { MobileHomesTab } from '@/components/admin/crm/mobile/MobileHomesTab'
+import { MobileNotesTab } from '@/components/admin/crm/mobile/MobileNotesTab'
+import { MobileCalendarTab } from '@/components/admin/crm/mobile/MobileCalendarTab'
+import type {
+  MobilePhoneEntry,
+  MobileEmailEntry,
+  MobileInquiry,
+  MobileCustomField,
+  MobileAddress,
+  MobileRecentMessage,
+} from '@/components/admin/crm/mobile/MobileInfoTab'
+import type { MobileNote } from '@/components/admin/crm/mobile/MobileNotesTab'
+import type { MobileTask } from '@/components/admin/crm/mobile/MobileCalendarTab'
+
+function fmtPhone(d: string): string {
+  return d.length === 10 ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}` : d
+}
+
+function brokerDisplay(slug: string | null | undefined): string | null {
+  return slug ? (CRM_BROKER_DISPLAY[slug as keyof typeof CRM_BROKER_DISPLAY] ?? slug) : null
+}
+
+/** §25.8.3 date format: "Tue, 8:16pm" this week, "Jun 13" older — computed on
+    the server so the client Notes tab has no now()-dependence. */
+function noteDateLabel(iso: string): string {
+  const d = new Date(iso)
+  const diffDays = (Date.now() - d.getTime()) / 86_400_000
+  if (diffDays >= 0 && diffDays < 7) {
+    return d.toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' })
+  }
+  return formatDate(iso, { month: 'short', day: 'numeric' })
+}
+
+export interface MobileLeadDetailProps {
+  full: CrmPersonFull
+  displayName: string
+  backHref: string
+  inquiryDate: string | null
+  customEntries: Array<[string, unknown]>
+  conversation: { items: ConversationMessage[]; nextCursor: string | null }
+  emailEngagement: Record<string, EmailEngagement>
+  relationships: ContactRelationship[]
+  collaborators: ContactCollaborator[]
+  viewedListings: ViewedListing[]
+  addNoteAction: (formData: FormData) => Promise<void>
+  addTaskAction: (formData: FormData) => Promise<void>
+}
+
+export function MobileLeadDetail({
+  full,
+  displayName,
+  backHref,
+  inquiryDate,
+  customEntries,
+  conversation,
+  emailEngagement,
+  relationships,
+  collaborators,
+  viewedListings,
+  addNoteAction,
+  addTaskAction,
+}: MobileLeadDetailProps) {
+  const person = full.person!
+
+  const customMap = (person.custom ?? {}) as Record<string, unknown>
+  const customVal = (re: RegExp): string | null => {
+    const hit = Object.entries(customMap).find(([k, v]) => re.test(k) && v !== null && v !== undefined && v !== '')
+    return hit ? String(hit[1]) : null
+  }
+
+  const recentMessages: MobileRecentMessage[] = conversation.items
+    .filter((m) => m.kind === 'sms_in' || m.kind === 'sms_out')
+    .slice(0, 2)
+    .map((m) => ({
+      id: m.id,
+      participants: [displayName, brokerDisplay(m.broker) ?? brokerDisplay(person.assigned_broker)]
+        .filter((v): v is string => Boolean(v))
+        .join(', '),
+      preview: (m.body ?? m.title ?? '').slice(0, 140),
+      date: formatDate(m.ts, { month: 'short', day: 'numeric' }),
+    }))
+  const phones: MobilePhoneEntry[] = full.contactPoints
+    .filter((c) => c.kind === 'phone')
+    .map((c) => ({ id: c.id, display: fmtPhone(c.value), tel: `tel:+1${c.value}`, label: c.label ?? 'Mobile' }))
+  const emails: MobileEmailEntry[] = full.contactPoints
+    .filter((c) => c.kind === 'email')
+    .map((c) => ({ id: c.id, value: c.value, label: c.label }))
+  const inquiries: MobileInquiry[] = person.source
+    ? [{ type: 'Registration', source: person.source, address: null, date: inquiryDate ?? '' }]
+    : []
+  const customFields: MobileCustomField[] = customEntries.map(([k, v]) => ({
+    key: k,
+    label: k.replace(/^custom/, '').replace(/([a-z0-9])([A-Z])/g, '$1 $2'),
+    value: String(v),
+  }))
+  const addresses: MobileAddress[] = ((person.addresses ?? []) as Array<Record<string, unknown>>)
+    .map((a) => ({
+      type: String(a.type ?? 'home'),
+      street: String(a.street ?? ''),
+      city: String(a.city ?? ''),
+      state: String(a.state ?? ''),
+      zip: String(a.code ?? a.zip ?? ''),
+    }))
+    .filter((a) => a.street.trim().length > 0)
+  const notes: MobileNote[] = full.timeline
+    .filter((t) => t.kind === 'note')
+    .map((t) => ({ id: t.id, ts: t.ts, dateLabel: noteDateLabel(t.ts), body: t.body ?? t.title ?? '', broker: t.broker }))
+  const tasks: MobileTask[] = full.tasks.map((t) => ({
+    id: t.id, name: t.name, type: t.type, due_at: t.due_at, completed_at: t.completed_at,
+  }))
+
+  return (
+    <MobileContactDetail
+      personId={person.id}
+      displayName={displayName}
+      pictureUrl={person.picture_url}
+      lastCommLabel={person.last_activity_at ? formatDate(person.last_activity_at, { month: 'short', day: 'numeric' }) : null}
+      priceTarget={(person as unknown as { price?: number | null }).price ?? null}
+      backHref={backHref}
+      infoTab={
+        <MobileInfoTab
+          personId={person.id}
+          recentMessages={recentMessages}
+          phones={phones}
+          emails={emails}
+          relationships={relationships}
+          collaborators={collaborators}
+          assignedTo={brokerDisplay(person.assigned_broker)}
+          stage={person.stage}
+          source={person.source}
+          tags={Array.isArray(person.tags) ? person.tags : []}
+          timeframe={customVal(/time.?frame/i)}
+          lender={customVal(/lender/i)}
+          background={person.background}
+          inquiries={inquiries}
+          customFields={customFields}
+          addresses={addresses}
+        />
+      }
+      commsTab={
+        <MobileCommsTab
+          personId={person.id}
+          personName={person.first_name ?? displayName}
+          items={conversation.items}
+          nextCursor={conversation.nextCursor}
+          engagement={emailEngagement}
+        />
+      }
+      homesTab={<MobileHomesTab listings={viewedListings} />}
+      notesTab={
+        <MobileNotesTab
+          personId={person.id}
+          notes={notes}
+          brokerDisplayNames={CRM_BROKER_DISPLAY}
+          addNoteAction={addNoteAction}
+        />
+      }
+      calendarTab={<MobileCalendarTab personId={person.id} tasks={tasks} addTaskAction={addTaskAction} />}
+    />
+  )
+}

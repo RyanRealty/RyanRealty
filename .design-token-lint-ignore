@@ -17,6 +17,18 @@ components/admin/crm/mobile/CrmMobileKit.tsx
 # avatar-utils — same FUB avatar hex palette, extracted to a non-client module so
 # server components can compute the color too (the kit is 'use client').
 components/admin/crm/mobile/avatar-utils.ts
+# §25 Mobile Contact Detail (M1, 2026-07-01): the FUB-iOS mobile screens are
+# pt-precise references (docs/fub-crm-spec/25-mobile-contact-detail.md) — text
+# sizes, row heights, and the pixel-verified SMS/Call/Email action-circle hexes
+# (#7595e8/#4ad09f/#4ab8e8, §25.1 "inline (no token)") are part of the visual
+# contract. Raw <button>s are full-row/circular tap targets the <Button>
+# primitive can't express. Same exception class as CrmMobileKit above.
+components/admin/crm/mobile/MobileContactDetail.tsx
+components/admin/crm/mobile/MobileInfoTab.tsx
+components/admin/crm/mobile/MobileCommsTab.tsx
+components/admin/crm/mobile/MobileHomesTab.tsx
+components/admin/crm/mobile/MobileNotesTab.tsx
+components/admin/crm/mobile/MobileCalendarTab.tsx
 # Comms feed (FUB-parity contact-360, 2026-06-29): clones the Follow Up Boss
 # Comms tab as a full-bleed, multi-line, left-aligned expandable message-row
 # list. Each row is a raw <button> so the whole row is the tap target with

@@ -69,6 +69,8 @@ import { StatusPill } from '@/components/console/StatusPill'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 import { KpiStrip } from '@/components/console/KpiStrip'
 import { LeadTabs } from '@/components/console/LeadTabs'
+// §25 Mobile Contact Detail (mapping + assembly colocated in mobile-detail.tsx)
+import { MobileLeadDetail } from './mobile-detail'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -320,12 +322,12 @@ export default async function ConsoleLeadPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ tpl?: string; smsTpl?: string; error?: string; flash?: string }>
+  searchParams: Promise<{ tpl?: string; smsTpl?: string; error?: string; flash?: string; view?: string }>
 }) {
   const { id: idRaw } = await params
   const id = Number(idRaw)
   if (!Number.isFinite(id) || id <= 0) notFound()
-  const { tpl, smsTpl, error: sendError, flash } = await searchParams
+  const { tpl, smsTpl, error: sendError, flash, view } = await searchParams
 
   const [crmAccess, full, templates, smsTemplates, twilioStatus] = await Promise.all([
     getCrmAccess(),
@@ -484,8 +486,42 @@ export default async function ConsoleLeadPage({
 
   const hasAlerts = Boolean(flash || sendError || full.suppressions.length > 0)
 
+  /* ── §25 Mobile Contact Detail — mapping + assembly in ./mobile-detail.tsx.
+     Renders at < md; standalone under ?view=mobile (the 390px verification
+     affordance — the automation browser can't shrink below 768px). */
+  const mobileDetail = (
+    <MobileLeadDetail
+      full={full}
+      displayName={displayName}
+      backHref={BASE}
+      inquiryDate={inquiryDate}
+      customEntries={customEntries}
+      conversation={conversation}
+      emailEngagement={emailEngagement}
+      relationships={relationships}
+      collaborators={collaborators}
+      viewedListings={viewedListings}
+      addNoteAction={addNoteForm.bind(null, person.id)}
+      addTaskAction={addTaskForm}
+    />
+  )
+
+  /* ?view=mobile — forced 390px frame regardless of viewport (verification
+     affordance; the automation browser can't resize below 768px). */
+  if (view === 'mobile') {
+    return (
+      <div className="mx-auto w-[390px] max-w-full overflow-hidden border-x border-border bg-secondary">
+        {mobileDetail}
+      </div>
+    )
+  }
+
   return (
     <>
+      {/* §25 mobile layout (< md) — full-bleed: cancel the ConsoleShell main
+          padding (px-4 pt-5 pb-24) so the navy header runs edge-to-edge. */}
+      <div className="-mx-4 -mt-5 -mb-24 md:hidden">{mobileDetail}</div>
+      <div className="hidden md:block">
       {hasAlerts ? (
         <div className="mx-auto mb-4 w-full max-w-6xl space-y-3">
           {flash ? <Alert><AlertDescription>{flash}</AlertDescription></Alert> : null}
@@ -912,6 +948,7 @@ export default async function ConsoleLeadPage({
           </ConsoleSection>
         }
       />
+      </div>
     </>
   )
 }
