@@ -3,9 +3,10 @@
 /**
  * PropertiesMap — Google Maps panel for the Properties report.
  *
- * Uses the vanilla Google Maps JS API (loaded by <GoogleMapsBootstrap> in the
- * root layout) via useGoogleMapsReady, placing a navy numbered pin for each
- * property that has lat/lng coordinates.
+ * Uses the vanilla Google Maps JS API via useGoogleMapsReady, placing a navy
+ * numbered pin for each property that has lat/lng coordinates. Renders its own
+ * <GoogleMapsBootstrap /> because the admin console tree does not mount the
+ * global one (that lives in the public-site RootProvider).
  *
  * Rendered as the right pane in the two-column Properties report layout.
  */
@@ -14,6 +15,7 @@ import { useRef, useEffect } from 'react'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { MAP_DEFAULT_CENTER } from '@/lib/map-constants'
 import type { PropertyInquiryRow } from '@/lib/data/crm/getPropertiesReport'
+import { GoogleMapsBootstrap } from '@/components/GoogleMapsBootstrap'
 
 // Declare the google global so TypeScript resolves it (provided by @types/google.maps).
 declare const google: typeof globalThis.google
@@ -114,22 +116,25 @@ export function PropertiesMap({ rows }: Props) {
   }, [ready, rows])
 
   // ── Render states ───────────────────────────────────────────────────────────
+  //
+  // The admin console tree does NOT mount the global <GoogleMapsBootstrap /> (it
+  // lives in the public-site RootProvider only), so render it here — the loader
+  // is idempotent, so a second instance on a page that already has one is a no-op.
 
-  if (error) {
-    return (
-      <div className="flex h-full items-center justify-center rounded-r-lg bg-muted/30">
-        <p className="text-sm text-muted-foreground">Map unavailable</p>
-      </div>
-    )
-  }
-
-  if (!ready) {
-    return (
-      <div className="flex h-full items-center justify-center rounded-r-lg bg-muted/30">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    )
-  }
-
-  return <div ref={containerRef} className="h-full w-full rounded-r-lg" />
+  return (
+    <>
+      <GoogleMapsBootstrap />
+      {error ? (
+        <div className="flex h-full items-center justify-center rounded-r-lg bg-muted/30">
+          <p className="text-sm text-muted-foreground">Map unavailable</p>
+        </div>
+      ) : !ready ? (
+        <div className="flex h-full items-center justify-center rounded-r-lg bg-muted/30">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
+      ) : (
+        <div ref={containerRef} className="h-full w-full rounded-r-lg" />
+      )}
+    </>
+  )
 }
