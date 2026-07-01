@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.696.1 (2026-07-01)
+
+### Maintenance
+- docs(crm): Inbox (delivery #5) verified on prod
+
+---
+
+
 ## v1.696.0 (2026-07-01)
 
 ### Features
