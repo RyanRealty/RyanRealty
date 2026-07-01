@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.690.1 (2026-07-01)
+
+### Bug Fixes
+- fix(crm): Lead Sources report — move LS_COL_KEYS out of the client boundary
+
+---
+
+
 ## v1.690.0 (2026-07-01)
 
 ### Features
