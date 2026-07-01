@@ -34,6 +34,8 @@ describe('validateTemplateInput', () => {
       subject: 'Your search is set',
       body: 'Reply any time and we will help.',
       category: 'buyer',
+      isShared: false,
+      ownerBroker: null,
     })
   })
 

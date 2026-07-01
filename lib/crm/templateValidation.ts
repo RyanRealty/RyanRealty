@@ -24,6 +24,10 @@ export type CrmTemplateInput = {
   subject?: string | null
   body: string
   category?: string | null
+  /** When true, all brokers can see and use this template. */
+  isShared?: boolean
+  /** Broker slug (matt|rebecca|paul) who owns/created this template. */
+  ownerBroker?: string | null
 }
 
 export type ValidatedTemplateRow = {
@@ -32,6 +36,8 @@ export type ValidatedTemplateRow = {
   subject: string | null
   body: string
   category: string | null
+  isShared: boolean
+  ownerBroker: string | null
 }
 
 export type TemplateValidationResult =
@@ -83,6 +89,8 @@ export function validateTemplateInput(input: CrmTemplateInput): TemplateValidati
   if (!voice.ok) return { ok: false, error: voice.error }
 
   const category = (input.category ?? '').trim() || null
+  const isShared = input.isShared === true
+  const ownerBroker = (input.ownerBroker ?? '').trim() || null
 
-  return { ok: true, row: { channel, name, subject, body, category } }
+  return { ok: true, row: { channel, name, subject, body, category, isShared, ownerBroker } }
 }

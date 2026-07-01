@@ -46,6 +46,10 @@ export type CrmTemplateAdmin = {
   body: string
   category: string | null
   isActive: boolean
+  /** When true, visible and usable by all brokers on the team. */
+  isShared: boolean
+  /** Broker slug who owns this template (null for legacy/seeded templates). */
+  ownerBroker: string | null
   /** Count of live sequence steps that reference this template's key. */
   usage: number
   /** Per-template email performance (null for SMS templates). */
@@ -64,6 +68,8 @@ type RawTemplateRow = {
   body: string
   category: string | null
   is_active: boolean
+  is_shared: boolean
+  owner_broker: string | null
 }
 
 /** Normalize a raw channel to the two supported values (defaults to email). */
@@ -134,6 +140,8 @@ export function mapTemplateRow(
     body: row.body ?? '',
     category: row.category ?? null,
     isActive: row.is_active !== false,
+    isShared: row.is_shared === true,
+    ownerBroker: row.owner_broker ?? null,
     usage,
     perf,
   }
@@ -147,7 +155,7 @@ export const getCrmTemplatesAdmin = unstable_cache(
 
     const { data: rows, error } = await sb
       .from('crm_templates')
-      .select('id,key,channel,name,subject,body,category,is_active')
+      .select('id,key,channel,name,subject,body,category,is_active,is_shared,owner_broker')
       .order('is_active', { ascending: false })
       .order('channel', { ascending: true })
       .order('name', { ascending: true })

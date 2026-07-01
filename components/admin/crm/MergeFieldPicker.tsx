@@ -17,11 +17,27 @@ import { cn } from '@/lib/utils'
 
 const GROUP_LABEL: Record<MergeToken['group'], string> = {
   contact: 'Contact',
+  agent: 'Agent',
+  sender: 'Sender',
+  company: 'Company',
+  lender: 'Lender',
   property: 'Property',
+  lead_source: 'Lead source',
   cma: 'CMA',
+  other: 'Other',
 }
 
-const GROUP_ORDER: MergeToken['group'][] = ['contact', 'property', 'cma']
+const GROUP_ORDER: MergeToken['group'][] = [
+  'contact',
+  'agent',
+  'sender',
+  'company',
+  'lender',
+  'property',
+  'lead_source',
+  'cma',
+  'other',
+]
 
 export function MergeFieldPicker({
   channel,
@@ -44,7 +60,7 @@ export function MergeFieldPicker({
   return (
     <div className={cn('space-y-1.5', className)}>
       <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-        Merge fields — click to insert at cursor
+        Merge fields. Click to insert at cursor.
       </p>
       <div className="flex flex-wrap gap-x-4 gap-y-2">
         {groups.map(({ group, tokens: gtokens }) => (

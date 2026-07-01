@@ -9,6 +9,7 @@ import {
   deleteTemplateAction,
   renameCategoryAction,
 } from '@/app/actions/crm-templates'
+import { sendTemplateSelfTestAction } from '@/app/actions/crm-template-test'
 import { SettingsSubpageShell } from '@/components/admin/crm/settings/SettingsSubpageShell'
 import { TemplateEditor, type TemplateRow } from '@/components/admin/crm/settings/TemplateEditor'
 
@@ -30,6 +31,8 @@ export default async function CrmTemplatesSettingsPage() {
     body: t.body,
     category: t.category,
     isActive: t.isActive,
+    isShared: t.isShared,
+    ownerBroker: t.ownerBroker,
     usage: t.usage,
     perf: t.perf ?? null,
   }))
@@ -47,6 +50,7 @@ export default async function CrmTemplatesSettingsPage() {
           setActive: setTemplateActiveAction,
           remove: deleteTemplateAction,
           renameCategory: renameCategoryAction,
+          testSend: sendTemplateSelfTestAction,
         }}
       />
     </SettingsSubpageShell>

@@ -3,23 +3,78 @@
  * Exported so UI components (MergeFieldPicker, TemplateEditor) can render a
  * click-to-insert chip palette without duplicating the token list.
  *
- * group:
- *   'contact'  — person fields (first name, etc.)
- *   'property' — address/property fields
- *   'cma'      — CMA delivery links
+ * group (§13.3 catalog):
+ *   'contact'      — contact/person fields
+ *   'agent'        — assigned agent fields
+ *   'sender'       — sending broker fields (may differ from assigned agent)
+ *   'company'      — company fields from contact record
+ *   'lender'       — assigned lender fields
+ *   'property'     — listing/property address fields
+ *   'lead_source'  — lead source name + campaign
+ *   'cma'          — CMA delivery links
+ *   'other'        — miscellaneous (greeting, etc.)
  */
 export type MergeToken = {
   token: string
   label: string
-  group: 'contact' | 'property' | 'cma'
+  group: 'contact' | 'agent' | 'sender' | 'company' | 'lender' | 'property' | 'lead_source' | 'cma' | 'other'
 }
 
 export const MERGE_TOKENS: MergeToken[] = [
+  // CONTACT
   { token: '%contact_first_name%', label: 'First name', group: 'contact' },
+  { token: '%contact_last_name%', label: 'Last name', group: 'contact' },
+  { token: '%contact_email%', label: 'Email', group: 'contact' },
+  { token: '%contact_phone%', label: 'Phone', group: 'contact' },
+  { token: '%contact_stage%', label: 'Stage', group: 'contact' },
+  { token: '%contact_address_street%', label: 'Street', group: 'contact' },
+  { token: '%contact_address_city%', label: 'City', group: 'contact' },
+  { token: '%contact_address_state%', label: 'State', group: 'contact' },
+  { token: '%contact_address_zip%', label: 'Zip', group: 'contact' },
+  { token: '%contact_address_full%', label: 'Full address', group: 'contact' },
+
+  // AGENT (assigned agent on the contact)
+  { token: '%agent_first_name%', label: 'Agent first name', group: 'agent' },
+  { token: '%agent_last_name%', label: 'Agent last name', group: 'agent' },
+  { token: '%agent_email%', label: 'Agent email', group: 'agent' },
+  { token: '%agent_phone%', label: 'Agent phone', group: 'agent' },
+  { token: '%agent_title%', label: 'Agent title', group: 'agent' },
+  { token: '%agent_brokerage%', label: 'Brokerage', group: 'agent' },
+  { token: '%agent_website%', label: 'Website', group: 'agent' },
+
+  // SENDER (the broker actually sending, may differ from assigned agent)
+  { token: '%sender_first_name%', label: 'Sender first name', group: 'sender' },
+  { token: '%sender_last_name%', label: 'Sender last name', group: 'sender' },
+  { token: '%sender_email%', label: 'Sender email', group: 'sender' },
+  { token: '%sender_phone%', label: 'Sender phone', group: 'sender' },
+
+  // COMPANY
+  { token: '%company_name%', label: 'Company name', group: 'company' },
+  { token: '%company_address%', label: 'Company address', group: 'company' },
+
+  // LENDER
+  { token: '%lender_first_name%', label: 'Lender first name', group: 'lender' },
+  { token: '%lender_last_name%', label: 'Lender last name', group: 'lender' },
+  { token: '%lender_email%', label: 'Lender email', group: 'lender' },
+  { token: '%lender_phone%', label: 'Lender phone', group: 'lender' },
+
+  // PROPERTY / listing context
   { token: '%customSellerPropertyAddress%', label: 'Seller property address', group: 'property' },
   { token: '%customPropertyAddress%', label: 'Property address', group: 'property' },
   { token: '%address%', label: 'Address (short)', group: 'property' },
+  { token: '%property_price%', label: 'Listing price', group: 'property' },
+  { token: '%property_mls_number%', label: 'MLS number', group: 'property' },
+  { token: '%last_viewed_address%', label: 'Last viewed address', group: 'property' },
+
+  // LEAD SOURCE
+  { token: '%lead_source_name%', label: 'Lead source', group: 'lead_source' },
+  { token: '%lead_source_campaign%', label: 'Campaign', group: 'lead_source' },
+
+  // CMA
   { token: '%cma_link%', label: 'CMA link', group: 'cma' },
+
+  // OTHER
+  { token: '%greeting%', label: 'Greeting', group: 'other' },
 ]
 
 export function renderCrmMerge(

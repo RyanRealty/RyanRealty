@@ -38,6 +38,12 @@ const NON_SENDER = new Set([
   'lib/email/deliverability.ts',
   // Internal infrastructure alerts — not marketing/automated sends
   'lib/deploy-health-alert.ts',
+  // Broker self-preview: sends the CALLING BROKER'S own email/phone a rendered
+  // draft of a template they're editing. Not a marketing/automated send: no real
+  // contact is involved, no list targeting, and CAN-SPAM List-Unsubscribe
+  // headers would be misleading noise in a preview addressed to the sender.
+  // Separated from crm-templates.ts specifically so this exclusion is scoped.
+  'app/actions/crm-template-test.ts',
 ])
 
 const SEND_CALL = /\bsendEmail\s*\(|\bsendBatchEmails\s*\(|\bsendCrmEmail\s*\(/

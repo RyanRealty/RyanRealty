@@ -1,21 +1,33 @@
 'use client'
 
 /**
- * TemplateEditor — the email + SMS template CRUD island (Wave 2 + FUB §8.6 parity).
+ * TemplateEditor (§13 delivery) — email + SMS template CRUD island.
  *
- * Upgraded from the flat table to:
- *   - Folder grouping: templates grouped by `category` using Accordion sections
- *     ("Uncategorized" for blank). Each section shows the template count.
- *   - Create/edit dialog: MergeFieldPicker in the body area so tokens are
- *     click-to-insert; a Preview tab renders renderCrmMerge against a placeholder
- *     contact in a sandboxed iframe.
- *   - Perf columns (email-only): Sends / Open% / Click% derived from email_events
- *     rows whose email_key starts with 'tpl:<key>:'. Shows '—' until data arrives.
+ * Features added over the Wave 2 baseline:
+ *   1. Folder sidebar — left panel lists unique categories. Clicking a folder
+ *      filters the main table to templates in that folder. "All templates"
+ *      reverts to the full accordion view. "+ New folder" lets brokers name
+ *      a folder before creating their first template in it.
  *
- * Design-system only.
+ *   2. Merge-field inserter — expanded token palette (Contact / Agent / Sender /
+ *      Company / Lender / Property / Lead source / CMA / Other). Clicking a chip
+ *      inserts the token at the cursor in the body textarea. SMS hides the CMA
+ *      group since those links are not clickable in text messages.
+ *
+ *   3. Share toggle — "Share with team" Switch in the editor form. When enabled
+ *      (is_shared = true), the template is visible to all brokers, not just the
+ *      owner. Legacy/seeded templates default to shared so existing workflows
+ *      continue uninterrupted.
+ *
+ *   4. Test-send — "Send test to myself" button in the editor footer. Sends the
+ *      current form body (pre-save, with sample merge data) to the broker's own
+ *      email or cell phone via the same underlying send path used for real sends,
+ *      so A2P + TCPA quiet-hours gates still apply.
+ *
+ * Design-system only. Navy/cream tokens throughout.
  */
 import { useRef, useState, useTransition } from 'react'
-import { Pencil } from 'lucide-react'
+import { FolderOpen, Pencil, Plus, Share2 } from 'lucide-react'
 import {
   Accordion,
   AccordionContent,
@@ -53,10 +65,12 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Separator } from '@/components/ui/separator'
 import { MergeFieldPicker, insertAtCursor } from '@/components/admin/crm/MergeFieldPicker'
 import { TemplatePreviewPane } from '@/components/admin/crm/settings/TemplatePreviewPane'
 import { cn } from '@/lib/utils'
 import type { CrmTemplatePerf } from '@/lib/data/crm/getCrmTemplatesAdmin'
+import type { SendTestInput } from '@/app/actions/crm-template-test'
 
 export type TemplateRow = {
   id: number
@@ -67,6 +81,8 @@ export type TemplateRow = {
   body: string
   category: string | null
   isActive: boolean
+  isShared: boolean
+  ownerBroker: string | null
   usage: number
   perf?: CrmTemplatePerf | null
 }
@@ -79,6 +95,8 @@ type TemplateInput = {
   subject?: string | null
   body: string
   category?: string | null
+  isShared?: boolean
+  ownerBroker?: string | null
 }
 
 export type TemplateEditorActions = {
@@ -87,6 +105,7 @@ export type TemplateEditorActions = {
   setActive: (id: number, isActive: boolean) => Promise<ActionResult>
   remove: (id: number) => Promise<ActionResult>
   renameCategory?: (oldName: string, newName: string) => Promise<ActionResult>
+  testSend?: (input: SendTestInput) => Promise<ActionResult>
 }
 
 type FormState = {
@@ -95,19 +114,172 @@ type FormState = {
   subject: string
   body: string
   category: string
+  isShared: boolean
 }
 
-const EMPTY: FormState = { channel: 'email', name: '', subject: '', body: '', category: '' }
+const EMPTY: FormState = {
+  channel: 'email',
+  name: '',
+  subject: '',
+  body: '',
+  category: '',
+  isShared: false,
+}
 
-/** Canonical category for display — blank/null → 'Uncategorized'. */
+/** Canonical category for display. Blank/null resolves to 'Uncategorized'. */
 function catLabel(c: string | null | undefined): string {
   return (c ?? '').trim() || 'Uncategorized'
 }
 
-/** Format a perf percentage (0–100) or null for display. */
+/** Format a perf percentage (0-100) or null for display. */
 function fmtPct(n: number | null | undefined): string {
   if (n === null || n === undefined) return '—'
   return `${n}%`
+}
+
+// ── TemplateTable — extracted to a stable top-level component so React hooks
+// rules are satisfied (no component-inside-render). Props carry all the
+// callbacks the parent manages.
+
+type TemplateTableProps = {
+  tableRows: TemplateRow[]
+  hasPerf: boolean
+  pending: boolean
+  onEdit: (row: TemplateRow) => void
+  onToggleActive: (row: TemplateRow, next: boolean) => void
+  onDelete: (row: TemplateRow) => void
+}
+
+function TemplateTable({
+  tableRows,
+  hasPerf,
+  pending,
+  onEdit,
+  onToggleActive,
+  onDelete,
+}: TemplateTableProps) {
+  return (
+    <div className="overflow-x-auto no-scrollbar">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-1/3">Name</TableHead>
+            <TableHead className="hidden w-1/8 md:table-cell">Channel</TableHead>
+            <TableHead className="hidden w-1/12 text-right tabular-nums md:table-cell">In use</TableHead>
+            {hasPerf ? (
+              <>
+                <TableHead className="hidden w-1/12 text-right tabular-nums md:table-cell">Sends</TableHead>
+                <TableHead className="hidden w-1/12 text-right tabular-nums md:table-cell">Open%</TableHead>
+                <TableHead className="hidden w-1/12 text-right tabular-nums md:table-cell">Click%</TableHead>
+              </>
+            ) : null}
+            <TableHead className="hidden w-20 md:table-cell">Shared</TableHead>
+            <TableHead className="w-1/8">Status</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {tableRows.map((row) => (
+            <TableRow key={row.id}>
+              <TableCell className="font-medium text-foreground">
+                <button
+                  type="button"
+                  className="block max-w-[44vw] truncate text-left hover:underline disabled:no-underline md:max-w-none"
+                  disabled={pending}
+                  onClick={() => onEdit(row)}
+                  title={row.name}
+                >
+                  {row.name}
+                </button>
+              </TableCell>
+              <TableCell className="hidden md:table-cell">
+                <Badge variant="outline" className="uppercase text-xs tracking-wide">
+                  {row.channel}
+                </Badge>
+              </TableCell>
+              <TableCell className="hidden text-right tabular-nums text-muted-foreground md:table-cell">
+                {row.usage.toLocaleString('en-US')}
+              </TableCell>
+              {hasPerf ? (
+                row.channel === 'email' ? (
+                  <>
+                    <TableCell className="hidden text-right tabular-nums text-muted-foreground md:table-cell">
+                      {row.perf?.sent != null && row.perf.sent > 0
+                        ? row.perf.sent.toLocaleString('en-US')
+                        : '—'}
+                    </TableCell>
+                    <TableCell className="hidden text-right tabular-nums text-muted-foreground md:table-cell">
+                      {fmtPct(row.perf?.openPct)}
+                    </TableCell>
+                    <TableCell className="hidden text-right tabular-nums text-muted-foreground md:table-cell">
+                      {fmtPct(row.perf?.clickPct)}
+                    </TableCell>
+                  </>
+                ) : (
+                  <>
+                    <TableCell className="hidden md:table-cell" />
+                    <TableCell className="hidden md:table-cell" />
+                    <TableCell className="hidden md:table-cell" />
+                  </>
+                )
+              ) : null}
+              <TableCell className="hidden md:table-cell">
+                {row.isShared ? (
+                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    <Share2 className="h-3 w-3" />
+                    Team
+                  </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground/50">Private</span>
+                )}
+              </TableCell>
+              <TableCell>
+                <span className="inline-flex items-center gap-2">
+                  <Switch
+                    checked={row.isActive}
+                    disabled={pending}
+                    onCheckedChange={(next) => onToggleActive(row, next)}
+                    aria-label={`${row.name} active`}
+                  />
+                  <span
+                    className={cn(
+                      'hidden text-xs sm:inline',
+                      row.isActive ? 'text-foreground' : 'text-muted-foreground',
+                    )}
+                  >
+                    {row.isActive ? 'Active' : 'Off'}
+                  </span>
+                </span>
+              </TableCell>
+              <TableCell className="text-right">
+                <div className="inline-flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="hidden h-8 md:inline-flex"
+                    disabled={pending}
+                    onClick={() => onEdit(row)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-destructive hover:text-destructive"
+                    disabled={pending || row.usage > 0}
+                    title={row.usage > 0 ? 'Referenced by a sequence. Detach it first.' : undefined}
+                    onClick={() => onDelete(row)}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
 }
 
 export function TemplateEditor({
@@ -126,21 +298,57 @@ export function TemplateEditor({
   const [deleteRow, setDeleteRow] = useState<TemplateRow | null>(null)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
 
+  // Folder sidebar state
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
+  const [pendingFolders, setPendingFolders] = useState<string[]>([])
+  const [newFolderOpen, setNewFolderOpen] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
+
   // Folder rename state
   const [renameCatOld, setRenameCatOld] = useState<string | null>(null)
   const [renameCatNew, setRenameCatNew] = useState('')
 
-  function submitRenameCategory() {
-    if (!renameCatOld || !actions.renameCategory) return
-    const next = renameCatNew.trim()
-    run(
-      () => actions.renameCategory!(renameCatOld, next),
-      next ? `Folder renamed to "${next}"` : 'Templates moved to Uncategorized',
-      () => { setRenameCatOld(null); setRenameCatNew('') },
-    )
+  // Test-send in-flight flag (separate from the form pending so the send
+  // button can be disabled without disabling Save at the same time).
+  const [testSending, setTestSending] = useState(false)
+
+  // ── Derived data ──────────────────────────────────────────────────────────
+
+  // Group rows by category for the accordion ("All") view.
+  const grouped = new Map<string, TemplateRow[]>()
+  for (const row of rows) {
+    const cat = catLabel(row.category)
+    if (!grouped.has(cat)) grouped.set(cat, [])
+    grouped.get(cat)!.push(row)
   }
 
-  function run(action: () => Promise<ActionResult>, fallbackOk: string, onOk?: () => void) {
+  // Ordered category list: named folders first (alpha), then Uncategorized.
+  const dbCategories = [...grouped.keys()].sort((a, b) => {
+    if (a === 'Uncategorized') return 1
+    if (b === 'Uncategorized') return -1
+    return a.localeCompare(b)
+  })
+
+  // Merge pending folders that do not already exist in the DB.
+  const allFolders: string[] = [
+    ...dbCategories.filter((c) => c !== 'Uncategorized'),
+    ...pendingFolders.filter((f) => !dbCategories.includes(f)),
+    ...(grouped.has('Uncategorized') ? ['Uncategorized'] : []),
+  ]
+
+  // Rows shown in the folder-scoped flat table.
+  const filteredRows =
+    selectedFolder === null ? rows : rows.filter((r) => catLabel(r.category) === selectedFolder)
+
+  const hasPerf = rows.some((r) => r.channel === 'email')
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  function run(
+    action: () => Promise<ActionResult>,
+    fallbackOk: string,
+    onOk?: () => void,
+  ) {
     setNote(null)
     startTransition(async () => {
       const r = await action()
@@ -155,7 +363,11 @@ export function TemplateEditor({
 
   function openCreate() {
     setEditId(null)
-    setForm(EMPTY)
+    // Pre-fill category with the currently selected folder.
+    setForm({
+      ...EMPTY,
+      category: selectedFolder && selectedFolder !== 'Uncategorized' ? selectedFolder : '',
+    })
     setFormOpen(true)
     setNote(null)
   }
@@ -168,6 +380,7 @@ export function TemplateEditor({
       subject: row.subject ?? '',
       body: row.body,
       category: row.category ?? '',
+      isShared: row.isShared,
     })
     setFormOpen(true)
     setNote(null)
@@ -208,13 +421,46 @@ export function TemplateEditor({
       subject: form.channel === 'email' ? form.subject.trim() : null,
       body: form.body.trim(),
       category: form.category.trim() || null,
+      isShared: form.isShared,
     }
-    const action = editId == null ? () => actions.create(input) : () => actions.update(editId, input)
-    run(action, editId == null ? 'Template created' : 'Template saved', () => setFormOpen(false))
+    const action =
+      editId == null ? () => actions.create(input) : () => actions.update(editId, input)
+    run(action, editId == null ? 'Template created' : 'Template saved', () => {
+      setFormOpen(false)
+      // If creating a template in a pending folder, promote it to the DB set.
+      if (editId == null && form.category.trim()) {
+        const cat = form.category.trim()
+        setPendingFolders((prev) => prev.filter((f) => f !== cat))
+      }
+    })
+  }
+
+  function handleTestSend() {
+    if (!actions.testSend) return
+    const body = form.body.trim()
+    if (!body) {
+      setNote({ tone: 'err', text: 'Template body is empty. Nothing to send.' })
+      return
+    }
+    setNote(null)
+    setTestSending(true)
+    actions
+      .testSend({ channel: form.channel, subject: form.subject || null, body })
+      .then((r) => {
+        if (r.ok) {
+          setNote({ tone: 'ok', text: r.message ?? 'Test sent' })
+        } else {
+          setNote({ tone: 'err', text: r.error })
+        }
+      })
+      .finally(() => setTestSending(false))
   }
 
   function submitActive(row: TemplateRow, next: boolean) {
-    run(() => actions.setActive(row.id, next), next ? 'Template enabled' : 'Template disabled')
+    run(
+      () => actions.setActive(row.id, next),
+      next ? 'Template enabled' : 'Template disabled',
+    )
   }
 
   function submitDelete() {
@@ -222,213 +468,284 @@ export function TemplateEditor({
     run(() => actions.remove(deleteRow.id), 'Template deleted', () => setDeleteRow(null))
   }
 
-  // Group rows by category, alphabetically sorted, Uncategorized last.
-  const grouped = new Map<string, TemplateRow[]>()
-  for (const row of rows) {
-    const cat = catLabel(row.category)
-    if (!grouped.has(cat)) grouped.set(cat, [])
-    grouped.get(cat)!.push(row)
+  function submitRenameCategory() {
+    if (!renameCatOld || !actions.renameCategory) return
+    const next = renameCatNew.trim()
+    run(
+      () => actions.renameCategory!(renameCatOld, next),
+      next ? `Folder renamed to "${next}"` : 'Templates moved to Uncategorized',
+      () => {
+        // Keep sidebar selection consistent with the rename.
+        if (selectedFolder === renameCatOld) setSelectedFolder(next || null)
+        setRenameCatOld(null)
+        setRenameCatNew('')
+      },
+    )
   }
-  const categories = [...grouped.keys()].sort((a, b) => {
-    if (a === 'Uncategorized') return 1
-    if (b === 'Uncategorized') return -1
-    return a.localeCompare(b)
-  })
 
-  const hasPerf = rows.some((r) => r.channel === 'email')
+  function confirmNewFolder() {
+    const name = newFolderName.trim()
+    if (!name) return
+    if (!allFolders.includes(name)) {
+      setPendingFolders((prev) => [...prev, name])
+    }
+    setSelectedFolder(name)
+    setNewFolderOpen(false)
+    setNewFolderName('')
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          {rows.length} {rows.length === 1 ? 'template' : 'templates'} in {categories.length}{' '}
-          {categories.length === 1 ? 'folder' : 'folders'}
-        </p>
-        <Button size="sm" onClick={openCreate} disabled={pending}>
-          New template
-        </Button>
+    <div className="flex gap-6">
+      {/* ── Folder sidebar ──────────────────────────────────────────────── */}
+      <aside className="hidden w-48 shrink-0 md:block">
+        <nav className="space-y-0.5">
+          {/* "All templates" entry */}
+          <button
+            type="button"
+            onClick={() => setSelectedFolder(null)}
+            className={cn(
+              'group flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors',
+              selectedFolder === null
+                ? 'bg-primary text-primary-foreground font-medium'
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+            )}
+          >
+            <span className="flex items-center gap-2">
+              <FolderOpen className="h-3.5 w-3.5" />
+              All templates
+            </span>
+            <Badge
+              variant={selectedFolder === null ? 'secondary' : 'outline'}
+              className="tabular-nums text-xs"
+            >
+              {rows.length}
+            </Badge>
+          </button>
+
+          {allFolders.length > 0 && (
+            <div className="pt-1 pb-0.5">
+              <Separator className="mb-2" />
+              {allFolders.map((folder) => {
+                const count = grouped.get(folder)?.length ?? 0
+                const isUncategorized = folder === 'Uncategorized'
+                return (
+                  <div key={folder} className="group relative flex items-center">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFolder(folder)}
+                      className={cn(
+                        'flex flex-1 items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors',
+                        selectedFolder === folder
+                          ? 'bg-primary text-primary-foreground font-medium'
+                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                      )}
+                    >
+                      <span className="truncate">{folder}</span>
+                      <Badge
+                        variant={selectedFolder === folder ? 'secondary' : 'outline'}
+                        className="tabular-nums text-xs ml-1 shrink-0"
+                      >
+                        {count}
+                      </Badge>
+                    </button>
+                    {/* Rename pencil (not shown for Uncategorized) */}
+                    {!isUncategorized && actions.renameCategory && count > 0 ? (
+                      <button
+                        type="button"
+                        aria-label={`Rename folder ${folder}`}
+                        className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-foreground focus:opacity-100"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setRenameCatOld(folder)
+                          setRenameCatNew(folder)
+                          setNote(null)
+                        }}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                    ) : null}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          <Separator className="my-2" />
+          <button
+            type="button"
+            onClick={() => {
+              setNewFolderName('')
+              setNewFolderOpen(true)
+            }}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            New folder
+          </button>
+        </nav>
+      </aside>
+
+      {/* ── Main content ────────────────────────────────────────────────── */}
+      <div className="flex-1 min-w-0 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            {selectedFolder !== null ? (
+              <>
+                <span className="font-medium text-foreground">{selectedFolder}</span>
+                {' · '}
+              </>
+            ) : null}
+            {filteredRows.length}{' '}
+            {filteredRows.length === 1 ? 'template' : 'templates'}
+          </p>
+          <Button size="sm" onClick={openCreate} disabled={pending}>
+            New template
+          </Button>
+        </div>
+
+        {note ? (
+          <Alert variant={note.tone === 'err' ? 'destructive' : 'default'}>
+            <AlertDescription className="whitespace-pre-wrap">{note.text}</AlertDescription>
+          </Alert>
+        ) : null}
+
+        {selectedFolder !== null ? (
+          /* Single-folder flat table */
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            {filteredRows.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No templates in this folder yet. Create the first one above.
+              </p>
+            ) : (
+              <TemplateTable
+                tableRows={filteredRows}
+                hasPerf={hasPerf}
+                pending={pending}
+                onEdit={openEdit}
+                onToggleActive={submitActive}
+                onDelete={(row) => { setDeleteRow(row); setNote(null) }}
+              />
+            )}
+          </div>
+        ) : (
+          /* All-templates accordion view */
+          <>
+            <Accordion type="multiple" defaultValue={dbCategories} className="space-y-2">
+              {dbCategories.map((cat) => {
+                const catRows = grouped.get(cat) ?? []
+                return (
+                  <AccordionItem
+                    key={cat}
+                    value={cat}
+                    className="group rounded-xl border border-border bg-card overflow-hidden"
+                  >
+                    <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                      <span className="flex items-center gap-2 text-sm font-medium">
+                        {cat}
+                        <Badge variant="secondary" className="tabular-nums text-xs">
+                          {catRows.length}
+                        </Badge>
+                        {actions.renameCategory && cat !== 'Uncategorized' ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            aria-label={`Rename folder ${cat}`}
+                            className="ml-1 h-5 w-5 p-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 focus:opacity-100"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setRenameCatOld(cat)
+                              setRenameCatNew(cat)
+                              setNote(null)
+                            }}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        ) : null}
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="p-0">
+                      <TemplateTable
+                        tableRows={catRows}
+                        hasPerf={hasPerf}
+                        pending={pending}
+                        onEdit={openEdit}
+                        onToggleActive={submitActive}
+                        onDelete={(row) => { setDeleteRow(row); setNote(null) }}
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
+                )
+              })}
+            </Accordion>
+
+            {rows.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No templates yet. Create the first one above.
+              </p>
+            ) : null}
+          </>
+        )}
       </div>
 
-      {note ? (
-        <Alert variant={note.tone === 'err' ? 'destructive' : 'default'}>
-          <AlertDescription className="whitespace-pre-wrap">{note.text}</AlertDescription>
-        </Alert>
-      ) : null}
-
-      {/* Folder-grouped accordion */}
-      <Accordion type="multiple" defaultValue={categories} className="space-y-2">
-        {categories.map((cat) => {
-          const catRows = grouped.get(cat) ?? []
-          return (
-            <AccordionItem
-              key={cat}
-              value={cat}
-              className="group rounded-xl border border-border bg-card overflow-hidden"
+      {/* ── New folder dialog ────────────────────────────────────────────── */}
+      <Dialog
+        open={newFolderOpen}
+        onOpenChange={(o) => {
+          if (!o) {
+            setNewFolderOpen(false)
+            setNewFolderName('')
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New folder</DialogTitle>
+            <DialogDescription>
+              Enter a name for the new folder. Templates you create while this
+              folder is selected will be assigned to it automatically.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="new-folder-input">Folder name</Label>
+            <Input
+              id="new-folder-input"
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') confirmNewFolder()
+              }}
+              placeholder="e.g. Buyer, Seller, Drip..."
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setNewFolderOpen(false)
+                setNewFolderName('')
+              }}
             >
-              <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                <span className="flex items-center gap-2 text-sm font-medium">
-                  {cat}
-                  <Badge variant="secondary" className="tabular-nums text-xs">
-                    {catRows.length}
-                  </Badge>
-                  {actions.renameCategory && cat !== 'Uncategorized' ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      aria-label={`Rename folder ${cat}`}
-                      className="ml-1 h-5 w-5 p-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 focus:opacity-100"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setRenameCatOld(cat)
-                        setRenameCatNew(cat)
-                        setNote(null)
-                      }}
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </Button>
-                  ) : null}
-                </span>
-              </AccordionTrigger>
-              <AccordionContent className="p-0">
-                <div className="overflow-x-auto no-scrollbar">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-1/3">Name</TableHead>
-                        <TableHead className="hidden w-1/8 md:table-cell">Channel</TableHead>
-                        <TableHead className="hidden w-1/12 text-right tabular-nums md:table-cell">In use</TableHead>
-                        {hasPerf ? (
-                          <>
-                            <TableHead className="hidden w-1/12 text-right tabular-nums md:table-cell">Sends</TableHead>
-                            <TableHead className="hidden w-1/12 text-right tabular-nums md:table-cell">Open%</TableHead>
-                            <TableHead className="hidden w-1/12 text-right tabular-nums md:table-cell">Click%</TableHead>
-                          </>
-                        ) : null}
-                        <TableHead className="w-1/8">Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {catRows.map((row) => (
-                        <TableRow key={row.id}>
-                          <TableCell className="font-medium text-foreground">
-                            <button
-                              type="button"
-                              className="block max-w-[44vw] truncate text-left hover:underline disabled:no-underline md:max-w-none"
-                              disabled={pending}
-                              onClick={() => openEdit(row)}
-                              title={row.name}
-                            >
-                              {row.name}
-                            </button>
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            <Badge variant="outline" className="uppercase text-xs tracking-wide">
-                              {row.channel}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="hidden text-right tabular-nums text-muted-foreground md:table-cell">
-                            {row.usage.toLocaleString('en-US')}
-                          </TableCell>
-                          {hasPerf ? (
-                            row.channel === 'email' ? (
-                              <>
-                                <TableCell className="hidden text-right tabular-nums text-muted-foreground md:table-cell">
-                                  {row.perf?.sent != null && row.perf.sent > 0
-                                    ? row.perf.sent.toLocaleString('en-US')
-                                    : '—'}
-                                </TableCell>
-                                <TableCell className="hidden text-right tabular-nums text-muted-foreground md:table-cell">
-                                  {fmtPct(row.perf?.openPct)}
-                                </TableCell>
-                                <TableCell className="hidden text-right tabular-nums text-muted-foreground md:table-cell">
-                                  {fmtPct(row.perf?.clickPct)}
-                                </TableCell>
-                              </>
-                            ) : (
-                              <>
-                                <TableCell className="hidden md:table-cell" />
-                                <TableCell className="hidden md:table-cell" />
-                                <TableCell className="hidden md:table-cell" />
-                              </>
-                            )
-                          ) : null}
-                          <TableCell>
-                            <span className="inline-flex items-center gap-2">
-                              <Switch
-                                checked={row.isActive}
-                                disabled={pending}
-                                onCheckedChange={(next) => submitActive(row, next)}
-                                aria-label={`${row.name} active`}
-                              />
-                              <span
-                                className={cn(
-                                  'hidden text-xs sm:inline',
-                                  row.isActive ? 'text-foreground' : 'text-muted-foreground',
-                                )}
-                              >
-                                {row.isActive ? 'Active' : 'Off'}
-                              </span>
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="inline-flex items-center gap-1">
-                              {/* Mobile opens the editor by tapping the name (above); the
-                                  explicit Edit button is a desktop convenience. */}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="hidden h-8 md:inline-flex"
-                                disabled={pending}
-                                onClick={() => openEdit(row)}
-                              >
-                                Edit
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 text-destructive hover:text-destructive"
-                                disabled={pending || row.usage > 0}
-                                title={
-                                  row.usage > 0
-                                    ? 'Referenced by a sequence. Detach it first.'
-                                    : undefined
-                                }
-                                onClick={() => {
-                                  setDeleteRow(row)
-                                  setNote(null)
-                                }}
-                              >
-                                Delete
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          )
-        })}
-      </Accordion>
+              Cancel
+            </Button>
+            <Button onClick={confirmNewFolder} disabled={!newFolderName.trim()}>
+              Create folder
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {rows.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">
-          No templates yet. Create the first one above.
-        </p>
-      ) : null}
-
-      {/* Create / edit dialog */}
+      {/* ── Create / edit dialog ─────────────────────────────────────────── */}
       <Dialog open={formOpen} onOpenChange={(o) => !pending && setFormOpen(o)}>
         <DialogContent className="max-w-2xl overflow-y-auto" style={{ maxHeight: '90vh' }}>
           <DialogHeader>
             <DialogTitle>{editId == null ? 'New template' : 'Edit template'}</DialogTitle>
             <DialogDescription>
-              Subject and body run the brand-voice check on save. A banned word or em-dash is
-              rejected.
+              Subject and body run the brand-voice check on save. A banned word or
+              em-dash is rejected.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -474,8 +791,12 @@ export function TemplateEditor({
 
             <Tabs defaultValue="edit">
               <TabsList className="h-8">
-                <TabsTrigger value="edit" className="text-xs">Edit body</TabsTrigger>
-                <TabsTrigger value="preview" className="text-xs">Preview</TabsTrigger>
+                <TabsTrigger value="edit" className="text-xs">
+                  Edit body
+                </TabsTrigger>
+                <TabsTrigger value="preview" className="text-xs">
+                  Preview
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="edit" className="space-y-2 mt-2">
@@ -486,7 +807,7 @@ export function TemplateEditor({
                   value={form.body}
                   onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
                   rows={8}
-                  placeholder="Template body…"
+                  placeholder="Template body..."
                 />
               </TabsContent>
 
@@ -501,37 +822,87 @@ export function TemplateEditor({
             </Tabs>
 
             <div className="space-y-1.5">
-              <Label htmlFor="tpl-category">Category / folder (optional)</Label>
+              <Label htmlFor="tpl-category">Folder (optional)</Label>
               <Input
                 id="tpl-category"
                 value={form.category}
                 onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                placeholder="e.g. Seller, Buyer, Drip…"
+                placeholder="e.g. Seller, Buyer, Drip..."
+                list="tpl-category-options"
               />
+              {/* Browser datalist for folder autocomplete */}
+              <datalist id="tpl-category-options">
+                {allFolders
+                  .filter((f) => f !== 'Uncategorized')
+                  .map((f) => (
+                    <option key={f} value={f} />
+                  ))}
+              </datalist>
+            </div>
+
+            {/* Share toggle */}
+            <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
+              <Switch
+                id="tpl-shared"
+                checked={form.isShared}
+                onCheckedChange={(v) => setForm((f) => ({ ...f, isShared: v }))}
+              />
+              <div>
+                <Label htmlFor="tpl-shared" className="cursor-pointer text-sm font-medium">
+                  Share with team
+                </Label>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {form.isShared
+                    ? 'All brokers can see and use this template.'
+                    : 'Only you can see and use this template.'}
+                </p>
+              </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setFormOpen(false)} disabled={pending}>
+
+          <DialogFooter className="flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setFormOpen(false)}
+              disabled={pending || testSending}
+            >
               Cancel
             </Button>
-            <Button onClick={submitForm} disabled={pending}>
+            {/* Test-send button — renders the current form body with sample data. */}
+            {actions.testSend ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleTestSend}
+                disabled={pending || testSending || !form.body.trim()}
+                title="Sends this template to your own email/phone with sample data"
+              >
+                {testSending ? 'Sending...' : 'Send test to myself'}
+              </Button>
+            ) : null}
+            <Button onClick={submitForm} disabled={pending || testSending}>
               {editId == null ? 'Create template' : 'Save'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Folder rename dialog */}
+      {/* ── Folder rename dialog ─────────────────────────────────────────── */}
       <Dialog
         open={renameCatOld !== null}
-        onOpenChange={(o) => { if (!o && !pending) { setRenameCatOld(null); setRenameCatNew('') } }}
+        onOpenChange={(o) => {
+          if (!o && !pending) {
+            setRenameCatOld(null)
+            setRenameCatNew('')
+          }
+        }}
       >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rename folder</DialogTitle>
             <DialogDescription>
-              All templates in &ldquo;{renameCatOld}&rdquo; will move to the new folder name.
-              Leave blank to move them to Uncategorized.
+              All templates in &ldquo;{renameCatOld}&rdquo; will move to the new
+              folder name. Leave blank to move them to Uncategorized.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5">
@@ -540,14 +911,19 @@ export function TemplateEditor({
               id="rename-cat-input"
               value={renameCatNew}
               onChange={(e) => setRenameCatNew(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') submitRenameCategory() }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submitRenameCategory()
+              }}
               autoFocus
             />
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => { setRenameCatOld(null); setRenameCatNew('') }}
+              onClick={() => {
+                setRenameCatOld(null)
+                setRenameCatNew('')
+              }}
               disabled={pending}
             >
               Cancel
@@ -559,15 +935,24 @@ export function TemplateEditor({
         </DialogContent>
       </Dialog>
 
-      {/* Delete dialog */}
-      <Dialog open={!!deleteRow} onOpenChange={(o) => !pending && !o && setDeleteRow(null)}>
+      {/* ── Delete dialog ────────────────────────────────────────────────── */}
+      <Dialog
+        open={!!deleteRow}
+        onOpenChange={(o) => !pending && !o && setDeleteRow(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete {deleteRow?.name}</DialogTitle>
-            <DialogDescription>This cannot be undone. The template is removed for good.</DialogDescription>
+            <DialogDescription>
+              This cannot be undone. The template is removed for good.
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteRow(null)} disabled={pending}>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteRow(null)}
+              disabled={pending}
+            >
               Cancel
             </Button>
             <Button variant="destructive" onClick={submitDelete} disabled={pending}>

@@ -33,6 +33,8 @@ describe('mapTemplateRow', () => {
       body: 'Body',
       category: 'buyer',
       is_active: true,
+      is_shared: false,
+      owner_broker: 'matt',
     }
     expect(mapTemplateRow(row, 3, null)).toEqual({
       id: 7,
@@ -43,6 +45,8 @@ describe('mapTemplateRow', () => {
       body: 'Body',
       category: 'buyer',
       isActive: true,
+      isShared: false,
+      ownerBroker: 'matt',
       usage: 3,
       perf: null,
     })
@@ -58,11 +62,15 @@ describe('mapTemplateRow', () => {
       body: '',
       category: null,
       is_active: false,
+      is_shared: false,
+      owner_broker: null,
     }
     const m = mapTemplateRow(row, 0, null)
     expect(m.channel).toBe('email')
     expect(m.subject).toBeNull()
     expect(m.body).toBe('')
     expect(m.isActive).toBe(false)
+    expect(m.isShared).toBe(false)
+    expect(m.ownerBroker).toBeNull()
   })
 })

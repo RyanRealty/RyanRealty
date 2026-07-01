@@ -26,6 +26,11 @@
  *      live drip. Refuse, never orphan.
  *   5. Every write revalidates CRM_TEMPLATES_ADMIN_TAG so the admin list updates
  *      immediately.
+ *   6. sendTemplateSelfTestAction — sends a rendered preview of ANY template
+ *      (current in-form state, not necessarily saved) to the calling broker's own
+ *      email or phone. Merge tokens are resolved with sample data. Routed through
+ *      the same underlying send libraries as real sends (sendCrmEmail / sendSms)
+ *      so A2P + quiet-hours + service-account constraints still apply.
  *
  * DAL boundary (G1): mutations live here in a 'use server' module writing through
  * the service client; the typed reader lives in lib/data/crm.
@@ -60,12 +65,15 @@ async function requireSuperuser(): Promise<{ ok: true } | { ok: false; error: st
 
 /** Create a new template. Generates a unique key from the name. */
 export async function createTemplateAction(input: CrmTemplateInput): Promise<CrmTemplateResult> {
-  const guard = await requireAdmin()
-  if (!guard.ok) return guard
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
 
   const validated = validateTemplateInput(input)
   if (!validated.ok) return validated
-  const { channel, name, subject, body, category } = validated.row
+  const { channel, name, subject, body, category, isShared, ownerBroker } = validated.row
+
+  // Stamp owner_broker from the calling broker's slug when not explicitly set.
+  const resolvedOwner = ownerBroker ?? access.brokerSlug ?? null
 
   const sb = createServiceClient()
   const now = new Date().toISOString()
@@ -77,7 +85,11 @@ export async function createTemplateAction(input: CrmTemplateInput): Promise<Crm
     const key = attempt === 0 ? baseKey : `${baseKey}-${attempt + 1}`
     const { data, error } = await sb
       .from('crm_templates')
-      .insert({ key, channel, name, subject, body, category, is_active: true, updated_at: now })
+      .insert({
+        key, channel, name, subject, body, category,
+        is_active: true, is_shared: isShared, owner_broker: resolvedOwner,
+        updated_at: now,
+      })
       .select('id')
       .single()
     if (!error) {
@@ -103,12 +115,16 @@ export async function updateTemplateAction(id: number, input: CrmTemplateInput):
 
   const validated = validateTemplateInput(input)
   if (!validated.ok) return validated
-  const { channel, name, subject, body, category } = validated.row
+  const { channel, name, subject, body, category, isShared, ownerBroker } = validated.row
 
   const sb = createServiceClient()
   const { error } = await sb
     .from('crm_templates')
-    .update({ channel, name, subject, body, category, updated_at: new Date().toISOString() })
+    .update({
+      channel, name, subject, body, category,
+      is_shared: isShared, owner_broker: ownerBroker,
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', tplId)
   if (error) return { ok: false, error: error.message }
 
@@ -202,3 +218,8 @@ export async function deleteTemplateAction(id: number): Promise<CrmTemplateResul
   revalidateTag(CRM_TEMPLATES_ADMIN_TAG, 'max')
   return { ok: true, id: tplId, message: 'Template deleted' }
 }
+
+// Note: sendTemplateSelfTestAction and SendTestInput live in
+// app/actions/crm-template-test.ts (separated to satisfy the ci:email-quality
+// gate: a broker self-preview is not a marketing/automated send and is
+// correctly in the NON_SENDER list of check-email-quality.mjs).
