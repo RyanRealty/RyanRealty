@@ -185,7 +185,20 @@ Marketing UTM report (visitor_sessions UTM — Overview links it; build or mark)
   Deferred (not in #3): §4.2 toolbar filters, Manage-Pipelines settings, Add-Stage, §11 deal-detail modal,
   touch-DnD (mobile is tap-to-open), multi-contact avatar cluster (awaits deal_people junction §20).
 
-**NEXT MISSION SECTION (delivery order #4+):**
+### Automation visual editor (delivery order #4) — ✅ DONE + verified on prod (commit c720bf35)
+- VERIFIED: /admin/crm/sequences renders 7 workflows w/ plan-type badges; the step editor + Add-step
+  palette shows all 9 step types incl "Pause other workflows" (= stop_other_plans).
+- Extended the EXISTING workflow editor (`/admin/crm/sequences`; `/admin/crm/automations` redirects there)
+  rather than rebuilding — WorkflowList + StepBuilder + StepEditor already existed. Added the missing
+  `stop_other_plans` step type (editor palette + config panel + engine handler in
+  app/api/cron/crm-sequence-engine that bulk-pauses sibling running enrollments), plan-type badges
+  (Default buyer/seller/expired/FSBO from fub_legacy_plan_id 69/70/71/72). All 9 step channels are
+  editor-configurable AND engine-executable: email, sms, task, tag, change_stage, add_note, reassign,
+  run_automation, stop_other_plans. Conditions (IF/ELSE) pre-existed. tsc 0 + gates + 2306 tests green.
+  NOTE: agent committed against "don't commit" (a transient mid-edit build break blocked an unrelated
+  push briefly; resolved when the agent finished). VERIFY the palette render on prod.
+
+**NEXT MISSION SECTION (delivery order #5+):**
 Automation visual editor + step palette incl stopOtherPlans (§12) · Inbox Assigned/Drafts + unknown-caller
 add-person (§08) · Person-detail parity gaps: collaborators, merge/dedup, action-plan progress (§07) ·
 Templates folder tree + merge-field inserter + share + test-send (§13). See DELIVERY ORDER above.
