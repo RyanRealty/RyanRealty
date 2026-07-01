@@ -39,6 +39,27 @@ function fmtPhone(d: string): string {
   return d.length === 10 ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}` : d
 }
 
+/** FUB date convention (§25 observed): current year → "Jun 1"; other years →
+    "Jul 2, 2025". */
+function fubDate(iso: string): string {
+  const y = new Date(iso).toLocaleString('en-US', { year: 'numeric', timeZone: 'America/Los_Angeles' })
+  const nowY = new Date(Date.now()).toLocaleString('en-US', { year: 'numeric', timeZone: 'America/Los_Angeles' })
+  return formatDate(iso, { month: 'short', day: 'numeric', year: y === nowY ? undefined : 'numeric' })
+}
+
+/** Notes ingested from FUB carry literal `<br />` markup — convert to newlines
+    and strip residual tags so the card shows clean text (§25.8.3). */
+function cleanNoteBody(s: string): string {
+  return s.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/\n{3,}/g, '\n\n').trim()
+}
+
+/** §25.8.3: note cards show the real broker headshot, not initials. */
+const BROKER_HEADSHOTS: Record<string, string> = {
+  matt: '/images/brokers/ryan-matt.png',
+  rebecca: '/images/brokers/peterson-rebecca.png',
+  paul: '/images/brokers/stevenson-paul.png',
+}
+
 function brokerDisplay(slug: string | null | undefined): string | null {
   return slug ? (CRM_BROKER_DISPLAY[slug as keyof typeof CRM_BROKER_DISPLAY] ?? slug) : null
 }
@@ -100,7 +121,7 @@ export function MobileLeadDetail({
         .filter((v): v is string => Boolean(v))
         .join(', '),
       preview: (m.body ?? m.title ?? '').slice(0, 140),
-      date: formatDate(m.ts, { month: 'short', day: 'numeric' }),
+      date: fubDate(m.ts),
     }))
   const phones: MobilePhoneEntry[] = full.contactPoints
     .filter((c) => c.kind === 'phone')
@@ -108,8 +129,11 @@ export function MobileLeadDetail({
   const emails: MobileEmailEntry[] = full.contactPoints
     .filter((c) => c.kind === 'email')
     .map((c) => ({ id: c.id, value: c.value, label: c.label }))
+  // Inquiry date = lead_created event, FUB-formatted (falls back to the page's
+  // preformatted label if the event is outside the loaded timeline window).
+  const leadCreatedTs = full.timeline.find((t) => t.kind === 'lead_created')?.ts ?? null
   const inquiries: MobileInquiry[] = person.source
-    ? [{ type: 'Registration', source: person.source, address: null, date: inquiryDate ?? '' }]
+    ? [{ type: 'Registration', source: person.source, address: null, date: leadCreatedTs ? fubDate(leadCreatedTs) : (inquiryDate ?? '') }]
     : []
   const customFields: MobileCustomField[] = customEntries.map(([k, v]) => ({
     key: k,
@@ -127,7 +151,14 @@ export function MobileLeadDetail({
     .filter((a) => a.street.trim().length > 0)
   const notes: MobileNote[] = full.timeline
     .filter((t) => t.kind === 'note')
-    .map((t) => ({ id: t.id, ts: t.ts, dateLabel: noteDateLabel(t.ts), body: t.body ?? t.title ?? '', broker: t.broker }))
+    .map((t) => ({
+      id: t.id,
+      ts: t.ts,
+      dateLabel: noteDateLabel(t.ts),
+      body: cleanNoteBody(t.body ?? t.title ?? ''),
+      broker: t.broker,
+      avatarUrl: BROKER_HEADSHOTS[t.broker ?? 'matt'] ?? null,
+    }))
   const tasks: MobileTask[] = full.tasks.map((t) => ({
     id: t.id, name: t.name, type: t.type, due_at: t.due_at, completed_at: t.completed_at,
   }))
@@ -137,7 +168,7 @@ export function MobileLeadDetail({
       personId={person.id}
       displayName={displayName}
       pictureUrl={person.picture_url}
-      lastCommLabel={person.last_activity_at ? formatDate(person.last_activity_at, { month: 'short', day: 'numeric' }) : null}
+      lastCommLabel={person.last_activity_at ? fubDate(person.last_activity_at) : null}
       priceTarget={(person as unknown as { price?: number | null }).price ?? null}
       backHref={backHref}
       infoTab={

@@ -30,6 +30,8 @@ export interface MobileNote {
   dateLabel: string
   body: string
   broker: string | null
+  /** §25.8.3: real broker headshot (null → initials fallback) */
+  avatarUrl: string | null
 }
 
 export interface MobileNotesTabProps {
@@ -90,8 +92,8 @@ export function MobileNotesTab({
           >
             <div className="p-3">
               <div className="flex items-start gap-3">
-                {/* §25.8.3: broker avatar 36 pt — uses CrmAvatar (initials fallback) */}
-                <CrmAvatar name={authorName} size={36} className="mt-0.5 shrink-0" />
+                {/* §25.8.3: broker headshot 36 pt (initials fallback) */}
+                <CrmAvatar name={authorName} src={note.avatarUrl} size={36} className="mt-0.5 shrink-0" />
                 <div className="min-w-0 flex-1">
                   <div className="mb-1 flex items-baseline justify-between gap-2">
                     <span className="text-[14px] font-semibold text-foreground">{authorName}</span>
@@ -102,7 +104,7 @@ export function MobileNotesTab({
                   {/* Body — truncated at 5 lines (§25.8.3) */}
                   <p
                     className={cn(
-                      'text-[13px] leading-5 text-foreground',
+                      'whitespace-pre-line text-[13px] leading-5 text-foreground',
                       'line-clamp-5',
                     )}
                   >
