@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.696.0 (2026-07-01)
+
+### Features
+- feat(crm): Inbox Assigned/Drafts folders + unknown-caller Add Person (§08)
+
+---
+
+
 ## v1.695.1 (2026-07-01)
 
 ### Maintenance
