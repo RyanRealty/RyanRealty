@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.691.1 (2026-07-01)
+
+### Bug Fixes
+- fix(crm): Texts report — real counts, no 1000-row cap, reconciled with Agent Activity
+
+---
+
+
 ## v1.691.0 (2026-07-01)
 
 ### Features
