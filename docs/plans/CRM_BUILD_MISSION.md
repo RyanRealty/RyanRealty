@@ -198,7 +198,17 @@ Marketing UTM report (visitor_sessions UTM — Overview links it; build or mark)
   NOTE: agent committed against "don't commit" (a transient mid-edit build break blocked an unrelated
   push briefly; resolved when the agent finished). VERIFY the palette render on prod.
 
-**NEXT MISSION SECTION (delivery order #5+):**
+### Inbox Assigned/Drafts (delivery order #5) — ✅ DONE + verified on prod (commit dc17a155→b09021bd)
+- /admin/crm/inbox folder rail gains **Assigned** (assigned_broker = acting broker, real filter even for
+  superuser; 63 count verified) + **Drafts** (new crm_message_drafts store, migration applied; empty-state
+  verified). Composers get draft prefill + Save draft (send path untouched, still suppression/quiet-hours
+  gated). Unknown-caller Add Person: inline flyout names the auto-created placeholder crm_people row (no dup,
+  no send), code-verified via isUnknownCaller (lib/crm/display-name.ts). NOTE: a missing-symbol push break
+  (display-name.ts change wasn't staged with the commit) — fixed by amending. Tiny follow-up: Drafts empty-
+  state copy is the generic inbox message, not drafts-specific. Deferred (§08): Sent folder, company/team
+  scope, channel filter, bulk-select, voicemail player, @mention, reassign dropdown.
+
+**NEXT MISSION SECTION (delivery order #6+):**
 Automation visual editor + step palette incl stopOtherPlans (§12) · Inbox Assigned/Drafts + unknown-caller
 add-person (§08) · Person-detail parity gaps: collaborators, merge/dedup, action-plan progress (§07) ·
 Templates folder tree + merge-field inserter + share + test-send (§13). See DELIVERY ORDER above.
