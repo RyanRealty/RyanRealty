@@ -13,6 +13,7 @@
 
 import { useRef, useEffect } from 'react'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
+import { getBaseMapOptions } from '@/lib/maps/markers'
 import { MAP_DEFAULT_CENTER } from '@/lib/map-constants'
 import type { PropertyInquiryRow } from '@/lib/data/crm/getPropertiesReport'
 import { GoogleMapsBootstrap } from '@/components/GoogleMapsBootstrap'
@@ -36,14 +37,16 @@ export function PropertiesMap({ rows }: Props) {
     // Create the map once; reuse on data changes.
     if (!mapRef.current) {
       mapRef.current = new google.maps.Map(containerRef.current, {
+        // getBaseMapOptions() guards the ControlPosition/MapTypeId enum access
+        // (they throw if touched before the Maps API loads — the ci:maps-safety
+        // gate enforces this). We run inside the ready-gated effect, but use the
+        // helper so the gate's static check passes and the pattern stays uniform.
+        ...getBaseMapOptions(),
         center: MAP_DEFAULT_CENTER,
         zoom: 9,
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: true,
-        zoomControlOptions: {
-          position: google.maps.ControlPosition.RIGHT_BOTTOM,
-        },
         // Subtle navy/cream-friendly style (vector fallback-safe)
         styles: [
           { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c9d2d3' }] },
