@@ -161,6 +161,13 @@ export default async function CrmSettingsPage() {
       label: 'Account',
       cards: [
         {
+          href: '/admin/crm/settings/company',
+          title: 'Company settings',
+          description: 'Brokerage identity, address, timezone, virtual phone, call recording, and business goals.',
+          countLabel: 'configure',
+          icon: '⚙',
+        },
+        {
           href: '/admin/crm/settings/team',
           title: 'Team',
           description: 'Per-broker permissions: export access, lead-routing pause, role, and last-seen activity.',

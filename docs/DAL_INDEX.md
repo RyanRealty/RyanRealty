@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-06-29T13:39:27.311Z
+**Generated:** 2026-07-01T15:09:04.316Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -282,6 +282,34 @@ Companion files:
 
 ---
 
+### `lib/data/crm/getAgentActivityReport.ts`
+
+**Exports:** `resolveDateRange`, `getAgentActivityReport`
+
+**Tables:** `brokers`, `crm_timeline`, `crm_tasks`, `crm_appointments`
+
+**Selected columns:** `crm_slug`, `display_name`, `photo_url`, `id`, `crm_people!inner(assigned_broker)`, `ts`, `kind`, `broker`, `completed_at`, `assigned_broker`, `start_at`, `broker_slug`
+
+**Cache keys:** `crm-agent-activity-v4`
+
+**Cache tags:** `'crm-agent-activity', 'crm-reporting'`
+
+---
+
+### `lib/data/crm/getAgentGoalsReport.ts`
+
+**Exports:** `getAgentGoalsReport`
+
+**Tables:** `brokers`, `crm_deals`
+
+**Selected columns:** `crm_slug`, `display_name`, `photo_url`, `id`, `commission_dollars`
+
+**Cache keys:** `crm-agent-goals-v1`
+
+**Cache tags:** `'crm-agent-goals', 'crm-reporting'`
+
+---
+
 ### `lib/data/crm/getAppointments.ts`
 
 **Exports:** `CRM_APPOINTMENT_TYPES_TAG`, `CRM_APPOINTMENT_OUTCOMES_TAG`, `getAppointments`, `getAppointmentTypes`, `getAppointmentOutcomes`
@@ -294,6 +322,20 @@ Companion files:
 
 ---
 
+### `lib/data/crm/getAppointmentsReport.ts`
+
+**Exports:** `getAppointmentsReport`
+
+**Tables:** `brokers`, `crm_appointment_types`, `crm_appointment_outcomes`, `crm_appointments`
+
+**Selected columns:** `crm_slug`, `display_name`, `photo_url`, `id`, `name`
+
+**Cache keys:** `crm-appointments-report-v1`
+
+**Cache tags:** `'crm-appointments', 'crm-reporting'`
+
+---
+
 ### `lib/data/crm/getAudienceEligiblePeople.ts`
 
 **Exports:** `AUDIENCE_EXCLUDED_TAG_PATTERNS`, `isAudienceExcludedByTag`, `getAudienceEligiblePeople`
@@ -301,6 +343,30 @@ Companion files:
 **Tables:** `crm_suppressions`, `crm_people`
 
 **Selected columns:** `person_id`, `id`, `first_name`, `last_name`, `emails`, `phones`, `deleted`, `tags`
+
+---
+
+### `lib/data/crm/getBatchEmailsReport.ts`
+
+**Exports:** `getBatchEmailsReport`
+
+**Tables:** `email_events`, `brokers`
+
+**Selected columns:** `message_id`, `broker`, `crm_slug`, `display_name`
+
+**Cache keys:** `crm-batch-emails-report-v1`
+
+**Cache tags:** `'crm-batch-emails', 'crm-reporting', 'crm-email-reporting'`
+
+---
+
+### `lib/data/crm/getBlockedNumber.ts`
+
+**Exports:** `isNumberBlocked`, `isStirSpamSuspected`
+
+**Tables:** `crm_blocked_numbers`
+
+**Selected columns:** `id`
 
 ---
 
@@ -328,6 +394,34 @@ Companion files:
 
 ---
 
+### `lib/data/crm/getCallLogsReport.ts`
+
+**Exports:** `CALL_LOGS_PAGE_SIZE`, `getCallLogsReport`
+
+**Tables:** `brokers`, `crm_timeline`
+
+**Selected columns:** `crm_slug`, `display_name`, `id`, `ts`, `kind`, `broker`, `person_id`, `payload`, `body`, `crm_people!inner(name)`
+
+**Cache keys:** `crm-call-logs-v1`
+
+**Cache tags:** `'crm-call-logs', 'crm-reporting'`
+
+---
+
+### `lib/data/crm/getCallsReport.ts`
+
+**Exports:** `getCallsReport`
+
+**Tables:** `brokers`, `crm_timeline`
+
+**Selected columns:** `crm_slug`, `display_name`, `photo_url`, `person_id`, `payload`
+
+**Cache keys:** `crm-calls-report-v1`
+
+**Cache tags:** `'crm-calls', 'crm-reporting'`
+
+---
+
 ### `lib/data/crm/getComposeAudienceOptions.ts`
 
 **Exports:** `getComposeAudienceOptions`
@@ -344,6 +438,20 @@ Companion files:
 
 ---
 
+### `lib/data/crm/getContactAttemptsReport.ts`
+
+**Exports:** `getContactAttemptsReport`
+
+**Tables:** `crm_timeline`, `brokers`
+
+**Selected columns:** `person_id`, `crm_people!inner(source`, `assigned_broker)`, `crm_slug`
+
+**Cache keys:** `crm-contact-attempts-v1`
+
+**Cache tags:** `'crm-contact-attempts', 'crm-reporting'`
+
+---
+
 ### `lib/data/crm/getContactBehaviorSummary.ts`
 
 **Exports:** `topByCount`, `deriveIntentSignals`, `getContactBehaviorSummary`
@@ -351,6 +459,16 @@ Companion files:
 **Tables:** `visitor_sessions`, `visitor_events`
 
 **Selected columns:** `session_id`, `first_seen_at`, `last_seen_at`, `event_type`, `event_at`, `page_url`, `page_category`, `listing_mls`, `listing_street`, `metadata`
+
+---
+
+### `lib/data/crm/getContactConversation.ts`
+
+**Exports:** `CONVERSATION_KINDS`, `getContactConversation`
+
+**Tables:** `crm_timeline`
+
+**Selected columns:** `id`, `ts`, `kind`, `title`, `body`, `payload`, `broker`
 
 ---
 
@@ -465,6 +583,16 @@ Companion files:
 **Exports:** `normalizeBulkJobStatus`, `computeProgress`, `buildBulkJobView`, `getCrmBulkJob`, `getRecentCrmBulkJobs`
 
 **Tables:** `crm_bulk_jobs`
+
+---
+
+### `lib/data/crm/getCrmCompanySettings.ts`
+
+**Exports:** `DEFAULT_COMPANY_SETTINGS`, `getCrmCompanySettings`
+
+**Tables:** `crm_company_settings`
+
+**Cache tags:** `'crm-company-settings'`
 
 ---
 
@@ -620,6 +748,36 @@ Companion files:
 
 ---
 
+### `lib/data/crm/getDashboardKpis.ts`
+
+**Exports:** `getDashboardKpis`
+
+**Tables:** `crm_timeline`
+
+**Selected columns:** `id`, `crm_people!inner(assigned_broker)`
+
+---
+
+### `lib/data/crm/getDashboardRecentActivity.ts`
+
+**Exports:** `getDashboardRecentActivity`
+
+**Tables:** `crm_people`, `crm_timeline`, `crm_contact_points`
+
+**Selected columns:** `id`, `name`, `picture_url`, `stage`, `assigned_broker`, `last_activity_at`, `person_id`, `kind`, `title`, `ts`, `value`, `is_primary`
+
+---
+
+### `lib/data/crm/getDealScopeRow.ts`
+
+**Exports:** `getDealScopeRow`
+
+**Tables:** `crm_deals`
+
+**Selected columns:** `assigned_broker`, `crm_people(assigned_broker)`
+
+---
+
 ### `lib/data/crm/getEmailCohortRecipients.ts`
 
 **Exports:** `firstEmail`, `getEmailCohortRecipients`, `getCrmTemplateForSend`
@@ -656,11 +814,11 @@ Companion files:
 
 ### `lib/data/crm/getGlobalActivityFeed.ts`
 
-**Exports:** `getGlobalActivityFeed`
+**Exports:** `ACTIVITY_TYPES`, `ALL_ACTIVITY_TYPE_KEYS`, `kindsForTypes`, `getGlobalActivityFeed`
 
 **Tables:** `crm_timeline`, `crm_people`
 
-**Selected columns:** `id`, `ts`, `kind`, `title`, `body`, `payload`, `broker`, `source`, `person_id`, `name`, `first_name`, `last_name`
+**Selected columns:** `id`, `name`, `first_name`, `last_name`
 
 ---
 
@@ -683,6 +841,26 @@ Companion files:
 **Selected columns:** `id`, `source`, `display_name`, `assigned_broker_slug`, `assigned_group_id`, `assigned_pond_id`, `automation_id`, `archived`, `created_at`, `updated_at`, `flow_id`, `position`, `condition_match`, `conditions`
 
 **Cache tags:** `'lead-flows'`
+
+---
+
+### `lib/data/crm/getLeadSmsRecipients.ts`
+
+**Exports:** `getLeadSmsRecipients`
+
+---
+
+### `lib/data/crm/getLeadSourcesReport.ts`
+
+**Exports:** `getLeadSourcesReport`
+
+**Tables:** `brokers`, `crm_timeline`, `crm_tasks`, `crm_appointments`
+
+**Selected columns:** `crm_slug`, `id`, `crm_people!inner(assigned_broker)`, `crm_people!inner(source`, `assigned_broker)`, `ts`, `kind`, `broker`, `completed_at`, `assigned_broker`, `start_at`, `broker_slug`, `crm_people!inner(source)`
+
+**Cache keys:** `crm-lead-sources-v1`
+
+**Cache tags:** `'crm-lead-sources', 'crm-reporting'`
 
 ---
 
@@ -717,6 +895,20 @@ Companion files:
 **Tables:** `crm_timeline`
 
 **Selected columns:** `payload`
+
+---
+
+### `lib/data/crm/getOverviewReport.ts`
+
+**Exports:** `getOverviewReport`
+
+**Tables:** `brokers`, `crm_timeline`, `crm_tasks`, `crm_appointments`
+
+**Selected columns:** `crm_slug`, `id`, `crm_people!inner(assigned_broker)`, `ts`, `kind`, `completed_at`, `start_at`
+
+**Cache keys:** `crm-overview-report-v1`
+
+**Cache tags:** `'crm-overview', 'crm-reporting'`
 
 ---
 
@@ -770,6 +962,20 @@ Companion files:
 
 ---
 
+### `lib/data/crm/getPropertiesReport.ts`
+
+**Exports:** `getPropertiesReport`
+
+**Tables:** `visitor_events`, `listings`
+
+**Selected columns:** `id`, `listing_mls`, `page_url`, `event_at`, `ListNumber`, `StreetNumber`, `StreetName`, `City`, `PostalCode`, `Latitude`, `Longitude`
+
+**Cache keys:** `crm-properties-v1`
+
+**Cache tags:** `'crm-properties', 'crm-reporting'`
+
+---
+
 ### `lib/data/crm/getRecordingOwnerBroker.ts`
 
 **Exports:** `getRecordingOwnerBroker`
@@ -795,6 +1001,20 @@ Companion files:
 **Tables:** `crm_people`, `crm_contact_points`
 
 **Selected columns:** `id`, `fub_legacy_id`, `phones`, `assigned_broker`, `name`, `first_name`, `custom`, `value`
+
+---
+
+### `lib/data/crm/getSpeedToLeadReport.ts`
+
+**Exports:** `getSpeedToLeadReport`
+
+**Tables:** `brokers`, `crm_timeline`
+
+**Selected columns:** `crm_slug`, `person_id`, `ts`, `crm_people!inner(source`, `assigned_broker)`, `kind`
+
+**Cache keys:** `crm-speed-to-lead-v1`
+
+**Cache tags:** `'crm-speed-to-lead', 'crm-reporting'`
 
 ---
 
@@ -827,6 +1047,20 @@ Companion files:
 **Selected columns:** `id`, `key`, `label`, `position`, `is_active`, `is_protected`
 
 **Cache tags:** `CRM_TASK_TYPES_TAG`
+
+---
+
+### `lib/data/crm/getTextsReport.ts`
+
+**Exports:** `getTextsReport`
+
+**Tables:** `crm_timeline`, `brokers`
+
+**Selected columns:** `person_id`, `crm_slug`, `display_name`, `photo_url`
+
+**Cache keys:** `crm-texts-report-v2`
+
+**Cache tags:** `'crm-texts', 'crm-reporting'`
 
 ---
 
@@ -875,6 +1109,16 @@ Companion files:
 ### `lib/data/crm/isSustainedHotAnonymous.ts`
 
 **Exports:** `SUSTAINED_HOT_ANONYMOUS_DEFAULTS`, `isAlreadyIdentified`, `evaluateSustainedHotAnonymous`, `isSustainedHotAnonymous`
+
+---
+
+### `lib/data/crm/leadAssignedBroker.ts`
+
+**Exports:** `resolveLeadAssignedBroker`, `getGuestAlertLead`
+
+**Tables:** `crm_people`, `guest_search_alerts`
+
+**Selected columns:** `assigned_broker`, `email`, `fub_person_id`
 
 ---
 
@@ -1537,28 +1781,30 @@ Companion files:
 | `asset_library` | `getAreaGuideVideos()`, `getAreaGuideVideo()`, `getGeoTileImages()`, `getGolfImages()`, `pickGolfImage()`, `getLifestyleImages()`, `getSurfaceImages()`, `pickSurfaceImage()`, `getSurfaceImage()` <br /> `lib/data/media/getAreaGuideVideos.ts` · `lib/data/media/getGeoTileImages.ts` · `lib/data/media/getGolfImages.ts` · `lib/data/media/getLifestyleImages.ts` · `lib/data/media/getSurfaceImages.ts` |
 | `blog_posts` | `getBlogPostBySlug()`, `getBlogPostsBySlugs()`, `getPopularBlogSlugs()`, `getPublishedBlogPosts()`, `getRecentBlogPosts()`, `getRelatedBlogPosts()`, `getMattBrokerRecord()`, `getBrokerSelfRecord()`, `updateBrokerById()`, `getBrokerBySlug()`, `getBrokerForOgBySlug()`, `getBlogPostForOgBySlug()`, `searchBrokersByDisplayName()`, `getBrokers()` <br /> `lib/data/blog/getBlogPostBySlug.ts` · `lib/data/blog/getBlogPostsBySlugs.ts` · `lib/data/blog/getPopularBlogSlugs.ts` · `lib/data/blog/getPublishedBlogPosts.ts` · `lib/data/blog/getRecentBlogPosts.ts` · `lib/data/blog/getRelatedBlogPosts.ts` · `lib/data/brokers/getBrokers.ts` |
 | `boundaries` | `getSyncState()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `findCommunityIdByName()`, `findCommunityIdBySlug()`, `insertCommunityRowReturnId()`, `findPropertyIdByAddress()`, `insertPropertyAddressOnly()`, `insertPropertyFullRow()`, `updatePropertyById()`, `findListingBySnakeKey()`, `upsertListingSnakeRow()`, `insertStatusHistoryRow()`, `insertPriceHistoryRow()`, `replaceListingPhotosForKey()`, `deleteListingAgentsForKey()`, `insertListingAgentRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectNewExpiredListings()`, `getExistingExpiredListingKeys()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `countListingsByOr()`, `countAllListingsByListingKey()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()` <br /> `lib/data/sync/syncWrites.ts` |
-| `brokers` | `getBlogPostBySlug()`, `getPublishedBlogPosts()`, `getMattBrokerRecord()`, `getBrokerSelfRecord()`, `updateBrokerById()`, `getBrokerBySlug()`, `getBrokerForOgBySlug()`, `getBlogPostForOgBySlug()`, `searchBrokersByDisplayName()`, `getBrokers()`, `getBrokerTelephony()`, `mapCrmBrokerRow()`, `mapCrmBrokerRows()`, `getCrmBrokers()`, `getCrmBrokerBySlug()` <br /> `lib/data/blog/getBlogPostBySlug.ts` · `lib/data/blog/getPublishedBlogPosts.ts` · `lib/data/brokers/getBrokers.ts` · `lib/data/crm/getBrokerTelephony.ts` · `lib/data/crm/getCrmBrokers.ts` |
+| `brokers` | `getBlogPostBySlug()`, `getPublishedBlogPosts()`, `getMattBrokerRecord()`, `getBrokerSelfRecord()`, `updateBrokerById()`, `getBrokerBySlug()`, `getBrokerForOgBySlug()`, `getBlogPostForOgBySlug()`, `searchBrokersByDisplayName()`, `getBrokers()`, `resolveDateRange()`, `getAgentActivityReport()`, `getAgentGoalsReport()`, `getAppointmentsReport()`, `getBatchEmailsReport()`, `getBrokerTelephony()`, `CALL_LOGS_PAGE_SIZE()`, `getCallLogsReport()`, `getCallsReport()`, `getContactAttemptsReport()`, `mapCrmBrokerRow()`, `mapCrmBrokerRows()`, `getCrmBrokers()`, `getCrmBrokerBySlug()`, `getLeadSourcesReport()`, `getOverviewReport()`, `getSpeedToLeadReport()`, `getTextsReport()` <br /> `lib/data/blog/getBlogPostBySlug.ts` · `lib/data/blog/getPublishedBlogPosts.ts` · `lib/data/brokers/getBrokers.ts` · `lib/data/crm/getAgentActivityReport.ts` · `lib/data/crm/getAgentGoalsReport.ts` · `lib/data/crm/getAppointmentsReport.ts` · `lib/data/crm/getBatchEmailsReport.ts` · `lib/data/crm/getBrokerTelephony.ts` · `lib/data/crm/getCallLogsReport.ts` · `lib/data/crm/getCallsReport.ts` · `lib/data/crm/getContactAttemptsReport.ts` · `lib/data/crm/getCrmBrokers.ts` · `lib/data/crm/getLeadSourcesReport.ts` · `lib/data/crm/getOverviewReport.ts` · `lib/data/crm/getSpeedToLeadReport.ts` · `lib/data/crm/getTextsReport.ts` |
 | `cities` | `getCityMetadataByNames()`, `getCityMetadataByName()`, `getCityBoundaryGeoJSON()`, `getAllCitiesForAdminUpload()`, `getAllNeighborhoodsForAdminUpload()`, `getAllCommunitiesForAdminUpload()`, `updateHeroEntityById()`, `insertHeroEntityRow()`, `getPageImageUrlsForPage()`, `insertPageImageRow()`, `updateCityById()`, `getCityIdByName()`, `getHeroPhotosByListingKeys()`, `getOpenHousesInRange()`, `getListingDetailPhotos()`, `getListingKeysForBrokerByLicense()`, `getListingKeysForBrokerByEmail()`, `getListingKeysByListAgentEmail()`, `getListingDetailAgents()`, `getOpenHouseById()`, `getListingDetailOpenHouses()`, `getListingDetailVideos()`, `upsertListingEmbedding()`, `getPendingListingHistoryEvents()`, `getListingKeysWithPriceChangeSince()`, `getListingDetailHistory()`, `resolveCommunityChainBySlug()` <br /> `lib/data/cities/getCityMetadata.ts` · `lib/data/listings/getListingDetailBundles.ts` |
 | `cmas` | `pickPrimary()`, `mapCmaRow()`, `getContactIdentityStrip()`, `getSyncState()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `findCommunityIdByName()`, `findCommunityIdBySlug()`, `insertCommunityRowReturnId()`, `findPropertyIdByAddress()`, `insertPropertyAddressOnly()`, `insertPropertyFullRow()`, `updatePropertyById()`, `findListingBySnakeKey()`, `upsertListingSnakeRow()`, `insertStatusHistoryRow()`, `insertPriceHistoryRow()`, `replaceListingPhotosForKey()`, `deleteListingAgentsForKey()`, `insertListingAgentRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectNewExpiredListings()`, `getExistingExpiredListingKeys()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `countListingsByOr()`, `countAllListingsByListingKey()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()` <br /> `lib/data/crm/getContactIdentityStrip.ts` · `lib/data/sync/syncWrites.ts` |
 | `communities` | `getCityMetadataByNames()`, `getCityMetadataByName()`, `getCityBoundaryGeoJSON()`, `getAllCitiesForAdminUpload()`, `getAllNeighborhoodsForAdminUpload()`, `getAllCommunitiesForAdminUpload()`, `updateHeroEntityById()`, `insertHeroEntityRow()`, `getPageImageUrlsForPage()`, `insertPageImageRow()`, `updateCityById()`, `getCityIdByName()`, `getResortEntityKeysFromFlags()`, `findCommunityBySlug()`, `updateCommunityRowById()`, `insertCommunityRow()`, `upsertSubdivisionResortFlag()`, `bulkUpsertResortFlags()`, `getCommunitiesWithCityNeighborhoodByNames()`, `countCommunitiesNotNull()`, `getCommunitiesForSitemapJoin()`, `getCommunitiesForSitemap()`, `getCommunitiesInNeighborhoodLite()`, `getCommunityNameBySlugIlike()`, `getCommunityDetailByName()`, `getCommunityNeighborhoodCityBySlug()`, `isSubdivisionFlagged()`, `getAllSubdivisionFlags()`, `getHeroPhotosByListingKeys()`, `getOpenHousesInRange()`, `getListingDetailPhotos()`, `getListingKeysForBrokerByLicense()`, `getListingKeysForBrokerByEmail()`, `getListingKeysByListAgentEmail()`, `getListingDetailAgents()`, `getOpenHouseById()`, `getListingDetailOpenHouses()`, `getListingDetailVideos()`, `upsertListingEmbedding()`, `getPendingListingHistoryEvents()`, `getListingKeysWithPriceChangeSince()`, `getListingDetailHistory()`, `resolveCommunityChainBySlug()`, `getSyncState()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `findCommunityIdByName()`, `findCommunityIdBySlug()`, `insertCommunityRowReturnId()`, `findPropertyIdByAddress()`, `insertPropertyAddressOnly()`, `insertPropertyFullRow()`, `updatePropertyById()`, `findListingBySnakeKey()`, `upsertListingSnakeRow()`, `insertStatusHistoryRow()`, `insertPriceHistoryRow()`, `replaceListingPhotosForKey()`, `deleteListingAgentsForKey()`, `insertListingAgentRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectNewExpiredListings()`, `getExistingExpiredListingKeys()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `countListingsByOr()`, `countAllListingsByListingKey()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()` <br /> `lib/data/cities/getCityMetadata.ts` · `lib/data/communities/subdivisionFlags.ts` · `lib/data/listings/getListingDetailBundles.ts` · `lib/data/sync/syncWrites.ts` |
-| `crm_appointment_outcomes` | `CRM_APPOINTMENT_TYPES_TAG()`, `CRM_APPOINTMENT_OUTCOMES_TAG()`, `getAppointments()`, `getAppointmentTypes()`, `getAppointmentOutcomes()` <br /> `lib/data/crm/getAppointments.ts` |
-| `crm_appointment_types` | `CRM_APPOINTMENT_TYPES_TAG()`, `CRM_APPOINTMENT_OUTCOMES_TAG()`, `getAppointments()`, `getAppointmentTypes()`, `getAppointmentOutcomes()` <br /> `lib/data/crm/getAppointments.ts` |
-| `crm_appointments` | `CRM_APPOINTMENT_TYPES_TAG()`, `CRM_APPOINTMENT_OUTCOMES_TAG()`, `getAppointments()`, `getAppointmentTypes()`, `getAppointmentOutcomes()` <br /> `lib/data/crm/getAppointments.ts` |
+| `crm_appointment_outcomes` | `CRM_APPOINTMENT_TYPES_TAG()`, `CRM_APPOINTMENT_OUTCOMES_TAG()`, `getAppointments()`, `getAppointmentTypes()`, `getAppointmentOutcomes()`, `getAppointmentsReport()` <br /> `lib/data/crm/getAppointments.ts` · `lib/data/crm/getAppointmentsReport.ts` |
+| `crm_appointment_types` | `CRM_APPOINTMENT_TYPES_TAG()`, `CRM_APPOINTMENT_OUTCOMES_TAG()`, `getAppointments()`, `getAppointmentTypes()`, `getAppointmentOutcomes()`, `getAppointmentsReport()` <br /> `lib/data/crm/getAppointments.ts` · `lib/data/crm/getAppointmentsReport.ts` |
+| `crm_appointments` | `resolveDateRange()`, `getAgentActivityReport()`, `CRM_APPOINTMENT_TYPES_TAG()`, `CRM_APPOINTMENT_OUTCOMES_TAG()`, `getAppointments()`, `getAppointmentTypes()`, `getAppointmentOutcomes()`, `getAppointmentsReport()`, `getLeadSourcesReport()`, `getOverviewReport()` <br /> `lib/data/crm/getAgentActivityReport.ts` · `lib/data/crm/getAppointments.ts` · `lib/data/crm/getAppointmentsReport.ts` · `lib/data/crm/getLeadSourcesReport.ts` · `lib/data/crm/getOverviewReport.ts` |
 | `crm_assignment_config` | `ASSIGNMENT_CONFIG_FALLBACK()`, `normalizeStrategy()`, `mapAssignmentConfig()`, `getCrmAssignmentConfig()` <br /> `lib/data/crm/getCrmAssignmentConfig.ts` |
 | `crm_assignment_rules` | `ASSIGNMENT_CONFIG_FALLBACK()`, `normalizeStrategy()`, `mapAssignmentConfig()`, `getCrmAssignmentConfig()` <br /> `lib/data/crm/getCrmAssignmentConfig.ts` |
 | `crm_automation_rules` | `CRM_AUTOMATION_RULES_TAG()`, `isTriggerType()`, `isActionType()`, `mapRule()`, `matchRules()`, `getCrmAutomationRules()`, `getActiveRulesForTrigger()` <br /> `lib/data/crm/getCrmAutomationRules.ts` |
+| `crm_blocked_numbers` | `isNumberBlocked()`, `isStirSpamSuspected()` <br /> `lib/data/crm/getBlockedNumber.ts` |
 | `crm_broker_alerts` | `recentHealthAlertExists()`, `insertHealthAlert()` <br /> `lib/data/crm/healthAlertQueue.ts` |
 | `crm_bulk_jobs` | `normalizeBulkJobStatus()`, `computeProgress()`, `buildBulkJobView()`, `getCrmBulkJob()`, `getRecentCrmBulkJobs()` <br /> `lib/data/crm/getCrmBulkJob.ts` |
-| `crm_contact_points` | `decideNativeLeadAction()`, `nativeLeadName()`, `ensureNativeLead()`, `cleanTags()`, `enrichNativeLead()`, `createNativeTask()`, `shouldCreatePerson()`, `inboundLeadName()`, `findOrCreatePersonByPhone()`, `CRM_SUPPRESSIONS_TAG()`, `COMPLIANCE_REASON_MARKERS()`, `isComplianceReason()`, `normalizeSuppressionChannel()`, `clampLimit()`, `clampOffset()`, `resolveSuppressionValue()`, `buildSuppressionRows()`, `getCrmSuppressions()`, `getPersonIdsByEmail()`, `getPersonPrimaryEmail()`, `getSendTarget()`, `normalizeEmail()`, `normalizePhone()`, `dedupeContactPoints()`, `resolvePersonIdentity()` <br /> `lib/data/crm/ensureNativeLead.ts` · `lib/data/crm/findOrCreatePersonByPhone.ts` · `lib/data/crm/getCrmSuppressions.ts` · `lib/data/crm/getPersonIdsByEmail.ts` · `lib/data/crm/getPersonPrimaryEmail.ts` · `lib/data/crm/getSendTarget.ts` · `lib/data/crm/resolvePersonIdentity.ts` |
+| `crm_company_settings` | `DEFAULT_COMPANY_SETTINGS()`, `getCrmCompanySettings()` <br /> `lib/data/crm/getCrmCompanySettings.ts` |
+| `crm_contact_points` | `decideNativeLeadAction()`, `nativeLeadName()`, `ensureNativeLead()`, `cleanTags()`, `enrichNativeLead()`, `createNativeTask()`, `shouldCreatePerson()`, `inboundLeadName()`, `findOrCreatePersonByPhone()`, `CRM_SUPPRESSIONS_TAG()`, `COMPLIANCE_REASON_MARKERS()`, `isComplianceReason()`, `normalizeSuppressionChannel()`, `clampLimit()`, `clampOffset()`, `resolveSuppressionValue()`, `buildSuppressionRows()`, `getCrmSuppressions()`, `getDashboardRecentActivity()`, `getPersonIdsByEmail()`, `getPersonPrimaryEmail()`, `getSendTarget()`, `normalizeEmail()`, `normalizePhone()`, `dedupeContactPoints()`, `resolvePersonIdentity()` <br /> `lib/data/crm/ensureNativeLead.ts` · `lib/data/crm/findOrCreatePersonByPhone.ts` · `lib/data/crm/getCrmSuppressions.ts` · `lib/data/crm/getDashboardRecentActivity.ts` · `lib/data/crm/getPersonIdsByEmail.ts` · `lib/data/crm/getPersonPrimaryEmail.ts` · `lib/data/crm/getSendTarget.ts` · `lib/data/crm/resolvePersonIdentity.ts` |
 | `crm_conversation_state` | `CONVERSATION_STATUSES()`, `isValidConversationStatus()`, `isAssignableBroker()`, `effectiveStatus()`, `needsReply()`, `matchesScope()`, `deriveConversationFromMessages()`, `getInboxQueue()`, `getConversationThread()` <br /> `lib/data/crm/getInboxQueue.ts` |
 | `crm_deal_files` | `getCrmDeal()` <br /> `lib/data/crm/getCrmDeal.ts` |
 | `crm_deal_splits` | `getCrmDeal()` <br /> `lib/data/crm/getCrmDeal.ts` |
-| `crm_deals` | `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `getCrmDeal()` <br /> `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getCrmDeal.ts` |
+| `crm_deals` | `getAgentGoalsReport()`, `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `getCrmDeal()`, `getDealScopeRow()` <br /> `lib/data/crm/getAgentGoalsReport.ts` · `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getCrmDeal.ts` · `lib/data/crm/getDealScopeRow.ts` |
 | `crm_field_definitions` | `CRM_FIELD_TYPES()`, `CRM_FIELD_DEFINITIONS_TAG()`, `normalizeFieldType()`, `normalizeFieldOptions()`, `mapFieldDefinitionRow()`, `getCrmFieldValue()`, `getCrmFieldDefinitions()` <br /> `lib/data/crm/getCrmFieldDefinitions.ts` |
 | `crm_group_members` | `getCrmGroups()` <br /> `lib/data/crm/getCrmGroups.ts` |
 | `crm_groups` | `getCrmGroups()` <br /> `lib/data/crm/getCrmGroups.ts` |
 | `crm_newsletter_segments` | `getCrmNewsletterSegments()` <br /> `lib/data/crm/getCrmNewsletterSegments.ts` |
-| `crm_people` | `CRM_PEOPLE_SELECT()`, `buildCrmPeopleQuery()`, `HOT_ANONYMOUS_SOURCE()`, `captureHotAnonymous()`, `decideNativeLeadAction()`, `nativeLeadName()`, `ensureNativeLead()`, `cleanTags()`, `enrichNativeLead()`, `createNativeTask()`, `shouldCreatePerson()`, `inboundLeadName()`, `findOrCreatePersonByPhone()`, `AUDIENCE_EXCLUDED_TAG_PATTERNS()`, `isAudienceExcludedByTag()`, `getAudienceEligiblePeople()`, `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `pickPrimary()`, `mapCmaRow()`, `getContactIdentityStrip()`, `humanizeRelationshipType()`, `getContactRelationships()`, `getCrmSignalFreshness()`, `getCrmLeadVolume()`, `getCrmContactTotal()`, `CRM_SUPPRESSIONS_TAG()`, `COMPLIANCE_REASON_MARKERS()`, `isComplianceReason()`, `normalizeSuppressionChannel()`, `clampLimit()`, `clampOffset()`, `resolveSuppressionValue()`, `buildSuppressionRows()`, `getCrmSuppressions()`, `CRM_TAGS_TAG()`, `tallyTagUsage()`, `getCrmTags()`, `firstEmail()`, `getEmailCohortRecipients()`, `getCrmTemplateForSend()`, `getGlobalActivityFeed()`, `mapMarketReportSubscriberRow()`, `getActiveMarketReportSubscriptions()`, `getMarketReportSubscribers()`, `getPersonContact()`, `getSendTarget()`, `getSuppressionSignals()`, `getPendingAudienceRemovals()`, `resolvePeopleForRemoval()`, `markAudienceRemovalsProcessed()`, `NATIVE_DEFAULT_BROKER()`, `buildNativePersonRow()`, `nativeCreateGaps()`, `normalizeEmail()`, `normalizePhone()`, `dedupeContactPoints()`, `resolvePersonIdentity()`, `subscribeToNewsletter()`, `unsubscribeNewsletterByToken()`, `setSubscriberStatus()`, `listNewsletterSubscribers()`, `newsletterSubscriberCounts()`, `getActiveSubscribersForSend()`, `setSubscriberStatusByEmail()`, `markSubscribersSent()`, `createNewsletterDraft()`, `updateNewsletter()`, `listNewsletters()`, `getNewsletter()`, `deleteNewsletterDraft()`, `recordRecipientSend()`, `recordNewsletterEvent()`, `getNewsletterStats()`, `getNewsletterRecipients()`, `getNewsletterMembershipForLead()`, `getCrmPersonContact()` <br /> `lib/data/crm/buildCrmPeopleQuery.ts` · `lib/data/crm/captureHotAnonymous.ts` · `lib/data/crm/ensureNativeLead.ts` · `lib/data/crm/findOrCreatePersonByPhone.ts` · `lib/data/crm/getAudienceEligiblePeople.ts` · `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getContactIdentityStrip.ts` · `lib/data/crm/getContactRelationships.ts` · `lib/data/crm/getCrmSignalFreshness.ts` · `lib/data/crm/getCrmSuppressions.ts` · `lib/data/crm/getCrmTags.ts` · `lib/data/crm/getEmailCohortRecipients.ts` · `lib/data/crm/getGlobalActivityFeed.ts` · `lib/data/crm/getMarketReportSubscribers.ts` · `lib/data/crm/getPersonContact.ts` · `lib/data/crm/getSendTarget.ts` · `lib/data/crm/getSuppressionSignals.ts` · `lib/data/crm/metaAudienceQueue.ts` · `lib/data/crm/nativeCreate.ts` · `lib/data/crm/resolvePersonIdentity.ts` · `lib/data/newsletter/index.ts` |
+| `crm_people` | `CRM_PEOPLE_SELECT()`, `buildCrmPeopleQuery()`, `HOT_ANONYMOUS_SOURCE()`, `captureHotAnonymous()`, `decideNativeLeadAction()`, `nativeLeadName()`, `ensureNativeLead()`, `cleanTags()`, `enrichNativeLead()`, `createNativeTask()`, `shouldCreatePerson()`, `inboundLeadName()`, `findOrCreatePersonByPhone()`, `AUDIENCE_EXCLUDED_TAG_PATTERNS()`, `isAudienceExcludedByTag()`, `getAudienceEligiblePeople()`, `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `pickPrimary()`, `mapCmaRow()`, `getContactIdentityStrip()`, `humanizeRelationshipType()`, `getContactRelationships()`, `getCrmSignalFreshness()`, `getCrmLeadVolume()`, `getCrmContactTotal()`, `CRM_SUPPRESSIONS_TAG()`, `COMPLIANCE_REASON_MARKERS()`, `isComplianceReason()`, `normalizeSuppressionChannel()`, `clampLimit()`, `clampOffset()`, `resolveSuppressionValue()`, `buildSuppressionRows()`, `getCrmSuppressions()`, `CRM_TAGS_TAG()`, `tallyTagUsage()`, `getCrmTags()`, `getDashboardRecentActivity()`, `firstEmail()`, `getEmailCohortRecipients()`, `getCrmTemplateForSend()`, `ACTIVITY_TYPES()`, `ALL_ACTIVITY_TYPE_KEYS()`, `kindsForTypes()`, `getGlobalActivityFeed()`, `mapMarketReportSubscriberRow()`, `getActiveMarketReportSubscriptions()`, `getMarketReportSubscribers()`, `getPersonContact()`, `getSendTarget()`, `getSuppressionSignals()`, `resolveLeadAssignedBroker()`, `getGuestAlertLead()`, `getPendingAudienceRemovals()`, `resolvePeopleForRemoval()`, `markAudienceRemovalsProcessed()`, `NATIVE_DEFAULT_BROKER()`, `buildNativePersonRow()`, `nativeCreateGaps()`, `normalizeEmail()`, `normalizePhone()`, `dedupeContactPoints()`, `resolvePersonIdentity()`, `subscribeToNewsletter()`, `unsubscribeNewsletterByToken()`, `setSubscriberStatus()`, `listNewsletterSubscribers()`, `newsletterSubscriberCounts()`, `getActiveSubscribersForSend()`, `setSubscriberStatusByEmail()`, `markSubscribersSent()`, `createNewsletterDraft()`, `updateNewsletter()`, `listNewsletters()`, `getNewsletter()`, `deleteNewsletterDraft()`, `recordRecipientSend()`, `recordNewsletterEvent()`, `getNewsletterStats()`, `getNewsletterRecipients()`, `getNewsletterMembershipForLead()`, `getCrmPersonContact()` <br /> `lib/data/crm/buildCrmPeopleQuery.ts` · `lib/data/crm/captureHotAnonymous.ts` · `lib/data/crm/ensureNativeLead.ts` · `lib/data/crm/findOrCreatePersonByPhone.ts` · `lib/data/crm/getAudienceEligiblePeople.ts` · `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getContactIdentityStrip.ts` · `lib/data/crm/getContactRelationships.ts` · `lib/data/crm/getCrmSignalFreshness.ts` · `lib/data/crm/getCrmSuppressions.ts` · `lib/data/crm/getCrmTags.ts` · `lib/data/crm/getDashboardRecentActivity.ts` · `lib/data/crm/getEmailCohortRecipients.ts` · `lib/data/crm/getGlobalActivityFeed.ts` · `lib/data/crm/getMarketReportSubscribers.ts` · `lib/data/crm/getPersonContact.ts` · `lib/data/crm/getSendTarget.ts` · `lib/data/crm/getSuppressionSignals.ts` · `lib/data/crm/leadAssignedBroker.ts` · `lib/data/crm/metaAudienceQueue.ts` · `lib/data/crm/nativeCreate.ts` · `lib/data/crm/resolvePersonIdentity.ts` · `lib/data/newsletter/index.ts` |
 | `crm_pond_members` | `getCrmPonds()` <br /> `lib/data/crm/getCrmPonds.ts` |
 | `crm_ponds` | `getCrmPonds()` <br /> `lib/data/crm/getCrmPonds.ts` |
 | `crm_relationships` | `humanizeRelationshipType()`, `getContactRelationships()` <br /> `lib/data/crm/getContactRelationships.ts` |
@@ -1571,15 +1817,15 @@ Companion files:
 | `crm_suppressions` | `AUDIENCE_EXCLUDED_TAG_PATTERNS()`, `isAudienceExcludedByTag()`, `getAudienceEligiblePeople()`, `CRM_SUPPRESSIONS_TAG()`, `COMPLIANCE_REASON_MARKERS()`, `isComplianceReason()`, `normalizeSuppressionChannel()`, `clampLimit()`, `clampOffset()`, `resolveSuppressionValue()`, `buildSuppressionRows()`, `getCrmSuppressions()`, `getPersonSuppressions()`, `getSuppressionCounts()`, `getSuppressionSignals()`, `GPC_SUPPRESSION_REASON()`, `GPC_SUPPRESSION_CHANNEL()`, `recordGpcSuppression()` <br /> `lib/data/crm/getAudienceEligiblePeople.ts` · `lib/data/crm/getCrmSuppressions.ts` · `lib/data/crm/getPersonSuppressions.ts` · `lib/data/crm/getSuppressionCounts.ts` · `lib/data/crm/getSuppressionSignals.ts` · `lib/data/crm/recordGpcSuppression.ts` |
 | `crm_tags` | `CRM_TAGS_TAG()`, `tallyTagUsage()`, `getCrmTags()` <br /> `lib/data/crm/getCrmTags.ts` |
 | `crm_task_types` | `taskQueueBounds()`, `classifyTaskView()`, `getTaskQueue()`, `CRM_TASK_TYPES_TAG()`, `getCrmTaskTypes()` <br /> `lib/data/crm/getTaskQueue.ts` |
-| `crm_tasks` | `decideNativeLeadAction()`, `nativeLeadName()`, `ensureNativeLead()`, `cleanTags()`, `enrichNativeLead()`, `createNativeTask()`, `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `taskQueueBounds()`, `classifyTaskView()`, `getTaskQueue()`, `CRM_TASK_TYPES_TAG()`, `getCrmTaskTypes()` <br /> `lib/data/crm/ensureNativeLead.ts` · `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getTaskQueue.ts` |
+| `crm_tasks` | `decideNativeLeadAction()`, `nativeLeadName()`, `ensureNativeLead()`, `cleanTags()`, `enrichNativeLead()`, `createNativeTask()`, `resolveDateRange()`, `getAgentActivityReport()`, `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `getLeadSourcesReport()`, `getOverviewReport()`, `taskQueueBounds()`, `classifyTaskView()`, `getTaskQueue()`, `CRM_TASK_TYPES_TAG()`, `getCrmTaskTypes()` <br /> `lib/data/crm/ensureNativeLead.ts` · `lib/data/crm/getAgentActivityReport.ts` · `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getLeadSourcesReport.ts` · `lib/data/crm/getOverviewReport.ts` · `lib/data/crm/getTaskQueue.ts` |
 | `crm_templates` | `CRM_TEMPLATES_ADMIN_TAG()`, `tallyTemplateUsage()`, `computeTemplatePerf()`, `mapTemplateRow()`, `getCrmTemplatesAdmin()`, `firstEmail()`, `getEmailCohortRecipients()`, `getCrmTemplateForSend()` <br /> `lib/data/crm/getCrmTemplatesAdmin.ts` · `lib/data/crm/getEmailCohortRecipients.ts` |
-| `crm_timeline` | `decideNativeLeadAction()`, `nativeLeadName()`, `ensureNativeLead()`, `cleanTags()`, `enrichNativeLead()`, `createNativeTask()`, `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `classifyTimelineKind()`, `buildSnippet()`, `toFeedItem()`, `getContactActivityFeed()`, `getCrmSignalFreshness()`, `getCrmLeadVolume()`, `getCrmContactTotal()`, `getGlobalActivityFeed()`, `CONVERSATION_STATUSES()`, `isValidConversationStatus()`, `isAssignableBroker()`, `effectiveStatus()`, `needsReply()`, `matchesScope()`, `deriveConversationFromMessages()`, `getInboxQueue()`, `getConversationThread()`, `getMmsOwnerBroker()`, `getOutboundCallLead()`, `getRecordingOwnerBroker()` <br /> `lib/data/crm/ensureNativeLead.ts` · `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getContactActivityFeed.ts` · `lib/data/crm/getCrmSignalFreshness.ts` · `lib/data/crm/getGlobalActivityFeed.ts` · `lib/data/crm/getInboxQueue.ts` · `lib/data/crm/getMmsOwnerBroker.ts` · `lib/data/crm/getOutboundCallLead.ts` · `lib/data/crm/getRecordingOwnerBroker.ts` |
+| `crm_timeline` | `decideNativeLeadAction()`, `nativeLeadName()`, `ensureNativeLead()`, `cleanTags()`, `enrichNativeLead()`, `createNativeTask()`, `resolveDateRange()`, `getAgentActivityReport()`, `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `CALL_LOGS_PAGE_SIZE()`, `getCallLogsReport()`, `getCallsReport()`, `classifyTimelineKind()`, `buildSnippet()`, `toFeedItem()`, `getContactActivityFeed()`, `getContactAttemptsReport()`, `CONVERSATION_KINDS()`, `getContactConversation()`, `getCrmSignalFreshness()`, `getCrmLeadVolume()`, `getCrmContactTotal()`, `getDashboardKpis()`, `getDashboardRecentActivity()`, `ACTIVITY_TYPES()`, `ALL_ACTIVITY_TYPE_KEYS()`, `kindsForTypes()`, `getGlobalActivityFeed()`, `CONVERSATION_STATUSES()`, `isValidConversationStatus()`, `isAssignableBroker()`, `effectiveStatus()`, `needsReply()`, `matchesScope()`, `deriveConversationFromMessages()`, `getInboxQueue()`, `getConversationThread()`, `getLeadSourcesReport()`, `getMmsOwnerBroker()`, `getOutboundCallLead()`, `getOverviewReport()`, `getRecordingOwnerBroker()`, `getSpeedToLeadReport()`, `getTextsReport()` <br /> `lib/data/crm/ensureNativeLead.ts` · `lib/data/crm/getAgentActivityReport.ts` · `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getCallLogsReport.ts` · `lib/data/crm/getCallsReport.ts` · `lib/data/crm/getContactActivityFeed.ts` · `lib/data/crm/getContactAttemptsReport.ts` · `lib/data/crm/getContactConversation.ts` · `lib/data/crm/getCrmSignalFreshness.ts` · `lib/data/crm/getDashboardKpis.ts` · `lib/data/crm/getDashboardRecentActivity.ts` · `lib/data/crm/getGlobalActivityFeed.ts` · `lib/data/crm/getInboxQueue.ts` · `lib/data/crm/getLeadSourcesReport.ts` · `lib/data/crm/getMmsOwnerBroker.ts` · `lib/data/crm/getOutboundCallLead.ts` · `lib/data/crm/getOverviewReport.ts` · `lib/data/crm/getRecordingOwnerBroker.ts` · `lib/data/crm/getSpeedToLeadReport.ts` · `lib/data/crm/getTextsReport.ts` |
 | `email_campaigns` | `clampLimit()`, `clampOffset()`, `safeRate()`, `formatRate()`, `sendKey()`, `recoverSendTypes()`, `filterBySendType()`, `collapseSendLog()`, `summarizeEngagement()`, `getEmailSendLog()`, `getEmailEngagementSummary()`, `getBrokerEmailEngagement()`, `getEmailCampaigns()`, `summarizeCampaign()`, `getCampaignEngagement()` <br /> `lib/data/crm/getEmailReporting.ts` |
-| `email_events` | `summarizeEmailEngagement()`, `getContactEmailEngagement()`, `CRM_TEMPLATES_ADMIN_TAG()`, `tallyTemplateUsage()`, `computeTemplatePerf()`, `mapTemplateRow()`, `getCrmTemplatesAdmin()`, `clampLimit()`, `clampOffset()`, `safeRate()`, `formatRate()`, `sendKey()`, `recoverSendTypes()`, `filterBySendType()`, `collapseSendLog()`, `summarizeEngagement()`, `getEmailSendLog()`, `getEmailEngagementSummary()`, `getBrokerEmailEngagement()`, `getEmailCampaigns()`, `summarizeCampaign()`, `getCampaignEngagement()`, `groupEnrollmentStatus()`, `buildWorkflowAnalytics()`, `getWorkflowAnalytics()`, `stepEmailKey()`, `tallyStepEmailSends()`, `tallyCurrentStep()`, `buildStepAnalytics()`, `getWorkflowStepAnalytics()`, `insertEmailEvent()`, `deleteEmailEventByDedupeKey()` <br /> `lib/data/crm/getContactEmailEngagement.ts` · `lib/data/crm/getCrmTemplatesAdmin.ts` · `lib/data/crm/getEmailReporting.ts` · `lib/data/crm/getWorkflowAnalytics.ts` · `lib/data/crm/insertEmailEvent.ts` |
+| `email_events` | `getBatchEmailsReport()`, `summarizeEmailEngagement()`, `getContactEmailEngagement()`, `CRM_TEMPLATES_ADMIN_TAG()`, `tallyTemplateUsage()`, `computeTemplatePerf()`, `mapTemplateRow()`, `getCrmTemplatesAdmin()`, `clampLimit()`, `clampOffset()`, `safeRate()`, `formatRate()`, `sendKey()`, `recoverSendTypes()`, `filterBySendType()`, `collapseSendLog()`, `summarizeEngagement()`, `getEmailSendLog()`, `getEmailEngagementSummary()`, `getBrokerEmailEngagement()`, `getEmailCampaigns()`, `summarizeCampaign()`, `getCampaignEngagement()`, `groupEnrollmentStatus()`, `buildWorkflowAnalytics()`, `getWorkflowAnalytics()`, `stepEmailKey()`, `tallyStepEmailSends()`, `tallyCurrentStep()`, `buildStepAnalytics()`, `getWorkflowStepAnalytics()`, `insertEmailEvent()`, `deleteEmailEventByDedupeKey()` <br /> `lib/data/crm/getBatchEmailsReport.ts` · `lib/data/crm/getContactEmailEngagement.ts` · `lib/data/crm/getCrmTemplatesAdmin.ts` · `lib/data/crm/getEmailReporting.ts` · `lib/data/crm/getWorkflowAnalytics.ts` · `lib/data/crm/insertEmailEvent.ts` |
 | `engagement_metrics` | `getEngagementCountsBatch()`, `getEngagementForListing()`, `incrementListingShareCount()`, `incrementListingSaveCount()`, `decrementListingSaveCount()`, `incrementListingLikeCount()`, `decrementListingLikeCount()`, `incrementListingViewCount()`, `sumEngagementForListingKeys()`, `getTopViewedListingKeys()` <br /> `lib/data/engagement/index.ts` |
 | `expired_listings` | `getSyncState()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `findCommunityIdByName()`, `findCommunityIdBySlug()`, `insertCommunityRowReturnId()`, `findPropertyIdByAddress()`, `insertPropertyAddressOnly()`, `insertPropertyFullRow()`, `updatePropertyById()`, `findListingBySnakeKey()`, `upsertListingSnakeRow()`, `insertStatusHistoryRow()`, `insertPriceHistoryRow()`, `replaceListingPhotosForKey()`, `deleteListingAgentsForKey()`, `insertListingAgentRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectNewExpiredListings()`, `getExistingExpiredListingKeys()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `countListingsByOr()`, `countAllListingsByListingKey()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()` <br /> `lib/data/sync/syncWrites.ts` |
 | `geo_snapshot_mv` | `getGeoSnapshot()`, `getAllCitySnapshots()`, `getAllCommunitySnapshots()`, `getCityCommunitySnapshots()` <br /> `lib/data/geo/getGeoSnapshot.ts` |
-| `guest_search_alerts` | `getContactMemberships()`, `setContactListingAlertsPaused()`, `toSavedSearchRow()`, `dedupeByFiltersHash()`, `pauseSavedSearchByToken()`, `claimGuestSavedSearches()` <br /> `lib/data/crm/getContactMemberships.ts` · `lib/data/savedSearches.ts` |
+| `guest_search_alerts` | `getContactMemberships()`, `setContactListingAlertsPaused()`, `resolveLeadAssignedBroker()`, `getGuestAlertLead()`, `toSavedSearchRow()`, `dedupeByFiltersHash()`, `pauseSavedSearchByToken()`, `claimGuestSavedSearches()` <br /> `lib/data/crm/getContactMemberships.ts` · `lib/data/crm/leadAssignedBroker.ts` · `lib/data/savedSearches.ts` |
 | `guides` | `getPublishedGuides()`, `getGuideBySlug()` <br /> `lib/data/guides/getGuides.ts` |
 | `lead_flow_rules` | `getLeadFlows()`, `getLeadFlowBySource()` <br /> `lib/data/crm/getLeadFlow.ts` |
 | `lead_flows` | `getLeadFlows()`, `getLeadFlowBySource()` <br /> `lib/data/crm/getLeadFlow.ts` |
@@ -1590,7 +1836,7 @@ Companion files:
 | `listing_photos` | `getAdminEditableListingRow()`, `updateAdminEditableListingRow()`, `getListingPhotosForKey()`, `appendListingPhoto()`, `deleteListingPhoto()`, `setListingHeroPhoto()`, `reorderListingPhotos()`, `getHeroPhotosByListingKeys()`, `getOpenHousesInRange()`, `getListingDetailPhotos()`, `getListingKeysForBrokerByLicense()`, `getListingKeysForBrokerByEmail()`, `getListingKeysByListAgentEmail()`, `getListingDetailAgents()`, `getOpenHouseById()`, `getListingDetailOpenHouses()`, `getListingDetailVideos()`, `upsertListingEmbedding()`, `getPendingListingHistoryEvents()`, `getListingKeysWithPriceChangeSince()`, `getListingDetailHistory()`, `resolveCommunityChainBySlug()`, `getListingPhotos()`, `getSyncState()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `findCommunityIdByName()`, `findCommunityIdBySlug()`, `insertCommunityRowReturnId()`, `findPropertyIdByAddress()`, `insertPropertyAddressOnly()`, `insertPropertyFullRow()`, `updatePropertyById()`, `findListingBySnakeKey()`, `upsertListingSnakeRow()`, `insertStatusHistoryRow()`, `insertPriceHistoryRow()`, `replaceListingPhotosForKey()`, `deleteListingAgentsForKey()`, `insertListingAgentRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectNewExpiredListings()`, `getExistingExpiredListingKeys()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `countListingsByOr()`, `countAllListingsByListingKey()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()` <br /> `lib/data/admin/listingEdit.ts` · `lib/data/listings/getListingDetailBundles.ts` · `lib/data/listings/getListingPhotos.ts` · `lib/data/sync/syncWrites.ts` |
 | `listing_tile_mv` | `getOwnedHomeMatches()`, `getViewedListingsForLead()`, `getBendNeighborhoodLedger()`, `getListingTiles()`, `getTotalListingCount()`, `getListingTilesCount()`, `getCityListings()`, `getCommunityListings()`, `getZipListings()`, `getNeighborhoodListings()` <br /> `lib/data/crm/getOwnedHome.ts` · `lib/data/crm/getViewedListings.ts` · `lib/data/geo/getBendNeighborhoodLedger.ts` · `lib/data/listings/getListingTiles.ts` |
 | `listing_videos` | `getHeroPhotosByListingKeys()`, `getOpenHousesInRange()`, `getListingDetailPhotos()`, `getListingKeysForBrokerByLicense()`, `getListingKeysForBrokerByEmail()`, `getListingKeysByListAgentEmail()`, `getListingDetailAgents()`, `getOpenHouseById()`, `getListingDetailOpenHouses()`, `getListingDetailVideos()`, `upsertListingEmbedding()`, `getPendingListingHistoryEvents()`, `getListingKeysWithPriceChangeSince()`, `getListingDetailHistory()`, `resolveCommunityChainBySlug()`, `getSyncState()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `findCommunityIdByName()`, `findCommunityIdBySlug()`, `insertCommunityRowReturnId()`, `findPropertyIdByAddress()`, `insertPropertyAddressOnly()`, `insertPropertyFullRow()`, `updatePropertyById()`, `findListingBySnakeKey()`, `upsertListingSnakeRow()`, `insertStatusHistoryRow()`, `insertPriceHistoryRow()`, `replaceListingPhotosForKey()`, `deleteListingAgentsForKey()`, `insertListingAgentRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectNewExpiredListings()`, `getExistingExpiredListingKeys()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `countListingsByOr()`, `countAllListingsByListingKey()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()`, `getRecentListingVideoRows()`, `getVideoToursCacheListings()`, `getAnyListingVideoRows()`, `getListingVideos()` <br /> `lib/data/listings/getListingDetailBundles.ts` · `lib/data/sync/syncWrites.ts` · `lib/data/videos/getListingVideoRows.ts` · `lib/data/videos/getListingVideos.ts` |
-| `listings` | `getAdminEditableListingRow()`, `updateAdminEditableListingRow()`, `getListingPhotosForKey()`, `appendListingPhoto()`, `deleteListingPhoto()`, `setListingHeroPhoto()`, `reorderListingPhotos()`, `getListingHistoryRowCount()`, `getActiveNeedingHistoryCount()`, `getHistoryFinalizedCount()`, `getHistoryVerifiedFullCount()`, `getFinalizedUnverifiedCount()`, `getTerminalBucketTotal()`, `getTerminalBucketFinalized()`, `getClosedFinalizedListingRows()`, `getListingHistoryTableStatus()`, `getAllListingsCount()`, `getStatusIlikeCount()`, `getPendingNonContingentCount()`, `getActiveBucketCount()`, `getTerminalBucketStrictBacklog()`, `getBrokerSales()`, `getListingDetail()`, `getHeroPhotosByListingKeys()`, `getOpenHousesInRange()`, `getListingDetailPhotos()`, `getListingKeysForBrokerByLicense()`, `getListingKeysForBrokerByEmail()`, `getListingKeysByListAgentEmail()`, `getListingDetailAgents()`, `getOpenHouseById()`, `getListingDetailOpenHouses()`, `getListingDetailVideos()`, `upsertListingEmbedding()`, `getPendingListingHistoryEvents()`, `getListingKeysWithPriceChangeSince()`, `getListingDetailHistory()`, `resolveCommunityChainBySlug()`, `getListingPhotos()`, `getListingRawRowByKey()`, `getListingVideoCandidates()`, `getMotivatedListings()`, `getBrokerageListingTiles()`, `getPriceDropTiles()`, `getPropertyFactsByMls()`, `getRepeatSalesAppreciation()`, `resolveCanonicalListingKey()`, `getUpcomingOpenHouses()`, `getParkDetail()`, `getSchoolDetail()`, `getSyncState()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `findCommunityIdByName()`, `findCommunityIdBySlug()`, `insertCommunityRowReturnId()`, `findPropertyIdByAddress()`, `insertPropertyAddressOnly()`, `insertPropertyFullRow()`, `updatePropertyById()`, `findListingBySnakeKey()`, `upsertListingSnakeRow()`, `insertStatusHistoryRow()`, `insertPriceHistoryRow()`, `replaceListingPhotosForKey()`, `deleteListingAgentsForKey()`, `insertListingAgentRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectNewExpiredListings()`, `getExistingExpiredListingKeys()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `countListingsByOr()`, `countAllListingsByListingKey()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()`, `getBrokerageTrackRecord()`, `getListingVideos()` <br /> `lib/data/admin/listingEdit.ts` · `lib/data/admin/syncCounts.ts` · `lib/data/brokers/getBrokerSales.ts` · `lib/data/listings/getListingDetail.ts` · `lib/data/listings/getListingDetailBundles.ts` · `lib/data/listings/getListingPhotos.ts` · `lib/data/listings/getListingRawRow.ts` · `lib/data/listings/getListingVideoCandidates.ts` · `lib/data/listings/getMotivatedListings.ts` · `lib/data/listings/getPriceDropTiles.ts` · `lib/data/listings/getPropertyFactsByMls.ts` · `lib/data/listings/getRepeatSalesAppreciation.ts` · `lib/data/listings/resolveCanonicalListingKey.ts` · `lib/data/open-houses/getUpcomingOpenHouses.ts` · `lib/data/parks/getParkDetail.ts` · `lib/data/schools/getSchoolDetail.ts` · `lib/data/sync/syncWrites.ts` · `lib/data/track-record.ts` · `lib/data/videos/getListingVideos.ts` |
+| `listings` | `getAdminEditableListingRow()`, `updateAdminEditableListingRow()`, `getListingPhotosForKey()`, `appendListingPhoto()`, `deleteListingPhoto()`, `setListingHeroPhoto()`, `reorderListingPhotos()`, `getListingHistoryRowCount()`, `getActiveNeedingHistoryCount()`, `getHistoryFinalizedCount()`, `getHistoryVerifiedFullCount()`, `getFinalizedUnverifiedCount()`, `getTerminalBucketTotal()`, `getTerminalBucketFinalized()`, `getClosedFinalizedListingRows()`, `getListingHistoryTableStatus()`, `getAllListingsCount()`, `getStatusIlikeCount()`, `getPendingNonContingentCount()`, `getActiveBucketCount()`, `getTerminalBucketStrictBacklog()`, `getBrokerSales()`, `getPropertiesReport()`, `getListingDetail()`, `getHeroPhotosByListingKeys()`, `getOpenHousesInRange()`, `getListingDetailPhotos()`, `getListingKeysForBrokerByLicense()`, `getListingKeysForBrokerByEmail()`, `getListingKeysByListAgentEmail()`, `getListingDetailAgents()`, `getOpenHouseById()`, `getListingDetailOpenHouses()`, `getListingDetailVideos()`, `upsertListingEmbedding()`, `getPendingListingHistoryEvents()`, `getListingKeysWithPriceChangeSince()`, `getListingDetailHistory()`, `resolveCommunityChainBySlug()`, `getListingPhotos()`, `getListingRawRowByKey()`, `getListingVideoCandidates()`, `getMotivatedListings()`, `getBrokerageListingTiles()`, `getPriceDropTiles()`, `getPropertyFactsByMls()`, `getRepeatSalesAppreciation()`, `resolveCanonicalListingKey()`, `getUpcomingOpenHouses()`, `getParkDetail()`, `getSchoolDetail()`, `getSyncState()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `findCommunityIdByName()`, `findCommunityIdBySlug()`, `insertCommunityRowReturnId()`, `findPropertyIdByAddress()`, `insertPropertyAddressOnly()`, `insertPropertyFullRow()`, `updatePropertyById()`, `findListingBySnakeKey()`, `upsertListingSnakeRow()`, `insertStatusHistoryRow()`, `insertPriceHistoryRow()`, `replaceListingPhotosForKey()`, `deleteListingAgentsForKey()`, `insertListingAgentRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectNewExpiredListings()`, `getExistingExpiredListingKeys()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `countListingsByOr()`, `countAllListingsByListingKey()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()`, `getBrokerageTrackRecord()`, `getListingVideos()` <br /> `lib/data/admin/listingEdit.ts` · `lib/data/admin/syncCounts.ts` · `lib/data/brokers/getBrokerSales.ts` · `lib/data/crm/getPropertiesReport.ts` · `lib/data/listings/getListingDetail.ts` · `lib/data/listings/getListingDetailBundles.ts` · `lib/data/listings/getListingPhotos.ts` · `lib/data/listings/getListingRawRow.ts` · `lib/data/listings/getListingVideoCandidates.ts` · `lib/data/listings/getMotivatedListings.ts` · `lib/data/listings/getPriceDropTiles.ts` · `lib/data/listings/getPropertyFactsByMls.ts` · `lib/data/listings/getRepeatSalesAppreciation.ts` · `lib/data/listings/resolveCanonicalListingKey.ts` · `lib/data/open-houses/getUpcomingOpenHouses.ts` · `lib/data/parks/getParkDetail.ts` · `lib/data/schools/getSchoolDetail.ts` · `lib/data/sync/syncWrites.ts` · `lib/data/track-record.ts` · `lib/data/videos/getListingVideos.ts` |
 | `market_pulse_live` | `WESTSIDE_NEIGHBORHOOD_SLUGS()`, `getBendNeighborhoodStats()`, `getMarketPulse()`, `getMarketPulseRegionSnapshot()`, `getMarketPulseCitySnapshots()`, `getMarketStatsCacheRowForGeo()`, `getReportingCacheMonthlyRows()`, `getMarketStatsCacheRowsByGeoType()`, `getMarketStatsCacheRowForPeriod()`, `getMarketPulseRowsByGeoType()`, `upsertMarketPulseLiveRow()`, `getMarketPulseRowForGeo()`, `getMarketStatsCacheRowsForGeos()`, `getSyncState()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `findCommunityIdByName()`, `findCommunityIdBySlug()`, `insertCommunityRowReturnId()`, `findPropertyIdByAddress()`, `insertPropertyAddressOnly()`, `insertPropertyFullRow()`, `updatePropertyById()`, `findListingBySnakeKey()`, `upsertListingSnakeRow()`, `insertStatusHistoryRow()`, `insertPriceHistoryRow()`, `replaceListingPhotosForKey()`, `deleteListingAgentsForKey()`, `insertListingAgentRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectNewExpiredListings()`, `getExistingExpiredListingKeys()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `countListingsByOr()`, `countAllListingsByListingKey()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()` <br /> `lib/data/geo/getBendNeighborhoodStats.ts` · `lib/data/market/getMarketPulse.ts` · `lib/data/market/getMarketPulseSnapshot.ts` · `lib/data/market/getMarketStatsCacheRows.ts` · `lib/data/sync/syncWrites.ts` |
 | `market_reports` | `getMarketReportBySlug()`, `listMarketReports()`, `getReportImageUrl()` <br /> `lib/data/market/getMarketReports.ts` |
 | `market_stats_cache` | `getCityMarketDetail()`, `getMarketStats()`, `getMarketStatsCacheRowForGeo()`, `getReportingCacheMonthlyRows()`, `getMarketStatsCacheRowsByGeoType()`, `getMarketStatsCacheRowForPeriod()`, `getMarketPulseRowsByGeoType()`, `upsertMarketPulseLiveRow()`, `getMarketPulseRowForGeo()`, `getMarketStatsCacheRowsForGeos()`, `getPriceHistory()` <br /> `lib/data/market/getCityMarketDetail.ts` · `lib/data/market/getMarketStats.ts` · `lib/data/market/getMarketStatsCacheRows.ts` · `lib/data/market/getPriceHistory.ts` |
@@ -1617,6 +1863,6 @@ Companion files:
 | `sync_state` | `getSyncState()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `findCommunityIdByName()`, `findCommunityIdBySlug()`, `insertCommunityRowReturnId()`, `findPropertyIdByAddress()`, `insertPropertyAddressOnly()`, `insertPropertyFullRow()`, `updatePropertyById()`, `findListingBySnakeKey()`, `upsertListingSnakeRow()`, `insertStatusHistoryRow()`, `insertPriceHistoryRow()`, `replaceListingPhotosForKey()`, `deleteListingAgentsForKey()`, `insertListingAgentRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectNewExpiredListings()`, `getExistingExpiredListingKeys()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `countListingsByOr()`, `countAllListingsByListingKey()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()` <br /> `lib/data/sync/syncWrites.ts` |
 | `valuation_requests` | `getSyncState()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `findCommunityIdByName()`, `findCommunityIdBySlug()`, `insertCommunityRowReturnId()`, `findPropertyIdByAddress()`, `insertPropertyAddressOnly()`, `insertPropertyFullRow()`, `updatePropertyById()`, `findListingBySnakeKey()`, `upsertListingSnakeRow()`, `insertStatusHistoryRow()`, `insertPriceHistoryRow()`, `replaceListingPhotosForKey()`, `deleteListingAgentsForKey()`, `insertListingAgentRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectNewExpiredListings()`, `getExistingExpiredListingKeys()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `countListingsByOr()`, `countAllListingsByListingKey()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()` <br /> `lib/data/sync/syncWrites.ts` |
 | `video_tours_cache` | `getSyncState()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `findCommunityIdByName()`, `findCommunityIdBySlug()`, `insertCommunityRowReturnId()`, `findPropertyIdByAddress()`, `insertPropertyAddressOnly()`, `insertPropertyFullRow()`, `updatePropertyById()`, `findListingBySnakeKey()`, `upsertListingSnakeRow()`, `insertStatusHistoryRow()`, `insertPriceHistoryRow()`, `replaceListingPhotosForKey()`, `deleteListingAgentsForKey()`, `insertListingAgentRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectNewExpiredListings()`, `getExistingExpiredListingKeys()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `countListingsByOr()`, `countAllListingsByListingKey()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()`, `getRecentListingVideoRows()`, `getVideoToursCacheListings()`, `getAnyListingVideoRows()`, `getListingVideos()` <br /> `lib/data/sync/syncWrites.ts` · `lib/data/videos/getListingVideoRows.ts` · `lib/data/videos/getListingVideos.ts` |
-| `visitor_events` | `HOT_ANONYMOUS_SOURCE()`, `captureHotAnonymous()`, `topByCount()`, `deriveIntentSignals()`, `getContactBehaviorSummary()`, `getViewedListingsForLead()`, `saveAnonymousPartialAddress()` <br /> `lib/data/crm/captureHotAnonymous.ts` · `lib/data/crm/getContactBehaviorSummary.ts` · `lib/data/crm/getViewedListings.ts` · `lib/data/leads/saveAnonymousPartialAddress.ts` |
+| `visitor_events` | `HOT_ANONYMOUS_SOURCE()`, `captureHotAnonymous()`, `topByCount()`, `deriveIntentSignals()`, `getContactBehaviorSummary()`, `getPropertiesReport()`, `getViewedListingsForLead()`, `saveAnonymousPartialAddress()` <br /> `lib/data/crm/captureHotAnonymous.ts` · `lib/data/crm/getContactBehaviorSummary.ts` · `lib/data/crm/getPropertiesReport.ts` · `lib/data/crm/getViewedListings.ts` · `lib/data/leads/saveAnonymousPartialAddress.ts` |
 | `visitor_identity_map` | `HOT_ANONYMOUS_SOURCE()`, `captureHotAnonymous()`, `normalizeEmail()`, `normalizePhone()`, `dedupeContactPoints()`, `resolvePersonIdentity()` <br /> `lib/data/crm/captureHotAnonymous.ts` · `lib/data/crm/resolvePersonIdentity.ts` |
 | `visitor_sessions` | `HOT_ANONYMOUS_SOURCE()`, `captureHotAnonymous()`, `topByCount()`, `deriveIntentSignals()`, `getContactBehaviorSummary()`, `pickFirstTouch()`, `getFirstTouchAttribution()`, `getViewedListingsForLead()`, `normalizeEmail()`, `normalizePhone()`, `dedupeContactPoints()`, `resolvePersonIdentity()` <br /> `lib/data/crm/captureHotAnonymous.ts` · `lib/data/crm/getContactBehaviorSummary.ts` · `lib/data/crm/getFirstTouchAttribution.ts` · `lib/data/crm/getViewedListings.ts` · `lib/data/crm/resolvePersonIdentity.ts` |
