@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.689.0 (2026-07-01)
+
+### Features
+- feat(crm): Agent Activity report — chart, sparklines, column picker, CSV export
+
+---
+
+
 ## v1.688.1 (2026-07-01)
 
 ### Bug Fixes
