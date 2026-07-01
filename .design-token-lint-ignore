@@ -256,3 +256,21 @@ app/luxury-homes-bend/page.tsx
 # as AdminSidebar (h-[calc(100vh-61px)]) and AdminMobileTabBar (pb-[env(...)]).
 components/admin/crm/settings/TemplateEditor.tsx
 components/admin/crm/workflows/WorkflowList.tsx
+
+# Properties report map (CRM reporting, 2026-07-01):
+# PropertiesMap.tsx: Google Maps API configuration (map styles + Marker icon/label
+#   props) requires literal hex — these are JS objects passed to the Maps SDK, not
+#   CSS. The InfoWindow popup is injected as a raw HTML string into the Maps SDK
+#   iframe-like DOM context, which is isolated from Tailwind/CSS-var inheritance;
+#   literal hex and font-family strings are unavoidable there. Same exception class
+#   as SearchMapClustered.tsx, ListingMapGoogle.tsx, and NeighborhoodMap.client.tsx.
+# page.tsx: h-[560px] for the map container — the side-by-side list+map panel needs
+#   a fixed pixel height (no locked-ladder step covers viewport-fraction map panels).
+#   Same exception class as AdminSidebar h-[calc(100vh-61px)].
+app/admin/(protected)/crm/reporting/properties/PropertiesMap.tsx
+app/admin/(protected)/crm/reporting/properties/page.tsx
+# Call Logs report page (CRM reporting, parallel build): a JSDoc comment on line 115
+# reads "No banned Tailwind color-scale classes (text-green-*, bg-amber-*, etc.)."
+# — the linter's regex matches the description of what is banned, not actual usage.
+# False positive; the page itself uses only design-system tokens.
+app/admin/(protected)/crm/reporting/call-logs/page.tsx
