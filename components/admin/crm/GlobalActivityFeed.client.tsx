@@ -119,8 +119,45 @@ export default function GlobalActivityFeed({
   const now = Date.now()
   const groups = groupByDay(items, now)
 
+  // §24 mobile sub-tabs (mob-01/32/05): New Leads · Emails · Website, plus an
+  // "All" tab for the mixed feed (the desktop default). Each tab pins `selected`
+  // to that type; the strip only renders < md.
+  const MOBILE_TABS: { key: string | null; label: string }[] = [
+    { key: null, label: 'All' },
+    { key: 'new_leads', label: 'New Leads' },
+    { key: 'email', label: 'Emails' },
+    { key: 'website', label: 'Website' },
+  ]
+  const activeMobileTab = selected.size === allTypes.length ? null : selected.size === 1 ? [...selected][0] : undefined
+
   return (
     <div>
+      {/* Mobile sub-tab strip (§24 §1.4) */}
+      <div className="-mx-4 mb-3 flex border-b border-border bg-muted md:hidden">
+        {MOBILE_TABS.map((t) => {
+          const isActive = activeMobileTab === t.key
+          return (
+            <button
+              key={t.label}
+              type="button"
+              disabled={pending}
+              onClick={() => {
+                const next = t.key === null ? new Set(allTypes.map((x) => x.key)) : new Set([t.key])
+                setSelected(next)
+                refetch(next, broker)
+              }}
+              className={cn(
+                'relative flex-1 py-2.5 text-center text-[14px]',
+                isActive ? 'font-semibold text-foreground' : 'font-normal text-muted-foreground',
+              )}
+            >
+              {t.label}
+              {isActive ? <span className="absolute inset-x-0 bottom-0 h-[2px] bg-primary" /> : null}
+            </button>
+          )
+        })}
+      </div>
+
       {/* Compact filter row: a multi-select Types dropdown + (owner only) a broker
           scope dropdown. Replaces the old chip sprawl. */}
       <div className="mb-5 flex flex-wrap items-center gap-2">

@@ -15,6 +15,7 @@ import BulkAssignWrapper, { type BulkAssignRow } from '@/components/admin/crm/Bu
 import SavedViewSidebar, { type SavedViewItem } from '@/components/admin/crm/SavedViewSidebar'
 import BrokerScopeSheet from '@/components/admin/crm/BrokerScopeSheet'
 import InstantFilterSelect from '@/components/admin/crm/InstantFilterSelect'
+import { MobilePeopleRoot } from '@/components/admin/crm/mobile/MobilePeopleRoot'
 import { Button } from '@/components/ui/button'
 import { KpiStrip } from '@/components/console/KpiStrip'
 import { formatDate } from '@/lib/format/date'
@@ -39,7 +40,7 @@ const BROKER_HEADSHOT: Record<string, string> = {
   paul: '/images/brokers/stevenson-paul.png',
 }
 
-type SearchParams = { q?: string; stage?: string; broker?: string; tag?: string; view?: string; page?: string }
+type SearchParams = { q?: string; stage?: string; broker?: string; tag?: string; view?: string; page?: string; ptab?: string }
 
 export default async function CrmPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const access = await getCrmAccess()
@@ -205,6 +206,48 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
       </div>
 
 
+      {/* ── MOBILE (< md): §24 People root — All Lists directory / Stages /
+             filtered contact list (mob-09 / mob-10). URL-driven. ─────────────── */}
+      <div className="mt-3 md:hidden">
+        <ContactsSearch initial={sp.q ?? ''} />
+        {(() => {
+          const mode: 'directory' | 'list' = sp.q || sp.stage || sp.tag || sp.view ? 'list' : 'directory'
+          const listTitle =
+            appliedView?.name ??
+            (sp.stage ? sp.stage : sp.tag ? `#${sp.tag}` : sp.q ? `“${sp.q}”` : 'People')
+          return (
+            <div className="mt-3">
+              {mode === 'list' ? (
+                <div className="mb-2">
+                  <BrokerScopeSheet
+                    brokers={CRM_BROKERS.map((slug) => ({ slug, label: CRM_BROKER_DISPLAY[slug], headshot: BROKER_HEADSHOT[slug] ?? null }))}
+                    current={effectiveBroker ?? 'all'}
+                    myBrokerSlug={access.brokerSlug ?? null}
+                    carry={{ q: sp.q, stage: sp.stage, tag: sp.tag, view: sp.view }}
+                  />
+                </div>
+              ) : null}
+              <MobilePeopleRoot
+                mode={mode}
+                ptab={sp.ptab === 'stages' ? 'stages' : 'lists'}
+                views={savedViewItems.map((v) => ({ id: v.id, name: v.name, count: v.count }))}
+                stages={stageOptions}
+                rows={bulkRows.map((r) => ({ id: r.id, name: r.name ?? `Contact #${r.id}`, picture_url: r.picture_url, source: r.source, stage: r.stage }))}
+                total={total}
+                listTitle={listTitle}
+                page={page}
+                lastPage={lastPage}
+                pageHrefPrev={page > 1 ? pageHref(page - 1) : null}
+                pageHrefNext={page < lastPage ? pageHref(page + 1) : null}
+                carryBroker={sp.broker || undefined}
+              />
+            </div>
+          )
+        })()}
+      </div>
+
+      {/* ── DESKTOP (md+): existing chips + 3-column layout, unchanged ───────── */}
+      <div className="hidden md:block">
       {/* Quick scope chips — My leads / All contacts (the broker book toggle). The
           named smart lists moved into the sidebar below. */}
       <div className="mt-4 -mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:mt-6 sm:flex-wrap sm:px-0">
@@ -357,6 +400,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
           </div>
         </aside>
 
+      </div>
       </div>
     </main>
   )

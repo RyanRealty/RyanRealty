@@ -26,6 +26,11 @@ components/admin/crm/mobile/avatar-utils.ts
 components/admin/crm/mobile/MobileContactDetail.tsx
 components/admin/crm/mobile/MobileInfoTab.tsx
 components/admin/crm/mobile/MobilePickerSheet.tsx
+components/admin/crm/mobile/MobilePeopleRoot.tsx
+# GlobalActivityFeed — the §24 mobile sub-tab strip (full-cell tap targets +
+# 2px indicator + FUB pt sizes) rides the existing feed client; same exception
+# class as the mobile components above.
+components/admin/crm/GlobalActivityFeed.client.tsx
 components/admin/crm/mobile/MobileDetailsSection.tsx
 components/admin/crm/mobile/MobileContactPointsSection.tsx
 components/admin/crm/mobile/MobileCommsTab.tsx

@@ -57,6 +57,21 @@ const SHIPPED = [
     file: 'app/components/admin/admin-nav.ts',
     must: [/\/admin\/crm\/reporting/, /\/admin\/crm\/sequences/, /\/admin\/crm\/settings\/templates/],
   },
+  {
+    id: 'M5 people root — §24 All Lists/Stages directory + filtered list at <md (mob-09/10)',
+    file: 'app/admin/(protected)/crm/page.tsx',
+    must: [/MobilePeopleRoot/, /md:hidden/],
+  },
+  {
+    id: 'M5 people root — directory/list modes + count bar',
+    file: 'components/admin/crm/mobile/MobilePeopleRoot.tsx',
+    must: [/All Lists/, /Stages/, /people\b/, /formatCount/],
+  },
+  {
+    id: 'M5 activity — §24 mobile sub-tab strip (New Leads/Emails/Website)',
+    file: 'components/admin/crm/GlobalActivityFeed.client.tsx',
+    must: [/MOBILE_TABS/, /New Leads/, /Website/],
+  },
 ]
 
 /** PENDING — the remaining debt. Matt directive 2026-07-01: "EVERY crm page."
@@ -68,7 +83,7 @@ const PENDING = [
   'M2 rest — pull-to-refresh, sheet swipe-down dismiss (§23 AC 20–21) [shell, all routes]',
   'M3 mobile inbox — sub-tabs + threads (§26): /admin/crm/inbox',
   'M4 mobile compose — email/text/call sheets (§27) [lead detail + inbox]',
-  'M5 mobile people/home/activity (§24): /admin/crm · /admin/crm/activity · /admin/broker-dashboard · /admin/console · /admin/console/leads · /admin/crm/new · /admin/crm/approvals',
+  'M5 rest (§24): swipe-left row actions + long-press multi-select + team-filter header sheet; /admin/broker-dashboard · /admin/console · /admin/console/leads · /admin/crm/new · /admin/crm/approvals',
   'M6 mobile calendar + tasks (§29): /admin/crm/calendar · /admin/crm/tasks',
   'M7 remaining pickers — Source, Time frame, relationships, §25.10 tags full-screen, §25.11 address map, header Edit mode, per-tab FAB sheets [lead detail]',
   'M8 mobile Home Dashboard parity (mob-44): /admin/broker-dashboard',
