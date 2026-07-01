@@ -49,6 +49,13 @@ import { getContactRelationships } from '@/lib/data/crm/getContactRelationships'
 import { RelationshipsPanel } from '@/components/admin/crm/RelationshipsPanel'
 import { getContactListingAlerts } from '@/lib/data/crm/getContactListingAlerts'
 import { ContactListingAlertsPanel } from '@/components/admin/crm/ContactListingAlertsPanel'
+import { getContactCollaborators } from '@/lib/data/crm/getContactCollaborators'
+import { CollaboratorsPanel } from '@/components/admin/crm/CollaboratorsPanel'
+import { getContactActionPlanProgress } from '@/lib/data/crm/getContactActionPlanProgress'
+import { ActionPlanProgressPanel } from '@/components/admin/crm/ActionPlanProgressPanel'
+import { addCrmCollaboratorAction, removeCrmCollaboratorAction } from '@/app/actions/crm-person-gaps'
+import { pauseEnrollmentAction, resumeEnrollmentAction, dismissEnrollmentAction } from '@/app/actions/crm'
+import { MergeContactDialog } from '@/components/admin/crm/MergeContactDialog'
 import { EmailComposer } from '@/components/admin/crm/EmailComposer'
 import { SmsComposer } from '@/components/admin/crm/SmsComposer'
 import { getLeadSmsRecipients } from '@/lib/data/crm/getLeadSmsRecipients'
@@ -345,7 +352,7 @@ export default async function ConsoleLeadPage({
   const personEmails = (person.emails ?? []).map((e) => e.value).filter((v): v is string => Boolean(v))
 
   // What they're shopping for — saved searches + the homes they're watching (live MLS) + newsletter status.
-  const [savedSearches, viewedListings, contactMemberships, activityFeed, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, fieldDefs, emailEngagementSummary] = await Promise.all([
+  const [savedSearches, viewedListings, contactMemberships, activityFeed, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, fieldDefs, emailEngagementSummary, collaborators, actionPlanEnrollments] = await Promise.all([
     getGuestSearchAlertsForLead({ fubPersonId: person.fub_legacy_id, emails: personEmails }),
     getViewedListingsForLead(person.fub_legacy_id),
     getContactMemberships(person.id),
@@ -361,6 +368,9 @@ export default async function ConsoleLeadPage({
     getCrmFieldDefinitions(),
     // Wave 5: per-contact email engagement, read from the unified email_events store.
     getContactEmailEngagement(person.id),
+    // §07 parity gaps: collaborators + action-plan progress
+    getContactCollaborators(person.id),
+    getContactActionPlanProgress(person.id),
   ])
 
   // Full Comms thread (every text + email + call), newest first, paginated —
@@ -403,6 +413,38 @@ export default async function ConsoleLeadPage({
   const homeMlsPhoto = confirmedMatches.find((m) => m.photoUrl)?.photoUrl ?? null
   const homeActiveListing = confirmedMatches.find((m) => ['Active', 'Coming Soon', 'Active Under Contract', 'Pending'].includes(m.status ?? '')) ?? null
   const homeFacts = confirmedMatches.find((m) => m.beds || m.sqft) ?? null
+
+  // §07 parity: collaborator form actions (bound to this person)
+  // person is non-null here: notFound() was called above if person was null.
+  const _pid = person!.id
+  async function addCollaboratorForm(formData: FormData): Promise<void> {
+    'use server'
+    const brokerSlug = String(formData.get('brokerSlug') ?? '')
+    await addCrmCollaboratorAction(_pid, brokerSlug)
+    redirect(`${BASE}/${_pid}?flash=${encodeURIComponent('Collaborator added.')}`)
+  }
+  async function removeCollaboratorForm(formData: FormData): Promise<void> {
+    'use server'
+    const brokerSlug = String(formData.get('brokerSlug') ?? '')
+    await removeCrmCollaboratorAction(_pid, brokerSlug)
+    redirect(`${BASE}/${_pid}?flash=${encodeURIComponent('Collaborator removed.')}`)
+  }
+  // §07 parity: enrollment action wrappers (FormData, enrollmentId from hidden input)
+  async function pauseEnrollmentForm(formData: FormData): Promise<void> {
+    'use server'
+    const enrollmentId = Number(formData.get('enrollmentId'))
+    await pauseEnrollmentAction(enrollmentId)
+  }
+  async function resumeEnrollmentForm(formData: FormData): Promise<void> {
+    'use server'
+    const enrollmentId = Number(formData.get('enrollmentId'))
+    await resumeEnrollmentAction(enrollmentId)
+  }
+  async function stopEnrollmentForm(formData: FormData): Promise<void> {
+    'use server'
+    const enrollmentId = Number(formData.get('enrollmentId'))
+    await dismissEnrollmentAction(enrollmentId)
+  }
 
   const webEvents = full.timeline.filter((t) => t.kind === 'web_event').slice(0, 6)
   const activityLog = full.timeline.filter((t) => !isConversationEvent(t.kind) && t.kind !== 'email_open' && t.kind !== 'email_click')
@@ -752,6 +794,22 @@ export default async function ConsoleLeadPage({
         }
         workflow={
           <>
+          {/* §07 parity gap 3: Action-plan progress (FUB §7c.8.1 / §7c.8.7) */}
+          <ActionPlanProgressPanel
+            enrollments={actionPlanEnrollments}
+            pauseAction={pauseEnrollmentForm}
+            resumeAction={resumeEnrollmentForm}
+            stopAction={stopEnrollmentForm}
+          />
+
+          {/* §07 parity gap 1: Collaborators (FUB §7c.8.9 / §7c.7) */}
+          <CollaboratorsPanel
+            collaborators={collaborators}
+            assignedBroker={person.assigned_broker}
+            addAction={addCollaboratorForm}
+            removeAction={removeCollaboratorForm}
+          />
+
           {/* Tags */}
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-base">Tags <span className="font-normal text-muted-foreground">({person.tags.length})</span></CardTitle></CardHeader>
@@ -794,6 +852,21 @@ export default async function ConsoleLeadPage({
               </CardContent>
             </Card>
           ) : null}
+
+          {/* §07 parity gap 2: Merge / dedup (FUB spec §7a §4.2) */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Duplicate management</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-3 text-sm text-muted-foreground">
+                Found a duplicate? Merge the other contact into this one. Its timeline,
+                tasks, and enrollments move here. The duplicate is archived to Trash.
+                This action cannot be undone.
+              </p>
+              <MergeContactDialog survivorId={person.id} />
+            </CardContent>
+          </Card>
           </>
         }
         activity={

@@ -34,6 +34,17 @@ components/admin/crm/OwnedHomeCard.tsx
 # Contact Info tab (2026-06-30): hidden <input name="personId"> in the Assigned /
 # Stage row forms — no shadcn equivalent for a hidden field.
 components/admin/crm/ContactInfoTab.tsx
+# §07 parity gaps (2026-07-01): CollaboratorsPanel, ActionPlanProgressPanel, MergeContactDialog.
+# Hidden <input type="hidden"> fields carry person/enrollment/broker ids into server-action
+# forms -- no shadcn equivalent for hidden fields (same exception class as SmsComposer /
+# OwnedHomeCard / ContactInfoTab above). Raw <button> elements in CollaboratorsPanel and
+# MergeContactDialog are full-row interactive list items / search result rows whose layout
+# can't be expressed with the inline-flex centered <Button> primitive.
+# text-[10px]/text-[11px]: Badge label sizing inside small chips -- matches the existing
+# locked usage in ConversationFeed / ContactInfoTab.
+components/admin/crm/CollaboratorsPanel.tsx
+components/admin/crm/ActionPlanProgressPanel.tsx
+components/admin/crm/MergeContactDialog.tsx
 # Deals/Pipeline Kanban (FUB-parity desktop, 2026-06-26): the FUB kanban board
 # uses a 6-color stage-indicator palette for column top borders (amber/blue/violet/
 # orange/emerald/neutral). These are stored as JS constants applied via inline
