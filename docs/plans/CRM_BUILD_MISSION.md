@@ -162,7 +162,9 @@ not a loose "it's responsive" approximation.
 ## DELIVERY ORDER (mobile) — gap-first, Contact Detail FIRST (the one that's visibly wrong)
 - **M1. Mobile Contact Detail / Lead Profile — ALL tabs** (Info · Comms · Homes · Notes · Calendar) + the
   header/avatar/quick-actions/stage, at 390px. §25 + screens mob-02/03/04/12/13/14/16/17/18/25/26/27/28/29/30/
-  31/33/37/50/51/52/53/55/56/59/60. **START HERE — this is what Matt flagged. Route: `/admin/console/leads/[id]`.**
+  31/33/37/45/46/47/50/51/52/53/55/56/59/60. (mob-45/46/47 = the in-house-web contact-detail variants:
+  Memberships·Workflows, Custom Fields, Subscriptions·Relationships — same route, build them into the Info/tab
+  set too.) **START HERE — this is what Matt flagged. Route: `/admin/console/leads/[id]`.**
 - **M2. Mobile shell + navigation** — bottom tab bar, header, app chrome, the mobile frame every screen sits in
   (§23; mob-01 frame).
 - **M3. Mobile Inbox & conversation threads** — inbox sub-tabs (My / Sent / Closed), SMS + email threads
@@ -173,6 +175,10 @@ not a loose "it's responsive" approximation.
 - **M6. Mobile Calendar & Tasks** (§29; mob-08/31). Routes: `/admin/crm/calendar`, `/admin/crm/tasks`.
 - **M7. Mobile Pickers / modals / action sheets** — assign-to, stage, source, time-frame, automations
   (§28; mob-11/15/34/35/36/54).
+- **M8. Mobile Home Dashboard** — the mobile landing/dashboard (§23/§24 context; mob-44 inhouse-web Home
+  Dashboard / Website-activity tab). Route: `/admin/broker-dashboard` (or the mobile CRM home).
+- **M9. Mobile Settings** — the mobile settings modal/screen (mob-06 fub-ios Settings). Route: `/admin/settings`
+  or the mobile account/settings surface.
 - **NOT IN SCOPE:** mob-19 (Instagram) + mob-20 (stock portfolio) are other-app reference shots, skip. Native
   iOS app is out of scope (this is the responsive web).
 
