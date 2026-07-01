@@ -112,13 +112,22 @@ DEFERRED (do NOT build unless told): Deals reporting beyond pipeline, Billing, p
 
 ---
 
-# TASK: Email open + click tracking (CRM-sent only) — wire the existing shells to real data (added 2026-07-01)
+# TASK: Email open + click tracking (EVERY CRM send path) + FIX merge fields (added 2026-07-01, expanded)
 
-## Decision (Matt, 2026-07-01)
-Track opens + clicks for emails sent THROUGH THE CRM only (which send via each broker's Gmail API,
-`gmail.users.messages.send` in `lib/crm/gmail.ts:361`). Emails composed DIRECTLY in gmail.com are OUT OF
-SCOPE — they can't be tracked without a Gmail add-on/extension, and Matt has decided all trackable email
-goes through the CRM. Every open/click must be tied to the `crm_people` contact.
+## Decision (Matt, 2026-07-01, expanded)
+EVERY email the CRM sends must have trackable opens + clicks tied to the `crm_people` contact — NOT just the
+1:1 composer. That means ALL send paths + BOTH send systems:
+- **Gmail path** (broker 1:1 + bulk + sequence sends): `lib/crm/gmail.ts` (`gmail.users.messages.send`),
+  `lib/crm/email-body.ts`, `lib/crm/bulk-handlers/email-cohort.ts`.
+- **Resend path** (system/automated email): `lib/resend.ts`, `app/actions/newsletter.ts` (NEWSLETTERS),
+  listing-alert / saved-search alert crons, `lib/cma-deliver*.ts` (CMAs), `lib/crm/market-report-*.ts`
+  (market reports), `lib/digest-email-templates.tsx` + `lib/email-templates/newsletter-shell.ts` (digests),
+  `lib/seller-lead-alert.ts` / `lib/expired-alert.ts` / `lib/fsbo-alert.ts`.
+Only emails composed DIRECTLY in gmail.com (outside the CRM) are out of scope. Every CRM-originated email —
+newsletters, listing alerts, saved-search alerts, CMAs, market reports, drips, composer — gets the pixel +
+tracked links and writes `email_events` tied to the contact. (Resend also has native open/click tracking +
+webhooks — either inject our own pixel/links OR enable Resend tracking + wire its webhook to `email_events`;
+whichever, the result must land in `email_events` per contact so the existing DAL/UI show it.)
 
 ## Verified current state (2026-07-01, by query — do NOT assume it works)
 - The feature is a BUILT SHELL with ZERO real data. `crm_timeline` email_out = **39,693** sent; `email_events`
@@ -128,9 +137,11 @@ goes through the CRM. Every open/click must be tied to the `crm_people` contact.
   `lib/data/crm/getContactEmailEngagement.ts` (returns sent/opens/clicks/bounces/lastOpenAt/lastClickAt), and
   the UI: `components/admin/crm/ContactEmailEngagement.tsx` (Opens/Clicks stats + Last open/Last click) +
   `ConversationFeed.tsx` (per-email "opened · N clicks · Last opened <date>") + the mobile comms tab.
-- MISSING (the gap = the whole task): the send path in `lib/crm/gmail.ts` / `lib/crm/email-body.ts` does NOT
-  inject a tracking pixel or rewrite links, and there are no confirmed `/open` + `/click` endpoints writing to
-  `email_events`. So nothing flows in.
+- CORRECTION: the tracking ENDPOINTS ALREADY EXIST — `app/api/track/e/open/route.ts` (pixel → writes
+  `email_events`) and `app/api/track/e/click/route.ts` (redirect → writes `email_events`). Use these; do NOT
+  build new ones. THE REAL GAP: the SEND PATHS don't inject the pixel + tracked links pointing at those
+  endpoints — on EITHER system (Gmail or Resend). So `email_events` stays ~empty. The task = wire injection
+  into every send path above so opens/clicks flow into `email_events` (which the DAL + UI already display).
 
 ## Build (the wiring)
 1. **At send time** (`lib/crm/gmail.ts` sendCrmEmail / email-body): before building the raw MIME, (a) inject a
@@ -154,6 +165,30 @@ goes through the CRM. Every open/click must be tied to the `crm_people` contact.
    redirects to the correct destination.
 4. tsc + ci:gates green. Idempotent opens (reload doesn't double-count). No raw `.from('email_events')` outside
    `lib/data/`. Do not claim done without the screenshots showing REAL open+click data on a contact.
+
+## FIX: merge fields don't render in emails (CONFIRMED BUG, verified 2026-07-01)
+Matt: "the merge fields don't work in the emails." Root cause pinned by reading `lib/crm/merge.ts`:
+- The merge-field PICKER (`MERGE_TOKENS`) advertises ~30 tokens across 9 groups: `%contact_first_name%`,
+  `%contact_last_name%`, `%contact_email%`, `%contact_phone%`, `%contact_stage%`, `%contact_address_*%`,
+  `%agent_first_name/last_name/email/phone/title/brokerage/website%`, `%sender_*%`, `%company_*%`,
+  `%lender_*%`, `%property_*%`, `%cma_link%`, etc.
+- But the RESOLVER `renderCrmMerge(text, person)` only replaces ~5: `%contact_first_name%` (+ `%first%`,
+  `{{first_name}}`), the address tokens, `%cma_link%`, and generic `%customX%`. **The other ~25 tokens
+  (all `%agent_*%`, `%contact_email/phone/stage/last_name/address_*%`, `%sender_*%`, `%company_*%`,
+  `%lender_*%`, `%property_*%`) are NEVER substituted → they go out LITERALLY in the email.** (The Templates
+  delivery expanded the picker 5→30 without expanding the resolver — that widened the bug.)
+FIX:
+1. Rewrite `renderCrmMerge` to resolve EVERY token in `MERGE_TOKENS` from real data — and change its signature
+   to take the data it needs: the `person` (contact fields incl email/phone/stage/address), the ASSIGNED
+   AGENT/broker (from `brokers` — name/email/phone/title/brokerage/website), the SENDER (the sending broker),
+   COMPANY (from `crm_company_settings`), PROPERTY (owned-home / listing), and LENDER if present. Unknown/empty
+   tokens: leave literal so the composer's unresolved-token warning still catches them.
+2. Ensure EVERY send path applies the resolver to the final body BEFORE send (composer, bulk `email-cohort`,
+   sequences `enroll`, and the Resend/newsletter/alert paths if they support merge). Verify it's applied on
+   SEND, not only in the preview pane.
+3. DoD: send a real test email containing several tokens (`%agent_first_name%`, `%contact_email%`,
+   `%contact_stage%`, `%company_name%`, `%cma_link%`) → the DELIVERED email shows the real values, zero literal
+   `%token%` left. Screenshot the received email. Add a unit test asserting every `MERGE_TOKENS` entry resolves.
 
 ---
 
