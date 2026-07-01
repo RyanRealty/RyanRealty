@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.699.0 (2026-07-01)
+
+### Features
+- feat(crm-mobile): M1 mobile contact detail — §25 FUB-iOS layout at <md + ?view=mobile verification frame
+
+---
+
+
 ## v1.698.2 (2026-07-01)
 
 ### Other
