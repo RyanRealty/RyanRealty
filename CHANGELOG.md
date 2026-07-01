@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.699.3 (2026-07-01)
+
+### Bug Fixes
+- fix(crm-mobile): single FAB + tab-bar suppression on pushed detail, centered header wordmark (§23 M2 slice 1)
+
+---
+
+
 ## v1.699.2 (2026-07-01)
 
 ### Maintenance
