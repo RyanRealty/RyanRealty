@@ -21,26 +21,21 @@
  *   muted uppercase labels, accent-colored action circles per §25.5.4/25.5.5.
  */
 
-import { ChevronRight, Mail, MessageSquare, Phone } from 'lucide-react'
+import { ChevronRight, MessageSquare } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ContactRelationship } from '@/lib/data/crm/getContactRelationships'
 import type { ContactCollaborator } from '@/lib/data/crm/getContactCollaborators'
+import {
+  MobileContactPointsSection,
+  type MobilePhoneEntry,
+  type MobileEmailEntry,
+} from '@/components/admin/crm/mobile/MobileContactPointsSection'
+import { MobileDetailsSection } from '@/components/admin/crm/mobile/MobileDetailsSection'
+import type { PickerOption } from '@/components/admin/crm/mobile/MobilePickerSheet'
 
 /* ── Types ───────────────────────────────────────────────────────────────────── */
 
-export interface MobilePhoneEntry {
-  id: number
-  display: string
-  /** tel: URI e.g. tel:+15415550123 */
-  tel: string
-  label: string | null
-}
-
-export interface MobileEmailEntry {
-  id: number
-  value: string
-  label: string | null
-}
+export type { MobilePhoneEntry, MobileEmailEntry }
 
 export interface MobileInquiry {
   type: string
@@ -81,10 +76,22 @@ export interface MobileInfoTabProps {
 
   /** §25.5.7 DETAILS rows */
   assignedTo: string | null
+  assignedToSlug: string | null
   stage: string
   source: string | null
   tags: string[]
   timeframe: string | null
+  brokerOptions: PickerOption[]
+  stageOptions: string[]
+
+  /** Server actions (page-bound, scope-gated) */
+  assignBrokerAction: (fd: FormData) => Promise<void>
+  updateStageAction: (fd: FormData) => Promise<void>
+  addTagAction: (fd: FormData) => Promise<void>
+  removeTagAction: (fd: FormData) => Promise<void>
+  addCollaboratorAction: (fd: FormData) => Promise<void>
+  removeCollaboratorAction: (fd: FormData) => Promise<void>
+  addContactPointAction: (fd: FormData) => Promise<void>
 
   /** §25.5.8 FINANCING */
   lender: string | null
@@ -167,51 +174,30 @@ function DetailRow({
   return <>{inner}</>
 }
 
-/* ── Action circle button (SMS / Call / Email) ────────────────────────────── */
-/* §25.5.4: SMS #7595e8 periwinkle; Call #4ad09f mint; Email #4ab8e8 sky-blue */
-
-function ActionCircle({
-  icon: Icon,
-  label,
-  href,
-  color,
-}: {
-  icon: typeof Phone
-  label: string
-  href?: string
-  color: string
-}) {
-  const cls =
-    'flex h-10 w-10 items-center justify-center rounded-full text-white transition-transform active:scale-95'
-  const inner = <Icon size={18} className="text-white" strokeWidth={2} />
-
-  if (href) {
-    return (
-      <a href={href} aria-label={label} style={{ backgroundColor: color }} className={cls}>
-        {inner}
-      </a>
-    )
-  }
-  return (
-    <button type="button" aria-label={label} style={{ backgroundColor: color }} className={cls}>
-      {inner}
-    </button>
-  )
-}
-
 /* ── Main component ─────────────────────────────────────────────────────────── */
 
 export function MobileInfoTab({
+  personId,
   recentMessages,
   phones,
   emails,
   relationships,
   collaborators,
   assignedTo,
+  assignedToSlug,
   stage,
   source,
   tags,
   timeframe,
+  brokerOptions,
+  stageOptions,
+  assignBrokerAction,
+  updateStageAction,
+  addTagAction,
+  removeTagAction,
+  addCollaboratorAction,
+  removeCollaboratorAction,
+  addContactPointAction,
   lender,
   background,
   inquiries,
@@ -247,83 +233,14 @@ export function MobileInfoTab({
         </>
       )}
 
-      {/* ── §25.5.4 PHONE NUMBERS ──────────────────────────────────────────── */}
-      {phones.length > 0 && (
-        <>
-          {/* "TEXT ALL..." appears only when >1 phone (AC-INFO-2, §25.5.4) */}
-          <SectionHeader
-            label="Phone Numbers"
-            rightLabel={phones.length > 1 ? 'TEXT ALL...' : undefined}
-          />
-          <Card>
-            {phones.map((p) => (
-              <div
-                key={p.id}
-                className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 last:border-0"
-                style={{ minHeight: 52 }}
-              >
-                <div className="min-w-0 flex-1">
-                  {p.label ? (
-                    <p className="text-[12px] text-muted-foreground">{p.label}</p>
-                  ) : null}
-                  <p className="text-[14px] font-medium tabular-nums text-foreground">
-                    {p.display}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  {/* SMS: periwinkle #7595e8 (§25.5.4, pixel-verified mob-02) */}
-                  <ActionCircle
-                    icon={MessageSquare}
-                    label="Send text"
-                    color="#7595e8"
-                  />
-                  {/* Call: mint #4ad09f (§25.5.4, pixel-verified mob-02) */}
-                  <ActionCircle
-                    icon={Phone}
-                    label="Call"
-                    href={p.tel}
-                    color="#4ad09f"
-                  />
-                </div>
-              </div>
-            ))}
-          </Card>
-        </>
-      )}
-
-      {/* ── §25.5.5 EMAILS ─────────────────────────────────────────────────── */}
-      {emails.length > 0 && (
-        <>
-          {/* "EMAIL ALL..." appears when >1 email (§25.5.5) */}
-          <SectionHeader
-            label="Emails"
-            rightLabel={emails.length > 1 ? 'EMAIL ALL...' : undefined}
-          />
-          <Card>
-            {emails.map((e) => (
-              <div
-                key={e.id}
-                className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 last:border-0"
-                style={{ minHeight: 52 }}
-              >
-                <div className="min-w-0 flex-1">
-                  {e.label ? (
-                    <p className="text-[12px] text-muted-foreground">{e.label}</p>
-                  ) : null}
-                  <p className="truncate text-[14px] font-medium text-foreground">{e.value}</p>
-                </div>
-                {/* Email: sky-blue #4ab8e8 (§25.5.5, pixel-verified mob-02) */}
-                <ActionCircle
-                  icon={Mail}
-                  label="Email"
-                  href={`mailto:${e.value}`}
-                  color="#4ab8e8"
-                />
-              </div>
-            ))}
-          </Card>
-        </>
-      )}
+      {/* ── §25.5.4/25.5.5 PHONE NUMBERS + EMAILS — interactive (add + live
+             SMS/Call/Email actions) ─────────────────────────────────────────── */}
+      <MobileContactPointsSection
+        personId={personId}
+        phones={phones}
+        emails={emails}
+        addContactPointAction={addContactPointAction}
+      />
 
       {/* ── §25.5.6 RELATIONSHIPS ──────────────────────────────────────────── */}
       <>
@@ -353,28 +270,27 @@ export function MobileInfoTab({
         </Card>
       </>
 
-      {/* ── §25.5.7 DETAILS ───────────────────────────────────────────────── */}
+      {/* ── §25.5.7 DETAILS — interactive rows (pickers per §23.8 / mob-35) ── */}
       <>
         <SectionHeader label="Details" />
-        <Card>
-          <DetailRow label="Assigned to" value={assignedTo ?? '—'} />
-          <DetailRow label="Stage" value={stage || '—'} />
-          <DetailRow label="Source" value={source || '—'} />
-          <DetailRow
-            label="Tags"
-            value={tags.length > 0 ? tags.join(', ') : '—'}
-            href={`/admin/console/leads/tags`}
-          />
-          <DetailRow label="Time frame" value={timeframe || '—'} />
-          <DetailRow
-            label="Collaborators"
-            value={
-              collaborators.length > 0
-                ? collaborators.map((c) => c.displayName).join(', ')
-                : 'No collaborators'
-            }
-          />
-        </Card>
+        <MobileDetailsSection
+          personId={personId}
+          assignedTo={assignedTo}
+          assignedToSlug={assignedToSlug}
+          stage={stage}
+          source={source}
+          tags={tags}
+          timeframe={timeframe}
+          collaborators={collaborators.map((c) => ({ slug: c.brokerSlug, name: c.displayName }))}
+          brokerOptions={brokerOptions}
+          stageOptions={stageOptions}
+          assignBrokerAction={assignBrokerAction}
+          updateStageAction={updateStageAction}
+          addTagAction={addTagAction}
+          removeTagAction={removeTagAction}
+          addCollaboratorAction={addCollaboratorAction}
+          removeCollaboratorAction={removeCollaboratorAction}
+        />
       </>
 
       {/* ── §25.5.8 FINANCING ─────────────────────────────────────────────── */}

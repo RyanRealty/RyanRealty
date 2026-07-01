@@ -141,6 +141,11 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
 
   const dashboardItems = has(today, '/admin/broker-dashboard')
 
+  // Menu redesign (Matt 2026-07-01 "the menu points to the wrong pages"):
+  // the CRM group now carries EVERY CRM surface — the reporting suite,
+  // workflows (sequences editor), templates, and CRM settings were missing
+  // entirely (reachable only by URL), and "Reports" led to the old marketing
+  // analytics instead of the FUB-parity CRM reporting hub.
   const crmItems: AdminNavItem[] = [
     ...has(people, '/admin/crm'), // Contacts
     item('/admin/crm/activity', 'Activity', 'activity'),
@@ -150,9 +155,13 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
     ...has(today, '/admin/analytics/action-required'), // Hot leads
     ...has(today, '/admin/crm/approvals'),
     ...has(people, '/admin/crm/new'),
+    item('/admin/crm/reporting', 'Reporting', 'bar-chart'),
+    item('/admin/crm/sequences', 'Workflows', 'zap'),
+    item('/admin/crm/settings/templates', 'Templates', 'file-text'),
     ...has(people, '/admin/email/compose'),
     ...has(marketing, '/admin/newsletters'),
     ...has(listings, '/admin/cmas'),
+    ...(isSuperuser ? [item('/admin/crm/settings', 'CRM settings', 'gauge')] : []),
   ]
 
   const dealsItems: AdminNavItem[] = [

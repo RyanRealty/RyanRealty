@@ -25,6 +25,9 @@ components/admin/crm/mobile/avatar-utils.ts
 # primitive can't express. Same exception class as CrmMobileKit above.
 components/admin/crm/mobile/MobileContactDetail.tsx
 components/admin/crm/mobile/MobileInfoTab.tsx
+components/admin/crm/mobile/MobilePickerSheet.tsx
+components/admin/crm/mobile/MobileDetailsSection.tsx
+components/admin/crm/mobile/MobileContactPointsSection.tsx
 components/admin/crm/mobile/MobileCommsTab.tsx
 components/admin/crm/mobile/MobileHomesTab.tsx
 components/admin/crm/mobile/MobileNotesTab.tsx

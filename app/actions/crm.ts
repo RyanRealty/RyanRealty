@@ -1246,6 +1246,55 @@ export async function removeCrmTagAction(formData: FormData): Promise<CrmActionR
   return { ok: true }
 }
 
+/** Add a phone or email to a contact (§25.5.4/25.5.5 — FUB supports multiple
+ *  contact points per person; the mobile Info tab's "Add phone / Add email"
+ *  flow lands here). Inserts into crm_contact_points (primary only when it is
+ *  the person's first point of that kind) + a timeline audit row. */
+export async function addCrmContactPointAction(formData: FormData): Promise<CrmActionResult> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  const personId = Number(formData.get('personId'))
+  const kind = String(formData.get('kind') ?? '').trim()
+  const label = String(formData.get('label') ?? '').trim() || null
+  let value = String(formData.get('value') ?? '').trim()
+  if (!personId || (kind !== 'phone' && kind !== 'email')) return { ok: false, error: 'Kind required' }
+  if (kind === 'phone') {
+    const digits = value.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1')
+    if (digits.length !== 10) return { ok: false, error: 'Phone must be 10 digits' }
+    value = digits
+  } else {
+    value = value.toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return { ok: false, error: 'Valid email required' }
+  }
+  const scoped = await requirePersonInScope(personId, access.access)
+  if (!scoped.ok) return scoped
+
+  const sb = createServiceClient()
+  const { data: existing } = await sb
+    .from('crm_contact_points')
+    .select('id,value')
+    .eq('person_id', personId)
+    .eq('kind', kind)
+  if ((existing ?? []).some((p) => p.value === value)) return { ok: true } // already on file
+  const { error } = await sb.from('crm_contact_points').insert({
+    person_id: personId,
+    kind,
+    value,
+    label,
+    is_primary: (existing ?? []).length === 0,
+  })
+  if (error) return { ok: false, error: error.message }
+  await sb.from('crm_timeline').insert({
+    person_id: personId,
+    kind: 'system',
+    title: `${kind === 'phone' ? 'Phone' : 'Email'} added${label ? ` (${label})` : ''}: ${value}`,
+    source: 'app',
+    broker: access.access.brokerSlug ?? null,
+  })
+  revalidateCrm(personId)
+  return { ok: true }
+}
+
 export async function addCrmTaskAction(formData: FormData): Promise<CrmActionResult> {
   const access = await requireCrmAccess()
   if (!access.ok) return access

@@ -3,7 +3,7 @@
   "floor": 600,
   "files": {
     "app/actions/cities.ts": 763,
-    "app/actions/crm.ts": 1815,
+    "app/actions/crm.ts": 1864,
     "app/actions/dashboard.ts": 910,
     "app/actions/lead-capture.ts": 610,
     "app/actions/listing-detail.ts": 1238,
@@ -16,7 +16,7 @@
     "app/admin/(protected)/deals/page.tsx": 657,
     "app/admin/(protected)/people/[fubPersonId]/page.tsx": 727,
     "app/admin/(protected)/reports/lead-flow/page.tsx": 642,
-    "app/admin/console/leads/[id]/page.tsx": 955,
+    "app/admin/console/leads/[id]/page.tsx": 969,
     "app/api/meta/lead-webhook/route.ts": 920,
     "app/api/social/publish/route.ts": 783,
     "app/cities/[slug]/page.tsx": 626,

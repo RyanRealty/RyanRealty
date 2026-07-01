@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { formatDate } from '@/lib/format/date'
 import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import {
+  addCrmContactPointAction,
   addCrmNoteAction,
   addCrmTagAction,
   addCrmTaskAction,
@@ -122,6 +123,12 @@ async function assignBrokerForm(formData: FormData): Promise<void> {
   'use server'
   const r = await assignCrmBrokerAction(formData)
   if (!r.ok) console.error('[console] assignBroker:', r.error)
+}
+async function addContactPointForm(formData: FormData): Promise<void> {
+  'use server'
+  const personId = Number(formData.get('personId'))
+  const r = await addCrmContactPointAction(formData)
+  if (!r.ok) redirect(`${BASE}/${personId}?error=${encodeURIComponent(`Not saved — ${r.error ?? 'unknown error'}`)}`)
 }
 async function sendEmailForm(personId: number, formData: FormData): Promise<void> {
   'use server'
@@ -503,6 +510,13 @@ export default async function ConsoleLeadPage({
       viewedListings={viewedListings}
       addNoteAction={addNoteForm.bind(null, person.id)}
       addTaskAction={addTaskForm}
+      assignBrokerAction={assignBrokerForm}
+      updateStageAction={updateStageForm}
+      addTagAction={addTagForm}
+      removeTagAction={removeTagForm}
+      addCollaboratorAction={addCollaboratorForm}
+      removeCollaboratorAction={removeCollaboratorForm}
+      addContactPointAction={addContactPointForm}
     />
   )
 

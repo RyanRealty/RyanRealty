@@ -11,7 +11,7 @@
  */
 
 import { formatDate } from '@/lib/format/date'
-import { CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
+import { CRM_BROKERS, CRM_BROKER_DISPLAY, CRM_STAGES } from '@/lib/crm/constants'
 import type { CrmPersonFull } from '@/app/actions/crm'
 import type { ConversationMessage } from '@/lib/data/crm/getContactConversation'
 import type { EmailEngagement } from '@/components/admin/crm/ConversationFeed'
@@ -88,6 +88,14 @@ export interface MobileLeadDetailProps {
   viewedListings: ViewedListing[]
   addNoteAction: (formData: FormData) => Promise<void>
   addTaskAction: (formData: FormData) => Promise<void>
+  /** §25.5 interactivity (pickers + add contact point) */
+  assignBrokerAction: (formData: FormData) => Promise<void>
+  updateStageAction: (formData: FormData) => Promise<void>
+  addTagAction: (formData: FormData) => Promise<void>
+  removeTagAction: (formData: FormData) => Promise<void>
+  addCollaboratorAction: (formData: FormData) => Promise<void>
+  removeCollaboratorAction: (formData: FormData) => Promise<void>
+  addContactPointAction: (formData: FormData) => Promise<void>
 }
 
 export function MobileLeadDetail({
@@ -103,6 +111,13 @@ export function MobileLeadDetail({
   viewedListings,
   addNoteAction,
   addTaskAction,
+  assignBrokerAction,
+  updateStageAction,
+  addTagAction,
+  removeTagAction,
+  addCollaboratorAction,
+  removeCollaboratorAction,
+  addContactPointAction,
 }: MobileLeadDetailProps) {
   const person = full.person!
 
@@ -125,7 +140,7 @@ export function MobileLeadDetail({
     }))
   const phones: MobilePhoneEntry[] = full.contactPoints
     .filter((c) => c.kind === 'phone')
-    .map((c) => ({ id: c.id, display: fmtPhone(c.value), tel: `tel:+1${c.value}`, label: c.label ?? 'Mobile' }))
+    .map((c) => ({ id: c.id, display: fmtPhone(c.value), tel: `tel:+1${c.value}`, sms: `sms:+1${c.value}`, label: c.label ?? 'Mobile' }))
   const emails: MobileEmailEntry[] = full.contactPoints
     .filter((c) => c.kind === 'email')
     .map((c) => ({ id: c.id, value: c.value, label: c.label }))
@@ -180,10 +195,20 @@ export function MobileLeadDetail({
           relationships={relationships}
           collaborators={collaborators}
           assignedTo={brokerDisplay(person.assigned_broker)}
+          assignedToSlug={person.assigned_broker ?? null}
           stage={person.stage}
           source={person.source}
           tags={Array.isArray(person.tags) ? person.tags : []}
           timeframe={customVal(/time.?frame/i)}
+          brokerOptions={CRM_BROKERS.map((b) => ({ value: b, label: CRM_BROKER_DISPLAY[b] }))}
+          stageOptions={[...CRM_STAGES]}
+          assignBrokerAction={assignBrokerAction}
+          updateStageAction={updateStageAction}
+          addTagAction={addTagAction}
+          removeTagAction={removeTagAction}
+          addCollaboratorAction={addCollaboratorAction}
+          removeCollaboratorAction={removeCollaboratorAction}
+          addContactPointAction={addContactPointAction}
           lender={customVal(/lender/i)}
           background={person.background}
           inquiries={inquiries}
