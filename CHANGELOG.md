@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.697.0 (2026-07-01)
+
+### Features
+- feat(crm): person-detail parity gaps — delivery order #6 (§07)
+
+---
+
+
 ## v1.696.1 (2026-07-01)
 
 ### Maintenance
