@@ -18,6 +18,7 @@ import {
   type OutcomeBucket,
 } from '@/lib/data/crm/getAppointmentsReport'
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
+import { formatDate, formatDateTime as fmtDateTimeFn } from '@/lib/format/date'
 import { Card } from '@/components/ui/card'
 import {
   Table,
@@ -51,21 +52,9 @@ const REPORTING_TABS = [
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Format an ISO datetime for display: "Jun 30, 2026 at 2:00 PM" */
-function formatDateTime(iso: string, allDay: boolean): string {
-  const d = new Date(iso)
-  const datePart = d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-  if (allDay) return datePart
-  const timePart = d.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  })
-  return `${datePart} at ${timePart}`
+/** Format an ISO datetime for display: "Jun 30, 2026" or "Jun 30, 2026, 2:00 PM" */
+function formatAppointmentDate(iso: string, allDay: boolean): string {
+  return allDay ? formatDate(iso) : fmtDateTimeFn(iso)
 }
 
 /** Delta arrow + value for KPI tiles. */
@@ -276,7 +265,7 @@ export default async function AppointmentsReportPage({
                 <TableRow key={row.id} className="hover:bg-muted/40">
                   {/* Date / Time */}
                   <TableCell className="text-sm text-foreground tabular-nums">
-                    {formatDateTime(row.startAt, row.allDay)}
+                    {formatAppointmentDate(row.startAt, row.allDay)}
                   </TableCell>
 
                   {/* Person — link to CRM contact if available */}

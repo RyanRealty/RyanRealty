@@ -5,6 +5,7 @@ import { RefreshCw } from 'lucide-react'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getBatchEmailsReport, type BatchEmailRow } from '@/lib/data/crm/getBatchEmailsReport'
+import { formatDate } from '@/lib/format/date'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
@@ -38,17 +39,9 @@ const REPORTING_TABS = [
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
-/** Short date like "Apr 9th '26". */
+/** Short date like "Apr 9, '26". */
 function shortDate(iso: string): string {
-  const d = new Date(iso)
-  const month = d.toLocaleDateString('en-US', { month: 'short' })
-  const day = d.getDate()
-  const year = String(d.getFullYear()).slice(2)
-  // Ordinal suffix
-  const s = ['th', 'st', 'nd', 'rd']
-  const v = day % 100
-  const suffix = s[(v - 20) % 10] || s[v] || s[0]
-  return `${month} ${day}${suffix} '${year}`
+  return formatDate(iso, { month: 'short', day: 'numeric', year: '2-digit' })
 }
 
 /** Format a rate in [0,1] as e.g. "24.3%". Returns "—" for null (no data). */

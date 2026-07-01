@@ -78,12 +78,13 @@ export function MergeContactDialog({ survivorId }: { survivorId: number }) {
   return (
     <Dialog open={open} onOpenChange={onOpen}>
       <DialogTrigger asChild>
-        <button
+        <Button
           type="button"
-          className="text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          variant="ghost"
+          className="h-auto p-0 text-xs font-medium text-muted-foreground underline-offset-2 hover:bg-transparent hover:text-foreground hover:underline"
         >
           Merge existing person
-        </button>
+        </Button>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-md">
@@ -113,22 +114,23 @@ export function MergeContactDialog({ survivorId }: { survivorId: number }) {
                     <p className="px-3 py-2 text-xs text-muted-foreground">No contacts found.</p>
                   ) : (
                     results.map((c) => (
-                      <button
+                      <Button
                         key={c.id}
                         type="button"
+                        variant="ghost"
                         onClick={() => pick(c)}
-                        className="flex w-full flex-col items-start gap-0.5 px-3 py-2.5 text-left hover:bg-muted"
+                        className="h-auto w-full flex-col items-start gap-0.5 rounded-none px-3 py-2.5 text-left"
                       >
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-foreground">{c.name ?? `Contact #${c.id}`}</span>
-                          <Badge variant="outline" className="text-[10px]">{c.stage}</Badge>
+                          <Badge variant="outline" className="text-xs">{c.stage}</Badge>
                         </div>
                         {(c.email ?? c.phone) ? (
                           <span className="text-xs text-muted-foreground">
                             {[c.email, c.phone].filter(Boolean).join(' · ')}
                           </span>
                         ) : null}
-                      </button>
+                      </Button>
                     ))
                   )}
                 </div>
@@ -166,8 +168,8 @@ export function MergeContactDialog({ survivorId }: { survivorId: number }) {
                 action={mergeCrmContactAction}
                 onSubmit={() => { /* allow pending state via native submit */ }}
               >
-                <input type="hidden" name="survivorId" value={survivorId} />
-                <input type="hidden" name="mergedId" value={selected?.id ?? ''} />
+                <Input type="hidden" name="survivorId" value={survivorId} />
+                <Input type="hidden" name="mergedId" value={selected?.id ?? ''} />
                 <Button
                   type="submit"
                   variant="destructive"

@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-01T16:44:46.870Z
+**Generated:** 2026-07-01T17:27:31.983Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -303,7 +303,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 592,170**
+### `listing_tile_mv` · **rows ≈ 590,918**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -1691,6 +1691,15 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `last_activity_at` | timestamp with time zone | yes |  |
 | `raw` | jsonb | yes |  |
 | `pond_id` | bigint | yes |  |
+
+### `crm_people_collaborators`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `person_id` | bigint | no |  |
+| `broker_slug` | text | no |  |
+| `added_by` | text | no | 'system'::text |
+| `created_at` | timestamp with time zone | no | now() |
 
 ### `crm_pond_members`
 

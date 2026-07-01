@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getAgentGoalsReport, type AgentGoalsRow } from '@/lib/data/crm/getAgentGoalsReport'
+import { formatPrice } from '@/lib/format/money'
 import { Card } from '@/components/ui/card'
 import {
   Table,
@@ -39,13 +40,9 @@ const REPORTING_TABS = [
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// GCI display rounded to nearest $1,000 per brand voice (§0).
 function fmtCurrency(dollars: number): string {
-  if (dollars === 0) return '$0'
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(dollars)
+  return formatPrice(dollars)
 }
 
 function GoalProgress({ earned, goal }: { earned: number; goal: number | null }) {

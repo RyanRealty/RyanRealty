@@ -10,6 +10,7 @@ import {
 } from '@/lib/data/crm/getAgentActivityReport'
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
 import { parseColsParam, ALL_COL_KEYS, COL_LABELS, type ColKey } from '@/lib/crm/reporting-constants'
+import { formatDate } from '@/lib/format/date'
 import { Card } from '@/components/ui/card'
 import {
   Table,
@@ -74,12 +75,7 @@ function NumCell({ value, href }: { value: number; href?: string }) {
 
 // --- Date range label ---
 function dateLabel(preset: string, start: string, end: string): string {
-  const fmt = (iso: string) =>
-    new Date(iso).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    })
+  const fmt = (iso: string) => formatDate(iso)
   const presets: Record<string, string> = {
     today: 'Today',
     this_week: 'This Week',

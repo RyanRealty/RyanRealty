@@ -1,5 +1,6 @@
 // @no-parity — internal admin surface, no public mockup contract
 import { notFound, redirect } from 'next/navigation'
+import { formatDate } from '@/lib/format/date'
 import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import {
   addCrmNoteAction,
@@ -66,6 +67,7 @@ import ViewedHomeCard from '@/components/admin/crm/ViewedHomeCard'
 import { isConversationEvent } from '@/components/admin/crm/ConversationThread'
 import { StatusPill } from '@/components/console/StatusPill'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { KpiStrip } from '@/components/console/KpiStrip'
 import { LeadTabs } from '@/components/console/LeadTabs'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -451,7 +453,7 @@ export default async function ConsoleLeadPage({
   // Inquiry date for the Info tab "Inquiries" section — when the lead was created.
   const inquiryDate = (() => {
     const created = full.timeline.find((t) => t.kind === 'lead_created')?.ts ?? null
-    return created ? new Date(created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }) : null
+    return created ? formatDate(created, { month: 'short', day: 'numeric' }) : null
   })()
   // Display name: many imported leads have a placeholder name like
   // "Lead someone@example.com". Strip the "Lead " prefix so the header shows the
@@ -497,13 +499,21 @@ export default async function ConsoleLeadPage({
         </div>
       ) : null}
 
+      {/* KPI strip — per lead-command-center parity contract (4-cell at-a-glance) */}
+      <KpiStrip items={[
+        { label: 'Homes viewed', value: viewedListings.length },
+        { label: 'Saved searches', value: savedSearches.length },
+        { label: 'Web sessions', value: full.visitorSessions },
+        { label: 'Open tasks', value: openTasks.length },
+      ]} />
+
       <LeadTabs
         name={displayName}
         pictureUrl={person.picture_url}
         stage={person.stage}
         live={isLiveNow}
         ownerName={person.assigned_broker ? (CRM_BROKER_DISPLAY[person.assigned_broker as keyof typeof CRM_BROKER_DISPLAY] ?? person.assigned_broker) : null}
-        lastCommLabel={person.last_activity_at ? new Date(person.last_activity_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }) : null}
+        lastCommLabel={person.last_activity_at ? formatDate(person.last_activity_at, { month: 'short', day: 'numeric' }) : null}
         email={headerEmail}
         phone={primaryPhone ? fmtPhone(primaryPhone) : null}
         defaultTab="comms"

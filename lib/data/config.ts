@@ -41,8 +41,7 @@ async function _getCalculatorDefaults(): Promise<CalculatorDefaults> {
     .select('key, value')
     .in('key', ['mortgage_rate', 'default_tax_rate_pct', 'insurance_rate_pct'])
 
-  if (error || !data) {
-    // Non-fatal: return fallbacks so calculators still render.
+  if (error || !data) { // poison-null-ok — deliberate fallback; calculators render with hardcoded rates
     return FALLBACKS
   }
 

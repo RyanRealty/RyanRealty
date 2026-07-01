@@ -12,6 +12,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
 import type { ActionPlanEnrollment } from '@/lib/data/crm/getContactActionPlanProgress'
 
@@ -28,23 +29,23 @@ type Props = {
 function StatusBadge({ status }: { status: string }) {
   if (status === 'running') {
     return (
-      <Badge className="border-success/20 bg-success/10 text-[10px] text-success">
+      <Badge className="border-success/20 bg-success/10 text-xs text-success">
         Running
       </Badge>
     )
   }
   if (status === 'paused' || status === 'paused_reply') {
-    return <Badge variant="outline" className="text-[10px]">Paused</Badge>
+    return <Badge variant="outline" className="text-xs">Paused</Badge>
   }
   if (status === 'awaiting_broker' || status === 'awaiting_broker_next') {
     return (
-      <Badge className="border-warning/20 bg-warning/10 text-[10px] text-warning">
+      <Badge className="border-warning/20 bg-warning/10 text-xs text-warning">
         Awaiting review
       </Badge>
     )
   }
   return (
-    <Badge variant="outline" className="text-[10px]">
+    <Badge variant="outline" className="text-xs">
       {status}
     </Badge>
   )
@@ -134,12 +135,12 @@ export function ActionPlanProgressPanel({
                 <div className="flex gap-2">
                   {isRunning ? (
                     <form action={pauseAction}>
-                      <input type="hidden" name="enrollmentId" value={e.enrollmentId} />
+                      <Input type="hidden" name="enrollmentId" value={e.enrollmentId} />
                       <Button
                         type="submit"
                         size="sm"
                         variant="outline"
-                        className="min-h-[36px] text-xs sm:min-h-0"
+                        className="min-h-9 text-xs sm:min-h-0"
                       >
                         Pause
                       </Button>
@@ -148,12 +149,12 @@ export function ActionPlanProgressPanel({
 
                   {isPaused ? (
                     <form action={resumeAction}>
-                      <input type="hidden" name="enrollmentId" value={e.enrollmentId} />
+                      <Input type="hidden" name="enrollmentId" value={e.enrollmentId} />
                       <Button
                         type="submit"
                         size="sm"
                         variant="outline"
-                        className="min-h-[36px] text-xs sm:min-h-0"
+                        className="min-h-9 text-xs sm:min-h-0"
                       >
                         Resume
                       </Button>
@@ -162,11 +163,11 @@ export function ActionPlanProgressPanel({
 
                   {isAwaiting ? (
                     <form action={resumeAction}>
-                      <input type="hidden" name="enrollmentId" value={e.enrollmentId} />
+                      <Input type="hidden" name="enrollmentId" value={e.enrollmentId} />
                       <Button
                         type="submit"
                         size="sm"
-                        className="min-h-[36px] text-xs sm:min-h-0"
+                        className="min-h-9 text-xs sm:min-h-0"
                       >
                         Approve
                       </Button>
@@ -174,12 +175,12 @@ export function ActionPlanProgressPanel({
                   ) : null}
 
                   <form action={stopAction}>
-                    <input type="hidden" name="enrollmentId" value={e.enrollmentId} />
+                    <Input type="hidden" name="enrollmentId" value={e.enrollmentId} />
                     <Button
                       type="submit"
                       size="sm"
                       variant="ghost"
-                      className="min-h-[36px] text-xs text-muted-foreground hover:text-destructive sm:min-h-0"
+                      className="min-h-9 text-xs text-muted-foreground hover:text-destructive sm:min-h-0"
                     >
                       Stop
                     </Button>

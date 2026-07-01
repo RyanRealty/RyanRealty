@@ -13,6 +13,7 @@ import { Mail, MailOpen, MessageSquare, Phone, ShieldAlert, Voicemail } from 'lu
 import { Button } from '@/components/ui/button'
 import { blockCrmNumber } from '@/app/actions/crm-block'
 import { timelineEmailBody } from '@/lib/crm/email-body'
+import { formatDate, formatDateTime as fmtDateTimeFn } from '@/lib/format/date'
 
 export type ConversationEvent = {
   id: number
@@ -47,15 +48,11 @@ function mediaOf(payload: ConversationEvent['payload']): Array<{ messageSid: str
 }
 
 function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles',
-  })
+  return formatDate(iso, { month: 'short', day: 'numeric' })
 }
 
 function fmtDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('en-US', {
-    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles',
-  })
+  return fmtDateTimeFn(iso)
 }
 
 /** Channel glyph + the FUB row's title + participant lines for one event. */

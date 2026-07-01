@@ -201,7 +201,7 @@ export default async function BrokerCommandCenterPage({
           table (Name · Email · Phone · Last Activity · Time · Stage · Assigned),
           identical to FUB. Matt directive 2026-06-30 + screenshots. ── */}
       <section className="hidden lg:block">
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {[
             { label: 'New Leads', value: String(kpis.newLeads30d), sub: `${kpis.unactioned} unactioned` },
             { label: 'Needs Action', value: String(needsActionCount), sub: needsActionCount === 0 ? 'all caught up' : 'to act on' },

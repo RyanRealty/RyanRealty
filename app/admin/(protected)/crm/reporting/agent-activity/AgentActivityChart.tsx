@@ -22,6 +22,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { METRIC_OPTIONS, METRIC_LABELS, type MetricKey } from '@/lib/crm/reporting-constants'
 import type { TimeSeriesPoint } from '@/lib/data/crm/getAgentActivityReport'
+import { formatDate } from '@/lib/format/date'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -37,23 +38,13 @@ interface Props {
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function fmtAxisDate(iso: string): string {
-  const d = new Date(iso + 'T00:00:00Z')
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+  return formatDate(iso + 'T00:00:00Z', { month: 'short', day: 'numeric' })
 }
 
 function fmtLongDate(iso: string): string {
   // iso may be a full ISO timestamp (from prevDateStart/prevDateEnd, e.g. "2025-06-30T23:59:59.999Z")
   // OR a date-only string (from chart tooltip labels, e.g. "2025-06-15").
-  // Use new Date(iso) directly — appending 'T00:00:00Z' to a string that already
-  // has a time component produces an invalid date (the "Invalid Date" bug).
-  const d = new Date(iso)
-  return d.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'UTC',
-  })
+  return formatDate(iso, { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
 }
 
 type BucketRow = { date: string } & Record<MetricKey, number>

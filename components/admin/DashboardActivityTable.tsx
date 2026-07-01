@@ -52,6 +52,7 @@ export function DashboardActivityTable({ rows }: { rows: DashboardActivityRow[] 
     return <p className="px-4 py-10 text-center text-sm text-muted-foreground">No recent activity.</p>
   }
   return (
+    <div className="overflow-x-auto no-scrollbar">
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
@@ -110,5 +111,6 @@ export function DashboardActivityTable({ rows }: { rows: DashboardActivityRow[] 
         })}
       </TableBody>
     </Table>
+    </div>
   )
 }

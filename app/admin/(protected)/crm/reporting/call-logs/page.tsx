@@ -18,6 +18,7 @@ import {
   type CallLogOutcome,
 } from '@/lib/data/crm/getCallLogsReport'
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
+import { formatDate } from '@/lib/format/date'
 import { Card } from '@/components/ui/card'
 import {
   Table,
@@ -66,18 +67,8 @@ function formatDuration(sec: number | null): string {
 
 /** Format an ISO timestamp as "Jun 25 · 10:48 AM" (Pacific, matching broker timezone). */
 function formatCallTime(iso: string): string {
-  const d = new Date(iso)
-  const date = d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    timeZone: 'America/Los_Angeles',
-  })
-  const time = d.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-    timeZone: 'America/Los_Angeles',
-  })
+  const date = formatDate(iso, { month: 'short', day: 'numeric' })
+  const time = formatDate(iso, { hour: 'numeric', minute: '2-digit', hour12: true })
   return `${date} · ${time}`
 }
 

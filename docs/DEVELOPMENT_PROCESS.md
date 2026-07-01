@@ -106,6 +106,16 @@ Everything in `docs/plans/` is registered here. A new file in that directory wit
 | `SKYSLOPE_COMPLIANCE_HANDOFF_2026-05-28.md` | ops record (not site process) |
 | `CROSS_AGENT_HANDOFF.md`, `SESSION_HANDOFF_2026-06-01.md`, `SESSION_HANDOFF_2026-06-01_PARTB.md`, `task-handoff-template.md` | session-continuity records |
 | `ADMIN_CURATION_TO_BAR.md`, `HANDOFF-cma-form-twilio-2026-06-13.md`, `HANDOFF_CRM_SESSION_2026-06-12.md`, `HANDOFF_HEATH_LP_2026-06-13.md`, `NEXT_SESSION_START_HERE_2026-06-13.md` | parallel-session records (archive) |
+| `CRM_BUILD_MISSION.md` | **live** — CRM delivery mission: locked §07 person-detail parity gap list, delivery order, CI override authorization, per-deliverable status log |
+| `CRM_FUB_ASSOCIATION_AND_ACTIVITY_2026-06-29.md` | research record — FUB association + activity parity analysis feeding crm-completion-spec (archive) |
+| `CRM_FUB_MOBILE_UI_AUDIT_2026-06-29.md` | research record — FUB mobile UI parity audit (archive) |
+| `CRM_MUTATION_AUDIT_2026-06-29.md` | research record — CRM mutation coverage audit 2026-06-29 (archive) |
+| `FUB_CUTOVER_READINESS_2026-06-29.md` | research record — FUB cutover readiness gate assessment (archive) |
+| `FUB_PARITY_COMPOSER_GROUP_MMS_2026-06-29.md` | research record — FUB composer + group + MMS parity spec (archive) |
+| `HANDOFF_2026-06-28.md`, `HANDOFF_CRM_FUB_UI_2026-06-29.md` | session-continuity records |
+| `SUBDIVISION_SEO_BATCH2_2026-06-29.md` | executed — subdivision SEO batch 2 (record) |
+| `TWILIO_FEATURE_RESEARCH_2026-06-29.md` | research record — Twilio feature coverage analysis (archive) |
+| `CONTACT_HEADER_REDESIGN_2026-06-30.md` | open input — contact header redesign spec, feed into Experience loop |
 | `GLOBAL_SKILLS_REGISTRY.md` | tool index (live reference) |
 | `task-registry.json` | live registry (non-md, exempt) |
 

@@ -11,6 +11,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import type { ContactCollaborator } from '@/lib/data/crm/getContactCollaborators'
 import { CRM_BROKER_DISPLAY, CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
 
@@ -52,21 +53,23 @@ export function CollaboratorsPanel({ collaborators, assignedBroker, addAction, r
                 className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2"
               >
                 <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
                     {c.displayName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
                   </div>
                   <span className="text-sm font-medium text-foreground">{c.displayName}</span>
-                  <Badge variant="outline" className="text-[10px]">Collaborator</Badge>
+                  <Badge variant="outline" className="text-xs">Collaborator</Badge>
                 </div>
                 <form action={removeAction}>
-                  <input type="hidden" name="brokerSlug" value={c.brokerSlug} />
-                  <button
+                  <Input type="hidden" name="brokerSlug" value={c.brokerSlug} />
+                  <Button
                     type="submit"
-                    className="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:text-destructive"
+                    size="sm"
+                    variant="ghost"
+                    className="h-auto px-1.5 py-0.5 text-xs text-muted-foreground hover:text-destructive"
                     aria-label={`Remove ${c.displayName} as collaborator`}
                   >
                     Remove
-                  </button>
+                  </Button>
                 </form>
               </div>
             ))}
@@ -76,14 +79,14 @@ export function CollaboratorsPanel({ collaborators, assignedBroker, addAction, r
         {/* Add available brokers */}
         {available.length > 0 ? (
           <div className="space-y-1.5">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Add collaborator
             </div>
             {available.map((slug) => (
               <form key={slug} action={addAction} className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-border px-3 py-2">
-                <input type="hidden" name="brokerSlug" value={slug} />
+                <Input type="hidden" name="brokerSlug" value={slug} />
                 <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold text-muted-foreground">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
                     {(CRM_BROKER_DISPLAY[slug as CrmBrokerSlug] ?? slug)
                       .split(' ')
                       .map((n) => n[0])
@@ -95,7 +98,7 @@ export function CollaboratorsPanel({ collaborators, assignedBroker, addAction, r
                     {CRM_BROKER_DISPLAY[slug as CrmBrokerSlug] ?? slug}
                   </span>
                 </div>
-                <Button type="submit" size="sm" variant="outline" className="min-h-[40px] sm:min-h-0">
+                <Button type="submit" size="sm" variant="outline" className="min-h-10 sm:min-h-0">
                   Add
                 </Button>
               </form>
