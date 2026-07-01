@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.697.3 (2026-07-01)
+
+### Maintenance
+- docs(crm): Person-detail parity (#6) verified + rogue-commit incident logged
+
+---
+
+
 ## v1.697.2 (2026-07-01)
 
 ### Bug Fixes
