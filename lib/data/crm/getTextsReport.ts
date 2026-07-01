@@ -31,27 +31,31 @@ export type TextsParams = {
  *
  * | Metric              | Source                                                                |
  * |---------------------|-----------------------------------------------------------------------|
- * | sent                | crm_timeline kind='sms_out', broker=slug, ts in [start,end]           |
+ * | sent                | crm_timeline kind='sms_out', broker=slug, ts in [start,end],         |
+ * |                     |   source != 'sequence' (personal texts only, matches Agent Activity) |
  * | sentPeople          | count(DISTINCT person_id) from sms_out rows                           |
- * | received            | crm_timeline kind='sms_in',  broker=slug, ts in [start,end]           |
+ * | received            | crm_timeline kind='sms_in',  broker=slug, ts in [start,end],         |
+ * |                     |   source != 'sequence' (personal texts only, matches Agent Activity) |
  * | receivedPeople      | count(DISTINCT person_id) from sms_in rows                            |
  * | conversations       | count(DISTINCT person_id) present in BOTH sms_out AND sms_in sets     |
  * | responseRate        | conversations / sentPeople × 100 (% of texted people who replied)    |
  *
- * V1 approximations (documented):
- *   - responseRate denominator uses sentPeople (unique people texted by broker).
- *     When sentPeople = 0, responseRate = null (not 0%) to avoid division by zero.
- *   - conversations requires set-intersection between sent/received person_id sets;
- *     this is computed client-side from the two sets (no extra round-trip needed).
+ * Sequence filter: source='sequence' rows are excluded from all metrics so this
+ * report's "Texts Sent"/"Received" agrees with Agent Activity's "Texts" column,
+ * which applies the same neq('source','sequence') filter.
+ *
+ * Pagination: counts use PostgREST exact-count HEAD requests (no row cap).
+ * Distinct-people sets are built by paginating person_id in 1000-row pages so
+ * brokers with >1000 messages (e.g. Matt 1044+ sms_out) produce correct set sizes.
  */
 export type TextsRow = {
   brokerSlug: string
   brokerName: string
   avatarUrl: string | null
-  /** Outbound texts sent by this broker (kind='sms_out'). */
+  /** Outbound texts sent by this broker (kind='sms_out', source!='sequence'). */
   sent: number
   sentPeople: number
-  /** Inbound texts received by this broker's number (kind='sms_in'). */
+  /** Inbound texts received by this broker's number (kind='sms_in', source!='sequence'). */
   received: number
   receivedPeople: number
   /**
@@ -92,6 +96,78 @@ const EMPTY_TOTALS: TextsTotals = {
   responseRate: null,
 }
 
+// ── Pagination helper ─────────────────────────────────────────────────────────
+//
+// PostgREST caps any `.select()` response at 1000 rows by default. For brokers
+// with high message volumes (Matt: 1044+ non-sequence sms_out YTD), fetching
+// person_id rows would be silently truncated, producing wrong distinct-people
+// counts and wrong conversation intersections.
+//
+// Strategy:
+//   1. Exact COUNT — one HEAD request (`{ count: 'exact', head: true }`) that
+//      returns the true total without fetching any rows.
+//   2. Paginated person_id fetch — loop with `.range(offset, offset+PAGE-1)`
+//      until a page returns fewer than PAGE rows, accumulating into a Set for
+//      O(1) intersection later.
+//
+// The count comes from step 1 (authoritative). The peopleSet comes from step 2.
+
+const PAGE_SIZE = 1000
+
+async function fetchSmsMetrics(
+  sb: ReturnType<typeof createServiceClient>,
+  slug: string,
+  kind: 'sms_out' | 'sms_in',
+  start: string,
+  end: string,
+): Promise<{ count: number; peopleSet: Set<number> }> {
+  // Step 1 — exact count (no row data returned, no cap applies)
+  const { count, error: countError } = await sb
+    .from('crm_timeline')
+    .select('*', { count: 'exact', head: true })
+    .eq('broker', slug)
+    .eq('kind', kind)
+    .neq('source', 'sequence')
+    .gte('ts', start)
+    .lte('ts', end)
+
+  if (countError) {
+    console.error(`[getTextsReport] count error ${slug}/${kind}`, countError.message)
+  }
+
+  // Step 2 — paginated person_id fetch to build the distinct-people set
+  const peopleSet = new Set<number>()
+  let offset = 0
+
+  while (true) {
+    const { data, error } = await sb
+      .from('crm_timeline')
+      .select('person_id')
+      .eq('broker', slug)
+      .eq('kind', kind)
+      .neq('source', 'sequence')
+      .gte('ts', start)
+      .lte('ts', end)
+      .range(offset, offset + PAGE_SIZE - 1)
+
+    if (error) {
+      console.error(
+        `[getTextsReport] page error ${slug}/${kind} offset=${offset}`,
+        error.message,
+      )
+      break
+    }
+
+    const rows = (data ?? []) as Array<{ person_id: number }>
+    for (const r of rows) peopleSet.add(r.person_id)
+
+    if (rows.length < PAGE_SIZE) break // final page
+    offset += PAGE_SIZE
+  }
+
+  return { count: count ?? peopleSet.size, peopleSet }
+}
+
 // ── Core reader (uncached) ────────────────────────────────────────────────────
 
 async function readTextsReport(params: TextsParams): Promise<TextsResult> {
@@ -126,60 +202,48 @@ async function readTextsReport(params: TextsParams): Promise<TextsResult> {
 
   // 2. Per-broker parallel queries.
   //
-  //    Two queries per broker — low cardinality expected (texts are broker-personal
-  //    1:1 SMS via Twilio; volumes are ~10s–100s/month per broker).
+  //    Each broker gets two fetchSmsMetrics calls (sms_out + sms_in). Each call
+  //    issues one HEAD count request + as many 1000-row person_id pages as needed.
+  //    Matt YTD requires 2 pages for sms_out (1044 rows); all others fit in 1.
   //
-  //    Group A: kind='sms_out' rows — outbound texts sent BY the broker
-  //    Group B: kind='sms_in'  rows — inbound texts received on the broker's number
+  //    source != 'sequence' is applied in every query so automated drip texts are
+  //    excluded, matching the Agent Activity report's "Texts" column definition.
   //
   const perBrokerGroup = await Promise.all(
     scopedBrokers.map((b) => {
       const slug = b.crm_slug
       return Promise.all([
-        // a: texts SENT by this broker
-        sb.from('crm_timeline')
-          .select('person_id')
-          .eq('broker', slug)
-          .eq('kind', 'sms_out')
-          .gte('ts', start)
-          .lte('ts', end),
-        // b: texts RECEIVED on this broker's number
-        sb.from('crm_timeline')
-          .select('person_id')
-          .eq('broker', slug)
-          .eq('kind', 'sms_in')
-          .gte('ts', start)
-          .lte('ts', end),
+        fetchSmsMetrics(sb, slug, 'sms_out', start, end),
+        fetchSmsMetrics(sb, slug, 'sms_in', start, end),
       ] as const)
     }),
   )
 
   // 3. Build per-broker rows
   const rows: TextsRow[] = scopedBrokers.map((b, i) => {
-    const [sentRes, receivedRes] = perBrokerGroup[i]
-    const sentRows = (sentRes.data ?? []) as Array<{ person_id: number }>
-    const receivedRows = (receivedRes.data ?? []) as Array<{ person_id: number }>
+    const [sentMetrics, receivedMetrics] = perBrokerGroup[i]
 
-    // Texts sent
-    const sent = sentRows.length
-    const sentPeopleSet = new Set(sentRows.map((r) => r.person_id))
+    // Texts sent — exact count from HEAD request; people from paginated Set
+    const sent = sentMetrics.count
+    const sentPeopleSet = sentMetrics.peopleSet
     const sentPeople = sentPeopleSet.size
 
-    // Texts received
-    const received = receivedRows.length
-    const receivedPeopleSet = new Set(receivedRows.map((r) => r.person_id))
+    // Texts received — exact count from HEAD request; people from paginated Set
+    const received = receivedMetrics.count
+    const receivedPeopleSet = receivedMetrics.peopleSet
     const receivedPeople = receivedPeopleSet.size
 
-    // 2-way conversations — person_id appears in both sent and received sets
+    // 2-way conversations — person_id appears in both sent and received Sets
     let conversations = 0
     for (const pid of sentPeopleSet) {
       if (receivedPeopleSet.has(pid)) conversations++
     }
 
     // Response rate — % of texted people who replied back
-    const responseRate = sentPeople > 0
-      ? Math.round((conversations / sentPeople) * 100 * 10) / 10
-      : null
+    const responseRate =
+      sentPeople > 0
+        ? Math.round((conversations / sentPeople) * 100 * 10) / 10
+        : null
 
     return {
       brokerSlug: b.crm_slug,
@@ -225,8 +289,16 @@ async function readTextsReport(params: TextsParams): Promise<TextsResult> {
  * Cache is keyed on filter params so different combos get separate entries.
  *
  * Source tables:
- *   - crm_timeline kind='sms_out' → texts SENT by broker
- *   - crm_timeline kind='sms_in'  → texts RECEIVED on broker's Twilio number
+ *   - crm_timeline kind='sms_out', source!='sequence' → personal texts SENT by broker
+ *   - crm_timeline kind='sms_in',  source!='sequence' → personal texts RECEIVED
+ *
+ * Sequence filter: automated drip/sequence messages (source='sequence') are
+ * excluded so this report's counts match the Agent Activity "Texts" column.
+ *
+ * Cap fix (v2): counts use exact-count HEAD requests; distinct-people sets use
+ * paginated 1000-row fetches. The old v1 approach (`rows.length` after a single
+ * select) was silently truncated at 1000, causing e.g. Matt's "Texts Sent" to
+ * show 1000 instead of the correct value (1044 non-sequence YTD as of 2026-07-01).
  *
  * INFERRED REPORT: no dedicated FUB GIF frame was captured for the Texts tab.
  * Metrics and layout mirror the Calls report + standard FUB Texts conventions.
@@ -235,7 +307,7 @@ export async function getTextsReport(params: TextsParams): Promise<TextsResult> 
   const cached = unstable_cache(
     () => readTextsReport(params),
     [
-      'crm-texts-report-v1',
+      'crm-texts-report-v2',
       params.brokerSlug ?? 'all',
       params.datePreset,
       params.dateStart ?? 'none',
