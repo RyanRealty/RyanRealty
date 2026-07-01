@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.698.0 (2026-07-01)
+
+### Features
+- feat(crm): Templates — folder tree, merge-field inserter, share, test-send (§13)
+
+---
+
+
 ## v1.697.3 (2026-07-01)
 
 ### Maintenance
