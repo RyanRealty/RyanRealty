@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.701.0 (2026-07-01)
+
+### Features
+- feat(crm-mobile): M5 — §24 mobile People root (All Lists/Stages + list) + Activity sub-tabs
+
+---
+
+
 ## v1.700.6 (2026-07-01)
 
 ### Other
