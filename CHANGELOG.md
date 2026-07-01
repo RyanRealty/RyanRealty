@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.700.5 (2026-07-01)
+
+### Other
+- gate(crm): MECHANICAL enforcement — no CRM screen 'done' without proof
+
+---
+
+
 ## v1.700.4 (2026-07-01)
 
 ### Other
