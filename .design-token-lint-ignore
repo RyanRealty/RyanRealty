@@ -274,3 +274,10 @@ app/admin/(protected)/crm/reporting/properties/page.tsx
 # — the linter's regex matches the description of what is banned, not actual usage.
 # False positive; the page itself uses only design-system tokens.
 app/admin/(protected)/crm/reporting/call-logs/page.tsx
+
+# Deal pipeline + stage config (FUB parity, 2026-07-01): the canonical stage
+# accent palette mirrored from docs/fub-crm-spec/api-export/pipelines.json — 7
+# FUB stage hex colors (amber/salmon/periwinkle/gold/green/red) with no 2-color
+# brand-token equivalent, applied to Kanban column top-borders via inline style.
+# Same exception class as components/admin/crm/mobile/avatar-utils.ts.
+lib/crm/deal-pipelines.ts

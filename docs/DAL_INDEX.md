@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-07-01T15:09:04.316Z
+**Generated:** 2026-07-01T15:43:54.014Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -774,7 +774,7 @@ Companion files:
 
 **Tables:** `crm_deals`
 
-**Selected columns:** `assigned_broker`, `crm_people(assigned_broker)`
+**Selected columns:** `assigned_broker`, `stage`, `pipeline`, `person_id`, `name`, `crm_people(assigned_broker)`
 
 ---
 

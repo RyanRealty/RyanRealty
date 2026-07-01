@@ -805,6 +805,13 @@ export type CrmDealRow = {
   stage: string | null
   value: number | null
   entered_stage_at: string | null
+  /** Gross commission — a stored dollar amount, NOT computed from price (spec §8). */
+  commission_dollars: number | null
+  /** Projected/actual close date — drives the card's date row (spec §8 Row 3). */
+  close_date: string | null
+  property_address: string | null
+  /** Deal's own assigned broker slug (matt/rebecca/paul) — the agent avatar on the card. */
+  assigned_broker: string | null
   person_id: number | null
   person: { name: string | null } | null
 }
@@ -815,11 +822,10 @@ export async function listCrmDeals(brokerSlug?: string | null): Promise<CrmDealR
   // crm_people.assigned_broker. The embed must be inner so .eq() filters rows.
   // Deals whose person_id is null are pre-link rows — an inner embed drops them
   // when scoped, which is correct (a restricted broker can't own an unlinked deal).
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const embed = brokerSlug ? 'crm_people!inner(name,assigned_broker)' : 'crm_people(name,assigned_broker)'
   let q = sb
     .from('crm_deals')
-    .select(`id,name,pipeline,stage,value,entered_stage_at,person_id,${embed}`)
+    .select(`id,name,pipeline,stage,value,entered_stage_at,commission_dollars,close_date,property_address,assigned_broker,person_id,${embed}`)
     .order('pipeline')
     .order('entered_stage_at', { ascending: false })
   if (brokerSlug) q = q.eq('crm_people.assigned_broker', brokerSlug)
