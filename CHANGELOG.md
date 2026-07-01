@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.695.1 (2026-07-01)
+
+### Maintenance
+- docs(crm): Automation editor (delivery #4) verified on prod
+
+---
+
+
 ## v1.695.0 (2026-07-01)
 
 ### Features
