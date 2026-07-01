@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.700.6 (2026-07-01)
+
+### Other
+- gate(crm-mobile): scope = EVERY CRM page (Matt 2026-07-01)
+
+---
+
+
 ## v1.700.5 (2026-07-01)
 
 ### Other
