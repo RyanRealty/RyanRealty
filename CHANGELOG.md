@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.688.0 (2026-07-01)
+
+### Features
+- feat(crm): Agent Activity report — first Reporting-suite slice
+
+---
+
+
 ## v1.687.2 (2026-07-01)
 
 ### Maintenance
