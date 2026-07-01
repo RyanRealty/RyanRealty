@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.692.0 (2026-07-01)
+
+### Features
+- feat(crm): Reporting suite — Properties, Call Logs, Speed to Lead, Contact Attempts
+
+---
+
+
 ## v1.691.1 (2026-07-01)
 
 ### Bug Fixes
