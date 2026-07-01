@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.695.0 (2026-07-01)
+
+### Features
+- feat(crm): delivery #4 — automation/action-plan visual editor
+
+### Maintenance
+- docs(crm): Deals restage fully verified — Matt confirmed drag saves
+
+---
+
+
 ## v1.694.1 (2026-07-01)
 
 ### Maintenance
