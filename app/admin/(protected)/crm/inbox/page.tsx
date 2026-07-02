@@ -9,9 +9,10 @@
  *
  * Every send routes through the EXISTING suppression/quiet-hours-gated actions
  * (sendCrmSmsAction / sendCrmEmailAction) — this page never adds a send path.
- * Mobile (< md) keeps the single-column list/thread pattern (§26 rebuilds it).
+ * Mobile (< md) is the §26 FUB-iOS inbox (MobileInbox list + MobileThread
+ * pushed detail) with the §27 compose surfaces (MobileComposeSheet FAB, AI
+ * pill strip, calling-method sheet) — same gated actions, phone-first layout.
  */
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import {
   getCrmAccess,
@@ -20,16 +21,21 @@ import {
   addCrmTagAction,
   addCrmNoteAction,
   getTwilioSmsStatus,
+  startCrmCallAction,
 } from '@/app/actions/crm'
 import {
   setConversationStateAction,
   assignConversationAction,
   bulkConversationStateAction,
-  markAllReadAction,
   saveDraftAction,
   discardDraftAction,
   addUnknownCallerPersonAction,
+  aiSmsDraftAction,
+  type AiDraftKind,
 } from '@/app/actions/crm-inbox'
+import { blockCrmNumber } from '@/app/actions/crm-block'
+import { searchCrmContactsAction } from '@/app/actions/crm-tasks'
+import { getCrmTemplatesAdmin } from '@/lib/data/crm/getCrmTemplatesAdmin'
 import {
   searchPeopleForMergeAction,
   linkUnknownCallerToPersonAction,
@@ -37,7 +43,6 @@ import {
 import { scopeBroker } from '@/lib/crm/scope'
 import {
   getInboxFolderQueue,
-  INBOX_FOLDERS,
   type InboxScopeKey,
   type InboxFolderKey,
   type ConversationStatus,
@@ -54,7 +59,6 @@ import { sendEmail } from '@/lib/resend'
 import { formatDateTime } from '@/lib/format/date'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
 import InboxFolderRail from '@/components/admin/crm/inbox/InboxFolderRail'
 import InboxThreadList, { type ThreadListRow } from '@/components/admin/crm/inbox/InboxThreadList'
 import InboxThreadView, { type InboxThreadViewItem } from '@/components/admin/crm/inbox/InboxThreadView'
@@ -66,8 +70,15 @@ import ContactSidebar, {
   type SidebarRecentItem,
 } from '@/components/admin/crm/inbox/ContactSidebar'
 import AddPersonForm from '@/components/admin/crm/inbox/AddPersonForm'
-import InboxQueue from '@/components/admin/crm/inbox/InboxQueue'
-import MobileStatusButton from '@/components/admin/crm/inbox/MobileStatusButton'
+import MobileBranch from '@/components/admin/crm/inbox/mobile/MobileBranch'
+import type { MobileThreadItem } from '@/components/admin/crm/inbox/mobile/MobileThread'
+import {
+  BROKER_HEADSHOTS,
+  buildMobileRows,
+  buildMobileThreadItems,
+  pickMobileMode,
+  splitComposeTemplates,
+} from '@/components/admin/crm/inbox/mobile/mobile-data'
 import {
   inboxHref,
   isScopeKey,
@@ -106,14 +117,22 @@ export default async function CrmInboxPage({
   const openId = sp.c && Number.isFinite(Number(sp.c)) ? Number(sp.c) : null
   const nowMs = Date.now()
 
-  const [{ conversations, counts }, smsStatus] = await Promise.all([
+  const [{ conversations, counts }, smsStatus, allTemplates] = await Promise.all([
     getInboxFolderQueue({ scopeKey, folder, view, brokerScope, actingBroker, limit: 100 }),
     getTwilioSmsStatus(),
+    getCrmTemplatesAdmin(),
   ])
   const rows: ThreadListRow[] = conversations.map((c) => ({
     ...c,
     tsLabel: relativeLabel(c.lastMessageAt, nowMs),
   }))
+
+  // ── Mobile (§26/§27) shared data ───────────────────────────────────────────
+  const actingSlug0 = (actingBroker ?? 'matt') as CrmBrokerSlug
+  const actingMailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug0) ?? CRM_MAILBOXES[0]
+  const actingSignature = await getSignatureForMailbox(actingMailbox.email)
+  const { emailTemplates, smsTemplates } = splitComposeTemplates(allTemplates, actingSlug0)
+  const mobileRows = buildMobileRows(conversations, scopeKey, folder, view, nowMs)
 
   // ── Server actions bound for the client controls ──────────────────────────
   async function bulkTriage(personIds: number[], status: ConversationStatus): Promise<{ ok: boolean; error?: string }> {
@@ -129,11 +148,6 @@ export default async function CrmInboxPage({
     }
     return { ok: true }
   }
-  async function markRead(): Promise<void> {
-    'use server'
-    await markAllReadAction()
-  }
-
   // ── Open conversation pane ────────────────────────────────────────────────
   let openPane: {
     personId: number
@@ -163,6 +177,9 @@ export default async function CrmInboxPage({
     draftEmailSubject: string
     draftEmailBody: string
     hasEmailDraft: boolean
+    /** §26 mobile thread presentation — email detail (26-E) vs SMS bubbles (26-I). */
+    mobileMode: 'email' | 'sms'
+    mobileItems: MobileThreadItem[]
   } | null = null
 
   if (openId) {
@@ -176,6 +193,9 @@ export default async function CrmInboxPage({
         getDraftsForPerson(openId, actingBroker),
       ])
       const items: InboxThreadViewItem[] = thread.map((it) => ({ ...it, tsLabel: formatDateTime(it.ts) }))
+      // §26 mobile thread — sanitized server-side in mobile-data.ts.
+      const mobileItems: MobileThreadItem[] = buildMobileThreadItems(thread)
+      const mobileMode = pickMobileMode(thread, Boolean(target?.phone))
       const status: ConversationStatus = (stateRow.data?.status as ConversationStatus | undefined) ?? 'unread'
       const actingSlug = access.brokerSlug ?? card.assignedBroker ?? 'matt'
       const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
@@ -221,6 +241,8 @@ export default async function CrmInboxPage({
         draftEmailSubject: drafts.email?.subject ?? '',
         draftEmailBody: drafts.email?.body ?? '',
         hasEmailDraft: Boolean(drafts.email),
+        mobileMode,
+        mobileItems,
       }
     }
   }
@@ -301,6 +323,44 @@ export default async function CrmInboxPage({
     'use server'
     const res = await setConversationStateAction(personId, status)
     return res.ok ? { ok: true } : { ok: false, error: res.error }
+  }
+  // ── §26/§27 mobile-bound actions (same gated send paths, result-returning) ──
+  async function composeSmsTo(personId: number, formData: FormData): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    formData.set('personId', String(personId))
+    const r = await sendCrmSmsAction(formData)
+    return r.ok ? { ok: true } : { ok: false, error: r.error }
+  }
+  async function composeEmailTo(personId: number, formData: FormData): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    formData.set('personId', String(personId))
+    const r = await sendCrmEmailAction(formData)
+    return r.ok ? { ok: true } : { ok: false, error: r.error }
+  }
+  async function searchContactsFor(q: string): Promise<Array<{ id: number; name: string }>> {
+    'use server'
+    const res = await searchCrmContactsAction(q)
+    return res.ok ? res.results : []
+  }
+  async function callContact(personId: number): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    const fd = new FormData()
+    fd.set('personId', String(personId))
+    const r = await startCrmCallAction(fd)
+    return r.ok ? { ok: true } : { ok: false, error: r.error }
+  }
+  async function blockPhoneFor(phone: string): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    const r = await blockCrmNumber(phone, { reason: 'manual', note: 'Blocked from the mobile inbox' })
+    return r.ok ? { ok: true } : { ok: false, error: r.error }
+  }
+  async function aiDraftFor(
+    personId: number,
+    kind: AiDraftKind,
+    customPrompt?: string,
+  ): Promise<{ ok: true; draft: string } | { ok: false; error: string }> {
+    'use server'
+    return aiSmsDraftAction(personId, kind, customPrompt)
   }
   async function assignFor(personId: number, broker: string | null): Promise<{ ok: boolean; error?: string }> {
     'use server'
@@ -437,114 +497,45 @@ export default async function CrmInboxPage({
   return (
     <main className="mx-auto w-full px-3 py-6 sm:px-4">
       {/*
-        ── Mobile (< md): single-column list / thread (§26 owns the rebuild) ──
+        ── Mobile (< md): §26 FUB-iOS inbox (MobileBranch → MobileInbox list /
+           MobileThread pushed detail / MobileComposeSheet FAB, §27). ──
       */}
-      {openPane ? (
-        <div className="md:hidden">
-          <Link
-            href={backHref}
-            className="inline-flex min-h-11 items-center gap-1.5 text-sm text-primary active:opacity-70"
-          >
-            <span aria-hidden>‹</span> Inbox
-          </Link>
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <h1 className="truncate text-lg font-bold text-foreground">
-              <Link href={`/admin/crm/${openPane.personId}`} className="text-primary">
-                {openPane.name}
-              </Link>
-            </h1>
-            <MobileStatusButton
-              status={openPane.status}
-              setStatusAction={setStatusFor.bind(null, openPane.personId)}
-            />
-          </div>
-          <div className="mt-4">
-            <InboxThreadView items={openPane.items} personName={openPane.name} />
-          </div>
-          {openPane.isUnknown ? (
-            <div className="mt-4">
-              <AddPersonForm
-                phone={openPane.phone}
-                addAction={addPersonFor.bind(null, openPane.personId)}
-                searchAction={searchExistingFor.bind(null, openPane.personId)}
-                linkAction={linkExistingFor.bind(null, openPane.personId)}
-              />
-            </div>
-          ) : null}
-          <div className="mt-4 border-t border-border pt-4">
-            {sendError ? (
-              <Alert variant="destructive" className="mb-3">
-                <AlertDescription>{sendError}</AlertDescription>
-              </Alert>
-            ) : null}
-            <InlineReply
-              smsAction={sendSmsForm.bind(null, openPane.personId)}
-              emailAction={sendEmailForm.bind(null, openPane.personId)}
-              smsAndCloseAction={sendSmsAndCloseForm.bind(null, openPane.personId)}
-              emailAndCloseAction={sendEmailAndCloseForm.bind(null, openPane.personId)}
-              signatureHtml={openPane.signatureHtml}
-              canText={openPane.canText}
-              canEmail={openPane.canEmail}
-              smsAllowed={smsStatus.canSend}
-              initialSmsBody={openPane.draftSmsBody}
-              initialEmailSubject={openPane.draftEmailSubject}
-              initialEmailBody={openPane.draftEmailBody}
-              hasTextDraft={openPane.hasTextDraft}
-              hasEmailDraft={openPane.hasEmailDraft}
-              saveSmsDraftAction={saveDraftForm.bind(null, openPane.personId, 'text')}
-              saveEmailDraftAction={saveDraftForm.bind(null, openPane.personId, 'email')}
-              discardDraftAction={discardDraftFor.bind(null, openPane.personId)}
-              addTagAction={addTagFor.bind(null, openPane.personId)}
-              lastEmailSubject={openPane.lastEmailSubject}
-              startOpen={startCompose}
-            />
-          </div>
-        </div>
-      ) : (
-        <div className="md:hidden">
-          <div className="flex items-center justify-between gap-3">
-            <h1 className="text-xl font-bold text-foreground">Inbox</h1>
-            <form action={markRead}>
-              <Button type="submit" size="sm" variant="outline">
-                Mark all read
-              </Button>
-            </form>
-          </div>
-
-          {/* Folder sub-tabs — the five FUB folders, me scope (§26 rebuilds this) */}
-          <div className="-mx-3 mt-4 flex overflow-x-auto border-b border-border no-scrollbar">
-            {INBOX_FOLDERS.map((f) => {
-              const active = scopeKey === 'me' && folder === f
-              const count = counts.me[f]
-              return (
-                <Link
-                  key={f}
-                  href={inboxHref({ scope: 'me', folder: f })}
-                  className="relative shrink-0 px-4 py-3 text-center text-sm font-medium transition-colors"
-                  style={{ color: active ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))' }}
-                >
-                  {FOLDER_TITLES[f]}
-                  {count > 0 ? <span className="ml-1 tabular-nums opacity-70">{count}</span> : null}
-                  {active ? (
-                    <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-primary" />
-                  ) : null}
-                </Link>
-              )
-            })}
-          </div>
-
-          <div className="mt-0">
-            <ConsoleSection title="">
-              <InboxQueue
-                conversations={conversations}
-                activePersonId={openId}
-                hrefBase={inboxHref({ scope: scopeKey, folder, view })}
-                bulkAction={bulkTriage}
-              />
-            </ConsoleSection>
-          </div>
-        </div>
-      )}
+      <MobileBranch
+        pane={openPane}
+        rows={mobileRows}
+        scopeKey={scopeKey}
+        folder={folder === 'drafts' ? 'inbox' : folder}
+        view={view}
+        unreadTotal={counts.unreadTotal}
+        brokerName={CRM_BROKER_DISPLAY[actingSlug0] ?? actingSlug0}
+        brokerHeadshotUrl={BROKER_HEADSHOTS[actingSlug0] ?? null}
+        canAssign={canAssign}
+        brokers={BROKER_OPTIONS}
+        smsAllowed={smsStatus.canSend}
+        hrefBase={inboxHref({ scope: scopeKey, folder: folder === 'drafts' ? 'inbox' : folder, view })}
+        backHref={backHref}
+        sendError={sendError}
+        actingSignatureHtml={actingSignature?.html ?? null}
+        emailTemplates={emailTemplates}
+        smsTemplates={smsTemplates}
+        actions={{
+          sendSmsForm: sendSmsForm.bind(null, openPane?.personId ?? 0),
+          sendEmailForm: sendEmailForm.bind(null, openPane?.personId ?? 0),
+          setStatusThread: setStatusFor.bind(null, openPane?.personId ?? 0),
+          setStatusFor,
+          assignFor,
+          blockPhoneFor,
+          callContact: callContact.bind(null, openPane?.personId ?? 0),
+          aiDraftThread: aiDraftFor.bind(null, openPane?.personId ?? 0),
+          aiDraftFor,
+          searchContactsFor,
+          composeSmsTo,
+          composeEmailTo,
+          addPersonFor: addPersonFor.bind(null, openPane?.personId ?? 0),
+          searchExistingFor: searchExistingFor.bind(null, openPane?.personId ?? 0),
+          linkExistingFor: linkExistingFor.bind(null, openPane?.personId ?? 0),
+        }}
+      />
 
       {/*
         ── Desktop (≥ md): FUB three-panel layout (spec §2) ──

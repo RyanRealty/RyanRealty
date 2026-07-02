@@ -373,3 +373,77 @@ export async function addUnknownCallerPersonAction(
   revalidateInbox(id)
   return { ok: true }
 }
+
+// ── §27 S3 — AI compose drafts (mobile pill strip) ───────────────────────────
+//
+// Generates a SHORT draft the broker reviews + edits in the compose field.
+// This action NEVER sends — the send still goes through the suppression-gated
+// sendCrmSmsAction/sendCrmEmailAction. Auto-send of AI content is prohibited
+// (spec §27 S3 "AI template generation flow" step 6); filling an editable input
+// is the entire scope of this action.
+
+export type AiDraftKind = 'introduction' | 'follow_up' | 'still_buying' | 'custom'
+
+export async function aiSmsDraftAction(
+  personId: number,
+  kind: AiDraftKind,
+  customPrompt?: string,
+): Promise<{ ok: true; draft: string } | { ok: false; error: string }> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
+  const id = Number(personId)
+  if (!Number.isFinite(id) || id <= 0) return { ok: false, error: 'A contact is required' }
+  const scoped = await requirePersonInScope(id, access)
+  if (!scoped.ok) return scoped
+  if (!process.env.ANTHROPIC_API_KEY?.trim()) return { ok: false, error: 'AI drafting is not configured' }
+
+  const [{ getInboxContactCard }, { getConversationThread }] = await Promise.all([
+    import('@/lib/data/crm/getInboxThread'),
+    import('@/lib/data/crm/getInboxQueue'),
+  ])
+  const [card, thread] = await Promise.all([getInboxContactCard(id), getConversationThread(id, 12)])
+  if (!card) return { ok: false, error: 'Contact not found' }
+
+  const recent = thread
+    .filter((it) => ['message', 'email', 'call', 'note'].includes(it.category))
+    .slice(0, 8)
+    .map((it) => `${it.label} (${it.ts.slice(0, 10)}): ${(it.snippet ?? '').slice(0, 160)}`)
+    .join('\n')
+
+  const ask =
+    kind === 'introduction'
+      ? 'Write a first-touch introduction text.'
+      : kind === 'follow_up'
+        ? 'Write a follow-up text that references the most recent real activity in the context.'
+        : kind === 'still_buying'
+          ? 'Write a gentle check-in text asking whether they are still looking at homes.'
+          : `Write a text for this request from the broker: ${String(customPrompt ?? '').slice(0, 300)}`
+
+  const { default: Anthropic } = await import('@anthropic-ai/sdk')
+  const client = new Anthropic()
+  try {
+    const msg = await client.messages.create({
+      model: 'claude-opus-4-8',
+      max_tokens: 300,
+      system: [
+        'You draft one short SMS for a Ryan Realty broker in Bend, Oregon. The broker reviews and edits before sending.',
+        'Voice: direct, specific, kind, honest. Plain English. Short sentences.',
+        'HARD RULES: no em dashes, no semicolons, no exclamation marks, no emoji.',
+        'Banned words: stunning, gorgeous, charming, nestled, boasts, dream home, truly, luxurious, delve, seamless, elevate, vibrant, curated, act fast, dont miss out.',
+        'Never invent market numbers, prices, listings, or facts not present in the context. Reference only what the contact actually did or said.',
+        'Under 280 characters. Output ONLY the SMS body text, nothing else.',
+      ].join(' '),
+      messages: [
+        {
+          role: 'user',
+          content: `Contact: ${card.name ?? 'Unknown'} · stage ${card.stage}${card.source ? ` · source ${card.source}` : ''}${card.timeframe ? ` · timeframe ${card.timeframe}` : ''}\nRecent activity (newest first):\n${recent || '(no prior activity)'}\n\n${ask}`,
+        },
+      ],
+    })
+    const text = msg.content.find((b) => b.type === 'text')?.text?.trim()
+    if (!text) return { ok: false, error: 'No draft came back. Try again.' }
+    return { ok: true, draft: text.slice(0, 320) }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message.slice(0, 160) : 'AI draft failed' }
+  }
+}

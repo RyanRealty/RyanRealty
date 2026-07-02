@@ -27,6 +27,19 @@ components/admin/crm/mobile/MobileContactDetail.tsx
 components/admin/crm/mobile/MobileInfoTab.tsx
 components/admin/crm/mobile/MobilePickerSheet.tsx
 components/admin/crm/mobile/MobilePeopleRoot.tsx
+# §26 Mobile Inbox + §27 Mobile Compose (M3/M4, 2026-07-02): same FUB-iOS
+# pt-precise reference class as the §25 files above — the documented row
+# heights (76pt rows, 60pt header, 34pt pills), 15/17/22pt text sizes, and
+# full-row/segmented-pill/swipe-action tap targets are the visual contract
+# (docs/fub-crm-spec/26-*.md + 27-*.md). Raw <button>s are full-bleed rows,
+# segmented pills, and circular icon targets the <Button> primitive can't
+# express.
+components/admin/crm/inbox/mobile/MobileBranch.tsx
+components/admin/crm/inbox/mobile/MobileInbox.tsx
+components/admin/crm/inbox/mobile/MobileInboxRow.tsx
+components/admin/crm/inbox/mobile/MobileThread.tsx
+components/admin/crm/inbox/mobile/MobileComposeSheet.tsx
+components/admin/crm/inbox/mobile/MobileAiPills.tsx
 # GlobalActivityFeed — the §24 mobile sub-tab strip (full-cell tap targets +
 # 2px indicator + FUB pt sizes) rides the existing feed client; same exception
 # class as the mobile components above.

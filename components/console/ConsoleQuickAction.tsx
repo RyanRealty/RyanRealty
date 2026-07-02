@@ -76,6 +76,10 @@ function ActionGrid({ items, onPick }: { items: Item[]; onPick: () => void }) {
 export default function ConsoleQuickAction() {
   const pathname = usePathname() ?? ''
   const leadId = leadIdFrom(pathname)
+  // §26: the mobile inbox owns its own FAB (compose sheet) — a second generic
+  // FAB there violates the single-FAB rule (§25.12 / mob-02). Hooks above run
+  // unconditionally; bail before render only.
+  const suppressed = pathname.startsWith('/admin/crm/inbox')
   const [open, setOpen] = useState(false)
   const [rec, setRec] = useState<CrmNextRec | null>(null)
   const [recLoading, setRecLoading] = useState(false)
@@ -106,6 +110,8 @@ export default function ConsoleQuickAction() {
         { label: 'Start a CMA', href: '/admin/cmas', icon: Calculator },
       ]
     : []
+
+  if (suppressed) return null
 
   return (
     <>

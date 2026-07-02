@@ -39,7 +39,11 @@ const REQUIRED_KIT_PAGES = [
   // AND the updated lead-command-center parity.json — a STRICTER contract than the
   // ConsoleSection floor this gate enforces, so this is a hand-off, not a regression.
   // CRM cluster
-  'app/admin/(protected)/crm/inbox/page.tsx',
+  // app/admin/(protected)/crm/inbox/page.tsx — REMOVED 2026-07-02: the §26
+  // mobile rebuild (MobileInbox/MobileThread) replaced the ConsoleSection
+  // mobile branch; the page is fully under the stricter ci:crm-screen-parity
+  // contract (crm-screens.json "inbox-desktop" + "inbox-mobile" +
+  // "mobile-compose" — requiredComponents + committed verify screenshots).
   'app/admin/(protected)/crm/workflows/page.tsx',
   'app/admin/(protected)/crm/tasks/page.tsx',
   'app/admin/(protected)/crm/sequences/page.tsx',

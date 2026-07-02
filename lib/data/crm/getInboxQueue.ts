@@ -124,6 +124,15 @@ export type InboxConversation = {
   isUnknown: boolean
   /** Duration of the latest call/voicemail, when the latest message is one (row label). */
   lastCallDurationSec: number | null
+  /** Message count within the recent working-set window (§26 row " N" label).
+   *  Derived from the loaded window, so very old threads may undercount — the
+   *  label is a thread-size signal, not an audited total. */
+  messageCount: number
+  /** Channel of the LATEST message — drives the §26 row channel icon + which
+   *  thread presentation (email detail vs SMS bubbles) a tap opens. */
+  lastChannel: InboxChannel | null
+  /** Subject (crm_timeline.title) of the newest email in the thread (§26 row line 2). */
+  lastEmailSubject: string | null
 };
 
 const MESSAGE_KINDS = ['sms_in', 'sms_out', 'email_in', 'email_out', 'email', 'call', 'voicemail'] as const
@@ -233,9 +242,13 @@ export function deriveConversationFromMessages(rows: RawMessageRow[]): {
   channels: InboxChannel[]
   outboundBrokers: string[]
   lastCallDurationSec: number | null
+  messageCount: number
+  lastChannel: InboxChannel | null
+  lastEmailSubject: string | null
 } {
   let lastInboundAt: string | null = null
   let lastOutboundAt: string | null = null
+  let lastEmailSubject: string | null = null
   const channels = new Set<InboxChannel>()
   const outboundBrokers = new Set<string>()
   // rows arrive newest-first; the first row is the latest message.
@@ -245,6 +258,7 @@ export function deriveConversationFromMessages(rows: RawMessageRow[]): {
     if (OUTBOUND_KINDS.has(r.kind) && (!lastOutboundAt || r.ts > lastOutboundAt)) lastOutboundAt = r.ts
     const ch = channelOfKind(r.kind)
     if (ch) channels.add(ch)
+    if (ch === 'email' && lastEmailSubject === null && r.title) lastEmailSubject = r.title
     if (OUTBOUND_KINDS.has(r.kind) && r.broker) outboundBrokers.add(r.broker)
   }
   const meta = latest ? classifyTimelineKind(latest.kind) : null
@@ -265,6 +279,9 @@ export function deriveConversationFromMessages(rows: RawMessageRow[]): {
     channels: [...channels],
     outboundBrokers: [...outboundBrokers],
     lastCallDurationSec,
+    messageCount: rows.length,
+    lastChannel: latest ? channelOfKind(latest.kind) : null,
+    lastEmailSubject,
   }
 }
 
@@ -508,6 +525,9 @@ async function buildInboxWorkingSet(
       outboundBrokers: derived.outboundBrokers,
       isUnknown: isUnknownCaller(person.name),
       lastCallDurationSec: derived.lastCallDurationSec,
+      messageCount: derived.messageCount,
+      lastChannel: derived.lastChannel,
+      lastEmailSubject: derived.lastEmailSubject,
     })
   }
   // 2) draft-only conversations (a draft exists but no message is in the timeline)
@@ -534,6 +554,9 @@ async function buildInboxWorkingSet(
       outboundBrokers: [],
       isUnknown: isUnknownCaller(person.name),
       lastCallDurationSec: null,
+      messageCount: 0,
+      lastChannel: null,
+      lastEmailSubject: null,
     })
   }
 

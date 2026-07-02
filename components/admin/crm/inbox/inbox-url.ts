@@ -63,6 +63,28 @@ export function mapLegacyScope(
   }
 }
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+/**
+ * §26 mobile row timestamp (AC-26A-06 + AC-26C-02, server-rendered):
+ *   "Xm" / "Xh" / "Xd" when ≤ 7 days · "Mon DD" same-year older · "M/DD/YY" prior years.
+ * Pure (nowMs passed in) so it stays hydration-safe and unit-testable.
+ */
+export function mobileTimeLabel(ts: string | null, nowMs: number): string {
+  if (!ts) return ''
+  const then = new Date(ts)
+  const diffMin = Math.floor((nowMs - then.getTime()) / 60000)
+  if (diffMin < 1) return 'now'
+  if (diffMin < 60) return `${diffMin}m`
+  const h = Math.floor(diffMin / 60)
+  if (h < 24) return `${h}h`
+  const d = Math.floor(h / 24)
+  if (d <= 7) return `${d}d`
+  const now = new Date(nowMs)
+  if (then.getFullYear() === now.getFullYear()) return `${MONTHS[then.getMonth()]} ${then.getDate()}`
+  return `${then.getMonth() + 1}/${String(then.getDate()).padStart(2, '0')}/${String(then.getFullYear() % 100).padStart(2, '0')}`
+}
+
 /** Server-rendered relative timestamp for thread rows (spec §4.1 — "16 hours ago"). */
 export function relativeLabel(ts: string | null, nowMs: number): string {
   if (!ts) return ''
