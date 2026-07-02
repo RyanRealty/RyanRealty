@@ -145,17 +145,14 @@ gap-fills. Standing commit+push authorization is in the mission doc.
    `.design-token-lint-ignore` — established class) + `npx vitest run` + commit + push
    (pre-push runs a full prod build, takes ~5 min — use a background shell).
 
-## NEXT (mobile track — all desktop screens are done; person-detail-mobile proven too)
-1. **mobile-shell** (§23, registry route `components/console/CrmMobileTabBar.tsx`) and
-   **mobile-activity-people** (§24, route `app/admin/(protected)/crm/page.tsx`) — both BUILT
-   (M-track shipped + verified), need proof artifacts at 390x844: capture `_verify/mob-shell.png` /
-   `_verify/mob-activity-people.png` via the scratchpad harness (`node shot.mjs <url> <out>
-   390x844` — recapture sb- cookies fresh, they rotate hourly), fill requiredComponents from each
-   route file, flip, gates, commit + push.
-2. Then the remaining mobile entries (inbox-mobile §26, mobile-compose §27, mobile-calendar-tasks
-   §29, mobile-pickers §28, mobile-dashboard, mobile-settings) — M3/M4/M6/M7 tracks; some need
-   real build work, not just proof.
-3. Also open in the mission doc: email open+click tracking wiring (every send path) — nobody owns
+## NEXT (mobile track — 12 done incl. person-detail-mobile, mobile-shell, mobile-activity-people)
+1. Remaining mobile registry entries: **inbox-mobile** (§26) + **mobile-compose** (§27) — M3/M4
+   builds needed (real build work, not just proof); **mobile-calendar-tasks** (§29) — the <md
+   branch exists (MobileCalendar/TaskQueue) but the §29 rebuild is pending (M6);
+   **mobile-pickers** (§28, M7 — the person-detail deferred pickers/sheets); **mobile-dashboard**
+   (mob-44) + **mobile-settings** (mob-06). Capture proofs at 390x844 via the scratchpad harness
+   (`node shot.mjs <url> <out> 390x844` — recapture sb- cookies fresh, they rotate hourly).
+2. Also open in the mission doc: email open+click tracking wiring (every send path) — nobody owns
    it yet. (The renderCrmMerge resolver fix SHIPPED with templates-desktop, 251ae048.)
 
 ## Gotchas carried forward

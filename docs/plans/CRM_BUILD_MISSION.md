@@ -300,6 +300,16 @@ the reference → iterate to ZERO diffs → `parity.json` → gates → the DONE
 side-by-side. Only then move to the next item.
 
 ## PROGRESS (mobile)
+- **mobile-shell + mobile-activity-people** ✅ REGISTRY-PROVEN (2026-07-01, prove-and-flip of the
+  M2/M5 builds): `_verify/mob-shell.png` (390x844, /admin/crm/activity — header chrome + §24
+  All/New Leads/Emails/Website strip + real activity feed + bottom tab bar w/ Activity active) and
+  `_verify/mob-activity-people.png` (390x844, /admin/crm — §24 People root: Everyone scope header,
+  All Lists|Stages strip, smart-list rows w/ live scoped counts incl. 8.3k abbreviation, FAB, tab
+  bar). Both fresh-Playwright captures, real crm_* data, ZERO console errors. Registry flipped w/
+  the names each route file references (CrmMobileTabBar/isPushedDetailPath/activeHref ·
+  MobilePeopleRoot/BrokerScopeSheet/ContactsSearch/getPeopleListSignals). crm-screen-parity: 12
+  done, all proven. Still pending from M5 (unchanged): swipe row actions, long-press multi-select,
+  team-filter header sheet.
 - **person-detail-mobile** ✅ REGISTRY-PROVEN (2026-07-01, prove-and-flip): the M1 build (36b06ebe +
   2492cc32 + 74e3b602 + 0cc81ea9, verified side-by-side vs §25 previously) now has its mechanical
   proof — captured `_verify/mob-contact-detail.png` at 390x844 via the fresh Playwright harness
