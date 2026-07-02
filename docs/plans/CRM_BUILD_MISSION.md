@@ -300,6 +300,14 @@ the reference → iterate to ZERO diffs → `parity.json` → gates → the DONE
 side-by-side. Only then move to the next item.
 
 ## PROGRESS (mobile)
+- **person-detail-mobile** ✅ REGISTRY-PROVEN (2026-07-01, prove-and-flip): the M1 build (36b06ebe +
+  2492cc32 + 74e3b602 + 0cc81ea9, verified side-by-side vs §25 previously) now has its mechanical
+  proof — captured `_verify/mob-contact-detail.png` at 390x844 via the fresh Playwright harness
+  (lead 12679 under `?view=mobile`, real crm_* data, ZERO console errors: §25.3 header w/ back/Edit +
+  avatar + "Last communication Jun 1", §25.4 five-tab strip w/ Info underline, §25.5 PHONE NUMBERS
+  w/ SMS/Call circles + add rows, EMAILS, RELATIONSHIPS, DETAILS, tag row, FAB). Registry flipped to
+  done w/ the 6 tab/shell components the route references. Deferrals unchanged from the M1 entry
+  (M7 pickers/sub-screens).
 - **M5 (core) People root + Activity sub-tabs** ✅ SHIPPED + VERIFIED on prod (commit e319433e, 2026-07-01).
   `/admin/crm` at < md = §24 People tab (mob-09/10): All Lists|Stages strip, 58pt smart-list rows w/ live
   scoped counts ('8.3k' abbreviation, 0 renders), list mode w/ back row + '{N} people' count bar + 44pt-avatar
@@ -338,6 +346,72 @@ and show me the screenshot.
 ## PROGRESS (agents append here as slices ship)
 
 ### GROUND-UP REBUILD under ci:crm-screen-parity (started 2026-07-01, screen-by-screen)
+- **reporting-desktop** ✅ DONE + PROVEN (commit ff4fe3ec) — the LAST desktop screen. Registry flipped
+  to done with 8 requiredComponents + committed `_verify/screen-reporting-agent-activity.png`
+  (1440x900, dev server, authed, ?date=this_year for density, ZERO console errors via the fresh
+  Playwright harness — scratchpad shot.mjs pattern). As predicted this was verify-close-diffs-and-
+  prove: the 12-report suite from the earlier delivery was already close; the anchor screen
+  (§11.5 Agent Activity + addenda agentactivity.md) had these REAL diffs, all closed:
+  (1) §11.3 "Show me" was a static phrase + "Switch view →" link → now a true interactive
+  page-title DropdownMenu (ShowMeSelector: primary underlined phrase + chevron, both documented
+  views, check on active, navigates ?view=). (2) The Closed Deals by Agent alternate view rendered
+  EM-DASHES where real data exists (a §0 violation in the honest direction but still wrong) → now
+  real: NEW lib/data/crm/agentActivityClosedDeals.ts (fetchClosedDealsByBroker — is_closed_stage
+  stage names, effective close = actual_close_date ?? close_date inside the window, archived
+  INCLUDED per spec, commission = SUM(commission_dollars)), split out to respect the 600-LOC
+  file budget; wired into getAgentActivityReport (cache key v5). DB-VERIFIED: Rebecca 1 closed
+  deal / $9,187 (crm_deals id=2, eff_close 2026-03-20) — note the first audit query DOUBLE-counted
+  via a name join because BOTH pipelines have a stage named "Closed" (is_closed_stage twice);
+  the page was right, the naive audit was wrong. (3) §11.5 column-totals row added (Total,
+  semibold, bg-muted/30; sums verified against per-broker rows: 5,228+6=5,234 etc). (4) The
+  lead-type Select was a silent NO-OP → honest UI: "All leads" is the real (only) mode; Web/Manual
+  render disabled (crm_people has no web-vs-manual classification). (5) Non-superusers got NO
+  filter controls (couldn't even change the date) → filters always render; agent Select locked
+  to Me for non-superusers (export route was already server-scoped). (6) The "ⓘ How Reporting
+  works" pill was an inert Badge → real outline Button + honest text Dialog (shared
+  components/admin/crm/reporting/HowReportingWorks.tsx, the How-Tasks-work pattern).
+  SHELL FIXES (screen-level §11.1 — the sub-nav is part of the anchor): the Marketing and Deals
+  tabs 404'd on every reporting page. NEW `/admin/crm/reporting/marketing` = §11.15 Marketing UTM
+  report (plain title + subtitle w/ Lead Source cross-link + cache notice + date filter + table
+  Platform/Sessions/Leads/Appointments/Deals Closed/Deal Value) from REAL data: NEW DAL
+  getMarketingUtmReport (visitor_sessions grouped by utm_source, paged .range() reads never
+  rows.length, leads = distinct crm_person_id, outcomes contact-attributed via crm_appointments +
+  closed-stage crm_deals). DB-VERIFIED exact: direct 136 / google 41 / meta 38 / gbp 17 /
+  facebook 15 / chatgpt.com 3 / com.slack 1 / ig 1, leads honestly 0 (no identified contacts among
+  UTM sessions 2026 YTD). NEW `/admin/crm/reporting/deals` = redirect to /admin/crm/deals (§21
+  explicitly DEFERS Deals reporting; a 404 tab was worse — the pipeline board carries the per-stage
+  counts/totals). Hub cards fixed in BOTH copies (reporting/page.tsx + reporting-constants.ts):
+  Call Logs → /reporting/call-logs, Speed To Lead → /reporting/speed-to-lead, Contact Attempts →
+  /reporting/contact-attempts (the old ?view= params were silently ignored).
+  VERIFIED live in dev (Matt's session, 1440x900): activity view full anatomy (11-tab sub-nav +
+  pill, Show me dropdown open/select round-trip deals↔activity via PointerEvent pointerType:'mouse'
+  — bare pointerdown without pointerType does NOT open Radix DropdownMenu), chart controls
+  (metric A vs B, Daily/Weekly/Monthly, compare-to-previous w/ prior-window label), 10 KPI tiles
+  w/ sparklines + deltas + Call Logs link on CALLS, table + totals, deals view real ranking,
+  marketing page real rows, deals tab redirect, How-Reporting-works dialog.
+  Gates: full ci:gates exit 0 + vitest 2414 green + ci:data-access refreshed (2 new DAL files).
+  DECISIONS (this slice): table trailing "+ Add Column" header button omitted — the addenda
+  capture (§7a, pixel truth) shows 11 headers with NO trailing button; the KPI strip's
+  "+ Add Columns" ghost card already controls both strip and table columns (?cols=) · export =
+  direct CSV honoring visible ?cols (the §17 column-checkbox dialog DEFERRED — the column picker
+  already picks columns) · drill-through hrefs keep the ?broker=&metric= param convention;
+  the People list ignores ?metric today (per-metric filtered People view already logged DEFERRED
+  in the automations slice) · Closed Deals By Source hub card points at lead-sources default
+  (§21 defers deals-by-source reporting; building it would violate the freeze) · Marketing
+  attribution = session-level all-touch; First Touch option renders disabled (per-lead
+  first-source stamping deferred with the UTM-on-lead capture §11.15 AC-1) · Marketing export
+  omitted (owner-only export for a report with 0 attributable leads = build-when-real) ·
+  Sessions column added beyond FUB's 5 (utm data is session-native here; leads-only would hide
+  the real volume) · no per-page REPORTING_TABS consolidation (12 identical copies work; a shared
+  sub-nav refactor is cleanup, not parity — left for a cleanup pass).
+  DEFERRED (explicit): §11.5 Initially/Currently Assigned remain = newLeads approximation (no
+  crm_lead_assignments history table — pre-existing, documented in the DAL) · communication_type
+  personal-vs-automated split remains source!='sequence' approximation (documented) · §11.16
+  leaderboards (spec itself says defer until core reports done) · §11.17 weekly insights email
+  (the Monday weekly-pipeline-digest cron already covers the recipients wiring from
+  company-settings) · §11.7 dual-value people sub-counts on Agent Activity tiles (Calls report
+  has them; Agent Activity FUB reference shows plain counts) · custom date-range picker
+  (presets only, all four presets live).
 - **tasks-calendar-desktop** ✅ DONE + PROVEN (commit 1c447866). Registry flipped to done with 9
   requiredComponents + committed `_verify/screen-tasks-calendar.png` (1440x900, dev server, authed,
   real crm_* data, ZERO console errors via fresh Playwright context) + supplementary

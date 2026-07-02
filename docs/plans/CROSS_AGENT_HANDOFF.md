@@ -2,7 +2,7 @@
 
 # CROSS-AGENT HANDOFF — CRM GROUND-UP REBUILD, screen-by-screen under ci:crm-screen-parity (2026-07-01)
 
-**HEAD:** `1c447866` on `main` · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` (8 done, all proven)
+**HEAD:** `ff4fe3ec` on `main` (+ the docs/mobile-flip commit after it) · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` (**10 done — ALL DESKTOP SCREENS + person-detail-mobile PROVEN**; 9 mobile todo)
 
 ## What this track is
 Matt's directive: execute CRM_BUILD_MISSION as a ground-up rebuild, screen by screen through the
@@ -11,6 +11,23 @@ full DoD, gated by `ci:crm-screen-parity` (scripts/check-crm-screen-parity.mjs �
 gap-fills. Standing commit+push authorization is in the mission doc.
 
 ## Shipped
+- **person-detail-mobile = done + proven** (prove-and-flip, same session as reporting-desktop):
+  the previously-verified M1 build got its mechanical proof — `_verify/mob-contact-detail.png`
+  captured at 390x844 (lead 12679 via `?view=mobile`, zero console errors), registry flipped with
+  the 6 Mobile* tab components `mobile-detail.tsx` references.
+- **reporting-desktop = done + proven** (commit `ff4fe3ec`) — the LAST desktop screen: §11 anchor
+  (Agent Activity) closed to zero structural diffs (ShowMeSelector dropdown, REAL Closed-Deals
+  alternate view via NEW `lib/data/crm/agentActivityClosedDeals.ts`, totals row, honest lead-type
+  filter, filters for non-superusers, HowReportingWorks dialog in
+  `components/admin/crm/reporting/`), plus shell fixes: NEW `/admin/crm/reporting/marketing`
+  (§11.15, NEW DAL `getMarketingUtmReport`) + `/admin/crm/reporting/deals` (redirect — §21 defers
+  deals reporting); hub card links fixed in reporting/page.tsx + reporting-constants.ts. Decisions
+  + deferrals in the mission PROGRESS block. GOTCHAS: Radix DropdownMenu in preview_eval needs
+  `new PointerEvent('pointerdown', {pointerType:'mouse', ...})` — without pointerType it silently
+  won't open · BOTH deal pipelines have a stage named "Closed", so any audit SQL that joins
+  crm_deals to crm_deal_stages BY NAME double-counts (use IN (SELECT name ...) or dedupe) ·
+  getAgentActivityReport cache key is now v5 · the file-size gate treats a file crossing 600 LOC
+  as a NEW breach — split (agentActivityClosedDeals.ts) rather than re-baseline.
 - **tasks-calendar-desktop = done + proven** (commit `1c447866`): §09 rebuild of BOTH surfaces —
   `/admin/crm/calendar` (CalendarView / CalendarGrids / AppointmentModal in
   `components/admin/crm/calendar/`; old CalendarGrid+AppointmentSheet preserved there as the
@@ -128,15 +145,17 @@ gap-fills. Standing commit+push authorization is in the mission doc.
    `.design-token-lint-ignore` — established class) + `npx vitest run` + commit + push
    (pre-push runs a full prod build, takes ~5 min — use a background shell).
 
-## NEXT (screen-by-screen, registry order)
-1. **reporting-desktop** (§11, `app/admin/(protected)/crm/reporting/agent-activity/page.tsx`) —
-   mostly verify-and-prove (the 12 reports were built recently): read the whole §11 spec +
-   `addenda-captures/agentactivity.md`, compare the live pages, close structural diffs, capture
-   `_verify/screen-reporting-agent-activity.png` at 1440x900, fill requiredComponents, flip to
-   done, FULL gates + tests, commit + push.
-3. Mobile screens (M-track largely built; person-detail-mobile/mobile-shell/mobile-activity-people
-   need proof artifacts at 390px via `?view=mobile` where available; others per §26–§29).
-4. Also open in the mission doc: email open+click tracking wiring (every send path) — nobody owns
+## NEXT (mobile track — all desktop screens are done; person-detail-mobile proven too)
+1. **mobile-shell** (§23, registry route `components/console/CrmMobileTabBar.tsx`) and
+   **mobile-activity-people** (§24, route `app/admin/(protected)/crm/page.tsx`) — both BUILT
+   (M-track shipped + verified), need proof artifacts at 390x844: capture `_verify/mob-shell.png` /
+   `_verify/mob-activity-people.png` via the scratchpad harness (`node shot.mjs <url> <out>
+   390x844` — recapture sb- cookies fresh, they rotate hourly), fill requiredComponents from each
+   route file, flip, gates, commit + push.
+2. Then the remaining mobile entries (inbox-mobile §26, mobile-compose §27, mobile-calendar-tasks
+   §29, mobile-pickers §28, mobile-dashboard, mobile-settings) — M3/M4/M6/M7 tracks; some need
+   real build work, not just proof.
+3. Also open in the mission doc: email open+click tracking wiring (every send path) — nobody owns
    it yet. (The renderCrmMerge resolver fix SHIPPED with templates-desktop, 251ae048.)
 
 ## Gotchas carried forward
