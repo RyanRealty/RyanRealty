@@ -156,6 +156,10 @@ export default function MobileThread({
     sendSmsAction: (personId: number, formData: FormData) => Promise<{ ok: boolean; error?: string }>
     sendEmailAction: (personId: number, formData: FormData) => Promise<{ ok: boolean; error?: string }>
     aiDraftAction: (personId: number, kind: AiDraftKind, customPrompt?: string) => Promise<{ ok: true; draft: string } | { ok: false; error: string }>
+    renderTemplateAction?: (
+      personId: number,
+      body: string,
+    ) => Promise<{ ok: true; body: string; unresolved: string[] } | { ok: false; error: string }>
   }
   /** Open the email reply sheet on mount — the lead-detail Email circle
    *  deep-links here with ?m=email so composing starts immediately (punch #4). */
@@ -581,6 +585,7 @@ export default function MobileThread({
           sendSmsAction={groupCompose.sendSmsAction}
           sendEmailAction={groupCompose.sendEmailAction}
           aiDraftAction={groupCompose.aiDraftAction}
+          renderTemplateAction={groupCompose.renderTemplateAction}
         />
       ) : null}
     </div>

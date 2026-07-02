@@ -77,9 +77,26 @@ export function classifyTimelineKind(kind: string): KindMeta {
   return KIND_MAP[kind] ?? { category: 'other', direction: null, label: humanizeKind(kind) }
 }
 
+/** Pure: decode the entities email bodies carry so previews never show raw
+ *  "&amp;" / "&#39;" (2026-07-02 mobile audit — inbox rows read
+ *  "Owner &amp; Principal Broker"). Tags are stripped only when the body
+ *  looks like HTML, so an SMS like "offers < 500k" survives untouched. */
+function toPlainPreview(s: string): string {
+  const stripped = /<([a-z][a-z0-9]*)\b[^>]*>/i.test(s) ? s.replace(/<[^>]+>/g, ' ') : s
+  return stripped
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#0?39;|&apos;/gi, "'")
+    .replace(/[ \t]+/g, ' ')
+    .trim()
+}
+
 /** Pure: a short preview for a feed item, from its title/body/payload. */
 export function buildSnippet(row: { title?: string | null; body?: string | null; payload?: unknown }): string | null {
-  const body = typeof row.body === 'string' ? row.body.trim() : ''
+  const body = typeof row.body === 'string' ? toPlainPreview(row.body) : ''
   if (body) return body.length > 200 ? body.slice(0, 197) + '...' : body
   const title = typeof row.title === 'string' ? row.title.trim() : ''
   if (title) return title

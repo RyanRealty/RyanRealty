@@ -4,6 +4,22 @@
 
 **HEAD:** `90ced1de` on `main` · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` — **REGISTRY COMPLETE: 18 done, all proven (all 10 desktop + all 8 mobile); only the _meta row is todo.** The mission's email open+click tracking task is also SHIPPED + PROVEN E2E (see the ✅ blocks in the mission doc).
 
+## MOBILE ADVERSARIAL AUDIT LANDED (2026-07-02) — ledger `docs/plans/CRM_AUDIT_MOBILE_2026-07-02.md`
+The production-ready-bar MOBILE pass (390x844, post-punch-list `8548c0f3`; 10 surfaces, ~120
+affordances, every mutation DB-proven then reverted net-zero, zero console errors). **18 findings:
+1 P0 + 6 P1 + 11 P2; the P0 and 5 of 6 P1s FIXED in-slice.** Headlines: SMS-template
+literal-%token% class closed three ways (FUB-token aliases in `lib/crm/merge.ts` + NEW
+`renderSmsTemplateAction` pre-renders templates in `MobileComposeSheet` + unresolved-token
+warning — a template send had ALREADY gone out literal on Jun 30) · AI-pill raw billing-error
+dump → graceful degradation (`aiSmsDraftAction`) · Deals root got the §23 navy `MobileCrmHeader`
+(the last split-brain surface) · lead FAB Send text/email at <md → `?c=<id>&m=sms|email` in-app
+composers, Add note → `#notes` (desktop aliases notes→comms in `LeadTabs`) · note cards
+tap-to-expand · `buildSnippet` entity-decode · activity "<unspecified>" strip. **OPEN: P1-6
+Settings "Email signature" is write-only** (`brokers.email_signature` saved by mobile+desktop
+settings but no send path reads it — wire through `buildSignature` + getBrokers DAL; desktop
+shares it) + P2 list in the ledger. Quiet-hours TCPA gate + override verified live on a real
+self-send. Coherence verdict: one language on every mobile route now.
+
 ## TELEPHONY FIX LANDED (2026-07-02) — Matt's sender is now +15417033095 (541.703.3095)
 Matt's ported primary business number is now his live Twilio line (`brokers.matthew-ryan
 .twilio_number`, migration `20260702090000_broker_primary_number_fix`); the temp +15412245025 is

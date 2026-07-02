@@ -31,6 +31,7 @@ import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
 import { EmailComposer } from '@/components/admin/crm/EmailComposer'
+import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { CrmAvatar } from '@/components/admin/crm/mobile/CrmMobileKit'
 import MobileAiPills from './MobileAiPills'
 import type { AiDraftKind } from '@/app/actions/crm-inbox'
@@ -57,6 +58,7 @@ export default function MobileComposeSheet({
   sendSmsAction,
   sendEmailAction,
   aiDraftAction,
+  renderTemplateAction,
 }: {
   /** 'fab' renders the fixed § 26-A FAB; 'controlled' relies on open/onOpenChange. */
   trigger?: 'fab' | 'controlled'
@@ -74,6 +76,13 @@ export default function MobileComposeSheet({
   sendSmsAction: (personId: number, formData: FormData) => Promise<SendResult>
   sendEmailAction: (personId: number, formData: FormData) => Promise<SendResult>
   aiDraftAction: (personId: number, kind: AiDraftKind, customPrompt?: string) => Promise<{ ok: true; draft: string } | { ok: false; error: string }>
+  /** Server-renders an SMS template for the primary recipient (merge tokens
+   *  resolved before they hit the input — 2026-07-02 mobile audit). Optional:
+   *  without it the raw body inserts and the unresolved warning still fires. */
+  renderTemplateAction?: (
+    personId: number,
+    body: string,
+  ) => Promise<{ ok: true; body: string; unresolved: string[] } | { ok: false; error: string }>
 }) {
   const router = useRouter()
   const [openLocal, setOpenLocal] = useState(false)
@@ -139,6 +148,9 @@ export default function MobileComposeSheet({
 
   const chars = smsBody.length
   const templates = channel === 'email' ? emailTemplates : smsTemplates
+  // Tokens still %literal% in the body — after the server-side template render
+  // these are genuinely unresolved for this contact (desktop SmsComposer parity).
+  const smsUnresolved = findUnresolvedMergeTokens(smsBody)
 
   return (
     <>
@@ -261,6 +273,12 @@ export default function MobileComposeSheet({
                   aiDraftAction={(kind, custom) => aiDraftAction(primary.id, kind, custom)}
                   onDraft={(text) => setSmsBody(text)}
                 />
+                {smsUnresolved.length > 0 ? (
+                  <p className="mb-1.5 px-1 text-xs font-medium text-warning">
+                    Unfilled merge fields, this contact has no value for: {smsUnresolved.join(', ')}.
+                    Edit before sending.
+                  </p>
+                ) : null}
                 <div className="flex items-end gap-1.5 rounded-3xl border border-input bg-background p-1.5">
                   <Button
                     type="button"
@@ -376,6 +394,15 @@ export default function MobileComposeSheet({
                   if (channel === 'email') {
                     setEmailTpl(t)
                     setEmailKey((k) => k + 1)
+                  } else if (renderTemplateAction && primary) {
+                    // Resolve merge tokens server-side BEFORE the body lands in
+                    // the input — the broker sees what will send, and anything
+                    // still %literal% is genuinely unresolved (warned below).
+                    setSmsBody(t.body)
+                    startTransition(async () => {
+                      const res = await renderTemplateAction(primary.id, t.body)
+                      if (res.ok) setSmsBody(res.body)
+                    })
                   } else {
                     setSmsBody(t.body)
                   }

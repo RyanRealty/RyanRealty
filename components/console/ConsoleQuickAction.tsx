@@ -24,6 +24,7 @@ import {
   UserPlus, Briefcase, PenSquare, ListChecks, Zap, X,
 } from 'lucide-react'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { getNextRecommendation, type CrmNextRec } from '@/app/actions/crm'
 import { cn } from '@/lib/utils'
 
@@ -102,12 +103,29 @@ export default function ConsoleQuickAction() {
   const close = () => setOpen(false)
 
   // Lead-scoped actions deep-link into that lead's own tab (LeadTabs reads the hash).
+  // At < md, Send text / Send email go to the IN-APP inbox composers instead —
+  // the mobile Comms tab is a read-only feed, so the hash deep-link left phone
+  // users with nothing to type into (2026-07-02 mobile audit; same ?m= deep
+  // links the lead-detail SMS/Email circles use, punch #4).
+  const isMobile = useIsMobile()
   const leadActions: Item[] = leadId
     ? [
         { label: 'Call', href: '#overview', icon: Phone },
-        { label: 'Send text', href: '#comms', icon: MessageSquare },
-        { label: 'Send email', href: '#comms', icon: Mail },
-        { label: 'Add note', href: '#comms', icon: StickyNote },
+        {
+          label: 'Send text',
+          href: isMobile ? `/admin/crm/inbox?c=${leadId}&m=sms` : '#comms',
+          icon: MessageSquare,
+        },
+        {
+          label: 'Send email',
+          href: isMobile ? `/admin/crm/inbox?c=${leadId}&m=email` : '#comms',
+          icon: Mail,
+        },
+        // #notes: the mobile detail has a dedicated Notes tab (the mobile map
+        // sends notes→notes); desktop aliases notes→comms where its note
+        // composer lives (2026-07-02 mobile audit — was #comms, which dropped
+        // phone users on a read-only feed with no note affordance).
+        { label: 'Add note', href: '#notes', icon: StickyNote },
         { label: 'Add task', href: '#tasks', icon: CheckSquare },
         { label: 'Enroll in workflow', href: '#overview', icon: Workflow },
         { label: 'Start a CMA', href: '/admin/cmas', icon: Calculator },

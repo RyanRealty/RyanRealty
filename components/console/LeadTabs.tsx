@@ -24,6 +24,9 @@ export type LeadTabKey = 'overview' | 'comms' | 'tasks' | 'watching' | 'workflow
 const HASH_TO_TAB: Record<string, LeadTabKey> = {
   overview: 'overview',
   comms: 'comms',
+  // The FAB's "Add note" deep-links #notes; on desktop the note composer
+  // lives in the comms column (mobile has a real Notes tab).
+  notes: 'comms',
   tasks: 'tasks',
   watching: 'watching',
   'saved-searches': 'watching',

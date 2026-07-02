@@ -31,6 +31,7 @@ import {
   discardDraftAction,
   addUnknownCallerPersonAction,
   aiSmsDraftAction,
+  renderSmsTemplateAction,
   type AiDraftKind,
 } from '@/app/actions/crm-inbox'
 import { blockCrmNumber } from '@/app/actions/crm-block'
@@ -368,6 +369,13 @@ export default async function CrmInboxPage({
     'use server'
     return aiSmsDraftAction(personId, kind, customPrompt)
   }
+  async function renderTemplateFor(
+    personId: number,
+    body: string,
+  ): Promise<{ ok: true; body: string; unresolved: string[] } | { ok: false; error: string }> {
+    'use server'
+    return renderSmsTemplateAction(personId, body)
+  }
   async function assignFor(personId: number, broker: string | null): Promise<{ ok: boolean; error?: string }> {
     'use server'
     const res = await assignConversationAction(personId, broker)
@@ -535,6 +543,7 @@ export default async function CrmInboxPage({
           callContact: callContact.bind(null, openPane?.personId ?? 0),
           aiDraftThread: aiDraftFor.bind(null, openPane?.personId ?? 0),
           aiDraftFor,
+          renderTemplateFor,
           searchContactsFor,
           composeSmsTo,
           composeEmailTo,

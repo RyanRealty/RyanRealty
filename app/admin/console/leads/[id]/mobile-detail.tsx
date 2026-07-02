@@ -193,7 +193,10 @@ export function MobileLeadDetail({
     .map((t) => ({
       id: t.id,
       kind: t.kind,
-      title: t.title ?? t.kind.replace(/_/g, ' '),
+      // FUB-imported web_event titles carry a literal "<unspecified>" source
+      // ("Property Inquiry · <unspecified>") — never show that to a broker
+      // (2026-07-02 mobile audit).
+      title: (t.title ?? t.kind.replace(/_/g, ' ')).replace(/\s*·\s*<unspecified>/g, '').replace(/<unspecified>/g, '').trim(),
       body: t.body && t.body !== t.title ? cleanNoteBody(t.body) : null,
       dateLabel: fubDate(t.ts),
     }))

@@ -51,6 +51,17 @@ export function MobileNotesTab({
 }: MobileNotesTabProps) {
   const [composerOpen, setComposerOpen] = useState(false)
   const [noteBody, setNoteBody] = useState('')
+  // Tap-to-expand: the 5-line clamp (§25.8.3) left long notes UNREADABLE on
+  // mobile — no affordance showed the rest (2026-07-02 mobile audit).
+  const [expanded, setExpanded] = useState<Set<number>>(new Set())
+  function toggleExpanded(id: number) {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   return (
     <div className="bg-secondary pb-24">
@@ -88,7 +99,14 @@ export function MobileNotesTab({
         return (
           <div
             key={note.id}
-            className="mx-4 mb-2 overflow-hidden rounded-xl border border-border bg-card shadow-sm"
+            role="button"
+            tabIndex={0}
+            aria-expanded={expanded.has(note.id)}
+            onClick={() => toggleExpanded(note.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') toggleExpanded(note.id)
+            }}
+            className="mx-4 mb-2 cursor-pointer overflow-hidden rounded-xl border border-border bg-card shadow-sm"
           >
             <div className="p-3">
               <div className="flex items-start gap-3">
@@ -101,11 +119,11 @@ export function MobileNotesTab({
                       {note.dateLabel}
                     </span>
                   </div>
-                  {/* Body — truncated at 5 lines (§25.8.3) */}
+                  {/* Body — 5-line clamp (§25.8.3), tap the card to read it all */}
                   <p
                     className={cn(
                       'whitespace-pre-line text-[13px] leading-5 text-foreground',
-                      'line-clamp-5',
+                      !expanded.has(note.id) && 'line-clamp-5',
                     )}
                   >
                     {note.body}

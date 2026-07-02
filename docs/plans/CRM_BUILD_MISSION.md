@@ -514,6 +514,24 @@ re-runs the E2E checks and states the sign-off inventory to Matt.
 
 ## PROGRESS (agents append here as slices ship)
 
+### MOBILE ADVERSARIAL AUDIT ✅ RUN + P0/P1s FIXED (2026-07-02) — ledger: [`CRM_AUDIT_MOBILE_2026-07-02.md`](CRM_AUDIT_MOBILE_2026-07-02.md)
+The production-ready-bar mobile pass (390x844, post-punch-list, live data, every mutation
+net-zero). 10 surfaces / ~120 affordances swept; zero console errors. **1 P0 + 6 P1 + 11 P2.**
+FIXED in-slice: P0 SMS-template literal-%tokens% class (merge aliases for the FUB token names 17
+of 37 live SMS templates carry + NEW `renderSmsTemplateAction` pre-renders templates in the mobile
+compose sheet + desktop-parity unresolved warning — the Jun 30 literal-token send to 13168 can't
+recur) · AI-pill raw Anthropic-billing-error dump → friendly degradation · Deals root got the §23
+navy MobileCrmHeader (the last "second CRM" surface) · FAB Send text/email at <md → in-app
+composer deep links (was read-only #comms dead-end) · FAB Add note → #notes (mobile Notes tab;
+desktop aliases notes→comms) · note cards tap-to-expand (5-line clamp had no reveal) · inbox
+snippets decode HTML entities · activity rows drop FUB's literal "<unspecified>". OPEN: **P1-6
+Settings "Email signature" is write-only** (`brokers.email_signature` saved but no send path
+reads it — buildSignature needs the column wired through the getBrokers DAL; desktop shares
+this) + 11 P2 polish items in the ledger. Verified: quiet-hours TCPA gate + override fired live
+on a real self-send (Twilio SID logged then removed), edit-sheet name round-trip, task
+create/complete round-trips, swipe Close/Reopen, Mark-as-Unread, settings toggles — all DB-proven
+then reverted. Coherence verdict post-fix: one language on every mobile route.
+
 ### TELEPHONY: Matt's primary number fix (2026-07-02) — +15417033095 is the live sender
 Matt's directive: "541.703.3095 is my primary business number, why are texts coming from
 541.224.5025." **Root cause:** the 2026-06-24 cutover parked the ported primary line

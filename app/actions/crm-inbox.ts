@@ -444,6 +444,51 @@ export async function aiSmsDraftAction(
     if (!text) return { ok: false, error: 'No draft came back. Try again.' }
     return { ok: true, draft: text.slice(0, 320) }
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message.slice(0, 160) : 'AI draft failed' }
+    // Graceful degradation: the raw SDK message carries API/billing internals
+    // ("credit balance is too low… Plans & Billing") — never surface that to
+    // the composer (2026-07-02 mobile audit). Log for diagnosis, show a
+    // friendly line.
+    console.error('[aiSmsDraftAction]', e instanceof Error ? e.message : e)
+    return { ok: false, error: 'AI drafting is unavailable right now. Write your text below.' }
   }
+}
+
+/**
+ * Render an SMS template body for a specific contact — merge tokens resolved
+ * server-side (same renderCrmMerge + buildMergeContext path the send uses) so
+ * the mobile compose sheet shows WHAT WILL SEND, not raw %tokens%
+ * (2026-07-02 mobile audit: 17 of 37 live SMS templates carry FUB-era tokens;
+ * one reached a contact literally on Jun 30). Tokens the contact has no data
+ * for stay literal and come back in `unresolved` for the composer warning.
+ * Render-only — no send, no writes.
+ */
+export async function renderSmsTemplateAction(
+  personId: number,
+  body: string,
+): Promise<{ ok: true; body: string; unresolved: string[] } | { ok: false; error: string }> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
+  const id = Number(personId)
+  if (!Number.isFinite(id) || id <= 0) return { ok: false, error: 'A contact is required' }
+  const scoped = await requirePersonInScope(id, access)
+  if (!scoped.ok) return scoped
+  const raw = String(body ?? '').slice(0, 4000)
+
+  const sb = createServiceClient()
+  const { data: person } = await sb
+    .from('crm_people')
+    .select('first_name,last_name,name,stage,source,lender_name,emails,phones,addresses,assigned_broker,custom')
+    .eq('id', id)
+    .maybeSingle()
+  if (!person) return { ok: false, error: 'Contact not found' }
+
+  const [{ renderCrmMerge, findUnresolvedMergeTokens }, { buildMergeContext }] = await Promise.all([
+    import('@/lib/crm/merge'),
+    import('@/lib/crm/merge-context'),
+  ])
+  const p = person as { assigned_broker?: string | null }
+  const senderSlug = access.brokerSlug ?? p.assigned_broker ?? null
+  const ctx = await buildMergeContext({ person, senderSlug })
+  const rendered = renderCrmMerge(raw, person, ctx)
+  return { ok: true, body: rendered, unresolved: findUnresolvedMergeTokens(rendered) }
 }

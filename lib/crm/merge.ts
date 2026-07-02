@@ -286,6 +286,14 @@ export function renderCrmMerge(
     '{{firstName}}': first,
     '{{address}}': customAddress,
     '{{cma_link}}': cmaLink,
+    // FUB-imported template aliases (2026-07-02 mobile audit): 17 of the 37
+    // live SMS templates still carry FUB token names — one already reached a
+    // contact literally ("%greeting_time%, Matthew, …", Jun 30). Resolve them
+    // to the canonical equivalents instead of trusting brokers to catch the
+    // composer warning on a phone.
+    '%greeting_time%': greeting,
+    '%agent_name%': [val(agent?.firstName), val(agent?.lastName)].filter(Boolean).join(' ') || null,
+    '%inquiry_address%': customAddress ?? val(ctx?.property?.lastViewedAddress),
   }
 
   let out = text

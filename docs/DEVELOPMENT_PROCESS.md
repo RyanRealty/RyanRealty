@@ -108,6 +108,8 @@ Everything in `docs/plans/` is registered here. A new file in that directory wit
 | `ADMIN_CURATION_TO_BAR.md`, `HANDOFF-cma-form-twilio-2026-06-13.md`, `HANDOFF_CRM_SESSION_2026-06-12.md`, `HANDOFF_HEATH_LP_2026-06-13.md`, `NEXT_SESSION_START_HERE_2026-06-13.md` | parallel-session records (archive) |
 | `CRM_BUILD_MISSION.md` | **live** — CRM delivery mission: locked §07 person-detail parity gap list, delivery order, CI override authorization, per-deliverable status log |
 | `CRM_FUB_ASSOCIATION_AND_ACTIVITY_2026-06-29.md` | research record — FUB association + activity parity analysis feeding crm-completion-spec (archive) |
+| `CRM_AUDIT_2026-07-02.md` | **live** — DESKTOP adversarial CRM audit ledger (production-ready-bar pass); findings feed the closure slices (record) |
+| `CRM_AUDIT_MOBILE_2026-07-02.md` | **live** — MOBILE adversarial CRM audit ledger (390x844, post-punch-list); P0/P1 fixed in-slice except P1-6 signature wire-up (record) |
 | `CRM_FUB_MOBILE_UI_AUDIT_2026-06-29.md` | research record — FUB mobile UI parity audit (archive) |
 | `CRM_MUTATION_AUDIT_2026-06-29.md` | research record — CRM mutation coverage audit 2026-06-29 (archive) |
 | `FUB_CUTOVER_READINESS_2026-06-29.md` | research record — FUB cutover readiness gate assessment (archive) |

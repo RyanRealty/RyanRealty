@@ -88,6 +88,10 @@ export default function MobileBranch({
     callContact: () => Promise<Result>
     aiDraftThread: (kind: AiDraftKind, customPrompt?: string) => Promise<AiResult>
     aiDraftFor: (personId: number, kind: AiDraftKind, customPrompt?: string) => Promise<AiResult>
+    renderTemplateFor: (
+      personId: number,
+      body: string,
+    ) => Promise<{ ok: true; body: string; unresolved: string[] } | { ok: false; error: string }>
     searchContactsFor: (q: string) => Promise<Array<{ id: number; name: string }>>
     composeSmsTo: (personId: number, formData: FormData) => Promise<Result>
     composeEmailTo: (personId: number, formData: FormData) => Promise<Result>
@@ -139,6 +143,7 @@ export default function MobileBranch({
             sendSmsAction: actions.composeSmsTo,
             sendEmailAction: actions.composeEmailTo,
             aiDraftAction: actions.aiDraftFor,
+            renderTemplateAction: actions.renderTemplateFor,
           }}
           addPersonSlot={
             pane.isUnknown ? (
@@ -183,6 +188,7 @@ export default function MobileBranch({
         sendSmsAction={actions.composeSmsTo}
         sendEmailAction={actions.composeEmailTo}
         aiDraftAction={actions.aiDraftFor}
+        renderTemplateAction={actions.renderTemplateFor}
       />
     </div>
   )

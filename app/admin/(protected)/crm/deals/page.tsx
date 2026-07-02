@@ -28,6 +28,15 @@ import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { DealsSubBar } from '@/components/admin/crm/deals/DealsSubBar'
 import { DealsBoard } from '@/components/admin/crm/deals/DealsBoard'
 import { DealDetailModal } from '@/components/admin/crm/deals/DealDetailModal'
+import MobileCrmHeader from '@/components/admin/crm/mobile/MobileCrmHeader'
+import { CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
+
+/** Broker slug → web headshot (transparent PNG mirror in public/images/brokers). */
+const BROKER_HEADSHOT: Record<string, string> = {
+  matt: '/images/brokers/ryan-matt.png',
+  rebecca: '/images/brokers/peterson-rebecca.png',
+  paul: '/images/brokers/stevenson-paul.png',
+}
 
 export const metadata = { title: 'Deal Tracking | CRM | Admin' }
 export const dynamic = 'force-dynamic'
@@ -87,6 +96,18 @@ export default async function CrmDealsPage({
 
   return (
     <main className="flex min-h-[calc(100vh-4rem)] flex-col">
+      {/* ── MOBILE (< md): §23 root-tab navy header — the same language every
+             other CRM root wears (People/Activity/Inbox/Calendar). Deals was
+             the one root without it (2026-07-02 mobile audit, "one CRM one
+             style"). Full-bleed cancels the ConsoleShell main padding. */}
+      <div className="-mx-4 -mt-5 mb-3 md:hidden sm:-mx-6 sm:-mt-7">
+        <MobileCrmHeader
+          brokerName={access.brokerSlug ? CRM_BROKER_DISPLAY[access.brokerSlug as keyof typeof CRM_BROKER_DISPLAY] ?? access.brokerSlug : 'Broker'}
+          brokerHeadshot={access.brokerSlug ? BROKER_HEADSHOT[access.brokerSlug] ?? null : null}
+          center={<span className="truncate text-lg font-medium text-primary-foreground">Deals</span>}
+          searchHref="/admin/crm"
+        />
+      </div>
       <DealsSubBar
         pipelines={pipelines}
         activePipeline={activePipeline?.name ?? ''}
