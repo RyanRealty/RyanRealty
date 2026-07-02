@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.713.1 (2026-07-02)
+
+### Maintenance
+- docs(crm-mobile): mobile-calendar-tasks + mobile-pickers shipped (8ded6cb5 + a7746316) — mission PROGRESS + handoff
+
+---
+
+
 ## v1.713.0 (2026-07-02)
 
 ### Features
