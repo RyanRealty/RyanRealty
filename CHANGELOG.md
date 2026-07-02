@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.718.0 (2026-07-02)
+
+### Features
+- feat(crm): rank broker-written notes above auto-generated system notes
+
+---
+
+
 ## v1.717.6 (2026-07-02)
 
 ### Bug Fixes
