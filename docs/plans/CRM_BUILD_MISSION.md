@@ -374,6 +374,22 @@ and show me the screenshot.
 
 ---
 
+## PRODUCTION-READY BAR (Matt directive 2026-07-02 — the acceptance criterion for the whole CRM)
+"CRM must be production ready." This outranks screen-level "done". The mission is complete only when:
+1. **Every feature works** — adversarially verified (assume-broken-until-proven), not happy-path checked.
+   Desktop audit ledger: docs/plans/CRM_AUDIT_2026-07-02.md. A matching MOBILE adversarial audit runs
+   after the 2026-07-02 mobile punch-list fixes land. EVERY P0/P1 finding in either ledger gets fixed
+   and re-verified — no open P0/P1s at sign-off.
+2. **One CRM, one look** — FUB parity per spec, or (for in-house features FUB lacks) visually
+   indistinguishable membership in the same design language. Cross-screen coherence findings count.
+3. **Zero inert affordances** — every link/button/row does something real or does not exist.
+4. **Compliance intact end-to-end** — suppression/quiet-hours/block-list/broker-scope verified on every
+   send/mutation path.
+5. **Gates + full suite green at HEAD**, registry 18/18 proven, migrations applied, docs current.
+Agents: after the two in-flight agents (mobile punch-list, desktop audit) land, chain: mobile
+adversarial audit → findings-closure slice(s) → a final production-readiness verification pass that
+re-runs the E2E checks and states the sign-off inventory to Matt.
+
 ## PROGRESS (agents append here as slices ship)
 
 ### GROUND-UP REBUILD under ci:crm-screen-parity (started 2026-07-01, screen-by-screen)
