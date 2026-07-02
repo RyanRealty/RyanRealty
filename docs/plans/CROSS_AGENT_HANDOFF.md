@@ -2,6 +2,21 @@
 
 # CROSS-AGENT HANDOFF — CRM GROUND-UP REBUILD, screen-by-screen under ci:crm-screen-parity (2026-07-01)
 
+## NOTES RANKING — Matt's own notes now sit ABOVE auto-generated system notes (2026-07-02, commit fe85d8f5)
+"My notes on top." The person-detail Notes view buried broker notes under the "Automated outreach
+packet generated" firehose (expired lead #18187 = 212 notes, all system). NEW pure classifier
+`lib/crm/note-classify.ts` (+8 tests): a note is SYSTEM only when `broker IS NULL` AND the body matches
+a known automation template (outreach-packet, or an `EXPIRED LISTING`/`LEAD ORIGIN`/`Viewed property:`/
+`Matt alert:`/"is back on the website"/FUB-feedback-link prefix); a broker-set note is always human;
+ambiguous broker-null free-text DEFAULTS to human (better to show than bury). `source` is never used
+(dual-write holds both packets and real notes). Desktop `PersonCenterColumn` + mobile `MobileNotesTab`
+Notes tab render broker notes first, then a collapsed `opacity-70` "Automated activity ⟨N⟩" disclosure.
+DISPLAY-ONLY (no data mutation, nothing hidden). Proven live desktop 1440 (18157: 1 broker note above
+38 collapsed) + mobile 390 (18187: "No notes from your team yet" + 212 collapsed), spot-check 37802
+(human-only, incl. an ambiguous BACKFILL note defaulted human). `out/crm-notes-ranking/*.png`, ci:gates
+exit 0 (foreign untracked newsletter/ + westside plan-doc isolated, not mine), vitest 2462. Closes the
+"system-note filtering/grouping" follow-up logged in the 2026-07-02 lead-data entry.
+
 ## LEAD-DATA DISPLAY REGRESSION FIXED (2026-07-02) — custom fields were invisible; data was 100% intact
 Matt saw "just names" — his expired/homeowner property detail, tenure, mailing/property address looked
 gone. Data was fully intact; pure DISPLAY bug. ROOT CAUSE: `lib/crm/custom-field-display.ts`

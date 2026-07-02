@@ -514,6 +514,34 @@ re-runs the E2E checks and states the sign-off inventory to Matt.
 
 ## PROGRESS (agents append here as slices ship)
 
+### NOTES RANKING — broker notes above auto-generated system notes ✅ (2026-07-02, commit fe85d8f5)
+Matt: "my notes on top." The person-detail Notes view buried hand-written notes under the
+"Automated outreach packet generated" firehose (e.g. expired lead #18187: 212 notes, all system).
+Fixed on BOTH desktop + mobile as a DISPLAY-ONLY ranking (no data mutation, nothing hidden).
+**CLASSIFIER (`lib/crm/note-classify.ts`, pure + unit-tested, +8 tests):** a `kind='note'` row is
+SYSTEM only if `broker IS NULL` AND the body matches a known automation template —
+`Automated outreach packet generated…` (the ~8k outreach-packet cron) or a system-event prefix
+(`EXPIRED LISTING` / `LEAD ORIGIN` / `Viewed property:` / `Matt alert:` / "…is back on the website" /
+the FUB action-plan feedback link). A note with `broker` set is ALWAYS human (the 147 smart-followup
+rows = Matt's drafted outreach). Any ambiguous broker-null free-text note DEFAULTS TO HUMAN (better to
+show than bury — the whole point). `source` is never used: the live distribution shows `dual-write`
+holds both packets AND 30 real notes, so source is not a discriminator. Query evidence (2026-07-02):
+notes by (source, broker-null, auto-packet) → fub-import/null/false 14,131 · dual-write/null/packet
+7,589 · fub-import/null/packet 448 · smart-followup/broker/false 147 · fub-import/null/sys-prefix 32 ·
+dual-write/null/sys-prefix 30. **RENDER:** desktop `PersonCenterColumn` + mobile `MobileNotesTab` Notes
+tab now show broker notes first (newest-first), then a collapsed, `opacity-70` "Automated activity ⟨N⟩"
+disclosure for system notes. `partitionNotes()` preserves reverse-chron within each group.
+**PROOF (matt authed session, real crm_* data, ZERO console errors):** desktop 1440x900 18157 —
+1 broker note "Suggested follow-up" on top, 38 packets under collapsed "Automated activity 38"
+(`out/crm-notes-ranking/desktop-18157-notes.png`); mobile 390x844 18187 — "No notes from your team
+yet" + collapsed "Automated activity" (0 broker/212 system, `out/crm-notes-ranking/mobile-18187-notes.png`);
+spot-checked human-only 37802 → 8 human (incl. a broker-null BACKFILL note, correctly defaulted human)
++ 1 EXPIRED-LISTING system. `ci:gates` exit 0 (isolating two FOREIGN untracked working-tree artifacts
+from other sessions: `design_system/.../ui_kits/newsletter/` + `docs/plans/WESTSIDE_PARCEL_STRIP_*.md` —
+not mine, left in place), vitest 2462 green, tsc clean. Files: note-classify.ts/.test.ts,
+PersonCenterColumn.tsx, MobileNotesTab.tsx, scripts/_verify-notes-ranking.mjs. Net-zero on data
+(read-only audit queries only). Follow-up from the 2026-07-02 lead-data entry (line ~556) is now DONE.
+
 ### WESTSIDE WRONG-HOUSEHOLD PARCEL DATA STRIPPED ✅ (2026-07-02)
 Matt-approved "Clean up the wrong household." Surgical removal of the county-import-stamped
 parcel data from the **67** high-confidence wrong-household contacts the 2026-07-02 sweep flagged
