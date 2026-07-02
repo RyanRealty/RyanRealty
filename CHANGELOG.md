@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.716.7 (2026-07-02)
+
+### Maintenance
+- docs(crm): correct stale Twilio number table in cutover doc (Matt=3095 primary, Paul 502 not 501)
+
+---
+
+
 ## v1.716.6 (2026-07-02)
 
 ### Maintenance
