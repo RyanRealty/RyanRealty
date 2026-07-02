@@ -18,16 +18,24 @@
  * Broker scope is enforced AT THE DATA LAYER (getAppointments /
  * getCalendarExtras take brokerScope); the "Everyone ▾" agent filter is
  * superuser-only (§2.15).
+ *
+ * < md renders the §29 Screen A mobile Calendar (mob-08) via
+ * MobileCalendarScreen — registry entry mobile-calendar-tasks in
+ * docs/fub-crm-spec/crm-screens.json (ci:crm-screen-parity).
  */
 
 import { redirect } from 'next/navigation'
-import { getCrmAccess } from '@/app/actions/crm'
+import { getCrmAccess, addCrmTaskAction, completeCrmTaskAction } from '@/app/actions/crm'
 import {
   createAppointmentAction,
   updateAppointmentAction,
   deleteAppointmentAction,
 } from '@/app/actions/appointments'
-import { searchCrmContactsAction } from '@/app/actions/crm-tasks'
+import {
+  searchCrmContactsAction,
+  updateCrmTaskAction,
+  deleteCrmTaskAction,
+} from '@/app/actions/crm-tasks'
 import { scopeBroker } from '@/lib/crm/scope'
 import {
   getAppointments,
@@ -50,10 +58,10 @@ import {
   type CalEvent,
 } from '@/lib/crm/calendar'
 import { zonedDateKey, zonedMinutes } from '@/lib/format/date'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { getCrmTaskTypes } from '@/lib/data/crm/getTaskQueue'
 import CalendarView, { type CalendarViewMode } from '@/components/admin/crm/calendar/CalendarView'
-import MobileCalendar from '@/components/admin/crm/calendar/MobileCalendar'
-import { CRM_BROKERS } from '@/lib/crm/constants'
+import MobileCalendarScreen from '@/components/admin/crm/calendar/mobile/MobileCalendarScreen'
+import { CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 
 export const metadata = { title: 'Calendar | CRM | Admin' }
 export const dynamic = 'force-dynamic'
@@ -132,6 +140,7 @@ async function loadEvents(brokerScope: string | null, from: string, to: string):
       personName: t.personName,
       broker: t.assignedBroker,
       apptId: null,
+      taskType: t.type,
     })
   }
 
@@ -197,13 +206,14 @@ export default async function CrmCalendarPage({
 
   const scheduleNeedsFetch = todayKey < from || tomorrowKey > to
 
-  const [windowData, scheduleData, types, outcomes, brokers, contacts] = await Promise.all([
+  const [windowData, scheduleData, types, outcomes, brokers, contacts, taskTypes] = await Promise.all([
     loadEvents(brokerScope, from, to),
     scheduleNeedsFetch ? loadEvents(brokerScope, todayKey, tomorrowKey) : Promise.resolve(null),
     getAppointmentTypes(),
     getAppointmentOutcomes(),
     getCrmBrokers(),
     getCalendarContactOptions(),
+    getCrmTaskTypes(),
   ])
 
   const { events, appointments } = windowData
@@ -240,6 +250,30 @@ export default async function CrmCalendarPage({
     const r = await searchCrmContactsAction(q)
     return r.ok ? { ok: true, results: r.results } : { ok: false, error: r.error }
   }
+  // §29 Screen A/C task quick actions (mobile) — the existing gated write paths.
+  async function completeTask(taskId: number, personId: number | null): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    const fd = new FormData()
+    fd.set('taskId', String(taskId))
+    if (personId) fd.set('personId', String(personId))
+    const r = await completeCrmTaskAction(fd)
+    return r.ok ? { ok: true } : { ok: false, error: r.error }
+  }
+  async function deleteTask(taskId: number): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    const r = await deleteCrmTaskAction(taskId)
+    return r.ok ? { ok: true } : { ok: false, error: r.error }
+  }
+  async function rescheduleTask(taskId: number, dueAtIso: string): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    const r = await updateCrmTaskAction({ id: taskId, dueAt: dueAtIso })
+    return r.ok ? { ok: true } : { ok: false, error: r.error }
+  }
+  async function createTask(fd: FormData): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    const r = await addCrmTaskAction(fd)
+    return r.ok ? { ok: true } : { ok: false, error: r.error }
+  }
 
   return (
     <main className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-4 sm:py-5">
@@ -267,27 +301,33 @@ export default async function CrmCalendarPage({
         />
       </div>
 
-      {/* ── Mobile (< md): existing calendar until the M6 §29 slice ── */}
-      <div className="md:hidden">
-        <div className="mb-4">
-          <h1 className="text-xl font-semibold text-foreground">Calendar</h1>
-        </div>
-        <ConsoleSection title="Appointments">
-          <MobileCalendar
-            appointments={appointments}
-            todayIso={todayKey}
-            monthIso={`${dateKey.slice(0, 7)}-01`}
-            types={types}
-            outcomes={outcomes}
-            contacts={contacts}
-            brokerSlugs={[...CRM_BROKERS]}
-            currentBrokerSlug={currentSlug}
-            isSuperuser={isSuperuser}
-            createAction={create}
-            updateAction={update}
-            deleteAction={del}
-          />
-        </ConsoleSection>
+      {/* ── Mobile (< md): the §29 Screen A calendar (mob-08) — full-bleed
+          under the shell chrome (cancels shell px-4 pt-5 + page px-3 py-4;
+          sm: shell px-6 pt-7 + page px-4 py-5). ── */}
+      <div className="-mx-7 -mt-9 md:hidden sm:-mx-10 sm:-mt-12">
+        <MobileCalendarScreen
+          key={`${dateKey.slice(0, 7)}-01`}
+          monthKey={`${dateKey.slice(0, 7)}-01`}
+          todayKey={todayKey}
+          events={events}
+          appointments={appointments}
+          types={types}
+          outcomes={outcomes}
+          contacts={contacts}
+          brokerSlugs={[...CRM_BROKERS]}
+          currentBrokerSlug={currentSlug}
+          brokerName={CRM_BROKER_DISPLAY[currentSlug as keyof typeof CRM_BROKER_DISPLAY] ?? currentSlug}
+          isSuperuser={isSuperuser}
+          taskTypes={taskTypes}
+          createAction={create}
+          updateAction={update}
+          deleteAction={del}
+          completeTaskAction={completeTask}
+          deleteTaskAction={deleteTask}
+          rescheduleTaskAction={rescheduleTask}
+          createTaskAction={createTask}
+          searchContactsAction={searchContacts}
+        />
       </div>
     </main>
   )

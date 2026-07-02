@@ -49,9 +49,20 @@ import { cn } from '@/lib/utils'
 import { taskGroupLabel, time12 } from '@/lib/crm/calendar'
 import { zonedDateKey, zonedMinutes } from '@/lib/format/date'
 import type { TaskQueueRow, TaskQueueCounts, CrmTaskType } from '@/lib/data/crm/getTaskQueue'
-import type { TaskActions } from './TaskQueue'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+type TaskActionResult = { ok: boolean; error?: string }
+
+/** The uniform server-action bundle both task surfaces receive (was TaskQueue's). */
+export type TaskActions = {
+  complete: (taskId: number, personId: number | null) => Promise<TaskActionResult>
+  bulkComplete: (ids: number[]) => Promise<TaskActionResult>
+  snooze: (id: number, days: number) => Promise<TaskActionResult>
+  remove: (id: number) => Promise<TaskActionResult>
+  update: (input: { id: number; name?: string; type?: string; dueAt?: string | null }) => Promise<TaskActionResult>
+  reassign: (id: number, broker: string) => Promise<TaskActionResult>
+}
 
 export type TasksDesktopView = 'today' | 'overdue' | 'upcoming'
 

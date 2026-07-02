@@ -392,3 +392,16 @@ components/admin/crm/calendar/AppointmentModal.tsx
 components/admin/crm/calendar/CalendarGrids.tsx
 components/admin/crm/calendar/CalendarView.tsx
 components/admin/crm/tasks/TasksView.tsx
+
+# §29 Mobile Calendar & Tasks rebuild (mobile-calendar-tasks, ci:crm-screen-parity,
+# 2026-07-02): FUB-iOS-parity mobile surfaces at documented pt precision — navy
+# grid with white/55 dots + 22px numerals (mob-08 A.4), 60/64px row anatomy with
+# micro type (12/13/15px), deterministic broker badge hex palette (§29 spec
+# table), warning-border checkboxes. Same exception class as the §25/§26 mobile
+# surfaces above.
+components/admin/crm/mobile/task-type-icons.tsx
+components/admin/crm/mobile/MobileTaskCreateSheet.tsx
+components/admin/crm/calendar/mobile/MobileMonthGrid.tsx
+components/admin/crm/calendar/mobile/MobileCalendarScreen.tsx
+components/admin/crm/calendar/mobile/MobileCalendarRows.tsx
+components/admin/crm/tasks/mobile/MobileTasksScreen.tsx

@@ -42,6 +42,10 @@ const TABS: Tab[] = [
 
 /** Longest-prefix match so /admin/crm/inbox lights Inbox, not People. */
 function activeHref(pathname: string): string {
+  // §29: Calendar + Tasks are menu-reached surfaces in this shell (the M2 tab
+  // set is Home/Inbox/People/Deals/Activity) — lighting People there via the
+  // /admin/crm prefix would lie about where the user is. Nothing lights.
+  if (/^\/admin\/crm\/(calendar|tasks)(\/|$)/.test(pathname)) return ''
   let best = ''
   for (const t of TABS) {
     const candidates = [t.href, ...(t.also ?? [])]

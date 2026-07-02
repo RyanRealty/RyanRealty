@@ -80,6 +80,10 @@ export default function ConsoleQuickAction() {
   // FAB there violates the single-FAB rule (§25.12 / mob-02). Hooks above run
   // unconditionally; bail before render only.
   const suppressed = pathname.startsWith('/admin/crm/inbox')
+  // §29: the mobile Calendar (Screen A) + Tasks (Screen C) own their FABs at
+  // < md; the desktop layouts keep this quick action (they have no §29 FAB).
+  const mobileSuppressed =
+    pathname.startsWith('/admin/crm/calendar') || pathname.startsWith('/admin/crm/tasks')
   const [open, setOpen] = useState(false)
   const [rec, setRec] = useState<CrmNextRec | null>(null)
   const [recLoading, setRecLoading] = useState(false)
@@ -124,6 +128,8 @@ export default function ConsoleQuickAction() {
           // §23 §9c: the tab bar is suppressed on pushed detail views, so the
           // FAB drops to the corner there (single FAB per §25.12 / mob-02).
           isPushedDetailPath(pathname) ? 'bottom-6' : 'bottom-20',
+          // §29 single-FAB rule: hidden at < md on calendar/tasks (their own FAB).
+          mobileSuppressed ? 'hidden md:flex' : 'flex',
         )}
         style={{ backgroundColor: 'var(--console-info)' }}
       >

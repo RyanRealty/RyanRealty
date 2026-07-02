@@ -9,8 +9,9 @@
  * Desktop (md+) renders TasksView: Today's Tasks | Overdue (N) | Future
  * sub-tabs, the How-Tasks-work / Filters ▾ / Me ▾ toolbar, and the two-panel
  * body (§1.2). Default landing is Overdue when overdue tasks exist, otherwise
- * Today (§1.1). < md keeps the existing TaskQueue agenda until the M6 mobile
- * slice (§29).
+ * Today (§1.1). < md renders the §29 Screen C mobile Tasks list
+ * (MobileTasksScreen — navy header + filter sheet, 3 sub-tabs with the
+ * destructive Overdue pill, C.5 row anatomy, FAB → D.3 create sheet).
  *
  * Scope: the agent dropdown is superuser-only (§1.4.3); everyone else is
  * pinned to their own broker slug AT THE DATA LAYER via getTaskQueue.
@@ -36,9 +37,8 @@ import { getTaskQueue, getCrmTaskTypes, type TaskQueueView } from '@/lib/data/cr
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { zonedDateKey } from '@/lib/format/date'
 import { CRM_BROKERS } from '@/lib/crm/constants'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
-import TaskQueue, { type TaskActions } from '@/components/admin/crm/tasks/TaskQueue'
-import TasksView, { type TasksDesktopView } from '@/components/admin/crm/tasks/TasksView'
+import TasksView, { type TaskActions, type TasksDesktopView } from '@/components/admin/crm/tasks/TasksView'
+import MobileTasksScreen from '@/components/admin/crm/tasks/mobile/MobileTasksScreen'
 import NewTaskDialog from '@/components/admin/crm/tasks/NewTaskDialog'
 
 export const metadata = { title: 'Tasks | CRM | Admin' }
@@ -63,7 +63,6 @@ export default async function CrmTasksPage({
   const currentSlug = access.brokerSlug ?? 'matt'
   const autoOpenNew = sp.new === '1'
   const showCompleted = sp.completed === '1'
-  const canReassign = isSuperuser
 
   // §1.4.3 — agent scope. Default "Me"; superuser may widen to All / a broker.
   const agent = isSuperuser && sp.agent && (sp.agent === 'all' || (CRM_BROKERS as readonly string[]).includes(sp.agent))
@@ -160,7 +159,7 @@ export default async function CrmTasksPage({
 
   return (
     <main className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-4 sm:py-5">
-      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      <div className="mb-3 hidden flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between md:flex">
         <div>
           <h1 className="text-xl font-semibold text-foreground md:text-2xl">Tasks</h1>
           <p className="hidden text-sm text-muted-foreground md:block">
@@ -194,17 +193,25 @@ export default async function CrmTasksPage({
         />
       </div>
 
-      {/* ── Mobile (< md): existing agenda until the M6 §29 slice ── */}
-      <div className="md:hidden">
-        <ConsoleSection title="Task queue">
-          <TaskQueue
-            rows={view === 'completed' ? (completedRes?.rows ?? []) : main.rows}
-            view={view}
-            taskTypes={taskTypes}
-            canReassign={canReassign}
-            actions={actions}
-          />
-        </ConsoleSection>
+      {/* ── Mobile (< md): the §29 Screen C Tasks list — full-bleed under the
+          shell chrome (cancels shell px-4 pt-5 + page px-3 py-4). ── */}
+      <div className="-mx-7 -mt-9 md:hidden sm:-mx-10 sm:-mt-12">
+        <MobileTasksScreen
+          rows={view === 'completed' ? [] : main.rows}
+          completedRows={completedRes?.rows ?? []}
+          counts={main.counts}
+          view={desktopView}
+          taskTypes={taskTypes}
+          brokers={brokerOptions}
+          isSuperuser={isSuperuser}
+          currentBrokerSlug={currentSlug}
+          agent={agent}
+          showCompleted={needCompleted}
+          actions={actions}
+          clearOverdue={clearOverdue}
+          createAction={createTask}
+          searchAction={searchContact}
+        />
       </div>
     </main>
   )

@@ -45,7 +45,11 @@ const REQUIRED_KIT_PAGES = [
   // contract (crm-screens.json "inbox-desktop" + "inbox-mobile" +
   // "mobile-compose" — requiredComponents + committed verify screenshots).
   'app/admin/(protected)/crm/workflows/page.tsx',
-  'app/admin/(protected)/crm/tasks/page.tsx',
+  // app/admin/(protected)/crm/tasks/page.tsx — REMOVED 2026-07-02: the §29
+  // mobile rebuild (MobileTasksScreen, Screen C) replaced the ConsoleSection
+  // TaskQueue branch; the page is under the stricter ci:crm-screen-parity
+  // contract (crm-screens.json "tasks-calendar-desktop" + "mobile-calendar-tasks"
+  // — requiredComponents + committed verify screenshots).
   'app/admin/(protected)/crm/sequences/page.tsx',
   'app/admin/(protected)/crm/approvals/page.tsx',
   // Comms cluster
