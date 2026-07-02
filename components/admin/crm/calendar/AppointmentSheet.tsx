@@ -73,9 +73,13 @@ function toDatetimeLocal(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-/** Build a default start (9:00 AM today or given date) and end (+1 h). */
-function defaultTimes(dateIso?: string | null): { start: string; end: string } {
-  const base = dateIso ? new Date(`${dateIso}T09:00:00`) : new Date()
+/**
+ * Build a default start (9:00 AM on the given date) and end (+1 h). The caller
+ * always supplies a date (the calendar's "+"/day-cell handlers pass one); the
+ * clock fallback lives in the open-effect, never in render (hydration safety).
+ */
+function defaultTimes(dateIso: string, fallbackNow?: Date): { start: string; end: string } {
+  const base = dateIso ? new Date(`${dateIso}T09:00:00`) : (fallbackNow ?? new Date(0))
   if (dateIso) {
     // Use exactly 9:00 AM on the given date
     base.setHours(9, 0, 0, 0)
@@ -153,8 +157,8 @@ export default function AppointmentSheet({
         setBrokerSlug(appointment.brokerSlug ?? currentBrokerSlug)
         setInviteSent(appointment.inviteSent)
       } else {
-        // Create mode
-        const { start, end } = defaultTimes(initialDate)
+        // Create mode — the clock fallback runs inside this effect only.
+        const { start, end } = defaultTimes(initialDate ?? '', new Date())
         setTitle('')
         setStartAt(start)
         setEndAt(end)

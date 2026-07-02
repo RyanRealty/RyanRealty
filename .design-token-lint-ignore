@@ -367,3 +367,15 @@ components/admin/crm/deals/DealsBoard.tsx
 components/admin/crm/deals/DealsSubBar.tsx
 components/admin/crm/deals/DealsDialogs.tsx
 components/admin/crm/deals/DealDetailModal.tsx
+
+# §09 Tasks + Calendar rebuild (tasks-calendar-desktop, ci:crm-screen-parity,
+# 2026-07-01): dense FUB-parity scheduling surfaces — month-grid event rows and
+# mini-cal day cells need micro type (text-[10px]/[11px]) below the ladder to
+# fit 4+ events per day cell per spec §2.5.3; the task list's §1.5.2/§1.5.3
+# header + row type (13/15px) matches the documented FUB anatomy; the §2.6
+# modal is viewport-bounded (max-h-[90vh]). Same exception class as the
+# §05/§07/§08/§10 rebuild surfaces above.
+components/admin/crm/calendar/AppointmentModal.tsx
+components/admin/crm/calendar/CalendarGrids.tsx
+components/admin/crm/calendar/CalendarView.tsx
+components/admin/crm/tasks/TasksView.tsx

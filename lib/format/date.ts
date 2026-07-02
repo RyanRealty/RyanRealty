@@ -30,6 +30,30 @@ export function formatDateTime(d: string | number | Date | null | undefined): st
 }
 
 /**
+ * YYYY-MM-DD calendar-day key for an instant in the brand timezone. Used by the
+ * §09 Tasks/Calendar surfaces to group true-instant timestamps (crm_tasks.due_at)
+ * into Pacific calendar days. Lives here so Intl stays inside lib/format
+ * (ci:date-format).
+ */
+export function zonedDateKey(d: string | number | Date, timeZone: string = TZ): string {
+  const date = d instanceof Date ? d : new Date(d)
+  if (Number.isNaN(date.getTime())) return ''
+  // en-CA yields YYYY-MM-DD directly.
+  return new Intl.DateTimeFormat('en-CA', { timeZone }).format(date)
+}
+
+/** Minutes since midnight for an instant in the brand timezone (grid placement). */
+export function zonedMinutes(d: string | number | Date, timeZone: string = TZ): number {
+  const date = d instanceof Date ? d : new Date(d)
+  if (Number.isNaN(date.getTime())) return 0
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone, hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(date)
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? '0')
+  return (get('hour') % 24) * 60 + get('minute')
+}
+
+/**
  * Local short weekday ("Mon".."Sun") + minutes since midnight for an instant in
  * an IANA zone. Used by the office-hours evaluator (lib/crm/office-hours.ts) —
  * a timezone CALCULATION, kept here so every Intl.DateTimeFormat call lives in

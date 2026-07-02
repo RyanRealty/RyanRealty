@@ -1,5 +1,21 @@
 // @no-parity — internal admin surface, no public mockup contract
-import Link from 'next/link'
+// (the §09 tasks surface is covered by ci:crm-screen-parity via the
+// tasks-calendar-desktop registry entry — docs/fub-crm-spec/crm-screens.json)
+
+/**
+ * /admin/crm/tasks — the §09 Part 1 Tasks module
+ * (spec: docs/fub-crm-spec/09-tasks-and-calendar.md).
+ *
+ * Desktop (md+) renders TasksView: Today's Tasks | Overdue (N) | Future
+ * sub-tabs, the How-Tasks-work / Filters ▾ / Me ▾ toolbar, and the two-panel
+ * body (§1.2). Default landing is Overdue when overdue tasks exist, otherwise
+ * Today (§1.1). < md keeps the existing TaskQueue agenda until the M6 mobile
+ * slice (§29).
+ *
+ * Scope: the agent dropdown is superuser-only (§1.4.3); everyone else is
+ * pinned to their own broker slug AT THE DATA LAYER via getTaskQueue.
+ */
+
 import { redirect } from 'next/navigation'
 import {
   getCrmAccess,
@@ -12,49 +28,77 @@ import {
   snoozeCrmTaskAction,
   deleteCrmTaskAction,
   bulkCompleteTasksAction,
+  clearMyOverdueTasksAction,
   searchCrmContactsAction,
 } from '@/app/actions/crm-tasks'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getTaskQueue, getCrmTaskTypes, type TaskQueueView } from '@/lib/data/crm/getTaskQueue'
+import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
+import { zonedDateKey } from '@/lib/format/date'
+import { CRM_BROKERS } from '@/lib/crm/constants'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 import TaskQueue, { type TaskActions } from '@/components/admin/crm/tasks/TaskQueue'
+import TasksView, { type TasksDesktopView } from '@/components/admin/crm/tasks/TasksView'
 import NewTaskDialog from '@/components/admin/crm/tasks/NewTaskDialog'
 
 export const metadata = { title: 'Tasks | CRM | Admin' }
 export const dynamic = 'force-dynamic'
 
-const VIEWS: { key: TaskQueueView; label: string }[] = [
-  { key: 'today', label: 'Today' },
-  { key: 'overdue', label: 'Overdue' },
-  { key: 'upcoming', label: 'Upcoming' },
-  { key: 'completed', label: 'Completed' },
-]
-
-function isView(v: string | undefined): v is TaskQueueView {
-  return v === 'today' || v === 'overdue' || v === 'upcoming' || v === 'completed'
+function parseView(v: string | undefined): TaskQueueView | null {
+  if (v === 'today' || v === 'overdue' || v === 'upcoming' || v === 'completed') return v
+  if (v === 'future') return 'upcoming' // §1.1 route segment name
+  return null
 }
 
 export default async function CrmTasksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; type?: string; new?: string }>
+  searchParams: Promise<{ view?: string; agent?: string; completed?: string; new?: string }>
 }) {
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
 
   const sp = await searchParams
-  const view: TaskQueueView = isView(sp.view) ? sp.view : 'today'
-  const typeFilter = sp.type && sp.type.trim() ? sp.type.trim() : null
+  const isSuperuser = access.role === 'superuser'
+  const currentSlug = access.brokerSlug ?? 'matt'
   const autoOpenNew = sp.new === '1'
-  const brokerScope = scopeBroker(access)
-  const canReassign = access.role === 'superuser'
+  const showCompleted = sp.completed === '1'
+  const canReassign = isSuperuser
+
+  // §1.4.3 — agent scope. Default "Me"; superuser may widen to All / a broker.
+  const agent = isSuperuser && sp.agent && (sp.agent === 'all' || (CRM_BROKERS as readonly string[]).includes(sp.agent))
+    ? sp.agent
+    : 'me'
+  const brokerScope = isSuperuser
+    ? (agent === 'all' ? null : agent === 'me' ? currentSlug : agent)
+    : scopeBroker(access)
 
   // A stable "now" computed server-side — never new Date() at render in a client.
   const now = new Date()
-  const [{ rows, counts }, taskTypes] = await Promise.all([
-    getTaskQueue({ brokerScope, view, type: typeFilter, now }),
+  const todayKey = zonedDateKey(now)
+
+  // §1.1 default landing: Overdue when overdue > 0, else Today.
+  const requested = parseView(sp.view)
+  let view: TaskQueueView = requested ?? 'overdue'
+  const mainView: TaskQueueView = view === 'completed' ? 'upcoming' : view
+  let main = await getTaskQueue({ brokerScope, view: mainView, now })
+  if (!requested && main.counts.overdue === 0) {
+    view = 'today'
+    main = await getTaskQueue({ brokerScope, view: 'today', now })
+  }
+
+  const needCompleted = showCompleted || view === 'completed'
+  const [completedRes, taskTypes, brokers] = await Promise.all([
+    needCompleted
+      ? getTaskQueue({ brokerScope, view: 'completed', now })
+      : Promise.resolve(null),
     getCrmTaskTypes(),
+    getCrmBrokers(),
   ])
+
+  const brokerOptions = brokers
+    .filter((b) => b.crmActive)
+    .map((b) => ({ slug: b.slug, name: b.name }))
 
   // ── Server-action wrappers (uniform { ok, error } for the client) ──────────
   async function completeTask(taskId: number, personId: number | null): Promise<{ ok: boolean; error?: string }> {
@@ -104,15 +148,24 @@ export default async function CrmTasksPage({
     'use server'
     return searchCrmContactsAction(q)
   }
+  async function clearOverdue(): Promise<{ ok: boolean; cleared?: number; error?: string }> {
+    'use server'
+    const r = await clearMyOverdueTasksAction()
+    return r.ok ? { ok: true, cleared: r.cleared } : { ok: false, error: r.error }
+  }
 
   const actions: TaskActions = { complete: completeTask, bulkComplete, snooze, remove, update, reassign }
 
+  const desktopView: TasksDesktopView = view === 'completed' ? 'upcoming' : (view as TasksDesktopView)
+
   return (
-    <main className="mx-auto w-full max-w-4xl px-3 py-6 sm:px-6 sm:py-8">
-      <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+    <main className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-4 sm:py-5">
+      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-semibold text-foreground md:text-2xl">Tasks</h1>
-          <p className="hidden text-sm text-muted-foreground md:block">Every task across the book, by when it is due.</p>
+          <p className="hidden text-sm text-muted-foreground md:block">
+            Every task across the book, by when it is due.
+          </p>
         </div>
         <NewTaskDialog
           taskTypes={taskTypes}
@@ -122,85 +175,37 @@ export default async function CrmTasksPage({
         />
       </div>
 
-      {/* View tabs — desktop only; mobile uses CrmSegmented inside TaskQueue */}
+      {/* ── Desktop: the §09 Part 1 module ── */}
       <div className="hidden md:block">
-        {/* FUB-style underline tab bar */}
-        <div className="-mx-3 overflow-x-auto no-scrollbar px-3 md:mx-0 md:px-0">
-          <div className="flex border-b border-border">
-            {VIEWS.map((v) => {
-              const active = view === v.key
-              const count = counts[v.key]
-              return (
-                <Link
-                  key={v.key}
-                  href={`/admin/crm/tasks?view=${v.key}${typeFilter ? `&type=${encodeURIComponent(typeFilter)}` : ''}`}
-                  className={[
-                    'relative flex shrink-0 items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors',
-                    active
-                      ? 'text-foreground after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primary'
-                      : 'text-muted-foreground hover:text-foreground',
-                  ].join(' ')}
-                >
-                  {v.label}
-                  {count > 0 ? (
-                    <span className={[
-                      'tabular-nums text-xs',
-                      active ? 'text-foreground' : 'text-muted-foreground',
-                    ].join(' ')}>
-                      {count}
-                    </span>
-                  ) : null}
-                </Link>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Type filter chip row */}
-        {taskTypes.length > 0 ? (
-          <div className="-mx-3 mt-2.5 overflow-x-auto no-scrollbar px-3 md:mx-0 md:px-0">
-            <div className="flex flex-wrap gap-1.5">
-              <Link
-                href={`/admin/crm/tasks?view=${view}`}
-                className={[
-                  'inline-flex h-7 items-center rounded-full px-3 text-xs font-medium transition-colors',
-                  !typeFilter
-                    ? 'bg-secondary text-secondary-foreground'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                ].join(' ')}
-              >
-                All types
-              </Link>
-              {taskTypes
-                .filter((t) => t.isActive || t.key === typeFilter)
-                .map((t) => (
-                  <Link
-                    key={t.key}
-                    href={`/admin/crm/tasks?view=${view}&type=${encodeURIComponent(t.key)}`}
-                    className={[
-                      'inline-flex h-7 items-center rounded-full px-3 text-xs font-medium transition-colors',
-                      typeFilter === t.key
-                        ? 'bg-secondary text-secondary-foreground'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                    ].join(' ')}
-                  >
-                    {t.label}
-                  </Link>
-                ))}
-            </div>
-          </div>
-        ) : null}
+        <TasksView
+          rows={view === 'completed' ? [] : main.rows}
+          completedRows={completedRes?.rows ?? []}
+          counts={main.counts}
+          view={desktopView}
+          taskTypes={taskTypes}
+          brokers={brokerOptions}
+          isSuperuser={isSuperuser}
+          currentBrokerSlug={currentSlug}
+          agent={agent}
+          todayKey={todayKey}
+          showCompleted={needCompleted}
+          actions={actions}
+          clearOverdue={clearOverdue}
+        />
       </div>
 
-      <ConsoleSection title="Task queue" className="mt-6">
-        <TaskQueue
-          rows={rows}
-          view={view}
-          taskTypes={taskTypes}
-          canReassign={canReassign}
-          actions={actions}
-        />
-      </ConsoleSection>
+      {/* ── Mobile (< md): existing agenda until the M6 §29 slice ── */}
+      <div className="md:hidden">
+        <ConsoleSection title="Task queue">
+          <TaskQueue
+            rows={view === 'completed' ? (completedRes?.rows ?? []) : main.rows}
+            view={view}
+            taskTypes={taskTypes}
+            canReassign={canReassign}
+            actions={actions}
+          />
+        </ConsoleSection>
+      </div>
     </main>
   )
 }

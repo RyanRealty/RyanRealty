@@ -1,7 +1,6 @@
 import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
-import { supabaseAnon } from '@/lib/data/client'
 
 /**
  * getTaskQueue — the cross-contact task queue (Wave 7, Phase A read side).
@@ -257,8 +256,11 @@ export const CRM_TASK_TYPES_TAG = 'crm-task-types' as const
  */
 export const getCrmTaskTypes = unstable_cache(
   async (): Promise<CrmTaskType[]> => {
-    const sb = supabaseAnon()
-    if (!sb) return []
+    // Service client: crm_task_types has RLS enabled with no anon policy, so
+    // the anon read silently returned [] (found 2026-07-01 in the §09 slice —
+    // the Filters dropdown had no type checkboxes and the old type-chip row
+    // rendered nothing). Internal config table — service read is correct.
+    const sb = createServiceClient()
     const { data, error } = await sb
       .from('crm_task_types')
       .select('key,label,position,is_active,is_protected')

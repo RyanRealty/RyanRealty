@@ -50,6 +50,13 @@ const NON_SENDER = new Set([
   // List-Unsubscribe would be misleading on an internal team ping. The page's
   // client-facing sends still route through the gated sendCrmEmailAction.
   'app/admin/(protected)/crm/inbox/page.tsx',
+  // §09 appointment invitation (spec 09 §2.11): a broker-initiated 1:1
+  // transactional email — the broker explicitly checks "Send invitation" on ONE
+  // appointment and it goes from the broker's own Gmail to that appointment's
+  // invitee(s) about their own meeting. Suppression-checked per recipient; no
+  // list targeting. CAN-SPAM List-Unsubscribe on a personal meeting invite
+  // would be misleading noise (same class as the 1:1 composer send).
+  'app/actions/appointments.ts',
 ])
 
 const SEND_CALL = /\bsendEmail\s*\(|\bsendBatchEmails\s*\(|\bsendCrmEmail\s*\(/

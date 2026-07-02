@@ -1,10 +1,12 @@
 'use client'
 
 /**
- * CalendarGrid — the interactive month grid for /admin/crm/calendar.
+ * MobileCalendar — the < md branch of /admin/crm/calendar (the pre-§09 month
+ * grid + agenda, preserved as the working mobile experience until the M6
+ * mobile-calendar-tasks slice rebuilds it to §29). Desktop renders the §09
+ * CalendarView instead.
  *
- * Month navigation via ?month=YYYY-MM query param (D2).
- * Broker filter for superusers via client-side Select (D6).
+ * Month navigation via ?month=YYYY-MM query param.
  */
 
 import { useState } from 'react'
@@ -20,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { DOW_FULL, MONTH_FULL, monthLabel as calMonthLabel } from '@/lib/crm/calendar'
 import AppointmentSheet, { type ContactOption } from './AppointmentSheet'
 import type { AppointmentRow, AppointmentType, AppointmentOutcome } from '@/lib/data/crm/getAppointments'
 
@@ -50,12 +53,8 @@ type Props = {
 function fmtTime(iso: string, allDay: boolean): string {
   if (allDay) return 'All day'
   const d = new Date(iso)
-  return d.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-    timeZone: 'UTC',
-  })
+  // Appointments store wall-clock times as UTC — format in UTC, not LA.
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'UTC' })
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -72,7 +71,7 @@ function shiftMonth(monthIso: string, delta: number): string {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function CalendarGrid({
+export default function MobileCalendar({
   appointments,
   todayIso,
   monthIso,
@@ -111,11 +110,7 @@ export default function CalendarGrid({
     cells.push(`${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`)
   }
 
-  const monthLabel = new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  })
+  const monthLabelText = calMonthLabel(`${monthIso.slice(0, 7)}-01`)
 
   // ── Current month check (for "Today" button) ──────────────────────────────
   const currentMonthYM = monthIso.slice(0, 7) // YYYY-MM
@@ -150,12 +145,8 @@ export default function CalendarGrid({
 
   const dayAppts = byDate.get(selectedDate) ?? []
 
-  const selectedLabel = new Date(`${selectedDate}T00:00:00Z`).toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    timeZone: 'UTC',
-  })
+  const sel = new Date(`${selectedDate}T00:00:00Z`)
+  const selectedLabel = `${DOW_FULL[sel.getUTCDay()]}, ${MONTH_FULL[sel.getUTCMonth()]} ${sel.getUTCDate()}`
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const openCreate = (date: string) => {
@@ -187,7 +178,7 @@ export default function CalendarGrid({
             ‹
           </Button>
           <h2 className="w-36 text-center text-sm font-semibold text-foreground">
-            {monthLabel}
+            {monthLabelText}
           </h2>
           <Button
             type="button"

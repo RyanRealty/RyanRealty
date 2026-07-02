@@ -225,6 +225,38 @@ export async function bulkCompleteTasksAction(
   return { ok: true, completed: allowed.length }
 }
 
+/**
+ * "Clear My Overdue Tasks" (§09 §1.5.1) — bulk-completes every OPEN overdue
+ * task assigned to the CALLER. Per the spec restriction this never clears
+ * another agent's tasks, even when a superuser has the view scoped to someone
+ * else. Uses the same overdue definition as getTaskQueue (due before today,
+ * newer than the 31-day stale floor) so the cleared count matches the badge.
+ */
+export async function clearMyOverdueTasksAction(): Promise<CrmActionResult & { cleared?: number }> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  const ownSlug = access.access.brokerSlug ?? scopeBroker(access.access)
+  if (!ownSlug) return { ok: false, error: 'Could not resolve your broker slug' }
+
+  const { taskQueueBounds } = await import('@/lib/data/crm/getTaskQueue')
+  const bounds = taskQueueBounds(new Date())
+
+  const sb = createServiceClient()
+  const nowIso = new Date().toISOString()
+  const { data, error } = await sb
+    .from('crm_tasks')
+    .update({ completed_at: nowIso, updated_at: nowIso })
+    .is('completed_at', null)
+    .lt('due_at', bounds.startOfToday)
+    .gte('due_at', bounds.staleFloor)
+    .eq('assigned_broker', ownSlug)
+    .select('id')
+  if (error) return { ok: false, error: error.message }
+
+  revalidateTasks()
+  return { ok: true, cleared: (data ?? []).length }
+}
+
 // ── Task-type config-table CRUD ─────────────────────────────────────────────
 
 const TASK_TYPES = makeConfigTable({

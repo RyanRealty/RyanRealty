@@ -49,6 +49,95 @@ function toTimestamptz(raw: string): string {
   return `${padded}Z`
 }
 
+/**
+ * Send the §2.11 invitation email to each contact invitee's PRIMARY email
+ * (secondary emails excluded, per spec), from the assigned broker's own Gmail
+ * mailbox, suppression-checked per recipient. Text reminders (the FUB
+ * Power-Up) are deliberately not implemented — the modal copy says so.
+ * Returns the number of invitations actually sent.
+ */
+async function sendAppointmentInvites(params: {
+  apptId: number
+  title: string
+  startAt: string
+  endAt: string
+  allDay: boolean
+  timezone: string | null
+  location: string | null
+  description: string | null
+  brokerSlug: string
+  personIds: number[]
+}): Promise<number> {
+  const ids = [...new Set(params.personIds)].filter(Boolean)
+  if (ids.length === 0) return 0
+
+  const sb = createServiceClient()
+  const { data: people } = await sb
+    .from('crm_people')
+    .select('id,name,first_name,emails')
+    .in('id', ids)
+  if (!people || people.length === 0) return 0
+
+  const { isSuppressed } = await import('@/lib/crm/suppressions')
+  const { CRM_MAILBOXES, sendCrmEmail } = await import('@/lib/crm/gmail')
+  const { taskGroupLabel, time12, wallDateKey, wallMinutes } = await import('@/lib/crm/calendar')
+  const mailbox = CRM_MAILBOXES.find((m) => m.slug === params.brokerSlug) ?? CRM_MAILBOXES[0]
+
+  const dayLabel = taskGroupLabel(wallDateKey(params.startAt))
+  const tzLabel =
+    params.timezone === 'America/New_York' ? 'Eastern Time'
+    : params.timezone === 'America/Chicago' ? 'Central Time'
+    : params.timezone === 'America/Denver' ? 'Mountain Time'
+    : 'Pacific Time'
+  const when = params.allDay
+    ? `${dayLabel} (all day)`
+    : `${dayLabel}, ${time12(wallMinutes(params.startAt))}–${time12(wallMinutes(params.endAt))} (${tzLabel})`
+  const notesPlain = (params.description ?? '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .trim()
+
+  let sent = 0
+  for (const p of people as Array<{ id: number; name: string | null; first_name: string | null; emails: Array<{ value?: string; isPrimary?: number | boolean }> | null }>) {
+    const to = (p.emails ?? [])
+      .slice()
+      .sort((a, b) => Number(!!b.isPrimary) - Number(!!a.isPrimary))[0]?.value
+    if (!to) continue
+    const gate = await isSuppressed(p.id, 'email')
+    if (gate.suppressed) continue
+
+    const first = (p.first_name ?? p.name ?? '').split(' ')[0]
+    const subject = `Appointment: ${params.title}`
+    const lines = [
+      first ? `Hi ${first},` : 'Hi,',
+      '',
+      `You have an appointment scheduled: ${params.title}`,
+      `When: ${when}`,
+      params.location ? `Where: ${params.location}` : null,
+      notesPlain ? `Notes: ${notesPlain}` : null,
+      '',
+      'Reply to this email if you need to reschedule.',
+    ].filter((l): l is string => l !== null)
+
+    const res = await sendCrmEmail({
+      fromMailbox: mailbox.email,
+      to,
+      subject,
+      bodyText: lines.join('\n'),
+      withSignature: true,
+      track: { personId: p.id, emailKey: `appt:${params.apptId}:${p.id}:${Date.now()}`, label: subject },
+    })
+    if (!res.ok) continue
+    sent += 1
+    await sb.from('crm_timeline').insert({
+      person_id: p.id, kind: 'email_out', title: subject, body: res.plainBody,
+      payload: { gmailId: res.gmailId, to, mailbox: mailbox.email, appointmentId: params.apptId },
+      broker: mailbox.slug, source: 'app', dedupe_key: `gmail:${res.gmailId}:p${p.id}`,
+    })
+  }
+  return sent
+}
+
 // ── createAppointmentAction ───────────────────────────────────────────────────
 
 export async function createAppointmentAction(formData: FormData): Promise<ActionResult> {
@@ -66,6 +155,8 @@ export async function createAppointmentAction(formData: FormData): Promise<Actio
   const personIdRaw  = formData.get('personId')  as string | null
   const brokerSlugRaw = formData.get('brokerSlug') as string | null
   const guestIdsRaw  = formData.get('guestPersonIds') as string | null
+  const timezone     = (formData.get('timezone') as string | null)?.trim() || null
+  const sendInvitation = formData.get('sendInvitation') === 'true'
 
   if (!title) return { ok: false, error: 'Title is required' }
   if (!startRaw) return { ok: false, error: 'Start date/time is required' }
@@ -118,6 +209,7 @@ export async function createAppointmentAction(formData: FormData): Promise<Actio
       start_at: startAt,
       end_at: endAt,
       all_day: allDay,
+      timezone,
       location,
       description,
       type_id: typeId,
@@ -133,6 +225,17 @@ export async function createAppointmentAction(formData: FormData): Promise<Actio
   if (error) {
     console.error('[createAppointmentAction]', error.message)
     return { ok: false, error: 'Could not save appointment' }
+  }
+
+  // §2.6 field 14 / §2.11 — invitation emails (defaults false; explicit opt-in).
+  if (sendInvitation && data?.id) {
+    const invited = await sendAppointmentInvites({
+      apptId: data.id, title, startAt, endAt, allDay, timezone, location, description,
+      brokerSlug, personIds: [personId, ...guestPersonIds].filter((n): n is number => !!n),
+    })
+    if (invited > 0) {
+      await sb.from('crm_appointments').update({ invite_sent: true }).eq('id', data.id)
+    }
   }
 
   revalidatePath('/admin/crm/calendar')
@@ -177,6 +280,8 @@ export async function updateAppointmentAction(
   const personIdRaw  = formData.get('personId')  as string | null
   const guestIdsRaw  = formData.get('guestPersonIds') as string | null
   const inviteSentRaw = formData.get('inviteSent') as string | null
+  const timezoneRaw  = (formData.get('timezone') as string | null)?.trim() || null
+  const sendInvitation = formData.get('sendInvitation') === 'true'
 
   if (!title) return { ok: false, error: 'Title is required' }
   if (!startRaw || !endRaw) return { ok: false, error: 'Start and end are required' }
@@ -206,6 +311,18 @@ export async function updateAppointmentAction(
     }
   }
 
+  // §2.6 gotcha / AC-17: re-saving with the "Send invitation" checkbox
+  // unchecked cancels the pending reminder (invite_sent → false). The modal
+  // warns before this happens; here we just apply the truth. Checking the box
+  // re-sends the invitation and flips it back on. The legacy `inviteSent`
+  // field (the old sheet's manual switch) is still honored when the modal
+  // fields are absent.
+  const inviteSent = sendInvitation
+    ? true
+    : inviteSentRaw != null && formData.get('sendInvitation') == null
+      ? inviteSentRaw === 'true'
+      : false
+
   const { error } = await sb
     .from('crm_appointments')
     .update({
@@ -213,19 +330,28 @@ export async function updateAppointmentAction(
       start_at: startAt,
       end_at: endAt,
       all_day: allDay,
+      timezone: timezoneRaw,
       location,
       description,
       type_id: typeId,
       outcome_id: outcomeId,
       person_id: personId,
       guest_person_ids: guestPersonIds,
-      invite_sent: inviteSentRaw === 'true',
+      invite_sent: inviteSent,
     })
     .eq('id', id)
 
   if (error) {
     console.error('[updateAppointmentAction]', error.message)
     return { ok: false, error: 'Could not update appointment' }
+  }
+
+  if (sendInvitation) {
+    await sendAppointmentInvites({
+      apptId: id, title, startAt, endAt, allDay, timezone: timezoneRaw, location, description,
+      brokerSlug: existing.broker_slug as string,
+      personIds: [personId, ...guestPersonIds].filter((n): n is number => !!n),
+    })
   }
 
   revalidatePath('/admin/crm/calendar')
