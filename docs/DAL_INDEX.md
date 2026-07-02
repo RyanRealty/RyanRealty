@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-07-02T03:49:41.867Z
+**Generated:** 2026-07-02T04:31:15.631Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -613,6 +613,16 @@ Companion files:
 **Selected columns:** `id`, `name`, `is_active`, `trigger_type`, `trigger_value`, `action_type`, `action_value`, `position`
 
 **Cache tags:** `CRM_AUTOMATION_RULES_TAG`
+
+---
+
+### `lib/data/crm/getCrmBlockedNumbers.ts`
+
+**Exports:** `getCrmBlockedNumbers`
+
+**Tables:** `crm_blocked_numbers`
+
+**Selected columns:** `id`, `phone_last10`, `e164`, `reason`, `blocked_by`, `note`, `created_at`
 
 ---
 
@@ -1895,7 +1905,7 @@ Companion files:
 | `crm_assignment_config` | `ASSIGNMENT_CONFIG_FALLBACK()`, `normalizeStrategy()`, `mapAssignmentConfig()`, `getCrmAssignmentConfig()` <br /> `lib/data/crm/getCrmAssignmentConfig.ts` |
 | `crm_assignment_rules` | `ASSIGNMENT_CONFIG_FALLBACK()`, `normalizeStrategy()`, `mapAssignmentConfig()`, `getCrmAssignmentConfig()` <br /> `lib/data/crm/getCrmAssignmentConfig.ts` |
 | `crm_automation_rules` | `CRM_AUTOMATION_RULES_TAG()`, `isTriggerType()`, `isActionType()`, `mapRule()`, `matchRules()`, `getCrmAutomationRules()`, `getActiveRulesForTrigger()` <br /> `lib/data/crm/getCrmAutomationRules.ts` |
-| `crm_blocked_numbers` | `isNumberBlocked()`, `isStirSpamSuspected()` <br /> `lib/data/crm/getBlockedNumber.ts` |
+| `crm_blocked_numbers` | `isNumberBlocked()`, `isStirSpamSuspected()`, `getCrmBlockedNumbers()` <br /> `lib/data/crm/getBlockedNumber.ts` · `lib/data/crm/getCrmBlockedNumbers.ts` |
 | `crm_broker_alerts` | `recentHealthAlertExists()`, `insertHealthAlert()` <br /> `lib/data/crm/healthAlertQueue.ts` |
 | `crm_bulk_jobs` | `normalizeBulkJobStatus()`, `computeProgress()`, `buildBulkJobView()`, `getCrmBulkJob()`, `getRecentCrmBulkJobs()` <br /> `lib/data/crm/getCrmBulkJob.ts` |
 | `crm_company_settings` | `DEFAULT_COMPANY_SETTINGS()`, `getCrmCompanySettings()` <br /> `lib/data/crm/getCrmCompanySettings.ts` |

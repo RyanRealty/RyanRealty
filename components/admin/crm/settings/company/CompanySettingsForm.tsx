@@ -1,12 +1,15 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import type { CrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
 import { updateCompanySettingsAction } from '@/app/actions/crm-company-settings'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -14,8 +17,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
-import { cn } from '@/lib/utils'
+import { FormRow, SectionDivider } from './form-shared'
+import { OfficeHoursEditor } from './OfficeHoursEditor'
+import { SpamLabelChange, SubdomainChange } from './ChangeDialogs'
+import { WeeklyRecipientsEditor } from './WeeklyRecipientsEditor'
 
 // ---- Static option lists -------------------------------------------------
 
@@ -50,82 +55,75 @@ const TIMEZONE_OPTIONS: { value: string; label: string }[] = [
   { value: 'Pacific/Honolulu',    label: 'Hawaii Time (GMT-10:00)' },
 ]
 
-// ---- Sub-components -------------------------------------------------------
+/**
+ * The exact recorded-call announcements the Twilio voice layer plays. These
+ * mirror the <Say> verbs in app/api/twilio/voice/route.ts and
+ * outbound-bridge/route.ts (kept literal there so ci:call-recording-consent
+ * can grep them). There is no pre-recorded audio file — Twilio speaks these.
+ */
+const DISCLOSURE_CALL = 'This call may be recorded for quality purposes.'
+const DISCLOSURE_VOICEMAIL =
+  'You have reached Ryan Realty. This call is recorded. Please leave a message after the tone and we will call you right back.'
 
-/** All-caps section divider with flanking separators (FUB-style). */
-function SectionDivider({ label }: { label: string }) {
-  return (
-    <div className="flex items-center gap-4 py-4">
-      <Separator className="flex-1" />
-      <span className="shrink-0 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-        {label}
-      </span>
-      <Separator className="flex-1" />
-    </div>
-  )
-}
-
-/** Two-column form row: label left (~30%), control(s) right (~70%). */
-function FormRow({
-  label,
-  htmlFor,
-  children,
-  description,
-  className,
-}: {
-  label?: string
-  htmlFor?: string
-  children: React.ReactNode
-  description?: string
-  className?: string
-}) {
-  return (
-    <div className={cn('grid grid-cols-[1fr_2fr] items-start gap-x-6 gap-y-1 py-2.5', className)}>
-      <div className="pt-1">
-        {label && (
-          <Label
-            htmlFor={htmlFor}
-            className="text-sm font-medium text-foreground leading-snug"
-          >
-            {label}
-          </Label>
-        )}
-        {description && (
-          <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{description}</p>
-        )}
-      </div>
-      <div className="min-w-0">{children}</div>
-    </div>
-  )
+/** §1.10 registration badge mapping — live Twilio A2P campaign status. */
+function registrationBadge(status: string | null): { label: string; className: string } {
+  switch (status) {
+    case 'VERIFIED':
+      return { label: 'Fully Registered', className: 'bg-success text-success-foreground' }
+    case 'IN_PROGRESS':
+    case 'PENDING':
+      return { label: 'Under Carrier Review', className: 'bg-warning text-warning-foreground' }
+    case 'FAILED':
+      return { label: 'Rejected by Carriers', className: 'bg-destructive text-destructive-foreground' }
+    case 'NONE':
+      return { label: 'Not Started', className: 'bg-secondary text-secondary-foreground' }
+    default:
+      return { label: 'Status unavailable', className: 'bg-secondary text-secondary-foreground' }
+  }
 }
 
 // ---- Main component -------------------------------------------------------
 
 /**
- * CompanySettingsForm — client form for /admin/crm/settings/company.
+ * CompanySettingsForm — client form for /admin/crm/settings/company (spec §1).
  *
- * Manages Switch + Select state locally; submits to updateCompanySettingsAction
- * via useTransition. Shows a brief "Saved" confirmation in the button on success.
- *
- * Per spec §1.9, the Save button covers: basic company info, fallback_number,
- * call_recording_enabled, legal_disclosure_auto_play, production_goal.
- * Fields managed via separate flows (office_hours, subdomain, spam_label_entity,
- * weekly_report_recipients, block_list) are shown read-only with navigation cues.
+ * The Save button (§1.9) commits: basic company info, fallback_number,
+ * call_recording_enabled, production_goal. Sections with their own flows save
+ * immediately through dedicated actions: office hours (§1.5), spam label
+ * (§1.4), subdomain (§1.6), weekly report recipients (§1.7). Block list is a
+ * dedicated sub-page (§1.8); Business Registration is a sub-page (§1.10)
+ * showing the LIVE Twilio A2P campaign status passed in as `a2pStatus`.
  */
-export function CompanySettingsForm({ settings }: { settings: CrmCompanySettings }) {
+export function CompanySettingsForm({
+  settings,
+  a2pStatus,
+  blockedCount,
+}: {
+  settings: CrmCompanySettings
+  a2pStatus: string | null
+  blockedCount: number
+}) {
   // Controlled state for Select and Switch fields (non-native form controls)
   const [industry, setIndustry] = useState(settings.industry)
   const [franchise, setFranchise] = useState(settings.franchise)
   const [country, setCountry] = useState(settings.country)
   const [timeZone, setTimeZone] = useState(settings.time_zone)
   const [callRecording, setCallRecording] = useState(settings.call_recording_enabled)
-  const [legalDisclosure, setLegalDisclosure] = useState(settings.legal_disclosure_auto_play)
+  const [spamLabel, setSpamLabel] = useState(settings.spam_label_entity)
+  const [subdomain, setSubdomain] = useState(settings.subdomain)
+  const [editingGoal, setEditingGoal] = useState(false)
+  const [goal, setGoal] = useState(
+    settings.production_goal.toLocaleString('en-US', { maximumFractionDigits: 0 }),
+  )
 
   const [isPending, startTransition] = useTransition()
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
-  const year = settings.production_goal_year || new Date().getFullYear()
+  // production_goal_year is always present (DB default + DAL fallback stamp it
+  // server-side) — no client-side clock needed (ci:hydration-safety).
+  const year = settings.production_goal_year
+  const badge = registrationBadge(a2pStatus)
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -136,12 +134,13 @@ export function CompanySettingsForm({ settings }: { settings: CrmCompanySettings
     fd.set('country', country)
     fd.set('time_zone', timeZone)
     fd.set('call_recording_enabled', String(callRecording))
-    fd.set('legal_disclosure_auto_play', String(legalDisclosure))
+    fd.set('production_goal', goal)
 
     startTransition(async () => {
       try {
         await updateCompanySettingsAction(fd)
         setSaveStatus('saved')
+        setEditingGoal(false)
         setTimeout(() => setSaveStatus('idle'), 3000)
       } catch (err) {
         setSaveStatus('error')
@@ -153,11 +152,19 @@ export function CompanySettingsForm({ settings }: { settings: CrmCompanySettings
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="rounded-xl border border-border bg-card shadow-sm">
-        {/* Card header */}
-        <div className="flex items-center gap-3 border-b border-border px-6 py-4">
-          <span className="text-base text-muted-foreground" aria-hidden>⚙</span>
-          <h2 className="text-base font-semibold text-foreground">Company settings</h2>
+      <Card className="shadow-sm">
+        {/* Card header — §1.2: gear + title left, View Business Registration right */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
+          <div className="flex items-center gap-3">
+            <span className="text-base text-muted-foreground" aria-hidden>⚙</span>
+            <h2 className="text-base font-semibold text-foreground">Company Settings</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge className={badge.className}>{badge.label}</Badge>
+            <Button asChild type="button" variant="outline" size="sm">
+              <Link href="/admin/crm/settings/company/registration">View Business Registration</Link>
+            </Button>
+          </div>
         </div>
 
         {/* Form body */}
@@ -274,6 +281,18 @@ export function CompanySettingsForm({ settings }: { settings: CrmCompanySettings
           <SectionDivider label="Virtual Phone" />
 
           <FormRow
+            label="Phone"
+            description="Per-broker business lines forward to each broker's cell."
+          >
+            <div className="flex items-center gap-2 pt-1 text-sm">
+              <span aria-hidden className="text-muted-foreground">✎</span>
+              <Button asChild type="button" variant="link" className="h-auto p-0 text-sm text-primary">
+                <Link href="/admin/crm/settings/team">Manage Settings</Link>
+              </Button>
+            </div>
+          </FormRow>
+
+          <FormRow
             label="Fallback number"
             htmlFor="fallback_number"
             description="Calls route here when no agent is available."
@@ -288,16 +307,16 @@ export function CompanySettingsForm({ settings }: { settings: CrmCompanySettings
           </FormRow>
 
           <FormRow
-            label="Spam label protection"
-            description="Legal entity name shown to carriers for STIR/SHAKEN caller ID. Edit via Business Registration."
+            label="Spam label calling protection"
+            description="Legal entity name shown to carriers for STIR/SHAKEN caller ID."
           >
-            <div className="flex items-center gap-2 text-sm">
-              <span className="font-medium text-foreground">{settings.spam_label_entity}</span>
-              <span className="text-xs text-muted-foreground">(managed in Business Registration)</span>
+            <div className="flex items-center gap-2 pt-1 text-sm">
+              <span className="font-medium text-foreground">{spamLabel}</span>
+              <SpamLabelChange value={spamLabel} onSaved={setSpamLabel} />
             </div>
           </FormRow>
 
-          <FormRow label="Call recording">
+          <FormRow label="Call Recording">
             <div className="flex items-center gap-3">
               <Switch
                 id="call_recording_enabled"
@@ -311,23 +330,37 @@ export function CompanySettingsForm({ settings }: { settings: CrmCompanySettings
             </div>
           </FormRow>
 
-          <FormRow label="Legal disclosure">
+          <FormRow label="Legal Disclosure">
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Switch
                   id="legal_disclosure_auto_play"
-                  checked={legalDisclosure}
-                  onCheckedChange={setLegalDisclosure}
+                  checked
+                  disabled
                   aria-label="Automatically play call recording disclosure for all calls"
                 />
-                <Label htmlFor="legal_disclosure_auto_play" className="text-sm text-muted-foreground cursor-pointer">
+                <Label htmlFor="legal_disclosure_auto_play" className="text-sm text-muted-foreground">
                   Automatically play call recording disclosure for all calls
                 </Label>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Locked on. Callers can be in two-party consent states, so the
+                notice always plays whenever a call records.
+              </p>
+              {/* Preview call disclosure — the exact announcements Twilio speaks */}
+              <div className="rounded-lg border border-border bg-background p-3">
+                <p className="text-xs font-semibold text-foreground">Preview call disclosure</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Forwarded and outbound calls: &ldquo;{DISCLOSURE_CALL}&rdquo;
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Voicemail greeting: &ldquo;{DISCLOSURE_VOICEMAIL}&rdquo;
+                </p>
               </div>
               {/* Legal Requirements info box */}
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
                 <p className="text-xs font-semibold text-foreground">
-                  Legal requirements for call disclosure
+                  Legal Requirements for call disclosure
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                   In some states and jurisdictions it is legally required to obtain
@@ -339,8 +372,7 @@ export function CompanySettingsForm({ settings }: { settings: CrmCompanySettings
                   of a call.
                 </p>
                 <p className="mt-2 text-xs font-medium text-primary">
-                  Oregon is a two-party consent state. Enabling this disclosure is
-                  strongly advised.
+                  Oregon is a two-party consent state. This disclosure stays enabled.
                 </p>
               </div>
             </div>
@@ -352,73 +384,69 @@ export function CompanySettingsForm({ settings }: { settings: CrmCompanySettings
           <FormRow
             description="Specify the days and times your team can receive incoming calls to your team inboxes."
           >
-            {settings.office_hours.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No office hours configured.{' '}
-                <span className="text-xs text-primary/70">(Office hours management coming soon.)</span>
-              </p>
-            ) : (
-              <ul className="space-y-1">
-                {settings.office_hours.map((block, i) => (
-                  <li key={i} className="text-sm text-foreground">
-                    {block.days.join(', ')} · {block.start_time} to {block.end_time}
-                  </li>
-                ))}
-              </ul>
-            )}
+            <OfficeHoursEditor blocks={settings.office_hours} />
           </FormRow>
 
           {/* ---- §1.6 Subdomain ---- */}
           <SectionDivider label="Subdomain" />
 
-          <FormRow description="The subdomain used for your account URL.">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="font-medium text-foreground">{settings.subdomain}.followupboss.com</span>
-              <span className="text-xs text-muted-foreground">(managed separately)</span>
+          <FormRow description="Change the subdomain of your account.">
+            <div className="flex items-center gap-2 pt-1 text-sm">
+              <span className="font-medium text-foreground">{subdomain}.ryan-realty.com</span>
+              <SubdomainChange value={subdomain} onSaved={setSubdomain} />
             </div>
           </FormRow>
 
           {/* ---- §1.7 Business Insights ---- */}
           <SectionDivider label="Business Insights" />
 
-          <FormRow label={`Production goals ${year}`} htmlFor="production_goal">
-            <div className="flex max-w-48 items-center gap-1">
-              <span className="text-sm text-muted-foreground">$</span>
-              <Input
-                id="production_goal"
-                name="production_goal"
-                defaultValue={settings.production_goal.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                className="max-w-40"
-                placeholder="1,000,000"
-              />
-            </div>
+          <FormRow label={`Production Goals ${year}`} htmlFor="production_goal">
+            {editingGoal ? (
+              <div className="flex max-w-56 items-center gap-1">
+                <span className="text-sm text-muted-foreground">$</span>
+                <Input
+                  id="production_goal"
+                  value={goal}
+                  onChange={(e) => setGoal(e.target.value)}
+                  className="max-w-40"
+                  placeholder="1,000,000"
+                  autoFocus
+                />
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="link"
+                className="h-auto p-0 pt-1 text-sm text-primary"
+                onClick={() => setEditingGoal(true)}
+              >
+                ${goal}
+              </Button>
+            )}
+            <p className="mt-1 text-xs text-muted-foreground">
+              {editingGoal ? 'Commits with Save below.' : 'Click to edit.'}
+            </p>
           </FormRow>
 
           <FormRow
-            label="Weekly report recipients"
-            description="Who receives the weekly performance digest."
+            label="Weekly Report Recipients"
+            description="Who receives the Monday weekly pipeline report."
           >
-            {settings.weekly_report_recipients.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No recipients added.{' '}
-                <span className="text-xs text-primary/70">(Recipient management coming soon.)</span>
-              </p>
-            ) : (
-              <ul className="space-y-0.5">
-                {settings.weekly_report_recipients.map((email) => (
-                  <li key={email} className="text-sm text-foreground">{email}</li>
-                ))}
-              </ul>
-            )}
+            <WeeklyRecipientsEditor recipients={settings.weekly_report_recipients} />
           </FormRow>
 
           {/* ---- §1.8 Block List ---- */}
           <SectionDivider label="Block List" />
 
           <FormRow description="Set which emails and phone numbers you want to block.">
-            <p className="text-sm text-muted-foreground">
-              <span className="text-primary/70 text-xs">(Block list management coming soon.)</span>
-            </p>
+            <div className="pt-1 text-sm">
+              <Button asChild type="button" variant="link" className="h-auto p-0 text-sm text-primary">
+                <Link href="/admin/crm/settings/company/block-list">Manage block list settings</Link>
+              </Button>
+              <span className="ml-2 text-xs text-muted-foreground">
+                {blockedCount} {blockedCount === 1 ? 'number' : 'numbers'} blocked
+              </span>
+            </div>
           </FormRow>
 
         </div>
@@ -441,7 +469,7 @@ export function CompanySettingsForm({ settings }: { settings: CrmCompanySettings
             {isPending ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Save'}
           </Button>
         </div>
-      </div>
+      </Card>
     </form>
   )
 }

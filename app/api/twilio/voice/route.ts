@@ -30,6 +30,8 @@ import {
 } from '@/lib/crm/twilio'
 import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
 import { isNumberBlocked, isStirSpamSuspected } from '@/lib/data/crm/getBlockedNumber'
+import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
+import { isWithinOfficeHours } from '@/lib/crm/office-hours'
 import { lookupCaller } from '@/lib/crm/lookup'
 import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
@@ -168,10 +170,26 @@ export async function POST(request: Request) {
     return voicemailResponse(site)
   }
 
+  // 5.5 Company settings (spec §15/§1): office hours + the recording master
+  //     switch are admin-configurable. Fail open — a settings-read failure must
+  //     never drop a live call (defaults keep recording on + hours unrestricted).
+  let companySettings: Awaited<ReturnType<typeof getCrmCompanySettings>> | null = null
+  try { companySettings = await getCrmCompanySettings() } catch { companySettings = null }
+
+  //     Office hours (§1.5, inbound only): when blocks are configured and the
+  //     call arrives outside every block, route to voicemail instead of ringing.
+  //     Empty blocks = always open (the pre-office-hours behavior).
+  if (companySettings && !isWithinOfficeHours(companySettings.office_hours, companySettings.time_zone, new Date())) {
+    return voicemailResponse(site)
+  }
+
   // 6. Dial the broker's cell, recording both legs with the caller already on
   //    notice. Pass the CALLER's number as caller ID so the broker sees who is
   //    calling and can call back directly (FUB's forwarding behavior).
-  const recording = process.env.CRM_CALL_RECORDING !== 'false'
+  //    Recording = env kill-switch AND the Company Settings master switch (AC-3).
+  const recording =
+    process.env.CRM_CALL_RECORDING !== 'false' &&
+    (companySettings?.call_recording_enabled ?? true)
   const recAttrs = recording
     ? ` record="record-from-answer-dual" recordingStatusCallback="${site}/api/twilio/recording" recordingStatusCallbackEvent="completed"`
     : ''

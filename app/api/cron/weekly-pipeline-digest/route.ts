@@ -31,6 +31,7 @@ import {
   type SmartListMovement,
 } from '@/lib/digest-email-templates'
 import { getWeeklyPipelineDigest, summarizeWeeklyLeads } from '@/lib/data/crm/getBrokerDigest'
+import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
 import { getFubApiKey } from '@/lib/crm/fub-env'
 import { createClient } from '@supabase/supabase-js'
 
@@ -192,7 +193,18 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const dryRun = url.searchParams.get('dryRun') === 'true'
 
   const fromEnv = process.env.RESEND_FROM?.trim() || 'Matt Ryan <matt@ryan-realty.com>'
-  const recipient = process.env.WEEKLY_DIGEST_EMAIL?.trim() || 'matt@ryan-realty.com'
+  // Recipients: the Company Settings "Weekly Report Recipients" list (spec
+  // §15/§1.7) when configured; otherwise the env/owner fallback. Fail soft to
+  // the fallback so a settings-read failure never skips the digest.
+  let configuredRecipients: string[] = []
+  try {
+    configuredRecipients = (await getCrmCompanySettings()).weekly_report_recipients
+  } catch {
+    configuredRecipients = []
+  }
+  const recipient: string | string[] = configuredRecipients.length
+    ? configuredRecipients
+    : process.env.WEEKLY_DIGEST_EMAIL?.trim() || 'matt@ryan-realty.com'
 
   const now = new Date()
   const asOfDate = now.toISOString().slice(0, 10)
