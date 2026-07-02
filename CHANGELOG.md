@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.706.0 (2026-07-02)
+
+### Features
+- feat(crm): automations-desktop — §12 Automations list + visual editor rebuild (screen-parity proven)
+
+---
+
+
 ## v1.705.1 (2026-07-02)
 
 ### Maintenance
