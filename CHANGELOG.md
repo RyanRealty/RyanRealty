@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.716.5 (2026-07-02)
+
+### Other
+- audit(crm-mobile): adversarial 390x844 pass — P0 template-token class + 5 P1s fixed, ledger landed
+
+---
+
+
 ## v1.716.4 (2026-07-02)
 
 ### Bug Fixes
