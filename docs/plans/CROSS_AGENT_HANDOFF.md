@@ -2,7 +2,7 @@
 
 # CROSS-AGENT HANDOFF — CRM GROUND-UP REBUILD, screen-by-screen under ci:crm-screen-parity (2026-07-01)
 
-**HEAD:** `66e79095` on `main` · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json`
+**HEAD:** `8c4c15af` on `main` · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json`
 
 ## What this track is
 Matt's directive: execute CRM_BUILD_MISSION as a ground-up rebuild, screen by screen through the
@@ -11,6 +11,14 @@ full DoD, gated by `ci:crm-screen-parity` (scripts/check-crm-screen-parity.mjs �
 gap-fills. Standing commit+push authorization is in the mission doc.
 
 ## Shipped
+- **contacts-list-desktop = done + proven** (commit `8c4c15af`): §05 three-region rebuild of
+  `/admin/crm` (PeopleSidebar / PeopleListView + Scope/Filter/Chooser/AddPerson/Export in
+  `components/admin/crm/people-list/`), 6 new bulk kinds + bulk merge, export route ids/all/view
+  support, DAL `lib/data/crm/getPeopleListSignals.ts`. Decisions + deferrals in the mission
+  PROGRESS block. GATE-DEBT NOTE: the §07 slice had left 3 gates red at HEAD (hydration-safety
+  ×4 in person-detail, stale lead-command-center parity.json, console-kit) — all swept in this
+  commit. Run the FULL `npm run ci:gates` before every commit; the previous slice evidently
+  didn't.
 - **person-detail-desktop = done + proven** (commit `66e79095`): §07 three-column rebuild
   (PersonSidebar / PersonCenterColumn / PersonRightRail in `components/admin/crm/person-detail/`),
   actions `app/actions/crm-person-detail.ts`, DAL `lib/data/crm/getPersonDetailExtras.ts`,
@@ -32,11 +40,11 @@ gap-fills. Standing commit+push authorization is in the mission doc.
    (pre-push runs a full prod build, takes ~5 min — use a background shell).
 
 ## NEXT (screen-by-screen, registry order)
-1. **contacts-list-desktop** (§05, `app/admin/(protected)/crm/page.tsx`) — three-region layout:
-   left All People + Collections sidebar, main table (columns §6, toolbar §5, bulk bar §14,
-   column chooser §8), PERSISTENT right filter panel §9, Add Person modal §16, Export modal §15.
-   Current page is 407 lines — expect a real rebuild like person-detail.
-2. inbox-desktop (§08) · deals-desktop (§10) · automations-desktop (§12) · templates-desktop (§13)
+1. **inbox-desktop** (§08, `app/admin/(protected)/crm/inbox/page.tsx`) — read the whole §08 spec,
+   compare the existing (prod-verified) inbox against it, close structural diffs, capture
+   `_verify/screen-inbox-desktop.png` at 1440x900 via the harness below, fill requiredComponents,
+   flip the registry to done, full gates + tests, commit + push.
+2. deals-desktop (§10) · automations-desktop (§12) · templates-desktop (§13)
    · company-settings-desktop (§15.8) · tasks-calendar-desktop (§09) · reporting-desktop (§11) —
    these were built + prod-verified in the previous push, so mostly: compare vs spec, close diffs,
    capture proof, flip done.

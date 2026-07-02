@@ -329,6 +329,44 @@ and show me the screenshot.
 ## PROGRESS (agents append here as slices ship)
 
 ### GROUND-UP REBUILD under ci:crm-screen-parity (started 2026-07-01, screen-by-screen)
+- **contacts-list-desktop** ✅ DONE + PROVEN (commit 8c4c15af). Registry flipped to done with 8
+  requiredComponents + committed `_verify/screen-contacts-list.png` (1440x900, dev server, authed,
+  real crm_* data, zero console errors). REBUILT `/admin/crm` desktop to the §05 three-region
+  structure: PeopleSidebar (§3 All People w/ scoped 18K badge + COLLECTIONS collapsible
+  Pipeline/Neighborhoods + K-abbreviated counts, no badge at 0, Manage link), PeopleListView
+  (§4 All-People/smart-list headers w/ mutually-exclusive "+ New List"/"Update List ↻", §11 Edit
+  Smart List modal name/desc/share/delete, §5 toolbar "How Smart Lists work · Columns · Me ·
+  Filters (N)" + always-visible bulk icon strip, §6/§13 8-column table w/ FUB date convention
+  "Nov 13th '25"/relative + permanent SMS/call circles + activity type icons + tag pills w/ +N
+  more, §7 ScopeDropdown Everyone/Me/PONDS/TEAM w/ avatars + search, §8 ColumnChooser swapping
+  the right-panel slot w/ per-list localStorage column config, §9 PERSISTENT FilterPanel w/
+  accordion rows + Clear filters + live Filters(N) badge, §12.1 loading.tsx table skeleton +
+  §12.3 headers-visible empty state, §14 bulk bar "Selected N people — Deselect all" + tag
+  sub-dropdown + 11-item main dropdown in spec order, §15 Export modal → export route grows
+  ids=/all=1/view= support, §16 Add Person modal wired to createCrmContactAction (+source)).
+  Backend: 6 NEW bulk kinds (crm:set-source/set-timeframe/set-lender/assign-pond/
+  add-collaborator/remove-collaborator — §14.3 audit-rowed, automation-bypassing, double
+  scope-clamped) + bulkMergePeopleAction (≤10, shares mergePairInternal); listCrmPeople gains
+  price/timeframe/pond_id + pond filter; NEW DAL getPeopleListSignals (Last Visit via
+  visitor_sessions.crm_person_id, Last Activity via latest lead-initiated crm_timeline event).
+  Mobile §24 branch untouched. No migration needed (crm_ponds/pond_id/timeframe/lender_name
+  already existed). Gates + 2341 tests green.
+  DECISIONS (this slice): Mailing Label (§14.3 #9) omitted from the dropdown — no Avery-PDF
+  generator yet, an inert menu item would lie (DEFERRED) · §15.3 async export + email link +
+  mandatory owner notification DEFERRED — export is a direct scoped CSV download (now honors
+  ids/all-columns/saved-view) · Lead Score column renders em-dash placeholders (no lead-score
+  model exists; honest §0 unavailable-marker) · §9.5 full operator matrix (exclude/contains/
+  between/time-units) DEFERRED — panel edits are include-any + name-contains, matching what
+  listCrmPeople's URL model supports; removing a VIEW's saved filter row is volatile-until-
+  reload rather than volatile-until-Update-List · per-list column config persists in
+  localStorage (server-side crm column table DEFERRED) · superuser default scope stays
+  Everyone (restricted brokers default to Me; spec's Me-default would hide 2/3 of the book
+  from Matt) · deleted orphaned BulkAssignWrapper/SavedViewSidebar/InstantFilterSelect ·
+  swept 3 gate debts the §07 slice left red at HEAD (4 person-detail hydration clock reads →
+  useClientNow effect; stale lead-command-center parity.json → §07 components; console-kit
+  list hands the lead route to the stricter crm-screen-parity contract) · re-baselined
+  date-format (+bespoke FUB formats), dal-actions-reads (+2 merge guards), file-size
+  (crm.ts +13) per each gate's documented flow.
 - **person-detail-desktop** ✅ DONE + PROVEN (commit 66e79095). Registry flipped to done with 9
   requiredComponents + committed `_verify/screen-person-detail-desktop.png` (1440x900, dev server,
   authed, lead 12679, real crm_* data). REBUILT the tabbed LeadTabs desktop layout into the §07
