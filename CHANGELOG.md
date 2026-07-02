@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.709.0 (2026-07-02)
+
+### Features
+- feat(crm): tasks-calendar-desktop — §09 Tasks + Calendar rebuilt to spec (ci:crm-screen-parity)
+
+---
+
+
 ## v1.708.1 (2026-07-02)
 
 ### Maintenance
