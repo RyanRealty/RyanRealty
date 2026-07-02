@@ -411,3 +411,18 @@ components/admin/crm/tasks/mobile/MobileTasksScreen.tsx
 # bare tap-row buttons). Same exception class as the §25/§26/§29 mobile
 # surfaces above.
 components/admin/crm/mobile/MobileAssignToSheet.tsx
+
+# mob-06 Settings modal (mobile-settings, ci:crm-screen-parity, 2026-07-02):
+# the documented feature-row anatomy carries pixel-verified icon-circle hexes
+# (#F5943C/#9B59B6/#2B7CD3/#27AE60 — part of the visual contract) and bare
+# full-row tap-target buttons the <Button> primitive can't express. Same
+# exception class as the §25/§26/§28/§29 mobile surfaces above.
+app/admin/(protected)/settings/MobileSettingsScreen.tsx
+
+# mob-44 Home Dashboard activity card (mobile-dashboard, ci:crm-screen-parity,
+# 2026-07-02): the documented card anatomy is pt-precise — 80pt rows, 16/13pt
+# text, the 4px box-outline active sub-tab, and the 4-row card height (~321px)
+# are the visual contract (screen-44.md §2a/§2b). Mobile-only component (the
+# desktop dashboard renders DashboardActivityTable instead). Same exception
+# class as the §25/§26/§28/§29 mobile surfaces above.
+components/admin/DashboardActivityFeed.tsx

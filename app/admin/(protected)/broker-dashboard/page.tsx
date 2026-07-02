@@ -176,7 +176,7 @@ export default async function BrokerCommandCenterPage({
                 key={v}
                 href={`/admin/broker-dashboard?broker=${v}&days=${selectedDays}`}
                 className={cn(
-                  'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                  'rounded-md px-2 py-1 text-xs font-medium transition-colors lg:px-2.5',
                   selectedBroker === v
                     ? 'bg-card text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground',
@@ -247,7 +247,7 @@ export default async function BrokerCommandCenterPage({
           {needsActionCount === 0 ? (
             <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
               <CheckCircle2 className="h-8 w-8 text-success" />
-              <p className="text-sm font-medium text-foreground">You are all caught up.</p>
+              <p className="text-sm font-medium text-foreground">You are all caught up</p>
               <p className="text-xs text-muted-foreground">No leads or tasks need action right now.</p>
             </div>
           ) : (
