@@ -14,7 +14,6 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import {
-  addPersonNote,
   addPersonTags,
   assignPersonToUser,
   completeFubTask,
@@ -508,17 +507,16 @@ export async function addCrmNoteAction(formData: FormData): Promise<CrmActionRes
   if (!person) return { ok: false, error: 'Person not found' }
 
   const broker = access.access.brokerSlug ?? undefined
-  if (person.fub_legacy_id) {
-    const ok = await addPersonNote(person.fub_legacy_id, body, { broker })
-    if (!ok) return { ok: false, error: 'FUB note write failed' }
-    // mirror layer writes the local timeline row (with the broker stamp)
-  } else {
-    const sb = createServiceClient()
-    const { error } = await sb.from('crm_timeline').insert({
-      person_id: personId, kind: 'note', body, source: 'app', broker: broker ?? null,
-    })
-    if (error) return { ok: false, error: error.message }
-  }
+  // FUB DECOMMISSIONED (2026-06-24): the CRM is the system of record. The old
+  // path gated the note on addPersonNote(fub_legacy_id) and relied on the (dead)
+  // mirror sync to write the local row — so notes on ANY imported contact
+  // silently failed ("FUB note write failed", 2026-07-02 audit P0). Write the
+  // local timeline row directly for every contact.
+  const sb = createServiceClient()
+  const { error } = await sb.from('crm_timeline').insert({
+    person_id: personId, kind: 'note', body, source: 'app', broker: broker ?? null,
+  })
+  if (error) return { ok: false, error: error.message }
   revalidateCrm(personId)
   return { ok: true }
 }

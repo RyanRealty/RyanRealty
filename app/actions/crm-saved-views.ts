@@ -78,6 +78,13 @@ export async function createSavedViewAction(input: {
   name: string
   description?: string
   ast: CrmSegment
+  /**
+   * Optional legacy {stage, tagsAny, q} bag written to the `filter` column IN
+   * LOCKSTEP with the AST (same dual-write updateSavedViewFilterAction does).
+   * listCrmPeople + the sidebar counts apply `filter` — a view created without
+   * it renders unfiltered (the 2026-07-02 audit P0).
+   */
+  filter?: LegacyFilters
 }): Promise<SavedViewActionResult> {
   const guard = await requireAccess()
   if (!guard.ok) return guard
@@ -109,6 +116,7 @@ export async function createSavedViewAction(input: {
       name,
       description,
       ast,
+      ...(input.filter !== undefined ? { filter: input.filter } : {}),
       owner_email: guard.access.email,
       is_shared: false,
       is_protected: false,
@@ -132,8 +140,15 @@ export async function saveCurrentFilterAsViewAction(input: {
   description?: string
   filters: LegacyFilters
 }): Promise<SavedViewActionResult> {
-  const ast = upgradeLegacyFilters(input.filters ?? {})
-  return createSavedViewAction({ name: input.name, description: input.description, ast })
+  const bag: LegacyFilters = {
+    stage: input.filters?.stage || undefined,
+    tagsAny: input.filters?.tagsAny?.filter(Boolean),
+    q: input.filters?.q || undefined,
+  }
+  const ast = upgradeLegacyFilters(bag)
+  // Dual-write filter + ast (lockstep, same as updateSavedViewFilterAction) so
+  // the new list actually FILTERS the people list, not just the audience bus.
+  return createSavedViewAction({ name: input.name, description: input.description, ast, filter: bag })
 }
 
 // ── Update ───────────────────────────────────────────────────────────────────
