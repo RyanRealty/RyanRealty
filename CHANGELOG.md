@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.702.1 (2026-07-02)
+
+### Maintenance
+- docs(crm): mission PROGRESS + handoff — person-detail-desktop done+proven under ci:crm-screen-parity (66e79095)
+
+---
+
+
 ## v1.702.0 (2026-07-02)
 
 ### Features
