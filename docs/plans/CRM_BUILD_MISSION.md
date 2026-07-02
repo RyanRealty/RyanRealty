@@ -338,6 +338,61 @@ and show me the screenshot.
 ## PROGRESS (agents append here as slices ship)
 
 ### GROUND-UP REBUILD under ci:crm-screen-parity (started 2026-07-01, screen-by-screen)
+- **company-settings-desktop** ✅ DONE + PROVEN (commit c2492625). Registry flipped to done with 5
+  requiredComponents + committed `_verify/screen-company-settings.png` (1440x900, dev server,
+  authed, real crm_* data, ZERO console errors via fresh Playwright context). The delivery-#2
+  build had deferred every sub-flow as read-only "coming soon" — the SPEC WON and they are now
+  REAL: §1.4 spam-label (Change) Dialog (15-char carrier cap enforced client+server, AC-6) ·
+  §1.5 OFFICE HOURS editor (day checkboxes + time pickers, multi-block, per-row Remove, AC-7)
+  with LIVE enforcement — the inbound Twilio voice webhook routes callers to voicemail outside
+  configured blocks (NEW pure lib/crm/office-hours.ts + 10 unit tests; empty = always open =
+  behavior unchanged until Matt configures hours; malformed blocks fail open per-block) · §1.6
+  SUBDOMAIN (Change) warning modal w/ type-the-new-prefix confirm (AC-8; copy honest to
+  in-house: the login URL ryan-realty.com/admin does not change) · §1.7 Production Goals
+  click-to-edit (link-styled value → input, commits via Save; year from stored
+  production_goal_year, no client clock — ci:hydration-safety) + Weekly Report Recipients chips
+  (+ Add Email, per-chip ×, auto-save, AC-10) WIRED into the real Monday weekly-pipeline-digest
+  cron (recipients from crm_company_settings, env/owner fallback when empty) · §1.8 BLOCK LIST
+  sub-page /admin/crm/settings/company/block-list (AC-11): full add/unblock CRUD on
+  crm_blocked_numbers (enforcement was already live in the Twilio webhooks — calls rejected,
+  texts dropped), NEW DAL getCrmBlockedNumbers, md:hidden mobile card fallback, live count on
+  the main page row · §1.10 View Business Registration button + status badge on the card header
+  AND a sub-page /admin/crm/settings/company/registration (AC-12) showing the LIVE Twilio A2P
+  campaign status (getA2pCampaignStatus, VERIFIED → green "Fully Registered") + the three
+  registered broker lines from getBrokerTelephony + the requirements list · §1.4 Call Recording
+  master switch WIRED into the calling layer (AC-3): voice/route.ts + outbound-bridge/route.ts
+  now consult crm_company_settings.call_recording_enabled AND the CRM_CALL_RECORDING env
+  kill-switch (fail open to recording-on so a settings-read failure never drops the compliance
+  default; the recorded-notice <Say> strings stay literal in the routes so
+  ci:call-recording-consent keeps grepping them) · fallback-number US-phone validation server +
+  normalization to (NNN) NNN-NNNN (AC-2, rejection verified live) · Manage Settings link →
+  /admin/crm/settings/team (AC-5; the in-house phone-numbers surface). All writes owner-gated
+  (superuser). No migration needed — every column already existed on crm_company_settings.
+  VERIFIED live in dev (Matt's session): office-hours block add → DB row → remove (net-zero),
+  recipient chip add → DB → remove (net-zero), block-list add (541) 555-0100 → row w/ e164/
+  reason/blocked_by/date → unblock (0 rows, net-zero), spam-label + subdomain dialogs
+  round-trip same values, invalid fallback rejected with the exact error, full Save net-zero
+  on all real values. Gates: full ci:gates exit 0 + vitest 2404 green + ci:data-access
+  refreshed (new DAL fn). DECISIONS (this slice): Legal Disclosure switch renders LOCKED ON
+  (checked + disabled) — the ci:call-recording-consent gate + out-of-state two-party-consent
+  callers require the notice whenever a call records, so a free toggle would be either a lying
+  UI or a compliance violation; the stored legal_disclosure_auto_play is now written true on
+  Save (truth-alignment: the notice DOES play) · "Preview call disclosure" renders the EXACT
+  TwiML <Say> announcement text instead of an audio player — no pre-recorded audio file exists
+  (Twilio speaks the verbs); fabricating an audio preview would misrepresent what plays ·
+  email blocking on the block-list page = a link to the existing suppression system
+  (crm_suppressions, checked by every send path) — a second crm_blocked_emails store with no
+  enforcement would be a lying UI; phone blocking is the fully-enforced half · subdomain
+  displays {subdomain}.ryan-realty.com (not followupboss.com) · registration page maps Twilio
+  A2P statuses onto the §1.10 badge enum (VERIFIED/IN_PROGRESS/PENDING/FAILED/NONE) and shows
+  the raw Twilio status string alongside for §0 traceability. DEFERRED (explicit): per-user
+  call-recording overrides below the master switch (no per-broker recording column; AC-3
+  half) · after-hours TEXT queuing 9pm–8am (§1.5 note — separate send-path work) · fallback
+  number is stored + validated but the no-forward-number path still routes to voicemail
+  rather than dialing it (voicemail is the deliberate never-drop default) · FUB's §0.2 18-tab
+  admin sub-nav bar (the settings hub + SettingsSubpageShell is the established in-house IA,
+  same as templates-desktop) · business_registration table (EIN etc.) — Twilio holds the
+  registration of record; duplicating it in Postgres adds drift risk with no consumer.
 - **templates-desktop** ✅ DONE + PROVEN (commit 251ae048). Registry flipped to done with 9
   requiredComponents + committed `_verify/screen-templates.png` (1440x900, dev server, authed,
   real crm_* data, ZERO console errors on all four levels via fresh Playwright contexts).

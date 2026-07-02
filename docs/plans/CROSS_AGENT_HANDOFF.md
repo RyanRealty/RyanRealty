@@ -2,7 +2,7 @@
 
 # CROSS-AGENT HANDOFF — CRM GROUND-UP REBUILD, screen-by-screen under ci:crm-screen-parity (2026-07-01)
 
-**HEAD:** `251ae048` on `main` · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` (6 done, all proven)
+**HEAD:** `c2492625` on `main` · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` (7 done, all proven)
 
 ## What this track is
 Matt's directive: execute CRM_BUILD_MISSION as a ground-up rebuild, screen by screen through the
@@ -11,6 +11,24 @@ full DoD, gated by `ci:crm-screen-parity` (scripts/check-crm-screen-parity.mjs �
 gap-fills. Standing commit+push authorization is in the mission doc.
 
 ## Shipped
+- **company-settings-desktop = done + proven** (commit `c2492625`): §15 full rebuild of
+  `/admin/crm/settings/company` — every previously-deferred sub-flow is now REAL (office-hours
+  editor w/ LIVE voicemail enforcement in the Twilio voice webhook via NEW `lib/crm/office-hours.ts`,
+  spam-label + subdomain Change dialogs, weekly-recipient chips wired into the Monday
+  weekly-pipeline-digest cron, production-goal click-to-edit, block-list sub-page
+  `/settings/company/block-list` on crm_blocked_numbers + NEW DAL `getCrmBlockedNumbers`,
+  Business Registration sub-page `/settings/company/registration` w/ LIVE Twilio A2P badge,
+  Call Recording master switch wired into voice + outbound-bridge routes, fallback US-phone
+  validation). Components in `components/admin/crm/settings/company/` (old CompanySettingsForm
+  moved+rebuilt). No migration needed. Decisions + deferrals in the mission PROGRESS block.
+  GOTCHAS: the recorded-notice `<Say>` strings must stay LITERAL in the twilio routes
+  (ci:call-recording-consent greps them — never refactor into a template constant) · Legal
+  Disclosure is a locked-on switch by design (compliance), don't "fix" it into a free toggle ·
+  new files must be `git add`ed before ci:gates (ci:untracked-imports) · a Record prop named
+  `format*` trips ci:rsc-fn-props (renamed to blockedOnById) · Intl.DateTimeFormat outside
+  lib/format/ trips ci:date-format (zonedDayMinutes now lives in lib/format/date.ts) · tables
+  need a md:hidden card fallback (ci:admin-responsive) · hand-rolled `rounded-xl border bg-card`
+  shells trip ci:design-tokens — use `<Card>`.
 - **templates-desktop = done + proven** (commit `251ae048`): §13 two-level rebuild of
   `/admin/crm/settings/templates` (TemplateFolderList / EmailTemplateList / TextTemplateList /
   EmailTemplateModal / TextTemplateModal / MergeFieldInserter / TemplatePerfScore / RichTextBody /
@@ -91,12 +109,12 @@ gap-fills. Standing commit+push authorization is in the mission doc.
    (pre-push runs a full prod build, takes ~5 min — use a background shell).
 
 ## NEXT (screen-by-screen, registry order)
-1. **company-settings-desktop** (§15.8, `app/admin/(protected)/crm/settings/company/page.tsx`) —
-   built + prod-verified in the previous push (commit 5ea1fe37), so mostly: read §15.8, compare
-   the live surface vs spec, close structural diffs, capture `_verify/screen-company-settings.png`
-   at 1440x900, fill requiredComponents, flip to done, FULL gates + tests, commit + push.
-2. tasks-calendar-desktop (§09) · reporting-desktop (§11) — same treatment (compare vs spec,
-   close diffs, capture proof, flip done).
+1. **tasks-calendar-desktop** (§09, `app/admin/(protected)/crm/calendar/page.tsx`) — read the
+   whole §09 spec + the current implementation, close every structural diff, capture
+   `_verify/screen-tasks-calendar.png` at 1440x900, fill requiredComponents, flip to done,
+   FULL gates + tests, commit + push.
+2. reporting-desktop (§11) — same treatment (compare vs spec, close diffs, capture proof,
+   flip done).
 3. Mobile screens (M-track largely built; person-detail-mobile/mobile-shell/mobile-activity-people
    need proof artifacts at 390px via `?view=mobile` where available; others per §26–§29).
 4. Also open in the mission doc: email open+click tracking wiring (every send path) — nobody owns

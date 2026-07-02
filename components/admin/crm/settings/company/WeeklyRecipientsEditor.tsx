@@ -22,7 +22,10 @@ export function WeeklyRecipientsEditor({ recipients: initial }: { recipients: st
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
 
-  function persist(next: string[]) {
+  function persist(list: string[]) {
+    // Dedupe client-side too (the action also dedupes) so a repeat add can't
+    // render duplicate chips / duplicate React keys.
+    const next = Array.from(new Set(list))
     setError('')
     startTransition(async () => {
       try {
