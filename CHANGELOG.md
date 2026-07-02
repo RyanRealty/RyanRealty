@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.710.1 (2026-07-02)
+
+### Maintenance
+- docs(crm): reporting-desktop shipped (ff4fe3ec) + person-detail-mobile proven — mission PROGRESS + handoff
+
+---
+
+
 ## v1.710.0 (2026-07-02)
 
 ### Features
