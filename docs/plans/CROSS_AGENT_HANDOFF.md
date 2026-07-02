@@ -2,7 +2,7 @@
 
 # CROSS-AGENT HANDOFF — CRM GROUND-UP REBUILD, screen-by-screen under ci:crm-screen-parity (2026-07-01)
 
-**HEAD:** `8c4c15af` on `main` · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json`
+**HEAD:** `7f987b20` on `main` · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json`
 
 ## What this track is
 Matt's directive: execute CRM_BUILD_MISSION as a ground-up rebuild, screen by screen through the
@@ -11,6 +11,17 @@ full DoD, gated by `ci:crm-screen-parity` (scripts/check-crm-screen-parity.mjs �
 gap-fills. Standing commit+push authorization is in the mission doc.
 
 ## Shipped
+- **deals-desktop = done + proven** (commit `7f987b20`): §10 full Kanban rebuild of
+  `/admin/crm/deals` (DealsSubBar / DealsBoard / DealsDialogs / DealDetailModal / ManagePipelines
+  in `components/admin/crm/deals/`), DB-backed pipeline config (NEW crm_pipelines +
+  crm_deal_stages + crm_deal_people + crm_deals.actual_close_date — migrations
+  20260701230000 + 20260701233000 APPLIED to hosted; the second HYDRATES crm_deals columns from
+  the FUB `raw` jsonb, which the import had never done — close dates/commissions/brokers/people
+  were all NULL in columns), DAL `getDealPipelines` + `listDealsBoard`, owner-only stage/pipeline
+  CRUD in `app/actions/crm-deal-pipelines.ts`, §11 modal via ?deal= param. Decisions + deferrals
+  in the mission PROGRESS block. GOTCHA: the deals page is OFF the console-kit list (handed to the
+  stricter crm-screen-parity contract, comment in scripts/check-console-kit.mjs) and the four
+  deals components are on `.design-token-lint-ignore` (documented §10 exception class).
 - **inbox-desktop = done + proven** (2026-07-01): §08 FUB three-panel rebuild of
   `/admin/crm/inbox` (InboxFolderRail / InboxThreadList / ThreadHeader / InboxThreadView /
   InlineReply / NoteTray / ContactSidebar / AddPersonForm in `components/admin/crm/inbox/`),
@@ -50,15 +61,13 @@ gap-fills. Standing commit+push authorization is in the mission doc.
    (pre-push runs a full prod build, takes ~5 min — use a background shell).
 
 ## NEXT (screen-by-screen, registry order)
-1. **deals-desktop** (§10, `app/admin/(protected)/crm/deals/page.tsx`) — read the whole §10 spec,
-   compare the existing (prod-verified) pipeline board against it, close structural diffs (toolbar
-   filters, Manage Pipelines, deal-detail modal were deferred in the earlier slice), capture
-   `_verify/screen-deals.png` at 1440x900, fill requiredComponents, flip to done, gates + tests,
-   commit + push.
-2. automations-desktop (§12) · templates-desktop (§13)
-   · company-settings-desktop (§15.8) · tasks-calendar-desktop (§09) · reporting-desktop (§11) —
-   these were built + prod-verified in the previous push, so mostly: compare vs spec, close diffs,
-   capture proof, flip done.
+1. **automations-desktop** (§12, `app/admin/(protected)/crm/sequences/page.tsx`) — read the whole
+   §12 spec, compare the existing (prod-verified) workflow editor against it, close structural
+   diffs, capture `_verify/screen-automations.png` at 1440x900, fill requiredComponents, flip to
+   done, FULL gates + tests, commit + push.
+2. templates-desktop (§13) · company-settings-desktop (§15.8) · tasks-calendar-desktop (§09) ·
+   reporting-desktop (§11) — these were built + prod-verified in the previous push, so mostly:
+   compare vs spec, close diffs, capture proof, flip done.
 3. Mobile screens (M-track largely built; person-detail-mobile/mobile-shell/mobile-activity-people
    need proof artifacts at 390px via `?view=mobile` where available; others per §26–§29).
 4. Also open in the mission doc: email open+click tracking wiring (every send path) + the

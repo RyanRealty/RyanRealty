@@ -329,6 +329,57 @@ and show me the screenshot.
 ## PROGRESS (agents append here as slices ship)
 
 ### GROUND-UP REBUILD under ci:crm-screen-parity (started 2026-07-01, screen-by-screen)
+- **deals-desktop** ✅ DONE + PROVEN (commit 7f987b20). Registry flipped to done with 9
+  requiredComponents + committed `_verify/screen-deals.png` (1440x900, dev server, authed, real
+  crm_* data). REBUILT `/admin/crm/deals` to the full §10 structure: DealsSubBar (§4 Buyers/Sellers
+  tabs + gear→/admin/crm/deals/pipelines, How-Deals-work popover, Deal Reporting link, Current
+  deals▾ Current/Archived/All, Everyone▾ agent filter — superuser only, brokers stay data-layer
+  scoped), DealsBoard (§5–§8: DB-backed stage columns w/ accent bars, "N deals $X,XXX,XXX" full-
+  dollar green totals + Closed badge on is_closed_stage, round + per column, "No deals, add deal"
+  empty state, cards w/ stored commission + Buyers-bills/Sellers-house icons, ordinal "Month Dth
+  YYYY" date row switching Close/Projected by stage flag, multi-contact initials cluster + agent
+  photo last, dnd-kit drag preserved, "Add a stage" link + hover-pencil stage edit for the owner),
+  DealDetailModal (§11: centered modal over the dimmed board via ?deal=, all 13 field groups in the
+  exact two-column layout, click-to-edit "Add <field>" primary links, PEOPLE link/unlink w/ contact
+  search, SPLITS add/remove, TEAM broker select, FILES link-add, Show-all-fields expander,
+  Archive/Restore §13), AddDealDialog (§12 name+stage+price+close date+contact+commission+assignee),
+  Manage Pipelines page (§9: owner-only, reorder/rename-cascade/delete-guarded/+Add Pipeline).
+  BACKEND: NEW tables crm_pipelines + crm_deal_stages (seeded byte-for-byte from
+  api-export/pipelines.json, FUB ids preserved) + crm_deal_people junction + crm_deals.
+  actual_close_date (migration 20260701230000, APPLIED to hosted) + a DATA-HYDRATION migration
+  20260701233000: the FUB import had left close_date/commissions/key dates/assigned_broker/people
+  links NULL in columns while raw jsonb carried the truth — hydrated all 20 deals from raw
+  (17 close dates, 20 commissions, 20 brokers, 23 junction links; FUB user ids 1/2/3 →
+  matt/rebecca/paul, dates cast via America/Los_Angeles). DAL: getDealPipelines (cached, tag
+  crm-deal-pipelines, static fallback) + listDealsBoard (dealInScope scope + §13 status/agent
+  filters AT the data layer); listCrmDeals retired from app/actions/crm.ts. Actions: restage now
+  validates vs LIVE stages + stamps actual_close_date (§20.10) idempotently; new
+  app/actions/crm-deal-pipelines.ts (owner-only stage/pipeline CRUD, rename cascades to
+  crm_deals name-strings, deletes refused while deals remain, 1000-gap order_weight renumber);
+  addDealPerson/removeDealPerson (person_id pointer kept coherent), setDealStatus archive/restore.
+  VERIFIED live in dev (1440x900, Matt's session): both pipelines render real columns/cards
+  ($5,250,000 Closed Buyers = live DB truth, verified by audit SQL), modal field edit round-trip
+  (mutual-acceptance add → renders 10/15/2025 → reverted to empty), Add Deal / Add Stage / Edit
+  Stage dialogs open, Manage Pipelines renders both pipelines w/ stage counts. Gates + 2341 tests
+  green.
+  DECISIONS (this slice): pipeline in URL as ?pipeline=<id> query param (spec's /deals/{id} path
+  segment collides with the existing /deals/[id] deal-detail route; client-side switch preserved) ·
+  card click opens the §11 MODAL (?deal=) — the old /deals/[id] full page kept for deep links ·
+  status normalization case-insensitive ('Active' FUB capitalization preserved on write) ·
+  pipeline/stage reorder = explicit up-down/left-right controls in Manage Pipelines + stage-edit
+  dialog (physical drag-of-column-headers + drag-of-pipeline-rows DEFERRED — dnd-kit sortable not
+  installed; mechanically equivalent, 1000-gap renumber per AC-8 #36) · TEAM = single
+  assigned_broker (our 3-broker scope model; multi-user deal_users junction §20.5 DEFERRED) ·
+  deal custom fields (§14/AC-12) DEFERRED — no deal-scoped field model yet; modal renders the
+  Show-all-fields expander with an honest empty note · FILES = link-add (storage upload DEFERRED,
+  same as the [id] page) · Deal Reporting button links to /admin/crm/reporting (Deals report
+  sub-tab §16 = "Deals reporting beyond pipeline", explicitly DEFERRED by §21) · §21 commission
+  split dual-mode (pct vs $ reinterpretation) DEFERRED — splits stored as pct via crm_deal_splits ·
+  drag gesture not automatable (dnd-kit needs real pointermove) — drag code-verified, wiring
+  unchanged from the Matt-confirmed delivery-#3 build · console-kit gate: deals page handed off to
+  the stricter crm-screen-parity contract (same pattern as §07) · dal-actions-reads re-baselined
+  (+12 mutation-integral reads: order-weight sequencing, rename cascades, delete guards) ·
+  file-size budget: split crm-deal-pipelines.ts out of crm-deals.ts (439 + 301 LOC).
 - **inbox-desktop** ✅ DONE + PROVEN (commit: §08 three-panel rebuild). Registry flipped to done with
   11 requiredComponents + committed `_verify/screen-inbox-desktop.png` (1440x900, dev server, authed,
   real crm_* data, page-emitted console clean). REBUILT `/admin/crm/inbox` to the §08 FUB structure:
