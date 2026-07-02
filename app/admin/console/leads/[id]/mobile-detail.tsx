@@ -19,7 +19,7 @@ import type { ContactRelationship } from '@/lib/data/crm/getContactRelationships
 import type { ContactCollaborator } from '@/lib/data/crm/getContactCollaborators'
 import type { ViewedListing } from '@/lib/data/crm/getViewedListings'
 import { MobileContactDetail } from '@/components/admin/crm/mobile/MobileContactDetail'
-import { MobileInfoTab } from '@/components/admin/crm/mobile/MobileInfoTab'
+import { MobileInfoTab, type MobilePickersData } from '@/components/admin/crm/mobile/MobileInfoTab'
 import { MobileCommsTab } from '@/components/admin/crm/mobile/MobileCommsTab'
 import { MobileHomesTab } from '@/components/admin/crm/mobile/MobileHomesTab'
 import { MobileNotesTab } from '@/components/admin/crm/mobile/MobileNotesTab'
@@ -86,6 +86,10 @@ export interface MobileLeadDetailProps {
   relationships: ContactRelationship[]
   collaborators: ContactCollaborator[]
   viewedListings: ViewedListing[]
+  /** §28 mobile-pickers data (mobile-calendar-tasks sibling slice, M7):
+      account sources · ponds · active automations + this contact's
+      enrollments · the acting broker (Me row + Currently banner). */
+  pickers: MobilePickersData
   addNoteAction: (formData: FormData) => Promise<void>
   addTaskAction: (formData: FormData) => Promise<void>
   /** §25.5 interactivity (pickers + add contact point) */
@@ -109,6 +113,7 @@ export function MobileLeadDetail({
   relationships,
   collaborators,
   viewedListings,
+  pickers,
   addNoteAction,
   addTaskAction,
   assignBrokerAction,
@@ -199,9 +204,14 @@ export function MobileLeadDetail({
           stage={person.stage}
           source={person.source}
           tags={Array.isArray(person.tags) ? person.tags : []}
-          timeframe={customVal(/time.?frame/i)}
+          timeframe={
+            /* §28 §4: prefer the first-class crm_people.timeframe column the
+               picker writes; fall back to the legacy FUB custom field. */
+            (person as unknown as { timeframe?: string | null }).timeframe ?? customVal(/time.?frame/i)
+          }
           brokerOptions={CRM_BROKERS.map((b) => ({ value: b, label: CRM_BROKER_DISPLAY[b] }))}
           stageOptions={[...CRM_STAGES]}
+          pickers={pickers}
           assignBrokerAction={assignBrokerAction}
           updateStageAction={updateStageAction}
           addTagAction={addTagAction}

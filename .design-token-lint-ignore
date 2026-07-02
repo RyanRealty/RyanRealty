@@ -405,3 +405,9 @@ components/admin/crm/calendar/mobile/MobileMonthGrid.tsx
 components/admin/crm/calendar/mobile/MobileCalendarScreen.tsx
 components/admin/crm/calendar/mobile/MobileCalendarRows.tsx
 components/admin/crm/tasks/mobile/MobileTasksScreen.tsx
+
+# §28 mobile pickers (mobile-pickers, ci:crm-screen-parity, 2026-07-02): the
+# mob-34 Assign-To sheet anatomy is pt-precise (60px rows, 12/13/16px labels,
+# bare tap-row buttons). Same exception class as the §25/§26/§29 mobile
+# surfaces above.
+components/admin/crm/mobile/MobileAssignToSheet.tsx

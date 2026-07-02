@@ -30,8 +30,10 @@ import {
   type MobilePhoneEntry,
   type MobileEmailEntry,
 } from '@/components/admin/crm/mobile/MobileContactPointsSection'
-import { MobileDetailsSection } from '@/components/admin/crm/mobile/MobileDetailsSection'
+import { MobileDetailsSection, type MobilePickersData } from '@/components/admin/crm/mobile/MobileDetailsSection'
 import type { PickerOption } from '@/components/admin/crm/mobile/MobilePickerSheet'
+
+export type { MobilePickersData }
 
 /* ── Types ───────────────────────────────────────────────────────────────────── */
 
@@ -83,6 +85,8 @@ export interface MobileInfoTabProps {
   timeframe: string | null
   brokerOptions: PickerOption[]
   stageOptions: string[]
+  /** §28 mobile-pickers data bundle (sources · ponds · automations). */
+  pickers: MobilePickersData
 
   /** Server actions (page-bound, scope-gated) */
   assignBrokerAction: (fd: FormData) => Promise<void>
@@ -191,6 +195,7 @@ export function MobileInfoTab({
   timeframe,
   brokerOptions,
   stageOptions,
+  pickers,
   assignBrokerAction,
   updateStageAction,
   addTagAction,
@@ -284,6 +289,7 @@ export function MobileInfoTab({
           collaborators={collaborators.map((c) => ({ slug: c.brokerSlug, name: c.displayName }))}
           brokerOptions={brokerOptions}
           stageOptions={stageOptions}
+          pickers={pickers}
           assignBrokerAction={assignBrokerAction}
           updateStageAction={updateStageAction}
           addTagAction={addTagAction}

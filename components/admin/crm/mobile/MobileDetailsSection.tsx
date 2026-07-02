@@ -1,27 +1,55 @@
 'use client'
 
 /**
- * MobileDetailsSection — the interactive §25.5.7 DETAILS card.
+ * MobileDetailsSection — the interactive §25.5.7 DETAILS card, with the full
+ * §28 picker set (mobile-pickers, docs/fub-crm-spec/28-mobile-pickers-modals-
+ * and-action-sheets.md).
  *
  * Every row behaves like FUB: tapping opens the matching picker/editor —
- *   Assigned to  → broker picker sheet (owner-gated server-side)
- *   Stage        → stage picker sheet (mob-35)
- *   Source       → read-only (system attribution value)
+ *   Assigned to  → §28 §5 Assign-To sheet (Currently banner · search · Me /
+ *                  PONDS / TEAM MEMBERS, tap = instant assign)
+ *   Stage        → §28 §2 stage picker (mob-35)
+ *   Source       → §28 §3 source picker (mob-54: <unspecified> pinned first,
+ *                  account source strings verbatim)
  *   Tags         → tags editor sheet (§25.10: alphabetical rows, add + remove)
- *   Time frame   → read-only for now (FUB custom field, no editor yet)
+ *   Time frame   → §28 §4 five-option picker (mob-36)
  *   Collaborators→ broker multi toggle sheet
+ *   Automations  → §28 §6 automations picker (mob-15: text-only rows,
+ *                  Select → enroll via the compliance-gated manual path)
  *
- * Server actions arrive as props from the page (already scope/compliance
- * gated); this component only renders and submits.
+ * Broker-scoped writes arrive as bound form actions from the page; the §28
+ * field writes call the §07 person-detail actions directly (same gated
+ * server actions the desktop sidebar uses).
  */
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { ChevronRight, Minus, Plus } from 'lucide-react'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { MobilePickerSheet, type PickerOption } from '@/components/admin/crm/mobile/MobilePickerSheet'
+import { MobileAssignToSheet } from '@/components/admin/crm/mobile/MobileAssignToSheet'
+import {
+  updatePersonFieldAction,
+  assignPondAction,
+  applyAutomationAction,
+} from '@/app/actions/crm-person-detail'
+import { TIMEFRAME_OPTIONS } from '@/components/admin/crm/people-list/people-list-utils'
 import { cn } from '@/lib/utils'
+
+/** §28 picker data bundle — assembled by the route (mobile-detail.tsx). */
+export interface MobilePickersData {
+  /** Account source vocabulary, verbatim (mob-54). */
+  sources: string[]
+  ponds: Array<{ id: number; name: string }>
+  /** Active automations, alphabetical (mob-15). */
+  sequences: Array<{ id: number; name: string }>
+  /** Names of automations this contact is currently enrolled in. */
+  enrolledNames: string[]
+  currentBrokerSlug: string
+  currentBrokerName: string
+}
 
 export interface MobileDetailsSectionProps {
   personId: number
@@ -34,6 +62,7 @@ export interface MobileDetailsSectionProps {
   collaborators: { slug: string; name: string }[]
   brokerOptions: PickerOption[]
   stageOptions: string[]
+  pickers: MobilePickersData
   assignBrokerAction: (fd: FormData) => Promise<void>
   updateStageAction: (fd: FormData) => Promise<void>
   addTagAction: (fd: FormData) => Promise<void>
@@ -82,6 +111,7 @@ export function MobileDetailsSection({
   collaborators,
   brokerOptions,
   stageOptions,
+  pickers,
   assignBrokerAction,
   updateStageAction,
   addTagAction,
@@ -89,7 +119,8 @@ export function MobileDetailsSection({
   addCollaboratorAction,
   removeCollaboratorAction,
 }: MobileDetailsSectionProps) {
-  const [openPicker, setOpenPicker] = useState<null | 'assigned' | 'stage' | 'tags' | 'collab'>(null)
+  const router = useRouter()
+  const [openPicker, setOpenPicker] = useState<null | 'assigned' | 'stage' | 'source' | 'timeframe' | 'tags' | 'collab' | 'automations'>(null)
   const [newTag, setNewTag] = useState('')
   const [pending, startTransition] = useTransition()
 
@@ -100,33 +131,98 @@ export function MobileDetailsSection({
     return action(fd)
   }
 
+  /** §28 field write via the §07 gated action, then refresh the server tree. */
+  const saveField = async (field: 'source' | 'timeframe', value: string) => {
+    const r = await updatePersonFieldAction(personId, field, value)
+    if (!r.ok) console.error('[mobile-pickers] save', field, r.error)
+    router.refresh()
+  }
+
   const collabSlugs = new Set(collaborators.map((c) => c.slug))
+
+  // §3.4 — <unspecified> pinned first (the clear option); every stored string
+  // verbatim. A literal stored '<unspecified>' string (FUB import artifact)
+  // would duplicate the clear row, so it folds into it. The contact's current
+  // value joins the list even if it fell out of the account vocabulary (so the
+  // checkmark still lands somewhere true).
+  const vocab = pickers.sources.filter((s) => s !== '<unspecified>')
+  const sourceOptions: PickerOption[] = [
+    { value: '', label: '<unspecified>' },
+    ...(source && !vocab.includes(source) ? [{ value: source, label: source }] : []),
+    ...vocab.map((s) => ({ value: s, label: s })),
+  ]
 
   return (
     <div className="bg-card shadow-sm">
       <Row label="Assigned to" value={assignedTo ?? '—'} onTap={() => setOpenPicker('assigned')} />
       <Row label="Stage" value={stage || '—'} onTap={() => setOpenPicker('stage')} />
-      <Row label="Source" value={source || '—'} />
+      <Row label="Source" value={source || '—'} onTap={() => setOpenPicker('source')} />
       <Row
         label="Tags"
         value={tags.length > 0 ? tags.join(', ') : 'Add tags…'}
         onTap={() => setOpenPicker('tags')}
       />
-      <Row label="Time frame" value={timeframe || '—'} />
+      <Row label="Time frame" value={timeframe || '—'} onTap={() => setOpenPicker('timeframe')} />
       <Row
         label="Collaborators"
         value={collaborators.length > 0 ? collaborators.map((c) => c.name).join(', ') : 'No collaborators'}
         onTap={() => setOpenPicker('collab')}
       />
+      <Row
+        label="Automations"
+        value={pickers.enrolledNames.length > 0 ? pickers.enrolledNames.join(', ') : 'Add to Automation'}
+        onTap={() => setOpenPicker('automations')}
+      />
 
-      {/* Assigned-to picker (§28 assign-to via the §23.8 sheet) */}
-      <MobilePickerSheet
-        title="Assign to"
+      {/* §28 §5 Assign-To sheet (mob-34): banner · search · Me / PONDS / TEAM */}
+      <MobileAssignToSheet
         open={openPicker === 'assigned'}
         onOpenChange={(v) => setOpenPicker(v ? 'assigned' : null)}
-        options={brokerOptions}
-        selected={assignedToSlug}
-        onConfirm={(broker) => submit(assignBrokerAction, { broker })}
+        currentAssigneeName={assignedTo}
+        currentBrokerSlug={pickers.currentBrokerSlug}
+        currentBrokerName={pickers.currentBrokerName}
+        brokers={brokerOptions.map((b) => ({ slug: b.value, name: b.label }))}
+        ponds={pickers.ponds}
+        onAssignBroker={(broker) => submit(assignBrokerAction, { broker })}
+        onAssignPond={async (pondId) => {
+          const r = await assignPondAction(personId, pondId)
+          if (!r.ok) console.error('[mobile-pickers] assignPond:', r.error)
+          router.refresh()
+        }}
+      />
+
+      {/* §28 §3 Source picker (mob-54) */}
+      <MobilePickerSheet
+        title="Source"
+        open={openPicker === 'source'}
+        onOpenChange={(v) => setOpenPicker(v ? 'source' : null)}
+        options={sourceOptions}
+        selected={source ?? ''}
+        onConfirm={(v) => saveField('source', v)}
+      />
+
+      {/* §28 §4 Time frame picker (mob-36) */}
+      <MobilePickerSheet
+        title="Time frame"
+        open={openPicker === 'timeframe'}
+        onOpenChange={(v) => setOpenPicker(v ? 'timeframe' : null)}
+        options={TIMEFRAME_OPTIONS.map((t) => ({ value: t, label: t }))}
+        selected={timeframe}
+        onConfirm={(v) => saveField('timeframe', v)}
+      />
+
+      {/* §28 §6 Automations picker (mob-15): text-only rows, Select → enroll */}
+      <MobilePickerSheet
+        title="Automations"
+        open={openPicker === 'automations'}
+        onOpenChange={(v) => setOpenPicker(v ? 'automations' : null)}
+        options={pickers.sequences.map((s) => ({ value: String(s.id), label: s.name }))}
+        selected={null}
+        onConfirm={async (v) => {
+          const r = await applyAutomationAction(personId, Number(v))
+          if (!r.ok) console.error('[mobile-pickers] enroll:', r.error)
+          router.refresh()
+        }}
       />
 
       {/* Stage picker (mob-35) */}

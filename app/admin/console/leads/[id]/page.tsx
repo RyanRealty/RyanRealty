@@ -3,30 +3,24 @@ import { notFound, redirect } from 'next/navigation'
 import { formatDate } from '@/lib/format/date'
 import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import {
-  addCrmContactPointAction,
-  addCrmNoteAction,
-  addCrmTagAction,
-  addCrmTaskAction,
-  assignCrmBrokerAction,
   getCrmAccess,
   getCrmEmailTemplates,
   getCrmPersonFull,
   getCrmSmsTemplates,
   getTwilioSmsStatus,
-  removeCrmTagAction,
-  sendCrmEmailAction,
-  sendCrmSmsAction,
-  updateCrmStageAction,
 } from '@/app/actions/crm'
-import { adminAssignSavedSearchAction, adminDeleteSavedSearchAction } from '@/app/actions/newsletter'
+import {
+  addNoteForm, updateStageForm, addTagForm, removeTagForm, addTaskForm,
+  assignBrokerForm, addContactPointForm, sendEmailForm, sendSmsForm,
+  startCmaForm, sendCmaForm, setReportSubsForm, assignSavedSearchForm,
+  deleteSavedSearchForm,
+} from './form-actions'
 // CRM record-card cutover (2026-06-24): home-driven next step, CMA-from-contact,
 // market-report subscriptions, source badge.
 import { getContactNextStep } from '@/app/actions/contact-next-step'
-import { startCmaForContactAction, sendCmaForContactAction } from '@/app/actions/contact-cma'
 import { getContactReportSubscription, listAvailableMarketReportAreas } from '@/lib/data/crm/getContactReportSubscriptions'
 import { getCrmFieldDefinitions } from '@/lib/data/crm/getCrmFieldDefinitions'
 import CustomFieldsPanel from '@/components/admin/crm/CustomFieldsPanel'
-import { setReportSubscriptionAction } from '@/app/actions/crm-report-subscriptions'
 import ReportSubscriptionsPanel from '@/components/admin/crm/ReportSubscriptionsPanel'
 import { OwnedHomeCard } from '@/components/admin/crm/OwnedHomeCard'
 import { timelineEmailBody } from '@/lib/crm/email-body'
@@ -62,6 +56,7 @@ import { PersonSidebar, type SidebarData } from '@/components/admin/crm/person-d
 import { PersonCenterColumn, type TimelineItem } from '@/components/admin/crm/person-detail/PersonCenterColumn'
 import { PersonRightRail } from '@/components/admin/crm/person-detail/PersonRightRail'
 import { getPersonDetailExtras } from '@/lib/data/crm/getPersonDetailExtras'
+import { getCrmSources } from '@/lib/data/crm/getCrmSources'
 import { listActiveSequences } from '@/lib/crm/enroll'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -71,140 +66,6 @@ export const metadata = { title: 'Lead · Console' }
 export const dynamic = 'force-dynamic'
 
 const BASE = '/admin/console/leads'
-
-// ── Server-action form wrappers (return to the console route) ────────────────
-async function addNoteForm(personId: number, formData: FormData): Promise<void> {
-  'use server'
-  formData.set('personId', String(personId))
-  const r = await addCrmNoteAction(formData)
-  if (!r.ok) redirect(`${BASE}/${personId}?error=${encodeURIComponent(`Note not saved — ${r.error ?? 'unknown error'}`)}`)
-  else redirect(`${BASE}/${personId}?flash=${encodeURIComponent('Note saved.')}`)
-}
-async function updateStageForm(formData: FormData): Promise<void> {
-  'use server'
-  const r = await updateCrmStageAction(formData)
-  if (!r.ok) console.error('[console] updateStage:', r.error)
-}
-async function addTagForm(formData: FormData): Promise<void> {
-  'use server'
-  const r = await addCrmTagAction(formData)
-  if (!r.ok) console.error('[console] addTag:', r.error)
-}
-async function removeTagForm(formData: FormData): Promise<void> {
-  'use server'
-  const r = await removeCrmTagAction(formData)
-  if (!r.ok) console.error('[console] removeTag:', r.error)
-}
-async function addTaskForm(formData: FormData): Promise<void> {
-  'use server'
-  const r = await addCrmTaskAction(formData)
-  if (!r.ok) console.error('[console] addTask:', r.error)
-}
-async function assignBrokerForm(formData: FormData): Promise<void> {
-  'use server'
-  const r = await assignCrmBrokerAction(formData)
-  if (!r.ok) console.error('[console] assignBroker:', r.error)
-}
-async function addContactPointForm(formData: FormData): Promise<void> {
-  'use server'
-  const personId = Number(formData.get('personId'))
-  const r = await addCrmContactPointAction(formData)
-  if (!r.ok) redirect(`${BASE}/${personId}?error=${encodeURIComponent(`Not saved — ${r.error ?? 'unknown error'}`)}`)
-}
-async function sendEmailForm(personId: number, formData: FormData): Promise<void> {
-  'use server'
-  formData.set('personId', String(personId))
-  const r = await sendCrmEmailAction(formData)
-  if (!r.ok) redirect(`${BASE}/${personId}?error=${encodeURIComponent(`Email not sent — ${r.error ?? 'unknown error'}`)}`)
-}
-async function sendSmsForm(personId: number, formData: FormData): Promise<void> {
-  'use server'
-  formData.set('personId', String(personId))
-  const r = await sendCrmSmsAction(formData)
-  if (!r.ok) redirect(`${BASE}/${personId}?error=${encodeURIComponent(`Text not sent — ${r.error ?? 'unknown error'}`)}`)
-}
-// ── Home-driven next step (CRM record-card cutover) ──────────────────────────
-async function startCmaForm(personId: number): Promise<void> {
-  'use server'
-  const r = await startCmaForContactAction(personId)
-  redirect(
-    r.ok
-      ? `${BASE}/${personId}?flash=${encodeURIComponent('CMA queued and building. Review it below, then send.')}`
-      : `${BASE}/${personId}?error=${encodeURIComponent(`CMA not started — ${r.error}`)}`,
-  )
-}
-async function sendCmaForm(personId: number, formData: FormData): Promise<void> {
-  'use server'
-  const deliveryId = String(formData.get('deliveryId') ?? '')
-  const r = await sendCmaForContactAction(deliveryId)
-  redirect(
-    r.ok
-      ? `${BASE}/${personId}?flash=${encodeURIComponent('CMA sent.')}`
-      : `${BASE}/${personId}?error=${encodeURIComponent(`CMA not sent — ${r.error}`)}`,
-  )
-}
-async function setReportSubsForm(personId: number, formData: FormData): Promise<void> {
-  'use server'
-  const isActive = String(formData.get('active') ?? '') === 'on'
-  const frequency = String(formData.get('frequency') ?? 'monthly') as 'weekly' | 'monthly' | 'quarterly'
-  const areas = formData.getAll('areas').map((a) => String(a)).filter(Boolean)
-  const r = await setReportSubscriptionAction(personId, { areas, frequency, isActive })
-  redirect(
-    r.ok
-      ? `${BASE}/${personId}?flash=${encodeURIComponent(r.message ?? 'Market reports updated.')}`
-      : `${BASE}/${personId}?error=${encodeURIComponent(`Market reports not updated — ${r.error}`)}`,
-  )
-}
-async function assignSavedSearchForm(formData: FormData): Promise<void> {
-  'use server'
-  const personId = Number(formData.get('personId'))
-  // Build the filters JSON from the simple inline fields before handing off.
-  const filters: Record<string, unknown> = {}
-  const city = String(formData.get('city') ?? '').trim()
-  const minPrice = Number(formData.get('minPrice'))
-  const maxPrice = Number(formData.get('maxPrice'))
-  const minBeds = Number(formData.get('minBeds'))
-  if (city) filters.city = city
-  if (Number.isFinite(minPrice) && minPrice > 0) filters.minPrice = minPrice
-  if (Number.isFinite(maxPrice) && maxPrice > 0) filters.maxPrice = maxPrice
-  if (Number.isFinite(minBeds) && minBeds > 0) filters.beds = minBeds
-  formData.set('filters', JSON.stringify(filters))
-  const r = await adminAssignSavedSearchAction(formData)
-  if (r.ok && Number.isFinite(personId) && personId > 0) {
-    const { createServiceClient } = await import('@/lib/supabase/service')
-    const { getCrmAccess } = await import('@/app/actions/crm')
-    const [sb, access] = [createServiceClient(), await getCrmAccess()]
-    const name = String(formData.get('name') ?? 'Saved search').trim() || 'Saved search'
-    await sb.from('crm_timeline').insert({
-      person_id: personId,
-      kind: 'system',
-      title: `Saved search "${name}" added by ${access?.email ?? 'broker'}`,
-      source: 'app',
-      broker: access?.brokerSlug ?? null,
-    })
-  }
-  const msg = r.ok ? 'Saved search assigned' : `Not assigned — ${r.error ?? 'unknown error'}`
-  redirect(`${BASE}/${personId}?flash=${encodeURIComponent(msg)}`)
-}
-async function deleteSavedSearchForm(formData: FormData): Promise<void> {
-  'use server'
-  const personId = Number(formData.get('personId'))
-  const id = String(formData.get('id') ?? '')
-  const r = await adminDeleteSavedSearchAction(id)
-  if (r.ok && Number.isFinite(personId) && personId > 0) {
-    const { createServiceClient } = await import('@/lib/supabase/service')
-    const { getCrmAccess } = await import('@/app/actions/crm')
-    const [sb, access] = [createServiceClient(), await getCrmAccess()]
-    await sb.from('crm_timeline').insert({
-      person_id: personId,
-      kind: 'system',
-      title: `Saved search removed by ${access?.email ?? 'broker'}`,
-      source: 'app',
-      broker: access?.brokerSlug ?? null,
-    })
-  }
-  redirect(`${BASE}/${personId}?flash=${encodeURIComponent('Saved search removed')}`)
-}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function usd(n: number | null | undefined): string | null {
@@ -278,7 +139,7 @@ export default async function ConsoleLeadPage({
   const personEmails = (person.emails ?? []).map((e) => e.value).filter((v): v is string => Boolean(v))
 
   // What they're shopping for — saved searches + the homes they're watching (live MLS) + newsletter status.
-  const [savedSearches, viewedListings, contactMemberships, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, fieldDefs, emailEngagementSummary, collaborators, actionPlanEnrollments, detailExtras, activeSequences] = await Promise.all([
+  const [savedSearches, viewedListings, contactMemberships, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, fieldDefs, emailEngagementSummary, collaborators, actionPlanEnrollments, detailExtras, activeSequences, crmSources] = await Promise.all([
     getGuestSearchAlertsForLead({ fubPersonId: person.fub_legacy_id, emails: personEmails }),
     getViewedListingsForLead(person.fub_legacy_id),
     getContactMemberships(person.id),
@@ -299,6 +160,8 @@ export default async function ConsoleLeadPage({
     // §07 three-column rebuild: right-rail widgets + exact timeline tab counts
     getPersonDetailExtras(person.id),
     listActiveSequences(),
+    // §28 mobile Source picker — the account's source vocabulary, verbatim
+    getCrmSources(),
   ])
 
   // Full Comms thread (every text + email + call), newest first, paginated —
@@ -498,6 +361,14 @@ export default async function ConsoleLeadPage({
       relationships={relationships}
       collaborators={collaborators}
       viewedListings={viewedListings}
+      pickers={{
+        sources: crmSources,
+        ponds: detailExtras.pondOptions,
+        sequences: activeSequences,
+        enrolledNames: actionPlanEnrollments.map((e) => e.sequenceName),
+        currentBrokerSlug: actingSlug,
+        currentBrokerName: CRM_BROKER_DISPLAY[actingSlug as keyof typeof CRM_BROKER_DISPLAY] ?? actingSlug,
+      }}
       addNoteAction={addNoteForm.bind(null, person.id)}
       addTaskAction={addTaskForm}
       assignBrokerAction={assignBrokerForm}
