@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.712.0 (2026-07-02)
+
+### Features
+- feat(crm-mobile): §29 mobile Calendar + Tasks — mobile-calendar-tasks done + proven
+
+---
+
+
 ## v1.711.0 (2026-07-02)
 
 ### Features
