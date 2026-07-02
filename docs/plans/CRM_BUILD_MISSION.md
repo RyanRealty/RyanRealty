@@ -557,9 +557,15 @@ sender) both showed the wrong caller ID. **Second latent bug found:** Paul's row
   (primary)"; renamed +15412245025 "Ryan Realty — legacy spare (do not release)" (kept owned,
   webhooks still → CRM, so replies to old threads keep landing on the timeline); set the
   missing StatusCallback on the other 3 numbers.
-- **Live verification:** SMS sent with the exact `sendSms` semantics → Matt's cell: sid
-  SM2873332f8762db8e89a60e36c6e37824, from=+15417033095, to=+15412136706, status=**delivered**.
-  Inbound path re-verified post-deploy via the signed-webhook probe (net-zero, rows deleted).
+- **Live verification (all post-deploy on prod, net-zero — test rows deleted):**
+  (1) real CRM send path: composer text to lead 13168 (Matt's cell) via Matt's authed prod
+  session → Twilio record SM5e359155247ba2270c9bed0a4708a8ab from=**+15417033095**
+  to=+15412136706 status=**delivered**, delivery receipt round-tripped onto the timeline row
+  (deliveryState=delivered) — then row deleted. (2) direct `sendSms`-semantics probe: sid
+  SM2873332f8762db8e89a60e36c6e37824, same from/to, delivered. (3) inbound: signed-webhook
+  probe → 200 on ryan-realty.com + vercel, sms_in landed on the timeline; probe rows + tasks
+  deleted, conversation state restored. (4) public display: /team/matthew-ryan renders
+  541.703.3095. Vercel prod env pulled + decrypted to confirm all TWILIO_NUMBER_* values.
 
 ### DESKTOP ADVERSARIAL AUDIT (2026-07-02) — full ledger: [docs/plans/CRM_AUDIT_2026-07-02.md](CRM_AUDIT_2026-07-02.md)
 Adversarial pass over all 10 desktop CRM screens at 1440×900 against Matt's authed prod-data
