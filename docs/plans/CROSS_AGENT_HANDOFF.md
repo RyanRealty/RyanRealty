@@ -2,7 +2,19 @@
 
 # CROSS-AGENT HANDOFF — CRM GROUND-UP REBUILD, screen-by-screen under ci:crm-screen-parity (2026-07-01)
 
-**HEAD:** `2b7dcfb2` on `main` (+ follow-up email-tracking commit) · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` — **REGISTRY COMPLETE: 18 done, all proven (all 10 desktop + all 8 mobile); only the _meta row is todo.** The mission's email open+click tracking task is also SHIPPED + PROVEN E2E (see the ✅ blocks in the mission doc).
+**HEAD:** `90ced1de` on `main` · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` — **REGISTRY COMPLETE: 18 done, all proven (all 10 desktop + all 8 mobile); only the _meta row is todo.** The mission's email open+click tracking task is also SHIPPED + PROVEN E2E (see the ✅ blocks in the mission doc).
+
+## DESKTOP ADVERSARIAL AUDIT LANDED (2026-07-02) — ledger `docs/plans/CRM_AUDIT_2026-07-02.md`
+A separate agent ran an adversarial pass over all 10 desktop CRM screens (Matt's authed prod-data
+session, ~120 elements, every mutation net-zero). **9 findings; 6 fixed (commits b02e7c90, 90ced1de,
++ phone-mirror in 8548c0f3), 3 open (all P2 coherence).** Fixed P0s: user-created smart lists never
+filtered (Save List wrote only `ast`, not the `filter` bag the list reads); Create Note dead for
+imported contacts (gated on decommissioned FUB API); phone/email jsonb mirror dropped `isPrimary`
+(wrong send target). Fixed P1s: Email Templates had no delete button; Contact Attempts report missing
+Marketing+Deals tabs; Agent Goals "Set goal" 404. Open P2s: reporting H1 size, duplicated
+`REPORTING_TABS` (13×), CRM headers Geist-not-Amboqia. If you touch `app/actions/crm-saved-views.ts`,
+`app/actions/crm.ts` (addCrmNoteAction), `app/actions/crm-person-detail.ts`,
+`components/admin/crm/settings/templates/EmailTemplateList.tsx`, or the reporting pages, pull first.
 
 ## What this track is
 Matt's directive: execute CRM_BUILD_MISSION as a ground-up rebuild, screen by screen through the

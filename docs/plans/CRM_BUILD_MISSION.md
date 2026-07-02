@@ -514,6 +514,27 @@ re-runs the E2E checks and states the sign-off inventory to Matt.
 
 ## PROGRESS (agents append here as slices ship)
 
+### DESKTOP ADVERSARIAL AUDIT (2026-07-02) — full ledger: [docs/plans/CRM_AUDIT_2026-07-02.md](CRM_AUDIT_2026-07-02.md)
+Adversarial pass over all 10 desktop CRM screens at 1440×900 against Matt's authed prod-data
+session. ~120 interactive elements exercised; every mutation round-tripped through a service-role
+DB verify and reverted net-zero. **9 findings (3 P0, 3 P1, 3 P2); 6 fixed, 3 open (all P2).**
+- **P0 fixed** (commits b02e7c90 + 8548c0f3): (1) user-created smart lists never filtered — Save
+  New List wrote only `ast`, not the `filter` bag the list reads → every new list showed all 18K.
+  (2) Create Note silently failed for every imported contact — gated on the decommissioned FUB API.
+  (3) phone/email jsonb mirrors dropped `isPrimary` → getSendTarget could pick the WRONG number.
+- **P1 fixed** (commit 90ced1de): (4) Email Templates list had no delete button (spec §13 requires
+  it; Text Templates had it). (5) Contact Attempts report missing Marketing + Deals sub-tabs.
+  (6) Agent Goals "Set goal" link 404'd → replaced with honest "Not set" (goal-setting is a V1
+  deferral, no fabricated feature).
+- **P2 open (non-blocking):** reporting H1 20px vs 24px elsewhere; 13× duplicated `REPORTING_TABS`
+  array (the cause of P1-5 — extract a shared constant); CRM headers use GeistSans not Amboqia
+  (consistent across all 10 screens + matches FUB-parity product surface — a Matt call).
+- **Verified-good:** compliance gates (suppression fail-closed + quiet-hours + blocked-numbers)
+  intact on every send path; broker scope clamped at the data layer (scopeBroker → own-slug .eq);
+  saved-view/bulk-tag/CSV/stage/phones/note/call/task/collaborator/deal/automation/template/
+  company/appointment round-trips all landed + reverted net-zero. Coherence verdict: the 10
+  screens read as ONE CRM (shared nav, navy/cream tokens, table/toolbar/empty-state idioms).
+
 ### GROUND-UP REBUILD under ci:crm-screen-parity (started 2026-07-01, screen-by-screen)
 - **mobile-dashboard + mobile-settings** ✅ DONE + PROVEN (commit 2b7dcfb2, 2026-07-02) — M8 (mob-44)
   + M9 (mob-06), the FINAL two registry screens. **`ci:crm-screen-parity`: 18 done (all proven), 0
