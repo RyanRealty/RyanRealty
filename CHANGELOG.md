@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.703.0 (2026-07-02)
+
+### Features
+- feat(crm): contacts-list-desktop rebuilt to the §05 three-region FUB structure (screen gate: done+proven)
+
+### Maintenance
+- docs(crm): contacts-list-desktop done+proven under ci:crm-screen-parity (8c4c15af) — mission PROGRESS + handoff
+
+---
+
+
 ## v1.702.1 (2026-07-02)
 
 ### Maintenance
