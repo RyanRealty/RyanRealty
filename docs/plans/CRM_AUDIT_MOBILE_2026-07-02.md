@@ -168,3 +168,16 @@ the same language** — navy 56px header (headshot / title-or-scope / search),
 bottom tab bar on every route, single-FAB rule intact, same sheet idioms
 (navy Cancel·Title·Action headers), FUB date conventions throughout. The
 "2 CRMs" split-brain is gone at 390. Remaining coherence nits are P2-3/5/8.
+
+---
+
+## Post-audit recording change (2026-07-02, commit 74d22bf9) — group SMS
+
+The MobileComposeSheet "Group text · N people share one thread" claim is now
+TRUE end-to-end: `sendGroupMms` was rewritten to native group MMS (recipients
+see one real carrier group thread, everyone's number visible) and inbound
+group replies are recorded by the new `/api/twilio/conversations-events`
+webhook as "Group text received" rows on every member's timeline (previously
+group replies were recorded NOWHERE). Thread/feed renderers accept IM message
+sids for conversation media. Evidence in mission PROGRESS "GROUP SMS
+RECORDING SLICE".

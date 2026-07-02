@@ -2,6 +2,24 @@
 
 # CROSS-AGENT HANDOFF — CRM GROUND-UP REBUILD, screen-by-screen under ci:crm-screen-parity (2026-07-01)
 
+## GROUP SMS FIX LANDED (2026-07-02, commit 74d22bf9) — inbound group texts were being DROPPED; now recorded
+Matt's "are group SMS recorded?" question exposed a message-loss class: Programmable Messaging does
+not support group MMS, so every inbound group text (incl. Mary Bowman + Yahson Terry's phone-era
+group thread with Matt's ported 541.703.3095) was silently dropped since the 2026-06-24 port — no
+webhook, no Twilio log, no CRM row. Fixed live: `sendGroupMms` rewritten to NATIVE group MMS
+(Address-only members + broker line ProjectedAddress; own Twilio numbers are REJECTED as members,
+50407) · NEW `/api/twilio/conversations-events` webhook records group messages to every member's
+timeline · global Conversations webhook + autocreation on all 4 lines wired by
+`scripts/setup-conversations-webhooks.mjs` (re-runnable) · IM-sid media via the MMS proxy. Verified
+net-zero on prod end-to-end (delivered receipt to Matt's cell, signed-webhook row+task+unread,
+403 on forged sig, dedupe on replay, 1:1 path unaffected, all test rows deleted). Full entry:
+mission PROGRESS "GROUP SMS RECORDING SLICE". **AWAITING MATT (identity, do NOT guess): "Yahson
+Terry" has never existed as a contact — FUB's "Mary Bowman" (crm_people 12967) is a merged couple
+record holding msbrilliantdisguise@gmail.com + yahsonkt@hotmail.com and phones 714.337.6028 (all
+recorded SMS traffic) + 909.343.0531 (zero traffic ever). To split him out, Matt must say which
+phone is whose; then create Yahson + move his contact points (timeline history stays on Mary's
+record unless Matt wants per-message re-attribution).**
+
 ## 🏁 PRODUCTION SIGN-OFF LANDED (2026-07-02, commit 3bb76d69) — CRM verified PRODUCTION READY
 Final independent verification pass: [`CRM_PRODUCTION_SIGNOFF_2026-07-02.md`](CRM_PRODUCTION_SIGNOFF_2026-07-02.md).
 Fresh evidence for everything (parity 18/18 · gates exit 0 · vitest 2431 · tsc clean · Vercel

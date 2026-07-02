@@ -514,6 +514,37 @@ re-runs the E2E checks and states the sign-off inventory to Matt.
 
 ## PROGRESS (agents append here as slices ship)
 
+### GROUP SMS RECORDING SLICE ✅ (2026-07-02, commit 74d22bf9) — Matt's "are group SMS recorded?" answer: they were NOT; now they are
+Matt asked whether group SMS can be sent through the CRM and whether group conversations (e.g. with
+Mary Bowman + Yahson Terry) are recorded. Findings, verified against Twilio docs + live API:
+1. **Inbound group texts were 100% dropped.** Programmable Messaging does not support group MMS, so a
+   client group text to any broker line (incl. replies to Matt's phone-era group threads on the ported
+   541.703.3095) produced NO webhook, NO message log, NO CRM row. Twilio message log confirms: zero
+   group traffic ever landed. This has been true since the 2026-06-24 port.
+2. **"Native group MMS" send was actually per-person proxy threads.** The old sendGroupMms bound every
+   member Address+ProxyAddress (the 1:1 pair model) — each recipient saw a lone 1:1 thread with the
+   proxy number, nobody saw each other, and replies were captured by the Conversation which had NO
+   webhook → recorded nowhere. The one real use (Jun 30, Matt+Nichole test group with the literal
+   %token% body) was this shape; that conversation was deleted (Twilio 204), CRM rows kept.
+3. **"Yahson Terry" has never existed as a contact — in FUB either.** FUB's "Mary Bowman" (21728 →
+   crm_people 12967) is a merged couple record carrying both emails (msbrilliantdisguise@gmail.com +
+   yahsonkt@hotmail.com) and both phones (714.337.6028 + 909.343.0531). All recorded SMS is with the
+   714 number; the 909 number has zero Twilio traffic ever. Splitting the record needs Matt to say
+   which phone is whose (flagged in handoff — do NOT guess identity).
+Fixes (all live on prod): sendGroupMms rewritten to TRUE native group MMS (Address-only members +
+broker line as ProjectedAddress, ≤10 addresses) · NEW `/api/twilio/conversations-events` webhook
+records inbound group messages to every mapped member's timeline with group context, find-or-creates
+the author, honors STOP/START, alerts the broker; skips proxy/1:1 conversations (inbound-sms owns
+those — no double-write) · global Conversations service webhook + per-line autocreation wired by
+`scripts/setup-conversations-webhooks.mjs` (all 4 lines: 3095/5025/3436/3380) — autocreation is what
+captures phone-era group threads · MMS media proxy + renderers accept IM sids (conversation media via
+MCS with chatServiceSid stored on the row). LIVE-VERIFIED net-zero: real 3-address group formed, no
+50435, receipt **delivered** to Matt's cell; own-outbound skipped (0 rows); signed inbound webhook →
+timeline row + reply task + unread on prod; forged signature → 403; replay → deduped (1 row); 1:1
+regression re-proven post-autocreation; all test rows deleted + state restored. 10 new vitest tests
+(`lib/crm/twilio-conversations.test.ts`). GOTCHA: our own Twilio numbers are REJECTED as group
+member addresses (50407) — a group is always 2+ real handsets + the broker's projected line.
+
 ### 🏁 PRODUCTION SIGN-OFF ✅ (2026-07-02) — [CRM_PRODUCTION_SIGNOFF_2026-07-02.md](CRM_PRODUCTION_SIGNOFF_2026-07-02.md)
 Independent final verification pass against the PRODUCTION-READY BAR: **PRODUCTION READY.**
 Fresh HEAD health (parity 18/18 proven · ci:gates exit 0 · vitest 2431/2431 · tsc clean) ·
