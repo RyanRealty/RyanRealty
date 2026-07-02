@@ -27,7 +27,7 @@ const REPORTING_TABS = [
 const AGENT_REPORTS = [
   { icon: '📊', title: 'Agent Activity', description: 'See the number of leads per agent alongside stats on follow up.', href: '/admin/crm/reporting/agent-activity' },
   { icon: '📞', title: 'Calls', description: 'See calls made, conversations, missed calls, talk time and more by agent.', href: '/admin/crm/reporting/calls' },
-  { icon: '📋', title: 'Call Logs', description: 'See and listen to recent inbound and outbound calls.', href: '/admin/crm/reporting/calls?view=logs' },
+  { icon: '📋', title: 'Call Logs', description: 'See and listen to recent inbound and outbound calls.', href: '/admin/crm/reporting/call-logs' },
   { icon: '💬', title: 'Texts', description: 'See text message delivery rates and other stats by phone number.', href: '/admin/crm/reporting/texts' },
   { icon: '📅', title: 'Appointments', description: 'See a list of appointments & outcomes with details on lead source and agent.', href: '/admin/crm/reporting/appointments' },
   { icon: '💰', title: 'Deals', description: 'See a list of deals with commissions by deal stage and lead source.', href: '/admin/crm/reporting/deals' },
@@ -36,9 +36,9 @@ const AGENT_REPORTS = [
 
 const LEAD_SOURCE_REPORTS = [
   { icon: '📈', title: 'Source Report', description: 'See your top lead providers and sources of appointments.', href: '/admin/crm/reporting/lead-sources' },
-  { icon: '🚀', title: 'Speed To Lead', description: 'See how quickly you follow up by source and follow up type.', href: '/admin/crm/reporting/lead-sources?view=speed' },
-  { icon: '📱', title: 'Contact Attempts', description: 'See how many times you follow up on average by source.', href: '/admin/crm/reporting/lead-sources?view=attempts' },
-  { icon: '🤓', title: 'Closed Deals By Source', description: 'See which lead source has the most closed deals, commission and conversion rate %.', href: '/admin/crm/reporting/lead-sources?view=deals' },
+  { icon: '🚀', title: 'Speed To Lead', description: 'See how quickly you follow up by source and follow up type.', href: '/admin/crm/reporting/speed-to-lead' },
+  { icon: '📱', title: 'Contact Attempts', description: 'See how many times you follow up on average by source.', href: '/admin/crm/reporting/contact-attempts' },
+  { icon: '🤓', title: 'Closed Deals By Source', description: 'See which lead source has the most closed deals, commission and conversion rate %.', href: '/admin/crm/reporting/lead-sources' },
 ]
 
 const MARKETING_REPORTS = [

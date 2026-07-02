@@ -157,7 +157,7 @@ export const HUB_AGENT_REPORTS: ReportHubCard[] = [
     icon: '📋',
     title: 'Call Logs',
     description: 'See and listen to recent inbound and outbound calls.',
-    href: '/admin/crm/reporting/calls?view=logs',
+    href: '/admin/crm/reporting/call-logs',
   },
   {
     icon: '💬',
@@ -196,19 +196,19 @@ export const HUB_LEAD_SOURCE_REPORTS: ReportHubCard[] = [
     icon: '🚀',
     title: 'Speed To Lead',
     description: 'See how quickly you follow up by source and follow up type.',
-    href: '/admin/crm/reporting/lead-sources?view=speed',
+    href: '/admin/crm/reporting/speed-to-lead',
   },
   {
     icon: '📱',
     title: 'Contact Attempts',
     description: 'See how many times you follow up on average by source.',
-    href: '/admin/crm/reporting/lead-sources?view=attempts',
+    href: '/admin/crm/reporting/contact-attempts',
   },
   {
     icon: '🤓',
     title: 'Closed Deals By Source',
     description: 'See which lead source has the most closed deals, commission and conversion rate %.',
-    href: '/admin/crm/reporting/lead-sources?view=deals',
+    href: '/admin/crm/reporting/lead-sources',
   },
 ]
 

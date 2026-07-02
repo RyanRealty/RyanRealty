@@ -1,7 +1,6 @@
 // @no-parity — internal admin surface
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { ChevronDown } from 'lucide-react'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import {
@@ -21,8 +20,9 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
+import HowReportingWorks from '@/components/admin/crm/reporting/HowReportingWorks'
 import AgentActivityFilters from './AgentActivityFilters'
+import ShowMeSelector from './ShowMeSelector'
 import { AgentActivityChart } from './AgentActivityChart'
 import { AgentActivityKpiStrip } from './AgentActivityKpiStrip'
 
@@ -134,6 +134,7 @@ export default async function AgentActivityPage({
   }).catch(() => null)
 
   const rows: AgentActivityRow[] = report?.rows ?? []
+  const closedDealRows = report?.closedDeals ?? []
   const totals = report?.totals ?? {
     newLeads: 0, initiallyAssignedLeads: 0, currentlyAssignedLeads: 0,
     calls: 0, emails: 0, texts: 0, notes: 0,
@@ -172,54 +173,34 @@ export default async function AgentActivityPage({
           ))}
         </div>
         <div className="ml-auto shrink-0 pb-0.5 pl-4">
-          <Badge variant="outline" className="text-muted-foreground">
-            ⓘ How Reporting works
-          </Badge>
+          <HowReportingWorks />
         </div>
       </div>
 
       {/* Header row: "Show me" selector + filter bar */}
       <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-center gap-1.5 text-sm">
-          <span className="text-muted-foreground">Show me</span>
-          <div className="flex items-center gap-0.5">
-            <span className="font-medium text-foreground">
-              {isDealsView
-                ? 'which team member has closed the most deals'
-                : 'total lead count and total agent activity'}
-            </span>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          </div>
-          {!isDealsView ? (
-            <Link
-              href={`/admin/crm/reporting/agent-activity?broker=${currentBroker}&date=${currentDate}&view=deals`}
-              className="ml-2 text-xs text-muted-foreground hover:text-foreground hover:underline"
-            >
-              Switch view →
-            </Link>
-          ) : (
-            <Link
-              href={`/admin/crm/reporting/agent-activity?broker=${currentBroker}&date=${currentDate}&view=activity`}
-              className="ml-2 text-xs text-muted-foreground hover:text-foreground hover:underline"
-            >
-              Switch view →
-            </Link>
-          )}
-        </div>
+        {/* §11.3 interactive page title — the phrase IS the view selector */}
+        <ShowMeSelector
+          currentView={view}
+          currentBroker={currentBroker}
+          currentDate={currentDate}
+          currentCols={currentCols}
+        />
 
-        {/* Filter controls — client component (superuser only; others are scoped) */}
-        {isSuperuser ? (
-          <AgentActivityFilters
-            currentBroker={currentBroker}
-            currentDate={currentDate}
-            currentView={view}
-            currentCols={currentCols}
-            brokers={CRM_BROKERS.map((slug) => ({
-              slug,
-              label: CRM_BROKER_DISPLAY[slug],
-            }))}
-          />
-        ) : null}
+        {/* Filter controls — date range for everyone; agent scope superuser-only
+            (non-superusers are locked to Me at the data layer AND in the UI) */}
+        <AgentActivityFilters
+          currentBroker={currentBroker}
+          currentDate={currentDate}
+          currentView={view}
+          currentCols={currentCols}
+          isSuperuser={isSuperuser}
+          lockedBrokerLabel={scope ? CRM_BROKER_DISPLAY[scope] : undefined}
+          brokers={CRM_BROKERS.map((slug) => ({
+            slug,
+            label: CRM_BROKER_DISPLAY[slug],
+          }))}
+        />
       </div>
 
       {/* Cache notice */}
@@ -328,6 +309,24 @@ export default async function AgentActivityPage({
                     )
                   })
                 )}
+                {/* Column totals row (§11.5 — aggregate sum per column) */}
+                {rows.length > 1 ? (
+                  <TableRow className="bg-muted/30 hover:bg-muted/30">
+                    <TableCell className="text-sm font-semibold text-foreground">
+                      Total
+                    </TableCell>
+                    {ALL_COL_KEYS.filter((k) => visibleCols.includes(k)).map((key) => (
+                      <TableCell
+                        key={key}
+                        className="text-right text-sm font-semibold tabular-nums text-foreground"
+                      >
+                        {(totals[COL_TO_ROW_FIELD[key] as keyof typeof totals] as number).toLocaleString(
+                          'en-US',
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ) : null}
               </TableBody>
             </Table>
           </Card>
@@ -340,7 +339,7 @@ export default async function AgentActivityPage({
               Closed deals by agent — {dateLabel(datePreset, dateStart, dateEnd)}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Deals in the Closed stage with a close_date in this period.
+              Deals in a closed stage with a close date in this period. Commission = stored deal commission.
             </p>
           </div>
           <Table>
@@ -352,7 +351,7 @@ export default async function AgentActivityPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((row) => (
+              {closedDealRows.map((row) => (
                 <TableRow key={row.brokerSlug} className="hover:bg-muted/40">
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -371,15 +370,25 @@ export default async function AgentActivityPage({
                       <span className="text-sm font-medium text-foreground">{row.brokerName}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right tabular-nums text-muted-foreground">
-                    —
+                  <TableCell
+                    className={cn(
+                      'text-right tabular-nums',
+                      row.closedDeals > 0 ? 'text-foreground' : 'text-muted-foreground',
+                    )}
+                  >
+                    {row.closedDeals.toLocaleString('en-US')}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums text-muted-foreground">
-                    —
+                  <TableCell
+                    className={cn(
+                      'text-right tabular-nums',
+                      row.commission > 0 ? 'text-foreground' : 'text-muted-foreground',
+                    )}
+                  >
+                    ${Math.round(row.commission).toLocaleString('en-US')}
                   </TableCell>
                 </TableRow>
               ))}
-              {rows.length === 0 && (
+              {closedDealRows.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={3}

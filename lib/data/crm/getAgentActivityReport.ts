@@ -1,6 +1,10 @@
 import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { createServiceClient } from '@/lib/data/client'
+import { fetchClosedDealsByBroker } from '@/lib/data/crm/agentActivityClosedDeals'
+import type { ClosedDealsRow } from '@/lib/data/crm/agentActivityClosedDeals'
+
+export type { ClosedDealsRow } from '@/lib/data/crm/agentActivityClosedDeals'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -58,6 +62,8 @@ export type TimeSeriesPoint = {
 
 export type AgentActivityResult = {
   rows: AgentActivityRow[]
+  /** Per-broker closed-deal aggregates for the alternate "Show me" view (sorted by count desc) */
+  closedDeals: ClosedDealsRow[]
   /** Totals for the current period (all scoped brokers combined) */
   totals: AgentActivityTotals
   /** Totals for the immediately preceding period of equal duration (for KPI delta) */
@@ -265,6 +271,7 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
   if (brokerSlugs.length === 0) {
     return {
       rows: [],
+      closedDeals: [],
       totals: { ...EMPTY_TOTALS },
       previousTotals: { ...EMPTY_TOTALS },
       timeSeries: [],
@@ -298,6 +305,7 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
     perBrokerGroup,
     curTsGroup,
     prevTsGroup,
+    closedDeals,
   ] = await Promise.all([
 
     // ── Group A: Previous period totals (7 COUNT queries) ──────────────────
@@ -407,6 +415,17 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
         .in('broker_slug', brokerSlugs).not('person_id', 'is', null)
         .gte('start_at', prevStart).lte('start_at', prevEnd),
     ] as const),
+
+    // ── Group E: Closed deals per broker (for the "closed deals" alternate view) ──
+    fetchClosedDealsByBroker(
+      scopedBrokers.map((b) => ({
+        slug: b.crm_slug,
+        name: b.display_name ?? b.crm_slug,
+        avatarUrl: BROKER_HEADSHOT[b.crm_slug] ?? b.photo_url ?? null,
+      })),
+      start,
+      end,
+    ),
   ])
 
   // 4. Unpack previous-period totals (from count queries — exact values)
@@ -502,6 +521,7 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
 
   return {
     rows,
+    closedDeals,
     totals,
     previousTotals,
     timeSeries,
@@ -527,6 +547,8 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
  *   - crm_timeline (calls/emails/texts/notes, filtered by ts + broker + kind)
  *   - crm_tasks (tasks completed, filtered by completed_at + assigned_broker)
  *   - crm_appointments (appointments, filtered by start_at + broker_slug)
+ *   - crm_deals + crm_deal_stages (closed deals + commission for the alternate
+ *     "Show me → which team member has closed the most deals" view)
  *
  * Count approach (Defect 1 fix — 2026-07-01):
  *   All KPI aggregate totals and per-broker breakdown values use
@@ -549,7 +571,7 @@ export async function getAgentActivityReport(
   const cached = unstable_cache(
     () => readAgentActivity(params),
     [
-      'crm-agent-activity-v4',
+      'crm-agent-activity-v5',
       params.brokerSlug ?? 'all',
       params.datePreset,
       params.dateStart ?? 'none',

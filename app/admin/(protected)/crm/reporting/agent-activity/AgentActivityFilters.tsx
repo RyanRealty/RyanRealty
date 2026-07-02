@@ -18,6 +18,10 @@ interface Props {
   currentView: string
   currentCols?: string
   brokers: Broker[]
+  /** Superusers may change the agent scope; everyone else is locked to "Me" */
+  isSuperuser: boolean
+  /** Display name for the locked "Me" state (non-superusers) */
+  lockedBrokerLabel?: string
 }
 
 export default function AgentActivityFilters({
@@ -26,6 +30,8 @@ export default function AgentActivityFilters({
   currentView,
   currentCols,
   brokers,
+  isSuperuser,
+  lockedBrokerLabel,
 }: Props) {
   const router = useRouter()
   const pathname = usePathname()
@@ -51,7 +57,7 @@ export default function AgentActivityFilters({
 
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-2">
-      {/* Export / download button */}
+      {/* Export / download button (server route re-scopes to the caller's role) */}
       <Button
         variant="outline"
         size="icon"
@@ -64,30 +70,46 @@ export default function AgentActivityFilters({
         </a>
       </Button>
 
-      {/* Agent selector */}
-      <Select value={currentBroker} onValueChange={(v) => navigate({ broker: v })}>
-        <SelectTrigger className="h-8 w-36 text-xs">
-          <SelectValue placeholder="Everyone" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="everyone">Everyone</SelectItem>
-          {brokers.map((b) => (
-            <SelectItem key={b.slug} value={b.slug}>
-              {b.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {/* Agent selector — locked to "Me" for non-superusers (data-layer scoped too) */}
+      {isSuperuser ? (
+        <Select value={currentBroker} onValueChange={(v) => navigate({ broker: v })}>
+          <SelectTrigger className="h-8 w-36 text-xs">
+            <SelectValue placeholder="Everyone" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="everyone">Everyone</SelectItem>
+            {brokers.map((b) => (
+              <SelectItem key={b.slug} value={b.slug}>
+                {b.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : (
+        <Select value="me" disabled>
+          <SelectTrigger className="h-8 w-36 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="me">{lockedBrokerLabel ?? 'Me'}</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
 
-      {/* Lead type (static for V1) */}
-      <Select value="web" onValueChange={() => {}}>
+      {/* Lead type — the CRM has no web-vs-manual lead classification, so only
+          "All leads" is real; the FUB-parity options render disabled (honest UI) */}
+      <Select value="all" onValueChange={() => {}}>
         <SelectTrigger className="h-8 w-32 text-xs">
-          <SelectValue placeholder="Web leads" />
+          <SelectValue placeholder="All leads" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All leads</SelectItem>
-          <SelectItem value="web">Web leads</SelectItem>
-          <SelectItem value="manual">Manual leads</SelectItem>
+          <SelectItem value="web" disabled>
+            Web leads
+          </SelectItem>
+          <SelectItem value="manual" disabled>
+            Manual leads
+          </SelectItem>
         </SelectContent>
       </Select>
 
