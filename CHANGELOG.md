@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.711.0 (2026-07-02)
+
+### Features
+- feat(crm-mobile): §26 mobile inbox + §27 mobile compose — inbox-mobile + mobile-compose done + proven
+
+### Maintenance
+- docs(crm-mobile): inbox-mobile + mobile-compose shipped (02e426f8) — mission PROGRESS + handoff
+
+---
+
+
 ## v1.710.2 (2026-07-02)
 
 ### Maintenance
