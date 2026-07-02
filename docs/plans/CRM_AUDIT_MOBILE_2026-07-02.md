@@ -63,6 +63,9 @@ LIVE data (self-sends only). Companion desktop ledger:
   `400 {"type":"error"… "credit balance is too low… Plans & Billing"` into the
   composer. `aiSmsDraftAction` catch now logs server-side and returns
   "AI drafting is unavailable right now. Write your text below." (verified live).
+  **External blocker RESOLVED 2026-07-02: Matt topped up the API account — the pill
+  now returns a real draft on prod (verified live on contact 13168, 226-char draft
+  rendered into the composer, nothing sent; smart-followups cron unblocked too).**
 - **P1-3 · FAB "Send text"/"Send email" dead-ended on mobile** (FIXED): they
   deep-linked `#comms`, but the mobile Comms tab is a read-only feed — nothing
   to type into. At <md they now use the punch-#4 in-app composer deep links
