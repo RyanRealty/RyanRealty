@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.716.0 (2026-07-02)
+
+### Features
+- feat(crm-mobile): Matt phone-feedback punch list #1-#6 — tab bar everywhere, edit leads, one CRM style, in-app texting, activity tab, dead-link sweep
+
+---
+
+
 ## v1.715.1 (2026-07-02)
 
 ### Maintenance
