@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.706.1 (2026-07-02)
+
+### Maintenance
+- docs(crm): automations-desktop verified + shipped — progress + handoff (next: templates-desktop)
+
+---
+
+
 ## v1.706.0 (2026-07-02)
 
 ### Features
