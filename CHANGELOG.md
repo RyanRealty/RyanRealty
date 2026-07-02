@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.716.3 (2026-07-02)
+
+### Maintenance
+- docs(crm): desktop adversarial audit ledger 2026-07-02 (6 fixed, 3 open P2)
+
+---
+
+
 ## v1.716.2 (2026-07-02)
 
 ### Bug Fixes
