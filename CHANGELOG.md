@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.718.1 (2026-07-02)
+
+### Maintenance
+- docs(crm): email-send audit — FUB/Beacon via Gmail is sending the 'archived' emails, not the CRM
+- docs(crm): log notes-ranking slice in mission PROGRESS + cross-agent handoff
+
+### Other
+- data(crm): strip wrong-household westside parcel data from 67 contacts (Matt-approved)
+
+---
+
+
 ## v1.718.0 (2026-07-02)
 
 ### Features
