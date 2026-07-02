@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.705.1 (2026-07-02)
+
+### Maintenance
+- docs(crm): §10 deals-desktop done + proven — mission PROGRESS + handoff (next: automations-desktop §12)
+
+---
+
+
 ## v1.705.0 (2026-07-02)
 
 ### Features
