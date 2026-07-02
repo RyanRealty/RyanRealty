@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.716.2 (2026-07-02)
+
+### Bug Fixes
+- fix(crm): audit P1s — email-template delete, reporting tab gaps, dead Set-goal 404
+
+---
+
+
 ## v1.716.1 (2026-07-02)
 
 ### Bug Fixes
