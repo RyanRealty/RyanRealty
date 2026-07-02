@@ -44,6 +44,12 @@ const NON_SENDER = new Set([
   // headers would be misleading noise in a preview addressed to the sender.
   // Separated from crm-templates.ts specifically so this exclusion is scoped.
   'app/actions/crm-template-test.ts',
+  // Inbox @mention notification (spec 08 paragraph 10.2): an INTERNAL email to the
+  // mentioned BROKER's own ryan-realty.com mailbox carrying a teammate's note.
+  // No contact/lead recipient, no list targeting — CAN-SPAM footers and
+  // List-Unsubscribe would be misleading on an internal team ping. The page's
+  // client-facing sends still route through the gated sendCrmEmailAction.
+  'app/admin/(protected)/crm/inbox/page.tsx',
 ])
 
 const SEND_CALL = /\bsendEmail\s*\(|\bsendBatchEmails\s*\(|\bsendCrmEmail\s*\(/

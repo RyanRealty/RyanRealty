@@ -22,6 +22,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
+import { isUnknownCaller } from '@/lib/crm/display-name'
 import {
   getContactActivityFeed,
   buildSnippet,
@@ -68,6 +69,30 @@ export function isAssignableBroker(broker: string | null): broker is CrmBrokerSl
  */
 export type InboxScope = 'mine' | 'assigned' | 'drafts' | 'all' | 'unread' | 'closed'
 
+// ── FUB five-folder model (spec §08 §2–§3) ───────────────────────────────────
+//
+// The rebuilt inbox routes on scope (My Inbox vs Company) × folder (the five
+// FUB folders). The legacy InboxScope above stays for the mobile branch + tests.
+
+/** My Inbox (per-user) vs Company (shared, whole working set) — spec §3.2. */
+export type InboxScopeKey = 'me' | 'company'
+
+/** The FUB five folders — spec §3.3. */
+export type InboxFolderKey = 'inbox' | 'assigned' | 'drafts' | 'sent' | 'closed'
+
+export const INBOX_FOLDERS: readonly InboxFolderKey[] = ['inbox', 'assigned', 'drafts', 'sent', 'closed']
+
+/** Channel classes for the thread-list Filter dropdown (spec §4.2). */
+export type InboxChannel = 'email' | 'text' | 'call'
+
+/** Pure: map a crm_timeline message kind to its filter channel. */
+export function channelOfKind(kind: string): InboxChannel | null {
+  if (kind === 'sms_in' || kind === 'sms_out') return 'text'
+  if (kind === 'email_in' || kind === 'email_out' || kind === 'email') return 'email'
+  if (kind === 'call' || kind === 'voicemail') return 'call'
+  return null
+}
+
 /** A single conversation row in the inbox queue. */
 export type InboxConversation = {
   personId: number
@@ -89,19 +114,16 @@ export type InboxConversation = {
   needsReply: boolean
   /** True when the acting broker has a started-but-unsent draft on this conversation. */
   hasDraft: boolean
-};
-
-/** The inbox queue payload: the conversations plus the per-tab counts. */
-export type InboxQueue = {
-  conversations: InboxConversation[]
-  counts: {
-    mine: number
-    assigned: number
-    drafts: number
-    all: number
-    unread: number
-    closed: number
-  }
+  /** Channel classes present in the conversation (drives the Filter dropdown). */
+  channels: InboxChannel[]
+  /** Explicit thread assignment from crm_conversation_state (the Assigned folder). */
+  explicitAssignee: string | null
+  /** Brokers who have sent an outbound message in this conversation (Sent folder). */
+  outboundBrokers: string[]
+  /** True when the contact is still an unidentified inbound caller (Company-only per §3.2). */
+  isUnknown: boolean
+  /** Duration of the latest call/voicemail, when the latest message is one (row label). */
+  lastCallDurationSec: number | null
 };
 
 const MESSAGE_KINDS = ['sms_in', 'sms_out', 'email_in', 'email_out', 'email', 'call', 'voicemail'] as const
@@ -190,6 +212,10 @@ type RawMessageRow = {
   kind: string
   title: string | null
   body: string | null
+  /** Broker stamp on the timeline row (drives the Sent folder). Optional for tests. */
+  broker?: string | null
+  /** Timeline payload (recording duration for call rows). Optional for tests. */
+  payload?: unknown
 }
 
 /**
@@ -204,16 +230,31 @@ export function deriveConversationFromMessages(rows: RawMessageRow[]): {
   lastMessageAt: string | null
   lastInboundAt: string | null
   lastOutboundAt: string | null
+  channels: InboxChannel[]
+  outboundBrokers: string[]
+  lastCallDurationSec: number | null
 } {
   let lastInboundAt: string | null = null
   let lastOutboundAt: string | null = null
+  const channels = new Set<InboxChannel>()
+  const outboundBrokers = new Set<string>()
   // rows arrive newest-first; the first row is the latest message.
   const latest = rows[0] ?? null
   for (const r of rows) {
     if (INBOUND_KINDS.has(r.kind) && (!lastInboundAt || r.ts > lastInboundAt)) lastInboundAt = r.ts
     if (OUTBOUND_KINDS.has(r.kind) && (!lastOutboundAt || r.ts > lastOutboundAt)) lastOutboundAt = r.ts
+    const ch = channelOfKind(r.kind)
+    if (ch) channels.add(ch)
+    if (OUTBOUND_KINDS.has(r.kind) && r.broker) outboundBrokers.add(r.broker)
   }
   const meta = latest ? classifyTimelineKind(latest.kind) : null
+  // Duration label for a call/voicemail latest row (spec §4.1 — e.g. 00:28).
+  let lastCallDurationSec: number | null = null
+  if (latest && (latest.kind === 'call' || latest.kind === 'voicemail')) {
+    const p = (latest.payload ?? {}) as Record<string, unknown>
+    const d = p.recordingDurationSec
+    if (typeof d === 'number' && Number.isFinite(d)) lastCallDurationSec = d
+  }
   return {
     snippet: latest ? buildSnippet({ title: latest.title, body: latest.body }) : null,
     lastKindLabel: meta?.label ?? '',
@@ -221,36 +262,139 @@ export function deriveConversationFromMessages(rows: RawMessageRow[]): {
     lastMessageAt: latest?.ts ?? null,
     lastInboundAt,
     lastOutboundAt,
+    channels: [...channels],
+    outboundBrokers: [...outboundBrokers],
+    lastCallDurationSec,
   }
 }
 
-type QueueParams = {
-  scope: InboxScope
-  /** scopeBroker(access) — null = superuser (all brokers), a slug = that broker only. */
-  brokerScope: string | null
-  /**
-   * The acting user's OWN broker slug (access.brokerSlug). Drives the 'assigned'
-   * folder (assigned_broker = me) and 'drafts' ownership — a superuser still has
-   * a slug here (matt), unlike brokerScope which is null for them.
-   */
-  actingBroker?: string | null
-  limit?: number
-  offset?: number
+/**
+ * Pure: does a conversation belong in the given FUB scope × folder (spec §3)?
+ *
+ *   scope 'me'      the acting broker's own working set (assigned to me).
+ *                   Unknown callers appear in Company only (§3.2). Drafts and
+ *                   Sent key on OWNERSHIP of the draft / outbound message, not
+ *                   contact assignment (a superuser's reply on another broker's
+ *                   contact still lands in their own Sent).
+ *   scope 'company' the whole scoped working set (shared inbox).
+ *
+ *   folder 'inbox'    active (non-closed) conversations
+ *   folder 'assigned' non-closed conversations explicitly routed via
+ *                     crm_conversation_state.assigned_broker
+ *   folder 'drafts'   conversations carrying my started-but-unsent draft
+ *   folder 'sent'     conversations with an outbound message (mine for scope me)
+ *   folder 'closed'   resolved conversations
+ */
+export function matchesFolder(
+  scopeKey: InboxScopeKey,
+  folder: InboxFolderKey,
+  conv: {
+    status: ConversationStatus
+    assignedBroker: string | null
+    explicitAssignee?: string | null
+    hasDraft?: boolean
+    outboundBrokers?: string[]
+    isUnknown?: boolean
+  },
+  brokerScope: string | null,
+  actingBroker?: string | null,
+): boolean {
+  const me = actingBroker ?? brokerScope
+  // Ownership folders — scoped by the draft/message owner, not the contact.
+  if (folder === 'drafts') return conv.hasDraft === true
+  if (folder === 'sent') {
+    const outs = conv.outboundBrokers ?? []
+    if (scopeKey === 'me') return me ? outs.includes(me) : false
+    return outs.length > 0
+  }
+  // Contact-assignment folders.
+  if (scopeKey === 'me') {
+    if (!me) return false
+    if (conv.isUnknown) return false
+    if (conv.assignedBroker !== me) return false
+  }
+  switch (folder) {
+    case 'inbox':
+      return conv.status !== 'closed'
+    case 'assigned': {
+      if (conv.status === 'closed') return false
+      const a = conv.explicitAssignee ?? null
+      if (!a) return false
+      return scopeKey === 'company' ? true : a === me
+    }
+    case 'closed':
+      return conv.status === 'closed'
+    default:
+      return false
+  }
+}
+
+/** Per-folder counts for one inbox scope (the folder-rail badges, spec §3.1). */
+export type InboxFolderCounts = Record<InboxFolderKey, number>
+
+/** The FUB folder-queue payload: conversations + rail counts + global unread. */
+export type InboxFolderQueue = {
+  conversations: InboxConversation[]
+  counts: { me: InboxFolderCounts; company: InboxFolderCounts; unreadTotal: number }
 }
 
 /**
- * getInboxQueue — the triageable conversation queue + per-tab counts.
- *
- * Strategy: pull the most recent message rows (broker-scoped via the joined
- * crm_people.assigned_broker), group by person to one conversation each, overlay
- * the triage state, derive the snippet + needs-reply, then filter to the tab and
- * page. The counts run across the same scoped working set.
+ * getInboxFolderQueue — the FUB scope × folder queue (spec §08 rebuild).
+ * Shares the working-set builder with the legacy tab queue; filters via
+ * matchesFolder, overlays the All/Unread view toggle, and returns the per-folder
+ * counts for BOTH scopes so the folder rail renders every badge live.
  */
-export async function getInboxQueue(params: QueueParams): Promise<InboxQueue> {
-  const { scope, brokerScope } = params
+export async function getInboxFolderQueue(params: {
+  scopeKey: InboxScopeKey
+  folder: InboxFolderKey
+  /** The All/Unread toggle (spec §4.2). */
+  view?: 'all' | 'unread'
+  brokerScope: string | null
+  actingBroker?: string | null
+  limit?: number
+  offset?: number
+}): Promise<InboxFolderQueue> {
+  const { scopeKey, folder, brokerScope } = params
   const actingBroker = params.actingBroker ?? null
+  const view = params.view ?? 'all'
   const limit = Math.min(Math.max(params.limit ?? 50, 1), 200)
   const offset = Math.max(params.offset ?? 0, 0)
+  const all = await buildInboxWorkingSet(brokerScope, actingBroker)
+
+  const countFor = (s: InboxScopeKey): InboxFolderCounts => {
+    const out = { inbox: 0, assigned: 0, drafts: 0, sent: 0, closed: 0 }
+    for (const f of INBOX_FOLDERS) {
+      out[f] = all.filter((c) => matchesFolder(s, f, c, brokerScope, actingBroker)).length
+    }
+    return out
+  }
+  const counts = {
+    me: countFor('me'),
+    company: countFor('company'),
+    // Global "N Unread Messages" header — unread across the whole scoped set.
+    unreadTotal: all.filter((c) => c.status === 'unread').length,
+  }
+
+  const filtered = all
+    .filter((c) => matchesFolder(scopeKey, folder, c, brokerScope, actingBroker))
+    .filter((c) => (view === 'unread' ? c.status === 'unread' : true))
+    .sort((a, b) =>
+      folder === 'sent'
+        ? (b.lastOutboundAt ?? '').localeCompare(a.lastOutboundAt ?? '')
+        : (b.lastMessageAt ?? '').localeCompare(a.lastMessageAt ?? ''),
+    )
+  return { conversations: filtered.slice(offset, offset + limit), counts }
+}
+
+/**
+ * buildInboxWorkingSet — the shared conversation builder both queue readers use.
+ * Pulls the recent message window (broker-scoped), folds to one conversation per
+ * person, overlays triage state + drafts, and derives every per-row field.
+ */
+async function buildInboxWorkingSet(
+  brokerScope: string | null,
+  actingBroker: string | null,
+): Promise<InboxConversation[]> {
   const sb = createServiceClient()
 
   // Pull a generous window of recent messages with the joined contact, scoped to
@@ -258,7 +402,7 @@ export async function getInboxQueue(params: QueueParams): Promise<InboxQueue> {
   // of recent inbound/outbound is small relative to the full timeline.
   let q = sb
     .from('crm_timeline')
-    .select('person_id,ts,kind,title,body,crm_people!inner(name,picture_url,assigned_broker,deleted)')
+    .select('person_id,ts,kind,title,body,broker,payload,crm_people!inner(name,picture_url,assigned_broker,deleted)')
     .in('kind', MESSAGE_KINDS as unknown as string[])
     .order('ts', { ascending: false })
     .limit(2000)
@@ -279,7 +423,15 @@ export async function getInboxQueue(params: QueueParams): Promise<InboxQueue> {
     const p = Array.isArray(raw.crm_people) ? raw.crm_people[0] : raw.crm_people
     if (!p || p.deleted) continue
     const existing = byPerson.get(raw.person_id)
-    const row: RawMessageRow = { person_id: raw.person_id, ts: raw.ts, kind: raw.kind, title: raw.title ?? null, body: raw.body ?? null }
+    const row: RawMessageRow = {
+      person_id: raw.person_id,
+      ts: raw.ts,
+      kind: raw.kind,
+      title: raw.title ?? null,
+      body: raw.body ?? null,
+      broker: raw.broker ?? null,
+      payload: raw.payload ?? null,
+    }
     if (existing) {
       existing.rows.push(row)
     } else {
@@ -297,12 +449,7 @@ export async function getInboxQueue(params: QueueParams): Promise<InboxQueue> {
 
   const timelinePersonIds = [...byPerson.keys()]
   const allPersonIds = Array.from(new Set([...timelinePersonIds, ...draftsByPerson.keys()]))
-  if (allPersonIds.length === 0) {
-    return {
-      conversations: [],
-      counts: { mine: 0, assigned: 0, drafts: 0, all: 0, unread: 0, closed: 0 },
-    }
-  }
+  if (allPersonIds.length === 0) return []
 
   // Overlay the triage state for every conversation in the working set
   // (timeline-derived + draft-only persons).
@@ -356,6 +503,11 @@ export async function getInboxQueue(params: QueueParams): Promise<InboxQueue> {
       lastOutboundAt,
       needsReply: needsReply(status, lastInboundAt, lastOutboundAt),
       hasDraft: draftsByPerson.has(personId),
+      channels: derived.channels,
+      explicitAssignee: state?.assigned_broker ?? null,
+      outboundBrokers: derived.outboundBrokers,
+      isUnknown: isUnknownCaller(person.name),
+      lastCallDurationSec: derived.lastCallDurationSec,
     })
   }
   // 2) draft-only conversations (a draft exists but no message is in the timeline)
@@ -377,26 +529,15 @@ export async function getInboxQueue(params: QueueParams): Promise<InboxQueue> {
       lastOutboundAt: state?.last_outbound_at ?? null,
       needsReply: false,
       hasDraft: true,
+      channels: [],
+      explicitAssignee: state?.assigned_broker ?? null,
+      outboundBrokers: [],
+      isUnknown: isUnknownCaller(person.name),
+      lastCallDurationSec: null,
     })
   }
 
-  // Per-folder counts across the full scoped working set.
-  const counts = {
-    mine: all.filter((c) => matchesScope('mine', c, brokerScope, actingBroker)).length,
-    assigned: all.filter((c) => matchesScope('assigned', c, brokerScope, actingBroker)).length,
-    drafts: all.filter((c) => matchesScope('drafts', c, brokerScope, actingBroker)).length,
-    all: all.filter((c) => matchesScope('all', c, brokerScope, actingBroker)).length,
-    unread: all.filter((c) => matchesScope('unread', c, brokerScope, actingBroker)).length,
-    closed: all.filter((c) => matchesScope('closed', c, brokerScope, actingBroker)).length,
-  }
-
-  // Filter to the requested folder, sort newest message first, then page.
-  const filtered = all
-    .filter((c) => matchesScope(scope, c, brokerScope, actingBroker))
-    .sort((a, b) => (b.lastMessageAt ?? '').localeCompare(a.lastMessageAt ?? ''))
-  const conversations = filtered.slice(offset, offset + limit)
-
-  return { conversations, counts }
+  return all
 }
 
 /**

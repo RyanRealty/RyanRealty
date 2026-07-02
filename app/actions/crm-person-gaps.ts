@@ -158,6 +158,39 @@ export async function searchPeopleForMergeAction(
   })
 }
 
+/**
+ * Inbox unknown-caller "or update an existing person" (spec §08 §9.2, AC-19):
+ * merge the placeholder unknown-caller record INTO an existing contact. The
+ * existing contact survives; the placeholder's timeline (the calls/texts that
+ * created the thread) moves onto it; the placeholder is soft-deleted. Returns a
+ * result instead of redirecting so the inline inbox panel can refresh in place.
+ */
+export async function linkUnknownCallerToPersonAction(
+  existingPersonId: number,
+  placeholderPersonId: number,
+): Promise<CrmPersonGapResult> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
+  const survivorId = Number(existingPersonId)
+  const mergedId = Number(placeholderPersonId)
+  if (!Number.isFinite(survivorId) || survivorId <= 0 || !Number.isFinite(mergedId) || mergedId <= 0) {
+    return { ok: false, error: 'Both contacts are required' }
+  }
+  if (survivorId === mergedId) return { ok: false, error: 'Cannot link a contact to itself' }
+
+  const sb = createServiceClient()
+  const [{ data: survivor }, { data: merged }] = await Promise.all([
+    sb.from('crm_people').select('id, name').eq('id', survivorId).eq('deleted', false).maybeSingle(),
+    sb.from('crm_people').select('id, name').eq('id', mergedId).eq('deleted', false).maybeSingle(),
+  ])
+  if (!survivor) return { ok: false, error: 'Existing contact not found' }
+  if (!merged) return { ok: false, error: 'Caller record not found or already merged' }
+
+  const mergedName = (merged as { name?: string | null }).name ?? `Contact #${mergedId}`
+  await mergePairInternal(sb, access, survivorId, mergedId, mergedName)
+  return { ok: true }
+}
+
 // ---- Merge: execute ---------------------------------------------------------
 
 /**

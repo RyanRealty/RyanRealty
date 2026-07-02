@@ -331,3 +331,9 @@ components/admin/crm/people-list/FilterPanel.tsx
 components/admin/crm/people-list/ColumnChooser.tsx
 components/admin/crm/people-list/ExportPeopleDialog.tsx
 components/admin/crm/people-list/ScopeDropdown.tsx
+
+# §08 Inbox rebuild (inbox-desktop, ci:crm-screen-parity, 2026-07-01): the FUB
+# three-panel workspace is a viewport-bounded pane (h-[calc(100vh-...)]) so the
+# folder rail / thread list / reading pane scroll INDEPENDENTLY — no ladder
+# equivalent. Same exception class as the §05/§07 rebuild surfaces above.
+app/admin/(protected)/crm/inbox/page.tsx

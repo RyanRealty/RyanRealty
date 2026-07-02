@@ -68,6 +68,10 @@
     "lib/tc/signing-emails.ts:77": {
       "kind": "internal",
       "reason": "1:1 transactional: completed-and-signed copy (sealed PDF + certificate) to a transaction party for one specific envelope. CAN-SPAM transactional-message exemption. Not a marketing send."
+    },
+    "app/admin/(protected)/crm/inbox/page.tsx:336": {
+      "kind": "internal",
+      "reason": "Internal: inbox note @mention notification to the mentioned BROKER's own ryan-realty.com mailbox (spec 08 paragraph 10.2). Never to a lead \u2014 the CRM_MAILBOXES lookup only resolves broker addresses. Client-facing sends on this page route through the gated sendCrmEmailAction. Permanently allowlisted."
     }
   }
 }

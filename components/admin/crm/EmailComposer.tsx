@@ -14,10 +14,17 @@
  * email_events row. This is what enables per-template open/click reporting.
  */
 import { useMemo, useRef, useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { buildEmailPreviewDoc } from '@/lib/crm/email-body'
 import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { MergeFieldPicker, insertAtCursor } from '@/components/admin/crm/MergeFieldPicker'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -28,6 +35,8 @@ export function EmailComposer(props: {
   sendAction: (formData: FormData) => Promise<void>
   /** Optional: persist the current subject + body as an unsent Inbox draft (formAction override). */
   saveDraftAction?: (formData: FormData) => Promise<void>
+  /** Optional: Send ▾ → "Send and Close" compound action (inbox AC-16). */
+  sendAndCloseAction?: (formData: FormData) => Promise<void>
   /** Template key that was loaded — stamped on email_events for per-template reporting. */
   tplKey?: string | null
   /** Recipient shown in the FUB-style "To" row (the lead's name + email). */
@@ -36,6 +45,7 @@ export function EmailComposer(props: {
   const [subject, setSubject] = useState(props.initialSubject)
   const [body, setBody] = useState(props.initialBody)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
+  const sendCloseRef = useRef<HTMLButtonElement>(null)
   const [tab, setTab] = useState<'preview' | 'edit'>(props.initialBody ? 'preview' : 'edit')
 
   const previewDoc = useMemo(
@@ -113,7 +123,29 @@ export function EmailComposer(props: {
               Save draft
             </Button>
           ) : null}
-          <Button type="submit" size="sm">Send email</Button>
+          <div className="flex items-center">
+            <Button type="submit" size="sm" className={props.sendAndCloseAction ? 'rounded-r-none' : undefined}>
+              Send email
+            </Button>
+            {props.sendAndCloseAction ? (
+              <>
+                {/* Hidden submit carries the compound formAction; the menu clicks it. */}
+                <button type="submit" formAction={props.sendAndCloseAction} ref={sendCloseRef} className="hidden" aria-hidden tabIndex={-1} />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button type="button" size="sm" className="rounded-l-none border-l border-primary-foreground/20 px-1.5" aria-label="More send options">
+                      <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => sendCloseRef.current?.click()}>
+                      Send and Close
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : null}
+          </div>
         </div>
       </div>
     </form>

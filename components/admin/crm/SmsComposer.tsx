@@ -33,6 +33,8 @@ export function SmsComposer(props: {
   sendAction: (formData: FormData) => Promise<void>
   /** Optional: persist the current body as an unsent Inbox draft (formAction override). */
   saveDraftAction?: (formData: FormData) => Promise<void>
+  /** Optional: "Send & Close" compound action (inbox AC-16). */
+  sendAndCloseAction?: (formData: FormData) => Promise<void>
   /** The lead + linked people (spouse, …) the broker can add to a group text. */
   recipients?: SmsRecipient[]
   primaryPersonId?: number
@@ -158,6 +160,18 @@ export function SmsComposer(props: {
               className="h-7 px-2 text-xs"
             >
               Save draft
+            </Button>
+          ) : null}
+          {props.sendAndCloseAction ? (
+            <Button
+              type="submit"
+              formAction={props.sendAndCloseAction}
+              variant="ghost"
+              size="sm"
+              disabled={!body.trim()}
+              className="h-7 px-2 text-xs"
+            >
+              Send &amp; Close
             </Button>
           ) : null}
           {body.trim() ? (

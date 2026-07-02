@@ -27,10 +27,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import { formatDateTime } from '@/lib/format/date'
 import { CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
-import type { InboxConversation, ConversationStatus, InboxScope } from '@/lib/data/crm/getInboxQueue'
+import type { InboxConversation, ConversationStatus } from '@/lib/data/crm/getInboxQueue'
 import { CrmList, CrmListRow } from '@/components/admin/crm/mobile/CrmMobileKit'
-
-type ActionResult = { ok: true } | { ok: false; error: string }
 
 const STATUS_LABEL: Record<ConversationStatus, string> = {
   unread: 'Unread',
@@ -54,12 +52,13 @@ function brokerLabel(slug: string | null): string {
 export default function InboxQueue({
   conversations,
   activePersonId,
-  scope,
+  hrefBase,
   bulkAction,
 }: {
   conversations: InboxConversation[]
   activePersonId: number | null
-  scope: InboxScope
+  /** Query-string base the row links append &c=<personId> to. */
+  hrefBase: string
   bulkAction: (personIds: number[], status: ConversationStatus) => Promise<{ ok: boolean; error?: string }>
 }) {
   const router = useRouter()
@@ -164,7 +163,7 @@ export default function InboxQueue({
                 className={cn(isActive && 'bg-accent/40')}
               >
                 <CrmListRow
-                  href={`/admin/crm/inbox?scope=${scope}&c=${c.personId}`}
+                  href={`${hrefBase}&c=${c.personId}`}
                   name={name}
                   title={
                     <span className={cn(isUnread && 'font-bold')}>{name}</span>
@@ -197,7 +196,7 @@ export default function InboxQueue({
                       aria-label={`Select ${c.name ?? 'contact'}`}
                     />
                   </div>
-                  <Link href={`/admin/crm/inbox?scope=${scope}&c=${c.personId}`} className="min-w-0 flex-1 text-left">
+                  <Link href={`${hrefBase}&c=${c.personId}`} className="min-w-0 flex-1 text-left">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="truncate text-sm font-semibold text-foreground">
                         {cleanContactName(c.name, c.personId)}
