@@ -57,6 +57,11 @@ const NON_SENDER = new Set([
   // list targeting. CAN-SPAM List-Unsubscribe on a personal meeting invite
   // would be misleading noise (same class as the 1:1 composer send).
   'app/actions/appointments.ts',
+  // Inbound group-text broker alert: an INTERNAL notification from the broker's
+  // own mailbox TO that same mailbox ("new group text from X"), mirroring the
+  // baselined inbound-sms webhook alert. No contact/lead recipient, no list
+  // targeting — CAN-SPAM footers would be misleading on a self-addressed ping.
+  'app/api/twilio/conversations-events/route.ts',
 ])
 
 const SEND_CALL = /\bsendEmail\s*\(|\bsendBatchEmails\s*\(|\bsendCrmEmail\s*\(/

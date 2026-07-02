@@ -890,10 +890,12 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   let sentCount = 0
   let lastError: string | null = null
 
-  // Native group MMS: 2+ recipients → ONE shared group thread (everyone sees
-  // everyone) via Twilio Conversations. Falls through to the per-recipient
-  // broadcast below if the group can't be formed (a member out of scope /
-  // suppressed / no phone, no broker proxy number, or Twilio rejects a binding).
+  // Native group MMS: 2+ recipients → ONE real carrier group thread (everyone
+  // sees everyone's number and messages) via Twilio Conversations, with the
+  // broker's line projected into the group. Replies are recorded by the
+  // Conversations webhook (app/api/twilio/conversations-events). Falls through
+  // to the per-recipient broadcast below if the group can't be formed (a member
+  // out of scope / suppressed / no phone, no broker line, or Twilio rejects).
   if (recipientIds.length >= 2) {
     const primaryTarget = await getSendTarget(personId)
     const slug = access.access.brokerSlug ?? (primaryTarget?.person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
@@ -916,7 +918,7 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
         const mergedBody = attributeSiteLinks(renderCrmMerge(body, primaryTarget.person, groupCtx), slug, primaryTarget.person.fub_legacy_id as number | null)
         const { sendGroupMms } = await import('@/lib/crm/twilio-conversations')
         const group = await sendGroupMms({
-          proxy,
+          projectedAddress: proxy,
           participants: members.map((m) => m.phone),
           body: mergedBody,
           friendlyName: `Group · ${primaryTarget.person.name ?? personId}`,

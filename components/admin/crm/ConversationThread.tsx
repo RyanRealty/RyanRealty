@@ -26,7 +26,8 @@ function recordingSidOf(payload: ConversationEvent['payload']): string | null {
 function mediaOf(payload: ConversationEvent['payload']): Array<{ messageSid: string; mediaSid: string; contentType: string }> {
   if (!payload) return []
   const sid = typeof payload.sid === 'string' ? payload.sid : typeof payload.messageSid === 'string' ? payload.messageSid : ''
-  if (!/^(MM|SM)[a-f0-9]{32}$/.test(sid)) return []
+  // MM/SM = classic MMS; IM = Conversations group-text media (same proxy route).
+  if (!/^(MM|SM|IM)[a-f0-9]{32}$/.test(sid)) return []
   const arr = Array.isArray(payload.media) ? payload.media : []
   return arr.flatMap((m) => {
     const mm = m as { mediaSid?: unknown; contentType?: unknown }
