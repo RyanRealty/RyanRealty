@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.717.5 (2026-07-02)
+
+### Maintenance
+- docs(crm): westside-import data-quality sweep — 995 flags, 114 Hoffman-pattern, DIAL-verified
+
+---
+
+
 ## v1.717.4 (2026-07-02)
 
 ### Maintenance
