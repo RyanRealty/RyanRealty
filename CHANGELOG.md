@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.717.0 (2026-07-02)
+
+### Features
+- feat(crm): Yahson split + FUB group-text backfill + webhook regression locks
+
+---
+
+
 ## v1.716.12 (2026-07-02)
 
 ### Maintenance
