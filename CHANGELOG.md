@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.713.0 (2026-07-02)
+
+### Features
+- feat(crm-mobile): §28 mobile pickers — mobile-pickers done + proven
+
+---
+
+
 ## v1.712.0 (2026-07-02)
 
 ### Features
