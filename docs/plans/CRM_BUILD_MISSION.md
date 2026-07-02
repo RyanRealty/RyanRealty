@@ -514,6 +514,56 @@ re-runs the E2E checks and states the sign-off inventory to Matt.
 
 ## PROGRESS (agents append here as slices ship)
 
+### NAME-CORRUPTION REPAIR: HOFFMANS + OLIVIERIS + ROOT CAUSE + VICTIM SWEEP ✅ (2026-07-02)
+Matt: "christopher hoffman and maria hoffmans names got changed to kevin hoffman… lets clean these
+up" + "there were other instances like this with steve and lanny olivieri."
+**ROOT CAUSE — two vectors, NEITHER is current CRM code (no code fix; no regression path):**
+1. **FUB-era duplicate merges** (batches 2025-11-12, 2025-12-07 + one-offs, all pre-dating our CRM):
+   FUB's suggested-duplicate merge collapsed one spouse's record into the other's, destroying the
+   merged person's identity. **18 merge notes found** (`crm_timeline` "were merged into this
+   person"), including the retroactive explanation for Yahson ("Yahson Terry merged into Mary
+   Bowman" 2026-01-17) and "Steven Olivier merged into Lanny Olivier" 2026-02-11.
+2. **The 2026-05-27 westside FUB CSV import** (Admin > Import, dedupe on email OR phone+name)
+   OVERWROTE names on matched pre-existing contacts with county deed-owner First/Last — the
+   build script's header wrongly assumed FUB "merges without overwriting existing data". "Kevin
+   Hoffman" is the Star Ridge Ct deed-owner name stamped over the couple's sign-call record
+   (FUB person updated exactly 2026-05-27; tags import:westside-2026-05 + source:county-assessor).
+   **2,880 pre-existing contacts were update-matched by that import** = the at-risk population.
+   NOTE: the FUB API/export reference is POST-corruption, so a name diff vs FUB cannot detect
+   victims — detectors are merge notes (high confidence, complete: 18) + email-vs-name mismatch
+   heuristic (861 low-confidence hits, noise-heavy) + duplicate-name group threads.
+**REPAIRS (evidence-based, all `-- audit:`-tagged, verified live on prod pages + webhook test):**
+- **Hoffmans:** 13014 "Kevin Hoffman" → **Maria Hoffman** (sign-call "Maria called" note, her
+  mariahoffman1@aol.com, voicemail greeting "Hi this is Maria" on the 2245 line). NEW
+  **Christopher Hoffman #52284**: (619) 890-6959 (group-thread second number) + cch1225@aol.com
+  (his reply address in the email history) + his 57 texts moved + **277 group-thread mirrors**
+  (334-msg thread complete on both). Spouse links both ways — FUB's own relationship row had
+  already named spouse "Christopher Hoffman" (independent confirmation). Superseded name-only
+  relationship row deleted.
+- **Olivieris:** 5694 "Lanny Olivier" → **Steve Olivieri** (absorbed the real "Steven Olivier"
+  in the 2026-02-11 FUB merge; "Steve and Lanny" FSBO email 2024). Phone corrected to (541)
+  968-5228 (the couple's group-thread third number); (541) 968-5110 is Lanny's per Matt's own
+  sphere record #9253 — the 9-row 5110 thread moved to Lanny + mirrored to Steve (silent group
+  member). Spouse links; superseded "Steven Olivier" name-only relationship row deleted.
+- Backfill script hardened: `--include-fub <id>` flag (a split can move ALL of a person's rows
+  away, dropping them from the row-derived scan population).
+**Live attribution proof (net-zero):** signed webhook as +16198906959 → rows landed on
+Christopher 52284 (author) + Maria 13014 (fan-out), no placeholder; test rows + conversation
+deleted. All four pages verified on prod (names/phones/emails/Spouse chips).
+**OPEN — decision list for Matt (do NOT auto-repair; identity calls):**
+1. The 15 other FUB merge-victims (couples collapsed; merged names preserved in the notes):
+   Doug←Charise Millard · Ryan Westendorf←Tess McFeley · Dave←Martha Detweiler · Matt←Abby
+   Hogge · Gary←Brenda Timms · Tom←Gail Newton · Helen←Edward Fess · Kim Anderson←Brian Smith ·
+   Scott←Susan Reese · Jessica King←Evan Karp · Jim←Debra Creekmore · Paul←Samuel Robinson ·
+   Kelly Plunkett←Devin Pohl · Nick←Becky Crawley (+ Elsa Uchikawa←self, true dupe, no action).
+   Each is splittable on request with the same discipline (phones/emails per FUB feed evidence).
+2. photo@eugenemagazine.com left on Steve #5694 — ownership (Steve vs Lanny) unconfirmed.
+3. +15039709123 texted twice into the Hoffman history — unknown third number, left on Maria.
+4. Maria's record carries the westside parcel data (20223 Star Ridge Ct + equity/tenure tags)
+   stamped by the import — correct only if the Hoffmans really own that parcel (deed name
+   "Kevin Hoffman" may be Chris's legal first name, or a different Kevin whose skip-trace
+   pulled Maria's contact info). Matt to confirm; tags/custom fields can be stripped if wrong.
+
 ### YAHSON SPLIT + FUB GROUP-TEXT BACKFILL ✅ (2026-07-02) — "yahson is 909" executed; all FUB-era group texts merged to the right people
 Follow-on to the group-SMS slice below, per Matt's confirmations ("yahson is 909"; "merge all of
 the past group texts from FUB with the appropriate people"; Yahson is Mary's SON-IN-LAW):

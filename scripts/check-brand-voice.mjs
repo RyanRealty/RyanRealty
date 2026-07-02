@@ -175,9 +175,7 @@ const IMPORT_PATH_LINE = /(^|\s)(from|import\s*\(|require\s*\()\s*['"`]/
 // Files whose PURPOSE is voice enforcement embed the banned-word lexicon
 // itself (regexes, LLM prompt rules listing the banned words). Every hit in
 // them is a meta-reference, not prose — skip the whole file.
-const LEXICON_FILES = new Set([
-  'app/api/cron/crm-smart-followups/route.ts',
-])
+const LEXICON_FILES = new Set([])
 
 const MECHANICAL_LITERALS = new Set([
   'force-dynamic',

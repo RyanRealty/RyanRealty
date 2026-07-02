@@ -8,7 +8,6 @@
   "app/api/cma/[slug]/email/route.ts",
   "app/api/cma/[slug]/gmail-draft/route.ts",
   "app/api/cron/crm-sequence-engine/route.ts",
-  "app/api/cron/crm-smart-followups/route.ts",
   "app/api/cron/daily-broker-digest/route.ts",
   "app/api/cron/marketing-optimization-report/route.ts",
   "app/api/cron/weekly-pipeline-digest/route.ts",

@@ -28,6 +28,10 @@
  *   node scripts/crm-backfill-fub-group-texts.mjs                 # dry-run, whole book
  *   node scripts/crm-backfill-fub-group-texts.mjs --person 21728  # one FUB person
  *   node scripts/crm-backfill-fub-group-texts.mjs --apply         # write rows
+ *   --include-fub <id>   force-scan a FUB person even when their crm contact has
+ *                        no local fub-import sms rows (e.g. after a contact split
+ *                        moved every row away — the scan population derives from
+ *                        local rows, so such people otherwise drop out)
  */
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
@@ -106,8 +110,16 @@ for (let i = 0; i < personIds.length; i += 200) {
   if (error) throw new Error(error.message)
   people.push(...(data ?? []))
 }
-const targets = ONLY_FUB_ID ? people.filter((p) => p.fub_legacy_id === ONLY_FUB_ID) : people
-console.log(`People with FUB sms history: ${people.length}${ONLY_FUB_ID ? ` (limited to fub:${ONLY_FUB_ID} → ${targets.length})` : ''}`)
+const includeArg = process.argv.indexOf('--include-fub')
+const INCLUDE_FUB_ID = includeArg > -1 ? Number(process.argv[includeArg + 1]) : null
+if (INCLUDE_FUB_ID && !people.some((p) => p.fub_legacy_id === INCLUDE_FUB_ID)) {
+  const { data } = await sb.from('crm_people').select('id,name,fub_legacy_id').eq('fub_legacy_id', INCLUDE_FUB_ID).maybeSingle()
+  if (data) people.push(data)
+}
+const targets = ONLY_FUB_ID ? people.filter((p) => p.fub_legacy_id === ONLY_FUB_ID)
+  : INCLUDE_FUB_ID ? people.filter((p) => p.fub_legacy_id === INCLUDE_FUB_ID)
+  : people
+console.log(`People with FUB sms history: ${people.length}${ONLY_FUB_ID || INCLUDE_FUB_ID ? ` (limited to fub:${ONLY_FUB_ID ?? INCLUDE_FUB_ID} → ${targets.length})` : ''}`)
 
 // person -> Set(existing dedupe suffix keys) is checked per-insert via upsert
 // ignoreDuplicates + a pre-check against fub:text keys.

@@ -41,12 +41,6 @@ import {
   type FubEventPerson,
 } from '@/lib/followupboss'
 
-/**
- * FUB Action Plan id for the FSBO Recovery (auto) plan. Auto-enrolled
- * after person creation so the 7-touch cadence starts immediately and
- * Matt does not have to click "Apply Action Plan" by hand.
- */
-const FSBO_RECOVERY_PLAN_ID = 72
 import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
 import { lookupOwnerForExpiredListing } from '@/lib/expired-owner-lookup'
 import { sendFsboAlertEmail } from '@/lib/fsbo-alert'

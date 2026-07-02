@@ -1,7 +1,7 @@
 /**
  * Visitor hot-lead escalation cron.
  *
- * Runs every 5 minutes. Finds visitor_sessions whose engagement_score has
+ * Runs every 15 minutes. Finds visitor_sessions whose engagement_score has
  * crossed the hot threshold (default 100) and hot_lead_fired_at is still
  * NULL. For each match:
  *
@@ -20,7 +20,7 @@
  * deploy (set VISITOR_HOT_LEAD_THRESHOLD in Vercel env).
  *
  * Auth: Authorization: Bearer $CRON_SECRET
- * Cadence: every 5 min (cron expression registered in vercel.json)
+ * Cadence: every 15 min (cron expression registered in vercel.json)
  *
  * Data: public.visitor_sessions + public.visitor_events. Scoring lives in
  * the DB trigger so this cron only reads, never recomputes.
