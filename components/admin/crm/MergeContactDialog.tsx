@@ -89,7 +89,7 @@ export function MergeContactDialog({ survivorId, trigger }: { survivorId: number
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent aria-describedby={undefined} className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Merge existing person</DialogTitle>
         </DialogHeader>

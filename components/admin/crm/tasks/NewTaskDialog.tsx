@@ -136,7 +136,7 @@ export default function NewTaskDialog({
           New task
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent aria-describedby={undefined} className="max-w-md">
         <DialogHeader>
           <DialogTitle>New task</DialogTitle>
         </DialogHeader>

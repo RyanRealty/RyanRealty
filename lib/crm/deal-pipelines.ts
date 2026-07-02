@@ -47,8 +47,11 @@ export const DEAL_PIPELINES: readonly DealPipeline[] = [
   {
     id: 1,
     name: 'Buyers',
+    // "Start (temp stage)" (id 47) — FUB's auto-created never-renamed
+    // placeholder — was deleted from crm_deal_stages 2026-07-02 (mobile audit
+    // P2-9 hygiene; 0 deals ever referenced it). Kept out of this fallback so
+    // an empty-table fallback can't resurrect it.
     stages: [
-      { id: 47, name: 'Start (temp stage)', color: '#F3B942', closedStage: false },
       { id: 19, name: 'Buyer Contract', color: '#ffad81', closedStage: false },
       { id: 21, name: 'Offer', color: '#819cff', closedStage: false },
       { id: 23, name: 'Pending', color: '#ffcc44', closedStage: false },
@@ -59,8 +62,8 @@ export const DEAL_PIPELINES: readonly DealPipeline[] = [
   {
     id: 2,
     name: 'Sellers',
+    // "Start (temp stage)" (id 48) removed 2026-07-02 — see the Buyers note.
     stages: [
-      { id: 48, name: 'Start (temp stage)', color: '#F3B942', closedStage: false },
       { id: 49, name: 'Pre-Listing', color: '#819cff', closedStage: false },
       { id: 20, name: 'Listed', color: '#ffad81', closedStage: false },
       { id: 22, name: 'Offer', color: '#819cff', closedStage: false },

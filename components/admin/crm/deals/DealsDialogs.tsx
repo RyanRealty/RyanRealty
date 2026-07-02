@@ -209,7 +209,7 @@ export function AddDealDialog({
         }
       }}
     >
-      <DialogContent className="sm:max-w-md">
+      <DialogContent aria-describedby={undefined} className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add deal{stage ? ` · ${stage.name}` : ''}</DialogTitle>
         </DialogHeader>
@@ -358,7 +358,7 @@ export function AddStageDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent aria-describedby={undefined} className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Add a stage · {pipeline.name}</DialogTitle>
         </DialogHeader>
@@ -439,7 +439,7 @@ export function StageEditDialog({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent aria-describedby={undefined} className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Edit stage · {stage.name}</DialogTitle>
         </DialogHeader>

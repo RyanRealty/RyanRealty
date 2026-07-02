@@ -211,7 +211,7 @@ function CollaboratorsDialog({
       <DialogTrigger asChild>
         <AddButton aria-label="Add collaborator" />
       </DialogTrigger>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent aria-describedby={undefined} className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Collaborators</DialogTitle>
         </DialogHeader>
@@ -354,7 +354,7 @@ function FilesSection({ personId, files }: { personId: number; files: PersonFile
       </div>
 
       <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent aria-describedby={undefined} className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Add Link</DialogTitle>
           </DialogHeader>

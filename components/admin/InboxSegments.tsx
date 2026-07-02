@@ -111,7 +111,7 @@ export default function InboxSegments({
 
       {/* Filter bottom-sheet — type filter (Emails / Texts / Calls) */}
       <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl px-4 pb-6 pt-4">
+        <SheetContent aria-describedby={undefined} side="bottom" className="rounded-t-2xl px-4 pb-6 pt-4">
           <SheetTitle className="text-base">Filter</SheetTitle>
           <div className="mt-3 space-y-1">
             <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Types</div>

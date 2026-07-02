@@ -54,7 +54,7 @@ import { getSendTarget } from '@/lib/data/crm/getSendTarget'
 import { isUnknownCaller, cleanContactName } from '@/lib/crm/display-name'
 import { createServiceClient } from '@/lib/supabase/service'
 import { CRM_MAILBOXES } from '@/lib/crm/gmail'
-import { CRM_BROKERS, CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
+import { CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
 import { sendEmail } from '@/lib/resend'
 import { formatDateTime } from '@/lib/format/date'
@@ -80,22 +80,10 @@ import {
   pickMobileMode,
   splitComposeTemplates,
 } from '@/components/admin/crm/inbox/mobile/mobile-data'
-import {
-  inboxHref,
-  isScopeKey,
-  isFolderKey,
-  mapLegacyScope,
-  relativeLabel,
-  FOLDER_TITLES,
-} from '@/components/admin/crm/inbox/inbox-url'
+import { inboxHref, isScopeKey, isFolderKey, mapLegacyScope, relativeLabel, FOLDER_TITLES, BROKER_OPTIONS } from '@/components/admin/crm/inbox/inbox-url'
 
 export const metadata = { title: 'Inbox | CRM | Admin' }
 export const dynamic = 'force-dynamic'
-
-const BROKER_OPTIONS = CRM_BROKERS.map((slug) => ({
-  slug,
-  name: CRM_BROKER_DISPLAY[slug as CrmBrokerSlug] ?? slug,
-}))
 
 export default async function CrmInboxPage({
   searchParams,

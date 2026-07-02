@@ -112,7 +112,7 @@ function NewEnvelopeDialog({ cycle }: { cycle: DealEnvelopesCycle }) {
           New envelope
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>New envelope · {cycle.label}</DialogTitle>
         </DialogHeader>

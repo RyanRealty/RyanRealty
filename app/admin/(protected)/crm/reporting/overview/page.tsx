@@ -12,29 +12,15 @@ import {
   type ReportHubCard,
 } from '@/lib/crm/reporting-constants'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
 import { OverviewKpiStrip } from './OverviewKpiStrip'
 import CallsFilters from '../calls/CallsFilters'
+import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
 
 export const metadata = { title: 'Overview | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
 
 // ── Sub-nav tabs (Overview active at this route) ───────────────────────────────
 
-const REPORTING_TABS = [
-  { label: 'Overview',       href: '/admin/crm/reporting/overview', active: true },
-  { label: 'Agent Activity', href: '/admin/crm/reporting/agent-activity', active: false },
-  { label: 'Properties',     href: '/admin/crm/reporting/properties', active: false },
-  { label: 'Lead Sources',   href: '/admin/crm/reporting/lead-sources', active: false },
-  { label: 'Calls',          href: '/admin/crm/reporting/calls', active: false },
-  { label: 'Texts',          href: '/admin/crm/reporting/texts', active: false },
-  { label: 'Batch Emails',   href: '/admin/crm/reporting/batch-emails', active: false },
-  { label: 'Marketing',      href: '/admin/crm/reporting/marketing', active: false },
-  { label: 'Deals',          href: '/admin/crm/reporting/deals', active: false },
-  { label: 'Appointments',   href: '/admin/crm/reporting/appointments', active: false },
-  { label: 'Agent Goals',    href: '/admin/crm/reporting/agent-goals', active: false },
-]
 
 // ── Report card item (same design as the hub page) ────────────────────────────
 
@@ -116,30 +102,7 @@ export default async function CrmOverviewReportPage({
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-      {/* Sub-nav tab strip */}
-      <div className="mb-6 flex items-center border-b border-border">
-        <div className="no-scrollbar flex items-center gap-0 overflow-x-auto">
-          {REPORTING_TABS.map((tab) => (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={cn(
-                'shrink-0 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors',
-                tab.active
-                  ? 'border-primary text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {tab.label}
-            </Link>
-          ))}
-        </div>
-        <div className="ml-auto shrink-0 pb-0.5 pl-4">
-          <Badge variant="outline" className="text-muted-foreground">
-            ⓘ How Reporting works
-          </Badge>
-        </div>
-      </div>
+      <ReportingTabStrip active="overview" />
 
       {/* Header row + filter bar */}
       <div className="mb-2 flex flex-wrap items-start justify-between gap-4">

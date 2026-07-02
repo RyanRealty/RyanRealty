@@ -3,25 +3,11 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
 
 export const metadata = { title: 'Reporting | CRM' }
 export const dynamic = 'force-dynamic'
 
-// --- Sub-nav tab strip ---
-const REPORTING_TABS = [
-  { label: 'Overview', href: '/admin/crm/reporting' },
-  { label: 'Agent Activity', href: '/admin/crm/reporting/agent-activity' },
-  { label: 'Properties', href: '/admin/crm/reporting/properties' },
-  { label: 'Lead Sources', href: '/admin/crm/reporting/lead-sources' },
-  { label: 'Calls', href: '/admin/crm/reporting/calls' },
-  { label: 'Texts', href: '/admin/crm/reporting/texts' },
-  { label: 'Batch Emails', href: '/admin/crm/reporting/batch-emails' },
-  { label: 'Marketing', href: '/admin/crm/reporting/marketing' },
-  { label: 'Deals', href: '/admin/crm/reporting/deals' },
-  { label: 'Appointments', href: '/admin/crm/reporting/appointments' },
-  { label: 'Agent Goals', href: '/admin/crm/reporting/agent-goals' },
-]
 
 // --- Report card data (14 reports in 3 sections) ---
 const AGENT_REPORTS = [
@@ -82,26 +68,12 @@ export default async function CrmReportingPage() {
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
       {/* Page title */}
       <div className="mb-6 flex items-center justify-between gap-3">
-        <h1 className="text-xl font-bold text-foreground">Reporting</h1>
+        {/* P2-7 (desktop audit): 24px at md+ — the CRM page-title idiom
+            (matches Tasks/Automations/Templates/Company). */}
+        <h1 className="text-xl font-semibold text-foreground md:text-2xl">Reporting</h1>
       </div>
 
-      {/* Sub-nav tab strip */}
-      <div className="mb-6 flex items-center gap-0 overflow-x-auto no-scrollbar border-b border-border">
-        {REPORTING_TABS.map((tab) => (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            className="shrink-0 border-b-2 border-primary px-3 py-2.5 text-sm font-medium text-foreground"
-          >
-            {tab.label}
-          </Link>
-        ))}
-        <div className="ml-auto shrink-0 pb-0.5">
-          <Badge variant="outline" className="text-muted-foreground">
-            ⓘ How Reporting works
-          </Badge>
-        </div>
-      </div>
+      <ReportingTabStrip active={null} />
 
       {/* Section: Agents */}
       <section className="mb-8">

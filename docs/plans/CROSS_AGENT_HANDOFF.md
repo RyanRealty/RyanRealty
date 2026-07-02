@@ -2,6 +2,26 @@
 
 # CROSS-AGENT HANDOFF — CRM GROUND-UP REBUILD, screen-by-screen under ci:crm-screen-parity (2026-07-01)
 
+## FINDINGS-CLOSURE SLICE LANDED (2026-07-02) — both audit ledgers drained, zero open P0/P1
+Every open finding in `CRM_AUDIT_2026-07-02.md` (desktop) + `CRM_AUDIT_MOBILE_2026-07-02.md`
+closed, EXCEPT desktop P2-9 (CRM headers Geist vs Amboqia — Matt's brand call, flagged) and the
+external ANTHROPIC_API_KEY credit. Headlines: **P1-6 email-signature wiring** (getBrokers now
+projects `email_signature`, `buildSignature` honors it + always appends the ORS 696.820 pamphlet
+line; proven with a real self-send, net-zero) · **shared `ReportingTabStrip`** replaces the 13×
+duplicated REPORTING_TABS (+ the 11 inert "How Reporting works" badges now open the real dialog;
+registry reporting-desktop requires ReportingTabStrip) · mobile P2 sweep (tab autoscroll, real
+appointment branch on the contact Calendar tab via `AppointmentSheet presetPersonId` + NEW DAL
+`getAppointmentsForPerson`, label casing, merge-panel collapsed at <md, "was created" phrasing,
+broker headshot on settings, aria-describedby sweep on 29 files) · test-data purged from live
+prod (temp stages 47/48 via applied migration `20260702120000`, ZZTEST person 52274, tc_deals
+ZZ-TEST-E2E-SIGNING incl. a one-transaction immutability-trigger bypass, re-armed + verified).
+GOTCHAS: HEAD was NOT gate-green when this slice started — inbox page + sequence-engine route had
+crossed the 600-LOC budget (split `BROKER_OPTIONS` → inbox-url.ts; engine helpers →
+`app/api/cron/crm-sequence-engine/helpers.ts`), dal-actions-reads was +2 over baseline, and the
+email-send-gated baseline is LINE-KEYED (re-keyed inbox:402→:398 — any edit above that send moves
+it again). `getDealPipelines` cache key is now `crm-deal-pipelines-v2`; `getBrokers` is
+`brokers-v5`. Full entry: mission PROGRESS "FINDINGS-CLOSURE SLICE".
+
 **HEAD:** `90ced1de` on `main` · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` — **REGISTRY COMPLETE: 18 done, all proven (all 10 desktop + all 8 mobile); only the _meta row is todo.** The mission's email open+click tracking task is also SHIPPED + PROVEN E2E (see the ✅ blocks in the mission doc).
 
 ## MOBILE ADVERSARIAL AUDIT LANDED (2026-07-02) — ledger `docs/plans/CRM_AUDIT_MOBILE_2026-07-02.md`

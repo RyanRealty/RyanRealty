@@ -7,6 +7,7 @@
  */
 
 import { formatDateTime } from '@/lib/format/date'
+import { CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import type { InboxFolderKey, InboxScopeKey } from '@/lib/data/crm/getInboxQueue'
 
 export type InboxHrefParams = {
@@ -97,3 +98,9 @@ export function relativeLabel(ts: string | null, nowMs: number): string {
   if (d < 7) return `${d} ${d === 1 ? 'day' : 'days'} ago`
   return formatDateTime(ts)
 }
+
+/** Assignable-broker options for the thread-list bulk-assign menu. */
+export const BROKER_OPTIONS = CRM_BROKERS.map((slug) => ({
+  slug,
+  name: CRM_BROKER_DISPLAY[slug] ?? slug,
+}))

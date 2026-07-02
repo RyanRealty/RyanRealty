@@ -271,7 +271,7 @@ export default function MobileCalendarScreen({
 
       {/* D.2 type picker sheet */}
       <Sheet open={typePickerOpen} onOpenChange={setTypePickerOpen}>
-        <SheetContent side="bottom" className="gap-0 rounded-t-2xl p-0">
+        <SheetContent aria-describedby={undefined} side="bottom" className="gap-0 rounded-t-2xl p-0">
           <SheetTitle className="px-4 pb-2 pt-4 text-[16px] font-semibold text-foreground">
             What would you like to add?
           </SheetTitle>
@@ -325,7 +325,7 @@ export default function MobileCalendarScreen({
 
       {/* Reschedule sheet (A.5 swipe quick action) */}
       <Sheet open={reschedId != null} onOpenChange={(v) => { if (!v) { setReschedId(null); setReschedAt('') } }}>
-        <SheetContent side="bottom" className="gap-3 rounded-t-2xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <SheetContent aria-describedby={undefined} side="bottom" className="gap-3 rounded-t-2xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <SheetTitle className="text-[16px] font-semibold text-foreground">Reschedule task</SheetTitle>
           <Label className="text-[12px] font-medium text-muted-foreground">New due date & time</Label>
           <Input type="datetime-local" value={reschedAt} onChange={(e) => setReschedAt(e.target.value)} className="h-11" />

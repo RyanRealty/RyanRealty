@@ -20,7 +20,7 @@
  *   accent underline → bg-accent; inactive tabs → text-primary-foreground/60
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -101,6 +101,19 @@ export function MobileContactDetail({
   const [active, setActive] = useState<MobileTabKey>(defaultTab)
   const [editOpen, setEditOpen] = useState(false)
   const router = useRouter()
+  const stripRef = useRef<HTMLDivElement | null>(null)
+
+  // P2-3 (2026-07-02 mobile audit): keep the active tab visible — at 390 the
+  // 6-tab strip overflows and a deep-linked Calendar/Notes tab (FAB hash, ?tab=)
+  // left its underline off-screen. Center the active button in the strip.
+  useEffect(() => {
+    const strip = stripRef.current
+    if (!strip) return
+    const btn = strip.querySelector<HTMLButtonElement>(`[data-tab-key="${active}"]`)
+    if (!btn) return
+    const target = btn.offsetLeft - (strip.clientWidth - btn.clientWidth) / 2
+    strip.scrollTo({ left: Math.max(0, target), behavior: 'smooth' })
+  }, [active])
 
   // The shell FAB's lead actions deep-link via hash (#comms / #tasks /
   // #overview) — the desktop LeadTabs reads them, and so must this component,
@@ -190,6 +203,7 @@ export function MobileContactDetail({
 
         {/* §25.4 Sub-tab strip — 44 pt, bg-primary, horizontally scrollable */}
         <div
+          ref={stripRef}
           className="no-scrollbar flex overflow-x-auto"
           role="tablist"
           aria-label="Contact sections"
@@ -199,6 +213,7 @@ export function MobileContactDetail({
             return (
               <button
                 key={tab.key}
+                data-tab-key={tab.key}
                 type="button"
                 role="tab"
                 aria-selected={isActive}

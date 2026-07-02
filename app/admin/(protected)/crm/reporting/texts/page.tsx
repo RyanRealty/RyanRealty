@@ -21,27 +21,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
 import TextsFilters from './TextsFilters'
+import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
 
 export const metadata = { title: 'Texts | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
 
-// ── Sub-nav tabs (matching Calls page — Texts is active) ──────────────────────
-const REPORTING_TABS = [
-  { label: 'Overview', href: '/admin/crm/reporting', active: false },
-  { label: 'Agent Activity', href: '/admin/crm/reporting/agent-activity', active: false },
-  { label: 'Properties', href: '/admin/crm/reporting/properties', active: false },
-  { label: 'Lead Sources', href: '/admin/crm/reporting/lead-sources', active: false },
-  { label: 'Calls', href: '/admin/crm/reporting/calls', active: false },
-  { label: 'Texts', href: '/admin/crm/reporting/texts', active: true },
-  { label: 'Batch Emails', href: '/admin/crm/reporting/batch-emails', active: false },
-  { label: 'Marketing', href: '/admin/crm/reporting/marketing', active: false },
-  { label: 'Deals', href: '/admin/crm/reporting/deals', active: false },
-  { label: 'Appointments', href: '/admin/crm/reporting/appointments', active: false },
-  { label: 'Agent Goals', href: '/admin/crm/reporting/agent-goals', active: false },
-]
 
 // ── KPI Tile ──────────────────────────────────────────────────────────────────
 
@@ -171,30 +156,7 @@ export default async function TextsReportPage({
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-      {/* Sub-nav tab strip */}
-      <div className="mb-6 flex items-center border-b border-border">
-        <div className="no-scrollbar flex items-center gap-0 overflow-x-auto">
-          {REPORTING_TABS.map((tab) => (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={cn(
-                'shrink-0 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors',
-                tab.active
-                  ? 'border-primary text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {tab.label}
-            </Link>
-          ))}
-        </div>
-        <div className="ml-auto shrink-0 pb-0.5 pl-4">
-          <Badge variant="outline" className="text-muted-foreground">
-            ⓘ How Reporting works
-          </Badge>
-        </div>
-      </div>
+      <ReportingTabStrip active="texts" />
 
       {/* Header row: "Show me" selector + filter bar */}
       <div className="mb-2 flex flex-wrap items-start justify-between gap-4">

@@ -240,7 +240,7 @@ export default function MobileInbox({
 
       {/* ── 26-L Inbox scope picker sheet ────────────────────────────────── */}
       <Sheet open={scopeOpen} onOpenChange={setScopeOpen}>
-        <SheetContent side="bottom" className="rounded-t-xl">
+        <SheetContent aria-describedby={undefined} side="bottom" className="rounded-t-xl">
           <SheetHeader>
             <SheetTitle>Inbox</SheetTitle>
           </SheetHeader>
@@ -273,7 +273,7 @@ export default function MobileInbox({
 
       {/* ── 26-K Filter sheet ─────────────────────────────────────────────── */}
       <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
-        <SheetContent side="bottom" className="rounded-t-xl">
+        <SheetContent aria-describedby={undefined} side="bottom" className="rounded-t-xl">
           <SheetHeader>
             <SheetTitle>Filter conversations</SheetTitle>
           </SheetHeader>
@@ -312,7 +312,7 @@ export default function MobileInbox({
 
       {/* ── Assign-to picker (swipe-right target, AC-26A-09) ─────────────── */}
       <Sheet open={assignFor != null} onOpenChange={(v) => !v && setAssignFor(null)}>
-        <SheetContent side="bottom" className="rounded-t-xl">
+        <SheetContent aria-describedby={undefined} side="bottom" className="rounded-t-xl">
           <SheetHeader>
             <SheetTitle>Assign conversation</SheetTitle>
           </SheetHeader>

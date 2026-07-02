@@ -82,7 +82,7 @@ export default function BrokerScopeSheet({
         </SheetTrigger>
       )}
 
-      <SheetContent side="bottom" className="gap-0 rounded-t-xl px-0 pb-6">
+      <SheetContent aria-describedby={undefined} side="bottom" className="gap-0 rounded-t-xl px-0 pb-6">
         <SheetHeader className="px-4">
           <SheetTitle>Filter by agent</SheetTitle>
         </SheetHeader>

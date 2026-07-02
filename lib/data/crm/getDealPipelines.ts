@@ -79,7 +79,10 @@ async function _getDealPipelines(): Promise<BoardPipeline[]> {
   }))
 }
 
-export const getDealPipelines = unstable_cache(_getDealPipelines, ['crm-deal-pipelines'], {
+// v2: key bump on the 2026-07-02 "Start (temp stage)" hygiene deletion
+// (migration 20260702120000) so a deploy can't serve the deleted columns for
+// up to the TTL from a stale entry.
+export const getDealPipelines = unstable_cache(_getDealPipelines, ['crm-deal-pipelines-v2'], {
   revalidate: 300,
   tags: ['crm-deal-pipelines'],
 })

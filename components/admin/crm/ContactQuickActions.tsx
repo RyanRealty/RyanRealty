@@ -96,7 +96,7 @@ export function ContactQuickActions(props: {
               {enrolledCount > 0 ? <span className="text-xs tabular-nums opacity-75">{enrolledCount}</span> : null}
             </Button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="max-h-screen overflow-y-auto">
+          <SheetContent aria-describedby={undefined} side="bottom" className="max-h-screen overflow-y-auto">
             <SheetHeader><SheetTitle>Automations</SheetTitle></SheetHeader>
             <div className="mt-2">
               {props.automations.length === 0 ? (
@@ -138,7 +138,7 @@ export function ContactQuickActions(props: {
               {savedCount > 0 ? <span className="text-xs tabular-nums opacity-75">{savedCount}</span> : null}
             </Button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="max-h-screen overflow-y-auto">
+          <SheetContent aria-describedby={undefined} side="bottom" className="max-h-screen overflow-y-auto">
             <SheetHeader><SheetTitle>Saved searches</SheetTitle></SheetHeader>
             <div className="mt-2">
               {savedCount === 0 ? (
@@ -167,7 +167,7 @@ export function ContactQuickActions(props: {
               Market reports
             </Button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="max-h-screen overflow-y-auto">
+          <SheetContent aria-describedby={undefined} side="bottom" className="max-h-screen overflow-y-auto">
             <SheetHeader><SheetTitle>Market reports</SheetTitle></SheetHeader>
             <div className="mt-2">
               <ReportSubscriptionsPanel

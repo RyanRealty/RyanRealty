@@ -17,29 +17,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
 import LeadSourcesFilters from './LeadSourcesFilters'
 import { AgentActivityChart } from '../agent-activity/AgentActivityChart'
 import { LeadSourcesKpiStrip } from './LeadSourcesKpiStrip'
+import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
 
 export const metadata = { title: 'Lead Sources | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
 
-// ── Sub-nav tabs (same list across all reporting pages; only active differs) ──
-const REPORTING_TABS = [
-  { label: 'Overview', href: '/admin/crm/reporting' },
-  { label: 'Agent Activity', href: '/admin/crm/reporting/agent-activity' },
-  { label: 'Properties', href: '/admin/crm/reporting/properties' },
-  { label: 'Lead Sources', href: '/admin/crm/reporting/lead-sources', active: true },
-  { label: 'Calls', href: '/admin/crm/reporting/calls' },
-  { label: 'Texts', href: '/admin/crm/reporting/texts' },
-  { label: 'Batch Emails', href: '/admin/crm/reporting/batch-emails' },
-  { label: 'Marketing', href: '/admin/crm/reporting/marketing' },
-  { label: 'Deals', href: '/admin/crm/reporting/deals' },
-  { label: 'Appointments', href: '/admin/crm/reporting/appointments' },
-  { label: 'Agent Goals', href: '/admin/crm/reporting/agent-goals' },
-]
 
 // ── Column set for Lead Sources (7 metrics, no initially/currently assigned) ──
 
@@ -137,30 +122,7 @@ export default async function LeadSourcesPage({
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-      {/* Sub-nav tab strip */}
-      <div className="mb-6 flex items-center border-b border-border">
-        <div className="no-scrollbar flex items-center gap-0 overflow-x-auto">
-          {REPORTING_TABS.map((tab) => (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={cn(
-                'shrink-0 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors',
-                tab.active
-                  ? 'border-primary text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {tab.label}
-            </Link>
-          ))}
-        </div>
-        <div className="ml-auto shrink-0 pb-0.5 pl-4">
-          <Badge variant="outline" className="text-muted-foreground">
-            ⓘ How Reporting works
-          </Badge>
-        </div>
-      </div>
+      <ReportingTabStrip active="lead-sources" />
 
       {/* Header row: "Show me" selector + filter bar */}
       <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
@@ -218,7 +180,7 @@ export default async function LeadSourcesPage({
       />
 
       {/* Lead Sources breakdown table */}
-      <Card className="overflow-hidden">
+      <Card className="no-scrollbar overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">

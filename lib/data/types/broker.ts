@@ -42,6 +42,11 @@ export type Broker = {
   licenseNumber: string | null
   bio: string | null
   isPrincipal: boolean
+  /** Broker-authored plain-text email signature (brokers.email_signature, §9 My
+   *  Settings). When non-blank it replaces the generated identity block in
+   *  buildSignature (the Oregon agency-pamphlet compliance line is always
+   *  appended regardless). Null/blank → the generated signature. */
+  emailSignature?: string | null
 
   // ── Enrichment from public.brokers (optional; null/empty when unset) ──
   /** Short positioning line under the name. */

@@ -99,7 +99,7 @@ export function MobileAssignToSheet({
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) setQ(''); onOpenChange(v) }}>
-      <SheetContent side="bottom" className="gap-0 overflow-hidden rounded-t-xl p-0" style={{ maxHeight: '92dvh' }}>
+      <SheetContent aria-describedby={undefined} side="bottom" className="gap-0 overflow-hidden rounded-t-xl p-0" style={{ maxHeight: '92dvh' }}>
         {/* §5.3 header — Cancel · Assign To · (no right control) */}
         <div className="flex h-[50px] shrink-0 items-center bg-primary px-4">
           <button

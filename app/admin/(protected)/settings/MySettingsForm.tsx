@@ -105,7 +105,9 @@ export default function MySettingsForm({
       <section className="rounded-xl border border-border bg-card px-6 py-5 space-y-4">
         <h2 className="text-sm font-semibold text-foreground">Email signature</h2>
         <p className="text-xs text-muted-foreground -mt-2">
-          Appended to emails you send from the CRM compose screen. Plain text only.
+          Used as your signature on emails you send from the CRM. Leave blank to use the
+          standard Ryan Realty signature. Plain text only. The Oregon agency disclosure
+          link is always included.
         </p>
         <Textarea
           id="email-signature"

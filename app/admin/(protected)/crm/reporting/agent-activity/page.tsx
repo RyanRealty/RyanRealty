@@ -20,29 +20,15 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
-import HowReportingWorks from '@/components/admin/crm/reporting/HowReportingWorks'
 import AgentActivityFilters from './AgentActivityFilters'
 import ShowMeSelector from './ShowMeSelector'
 import { AgentActivityChart } from './AgentActivityChart'
 import { AgentActivityKpiStrip } from './AgentActivityKpiStrip'
+import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
 
 export const metadata = { title: 'Agent Activity | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
 
-// --- Sub-nav tabs ---
-const REPORTING_TABS = [
-  { label: 'Overview', href: '/admin/crm/reporting', active: false },
-  { label: 'Agent Activity', href: '/admin/crm/reporting/agent-activity', active: true },
-  { label: 'Properties', href: '/admin/crm/reporting/properties', active: false },
-  { label: 'Lead Sources', href: '/admin/crm/reporting/lead-sources', active: false },
-  { label: 'Calls', href: '/admin/crm/reporting/calls', active: false },
-  { label: 'Texts', href: '/admin/crm/reporting/texts', active: false },
-  { label: 'Batch Emails', href: '/admin/crm/reporting/batch-emails', active: false },
-  { label: 'Marketing', href: '/admin/crm/reporting/marketing', active: false },
-  { label: 'Deals', href: '/admin/crm/reporting/deals', active: false },
-  { label: 'Appointments', href: '/admin/crm/reporting/appointments', active: false },
-  { label: 'Agent Goals', href: '/admin/crm/reporting/agent-goals', active: false },
-]
 
 // --- Map ColKey → AgentActivityRow field name ---
 const COL_TO_ROW_FIELD: Record<ColKey, keyof AgentActivityRow> = {
@@ -154,28 +140,7 @@ export default async function AgentActivityPage({
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-      {/* Sub-nav tab strip */}
-      <div className="mb-6 flex items-center border-b border-border">
-        <div className="no-scrollbar flex items-center gap-0 overflow-x-auto">
-          {REPORTING_TABS.map((tab) => (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={cn(
-                'shrink-0 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors',
-                tab.active
-                  ? 'border-primary text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {tab.label}
-            </Link>
-          ))}
-        </div>
-        <div className="ml-auto shrink-0 pb-0.5 pl-4">
-          <HowReportingWorks />
-        </div>
-      </div>
+      <ReportingTabStrip active="agent-activity" />
 
       {/* Header row: "Show me" selector + filter bar */}
       <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
@@ -237,7 +202,7 @@ export default async function AgentActivityPage({
           />
 
           {/* Agent breakdown table — no totals row (matching FUB f04 spec) */}
-          <Card className="overflow-hidden">
+          <Card className="no-scrollbar overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">

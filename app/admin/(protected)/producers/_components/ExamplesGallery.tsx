@@ -60,7 +60,7 @@ export function ExamplesGallery({ exampleOutputs, producerName }: ExamplesGaller
 
       {selected && (
         <Dialog open onOpenChange={() => setSelected(null)}>
-          <DialogContent className="max-w-3xl">
+          <DialogContent aria-describedby={undefined} className="max-w-3xl">
             <DialogTitle className="text-sm text-muted-foreground">
               {producerName} example
             </DialogTitle>

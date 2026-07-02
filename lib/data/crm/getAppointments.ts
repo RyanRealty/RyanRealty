@@ -156,6 +156,35 @@ export async function getAppointments({
   return ((data ?? []) as unknown as RawAppointment[]).map(mapRow)
 }
 
+/**
+ * getAppointmentsForPerson — every appointment linked to one contact (as the
+ * primary person OR a guest), newest-first. Powers the §25.9 mobile Calendar
+ * tab on the contact detail (P2-4 closure, 2026-07-02): the tab renders the
+ * contact's real appointments next to their tasks. Not date-windowed — a
+ * single contact has few rows.
+ */
+export async function getAppointmentsForPerson(personId: number): Promise<AppointmentRow[]> {
+  if (!Number.isFinite(personId) || personId <= 0) return []
+  const sb = createServiceClient()
+  const { data, error } = await sb
+    .from('crm_appointments')
+    .select(
+      'id,title,start_at,end_at,all_day,timezone,location,description,type_id,outcome_id,person_id,broker_slug,guest_person_ids,invite_sent,gcal_event_id,created_at,updated_at,' +
+      'crm_appointment_types(id,name),' +
+      'crm_appointment_outcomes(id,name),' +
+      'crm_people(id,name)',
+    )
+    .or(`person_id.eq.${personId},guest_person_ids.cs.{${personId}}`)
+    .order('start_at', { ascending: false })
+    .limit(100)
+
+  if (error) {
+    console.error('[getAppointmentsForPerson]', error.message)
+    return []
+  }
+  return ((data ?? []) as unknown as RawAppointment[]).map(mapRow)
+}
+
 // ── Calendar's other event sources (§09 §2.5.3 color taxonomy) ───────────────
 
 /**

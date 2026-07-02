@@ -91,7 +91,7 @@ export function EditPhonesDialog({
       }}
     >
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent aria-describedby={undefined} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit Phone Numbers</DialogTitle>
         </DialogHeader>
@@ -210,7 +210,7 @@ export function AddRelationshipDialog({ personId, trigger }: { personId: number;
       }}
     >
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent aria-describedby={undefined} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-4 w-4" /> Add relationship
@@ -363,7 +363,7 @@ export function ApplyAutomationDialog({
       }}
     >
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-[560px]">
+      <DialogContent aria-describedby={undefined} className="sm:max-w-[560px]">
         <DialogHeader>
           <DialogTitle>Apply Automation</DialogTitle>
         </DialogHeader>

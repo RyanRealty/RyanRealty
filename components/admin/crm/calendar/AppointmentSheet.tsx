@@ -51,6 +51,8 @@ export type AppointmentSheetProps = {
   initialDate?: string | null
   /** When editing, the existing row. Null = create mode. */
   appointment?: AppointmentRow | null
+  /** Pre-linked primary contact for create mode (contact-detail Calendar tab). */
+  presetPersonId?: number | null
   types: AppointmentType[]
   outcomes: AppointmentOutcome[]
   /** Full contact roster for the guest picker. */
@@ -99,6 +101,7 @@ export default function AppointmentSheet({
   onOpenChange,
   initialDate,
   appointment,
+  presetPersonId,
   types,
   outcomes,
   contacts,
@@ -167,7 +170,7 @@ export default function AppointmentSheet({
         setDesc('')
         setTypeId('')
         setOutcomeId('')
-        setPersonId('')
+        setPersonId(presetPersonId ? String(presetPersonId) : '')
         setGuestIds([])
         setBrokerSlug(currentBrokerSlug)
         setInviteSent(false)
@@ -177,7 +180,7 @@ export default function AppointmentSheet({
       setDeleteConfirm(false)
     }
     prevOpen.current = open
-  }, [open, appointment, initialDate, currentBrokerSlug])
+  }, [open, appointment, initialDate, currentBrokerSlug, presetPersonId])
 
   // ── Submit ──────────────────────────────────────────────────────────────────
   const submit = () => {
@@ -239,7 +242,7 @@ export default function AppointmentSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
+      <SheetContent aria-describedby={undefined}
         side="right"
         className="flex w-full flex-col gap-0 overflow-y-auto p-0 sm:max-w-md"
       >

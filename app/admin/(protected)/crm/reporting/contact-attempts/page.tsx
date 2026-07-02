@@ -14,7 +14,6 @@ import { getContactAttemptsReport } from '@/lib/data/crm/getContactAttemptsRepor
 import type { ContactAttemptsRow, ContactAttemptsTotals } from '@/lib/data/crm/getContactAttemptsReport'
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -23,8 +22,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { cn } from '@/lib/utils'
 import ContactAttemptsFilters from './ContactAttemptsFilters'
+import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
 
 export const metadata = { title: 'Contact Attempts | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
@@ -32,20 +31,6 @@ export const dynamic = 'force-dynamic'
 // ── Sub-nav tabs ───────────────────────────────────────────────────────────────
 // Contact Attempts is inserted between Batch Emails and Appointments to
 // keep lead-source and activity reports grouped together.
-const REPORTING_TABS = [
-  { label: 'Overview', href: '/admin/crm/reporting' },
-  { label: 'Agent Activity', href: '/admin/crm/reporting/agent-activity' },
-  { label: 'Properties', href: '/admin/crm/reporting/properties' },
-  { label: 'Lead Sources', href: '/admin/crm/reporting/lead-sources' },
-  { label: 'Calls', href: '/admin/crm/reporting/calls' },
-  { label: 'Texts', href: '/admin/crm/reporting/texts' },
-  { label: 'Batch Emails', href: '/admin/crm/reporting/batch-emails' },
-  { label: 'Contact Attempts', href: '/admin/crm/reporting/contact-attempts', active: true },
-  { label: 'Marketing', href: '/admin/crm/reporting/marketing' },
-  { label: 'Deals', href: '/admin/crm/reporting/deals' },
-  { label: 'Appointments', href: '/admin/crm/reporting/appointments' },
-  { label: 'Agent Goals', href: '/admin/crm/reporting/agent-goals' },
-] as const
 
 // ── KPI tile — inline server component (no sparkline for this report) ──────────
 
@@ -146,30 +131,7 @@ export default async function ContactAttemptsPage({
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-      {/* ── Sub-nav tab strip ── */}
-      <div className="mb-6 flex items-center border-b border-border">
-        <div className="no-scrollbar flex items-center gap-0 overflow-x-auto">
-          {REPORTING_TABS.map((tab) => (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={cn(
-                'shrink-0 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors',
-                'active' in tab && tab.active
-                  ? 'border-primary text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {tab.label}
-            </Link>
-          ))}
-        </div>
-        <div className="ml-auto shrink-0 pb-0.5 pl-4">
-          <Badge variant="outline" className="text-muted-foreground">
-            ⓘ How Reporting works
-          </Badge>
-        </div>
-      </div>
+      <ReportingTabStrip active="contact-attempts" />
 
       {/* ── Header: "Show me" selector + filter bar ── */}
       <div className="mb-2 flex flex-wrap items-start justify-between gap-4">

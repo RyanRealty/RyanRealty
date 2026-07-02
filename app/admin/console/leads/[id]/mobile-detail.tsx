@@ -34,10 +34,17 @@ import type {
   MobileRecentMessage,
 } from '@/components/admin/crm/mobile/MobileInfoTab'
 import type { MobileNote } from '@/components/admin/crm/mobile/MobileNotesTab'
-import type { MobileTask } from '@/components/admin/crm/mobile/MobileCalendarTab'
+import type { MobileTask, MobileApptData } from '@/components/admin/crm/mobile/MobileCalendarTab'
 
 function fmtPhone(d: string): string {
   return d.length === 10 ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}` : d
+}
+
+/** FUB-imported contact-point labels are lowercase ('mobile', 'work') — render
+    Title Case like the Edit sheet's vocabulary (P2-5, 2026-07-02 mobile audit). */
+function titleCaseLabel(label: string | null): string | null {
+  if (!label) return null
+  return label.replace(/\b[a-z]/g, (c) => c.toUpperCase())
 }
 
 /** FUB date convention (§25 observed): current year → "Jun 1"; other years →
@@ -91,8 +98,14 @@ export interface MobileLeadDetailProps {
       account sources · ponds · active automations + this contact's
       enrollments · the acting broker (Me row + Currently banner). */
   pickers: MobilePickersData
+  /** §25.9 Calendar tab — the contact's appointments + create-sheet config
+      (P2-4 closure: the "Add Appointment or Task" row has a real
+      appointment branch). */
+  appointments: MobileApptData
   addNoteAction: (formData: FormData) => Promise<void>
   addTaskAction: (formData: FormData) => Promise<void>
+  createAppointmentAction: (formData: FormData) => Promise<{ ok: boolean; error?: string; id?: number }>
+  updateAppointmentAction: (id: number, formData: FormData) => Promise<{ ok: boolean; error?: string }>
   /** §25.5 interactivity (pickers + add contact point) */
   assignBrokerAction: (formData: FormData) => Promise<void>
   updateStageAction: (formData: FormData) => Promise<void>
@@ -115,8 +128,11 @@ export function MobileLeadDetail({
   collaborators,
   viewedListings,
   pickers,
+  appointments,
   addNoteAction,
   addTaskAction,
+  createAppointmentAction,
+  updateAppointmentAction,
   assignBrokerAction,
   updateStageAction,
   addTagAction,
@@ -146,10 +162,10 @@ export function MobileLeadDetail({
     }))
   const phones: MobilePhoneEntry[] = full.contactPoints
     .filter((c) => c.kind === 'phone')
-    .map((c) => ({ id: c.id, display: fmtPhone(c.value), tel: `tel:+1${c.value}`, label: c.label ?? 'Mobile' }))
+    .map((c) => ({ id: c.id, display: fmtPhone(c.value), tel: `tel:+1${c.value}`, label: titleCaseLabel(c.label) ?? 'Mobile' }))
   const emails: MobileEmailEntry[] = full.contactPoints
     .filter((c) => c.kind === 'email')
-    .map((c) => ({ id: c.id, value: c.value, label: c.label }))
+    .map((c) => ({ id: c.id, value: c.value, label: titleCaseLabel(c.label) }))
   // Inquiry date = lead_created event, FUB-formatted (falls back to the page's
   // preformatted label if the event is outside the loaded timeline window).
   const leadCreatedTs = full.timeline.find((t) => t.kind === 'lead_created')?.ts ?? null
@@ -190,16 +206,22 @@ export function MobileLeadDetail({
   const ACTIVITY_KINDS = new Set(['web_event', 'stage_change', 'system', 'lead_created', 'task'])
   const activityRows: MobileActivityRow[] = full.timeline
     .filter((t) => ACTIVITY_KINDS.has(t.kind))
-    .map((t) => ({
-      id: t.id,
-      kind: t.kind,
+    .map((t) => {
       // FUB-imported web_event titles carry a literal "<unspecified>" source
       // ("Property Inquiry · <unspecified>") — never show that to a broker
       // (2026-07-02 mobile audit).
-      title: (t.title ?? t.kind.replace(/_/g, ' ')).replace(/\s*·\s*<unspecified>/g, '').replace(/<unspecified>/g, '').trim(),
-      body: t.body && t.body !== t.title ? cleanNoteBody(t.body) : null,
-      dateLabel: fubDate(t.ts),
-    }))
+      let title = (t.title ?? t.kind.replace(/_/g, ' ')).replace(/\s*·\s*<unspecified>/g, '').replace(/<unspecified>/g, '').trim()
+      // P2-7: lead_created rows store the bare contact name as the title
+      // ("Brent Babin") — render FUB's "created" phrasing instead.
+      if (t.kind === 'lead_created') title = title && title !== 'lead created' ? `${title} was created` : 'Lead created'
+      return {
+        id: t.id,
+        kind: t.kind,
+        title,
+        body: t.body && t.body !== t.title ? cleanNoteBody(t.body) : null,
+        dateLabel: fubDate(t.ts),
+      }
+    })
 
   // Punch #2 header Edit mode — name + the raw phone/email rows the §07
   // actions expect (savePhoneNumbersAction replaces the set atomically).
@@ -284,7 +306,17 @@ export function MobileLeadDetail({
           addNoteAction={addNoteAction}
         />
       }
-      calendarTab={<MobileCalendarTab personId={person.id} tasks={tasks} addTaskAction={addTaskAction} />}
+      calendarTab={
+        <MobileCalendarTab
+          personId={person.id}
+          personName={displayName}
+          tasks={tasks}
+          appointments={appointments}
+          addTaskAction={addTaskAction}
+          createAppointmentAction={createAppointmentAction}
+          updateAppointmentAction={updateAppointmentAction}
+        />
+      }
     />
   )
 }

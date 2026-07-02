@@ -253,7 +253,7 @@ export default function AppointmentModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto p-0 sm:max-w-xl">
+      <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto p-0 sm:max-w-xl">
         <DialogHeader className="border-b border-border px-5 py-4">
           <DialogTitle className="text-base font-semibold">
             {isEdit ? 'Edit Appointment' : 'Create Appointment'}

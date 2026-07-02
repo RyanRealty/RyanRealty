@@ -237,7 +237,7 @@ export function MobileDetailsSection({
 
       {/* Tags editor (§25.10: Add tags row + alphabetical rows + remove) */}
       <Sheet open={openPicker === 'tags'} onOpenChange={(v) => setOpenPicker(v ? 'tags' : null)}>
-        <SheetContent side="bottom" className="gap-0 overflow-hidden rounded-t-xl p-0" style={{ maxHeight: '85dvh' }}>
+        <SheetContent aria-describedby={undefined} side="bottom" className="gap-0 overflow-hidden rounded-t-xl p-0" style={{ maxHeight: '85dvh' }}>
           <div className="flex h-[50px] shrink-0 items-center justify-between bg-primary px-4">
             <span className="w-14" />
             <SheetTitle className="text-[17px] font-semibold text-primary-foreground">Tags</SheetTitle>
@@ -296,7 +296,7 @@ export function MobileDetailsSection({
 
       {/* Collaborators toggle sheet — tap a broker to add/remove */}
       <Sheet open={openPicker === 'collab'} onOpenChange={(v) => setOpenPicker(v ? 'collab' : null)}>
-        <SheetContent side="bottom" className="gap-0 overflow-hidden rounded-t-xl p-0">
+        <SheetContent aria-describedby={undefined} side="bottom" className="gap-0 overflow-hidden rounded-t-xl p-0">
           <div className="flex h-[50px] shrink-0 items-center justify-between bg-primary px-4">
             <span className="w-14" />
             <SheetTitle className="text-[17px] font-semibold text-primary-foreground">Collaborators</SheetTitle>

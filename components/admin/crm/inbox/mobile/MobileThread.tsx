@@ -429,7 +429,7 @@ export default function MobileThread({
         className="absolute right-0 top-1/2 h-12 w-1.5 -translate-y-1/2 rounded-l-md bg-muted-foreground/40"
       />
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent side="right" className="w-80">
+        <SheetContent aria-describedby={undefined} side="right" className="w-80">
           <SheetHeader>
             <SheetTitle>{name}</SheetTitle>
           </SheetHeader>
@@ -475,7 +475,7 @@ export default function MobileThread({
 
       {/* ── Email reply sheet (AC-26E-09) ─────────────────────────────────── */}
       <Sheet open={replyOpen} onOpenChange={setReplyOpen}>
-        <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto rounded-t-xl">
+        <SheetContent aria-describedby={undefined} side="bottom" className="max-h-[90dvh] overflow-y-auto rounded-t-xl">
           <SheetHeader>
             <SheetTitle>Email {name}</SheetTitle>
           </SheetHeader>
@@ -497,7 +497,7 @@ export default function MobileThread({
 
       {/* ── S8 calling-method sheet ───────────────────────────────────────── */}
       <Sheet open={callOpen} onOpenChange={setCallOpen}>
-        <SheetContent side="bottom" className="rounded-t-xl">
+        <SheetContent aria-describedby={undefined} side="bottom" className="rounded-t-xl">
           <SheetHeader>
             <SheetTitle>Call {name}</SheetTitle>
             {phone ? <p className="text-sm text-muted-foreground">{fmtPhone(phone)}</p> : null}

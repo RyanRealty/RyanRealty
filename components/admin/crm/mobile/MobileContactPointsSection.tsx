@@ -185,7 +185,7 @@ export function MobileContactPointsSection({
 
       {/* ── S8 calling-method sheet (same anatomy as the inbox thread's) ─── */}
       <Sheet open={callOpen} onOpenChange={setCallOpen}>
-        <SheetContent side="bottom" className="rounded-t-xl">
+        <SheetContent aria-describedby={undefined} side="bottom" className="rounded-t-xl">
           <SheetHeader>
             <SheetTitle>Call {personName}</SheetTitle>
             {phones[0] ? <p className="text-sm text-muted-foreground">{phones[0].display}</p> : null}
@@ -217,7 +217,7 @@ export function MobileContactPointsSection({
 
       {/* Add sheet — label picker + value input */}
       <Sheet open={addKind !== null} onOpenChange={(v) => { if (!v) { setAddKind(null); setValue('') } }}>
-        <SheetContent side="bottom" className="gap-0 overflow-hidden rounded-t-xl p-0">
+        <SheetContent aria-describedby={undefined} side="bottom" className="gap-0 overflow-hidden rounded-t-xl p-0">
           <div className="flex h-[50px] shrink-0 items-center justify-between bg-primary px-4">
             <button type="button" className="text-[17px] text-primary-foreground" onClick={() => setAddKind(null)}>
               Cancel

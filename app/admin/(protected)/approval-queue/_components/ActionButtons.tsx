@@ -240,7 +240,7 @@ export function ActionButtons({ actionId, producerSlug, status, onStatusChange }
 
       {/* Approve and schedule dialog */}
       <Dialog open={dialog === 'schedule'} onOpenChange={(o) => !o && setDialog(null)}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Schedule this post</DialogTitle>
           </DialogHeader>
@@ -270,7 +270,7 @@ export function ActionButtons({ actionId, producerSlug, status, onStatusChange }
 
       {/* Request changes dialog */}
       <Dialog open={dialog === 'request_changes'} onOpenChange={(o) => !o && setDialog(null)}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Request changes</DialogTitle>
           </DialogHeader>
@@ -301,7 +301,7 @@ export function ActionButtons({ actionId, producerSlug, status, onStatusChange }
 
       {/* Reject dialog */}
       <Dialog open={dialog === 'reject'} onOpenChange={(o) => !o && setDialog(null)}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Reject this action</DialogTitle>
           </DialogHeader>
@@ -336,7 +336,7 @@ export function ActionButtons({ actionId, producerSlug, status, onStatusChange }
 
       {/* Duplicate dialog */}
       <Dialog open={dialog === 'duplicate'} onOpenChange={(o) => !o && setDialog(null)}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Duplicate as new variant</DialogTitle>
           </DialogHeader>

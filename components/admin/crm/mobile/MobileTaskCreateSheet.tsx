@@ -116,7 +116,7 @@ export default function MobileTaskCreateSheet({
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v) }}>
-      <SheetContent side="bottom" className="gap-0 overflow-hidden rounded-t-2xl p-0" style={{ maxHeight: '85dvh' }}>
+      <SheetContent aria-describedby={undefined} side="bottom" className="gap-0 overflow-hidden rounded-t-2xl p-0" style={{ maxHeight: '85dvh' }}>
         {/* Header — title + dismiss X (D.3) */}
         <div className="flex h-[50px] shrink-0 items-center justify-between border-b border-border px-4">
           <SheetTitle className="text-[16px] font-semibold text-foreground">New Task</SheetTitle>

@@ -173,7 +173,7 @@ export default function MobileComposeSheet({
           if (!v) reset()
         }}
       >
-        <SheetContent side="bottom" className="max-h-[92dvh] overflow-y-auto rounded-t-xl">
+        <SheetContent aria-describedby={undefined} side="bottom" className="max-h-[92dvh] overflow-y-auto rounded-t-xl">
           <SheetHeader>
             <SheetTitle>{primary ? 'New message' : 'Select Recipients'}</SheetTitle>
           </SheetHeader>
@@ -368,7 +368,7 @@ export default function MobileComposeSheet({
 
       {/* Template picker sheet (S1 step 7 / S4 "Use template") */}
       <Sheet open={tplOpen} onOpenChange={setTplOpen}>
-        <SheetContent side="bottom" className="max-h-[70dvh] overflow-y-auto rounded-t-xl">
+        <SheetContent aria-describedby={undefined} side="bottom" className="max-h-[70dvh] overflow-y-auto rounded-t-xl">
           <SheetHeader>
             <SheetTitle>{channel === 'email' ? 'Email templates' : 'Text templates'}</SheetTitle>
           </SheetHeader>

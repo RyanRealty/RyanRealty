@@ -137,7 +137,7 @@ export function MobileNotesTab({
 
       {/* §25.8.6 Note composer sheet */}
       <Sheet open={composerOpen} onOpenChange={setComposerOpen}>
-        <SheetContent side="bottom" className="h-[60vh]">
+        <SheetContent aria-describedby={undefined} side="bottom" className="h-[60vh]">
           <SheetHeader>
             <SheetTitle>Add note</SheetTitle>
           </SheetHeader>

@@ -11,6 +11,8 @@
  *   channel   — 'email' | 'sms' — CMA tokens are hidden for SMS (no link click)
  *   onInsert  — called with the raw token string, e.g. '%contact_first_name%'
  */
+import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { MERGE_TOKENS, type MergeToken } from '@/lib/crm/merge'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -57,12 +59,27 @@ export function MergeFieldPicker({
     tokens: tokens.filter((t) => t.group === g),
   })).filter((g) => g.tokens.length > 0)
 
+  // P2-6 (2026-07-02 mobile audit): at <md the full chip palette pushed the
+  // message field below the fold, so it starts collapsed behind a disclosure
+  // row. md+ keeps the always-expanded desktop behavior (CSS-only — no
+  // hydration flash). The toggle itself only renders under md.
+  const [mobileExpanded, setMobileExpanded] = useState(false)
+
   return (
     <div className={cn('space-y-1.5', className)}>
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <button
+        type="button"
+        className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground md:hidden"
+        aria-expanded={mobileExpanded}
+        onClick={() => setMobileExpanded((v) => !v)}
+      >
+        Merge fields
+        <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', mobileExpanded && 'rotate-180')} aria-hidden />
+      </button>
+      <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-muted-foreground md:block">
         Merge fields. Click to insert at cursor.
       </p>
-      <div className="flex flex-wrap gap-x-4 gap-y-2">
+      <div className={cn('flex-wrap gap-x-4 gap-y-2', mobileExpanded ? 'flex' : 'hidden md:flex')}>
         {groups.map(({ group, tokens: gtokens }) => (
           <div key={group} className="flex flex-wrap items-center gap-1.5">
             <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">

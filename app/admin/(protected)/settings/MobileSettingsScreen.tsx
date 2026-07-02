@@ -280,10 +280,11 @@ export default function MobileSettingsScreen({
 
       {/* ── Email signature editor sheet ── */}
       <Sheet open={sigOpen} onOpenChange={setSigOpen}>
-        <SheetContent side="bottom" className="gap-0 rounded-t-2xl px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
+        <SheetContent aria-describedby={undefined} side="bottom" className="gap-0 rounded-t-2xl px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
           <SheetTitle className="text-base">Email signature</SheetTitle>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            Appended to emails you send from the CRM compose screen. Plain text only.
+            Used as your signature on emails you send from the CRM. Leave blank to use
+            the standard Ryan Realty signature. Plain text only.
           </p>
           <Textarea
             value={signature}

@@ -165,7 +165,7 @@ export function ManagePipelines({ pipelines }: { pipelines: BoardPipeline[] }) {
           }
         }}
       >
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent aria-describedby={undefined} className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>{adding ? 'Add pipeline' : `Rename ${renaming?.name}`}</DialogTitle>
           </DialogHeader>
@@ -201,7 +201,7 @@ export function ManagePipelines({ pipelines }: { pipelines: BoardPipeline[] }) {
 
       {/* Delete confirmation */}
       <Dialog open={deleting != null} onOpenChange={(o) => { if (!o) setDeleting(null) }}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent aria-describedby={undefined} className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Delete {deleting?.name}?</DialogTitle>
           </DialogHeader>

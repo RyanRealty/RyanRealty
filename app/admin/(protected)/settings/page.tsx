@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { createServiceClient } from '@/lib/supabase/service'
+import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
+import { BROKER_HEADSHOTS } from '@/components/admin/crm/inbox/mobile/mobile-data'
 import MySettingsForm from './MySettingsForm'
 import MobileSettingsScreen from './MobileSettingsScreen'
 import pkg from '@/package.json'
@@ -39,8 +41,15 @@ export default async function MySettingsPage() {
     .eq('email', email)
     .maybeSingle()
 
+  // Mobile audit P2-8 (2026-07-02): the profile card wears the same broker
+  // headshot the navy CRM headers use — the real headshot for the three
+  // brokers, falling back to the OAuth avatar (then initials) for others.
+  const crmSlug = CRM_BROKER_BY_EMAIL[email] ?? null
   const avatarUrl: string | null =
-    session?.user?.user_metadata?.avatar_url ?? session?.user?.user_metadata?.picture ?? null
+    (crmSlug ? BROKER_HEADSHOTS[crmSlug] : null) ??
+    session?.user?.user_metadata?.avatar_url ??
+    session?.user?.user_metadata?.picture ??
+    null
 
   const mobileBroker = broker
     ? {

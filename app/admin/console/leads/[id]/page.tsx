@@ -58,6 +58,9 @@ import { PersonRightRail } from '@/components/admin/crm/person-detail/PersonRigh
 import { getPersonDetailExtras } from '@/lib/data/crm/getPersonDetailExtras'
 import { getCrmSources } from '@/lib/data/crm/getCrmSources'
 import { listActiveSequences } from '@/lib/crm/enroll'
+// §25.9 mobile Calendar tab (P2-4): real appointments + create sheet config
+import { getAppointmentsForPerson, getAppointmentTypes, getAppointmentOutcomes } from '@/lib/data/crm/getAppointments'
+import { createAppointmentAction, updateAppointmentAction } from '@/app/actions/appointments'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -162,6 +165,14 @@ export default async function ConsoleLeadPage({
     listActiveSequences(),
     // §28 mobile Source picker — the account's source vocabulary, verbatim
     getCrmSources(),
+  ])
+
+  // §25.9 mobile Calendar tab (P2-4): the contact's appointments + the
+  // create-sheet vocabulary (types/outcomes).
+  const [personAppointments, apptTypes, apptOutcomes] = await Promise.all([
+    getAppointmentsForPerson(person.id),
+    getAppointmentTypes(),
+    getAppointmentOutcomes(),
   ])
 
   // Full Comms thread (every text + email + call), newest first, paginated —
@@ -369,8 +380,18 @@ export default async function ConsoleLeadPage({
         currentBrokerSlug: actingSlug,
         currentBrokerName: CRM_BROKER_DISPLAY[actingSlug as keyof typeof CRM_BROKER_DISPLAY] ?? actingSlug,
       }}
+      appointments={{
+        rows: personAppointments,
+        types: apptTypes,
+        outcomes: apptOutcomes,
+        brokerSlugs: [...CRM_BROKERS],
+        currentBrokerSlug: actingSlug,
+        isSuperuser: crmAccess.role === 'superuser',
+      }}
       addNoteAction={addNoteForm.bind(null, person.id)}
       addTaskAction={addTaskForm}
+      createAppointmentAction={createAppointmentAction}
+      updateAppointmentAction={updateAppointmentAction}
       assignBrokerAction={assignBrokerForm}
       updateStageAction={updateStageForm}
       addTagAction={addTagForm}

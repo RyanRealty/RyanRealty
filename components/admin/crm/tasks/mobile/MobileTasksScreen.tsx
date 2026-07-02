@@ -429,7 +429,7 @@ export default function MobileTasksScreen({
 
       {/* ── C.10 filter bottom sheet ── */}
       <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
-        <SheetContent side="bottom" className="gap-0 overflow-y-auto rounded-t-2xl p-0" style={{ maxHeight: '70dvh' }}>
+        <SheetContent aria-describedby={undefined} side="bottom" className="gap-0 overflow-y-auto rounded-t-2xl p-0" style={{ maxHeight: '70dvh' }}>
           <SheetTitle className="px-4 pb-2 pt-4 text-[16px] font-semibold text-foreground">Filters</SheetTitle>
 
           <p className="px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Task type</p>
@@ -521,7 +521,7 @@ export default function MobileTasksScreen({
 
       {/* Reschedule sheet (C.9 swipe-right) */}
       <Sheet open={resched != null} onOpenChange={(v) => { if (!v) { setResched(null); setReschedAt('') } }}>
-        <SheetContent side="bottom" className="gap-3 rounded-t-2xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <SheetContent aria-describedby={undefined} side="bottom" className="gap-3 rounded-t-2xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <SheetTitle className="text-[16px] font-semibold text-foreground">Reschedule task</SheetTitle>
           <Label className="text-[12px] font-medium text-muted-foreground">New due date & time</Label>
           <Input type="datetime-local" value={reschedAt} onChange={(e) => setReschedAt(e.target.value)} className="h-11" />

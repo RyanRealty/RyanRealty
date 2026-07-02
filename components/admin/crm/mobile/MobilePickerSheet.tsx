@@ -57,7 +57,7 @@ export function MobilePickerSheet({
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) setPicked(null); onOpenChange(v) }}>
-      <SheetContent side="bottom" className="gap-0 overflow-hidden rounded-t-xl p-0" style={{ maxHeight: '85dvh' }}>
+      <SheetContent aria-describedby={undefined} side="bottom" className="gap-0 overflow-hidden rounded-t-xl p-0" style={{ maxHeight: '85dvh' }}>
         {/* §23.8a modal header: Cancel · title · Select on the dark primary bar */}
         <div className="flex h-[50px] shrink-0 items-center justify-between bg-primary px-4">
           <button

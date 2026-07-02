@@ -514,6 +514,49 @@ re-runs the E2E checks and states the sign-off inventory to Matt.
 
 ## PROGRESS (agents append here as slices ship)
 
+### FINDINGS-CLOSURE SLICE ✅ BOTH AUDIT LEDGERS DRAINED (2026-07-02) — zero open P0/P1; P2 backlog closed
+The production-ready-bar closure pass over BOTH ledgers. **Every finding closed except desktop
+P2-9 (CRM headers Geist vs Amboqia) — left open by instruction as Matt's brand call.**
+- **Mobile P1-6 (the last open P1) FIXED + PROVEN:** `brokers.email_signature` now wired
+  end-to-end — getBrokers DAL projection + `Broker.emailSignature` + cache key `brokers-v5`;
+  `buildSignature` uses the broker's custom plain-text signature when set (escaped, `<br>`,
+  ORS 696.820 pamphlet line ALWAYS appended) with fallback to the generated identity block;
+  covers composer/inbox/sequence-engine by construction (all route through
+  `getSignatureForMailbox`). Settings helper copy corrected on both surfaces. 6 new tests.
+  Live proof: signature saved via the mobile sheet → real composer self-send to Matt's own
+  contact 13168 carried the custom block + compliance line → reverted net-zero.
+- **Desktop P2-7 + P2-8 FIXED:** reporting hub H1 → 24px CRM idiom; the 13× duplicated
+  `REPORTING_TABS` arrays replaced by ONE shared `ReportingTabStrip`
+  (`components/admin/crm/reporting/`) with contextual Call Logs/Speed to Lead/Contact
+  Attempts insertion — ~520 duplicated lines deleted, and the 11 pages that rendered an
+  INERT "ⓘ How Reporting works" Badge now get the real dialog (zero-inert rule). All 13
+  reporting routes verified live (active markers, dialog opens, 200s, no console errors).
+- **Mobile P2 backlog drained (P2-3..P2-11):** tab-strip auto-scroll (active tab centered) ·
+  Calendar tab "Add Appointment or Task" now has a REAL appointment branch (chooser →
+  `AppointmentSheet` w/ new `presetPersonId`, NEW DAL `getAppointmentsForPerson` renders the
+  contact's appointments; create round-trip proven net-zero) · phone/email label Title Case ·
+  merge-chip panel collapsed behind a disclosure at <md (desktop unchanged) · lead_created
+  rows read "<Name> was created" · settings profile card wears the real broker headshot ·
+  Radix `aria-describedby` warnings silenced on all 29 description-less Sheet/Dialog files ·
+  TEST-DATA HYGIENE: "Start (temp stage)" 47/48 deleted (migration
+  `20260702120000_remove_temp_deal_stages` applied; 0 refs; fallback module + cache key v2),
+  ZZTEST person 52274 deleted (19 FK tables verified 0), tc_deals ZZ-TEST-E2E-SIGNING fixture
+  purged (immutability trigger disabled/re-enabled in one transaction, verified re-armed) —
+  dashboard + deals board verified clean.
+- **Gate repairs inherited from prior slices (HEAD was not fully green):** inbox page (605)
+  + sequence-engine route (601) were over the 600-LOC budget → split `BROKER_OPTIONS` into
+  inbox-url.ts and the engine's pure helpers into `crm-sequence-engine/helpers.ts` (verbatim
+  move); dal-actions-reads re-baselined (+2 pre-existing reads from the audit/punch-list
+  commits); email-send-gated baseline re-keyed inbox:402→:398; the 4 report tables that lost
+  their coincidental `overflow-x-auto` got a real phone scroll fallback
+  (`no-scrollbar overflow-x-auto` on the table Card); crm-screens.json reporting-desktop
+  requires `ReportingTabStrip` (carries HowReportingWorks).
+- **Verified:** full `ci:gates` exit 0 (109 gate files accounted) · vitest 2431/2431 · live
+  dev-server pass at 1440x900 + 390x844, Matt's session, zero console errors, all mutations
+  net-zero (self-sends only). DAL index + schema snapshot refreshed.
+- **Still open (by design):** desktop P2-9 Amboqia-vs-Geist CRM headers (Matt's call) ·
+  ANTHROPIC_API_KEY credit (external — AI drafting degrades gracefully per P1-2 fix).
+
 ### MOBILE ADVERSARIAL AUDIT ✅ RUN + P0/P1s FIXED (2026-07-02) — ledger: [`CRM_AUDIT_MOBILE_2026-07-02.md`](CRM_AUDIT_MOBILE_2026-07-02.md)
 The production-ready-bar mobile pass (390x844, post-punch-list, live data, every mutation
 net-zero). 10 surfaces / ~120 affordances swept; zero console errors. **1 P0 + 6 P1 + 11 P2.**
