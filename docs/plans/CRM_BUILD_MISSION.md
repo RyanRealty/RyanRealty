@@ -328,6 +328,33 @@ and show me the screenshot.
 
 ## PROGRESS (agents append here as slices ship)
 
+### GROUND-UP REBUILD under ci:crm-screen-parity (started 2026-07-01, screen-by-screen)
+- **person-detail-desktop** ✅ DONE + PROVEN (commit 66e79095). Registry flipped to done with 9
+  requiredComponents + committed `_verify/screen-person-detail-desktop.png` (1440x900, dev server,
+  authed, lead 12679, real crm_* data). REBUILT the tabbed LeadTabs desktop layout into the §07
+  three-column FUB structure: PersonSidebar (§07a: avatar/header, phones w/ Edit Phone Numbers modal
+  + Bad Number per 7c.6, inline email/address, Relationships w/ Add-relationship + Merge modals,
+  Details Stage/Assigned-to (Me+PONDS+TEAM)/Source/Price/Timeframe/Tags/Campaigns, Financing,
+  Custom Fields, Background, Social Profile, Groups, owner-gated Delete person), PersonCenterColumn
+  (§07b: 4-tab action bar, ⚡ Quick Follow Up 8 presets, Note/Email/Text/LogCall compose, 8 filter
+  tabs w/ exact count:'exact' badges, date-grouped cards w/ star toggle + Archived pill + opens
+  badges + LEAD ORIGIN key-value card, scroll-to-top FAB), PersonRightRail (§7c.8: metadata strip,
+  owned-home card, Action Plans + Apply Automation modal, Activity summary, Tasks, Appointments,
+  Website Activity, Deals, Automations, Files upload/link/drag-drop → private crm-files bucket,
+  Collaborators modal excl. assigned agent, kbd hint). Mobile (§25) branch untouched. Migration
+  20260701150000 APPLIED to hosted (crm_timeline.starred, crm_people.timeframe/lender_name,
+  crm_contact_points.status, crm_person_files). Gates + 2324 tests green.
+  DECISIONS (this slice): Delete person = soft delete (deleted=true + Trash, auditable) not
+  hard-erase · Website Activity rail section = the §7c.8.5 AgentFire-widget slot, holds the
+  in-house panels (quick actions, behavior, viewed homes, engagement, report subs, saved
+  searches) · Automations rail section mirrors enrollments (FUB 2.0 merged them) · timeline
+  depth = latest 100 events (older via Load-more DEFERRED) · sidebar/rail drag-reorder (AC-COLL-3,
+  §7c.8 per-user order) DEFERRED · saved-search inline EDIT dropped (assign+remove kept) ·
+  §07b person navigator counter hidden (direct-URL arrival, per spec) · social links render only
+  when enrichment data exists (no enrichment job yet).
+  VERIFY HARNESS: scratchpad Playwright + preview-session cookie (script pattern reusable for the
+  remaining screens; capture cookies fresh, they rotate hourly).
+
 ### Reporting suite (delivery order #1) — 12 of ~13 live + verified (near complete)
 All verified on prod (ryan-realty.com) via browser screenshot vs the reporting-GIF frames,
 real crm_* data, navy/cream tokens. Shared components proven: KPI strip (sparklines + vs-prev
