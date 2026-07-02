@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.716.8 (2026-07-02)
+
+### Bug Fixes
+- fix(crm): findings-closure — both audit ledgers drained, zero open P0/P1
+
+---
+
+
 ## v1.716.7 (2026-07-02)
 
 ### Maintenance
