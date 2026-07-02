@@ -2,7 +2,7 @@
 
 # CROSS-AGENT HANDOFF — CRM GROUND-UP REBUILD, screen-by-screen under ci:crm-screen-parity (2026-07-01)
 
-**HEAD:** `c2492625` on `main` · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` (7 done, all proven)
+**HEAD:** `1c447866` on `main` · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` (8 done, all proven)
 
 ## What this track is
 Matt's directive: execute CRM_BUILD_MISSION as a ground-up rebuild, screen by screen through the
@@ -11,6 +11,26 @@ full DoD, gated by `ci:crm-screen-parity` (scripts/check-crm-screen-parity.mjs �
 gap-fills. Standing commit+push authorization is in the mission doc.
 
 ## Shipped
+- **tasks-calendar-desktop = done + proven** (commit `1c447866`): §09 rebuild of BOTH surfaces —
+  `/admin/crm/calendar` (CalendarView / CalendarGrids / AppointmentModal in
+  `components/admin/crm/calendar/`; old CalendarGrid+AppointmentSheet preserved there as the
+  <md MobileCalendar branch until M6/§29) and `/admin/crm/tasks` (TasksView in
+  `components/admin/crm/tasks/`; TaskQueue = the <md branch). Day/Week/Month grids w/ three
+  real event sources (appointments navy · open tasks amber · deal closings green), §2.6
+  16-field modal w/ REAL invitation emails (broker Gmail, suppression-checked, proven
+  self-addressed then net-zero deleted), §1.2 two-panel tasks module (Overdue default landing,
+  Filters ▾ 8-type + Show Completed, Me ▾, Clear My Overdue via NEW clearMyOverdueTasksAction,
+  optimistic completion). Migration `20260702010000`-style: `20260702120000` (APPLIED to
+  hosted) adds crm_appointments.timezone. NEW pure lib `lib/crm/calendar.ts` (+10 tests) +
+  zonedDateKey/zonedMinutes in lib/format/date; DAL adds getCalendarExtras /
+  getPersonNamesByIds / getCalendarContactOptions. Decisions + deferrals in the mission
+  PROGRESS block. GOTCHAS: crm_task_types/crm_appointment_types/crm_appointment_outcomes have
+  RLS-on with ZERO policies — anon reads return [] silently; their cached readers now use the
+  service client (check any OTHER anon config-table reader you touch for the same failure) ·
+  appointments store WALL-CLOCK times as UTC while tasks are true instants (conventions
+  documented in lib/crm/calendar.ts — don't "fix" one to match the other) · appointments.ts is
+  a documented NON_SENDER in check-email-quality (1:1 transactional invite) · the pull--rebase
+  AFTER commit rewrote the SHA (commit, then rebase, then read the SHA you publish).
 - **company-settings-desktop = done + proven** (commit `c2492625`): §15 full rebuild of
   `/admin/crm/settings/company` — every previously-deferred sub-flow is now REAL (office-hours
   editor w/ LIVE voicemail enforcement in the Twilio voice webhook via NEW `lib/crm/office-hours.ts`,
@@ -109,12 +129,11 @@ gap-fills. Standing commit+push authorization is in the mission doc.
    (pre-push runs a full prod build, takes ~5 min — use a background shell).
 
 ## NEXT (screen-by-screen, registry order)
-1. **tasks-calendar-desktop** (§09, `app/admin/(protected)/crm/calendar/page.tsx`) — read the
-   whole §09 spec + the current implementation, close every structural diff, capture
-   `_verify/screen-tasks-calendar.png` at 1440x900, fill requiredComponents, flip to done,
-   FULL gates + tests, commit + push.
-2. reporting-desktop (§11) — same treatment (compare vs spec, close diffs, capture proof,
-   flip done).
+1. **reporting-desktop** (§11, `app/admin/(protected)/crm/reporting/agent-activity/page.tsx`) —
+   mostly verify-and-prove (the 12 reports were built recently): read the whole §11 spec +
+   `addenda-captures/agentactivity.md`, compare the live pages, close structural diffs, capture
+   `_verify/screen-reporting-agent-activity.png` at 1440x900, fill requiredComponents, flip to
+   done, FULL gates + tests, commit + push.
 3. Mobile screens (M-track largely built; person-detail-mobile/mobile-shell/mobile-activity-people
    need proof artifacts at 390px via `?view=mobile` where available; others per §26–§29).
 4. Also open in the mission doc: email open+click tracking wiring (every send path) — nobody owns

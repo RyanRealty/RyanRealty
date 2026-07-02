@@ -338,6 +338,83 @@ and show me the screenshot.
 ## PROGRESS (agents append here as slices ship)
 
 ### GROUND-UP REBUILD under ci:crm-screen-parity (started 2026-07-01, screen-by-screen)
+- **tasks-calendar-desktop** ✅ DONE + PROVEN (commit 1c447866). Registry flipped to done with 9
+  requiredComponents + committed `_verify/screen-tasks-calendar.png` (1440x900, dev server, authed,
+  real crm_* data, ZERO console errors via fresh Playwright context) + supplementary
+  `_verify/screen-tasks-calendar-tasks.png`. REBUILT BOTH §09 surfaces. CALENDAR
+  (`/admin/crm/calendar`): §2.2 two-column CalendarView — mini month cal (today circled, faded
+  overflow, click-to-jump) + Schedule|Filters sidebar tabs (Today/Tomorrow event lists, blue
+  all-day pills, "No events, add appointment" inline link → the modal; Filters = event-source
+  checkboxes) over Day/Week/Month grids (Day default per §2.1; All Day row; 7am–10pm hourly band
+  w/ click-empty-slot quick-create; week highlights today's column; month cells carry the §2.5.3
+  dot taxonomy + "N More" overflow → day view). Header = Day|Week|Month underline switcher,
+  ‹ Today ›, Everyone ▾ (superuser only — everyone else scoped AT the data layer), circular +.
+  THREE event sources, all real: appointments (navy `bg-primary`), open tasks w/ due dates
+  (amber `bg-warning`, §1.10 — LA-zone day/minutes via new zonedDateKey/zonedMinutes), deal
+  closings (green `bg-success`). §2.6 modal = the full 16-field inventory (Add title; start
+  date/start time/end time/end date; timezone Select persisted to NEW crm_appointments.timezone
+  — migration 20260702120000 APPLIED to hosted; All-day checkbox hides time pickers; map-pin
+  location; LIVE guest search (searchCrmContactsAction) + chips w/ the current broker pre-added
+  (superuser = broker Select); Set type / No Outcome dropdowns from the admin config tables;
+  RichTextBody notes (reused §13 editor); send-invitation checkbox default-false; full-width
+  Create; X dismiss) + AC-17: editing an appointment whose invite was sent shows the
+  reminder-will-be-canceled warning (checkbox re-seeds unchecked per the FUB gotcha, but we WARN
+  instead of silently canceling). §2.11 invitation emails are REAL: sendAppointmentInvites →
+  broker's own Gmail → each contact invitee's PRIMARY email only, suppression-checked per
+  recipient, open/click-instrumented, crm_timeline email_out logged, invite_sent flipped —
+  PROVEN live with a self-addressed send to Matt's own contact row, then net-zero deleted.
+  TASKS (`/admin/crm/tasks`): §1.2 TasksView — sub-tabs Today's Tasks | Overdue (amber count
+  badge, decrements optimistically) | Future w/ §1.1 default landing (Overdue if any, else
+  Today); toolbar = How Tasks work Dialog (§1.9, honest text explainer — no fake FUB video),
+  Filters ▾ DropdownMenu (§1.4.2: All-types meta toggle + all 8 type checkboxes w/ §1.12
+  color-coded icons, live client-side filtering + Show Completed → merges trailing-30d
+  completed rows into the active bucket's date groups, muted/strikethrough), Me ▾ agent Select
+  (superuser-only per §1.4.3 permission gate; brokers see a pinned Me); two-panel body = idle
+  light-gray LEFT panel → selected-task detail card (contact link + stage, inline name/type/due
+  edit, reassign (superuser), snooze 1d/7d, complete, delete) and the white task-list panel w/
+  §1.5.1 clock-icon header + "Clear My Overdue Tasks" (AlertDialog confirm w/ count → NEW
+  clearMyOverdueTasksAction — completes the CALLER's own overdue only, per the spec restriction,
+  same stale-floor definition as the badge), §1.5.2 date groups ("Tuesday, Jun 23 (3)", DESC on
+  Overdue, ASC elsewhere, "No due date" group last per §1.8), §1.5.3 full row anatomy (checkbox,
+  tinted-initials Avatar, contact hyperlink → /admin/console/leads/[id], type icon, description,
+  assignee sub-text w/ person icon, 12-hour lowercase due time, » expand chevron), §1.6
+  optimistic completion (strike → badge decrement same tick → 500ms slide-out → server action w/
+  revert-on-error; VERIFIED live on a disposable task, completed_at written, then deleted
+  net-zero). Both pages keep the pre-§09 UI as the <md branch (MobileCalendar + TaskQueue) until
+  M6/§29. NEW SHARED: lib/crm/calendar.ts (pure month-grid/week-range/label/wall-clock math, 10
+  unit tests — no Intl, hydration-safe) + zonedDateKey/zonedMinutes in lib/format/date.
+  LATENT BUG FIXED: crm_task_types + crm_appointment_types + crm_appointment_outcomes have RLS
+  enabled with ZERO policies → the anon-cached readers (getCrmTaskTypes/getAppointmentTypes/
+  getAppointmentOutcomes) silently returned [] since they shipped — the task type filters and
+  the appointment Type/Outcome dropdowns had NEVER had options. Switched to the service client
+  (internal admin config tables). Also moved the calendar page's inline crm_people read into the
+  DAL (getCalendarContactOptions — G1 hygiene). Gates: full ci:gates exit 0 + vitest 2414 green +
+  ci:data-access refreshed. DECISIONS (this slice): FUB teal + button → brand primary; closing
+  events green not orange (deals surface's established closed-green; token-swap class) ·
+  invitation checkbox label reads "Send invitation email to linked contacts" + an honest "text
+  reminders are not enabled yet" note (the §2.11 SMS Power-Up needs reminder scheduling infra —
+  DEFERRED) · guests = CONTACTS via guest_person_ids; the team-member side of §2.6 field 10 is
+  the assigned-broker chip (3-broker shop; multi-team-member invitee junction DEFERRED w/ the
+  spec's crm_appointment_invitees table — the array model is the working backend) · first guest
+  chip = crm_appointments.person_id (primary contact), rest = guest_person_ids · multi-day
+  appointments render as an all-day block on each covered day · appointment wall-clock-as-UTC
+  storage convention PRESERVED (tasks = true instants in LA; both documented in lib/crm/calendar.ts)
+  · tasks page URL stays ?view= query (spec's /crm/tasks/{seg} path segments would orphan
+  existing deep links; 'future' accepted as the spec's segment name) · Completed remains
+  reachable (mobile tab + Show Completed) though the desktop tab set is the spec's three ·
+  task-type filtering is client-side over the loaded page (live, no reload, per §1.4.2) ·
+  "Clear My Overdue" COMPLETES rather than deletes (audit trail; spec allows either) · New Task
+  button kept in the header (working feature preserved; FUB has no tasks-page create — deliberate
+  improvement, §1.8 CTA links to it) · How-Tasks-work modal ships Ryan Realty text, no video
+  (spec marks the FUB video low-priority; an internal video doesn't exist — honest copy instead).
+  DEFERRED (explicit): §2.13 Google/MS365 two-way sync (gcal_event_id column + getGcalEvents lib
+  preserved; OAuth sync engine is its own delivery) · §2.11 SMS reminder Power-Up + timing rules ·
+  §1.13 notification channels (bell/push/SMS/email on task due) · §1.17 behavioral-trigger dedup
+  (auto-task creation lives in the automation engine, not this surface) · §1.18 Hot Sheet email ·
+  §2.14 Appointment Report (belongs to §11 reporting-desktop) · drag-to-move/resize events on the
+  grid · overlapping same-time blocks stack (FUB-equivalent) · §1.14 quick follow-up lightning
+  presets (person-detail owns it) · admin CRUD pages for types/outcomes already existed at
+  /admin/crm/settings/appointments (AC-18/19 — verified present, untouched).
 - **company-settings-desktop** ✅ DONE + PROVEN (commit c2492625). Registry flipped to done with 5
   requiredComponents + committed `_verify/screen-company-settings.png` (1440x900, dev server,
   authed, real crm_* data, ZERO console errors via fresh Playwright context). The delivery-#2
