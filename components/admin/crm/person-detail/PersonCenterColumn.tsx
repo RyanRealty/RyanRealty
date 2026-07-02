@@ -34,6 +34,8 @@ import {
   Settings,
   ListChecks,
   CircleAlert,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -48,6 +50,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
+import { partitionNotes } from '@/lib/crm/note-classify'
 import { addCrmNoteAction, startCrmCallAction } from '@/app/actions/crm'
 import { logCrmCallAction, quickFollowUpAction, toggleTimelineStarAction } from '@/app/actions/crm-person-detail'
 
@@ -114,6 +117,18 @@ function kindIcon(kind: string, source: string): { icon: React.ReactNode; classN
 
 function dateGroupLabel(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })
+}
+
+/** Bucket an already-sorted (newest-first) timeline list into date sections. */
+function dateGroupItems(list: TimelineItem[]): Array<{ label: string; items: TimelineItem[] }> {
+  const out: Array<{ label: string; items: TimelineItem[] }> = []
+  for (const item of list) {
+    const label = dateGroupLabel(item.ts)
+    const last = out[out.length - 1]
+    if (last && last.label === label) last.items.push(item)
+    else out.push({ label, items: [item] })
+  }
+  return out
 }
 
 /**
@@ -358,6 +373,9 @@ export function PersonCenterColumn({
   const [showFab, setShowFab] = useState(false)
   const [quickPending, startQuick] = useTransition()
   const [quickNote, setQuickNote] = useState<string | null>(null)
+  // Notes tab: the "Automated activity" (system-note) section is collapsed by
+  // default so a broker's own notes sit above the automation firehose.
+  const [showSystemNotes, setShowSystemNotes] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
@@ -369,16 +387,21 @@ export function PersonCenterColumn({
     return items.filter((i) => kinds.includes(i.kind))
   }, [items, tab])
 
-  const groups = useMemo(() => {
-    const out: Array<{ label: string; items: TimelineItem[] }> = []
-    for (const item of filtered) {
-      const label = dateGroupLabel(item.ts)
-      const last = out[out.length - 1]
-      if (last && last.label === label) last.items.push(item)
-      else out.push({ label, items: [item] })
+  const groups = useMemo(() => dateGroupItems(filtered), [filtered])
+
+  // Notes tab only: split broker-written notes (shown first) from
+  // auto-generated system notes (de-emphasized below). Display-only ranking —
+  // both groups keep the reverse-chron order from `filtered`; nothing is hidden.
+  const noteSplit = useMemo(() => {
+    if (tab !== 'notes') return null
+    const { human, system } = partitionNotes(filtered)
+    return {
+      humanGroups: dateGroupItems(human),
+      systemGroups: dateGroupItems(system),
+      humanCount: human.length,
+      systemCount: system.length,
     }
-    return out
-  }, [filtered])
+  }, [tab, filtered])
 
   const tabCount = (key: string): number | null => {
     if (key === 'all') return totalCount
@@ -507,7 +530,60 @@ export function PersonCenterColumn({
         {tab === 'marketing' && (counts.marketing ?? 0) > 75 ? (
           <p className="text-xs text-muted-foreground">Showing 75 most recent marketing emails.</p>
         ) : null}
-        {groups.length === 0 ? (
+        {noteSplit ? (
+          /* Notes tab: broker-written notes first, auto-generated below (§07b). */
+          noteSplit.humanCount === 0 && noteSplit.systemCount === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">No notes yet.</p>
+          ) : (
+            <>
+              {noteSplit.humanCount > 0 ? (
+                noteSplit.humanGroups.map((g) => (
+                  <div key={`h-${g.label}`} className="space-y-3">
+                    <div className="relative text-center">
+                      <span className="absolute inset-x-0 top-1/2 border-t border-border" aria-hidden />
+                      <span className="relative bg-background px-3 text-xs font-medium text-muted-foreground">{g.label}</span>
+                    </div>
+                    {g.items.map((item) => (
+                      <EventCard key={item.id} item={item} />
+                    ))}
+                  </div>
+                ))
+              ) : (
+                <p className="py-6 text-center text-sm text-muted-foreground">No notes from your team yet.</p>
+              )}
+
+              {noteSplit.systemCount > 0 ? (
+                <div className="space-y-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowSystemNotes((v) => !v)}
+                    aria-expanded={showSystemNotes}
+                    className="flex w-full items-center gap-1.5 border-t border-border pt-3 text-xs font-medium text-muted-foreground hover:text-foreground"
+                  >
+                    {showSystemNotes ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                    Automated activity
+                    <Badge variant="secondary" className="px-1.5 text-[10px] tabular-nums">
+                      {noteSplit.systemCount}
+                    </Badge>
+                  </button>
+                  {showSystemNotes
+                    ? noteSplit.systemGroups.map((g) => (
+                        <div key={`s-${g.label}`} className="space-y-3 opacity-70">
+                          <div className="relative text-center">
+                            <span className="absolute inset-x-0 top-1/2 border-t border-border" aria-hidden />
+                            <span className="relative bg-background px-3 text-xs font-medium text-muted-foreground">{g.label}</span>
+                          </div>
+                          {g.items.map((item) => (
+                            <EventCard key={item.id} item={item} />
+                          ))}
+                        </div>
+                      ))
+                    : null}
+                </div>
+              ) : null}
+            </>
+          )
+        ) : groups.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">No activity in this view yet.</p>
         ) : (
           groups.map((g) => (

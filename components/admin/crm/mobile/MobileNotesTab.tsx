@@ -14,12 +14,13 @@
  * Client component because it manages the composer sheet open state.
  */
 
-import { useState } from 'react'
-import { Plus, StickyNote } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Plus, StickyNote, ChevronDown, ChevronRight } from 'lucide-react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { CrmAvatar } from '@/components/admin/crm/mobile/CrmMobileKit'
+import { partitionNotes } from '@/lib/crm/note-classify'
 import { cn } from '@/lib/utils'
 
 export interface MobileNote {
@@ -54,6 +55,9 @@ export function MobileNotesTab({
   // Tap-to-expand: the 5-line clamp (§25.8.3) left long notes UNREADABLE on
   // mobile — no affordance showed the rest (2026-07-02 mobile audit).
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
+  // "Automated activity" (system-note) section collapsed by default so a
+  // broker's own notes sit above the automation firehose (parity w/ desktop).
+  const [showSystem, setShowSystem] = useState(false)
   function toggleExpanded(id: number) {
     setExpanded((prev) => {
       const next = new Set(prev)
@@ -61,6 +65,49 @@ export function MobileNotesTab({
       else next.add(id)
       return next
     })
+  }
+
+  // Display-only ranking: broker-written notes first, auto-generated below.
+  const { human, system } = useMemo(() => partitionNotes(notes), [notes])
+
+  function renderNoteCard(note: MobileNote) {
+    const authorSlug = note.broker ?? 'matt'
+    const authorName = brokerDisplayNames[authorSlug] ?? authorSlug
+    return (
+      <div
+        key={note.id}
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded.has(note.id)}
+        onClick={() => toggleExpanded(note.id)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') toggleExpanded(note.id)
+        }}
+        className="mx-4 mb-2 cursor-pointer overflow-hidden rounded-xl border border-border bg-card shadow-sm"
+      >
+        <div className="p-3">
+          <div className="flex items-start gap-3">
+            {/* §25.8.3: broker headshot 36 pt (initials fallback) */}
+            <CrmAvatar name={authorName} src={note.avatarUrl} size={36} className="mt-0.5 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <div className="mb-1 flex items-baseline justify-between gap-2">
+                <span className="text-[14px] font-semibold text-foreground">{authorName}</span>
+                <span className="shrink-0 text-[12px] text-muted-foreground">{note.dateLabel}</span>
+              </div>
+              {/* Body — 5-line clamp (§25.8.3), tap the card to read it all */}
+              <p
+                className={cn(
+                  'whitespace-pre-line text-[13px] leading-5 text-foreground',
+                  !expanded.has(note.id) && 'line-clamp-5',
+                )}
+              >
+                {note.body}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -92,48 +139,30 @@ export function MobileNotesTab({
         </div>
       )}
 
-      {/* §25.8.3 Note cards */}
-      {notes.map((note) => {
-        const authorSlug = note.broker ?? 'matt'
-        const authorName = brokerDisplayNames[authorSlug] ?? authorSlug
-        return (
-          <div
-            key={note.id}
-            role="button"
-            tabIndex={0}
-            aria-expanded={expanded.has(note.id)}
-            onClick={() => toggleExpanded(note.id)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') toggleExpanded(note.id)
-            }}
-            className="mx-4 mb-2 cursor-pointer overflow-hidden rounded-xl border border-border bg-card shadow-sm"
+      {/* §25.8.3 Broker-written notes first */}
+      {human.map(renderNoteCard)}
+      {notes.length > 0 && human.length === 0 && (
+        <p className="px-4 py-6 text-center text-[14px] text-muted-foreground">No notes from your team yet.</p>
+      )}
+
+      {/* Auto-generated notes, collapsed below (display-only de-emphasis) */}
+      {system.length > 0 && (
+        <>
+          <button
+            type="button"
+            onClick={() => setShowSystem((v) => !v)}
+            aria-expanded={showSystem}
+            className="mx-4 mt-1 flex w-[calc(100%-2rem)] items-center gap-1.5 border-t border-border py-3 text-[13px] font-medium text-muted-foreground"
           >
-            <div className="p-3">
-              <div className="flex items-start gap-3">
-                {/* §25.8.3: broker headshot 36 pt (initials fallback) */}
-                <CrmAvatar name={authorName} src={note.avatarUrl} size={36} className="mt-0.5 shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <div className="mb-1 flex items-baseline justify-between gap-2">
-                    <span className="text-[14px] font-semibold text-foreground">{authorName}</span>
-                    <span className="shrink-0 text-[12px] text-muted-foreground">
-                      {note.dateLabel}
-                    </span>
-                  </div>
-                  {/* Body — 5-line clamp (§25.8.3), tap the card to read it all */}
-                  <p
-                    className={cn(
-                      'whitespace-pre-line text-[13px] leading-5 text-foreground',
-                      !expanded.has(note.id) && 'line-clamp-5',
-                    )}
-                  >
-                    {note.body}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-      })}
+            {showSystem ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+            Automated activity
+            <span className="ml-0.5 rounded-full bg-secondary px-1.5 text-[11px] tabular-nums text-muted-foreground">
+              {system.length}
+            </span>
+          </button>
+          {showSystem && <div className="opacity-70">{system.map(renderNoteCard)}</div>}
+        </>
+      )}
 
       {/* §25.8.6 Note composer sheet */}
       <Sheet open={composerOpen} onOpenChange={setComposerOpen}>
