@@ -531,8 +531,9 @@ Hogge 52289 · Brenda Timms 52290 · Gail Newton 52291 · Edward Fess 52292 · S
 phone in snapshot — survivor's single phone stays with Scott) · Evan Karp 52294 · Debra Creekmore
 52295 · Samuel Robinson 52296 · Devin Pohl 52297 · Becky Crawley 52298.
 **Relationship kinds:** spouse for same-surname pairs + the two FUB-explicit Spouse rows (Martha,
-Brian Smith). Kind 'other' + FLAGGED FOR MATT (FUB type null, different surnames): **Tess
-McFeley↔Ryan Westendorf · Evan Karp↔Jessica King · Devin Pohl↔Kelly Plunkett.** Message history:
+Brian Smith). The three different-surname pairs (Tess McFeley↔Ryan Westendorf · Evan Karp↔Jessica
+King · Devin Pohl↔Kelly Plunkett) — **RESOLVED same day: Matt said "partner on those" → kind set
+to Partner both directions, Change-Logged on all six records, verified rendering live.** Message history:
 only 1 row was provably attributable by number (a text to Martha's 5414013159) — everything else in
 these histories carries no number payload evidence, so it stays on the survivors (couple threads).
 Group backfill re-run: idempotent, none of the 14 numbers appear in group threads. Minor note: Doug
