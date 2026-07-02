@@ -32,6 +32,12 @@ export const RELATIONSHIP_TYPES = [
   'referred',
   'assistant',
   'principal',
+  // In-law directional pair (Matt 2026-07-02, Mary Bowman ↔ Yahson Terry split).
+  // Paired son-in-law ↔ mother-in-law to keep the reciprocal map a total
+  // involution; when the true reciprocal differs (father-in-law), set the other
+  // side manually with setRelationshipType.
+  'son-in-law',
+  'mother-in-law',
   'other',
 ] as const
 
@@ -51,6 +57,8 @@ export const RELATIONSHIP_LABELS: Record<RelationshipType, string> = {
   referred: 'Referred',
   assistant: 'Assistant',
   principal: 'Principal',
+  'son-in-law': 'Son-in-law',
+  'mother-in-law': 'Mother-in-law',
   other: 'Other',
 }
 
@@ -87,6 +95,8 @@ const RECIPROCAL: Record<RelationshipType, RelationshipType> = {
   referred: 'referrer',
   assistant: 'principal',
   principal: 'assistant',
+  'son-in-law': 'mother-in-law',
+  'mother-in-law': 'son-in-law',
 }
 
 /** Narrow an arbitrary string to a known RelationshipType, else null. */

@@ -13,12 +13,19 @@ timeline · global Conversations webhook + autocreation on all 4 lines wired by
 `scripts/setup-conversations-webhooks.mjs` (re-runnable) · IM-sid media via the MMS proxy. Verified
 net-zero on prod end-to-end (delivered receipt to Matt's cell, signed-webhook row+task+unread,
 403 on forged sig, dedupe on replay, 1:1 path unaffected, all test rows deleted). Full entry:
-mission PROGRESS "GROUP SMS RECORDING SLICE". **AWAITING MATT (identity, do NOT guess): "Yahson
-Terry" has never existed as a contact — FUB's "Mary Bowman" (crm_people 12967) is a merged couple
-record holding msbrilliantdisguise@gmail.com + yahsonkt@hotmail.com and phones 714.337.6028 (all
-recorded SMS traffic) + 909.343.0531 (zero traffic ever). To split him out, Matt must say which
-phone is whose; then create Yahson + move his contact points (timeline history stays on Mary's
-record unless Matt wants per-message re-attribution).**
+mission PROGRESS "GROUP SMS RECORDING SLICE".
+
+**RESOLVED same day — YAHSON SPLIT + FUB GROUP-TEXT BACKFILL (Matt: "yahson is 909", son-in-law):**
+Yahson Terry = crm_people **52283** (909.343.0531 + yahsonkt@hotmail.com + 107 provably-909 rows
+moved from Mary #12967; `son-in-law`/`mother-in-law` reciprocal link, enum extended). And Matt's
+"merge all past FUB group texts" directive ran: `scripts/crm-backfill-fub-group-texts.mjs`
+(committed, idempotent, FUB read-only) enriched 763 imported group rows with group context and
+mirrored 784 group messages across 18 FUB threads onto every mapped participant (Yahson +220,
+James Merkle #1933 +3; 9 unmatched numbers report-only). 7 new route regression tests lock the
+future path. OPEN FOLLOW-UP: the Jun-24→Jul-2 dropped-group-MMS window is unrecoverable from
+Twilio — a Messages-app sweep on the mac mini is the offered recovery; threads plausibly active
+in the gap: Mary/Yahson (groupTextId 6) + the Hogans (18). Full entry: mission PROGRESS
+"YAHSON SPLIT + FUB GROUP-TEXT BACKFILL".
 
 ## 🏁 PRODUCTION SIGN-OFF LANDED (2026-07-02, commit 3bb76d69) — CRM verified PRODUCTION READY
 Final independent verification pass: [`CRM_PRODUCTION_SIGNOFF_2026-07-02.md`](CRM_PRODUCTION_SIGNOFF_2026-07-02.md).

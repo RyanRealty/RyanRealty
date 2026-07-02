@@ -514,6 +514,45 @@ re-runs the E2E checks and states the sign-off inventory to Matt.
 
 ## PROGRESS (agents append here as slices ship)
 
+### YAHSON SPLIT + FUB GROUP-TEXT BACKFILL ✅ (2026-07-02) — "yahson is 909" executed; all FUB-era group texts merged to the right people
+Follow-on to the group-SMS slice below, per Matt's confirmations ("yahson is 909"; "merge all of
+the past group texts from FUB with the appropriate people"; Yahson is Mary's SON-IN-LAW):
+1. **Contact split (all mutations `-- audit:`-tagged, verified on prod pages).** Yahson Terry =
+   crm_people **52283** (stage Active Client, broker matt). Moved from Mary Bowman #12967: phone
+   909.343.0531 + yahsonkt@hotmail.com (contact points AND embedded jsonb) + the **107 timeline
+   rows provably to/from 909** (dedupe suffixes rewritten :p12967→:p52283). Reciprocal
+   relationship rows: Mary→Yahson `son-in-law`, Yahson→Mary `mother-in-law` (enum extended in
+   `lib/crm/relationships.ts` — new directional pair, involution tests hold). The FUB-imported
+   name-only "Yahson Terry" relationship row (id 7) was deleted as superseded (it double-rendered
+   in the panel). Change-log rows written on both records. FUB independently confirms the
+   identity: its group-thread participants name "Yahson Terry +19093430531".
+2. **FUB group-text backfill (`scripts/crm-backfill-fub-group-texts.mjs`, committed, idempotent).**
+   ROOT CAUSE: the comms importer dropped FUB's `groupTextId` + `participants` fields, so every
+   FUB-era group text lived only on the one person FUB attached it to. The script re-reads FUB
+   READ-ONLY (Matt-authorized reference pulls; FUB stays write-dead), ENRICHES the 763 imported
+   group rows with group context (`group/groupTextId/groupMembers/fromNumber`), and MIRRORS each
+   group message onto every other participant who is already a CRM person (dedupe
+   `fub-group:<id>:p<pid>` + a same-ts guard against FUB per-person message-id copies — caught 3
+   real cross-feed dupes on person 13020). Totals: 530 people scanned · 2,169 messages · **784
+   group messages across 18 threads** · mirrors: Yahson #52283 +220, James Merkle #1933 +3 · 9
+   unmatched numbers (no CRM person, no FUB person — REPORTED, never auto-created:
+   out/fub-group-backfill-report.json). Idempotence proven: second `--apply` = 0 enriched /
+   0 mirrored / 245 skipped. GOTCHA fixed en route: supabase `.range()` pagination WITHOUT
+   `.order()` returns nondeterministic pages (silently dropped ~50 people on the first scan) —
+   every pageAll builder now carries `.order('id')`.
+3. **Durability locks.** NEW `app/api/twilio/conversations-events/route.test.ts` (7 tests):
+   group inbound → all mapped members' timelines · unknown author → lead + alert · per-person
+   dedupe keys + ignoreDuplicates · STOP honored via suppression chokepoint · proxy/1:1
+   conversations skipped (no double-write) · own-line author skipped · unsigned request → 403.
+   vitest config now includes `app/api/**/*.test.ts`.
+4. **The Jun-24→Jul-2 dropped-group-MMS window (for Matt).** Group texts to the ported line were
+   dropped by Twilio between the port (Jun 24) and the fix (Jul 2) — never delivered, NOT
+   recoverable from Twilio (no log exists). Threads plausibly active in that window, by FUB-era
+   recency: **groupTextId 6 Mary/Yahson/Matt (last FUB msg Jun 12, 239 msgs — Mary was still
+   texting 1:1 through Jul 1, so gap traffic is likely)** and groupTextId 18 Patrick+Tanya
+   Hogan/Matt (last Jun 3). All 16 other threads were ≥6 weeks stale. Follow-up (coordinator):
+   a Messages-app sweep on the mac mini is the offered recovery path for that window.
+
 ### GROUP SMS RECORDING SLICE ✅ (2026-07-02, commit 74d22bf9) — Matt's "are group SMS recorded?" answer: they were NOT; now they are
 Matt asked whether group SMS can be sent through the CRM and whether group conversations (e.g. with
 Mary Bowman + Yahson Terry) are recorded. Findings, verified against Twilio docs + live API:

@@ -19,6 +19,9 @@ export default defineConfig({
       'components/search/__tests__/**/*.test.tsx',
       'components/admin/crm/**/*.test.ts',
       'components/admin/crm/**/*.test.tsx',
+      // Route-handler tests (e.g. the Twilio conversations-events webhook
+      // regression locks) live next to their route.ts.
+      'app/api/**/*.test.ts',
     ],
     globals: false,
   },
