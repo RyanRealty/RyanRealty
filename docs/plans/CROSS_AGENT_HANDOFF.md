@@ -2,7 +2,7 @@
 
 # CROSS-AGENT HANDOFF — CRM GROUND-UP REBUILD, screen-by-screen under ci:crm-screen-parity (2026-07-01)
 
-**HEAD:** `1ceb536e` on `main` · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` (5 done, all proven)
+**HEAD:** `251ae048` on `main` · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` (6 done, all proven)
 
 ## What this track is
 Matt's directive: execute CRM_BUILD_MISSION as a ground-up rebuild, screen by screen through the
@@ -11,6 +11,23 @@ full DoD, gated by `ci:crm-screen-parity` (scripts/check-crm-screen-parity.mjs �
 gap-fills. Standing commit+push authorization is in the mission doc.
 
 ## Shipped
+- **templates-desktop = done + proven** (commit `251ae048`): §13 two-level rebuild of
+  `/admin/crm/settings/templates` (TemplateFolderList / EmailTemplateList / TextTemplateList /
+  EmailTemplateModal / TextTemplateModal / MergeFieldInserter / TemplatePerfScore / RichTextBody /
+  EmojiPickerButton in `components/admin/crm/settings/templates/`; old TemplateEditor DELETED),
+  URL model `?t=email|text&folder=all|my|used|cat:<name>&q=`. Migration `20260702010000` APPLIED
+  to hosted (crm_templates.preview_text + featured + nullable created_at). PLUS the mission's
+  "FIX: merge fields" SHIPPED: renderCrmMerge resolves ALL ~30 catalog tokens via NEW
+  `lib/crm/merge-context.ts` (buildMergeContext), wired ON SEND into composer email/SMS, the
+  sequence engine, bulk email-cohort, enroll + previews, self-test, lead-page prefill;
+  `lib/crm/merge.test.ts` asserts every token resolves; PROVEN on a real delivered email read
+  back from Matt's Gmail. Decisions + deferrals in the mission PROGRESS block. GOTCHAS: the
+  resolver is now PURE — %greeting% resolves only from ctx.now (buildMergeContext stamps it;
+  ambient new Date() in the resolver trips ci:hydration-safety) · greetingFor routes through
+  lib/format/date (ci:date-format) · Radix Tabs/AlertDialog in the preview browser need real
+  PointerEvent pointerdown sequences (memory `reference_preview_eval_radix_gotchas`) · Dialog
+  width overrides need `sm:max-w-*` (the primitive's own `sm:max-w-lg` wins otherwise) ·
+  Tooltip needs a local TooltipProvider on this surface.
 - **automations-desktop = done + proven** (commit `1ceb536e`): §12 rebuild of
   `/admin/crm/sequences` — the §12.2 list (folder cards + 10-column table w/ Using-pill /
   Engaged "N+ P%" / Created By avatars / optimistic Status toggles) + the §12.4 three-column
@@ -74,17 +91,16 @@ gap-fills. Standing commit+push authorization is in the mission doc.
    (pre-push runs a full prod build, takes ~5 min — use a background shell).
 
 ## NEXT (screen-by-screen, registry order)
-1. **templates-desktop** (§13, `app/admin/(protected)/crm/settings/templates/page.tsx`) — read
-   the whole §13 spec, compare the existing (prod-verified, delivery-#7) templates surface
-   against it, close structural diffs, capture `_verify/screen-templates.png` at 1440x900,
-   fill requiredComponents, flip to done, FULL gates + tests, commit + push.
-2. company-settings-desktop (§15.8) · tasks-calendar-desktop (§09) · reporting-desktop (§11) —
-   these were built + prod-verified in the previous push, so mostly: compare vs spec, close
-   diffs, capture proof, flip done.
+1. **company-settings-desktop** (§15.8, `app/admin/(protected)/crm/settings/company/page.tsx`) —
+   built + prod-verified in the previous push (commit 5ea1fe37), so mostly: read §15.8, compare
+   the live surface vs spec, close structural diffs, capture `_verify/screen-company-settings.png`
+   at 1440x900, fill requiredComponents, flip to done, FULL gates + tests, commit + push.
+2. tasks-calendar-desktop (§09) · reporting-desktop (§11) — same treatment (compare vs spec,
+   close diffs, capture proof, flip done).
 3. Mobile screens (M-track largely built; person-detail-mobile/mobile-shell/mobile-activity-people
    need proof artifacts at 390px via `?view=mobile` where available; others per §26–§29).
-4. Also open in the mission doc: email open+click tracking wiring (every send path) + the
-   renderCrmMerge resolver fix (~25 tokens go out literal). Nobody owns it yet.
+4. Also open in the mission doc: email open+click tracking wiring (every send path) — nobody owns
+   it yet. (The renderCrmMerge resolver fix SHIPPED with templates-desktop, 251ae048.)
 
 ## Gotchas carried forward
 - crm_timeline.starred / crm_people.timeframe+lender_name / crm_contact_points.status /

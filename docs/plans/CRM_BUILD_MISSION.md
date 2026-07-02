@@ -189,6 +189,15 @@ whichever, the result must land in `email_events` per contact so the existing DA
    `lib/data/`. Do not claim done without the screenshots showing REAL open+click data on a contact.
 
 ## FIX: merge fields don't render in emails (CONFIRMED BUG, verified 2026-07-01)
+
+> ✅ **FIXED + PROVEN 2026-07-01 in the templates-desktop slice (commit 251ae048).** renderCrmMerge
+> resolves every MERGE_TOKENS entry from (person + agent + sender + company + property + lender)
+> via lib/crm/merge-context.ts, applied ON SEND in every path (composer email/SMS, engine, bulk
+> cohort, enroll, self-test, previews). Unit test lib/crm/merge.test.ts locks it. Verified on a
+> real delivered email read back from Matt's Gmail — all token classes resolved, unknown tokens
+> surfaced. One deliberate deviation: unknown/EMPTY tokens stay LITERAL (not empty string) so the
+> composer warning + the fail-closed automated-send gate keep catching broken copy. See the
+> templates-desktop PROGRESS entry. (The email open/click tracking task below is still open.)
 Matt: "the merge fields don't work in the emails." Root cause pinned by reading `lib/crm/merge.ts`:
 - The merge-field PICKER (`MERGE_TOKENS`) advertises ~30 tokens across 9 groups: `%contact_first_name%`,
   `%contact_last_name%`, `%contact_email%`, `%contact_phone%`, `%contact_stage%`, `%contact_address_*%`,
@@ -329,6 +338,85 @@ and show me the screenshot.
 ## PROGRESS (agents append here as slices ship)
 
 ### GROUND-UP REBUILD under ci:crm-screen-parity (started 2026-07-01, screen-by-screen)
+- **templates-desktop** ✅ DONE + PROVEN (commit 251ae048). Registry flipped to done with 9
+  requiredComponents + committed `_verify/screen-templates.png` (1440x900, dev server, authed,
+  real crm_* data, ZERO console errors on all four levels via fresh Playwright contexts).
+  REBUILT `/admin/crm/settings/templates` to the §13 two-level folder architecture (the old
+  sidebar+accordion TemplateEditor is DELETED): sub-nav Email Templates | Text Templates
+  (?t=email|text — the spec's two admin sub-nav URLs map onto the one registry-pinned route);
+  LEVEL 1 = folder list ("3 Email Template Folders": Name | count badge | Actions, system
+  All/My/Used-by-Automations + channel-scoped category folders w/ rename-pencil + delete-trash,
+  both confirmed; live counts 76/76/22 email · 37/37 text); LEVEL 2 = breadcrumb + "N Email
+  Templates" + Search Templates + "+ Folder" + "+ Email Template" controls, EMAIL table in the
+  exact §13.1.2 12-column order (checkbox · Template 2-line name+subject · Folders · Automations
+  count + eye popover listing referencing sequence NAMES (new usedBy in the DAL) · Action Plans ·
+  Sent · Opens · Clicks · Replies · Unsubscribed · Bounces w/ ? tooltip · Actions pencil) with
+  the spec null pattern (engagement cols render em-dash until Sent > 0, counts from email_events
+  tpl: rows), bulk checkbox select → Move-to-folder bar (NEW moveTemplatesToFolderAction —
+  category-only update that never re-validates legacy FUB bodies, ≤200); TEXT table = exactly the
+  §13.2.2 six columns (Template 2-line · Score via §13.8 TemplatePerfScore "Pending (–)" ·
+  Replies "–" · Opt Outs "–" · Sent "30d (all-time)" derived from the engine's templateKey-stamped
+  sms_out timeline rows · Actions pencil + trash w/ AlertDialog confirm). MODALS: §13.1.3 email
+  (✉ header, "Created on <date> by <name>" metadata when created_at known, "In use by N
+  automation steps (names)" Alert, Subject + Preview text EACH with a Merge Fields ▾ inserter,
+  rich-text body w/ B/I/U/lists/link/image toolbar (new dependency-free RichTextBody,
+  contentEditable; plain legacy bodies lifted to HTML on load; send path already handles both),
+  signature auto-added note, "Share this template with everyone" checkbox, folder assignment) +
+  §13.2.3 text (two-column 65/35: name + plain Textarea + Emoji picker + Merge Fields ▾ +
+  "Remember to keep text messages short" hint; right column Share toggle + circular Feature
+  button + red Delete). MergeFieldInserter = §13.3 DropdownMenu grouped by every catalog category
+  (Contact/Company/Agent/Lender/Sender/Property/Last Viewed/Lead Source/CMA/Other) + a live
+  Custom Fields group from crm_field_definitions; inserts %field_name% at cursor. BACKEND:
+  migration 20260702010000 (APPLIED to hosted) adds crm_templates.preview_text + featured +
+  NULLABLE created_at (NOT backfilled — the FUB import carried no creation date; the metadata
+  line renders only when known, §0); getCrmTemplatesAdmin extended (previewText/featured/
+  createdAt/usedBy/emailMetrics counts/textMetrics 30d+total w/ paged sms_out scan — never
+  rows.length); featured text templates sort FIRST in getCrmSmsTemplates (quick-text picker
+  prominence per AC); renameCategoryAction gains a channel scope; page access relaxed
+  superuser→any CRM broker w/ data-edge visibility scoping (shared OR legacy-null-owner OR own;
+  delete stays superuser). VERIFIED live in dev (Matt's session, 1440x900): both folder levels,
+  both tables, both modals, Preview tab (Radix pointer events), and a full CREATE→columns-
+  persisted-in-DB (featured/category/owner/created_at audited)→DELETE round-trip.
+  **FIX merge fields (the mission's confirmed bug) SHIPPED in this slice:** renderCrmMerge now
+  takes (person, MergeContext) and resolves EVERY MERGE_TOKENS entry — contact
+  (email/phone/stage/address/last-name from the row), agent + sender (brokers + telephony DALs,
+  CRM Twilio line first, title, brokerage=company, website), company name+address
+  (crm_company_settings), lender (person.lender_name split), lead source, %greeting% (company
+  timezone). Unknown/empty tokens stay LITERAL so findUnresolvedMergeTokens + the fail-closed
+  automated-send gate still catch them; resolver is PURE (no ambient Date — %greeting% resolves
+  only from ctx.now, stamped server-side by NEW lib/crm/merge-context.ts buildMergeContext).
+  Context applied ON SEND in every path: composer email + SMS (group MMS + broadcast), the
+  sequence engine (all 8 renderMerge sites), bulk email-cohort (per-recipient, cached-DAL cheap),
+  enroll first-touch preview, next-recommendation + broker-action-queue previews, template
+  self-test, lead-page composer prefill, and the client TemplatePreviewPane (server-built context
+  prop). Unit test lib/crm/merge.test.ts asserts every catalog token resolves (50 tests).
+  PROVEN END-TO-END: a real test email sent through the compliance-gated path and read back from
+  Matt's Gmail shows every token class resolved from live data ("Matt Ryan (Owner & Principal
+  Broker) with Ryan Realty at 115 NW Oregon Ave. #2...", agent phone = the real Twilio line,
+  %greeting% = "Good evening" at 8:46pm PT, unknown %property_mls_number% surfaced as a bracket
+  marker). Gates: full ci:gates exit 0 (design-tokens stable w/ 4 documented raw-button ignore
+  entries replacing the deleted TemplateEditor entry; admin-responsive 0; date-format routed
+  through lib/format/date; hydration-safety clean after the purity fix; file-size re-baselined
+  +6 for the lead-page merge wiring) + vitest 2394 green + ci:data-access refreshed.
+  DECISIONS (this slice): spec's /email-templates + /text-templates routes map to ?t= on the ONE
+  registry-pinned route · folders = crm_templates.category (single-folder membership; the spec's
+  crm_template_folders M2M tables DEFERRED — category covers observed usage; a template in two
+  folders is not reproducible in-house yet) · FUB's "Used by Action Plans" system folder renders
+  as "Used by Automations" (our engine IS automations; legacy action plans don't exist) and the
+  Action Plans table column renders honest 0 · Replies/Opt-Outs render "–" (no per-template
+  reply/opt-out attribution recorded; a fabricated rate violates §0) and Score renders
+  "Pending (–)" (no scoring model runs in-house — FUB's is network-benchmark AI we cannot
+  reproduce honestly; DEFERRED until real component metrics exist) · spec AC "No test-send
+  button" intentionally OVERRIDDEN — the mission names send-test-to-myself a working feature to
+  preserve (compliance-gated, self-only), same for the Preview tab + Active switch (pickers
+  filter on is_active; Status column dropped from the table per spec, the switch moved into the
+  modals) · created_at NOT backfilled for the 113 FUB-seeded rows (no source data — metadata
+  line simply absent) · %greeting_time% / %inquiry_address% / %neighborhood_*% (FUB tokens in
+  seeded bodies, absent from the §13.3 catalog) stay literal + composer-warned; mapping them
+  without knowing FUB's resolution would be guessing · bulk bar ships ONE safe action (Move to
+  folder); destructive bulk ops DEFERRED · emoji picker is a curated 32-emoji grid (internal
+  admin; a full emoji keyboard is a dependency without a requirement) · update now passes
+  ownerBroker through (the old editor silently NULLed owner on every edit — latent bug fixed).
 - **automations-desktop** ✅ DONE + PROVEN (commit 1ceb536e). Registry flipped to done with 8
   requiredComponents + committed `_verify/screen-automations.png` (1440x900, dev server, authed,
   real crm_* data, ZERO console errors via fresh Playwright context — the preview tab's shared
