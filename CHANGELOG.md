@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.708.0 (2026-07-02)
+
+### Features
+- feat(crm): company-settings-desktop — §15 full Company Settings rebuild (sub-flows now real)
+
+---
+
+
 ## v1.707.0 (2026-07-02)
 
 ### Features
