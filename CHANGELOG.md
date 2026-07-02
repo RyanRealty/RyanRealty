@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.716.1 (2026-07-02)
+
+### Bug Fixes
+- fix(crm): audit P0s — user-created smart lists never filtered; Create Note dead for imported contacts
+
+---
+
+
 ## v1.716.0 (2026-07-02)
 
 ### Features
