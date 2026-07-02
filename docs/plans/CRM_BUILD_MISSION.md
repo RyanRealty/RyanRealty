@@ -356,6 +356,85 @@ and show me the screenshot.
 ## PROGRESS (agents append here as slices ship)
 
 ### GROUND-UP REBUILD under ci:crm-screen-parity (started 2026-07-01, screen-by-screen)
+- **mobile-calendar-tasks + mobile-pickers** ✅ DONE + PROVEN (commits 8ded6cb5 + a7746316,
+  2026-07-02) — M6 (§29) + M7 (§28). Registry 16 done / 3 todo, both with committed 390x844
+  fresh-Playwright proofs (`_verify/mob-calendar-tasks.png` + `_verify/mob-pickers.png`),
+  zero console errors, real crm_* data.
+  **§29 BUILT (8ded6cb5):** `/admin/crm/calendar` at <md = Screen A (mob-08):
+  `components/admin/crm/calendar/mobile/` MobileCalendarScreen + MobileMonthGrid +
+  MobileCalendarRows — navy header (broker headshot → /admin/settings · month title +
+  caret toggling full-month↔week strip · bell → activity · search → people), navy grid
+  (white 22px numerals, 5px white/55 event dots, 44px cream-tint today/selected ring,
+  tap-to-select scroll-syncs the list via a data-datekey effect lookup, touch-swipe month
+  nav + sr-only prev/next for AT), white list (sticky ordinal headers "Wednesday, July
+  1st" at top-14 under the shell header; 60px CalendarTaskRow: 18px warning checkbox +
+  A.6 type icon (shared components/admin/crm/mobile/task-type-icons.tsx w/ the
+  deterministic broker badge palette matt navy / paul indigo / rebecca teal) + 15px title
+  + 13px time + 32px broker badge; CalendarReminderRow (10px success dot) for
+  appointments (tap → edit AppointmentSheet) + deal closings (tap → /deals); optimistic
+  complete = strike → 500ms slide-out → server w/ revert-on-error; swipe-left
+  Delete/Resched./Complete; A.11 "No tasks scheduled" placeholder on the empty selected
+  date), FAB → D.2 type picker → AppointmentSheet (reused, full field set) / NEW shared
+  MobileTaskCreateSheet (D.3: live contact search, 8-type select w/ icons, description,
+  due date + conditional time; dueHours computed for the existing addCrmTaskAction).
+  `/admin/crm/tasks` at <md = Screen C: components/admin/crm/tasks/mobile/
+  MobileTasksScreen — navy Tasks header + C.10 filter sheet (All-Types meta + 8 type
+  checkboxes live client-filtering (verified 167→120 rows), Show Completed ?completed=1,
+  superuser agent scope Me/All/brokers), 3 URL sub-tabs w/ the destructive Overdue pill,
+  C.5 64px rows (16px warning checkbox · 32px tinted avatar · contact link → detail ·
+  14px type icon + description · "Me" assignee sub-label · due time + chevron), date
+  groups "Wednesday, Jul 1 (11)" DESC on Overdue / ASC else / No-date last, Clear My
+  Overdue AlertDialog w/ live count (clearMyOverdueTasksAction), C.7 empty states w/
+  + Create Task CTA, swipe left Complete+Delete / right Reschedule sheet, FAB → the
+  shared create sheet. CalEvent gains optional taskType. Old MobileCalendar.tsx +
+  TaskQueue.tsx DELETED (TaskActions type moved into TasksView.tsx). PROVEN live in the
+  dev browser: date-tap scroll (existing + empty sections), month↔week toggle (31→7→31
+  cells), month nav to August (?date=), FAB → type picker → BOTH sheets, and a NET-ZERO
+  create→complete→delete task round trip on Matt's own contact row.
+  **§28 BUILT (a7746316):** the §25.5.7 DETAILS card gets the full picker set —
+  NEW MobileAssignToSheet (§5 mob-34: Cancel · Assign To navy header, "Currently: Matt
+  Ryan" banner, live search (verified filters to Rebecca), Me + PONDS + TEAM MEMBERS w/
+  broker headshots, tap = instant assign + dismiss (verified); pond → assignPondAction);
+  Source picker (§3 mob-54: `<unspecified>` pinned clear row, account vocabulary
+  VERBATIM incl "AI- Claude", current value checked; NEW DAL lib/data/crm/getCrmSources
+  — paged distinct scan, cached 10 min); Time frame picker (§4 mob-36: the 5 enum
+  labels → crm_people.timeframe via updatePersonFieldAction; the mobile detail now
+  prefers the first-class column over the legacy custom field; VERIFIED live: set
+  "0-3 Months" → cross-checked on the DESKTOP sidebar → cleared back, net-zero); NEW
+  Automations row → §6 picker (mob-15: active sequences, text-only alphabetical rows,
+  Select → enroll via the compliance-gated applyAutomationAction). Registry route =
+  MobileDetailsSection.tsx (component-file route, inbox-mobile precedent). FILE-SIZE
+  SPLIT: the lead page's 14 'use server' form wrappers moved byte-identical to
+  app/admin/console/leads/[id]/form-actions.ts (734→593 LOC; split-not-rebaseline per
+  the reporting precedent); the moved wrappers PROVEN live w/ a tag add/remove round
+  trip (net-zero). DATA FIX: deduped the double-created "Out Of State Home Owners"
+  pond (crm_ponds id 2 identical to id 1, 0 crm_people references, verified before
+  delete — the Assign-To sheet had shown it twice; audit-tagged SQL).
+  DECISIONS: our M2 shell tab set (Home/Inbox/People/Deals/Activity) has no Calendar
+  tab, so the calendar/tasks routes light NO tab (CrmMobileTabBar exclusion — People
+  lighting there via the /admin/crm prefix lied about location; §29 A.8's FUB tab bar
+  is superseded by the locked M2 shell) · ConsoleQuickAction hidden at <md on
+  calendar/tasks (single-FAB rule; desktop keeps it) · task create always assigns the
+  caller (addCrmTaskAction contract — assignee renders read-only "Me"; the D.3 field-6
+  assignee select deferred, reassign exists on desktop) · create-task reminder toggle
+  (D.3 field 7) omitted — no remind_seconds_before column / notification infra (§29
+  C.13 AC-12 notifications deferred with it, same as the desktop slice) · timed
+  appointments in the calendar list render reminder-row style WITH a time sub-label
+  (FUB's observed row was all-day; hiding times would hide data) · completed tasks
+  merge into the active bucket's date groups (the desktop Show-Completed convention) ·
+  §5.6 GROUPS omitted from Assign-To — crm_groups distribute at lead intake, no manual
+  assign-to-group write path exists (dead UI otherwise) · automations enroll NOT
+  live-fired in verification (manualEnrollPerson can send a first touch — not
+  net-zero; the same action is proven on the §07 desktop slice) · a literal stored
+  "<unspecified>" source string folds into the pinned clear row (FUB import artifact).
+  DEFERRED (explicit): swipe gestures are touch-only (mouse parity via checkbox/
+  buttons — same class as the M3 inbox rows) · pull-to-refresh (browser-native
+  conflict, same as M3/M5) · month-grid slide transition animation (§29 A.11 — month
+  navigation is a server round trip) · D.2 type picker "pre-scoped to contact" from
+  Screen B (the §25.9 contact Calendar tab keeps its M1 add-task sheet; unifying onto
+  MobileTaskCreateSheet is cleanup) · filter-sheet "Clear Filters" ghost button (the
+  All-Types meta + Apply covers it) · §4.4 timeframe clear-on-mobile (the desktop
+  inline editor clears; the mobile spec itself has no clear row).
 - **inbox-mobile + mobile-compose** ✅ DONE + PROVEN (commit 02e426f8, 2026-07-02) — the M3/M4
   builds, §26 + §27. Registry flipped with committed 390x844 proofs `_verify/mob-inbox.png`
   (list, real crm_* data, 62-unread bar live) + `_verify/mob-compose.png` (FAB sheet open,

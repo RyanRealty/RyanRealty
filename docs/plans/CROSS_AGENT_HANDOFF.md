@@ -2,7 +2,7 @@
 
 # CROSS-AGENT HANDOFF — CRM GROUND-UP REBUILD, screen-by-screen under ci:crm-screen-parity (2026-07-01)
 
-**HEAD:** `02e426f8` on `main` (+ the docs commit after it) · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` (**14 done, all proven — all 10 desktop + person-detail-mobile + mobile-shell + mobile-activity-people + inbox-mobile + mobile-compose**; 5 todo)
+**HEAD:** `a7746316` on `main` (+ the docs commit after it) · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` (**16 done, all proven — all 10 desktop + person-detail-mobile + mobile-shell + mobile-activity-people + inbox-mobile + mobile-compose + mobile-calendar-tasks + mobile-pickers**; 3 todo: mobile-dashboard, mobile-settings + the _meta row)
 
 ## What this track is
 Matt's directive: execute CRM_BUILD_MISSION as a ground-up rebuild, screen by screen through the
@@ -11,6 +11,29 @@ full DoD, gated by `ci:crm-screen-parity` (scripts/check-crm-screen-parity.mjs �
 gap-fills. Standing commit+push authorization is in the mission doc.
 
 ## Shipped
+- **mobile-calendar-tasks + mobile-pickers = done + proven** (commits `8ded6cb5` + `a7746316`,
+  2026-07-02): M6 §29 (`/admin/crm/calendar` <md Screen A in
+  `components/admin/crm/calendar/mobile/`, `/admin/crm/tasks` <md Screen C in
+  `components/admin/crm/tasks/mobile/`, shared `MobileTaskCreateSheet` +
+  `task-type-icons` broker-badge palette; old MobileCalendar/TaskQueue DELETED,
+  TaskActions type now lives in TasksView) and M7 §28 (DETAILS pickers on the mobile
+  contact detail: NEW `MobileAssignToSheet`, Source picker w/ NEW DAL `getCrmSources`,
+  Time frame picker → crm_people.timeframe, Automations enroll picker). Proofs
+  `_verify/mob-calendar-tasks.png` + `_verify/mob-pickers.png` (390x844, zero console
+  errors). Decisions + deferrals in the mission PROGRESS block. GOTCHAS for the next
+  agent: the lead page's form wrappers now live in
+  `app/admin/console/leads/[id]/form-actions.ts` ('use server' module — the page was
+  over its file-size budget; split, never re-baseline) · CrmMobileTabBar lights NO tab
+  on /admin/crm/calendar|tasks (explicit exclusion in activeHref) · ConsoleQuickAction
+  is `hidden md:flex` on those routes (its FAB suppression is now viewport-conditional,
+  a THIRD suppression mode next to the inbox full suppression) · the tasks page is OFF
+  ci:console-kit (comment in check-console-kit.mjs) · scroll-to-section on the mobile
+  calendar uses a `[data-datekey]` querySelector inside a useEffect keyed on
+  selectedDate — a ref-map version silently failed; and `scrollIntoView` needs
+  `scrollMarginTop` + the sticky headers sit at `top-14` under the shell header ·
+  sticky bits: crm_ponds HAD a duplicate "Out Of State Home Owners" row (deduped
+  2026-07-02, id 2 deleted after a 0-references check) · the §29 files + MobileAssignToSheet
+  are on `.design-token-lint-ignore` (documented FUB-pt-precision class).
 - **inbox-mobile + mobile-compose = done + proven** (commit `02e426f8`, 2026-07-02): the M3/M4
   REAL builds — §26 FUB-iOS inbox at <md (`components/admin/crm/inbox/mobile/`: MobileBranch →
   MobileInbox list w/ navy header + 4-tab pills + swipe rows + scope/filter sheets, MobileThread
@@ -163,12 +186,15 @@ gap-fills. Standing commit+push authorization is in the mission doc.
    `.design-token-lint-ignore` — established class) + `npx vitest run` + commit + push
    (pre-push runs a full prod build, takes ~5 min — use a background shell).
 
-## NEXT (mobile track — 14 done)
-1. Remaining mobile registry entries: **mobile-calendar-tasks** (§29) — the <md
-   branch exists (MobileCalendar/TaskQueue) but the §29 rebuild is pending (M6);
-   **mobile-pickers** (§28, M7 — the person-detail deferred pickers/sheets); **mobile-dashboard**
-   (mob-44) + **mobile-settings** (mob-06). Capture proofs at 390x844 via the scratchpad harness
-   (`node shot.mjs <url> <out> 390x844` — recapture sb- cookies fresh, they rotate hourly).
+## NEXT (mobile track — 16 done)
+1. Remaining mobile registry entries: **mobile-dashboard** (mob-44 — spec
+   `docs/fub-crm-spec/mobile-screens/screen-44.md`, route
+   `app/admin/(protected)/broker-dashboard/page.tsx`) and **mobile-settings** (mob-06 —
+   spec `mobile-screens/screen-06.md` + §28 §8 Settings modal, route
+   `app/admin/(protected)/settings/page.tsx`). Same DoD: 390x844 proof via the
+   scratchpad harness (`node shot.mjs <url> <out> 390x844` — recapture sb- cookies
+   fresh, they rotate hourly; `shot-pickers.mjs` shows the open-a-sheet-then-shoot
+   variant), registry flip w/ requiredComponents, full ci:gates + vitest, commit+push.
 2. Also open in the mission doc: email open+click tracking wiring (every send path) — nobody owns
    it yet. (The renderCrmMerge resolver fix SHIPPED with templates-desktop, 251ae048.)
 
