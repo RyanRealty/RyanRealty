@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.717.3 (2026-07-02)
+
+### Maintenance
+- docs(crm): Split all — all 14 remaining FUB merge-victims recreated (mission PROGRESS)
+
+---
+
+
 ## v1.717.2 (2026-07-02)
 
 ### Maintenance
