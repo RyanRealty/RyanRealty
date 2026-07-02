@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.716.6 (2026-07-02)
+
+### Maintenance
+- docs(crm): telephony fix — record post-deploy CRM-path verification evidence
+
+---
+
+
 ## v1.716.5 (2026-07-02)
 
 ### Other
