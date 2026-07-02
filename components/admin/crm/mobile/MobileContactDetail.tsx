@@ -20,19 +20,23 @@
  *   accent underline → bg-accent; inactive tabs → text-primary-foreground/60
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { CrmAvatar } from '@/components/admin/crm/mobile/CrmMobileKit'
+import MobileEditSheet, { type MobileEditData } from '@/components/admin/crm/mobile/MobileEditSheet'
 
 /* ── §25.4 Tab definitions ─────────────────────────────────────────────────── */
 
-export type MobileTabKey = 'info' | 'comms' | 'homes' | 'notes' | 'calendar'
+export type MobileTabKey = 'info' | 'comms' | 'activity' | 'homes' | 'notes' | 'calendar'
 
 const TABS: { key: MobileTabKey; label: string }[] = [
   { key: 'info', label: 'Info' },
   { key: 'comms', label: 'Comms' },
+  // Matt punch list #5 (2026-07-02): "I need to be able to see lead activity
+  // on the lead detail" — the desktop center column's Activity filter, as a tab.
+  { key: 'activity', label: 'Activity' },
   { key: 'homes', label: 'Homes' },
   { key: 'notes', label: 'Notes' },
   { key: 'calendar', label: 'Calendar' },
@@ -56,9 +60,13 @@ export interface MobileContactDetailProps {
   /** Per-tab default: which tab to show first */
   defaultTab?: MobileTabKey
 
+  /** §25.3.2 header Edit mode — first/last name + phones + emails (punch #2). */
+  editData: MobileEditData
+
   /* §25.5–25.9 tab slot content — server-rendered nodes */
   infoTab: React.ReactNode
   commsTab: React.ReactNode
+  activityTab: React.ReactNode
   homesTab: React.ReactNode
   notesTab: React.ReactNode
   calendarTab: React.ReactNode
@@ -75,24 +83,51 @@ function formatPrice(n: number): string {
 /* ── Main component ─────────────────────────────────────────────────────────── */
 
 export function MobileContactDetail({
+  personId,
   displayName,
   pictureUrl,
   lastCommLabel,
   priceTarget,
   backHref,
   defaultTab = 'info',
+  editData,
   infoTab,
   commsTab,
+  activityTab,
   homesTab,
   notesTab,
   calendarTab,
 }: MobileContactDetailProps) {
   const [active, setActive] = useState<MobileTabKey>(defaultTab)
+  const [editOpen, setEditOpen] = useState(false)
   const router = useRouter()
+
+  // The shell FAB's lead actions deep-link via hash (#comms / #tasks /
+  // #overview) — the desktop LeadTabs reads them, and so must this component,
+  // or the FAB actions are dead at < md (punch #6, 2026-07-02).
+  useEffect(() => {
+    const HASH_TO_TAB: Record<string, MobileTabKey> = {
+      overview: 'info',
+      comms: 'comms',
+      activity: 'activity',
+      homes: 'homes',
+      notes: 'notes',
+      tasks: 'calendar',
+      calendar: 'calendar',
+    }
+    const sync = () => {
+      const key = HASH_TO_TAB[window.location.hash.replace(/^#/, '')]
+      if (key) setActive(key)
+    }
+    sync()
+    window.addEventListener('hashchange', sync)
+    return () => window.removeEventListener('hashchange', sync)
+  }, [])
 
   const tabContent: Record<MobileTabKey, React.ReactNode> = {
     info: infoTab,
     comms: commsTab,
+    activity: activityTab,
     homes: homesTab,
     notes: notesTab,
     calendar: calendarTab,
@@ -115,14 +150,13 @@ export function MobileContactDetail({
           >
             <ChevronLeft size={22} strokeWidth={2.5} />
           </button>
-          {/* §25.3.2 — "Edit" appears only on Info tab */}
+          {/* §25.3.2 — "Edit" appears only on Info tab (punch #2: opens the
+              real edit sheet — name + phones + emails) */}
           {active === 'info' && (
             <button
               type="button"
               className="text-sm text-primary-foreground"
-              onClick={() => {
-                /* TODO: inline edit mode (§24) */
-              }}
+              onClick={() => setEditOpen(true)}
             >
               Edit
             </button>
@@ -206,8 +240,12 @@ export function MobileContactDetail({
       </div>
 
       {/* §25.12 FAB — provided by the shell's ConsoleQuickAction (single FAB
-          rule; it drops to bottom-6 on pushed detail via isPushedDetailPath).
-          Rendering a second one here produced two stacked + buttons on phones. */}
+          rule). Rendering a second one here produced two stacked + buttons. */}
+
+      {/* §25.3.2 Edit mode (punch #2) — full-screen z-50 sheet */}
+      {editOpen ? (
+        <MobileEditSheet personId={personId} initial={editData} onClose={() => setEditOpen(false)} />
+      ) : null}
     </div>
   )
 }

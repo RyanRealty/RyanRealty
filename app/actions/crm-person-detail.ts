@@ -16,8 +16,8 @@
  *   - quickFollowUpAction       — §07b 4.7 lightning-bolt preset follow-up task.
  *   - addRelationshipContactAction — §07a 4.1 Add relationship modal (new person
  *                                 + reciprocal link in one action).
- *   - addPersonFileLinkAction / uploadPersonFileAction / deletePersonFileAction
- *                               — §7c.8.8 Files widget.
+ *   - Files-widget actions (§7c.8.8) live in app/actions/crm-person-files.ts
+ *     (split 2026-07-02 for the 600-LOC file budget).
  *   - deleteCrmPersonAction     — §07a 11 Delete person (soft delete: the
  *                                 archived-not-erased variant, auditable).
  */
@@ -84,6 +84,49 @@ export async function updatePersonFieldAction(
   return { ok: true }
 }
 
+/** First/last name edit (mobile header Edit mode — punch list #2, 2026-07-02).
+    Updates first_name + last_name AND the denormalized `name`, with a Change
+    Log entry matching the field-edit pattern above. */
+export async function updatePersonNameAction(
+  personId: number,
+  firstName: string,
+  lastName: string,
+): Promise<PersonDetailResult> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
+
+  const first = firstName.trim()
+  const last = lastName.trim()
+  if (!first && !last) return { ok: false, error: 'A first or last name is required.' }
+  const name = [first, last].filter(Boolean).join(' ')
+
+  const sb = createServiceClient()
+  const { data: before } = await sb.from('crm_people').select('name').eq('id', personId).maybeSingle()
+  const { error } = await sb
+    .from('crm_people')
+    .update({
+      first_name: first || null,
+      last_name: last || null,
+      name,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', personId)
+  if (error) return { ok: false, error: error.message }
+
+  if ((before?.name ?? '') !== name) {
+    await sb.from('crm_timeline').insert({
+      person_id: personId,
+      kind: 'system',
+      title: `Name changed from "${before?.name ?? '(empty)'}" to "${name}" by ${access.email}`,
+      source: 'app',
+      broker: access.brokerSlug ?? null,
+    })
+  }
+
+  revalidatePath(`${BASE}/${personId}`)
+  return { ok: true }
+}
+
 // ---- Edit Phone Numbers modal (§7c.6) ---------------------------------------
 
 export type PhoneRow = { value: string; label: string; bad: boolean; isPrimary: boolean }
@@ -136,11 +179,20 @@ export async function savePhoneNumbersAction(
     if (insErr) return { ok: false, error: insErr.message }
   }
 
-  // Mirror to the jsonb cache used across list surfaces.
+  // Mirror to the jsonb cache used across list surfaces. MUST carry isPrimary +
+  // normalized — getSendTarget/sendCrmTextAction pick the send phone by sorting
+  // this jsonb on isPrimary, so a mirror without it can text the WRONG number
+  // after any modal save (2026-07-02 audit).
   await sb
     .from('crm_people')
     .update({
-      phones: clean.map((r) => ({ value: r.value, type: r.label.toLowerCase(), status: r.bad ? 'bad' : 'active' })),
+      phones: clean.map((r) => ({
+        value: r.value,
+        type: r.label.toLowerCase(),
+        status: r.bad ? 'bad' : 'active',
+        isPrimary: r.isPrimary ? 1 : 0,
+        normalized: r.value.slice(-10),
+      })),
       updated_at: new Date().toISOString(),
     })
     .eq('id', personId)
@@ -196,15 +248,25 @@ export async function saveEmailRowAction(
     if (error) return { ok: false, error: error.message }
   }
 
-  // Mirror to jsonb cache.
+  // Mirror to jsonb cache. MUST carry isPrimary — getSendTarget/sendCrmEmailAction
+  // pick the send address by sorting this jsonb on isPrimary, so a mirror without
+  // it can email the WRONG address after any inline edit (2026-07-02 audit).
   const { data: pts } = await sb
     .from('crm_contact_points')
-    .select('value')
+    .select('value,label,status,is_primary')
     .eq('person_id', personId)
     .eq('kind', 'email')
   await sb
     .from('crm_people')
-    .update({ emails: (pts ?? []).map((p) => ({ value: p.value })), updated_at: new Date().toISOString() })
+    .update({
+      emails: (pts ?? []).map((p) => ({
+        value: p.value,
+        type: (p.label as string | null)?.toLowerCase() || 'home',
+        status: (p.status as string | null) ?? 'active',
+        isPrimary: p.is_primary ? 1 : 0,
+      })),
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', personId)
 
   revalidatePath(`${BASE}/${personId}`)
@@ -358,85 +420,6 @@ export async function addRelationshipContactAction(
 
   revalidatePath(`${BASE}/${personId}`)
   return { ok: true, relatedId }
-}
-
-// ---- Files widget (§7c.8.8) ----------------------------------------------------
-
-export async function addPersonFileLinkAction(
-  personId: number,
-  title: string,
-  url: string,
-): Promise<PersonDetailResult> {
-  const access = await getCrmAccess()
-  if (!access) return { ok: false, error: 'Unauthorized' }
-  const cleanUrl = url.trim()
-  if (!/^https?:\/\//i.test(cleanUrl)) return { ok: false, error: 'Enter a full URL (https://…).' }
-  const sb = createServiceClient()
-  const { error } = await sb.from('crm_person_files').insert({
-    person_id: personId,
-    name: title.trim() || cleanUrl,
-    kind: 'link',
-    url: cleanUrl,
-    uploaded_by: access.email,
-  })
-  if (error) return { ok: false, error: error.message }
-  revalidatePath(`${BASE}/${personId}`)
-  return { ok: true }
-}
-
-const BLOCKED_EXT = ['.exe', '.vb', '.bat', '.cmd']
-const MAX_FILE_BYTES = 100 * 1024 * 1024
-
-export async function uploadPersonFileAction(formData: FormData): Promise<PersonDetailResult> {
-  const access = await getCrmAccess()
-  if (!access) return { ok: false, error: 'Unauthorized' }
-  const personId = Number(formData.get('personId'))
-  const file = formData.get('file') as File | null
-  if (!Number.isFinite(personId) || personId <= 0) return { ok: false, error: 'Bad person id' }
-  if (!file || file.size === 0) return { ok: false, error: 'Choose a file.' }
-  if (file.size > MAX_FILE_BYTES) return { ok: false, error: 'Max file size is 100 MB.' }
-  const lower = file.name.toLowerCase()
-  if (BLOCKED_EXT.some((ext) => lower.endsWith(ext))) {
-    return { ok: false, error: `File type not allowed (${BLOCKED_EXT.join(', ')}).` }
-  }
-
-  const sb = createServiceClient()
-  const path = `person-${personId}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, '_')}`
-  const { error: upErr } = await sb.storage
-    .from('crm-files')
-    .upload(path, file, { contentType: file.type || 'application/octet-stream' })
-  if (upErr) return { ok: false, error: upErr.message }
-
-  // Private bucket: the DAL read generates short-lived signed URLs from storage_path.
-  const { error } = await sb.from('crm_person_files').insert({
-    person_id: personId,
-    name: file.name,
-    kind: 'file',
-    url: null,
-    storage_path: path,
-    size_bytes: file.size,
-    uploaded_by: access.email,
-  })
-  if (error) return { ok: false, error: error.message }
-  revalidatePath(`${BASE}/${personId}`)
-  return { ok: true }
-}
-
-export async function deletePersonFileAction(fileId: number): Promise<PersonDetailResult> {
-  const access = await getCrmAccess()
-  if (!access) return { ok: false, error: 'Unauthorized' }
-  const sb = createServiceClient()
-  const { data: row } = await sb
-    .from('crm_person_files')
-    .select('id, storage_path, person_id')
-    .eq('id', fileId)
-    .maybeSingle()
-  if (!row) return { ok: false, error: 'File not found.' }
-  if (row.storage_path) await sb.storage.from('crm-files').remove([row.storage_path])
-  const { error } = await sb.from('crm_person_files').delete().eq('id', fileId)
-  if (error) return { ok: false, error: error.message }
-  revalidatePath(`${BASE}/${Number(row.person_id)}`)
-  return { ok: true }
 }
 
 // ---- Apply Automation modal (§07b 11) ------------------------------------------

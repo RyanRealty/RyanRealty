@@ -366,6 +366,128 @@ side-by-side. Only then move to the next item.
   inline-Edit mode, FAB action sheets (FAB renders, per-tab sheets pending), Info-row tap-to-edit pickers.
   mob-45/46/47 are inhouse-web CURRENT-STATE captures (baseline docs), not FUB build targets.
 
+# MOBILE UX FIX PUNCH LIST (Matt phone feedback 2026-07-02)
+
+> Matt used the mobile CRM on his real phone (ryan-realty.com, iPhone, 2026-07-02) and sent
+> screenshots + this verbatim feedback: "I do not have the bottom bar like in follow up boss,
+> I cannot edit leads, there are different styles to the CRM pages, I need to be able to text
+> from my CRM not open up my messaging app, basically I have what looks like 2 crms, I need to
+> be able to see lead activity on the lead detail so we need to create an activity tab, many
+> of the links don't go anywhere on the CRM."
+
+THE PUNCH LIST (fix ALL, in this order):
+1. BOTTOM TAB BAR EVERYWHERE: Matt's directive overrides the earlier mob-02 "suppress on pushed
+   detail" decision — the FUB app keeps the bottom bar. Show the CrmMobileTabBar on ALL mobile
+   CRM surfaces including the lead detail (and any other route where it's currently suppressed).
+   Keep the single-FAB rule intact.
+2. EDIT LEADS ON MOBILE: the header "Edit" on the mobile lead detail must actually work — build
+   the header edit mode (was an explicitly logged M7 deferral): edit first/last name, and
+   add/edit/remove phones + emails (reuse existing actions: addCrmContactPointAction,
+   savePhoneNumbersAction/saveEmailRowAction from app/actions/crm-person-detail.ts,
+   updatePersonFieldAction). Verify every DETAILS row picker opens and saves on the phone-size
+   viewport (assigned/stage/source/timeframe/tags/collaborators shipped in earlier slices —
+   confirm they work from this screen and fix any that don't).
+3. ONE CRM, ONE STYLE: unify the mobile CRM onto the FUB-iOS structure re-skinned with Ryan
+   tokens (the documented mob-NN language the detail already uses): rebuild the mobile
+   /admin/crm People page to match mob-09/10 (navy header, FUB-style list rows) so it matches
+   the detail, inbox, calendar surfaces. Audit the other mobile CRM surfaces
+   (Home/broker-dashboard, Activity, Deals) for the same split-brain styling and bring outliers
+   into the same language. "Looks like 2 CRMs" must end.
+4. TEXT FROM THE CRM: find every mobile CRM element that opens the native SMS app (sms: hrefs —
+   e.g. the SMS quick-action circles on the lead detail, list-row text actions) and rewire them
+   to the IN-APP compose sheet (§27 MobileComposeSheet / SMS composer, compliance-gated). Same
+   for any mailto: that should open the in-app email composer. tel: links for actual phone
+   CALLS may remain tel: (or route through the Twilio bridge action where that's the
+   established pattern — check how the call sheet does it and be consistent).
+5. ACTIVITY TAB ON LEAD DETAIL: add an Activity tab to the mobile contact-detail tab strip
+   showing the lead's real activity feed (web_event/system/stage_change/lead_created/task rows
+   from crm_timeline incl. the visitor-events merge that getCrmPersonFull already does; same
+   data the desktop center column's Activity filter shows). Also FIX the section-header
+   mislabel ("RELATIONSHIPS" above the details rows → "DETAILS"; ensure the actual
+   Relationships section renders its own rows) and verify the tab strip starts with
+   Info · Comms per §25.
+6. DEAD-LINK AUDIT: systematically tap/verify EVERY link, button, chevron row, kebab item, and
+   FAB action across the mobile CRM surfaces (People root, lead detail all tabs, Inbox, Deals,
+   Calendar, Tasks, broker-dashboard Home, Activity, Settings). Fix each dead one (wire it or
+   remove it — no inert affordances; if a target doesn't exist yet, remove the affordance and
+   log it as a deferral). List every fixed/removed item in your PROGRESS entry. Include the
+   "My Agent status / Send Invite" row: if it has no backing feature, remove it (an inert Send
+   Invite is a lying UI).
+
+## PROGRESS (punch list)
+- **Punch list #1–#6 SHIPPED + VERIFIED (2026-07-02, this session).** All six items live-verified
+  at 390x844 in the dev server (Matt's session, real crm_* data, zero console errors on every
+  touched surface via fresh-Playwright captures), full ci:gates exit 0 + vitest 2422 green.
+  **#1 tab bar everywhere:** CrmMobileTabBar suppression on pushed detail REMOVED (Matt's
+  directive supersedes mob-02); `components/console/pushed-detail.ts` deleted; ConsoleQuickAction
+  FAB always rides above the bar (bottom-20 <lg). ci:crm-mobile-track contracts REWRITTEN to lock
+  the new rule (mustNot isPushedDetailPath). Full-screen overlays (MobileThread, settings, edit
+  sheet) still occlude at z-50 — modals, not routes.
+  **#2 edit leads:** NEW `MobileEditSheet` (z-50 navy Cancel·Edit Contact·Save) wired to the
+  header Edit button — first/last name via NEW `updatePersonNameAction` (updates first/last +
+  denormalized name + Change Log row), phones via savePhoneNumbersAction (atomic replace, label
+  select, primary toggle, remove), emails via saveEmailRowAction (explicit prev→next diff, NOT
+  positional — a middle-row removal mis-fires positionally). PROVEN live round-trip on Matt's own
+  contact 13168 (name → "Ryan-Test" → verified in header → reverted, net-zero; 2 audit timeline
+  rows remain per the M7 precedent). FUB-imported lowercase phone labels normalize to the §07a
+  vocabulary. DETAILS pickers re-verified at 390 (Stage sheet, Assign-To sheet open + cancel).
+  **#3 one CRM:** `/admin/console/leads` (the site-styled "Leads · N in your book" page — the
+  literal second CRM Matt screenshotted) is now a redirect to `/admin/crm` carrying q/stage/view/
+  page; command-palette "Leads" repointed. The mobile `/admin/crm` People root got the §24 §1.3
+  navy header (NEW shared `MobileCrmHeader`: 36pt broker headshot → settings · centered
+  "Everyone ▾" BrokerScopeSheet header-variant trigger · search icon toggling inline
+  ContactsSearch, auto-open when ?q=), full-bleed via -mx-8/-mt-7 shell-padding cancellation;
+  the site-style h1+search block deleted. `/admin/crm/activity` got the same navy header
+  (title center, search → /admin/crm — the calendar pattern); desktop h1 now hidden md:block.
+  **#4 text from the CRM:** ALL native-app handoffs on the mobile detail rewired — SMS circle →
+  `/admin/crm/inbox?c=<id>&m=sms` (NEW `m` param forces the thread's composer channel,
+  capability-gated), Email circle → `?m=email` + NEW `initialReplyOpen` auto-opens the reply
+  EmailComposer, Call circle → the S8 calling-method sheet (startCrmCallAction Twilio bridge,
+  recorded+logged, honest untracked tel: fallback) — same anatomy as the inbox thread's. Every
+  send stays inside the existing suppression/quiet-hours-gated actions. Verified live: SMS deep
+  link lands on the in-app SMS bar; email deep link opens the composer sheet.
+  **#5 activity tab:** NEW `MobileActivityTab` in the §25.4 strip (Info · Comms · Activity ·
+  Homes · Notes · Calendar) — web_event/stage_change/system/lead_created/task rows from
+  full.timeline (same kinds as the desktop center column's Activity filter, visitor-merge incl.),
+  per-kind tinted icons, FUB dates. Verified live w/ real rows (web inquiries, stage/system,
+  lead_created). The "RELATIONSHIPS above DETAILS" mislabel does NOT exist in our code — Matt's
+  screenshot B (contact "Andy Christensen" + "My Agent status/Send Invite" + Automations tab) is
+  the FUB-iOS mob-02 REFERENCE capture, not our page (grep: no Send Invite anywhere in the repo);
+  our order verified live: RELATIONSHIPS (own rows — Nichole Ryan/Spouse renders) then DETAILS.
+  Tab strip starts Info · Comms ✓.
+  **#6 dead-link audit (fixed/removed list):** FIXED — shell-FAB lead actions (#comms/#tasks/
+  #overview hashes) now switch the MOBILE tabs too (hashchange sync in MobileContactDetail; they
+  only drove the hidden desktop LeadTabs before = dead on phones; verified live #comms → Comms) ·
+  relationship rows now link to the related contact's detail (relatedPersonId) · ADDRESS rows now
+  open the address in the maps app (were inert link-styled text) · command-palette Leads →
+  /admin/crm · Edit button (was a TODO no-op) → real edit sheet · SMS/Call/Email circles (were
+  native-app handoffs). REMOVED (no backing feature — inert affordances deleted, logged as
+  deferrals): "TRANSFER TO LENDER ›" · "TEXT ALL…" / "EMAIL ALL…" section labels · Relationships
+  "+" / "Add Relationship…" (add-relationship lives on desktop) · Custom Fields "EDIT ALL…" /
+  "Add Custom Fields…" (desktop-only editing) · "Add background" → plain "No background".
+  "My Agent status / Send Invite" — confirmed NOT in our codebase (FUB screenshot artifact).
+  Swept surfaces: People root (directory/stages/list/pagination/scope/search), lead detail all 6
+  tabs, Inbox (M3-verified + new deep links), Calendar/Tasks (M6), dashboard Home (M8), Settings
+  (M9), Activity, Deals.
+  DECISIONS: desktop PeopleListView row sms:/mailto:/tel: anchors left as-is (desktop-browser
+  affordances, out of the mobile punch list's scope) · Deals mobile renders a functional stacked
+  stage board w/o a site-style heading — full FUB-iOS mobile deals screen logged as a DEFERRAL
+  (never in the M-track scope) · multiple phones' SMS circles all route to the one thread
+  (sendCrmSmsAction texts the primary/send-target — one thread per person model) · gate-contract
+  updates: crm-mobile-track M2 contracts rewritten (+ mustNot support in the checker),
+  email-send-gated baseline re-keyed :396→:402 (line shift), dal-actions-reads re-baselined +1
+  (updatePersonNameAction's before-read, same audit pattern as the sibling field action),
+  file-size budget fixed by SPLITTING app/actions/crm-person-files.ts out of crm-person-detail.ts
+  (Files-widget trio, byte-identical move, split-not-rebaseline) · new mobile components added to
+  .design-token-lint-ignore (documented FUB-pt-precision class). Registry: mobile-shell drops
+  isPushedDetailPath, mobile-activity-people adds MobileCrmHeader, person-detail-mobile adds
+  MobileActivityTab; `_verify/mob-contact-detail.png` + `mob-activity-people.png` +
+  `mob-shell.png` recaptured (390x844, zero console errors).
+  DEFERRALS: mobile add-relationship + custom-field editing (desktop covers both) · FUB-iOS
+  mobile Deals screen · mobile lender-transfer (no such feature).
+
+---
+
 ## START NOW
 Read the spec (1–5), fresh-read the current CRM code (backend to reuse vs UI to replace),
 pre-flight the dev server + Supabase migration path + Chrome automation, then build slice 0

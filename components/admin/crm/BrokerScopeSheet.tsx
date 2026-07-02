@@ -26,6 +26,7 @@ export default function BrokerScopeSheet({
   carry,
   basePath = '/admin/crm',
   className,
+  variant = 'input',
 }: {
   brokers: ScopeBroker[]
   /** 'all' or a broker slug */
@@ -35,6 +36,9 @@ export default function BrokerScopeSheet({
   carry: Record<string, string | undefined>
   basePath?: string
   className?: string
+  /** 'input' = bordered field trigger (list toolbars); 'header' = the §24 §1.3
+      centered "Everyone ▾" white-on-navy control inside the mobile navy header. */
+  variant?: 'input' | 'header'
 }) {
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState('')
@@ -55,18 +59,28 @@ export default function BrokerScopeSheet({
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger
-        className={cn(
-          'flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 text-sm text-foreground',
-          className,
-        )}
-      >
-        <span className="flex min-w-0 items-center gap-2">
-          <Users className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+      {variant === 'header' ? (
+        <SheetTrigger
+          className={cn('flex items-center gap-1 text-lg font-medium text-primary-foreground', className)}
+          aria-label="Filter by agent"
+        >
           <span className="truncate">{currentLabel}</span>
-        </span>
-        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-      </SheetTrigger>
+          <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        </SheetTrigger>
+      ) : (
+        <SheetTrigger
+          className={cn(
+            'flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 text-sm text-foreground',
+            className,
+          )}
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <Users className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+            <span className="truncate">{currentLabel}</span>
+          </span>
+          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        </SheetTrigger>
+      )}
 
       <SheetContent side="bottom" className="gap-0 rounded-t-xl px-0 pb-6">
         <SheetHeader className="px-4">

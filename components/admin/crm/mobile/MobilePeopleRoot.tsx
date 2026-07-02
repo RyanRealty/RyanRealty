@@ -104,7 +104,7 @@ export function MobilePeopleRoot({
 }) {
   if (mode === 'directory') {
     return (
-      <div className="-mx-4 bg-card">
+      <div className="bg-card">
         <SubTabStrip active={ptab} carryBroker={carryBroker} />
         {ptab === 'lists' ? (
           <div>
@@ -142,7 +142,7 @@ export function MobilePeopleRoot({
 
   /* ── LIST mode (mob-10) ────────────────────────────────────────────────── */
   return (
-    <div className="-mx-4 bg-card">
+    <div className="bg-card">
       {/* Back row + title (stands in for the pushed-screen nav bar) */}
       <div className="flex items-center gap-1 border-b border-border px-2 py-2.5">
         <Link href="/admin/crm" aria-label="All lists" className="flex items-center p-1 text-foreground">

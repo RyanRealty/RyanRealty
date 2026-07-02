@@ -120,6 +120,7 @@ export default function MobileThread({
   aiDraftAction,
   addPersonSlot,
   groupCompose,
+  initialReplyOpen = false,
 }: {
   personId: number
   name: string
@@ -156,10 +157,13 @@ export default function MobileThread({
     sendEmailAction: (personId: number, formData: FormData) => Promise<{ ok: boolean; error?: string }>
     aiDraftAction: (personId: number, kind: AiDraftKind, customPrompt?: string) => Promise<{ ok: true; draft: string } | { ok: false; error: string }>
   }
+  /** Open the email reply sheet on mount — the lead-detail Email circle
+   *  deep-links here with ?m=email so composing starts immediately (punch #4). */
+  initialReplyOpen?: boolean
 }) {
   const router = useRouter()
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [replyOpen, setReplyOpen] = useState(false)
+  const [replyOpen, setReplyOpen] = useState(initialReplyOpen && canEmail)
   const [callOpen, setCallOpen] = useState(false)
   const [blockOpen, setBlockOpen] = useState(false)
   const [groupOpen, setGroupOpen] = useState(false)

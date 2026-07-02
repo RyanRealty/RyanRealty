@@ -26,7 +26,6 @@ import {
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { getNextRecommendation, type CrmNextRec } from '@/app/actions/crm'
 import { cn } from '@/lib/utils'
-import { isPushedDetailPath } from '@/components/console/pushed-detail'
 
 type Item = { label: string; href: string; icon: React.ComponentType<{ className?: string }> }
 
@@ -124,10 +123,10 @@ export default function ConsoleQuickAction() {
         onClick={() => setOpen(true)}
         aria-label="Quick actions"
         className={cn(
-          'fixed right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 lg:bottom-5',
-          // §23 §9c: the tab bar is suppressed on pushed detail views, so the
-          // FAB drops to the corner there (single FAB per §25.12 / mob-02).
-          isPushedDetailPath(pathname) ? 'bottom-6' : 'bottom-20',
+          // Matt directive 2026-07-02 (punch list #1): the bottom tab bar now
+          // renders on EVERY mobile route incl. pushed detail, so the FAB always
+          // sits above it (bottom-20) below lg; lg+ has no tab bar (bottom-5).
+          'fixed bottom-20 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 lg:bottom-5',
           // §29 single-FAB rule: hidden at < md on calendar/tasks (their own FAB).
           mobileSuppressed ? 'hidden md:flex' : 'flex',
         )}

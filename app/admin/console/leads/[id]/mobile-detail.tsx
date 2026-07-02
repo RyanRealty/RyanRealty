@@ -20,6 +20,7 @@ import type { ContactCollaborator } from '@/lib/data/crm/getContactCollaborators
 import type { ViewedListing } from '@/lib/data/crm/getViewedListings'
 import { MobileContactDetail } from '@/components/admin/crm/mobile/MobileContactDetail'
 import { MobileInfoTab, type MobilePickersData } from '@/components/admin/crm/mobile/MobileInfoTab'
+import { MobileActivityTab, type MobileActivityRow } from '@/components/admin/crm/mobile/MobileActivityTab'
 import { MobileCommsTab } from '@/components/admin/crm/mobile/MobileCommsTab'
 import { MobileHomesTab } from '@/components/admin/crm/mobile/MobileHomesTab'
 import { MobileNotesTab } from '@/components/admin/crm/mobile/MobileNotesTab'
@@ -145,7 +146,7 @@ export function MobileLeadDetail({
     }))
   const phones: MobilePhoneEntry[] = full.contactPoints
     .filter((c) => c.kind === 'phone')
-    .map((c) => ({ id: c.id, display: fmtPhone(c.value), tel: `tel:+1${c.value}`, sms: `sms:+1${c.value}`, label: c.label ?? 'Mobile' }))
+    .map((c) => ({ id: c.id, display: fmtPhone(c.value), tel: `tel:+1${c.value}`, label: c.label ?? 'Mobile' }))
   const emails: MobileEmailEntry[] = full.contactPoints
     .filter((c) => c.kind === 'email')
     .map((c) => ({ id: c.id, value: c.value, label: c.label }))
@@ -183,6 +184,39 @@ export function MobileLeadDetail({
     id: t.id, name: t.name, type: t.type, due_at: t.due_at, completed_at: t.completed_at,
   }))
 
+  // Punch #5 Activity tab — the same kinds the desktop center column's
+  // Activity filter shows (web_event/stage_change/system/lead_created/task),
+  // incl. the visitor-events merge getCrmPersonFull already performs.
+  const ACTIVITY_KINDS = new Set(['web_event', 'stage_change', 'system', 'lead_created', 'task'])
+  const activityRows: MobileActivityRow[] = full.timeline
+    .filter((t) => ACTIVITY_KINDS.has(t.kind))
+    .map((t) => ({
+      id: t.id,
+      kind: t.kind,
+      title: t.title ?? t.kind.replace(/_/g, ' '),
+      body: t.body && t.body !== t.title ? cleanNoteBody(t.body) : null,
+      dateLabel: fubDate(t.ts),
+    }))
+
+  // Punch #2 header Edit mode — name + the raw phone/email rows the §07
+  // actions expect (savePhoneNumbersAction replaces the set atomically).
+  const editData = {
+    firstName: person.first_name ?? '',
+    lastName: person.last_name ?? '',
+    phones: full.contactPoints
+      .filter((c) => c.kind === 'phone')
+      .map((c) => {
+        // FUB-imported labels are lowercase ('mobile') — normalize to the
+        // §07a PHONE_LABELS vocabulary so the label select shows the value.
+        const raw = (c.label ?? 'Mobile').toLowerCase()
+        const label = ['mobile', 'home', 'work', 'other', 'fax'].includes(raw)
+          ? raw[0].toUpperCase() + raw.slice(1)
+          : 'Mobile'
+        return { value: c.value, label, bad: c.status === 'bad', isPrimary: Boolean(c.is_primary) }
+      }),
+    emails: full.contactPoints.filter((c) => c.kind === 'email').map((c) => c.value),
+  }
+
   return (
     <MobileContactDetail
       personId={person.id}
@@ -191,9 +225,12 @@ export function MobileLeadDetail({
       lastCommLabel={person.last_activity_at ? fubDate(person.last_activity_at) : null}
       priceTarget={(person as unknown as { price?: number | null }).price ?? null}
       backHref={backHref}
+      editData={editData}
+      activityTab={<MobileActivityTab rows={activityRows} />}
       infoTab={
         <MobileInfoTab
           personId={person.id}
+          personName={displayName}
           recentMessages={recentMessages}
           phones={phones}
           emails={emails}

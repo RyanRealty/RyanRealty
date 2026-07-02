@@ -69,6 +69,7 @@ export interface MobileRecentMessage {
 
 export interface MobileInfoTabProps {
   personId: number
+  personName: string
 
   recentMessages: MobileRecentMessage[]
   phones: MobilePhoneEntry[]
@@ -182,6 +183,7 @@ function DetailRow({
 
 export function MobileInfoTab({
   personId,
+  personName,
   recentMessages,
   phones,
   emails,
@@ -242,35 +244,43 @@ export function MobileInfoTab({
              SMS/Call/Email actions) ─────────────────────────────────────────── */}
       <MobileContactPointsSection
         personId={personId}
+        personName={personName}
         phones={phones}
         emails={emails}
         addContactPointAction={addContactPointAction}
       />
 
-      {/* ── §25.5.6 RELATIONSHIPS ──────────────────────────────────────────── */}
+      {/* ── §25.5.6 RELATIONSHIPS — linked contacts open their own detail;
+             adding a relationship lives on desktop for now (punch #6: no inert
+             affordances — the old "+" and "Add Relationship..." were dead). ── */}
       <>
-        <SectionHeader
-          label="Relationships"
-          rightLabel={relationships.length > 0 ? '+' : undefined}
-        />
+        <SectionHeader label="Relationships" />
         <Card>
           {relationships.length === 0 ? (
-            <div className="px-4 py-3 text-[14px] italic text-muted-foreground">
-              Add Relationship...
-            </div>
+            <div className="px-4 py-3 text-[14px] text-muted-foreground">No relationships</div>
           ) : (
-            relationships.map((r) => (
-              <div
-                key={r.id}
-                className="flex min-h-[48px] items-center justify-between gap-3 border-b border-border px-4 py-2.5 last:border-0"
-              >
-                <div>
-                  <p className="text-[14px] font-medium text-foreground">{r.name}</p>
-                  <p className="text-[12px] text-muted-foreground">({r.label})</p>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </div>
-            ))
+            relationships.map((r) => {
+              const inner = (
+                <>
+                  <div>
+                    <p className="text-[14px] font-medium text-foreground">{r.name}</p>
+                    <p className="text-[12px] text-muted-foreground">({r.label})</p>
+                  </div>
+                  {r.relatedPersonId != null ? (
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  ) : null}
+                </>
+              )
+              const cls =
+                'flex min-h-[48px] items-center justify-between gap-3 border-b border-border px-4 py-2.5 last:border-0'
+              return r.relatedPersonId != null ? (
+                <a key={r.id} href={`/admin/console/leads/${r.relatedPersonId}`} className={cls}>
+                  {inner}
+                </a>
+              ) : (
+                <div key={r.id} className={cls}>{inner}</div>
+              )
+            })
           )}
         </Card>
       </>
@@ -299,20 +309,12 @@ export function MobileInfoTab({
         />
       </>
 
-      {/* ── §25.5.8 FINANCING ─────────────────────────────────────────────── */}
+      {/* ── §25.5.8 FINANCING — punch #6: the FUB "TRANSFER TO LENDER ›" CTA
+             was inert (no lender-transfer feature exists) — removed. ───────── */}
       <>
         <SectionHeader label="Financing" />
         <Card>
-          <DetailRow label="Lender" value={lender || ''} />
-          {/* §25.5.8: "TRANSFER TO LENDER ›" appears when no lender (AC-INFO-6) */}
-          {!lender && (
-            <div className="flex items-center gap-1 px-4 py-3" style={{ color: 'var(--console-info)' }}>
-              <span className="text-[14px] font-semibold uppercase tracking-wide">
-                Transfer to Lender
-              </span>
-              <ChevronRight size={14} />
-            </div>
-          )}
+          <DetailRow label="Lender" value={lender || '—'} />
         </Card>
       </>
 
@@ -325,7 +327,7 @@ export function MobileInfoTab({
               {background}
             </p>
           ) : (
-            <div className="px-4 py-3 text-[14px] text-muted-foreground">Add background</div>
+            <div className="px-4 py-3 text-[14px] text-muted-foreground">No background</div>
           )}
         </Card>
       </>
@@ -361,15 +363,14 @@ export function MobileInfoTab({
         </>
       )}
 
-      {/* ── §25.5.11 CUSTOM FIELDS ─────────────────────────────────────────── */}
+      {/* ── §25.5.11 CUSTOM FIELDS — punch #6: "EDIT ALL..." / "Add Custom
+             Fields..." were inert (custom-field editing lives on desktop) —
+             removed rather than lie. ───────────────────────────────────────── */}
       <>
-        <SectionHeader
-          label="Custom Fields"
-          rightLabel={customFields.length > 0 ? 'EDIT ALL...' : undefined}
-        />
+        <SectionHeader label="Custom Fields" />
         <Card>
           {customFields.length === 0 ? (
-            <div className="px-4 py-3 text-[14px]" style={{ color: 'var(--console-info)' }}>Add Custom Fields...</div>
+            <div className="px-4 py-3 text-[14px] text-muted-foreground">No custom fields</div>
           ) : (
             customFields.map((f) => (
               <div
@@ -393,23 +394,33 @@ export function MobileInfoTab({
         <>
           <SectionHeader label="Address" />
           <Card>
-            {addresses.map((addr, idx) => (
-              <div
-                key={idx}
-                className="flex min-h-[56px] items-start justify-between gap-3 border-b border-border px-4 py-3 last:border-0"
-              >
-                <div>
-                  <p className="text-[12px] uppercase text-muted-foreground">{addr.type}</p>
-                  {/* §25.5.12: address text is accent-colored link */}
-                  <p className="text-[14px]" style={{ color: 'var(--console-info)' }}>{addr.street}</p>
-                  <p className="text-[14px]" style={{ color: 'var(--console-info)' }}>
-                    {[addr.city, addr.state, addr.zip].filter(Boolean).join(', ')}
-                  </p>
-                </div>
-                {/* §25.5.12: diamond/compass nav icon */}
-                <span className="mt-1 shrink-0 text-[16px]" style={{ color: 'var(--console-info)' }}>◇</span>
-              </div>
-            ))}
+            {addresses.map((addr, idx) => {
+              // Punch #6: the address "link" styling was inert — it now opens
+              // the address in the phone's maps app (universal geo search URL).
+              const q = encodeURIComponent(
+                [addr.street, addr.city, addr.state, addr.zip].filter(Boolean).join(', '),
+              )
+              return (
+                <a
+                  key={idx}
+                  href={`https://maps.apple.com/?q=${q}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex min-h-[56px] items-start justify-between gap-3 border-b border-border px-4 py-3 last:border-0"
+                >
+                  <div>
+                    <p className="text-[12px] uppercase text-muted-foreground">{addr.type}</p>
+                    {/* §25.5.12: address text is accent-colored link */}
+                    <p className="text-[14px]" style={{ color: 'var(--console-info)' }}>{addr.street}</p>
+                    <p className="text-[14px]" style={{ color: 'var(--console-info)' }}>
+                      {[addr.city, addr.state, addr.zip].filter(Boolean).join(', ')}
+                    </p>
+                  </div>
+                  {/* §25.5.12: diamond/compass nav icon */}
+                  <span className="mt-1 shrink-0 text-[16px]" style={{ color: 'var(--console-info)' }}>◇</span>
+                </a>
+              )
+            })}
           </Card>
         </>
       )}

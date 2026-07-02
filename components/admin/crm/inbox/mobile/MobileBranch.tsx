@@ -55,6 +55,7 @@ export default function MobileBranch({
   actingSignatureHtml,
   emailTemplates,
   smsTemplates,
+  autoOpenEmailReply = false,
   actions,
 }: {
   pane: MobilePaneData | null
@@ -75,6 +76,8 @@ export default function MobileBranch({
   actingSignatureHtml: string | null
   emailTemplates: ComposeTemplate[]
   smsTemplates: ComposeTemplate[]
+  /** ?m=email deep link (lead-detail Email circle) — open the reply sheet on mount. */
+  autoOpenEmailReply?: boolean
   actions: {
     sendSmsForm: (formData: FormData) => Promise<void>
     sendEmailForm: (formData: FormData) => Promise<void>
@@ -117,6 +120,7 @@ export default function MobileBranch({
           }}
           signatureHtml={pane.signatureHtml}
           lastEmailSubject={pane.lastEmailSubject}
+          initialReplyOpen={autoOpenEmailReply}
           backHref={backHref}
           sendError={sendError}
           smsAction={actions.sendSmsForm}

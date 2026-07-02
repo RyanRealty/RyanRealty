@@ -22,6 +22,7 @@ import { getCrmReportAreas } from '@/lib/data/crm/getCrmReportAreas'
 import { getCrmTemplatesAdmin } from '@/lib/data/crm/getCrmTemplatesAdmin'
 import ContactsSearch from '@/components/admin/crm/ContactsSearch'
 import BrokerScopeSheet from '@/components/admin/crm/BrokerScopeSheet'
+import MobileCrmHeader from '@/components/admin/crm/mobile/MobileCrmHeader'
 import { MobilePeopleRoot } from '@/components/admin/crm/mobile/MobilePeopleRoot'
 import PeopleSidebar from '@/components/admin/crm/people-list/PeopleSidebar'
 import PeopleListView, { type PeopleRow } from '@/components/admin/crm/people-list/PeopleListView'
@@ -205,43 +206,48 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
 
   return (
     <main className="mx-auto max-w-[1600px] px-4 pb-8 pt-2 sm:px-6 sm:py-6">
-      {/* ── MOBILE (< md): §24 People root — All Lists / Stages / filtered list
-             (mob-09 / mob-10). URL-driven. Unchanged by the §05 desktop rebuild. */}
-      <div className="mt-1 md:hidden">
-        <h1 className="mb-2 text-xl font-bold text-foreground">People</h1>
-        <ContactsSearch initial={sp.q ?? ''} />
+      {/* ── MOBILE (< md): §24 People root — navy §1.3 header (avatar ·
+             "Everyone ▾" scope · search) over All Lists / Stages / filtered
+             list (mob-09 / mob-10). Full-bleed: cancels the ConsoleShell main
+             padding (px-4 pt-5 / sm:px-6 sm:pt-7) + this page's own
+             (px-4 pt-2 / sm:px-6 sm:py-6). Matt punch list #3 (2026-07-02):
+             one CRM, one style — same navy header language as calendar/inbox. */}
+      <div className="-mx-8 -mt-7 md:hidden sm:-mx-12 sm:-mt-13">
+        <MobileCrmHeader
+          brokerName={access.brokerSlug ? CRM_BROKER_DISPLAY[access.brokerSlug as keyof typeof CRM_BROKER_DISPLAY] ?? access.brokerSlug : 'Broker'}
+          brokerHeadshot={access.brokerSlug ? BROKER_HEADSHOT[access.brokerSlug] ?? null : null}
+          center={
+            <BrokerScopeSheet
+              variant="header"
+              brokers={scopeBrokers}
+              current={effectiveBroker ?? 'all'}
+              myBrokerSlug={access.brokerSlug ?? null}
+              carry={{ q: sp.q, stage: sp.stage, tag: sp.tag, view: sp.view }}
+            />
+          }
+          searchSlot={<ContactsSearch initial={sp.q ?? ''} />}
+          searchOpenInitially={Boolean(sp.q)}
+        />
         {(() => {
           const mode: 'directory' | 'list' = sp.q || sp.stage || sp.tag || sp.view ? 'list' : 'directory'
           const listTitle =
             appliedView?.name ??
             (sp.stage ? sp.stage : sp.tag ? `#${sp.tag}` : sp.q ? `“${sp.q}”` : 'People')
           return (
-            <div className="mt-3">
-              {mode === 'list' ? (
-                <div className="mb-2">
-                  <BrokerScopeSheet
-                    brokers={scopeBrokers}
-                    current={effectiveBroker ?? 'all'}
-                    myBrokerSlug={access.brokerSlug ?? null}
-                    carry={{ q: sp.q, stage: sp.stage, tag: sp.tag, view: sp.view }}
-                  />
-                </div>
-              ) : null}
-              <MobilePeopleRoot
-                mode={mode}
-                ptab={sp.ptab === 'stages' ? 'stages' : 'lists'}
-                views={savedViewItems.map((v) => ({ id: v.id, name: v.name, count: v.count }))}
-                stages={stageOptions}
-                rows={peopleRows.map((r) => ({ id: r.id, name: r.name ?? `Contact #${r.id}`, picture_url: r.picture_url, source: r.source, stage: r.stage }))}
-                total={total}
-                listTitle={listTitle}
-                page={page}
-                lastPage={lastPage}
-                pageHrefPrev={page > 1 ? pageHref(page - 1) : null}
-                pageHrefNext={page < lastPage ? pageHref(page + 1) : null}
-                carryBroker={sp.broker || undefined}
-              />
-            </div>
+            <MobilePeopleRoot
+              mode={mode}
+              ptab={sp.ptab === 'stages' ? 'stages' : 'lists'}
+              views={savedViewItems.map((v) => ({ id: v.id, name: v.name, count: v.count }))}
+              stages={stageOptions}
+              rows={peopleRows.map((r) => ({ id: r.id, name: r.name ?? `Contact #${r.id}`, picture_url: r.picture_url, source: r.source, stage: r.stage }))}
+              total={total}
+              listTitle={listTitle}
+              page={page}
+              lastPage={lastPage}
+              pageHrefPrev={page > 1 ? pageHref(page - 1) : null}
+              pageHrefNext={page < lastPage ? pageHref(page + 1) : null}
+              carryBroker={sp.broker || undefined}
+            />
           )
         })()}
       </div>

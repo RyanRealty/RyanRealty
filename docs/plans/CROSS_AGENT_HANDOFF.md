@@ -11,6 +11,22 @@ full DoD, gated by `ci:crm-screen-parity` (scripts/check-crm-screen-parity.mjs �
 gap-fills. Standing commit+push authorization is in the mission doc.
 
 ## Shipped
+- **MOBILE UX FIX PUNCH LIST #1–#6 = SHIPPED + VERIFIED** (2026-07-02, Matt phone feedback):
+  full entry in the mission's "PROGRESS (punch list)" block. Headlines: bottom tab bar now on
+  EVERY mobile route incl. lead detail (mob-02 suppression + pushed-detail.ts DELETED, Matt's
+  directive supersedes; ci:crm-mobile-track M2 contracts rewritten w/ mustNot support) · header
+  Edit works (NEW MobileEditSheet + updatePersonNameAction; proven net-zero round-trip on 13168) ·
+  ONE CRM (legacy /admin/console/leads list → redirect to /admin/crm; NEW MobileCrmHeader navy
+  header on People root + Activity; BrokerScopeSheet gains variant="header") · texting/email from
+  the CRM (SMS/Email circles → /admin/crm/inbox?c=<id>&m=sms|email — NEW `m` channel override +
+  initialReplyOpen; Call → S8 bridge sheet) · NEW Activity tab on the contact detail
+  (MobileActivityTab) · dead-link sweep (FAB hash actions now switch mobile tabs; inert FUB
+  affordances removed — see PROGRESS). GOTCHAS: Matt's screenshot B ("Andy Christensen",
+  "My Agent status/Send Invite", Automations tab, RELATIONSHIPS-above-details) is the FUB-iOS
+  mob-02 REFERENCE, not our page — no such code exists · file-size budget forced
+  app/actions/crm-person-files.ts split out of crm-person-detail.ts · email-send-gated baseline
+  re-keyed :396→:402 · dal-actions-reads re-baselined +1 (name-audit before-read) · a CONCURRENT
+  session edits app/actions/crm-saved-views.ts (filter dual-write P0) — left unstaged.
 - **mobile-dashboard + mobile-settings = done + proven** (commit `2b7dcfb2`, 2026-07-02): the FINAL
   two registry screens — M8 mob-44 (`/admin/broker-dashboard`: DashboardActivityFeed rebuilt to the
   §2a/§2b card anatomy — box-outline active sub-tab, 80pt/44pt rows, 4-row card w/ internal scroll,

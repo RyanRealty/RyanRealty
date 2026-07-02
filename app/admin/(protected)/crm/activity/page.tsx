@@ -10,6 +10,14 @@ import {
   ALL_ACTIVITY_TYPE_KEYS,
 } from '@/lib/data/crm/getGlobalActivityFeed'
 import GlobalActivityFeed from '@/components/admin/crm/GlobalActivityFeed.client'
+import MobileCrmHeader from '@/components/admin/crm/mobile/MobileCrmHeader'
+
+/** Broker slug → web headshot (transparent PNG mirror in public/images/brokers). */
+const BROKER_HEADSHOT: Record<string, string> = {
+  matt: '/images/brokers/ryan-matt.png',
+  rebecca: '/images/brokers/peterson-rebecca.png',
+  paul: '/images/brokers/stevenson-paul.png',
+}
 
 export const metadata = { title: 'Activity | Admin' }
 export const dynamic = 'force-dynamic'
@@ -47,7 +55,17 @@ export default async function CrmActivityPage({
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
-      <header className="mb-4">
+      {/* ── MOBILE (< md): §24 navy header — same language as People/Calendar/
+             Inbox (Matt punch list #3). Full-bleed cancels shell + page padding. */}
+      <div className="-mx-8 -mt-13 mb-3 md:hidden sm:-mx-12 sm:-mt-15">
+        <MobileCrmHeader
+          brokerName={access.brokerSlug ? CRM_BROKER_DISPLAY[access.brokerSlug as keyof typeof CRM_BROKER_DISPLAY] ?? access.brokerSlug : 'Broker'}
+          brokerHeadshot={access.brokerSlug ? BROKER_HEADSHOT[access.brokerSlug] ?? null : null}
+          center={<span className="truncate text-lg font-medium text-primary-foreground">Activity</span>}
+          searchHref="/admin/crm"
+        />
+      </div>
+      <header className="mb-4 hidden md:block">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Activity</h1>
       </header>
 

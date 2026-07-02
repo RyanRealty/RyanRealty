@@ -60,8 +60,8 @@ import {
   addPersonFileLinkAction,
   uploadPersonFileAction,
   deletePersonFileAction,
-  quickFollowUpAction,
-} from '@/app/actions/crm-person-detail'
+} from '@/app/actions/crm-person-files'
+import { quickFollowUpAction } from '@/app/actions/crm-person-detail'
 import {
   addCrmTaskAction,
   completeCrmTaskAction,

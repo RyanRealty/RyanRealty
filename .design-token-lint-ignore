@@ -50,6 +50,12 @@ components/admin/crm/mobile/MobileCommsTab.tsx
 components/admin/crm/mobile/MobileHomesTab.tsx
 components/admin/crm/mobile/MobileNotesTab.tsx
 components/admin/crm/mobile/MobileCalendarTab.tsx
+# Mobile punch-list additions (2026-07-02, Matt phone feedback): same §24/§25
+# FUB-iOS pt-precise exception class as the files above — navy header (§24
+# §1.3), edit sheet (§25.3.2), per-kind activity icon tints.
+components/admin/crm/mobile/MobileCrmHeader.tsx
+components/admin/crm/mobile/MobileEditSheet.tsx
+components/admin/crm/mobile/MobileActivityTab.tsx
 # Comms feed (FUB-parity contact-360, 2026-06-29): clones the Follow Up Boss
 # Comms tab as a full-bleed, multi-line, left-aligned expandable message-row
 # list. Each row is a raw <button> so the whole row is the tap target with

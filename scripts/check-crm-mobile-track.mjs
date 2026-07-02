@@ -42,15 +42,22 @@ const SHIPPED = [
     file: 'app/actions/crm.ts',
     must: [/export async function addCrmContactPointAction/],
   },
+  // Matt directive 2026-07-02 (mobile punch list #1) SUPERSEDES the earlier
+  // mob-02 "suppress tab bar on pushed detail" contract: "I do not have the
+  // bottom bar like in follow up boss" — the bar renders on EVERY mobile CRM
+  // route, including the lead detail. The FAB always sits above it (bottom-20
+  // below lg). isPushedDetailPath was deleted with the suppression.
   {
-    id: 'M2 shell — tab bar suppressed on pushed detail (§23 §9c, mob-02)',
+    id: 'M2 shell — tab bar renders on every route incl. pushed detail (Matt 2026-07-02)',
     file: 'components/console/CrmMobileTabBar.tsx',
-    must: [/isPushedDetailPath/],
+    must: [/the bar renders on EVERY\s+\/\/ mobile CRM route/m],
+    mustNot: [/isPushedDetailPath/],
   },
   {
-    id: 'M2 shell — single FAB drops to corner on detail',
+    id: 'M2 shell — single FAB rides above the always-on tab bar',
     file: 'components/console/ConsoleQuickAction.tsx',
-    must: [/isPushedDetailPath/],
+    must: [/fixed bottom-20 right-5/],
+    mustNot: [/isPushedDetailPath/],
   },
   {
     id: 'Menu — CRM group carries Reporting/Workflows/Templates',
@@ -96,7 +103,7 @@ const PENDING = [
 ]
 
 const fails = []
-for (const { id, file, must } of SHIPPED) {
+for (const { id, file, must, mustNot = [] } of SHIPPED) {
   let src
   try {
     src = readFileSync(file, 'utf8')
@@ -105,6 +112,7 @@ for (const { id, file, must } of SHIPPED) {
     continue
   }
   for (const re of must) if (!re.test(src)) fails.push(`${id}: pattern ${re} gone from ${file}`)
+  for (const re of mustNot) if (re.test(src)) fails.push(`${id}: forbidden pattern ${re} present in ${file}`)
 }
 
 console.log('CRM mobile track gate')

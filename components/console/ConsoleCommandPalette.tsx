@@ -26,7 +26,7 @@ import {
 
 const NAV = [
   { label: 'Today', href: '/admin/console' },
-  { label: 'Leads', href: '/admin/console/leads' },
+  { label: 'Leads', href: '/admin/crm' },
   { label: 'Inbox (brand admin)', href: '/admin/crm/inbox' },
   { label: 'Transactions (brand admin)', href: '/admin/deals' },
 ]

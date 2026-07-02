@@ -99,7 +99,7 @@ const BROKER_OPTIONS = CRM_BROKERS.map((slug) => ({
 export default async function CrmInboxPage({
   searchParams,
 }: {
-  searchParams: Promise<{ scope?: string; folder?: string; view?: string; c?: string; compose?: string; error?: string }>
+  searchParams: Promise<{ scope?: string; folder?: string; view?: string; c?: string; compose?: string; error?: string; m?: string }>
 }) {
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
@@ -195,7 +195,13 @@ export default async function CrmInboxPage({
       const items: InboxThreadViewItem[] = thread.map((it) => ({ ...it, tsLabel: formatDateTime(it.ts) }))
       // §26 mobile thread — sanitized server-side in mobile-data.ts.
       const mobileItems: MobileThreadItem[] = buildMobileThreadItems(thread)
-      const mobileMode = pickMobileMode(thread, Boolean(target?.phone))
+      // ?m=sms|email forces the mobile composer channel (the lead-detail SMS /
+      // Email quick-action circles deep-link here so texting happens IN the CRM,
+      // not the native SMS app — Matt punch list #4, 2026-07-02). Capability-
+      // gated: m=sms without a phone falls back to the inferred mode.
+      const forcedMode =
+        sp.m === 'sms' && target?.phone ? 'sms' : sp.m === 'email' && card.email ? 'email' : null
+      const mobileMode = forcedMode ?? pickMobileMode(thread, Boolean(target?.phone))
       const status: ConversationStatus = (stateRow.data?.status as ConversationStatus | undefined) ?? 'unread'
       const actingSlug = access.brokerSlug ?? card.assignedBroker ?? 'matt'
       const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
@@ -518,6 +524,7 @@ export default async function CrmInboxPage({
         actingSignatureHtml={actingSignature?.html ?? null}
         emailTemplates={emailTemplates}
         smsTemplates={smsTemplates}
+        autoOpenEmailReply={sp.m === 'email'}
         actions={{
           sendSmsForm: sendSmsForm.bind(null, openPane?.personId ?? 0),
           sendEmailForm: sendEmailForm.bind(null, openPane?.personId ?? 0),
