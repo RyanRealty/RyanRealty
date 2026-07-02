@@ -99,11 +99,28 @@ export async function POST(
     )
   }
 
+  // Open/click tracking + broker attribution (CRM_BUILD_MISSION "Email open +
+  // click tracking" — EVERY client-facing send path). Person resolve is
+  // fail-closed (ambiguous email -> null -> attribution only, no pixel).
+  const { resolvePersonIdByEmail, recordEmailEvent } = await import('@/lib/crm/email-events')
+  const { attributeOutbound } = await import('@/lib/crm/attributed-links')
+  const { CRM_BROKER_BY_EMAIL } = await import('@/lib/crm/constants')
+  const trackPersonId = await resolvePersonIdByEmail(row.lead_email as string)
+  const brokerSlug =
+    CRM_BROKER_BY_EMAIL[((row.assigned_broker_email as string | null) ?? '').trim().toLowerCase()] ?? 'matt'
+  const emailKey = `cma:draft:${id}`
+  const trackedHtml = attributeOutbound(row.email_body_html as string, {
+    brokerSlug,
+    personId: trackPersonId,
+    emailKey,
+    label: row.email_subject as string,
+  })
+
   // Send.
   const result = await sendEmail({
     to: row.lead_email as string,
     subject: row.email_subject as string,
-    html: row.email_body_html as string,
+    html: trackedHtml,
     text: (row.email_body_text as string) ?? undefined,
     replyTo:
       (row.assigned_broker_email as string | null) ?? 'matt@ryan-realty.com',
@@ -117,6 +134,18 @@ export async function POST(
       { status: 500 }
     )
   }
+
+  // Unified email_events 'sent' row (idempotent on the Resend message id).
+  await recordEmailEvent({
+    messageId: result.id ?? null,
+    recipientEmail: row.lead_email as string,
+    personId: trackPersonId,
+    broker: brokerSlug,
+    sendType: 'cma',
+    event: 'sent',
+    emailKey,
+    subject: row.email_subject as string,
+  })
 
   // Mark sent.
   const sentAt = new Date().toISOString()

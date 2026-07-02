@@ -75,9 +75,25 @@ export function verifyEmailToken(token: string | null | undefined): EmailTrackCo
 }
 
 /**
+ * Compliance carve-out: unsubscribe / preference links are NEVER click-wrapped
+ * (CRM_BUILD_MISSION "Email open + click tracking" §5 — no tracking on
+ * unsubscribe/compliance links). Wrapping them would log an engagement "click"
+ * for an opt-OUT and put a tracking hop in front of a CAN-SPAM mechanism.
+ * Covers every unsubscribe rail in the codebase: /newsletter/unsubscribe,
+ * /alerts/unsubscribe, /api/alerts/unsubscribe, /api/email/unsubscribe, and
+ * generic ?unsubscribe= / list-unsubscribe shapes, plus the Oregon agency
+ * disclosure pamphlet (a legally-required disclosure never gets a tracking hop
+ * in front of it). Exported for the unit test.
+ */
+export function isComplianceLink(url: string): boolean {
+  return /unsubscribe|email-preferences|opt[-_]?out|agency-disclosure/i.test(url)
+}
+
+/**
  * Instrument an HTML email body: wrap every http(s) link through the click
  * tracker and append the open pixel. Idempotent-ish (skips already-wrapped
- * links). Returns the instrumented HTML.
+ * links). Unsubscribe/compliance links stay plain. Returns the instrumented
+ * HTML.
  */
 export function instrumentEmailHtml(html: string, ctx: EmailTrackContext): string {
   const base = `${SITE_URL}/api/track/e`
@@ -85,6 +101,7 @@ export function instrumentEmailHtml(html: string, ctx: EmailTrackContext): strin
 
   const out = html.replace(/href="(https?:\/\/[^"]+)"/gi, (m, url: string) => {
     if (url.includes('/api/track/e/')) return m // already wrapped
+    if (isComplianceLink(url)) return m // unsubscribe/compliance links stay plain
     const tok = signEmailToken({ personId: ctx.personId, emailKey: ctx.emailKey, label: ctx.label, url })
     return `href="${base}/click?t=${encodeURIComponent(tok)}"`
   })

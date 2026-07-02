@@ -136,6 +136,24 @@ DEFERRED (do NOT build unless told): Deals reporting beyond pipeline, Billing, p
 
 # TASK: Email open + click tracking (EVERY CRM send path) + FIX merge fields (added 2026-07-01, expanded)
 
+> ✅ **SHIPPED + PROVEN E2E 2026-07-02** (same session as mobile-dashboard/mobile-settings). The DoD ran
+> for real: a composer email sent to Matt's own contact (crm_people 13168, matt@ryan-realty.com), the
+> DELIVERED HTML read back from Matt's mailbox via the Gmail service account (pixel + click-wrapped links
+> confirmed in the delivered source), the pixel fired TWICE → exactly ONE `email_events` open row
+> (idempotent), a real click → ONE click row + 302 to the correct destination, both rows tied to
+> person_id 13168, and the contact UI showed "3 opens · 1 clicks" chips + Emails sent 1 — screenshot
+> committed at `docs/fub-crm-spec/_verify/email-tracking-engagement.png`. Test rows then deleted
+> (net-zero; the screenshot is the artifact). What this session ADDED (most send paths were already
+> wired by intervening slices — see status table in the PROGRESS entry): the unsubscribe/compliance
+> link carve-out `isComplianceLink()` in `lib/email-tracking.ts` (unsubscribe rails + the Oregon agency
+> disclosure pamphlet are NEVER click-wrapped) + `lib/email-tracking.test.ts` (8 tests), and
+> open/click instrumentation + `email_events` 'sent' rows on the `app/api/cma-drafts/[id]/send` route
+> (person resolve fail-closed by lead_email). Deliberate NON-tracked paths (decision, logged):
+> internal broker-recipient emails (seller/expired/fsbo alerts, digests, cma-request broker notify,
+> template self-test to own mailbox) — tracking them would attribute the BROKER's opens to engagement
+> data; `tc/signing-emails` — no tracking hop in front of legal signing links; `cma/[slug]/email` —
+> multi-recipient single-HTML can't carry per-person tokens (deferred: needs a per-recipient send loop).
+
 ## Decision (Matt, 2026-07-01, expanded)
 EVERY email the CRM sends must have trackable opens + clicks tied to the `crm_people` contact — NOT just the
 1:1 composer. That means ALL send paths + BOTH send systems:
@@ -300,6 +318,9 @@ the reference → iterate to ZERO diffs → `parity.json` → gates → the DONE
 side-by-side. Only then move to the next item.
 
 ## PROGRESS (mobile)
+- **M8 mobile-dashboard + M9 mobile-settings** ✅ DONE + PROVEN (commit 2b7dcfb2, 2026-07-02) — the
+  FINAL two mobile items; see the full entry in the main PROGRESS block below. **The mobile track and
+  the whole 18-screen registry are COMPLETE (all proven).**
 - **mobile-shell + mobile-activity-people** ✅ REGISTRY-PROVEN (2026-07-01, prove-and-flip of the
   M2/M5 builds): `_verify/mob-shell.png` (390x844, /admin/crm/activity — header chrome + §24
   All/New Leads/Emails/Website strip + real activity feed + bottom tab bar w/ Activity active) and
@@ -356,6 +377,46 @@ and show me the screenshot.
 ## PROGRESS (agents append here as slices ship)
 
 ### GROUND-UP REBUILD under ci:crm-screen-parity (started 2026-07-01, screen-by-screen)
+- **mobile-dashboard + mobile-settings** ✅ DONE + PROVEN (commit 2b7dcfb2, 2026-07-02) — M8 (mob-44)
+  + M9 (mob-06), the FINAL two registry screens. **`ci:crm-screen-parity`: 18 done (all proven), 0
+  real screens todo — the registry is COMPLETE.** Both with committed 390x844 fresh-Playwright proofs
+  (`_verify/mob-dashboard.png` + `_verify/mob-settings.png`), zero console errors, real crm_* data,
+  desktop verified unchanged at 1440x900, full ci:gates + vitest (2414) green.
+  **mob-44 BUILT** (`/admin/broker-dashboard` at <lg): DashboardActivityFeed rebuilt to the §2a/§2b
+  card anatomy — box-outline active sub-tab (New Leads · Emails · Website; rounded 4px 1.5pt border
+  around the active cell, NOT an underline), 80pt contact rows w/ 44pt avatars + 16px semibold names
+  + 13px activity subtitle + right age badges ("5d"), 4-visible-row card height (321px) w/ internal
+  scroll so the "Needs your action" card sits in-viewport per the documented y-bands; empty-state
+  text matched verbatim ("You are all caught up"); scope-toggle padding tightened so "Good morning,
+  Matt." renders un-truncated at 390px. Verified live: Website tab shows the real site-visitor rows
+  ("Matthew Ryan · Viewed the site · 8d" — the spec's exact content), tab switching + Home tab
+  active + FAB all confirmed.
+  **mob-06 BUILT** (`/admin/settings` at <md): NEW `MobileSettingsScreen` — the FUB-iOS Settings
+  modal re-skinned per the spec's own rebuild notes: full-screen `fixed inset-0 z-50` sheet (occludes
+  tab bar + FAB, the mob-06 "modal occludes tab bar" pattern — zero shell changes needed), navy
+  Close/Settings header, 52pt-avatar profile card (name + Admin/Broker/Viewer role), icon-circle
+  feature rows at the documented hexes (orange app-version w/ REAL package.json version, purple
+  new-lead / blue deal-activity / green task-due prefs as Enabled/Disabled tap-toggle rows, SMS
+  alerts as the icon-less Switch row — all saving IMMEDIATELY via saveBrokerSettingsAction, round-trip
+  verified net-zero on the live brokers row), support/links section (Report a bug + Support mailtos,
+  Email signature bottom-sheet editor, CRM settings, Company settings superuser-only). Desktop
+  MySettingsForm untouched (`hidden md:block`); Close returns to the originating screen (verified).
+  DECISIONS: greeting renders at the token-ladder `text-xl` (spec is "~22pt" approximate; the
+  arbitrary 22px tripped ci:design-tokens and truncates the longer afternoon greeting) · the feed
+  caps at 4 visible rows w/ in-card scroll (spec card is a fixed 380pt region) · FUB-specific rows
+  (Zillow, FUB support emails) replaced per the spec's in-house rebuild notes · MobileSettingsScreen
+  + DashboardActivityFeed on the documented FUB-pt-precision `.design-token-lint-ignore` class.
+  DEFERRALS (unchanged from M5/M8 scope): swipe-left row quick-actions + pull-to-refresh on the
+  dashboard feed (spec marks both [INFERRED]).
+- **Email open + click tracking** ✅ SHIPPED + PROVEN E2E (2026-07-02, same session — see the ✅ block
+  at the top of the TASK section above for the full proof + decisions). Send-path status at close:
+  composer/sequence/appointments (Gmail rail, `track` param) ✓ · bulk email-cohort ✓ ·
+  market-report-send ✓ · cma-deliver ✓ · newsletter + saved-search alerts (attributeOutbound) ✓ ·
+  cma-drafts send route ✓ (NEW this session) · Resend webhook → email_events ✓. NEW this session:
+  `isComplianceLink()` carve-out (unsubscribe rails + agency disclosure never click-wrapped) +
+  `lib/email-tracking.test.ts`. NOT tracked by decision: internal broker-recipient alerts/digests,
+  TC signing emails, template self-test; `cma/[slug]/email` multi-recipient deferred (needs
+  per-recipient send loop). Proof artifact: `_verify/email-tracking-engagement.png`.
 - **mobile-calendar-tasks + mobile-pickers** ✅ DONE + PROVEN (commits 8ded6cb5 + a7746316,
   2026-07-02) — M6 (§29) + M7 (§28). Registry 16 done / 3 todo, both with committed 390x844
   fresh-Playwright proofs (`_verify/mob-calendar-tasks.png` + `_verify/mob-pickers.png`),

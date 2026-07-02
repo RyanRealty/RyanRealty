@@ -2,7 +2,7 @@
 
 # CROSS-AGENT HANDOFF — CRM GROUND-UP REBUILD, screen-by-screen under ci:crm-screen-parity (2026-07-01)
 
-**HEAD:** `a7746316` on `main` (+ the docs commit after it) · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` (**16 done, all proven — all 10 desktop + person-detail-mobile + mobile-shell + mobile-activity-people + inbox-mobile + mobile-compose + mobile-calendar-tasks + mobile-pickers**; 3 todo: mobile-dashboard, mobile-settings + the _meta row)
+**HEAD:** `2b7dcfb2` on `main` (+ follow-up email-tracking commit) · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` — **REGISTRY COMPLETE: 18 done, all proven (all 10 desktop + all 8 mobile); only the _meta row is todo.** The mission's email open+click tracking task is also SHIPPED + PROVEN E2E (see the ✅ blocks in the mission doc).
 
 ## What this track is
 Matt's directive: execute CRM_BUILD_MISSION as a ground-up rebuild, screen by screen through the
@@ -11,6 +11,30 @@ full DoD, gated by `ci:crm-screen-parity` (scripts/check-crm-screen-parity.mjs �
 gap-fills. Standing commit+push authorization is in the mission doc.
 
 ## Shipped
+- **mobile-dashboard + mobile-settings = done + proven** (commit `2b7dcfb2`, 2026-07-02): the FINAL
+  two registry screens — M8 mob-44 (`/admin/broker-dashboard`: DashboardActivityFeed rebuilt to the
+  §2a/§2b card anatomy — box-outline active sub-tab, 80pt/44pt rows, 4-row card w/ internal scroll,
+  "Needs your action" in-viewport; Website tab verified showing real "Viewed the site" rows) and
+  M9 mob-06 (`/admin/settings`: NEW `MobileSettingsScreen` full-screen z-50 modal — navy Close header,
+  profile card, icon-circle feature rows w/ immediate-save toggles proven net-zero, signature sheet,
+  support links; desktop MySettingsForm untouched). Proofs `_verify/mob-dashboard.png` +
+  `_verify/mob-settings.png` (390x844, zero console errors). GOTCHAS: the z-50 fixed-overlay pattern
+  (from MobileThread) is the cheapest way to satisfy "modal occludes tab bar + FAB" — tab bar is z-30,
+  FAB z-40, no suppression edits needed · `getByRole('button', {name})` is case-INsensitive — 'Send
+  email' matched the 'Send Email' header toggle and silently closed the composer (use exact: true) ·
+  arbitrary px sizes on a PAGE trip ci:design-tokens (ignore-list is for pt-precise COMPONENTS; pages
+  use the ladder).
+- **Email open+click tracking task = SHIPPED + PROVEN E2E** (2026-07-02, same session): most send
+  paths were already wired by intervening slices (composer/sequences/appointments `track`, cohort +
+  newsletter + market-report + saved-search via `attributeOutbound`, cma-deliver, Resend webhook →
+  email_events). Added: `isComplianceLink()` in lib/email-tracking.ts (unsubscribe rails + Oregon
+  agency disclosure NEVER click-wrapped) + lib/email-tracking.test.ts, and tracking + 'sent' events
+  on `app/api/cma-drafts/[id]/send`. E2E proof: composer send to Matt's own contact (13168) →
+  delivered HTML pulled via Gmail service account (pixel + wrapped links confirmed) → pixel fired
+  2× = ONE open row (idempotent) → real click = ONE click row + 302 → UI showed "3 opens · 1 clicks"
+  (screenshot `_verify/email-tracking-engagement.png`) → test rows deleted (net-zero). NOT tracked by
+  decision: internal broker-recipient alerts/digests, TC signing emails, template self-test;
+  `cma/[slug]/email` multi-recipient deferred.
 - **mobile-calendar-tasks + mobile-pickers = done + proven** (commits `8ded6cb5` + `a7746316`,
   2026-07-02): M6 §29 (`/admin/crm/calendar` <md Screen A in
   `components/admin/crm/calendar/mobile/`, `/admin/crm/tasks` <md Screen C in
@@ -186,17 +210,14 @@ gap-fills. Standing commit+push authorization is in the mission doc.
    `.design-token-lint-ignore` — established class) + `npx vitest run` + commit + push
    (pre-push runs a full prod build, takes ~5 min — use a background shell).
 
-## NEXT (mobile track — 16 done)
-1. Remaining mobile registry entries: **mobile-dashboard** (mob-44 — spec
-   `docs/fub-crm-spec/mobile-screens/screen-44.md`, route
-   `app/admin/(protected)/broker-dashboard/page.tsx`) and **mobile-settings** (mob-06 —
-   spec `mobile-screens/screen-06.md` + §28 §8 Settings modal, route
-   `app/admin/(protected)/settings/page.tsx`). Same DoD: 390x844 proof via the
-   scratchpad harness (`node shot.mjs <url> <out> 390x844` — recapture sb- cookies
-   fresh, they rotate hourly; `shot-pickers.mjs` shows the open-a-sheet-then-shoot
-   variant), registry flip w/ requiredComponents, full ci:gates + vitest, commit+push.
-2. Also open in the mission doc: email open+click tracking wiring (every send path) — nobody owns
-   it yet. (The renderCrmMerge resolver fix SHIPPED with templates-desktop, 251ae048.)
+## NEXT (registry COMPLETE — 18/18 done, tracking task shipped)
+1. The ground-up rebuild track is CLOSED: every registry screen is done + proven and the email
+   open+click tracking task shipped E2E. No screen work remains.
+2. Open threads across the wider mission (not this track): deferred items logged per-slice in the
+   mission PROGRESS entries (e.g. M5 swipe-row actions / long-press multi-select / team-filter sheet,
+   dashboard pull-to-refresh, `cma/[slug]/email` per-recipient tracking loop, mob-06 [INFERRED]
+   swipe-down dismissal), the ANTHROPIC_API_KEY credit top-up (AI drafts degrade gracefully), and the
+   CRM_LEAD_BACKEND lead-entry flip (Matt owns, per the Twilio cutover memory).
 
 ## Gotchas carried forward
 - crm_timeline.starred / crm_people.timeframe+lender_name / crm_contact_points.status /
