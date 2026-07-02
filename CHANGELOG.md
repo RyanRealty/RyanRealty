@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.704.0 (2026-07-02)
+
+### Features
+- feat(crm): §08 inbox-desktop — FUB three-panel rebuild through ci:crm-screen-parity
+
+### Maintenance
+- docs(crm): §08 inbox-desktop done + proven — mission PROGRESS + handoff (next: deals-desktop §10)
+
+---
+
+
 ## v1.703.0 (2026-07-02)
 
 ### Features
