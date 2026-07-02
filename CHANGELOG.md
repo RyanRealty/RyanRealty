@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.715.0 (2026-07-02)
+
+### Features
+- feat(crm): email open+click tracking — proven E2E, compliance-link carve-out, cma-drafts send wired
+
+---
+
+
 ## v1.714.0 (2026-07-02)
 
 ### Features
