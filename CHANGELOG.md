@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.717.2 (2026-07-02)
+
+### Maintenance
+- docs(crm): Hoffman/Olivieri follow-ups executed — Lanny's email, 503 annotation, Star Ridge strip + westside skip-trace recommendation
+
+---
+
+
 ## v1.717.1 (2026-07-02)
 
 ### Maintenance
