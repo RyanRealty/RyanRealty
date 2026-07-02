@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.708.1 (2026-07-02)
+
+### Maintenance
+- docs(crm): company-settings-desktop shipped — mission PROGRESS + handoff top block
+
+---
+
+
 ## v1.708.0 (2026-07-02)
 
 ### Features
