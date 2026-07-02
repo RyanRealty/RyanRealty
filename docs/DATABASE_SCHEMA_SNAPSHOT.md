@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-02T02:19:04.582Z
+**Generated:** 2026-07-02T02:53:20.259Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -416,7 +416,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 21,052**
+### `market_stats_cache` · **rows ≈ 20,546**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -1872,6 +1872,17 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `approved_by` | text | yes |  |
 | `approved_at` | timestamp with time zone | yes |  |
 
+### `crm_sequence_folders`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `name` | text | no |  |
+| `is_system` | boolean | no | false |
+| `folder_order` | integer | no | 0 |
+| `created_by` | text | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+
 ### `crm_sequences`
 
 | Column | Type | Nullable | Default |
@@ -1886,6 +1897,8 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `created_at` | timestamp with time zone | no | now() |
 | `updated_at` | timestamp with time zone | no | now() |
 | `triggers` | jsonb | no | '[]'::jsonb |
+| `folder_id` | bigint | yes |  |
+| `created_by` | text | yes |  |
 
 ### `crm_stages`
 

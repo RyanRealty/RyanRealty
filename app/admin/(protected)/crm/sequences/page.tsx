@@ -1,16 +1,16 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import {
-  getCrmAccess,
-  listCrmSequences,
-  setCrmSequenceStatusAction,
-} from '@/app/actions/crm'
+import { getCrmAccess, setCrmSequenceStatusAction } from '@/app/actions/crm'
 import {
   createCrmSequenceAction,
   duplicateCrmSequenceAction,
   archiveCrmSequenceAction,
   deleteCrmSequenceAction,
+  createCrmSequenceFolderAction,
+  renameCrmSequenceFolderAction,
+  deleteCrmSequenceFolderAction,
+  moveCrmSequenceToFolderAction,
 } from '@/app/actions/crm-sequences'
 import {
   createCrmAutomationRuleAction,
@@ -20,6 +20,7 @@ import {
   reorderCrmAutomationRulesAction,
 } from '@/app/actions/crm-automation-rules'
 import { getWorkflowAnalytics } from '@/lib/data/crm/getWorkflowAnalytics'
+import { getCrmAutomationsAdminList, getCrmSequenceFolders } from '@/lib/data/crm/getAutomationsAdmin'
 import { getCrmAutomationRules } from '@/lib/data/crm/getCrmAutomationRules'
 import { getCrmTags } from '@/lib/data/crm/getCrmTags'
 import { getCrmStages } from '@/lib/data/crm/getCrmStages'
@@ -27,14 +28,25 @@ import { scopeBroker } from '@/lib/crm/scope'
 import { CRM_BROKERS, CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
 import { Button } from '@/components/ui/button'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
-import { WorkflowList, type WorkflowRow, type WorkflowPlanType } from '@/components/admin/crm/workflows/WorkflowList'
+import {
+  AutomationsListView,
+  type AutomationListRow,
+  type WorkflowPlanType,
+} from '@/components/admin/crm/automations/AutomationsListView'
 import {
   AutomationRulesManager,
   type RuleRow,
 } from '@/components/admin/crm/workflows/AutomationRulesManager'
 
-export const metadata = { title: 'Workflows | CRM | Admin' }
+export const metadata = { title: 'Automations | CRM | Admin' }
 export const dynamic = 'force-dynamic'
+
+/** Broker headshots for the Created By column (§12.2.3 col 7). */
+const BROKER_HEADSHOT: Record<string, string> = {
+  matt: '/images/brokers/ryan-matt.png',
+  rebecca: '/images/brokers/peterson-rebecca.png',
+  paul: '/images/brokers/stevenson-paul.png',
+}
 
 // ── Server-action adapters (the islands call typed callbacks) ──────────────────
 
@@ -70,6 +82,26 @@ async function removeWorkflow(id: number) {
   return deleteCrmSequenceAction(id)
 }
 
+async function createFolder(name: string) {
+  'use server'
+  return createCrmSequenceFolderAction({ name })
+}
+
+async function renameFolder(id: number, name: string) {
+  'use server'
+  return renameCrmSequenceFolderAction({ id, name })
+}
+
+async function removeFolder(id: number) {
+  'use server'
+  return deleteCrmSequenceFolderAction(id)
+}
+
+async function moveToFolder(sequenceId: number, folderId: number | null) {
+  'use server'
+  return moveCrmSequenceToFolderAction({ sequenceId, folderId })
+}
+
 async function createRule(fd: FormData) {
   'use server'
   return createCrmAutomationRuleAction(fd)
@@ -91,13 +123,35 @@ async function reorderRules(orderedIds: number[]) {
   return reorderCrmAutomationRulesAction(orderedIds)
 }
 
-export default async function CrmSequencesPage() {
+/** Map FUB legacy plan IDs to canonical plan types for badge rendering.
+ *  These IDs come from the FUB API export (enroll.ts RULES constant):
+ *  69 = seller master, 70 = buyer master, 71 = expired, 72 = fsbo. */
+function planTypeFromFubId(fubId: number | null | undefined): WorkflowPlanType {
+  switch (fubId) {
+    case 69: return 'seller'
+    case 70: return 'buyer'
+    case 71: return 'expired'
+    case 72: return 'fsbo'
+    default: return null
+  }
+}
+
+/** shot-34 date convention: M/D/YYYY, formatted server-side (hydration-safe). */
+const CREATED_ON_FMT = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/Los_Angeles',
+  month: 'numeric',
+  day: 'numeric',
+  year: 'numeric',
+})
+
+export default async function CrmAutomationsPage() {
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
   const broker = scopeBroker(access)
 
-  const [sequences, analytics, rules, tags, stages] = await Promise.all([
-    listCrmSequences(),
+  const [sequences, folders, analytics, rules, tags, stages] = await Promise.all([
+    getCrmAutomationsAdminList(),
+    getCrmSequenceFolders(),
     getWorkflowAnalytics(broker),
     getCrmAutomationRules(),
     getCrmTags(),
@@ -106,33 +160,27 @@ export default async function CrmSequencesPage() {
 
   const analyticsById = new Map(analytics.rows.map((r) => [r.id, r]))
 
-  /** Map FUB legacy plan IDs to canonical plan types for badge rendering.
-   *  These IDs come from the FUB API export (enroll.ts RULES constant):
-   *  69 = seller master, 70 = buyer master, 71 = expired, 72 = fsbo. */
-  function planTypeFromFubId(fubId: number | null | undefined): WorkflowPlanType {
-    switch (fubId) {
-      case 69: return 'seller'
-      case 70: return 'buyer'
-      case 71: return 'expired'
-      case 72: return 'fsbo'
-      default: return null
-    }
-  }
-
-  const rows: WorkflowRow[] = sequences.map((s) => {
+  const rows: AutomationListRow[] = sequences.map((s) => {
     const a = analyticsById.get(s.id)
+    const createdBy = s.createdBy && CRM_BROKER_DISPLAY[s.createdBy as CrmBrokerSlug]
+      ? { name: CRM_BROKER_DISPLAY[s.createdBy as CrmBrokerSlug], avatar: BROKER_HEADSHOT[s.createdBy] ?? null }
+      : { name: 'Ryan Realty', avatar: null }
     return {
       id: s.id,
       name: s.name,
       status: s.status,
-      stepCount: Array.isArray(s.steps) ? s.steps.length : 0,
-      isAutoEnrollMaster: s.fub_legacy_plan_id != null,
-      planType: planTypeFromFubId(s.fub_legacy_plan_id),
-      enrolled: a?.enrolled ?? 0,
-      active: a?.active ?? 0,
+      stepCount: s.stepCount,
+      planType: planTypeFromFubId(s.fubLegacyPlanId),
+      isAutoEnrollMaster: s.fubLegacyPlanId != null,
+      usedBy: s.usedBy,
+      started: a?.enrolled ?? 0,
+      engaged: a?.engaged ?? null,
       completed: a?.completed ?? 0,
-      stopped: a?.stopped ?? 0,
-      awaitingBroker: a?.awaitingBroker ?? 0,
+      createdByName: createdBy.name,
+      createdByAvatarUrl: createdBy.avatar,
+      createdOnLabel: CREATED_ON_FMT.format(new Date(s.createdAt)),
+      createdAtMs: Date.parse(s.createdAt),
+      folderId: s.folderId,
     }
   })
 
@@ -158,45 +206,41 @@ export default async function CrmSequencesPage() {
   }))
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
-      <div className="mb-1 text-sm text-muted-foreground">
+    <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
+      <div className="mb-3 flex items-center justify-between gap-3 text-sm text-muted-foreground">
         <Link href="/admin/crm" className="inline-flex min-h-10 items-center hover:text-foreground md:min-h-0">
           Back to CRM
         </Link>
-      </div>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-foreground">Workflows</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Automated drip sequences. Build steps, set triggers, then activate. Active workflows send from the
-            assigned broker&apos;s mailbox inside 7am to 7pm PT, pause on any reply, and never touch a suppressed
-            contact.
-          </p>
-        </div>
         <Link href="/admin/crm/workflows" className="shrink-0">
-          <Button variant="outline" size="sm" className="h-10 md:h-8">
+          <Button variant="outline" size="sm" className="h-8">
             Enrollment board
           </Button>
         </Link>
       </div>
 
-      <ConsoleSection title="Workflows" className="mt-6">
-        <WorkflowList
-          rows={rows}
-          analyticsUnreadable={analytics.unreadable}
-          actions={{
-            create: createWorkflow,
-            duplicate: duplicateWorkflow,
-            setStatus: setWorkflowStatus,
-            archive: archiveWorkflow,
-            remove: removeWorkflow,
-          }}
-        />
-      </ConsoleSection>
+      {/* §12.2 Automations list — header, folder cards, 10-column table */}
+      <AutomationsListView
+        rows={rows}
+        folders={folders}
+        analyticsUnreadable={analytics.unreadable}
+        actions={{
+          create: createWorkflow,
+          duplicate: duplicateWorkflow,
+          setStatus: setWorkflowStatus,
+          archive: archiveWorkflow,
+          remove: removeWorkflow,
+          createFolder,
+          renameFolder,
+          deleteFolder: removeFolder,
+          moveToFolder,
+        }}
+      />
 
-      <ConsoleSection title="Triggers" className="mt-8">
+      {/* Enrollment rules — the engine's event → enroll path (kept from the
+          working build; §12.9.2 automatic enrollment). */}
+      <ConsoleSection title="Enrollment rules" className="mt-10">
         <p className="mb-3 text-sm text-muted-foreground">
-          Rules that enroll a contact automatically. The tag-added to enroll-in-workflow path runs in the engine
+          Rules that enroll a contact automatically. The tag-added to enroll-in-automation path runs in the engine
           today. First matching rule wins.
         </p>
         <AutomationRulesManager

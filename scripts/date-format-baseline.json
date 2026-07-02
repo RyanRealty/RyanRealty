@@ -14,6 +14,7 @@
     "app/admin/(protected)/crm/calendar/CalendarGrid.tsx",
     "app/admin/(protected)/crm/deals/[id]/DealFiles.tsx",
     "app/admin/(protected)/crm/deals/[id]/page.tsx",
+    "app/admin/(protected)/crm/sequences/page.tsx",
     "app/admin/(protected)/expired-listings/ExpiredListingRow.tsx",
     "app/admin/(protected)/listings/page.tsx",
     "app/admin/(protected)/newsletters/page.tsx",

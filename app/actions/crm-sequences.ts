@@ -48,13 +48,15 @@ const LIVE_ENROLLMENT_STATUSES = ['running', 'paused_reply'] as const
  * superuser-gated. A restricted broker is refused. Returns the standard result
  * shape so callers keep their early-return on !ok.
  */
-async function requireSuperuser(): Promise<CrmActionResult> {
+async function requireSuperuser(): Promise<
+  { ok: true; brokerSlug: string | null } | { ok: false; error: string }
+> {
   const access = await requireCrmAccess()
   if (!access.ok) return access
   if (access.access.role !== 'superuser') {
     return { ok: false, error: 'Not authorized. Only an owner can manage workflows.' }
   }
-  return { ok: true }
+  return { ok: true, brokerSlug: access.access.brokerSlug ?? null }
 }
 
 /** Revalidate every surface that renders workflows. */
@@ -131,6 +133,8 @@ export async function createCrmSequenceAction(input: {
       stop_on_reply: input.stopOnReply ?? true,
       steps,
       status: 'paused',
+      // Created By (§12.2.3 col 7): stamp the authoring broker.
+      created_by: guard.brokerSlug ?? 'matt',
     })
     .select('id')
     .single()
@@ -158,7 +162,7 @@ export async function duplicateCrmSequenceAction(
   const sb = createServiceClient()
   const { data: src, error: readErr } = await sb
     .from('crm_sequences')
-    .select('name,description,stop_on_reply,steps')
+    .select('name,description,stop_on_reply,steps,folder_id')
     .eq('id', id)
     .maybeSingle()
   if (readErr) return { ok: false, error: readErr.message }
@@ -175,6 +179,8 @@ export async function duplicateCrmSequenceAction(
       stop_on_reply: src.stop_on_reply ?? true,
       steps: clonedSteps,
       status: 'paused',
+      folder_id: src.folder_id ?? null,
+      created_by: guard.brokerSlug ?? 'matt',
     })
     .select('id')
     .single()
@@ -375,5 +381,108 @@ export async function updateCrmSequenceStepsAction(
   if (error) return { ok: false, error: error.message }
 
   revalidateWorkflows(id)
+  return { ok: true }
+}
+
+// ── Folders (§12.2 — Create Folder, Move to Folder, folder edit) ─────────────
+
+/** Create a user folder for grouping automations (§12.2.1 Create Folder). */
+export async function createCrmSequenceFolderAction(input: {
+  name: string
+}): Promise<CrmActionResult & { id?: number }> {
+  const guard = await requireSuperuser()
+  if (!guard.ok) return guard
+  const name = (input.name ?? '').trim()
+  if (!name) return { ok: false, error: 'Folder name is required' }
+
+  const sb = createServiceClient()
+  const { data, error } = await sb
+    .from('crm_sequence_folders')
+    .insert({ name, is_system: false, created_by: guard.brokerSlug ?? 'matt' })
+    .select('id')
+    .single()
+  if (error) return { ok: false, error: error.message }
+  revalidateWorkflows()
+  return { ok: true, id: data.id as number }
+}
+
+/** Rename a USER folder. System folders (My Automations) are refused. */
+export async function renameCrmSequenceFolderAction(input: {
+  id: number
+  name: string
+}): Promise<CrmActionResult> {
+  const guard = await requireSuperuser()
+  if (!guard.ok) return guard
+  if (!Number.isInteger(input.id) || input.id <= 0) return { ok: false, error: 'Bad input' }
+  const name = (input.name ?? '').trim()
+  if (!name) return { ok: false, error: 'Folder name is required' }
+
+  const sb = createServiceClient()
+  const { data: folder, error: readErr } = await sb
+    .from('crm_sequence_folders')
+    .select('id,is_system')
+    .eq('id', input.id)
+    .maybeSingle()
+  if (readErr) return { ok: false, error: readErr.message }
+  if (!folder) return { ok: false, error: 'Folder not found' }
+  if (folder.is_system) return { ok: false, error: 'System folders cannot be renamed.' }
+
+  const { error } = await sb.from('crm_sequence_folders').update({ name }).eq('id', input.id)
+  if (error) return { ok: false, error: error.message }
+  revalidateWorkflows()
+  return { ok: true }
+}
+
+/**
+ * Delete a USER folder. Members are NOT deleted — their folder_id clears via
+ * the FK's ON DELETE SET NULL, so the automations simply become unfoldered.
+ */
+export async function deleteCrmSequenceFolderAction(id: number): Promise<CrmActionResult> {
+  const guard = await requireSuperuser()
+  if (!guard.ok) return guard
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, error: 'Bad input' }
+
+  const sb = createServiceClient()
+  const { data: folder, error: readErr } = await sb
+    .from('crm_sequence_folders')
+    .select('id,is_system')
+    .eq('id', id)
+    .maybeSingle()
+  if (readErr) return { ok: false, error: readErr.message }
+  if (!folder) return { ok: false, error: 'Folder not found' }
+  if (folder.is_system) return { ok: false, error: 'System folders cannot be deleted.' }
+
+  const { error } = await sb.from('crm_sequence_folders').delete().eq('id', id)
+  if (error) return { ok: false, error: error.message }
+  revalidateWorkflows()
+  return { ok: true }
+}
+
+/** Move an automation into a folder (or out — folderId null) per §12.2.3 row actions. */
+export async function moveCrmSequenceToFolderAction(input: {
+  sequenceId: number
+  folderId: number | null
+}): Promise<CrmActionResult> {
+  const guard = await requireSuperuser()
+  if (!guard.ok) return guard
+  if (!Number.isInteger(input.sequenceId) || input.sequenceId <= 0) return { ok: false, error: 'Bad input' }
+
+  const sb = createServiceClient()
+  if (input.folderId != null) {
+    const { data: folder, error: fErr } = await sb
+      .from('crm_sequence_folders')
+      .select('id')
+      .eq('id', input.folderId)
+      .maybeSingle()
+    if (fErr) return { ok: false, error: fErr.message }
+    if (!folder) return { ok: false, error: 'Folder not found' }
+  }
+
+  const { error } = await sb
+    .from('crm_sequences')
+    .update({ folder_id: input.folderId, updated_at: new Date().toISOString() })
+    .eq('id', input.sequenceId)
+  if (error) return { ok: false, error: error.message }
+  revalidateWorkflows(input.sequenceId)
   return { ok: true }
 }

@@ -279,14 +279,30 @@ app/admin/(protected)/crm/reporting/overview/OverviewKpiStrip.tsx
 # class as app/lp/sell-your-home/page.tsx and other KB-register LPs above.
 app/luxury-homes-bend/page.tsx
 
-# CRM TemplateEditor + WorkflowList (admin-only, 2026-07-01): both use vw-based
-# max-w-[Xvw] for responsive column truncation in table cells (md:max-w-none
-# collapses on desktop). No locked-ladder equivalent for vw units. TemplateEditor
-# also uses a raw <button> as an inline table-cell text trigger — the <Button>
+# CRM TemplateEditor (admin-only, 2026-07-01): uses vw-based max-w-[Xvw] for
+# responsive column truncation in table cells (md:max-w-none collapses on
+# desktop). No locked-ladder equivalent for vw units. TemplateEditor also uses
+# a raw <button> as an inline table-cell text trigger — the <Button>
 # primitive's inline-flex centering breaks text-flow here. Same exception class
 # as AdminSidebar (h-[calc(100vh-61px)]) and AdminMobileTabBar (pb-[env(...)]).
+# (WorkflowList.tsx was deleted 2026-07-01 — replaced by the §12 automations UI.)
 components/admin/crm/settings/TemplateEditor.tsx
-components/admin/crm/workflows/WorkflowList.tsx
+
+# §12 Automations visual editor + list (admin-only FUB-parity surfaces, 2026-07-01,
+# docs/fub-crm-spec/12-action-plans-and-automations.md):
+# - AutomationEditor.tsx: h-[calc(100vh-8.5rem)] + min-h-[560px] — the editor is a
+#   full-viewport three-column layout with no outer scrollbar (§12.4.1). Same
+#   exception class as AdminSidebar (h-[calc(100vh-61px)]).
+# - EditorCanvas.tsx / EditorPalette.tsx / AutomationsListView.tsx: raw <button>
+#   as card-like interactive surfaces (canvas step/trigger cards, palette drag
+#   tiles, folder cards). Multi-line card content + HTML5 drag sources — the
+#   <Button> primitive's inline-flex centering breaks the card layout (same
+#   exception class as TemplateEditor's inline table-cell trigger). The canvas
+#   step cards are buttons, so they cannot be <Card> (hand-rolled-card rule).
+components/admin/crm/automations/AutomationEditor.tsx
+components/admin/crm/automations/EditorCanvas.tsx
+components/admin/crm/automations/EditorPalette.tsx
+components/admin/crm/automations/AutomationsListView.tsx
 
 # Properties report map (CRM reporting, 2026-07-01):
 # PropertiesMap.tsx: Google Maps API configuration (map styles + Marker icon/label

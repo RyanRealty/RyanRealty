@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-07-02T02:19:04.652Z
+**Generated:** 2026-07-02T02:53:20.330Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -363,6 +363,16 @@ Companion files:
 **Tables:** `crm_suppressions`, `crm_people`
 
 **Selected columns:** `person_id`, `id`, `first_name`, `last_name`, `emails`, `phones`, `deleted`, `tags`
+
+---
+
+### `lib/data/crm/getAutomationsAdmin.ts`
+
+**Exports:** `getCrmSequenceFolders`, `getCrmAutomationsAdminList`
+
+**Tables:** `crm_sequence_folders`, `crm_sequences`
+
+**Selected columns:** `id`, `name`, `is_system`, `folder_order`, `folder_id`, `description`, `status`, `steps`, `triggers`, `fub_legacy_plan_id`, `created_by`, `created_at`
 
 ---
 
@@ -1912,7 +1922,8 @@ Companion files:
 | `crm_report_subscriptions` | `REPORT_FREQUENCIES()`, `normalizeReportFrequency()`, `mapReportSubscriptionRow()`, `buildMarketReportAreas()`, `listAvailableMarketReportAreas()`, `getContactReportSubscription()`, `mapMarketReportSubscriberRow()`, `getActiveMarketReportSubscriptions()`, `getMarketReportSubscribers()`, `stampMarketReportAttempt()`, `stampMarketReportSent()` <br /> `lib/data/crm/getContactReportSubscriptions.ts` · `lib/data/crm/getMarketReportSubscribers.ts` · `lib/data/crm/stampMarketReportSent.ts` |
 | `crm_saved_views` | `getCrmSavedViews()`, `getCrmSavedView()`, `SAVED_VIEW_SEGMENT_SELECT()`, `savedViewToSegment()`, `getSavedViewSegment()` <br /> `lib/data/crm/getCrmSavedViews.ts` · `lib/data/crm/getSavedViewSegment.ts` |
 | `crm_sequence_enrollments` | `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `getContactActionPlanProgress()`, `getContactMemberships()`, `setContactListingAlertsPaused()`, `groupEnrollmentStatus()`, `buildWorkflowAnalytics()`, `getWorkflowAnalytics()`, `stepEmailKey()`, `tallyStepEmailSends()`, `tallyCurrentStep()`, `buildStepAnalytics()`, `getWorkflowStepAnalytics()` <br /> `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getContactActionPlanProgress.ts` · `lib/data/crm/getContactMemberships.ts` · `lib/data/crm/getWorkflowAnalytics.ts` |
-| `crm_sequences` | `getContactActionPlanProgress()`, `getContactMemberships()`, `setContactListingAlertsPaused()`, `getCrmSequenceForEdit()`, `CRM_TEMPLATES_ADMIN_TAG()`, `tallyTemplateUsage()`, `computeTemplatePerf()`, `mapTemplateRow()`, `getCrmTemplatesAdmin()`, `groupEnrollmentStatus()`, `buildWorkflowAnalytics()`, `getWorkflowAnalytics()`, `stepEmailKey()`, `tallyStepEmailSends()`, `tallyCurrentStep()`, `buildStepAnalytics()`, `getWorkflowStepAnalytics()` <br /> `lib/data/crm/getContactActionPlanProgress.ts` · `lib/data/crm/getContactMemberships.ts` · `lib/data/crm/getCrmSequenceForEdit.ts` · `lib/data/crm/getCrmTemplatesAdmin.ts` · `lib/data/crm/getWorkflowAnalytics.ts` |
+| `crm_sequence_folders` | `getCrmSequenceFolders()`, `getCrmAutomationsAdminList()` <br /> `lib/data/crm/getAutomationsAdmin.ts` |
+| `crm_sequences` | `getCrmSequenceFolders()`, `getCrmAutomationsAdminList()`, `getContactActionPlanProgress()`, `getContactMemberships()`, `setContactListingAlertsPaused()`, `getCrmSequenceForEdit()`, `CRM_TEMPLATES_ADMIN_TAG()`, `tallyTemplateUsage()`, `computeTemplatePerf()`, `mapTemplateRow()`, `getCrmTemplatesAdmin()`, `groupEnrollmentStatus()`, `buildWorkflowAnalytics()`, `getWorkflowAnalytics()`, `stepEmailKey()`, `tallyStepEmailSends()`, `tallyCurrentStep()`, `buildStepAnalytics()`, `getWorkflowStepAnalytics()` <br /> `lib/data/crm/getAutomationsAdmin.ts` · `lib/data/crm/getContactActionPlanProgress.ts` · `lib/data/crm/getContactMemberships.ts` · `lib/data/crm/getCrmSequenceForEdit.ts` · `lib/data/crm/getCrmTemplatesAdmin.ts` · `lib/data/crm/getWorkflowAnalytics.ts` |
 | `crm_stages` | `getCrmStages()` <br /> `lib/data/crm/getCrmStages.ts` |
 | `crm_suppressions` | `AUDIENCE_EXCLUDED_TAG_PATTERNS()`, `isAudienceExcludedByTag()`, `getAudienceEligiblePeople()`, `CRM_SUPPRESSIONS_TAG()`, `COMPLIANCE_REASON_MARKERS()`, `isComplianceReason()`, `normalizeSuppressionChannel()`, `clampLimit()`, `clampOffset()`, `resolveSuppressionValue()`, `buildSuppressionRows()`, `getCrmSuppressions()`, `getPersonSuppressions()`, `getSuppressionCounts()`, `getSuppressionSignals()`, `GPC_SUPPRESSION_REASON()`, `GPC_SUPPRESSION_CHANNEL()`, `recordGpcSuppression()` <br /> `lib/data/crm/getAudienceEligiblePeople.ts` · `lib/data/crm/getCrmSuppressions.ts` · `lib/data/crm/getPersonSuppressions.ts` · `lib/data/crm/getSuppressionCounts.ts` · `lib/data/crm/getSuppressionSignals.ts` · `lib/data/crm/recordGpcSuppression.ts` |
 | `crm_tags` | `CRM_TAGS_TAG()`, `tallyTagUsage()`, `getCrmTags()`, `TIMELINE_TAB_KINDS()`, `getPersonDetailExtras()` <br /> `lib/data/crm/getCrmTags.ts` · `lib/data/crm/getPersonDetailExtras.ts` |

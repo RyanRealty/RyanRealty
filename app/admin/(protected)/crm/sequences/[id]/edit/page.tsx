@@ -1,7 +1,6 @@
 // @no-parity — internal admin surface, no public mockup contract
-import Link from 'next/link'
 import { redirect, notFound } from 'next/navigation'
-import { getCrmAccess } from '@/app/actions/crm'
+import { getCrmAccess, setCrmSequenceStatusAction } from '@/app/actions/crm'
 import {
   updateCrmSequenceStepsAction,
   updateCrmSequenceSettingsAction,
@@ -10,26 +9,26 @@ import {
 import { getCrmTemplatesAdmin } from '@/lib/data/crm/getCrmTemplatesAdmin'
 import { getCrmTags } from '@/lib/data/crm/getCrmTags'
 import { getCrmSequenceForEdit } from '@/lib/data/crm/getCrmSequenceForEdit'
+import { getCrmAutomationsAdminList } from '@/lib/data/crm/getAutomationsAdmin'
 import { getCrmStages } from '@/lib/data/crm/getCrmStages'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { getWorkflowStepAnalytics } from '@/lib/data/crm/getWorkflowAnalytics'
 import { scopeBroker } from '@/lib/crm/scope'
-import { createServiceClient } from '@/lib/supabase/service'
 import type { AnyStepOrCondition, SequenceTrigger } from '@/lib/crm/sequence-step-schema'
-import {
-  StepBuilder,
-  type TemplateOption,
-  type TagOption,
-  type StepFunnelRow,
-  type StageOption,
-  type BrokerOption,
-  type SequenceOption,
-} from '@/components/admin/crm/workflows/StepBuilder'
+import { AutomationEditor } from '@/components/admin/crm/automations/AutomationEditor'
+import type {
+  TemplateOption,
+  TagOption,
+  StageOption,
+  BrokerOption,
+  SequenceOption,
+} from '@/components/admin/crm/automations/StepConfigPanel'
+import type { CanvasFunnelRow } from '@/components/admin/crm/automations/EditorCanvas'
 
-export const metadata = { title: 'Edit workflow | CRM | Admin' }
+export const metadata = { title: 'Edit automation | CRM | Admin' }
 export const dynamic = 'force-dynamic'
 
-export default async function CrmSequenceEditPage({
+export default async function CrmAutomationEditPage({
   params,
 }: {
   params: Promise<{ id: string }>
@@ -43,15 +42,14 @@ export default async function CrmSequenceEditPage({
 
   const broker = scopeBroker(access)
 
-  const sb = createServiceClient()
-  const [seq, templates, tags, funnel, stages, brokers, activeSeqsResult] = await Promise.all([
+  const [seq, templates, tags, funnel, stages, brokers, allSequences] = await Promise.all([
     getCrmSequenceForEdit(id),
     getCrmTemplatesAdmin(),
     getCrmTags(),
     getWorkflowStepAnalytics(id, broker),
     getCrmStages(),
     getCrmBrokers(),
-    sb.from('crm_sequences').select('id,name').eq('status', 'active').order('name', { ascending: true }),
+    getCrmAutomationsAdminList(),
   ])
 
   if (!seq) notFound()
@@ -78,6 +76,14 @@ export default async function CrmSequenceEditPage({
     return updateCrmSequenceTriggersAction(id, triggers)
   }
 
+  async function setStatus(status: 'active' | 'paused') {
+    'use server'
+    const fd = new FormData()
+    fd.set('sequenceId', String(id))
+    fd.set('status', status)
+    return setCrmSequenceStatusAction(fd)
+  }
+
   const templateOptions: TemplateOption[] = templates
     .filter((t) => t.isActive)
     .map((t) => ({ key: t.key, name: t.name, channel: t.channel }))
@@ -94,13 +100,14 @@ export default async function CrmSequenceEditPage({
     .filter((b) => b.crmActive)
     .map((b) => ({ slug: b.slug, label: b.name }))
 
-  const sequenceOptions: SequenceOption[] = ((activeSeqsResult.data ?? []) as Array<{ id: number; name: string }>)
-    .filter((s) => s.id !== id)
+  // Run Automation targets: ACTIVE automations only (§12.4.4 — "only active
+  // automations appear"), excluding this one.
+  const sequenceOptions: SequenceOption[] = allSequences
+    .filter((s) => s.id !== id && s.status === 'active')
     .map((s) => ({ id: s.id, name: s.name }))
 
-  const funnelRows: StepFunnelRow[] = funnel.rows.map((r) => ({
+  const funnelRows: CanvasFunnelRow[] = funnel.rows.map((r) => ({
     stepIndex: r.stepIndex,
-    channel: r.channel,
     currentlyHere: r.currentlyHere,
     emailsSent: r.emailsSent,
   }))
@@ -109,40 +116,23 @@ export default async function CrmSequenceEditPage({
   const initialTriggers = (Array.isArray(seq.triggers) ? seq.triggers : []) as SequenceTrigger[]
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
-      <div className="mb-1 text-sm text-muted-foreground">
-        <Link
-          href="/admin/crm/sequences"
-          className="inline-flex min-h-10 items-center hover:text-foreground md:min-h-0"
-        >
-          Back to workflows
-        </Link>
-      </div>
-      <h1 className="text-2xl font-bold text-foreground">Edit workflow</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Steps run in order. Each step waits its number of days before it fires. Saving validates every step against
-        the engine, so a workflow can never save in a state that would stall a contact.
-      </p>
-
-      <div className="mt-6">
-        <StepBuilder
-          sequenceId={id}
-          initialName={seq.name}
-          initialDescription={seq.description ?? ''}
-          initialStopOnReply={seq.stopOnReply}
-          initialStatus={seq.status}
-          initialSteps={initialSteps}
-          templates={templateOptions}
-          tags={tagOptions}
-          stages={stageOptions}
-          brokers={brokerOptions}
-          sequences={sequenceOptions}
-          funnel={funnelRows}
-          funnelUnreadable={funnel.unreadable}
-          initialTriggers={initialTriggers}
-          actions={{ saveSteps, saveSettings, saveTriggers }}
-        />
-      </div>
+    <main className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6">
+      <AutomationEditor
+        initialName={seq.name}
+        initialDescription={seq.description ?? ''}
+        initialStopOnReply={seq.stopOnReply}
+        initialStatus={seq.status}
+        initialSteps={initialSteps}
+        initialTriggers={initialTriggers}
+        templates={templateOptions}
+        tags={tagOptions}
+        stages={stageOptions}
+        brokers={brokerOptions}
+        sequences={sequenceOptions}
+        funnel={funnelRows}
+        funnelUnreadable={funnel.unreadable}
+        actions={{ saveSteps, saveSettings, saveTriggers, setStatus }}
+      />
     </main>
   )
 }
