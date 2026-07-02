@@ -26,7 +26,7 @@ import { searchPeopleForMergeAction, mergeCrmContactAction, type MergeCandidate 
 
 type Step = 'search' | 'confirm'
 
-export function MergeContactDialog({ survivorId }: { survivorId: number }) {
+export function MergeContactDialog({ survivorId, trigger }: { survivorId: number; trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<Step>('search')
   const [query, setQuery] = useState('')
@@ -78,13 +78,15 @@ export function MergeContactDialog({ survivorId }: { survivorId: number }) {
   return (
     <Dialog open={open} onOpenChange={onOpen}>
       <DialogTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          className="h-auto p-0 text-xs font-medium text-muted-foreground underline-offset-2 hover:bg-transparent hover:text-foreground hover:underline"
-        >
-          Merge existing person
-        </Button>
+        {trigger ?? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-auto p-0 text-xs font-medium text-muted-foreground underline-offset-2 hover:bg-transparent hover:text-foreground hover:underline"
+          >
+            Merge existing person
+          </Button>
+        )}
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-md">

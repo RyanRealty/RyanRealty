@@ -312,3 +312,8 @@ app/admin/(protected)/crm/reporting/call-logs/page.tsx
 # brand-token equivalent, applied to Kanban column top-borders via inline style.
 # Same exception class as components/admin/crm/mobile/avatar-utils.ts.
 lib/crm/deal-pipelines.ts
+components/admin/crm/person-detail/InlineEditField.tsx
+components/admin/crm/person-detail/PersonDialogs.tsx
+components/admin/crm/person-detail/PersonSidebar.tsx
+components/admin/crm/person-detail/PersonCenterColumn.tsx
+components/admin/crm/person-detail/PersonRightRail.tsx
