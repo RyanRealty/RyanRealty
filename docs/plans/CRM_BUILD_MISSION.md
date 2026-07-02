@@ -514,6 +514,33 @@ re-runs the E2E checks and states the sign-off inventory to Matt.
 
 ## PROGRESS (agents append here as slices ship)
 
+### "SPLIT ALL" — ALL 14 REMAINING FUB MERGE-VICTIMS RECREATED ✅ (2026-07-02)
+Matt: "Split all." Every remaining collapsed pair from the merge-note sweep is repaired. **Evidence
+breakthrough that eliminated guessing: FUB relationship snapshots** (`people/<id>?fields=relationships`)
+captured the merged-away person's OWN emails + phones at merge time — authoritative per-person
+attribution for all 14, including the three previously flagged ambiguous (Edward Fess owns
+pacifichealth@earthlink.net; Samuel Robinson owns abcseamlessgutters@yahoo.com; Martha Detweiler owns
+mkddetweiler@gmail.com — and Abby Hogge owns the Hogge record's ONLY phone, which moved, leaving
+Matt Hogge phone-less by truth).
+Per pair: person recreated (stage/source/broker inherited) · FUB-snapshot email+phone contact points
+moved (survivor jsonb pruned) · FUB name-only relationship row replaced by linked reciprocals ·
+Change Logs both sides. New ids: Brian Smith 52285 (smoke pair, live-verified first) · Charise
+Millard 52286 · Tess McFeley 52287 · **Martha Detweiler 52288 (compliance fail-safe: survivor's
+tcpa-hard-stop + do-not-email suppressions COPIED, plus the 1 provably-hers sms row moved)** · Abby
+Hogge 52289 · Brenda Timms 52290 · Gail Newton 52291 · Edward Fess 52292 · Susan Reese 52293 (no
+phone in snapshot — survivor's single phone stays with Scott) · Evan Karp 52294 · Debra Creekmore
+52295 · Samuel Robinson 52296 · Devin Pohl 52297 · Becky Crawley 52298.
+**Relationship kinds:** spouse for same-surname pairs + the two FUB-explicit Spouse rows (Martha,
+Brian Smith). Kind 'other' + FLAGGED FOR MATT (FUB type null, different surnames): **Tess
+McFeley↔Ryan Westendorf · Evan Karp↔Jessica King · Devin Pohl↔Kelly Plunkett.** Message history:
+only 1 row was provably attributable by number (a text to Martha's 5414013159) — everything else in
+these histories carries no number payload evidence, so it stays on the survivors (couple threads).
+Group backfill re-run: idempotent, none of the 14 numbers appear in group threads. Minor note: Doug
+Millard retains a second phone (5413881661) the snapshot didn't attribute to Charise — left with Doug.
+Driver: `scripts/_split-merge-victims.mjs` (skip-guard: won't double-run a pair with an existing
+linked relationship). Live-verified: smoke pair both pages + Martha/Abby/Matt-Hogge spot checks.
+Zero merge-victims remain unrepaired; the merge-note detector returns only repaired/self-dupe rows.
+
 ### NAME-CORRUPTION REPAIR: HOFFMANS + OLIVIERIS + ROOT CAUSE + VICTIM SWEEP ✅ (2026-07-02)
 Matt: "christopher hoffman and maria hoffmans names got changed to kevin hoffman… lets clean these
 up" + "there were other instances like this with steve and lanny olivieri."
