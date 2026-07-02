@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.716.12 (2026-07-02)
+
+### Maintenance
+- docs(crm): group SMS slice — mission PROGRESS + handoff + ledger notes, live verification evidence
+
+---
+
+
 ## v1.716.11 (2026-07-02)
 
 ### Bug Fixes
