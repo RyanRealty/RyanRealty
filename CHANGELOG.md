@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.716.10 (2026-07-02)
+
+### Maintenance
+- docs(crm): handoff top block — production sign-off landed, stale open items corrected
+
+---
+
+
 ## v1.716.9 (2026-07-02)
 
 ### Maintenance
