@@ -356,6 +356,72 @@ and show me the screenshot.
 ## PROGRESS (agents append here as slices ship)
 
 ### GROUND-UP REBUILD under ci:crm-screen-parity (started 2026-07-01, screen-by-screen)
+- **inbox-mobile + mobile-compose** ✅ DONE + PROVEN (commit 02e426f8, 2026-07-02) — the M3/M4
+  builds, §26 + §27. Registry flipped with committed 390x844 proofs `_verify/mob-inbox.png`
+  (list, real crm_* data, 62-unread bar live) + `_verify/mob-compose.png` (FAB sheet open,
+  recipient token + Email|Text + AI pills + "Text message · SMS" bar) — both fresh-Playwright,
+  ZERO console errors. **§26 BUILT:** `/admin/crm/inbox` at <md is the FUB-iOS structure
+  (components/admin/crm/inbox/mobile/): navy header (broker avatar → settings, "My Inbox ▾" →
+  26-L scope sheet Me/Company, bell → activity, search toggles an inline filter input),
+  4-tab pill strip Inbox/Assigned/Sent/Closed (NO Drafts on mobile per AC-26A-02) + 26-K
+  channel-filter sheet (Emails/Texts/Calls, dot indicator), "N Unread conversations" bar,
+  welcome system banner (AC-26A-14 verbatim), rows w/ unread dot · 40px avatar · name+count ·
+  Xm/Xh/Xd→"Mon DD"→M/DD/YY stamps (NEW pure mobileTimeLabel) · channel icon · subject ·
+  2-line preview · reply-sent avatar overlay · chevron; TOUCH SWIPE left=Close (Reopen in
+  Closed, AC-26C-01) right=Assign → broker sheet (superuser-gated). Thread = full-screen
+  PUSHED overlay (tab bar hidden, AC-26E-07; ConsoleQuickAction suppressed on the inbox route,
+  single-FAB rule): email mode (26-E) = 22px subject block + per-email sender rows + reply
+  arrow + SERVER-sanitized HTML bodies; sms mode (26-F/I) = navy-out/muted-in bubbles, >1h
+  separators, calls as centered markers w/ recording download, scroll-to-bottom; kebab popover
+  (26-G: Call / Email / Start a group message / Reply / Mark as Unread / Archive|Reopen /
+  Block (NNN) NNN-NNNN w/ AlertDialog confirm → blockCrmNumber, live in the Twilio webhooks);
+  right-edge handle → contact context drawer (stage/agent/source/price/timeframe/tags +
+  unknown-caller AddPerson slot). **§27 BUILT:** FAB → MobileComposeSheet (26-J/S1/S2): token
+  To row + live contact search, Email|Text segmented, GROUP SMS up to 10 (real — existing
+  recipientIds Twilio Conversations path; also reachable from the thread kebab w/ the contact
+  pre-added), template picker sheets (from getCrmTemplatesAdmin, merge tokens resolved ON
+  SEND), SMS bar w/ quiet-hours override + N/320 counter, EmailComposer for email (the S5/S6
+  anatomy: To row · subject · preview-what-sends/Edit · merge-field catalog · signature note).
+  NEW `aiSmsDraftAction` (app/actions/crm-inbox.ts, claude-opus-4-8 via the installed SDK,
+  brand-voice-constrained prompt, contact + recent-timeline context): §27 S3 pill strip
+  ✦Introduction/✦Follow Up/✦Still Buying/+Custom fills the EDITABLE input only — auto-send
+  prohibited by design. S8 call sheet: "Call via Ryan Realty line" = startCrmCallAction (cell
+  bridge, recorded + logged) + honest direct-tel: fallback labeled "not tracked". COMPLIANCE:
+  every send routes through the EXISTING sendCrmSmsAction/sendCrmEmailAction (suppression +
+  quiet hours + A2P gate; A2P-blocked state renders the registration prompt, AC-26F-10).
+  PROVEN live: row nav, scope/filter/assign sheets, kebab round-trips, context drawer real
+  data, reply sheet Re: prefill, compose self-send email → crm_timeline 222911 (email_out,
+  broker matt, source app — kept as the truthful record) + auto-navigate to the thread. DAL:
+  InboxConversation gains messageCount (recent-window count, documented) / lastChannel /
+  lastEmailSubject (additive, 27 unit tests green). Page split for the 600-LOC budget:
+  MobileBranch.tsx (server, owns the <md JSX) + mobile-data.ts (mappers); registry routes
+  point at MobileBranch.tsx / MobileComposeSheet.tsx (person-detail-mobile precedent). Gates:
+  full ci:gates exit 0 + vitest 2414 green. DECISIONS: mixed-channel threads render in the
+  LAST message's channel mode, the other channel's items show as centered markers (one thread
+  per person is our model — FUB's per-channel threads don't exist in crm_timeline) · Sent-row
+  "archived" label omitted (FUB auto-archive state has no equivalent — showing it would lie) ·
+  attachment paperclip omitted (crm_timeline carries no attachment flag — no data, no icon) ·
+  S4 attachment sheet replaced by the live "Use template" picker (MMS media send not supported
+  by sendCrmSmsAction; media rows would be dead UI) · Forward + Delete kebab items omitted (no
+  arbitrary-address forward path; no thread-delete — Archive is the resolution) · Assigned
+  empty state ships honest copy instead of FUB's fake video onboarding card · email from the
+  compose sheet is single-recipient w/ honest note (bulk email = the desktop cohort flow) ·
+  active-tab pill uses a color transition, not FUB's translateX slide (regions/order parity,
+  not animation parity) · inbox page moved OFF ci:console-kit to the stricter
+  crm-screen-parity contract (deals precedent, documented in check-console-kit.mjs) ·
+  email-send-gated baseline re-keyed :336→:396 (same allowlisted @mention broker send, line
+  shift only) · the 6 mobile files + MobileBranch are on .design-token-lint-ignore (same
+  documented §25 FUB-pt-precision exception class). DEFERRED (explicit): pull-to-refresh
+  (AC-26A-10; browser-native conflict, same class as M5's gesture deferrals) · 26-H
+  group-thread VIEW (group SEND is live; crm_timeline has no is_group thread model — needs
+  schema) · S9 manual Log-Call form (the bridge auto-logs calls) · S10 first-touch SMS
+  reminder banner + per-message delivery-status sub-labels (sms_status not stored per timeline
+  row) · CC/BCC on mobile email (sendCrmEmail has no cc MIME support — send-path change, kept
+  sacred) · real-time badge/websocket updates (poll/refresh model today). EXTERNAL BLOCKER:
+  the ANTHROPIC_API_KEY account has insufficient credit — aiSmsDraftAction errors gracefully
+  in the pill strip ("credit balance too low"); wiring verified end-to-end, works the moment
+  the balance is topped up (also degrades the pre-existing crm-smart-followups cron; task
+  chip raised for Matt).
 - **reporting-desktop** ✅ DONE + PROVEN (commit ff4fe3ec) — the LAST desktop screen. Registry flipped
   to done with 8 requiredComponents + committed `_verify/screen-reporting-agent-activity.png`
   (1440x900, dev server, authed, ?date=this_year for density, ZERO console errors via the fresh

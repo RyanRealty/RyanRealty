@@ -2,7 +2,7 @@
 
 # CROSS-AGENT HANDOFF — CRM GROUND-UP REBUILD, screen-by-screen under ci:crm-screen-parity (2026-07-01)
 
-**HEAD:** `ff4fe3ec` on `main` (+ the docs/mobile-flip commit after it) · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` (**10 done — ALL DESKTOP SCREENS + person-detail-mobile PROVEN**; 9 mobile todo)
+**HEAD:** `02e426f8` on `main` (+ the docs commit after it) · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` (**14 done, all proven — all 10 desktop + person-detail-mobile + mobile-shell + mobile-activity-people + inbox-mobile + mobile-compose**; 5 todo)
 
 ## What this track is
 Matt's directive: execute CRM_BUILD_MISSION as a ground-up rebuild, screen by screen through the
@@ -11,6 +11,24 @@ full DoD, gated by `ci:crm-screen-parity` (scripts/check-crm-screen-parity.mjs �
 gap-fills. Standing commit+push authorization is in the mission doc.
 
 ## Shipped
+- **inbox-mobile + mobile-compose = done + proven** (commit `02e426f8`, 2026-07-02): the M3/M4
+  REAL builds — §26 FUB-iOS inbox at <md (`components/admin/crm/inbox/mobile/`: MobileBranch →
+  MobileInbox list w/ navy header + 4-tab pills + swipe rows + scope/filter sheets, MobileThread
+  pushed overlay w/ email-detail / SMS-bubble modes + 26-G kebab + block + context drawer) and
+  §27 compose (MobileComposeSheet FAB: contact search + group SMS ≤10 + template pickers +
+  EmailComposer; NEW aiSmsDraftAction AI pill strip fills the input only; S8 call sheet →
+  startCrmCallAction bridge). Every send through the existing gated actions. Proofs
+  `_verify/mob-inbox.png` + `_verify/mob-compose.png` (390x844, zero console errors). Decisions
+  + deferrals in the mission PROGRESS block. GOTCHAS for the next agent: the inbox page is OFF
+  ci:console-kit (crm-screen-parity owns it — comment in check-console-kit.mjs) · the
+  file-size gate forced a split: page 589 LOC + MobileBranch.tsx + mobile-data.ts; registry
+  routes point at component files (allowed — person-detail-mobile precedent) ·
+  ConsoleQuickAction now returns null on /admin/crm/inbox (single-FAB rule) · the ConsoleShell
+  main adds px-4 pt-5 (sm:px-6 pt-7) — full-bleed mobile branches need the -mx-7/-mt-11
+  cancellation in MobileBranch · email-send-gated baseline keys on file:LINE — editing the
+  inbox page shifts the allowlisted @mention send, re-key it (336→396 this time) · the
+  ANTHROPIC_API_KEY account is OUT OF CREDIT (AI drafts + crm-smart-followups degrade
+  gracefully; top-up chip raised).
 - **person-detail-mobile = done + proven** (prove-and-flip, same session as reporting-desktop):
   the previously-verified M1 build got its mechanical proof — `_verify/mob-contact-detail.png`
   captured at 390x844 (lead 12679 via `?view=mobile`, zero console errors), registry flipped with
@@ -145,9 +163,8 @@ gap-fills. Standing commit+push authorization is in the mission doc.
    `.design-token-lint-ignore` — established class) + `npx vitest run` + commit + push
    (pre-push runs a full prod build, takes ~5 min — use a background shell).
 
-## NEXT (mobile track — 12 done incl. person-detail-mobile, mobile-shell, mobile-activity-people)
-1. Remaining mobile registry entries: **inbox-mobile** (§26) + **mobile-compose** (§27) — M3/M4
-   builds needed (real build work, not just proof); **mobile-calendar-tasks** (§29) — the <md
+## NEXT (mobile track — 14 done)
+1. Remaining mobile registry entries: **mobile-calendar-tasks** (§29) — the <md
    branch exists (MobileCalendar/TaskQueue) but the §29 rebuild is pending (M6);
    **mobile-pickers** (§28, M7 — the person-detail deferred pickers/sheets); **mobile-dashboard**
    (mob-44) + **mobile-settings** (mob-06). Capture proofs at 390x844 via the scratchpad harness
