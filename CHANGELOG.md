@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.717.6 (2026-07-02)
+
+### Bug Fixes
+- fix(crm): lead custom-field data was invisible on the contact card — render all populated enrichment keys
+
+---
+
+
 ## v1.717.5 (2026-07-02)
 
 ### Maintenance
