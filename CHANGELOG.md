@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.717.1 (2026-07-02)
+
+### Maintenance
+- chore(crons): remove dead handlers, deregister redundant expired cron, throttle frozen producer pipeline
+
+---
+
+
 ## v1.717.0 (2026-07-02)
 
 ### Features
