@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.710.2 (2026-07-02)
+
+### Maintenance
+- docs(crm-mobile): mobile-shell + mobile-activity-people proven — registry flips + proofs
+
+---
+
+
 ## v1.710.1 (2026-07-02)
 
 ### Maintenance
