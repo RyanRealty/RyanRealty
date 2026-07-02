@@ -96,6 +96,10 @@ export type BrokerKey = 'matt' | 'paul' | 'rebecca'
  * inbound is recorded, logged to the CRM timeline, and forwarded to that
  * broker's private cell (brokers.forward_to_cell — never shown publicly). This
  * is the fallback roster; the live values are public.brokers.twilio_number.
+ * Matt's line is the ported primary business number 541.703.3095 (2026-07-02
+ * fix — the temp 541.224.5025 is retained in Twilio as the legacy/spare line,
+ * see lib/crm/twilio.ts MARKETING_NUMBER). Paul's line is 541.502.3436 (the
+ * cutover doc's "501" was a typo — Twilio owns +15415023436).
  */
 export const BROKERS = {
   matt: {
@@ -105,7 +109,7 @@ export const BROKERS = {
     title: 'Owner & Principal Broker',
     titleShort: 'Principal Broker',
     email: 'matt@ryan-realty.com',
-    phone: '541.224.5025',
+    phone: '541.703.3095',
     license: '201206613',
     isPrincipal: true,
   },
@@ -116,7 +120,7 @@ export const BROKERS = {
     title: 'Broker',
     titleShort: 'Broker',
     email: 'paul@ryan-realty.com',
-    phone: '541.501.3436',
+    phone: '541.502.3436',
     license: '201259123',
     isPrincipal: false,
   },

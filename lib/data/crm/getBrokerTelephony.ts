@@ -49,6 +49,9 @@ export const getBrokerTelephony = unstable_cache(
     }
     return out
   },
-  ['crm-broker-telephony-v1'],
+  // v2: cache-key bump on the 2026-07-02 primary-number fix (Matt →
+  // +15417033095, Paul → +15415023436) so the deploy orphans stale entries
+  // instead of serving the temp/wrong lines for up to the 1d TTL.
+  ['crm-broker-telephony-v2'],
   { revalidate: CACHE_WINDOWS.brokers, tags: [cacheTag.brokers] }
 )

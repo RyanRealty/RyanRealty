@@ -514,6 +514,35 @@ re-runs the E2E checks and states the sign-off inventory to Matt.
 
 ## PROGRESS (agents append here as slices ship)
 
+### TELEPHONY: Matt's primary number fix (2026-07-02) — +15417033095 is the live sender
+Matt's directive: "541.703.3095 is my primary business number, why are texts coming from
+541.224.5025." **Root cause:** the 2026-06-24 cutover parked the ported primary line
++15417033095 as the shared "marketing line" (`lib/crm/twilio MARKETING_NUMBER`) and left
+`brokers.matthew-ryan.twilio_number` on the temp provisioned +15412245025, so composer sends
+(From = brokers.twilio_number) and pooled messaging-service sends (sequence engine, sticky
+sender) both showed the wrong caller ID. **Second latent bug found:** Paul's row held
++15415013436 — a number the Twilio account does NOT own (cutover-doc typo; the real line is
++15415023436) → his outbound sends would have failed with a 21606.
+- **DB** (migration `20260702090000_broker_primary_number_fix`, applied): matthew-ryan
+  twilio_number → +15417033095; paul-stevenson → +15415023436. Verified by live re-read.
+- **Code:** `MARKETING_NUMBER` default → +15412245025 (the legacy/spare line — inbound to it
+  still routes to the default desk); sequence engine now sends from the assigned broker's OWN
+  line via `brokerTwilioNumber` (MS = fallback only), same model as the composer; cache-key
+  bumps (`crm-broker-telephony-v2`, `broker-by-slug-v3`, `brokers-v4`) so the deploy orphans
+  stale entries; `lib/brand/contact.ts` fallback roster Matt → 541.703.3095, Paul →
+  541.502.3436; inbound-test script updated.
+- **Env:** `.env.local` + Vercel prod: TWILIO_NUMBER_MATT=+15417033095, new
+  TWILIO_NUMBER_MARKETING=+15412245025. (`TWILIO_PHONE_NUMBER=+18446813617` is stale — not
+  owned, referenced nowhere; left as-is.)
+- **Twilio:** +15417033095 was already CRM-webhooked (inbound-sms/voice/status) + in the A2P
+  VERIFIED messaging service — no attach needed. Renamed it "Ryan Realty — Matt Ryan
+  (primary)"; renamed +15412245025 "Ryan Realty — legacy spare (do not release)" (kept owned,
+  webhooks still → CRM, so replies to old threads keep landing on the timeline); set the
+  missing StatusCallback on the other 3 numbers.
+- **Live verification:** SMS sent with the exact `sendSms` semantics → Matt's cell: sid
+  SM2873332f8762db8e89a60e36c6e37824, from=+15417033095, to=+15412136706, status=**delivered**.
+  Inbound path re-verified post-deploy via the signed-webhook probe (net-zero, rows deleted).
+
 ### DESKTOP ADVERSARIAL AUDIT (2026-07-02) — full ledger: [docs/plans/CRM_AUDIT_2026-07-02.md](CRM_AUDIT_2026-07-02.md)
 Adversarial pass over all 10 desktop CRM screens at 1440×900 against Matt's authed prod-data
 session. ~120 interactive elements exercised; every mutation round-tripped through a service-role

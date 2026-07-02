@@ -31,7 +31,7 @@ export type Broker = {
   fullName: string
   title: string
   email: string | null
-  /** Public display phone (dotted, e.g. 541.224.5025) — the broker's Twilio
+  /** Public display phone (dotted, e.g. 541.703.3095) — the broker's Twilio
    *  business line (brokers.twilio_number, falling back to brokers.phone).
    *  Inbound is recorded, logged to the CRM timeline, and forwarded to the
    *  broker's private cell. Both fields carry the same Twilio line. */

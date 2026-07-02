@@ -1,9 +1,12 @@
 /**
  * CRM Twilio layer (blueprint §5.5) — numbers, inbound routing, send.
  *
- * Numbers model: per-broker local 541 lines + the ported marketing line
- * (541.703.3095, port pending). Inbound SMS routes to the assigned broker of
- * the matching contact; unknown senders become new leads.
+ * Numbers model: per-broker 541 lines. Matt's line is the ported primary
+ * business number 541.703.3095 (Matt directive 2026-07-02 — it was wrongly
+ * parked as a "marketing line" while his row held the temp 541.224.5025).
+ * The temp line is retained as the legacy/spare line (MARKETING_NUMBER):
+ * inbound to it still routes to the default desk. Inbound SMS routes to the
+ * broker who owns the DIALED line; unknown senders become new leads.
  */
 
 import 'server-only'
@@ -94,11 +97,15 @@ export function normalizeTo10(v: string | null | undefined): string | null {
 }
 
 /**
- * The brokerage brand/marketing line (541.703.3095, ported from FUB into Twilio).
- * Inbound to this line has no single broker owner — it routes to the default desk.
- * Overridable via TWILIO_NUMBER_MARKETING.
+ * The legacy/spare line (541.224.5025 — the temp number provisioned at cutover
+ * while 541.703.3095 was still parked as a shared marketing line). Retained,
+ * never released: old threads may still reply to it, and it stays webhooked to
+ * the CRM. Inbound to it has no single broker owner — it routes to the default
+ * desk. Overridable via TWILIO_NUMBER_MARKETING. 541.703.3095 itself is now
+ * Matt's broker line (brokers.twilio_number, 2026-07-02) and routes to him via
+ * the normal dialed-number map.
  */
-export const MARKETING_NUMBER = (process.env.TWILIO_NUMBER_MARKETING || '+15417033095').trim()
+export const MARKETING_NUMBER = (process.env.TWILIO_NUMBER_MARKETING || '+15412245025').trim()
 
 /** Default desk for the shared marketing line + the no-forward-resolved fallback. */
 export const DEFAULT_DESK_BROKER: CrmBrokerSlug = 'matt'

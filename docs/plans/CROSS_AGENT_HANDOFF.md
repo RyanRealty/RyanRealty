@@ -4,6 +4,16 @@
 
 **HEAD:** `90ced1de` on `main` · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` — **REGISTRY COMPLETE: 18 done, all proven (all 10 desktop + all 8 mobile); only the _meta row is todo.** The mission's email open+click tracking task is also SHIPPED + PROVEN E2E (see the ✅ blocks in the mission doc).
 
+## TELEPHONY FIX LANDED (2026-07-02) — Matt's sender is now +15417033095 (541.703.3095)
+Matt's ported primary business number is now his live Twilio line (`brokers.matthew-ryan
+.twilio_number`, migration `20260702090000_broker_primary_number_fix`); the temp +15412245025 is
+the retained legacy/spare line (`MARKETING_NUMBER` in `lib/crm/twilio.ts`, still CRM-webhooked,
+do NOT release). Paul's row was also fixed (+15415013436 → +15415023436 — the old value wasn't
+even owned by the account). Sequence engine now sends from the assigned broker's own line, not
+the pooled MS. Cache keys bumped: `crm-broker-telephony-v2`, `broker-by-slug-v3`, `brokers-v4`.
+Vercel env: TWILIO_NUMBER_MATT updated, TWILIO_NUMBER_MARKETING added. Live-verified delivered
+from +15417033095. Full entry in the mission PROGRESS block ("TELEPHONY", 2026-07-02).
+
 ## DESKTOP ADVERSARIAL AUDIT LANDED (2026-07-02) — ledger `docs/plans/CRM_AUDIT_2026-07-02.md`
 A separate agent ran an adversarial pass over all 10 desktop CRM screens (Matt's authed prod-data
 session, ~120 elements, every mutation net-zero). **9 findings; 6 fixed (commits b02e7c90, 90ced1de,

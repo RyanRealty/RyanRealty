@@ -38,10 +38,13 @@ async function postSigned(baseUrl, params) {
   return { url, status: res.status, body: text.slice(0, 160) };
 }
 
+// From = the legacy/spare line (distinct from Matt's), To = Matt's primary
+// business line +15417033095 (2026-07-02 — it was previously the shared
+// marketing line; it is now brokers.matthew-ryan.twilio_number).
 const probeSid = `SMprobe${Date.now()}`;
 const params = {
-  From: env.TWILIO_NUMBER_MATT ?? '+15412245025',
-  To: '+15417033095',
+  From: env.TWILIO_NUMBER_MARKETING ?? '+15412245025',
+  To: env.TWILIO_NUMBER_MATT ?? '+15417033095',
   Body: `CRM inbound probe ${new Date().toISOString()}`,
   MessageSid: probeSid,
   AccountSid: sid,
@@ -64,8 +67,8 @@ const send = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Mess
   method: 'POST',
   headers: { ...TW_AUTH, 'Content-Type': 'application/x-www-form-urlencoded' },
   body: new URLSearchParams({
-    From: env.TWILIO_NUMBER_MATT ?? '+15412245025',
-    To: '+15417033095',
+    From: env.TWILIO_NUMBER_MARKETING ?? '+15412245025',
+    To: env.TWILIO_NUMBER_MATT ?? '+15417033095',
     Body: body,
   }),
 });

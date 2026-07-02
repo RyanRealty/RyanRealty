@@ -24,7 +24,7 @@ import { sendCrmEmail, CRM_MAILBOXES } from '@/lib/crm/gmail'
 import { isSuppressed } from '@/lib/crm/suppressions'
 import { attributeSiteLinks, renderCrmMerge, referencesCmaLink, findUnresolvedMergeTokens, type MergeContext, type MergePersonLike } from '@/lib/crm/merge'
 import { buildMergeContext } from '@/lib/crm/merge-context'
-import { sendSmsViaMessagingService, getA2pCampaignStatus } from '@/lib/crm/twilio'
+import { sendSms, sendSmsViaMessagingService, brokerTwilioNumber, getA2pCampaignStatus } from '@/lib/crm/twilio'
 import { addPersonTags, replacePersonTags } from '@/lib/followupboss'
 import { isConditionNode, type AnyStepOrCondition } from '@/lib/crm/sequence-step-schema'
 import { resolveConditionPath } from '@/lib/crm/conditions-eval'
@@ -396,7 +396,15 @@ export async function GET(request: Request) {
         if (a2pStatus === 'VERIFIED') {
           // Quiet hours gate the actual Twilio send only (8 AM to 9 PM PT).
           if (inSmsQuietHours()) { await finish({ next_run_at: nextSendWindow().toISOString() }); continue }
-          const sent = await sendSmsViaMessagingService({ to: toPhone, body })
+          // Send from the assigned broker's OWN Twilio line (same model as the
+          // composer) so the lead always sees a consistent caller ID — the
+          // pooled messaging service picks an arbitrary sticky number (this is
+          // how texts went out from the temp 541.224.5025 line, 2026-07-02
+          // fix). MS remains the fallback when no broker line resolves.
+          const seqFrom = await brokerTwilioNumber(mailbox.slug)
+          const sent = seqFrom
+            ? await sendSms({ from: seqFrom, to: toPhone, body })
+            : await sendSmsViaMessagingService({ to: toPhone, body })
           if (!sent.ok) {
             await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() })
             await log(`Sequence SMS send failed, retrying in 30m`, sent.error)
