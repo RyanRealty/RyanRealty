@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.715.1 (2026-07-02)
+
+### Maintenance
+- docs(crm): PRODUCTION-READY BAR — Matt directive 2026-07-02, the whole-CRM acceptance criterion
+
+---
+
+
 ## v1.715.0 (2026-07-02)
 
 ### Features
