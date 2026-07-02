@@ -329,6 +329,68 @@ and show me the screenshot.
 ## PROGRESS (agents append here as slices ship)
 
 ### GROUND-UP REBUILD under ci:crm-screen-parity (started 2026-07-01, screen-by-screen)
+- **automations-desktop** ✅ DONE + PROVEN (commit 1ceb536e). Registry flipped to done with 8
+  requiredComponents + committed `_verify/screen-automations.png` (1440x900, dev server, authed,
+  real crm_* data, ZERO console errors via fresh Playwright context — the preview tab's shared
+  buffer only carries stale HMR noise from other pages) + a second editor proof shot
+  `_verify/screen-automations-editor.png`. REBUILT `/admin/crm/sequences` to the §12 structure
+  (shot-34/35/36/37 references): LIST (§12.2) = "Automations" header w/ search + Create Folder
+  (outline) + "+ Create Automation" (primary → name dialog → editor), "1 Folder" section w/
+  folder cards (system "My Automations · 7 Automations" + user folders w/ rename/delete kebab,
+  click-to-filter), "N Automations" heading, 10-column table in exact §12.2.3 order: Name
+  (link + hover tooltip + preserved plan-type badges) · Linked Automations ("Using: N ▾" pill
+  dropdown listing referencing automations, computed from run_automation steps INCL. condition
+  branches — new pure lib/crm/automation-links.ts + 6 unit tests; "None" muted otherwise) ·
+  Steps · Started (link when >0) · Engaged ⓘ ("N+ P%", 0→"0%", null→em-dash; tooltip on ⓘ) ·
+  Completed (link when >0) · Created By (broker headshot Avatar + name from NEW
+  crm_sequences.created_by) · Status (optimistic Switch, reverts on error; Archived badge) ·
+  Created On ↕ (M/D/YYYY LA-time server-formatted, sortable, default desc) · Actions kebab
+  (Edit/Duplicate/Move to Folder/Archive/guarded Delete). Enrollment-rules manager (working
+  engine path) preserved as a section below. EDITOR (§12.4) = full three-column visual editor
+  at /sequences/[id]/edit: top bar (← Back to Automations, inline-editable name, Enabled/
+  Disabled publish toggle wired to setCrmSequenceStatusAction w/ optimistic revert, Save),
+  left palette (Triggers|Steps tabs + search + "Drag a step to the canvas" banner + CONTROLS
+  Conditions/Time Delay + ACTIONS all 9 engine channels, HTML5 drag w/ dashed-primary dragged
+  state + click-to-append), dot-grid canvas (radial-gradient var(--border); trigger card w/
+  trigger summary or "Manual"; step cards w/ icon + template/config summary + live "N here ·
+  M sent" funnel; FUB-orange delay badges → warning token on connectors, zero-delay = no badge;
+  drop zones between steps while dragging; tail "+ Add step" menu; zoom +/−/%/fit/fullscreen
+  toolbar), right config panel (settings view = description/stop-on-reply; trigger view = pill
+  list + add form w/ tag/stage value pickers; per-step views incl. §12.4.4 Send Email anatomy:
+  searchable Command Template picker, From "Broker assigned to the contact", Recipient
+  Preferences 3 radios + Delivery Preferences 4 radios where the ENABLED option is the engine
+  truth (primary-contact-only; 7:00am–7:00pm PT window) and unavailable options render
+  disabled/greyed exactly like FUB's office-hours option, Wait field, destructive Delete step
+  w/ confirm; IF/ELSE condition view w/ true/false branch editors). Saves through the SAME
+  validated actions (parseSteps + live-template check) — engine, suppression, quiet hours
+  untouched. BACKEND: migration 20260702000000 (APPLIED to hosted): NEW crm_sequence_folders
+  + crm_sequences.folder_id/created_by (backfilled matt — factual, all 7 plans are Matt's),
+  seeded system folder; DAL lib/data/crm/getAutomationsAdmin.ts (getCrmSequenceFolders +
+  getCrmAutomationsAdminList w/ usedBy inversion); folder CRUD + move actions (owner-gated,
+  system folder refuses rename/delete, delete unfolders members via FK SET NULL); created_by
+  stamped on create/duplicate. Deleted WorkflowList/StepBuilder/step-display (replaced).
+  Gates: full ci:gates exit 0 + vitest 2332 green; ci:data-access refreshed; date-format +
+  dal-actions-reads re-baselined per their documented flows (bespoke FUB M/D/YYYY; +3
+  mutation-guard reads in folder actions); 4 automations components added to
+  .design-token-lint-ignore (documented: full-viewport editor calc height = AdminSidebar
+  class; card-as-button canvas/palette/folder tiles = TemplateEditor class).
+  DECISIONS (this slice): FUB "Library" button omitted — no in-house automation library
+  content exists; an inert button would lie (§12.3 Library page DEFERRED until there is real
+  library content) · Started/Completed link to /admin/crm/workflows (the enrollment board) —
+  the People list has no per-automation filter param yet (per-automation filtered People view
+  DEFERRED) · Engaged = distinct enrollees w/ email open/reply from getWorkflowAnalytics
+  (email_events keyed seq:<name>:<idx>) — currently 0 everywhere, honest (tracking-pixel
+  wiring is the separate open task) · Recipient/Delivery preference radios are DISPLAY of
+  engine truth, not persisted per-step config — persisting per-step delivery prefs the engine
+  ignores would be a lying UI (engine-level delivery windows are the §12.9.5 parity gap,
+  DEFERRED with the engine work) · Time Delay palette tile focuses the Wait field of the
+  selected/target step (delays are step properties in our schema, not standalone nodes) ·
+  drag-drop = native HTML5 (palette→connector drop zones); step reorder via drag on canvas
+  DEFERRED (remove+re-add or insert-at-position covers authoring; §12.5.7 step drag-reorder
+  noted) · Action Plans legacy read-only page (§12.5) NOT built — spec's own build
+  recommendation: design around Automations 2.0; our engine has no legacy action-plan tables ·
+  Apply Automation modal (§12.6) already shipped in person-detail slice · canvas pan =
+  native scroll; only automation-name search (§12.2.1 note: search placement unconfirmed).
 - **deals-desktop** ✅ DONE + PROVEN (commit 7f987b20). Registry flipped to done with 9
   requiredComponents + committed `_verify/screen-deals.png` (1440x900, dev server, authed, real
   crm_* data). REBUILT `/admin/crm/deals` to the full §10 structure: DealsSubBar (§4 Buyers/Sellers

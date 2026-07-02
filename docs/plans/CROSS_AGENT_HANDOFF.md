@@ -2,7 +2,7 @@
 
 # CROSS-AGENT HANDOFF — CRM GROUND-UP REBUILD, screen-by-screen under ci:crm-screen-parity (2026-07-01)
 
-**HEAD:** `7f987b20` on `main` · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json`
+**HEAD:** `1ceb536e` on `main` · mission: `docs/plans/CRM_BUILD_MISSION.md` (read its PROGRESS "GROUND-UP REBUILD" block) · registry: `docs/fub-crm-spec/crm-screens.json` (5 done, all proven)
 
 ## What this track is
 Matt's directive: execute CRM_BUILD_MISSION as a ground-up rebuild, screen by screen through the
@@ -11,6 +11,19 @@ full DoD, gated by `ci:crm-screen-parity` (scripts/check-crm-screen-parity.mjs �
 gap-fills. Standing commit+push authorization is in the mission doc.
 
 ## Shipped
+- **automations-desktop = done + proven** (commit `1ceb536e`): §12 rebuild of
+  `/admin/crm/sequences` — the §12.2 list (folder cards + 10-column table w/ Using-pill /
+  Engaged "N+ P%" / Created By avatars / optimistic Status toggles) + the §12.4 three-column
+  visual editor at `/sequences/[id]/edit` (palette w/ Triggers|Steps tabs + drag, dot-grid
+  canvas w/ delay badges + zoom, right config panel w/ the full Send Email anatomy). NEW
+  `crm_sequence_folders` + `crm_sequences.folder_id/created_by` (migration `20260702000000`
+  APPLIED to hosted), DAL `lib/data/crm/getAutomationsAdmin.ts`, pure
+  `lib/crm/automation-links.ts` (+tests), folder CRUD actions. Old WorkflowList/StepBuilder
+  deleted. Decisions + deferrals in the mission PROGRESS block. GOTCHAS: preview-tab console
+  buffer carries STALE HMR errors from other pages (e.g. a long-fixed ManagePipelines import)
+  — always console-check via a fresh Playwright context; sb- cookies were readable directly
+  via preview_eval `document.cookie` while on localhost:3000 (no catcher needed this time);
+  scratchpad `shot-console.mjs` = screenshot + zero-console-error assert in one run.
 - **deals-desktop = done + proven** (commit `7f987b20`): §10 full Kanban rebuild of
   `/admin/crm/deals` (DealsSubBar / DealsBoard / DealsDialogs / DealDetailModal / ManagePipelines
   in `components/admin/crm/deals/`), DB-backed pipeline config (NEW crm_pipelines +
@@ -61,13 +74,13 @@ gap-fills. Standing commit+push authorization is in the mission doc.
    (pre-push runs a full prod build, takes ~5 min — use a background shell).
 
 ## NEXT (screen-by-screen, registry order)
-1. **automations-desktop** (§12, `app/admin/(protected)/crm/sequences/page.tsx`) — read the whole
-   §12 spec, compare the existing (prod-verified) workflow editor against it, close structural
-   diffs, capture `_verify/screen-automations.png` at 1440x900, fill requiredComponents, flip to
-   done, FULL gates + tests, commit + push.
-2. templates-desktop (§13) · company-settings-desktop (§15.8) · tasks-calendar-desktop (§09) ·
-   reporting-desktop (§11) — these were built + prod-verified in the previous push, so mostly:
-   compare vs spec, close diffs, capture proof, flip done.
+1. **templates-desktop** (§13, `app/admin/(protected)/crm/settings/templates/page.tsx`) — read
+   the whole §13 spec, compare the existing (prod-verified, delivery-#7) templates surface
+   against it, close structural diffs, capture `_verify/screen-templates.png` at 1440x900,
+   fill requiredComponents, flip to done, FULL gates + tests, commit + push.
+2. company-settings-desktop (§15.8) · tasks-calendar-desktop (§09) · reporting-desktop (§11) —
+   these were built + prod-verified in the previous push, so mostly: compare vs spec, close
+   diffs, capture proof, flip done.
 3. Mobile screens (M-track largely built; person-detail-mobile/mobile-shell/mobile-activity-people
    need proof artifacts at 390px via `?view=mobile` where available; others per §26–§29).
 4. Also open in the mission doc: email open+click tracking wiring (every send path) + the
