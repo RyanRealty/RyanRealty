@@ -331,6 +331,71 @@ export async function bulkDeleteAction(
   })
 }
 
+// ── §14.3 mass actions (05-people-list spec) ─────────────────────────────────
+// Per the FUB architectural rule replicated in §14.3, none of these fire
+// automation triggers — the handlers are plain column/junction updates + audit
+// rows and never touch the automation-rule engine.
+
+/** Bulk change the lead source (§14.3 #2 Update Source). */
+export async function bulkSetSourceAction(
+  selection: BulkActionSelection,
+  source: string,
+): Promise<BulkEnqueueResult> {
+  const s = String(source ?? '').trim()
+  if (!s || s.length > 100) return { ok: false, error: 'Source required (max 100 chars)' }
+  return enqueue('crm:set-source', selection, { source: s })
+}
+
+/** Bulk set the Timeframe field (§14.3 #10 Update Timeframe). */
+export async function bulkSetTimeframeAction(
+  selection: BulkActionSelection,
+  timeframe: string,
+): Promise<BulkEnqueueResult> {
+  const t = String(timeframe ?? '').trim()
+  if (!t) return { ok: false, error: 'Timeframe required' }
+  return enqueue('crm:set-timeframe', selection, { timeframe: t })
+}
+
+/** Bulk assign a lender (§14.3 #5 Assign Lender — crm_people.lender_name). */
+export async function bulkSetLenderAction(
+  selection: BulkActionSelection,
+  lender: string,
+): Promise<BulkEnqueueResult> {
+  const l = String(lender ?? '').trim()
+  if (!l || l.length > 120) return { ok: false, error: 'Lender name required (max 120 chars)' }
+  return enqueue('crm:set-lender', selection, { lender: l })
+}
+
+/** Bulk assign to a pond (§14.3 #4 Assign Ponds). */
+export async function bulkAssignPondAction(
+  selection: BulkActionSelection,
+  pondId: number,
+): Promise<BulkEnqueueResult> {
+  const id = Number(pondId)
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, error: 'A pond is required' }
+  return enqueue('crm:assign-pond', selection, { pondId: id })
+}
+
+/** Bulk add a collaborator (§14.3 #6 Add Collaborators). */
+export async function bulkAddCollaboratorAction(
+  selection: BulkActionSelection,
+  broker: string,
+): Promise<BulkEnqueueResult> {
+  const slug = String(broker ?? '').trim().toLowerCase()
+  if (!(CRM_BROKERS as readonly string[]).includes(slug)) return { ok: false, error: 'Broker required' }
+  return enqueue('crm:add-collaborator', selection, { brokerSlug: slug })
+}
+
+/** Bulk remove a collaborator (§14.3 #7 Remove Collaborators). */
+export async function bulkRemoveCollaboratorAction(
+  selection: BulkActionSelection,
+  broker: string,
+): Promise<BulkEnqueueResult> {
+  const slug = String(broker ?? '').trim().toLowerCase()
+  if (!(CRM_BROKERS as readonly string[]).includes(slug)) return { ok: false, error: 'Broker required' }
+  return enqueue('crm:remove-collaborator', selection, { brokerSlug: slug })
+}
+
 export async function bulkPreflightCount(
   selection: BulkActionSelection,
   kind: BulkKind,

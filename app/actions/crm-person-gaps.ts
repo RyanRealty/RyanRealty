@@ -205,6 +205,26 @@ export async function mergeCrmContactAction(formData: FormData): Promise<void> {
   const mergedName =
     (merged as { name?: string | null } | null)?.name ?? `Contact #${mergedId}`
 
+  await mergePairInternal(sb, access!, survivorId, mergedId, mergedName)
+
+  redirect(
+    `${BASE}/${survivorId}?flash=${encodeURIComponent(`Merged with "${mergedName}". The duplicate has been archived.`)}`,
+  )
+}
+
+/**
+ * The merge steps shared by the single-pair form action and the §14.3 bulk
+ * "Merge People" action. Survivor keeps its fields; the duplicate's timeline,
+ * tasks, enrollments, relationships, and collaborators move; the duplicate is
+ * soft-deleted (stage=Trash, deleted=true) with a permanent audit row.
+ */
+async function mergePairInternal(
+  sb: ReturnType<typeof createServiceClient>,
+  access: { email: string; brokerSlug: string | null },
+  survivorId: number,
+  mergedId: number,
+  mergedName: string,
+): Promise<void> {
   // 1. Timeline
   await sb.from('crm_timeline').update({ person_id: survivorId }).eq('person_id', mergedId)
 
@@ -282,12 +302,59 @@ export async function mergeCrmContactAction(formData: FormData): Promise<void> {
   await sb.from('crm_timeline').insert({
     person_id: survivorId,
     kind: 'system',
-    title: `Merged with "${mergedName}" (ID ${mergedId}) by ${access!.email}. Duplicate archived to Trash. Unmerge not supported.`,
+    title: `Merged with "${mergedName}" (ID ${mergedId}) by ${access.email}. Duplicate archived to Trash. Unmerge not supported.`,
     source: 'app',
-    broker: access!.brokerSlug ?? null,
+    broker: access.brokerSlug ?? null,
   })
+}
 
-  redirect(
-    `${BASE}/${survivorId}?flash=${encodeURIComponent(`Merged with "${mergedName}". The duplicate has been archived.`)}`,
+/**
+ * §14.3 #8 "Merge People" bulk action: consolidate up to 10 selected duplicates
+ * into one survivor. FUB hard limit of 10 replicated. Runs the same merge steps
+ * as the single-pair action per duplicate; returns a result instead of
+ * redirecting so the bulk bar can show the outcome inline.
+ */
+export async function bulkMergePeopleAction(input: {
+  survivorId: number
+  mergedIds: number[]
+}): Promise<{ ok: true; merged: number } | { ok: false; error: string }> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Not authorized.' }
+
+  const survivorId = Number(input.survivorId)
+  const mergedIds = Array.from(new Set((input.mergedIds ?? []).map(Number))).filter(
+    (n) => Number.isInteger(n) && n > 0 && n !== survivorId,
   )
+  if (!Number.isInteger(survivorId) || survivorId <= 0) {
+    return { ok: false, error: 'Pick the surviving contact.' }
+  }
+  if (mergedIds.length === 0) return { ok: false, error: 'Select at least one duplicate to merge.' }
+  if (mergedIds.length > 9) {
+    return { ok: false, error: 'Merge is capped at 10 contacts at once.' }
+  }
+
+  const sb = createServiceClient()
+  const { data: survivor } = await sb
+    .from('crm_people')
+    .select('id, name')
+    .eq('id', survivorId)
+    .eq('deleted', false)
+    .maybeSingle()
+  if (!survivor) return { ok: false, error: 'Surviving contact not found.' }
+
+  let merged = 0
+  for (const mergedId of mergedIds) {
+    const { data: dup } = await sb
+      .from('crm_people')
+      .select('id, name')
+      .eq('id', mergedId)
+      .eq('deleted', false)
+      .maybeSingle()
+    if (!dup) continue
+    const mergedName = (dup as { name?: string | null }).name ?? `Contact #${mergedId}`
+    await mergePairInternal(sb, access, survivorId, mergedId, mergedName)
+    merged++
+  }
+  if (merged === 0) return { ok: false, error: 'No mergeable contacts found (already deleted?).' }
+  return { ok: true, merged }
 }

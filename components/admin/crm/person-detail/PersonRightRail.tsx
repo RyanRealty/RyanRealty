@@ -83,9 +83,22 @@ export type RailEnrollment = {
 export type RailTask = { id: number; name: string; type: string | null; dueAt: string | null; assignedBroker: string | null }
 export type RailCollaborator = { brokerSlug: string; name: string }
 
-function fmtAgo(iso: string | null): string {
+/**
+ * Client-only clock read (hydration-safe per gate #418): null on the server and
+ * the first client render, the real time after mount. Callers render a
+ * deterministic absolute fallback until it resolves.
+ */
+function useClientNow(): number | null {
+  const [now, setNow] = useState<number | null>(null)
+  useEffect(() => { setNow(Date.now()) }, [])
+  return now
+}
+
+function fmtAgo(iso: string | null, nowMs: number | null): string {
   if (!iso) return ''
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400_000)
+  // Pre-hydration: a deterministic absolute date (no clock read in render).
+  if (nowMs == null) return fmtDate(iso)
+  const days = Math.floor((nowMs - new Date(iso).getTime()) / 86400_000)
   if (days <= 0) return 'today'
   if (days === 1) return '1 day ago'
   if (days < 30) return `${days} days ago`
@@ -238,6 +251,7 @@ function CollaboratorsDialog({
 // ── Files widget (§7c.8.8) ───────────────────────────────────────────────────
 
 function FilesSection({ personId, files }: { personId: number; files: PersonFile[] }) {
+  const nowMs = useClientNow()
   const [dragOver, setDragOver] = useState(false)
   const [linkOpen, setLinkOpen] = useState(false)
   const [linkTitle, setLinkTitle] = useState('')
@@ -310,7 +324,7 @@ function FilesSection({ personId, files }: { personId: number; files: PersonFile
                   <span className="block truncate text-sm">{f.name}</span>
                 )}
                 <span className="text-xs text-muted-foreground" title={f.uploadedBy ?? undefined}>
-                  {f.kind === 'link' ? 'Link' : 'File'} · {fmtAgo(f.createdAt)}
+                  {f.kind === 'link' ? 'Link' : 'File'} · {fmtAgo(f.createdAt, nowMs)}
                 </span>
               </div>
               {f.url ? (
@@ -427,9 +441,11 @@ export function PersonRightRail({
   const [pending, start] = useTransition()
   const [newTask, setNewTask] = useState('')
   const router = useRouter()
+  const nowMs = useClientNow()
   const openTasks = tasks.filter((t) => t)
   const runningPlans = enrollments.filter((e) => e.status === 'running')
-  const upcomingAppts = appointments.filter((a) => new Date(a.startAt).getTime() > Date.now())
+  // Pre-hydration (nowMs null) shows all appointments; narrows after mount.
+  const upcomingAppts = nowMs == null ? appointments : appointments.filter((a) => new Date(a.startAt).getTime() > nowMs)
 
   function refresh() {
     router.refresh()
@@ -475,7 +491,7 @@ export function PersonRightRail({
                   </div>
                   <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                     <span>
-                      {Math.min(e.stepIndex, e.totalSteps)} of {e.totalSteps} steps complete · Started {fmtAgo(e.enrolledAt)}
+                      {Math.min(e.stepIndex, e.totalSteps)} of {e.totalSteps} steps complete · Started {fmtAgo(e.enrolledAt, nowMs)}
                     </span>
                     <span className="flex gap-0.5">
                       {e.status === 'running' ? (
@@ -521,7 +537,7 @@ export function PersonRightRail({
           id="activity"
           icon={<Footprints className="h-4 w-4" />}
           title="Activity"
-          headerRight={lastSeenAt ? <span className="text-xs text-muted-foreground">Seen {fmtAgo(lastSeenAt)}</span> : null}
+          headerRight={lastSeenAt ? <span className="text-xs text-muted-foreground">Seen {fmtAgo(lastSeenAt, nowMs)}</span> : null}
         >
           <dl className="space-y-1">
             {activitySummary.map((s) => (
@@ -566,7 +582,7 @@ export function PersonRightRail({
           <div className="space-y-1.5">
             {openTasks.length === 0 ? <p className="py-1 text-sm text-muted-foreground">No upcoming tasks</p> : null}
             {openTasks.slice(0, 8).map((t) => {
-              const overdue = t.dueAt ? new Date(t.dueAt).getTime() < Date.now() : false
+              const overdue = nowMs != null && t.dueAt ? new Date(t.dueAt).getTime() < nowMs : false
               return (
                 <div key={t.id} className="flex items-start gap-2">
                   <Checkbox

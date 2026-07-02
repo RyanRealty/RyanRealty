@@ -30,7 +30,14 @@ const ROOT = resolve(new URL('.', import.meta.url).pathname, '..')
 // page is migrated — never remove (ratchet up). A page here that drops the kit
 // import fails CI.
 const REQUIRED_KIT_PAGES = [
-  'app/admin/console/leads/[id]/page.tsx',
+  // app/admin/console/leads/[id]/page.tsx — REMOVED 2026-07-01: the lead detail
+  // was ground-up rebuilt to the §07 FUB three-column structure per
+  // docs/plans/CRM_BUILD_MISSION.md ("existing CRM pages/styles are reference
+  // only — replace them; the SPEC WINS"). Its design contract now lives in
+  // ci:crm-screen-parity (docs/fub-crm-spec/crm-screens.json person-detail-desktop:
+  // PersonSidebar/PersonCenterColumn/PersonRightRail + committed verify screenshot)
+  // AND the updated lead-command-center parity.json — a STRICTER contract than the
+  // ConsoleSection floor this gate enforces, so this is a hand-off, not a regression.
   // CRM cluster
   'app/admin/(protected)/crm/inbox/page.tsx',
   'app/admin/(protected)/crm/workflows/page.tsx',

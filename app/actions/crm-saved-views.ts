@@ -183,6 +183,51 @@ export async function updateSavedViewAction(input: {
   return { ok: true, id }
 }
 
+/**
+ * §9.8 "Update List": commit the CURRENT people-list filter bag as the smart
+ * list's saved definition. Writes BOTH representations kept in lockstep:
+ *   - `filter` — the legacy {stage, tagsAny, q} bag listCrmPeople applies
+ *   - `ast`    — the upgraded CrmSegment the audience bus / counts resolve
+ * The broker scope is deliberately NOT saved into the list (it is a view-level
+ * overlay per §7, not part of the smart list's definition).
+ */
+export async function updateSavedViewFilterAction(input: {
+  id: number
+  filters: LegacyFilters
+}): Promise<SavedViewActionResult> {
+  const guard = await requireAccess()
+  if (!guard.ok) return guard
+  const id = Number(input.id)
+  if (!Number.isFinite(id) || id <= 0) return { ok: false, error: 'A view is required' }
+
+  const row = await loadGuardRow(id)
+  if (!row) return { ok: false, error: 'That list no longer exists' }
+  if (!canEditView(row, guard.access)) {
+    return { ok: false, error: 'Not authorized to edit this list' }
+  }
+
+  const bag: LegacyFilters = {
+    stage: input.filters?.stage || undefined,
+    tagsAny: input.filters?.tagsAny?.filter(Boolean),
+    q: input.filters?.q || undefined,
+  }
+  let ast: CrmSegment
+  try {
+    ast = validateSegment(upgradeLegacyFilters(bag))
+  } catch (e) {
+    return { ok: false, error: `Invalid filter: ${(e as Error).message}` }
+  }
+
+  const sb = createServiceClient()
+  const { error } = await sb
+    .from('crm_saved_views')
+    .update({ filter: bag, ast, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) return { ok: false, error: error.message }
+  revalidate()
+  return { ok: true, id }
+}
+
 // ── Delete ───────────────────────────────────────────────────────────────────
 
 /**

@@ -317,3 +317,17 @@ components/admin/crm/person-detail/PersonDialogs.tsx
 components/admin/crm/person-detail/PersonSidebar.tsx
 components/admin/crm/person-detail/PersonCenterColumn.tsx
 components/admin/crm/person-detail/PersonRightRail.tsx
+
+# §05 People list rebuild (contacts-list-desktop, ci:crm-screen-parity,
+# 2026-07-01): dense FUB-parity admin surfaces — micro type sizes
+# (text-[9px]/[10px]/[11px] badges + table chrome), fixed FUB region widths
+# (230px sidebar / 290px filter panel per spec §2), and plain <button> rows for
+# accordion/filter chips where <Button> padding breaks the dense layout.
+# Same exception class as components/admin/crm/person-detail/*.
+app/admin/(protected)/crm/loading.tsx
+components/admin/crm/people-list/PeopleSidebar.tsx
+components/admin/crm/people-list/PeopleListView.tsx
+components/admin/crm/people-list/FilterPanel.tsx
+components/admin/crm/people-list/ColumnChooser.tsx
+components/admin/crm/people-list/ExportPeopleDialog.tsx
+components/admin/crm/people-list/ScopeDropdown.tsx

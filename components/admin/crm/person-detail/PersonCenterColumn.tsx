@@ -17,7 +17,7 @@
  * count:'exact' — never rows.length).
  */
 
-import { useMemo, useRef, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -116,10 +116,23 @@ function dateGroupLabel(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })
 }
 
-function cardTimestamp(iso: string): string {
+/**
+ * Client-only clock read (hydration-safe per gate #418): null on the server and
+ * the first client render, the real time after mount.
+ */
+function useClientNow(): Date | null {
+  const [now, setNow] = useState<Date | null>(null)
+  useEffect(() => { setNow(new Date()) }, [])
+  return now
+}
+
+function cardTimestamp(iso: string, now: Date | null): string {
   const d = new Date(iso)
-  const now = new Date()
   const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
+  // Pre-hydration: a deterministic absolute date (no clock read in render).
+  if (now == null) {
+    return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })} · ${time}`
+  }
   const sameDay = d.toDateString() === now.toDateString()
   if (sameDay) return `Today · ${time}`
   const yesterday = new Date(now.getTime() - 86400_000)
@@ -133,6 +146,7 @@ function cardTimestamp(iso: string): string {
 // ── Timeline event card (§07b 7) ─────────────────────────────────────────────
 
 function EventCard({ item }: { item: TimelineItem }) {
+  const now = useClientNow()
   const [expanded, setExpanded] = useState(false)
   const [starred, setStarred] = useState(item.starred)
   const [, start] = useTransition()
@@ -177,7 +191,7 @@ function EventCard({ item }: { item: TimelineItem }) {
             ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <span className="text-xs tabular-nums text-muted-foreground">{cardTimestamp(item.ts)}</span>
+            <span className="text-xs tabular-nums text-muted-foreground">{cardTimestamp(item.ts, now)}</span>
             <button
               type="button"
               onClick={toggleStar}

@@ -65,6 +65,9 @@ export type CrmPersonRow = {
   phones: Array<{ value?: string; isPrimary?: number | boolean }>
   last_activity_at: string | null
   fub_created_at: string | null
+  price: number | null
+  timeframe: string | null
+  pond_id: number | null
 }
 
 export type CrmListFilters = {
@@ -74,6 +77,8 @@ export type CrmListFilters = {
   tag?: string
   view?: string
   page?: number
+  /** §07 scope dropdown: restrict to one pond (crm_people.pond_id). */
+  pond?: string
 }
 
 export type CrmSavedView = {
@@ -172,7 +177,7 @@ export async function listCrmPeople(filters: CrmListFilters): Promise<{
   let query = sb
     .from('crm_people')
     .select(
-      'id,fub_legacy_id,name,first_name,last_name,stage,source,assigned_broker,tags,emails,phones,last_activity_at,fub_created_at,picture_url',
+      'id,fub_legacy_id,name,first_name,last_name,stage,source,assigned_broker,tags,emails,phones,last_activity_at,fub_created_at,picture_url,price,timeframe,pond_id',
       { count: 'exact' },
     )
     // Baseline: never return soft-deleted contacts (matches getCrmStageCounts /
@@ -184,6 +189,10 @@ export async function listCrmPeople(filters: CrmListFilters): Promise<{
   const tagsAny = filters.tag ? [filters.tag] : appliedView?.filter?.tagsAny
   if (tagsAny?.length) query = query.overlaps('tags', tagsAny)
   if (effectiveBroker) query = query.eq('assigned_broker', effectiveBroker)
+  // Pond scope (§07): a view-level overlay, applied alongside broker scope so a
+  // restricted broker still can't widen past their own book.
+  const pondId = Number(filters.pond)
+  if (filters.pond && Number.isInteger(pondId) && pondId > 0) query = query.eq('pond_id', pondId)
 
   const q = filters.q?.trim()
   if (q) {
@@ -1386,13 +1395,15 @@ export async function createCrmContactAction(formData: FormData): Promise<CrmAct
   const phone = String(formData.get('phone') ?? '').trim()
   const note = String(formData.get('note') ?? '').trim()
   const broker = String(formData.get('broker') ?? '').trim() || (access.access.brokerSlug ?? 'matt')
+  // §16 Add Person modal: optional lead source captured at creation time.
+  const source = String(formData.get('source') ?? '').trim() || 'Manual entry'
   if (!firstName) return { ok: false, error: 'First name required' }
   if (!email && !phone) return { ok: false, error: 'An email or a phone number is required' }
 
   const { sendEvent } = await import('@/lib/followupboss')
   const sent = await sendEvent({
     type: 'General Inquiry',
-    source: 'Manual entry',
+    source,
     system: 'RyanRealtyPlatform',
     person: {
       firstName,

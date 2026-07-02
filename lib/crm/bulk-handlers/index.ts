@@ -35,6 +35,10 @@ import { enrollWorkflowHandler } from './enroll-workflow'
 import { setReportSubscriptionHandler } from './set-report-subscription'
 import { registerEmailCohortHandler } from './email-cohort'
 import { deleteContactsHandler } from './delete'
+import {
+  setSourceHandler, setTimeframeHandler, setLenderHandler, assignPondHandler,
+} from './update-person-field'
+import { addCollaboratorHandler, removeCollaboratorHandler } from './collaborators'
 
 registerBulkHandler('crm:assign-broker', assignBrokerHandler)
 registerBulkHandler('crm:add-tag', addTagHandler)
@@ -43,6 +47,13 @@ registerBulkHandler('crm:set-stage', setStageHandler)
 registerBulkHandler('crm:enroll-workflow', enrollWorkflowHandler)
 registerBulkHandler('crm:set-report-subscription', setReportSubscriptionHandler)
 registerBulkHandler('crm:delete', deleteContactsHandler)
+// §14.3 mass actions (05-people-list spec): single-column updates + collaborators.
+registerBulkHandler('crm:set-source', setSourceHandler)
+registerBulkHandler('crm:set-timeframe', setTimeframeHandler)
+registerBulkHandler('crm:set-lender', setLenderHandler)
+registerBulkHandler('crm:assign-pond', assignPondHandler)
+registerBulkHandler('crm:add-collaborator', addCollaboratorHandler)
+registerBulkHandler('crm:remove-collaborator', removeCollaboratorHandler)
 
 // The email-cohort SEND handler is owned by a sibling agent and exposes an
 // explicit registration fn so it never has to edit this index. Wire it here so

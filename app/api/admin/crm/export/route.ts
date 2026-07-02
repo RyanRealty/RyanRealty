@@ -17,6 +17,13 @@ import { createServiceClient } from '@/lib/supabase/service'
 const CRM_EXPORT_SELECT =
   'id,name,stage,source,assigned_broker,tags,emails,phones,fub_created_at'
 
+/**
+ * §15.4 full export ("Export all columns" checked): first/last name, every
+ * email/phone/address, price, timeframe, lender, background, custom fields.
+ */
+const CRM_EXPORT_SELECT_ALL =
+  'id,name,first_name,last_name,stage,source,assigned_broker,tags,emails,phones,addresses,price,timeframe,lender_name,background,custom,fub_created_at,last_activity_at'
+
 /** Quote a CSV cell value: wrap in double quotes and escape inner quotes. */
 function csvCell(v: string | null | undefined): string {
   const s = v == null ? '' : String(v)
@@ -58,24 +65,49 @@ export async function GET(req: NextRequest) {
 
   const sp = req.nextUrl.searchParams
   const q = sp.get('q')?.trim() || undefined
-  const stage = sp.get('stage') || undefined
+  let stage = sp.get('stage') || undefined
   const tag = sp.get('tag') || undefined
+  // §15: an active saved view exports its saved filter bag (same resolution
+  // listCrmPeople applies: explicit URL params override the view's).
+  const viewId = Number(sp.get('view'))
+  let viewTags: string[] | undefined
+  // §15: export the explicitly SELECTED people (ids=1,2,3) and/or all columns (all=1).
+  const allColumns = sp.get('all') === '1'
+  const ids = (sp.get('ids') ?? '')
+    .split(',')
+    .map((s) => Number(s))
+    .filter((n) => Number.isInteger(n) && n > 0)
+    .slice(0, 10_000)
 
   // Broker scope: a restricted broker is clamped to their own book.
-  // A superuser respects the explicit ?broker= param (or no clamp).
+  // A superuser respects the explicit ?broker= param (or no clamp; 'all' = no clamp).
   const brokerScope = scopeBroker(access)
-  const effectiveBroker = brokerScope ?? (sp.get('broker') || undefined)
+  const requestedBroker = sp.get('broker')
+  const effectiveBroker = brokerScope ?? ((requestedBroker && requestedBroker !== 'all') ? requestedBroker : undefined)
 
   const sb = createServiceClient()
+
+  if (Number.isInteger(viewId) && viewId > 0) {
+    const { data: view } = await sb
+      .from('crm_saved_views')
+      .select('filter')
+      .eq('id', viewId)
+      .maybeSingle()
+    const f = (view?.filter ?? {}) as { stage?: string; tagsAny?: string[] }
+    if (!stage && f.stage) stage = f.stage
+    if (!tag && f.tagsAny?.length) viewTags = f.tagsAny
+  }
 
   // Build the query the same way listCrmPeople does (proven working, filter-for-filter).
   let query = sb
     .from('crm_people')
-    .select(CRM_EXPORT_SELECT)
+    .select(allColumns ? CRM_EXPORT_SELECT_ALL : CRM_EXPORT_SELECT)
     .eq('deleted', false)
 
+  if (ids.length > 0) query = query.in('id', ids)
   if (stage) query = query.eq('stage', stage)
   if (tag) query = query.overlaps('tags', [tag])
+  else if (viewTags?.length) query = query.overlaps('tags', viewTags)
   if (effectiveBroker) query = query.eq('assigned_broker', effectiveBroker)
 
   // q: name ilike (matches listCrmPeople's non-email / non-phone branch)
@@ -93,22 +125,68 @@ export async function GET(req: NextRequest) {
     return new Response(`Export failed: ${error.message}`, { status: 500 })
   }
 
-  const rows = (data ?? []) as unknown as PersonRow[]
+  type FullPersonRow = PersonRow & {
+    first_name: string | null
+    last_name: string | null
+    addresses: Array<{ street?: string; city?: string; state?: string; code?: string }> | null
+    price: number | null
+    timeframe: string | null
+    lender_name: string | null
+    background: string | null
+    custom: Record<string, unknown> | null
+    last_activity_at: string | null
+  }
+  const rows = (data ?? []) as unknown as FullPersonRow[]
 
-  const lines: string[] = [csvRow(HEADERS)]
+  const allValues = (items: Array<{ value?: string }> | null): string =>
+    (items ?? []).map((i) => i?.value).filter(Boolean).join('; ')
+  const fmtAddress = (a: { street?: string; city?: string; state?: string; code?: string }): string =>
+    [a.street, a.city, a.state, a.code].filter(Boolean).join(', ')
+
+  const headers = allColumns
+    ? ['Name', 'First Name', 'Last Name', 'Emails', 'Phones', 'Addresses', 'Stage', 'Agent',
+       'Tags', 'Source', 'Price', 'Timeframe', 'Lender', 'Background', 'Custom Fields',
+       'Created', 'Last Activity']
+    : HEADERS
+
+  const lines: string[] = [csvRow(headers)]
   for (const p of rows) {
-    lines.push(
-      csvRow([
-        p.name ?? '',
-        primaryContact(p.emails),
-        primaryContact(p.phones),
-        p.stage,
-        p.assigned_broker ?? '',
-        (p.tags ?? []).join('; '),
-        p.source ?? '',
-        p.fub_created_at ? p.fub_created_at.slice(0, 10) : '',
-      ]),
-    )
+    if (allColumns) {
+      lines.push(
+        csvRow([
+          p.name ?? '',
+          p.first_name ?? '',
+          p.last_name ?? '',
+          allValues(p.emails),
+          allValues(p.phones),
+          (p.addresses ?? []).map(fmtAddress).filter(Boolean).join('; '),
+          p.stage,
+          p.assigned_broker ?? '',
+          (p.tags ?? []).join('; '),
+          p.source ?? '',
+          p.price != null ? String(p.price) : '',
+          p.timeframe ?? '',
+          p.lender_name ?? '',
+          p.background ?? '',
+          p.custom && Object.keys(p.custom).length > 0 ? JSON.stringify(p.custom) : '',
+          p.fub_created_at ? p.fub_created_at.slice(0, 10) : '',
+          p.last_activity_at ? p.last_activity_at.slice(0, 10) : '',
+        ]),
+      )
+    } else {
+      lines.push(
+        csvRow([
+          p.name ?? '',
+          primaryContact(p.emails),
+          primaryContact(p.phones),
+          p.stage,
+          p.assigned_broker ?? '',
+          (p.tags ?? []).join('; '),
+          p.source ?? '',
+          p.fub_created_at ? p.fub_created_at.slice(0, 10) : '',
+        ]),
+      )
+    }
   }
 
   const csv = lines.join('')

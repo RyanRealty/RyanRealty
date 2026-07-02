@@ -30,8 +30,9 @@
  */
 
 import { forwardRef, useImperativeHandle, useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Loader2, X, ChevronDown } from 'lucide-react'
+import { Loader2, X, MoreHorizontal, Tag, Mail, Upload, Trash2, Download } from 'lucide-react'
 import {
   bulkAssignBrokerAction,
   bulkAddTagAction,
@@ -42,7 +43,15 @@ import {
   bulkEmailCohortAction,
   bulkPreflightCount,
   bulkDeleteAction,
+  bulkSetSourceAction,
+  bulkSetTimeframeAction,
+  bulkSetLenderAction,
+  bulkAssignPondAction,
+  bulkAddCollaboratorAction,
+  bulkRemoveCollaboratorAction,
 } from '@/app/actions/crm-bulk'
+import { bulkMergePeopleAction } from '@/app/actions/crm-person-gaps'
+import { TIMEFRAME_OPTIONS } from '@/components/admin/crm/people-list/people-list-utils'
 import type {
   BulkActionSelection,
   BulkKind,
@@ -108,6 +117,14 @@ export type BulkActionsProps = {
   emailTemplates: BulkTemplateOption[]
   /** Active sequences for the enroll-workflow action. */
   sequences: BulkSequenceOption[]
+  /** Ponds for the §14.3 Assign Ponds action. */
+  ponds?: BulkPickerOption[]
+  /** Configured lead sources for the §14.3 Update Source action. */
+  sources?: BulkPickerOption[]
+  /** The selected rows (id + name), for the Merge People survivor picker. */
+  selectedRows?: Array<{ id: number; name: string | null }>
+  /** Called by the §14.5 export icon — opens the Export Selected People modal. */
+  onExport?: () => void
 }
 
 // One discriminated action the dialog renders a form for.
@@ -122,8 +139,15 @@ type ActionId =
   | 'newsletter'
   | 'saved_search'
   | 'delete_contacts'
+  | 'set_source'
+  | 'set_timeframe'
+  | 'set_lender'
+  | 'assign_pond'
+  | 'add_collaborator'
+  | 'remove_collaborator'
+  | 'merge_people'
 
-// The bulk-job kind each action maps to (legacy two have no job kind).
+// The bulk-job kind each action maps to (legacy + merge have no job kind).
 const ACTION_KIND: Partial<Record<ActionId, BulkKind>> = {
   assign_broker: 'crm:assign-broker',
   add_tag: 'crm:add-tag',
@@ -133,19 +157,32 @@ const ACTION_KIND: Partial<Record<ActionId, BulkKind>> = {
   set_report_subscription: 'crm:set-report-subscription',
   email_cohort: 'email-cohort',
   delete_contacts: 'crm:delete',
+  set_source: 'crm:set-source',
+  set_timeframe: 'crm:set-timeframe',
+  set_lender: 'crm:set-lender',
+  assign_pond: 'crm:assign-pond',
+  add_collaborator: 'crm:add-collaborator',
+  remove_collaborator: 'crm:remove-collaborator',
 }
 
 const ACTION_TITLE: Record<ActionId, string> = {
-  assign_broker: 'Reassign broker',
-  add_tag: 'Add a tag',
-  remove_tag: 'Remove a tag',
-  set_stage: 'Set stage',
-  enroll_workflow: 'Enroll in a workflow',
+  assign_broker: 'Assign Agent',
+  add_tag: 'Add Tags',
+  remove_tag: 'Remove Tags',
+  set_stage: 'Update Stage',
+  enroll_workflow: 'Apply Automation',
   set_report_subscription: 'Market report subscription',
-  email_cohort: 'Email this cohort',
+  email_cohort: 'Batch Email',
   newsletter: 'Add to newsletter',
   saved_search: 'Assign a saved search',
   delete_contacts: 'Delete contacts',
+  set_source: 'Update Source',
+  set_timeframe: 'Update Timeframe',
+  set_lender: 'Assign Lender',
+  assign_pond: 'Assign Ponds',
+  add_collaborator: 'Add Collaborators',
+  remove_collaborator: 'Remove Collaborators',
+  merge_people: 'Merge People',
 }
 
 /** Imperative handle exposed via forwardRef so the icon toolbar can open actions. */
@@ -162,6 +199,7 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
   const {
     selectedIds, onClear, barClassName, activeFilters, activeViewId, matchingTotal, canAssignBroker,
     brokers, stages, tags, reportAreas, emailTemplates, sequences,
+    ponds = [], sources = [], selectedRows = [], onExport,
   } = props
 
   const router = useRouter()
@@ -190,6 +228,13 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
   const [reportFrequency, setReportFrequency] = useState('monthly')
   const [segment, setSegment] = useState('general')
   const [ssName, setSsName] = useState('')
+  // §14.3 mass-action form state
+  const [source, setSource] = useState('')
+  const [timeframe, setTimeframe] = useState('')
+  const [lender, setLender] = useState('')
+  const [pondId, setPondId] = useState('')
+  const [collabBroker, setCollabBroker] = useState('')
+  const [mergeSurvivorId, setMergeSurvivorId] = useState('')
 
   // Result feedback for legacy actions (newsletter / saved_search) that return counts.
   const [legacyResult, setLegacyResult] = useState<{ assigned: number; skipped: number } | null>(null)
@@ -216,6 +261,8 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
     setBroker(''); setTag(''); setStage(''); setSequenceId(''); setTemplateId('')
     setSubject(''); setBody(''); setReportAreaKeys(new Set()); setReportActive(true)
     setReportFrequency('monthly'); setSegment('general'); setSsName('')
+    setSource(''); setTimeframe(''); setLender(''); setPondId(''); setCollabBroker('')
+    setMergeSurvivorId('')
   }
 
   const closeDialog = () => {
@@ -234,14 +281,18 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
     resetForm()
     const kind = ACTION_KIND[id]
     if (!kind) {
-      // Legacy actions (newsletter, saved_search, delete_contacts) act on ids only.
+      // Legacy actions (newsletter, saved_search, merge) act on ids only.
       setScope('ids')
       return
     }
-    runPreflight(kind)
+    // Opening from the §5 icon strip with nothing checked targets the whole
+    // matching cohort; a checked selection targets the ids by default.
+    const nextScope: 'ids' | 'matching' = selectedIds.length > 0 ? 'ids' : 'matching'
+    setScope(nextScope)
+    runPreflightForScope(kind, nextScope)
   }
 
-  // Expose openAction so BulkAssignWrapper's icon toolbar can trigger actions.
+  // Expose openAction so PeopleListView's §5 icon strip can trigger actions.
   // Must be declared after openAction to satisfy the reference, and before any
   // conditional return so React's hooks rules are satisfied.
   useImperativeHandle(ref, () => ({ openAction }), [])
@@ -376,6 +427,50 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
           onEnqueued(await bulkDeleteAction(buildSelection()))
           return
         }
+        // §14.3 mass actions (05-people-list spec)
+        case 'set_source': {
+          if (!source.trim()) { setError('Pick or type a source'); return }
+          onEnqueued(await bulkSetSourceAction(sel, source.trim()))
+          return
+        }
+        case 'set_timeframe': {
+          if (!timeframe) { setError('Pick a timeframe'); return }
+          onEnqueued(await bulkSetTimeframeAction(sel, timeframe))
+          return
+        }
+        case 'set_lender': {
+          if (!lender.trim()) { setError('Type a lender name'); return }
+          onEnqueued(await bulkSetLenderAction(sel, lender.trim()))
+          return
+        }
+        case 'assign_pond': {
+          const id = Number(pondId)
+          if (!id) { setError('Pick a pond'); return }
+          onEnqueued(await bulkAssignPondAction(sel, id))
+          return
+        }
+        case 'add_collaborator': {
+          if (!collabBroker) { setError('Pick a broker'); return }
+          onEnqueued(await bulkAddCollaboratorAction(sel, collabBroker))
+          return
+        }
+        case 'remove_collaborator': {
+          if (!collabBroker) { setError('Pick a broker'); return }
+          onEnqueued(await bulkRemoveCollaboratorAction(sel, collabBroker))
+          return
+        }
+        case 'merge_people': {
+          const survivorId = Number(mergeSurvivorId)
+          if (!survivorId) { setError('Pick the surviving contact'); return }
+          const mergedIds = selectedIds.filter((id) => id !== survivorId)
+          const res = await bulkMergePeopleAction({ survivorId, mergedIds })
+          if (!res.ok) { setError(res.error); return }
+          setError(null)
+          setLegacyResult({ assigned: res.merged, skipped: selectedIds.length - 1 - res.merged })
+          onClear()
+          startTransition(() => router.refresh())
+          return
+        }
       }
     })
   }
@@ -390,88 +485,151 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
   }
 
   const actingCount = scope === 'ids' ? idCount : matchingTotal
-  const isLegacy = open === 'newsletter' || open === 'saved_search'
+  const isLegacy = open === 'newsletter' || open === 'saved_search' || open === 'merge_people'
   const isDelete = open === 'delete_contacts'
 
   return (
+    <>
+    {/* §14.1: the bar appears when rows are selected (or a job is running). The
+        dialogs stay mounted outside so the §5 icon strip can open them with an
+        empty selection (they then default to the whole matching cohort). */}
+    {hasIds || jobId ? (
     <div className={`fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/80 sm:px-6 ${barClassName ?? ''}`}>
-      <div className="mx-auto max-w-screen-2xl">
+      {/* pr clears the global quick-action FAB (bottom-right) so the §14 icons stay clickable */}
+      <div className="mx-auto max-w-screen-2xl md:pr-24">
+        {hasIds ? (
         <div className="flex flex-wrap items-center gap-2">
-          {/* Scope toggle — explicit checkbox set vs "all matching this filter" */}
-          <div className="flex items-center gap-1 rounded-md border border-border p-0.5">
+          {/* §14.1: "Selected N people — Deselect all" + scope toggle */}
+          <span className="text-sm tabular-nums text-foreground">
+            Selected <span className="font-semibold">{(scope === 'ids' ? idCount : matchingTotal).toLocaleString('en-US')}</span>{' '}
+            {actingCount === 1 ? 'person' : 'people'}
+          </span>
+          {hasIds ? (
             <Button
               size="sm"
-              variant={scope === 'ids' ? 'default' : 'ghost'}
-              className="h-8 tabular-nums"
-              onClick={() => switchScope('ids')}
-              disabled={!hasIds || isPending}
+              variant="ghost"
+              className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => { onClear(); setJobId(null) }}
+              disabled={isPending}
             >
-              {idCount} selected
+              <X className="mr-1 h-3.5 w-3.5" aria-hidden />
+              Deselect all
             </Button>
-            <Button
-              size="sm"
-              variant={scope === 'matching' ? 'default' : 'ghost'}
-              className="h-8 tabular-nums"
-              onClick={() => switchScope('matching')}
-              disabled={!hasMatching || isPending}
-            >
-              {activeViewId != null ? 'Whole view' : 'All'} {matchingTotal.toLocaleString('en-US')}
-            </Button>
-          </div>
+          ) : null}
+          {/* In-house extra: act on the page's checkbox set or on ALL matching the filter/view */}
+          {hasMatching ? (
+            <div className="flex items-center gap-1 rounded-md border border-border p-0.5">
+              <Button
+                size="sm"
+                variant={scope === 'ids' ? 'default' : 'ghost'}
+                className="h-7 px-2 text-xs tabular-nums"
+                onClick={() => switchScope('ids')}
+                disabled={!hasIds || isPending}
+              >
+                Checked ({idCount})
+              </Button>
+              <Button
+                size="sm"
+                variant={scope === 'matching' ? 'default' : 'ghost'}
+                className="h-7 px-2 text-xs tabular-nums"
+                onClick={() => switchScope('matching')}
+                disabled={isPending}
+              >
+                {activeViewId != null ? 'Whole list' : 'All'} {matchingTotal.toLocaleString('en-US')}
+              </Button>
+            </div>
+          ) : null}
 
-          <div className="ml-auto flex flex-wrap items-center gap-2">
+          <div className="ml-auto flex flex-wrap items-center gap-1">
+            {/* §14.5 bar icons: Batch Email · Import · Delete · Export */}
+            <Button
+              size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground"
+              aria-label="Batch Email" title="Batch Email"
+              onClick={() => openAction('email_cohort')} disabled={isPending}
+            >
+              <Mail className="h-4 w-4" aria-hidden />
+            </Button>
+            <Link
+              href="/admin/crm/import"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              aria-label="Import" title="Import"
+            >
+              <Upload className="h-4 w-4" aria-hidden />
+            </Link>
+            {canAssignBroker ? (
+              <Button
+                size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground"
+                aria-label="Delete" title="Delete"
+                onClick={() => openAction('delete_contacts')} disabled={isPending}
+              >
+                <Trash2 className="h-4 w-4" aria-hidden />
+              </Button>
+            ) : null}
+            {onExport ? (
+              <Button
+                size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground"
+                aria-label="Export Selected People" title="Export Selected People"
+                onClick={onExport} disabled={isPending}
+              >
+                <Download className="h-4 w-4" aria-hidden />
+              </Button>
+            ) : null}
+
+            {/* §14.4 tag icon sub-dropdown: Add Tags / Remove Tags */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button size="sm" className="h-10 md:h-8" disabled={isPending}>
-                  Bulk action
-                  <ChevronDown className="ml-1 h-4 w-4" aria-hidden />
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground" aria-label="Tag actions" title="Tags" disabled={isPending}>
+                  <Tag className="h-4 w-4" aria-hidden />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem onSelect={() => openAction('add_tag')}>Add Tags</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => openAction('remove_tag')}>Remove Tags</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* §14.3 main bulk-action dropdown — the 11 items, exact order */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground" aria-label="Bulk actions" title="Bulk actions" disabled={isPending}>
+                  <MoreHorizontal className="h-4 w-4" aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Apply to {actingCount.toLocaleString('en-US')} contacts</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => openAction('add_tag')}>Add a tag</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => openAction('remove_tag')}>Remove a tag</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => openAction('set_stage')}>Set stage</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => openAction('enroll_workflow')}>Enroll in a workflow</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => openAction('email_cohort')}>Email this cohort</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => openAction('set_report_subscription')}>Market report subscription</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => openAction('set_stage')}>Update Stage</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => openAction('set_source')}>Update Source</DropdownMenuItem>
                 {canAssignBroker ? (
-                  <DropdownMenuItem onSelect={() => openAction('assign_broker')}>Reassign broker</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => openAction('assign_broker')}>Assign Agent</DropdownMenuItem>
                 ) : null}
+                <DropdownMenuItem onSelect={() => openAction('assign_pond')}>Assign Ponds</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => openAction('set_lender')}>Assign Lender</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => openAction('add_collaborator')}>Add Collaborators</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => openAction('remove_collaborator')}>Remove Collaborators</DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={idCount < 2 || idCount > 10}
+                  onSelect={() => openAction('merge_people')}
+                >
+                  Merge People
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => openAction('set_timeframe')}>Update Timeframe</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => openAction('enroll_workflow')}>Apply Automation</DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => openAction('set_report_subscription')}>Market report subscription</DropdownMenuItem>
                 <DropdownMenuItem disabled={!hasIds} onSelect={() => openAction('newsletter')}>Add to newsletter</DropdownMenuItem>
                 <DropdownMenuItem disabled={!hasIds} onSelect={() => openAction('saved_search')}>Assign a saved search</DropdownMenuItem>
-                {canAssignBroker ? (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onSelect={() => openAction('delete_contacts')}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      Delete contacts
-                    </DropdownMenuItem>
-                  </>
-                ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
-
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-10 md:h-8"
-              onClick={() => { onClear(); setJobId(null) }}
-              disabled={isPending}
-            >
-              <X className="mr-1 h-4 w-4" aria-hidden />
-              Clear
-            </Button>
           </div>
         </div>
+        ) : null}
 
         {/* Progress poller appears after a job is enqueued */}
         {jobId ? <BulkProgress jobId={jobId} /> : null}
       </div>
+    </div>
+    ) : null}
 
       {/* Confirm + form dialog */}
       <Dialog open={open !== null} onOpenChange={(o) => { if (!o) closeDialog() }}>
@@ -480,7 +638,7 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
             <DialogTitle>{open ? ACTION_TITLE[open] : ''}</DialogTitle>
             <DialogDescription>
               {legacyResult
-                ? `Done. ${legacyResult.assigned} added, ${legacyResult.skipped} skipped.`
+                ? `Done. ${legacyResult.assigned} ${open === 'merge_people' ? 'merged' : 'added'}, ${legacyResult.skipped} skipped.`
                 : isDelete
                   ? `This will soft-delete the selected contacts — they will disappear from all lists. This cannot be undone in bulk.`
                   : isLegacy
@@ -599,6 +757,68 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
               </div>
             ) : null}
 
+            {open === 'set_source' ? (
+              sources.length > 0 ? (
+                <FormSelect label="Lead source" value={source} onChange={setSource} placeholder="Pick a source" options={sources} />
+              ) : (
+                <div>
+                  <Label htmlFor="bulk-source" className="mb-1.5 block text-xs text-muted-foreground">Lead source</Label>
+                  <Input id="bulk-source" value={source} onChange={(e) => setSource(e.target.value)} placeholder="Referral" className="h-10 md:h-9" />
+                </div>
+              )
+            ) : null}
+
+            {open === 'set_timeframe' ? (
+              <FormSelect
+                label="Timeframe"
+                value={timeframe}
+                onChange={setTimeframe}
+                placeholder="Pick a timeframe"
+                options={TIMEFRAME_OPTIONS.map((t) => ({ key: t, label: t }))}
+              />
+            ) : null}
+
+            {open === 'set_lender' ? (
+              <div>
+                <Label htmlFor="bulk-lender" className="mb-1.5 block text-xs text-muted-foreground">Lender name</Label>
+                <Input id="bulk-lender" value={lender} onChange={(e) => setLender(e.target.value)} placeholder="Lender or loan officer" className="h-10 md:h-9" />
+              </div>
+            ) : null}
+
+            {open === 'assign_pond' ? (
+              <FormSelect
+                label="Pond"
+                value={pondId}
+                onChange={setPondId}
+                placeholder="Pick a pond"
+                options={ponds}
+              />
+            ) : null}
+
+            {open === 'add_collaborator' || open === 'remove_collaborator' ? (
+              <FormSelect label="Broker" value={collabBroker} onChange={setCollabBroker} placeholder="Pick a broker" options={brokers} />
+            ) : null}
+
+            {open === 'merge_people' && !legacyResult ? (
+              <div>
+                <Label className="mb-1.5 block text-xs text-muted-foreground">
+                  Surviving contact (the {idCount - 1} other {idCount === 2 ? 'contact keeps' : 'contacts keep'} nothing — timeline, tasks and workflows move to the survivor, duplicates are archived to Trash)
+                </Label>
+                <Select value={mergeSurvivorId} onValueChange={setMergeSurvivorId}>
+                  <SelectTrigger className="h-10 md:h-9">
+                    <SelectValue placeholder="Pick the survivor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedRows
+                      .filter((r) => selectedIds.includes(r.id))
+                      .map((r) => (
+                        <SelectItem key={r.id} value={String(r.id)}>{r.name ?? `Contact #${r.id}`}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+
             {error ? <p className="text-xs text-destructive" role="alert">{error}</p> : null}
           </div>
 
@@ -622,7 +842,7 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 })
 

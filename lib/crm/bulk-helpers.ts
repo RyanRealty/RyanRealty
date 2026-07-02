@@ -39,6 +39,12 @@ export type BulkKind =
   | 'crm:enroll-workflow'
   | 'crm:set-report-subscription'
   | 'crm:delete'
+  | 'crm:set-source'
+  | 'crm:set-timeframe'
+  | 'crm:set-lender'
+  | 'crm:assign-pond'
+  | 'crm:add-collaborator'
+  | 'crm:remove-collaborator'
   | 'email-cohort'
 
 // ── Protected-tag policy (PURE, exported for tests) ──────────────────────────
