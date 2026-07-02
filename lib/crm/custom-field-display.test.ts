@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   formatCustomFieldDisplay,
   groupAndFormat,
+  humanizeCustomKey,
+  UNDEFINED_FIELD_GROUP,
 } from './custom-field-display'
 import type { CrmFieldDefinition } from '@/lib/data/crm/getCrmFieldDefinitions'
 
@@ -91,10 +93,15 @@ describe('groupAndFormat', () => {
     expect(groups[0].rows.map((r) => r.key)).toEqual(['present'])
   })
 
-  it('keeps a non-hideIfEmpty empty field as an em-dash placeholder', () => {
-    const defs = [def({ key: 'missing', label: 'Missing', type: 'text', hideIfEmpty: false })]
-    const groups = groupAndFormat({}, defs)
-    expect(groups[0].rows[0].display).toBe('—')
+  it('omits an empty typed field on the person card (populated-only, FUB parity)', () => {
+    // A typed field with no value for this contact is dropped, not rendered as
+    // an em-dash — the card shows only fields that actually have data.
+    const defs = [
+      def({ key: 'present', label: 'Present', type: 'text' }),
+      def({ key: 'missing', label: 'Missing', type: 'text', hideIfEmpty: false }),
+    ]
+    const groups = groupAndFormat({ present: 'here' }, defs)
+    expect(groups[0].rows.map((r) => r.key)).toEqual(['present'])
   })
 
   it('marks number and date rows as tabular, text/select as not', () => {
@@ -116,5 +123,60 @@ describe('groupAndFormat', () => {
   it('tolerates a null custom bag', () => {
     const defs = [def({ key: 'a', label: 'A', type: 'text', hideIfEmpty: true })]
     expect(groupAndFormat(null, defs)).toEqual([])
+  })
+
+  // ── Fallback rendering: populated keys with NO definition (the regression) ──
+  it('renders populated custom keys that have NO definition (the "just names" fix)', () => {
+    // The real FUB enrichment bag: custom-prefixed keys the registry never declared.
+    const custom = {
+      customYearBuilt: '1977',
+      customSubdivision: 'Deschutes RiverWoods',
+      customSellerPropertyAddress: '18949 Baker, Bend, OR 97702',
+      customClassification: 'EXPIRED',
+    }
+    const groups = groupAndFormat(custom, []) // zero definitions match
+    expect(groups).toHaveLength(1)
+    expect(groups[0].group).toBe(UNDEFINED_FIELD_GROUP)
+    const byLabel = Object.fromEntries(groups[0].rows.map((r) => [r.label, r.display]))
+    expect(byLabel).toEqual({
+      'Classification': 'EXPIRED',
+      'Seller Property Address': '18949 Baker, Bend, OR 97702',
+      'Subdivision': 'Deschutes RiverWoods',
+      'Year Built': '1977',
+    })
+  })
+
+  it('keeps typed groups first and puts undefined keys in a trailing Enrichment bucket', () => {
+    const defs = [def({ key: 'stage', label: 'Stage', type: 'text', fieldGroup: 'Buyer', position: 1 })]
+    const groups = groupAndFormat({ stage: 'hot', customYearBuilt: '1977' }, defs)
+    expect(groups.map((g) => g.group)).toEqual(['Buyer', UNDEFINED_FIELD_GROUP])
+  })
+
+  it('does not duplicate a key that already has a definition', () => {
+    const defs = [def({ key: 'customYearBuilt', label: 'Year', type: 'text' })]
+    const groups = groupAndFormat({ customYearBuilt: '1977' }, defs)
+    const allRows = groups.flatMap((g) => g.rows)
+    expect(allRows.filter((r) => r.key === 'customYearBuilt')).toHaveLength(1)
+    expect(groups.some((g) => g.group === UNDEFINED_FIELD_GROUP)).toBe(false)
+  })
+
+  it('drops empty undefined values', () => {
+    const groups = groupAndFormat({ customA: '', customB: null, customC: 'keep' }, [])
+    expect(groups).toHaveLength(1)
+    expect(groups[0].rows.map((r) => r.key)).toEqual(['customC'])
+  })
+})
+
+describe('humanizeCustomKey', () => {
+  it('strips the custom prefix and splits camelCase into Title Case', () => {
+    expect(humanizeCustomKey('customSellerPropertyAddress')).toBe('Seller Property Address')
+    expect(humanizeCustomKey('customYearBuilt')).toBe('Year Built')
+    expect(humanizeCustomKey('customSubdivision')).toBe('Subdivision')
+  })
+
+  it('handles acronym runs and non-prefixed keys', () => {
+    expect(humanizeCustomKey('customMLSNumber')).toBe('MLS Number')
+    expect(humanizeCustomKey('customAPN')).toBe('APN')
+    expect(humanizeCustomKey('bareKey')).toBe('Bare Key')
   })
 })

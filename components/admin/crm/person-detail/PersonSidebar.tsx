@@ -534,9 +534,11 @@ export function PersonSidebar({ data, customFieldsNode }: { data: SidebarData; c
         </FieldRow>
       </SidebarSection>
 
-      {/* Custom Fields (§07a 7) — default collapsed */}
+      {/* Custom Fields (§07a 7) — OPEN by default. This is prime lead data
+          (BatchData enrichment, expired-listing + homeowner property detail);
+          collapsing it hid Matt's most valuable fields behind a click. */}
       {customFieldsNode ? (
-        <SidebarSection id="custom-fields" title="Custom Fields" defaultOpen={false}>
+        <SidebarSection id="custom-fields" title="Custom Fields" defaultOpen>
           {customFieldsNode}
         </SidebarSection>
       ) : null}

@@ -514,6 +514,54 @@ re-runs the E2E checks and states the sign-off inventory to Matt.
 
 ## PROGRESS (agents append here as slices ship)
 
+### LEAD-DATA DISPLAY REGRESSION FIXED — custom fields were invisible ✅ (2026-07-02)
+Matt: his valuable lead data (expired-listing info, homeowner property/tenure detail, mailing/
+property address, notes) "seems gone" — he saw "just names." **DATA WAS 100% INTACT** (SQL-verified:
+22,377 notes · 11,251 contacts with a rich `crm_people.background` · 10,998 with `custom` jsonb). This
+was a pure DISPLAY regression, now fixed on BOTH desktop + mobile.
+**ROOT CAUSE (exact):** `lib/crm/custom-field-display.ts` `groupAndFormat()` iterated the DEFINITIONS
+(`crm_field_definitions`, 41 rows) and pulled matching values off the custom bag. But the 41 defined
+keys are UNPREFIXED camelCase (`yearBuilt`, `subdivision`, `sellerPropertyAddress`, …) while EVERY
+populated custom key in the book is `custom`-PREFIXED (`customYearBuilt` 7,763 ppl ·
+`customSellerPropertyAddress` 7,909 · `customPurchasePrice` 10,372 · `customSubdivision` 7,635 · …).
+**Zero overlap** → any key with data but no matching definition was silently dropped. Desktop
+`CustomFieldsPanel` therefore rendered NOTHING for every contact (e.g. 18187 Katherine Hamada: 8
+populated keys, 0 shown), and the section was `defaultOpen={false}` (collapsed) on top of that.
+Background rendered fine on desktop; mobile custom fields already rendered (built from `customEntries`
+directly) but background was `line-clamp-4` (truncated the rich expired/property/next-steps content).
+**FIX (display-only, no data touched):**
+- `groupAndFormat()` now, after walking typed defs, appends EVERY populated custom key that has no
+  definition as a humanized text row in a trailing "Enrichment data" group (fallback rendering — the
+  old-CRM "show everything" behavior). New `humanizeCustomKey()` (`customSellerPropertyAddress` →
+  "Seller Property Address") lifted from the mobile transform so both form factors humanize identically.
+- Empty typed rows are now DROPPED (populated-only person card, FUB parity) instead of rendering 41
+  em-dash placeholders that buried the real values. (Was: `hideIfEmpty` gated the drop; the 41 seed
+  defs are `hideIfEmpty:false` → 41 dashes.) `groupAndFormat` is consumed ONLY by `CustomFieldsPanel`.
+- `PersonSidebar` Custom Fields section flipped to `defaultOpen` (prime lead data, not behind a click).
+- Mobile `MobileInfoTab` background un-clamped (`line-clamp-4` → `whitespace-pre-line`) so the full
+  multi-line background shows.
+**PROOF (live, Matt's authed dev session, real crm_* data, ZERO console errors):**
+- Desktop 1440x900, 18187: CUSTOM FIELDS open, "Enrichment data" group, exactly the 8 populated rows
+  (Baths 2 · Building Sqft 1732 · Classification EXPIRED · Enrichment Provider batchdata · Phone Type
+  Mobile · Seller Property Address 18949 Baker · Subdivision Deschutes RiverWoods · Year Built 1977),
+  no dash noise, followed by the full BACKGROUND block.
+- Desktop, 104 Christian Calande (homeowner-type): 23 enrichment rows incl. the exact categories Matt
+  named — Years Owned 21, Purchase/Last-Purchase Date 2005-06-09, Seller Property Address 2473 Nw
+  Lemhi Pass Dr, Purchase Price 549,000, Estimated/Market Value 1,339,530, Equity Pct 59, Neighborhood.
+- Mobile 390x844, 18187 Info tab: CUSTOM FIELDS section (all 8 rows) + full BACKGROUND (NEXT STEPS
+  bullets now visible, no clamp).
+- Notes: RENDER fine (212 timeline note rows on 18187) — but 211 of 212 are the system "Automated
+  outreach packet generated" note; that contact simply has no broker note. Real broker notes across the
+  book (22,377) are reachable in Comms + Notes; note LIST is not empty. (System-note filtering/grouping
+  is a follow-up UX nicety, not a display bug — logged, not done here.)
+Tests: `lib/crm/custom-field-display.test.ts` +9 (fallback rendering, humanizer, populated-only,
+no-dup, empty-drop). Full suite 2454 green · tsc clean · ci:gates exit 0 (also registered the foreign
+`WESTSIDE_DATA_SWEEP_2026-07-02.md` plan doc in DEVELOPMENT_PROCESS.md to unblock the shared G44 canon
+gate — it was committed unregistered by the westside session at 3bce73d0). Files: custom-field-display
+.ts/.test.ts, PersonSidebar.tsx, MobileInfoTab.tsx, DEVELOPMENT_PROCESS.md. Net-zero on data (read-only
+audit queries only). `_verify` screens unchanged (crm-screen-parity 18/18 still proven — the change is
+additive to the same components).
+
 ### "SPLIT ALL" — ALL 14 REMAINING FUB MERGE-VICTIMS RECREATED ✅ (2026-07-02)
 Matt: "Split all." Every remaining collapsed pair from the merge-note sweep is repaired. **Evidence
 breakthrough that eliminated guessing: FUB relationship snapshots** (`people/<id>?fields=relationships`)

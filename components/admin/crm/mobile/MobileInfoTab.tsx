@@ -323,7 +323,7 @@ export function MobileInfoTab({
         <SectionHeader label="Background" />
         <Card>
           {background ? (
-            <p className="px-4 py-3 text-[14px] leading-5 text-foreground line-clamp-4">
+            <p className="whitespace-pre-line px-4 py-3 text-[14px] leading-5 text-foreground">
               {background}
             </p>
           ) : (

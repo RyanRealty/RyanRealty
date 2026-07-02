@@ -2,6 +2,22 @@
 
 # CROSS-AGENT HANDOFF — CRM GROUND-UP REBUILD, screen-by-screen under ci:crm-screen-parity (2026-07-01)
 
+## LEAD-DATA DISPLAY REGRESSION FIXED (2026-07-02) — custom fields were invisible; data was 100% intact
+Matt saw "just names" — his expired/homeowner property detail, tenure, mailing/property address looked
+gone. Data was fully intact; pure DISPLAY bug. ROOT CAUSE: `lib/crm/custom-field-display.ts`
+`groupAndFormat()` only rendered custom keys that had a matching `crm_field_definitions` row, but the 41
+defined keys are unprefixed (`yearBuilt`) while EVERY populated key is `custom`-prefixed
+(`customYearBuilt`, `customSellerPropertyAddress`, `customPurchasePrice`, …) — zero overlap → all
+enrichment data dropped from the desktop `CustomFieldsPanel`. FIX (display-only, no data touched):
+fallback-render every populated undefined key in a trailing "Enrichment data" group (+ `humanizeCustomKey`),
+drop empty typed rows (populated-only, FUB parity — was 41 em-dash rows), flip the sidebar Custom Fields
+section to `defaultOpen`, and un-clamp the mobile background. Proven live on 18187 + homeowner 104,
+desktop 1440 + mobile 390, zero console errors. Suite 2454 green · tsc clean · ci:gates exit 0. Also
+registered the foreign `WESTSIDE_DATA_SWEEP_2026-07-02.md` plan doc (committed unregistered at 3bce73d0)
+to unblock G44. Full detail: mission PROGRESS "LEAD-DATA DISPLAY REGRESSION FIXED". Follow-up (not a bug,
+logged): system "Automated outreach packet generated" notes dominate long-running contacts' Notes — a
+filter/group to surface real broker notes is a UX nicety, deferred.
+
 ## GROUP SMS FIX LANDED (2026-07-02, commit 74d22bf9) — inbound group texts were being DROPPED; now recorded
 Matt's "are group SMS recorded?" question exposed a message-loss class: Programmable Messaging does
 not support group MMS, so every inbound group text (incl. Mary Bowman + Yahson Terry's phone-era

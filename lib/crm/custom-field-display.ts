@@ -42,6 +42,55 @@ export type CustomFieldGroup = {
   rows: CustomFieldDisplayRow[]
 }
 
+/**
+ * Humanize a raw custom-bag key into a display label when no definition
+ * supplies one. Strips the FUB `custom` prefix and splits camelCase / snake_case
+ * into Title Case words: `customSellerPropertyAddress` → "Seller Property
+ * Address", `customYearBuilt` → "Year Built". Pure — exported for the test.
+ *
+ * This is the SAME transform the mobile Info tab already applied, lifted here so
+ * desktop + mobile humanize undefined keys identically.
+ */
+export function humanizeCustomKey(key: string): string {
+  const stripped = key.replace(/^custom/, '')
+  const spaced = stripped
+    .replace(/[_-]+/g, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .trim()
+  if (!spaced) return key
+  return spaced
+    .split(/\s+/)
+    .map((w) => (w.length <= 3 && w === w.toUpperCase() ? w : w.charAt(0).toUpperCase() + w.slice(1)))
+    .join(' ')
+}
+
+/**
+ * Format an arbitrary raw value (a key with NO definition) for display. Numbers
+ * render locale-grouped, everything else is coerced to a trimmed string. Returns
+ * null for empty / unusable values so they can be dropped. Pure.
+ */
+function formatUndefinedValue(raw: unknown): { display: string; tabular: boolean } | null {
+  if (raw === null || raw === undefined) return null
+  if (typeof raw === 'number') {
+    return Number.isFinite(raw) ? { display: raw.toLocaleString('en-US'), tabular: true } : null
+  }
+  if (typeof raw === 'boolean') return { display: raw ? 'Yes' : 'No', tabular: false }
+  if (typeof raw === 'object') {
+    try {
+      const s = JSON.stringify(raw)
+      return s && s !== '{}' && s !== '[]' ? { display: s, tabular: false } : null
+    } catch {
+      return null
+    }
+  }
+  const s = String(raw).trim()
+  return s.length > 0 ? { display: s, tabular: false } : null
+}
+
+/** Trailing group name for populated custom keys that have no typed definition. */
+export const UNDEFINED_FIELD_GROUP = 'Enrichment data' as const
+
 /** Sort key the display order uses: position ascending, then label A→Z. */
 function comparePosition(a: CrmFieldDefinition, b: CrmFieldDefinition): number {
   if (a.position !== b.position) return a.position - b.position
@@ -112,10 +161,14 @@ export function groupAndFormat(
     const raw = getCrmFieldValue(custom, def)
     const display = formatCustomFieldDisplay(def, raw)
 
-    // hideIfEmpty drops fields with no usable value. A field that is NOT
-    // hideIfEmpty but still has no value renders an em-dash placeholder so the
-    // card shows the field exists.
-    if (display === null && def.hideIfEmpty) continue
+    // A person's custom-field card shows POPULATED fields only (FUB parity):
+    // a typed field with no value for this contact is omitted, never rendered
+    // as an em-dash placeholder. The registry has ~40 typed definitions the
+    // FUB import never populated (their keys are unprefixed while the imported
+    // data is `custom`-prefixed), so rendering blanks buried the real values
+    // under a wall of dashes. The field still exists in the registry / editor
+    // — it just doesn't clutter a contact who has no value for it.
+    if (display === null) continue
 
     const group = def.fieldGroup
     if (!buckets.has(group)) {
@@ -131,11 +184,46 @@ export function groupAndFormat(
     })
   }
 
-  // null group always renders last regardless of when it was first seen.
+  // ── Fallback: populated custom keys with NO typed definition ────────────────
+  // The FUB-imported enrichment bag uses `custom`-prefixed keys
+  // (customYearBuilt, customSubdivision, customSellerPropertyAddress, …) that
+  // the definition registry never declared. Walking definitions alone drops
+  // ALL of that data (the display regression Matt hit — a contact showed "just
+  // names"). Render every remaining populated key as a humanized text row in a
+  // trailing "Enrichment data" bucket so nothing is silently invisible.
+  const definedKeys = new Set(defs.map((d) => d.key))
+  if (custom && typeof custom === 'object') {
+    const undefinedRows: CustomFieldDisplayRow[] = []
+    for (const key of Object.keys(custom)) {
+      if (definedKeys.has(key)) continue
+      const formatted = formatUndefinedValue((custom as Record<string, unknown>)[key])
+      if (!formatted) continue
+      undefinedRows.push({
+        key,
+        label: humanizeCustomKey(key),
+        type: 'text',
+        display: formatted.display,
+        tabular: formatted.tabular,
+      })
+    }
+    if (undefinedRows.length > 0) {
+      undefinedRows.sort((a, b) => a.label.localeCompare(b.label))
+      if (!buckets.has(UNDEFINED_FIELD_GROUP)) {
+        buckets.set(UNDEFINED_FIELD_GROUP, [])
+        order.push(UNDEFINED_FIELD_GROUP)
+      }
+      buckets.get(UNDEFINED_FIELD_GROUP)!.push(...undefinedRows)
+    }
+  }
+
+  // null group always renders last; the Enrichment-data bucket renders just
+  // before it (after every typed group).
   const sortedOrder = [...order].sort((a, b) => {
     if (a === b) return 0
     if (a === null) return 1
     if (b === null) return -1
+    if (a === UNDEFINED_FIELD_GROUP) return 1
+    if (b === UNDEFINED_FIELD_GROUP) return -1
     return 0
   })
 
