@@ -41,6 +41,8 @@ const REPORTING_TABS = [
   { label: 'Texts', href: '/admin/crm/reporting/texts' },
   { label: 'Batch Emails', href: '/admin/crm/reporting/batch-emails' },
   { label: 'Contact Attempts', href: '/admin/crm/reporting/contact-attempts', active: true },
+  { label: 'Marketing', href: '/admin/crm/reporting/marketing' },
+  { label: 'Deals', href: '/admin/crm/reporting/deals' },
   { label: 'Appointments', href: '/admin/crm/reporting/appointments' },
   { label: 'Agent Goals', href: '/admin/crm/reporting/agent-goals' },
 ] as const

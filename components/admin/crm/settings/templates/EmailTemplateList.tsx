@@ -19,7 +19,7 @@
  */
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Eye, HelpCircle, Pencil } from 'lucide-react'
+import { Eye, HelpCircle, Pencil, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import {
   Table,
@@ -29,6 +29,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -66,6 +76,7 @@ export function EmailTemplateList({
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [moveTo, setMoveTo] = useState('')
   const [editRow, setEditRow] = useState<TemplateRow | null>(null)
+  const [deleteRow, setDeleteRow] = useState<TemplateRow | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
 
   const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id))
@@ -84,6 +95,24 @@ export function EmailTemplateList({
       if (next.has(id)) next.delete(id)
       else next.add(id)
       return next
+    })
+  }
+
+  /** §13 Actions column trash — confirm-gated, superuser-only (same pattern as
+      TextTemplateList; the email list shipped without it, 2026-07-02 audit). */
+  function doDelete() {
+    const row = deleteRow
+    if (!row) return
+    setNote(null)
+    startTransition(async () => {
+      const r = await shared.actions.remove(row.id)
+      setDeleteRow(null)
+      if (r.ok) {
+        setNote({ tone: 'ok', text: r.message ?? 'Template deleted' })
+        router.refresh()
+      } else {
+        setNote({ tone: 'err', text: r.error })
+      }
     })
   }
 
@@ -288,17 +317,33 @@ export function EmailTemplateList({
                       {metric(m.sent, m.bounces)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0"
-                        aria-label={`Edit ${row.name}`}
-                        disabled={pending}
-                        onClick={() => setEditRow(row)}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
+                      <span className="inline-flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          aria-label={`Edit ${row.name}`}
+                          disabled={pending}
+                          onClick={() => setEditRow(row)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        {shared.isSuperuser ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                            aria-label={`Delete ${row.name}`}
+                            disabled={pending || row.usage > 0}
+                            title={row.usage > 0 ? 'Referenced by an automation. Detach it first.' : undefined}
+                            onClick={() => setDeleteRow(row)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        ) : null}
+                      </span>
                     </TableCell>
                   </TableRow>
                 )
@@ -323,6 +368,30 @@ export function EmailTemplateList({
           }}
         />
       ) : null}
+
+      <AlertDialog open={deleteRow !== null} onOpenChange={(o) => !o && !pending && setDeleteRow(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {deleteRow?.name}</AlertDialogTitle>
+            <AlertDialogDescription>
+              This cannot be undone. The template is removed for good.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={pending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault()
+                doDelete()
+              }}
+            >
+              Delete template
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

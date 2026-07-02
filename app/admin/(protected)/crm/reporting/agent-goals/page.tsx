@@ -160,9 +160,8 @@ export default async function AgentGoalsPage({
       {/* No-goals-config notice — honest about V1 state */}
       <div className="mb-4 rounded-lg border border-border bg-muted/40 px-4 py-3">
         <p className="text-sm text-muted-foreground">
-          Annual commission goals are not yet configured. Use the{' '}
-          <span className="font-medium text-foreground">Set goal</span> link per agent to set
-          a target once goal-setting is available.
+          Annual commission goals are not yet configured. Per-agent goal-setting is a future
+          increment. Closed deals, upcoming deals, and commission earned below are live.
         </p>
       </div>
 
@@ -236,17 +235,20 @@ export default async function AgentGoalsPage({
                     </span>
                   </TableCell>
 
-                  {/* Commission goal — "Set goal" link when unset */}
+                  {/* Commission goal — honest deferred state when unset.
+                      Goal-setting persistence is a future increment (no
+                      commission-goal store exists in V1). The prior "Set goal"
+                      link pointed at a route that does not exist and 404'd
+                      (2026-07-02 audit) — render a muted, non-navigating
+                      placeholder until the goal-setting slice ships. */}
                   <TableCell className="text-right">
                     {row.commissionGoal === null ? (
-                      /* FUB uses an inline blue hyperlink for goal-setting.
-                         Linking to a future settings route; placeholder for now. */
-                      <Link
-                        href={`/admin/crm/reporting/agent-goals/set-goal?broker=${row.brokerSlug}&year=${currentYear}`}
-                        className="text-sm text-primary hover:underline"
+                      <span
+                        className="text-sm text-muted-foreground"
+                        title="Commission goal-setting is coming soon."
                       >
-                        Set goal
-                      </Link>
+                        Not set
+                      </span>
                     ) : (
                       <span className="tabular-nums text-foreground">
                         {fmtCurrency(row.commissionGoal)}
