@@ -30,6 +30,19 @@ vi.mock('@/lib/data/crm/getEmailCohortRecipients', () => ({
   getCrmTemplateForSend: (...args: unknown[]) => mockGetTemplate(...args),
 }))
 
+// buildMergeContext reads server-only cached DALs (brokers/telephony/company) —
+// mock it thin; renderCrmMerge itself runs unmocked against this context.
+vi.mock('@/lib/crm/merge-context', () => ({
+  buildMergeContext: async () => ({
+    agent: { firstName: 'Rebecca', lastName: 'Peterson' },
+    sender: { firstName: 'Rebecca', lastName: 'Peterson' },
+    company: { name: 'Ryan Realty', address: null },
+    lender: null,
+    leadSource: { name: null, campaign: null },
+    timeZone: 'America/Los_Angeles',
+  }),
+}))
+
 // attributeOutbound + prepareDeliverableEmail + renderCrmMerge are pure and safe
 // to run unmocked, but prepare pulls 'server-only' env helpers; mock them thin so
 // the test asserts the handler's orchestration, not their internals.
@@ -68,6 +81,13 @@ const recipient = (over: Partial<EmailCohortRecipient> = {}): EmailCohortRecipie
   assigned_broker: 'rebecca',
   name: 'Jane Doe',
   first_name: 'Jane',
+  last_name: 'Doe',
+  stage: 'Lead',
+  source: null,
+  lender_name: null,
+  emails: [{ value: 'lead@example.com', isPrimary: 1 }],
+  phones: [],
+  addresses: [],
   custom: {},
   ...over,
 })

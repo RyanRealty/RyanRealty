@@ -279,14 +279,17 @@ app/admin/(protected)/crm/reporting/overview/OverviewKpiStrip.tsx
 # class as app/lp/sell-your-home/page.tsx and other KB-register LPs above.
 app/luxury-homes-bend/page.tsx
 
-# CRM TemplateEditor (admin-only, 2026-07-01): uses vw-based max-w-[Xvw] for
-# responsive column truncation in table cells (md:max-w-none collapses on
-# desktop). No locked-ladder equivalent for vw units. TemplateEditor also uses
-# a raw <button> as an inline table-cell text trigger — the <Button>
-# primitive's inline-flex centering breaks text-flow here. Same exception class
-# as AdminSidebar (h-[calc(100vh-61px)]) and AdminMobileTabBar (pb-[env(...)]).
-# (WorkflowList.tsx was deleted 2026-07-01 — replaced by the §12 automations UI.)
-components/admin/crm/settings/TemplateEditor.tsx
+# §13 Templates surface (admin-only FUB-parity, 2026-07-01,
+# docs/fub-crm-spec/13-email-and-text-templates.md — replaced TemplateEditor.tsx):
+# raw <button> as inline table-cell text triggers (template-name links), the
+# eye popover trigger, the emoji grid cells, and the circular Feature toggle —
+# the <Button> primitive's inline-flex centering breaks text-flow / the
+# compact grid here. Same exception class as the deleted TemplateEditor and
+# the §12 automations canvas/palette tiles below.
+components/admin/crm/settings/templates/EmailTemplateList.tsx
+components/admin/crm/settings/templates/TextTemplateList.tsx
+components/admin/crm/settings/templates/TextTemplateModal.tsx
+components/admin/crm/settings/templates/EmojiPickerButton.tsx
 
 # §12 Automations visual editor + list (admin-only FUB-parity surfaces, 2026-07-01,
 # docs/fub-crm-spec/12-action-plans-and-automations.md):

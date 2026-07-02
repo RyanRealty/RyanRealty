@@ -44,6 +44,7 @@ import {
   deleteEmailEventByDedupeKey,
 } from '@/lib/data/crm/insertEmailEvent'
 import { renderCrmMerge } from '@/lib/crm/merge'
+import { buildMergeContext } from '@/lib/crm/merge-context'
 import {
   getEmailCohortRecipients,
   getCrmTemplateForSend,
@@ -189,14 +190,16 @@ export async function sendOneCohortEmail(
     return { kind: 'skipped', bucket: suppressionBucket(gate.reasons) }
   }
 
-  // 2) Render: merge the contact's fields into subject + body.
-  const mergeCtx = {
-    first_name: recipient.first_name,
-    name: recipient.name,
-    custom: recipient.custom,
-  }
-  const subject = renderCrmMerge(content.subject, mergeCtx)
-  const renderedBody = renderCrmMerge(content.body, mergeCtx)
+  // 2) Render: merge the contact's fields into subject + body. The context
+  // resolves %agent_*%/%sender_*%/%company_*% from real data; bulk cohort
+  // sends come "from" the assigned broker, so sender = agent. Cheap
+  // per-recipient — the context builder reads cached DALs.
+  const mergeContext = await buildMergeContext({
+    person: recipient,
+    senderSlug: recipient.assigned_broker ?? null,
+  })
+  const subject = renderCrmMerge(content.subject, recipient, mergeContext)
+  const renderedBody = renderCrmMerge(content.body, recipient, mergeContext)
 
   // 3) Attribution + open/click instrumentation (broker routing + tracking).
   const emailKey = cohortEmailKey(params, ctx.jobId)

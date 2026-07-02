@@ -31,6 +31,7 @@ import ReportSubscriptionsPanel from '@/components/admin/crm/ReportSubscriptions
 import { OwnedHomeCard } from '@/components/admin/crm/OwnedHomeCard'
 import { timelineEmailBody } from '@/lib/crm/email-body'
 import { renderCrmMerge } from '@/lib/crm/merge'
+import { buildMergeContext } from '@/lib/crm/merge-context'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
 import { CRM_MAILBOXES } from '@/lib/crm/gmail'
 import { getOwnedHomeMatches, getGuestSearchAlertsForLead, getViewedListingsForLead, type OwnedHomeMatch } from '@/lib/data'
@@ -256,16 +257,21 @@ export default async function ConsoleLeadPage({
   const person = full.person
   if (!person) notFound()
 
-  const personLike = person as unknown as { first_name?: string | null; name?: string | null; custom?: Record<string, unknown>; assigned_broker?: string | null }
+  const personLike = person as unknown as import('@/lib/crm/merge').MergePersonLike & { assigned_broker?: string | null }
   const actingSlug = crmAccess?.brokerSlug ?? personLike.assigned_broker ?? 'matt'
   const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
   const signature = await getSignatureForMailbox(mailbox.email)
 
   const activeTpl = tpl ? templates.find((t) => t.key === tpl) ?? null : null
   const activeSmsTpl = smsTpl ? smsTemplates.find((t) => t.key === smsTpl) ?? null : null
-  const emailInitialSubject = activeTpl?.subject ? renderCrmMerge(activeTpl.subject, personLike) : ''
-  const emailInitialBody = activeTpl?.body ? renderCrmMerge(activeTpl.body, personLike) : ''
-  const smsInitialBody = activeSmsTpl?.body ? renderCrmMerge(activeSmsTpl.body, personLike) : ''
+  // Composer prefill renders with the SAME context the send path uses, so the
+  // broker sees exactly what will go out (agent/sender/company resolved).
+  const mergeCtx = (activeTpl || activeSmsTpl)
+    ? await buildMergeContext({ person: personLike, senderSlug: actingSlug })
+    : undefined
+  const emailInitialSubject = activeTpl?.subject ? renderCrmMerge(activeTpl.subject, personLike, mergeCtx) : ''
+  const emailInitialBody = activeTpl?.body ? renderCrmMerge(activeTpl.body, personLike, mergeCtx) : ''
+  const smsInitialBody = activeSmsTpl?.body ? renderCrmMerge(activeSmsTpl.body, personLike, mergeCtx) : ''
 
   const primaryEmail = full.contactPoints.find((c) => c.kind === 'email')?.value ?? null
   const primaryPhone = full.contactPoints.find((c) => c.kind === 'phone')?.value ?? null

@@ -22,7 +22,8 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendCrmEmail, CRM_MAILBOXES } from '@/lib/crm/gmail'
 import { isSuppressed } from '@/lib/crm/suppressions'
-import { attributeSiteLinks, renderCrmMerge, referencesCmaLink, findUnresolvedMergeTokens } from '@/lib/crm/merge'
+import { attributeSiteLinks, renderCrmMerge, referencesCmaLink, findUnresolvedMergeTokens, type MergeContext, type MergePersonLike } from '@/lib/crm/merge'
+import { buildMergeContext } from '@/lib/crm/merge-context'
 import { sendSmsViaMessagingService, getA2pCampaignStatus } from '@/lib/crm/twilio'
 import { addPersonTags, replacePersonTags } from '@/lib/followupboss'
 import { isConditionNode, type AnyStepOrCondition } from '@/lib/crm/sequence-step-schema'
@@ -98,11 +99,15 @@ type Step = {
   type?: string
 }
 
-function renderMerge(text: string, person: { first_name?: string | null; name?: string | null; custom?: Record<string, unknown>; assigned_broker?: string | null; fub_legacy_id?: number | null }): string {
+function renderMerge(
+  text: string,
+  person: MergePersonLike & { assigned_broker?: string | null; fub_legacy_id?: number | null },
+  ctx?: MergeContext,
+): string {
   // Every site link in an automated send carries the assigned broker (routing)
   // AND the recipient's FUB id (?_fuid=) — so a click identifies them, cookies
   // the browser to the contact, and backfills their anonymous sessions.
-  return attributeSiteLinks(renderCrmMerge(text, person), person.assigned_broker ?? 'matt', person.fub_legacy_id ?? null)
+  return attributeSiteLinks(renderCrmMerge(text, person, ctx), person.assigned_broker ?? 'matt', person.fub_legacy_id ?? null)
 }
 
 export async function GET(request: Request) {
@@ -190,10 +195,15 @@ export async function GET(request: Request) {
 
       const { data: person } = await sb
         .from('crm_people')
-        .select('id,fub_legacy_id,first_name,name,emails,phones,tags,custom,assigned_broker')
+        .select('id,fub_legacy_id,first_name,last_name,name,stage,source,lender_name,emails,phones,addresses,tags,custom,assigned_broker')
         .eq('id', en.person_id)
         .single()
       if (!person) { await finish({ status: 'stopped' }); errored++; continue }
+
+      // Merge context — resolves %agent_*%/%sender_*%/%company_*% from real
+      // data. Automated sends come "from" the assigned broker, so sender=agent.
+      // Cheap per-iteration: it reads cached DALs (brokers/telephony/company).
+      const mergeCtx = await buildMergeContext({ person, senderSlug: person.assigned_broker ?? null })
 
       if (step.channel === 'email') {
         if (laHour() < 7 || laHour() >= 19) {
@@ -278,8 +288,8 @@ export async function GET(request: Request) {
           continue
         }
 
-        subject = renderMerge(subject, person)
-        body = renderMerge(body, person)
+        subject = renderMerge(subject, person, mergeCtx)
+        body = renderMerge(body, person, mergeCtx)
 
         // Fail-closed: never deliver literal %token% / {{token}} text to a client.
         const emailUnresolved = findUnresolvedMergeTokens(`${subject} ${body}`)
@@ -368,7 +378,7 @@ export async function GET(request: Request) {
           continue
         }
 
-        body = renderMerge(body, person)
+        body = renderMerge(body, person, mergeCtx)
 
         // Fail-closed: never text literal %token% / {{token}} content to a client.
         const smsUnresolved = findUnresolvedMergeTokens(body)
@@ -406,8 +416,8 @@ export async function GET(request: Request) {
           // still lands. Reuses the email suppression + send path.
           const fbTo = (person.emails as Array<{ value?: string }>)?.[0]?.value
           if (fbTo && !(await isSuppressed(person.id, 'email')).suppressed) {
-            const fbSubject = renderMerge(step.fallbackEmailSubject ?? 'A quick note from Ryan Realty', person)
-            const fbBody = renderMerge(step.fallbackEmailBody, person)
+            const fbSubject = renderMerge(step.fallbackEmailSubject ?? 'A quick note from Ryan Realty', person, mergeCtx)
+            const fbBody = renderMerge(step.fallbackEmailBody, person, mergeCtx)
             const sent = await sendCrmEmail({ fromMailbox: mailbox.email, to: fbTo, subject: fbSubject, bodyText: fbBody, withSignature: true })
             if (!sent.ok) { await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log('Fallback email send failed, retrying in 30m', sent.error); errored++; continue }
             await sb.from('crm_timeline').insert({
@@ -436,7 +446,7 @@ export async function GET(request: Request) {
         }
       } else if (step.channel === 'task') {
         await sb.from('crm_tasks').insert({
-          person_id: person.id, name: renderMerge(step.taskName ?? 'Follow up', person),
+          person_id: person.id, name: renderMerge(step.taskName ?? 'Follow up', person, mergeCtx),
           type: step.taskType ?? 'Follow Up',
           due_at: new Date(Date.now() + 3600e3).toISOString(),
           assigned_broker: person.assigned_broker, origin: 'sequence',
@@ -475,7 +485,7 @@ export async function GET(request: Request) {
           errored++
           continue
         }
-        const renderedNote = renderMerge(noteText, person)
+        const renderedNote = renderMerge(noteText, person, mergeCtx)
         await sb.from('crm_timeline').insert({
           person_id: person.id, kind: 'note',
           title: 'Note added by workflow',

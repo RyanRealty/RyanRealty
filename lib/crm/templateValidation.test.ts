@@ -32,9 +32,11 @@ describe('validateTemplateInput', () => {
       channel: 'email',
       name: 'Welcome buyer',
       subject: 'Your search is set',
+      previewText: null,
       body: 'Reply any time and we will help.',
       category: 'buyer',
       isShared: false,
+      featured: false,
       ownerBroker: null,
     })
   })
@@ -94,5 +96,44 @@ describe('validateTemplateInput', () => {
     expect(r.ok).toBe(false)
     if (r.ok) throw new Error('expected fail')
     expect(r.error).toContain('brand voice')
+  })
+})
+
+
+describe('validateTemplateInput — §13 fields', () => {
+  it('keeps preview text on email and strips it on sms', () => {
+    const email = validateTemplateInput({
+      channel: 'email',
+      name: 'A',
+      subject: 'S',
+      previewText: '  See the latest numbers  ',
+      body: 'B',
+    })
+    expect(email.ok && email.row.previewText).toBe('See the latest numbers')
+    const sms = validateTemplateInput({
+      channel: 'sms',
+      name: 'A',
+      previewText: 'ignored',
+      body: 'B',
+    })
+    expect(sms.ok && sms.row.previewText).toBe(null)
+  })
+
+  it('runs the voice gate over preview text', () => {
+    const r = validateTemplateInput({
+      channel: 'email',
+      name: 'A',
+      subject: 'S',
+      previewText: 'A stunning home awaits',
+      body: 'B',
+    })
+    expect(r.ok).toBe(false)
+  })
+
+  it('featured only persists for sms templates', () => {
+    const sms = validateTemplateInput({ channel: 'sms', name: 'A', body: 'B', featured: true })
+    expect(sms.ok && sms.row.featured).toBe(true)
+    const email = validateTemplateInput({ channel: 'email', name: 'A', subject: 'S', body: 'B', featured: true })
+    expect(email.ok && email.row.featured).toBe(false)
   })
 })

@@ -24,6 +24,13 @@ export type EmailCohortRecipient = {
   assigned_broker: string | null
   name: string | null
   first_name: string | null
+  last_name: string | null
+  stage: string | null
+  source: string | null
+  lender_name: string | null
+  emails: unknown
+  phones: unknown
+  addresses: unknown
   custom: Record<string, unknown>
 }
 
@@ -57,7 +64,7 @@ export async function getEmailCohortRecipients(ids: number[]): Promise<EmailCoho
   const sb = createServiceClient()
   const { data, error } = await sb
     .from('crm_people')
-    .select('id,fub_legacy_id,emails,assigned_broker,name,first_name,custom,deleted')
+    .select('id,fub_legacy_id,emails,phones,addresses,assigned_broker,name,first_name,last_name,stage,source,lender_name,custom,deleted')
     .in('id', clean)
   if (error || !data) {
     if (error) console.error('[getEmailCohortRecipients]', error.message)
@@ -72,6 +79,13 @@ export async function getEmailCohortRecipients(ids: number[]): Promise<EmailCoho
       assigned_broker: (r.assigned_broker as string | null) ?? null,
       name: (r.name as string | null) ?? null,
       first_name: (r.first_name as string | null) ?? null,
+      last_name: (r.last_name as string | null) ?? null,
+      stage: (r.stage as string | null) ?? null,
+      source: (r.source as string | null) ?? null,
+      lender_name: (r.lender_name as string | null) ?? null,
+      emails: r.emails ?? null,
+      phones: r.phones ?? null,
+      addresses: r.addresses ?? null,
       custom: (r.custom ?? {}) as Record<string, unknown>,
     }))
 }

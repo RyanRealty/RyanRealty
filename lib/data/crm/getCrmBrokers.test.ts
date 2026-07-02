@@ -14,9 +14,37 @@ describe('mapCrmBrokerRow', () => {
       slug: 'matt',
       name: 'Matt Ryan',
       email: 'matt@ryan-realty.com',
+      phone: null,
+      title: null,
       crmActive: true,
       routingEligible: true,
     } satisfies CrmBroker)
+  })
+
+  it('maps phone + title for the merge-field party fields', () => {
+    const b = mapCrmBrokerRow({
+      crm_slug: 'matt',
+      display_name: 'Matt Ryan',
+      email: 'matt@ryan-realty.com',
+      phone: '541.213.6706',
+      title: 'Principal Broker',
+      crm_active: true,
+      routing_eligible: true,
+    })
+    expect(b?.phone).toBe('541.213.6706')
+    expect(b?.title).toBe('Principal Broker')
+  })
+
+  it('coerces a blank title to null', () => {
+    const b = mapCrmBrokerRow({
+      crm_slug: 'matt',
+      display_name: 'Matt Ryan',
+      email: 'matt@ryan-realty.com',
+      title: '   ',
+      crm_active: true,
+      routing_eligible: true,
+    })
+    expect(b?.title).toBeNull()
   })
 
   it('returns null for a row with no crm_slug (a non-CRM broker)', () => {
@@ -55,6 +83,8 @@ describe('mapCrmBrokerRow', () => {
       slug: 'rebecca',
       name: 'Rebecca Peterson',
       email: null,
+      phone: null,
+      title: null,
       crmActive: false,
       routingEligible: false,
     } satisfies CrmBroker)

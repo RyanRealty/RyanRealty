@@ -4,8 +4,8 @@
  * TemplatePreviewPane — renders a template body in a sandboxed iframe after
  * resolving merge tokens against a placeholder contact.
  *
- * Used in the TemplateEditor create/edit dialog as a "Preview" tab alongside
- * the body textarea. The iframe is sandbox="" (no scripts) so the HTML is
+ * Used in the §13 template modals as a "Preview" tab alongside the body
+ * editor. The iframe is sandbox="" (no scripts) so the HTML is
  * fully safe to render even if a template body contains arbitrary HTML.
  *
  * The placeholder contact deliberately uses obvious stand-in values so a
@@ -15,14 +15,20 @@
  * what the recipient sees.
  */
 import { useMemo } from 'react'
-import { renderCrmMerge } from '@/lib/crm/merge'
+import { renderCrmMerge, type MergeContext } from '@/lib/crm/merge'
 import { buildEmailPreviewDoc } from '@/lib/crm/email-body'
 import { cn } from '@/lib/utils'
 
 /** Placeholder person used for preview rendering — obvious stand-in values. */
 const PLACEHOLDER_PERSON = {
   first_name: 'Alex',
+  last_name: 'Preview',
   name: 'Alex Preview',
+  stage: 'Lead',
+  source: 'Ryan-Realty.com',
+  emails: [{ value: 'alex.preview@example.com', isPrimary: 1 }],
+  phones: [{ value: '541-555-0100', isPrimary: 1 }],
+  addresses: [{ street: '123 Preview Lane', city: 'Bend', state: 'OR', code: '97701' }],
   custom: {
     customSellerPropertyAddress: '123 Preview Lane, Bend OR 97701',
     customPropertyAddress: '123 Preview Lane, Bend OR 97701',
@@ -35,16 +41,27 @@ export function TemplatePreviewPane({
   subject,
   body,
   signatureHtml,
+  mergeContext,
   className,
 }: {
   channel: 'email' | 'sms'
   subject: string
   body: string
   signatureHtml?: string | null
+  /** Real agent/sender/company context (server-built) so %agent_*% etc. preview
+   *  with the same values the send path resolves. Optional — tokens without
+   *  context stay literal, which is itself informative in a preview. */
+  mergeContext?: MergeContext
   className?: string
 }) {
-  const mergedSubject = useMemo(() => renderCrmMerge(subject, PLACEHOLDER_PERSON), [subject])
-  const mergedBody = useMemo(() => renderCrmMerge(body, PLACEHOLDER_PERSON), [body])
+  const mergedSubject = useMemo(
+    () => renderCrmMerge(subject, PLACEHOLDER_PERSON, mergeContext),
+    [subject, mergeContext],
+  )
+  const mergedBody = useMemo(
+    () => renderCrmMerge(body, PLACEHOLDER_PERSON, mergeContext),
+    [body, mergeContext],
+  )
 
   const previewDoc = useMemo(() => {
     if (channel === 'email') {

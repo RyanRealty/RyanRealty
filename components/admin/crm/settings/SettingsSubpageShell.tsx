@@ -13,14 +13,17 @@ import { Button } from '@/components/ui/button'
 export function SettingsSubpageShell({
   title,
   description,
+  wide = false,
   children,
 }: {
   title: string
   description: string
+  /** Wide surfaces (the §13 templates tables) need more than max-w-5xl. */
+  wide?: boolean
   children: ReactNode
 }) {
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+    <main className={`mx-auto ${wide ? 'max-w-7xl' : 'max-w-5xl'} px-4 py-8 sm:px-6`}>
       <div className="flex flex-wrap items-start justify-between gap-3 md:items-end">
         <div className="min-w-0">
           <nav className="mb-1 text-xs text-muted-foreground">

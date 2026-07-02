@@ -6,9 +6,15 @@ export type SendTargetPerson = {
   id: number
   fub_legacy_id: number | null
   phones: unknown
+  emails: unknown
+  addresses: unknown
   assigned_broker: string | null
   name: string | null
   first_name: string | null
+  last_name: string | null
+  stage: string | null
+  source: string | null
+  lender_name: string | null
   custom: Record<string, unknown>
 }
 export type SendTarget = { person: SendTargetPerson; phone: string }
@@ -25,7 +31,7 @@ export async function getSendTarget(personId: number): Promise<SendTarget | null
   const sb = createServiceClient()
   const { data: person } = await sb
     .from('crm_people')
-    .select('id,fub_legacy_id,phones,assigned_broker,name,first_name,custom')
+    .select('id,fub_legacy_id,phones,emails,addresses,assigned_broker,name,first_name,last_name,stage,source,lender_name,custom')
     .eq('id', personId)
     .maybeSingle()
   if (!person) return null

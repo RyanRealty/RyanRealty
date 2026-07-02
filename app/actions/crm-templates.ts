@@ -70,7 +70,7 @@ export async function createTemplateAction(input: CrmTemplateInput): Promise<Crm
 
   const validated = validateTemplateInput(input)
   if (!validated.ok) return validated
-  const { channel, name, subject, body, category, isShared, ownerBroker } = validated.row
+  const { channel, name, subject, previewText, body, category, isShared, featured, ownerBroker } = validated.row
 
   // Stamp owner_broker from the calling broker's slug when not explicitly set.
   const resolvedOwner = ownerBroker ?? access.brokerSlug ?? null
@@ -86,9 +86,9 @@ export async function createTemplateAction(input: CrmTemplateInput): Promise<Crm
     const { data, error } = await sb
       .from('crm_templates')
       .insert({
-        key, channel, name, subject, body, category,
-        is_active: true, is_shared: isShared, owner_broker: resolvedOwner,
-        updated_at: now,
+        key, channel, name, subject, preview_text: previewText, body, category,
+        is_active: true, is_shared: isShared, featured, owner_broker: resolvedOwner,
+        created_at: now, updated_at: now,
       })
       .select('id')
       .single()
@@ -115,14 +115,14 @@ export async function updateTemplateAction(id: number, input: CrmTemplateInput):
 
   const validated = validateTemplateInput(input)
   if (!validated.ok) return validated
-  const { channel, name, subject, body, category, isShared, ownerBroker } = validated.row
+  const { channel, name, subject, previewText, body, category, isShared, featured, ownerBroker } = validated.row
 
   const sb = createServiceClient()
   const { error } = await sb
     .from('crm_templates')
     .update({
-      channel, name, subject, body, category,
-      is_shared: isShared, owner_broker: ownerBroker,
+      channel, name, subject, preview_text: previewText, body, category,
+      is_shared: isShared, featured, owner_broker: ownerBroker,
       updated_at: new Date().toISOString(),
     })
     .eq('id', tplId)
@@ -133,13 +133,16 @@ export async function updateTemplateAction(id: number, input: CrmTemplateInput):
 }
 
 /**
- * Rename a template category across all templates that share the old name.
- * Blank newName collapses them to Uncategorized (sets category = null).
+ * Rename a template category (folder) across all templates that share the old
+ * name. Blank newName deletes the folder (sets category = null — the templates
+ * stay, unfoldered). Optional channel scopes the rename to email OR sms
+ * templates only (§13 keeps the two folder trees separate); omitted = both.
  * Superuser-only because renaming affects every template in the category.
  */
 export async function renameCategoryAction(
   oldName: string,
   newName: string,
+  channel?: string,
 ): Promise<CrmTemplateResult> {
   const guard = await requireSuperuser()
   if (!guard.ok) return guard
@@ -147,21 +150,58 @@ export async function renameCategoryAction(
   const old = (oldName ?? '').trim()
   if (!old) return { ok: false, error: 'Old category name is required' }
 
-  const next = (newName ?? '').trim() || null // blank → null (Uncategorized)
+  const next = (newName ?? '').trim() || null // blank → null (folder removed)
 
   const sb = createServiceClient()
-  const { error } = await sb
+  let q = sb
     .from('crm_templates')
     .update({ category: next, updated_at: new Date().toISOString() })
     .eq('category', old)
+  if (channel === 'email' || channel === 'sms') q = q.eq('channel', channel)
+  const { error } = await q
   if (error) return { ok: false, error: error.message }
 
   revalidateTag(CRM_TEMPLATES_ADMIN_TAG, 'max')
   return {
     ok: true,
     message: next
-      ? `Category renamed from "${old}" to "${next}"`
-      : `Category "${old}" cleared (templates moved to Uncategorized)`,
+      ? `Folder renamed from "${old}" to "${next}"`
+      : `Folder "${old}" removed (its templates are unfoldered)`,
+  }
+}
+
+/**
+ * Move a selection of templates into a folder (category), or out of every
+ * folder (category = null). A category-only update on purpose: it does NOT
+ * re-run body validation, so legacy FUB-imported copy that predates the voice
+ * gate can still be organized without editing it first.
+ */
+export async function moveTemplatesToFolderAction(
+  ids: number[],
+  category: string | null,
+): Promise<CrmTemplateResult> {
+  const guard = await requireAdmin()
+  if (!guard.ok) return guard
+
+  const clean = (ids ?? []).map(Number).filter((n) => Number.isFinite(n) && n > 0)
+  if (clean.length === 0) return { ok: false, error: 'Select at least one template' }
+  if (clean.length > 200) return { ok: false, error: 'Too many templates selected (max 200)' }
+
+  const next = (category ?? '').trim() || null
+
+  const sb = createServiceClient()
+  const { error } = await sb
+    .from('crm_templates')
+    .update({ category: next, updated_at: new Date().toISOString() })
+    .in('id', clean)
+  if (error) return { ok: false, error: error.message }
+
+  revalidateTag(CRM_TEMPLATES_ADMIN_TAG, 'max')
+  return {
+    ok: true,
+    message: next
+      ? `${clean.length} template${clean.length === 1 ? '' : 's'} moved to "${next}"`
+      : `${clean.length} template${clean.length === 1 ? '' : 's'} unfoldered`,
   }
 }
 

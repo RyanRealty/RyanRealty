@@ -46,26 +46,39 @@ export async function sendTemplateSelfTestAction(
   const rawBody = (input.body ?? '').trim()
   if (!rawBody) return { ok: false, error: 'Template body is empty. Nothing to send.' }
 
-  // Render with sample data so tokens like %contact_first_name% do not reach
-  // the inbox literally. Values chosen to look real enough to evaluate copy.
+  // Render with sample CONTACT data (obvious stand-ins) + the broker's REAL
+  // agent/sender/company context, so the self-test previews exactly what a
+  // live send resolves for the %agent_*%/%sender_*%/%company_*% tokens.
   const { renderCrmMerge } = await import('@/lib/crm/merge')
+  const { buildMergeContext } = await import('@/lib/crm/merge-context')
+  const actingSlug = access.brokerSlug ?? 'matt'
   const samplePerson = {
     first_name: 'Alex',
+    last_name: 'Sample',
     name: 'Alex Sample',
+    stage: 'Lead',
+    source: 'Ryan-Realty.com',
+    emails: [{ value: 'alex.sample@example.com', isPrimary: 1 }],
+    phones: [{ value: '541-555-0100', isPrimary: 1 }],
+    addresses: [{ street: '123 River Ridge Dr', city: 'Bend', state: 'OR', code: '97701' }],
     custom: {
       customSellerPropertyAddress: '123 River Ridge Dr, Bend OR 97701',
       customPropertyAddress: '123 River Ridge Dr, Bend OR 97701',
       cmaLink: 'https://ryan-realty.com/cma/sample',
     },
   }
-  const renderedBody = renderCrmMerge(rawBody, samplePerson)
+  const mergeCtx = await buildMergeContext({
+    person: { assigned_broker: actingSlug, lender_name: null, source: samplePerson.source },
+    senderSlug: actingSlug,
+  })
+  const renderedBody = renderCrmMerge(rawBody, samplePerson, mergeCtx)
     // Replace any remaining unresolved standard tokens with bracketed labels.
     .replace(/%([A-Za-z][A-Za-z0-9_]*)%/g, '[$1]')
 
   if (channel === 'email') {
     const rawSubject = (input.subject ?? '').trim()
     if (!rawSubject) return { ok: false, error: 'An email template requires a subject line.' }
-    const renderedSubject = renderCrmMerge(rawSubject, samplePerson)
+    const renderedSubject = renderCrmMerge(rawSubject, samplePerson, mergeCtx)
       .replace(/%([A-Za-z][A-Za-z0-9_]*)%/g, '[$1]')
 
     const { CRM_MAILBOXES, sendCrmEmail } = await import('@/lib/crm/gmail')

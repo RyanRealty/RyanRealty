@@ -537,7 +537,7 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   const sb = createServiceClient()
   const { data: person } = await sb
     .from('crm_people')
-    .select('id,fub_legacy_id,emails,assigned_broker,name,first_name,custom')
+    .select('id,fub_legacy_id,emails,phones,addresses,assigned_broker,name,first_name,last_name,stage,source,lender_name,custom')
     .eq('id', personId)
     .maybeSingle()
   if (!person) return { ok: false, error: 'Person not found' }
@@ -550,11 +550,14 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   if (gate.suppressed) return { ok: false, error: `Blocked by suppression (${gate.reasons.join(', ')})` }
 
   // Merge tokens like the SMS path does — a template body with %first% must
-  // never reach a client literally.
+  // never reach a client literally. The context resolves agent/sender/company
+  // tokens from real data (brokers + crm_company_settings).
   const { renderCrmMerge, attributeSiteLinks } = await import('@/lib/crm/merge')
+  const { buildMergeContext } = await import('@/lib/crm/merge-context')
   const actingSlugForLinks = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
-  const mergedSubject = renderCrmMerge(subject, person)
-  const mergedBody = attributeSiteLinks(renderCrmMerge(body, person), actingSlugForLinks, person.fub_legacy_id as number | null)
+  const mergeCtx = await buildMergeContext({ person, senderSlug: actingSlugForLinks })
+  const mergedSubject = renderCrmMerge(subject, person, mergeCtx)
+  const mergedBody = attributeSiteLinks(renderCrmMerge(body, person, mergeCtx), actingSlugForLinks, person.fub_legacy_id as number | null)
 
   const { CRM_MAILBOXES, sendCrmEmail } = await import('@/lib/crm/gmail')
   const actingSlug = actingSlugForLinks
@@ -823,14 +826,19 @@ export async function getCrmEmailTemplates(): Promise<Array<{ key: string; name:
   return (data ?? []) as Array<{ key: string; name: string; subject: string | null; body: string; category: string | null }>
 }
 
-export async function getCrmSmsTemplates(): Promise<Array<{ key: string; name: string; body: string; category: string | null }>> {
+export async function getCrmSmsTemplates(): Promise<Array<{ key: string; name: string; body: string; category: string | null; featured: boolean }>> {
   const sb = createServiceClient()
+  // Featured templates (§13.2.3 "Feature" toggle) sort first so they surface
+  // prominently in the quick-text picker.
   const { data } = await sb
     .from('crm_templates')
-    .select('key,name,body,category')
+    .select('key,name,body,category,featured')
     .eq('channel', 'sms')
+    .order('featured', { ascending: false })
     .order('name')
-  return (data ?? []) as Array<{ key: string; name: string; body: string; category: string | null }>
+  return ((data ?? []) as Array<{ key: string; name: string; body: string; category: string | null; featured: boolean | null }>).map(
+    (t) => ({ ...t, featured: t.featured === true }),
+  )
 }
 
 // A2P campaign status changes on a multi-day carrier-review cadence — a live
@@ -878,6 +886,7 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   const { getSendTarget } = await import('@/lib/data/crm/getSendTarget')
   const { isSuppressed } = await import('@/lib/crm/suppressions')
   const { renderCrmMerge, attributeSiteLinks } = await import('@/lib/crm/merge')
+  const { buildMergeContext } = await import('@/lib/crm/merge-context')
   const { sendSms, sendSmsViaMessagingService, brokerTwilioNumber } = await import('@/lib/crm/twilio')
 
   let sentCount = 0
@@ -905,7 +914,8 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
         members.push({ rid, phone: t.phone })
       }
       if (!blocked && members.length >= 2) {
-        const mergedBody = attributeSiteLinks(renderCrmMerge(body, primaryTarget.person), slug, primaryTarget.person.fub_legacy_id as number | null)
+        const groupCtx = await buildMergeContext({ person: primaryTarget.person, senderSlug: slug })
+        const mergedBody = attributeSiteLinks(renderCrmMerge(body, primaryTarget.person, groupCtx), slug, primaryTarget.person.fub_legacy_id as number | null)
         const { sendGroupMms } = await import('@/lib/crm/twilio-conversations')
         const group = await sendGroupMms({
           proxy,
@@ -943,7 +953,8 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
     const person = target.person
     const to = target.phone
     const slug = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
-    const mergedBody = attributeSiteLinks(renderCrmMerge(body, person), slug, person.fub_legacy_id as number | null)
+    const smsCtx = await buildMergeContext({ person, senderSlug: slug })
+    const mergedBody = attributeSiteLinks(renderCrmMerge(body, person, smsCtx), slug, person.fub_legacy_id as number | null)
     // Send from the broker's OWN Twilio business line, else the A2P service.
     const fromNumber = await brokerTwilioNumber(slug)
     const sent = fromNumber
@@ -1637,17 +1648,19 @@ export async function getNextRecommendation(personId: number): Promise<CrmNextRe
   if (!step) return null
   const { data: person } = await sb
     .from('crm_people')
-    .select('first_name,name,custom')
+    .select('first_name,last_name,name,stage,source,lender_name,emails,phones,addresses,assigned_broker,custom')
     .eq('id', personId)
     .maybeSingle()
   const { renderCrmMerge, findUnresolvedMergeTokens, referencesCmaLink } = await import('@/lib/crm/merge')
-  const p = (person ?? {}) as { first_name?: string | null; name?: string | null; custom?: Record<string, unknown> }
+  const { buildMergeContext } = await import('@/lib/crm/merge-context')
+  const p = (person ?? {}) as { first_name?: string | null; name?: string | null; assigned_broker?: string | null; custom?: Record<string, unknown> }
+  const mergeCtx = await buildMergeContext({ person: p, senderSlug: p.assigned_broker ?? null })
   const channel = String(step.channel ?? 'step')
   const isMessage = channel === 'email' || channel === 'sms'
   const resolved = await resolveStepContent(sb, step)
   const rawBody = resolved.body || String(step.taskName ?? '')
-  const bodyPreview = renderCrmMerge(rawBody, p)
-  const subjectPreview = resolved.subject ? renderCrmMerge(resolved.subject, p) : null
+  const bodyPreview = renderCrmMerge(rawBody, p, mergeCtx)
+  const subjectPreview = resolved.subject ? renderCrmMerge(resolved.subject, p, mergeCtx) : null
   const holdReason =
     referencesCmaLink(rawBody) && !((p.custom ?? {}) as Record<string, unknown>).cmaLink
       ? 'Holds until the CMA is built (the link is stamped at finalize)'
@@ -1690,17 +1703,19 @@ export async function getBrokerActionQueue(): Promise<BrokerActionItem[]> {
   const sb = createServiceClient()
   let q = sb
     .from('crm_sequence_enrollments')
-    .select('id,person_id,step_index,crm_people!inner(name,first_name,custom,assigned_broker,emails),crm_sequences!inner(name,steps)')
+    .select('id,person_id,step_index,crm_people!inner(name,first_name,last_name,stage,source,lender_name,custom,assigned_broker,emails,phones,addresses),crm_sequences!inner(name,steps)')
     .eq('status', 'awaiting_broker_next')
     .order('updated_at', { ascending: true })
     .limit(100)
   if (access.brokerSlug) q = q.eq('crm_people.assigned_broker', access.brokerSlug)
   const { data } = await q
   const { renderCrmMerge, referencesCmaLink, findUnresolvedMergeTokens } = await import('@/lib/crm/merge')
+  const { buildMergeContext } = await import('@/lib/crm/merge-context')
   const out: BrokerActionItem[] = []
   for (const r of data ?? []) {
     const person = r.crm_people as unknown as {
-      name?: string | null; first_name?: string | null; custom?: Record<string, unknown>
+      name?: string | null; first_name?: string | null; assigned_broker?: string | null
+      custom?: Record<string, unknown>
       emails?: Array<{ value?: string }> | null
     }
     const seq = r.crm_sequences as unknown as { name: string; steps: Array<Record<string, unknown>> }
@@ -1711,8 +1726,9 @@ export async function getBrokerActionQueue(): Promise<BrokerActionItem[]> {
     // Resolve templateKey so the preview + every guard match what the engine sends.
     const resolved = await resolveStepContent(sb, step)
     const rawBody = resolved.body || String(step.taskName ?? '')
-    const preview = renderCrmMerge(rawBody, person)
-    const subjectPreview = resolved.subject ? renderCrmMerge(resolved.subject, person) : null
+    const mergeCtx = await buildMergeContext({ person, senderSlug: person.assigned_broker ?? null })
+    const preview = renderCrmMerge(rawBody, person, mergeCtx)
+    const subjectPreview = resolved.subject ? renderCrmMerge(resolved.subject, person, mergeCtx) : null
     const cmaPending = referencesCmaLink(rawBody) && !((person.custom ?? {}) as Record<string, unknown>).cmaLink
     // email has NO contact-points fallback in the engine, so empty emails[] is a
     // guaranteed non-delivery — surface it rather than show a Send that no-ops.

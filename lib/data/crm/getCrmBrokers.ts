@@ -28,6 +28,11 @@ export type CrmBroker = {
   name: string
   /** Sign-in / routing email. May be null on an incomplete broker row. */
   email: string | null
+  /** Profile phone (brokers.phone) — merge fields fall back to this when the
+   *  broker has no CRM Twilio line. */
+  phone: string | null
+  /** Profile title (brokers.title) — %agent_title% merge field. */
+  title: string | null
   /** Is this broker active inside the CRM (pickers, assignment, lists). */
   crmActive: boolean
   /** May this broker receive round-robin lead routing. */
@@ -38,6 +43,8 @@ type RawBrokerRow = {
   crm_slug: string | null
   display_name: string | null
   email: string | null
+  phone?: string | null
+  title?: string | null
   crm_active: boolean | null
   routing_eligible: boolean | null
 }
@@ -53,6 +60,8 @@ export function mapCrmBrokerRow(r: RawBrokerRow): CrmBroker | null {
     slug,
     name: (r.display_name ?? '').trim(),
     email: r.email ?? null,
+    phone: r.phone ?? null,
+    title: (r.title ?? '').trim() || null,
     crmActive: r.crm_active ?? false,
     routingEligible: r.routing_eligible ?? false,
   }
@@ -78,7 +87,7 @@ export const getCrmBrokers = unstable_cache(
     if (!sb) return []
     const { data, error } = await sb
       .from('brokers')
-      .select('crm_slug,display_name,email,crm_active,routing_eligible')
+      .select('crm_slug,display_name,email,phone,title,crm_active,routing_eligible')
       .not('crm_slug', 'is', null)
       .order('sort_order', { ascending: true })
       .order('crm_slug', { ascending: true })
@@ -88,7 +97,7 @@ export const getCrmBrokers = unstable_cache(
     }
     return mapCrmBrokerRows(data as RawBrokerRow[])
   },
-  ['crm-brokers-v1'],
+  ['crm-brokers-v2'],
   { revalidate: 300, tags: ['crm-brokers'] },
 )
 

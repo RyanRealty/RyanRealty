@@ -226,18 +226,20 @@ export async function renderFirstTouchPreview(
   const sb = createServiceClient()
   const [{ data: seq }, { data: person }] = await Promise.all([
     sb.from('crm_sequences').select('steps').eq('id', sequenceId).maybeSingle(),
-    sb.from('crm_people').select('first_name,name,custom').eq('id', personId).maybeSingle(),
+    sb.from('crm_people').select('first_name,last_name,name,stage,source,lender_name,emails,phones,addresses,assigned_broker,custom').eq('id', personId).maybeSingle(),
   ])
   const step = (seq?.steps as Array<{ channel?: string; body?: string }> | null)?.[0]
   if (!step?.channel || !['sms', 'email'].includes(step.channel) || !step.body || !person) return null
   const { renderCrmMerge } = await import('@/lib/crm/merge')
+  const { buildMergeContext } = await import('@/lib/crm/merge-context')
   // CMA may not be built yet at enroll time — swap the token for a readable
   // placeholder BEFORE merge (merge renders an empty string when no link yet).
   const hasCma = Boolean((person.custom as Record<string, unknown> | null)?.cmaLink)
   const raw = hasCma
     ? step.body
     : step.body.replace(/%cma_link%|\{\{cma_link\}\}/g, '[CMA link attaches when built]')
-  const body = renderCrmMerge(raw, person).replace(/ {2,}/g, ' ').trim()
+  const mergeCtx = await buildMergeContext({ person, senderSlug: person.assigned_broker ?? null })
+  const body = renderCrmMerge(raw, person, mergeCtx).replace(/ {2,}/g, ' ').trim()
   return { channel: step.channel, body }
 }
 

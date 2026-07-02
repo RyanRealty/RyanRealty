@@ -22,10 +22,14 @@ export type CrmTemplateInput = {
   channel: string
   name: string
   subject?: string | null
+  /** Email-only inbox preview text (§13.1.3). */
+  previewText?: string | null
   body: string
   category?: string | null
   /** When true, all brokers can see and use this template. */
   isShared?: boolean
+  /** Text-only "Feature" flag (§13.2.3) — prominent in the quick-text picker. */
+  featured?: boolean
   /** Broker slug (matt|rebecca|paul) who owns/created this template. */
   ownerBroker?: string | null
 }
@@ -34,9 +38,11 @@ export type ValidatedTemplateRow = {
   channel: 'email' | 'sms'
   name: string
   subject: string | null
+  previewText: string | null
   body: string
   category: string | null
   isShared: boolean
+  featured: boolean
   ownerBroker: string | null
 }
 
@@ -77,20 +83,30 @@ export function validateTemplateInput(input: CrmTemplateInput): TemplateValidati
   if (!body) return { ok: false, error: 'Template body is required' }
 
   let subject: string | null = null
+  let previewText: string | null = null
   if (channel === 'email') {
     subject = (input.subject ?? '').trim()
     if (!subject) return { ok: false, error: 'An email template needs a subject line' }
+    previewText = (input.previewText ?? '').trim() || null
   } else {
-    // SMS has no subject line; ignore any supplied value.
+    // SMS has no subject line or preview text; ignore any supplied values.
     subject = null
+    previewText = null
   }
 
-  const voice = checkTemplateVoice({ subject, body })
+  // Preview text is recipient-visible copy — it runs the voice gate with the
+  // subject so a banned word can never persist in any rendered surface.
+  const voice = checkTemplateVoice({
+    subject: [subject, previewText].filter(Boolean).join(' ') || subject,
+    body,
+  })
   if (!voice.ok) return { ok: false, error: voice.error }
 
   const category = (input.category ?? '').trim() || null
   const isShared = input.isShared === true
+  // Feature is a text-template concept (§13.2.3) — ignored for email.
+  const featured = channel === 'sms' && input.featured === true
   const ownerBroker = (input.ownerBroker ?? '').trim() || null
 
-  return { ok: true, row: { channel, name, subject, body, category, isShared, ownerBroker } }
+  return { ok: true, row: { channel, name, subject, previewText, body, category, isShared, featured, ownerBroker } }
 }
