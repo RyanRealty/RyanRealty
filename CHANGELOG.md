@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.716.11 (2026-07-02)
+
+### Bug Fixes
+- fix(crm): group SMS — true native group MMS + inbound group recording
+
+---
+
+
 ## v1.716.10 (2026-07-02)
 
 ### Maintenance
