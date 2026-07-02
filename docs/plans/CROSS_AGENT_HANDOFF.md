@@ -2,6 +2,15 @@
 
 # CROSS-AGENT HANDOFF — CRM GROUND-UP REBUILD, screen-by-screen under ci:crm-screen-parity (2026-07-01)
 
+## 🏁 PRODUCTION SIGN-OFF LANDED (2026-07-02, commit 3bb76d69) — CRM verified PRODUCTION READY
+Final independent verification pass: [`CRM_PRODUCTION_SIGNOFF_2026-07-02.md`](CRM_PRODUCTION_SIGNOFF_2026-07-02.md).
+Fresh evidence for everything (parity 18/18 · gates exit 0 · vitest 2431 · tsc clean · Vercel
+READY on HEAD · live-prod smoke 18/18 surfaces both form factors · compliance code-read ·
+3 SQL-reconciled reporting numbers · zero test artifacts). **The formerly-open items are ALL
+resolved: Matt chose GEIST for CRM headers (desktop P2-9 closed by decision) · API credits
+topped up + AI drafting verified live on prod · CRM_LEAD_BACKEND is already 'native' in prod
+(no env override — the "Matt owns the flip" line below is STALE). Awaiting-Matt list: empty.**
+
 ## FINDINGS-CLOSURE SLICE LANDED (2026-07-02) — both audit ledgers drained, zero open P0/P1
 Every open finding in `CRM_AUDIT_2026-07-02.md` (desktop) + `CRM_AUDIT_MOBILE_2026-07-02.md`
 closed, EXCEPT desktop P2-9 (CRM headers Geist vs Amboqia — Matt's brand call, flagged) and the
