@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.710.0 (2026-07-02)
+
+### Features
+- feat(crm): reporting-desktop screen done + proven under ci:crm-screen-parity (§11)
+
+---
+
+
 ## v1.709.1 (2026-07-02)
 
 ### Maintenance
