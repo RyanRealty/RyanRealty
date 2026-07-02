@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.709.1 (2026-07-02)
+
+### Maintenance
+- docs(crm): tasks-calendar-desktop shipped (1c447866) — mission PROGRESS + handoff top block
+
+---
+
+
 ## v1.709.0 (2026-07-02)
 
 ### Features
