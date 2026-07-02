@@ -12,6 +12,13 @@ Method: 8-subsystem parallel audit (workflow `twilio-cutover-audit`) + live Twil
 
 ## Live-verified ground truth (pulled this session, supersedes stale doc claims)
 
+> **CORRECTION 2026-07-02 (supersedes two rows below):** Matt's line is now the ported
+> primary **+1 541 703 3095** (`brokers.matthew-ryan.twilio_number`, migration
+> `20260702090000_broker_primary_number_fix`) — +1 541 224 5025 is the retained
+> legacy/spare line (`MARKETING_NUMBER`, do not release). And Paul's number below is a
+> TYPO: the account owns **+1 541 502 3436** (501 was never owned). See the TELEPHONY
+> entry in CRM_BUILD_MISSION.md PROGRESS.
+
 | Fact | Status | Evidence |
 |---|---|---|
 | Twilio account | **Full / active** (not trial) | `GET /Accounts/{sid}` → type=Full |
