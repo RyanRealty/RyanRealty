@@ -329,6 +329,51 @@ and show me the screenshot.
 ## PROGRESS (agents append here as slices ship)
 
 ### GROUND-UP REBUILD under ci:crm-screen-parity (started 2026-07-01, screen-by-screen)
+- **inbox-desktop** ✅ DONE + PROVEN (commit: §08 three-panel rebuild). Registry flipped to done with
+  11 requiredComponents + committed `_verify/screen-inbox-desktop.png` (1440x900, dev server, authed,
+  real crm_* data, page-emitted console clean). REBUILT `/admin/crm/inbox` to the §08 FUB structure:
+  InboxFolderRail (§3: Compose w/ contact-search popover, "N Unread Messages" header, My Inbox +
+  Company × Inbox/Assigned/Drafts/Sent/Closed w/ live badges, left-border active state),
+  InboxThreadList (§4: All/Unread toggle, Emails/Texts/Calls Filter dropdown w/ Filter(N) badge,
+  Select bulk mode → read/unread/close/reopen/assign, unread-dot/avatar/preview/relative-ts/
+  call-duration rows, per-folder empty states incl. the §4.3 Assigned onboarding card),
+  ThreadHeader (§5.1/§8: Me/Company assignee dropdown, mutually exclusive Close destructive /
+  Reopen outline, AC-07 auto-read on open — verified live, header count decremented),
+  InboxThreadView (§5.2–5.6: full sanitized HTML emails inline via lib/sanitize, SMS bubbles,
+  voicemail timeline w/ MM:SS + download + inline play, note cards, "No communication yet"),
+  InlineReply (§7: Reply/Reply All/Forward expand inline — no modal, signature pre-insert,
+  quick-tag row w/ exact FUB labels + Custom → addCrmTagAction, Send ▾ Send-and-Close on BOTH
+  composers, Discard, AC-21 A2P gate replaces the SMS composer unless VERIFIED),
+  NoteTray (§10: persistent, exact placeholder, Create Note, [N] shortcut, @mention picker +
+  Resend email notification to the mentioned broker), ContactSidebar (§6: Last Communication,
+  DETAILS Stage/Agent/Lender/Source/Price/Timeframe, clickable phone/email, tags, Recent
+  Conversations, Activity, localStorage collapse — AC-32), AddPersonForm (§9: + NEW "or update an
+  existing person" search → linkUnknownCallerToPersonAction merge; verified on a live Call-lead
+  thread). DAL: scope×folder model in getInboxQueue.ts (matchesFolder, getInboxFolderQueue,
+  channels/outboundBrokers/explicitAssignee/isUnknown derivations) + NEW lib/data/crm/
+  getInboxThread.ts (full-body thread + contact card). Sends untouched — all through the
+  suppression/quiet-hours-gated actions. Gates + 2341 tests green.
+  DECISIONS (this slice): query-param routing (?scope=me|company&folder=…&view=unread&c=) instead
+  of the spec's path segments — single-page routing, legacy ?scope=mine|… params map forward ·
+  My Inbox = contacts assigned to the ACTING broker even for the superuser (FUB per-user
+  semantics; old "Mine=all for superuser" retired); Company = whole scoped set; unknown callers
+  excluded from Me per §3.2; Sent/Drafts key on message/draft OWNERSHIP not contact assignment ·
+  'handled' stays in the backend 4-state model, header exposes only Close/Reopen per spec ·
+  Reply All/Forward expand the same single-recipient compose (Re:/Fwd: prefill) — multi-recipient
+  send DEFERRED (backend sends to the contact only) · Compose = search-a-contact → open thread w/
+  composer expanded (no standalone new-message modal) · @mention email = internal Resend send,
+  allowlisted (email-quality NON_SENDER + email-send-gated kind=internal) · legacy getInboxQueue()
+  reader + ThreadStatusControl deleted (unused after rebuild) · Drafts empty-state copy now
+  drafts-specific (closes the delivery-#5 follow-up) · dal-actions-reads re-baselined +2 (merge
+  guard reads) · inbox page ignore-listed in design-tokens (viewport-bounded pane, documented class).
+  DEFERRED (explicit): presence indicator AC-25 (needs crm_conversation_viewers + polling) ·
+  desktop notifications + 5s throttle AC-26 · Team Inbox Manage §14/AC-31 (no multi-team-inbox
+  model — single Company inbox) · voicemail transcription + access control AC-27 (no transcription
+  data) · carrier-filter 30007 badge AC-24 (no per-message delivery status in crm_timeline) ·
+  scheduled send + attachments in inbox compose §7.4 · Smart Messages AI §7.7 · TCPA
+  consent-window warning §15.5 · AC-28 recording-delete 403 (no delete endpoint exists at all) ·
+  inbox-mobile stays todo (§26 owns the 390px rebuild; mobile tabs updated to the five-folder
+  model, existing flows preserved).
 - **contacts-list-desktop** ✅ DONE + PROVEN (commit 8c4c15af). Registry flipped to done with 8
   requiredComponents + committed `_verify/screen-contacts-list.png` (1440x900, dev server, authed,
   real crm_* data, zero console errors). REBUILT `/admin/crm` desktop to the §05 three-region

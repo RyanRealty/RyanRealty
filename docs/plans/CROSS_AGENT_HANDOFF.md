@@ -11,6 +11,16 @@ full DoD, gated by `ci:crm-screen-parity` (scripts/check-crm-screen-parity.mjs �
 gap-fills. Standing commit+push authorization is in the mission doc.
 
 ## Shipped
+- **inbox-desktop = done + proven** (2026-07-01): §08 FUB three-panel rebuild of
+  `/admin/crm/inbox` (InboxFolderRail / InboxThreadList / ThreadHeader / InboxThreadView /
+  InlineReply / NoteTray / ContactSidebar / AddPersonForm in `components/admin/crm/inbox/`),
+  scope×folder DAL (`getInboxFolderQueue` + new `lib/data/crm/getInboxThread.ts`), unknown-caller
+  link-to-existing merge action in `app/actions/crm-person-gaps.ts`. Decisions + deferrals in the
+  mission PROGRESS block. Verified live in dev (three panels, auto-read decrement, inline compose,
+  quick tags, unknown-caller Add Person on a real Call-lead thread, Drafts/Sent/Assigned states,
+  mobile branch intact). NOTE: the preview tab's console buffer accumulates errors from OTHER
+  pages (PeopleListView HMR + reporting Tooltip) — the inbox page itself emits none (Playwright
+  fresh-context capture clean).
 - **contacts-list-desktop = done + proven** (commit `8c4c15af`): §05 three-region rebuild of
   `/admin/crm` (PeopleSidebar / PeopleListView + Scope/Filter/Chooser/AddPerson/Export in
   `components/admin/crm/people-list/`), 6 new bulk kinds + bulk merge, export route ids/all/view
@@ -40,11 +50,12 @@ gap-fills. Standing commit+push authorization is in the mission doc.
    (pre-push runs a full prod build, takes ~5 min — use a background shell).
 
 ## NEXT (screen-by-screen, registry order)
-1. **inbox-desktop** (§08, `app/admin/(protected)/crm/inbox/page.tsx`) — read the whole §08 spec,
-   compare the existing (prod-verified) inbox against it, close structural diffs, capture
-   `_verify/screen-inbox-desktop.png` at 1440x900 via the harness below, fill requiredComponents,
-   flip the registry to done, full gates + tests, commit + push.
-2. deals-desktop (§10) · automations-desktop (§12) · templates-desktop (§13)
+1. **deals-desktop** (§10, `app/admin/(protected)/crm/deals/page.tsx`) — read the whole §10 spec,
+   compare the existing (prod-verified) pipeline board against it, close structural diffs (toolbar
+   filters, Manage Pipelines, deal-detail modal were deferred in the earlier slice), capture
+   `_verify/screen-deals.png` at 1440x900, fill requiredComponents, flip to done, gates + tests,
+   commit + push.
+2. automations-desktop (§12) · templates-desktop (§13)
    · company-settings-desktop (§15.8) · tasks-calendar-desktop (§09) · reporting-desktop (§11) —
    these were built + prod-verified in the previous push, so mostly: compare vs spec, close diffs,
    capture proof, flip done.
