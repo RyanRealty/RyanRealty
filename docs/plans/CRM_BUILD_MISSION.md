@@ -557,12 +557,34 @@ deleted. All four pages verified on prod (names/phones/emails/Spouse chips).
    Scott←Susan Reese · Jessica King←Evan Karp · Jim←Debra Creekmore · Paul←Samuel Robinson ·
    Kelly Plunkett←Devin Pohl · Nick←Becky Crawley (+ Elsa Uchikawa←self, true dupe, no action).
    Each is splittable on request with the same discipline (phones/emails per FUB feed evidence).
-2. photo@eugenemagazine.com left on Steve #5694 — ownership (Steve vs Lanny) unconfirmed.
-3. +15039709123 texted twice into the Hoffman history — unknown third number, left on Maria.
-4. Maria's record carries the westside parcel data (20223 Star Ridge Ct + equity/tenure tags)
-   stamped by the import — correct only if the Hoffmans really own that parcel (deed name
-   "Kevin Hoffman" may be Chris's legal first name, or a different Kevin whose skip-trace
-   pulled Maria's contact info). Matt to confirm; tags/custom fields can be stripped if wrong.
+2. ~~photo@eugenemagazine.com~~ **RESOLVED (Matt, same day): it is LANNY's — moved to #9253**
+   (contact point + jsonb, Change Logs both sides).
+3. ~~+15039709123~~ **RESOLVED-AS-UNKNOWN (Matt, same day): identity unconfirmed — left
+   unattached, annotated with a system note on Maria's timeline so it reads as unconfirmed.**
+4. ~~Maria's westside parcel data~~ **RESOLVED (Matt, same day): the Hoffmans do NOT own 20223
+   Star Ridge Ct — stripped from #13014: parcel address, ALL custom property fields, the
+   parcel-derived tags (westside/neighborhood/equity/tenure/seller-score/geo/lifecycle —
+   kept only Buyer/audience:buyer/ExcludeFromReEngagement/contact-facts), and the
+   westside broker-brief Background text. Change-Logged.** FUB person 21801 still carries the
+   stale data — FUB is a decommissioned read-only reference, left as-is.
+
+**OPEN DATA-QUALITY ITEM — westside skip-trace mismatches (recommendation only, NOT executed):**
+The Star Ridge case proves the westside pipeline's skip-trace can attach the WRONG household's
+phone/email to a parcel owner — meaning some of the **2,880 update-matched pre-existing
+contacts** may carry another household's parcel data (address, valuation, equity/tenure tags,
+seller scores) exactly as Maria did. Recommended verification approach, in confidence order:
+(a) **Prioritize the ~1,629 engaged-source contacts** (Sphere/Sign Call/FSBO/Referral etc.) —
+    these are real relationships where wrong parcel data does damage; the rest are cold farm rows.
+(b) **Detect signal 1 — geography conflict:** contact's pre-import mailing address / phone area
+    code / prior tags (geo:out-of-state, city:≠bend) conflicting with the stamped Bend westside
+    parcel (the Hoffmans: 619 San-Diego phones + buyer-of-second-home history vs "owner-occupied
+    25yr Boyd Acres"). SQL-computable from current data.
+(c) **Detect signal 2 — name conflict:** the parcel push kept First/Last from the deed; contacts
+    whose pre-import identity survives elsewhere (email local-part, note/email salutations, FUB
+    relationship names) can be diffed the way this session's cases were.
+(d) **Verify hits against Deschutes DIAL** (authoritative owner-of-record per the GIS rule) before
+    stripping — a name+geography hit list first goes to Matt as a spreadsheet, nothing bulk-stripped
+    without his review. Estimated blast radius if run: low-hundreds of flags out of 2,880.
 
 ### YAHSON SPLIT + FUB GROUP-TEXT BACKFILL ✅ (2026-07-02) — "yahson is 909" executed; all FUB-era group texts merged to the right people
 Follow-on to the group-SMS slice below, per Matt's confirmations ("yahson is 909"; "merge all of
