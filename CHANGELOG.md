@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.705.0 (2026-07-02)
+
+### Features
+- feat(crm): deals-desktop §10 rebuild — full Kanban parity under ci:crm-screen-parity
+
+---
+
+
 ## v1.704.0 (2026-07-02)
 
 ### Features
