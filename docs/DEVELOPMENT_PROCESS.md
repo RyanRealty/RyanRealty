@@ -112,6 +112,7 @@ Everything in `docs/plans/` is registered here. A new file in that directory wit
 | `CRM_AUDIT_MOBILE_2026-07-02.md` | **live** — MOBILE adversarial CRM audit ledger (390x844, post-punch-list); P0/P1 fixed in-slice except P1-6 signature wire-up (record) |
 | `CRM_PRODUCTION_SIGNOFF_2026-07-02.md` | executed — independent CRM production sign-off verification pass (record) |
 | `WESTSIDE_DATA_SWEEP_2026-07-02.md` | executed — westside-import data-quality sweep (995 flags, 114 Hoffman-pattern, DIAL-verified) (record) |
+| `WESTSIDE_PARCEL_STRIP_2026-07-02.md` | executed — westside wrong-household parcel strip (67 stripped, 8 skipped, full backup + one-command restore) (record) |
 | `CRM_FUB_MOBILE_UI_AUDIT_2026-06-29.md` | research record — FUB mobile UI parity audit (archive) |
 | `CRM_MUTATION_AUDIT_2026-06-29.md` | research record — CRM mutation coverage audit 2026-06-29 (archive) |
 | `FUB_CUTOVER_READINESS_2026-06-29.md` | research record — FUB cutover readiness gate assessment (archive) |

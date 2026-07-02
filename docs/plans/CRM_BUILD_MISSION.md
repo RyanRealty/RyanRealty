@@ -514,6 +514,40 @@ re-runs the E2E checks and states the sign-off inventory to Matt.
 
 ## PROGRESS (agents append here as slices ship)
 
+### WESTSIDE WRONG-HOUSEHOLD PARCEL DATA STRIPPED ✅ (2026-07-02)
+Matt-approved "Clean up the wrong household." Surgical removal of the county-import-stamped
+parcel data from the **67** high-confidence wrong-household contacts the 2026-07-02 sweep flagged
+(`out/westside-mismatch-flags.csv` rows: `confidence=='high'` AND `dial_verdict` contains
+'Hoffman pattern' — the Star Ridge / Maria Hoffman #13014 signature: DIAL confirms the stamped deed
+name but the contact's own pre-import email/phone identity names a different person). Target count
+**75**, in the expected 70–80 window; **8 skipped for manual review** (left fully intact): 8036
+Marx Wein + 8161 Sian Heyworth (expired-listing MLS/listing custom + Expired tags = Matt's expired
+pipeline gold), 11727 Jonathan Gemme (intent:expired-listing), 2401 Patrick Acton + 6729 Thomas
+Howard (Real Estate Agent / broker-recruit), 5173 Peter Mccaffrey + 12362 David Moore (realtor
+brokerage+license), 12099 Diana Robinson (split_agent_overlap=YES, may be mid couple-split).
+**Removed county-stamped only:** parcel tags (import:westside-2026-05, source:county-assessor,
+owner:/equity:/tenure:/seller-score:/neighborhood:/subdivision:/geo:/lifecycle: + legacy stamps),
+28 county custom keys (customSellerPropertyAddress/APN/YearBuilt/…), both stamped address shapes
+(blank-type row == customSellerPropertyAddress + every type:"Property" Zillow-enrich row → 68
+removed, **24 real out-of-state identity addresses KEPT**), and the stamped homeowner-brief
+background (all 67 were the template; **0** non-template/Matt-written backgrounds — had any been
+non-template it would have been KEPT + flagged). **Preserved:** phones/emails (contact points +
+mirror, never touched), stage, relationships, all real tags. **Maximum reversibility:** full
+pre-strip backup of all 75 → `out/westside-strip-backup.json` (gitignored, PII) written BEFORE any
+mutation; one-command undo `node scripts/_westside-parcel-restore.mjs --apply [--ids <id>]`
+(byte-for-byte, idempotent, writes RESTORED audit row); per-contact Change Log `kind='system'` row
+listing every removed field + backup pointer. **SMOKE (9828 Allyson Crowe):** stripped live →
+CRM page confirmed WESTSIDE HOMEOWNER bg / Seller Property Address / Year Built / Market Value / APN
+gone, real Santa Barbara CA address + phone + email + Seller Prospect stage remain, Change Log row
+at top of timeline → restored from backup, verified byte-identical → re-stripped in batch.
+**Batch verify:** 0 residual county tags/custom/addresses/backgrounds across the 67, 0 lost all
+contact points, all have a stage, all 67 have a removal audit row; idempotent (2nd run 0 stripped /
+67 no-op); 8 skips intact vs backup; f99a45df custom-field display fix un-regressed (non-target
+18187 still shows its legit enrichment fields). Scripts: `_westside-strip-rules.mjs` (shared pure
+rules) + `_westside-parcel-backup.mjs` + `_westside-parcel-strip.mjs` + `_westside-parcel-restore.mjs`.
+Report: `docs/plans/WESTSIDE_PARCEL_STRIP_2026-07-02.md`. Net-zero on any test contact. Verified
+URLs: /admin/console/leads/{9828,3989,434,12604,283}.
+
 ### LEAD-DATA DISPLAY REGRESSION FIXED — custom fields were invisible ✅ (2026-07-02)
 Matt: his valuable lead data (expired-listing info, homeowner property/tenure detail, mailing/
 property address, notes) "seems gone" — he saw "just names." **DATA WAS 100% INTACT** (SQL-verified:
