@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.714.0 (2026-07-02)
+
+### Features
+- feat(crm-mobile): M8+M9 — mobile-dashboard (mob-44) + mobile-settings (mob-06), registry 18/18 done
+
+---
+
+
 ## v1.713.1 (2026-07-02)
 
 ### Maintenance
