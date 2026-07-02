@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.717.4 (2026-07-02)
+
+### Maintenance
+- docs(crm): partner on the three flagged split pairs — Matt's call executed + live-verified
+
+---
+
+
 ## v1.717.3 (2026-07-02)
 
 ### Maintenance
