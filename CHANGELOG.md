@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.702.0 (2026-07-02)
+
+### Features
+- feat(crm): person-detail-desktop rebuilt to §07 three-column FUB parity (screen gate: done+proven)
+
+---
+
+
 ## v1.701.1 (2026-07-01)
 
 ### Maintenance
