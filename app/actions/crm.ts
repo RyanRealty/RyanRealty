@@ -809,43 +809,9 @@ export async function listCrmConversations(perDirection = 80, brokerSlug?: strin
   })
 }
 
-export type CrmDealRow = {
-  id: number
-  name: string | null
-  pipeline: string | null
-  stage: string | null
-  value: number | null
-  entered_stage_at: string | null
-  /** Gross commission — a stored dollar amount, NOT computed from price (spec §8). */
-  commission_dollars: number | null
-  /** Projected/actual close date — drives the card's date row (spec §8 Row 3). */
-  close_date: string | null
-  property_address: string | null
-  /** Deal's own assigned broker slug (matt/rebecca/paul) — the agent avatar on the card. */
-  assigned_broker: string | null
-  person_id: number | null
-  person: { name: string | null } | null
-}
-
-export async function listCrmDeals(brokerSlug?: string | null): Promise<CrmDealRow[]> {
-  const sb = createServiceClient()
-  // GAP-7: crm_deals has NO assigned_broker column, so scope through the embedded
-  // crm_people.assigned_broker. The embed must be inner so .eq() filters rows.
-  // Deals whose person_id is null are pre-link rows — an inner embed drops them
-  // when scoped, which is correct (a restricted broker can't own an unlinked deal).
-  const embed = brokerSlug ? 'crm_people!inner(name,assigned_broker)' : 'crm_people(name,assigned_broker)'
-  let q = sb
-    .from('crm_deals')
-    .select(`id,name,pipeline,stage,value,entered_stage_at,commission_dollars,close_date,property_address,assigned_broker,person_id,${embed}`)
-    .order('pipeline')
-    .order('entered_stage_at', { ascending: false })
-  if (brokerSlug) q = q.eq('crm_people.assigned_broker', brokerSlug)
-  const { data } = await q
-  return (data ?? []).map((r) => ({
-    ...(r as unknown as Omit<CrmDealRow, 'person'>),
-    person: (r as unknown as { crm_people: { name: string | null } | null }).crm_people ?? null,
-  }))
-}
+// listCrmDeals retired 2026-07-01 (deals-desktop rebuild): the board now reads
+// through lib/data/crm/listDealsBoard.ts (DAL — scope + §13 status/agent filters
+// + the crm_deal_people junction for multi-contact cards).
 
 export async function getCrmEmailTemplates(): Promise<Array<{ key: string; name: string; subject: string | null; body: string; category: string | null }>> {
   const sb = createServiceClient()

@@ -337,3 +337,14 @@ components/admin/crm/people-list/ScopeDropdown.tsx
 # folder rail / thread list / reading pane scroll INDEPENDENTLY — no ladder
 # equivalent. Same exception class as the §05/§07 rebuild surfaces above.
 app/admin/(protected)/crm/inbox/page.tsx
+
+# §10 Deals Kanban rebuild (deals-desktop, ci:crm-screen-parity, 2026-07-01):
+# dense FUB-parity board — viewport-bounded column scroll (max-h-[calc(100vh-...)])
+# so each stage column scrolls independently per spec §2, plain <button>/<label>
+# click-to-edit teal links + color swatches + tab strip where <Button> padding
+# breaks the FUB layout, modal max-h-[85vh], micro chip type. Same exception
+# class as the §05/§07/§08 rebuild surfaces above.
+components/admin/crm/deals/DealsBoard.tsx
+components/admin/crm/deals/DealsSubBar.tsx
+components/admin/crm/deals/DealsDialogs.tsx
+components/admin/crm/deals/DealDetailModal.tsx

@@ -68,7 +68,13 @@ const REQUIRED_KIT_PAGES = [
   // Ops / home cluster
   'app/admin/(protected)/operations/page.tsx',
   'app/admin/(protected)/crm/new/page.tsx',
-  'app/admin/(protected)/crm/deals/page.tsx',
+  // app/admin/(protected)/crm/deals/page.tsx — REMOVED 2026-07-01: ground-up
+  // rebuilt to the §10 FUB Kanban (full-bleed pipeline sub-bar + stage-column
+  // board; docs/fub-crm-spec/10-deals-pipelines.md) per CRM_BUILD_MISSION
+  // ("the SPEC WINS"). Its design contract now lives in ci:crm-screen-parity
+  // (crm-screens.json "deals-desktop": DealsSubBar/DealsBoard/DealDetailModal +
+  // committed verify screenshot) — a STRICTER contract than the ConsoleSection
+  // floor, so this is a hand-off, not a regression (same as the §07 lead detail).
   'app/admin/(protected)/forms/page.tsx',
   'app/admin/(protected)/fub-attribution/page.tsx',
 ]

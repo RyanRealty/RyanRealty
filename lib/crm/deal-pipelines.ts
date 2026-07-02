@@ -74,6 +74,25 @@ export const DEAL_PIPELINES: readonly DealPipeline[] = [
 /** Pipeline labels in tab order — ['Buyers', 'Sellers']. */
 export const DEAL_PIPELINE_NAMES: readonly string[] = DEAL_PIPELINES.map((p) => p.name)
 
+/**
+ * The predefined stage accent palette for the §10 Add-Stage / Edit-Stage color
+ * picker — the FUB stage palette observed in the export, plus complements.
+ * Lives HERE (a .design-token-lint-ignore module) so no component carries hex
+ * literals; components consume these as data.
+ */
+export const STAGE_COLOR_PALETTE: readonly string[] = [
+  '#F3B942', // amber
+  '#ffad81', // salmon
+  '#819cff', // periwinkle
+  '#ffcc44', // gold
+  '#4ad09f', // green
+  '#ff8181', // coral
+  '#9c6bc0', // lavender
+  '#26a69a', // teal
+  '#5c6bc0', // indigo
+  '#7595e8', // sky
+]
+
 /** Resolve a pipeline config by its exact name (crm_deals.pipeline value). */
 export function getDealPipeline(name: string | null | undefined): DealPipeline | undefined {
   if (!name) return undefined

@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-07-02T00:01:23.613Z
+**Generated:** 2026-07-02T02:19:04.652Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -640,9 +640,9 @@ Companion files:
 
 **Exports:** `getCrmDeal`
 
-**Tables:** `crm_deals`, `crm_deal_splits`, `crm_deal_files`
+**Tables:** `crm_deals`, `crm_deal_people`, `crm_deal_splits`, `crm_deal_files`
 
-**Selected columns:** `id`, `name`, `pipeline`, `stage`, `status`, `value`, `entered_stage_at`, `person_id`, `listing_key`, `deal_id`, `broker_slug`, `split_pct`, `split_dollars`, `notes`, `created_at`, `storage_path`, `url`, `uploaded_by`
+**Selected columns:** `id`, `name`, `pipeline`, `stage`, `status`, `value`, `entered_stage_at`, `person_id`, `listing_key`, `role`, `person:crm_people(id`, `name)`, `deal_id`, `broker_slug`, `split_pct`, `split_dollars`, `notes`, `created_at`, `storage_path`, `url`, `uploaded_by`
 
 **Cache keys:** `crm-deal-detail`
 
@@ -808,13 +808,27 @@ Companion files:
 
 ---
 
+### `lib/data/crm/getDealPipelines.ts`
+
+**Exports:** `getDealPipelines`, `pipelineHasStage`
+
+**Tables:** `crm_pipelines`, `crm_deal_stages`
+
+**Selected columns:** `id`, `name`, `order_weight`, `pipeline_id`, `color`, `is_closed_stage`
+
+**Cache keys:** `crm-deal-pipelines`
+
+**Cache tags:** `'crm-deal-pipelines'`
+
+---
+
 ### `lib/data/crm/getDealScopeRow.ts`
 
 **Exports:** `getDealScopeRow`
 
 **Tables:** `crm_deals`
 
-**Selected columns:** `assigned_broker`, `stage`, `pipeline`, `person_id`, `name`, `crm_people(assigned_broker)`
+**Selected columns:** `assigned_broker`, `stage`, `pipeline`, `person_id`, `name`, `actual_close_date`, `crm_people(assigned_broker)`
 
 ---
 
@@ -864,11 +878,21 @@ Companion files:
 
 ### `lib/data/crm/getInboxQueue.ts`
 
-**Exports:** `CONVERSATION_STATUSES`, `isValidConversationStatus`, `isAssignableBroker`, `effectiveStatus`, `needsReply`, `matchesScope`, `deriveConversationFromMessages`, `getInboxQueue`, `getConversationThread`
+**Exports:** `CONVERSATION_STATUSES`, `isValidConversationStatus`, `isAssignableBroker`, `INBOX_FOLDERS`, `channelOfKind`, `effectiveStatus`, `needsReply`, `matchesScope`, `deriveConversationFromMessages`, `matchesFolder`, `getInboxFolderQueue`, `getConversationThread`
 
 **Tables:** `crm_timeline`, `crm_conversation_state`, `crm_people`
 
-**Selected columns:** `person_id`, `ts`, `kind`, `title`, `body`, `crm_people!inner(name`, `picture_url`, `assigned_broker`, `deleted)`, `status`, `last_inbound_at`, `last_outbound_at`, `id`, `name`, `deleted`
+**Selected columns:** `person_id`, `ts`, `kind`, `title`, `body`, `broker`, `payload`, `crm_people!inner(name`, `picture_url`, `assigned_broker`, `deleted)`, `status`, `last_inbound_at`, `last_outbound_at`, `id`, `name`, `deleted`
+
+---
+
+### `lib/data/crm/getInboxThread.ts`
+
+**Exports:** `getInboxContactCard`, `getConversationThreadFull`
+
+**Tables:** `crm_people`, `crm_timeline`
+
+**Selected columns:** `id`, `name`, `stage`, `assigned_broker`, `lender_name`, `source`, `price`, `timeframe`, `tags`, `emails`, `phones`, `picture_url`, `ts`, `kind`, `title`, `body`, `payload`, `broker`
 
 ---
 
@@ -959,6 +983,16 @@ Companion files:
 **Tables:** `listing_tile_mv`
 
 **Selected columns:** `listing_key`, `street_number`, `street_name`, `city`, `standard_status`, `photo_url`, `list_price`, `close_price`, `close_date`, `beds`, `baths`, `sqft`, `year_built`, `address_slug`
+
+---
+
+### `lib/data/crm/getPeopleListSignals.ts`
+
+**Exports:** `getPeopleListSignals`
+
+**Tables:** `visitor_sessions`, `crm_timeline`
+
+**Selected columns:** `crm_person_id`, `last_seen_at`, `person_id`, `kind`, `title`, `ts`
 
 ---
 
@@ -1169,6 +1203,16 @@ Companion files:
 **Tables:** `crm_people`, `guest_search_alerts`
 
 **Selected columns:** `assigned_broker`, `email`, `fub_person_id`
+
+---
+
+### `lib/data/crm/listDealsBoard.ts`
+
+**Exports:** `listDealsBoard`
+
+**Tables:** `crm_deals`
+
+**Selected columns:** `id`, `name`, `pipeline`, `stage`, `value`, `status`, `entered_stage_at`, `commission_dollars`, `close_date`, `actual_close_date`
 
 ---
 
@@ -1846,18 +1890,21 @@ Companion files:
 | `crm_bulk_jobs` | `normalizeBulkJobStatus()`, `computeProgress()`, `buildBulkJobView()`, `getCrmBulkJob()`, `getRecentCrmBulkJobs()` <br /> `lib/data/crm/getCrmBulkJob.ts` |
 | `crm_company_settings` | `DEFAULT_COMPANY_SETTINGS()`, `getCrmCompanySettings()` <br /> `lib/data/crm/getCrmCompanySettings.ts` |
 | `crm_contact_points` | `decideNativeLeadAction()`, `nativeLeadName()`, `ensureNativeLead()`, `cleanTags()`, `enrichNativeLead()`, `createNativeTask()`, `shouldCreatePerson()`, `inboundLeadName()`, `findOrCreatePersonByPhone()`, `CRM_SUPPRESSIONS_TAG()`, `COMPLIANCE_REASON_MARKERS()`, `isComplianceReason()`, `normalizeSuppressionChannel()`, `clampLimit()`, `clampOffset()`, `resolveSuppressionValue()`, `buildSuppressionRows()`, `getCrmSuppressions()`, `getDashboardRecentActivity()`, `getPersonIdsByEmail()`, `getPersonPrimaryEmail()`, `getSendTarget()`, `normalizeEmail()`, `normalizePhone()`, `dedupeContactPoints()`, `resolvePersonIdentity()` <br /> `lib/data/crm/ensureNativeLead.ts` · `lib/data/crm/findOrCreatePersonByPhone.ts` · `lib/data/crm/getCrmSuppressions.ts` · `lib/data/crm/getDashboardRecentActivity.ts` · `lib/data/crm/getPersonIdsByEmail.ts` · `lib/data/crm/getPersonPrimaryEmail.ts` · `lib/data/crm/getSendTarget.ts` · `lib/data/crm/resolvePersonIdentity.ts` |
-| `crm_conversation_state` | `CONVERSATION_STATUSES()`, `isValidConversationStatus()`, `isAssignableBroker()`, `effectiveStatus()`, `needsReply()`, `matchesScope()`, `deriveConversationFromMessages()`, `getInboxQueue()`, `getConversationThread()` <br /> `lib/data/crm/getInboxQueue.ts` |
+| `crm_conversation_state` | `CONVERSATION_STATUSES()`, `isValidConversationStatus()`, `isAssignableBroker()`, `INBOX_FOLDERS()`, `channelOfKind()`, `effectiveStatus()`, `needsReply()`, `matchesScope()`, `deriveConversationFromMessages()`, `matchesFolder()`, `getInboxFolderQueue()`, `getConversationThread()` <br /> `lib/data/crm/getInboxQueue.ts` |
 | `crm_deal_files` | `getCrmDeal()` <br /> `lib/data/crm/getCrmDeal.ts` |
+| `crm_deal_people` | `getCrmDeal()` <br /> `lib/data/crm/getCrmDeal.ts` |
 | `crm_deal_splits` | `getCrmDeal()` <br /> `lib/data/crm/getCrmDeal.ts` |
-| `crm_deals` | `getAgentGoalsReport()`, `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `getCrmDeal()`, `getDealScopeRow()`, `TIMELINE_TAB_KINDS()`, `getPersonDetailExtras()` <br /> `lib/data/crm/getAgentGoalsReport.ts` · `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getCrmDeal.ts` · `lib/data/crm/getDealScopeRow.ts` · `lib/data/crm/getPersonDetailExtras.ts` |
+| `crm_deal_stages` | `getDealPipelines()`, `pipelineHasStage()` <br /> `lib/data/crm/getDealPipelines.ts` |
+| `crm_deals` | `getAgentGoalsReport()`, `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `getCrmDeal()`, `getDealScopeRow()`, `TIMELINE_TAB_KINDS()`, `getPersonDetailExtras()`, `listDealsBoard()` <br /> `lib/data/crm/getAgentGoalsReport.ts` · `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getCrmDeal.ts` · `lib/data/crm/getDealScopeRow.ts` · `lib/data/crm/getPersonDetailExtras.ts` · `lib/data/crm/listDealsBoard.ts` |
 | `crm_field_definitions` | `CRM_FIELD_TYPES()`, `CRM_FIELD_DEFINITIONS_TAG()`, `normalizeFieldType()`, `normalizeFieldOptions()`, `mapFieldDefinitionRow()`, `getCrmFieldValue()`, `getCrmFieldDefinitions()` <br /> `lib/data/crm/getCrmFieldDefinitions.ts` |
 | `crm_group_members` | `getCrmGroups()` <br /> `lib/data/crm/getCrmGroups.ts` |
 | `crm_groups` | `getCrmGroups()` <br /> `lib/data/crm/getCrmGroups.ts` |
 | `crm_message_drafts` | `DRAFT_CHANNELS()`, `isValidDraftChannel()`, `listDraftsByPerson()`, `getDraftsForPerson()`, `upsertDraft()`, `deleteDraft()` <br /> `lib/data/crm/drafts.ts` |
 | `crm_newsletter_segments` | `getCrmNewsletterSegments()` <br /> `lib/data/crm/getCrmNewsletterSegments.ts` |
-| `crm_people` | `composeContactName()`, `isLikelyEmail()`, `mergeEmail()`, `nameUnknownCallerContact()`, `CRM_PEOPLE_SELECT()`, `buildCrmPeopleQuery()`, `HOT_ANONYMOUS_SOURCE()`, `captureHotAnonymous()`, `decideNativeLeadAction()`, `nativeLeadName()`, `ensureNativeLead()`, `cleanTags()`, `enrichNativeLead()`, `createNativeTask()`, `shouldCreatePerson()`, `inboundLeadName()`, `findOrCreatePersonByPhone()`, `AUDIENCE_EXCLUDED_TAG_PATTERNS()`, `isAudienceExcludedByTag()`, `getAudienceEligiblePeople()`, `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `pickPrimary()`, `mapCmaRow()`, `getContactIdentityStrip()`, `humanizeRelationshipType()`, `getContactRelationships()`, `getCrmSignalFreshness()`, `getCrmLeadVolume()`, `getCrmContactTotal()`, `CRM_SUPPRESSIONS_TAG()`, `COMPLIANCE_REASON_MARKERS()`, `isComplianceReason()`, `normalizeSuppressionChannel()`, `clampLimit()`, `clampOffset()`, `resolveSuppressionValue()`, `buildSuppressionRows()`, `getCrmSuppressions()`, `CRM_TAGS_TAG()`, `tallyTagUsage()`, `getCrmTags()`, `getDashboardRecentActivity()`, `firstEmail()`, `getEmailCohortRecipients()`, `getCrmTemplateForSend()`, `ACTIVITY_TYPES()`, `ALL_ACTIVITY_TYPE_KEYS()`, `kindsForTypes()`, `getGlobalActivityFeed()`, `CONVERSATION_STATUSES()`, `isValidConversationStatus()`, `isAssignableBroker()`, `effectiveStatus()`, `needsReply()`, `matchesScope()`, `deriveConversationFromMessages()`, `getInboxQueue()`, `getConversationThread()`, `mapMarketReportSubscriberRow()`, `getActiveMarketReportSubscriptions()`, `getMarketReportSubscribers()`, `getPersonContact()`, `getSendTarget()`, `getSuppressionSignals()`, `resolveLeadAssignedBroker()`, `getGuestAlertLead()`, `getPendingAudienceRemovals()`, `resolvePeopleForRemoval()`, `markAudienceRemovalsProcessed()`, `NATIVE_DEFAULT_BROKER()`, `buildNativePersonRow()`, `nativeCreateGaps()`, `normalizeEmail()`, `normalizePhone()`, `dedupeContactPoints()`, `resolvePersonIdentity()`, `subscribeToNewsletter()`, `unsubscribeNewsletterByToken()`, `setSubscriberStatus()`, `listNewsletterSubscribers()`, `newsletterSubscriberCounts()`, `getActiveSubscribersForSend()`, `setSubscriberStatusByEmail()`, `markSubscribersSent()`, `createNewsletterDraft()`, `updateNewsletter()`, `listNewsletters()`, `getNewsletter()`, `deleteNewsletterDraft()`, `recordRecipientSend()`, `recordNewsletterEvent()`, `getNewsletterStats()`, `getNewsletterRecipients()`, `getNewsletterMembershipForLead()`, `getCrmPersonContact()` <br /> `lib/data/crm/addUnknownCallerContact.ts` · `lib/data/crm/buildCrmPeopleQuery.ts` · `lib/data/crm/captureHotAnonymous.ts` · `lib/data/crm/ensureNativeLead.ts` · `lib/data/crm/findOrCreatePersonByPhone.ts` · `lib/data/crm/getAudienceEligiblePeople.ts` · `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getContactIdentityStrip.ts` · `lib/data/crm/getContactRelationships.ts` · `lib/data/crm/getCrmSignalFreshness.ts` · `lib/data/crm/getCrmSuppressions.ts` · `lib/data/crm/getCrmTags.ts` · `lib/data/crm/getDashboardRecentActivity.ts` · `lib/data/crm/getEmailCohortRecipients.ts` · `lib/data/crm/getGlobalActivityFeed.ts` · `lib/data/crm/getInboxQueue.ts` · `lib/data/crm/getMarketReportSubscribers.ts` · `lib/data/crm/getPersonContact.ts` · `lib/data/crm/getSendTarget.ts` · `lib/data/crm/getSuppressionSignals.ts` · `lib/data/crm/leadAssignedBroker.ts` · `lib/data/crm/metaAudienceQueue.ts` · `lib/data/crm/nativeCreate.ts` · `lib/data/crm/resolvePersonIdentity.ts` · `lib/data/newsletter/index.ts` |
+| `crm_people` | `composeContactName()`, `isLikelyEmail()`, `mergeEmail()`, `nameUnknownCallerContact()`, `CRM_PEOPLE_SELECT()`, `buildCrmPeopleQuery()`, `HOT_ANONYMOUS_SOURCE()`, `captureHotAnonymous()`, `decideNativeLeadAction()`, `nativeLeadName()`, `ensureNativeLead()`, `cleanTags()`, `enrichNativeLead()`, `createNativeTask()`, `shouldCreatePerson()`, `inboundLeadName()`, `findOrCreatePersonByPhone()`, `AUDIENCE_EXCLUDED_TAG_PATTERNS()`, `isAudienceExcludedByTag()`, `getAudienceEligiblePeople()`, `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `pickPrimary()`, `mapCmaRow()`, `getContactIdentityStrip()`, `humanizeRelationshipType()`, `getContactRelationships()`, `getCrmSignalFreshness()`, `getCrmLeadVolume()`, `getCrmContactTotal()`, `CRM_SUPPRESSIONS_TAG()`, `COMPLIANCE_REASON_MARKERS()`, `isComplianceReason()`, `normalizeSuppressionChannel()`, `clampLimit()`, `clampOffset()`, `resolveSuppressionValue()`, `buildSuppressionRows()`, `getCrmSuppressions()`, `CRM_TAGS_TAG()`, `tallyTagUsage()`, `getCrmTags()`, `getDashboardRecentActivity()`, `firstEmail()`, `getEmailCohortRecipients()`, `getCrmTemplateForSend()`, `ACTIVITY_TYPES()`, `ALL_ACTIVITY_TYPE_KEYS()`, `kindsForTypes()`, `getGlobalActivityFeed()`, `CONVERSATION_STATUSES()`, `isValidConversationStatus()`, `isAssignableBroker()`, `INBOX_FOLDERS()`, `channelOfKind()`, `effectiveStatus()`, `needsReply()`, `matchesScope()`, `deriveConversationFromMessages()`, `matchesFolder()`, `getInboxFolderQueue()`, `getConversationThread()`, `getInboxContactCard()`, `getConversationThreadFull()`, `mapMarketReportSubscriberRow()`, `getActiveMarketReportSubscriptions()`, `getMarketReportSubscribers()`, `getPersonContact()`, `getSendTarget()`, `getSuppressionSignals()`, `resolveLeadAssignedBroker()`, `getGuestAlertLead()`, `getPendingAudienceRemovals()`, `resolvePeopleForRemoval()`, `markAudienceRemovalsProcessed()`, `NATIVE_DEFAULT_BROKER()`, `buildNativePersonRow()`, `nativeCreateGaps()`, `normalizeEmail()`, `normalizePhone()`, `dedupeContactPoints()`, `resolvePersonIdentity()`, `subscribeToNewsletter()`, `unsubscribeNewsletterByToken()`, `setSubscriberStatus()`, `listNewsletterSubscribers()`, `newsletterSubscriberCounts()`, `getActiveSubscribersForSend()`, `setSubscriberStatusByEmail()`, `markSubscribersSent()`, `createNewsletterDraft()`, `updateNewsletter()`, `listNewsletters()`, `getNewsletter()`, `deleteNewsletterDraft()`, `recordRecipientSend()`, `recordNewsletterEvent()`, `getNewsletterStats()`, `getNewsletterRecipients()`, `getNewsletterMembershipForLead()`, `getCrmPersonContact()` <br /> `lib/data/crm/addUnknownCallerContact.ts` · `lib/data/crm/buildCrmPeopleQuery.ts` · `lib/data/crm/captureHotAnonymous.ts` · `lib/data/crm/ensureNativeLead.ts` · `lib/data/crm/findOrCreatePersonByPhone.ts` · `lib/data/crm/getAudienceEligiblePeople.ts` · `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getContactIdentityStrip.ts` · `lib/data/crm/getContactRelationships.ts` · `lib/data/crm/getCrmSignalFreshness.ts` · `lib/data/crm/getCrmSuppressions.ts` · `lib/data/crm/getCrmTags.ts` · `lib/data/crm/getDashboardRecentActivity.ts` · `lib/data/crm/getEmailCohortRecipients.ts` · `lib/data/crm/getGlobalActivityFeed.ts` · `lib/data/crm/getInboxQueue.ts` · `lib/data/crm/getInboxThread.ts` · `lib/data/crm/getMarketReportSubscribers.ts` · `lib/data/crm/getPersonContact.ts` · `lib/data/crm/getSendTarget.ts` · `lib/data/crm/getSuppressionSignals.ts` · `lib/data/crm/leadAssignedBroker.ts` · `lib/data/crm/metaAudienceQueue.ts` · `lib/data/crm/nativeCreate.ts` · `lib/data/crm/resolvePersonIdentity.ts` · `lib/data/newsletter/index.ts` |
 | `crm_people_collaborators` | `getContactCollaborators()` <br /> `lib/data/crm/getContactCollaborators.ts` |
 | `crm_person_files` | `TIMELINE_TAB_KINDS()`, `getPersonDetailExtras()` <br /> `lib/data/crm/getPersonDetailExtras.ts` |
+| `crm_pipelines` | `getDealPipelines()`, `pipelineHasStage()` <br /> `lib/data/crm/getDealPipelines.ts` |
 | `crm_pond_members` | `getCrmPonds()` <br /> `lib/data/crm/getCrmPonds.ts` |
 | `crm_ponds` | `getCrmPonds()`, `TIMELINE_TAB_KINDS()`, `getPersonDetailExtras()` <br /> `lib/data/crm/getCrmPonds.ts` · `lib/data/crm/getPersonDetailExtras.ts` |
 | `crm_relationships` | `humanizeRelationshipType()`, `getContactRelationships()` <br /> `lib/data/crm/getContactRelationships.ts` |
@@ -1872,7 +1919,7 @@ Companion files:
 | `crm_task_types` | `taskQueueBounds()`, `classifyTaskView()`, `getTaskQueue()`, `CRM_TASK_TYPES_TAG()`, `getCrmTaskTypes()` <br /> `lib/data/crm/getTaskQueue.ts` |
 | `crm_tasks` | `decideNativeLeadAction()`, `nativeLeadName()`, `ensureNativeLead()`, `cleanTags()`, `enrichNativeLead()`, `createNativeTask()`, `resolveDateRange()`, `getAgentActivityReport()`, `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `getLeadSourcesReport()`, `getOverviewReport()`, `taskQueueBounds()`, `classifyTaskView()`, `getTaskQueue()`, `CRM_TASK_TYPES_TAG()`, `getCrmTaskTypes()` <br /> `lib/data/crm/ensureNativeLead.ts` · `lib/data/crm/getAgentActivityReport.ts` · `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getLeadSourcesReport.ts` · `lib/data/crm/getOverviewReport.ts` · `lib/data/crm/getTaskQueue.ts` |
 | `crm_templates` | `CRM_TEMPLATES_ADMIN_TAG()`, `tallyTemplateUsage()`, `computeTemplatePerf()`, `mapTemplateRow()`, `getCrmTemplatesAdmin()`, `firstEmail()`, `getEmailCohortRecipients()`, `getCrmTemplateForSend()` <br /> `lib/data/crm/getCrmTemplatesAdmin.ts` · `lib/data/crm/getEmailCohortRecipients.ts` |
-| `crm_timeline` | `composeContactName()`, `isLikelyEmail()`, `mergeEmail()`, `nameUnknownCallerContact()`, `decideNativeLeadAction()`, `nativeLeadName()`, `ensureNativeLead()`, `cleanTags()`, `enrichNativeLead()`, `createNativeTask()`, `resolveDateRange()`, `getAgentActivityReport()`, `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `CALL_LOGS_PAGE_SIZE()`, `getCallLogsReport()`, `getCallsReport()`, `classifyTimelineKind()`, `buildSnippet()`, `toFeedItem()`, `getContactActivityFeed()`, `getContactAttemptsReport()`, `CONVERSATION_KINDS()`, `getContactConversation()`, `getCrmSignalFreshness()`, `getCrmLeadVolume()`, `getCrmContactTotal()`, `getDashboardKpis()`, `getDashboardRecentActivity()`, `ACTIVITY_TYPES()`, `ALL_ACTIVITY_TYPE_KEYS()`, `kindsForTypes()`, `getGlobalActivityFeed()`, `CONVERSATION_STATUSES()`, `isValidConversationStatus()`, `isAssignableBroker()`, `effectiveStatus()`, `needsReply()`, `matchesScope()`, `deriveConversationFromMessages()`, `getInboxQueue()`, `getConversationThread()`, `getLeadSourcesReport()`, `getMmsOwnerBroker()`, `getOutboundCallLead()`, `getOverviewReport()`, `TIMELINE_TAB_KINDS()`, `getPersonDetailExtras()`, `getRecordingOwnerBroker()`, `getSpeedToLeadReport()`, `getTextsReport()` <br /> `lib/data/crm/addUnknownCallerContact.ts` · `lib/data/crm/ensureNativeLead.ts` · `lib/data/crm/getAgentActivityReport.ts` · `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getCallLogsReport.ts` · `lib/data/crm/getCallsReport.ts` · `lib/data/crm/getContactActivityFeed.ts` · `lib/data/crm/getContactAttemptsReport.ts` · `lib/data/crm/getContactConversation.ts` · `lib/data/crm/getCrmSignalFreshness.ts` · `lib/data/crm/getDashboardKpis.ts` · `lib/data/crm/getDashboardRecentActivity.ts` · `lib/data/crm/getGlobalActivityFeed.ts` · `lib/data/crm/getInboxQueue.ts` · `lib/data/crm/getLeadSourcesReport.ts` · `lib/data/crm/getMmsOwnerBroker.ts` · `lib/data/crm/getOutboundCallLead.ts` · `lib/data/crm/getOverviewReport.ts` · `lib/data/crm/getPersonDetailExtras.ts` · `lib/data/crm/getRecordingOwnerBroker.ts` · `lib/data/crm/getSpeedToLeadReport.ts` · `lib/data/crm/getTextsReport.ts` |
+| `crm_timeline` | `composeContactName()`, `isLikelyEmail()`, `mergeEmail()`, `nameUnknownCallerContact()`, `decideNativeLeadAction()`, `nativeLeadName()`, `ensureNativeLead()`, `cleanTags()`, `enrichNativeLead()`, `createNativeTask()`, `resolveDateRange()`, `getAgentActivityReport()`, `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `CALL_LOGS_PAGE_SIZE()`, `getCallLogsReport()`, `getCallsReport()`, `classifyTimelineKind()`, `buildSnippet()`, `toFeedItem()`, `getContactActivityFeed()`, `getContactAttemptsReport()`, `CONVERSATION_KINDS()`, `getContactConversation()`, `getCrmSignalFreshness()`, `getCrmLeadVolume()`, `getCrmContactTotal()`, `getDashboardKpis()`, `getDashboardRecentActivity()`, `ACTIVITY_TYPES()`, `ALL_ACTIVITY_TYPE_KEYS()`, `kindsForTypes()`, `getGlobalActivityFeed()`, `CONVERSATION_STATUSES()`, `isValidConversationStatus()`, `isAssignableBroker()`, `INBOX_FOLDERS()`, `channelOfKind()`, `effectiveStatus()`, `needsReply()`, `matchesScope()`, `deriveConversationFromMessages()`, `matchesFolder()`, `getInboxFolderQueue()`, `getConversationThread()`, `getInboxContactCard()`, `getConversationThreadFull()`, `getLeadSourcesReport()`, `getMmsOwnerBroker()`, `getOutboundCallLead()`, `getOverviewReport()`, `getPeopleListSignals()`, `TIMELINE_TAB_KINDS()`, `getPersonDetailExtras()`, `getRecordingOwnerBroker()`, `getSpeedToLeadReport()`, `getTextsReport()` <br /> `lib/data/crm/addUnknownCallerContact.ts` · `lib/data/crm/ensureNativeLead.ts` · `lib/data/crm/getAgentActivityReport.ts` · `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getCallLogsReport.ts` · `lib/data/crm/getCallsReport.ts` · `lib/data/crm/getContactActivityFeed.ts` · `lib/data/crm/getContactAttemptsReport.ts` · `lib/data/crm/getContactConversation.ts` · `lib/data/crm/getCrmSignalFreshness.ts` · `lib/data/crm/getDashboardKpis.ts` · `lib/data/crm/getDashboardRecentActivity.ts` · `lib/data/crm/getGlobalActivityFeed.ts` · `lib/data/crm/getInboxQueue.ts` · `lib/data/crm/getInboxThread.ts` · `lib/data/crm/getLeadSourcesReport.ts` · `lib/data/crm/getMmsOwnerBroker.ts` · `lib/data/crm/getOutboundCallLead.ts` · `lib/data/crm/getOverviewReport.ts` · `lib/data/crm/getPeopleListSignals.ts` · `lib/data/crm/getPersonDetailExtras.ts` · `lib/data/crm/getRecordingOwnerBroker.ts` · `lib/data/crm/getSpeedToLeadReport.ts` · `lib/data/crm/getTextsReport.ts` |
 | `email_campaigns` | `clampLimit()`, `clampOffset()`, `safeRate()`, `formatRate()`, `sendKey()`, `recoverSendTypes()`, `filterBySendType()`, `collapseSendLog()`, `summarizeEngagement()`, `getEmailSendLog()`, `getEmailEngagementSummary()`, `getBrokerEmailEngagement()`, `getEmailCampaigns()`, `summarizeCampaign()`, `getCampaignEngagement()` <br /> `lib/data/crm/getEmailReporting.ts` |
 | `email_events` | `getBatchEmailsReport()`, `summarizeEmailEngagement()`, `getContactEmailEngagement()`, `CRM_TEMPLATES_ADMIN_TAG()`, `tallyTemplateUsage()`, `computeTemplatePerf()`, `mapTemplateRow()`, `getCrmTemplatesAdmin()`, `clampLimit()`, `clampOffset()`, `safeRate()`, `formatRate()`, `sendKey()`, `recoverSendTypes()`, `filterBySendType()`, `collapseSendLog()`, `summarizeEngagement()`, `getEmailSendLog()`, `getEmailEngagementSummary()`, `getBrokerEmailEngagement()`, `getEmailCampaigns()`, `summarizeCampaign()`, `getCampaignEngagement()`, `groupEnrollmentStatus()`, `buildWorkflowAnalytics()`, `getWorkflowAnalytics()`, `stepEmailKey()`, `tallyStepEmailSends()`, `tallyCurrentStep()`, `buildStepAnalytics()`, `getWorkflowStepAnalytics()`, `insertEmailEvent()`, `deleteEmailEventByDedupeKey()` <br /> `lib/data/crm/getBatchEmailsReport.ts` · `lib/data/crm/getContactEmailEngagement.ts` · `lib/data/crm/getCrmTemplatesAdmin.ts` · `lib/data/crm/getEmailReporting.ts` · `lib/data/crm/getWorkflowAnalytics.ts` · `lib/data/crm/insertEmailEvent.ts` |
 | `engagement_metrics` | `getEngagementCountsBatch()`, `getEngagementForListing()`, `incrementListingShareCount()`, `incrementListingSaveCount()`, `decrementListingSaveCount()`, `incrementListingLikeCount()`, `decrementListingLikeCount()`, `incrementListingViewCount()`, `sumEngagementForListingKeys()`, `getTopViewedListingKeys()` <br /> `lib/data/engagement/index.ts` |
@@ -1918,4 +1965,4 @@ Companion files:
 | `video_tours_cache` | `getSyncState()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `findCommunityIdByName()`, `findCommunityIdBySlug()`, `insertCommunityRowReturnId()`, `findPropertyIdByAddress()`, `insertPropertyAddressOnly()`, `insertPropertyFullRow()`, `updatePropertyById()`, `findListingBySnakeKey()`, `upsertListingSnakeRow()`, `insertStatusHistoryRow()`, `insertPriceHistoryRow()`, `replaceListingPhotosForKey()`, `deleteListingAgentsForKey()`, `insertListingAgentRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectNewExpiredListings()`, `getExistingExpiredListingKeys()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `countListingsByOr()`, `countAllListingsByListingKey()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()`, `getRecentListingVideoRows()`, `getVideoToursCacheListings()`, `getAnyListingVideoRows()`, `getListingVideos()` <br /> `lib/data/sync/syncWrites.ts` · `lib/data/videos/getListingVideoRows.ts` · `lib/data/videos/getListingVideos.ts` |
 | `visitor_events` | `HOT_ANONYMOUS_SOURCE()`, `captureHotAnonymous()`, `topByCount()`, `deriveIntentSignals()`, `getContactBehaviorSummary()`, `getPropertiesReport()`, `getViewedListingsForLead()`, `saveAnonymousPartialAddress()` <br /> `lib/data/crm/captureHotAnonymous.ts` · `lib/data/crm/getContactBehaviorSummary.ts` · `lib/data/crm/getPropertiesReport.ts` · `lib/data/crm/getViewedListings.ts` · `lib/data/leads/saveAnonymousPartialAddress.ts` |
 | `visitor_identity_map` | `HOT_ANONYMOUS_SOURCE()`, `captureHotAnonymous()`, `normalizeEmail()`, `normalizePhone()`, `dedupeContactPoints()`, `resolvePersonIdentity()` <br /> `lib/data/crm/captureHotAnonymous.ts` · `lib/data/crm/resolvePersonIdentity.ts` |
-| `visitor_sessions` | `HOT_ANONYMOUS_SOURCE()`, `captureHotAnonymous()`, `topByCount()`, `deriveIntentSignals()`, `getContactBehaviorSummary()`, `pickFirstTouch()`, `getFirstTouchAttribution()`, `getViewedListingsForLead()`, `normalizeEmail()`, `normalizePhone()`, `dedupeContactPoints()`, `resolvePersonIdentity()` <br /> `lib/data/crm/captureHotAnonymous.ts` · `lib/data/crm/getContactBehaviorSummary.ts` · `lib/data/crm/getFirstTouchAttribution.ts` · `lib/data/crm/getViewedListings.ts` · `lib/data/crm/resolvePersonIdentity.ts` |
+| `visitor_sessions` | `HOT_ANONYMOUS_SOURCE()`, `captureHotAnonymous()`, `topByCount()`, `deriveIntentSignals()`, `getContactBehaviorSummary()`, `pickFirstTouch()`, `getFirstTouchAttribution()`, `getPeopleListSignals()`, `getViewedListingsForLead()`, `normalizeEmail()`, `normalizePhone()`, `dedupeContactPoints()`, `resolvePersonIdentity()` <br /> `lib/data/crm/captureHotAnonymous.ts` · `lib/data/crm/getContactBehaviorSummary.ts` · `lib/data/crm/getFirstTouchAttribution.ts` · `lib/data/crm/getPeopleListSignals.ts` · `lib/data/crm/getViewedListings.ts` · `lib/data/crm/resolvePersonIdentity.ts` |

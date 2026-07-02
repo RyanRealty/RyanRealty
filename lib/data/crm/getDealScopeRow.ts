@@ -20,13 +20,15 @@ export type DealScopeRow = {
   pipeline: string | null
   personId: number | null
   name: string | null
+  /** §20.10 — lets a restage stamp the actual close date idempotently. */
+  actualCloseDate: string | null
 }
 
 export async function getDealScopeRow(dealId: number): Promise<DealScopeRow | null> {
   const sb = createServiceClient()
   const { data } = await sb
     .from('crm_deals')
-    .select('assigned_broker,stage,pipeline,person_id,name,crm_people(assigned_broker)')
+    .select('assigned_broker,stage,pipeline,person_id,name,actual_close_date,crm_people(assigned_broker)')
     .eq('id', dealId)
     .maybeSingle()
   if (!data) return null
@@ -39,6 +41,7 @@ export async function getDealScopeRow(dealId: number): Promise<DealScopeRow | nu
     pipeline: string | null
     person_id: number | null
     name: string | null
+    actual_close_date: string | null
   }
   return {
     assignedBroker: d.assigned_broker ?? null,
@@ -47,5 +50,6 @@ export async function getDealScopeRow(dealId: number): Promise<DealScopeRow | nu
     pipeline: d.pipeline ?? null,
     personId: d.person_id ?? null,
     name: d.name ?? null,
+    actualCloseDate: d.actual_close_date ?? null,
   }
 }

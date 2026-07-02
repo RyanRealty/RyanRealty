@@ -9,16 +9,18 @@
 
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getCrmAccess } from '@/app/actions/crm'
+import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { dealInScope } from '@/lib/crm/deal-scope'
 import { getDealScopeRow } from '@/lib/data/crm/getDealScopeRow'
-import { isKnownStage } from '@/lib/crm/deal-pipelines'
+import { getDealPipelines, pipelineHasStage } from '@/lib/data/crm/getDealPipelines'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
 
 export type DealActionResult = { ok: true } | { ok: false; error: string }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
+// (Owner-only §9/§10 pipeline + stage management lives in
+//  app/actions/crm-deal-pipelines.ts — split for the file-size budget.)
 
 async function requireAccess() {
   const access = await getCrmAccess()
@@ -130,8 +132,10 @@ export async function restageCrmDeal(
       return { ok: false, error: 'Not authorized for this deal' }
     }
 
-    // Reject a target that isn't a real stage of this deal's pipeline.
-    if (row.pipeline && !isKnownStage(row.pipeline, target)) {
+    // Reject a target that isn't a real stage of this deal's pipeline — checked
+    // against the LIVE (DB-backed) config so owner-added stages are honored.
+    const pipelines = await getDealPipelines()
+    if (row.pipeline && !pipelineHasStage(pipelines, row.pipeline, target)) {
       return { ok: false, error: `"${target}" is not a stage of the ${row.pipeline} pipeline` }
     }
 
@@ -139,10 +143,20 @@ export async function restageCrmDeal(
 
     const sb = createServiceClient()
     const nowIso = new Date().toISOString()
-    const { error: upErr } = await sb
-      .from('crm_deals')
-      .update({ stage: target, entered_stage_at: nowIso, updated_at: nowIso })
-      .eq('id', dealId)
+    const patch: Record<string, unknown> = {
+      stage: target,
+      entered_stage_at: nowIso,
+      updated_at: nowIso,
+    }
+    // §20.10: entering an is_closed_stage stage stamps the ACTUAL close date
+    // (idempotent — never overwrites one already set; projected close untouched).
+    const targetStage = pipelines
+      .find((p) => p.name === row.pipeline)
+      ?.stages.find((s) => s.name === target)
+    if (targetStage?.isClosedStage && !row.actualCloseDate) {
+      patch.actual_close_date = nowIso.slice(0, 10)
+    }
+    const { error: upErr } = await sb.from('crm_deals').update(patch).eq('id', dealId)
     if (upErr) return { ok: false, error: upErr.message }
 
     if (row.personId) {
@@ -257,7 +271,17 @@ export async function removeDealFile(
 // ── createCrmDeal ─────────────────────────────────────────────────────────────
 
 export async function createCrmDeal(
-  input: { name: string; pipeline?: string | null; stage?: string | null },
+  input: {
+    name: string
+    pipeline?: string | null
+    stage?: string | null
+    /** §12 optional creation fields. */
+    value?: number | null
+    close_date?: string | null
+    commission_dollars?: number | null
+    person_id?: number | null
+    assigned_broker?: string | null
+  },
 ): Promise<{ ok: true; id: number } | { ok: false; error: string }> {
   try {
     const access = await requireAccess()
@@ -265,21 +289,27 @@ export async function createCrmDeal(
     if (!name) return { ok: false, error: 'Deal name is required' }
 
     // Optional pipeline/stage pre-scope (the per-column "+" on the Kanban board).
-    // Validate the pair against the pipeline config so a deal can only be seeded
-    // into a real column; an unknown pipeline/stage is dropped (deal created bare).
+    // Validate the pair against the LIVE pipeline config so a deal can only be
+    // seeded into a real column; an unknown pipeline/stage is dropped (deal
+    // created bare).
     const pipeline = (input.pipeline ?? '').trim() || null
     const stage = (input.stage ?? '').trim() || null
-    const seedStage = pipeline && stage && isKnownStage(pipeline, stage) ? stage : null
+    const pipelines = await getDealPipelines()
+    const seedStage = pipeline && stage && pipelineHasStage(pipelines, pipeline, stage) ? stage : null
     const seedPipeline = seedStage ? pipeline : null
 
     const sb = createServiceClient()
     // Own the deal on create so it isn't an unscoped orphan (finding F6): the
-    // creating broker becomes assigned_broker. An owner/superuser with no broker
-    // slug leaves it null (they see all deals regardless).
+    // creating broker becomes assigned_broker (a restricted broker can only
+    // assign to themselves; an owner may pick any broker or leave their own).
+    const assigned =
+      access.role === 'superuser'
+        ? ((input.assigned_broker ?? '').trim() || access.brokerSlug || null)
+        : (access.brokerSlug ?? null)
     const insert: Record<string, unknown> = {
       name,
       status: 'active',
-      assigned_broker: access.brokerSlug ?? null,
+      assigned_broker: assigned,
       created_at: new Date().toISOString(),
     }
     if (seedPipeline) insert.pipeline = seedPipeline
@@ -287,15 +317,123 @@ export async function createCrmDeal(
       insert.stage = seedStage
       insert.entered_stage_at = new Date().toISOString()
     }
+    if (input.value != null && Number.isFinite(input.value)) insert.value = input.value
+    if (input.commission_dollars != null && Number.isFinite(input.commission_dollars)) {
+      insert.commission_dollars = input.commission_dollars
+    }
+    if ((input.close_date ?? '').trim()) insert.close_date = input.close_date
+
+    // Optional initial contact (§12 "Associated contacts") — scope-checked so a
+    // restricted broker can only attach their own contact.
+    let personId: number | null = null
+    if (input.person_id != null && Number.isFinite(input.person_id)) {
+      const inScope = await requirePersonInScope(Number(input.person_id), access)
+      if (inScope.ok) {
+        personId = Number(input.person_id)
+        insert.person_id = personId
+      }
+    }
+
     const { data, error } = await sb
       .from('crm_deals')
       .insert(insert)
       .select('id')
       .single()
     if (error) return { ok: false, error: error.message }
+    const id = data.id as number
+    if (personId) {
+      await sb
+        .from('crm_deal_people')
+        .upsert({ deal_id: id, person_id: personId }, { onConflict: 'deal_id,person_id' })
+    }
     revalidatePath('/admin/crm/deals')
-    return { ok: true, id: data.id as number }
+    return { ok: true, id }
   } catch (e) {
     return { ok: false, error: String(e) }
   }
 }
+
+// ── people (crm_deal_people junction, §20.4 / AC-5 #22) ──────────────────────
+
+export async function addDealPerson(dealId: number, personId: number): Promise<DealActionResult> {
+  try {
+    const access = await requireAccess()
+    const scoped = await requireDealInScope(dealId, scopeBroker(access))
+    if (!scoped.ok) return scoped
+    const inScope = await requirePersonInScope(personId, access)
+    if (!inScope.ok) return inScope
+    const sb = createServiceClient()
+    const { error } = await sb
+      .from('crm_deal_people')
+      .upsert({ deal_id: dealId, person_id: personId }, { onConflict: 'deal_id,person_id' })
+    if (error) return { ok: false, error: error.message }
+    // Keep the legacy primary-contact pointer coherent when it was empty.
+    const row = await getDealScopeRow(dealId)
+    if (row && row.personId == null) {
+      await sb.from('crm_deals').update({ person_id: personId }).eq('id', dealId)
+    }
+    bust(dealId)
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: String(e) }
+  }
+}
+
+export async function removeDealPerson(dealId: number, personId: number): Promise<DealActionResult> {
+  try {
+    const access = await requireAccess()
+    const scoped = await requireDealInScope(dealId, scopeBroker(access))
+    if (!scoped.ok) return scoped
+    const sb = createServiceClient()
+    const { error } = await sb
+      .from('crm_deal_people')
+      .delete()
+      .eq('deal_id', dealId)
+      .eq('person_id', personId)
+    if (error) return { ok: false, error: error.message }
+    // If the removed contact was the legacy primary pointer, repoint or clear it.
+    const row = await getDealScopeRow(dealId)
+    if (row && row.personId === personId) {
+      const { data: remaining } = await sb
+        .from('crm_deal_people')
+        .select('person_id')
+        .eq('deal_id', dealId)
+        .order('created_at')
+        .limit(1)
+      await sb
+        .from('crm_deals')
+        .update({ person_id: remaining?.[0]?.person_id ?? null })
+        .eq('id', dealId)
+    }
+    bust(dealId)
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: String(e) }
+  }
+}
+
+// ── archive / restore (§13 — archiving, not deleting, marks lost deals) ──────
+
+export async function setDealStatus(
+  dealId: number,
+  status: 'active' | 'archived',
+): Promise<DealActionResult> {
+  try {
+    const access = await requireAccess()
+    const scoped = await requireDealInScope(dealId, scopeBroker(access))
+    if (!scoped.ok) return scoped
+    const sb = createServiceClient()
+    // Existing FUB-imported rows use 'Active' capitalization — write the same
+    // family; all readers normalize case-insensitively.
+    const { error } = await sb
+      .from('crm_deals')
+      .update({ status: status === 'archived' ? 'Archived' : 'Active', updated_at: new Date().toISOString() })
+      .eq('id', dealId)
+    if (error) return { ok: false, error: error.message }
+    bust(dealId)
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: String(e) }
+  }
+}
+

@@ -43,25 +43,34 @@ export type CrmDealDetail = {
   description: string | null
   property_address: string | null
   assigned_broker: string | null
+  actual_close_date: string | null
+  created_at: string | null
   // Relations
   person: { id: number; name: string | null; assigned_broker: string | null } | null
+  /** ALL linked contacts (crm_deal_people junction, §20.4) — the modal's PEOPLE section. */
+  people: Array<{ id: number; name: string | null; role: string | null }>
   splits: CrmDealSplit[]
   files: CrmDealFile[]
 }
 
 async function _getCrmDeal(id: number): Promise<CrmDealDetail | null> {
   const sb = createServiceClient()
-  const [dealRes, splitsRes, filesRes] = await Promise.all([
+  const [dealRes, peopleRes, splitsRes, filesRes] = await Promise.all([
     sb
       .from('crm_deals')
       .select(
         'id,name,pipeline,stage,status,value,entered_stage_at,person_id,listing_key,' +
           'close_date,earnest_money_due,mutual_acceptance,due_diligence,final_walkthrough,possession,' +
-          'commission_dollars,commission_percent,description,property_address,assigned_broker,' +
+          'commission_dollars,commission_percent,description,property_address,assigned_broker,actual_close_date,created_at,' +
           'crm_people(id,name,assigned_broker)',
       )
       .eq('id', id)
       .maybeSingle(),
+    sb
+      .from('crm_deal_people')
+      .select('person_id,role,person:crm_people(id,name)')
+      .eq('deal_id', id)
+      .order('created_at'),
     sb
       .from('crm_deal_splits')
       .select('id,deal_id,broker_slug,split_pct,split_dollars,notes,created_at')
@@ -101,7 +110,17 @@ async function _getCrmDeal(id: number): Promise<CrmDealDetail | null> {
     description: (raw.description as string | null) ?? null,
     property_address: (raw.property_address as string | null) ?? null,
     assigned_broker: (raw.assigned_broker as string | null) ?? null,
+    actual_close_date: (raw.actual_close_date as string | null) ?? null,
+    created_at: (raw.created_at as string | null) ?? null,
     person: raw.crm_people ?? null,
+    people: ((peopleRes.data ?? []) as Array<{
+      person_id: number
+      role: string | null
+      person: { id: number; name: string | null } | { id: number; name: string | null }[] | null
+    }>).flatMap((j) => {
+      const p = Array.isArray(j.person) ? (j.person[0] ?? null) : j.person
+      return p ? [{ id: Number(p.id), name: p.name ?? null, role: j.role ?? null }] : []
+    }),
     splits: (splitsRes.data ?? []) as CrmDealSplit[],
     files: (filesRes.data ?? []) as CrmDealFile[],
   }

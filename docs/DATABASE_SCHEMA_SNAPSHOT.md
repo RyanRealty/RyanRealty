@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-02T00:01:23.557Z
+**Generated:** 2026-07-02T02:19:04.582Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -303,7 +303,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 598,205**
+### `listing_tile_mv` · **rows ≈ 587,964**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -416,7 +416,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 21,015**
+### `market_stats_cache` · **rows ≈ 21,052**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -1541,6 +1541,16 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `uploaded_by` | text | yes |  |
 | `created_at` | timestamp with time zone | no | now() |
 
+### `crm_deal_people`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `deal_id` | bigint | no |  |
+| `person_id` | bigint | no |  |
+| `role` | text | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+
 ### `crm_deal_splits`
 
 | Column | Type | Nullable | Default |
@@ -1552,6 +1562,19 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `split_dollars` | numeric | yes |  |
 | `notes` | text | yes |  |
 | `created_at` | timestamp with time zone | no | now() |
+
+### `crm_deal_stages`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `pipeline_id` | bigint | no |  |
+| `name` | text | no |  |
+| `color` | text | no | '#819cff'::text |
+| `order_weight` | integer | no | 1000 |
+| `is_closed_stage` | boolean | no | false |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
 
 ### `crm_deals`
 
@@ -1581,6 +1604,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `description` | text | yes |  |
 | `property_address` | text | yes |  |
 | `assigned_broker` | text | yes |  |
+| `actual_close_date` | date | yes |  |
 
 ### `crm_field_definitions`
 
@@ -1717,6 +1741,17 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `size_bytes` | bigint | yes |  |
 | `uploaded_by` | text | yes |  |
 | `created_at` | timestamp with time zone | no | now() |
+
+### `crm_pipelines`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `name` | text | no |  |
+| `description` | text | yes |  |
+| `order_weight` | integer | no | 1000 |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
 
 ### `crm_pond_members`
 
