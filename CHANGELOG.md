@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.707.0 (2026-07-02)
+
+### Features
+- feat(crm): templates-desktop — §13 two-level Email/Text Templates rebuild + full merge-field resolver fix
+
+### Maintenance
+- docs(crm): templates-desktop shipped — mission PROGRESS + handoff top block (merge-field fix proven)
+
+---
+
+
 ## v1.706.1 (2026-07-02)
 
 ### Maintenance
