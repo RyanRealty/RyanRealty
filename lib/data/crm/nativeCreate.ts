@@ -5,7 +5,8 @@ import type { CrmBrokerSlug } from '@/lib/crm/constants'
  * native-create paths). Two helpers create a native lead row: ensureNativeLead
  * (FUB-push-failure fallback for the LP paths) and findOrCreatePersonByPhone
  * (inbound SMS / voice). They MUST write the same complete shape — a real source,
- * stage 'Lead', an assigned broker, a `source:<x>` tag, and (downstream) a
+ * stage 'Nurture' (streamline v2: new leads enter the pipeline at Nurture; the legacy
+ * 'Lead' stage was retired), an assigned broker, a `source:<x>` tag, and (downstream) a
  * normalized crm_contact_points row — or a native lead lands incomplete and
  * invisible to the workflow. This single builder is the chokepoint that keeps the
  * two paths from drifting: both call it for the crm_people insert payload, so a
@@ -22,7 +23,7 @@ export type NativePersonRow = {
   name: string
   first_name: string | null
   last_name: string | null
-  stage: 'Lead'
+  stage: 'Nurture'
   source: string
   assigned_broker: CrmBrokerSlug
   emails: Array<{ value: string; type: string; isPrimary: number }>
@@ -37,7 +38,7 @@ export type NativePersonRow = {
  *   - `source` is the trimmed origin label (e.g. 'inbound-call', 'seller-lp');
  *     a blank source is never written — it falls back to the generic 'native-lead'
  *     so the row is always attributable (ci:crm-lead-integrity: source required).
- *   - `stage` is always 'Lead'.
+ *   - `stage` is always 'Nurture' (the streamline-v2 pipeline entry stage).
  *   - `assigned_broker` is always set (defaults to Matt) so the lead is owned, not
  *     orphaned/invisible.
  *   - `tags` always contains `source:<source>` and is deduped; extra caller tags
@@ -59,7 +60,7 @@ export function buildNativePersonRow(input: {
     name: input.name,
     first_name: input.first_name,
     last_name: input.last_name,
-    stage: 'Lead',
+    stage: 'Nurture',
     source,
     assigned_broker: input.assignedBroker ?? NATIVE_DEFAULT_BROKER,
     emails: input.emails ?? [],
@@ -70,7 +71,7 @@ export function buildNativePersonRow(input: {
 
 /**
  * Assert (for tests + as living documentation) that a built row satisfies the
- * native-create completeness contract: real source, stage Lead, an owner, a
+ * native-create completeness contract: real source, stage Nurture, an owner, a
  * matching source tag, and at least one contactable point (email or phone) so the
  * downstream crm_contact_points row can be keyed. Returns the list of gaps — an
  * empty list means a complete person.
@@ -78,7 +79,7 @@ export function buildNativePersonRow(input: {
 export function nativeCreateGaps(row: NativePersonRow): string[] {
   const gaps: string[] = []
   if (!row.source || !row.source.trim()) gaps.push('missing source')
-  if (row.stage !== 'Lead') gaps.push('stage is not Lead')
+  if (row.stage !== 'Nurture') gaps.push('stage is not Nurture')
   if (!row.assigned_broker) gaps.push('missing assigned_broker')
   if (!row.tags.includes(`source:${row.source}`)) gaps.push('missing source:<source> tag')
   if (row.emails.length === 0 && row.phones.length === 0) gaps.push('no contactable point (email or phone)')

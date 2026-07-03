@@ -4,20 +4,20 @@ import { buildNativePersonRow, nativeCreateGaps, NATIVE_DEFAULT_BROKER } from '.
 // CONTACT360 Phase 0.4 — no thin native-create paths. Both native-create helpers
 // (ensureNativeLead, findOrCreatePersonByPhone) build their crm_people insert row
 // through buildNativePersonRow. These tests lock the create-completeness contract
-// the two paths share: a real source, stage 'Lead', an owner, a source:<x> tag,
+// the two paths share: a real source, stage 'Nurture', an owner, a source:<x> tag,
 // and (asserted via nativeCreateGaps) a contactable point — so a native lead can
 // never land incomplete or invisible to the workflow, and the two paths can't
 // drift. Pure (no Supabase); the .from().insert() lives in the DAL helpers.
 
 describe('buildNativePersonRow (canonical native-create shape)', () => {
-  it('stamps stage Lead, the trimmed source, the default owner, and a source tag', () => {
+  it('stamps stage Nurture, the trimmed source, the default owner, and a source tag', () => {
     const row = buildNativePersonRow({
       name: 'Jane Seller',
       first_name: 'Jane',
       last_name: 'Seller',
       source: 'seller-lp',
     })
-    expect(row.stage).toBe('Lead')
+    expect(row.stage).toBe('Nurture')
     expect(row.source).toBe('seller-lp')
     expect(row.assigned_broker).toBe(NATIVE_DEFAULT_BROKER)
     expect(row.tags).toContain('source:seller-lp')
