@@ -25,7 +25,7 @@
     "app/housing-market/[...slug]/page.tsx": 855,
     "app/lp/bend/page.tsx": 1043,
     "app/lp/buyer-listing-alerts/page.tsx": 783,
-    "app/lp/central-oregon-golf/page.tsx": 1453,
+    "app/lp/central-oregon-golf/page.tsx": 1461,
     "app/lp/seller-home-value/actions.ts": 744,
     "app/lp/seller-home-value/data.ts": 672,
     "app/lp/seller-home-value/page.tsx": 683,
@@ -38,7 +38,7 @@
     "lib/cma.ts": 839,
     "lib/data/crm/getEmailReporting.ts": 686,
     "lib/data/crm/getLeadSourcesReport.ts": 609,
-    "lib/data/index.ts": 654,
+    "lib/data/index.ts": 662,
     "lib/data/sync/syncWrites.ts": 1108,
     "lib/expired-owner-lookup.ts": 689,
     "lib/followupboss.ts": 1599,
@@ -56,6 +56,6 @@
     "lib/x.ts": 787
   },
   "barrels": {
-    "lib/data/index.ts": 150
+    "lib/data/index.ts": 152
   }
 }
