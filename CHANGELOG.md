@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.718.6 (2026-07-03)
+
+### Maintenance
+- docs(crm): second adversarial audit — v2 plan. Verdict CONDITIONAL, 3 P1 / 5 P2
+
+---
+
+
 ## v1.718.5 (2026-07-03)
 
 ### Maintenance
