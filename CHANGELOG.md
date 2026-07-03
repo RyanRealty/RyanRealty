@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.718.2 (2026-07-03)
+
+### Other
+- data(crm): de-pollute New Leads report — 16 recreated split un-merges were mis-stamped as new leads
+
+---
+
+
 ## v1.718.1 (2026-07-02)
 
 ### Maintenance
