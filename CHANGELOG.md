@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.728.0 (2026-07-03)
+
+### Features
+- feat(newsletter): manual auto-draft producer (live-data curation, §0-traced)
+
+---
+
+
 ## v1.727.3 (2026-07-03)
 
 ### Maintenance
