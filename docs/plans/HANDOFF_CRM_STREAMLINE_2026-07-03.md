@@ -161,4 +161,5 @@ proposal doc was never finished (this handoff + the plan doc supersede it).
 | Telephony (703-3095) | ✅ fixed |
 | FUB "archived" emails | 🔴 Matt must revoke Google access |
 | Tag/smart-list streamline | 📋 planned; blocked on Matt's 3 inputs + approval |
+| Vendors (segment #8) | ⏸ DEFERRED (Matt 2026-07-03 "add vendors later"). Design done in the plan (`segment:vendor` + curated `vendor:<type>` dropdown + Vendors list). NO existing vendor list found in CRM or FUB (checked stages/tags/groups/raw — all empty). When Matt's ready: import his external list, OR scan the book for vendor-looking contacts (company names, closing-thread service providers) for him to confirm/type. |
 | Post-revoke cleanups | ⏳ queued (48 rows + sync filter) |
