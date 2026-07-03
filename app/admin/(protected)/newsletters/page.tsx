@@ -76,9 +76,14 @@ export default async function NewslettersPage() {
             Compose, send, and measure newsletters across the subscriber list.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/admin/newsletters/new">Compose newsletter</Link>
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button asChild variant="outline">
+            <Link href="/admin/newsletters/analytics">Broker analytics</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/admin/newsletters/new">Compose newsletter</Link>
+          </Button>
+        </div>
       </div>
 
       <div className="mt-6">

@@ -46,6 +46,16 @@ already exist (`/blog`, `/communities`, `/schools`, `/parks`, `/guides`).
 
 ## Build progress log (newest first)
 
+**2026-07-03 — Phase 8 (per-broker analytics console) shipped.**
+- `lib/data/newsletter/brokerAnalytics.ts`: `getBrokerNewsletterAnalytics(slug)` (recipients/delivered/
+  opened/clicked/CTR/CTOR, scoped `.eq('broker',slug)` on recipients + the deduped ledger) +
+  `getBrokerWarmList(slug)` (that broker's clickers, for follow-up). `/admin/newsletters/analytics` page:
+  a restricted broker sees ONLY their own slug (resolved from the session via getCrmAccess/scopeBroker,
+  never a client param); a superuser gets a broker filter. KPI strip + warm-list table linking to the CRM card.
+- **G-NL-12 scope invariant gated**: `ci:newsletter-scope` asserts every analytics query carries the
+  broker filter in-chain AND a restricted broker's slug comes from the session, not the client —
+  red-demo'd (removing a filter fails; hardcoding isSuperuser fails). 4 scope unit tests. tsc clean.
+
 **2026-07-03 — Phase 5b (scale-safety, partial) shipped.**
 - Pre-send REPUTATION GATE (G-NL-20): `deliverability_metrics` table (Postmaster snapshots) + DAL
   (`getLatestDeliverability`, `deliverabilityVerdict`) + integrated into `enqueueNewsletter` — a LARGE
