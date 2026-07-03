@@ -46,6 +46,28 @@ already exist (`/blog`, `/communities`, `/schools`, `/parks`, `/guides`).
 
 ## Build progress log (newest first)
 
+**2026-07-03 — Phase 3 (send reliability queue) shipped.**
+- Replaced the synchronous ≤5,000-send in-request loop with a QUEUE (spec §6):
+  `lib/data/newsletter/queue.ts` (data ops) + `lib/newsletter/send-queue.ts` (orchestration).
+  Approve = `enqueueNewsletter()`: wins a CAS lock (`claimNewsletterForSending`, S-1), freezes each
+  recipient's broker + engagement tier (2 batch reads), writes queued rows + the tranche schedule,
+  returns immediately. The drain cron (`/api/cron/newsletter-send`, every 2 min) claims batches
+  atomically (queued→sending, concurrency-safe), re-checks suppression + active per row (S-8), renders
+  per-broker (From-name/reply swap + broker-frozen link attribution + broker-stamped token), sends, and
+  finalizes. Reconcile cron (`/api/cron/newsletter-reconcile`, hourly) finalizes only when 0 queued/
+  in-flight remain and flags true stalls (S-15). Circuit-breaker auto-pauses on bounce>2%/complaint>0.1%
+  (`send_paused` flag). NEWSLETTER_FROM flipped `mail.`→`news.` (A4). recordRecipientSend onConflict fixed
+  via a plain `(newsletter_id,email)` unique (A5). One-click contact send brought to parity: voice gate
+  (G-NL-4), no-reactivation of opt-outs preserving segment (S-10), tracking-on-failure (S-11), news. domain.
+- Migrations (applied + verified): `20260703110000` plain email unique (A5), `110100` recipients status
+  +sending (atomic claim), `110200` newsletters.send_paused (breaker).
+- **Real tests:** 8 unit tests (render per-broker From/reply swap, broker-in-token verified via
+  round-trip, ?agent attribution, tiering, warm-up caps, text fallback) + a live-DB state-machine test
+  (CAS lock rejects 2nd approver, atomic claim, finalize, cascade — self-cleaning). tsc 0 errors.
+- Gates: compliance gate repointed to the queue render path; new G-NL-4/6/9/15 (voice on every send
+  path, drain suppression+active recheck + one-click no-reactivate, CAS + no-sync-loop + reconciler,
+  cron registration).
+
 **2026-07-03 — Phase 2 (compliance + format hardening) shipped.**
 - Tracking token hardened (`lib/email-tracking.ts`): prod hard-fail `assertTrackingSecret()` (refuses
   the insecure dev-fallback secret in production), optional TTL (`exp`) + nonce (`n` via `randomBytes`)

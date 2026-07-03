@@ -4,35 +4,21 @@ import { revalidatePath } from 'next/cache'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { scopeBroker, isPersonInScope } from '@/lib/crm/scope'
 import { resolveLeadAssignedBroker, getGuestAlertLead } from '@/lib/data/crm/leadAssignedBroker'
-import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
-import { sendEmail } from '@/lib/resend'
-import { attributeOutbound } from '@/lib/crm/attributed-links'
-import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
-import { wrapNewsletterHtml, newsletterTextFooter } from '@/lib/email-templates/newsletter-shell'
-import { htmlToPlainText } from '@/lib/email/prepare'
 import { checkNewsletterVoice } from '@/lib/email/voice-precheck'
+import { enqueueNewsletter } from '@/lib/newsletter/send-queue'
 import { createSavedSearchForLead, updateSavedSearch, deleteSavedSearchById } from '@/lib/data'
 import {
   subscribeToNewsletter,
   setSubscriberStatus,
   getCrmPersonContact,
-  getActiveSubscribersForSend,
-  markSubscribersSent,
   createNewsletterDraft,
   updateNewsletter,
   deleteNewsletterDraft,
   getNewsletter,
-  recordRecipientSend,
   type NewsletterSegment,
   type SubscriberStatus,
 } from '@/lib/data'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-const NEWSLETTER_FROM = 'Ryan Realty <newsletter@mail.ryan-realty.com>'
-
-function unsubUrl(token: string): string {
-  return `${SITE_URL}/newsletter/unsubscribe?token=${encodeURIComponent(token)}`
-}
 const SEGMENTS: NewsletterSegment[] = ['general', 'buyer', 'seller', 'past-client']
 function asSegment(v: FormDataEntryValue | null | undefined): NewsletterSegment {
   const s = String(v ?? 'general')
@@ -225,7 +211,9 @@ export async function adminDeleteNewsletterAction(id: string): Promise<{ ok: boo
  * from the verified mail.ryan-realty.com domain. Tallies sent/failed, stamps the
  * subscribers, and marks the newsletter sent. Returns a summary.
  */
-export async function adminSendNewsletterAction(id: string): Promise<{ ok: boolean; sent?: number; skipped?: number; failed?: number; error?: string }> {
+export async function adminSendNewsletterAction(
+  id: string,
+): Promise<{ ok: boolean; queued?: number; brokerSplit?: Record<string, number>; large?: boolean; error?: string }> {
   const gate = await requireAdmin()
   if (!gate.ok) return { ok: false, error: 'unauthorized' }
 
@@ -234,70 +222,21 @@ export async function adminSendNewsletterAction(id: string): Promise<{ ok: boole
   if (letter.status === 'sent' || letter.status === 'sending') return { ok: false, error: 'already_sent' }
   if (!letter.body_html && !letter.body_text) return { ok: false, error: 'empty_body' }
 
-  // Brand-voice hard-fail gate. A newsletter is public copy but the CI voice gate
-  // skips app/admin/, so check here before a single send goes out.
+  // Brand-voice hard-fail gate (R-1 / G-NL-4). A newsletter is public copy but the
+  // CI voice gate skips app/admin/, so enforce it here before anything enqueues.
   const voice = checkNewsletterVoice({ subject: letter.subject, bodyHtml: letter.body_html, bodyText: letter.body_text })
   if (!voice.ok) return { ok: false, error: `Brand-voice check failed. Fix before sending: ${voice.violations.join('; ')}` }
 
-  const segment = letter.audience.startsWith('segment:') ? (letter.audience.slice('segment:'.length) as NewsletterSegment) : undefined
-  const recipients = await getActiveSubscribersForSend({ segment })
-  if (recipients.length === 0) return { ok: false, error: 'no_recipients' }
-
-  // Record who sent it (per-broker attribution) + lock the send.
-  await updateNewsletter(id, { status: 'sending', recipient_count: recipients.length })
+  // Approve = ENQUEUE (spec §6, gate G-NL-9). The old path sent up to 5,000 emails
+  // in this request — a Vercel timeout stranded status='sending' forever. Now this
+  // records the approver, then enqueueNewsletter() wins a CAS lock, freezes each
+  // recipient's broker + engagement tier, writes the queue + tranche schedule, and
+  // returns immediately. The send cron drains it, re-checking suppression + active
+  // per recipient (S-8). No synchronous per-recipient loop in the request path.
   await updateNewsletter(id, { sent_by: gate.email })
+  const result = await enqueueNewsletter(id)
+  if (!result.ok) return { ok: false, error: result.error }
 
-  // Broker attribution: every link in the newsletter carries ?agent=<sender>
-  // so the broker sees opens/clicks routed to them (CRM cutover 2026-06-24).
-  const brokerSlug = CRM_BROKER_BY_EMAIL[gate.email.trim().toLowerCase()] ?? 'matt'
-
-  let sent = 0
-  let skipped = 0
-  let failed = 0
-  const sentIds: string[] = []
-
-  for (const r of recipients) {
-    // Honor the suppression chokepoint (fails closed). Use the person id when
-    // the subscriber is linked to a CRM person, else resolve by email so an
-    // unlinked subscriber row is still checked against the consent record.
-    if (r.crm_person_id) {
-      const sup = await isSuppressed(r.crm_person_id, 'email')
-      if (sup.suppressed) { skipped++; continue }
-    } else {
-      const sup = await isSuppressedByEmail(r.email, 'email')
-      if (sup.suppressed) { skipped++; continue }
-    }
-    const u = unsubUrl(r.unsubscribe_token)
-    const rawHtml = letter.body_html ? wrapNewsletterHtml({ bodyHtml: letter.body_html, previewText: letter.preview_text, unsubscribeUrl: u }) : undefined
-    const html = rawHtml
-      ? attributeOutbound(rawHtml, { brokerSlug, personId: r.crm_person_id ?? null, emailKey: `newsletter:${id}`, label: letter.subject })
-      : undefined
-    // Multipart guarantee (gate G-NL-3): never dispatch a whitespace-only text
-    // part. If the admin left the plain-text body blank, derive it from the HTML
-    // (the compose form doesn't expose a text field), so every send is real
-    // multipart — better inbox placement and a readable copy in text-only clients.
-    const bodyText = letter.body_text?.trim() || htmlToPlainText(letter.body_html ?? '')
-    const text = bodyText + newsletterTextFooter(u)
-    const res = await sendEmail({
-      to: r.email,
-      from: NEWSLETTER_FROM,
-      subject: letter.subject,
-      html,
-      text,
-      headers: { 'List-Unsubscribe': `<${u}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
-    })
-    // One tracking row per recipient; the Resend message id ties webhook
-    // opens/clicks back to this person.
-    await recordRecipientSend({ newsletterId: id, subscriberId: r.id, email: r.email, resendMessageId: res.id ?? null, failed: Boolean(res.error) })
-    if (res.error) { failed++ } else { sent++; sentIds.push(r.id) }
-  }
-
-  const iso = new Date().toISOString()
-  await markSubscribersSent(sentIds, iso)
-  await updateNewsletter(id, { status: failed > 0 && sent === 0 ? 'failed' : 'sent', sent_count: sent, failed_count: failed, sent_at: iso })
-
-  // Reflect the sent/failed status in the admin newsletters list without a manual reload (O13).
   revalidatePath('/admin/newsletters')
-
-  return { ok: true, sent, skipped, failed }
+  return { ok: true, queued: result.queued, brokerSplit: result.brokerSplit, large: result.large }
 }

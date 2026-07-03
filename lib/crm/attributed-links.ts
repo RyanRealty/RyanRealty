@@ -47,6 +47,10 @@ export interface AttributeOutboundOptions {
   emailKey: string
   /** Human label for the comms chain, usually the subject line. */
   label: string
+  /** Recipient's short broker slug — stamped into the tracking token so opens/clicks carry broker (spec §5 / H1). */
+  broker?: string
+  /** Optional token TTL (newsletter links set 180d); omitted = non-expiring, unchanged. */
+  ttlSeconds?: number
 }
 
 /**
@@ -79,6 +83,8 @@ export function attributeOutbound(html: string, opts: AttributeOutboundOptions):
     personId,
     emailKey: opts.emailKey,
     label: opts.label,
+    broker: opts.broker,
+    ttlSeconds: opts.ttlSeconds,
   })
 }
 

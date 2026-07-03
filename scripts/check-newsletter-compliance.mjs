@@ -42,7 +42,9 @@ const ROOT = process.cwd()
 const PATHS = {
   prepare: join(ROOT, 'lib/email/prepare.ts'),
   shell: join(ROOT, 'lib/email-templates/newsletter-shell.ts'),
-  newsletter: join(ROOT, 'app/actions/newsletter.ts'),
+  // The bulk send path is now the queue drain (Phase 3); the one-click path stays
+  // in contact-newsletter.ts. Both must carry the RFC 8058 headers + multipart.
+  sendQueue: join(ROOT, 'lib/newsletter/send-queue.ts'),
   contactNewsletter: join(ROOT, 'app/actions/contact-newsletter.ts'),
 }
 
@@ -60,7 +62,7 @@ function safeRead(path) {
  * Pure: run every check against already-read file contents. Returns an array
  * of { id, ok, detail } — one row per assertion, in check order.
  */
-export function runChecks({ prepare, shell, newsletter, contactNewsletter }) {
+export function runChecks({ prepare, shell, sendQueue, contactNewsletter }) {
   const results = []
 
   // G-NL-1a: BROKERAGE_POSTAL_ADDRESS defined with a real street-number fallback.
@@ -105,9 +107,9 @@ export function runChecks({ prepare, shell, newsletter, contactNewsletter }) {
     })
   }
 
-  // G-NL-2: RFC 8058 headers on both newsletter send actions.
+  // G-NL-2: RFC 8058 headers on both newsletter send paths (bulk drain + one-click).
   for (const [label, src] of [
-    ['app/actions/newsletter.ts', newsletter],
+    ['lib/newsletter/send-queue.ts', sendQueue],
     ['app/actions/contact-newsletter.ts', contactNewsletter],
   ]) {
     if (src == null) {
@@ -126,17 +128,17 @@ export function runChecks({ prepare, shell, newsletter, contactNewsletter }) {
     })
   }
 
-  // G-NL-3: non-empty plain-text fallback in app/actions/newsletter.ts.
-  if (newsletter == null) {
-    results.push({ id: 'G-NL-3 plain-text-fallback', ok: false, detail: 'app/actions/newsletter.ts not found' })
+  // G-NL-3: non-empty plain-text fallback in the queue render path.
+  if (sendQueue == null) {
+    results.push({ id: 'G-NL-3 plain-text-fallback', ok: false, detail: 'lib/newsletter/send-queue.ts not found' })
   } else {
-    const ok = /letter\.body_text\?\.trim\(\)\s*\|\|\s*htmlToPlainText\(/.test(newsletter)
+    const ok = /body_text\?\.trim\(\)\s*\|\|\s*htmlToPlainText\(/.test(sendQueue)
     results.push({
       id: 'G-NL-3 plain-text-fallback',
       ok,
       detail: ok
-        ? 'app/actions/newsletter.ts — body_text falls back to htmlToPlainText(...) when the admin left it blank'
-        : 'app/actions/newsletter.ts — expected the fallback pattern `letter.body_text?.trim() || htmlToPlainText(` (a send could dispatch empty plain-text)',
+        ? 'lib/newsletter/send-queue.ts — renderForRecipient falls back to htmlToPlainText(...) when body_text is blank'
+        : 'lib/newsletter/send-queue.ts — expected the fallback pattern `body_text?.trim() || htmlToPlainText(` (a send could dispatch empty plain-text)',
     })
   }
 
@@ -147,7 +149,7 @@ function loadInputs() {
   return {
     prepare: safeRead(PATHS.prepare),
     shell: safeRead(PATHS.shell),
-    newsletter: safeRead(PATHS.newsletter),
+    sendQueue: safeRead(PATHS.sendQueue),
     contactNewsletter: safeRead(PATHS.contactNewsletter),
   }
 }

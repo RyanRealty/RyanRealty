@@ -118,7 +118,9 @@ describe('sendNewsletterToContactAction', () => {
     sentNewsletterId = 'nl-1'
     getNewsletter.mockResolvedValue({ id: 'nl-1', subject: 'June update', preview_text: null, body_html: '<p>hi</p>', body_text: null })
     subscribeToNewsletter.mockResolvedValue({ ok: true })
-    subRow = { id: 'sub-1', unsubscribe_token: 'tok-1' }
+    // status is required now — the one-click path refuses to reactivate an opt-out
+    // (S-10). An already-active subscriber is used as-is (segment preserved).
+    subRow = { id: 'sub-1', status: 'active', unsubscribe_token: 'tok-1' }
     sendEmail.mockResolvedValue({ id: 'resend-1' })
 
     const r = await sendNewsletterToContactAction(5)
@@ -129,6 +131,21 @@ describe('sendNewsletterToContactAction', () => {
     // One timeline row logged for the send.
     expect(insertSpy).toHaveBeenCalledTimes(1)
     expect(insertSpy.mock.calls[0][0].kind).toBe('email_out')
+  })
+
+  it('refuses to reactivate an opt-out (S-10)', async () => {
+    getCrmAccess.mockResolvedValue({ email: 'matt@ryan-realty.com', role: 'superuser', brokerSlug: 'matt' })
+    requirePersonInScope.mockResolvedValue({ ok: true })
+    personRow = { id: 5, fub_legacy_id: 42, emails: [{ value: 'a@b.com', isPrimary: 1 }], name: 'A', assigned_broker: 'matt' }
+    isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    sentNewsletterId = 'nl-1'
+    getNewsletter.mockResolvedValue({ id: 'nl-1', subject: 'June update', preview_text: null, body_html: '<p>hi</p>', body_text: null })
+    subRow = { id: 'sub-1', status: 'unsubscribed', unsubscribe_token: 'tok-1' }
+
+    const r = await sendNewsletterToContactAction(5)
+    expect(r.ok).toBe(false)
+    expect(sendEmail).not.toHaveBeenCalled()
+    expect(subscribeToNewsletter).not.toHaveBeenCalled() // never resurrected
   })
 
   it('never throws', async () => {

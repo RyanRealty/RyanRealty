@@ -1,6 +1,14 @@
 {
   "crons": [
     {
+      "path": "/api/cron/newsletter-send",
+      "schedule": "*/2 * * * *"
+    },
+    {
+      "path": "/api/cron/newsletter-reconcile",
+      "schedule": "0 * * * *"
+    },
+    {
       "path": "/api/cron/sync-delta",
       "schedule": "3,18,33,48 * * * *"
     },

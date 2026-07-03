@@ -30,6 +30,8 @@ import { sendEmail } from '@/lib/resend'
 import { wrapNewsletterHtml, newsletterTextFooter } from '@/lib/email-templates/newsletter-shell'
 import { attributeSiteLinks } from '@/lib/crm/merge'
 import { instrumentEmailHtml } from '@/lib/email-tracking'
+import { checkNewsletterVoice } from '@/lib/email/voice-precheck'
+import { NEWSLETTER_FROM_ADDRESS } from '@/lib/newsletter/send-queue'
 import {
   subscribeToNewsletter,
   getNewsletter,
@@ -39,7 +41,10 @@ import {
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-const NEWSLETTER_FROM = 'Ryan Realty <newsletter@mail.ryan-realty.com>'
+// Bulk newsletter identity sends from the isolated news. subdomain (audit A4).
+const NEWSLETTER_FROM = `Ryan Realty <${NEWSLETTER_FROM_ADDRESS}>`
+/** One-click newsletter links live 180 days (T-5). */
+const ONE_CLICK_TTL_SECONDS = (180 * 24 * 60 * 60)
 
 function unsubUrl(token: string): string {
   return `${SITE_URL}/newsletter/unsubscribe?token=${encodeURIComponent(token)}`
@@ -108,21 +113,35 @@ export async function sendNewsletterToContactAction(personId: number): Promise<C
     const letter = await resolveCurrentNewsletter()
     if (!letter) return { ok: false, error: 'No newsletter is ready to send' }
 
-    // Ensure the contact is a subscriber so we have an unsubscribe token + a
-    // tracking row to key opens/clicks on. Idempotent (reactivates if needed).
-    await subscribeToNewsletter({
-      email: to,
-      name: (person.name as string | null) ?? null,
-      source: 'crm-one-click',
-      segment: 'general',
-      crmPersonId: personId,
-      fubPersonId: (person.fub_legacy_id as number | null) ?? undefined,
-    })
-    const { data: sub } = await sb
+    // Voice hard-fail gate (G-NL-4) — parity with the bulk send path (R-1).
+    const voice = checkNewsletterVoice({ subject: letter.subject, bodyHtml: letter.body_html, bodyText: letter.body_text })
+    if (!voice.ok) return { ok: false, error: `Brand-voice check failed: ${voice.violations.join('; ')}` }
+
+    // Never resurrect an opt-out (S-10). If this email is already a subscriber who
+    // unsubscribed / bounced / complained, refuse — don't reactivate + send. Only a
+    // brand-new email gets subscribed; an already-active one is used as-is, so its
+    // segment is never clobbered to 'general'.
+    const { data: existing } = await sb
       .from('newsletter_subscribers')
-      .select('id,unsubscribe_token')
+      .select('id, status, unsubscribe_token')
       .ilike('email', to)
       .maybeSingle()
+    if (existing && (existing.status as string) !== 'active') {
+      return { ok: false, error: `Contact previously ${existing.status}. Not re-subscribing or sending.` }
+    }
+    if (!existing) {
+      await subscribeToNewsletter({
+        email: to,
+        name: (person.name as string | null) ?? null,
+        source: 'crm-one-click',
+        segment: 'general',
+        crmPersonId: personId,
+        fubPersonId: (person.fub_legacy_id as number | null) ?? undefined,
+      })
+    }
+    const { data: sub } = existing
+      ? { data: existing }
+      : await sb.from('newsletter_subscribers').select('id,unsubscribe_token').ilike('email', to).maybeSingle()
     if (!sub?.unsubscribe_token) return { ok: false, error: 'Could not resolve subscriber' }
 
     const u = unsubUrl(sub.unsubscribe_token as string)
@@ -131,7 +150,8 @@ export async function sendNewsletterToContactAction(personId: number): Promise<C
     const fubId = (person.fub_legacy_id as number | null) ?? null
 
     // Build the HTML: shell + unsub footer, then attribute every site link to
-    // the acting broker + stamp recipient identity, then instrument tracking.
+    // the acting broker + stamp recipient identity, then instrument tracking with
+    // the broker baked into the token (§5/H1) + a 180-day TTL (T-5).
     let html: string | undefined
     if (letter.body_html) {
       const attributed = attributeSiteLinks(letter.body_html, actingSlug, fubId)
@@ -140,6 +160,8 @@ export async function sendNewsletterToContactAction(personId: number): Promise<C
         personId,
         emailKey: `newsletter:${letter.id}:p${personId}`,
         label: letter.subject,
+        broker: actingSlug,
+        ttlSeconds: ONE_CLICK_TTL_SECONDS,
       })
     }
     const text = letter.body_text
@@ -154,16 +176,28 @@ export async function sendNewsletterToContactAction(personId: number): Promise<C
       text,
       headers: { 'List-Unsubscribe': `<${u}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
     })
-    if (res.error) return { ok: false, error: res.error }
-
-    // Per-recipient tracking row (opens/clicks tie back via the Resend id).
+    // Per-recipient tracking row — recorded on FAILURE too (S-11), so a failed
+    // one-click send still leaves an auditable attempt, exactly like the bulk path.
     await recordRecipientSend({
       newsletterId: letter.id,
       subscriberId: sub.id as string,
       email: to,
       resendMessageId: res.id ?? null,
-      failed: false,
+      failed: Boolean(res.error),
     })
+    if (res.error) {
+      await sb.from('crm_timeline').insert({
+        person_id: personId,
+        kind: 'email_out',
+        title: letter.subject,
+        body: `Newsletter send failed: ${res.error}`,
+        payload: { newsletterId: letter.id, to, error: res.error, oneClick: true },
+        broker: actingSlug,
+        source: 'app',
+        dedupe_key: `newsletter-fail:${letter.id}:${personId}:${res.error.slice(0, 40)}`,
+      })
+      return { ok: false, error: res.error }
+    }
     // Log to the contact timeline so the send shows on the record card.
     await sb.from('crm_timeline').insert({
       person_id: personId,
