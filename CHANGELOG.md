@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.720.0 (2026-07-03)
+
+### Features
+- feat(newsletter): Phase 1 schema + G-NL-14 gate + spec v1.2 (audit-corrected)
+
+---
+
+
 ## v1.719.0 (2026-07-03)
 
 ### Features
