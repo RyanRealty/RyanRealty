@@ -9,6 +9,27 @@
 
 ---
 
+## 0. EXECUTION APPROACH — ONE COORDINATED MIGRATION (Matt directive 2026-07-03)
+
+"We will do this all at once." The tag consolidation + smart-list rebuild + stage remap (16→5) +
+auto-tagging + stage automation ship as **ONE coordinated, reversible batch** — not piecemeal (the
+pieces are interdependent: segment tags feed the smart lists; stages relate to segments). Single backup
+of everything touched (tags array + stage per contact), single dry-run for Matt's review with real
+before/after counts, then apply, then rebuild lists + install auto-tagging/stage-automation, then verify.
+Specs: `CRM_TAG_SMARTLIST_STREAMLINE_PLAN_2026-07-03.md` + `CRM_STAGES_AUTOMATION_2026-07-03.md`.
+
+**PRE-RUN CHECKLIST — settle before the single execution:**
+1. Migration Realtors **feeder-market list** (or confirm observed set: greater Seattle/WA, CA metros incl.
+   Bay Area + SoCal, Portland metro, Colorado Front Range).
+2. **`neighborhood`** (17,763 uses) — keep as tag, or move to a field?
+3. **Vendors** — DEFERRED ("add later"); likely OUT of this first run (no existing list found). Confirm.
+4. **Stages** — 5-stage set confirmed (New removed); realtors/vendors → **Sphere** (Matt's default call,
+   overridable); confirm the **45-day** demotion window.
+5. The **83 manual-review tags** — Matt rules on these from the dry-run.
+6. Final **"go"** → run backup + dry-run, Matt reviews counts, then apply everything in one pass.
+
+---
+
 ## 1. THE ONE THING ONLY MATT CAN DO (unblocks a live problem)
 
 **Revoke Follow Up Boss's access to Matt's Google account** → `myaccount.google.com/connections` →
