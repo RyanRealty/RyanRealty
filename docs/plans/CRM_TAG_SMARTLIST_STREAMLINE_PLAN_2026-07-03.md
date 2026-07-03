@@ -156,8 +156,12 @@ incomplete address gets `owner:unknown` rather than a guess.
 
 ## 8. Open items for Matt
 
-1. **Feeder-market list** for Migration Realtors — use the observed set (greater Seattle/WA, CA metros
-   incl. Bay Area + SoCal, Portland metro, Colorado Front Range), or a specific list you work?
+1. **Migration Realtors** — RESOLVED (Matt 2026-07-03): DATA-DRIVEN, no hardcoded market list.
+   `realtor:migration` = a realtor with any `<City> realtor` tag (the 10 present are all feeder markets:
+   Seattle, San Francisco, Portland, Denver, San Diego, Boulder, La Mesa, Oakland, Beverly Hills, Los
+   Angeles) OR `migration broker` (~100). Self-maintaining (a new `<City> realtor` tag auto-adds that
+   market). `realtor:local` = every other realtor (~2,240). **`audience:broker-recruit` (233) → RETIRE**
+   — Matt doesn't recruit agents; all 233 are realtors with no feeder signal → default `realtor:local`.
 2. **`neighborhood`** — RESOLVED (Matt 2026-07-03): move to a single-select **field** "Neighborhood",
    NOT a tag. A property is in exactly one neighborhood → single-valued → field. Populate in the
    migration by moving the existing 28 tag values (already assigned); going forward **derive from the
