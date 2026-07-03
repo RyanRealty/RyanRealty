@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.727.1 (2026-07-03)
+
+### Maintenance
+- chore(design-tokens): except content-engine map pins (VenueMap)
+
+---
+
+
 ## v1.727.0 (2026-07-03)
 
 ### Features
