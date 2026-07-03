@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.718.5 (2026-07-03)
+
+### Maintenance
+- docs(crm): streamline plan v2 — corrected & execution-ready (closes all audit findings)
+
+---
+
+
 ## v1.718.4 (2026-07-03)
 
 ### Maintenance
