@@ -44,6 +44,12 @@ type KbHeroProps = {
   portraitSrc?: string
   /** Show the plain-language property search. Default true; set false on profile/non-search heroes (e.g. a broker page). */
   showSearch?: boolean
+  /**
+   * Render the sub-line as the plain `lead` only, without the "Homes for sale"
+   * stat prefix or the median/pending stats. Use on content hubs (events,
+   * venues, golf) whose lead is a full sentence, not a listings count.
+   */
+  statless?: boolean
 }
 
 export function KbHero({
@@ -58,6 +64,7 @@ export function KbHero({
   mediaCaption,
   portraitSrc,
   showSearch = true,
+  statless = false,
 }: KbHeroProps) {
   const root = useRef<HTMLElement>(null)
   const router = useRouter()
@@ -181,9 +188,32 @@ export function KbHero({
         ) : null}
         <div className="hero-sub-row">
           <p className="hero-sub">
-            {data.activeCount != null ? <><b>{data.activeCount.toLocaleString('en-US')} homes</b> for sale</> : 'Homes for sale'} {lead}
-            {median ? <> Median list <b>{median}</b>.</> : null}
-            {data.medianDaysToPending != null ? <> Pending in <b>{data.medianDaysToPending} days</b>.</> : null}
+            {statless ? (
+              lead
+            ) : (
+              <>
+                {data.activeCount != null ? (
+                  <>
+                    <b>{data.activeCount.toLocaleString('en-US')} homes</b> for sale
+                  </>
+                ) : (
+                  'Homes for sale'
+                )}{' '}
+                {lead}
+                {median ? (
+                  <>
+                    {' '}
+                    Median list <b>{median}</b>.
+                  </>
+                ) : null}
+                {data.medianDaysToPending != null ? (
+                  <>
+                    {' '}
+                    Pending in <b>{data.medianDaysToPending} days</b>.
+                  </>
+                ) : null}
+              </>
+            )}
           </p>
           <div className="hero-cta-row">
             <a href="/homes-for-sale" className="btn">Browse <span className="arr">→</span></a>

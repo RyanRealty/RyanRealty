@@ -10,6 +10,7 @@ import { fetchAllRows } from '@/lib/supabase/paginate'
 import { isCentralOregonCity, SITE_CITY_SLUGS } from '@/lib/central-oregon'
 import { CO_EVENTS } from '@/data/co-events'
 import { CO_VENUES } from '@/data/co-venues'
+import { CO_GOLF_COURSES } from '@/data/co-golf'
 
 // The ONLY slugs with a real /communities/[slug] page — the curated resort
 // registry (data/resort-communities.json). The old code emitted every row of
@@ -125,6 +126,14 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     staticPages.push({
       url: `${baseUrl}/central-oregon/venues/${venue.slug}`,
       lastModified: venue.lastVerified,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    })
+  }
+  for (const course of CO_GOLF_COURSES) {
+    staticPages.push({
+      url: `${baseUrl}/central-oregon/golf/${course.slug}`,
+      lastModified: course.lastVerified,
       changeFrequency: 'monthly',
       priority: 0.5,
     })

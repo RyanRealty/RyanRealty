@@ -96,6 +96,7 @@ export default function VenuesIndexPage() {
           lead={`${total} of the venues that carry live music and performing arts across Central Oregon, from the amphitheater on the Deschutes to downtown theaters and brewery stages. Pick one to see what is on and the homes for sale nearby.`}
           videoSrc={null}
           posterSrc={CONTENT_HERO_IMAGES.venues}
+          statless
         />
 
         {music.length > 0 ? (

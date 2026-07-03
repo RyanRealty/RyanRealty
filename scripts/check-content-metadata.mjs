@@ -50,9 +50,14 @@ function checkFamily(label, file) {
 
 checkFamily('event', path.join(ROOT, 'data/co-events.ts'))
 checkFamily('venue', path.join(ROOT, 'data/co-venues.ts'))
+checkFamily('golf', path.join(ROOT, 'data/co-golf.ts'))
 
 // ── One <h1> per detail template ──
-for (const t of ['app/central-oregon/events/[slug]/page.tsx', 'app/central-oregon/venues/[slug]/page.tsx']) {
+for (const t of [
+  'app/central-oregon/events/[slug]/page.tsx',
+  'app/central-oregon/venues/[slug]/page.tsx',
+  'app/central-oregon/golf/[slug]/page.tsx',
+]) {
   const src = fs.readFileSync(path.join(ROOT, t), 'utf8')
   const h1s = (src.match(/<h1[\s>]/g) || []).length
   if (h1s !== 1) fail.push(`${t}: has ${h1s} <h1> tags (must be exactly 1 for accessibility)`)

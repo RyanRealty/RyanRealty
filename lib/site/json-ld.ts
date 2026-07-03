@@ -113,6 +113,7 @@ export type PlaceInput = {
     | 'MusicVenue'
     | 'PerformingArtsTheater'
     | 'EventVenue'
+    | 'TouristAttraction'
   name: string
   description?: string
   url?: string

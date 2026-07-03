@@ -41,6 +41,8 @@ export const CONTENT_HERO_IMAGES = {
   events: '/images/hero/hero-old-mill-master-4k.jpg',
   /** Venues index: canonical brand hero */
   venues: '/images/hero/hero-old-mill-master-4k.jpg',
+  /** Golf index: canonical brand hero */
+  golf: '/images/hero/hero-old-mill-master-4k.jpg',
 } as const
 
 export type ContentHeroKey = keyof typeof CONTENT_HERO_IMAGES

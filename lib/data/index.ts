@@ -579,6 +579,15 @@ export type {
   VenueStats,
 } from '@/lib/data/venues/getVenueDetail'
 
+// Central Oregon golf courses — the region's public/resort/semi-private courses
+// (data/co-golf.ts, verified + cited per CLAUDE.md §0). getGolfDetail joins the
+// clubhouse to the live active single-family listings within ~1.5 miles + the
+// live city market band. Cross-links to resort community pages.
+export { getGolfForIndex, getGolfCount } from '@/lib/data/golf/getGolf'
+export type { GolfIndex } from '@/lib/data/golf/getGolf'
+export { getGolfDetail } from '@/lib/data/golf/getGolfDetail'
+export type { GolfDetail, GolfHomeTile, GolfStats } from '@/lib/data/golf/getGolfDetail'
+
 // More functions get exported here as Wave 1-3 lands them.
 
 // Brokerage track record (seller conviction LP + similar surfaces)

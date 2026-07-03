@@ -72,12 +72,29 @@ for (const { slug, block } of objects(path.join(ROOT, 'data/co-venues.ts'))) {
   if (!/^https:\/\//.test(calendar ?? '')) fail.push(`venue/${slug}: calendarUrl not https`)
 }
 
+// ── Golf ──
+const GOLF_ACCESS = ['public', 'resort', 'semi-private', 'private']
+for (const { slug, block } of objects(path.join(ROOT, 'data/co-golf.ts'))) {
+  const name = field(block, 'name')
+  const geoSlug = field(block, 'geoSlug')
+  const access = field(block, 'access')
+  const holes = rawField(block, 'holes')
+  const official = field(block, 'officialUrl')
+  if (!name) fail.push(`golf/${slug}: missing name (Place.name)`)
+  if (!geoSlug) fail.push(`golf/${slug}: missing geoSlug (Place.address.addressLocality)`)
+  if (!access || !GOLF_ACCESS.includes(access)) fail.push(`golf/${slug}: access '${access}' invalid`)
+  if (!holes || !/^\d+$/.test(holes)) fail.push(`golf/${slug}: holes '${holes}' not an integer`)
+  if (!/^https:\/\//.test(official ?? '')) fail.push(`golf/${slug}: officialUrl not https`)
+}
+
 // ── Templates must emit schema (MetadataBlock) ──
 const templates = [
   'app/central-oregon/events/page.tsx',
   'app/central-oregon/events/[slug]/page.tsx',
   'app/central-oregon/venues/page.tsx',
   'app/central-oregon/venues/[slug]/page.tsx',
+  'app/central-oregon/golf/page.tsx',
+  'app/central-oregon/golf/[slug]/page.tsx',
 ]
 for (const t of templates) {
   const src = fs.readFileSync(path.join(ROOT, t), 'utf8')

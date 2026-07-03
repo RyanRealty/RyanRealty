@@ -113,6 +113,7 @@ export default function EventsIndexPage() {
           lead={`${total} of the festivals, races, and seasonal events that anchor the year across Bend, Redmond, Sisters, and Sunriver. Pick one to see its confirmed dates and the homes for sale near the venue.`}
           videoSrc={null}
           posterSrc={CONTENT_HERO_IMAGES.events}
+          statless
         />
 
         {upcoming.length > 0 ? (
