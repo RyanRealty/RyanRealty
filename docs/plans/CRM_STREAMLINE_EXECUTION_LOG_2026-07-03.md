@@ -82,3 +82,26 @@ Live progress record for the coordinated streamline execution. Specs: `CRM_STREA
 - PeopleSidebar renders a "Stages" strip above Collections: the 8 active stages as chips w/ live counts,
   linking to ?stage=<key> (active-state highlight). Wired from `app/admin/(protected)/crm/page.tsx`.
 - 0 TS errors; 450 CRM data tests green. Browser-verify on production after Vercel deploy.
+
+---
+
+## ✅ COMPLETE — all phases applied + browser-verified on production (2026-07-03)
+
+| Phase | Result (live-verified) |
+|---|---|
+| 1 Tag migration | segment:seller 7,524 · compliance:hard-stop 3,229 (intact) · avg tags 14→2.82 · 0 dropped patterns |
+| 2 Smart lists | 12 canonical lists render + FILTER correctly (Sellers → 7,524, verified in browser) |
+| 3 Stage remap | Nurture 15,838 · Sphere 2,343 · Active 12 · Past 32 · Trash 2 · 0 on dead stages |
+| 3B Stages strip | live desktop strip, 8 stages w/ counts; clicking Sphere → 2,343 filtered (verified) |
+| 4 Auto-tagging | new/re-touched leads self-emit segment/realtor tags; new leads enter at **Nurture** |
+| 5 Browser verify | caught+fixed the filter-bag bug (lists showed everyone) + the new-lead-stage gap |
+| 6 Final review | full suite green (only unrelated concurrent newsletter test fails); integrity clean |
+
+**Reversibility:** every phase has a disk backup + restore script
+(`out/streamline-backup-v2-*.json`, `out/stage-migration-backup-*.json`, migration down-paths).
+
+**Deferred (documented next increment):** stage-transition automation (promote on inbound reply / demote on
+30d no-two-way). Nothing sits in Engaged yet, and a scheduled book-mutation needs Matt's explicit ops go;
+the two-way source must be computed from `crm_timeline` inbound rows (audit P1-3), not `last_activity_at`.
+
+**Tech debt logged:** unify `listCrmPeople` onto the `ast` compiler so `filter`/`ast` can't drift.
