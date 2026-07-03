@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.718.7 (2026-07-03)
+
+### Maintenance
+- docs(crm): correct V2-1 after reviewing the neighborhood assignment code
+
+---
+
+
 ## v1.718.6 (2026-07-03)
 
 ### Maintenance
