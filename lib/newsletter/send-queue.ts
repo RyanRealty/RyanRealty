@@ -7,6 +7,7 @@ import { sendEmail } from '@/lib/resend'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { wrapNewsletterHtml, newsletterTextFooter, type SenderBroker } from '@/lib/email-templates/newsletter-shell'
 import { htmlToPlainText } from '@/lib/email/prepare'
+import { getLatestDeliverability, deliverabilityVerdict } from '@/lib/data/deliverability'
 import {
   anyNewsletterEverSent,
   bumpScheduleSent,
@@ -124,6 +125,18 @@ export async function enqueueNewsletter(newsletterId: string): Promise<EnqueueRe
       return { ok: false, error: 'no_recipients' }
     }
 
+    // Pre-send reputation gate for a LARGE send (§6.5 rule 4 / G-NL-20). Block on a
+    // LOW/BAD Gmail reputation or spam rate over the 0.30% ceiling; no Postmaster
+    // data yet → 'warmup' (allowed — the tranche schedule ramps caps, never blasts).
+    const large = audience.length > LARGE_SEND_THRESHOLD
+    if (large) {
+      const verdict = deliverabilityVerdict(await getLatestDeliverability())
+      if (verdict.action === 'block') {
+        await releaseNewsletterLock(newsletterId, 'draft')
+        return { ok: false, error: `deliverability_block: ${verdict.reason}` }
+      }
+    }
+
     // Freeze broker + tier per recipient. Two batch reads, not one-per-subscriber.
     const personIds = audience.map((s) => s.crm_person_id).filter((n): n is number => Number.isFinite(n as number))
     const brokerByPerson = await getAssignedBrokersByPersonId(personIds)
@@ -141,7 +154,7 @@ export async function enqueueNewsletter(newsletterId: string): Promise<EnqueueRe
     const queued = await insertQueuedRecipients(newsletterId, rows)
 
     // Tranche schedule (§6.5): small sends go out day 0; large sends tier across days.
-    const large = rows.length > LARGE_SEND_THRESHOLD
+    // `large` was computed above (audience.length) for the reputation gate.
     const warmup = !(await anyNewsletterEverSent())
     const tierCounts = new Map<number, number>()
     for (const r of rows) tierCounts.set(r.tier, (tierCounts.get(r.tier) ?? 0) + 1)

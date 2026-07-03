@@ -46,6 +46,19 @@ already exist (`/blog`, `/communities`, `/schools`, `/parks`, `/guides`).
 
 ## Build progress log (newest first)
 
+**2026-07-03 — Phase 5b (scale-safety, partial) shipped.**
+- Pre-send REPUTATION GATE (G-NL-20): `deliverability_metrics` table (Postmaster snapshots) + DAL
+  (`getLatestDeliverability`, `deliverabilityVerdict`) + integrated into `enqueueNewsletter` — a LARGE
+  send (>1000) is refused on Gmail LOW/BAD reputation or spam>0.30%, with no-data→warmup fallback (safe
+  without the ingestion cron — defaults to the ramp, never a blind blast). 5 verdict unit tests. The
+  circuit-breaker (bounce>2%/complaint>0.1% auto-pause) + warm-up ramp + engagement tiering were already
+  built in Phase 3. Hygiene: dedup via unique(lower(email)) + per-row suppression at drain already hold.
+- **REMAINING for the first LARGE send (external/follow-up):** the Postmaster ingestion cron
+  (`/api/cron/postmaster-sync` → Google DWD → deliverability_metrics) that POPULATES the gate's data —
+  deferred because it needs Google service-account wiring and only produces data after real volume
+  flows; until then no-data→warmup is the safe default. Email-verification provider for hygiene (MX
+  check) also a follow-up. Admin deliverability tile (§6.7) not built.
+
 **2026-07-03 — Phase 7 (admin UX) shipped.**
 - Compose form: added a plain-text body field (posts body_text; auto-gen at send if blank); a
   **Preview-as-broker** tab — an iframe rendering the draft through the REAL shell

@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-03T20:21:11.266Z
+**Generated:** 2026-07-03T20:39:40.282Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -2004,6 +2004,22 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `fub_legacy_id` | bigint | yes |  |
 | `dedupe_key` | text | yes |  |
 | `starred` | boolean | no | false |
+
+### `deliverability_metrics`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `domain` | text | no |  |
+| `metric_date` | date | no |  |
+| `spam_ratio` | numeric | yes |  |
+| `domain_reputation` | text | yes |  |
+| `ip_reputation_summary` | jsonb | no | '[]'::jsonb |
+| `spf_ok` | boolean | yes |  |
+| `dkim_ok` | boolean | yes |  |
+| `dmarc_ok` | boolean | yes |  |
+| `delivery_errors` | jsonb | no | '[]'::jsonb |
+| `fetched_at` | timestamp with time zone | no | now() |
 
 ### `email_campaigns`
 
