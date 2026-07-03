@@ -514,6 +514,42 @@ re-runs the E2E checks and states the sign-off inventory to Matt.
 
 ## PROGRESS (agents append here as slices ship)
 
+### NEW-LEAD REPORT CLEANUP — 16 un-merges de-polluted from New Leads + Activity ✅ (2026-07-02)
+Matt: today's repair splits were "blowing up" his New Leads + Activities. ROOT CAUSE (verified):
+the 2026-07-02 merge-victim split (`scripts/_split-merge-victims.mjs`) inserted 16 fresh
+`crm_people` rows; the `crm_people_lead_created` AFTER-INSERT trigger (migration 20260629140000)
+fires on every insert and stamped a `kind='lead_created'` timeline row at ts=today (fub_created_at
+null, created_at=now). The New Leads report (`getAgentActivityReport` / `getGlobalActivityFeed` /
+`getDashboardKpis`) keys on `lead_created` ts-in-range, so all 16 OLD un-merges (Past/Active
+Client, history back to Jan) surfaced as brand-new leads. FIX per contact (52283..52298, all
+reversible): deleted the erroneous `lead_created` event, backdated `created_at` + `fub_created_at`
+to the survivor spouse's real `fub_created_at` (household lead origin — 2025-06 → 2026-01; NOT the
+2026-06-10 bulk-import `created_at`, itself an artifact), left `source` (already == survivor source
+for all 16 at split time; Evan Karp #52294 `AI- Claude` kept + flagged as a survivor-inherited
+placeholder, NOT invented), wrote a `system` Change Log note. **Genuine same-day leads 52281
+(Serrano Woods, ryan-realty.com) + 52282 (Martinez Paul, expired-listing-cron) UNTOUCHED.**
+CONTACTS CORRECTED: 16 lead_created removed · 16 created_at+fub_created_at backdated · 0 source
+changed (already aligned). PROOF (direct query = what the report renders; live prod confirmed):
+New Leads THIS YEAR 5,252 → **5,236** (−16, live KPI reads 5,236); `lead_created` dated TODAY 18 →
+**2** (only the 2 genuine); live `/admin/crm/activity?types=new_leads` shows exactly 2 TODAY events
+(screenshots in transcript). Net-zero on contact points / relationships / messages / stage / name
+(verified all 16). **ACTIVITY-FEED DECISION: LEFT AS-IS, no filter, no delete.** The 120
+`kind='system'` Change Log rows the repair work wrote do NOT appear in the global Activity feed —
+`getGlobalActivityFeed` ACTIVITY_TYPES has no `system` bucket (excluded by design). They render only
+as per-contact Change Log audit history on the lead-detail Activity tab, which is their correct home
+and the reversibility trail — no global pollution exists, so no display filter was needed. Prefer
+keeping audit history over hiding it. REVERSIBILITY: full pre-fix backup (deleted lead_created rows +
+old created_at/fub_created_at/source per contact) at `out/newlead-cleanup-backup.json`; one-command
+undo `node scripts/_newlead-cleanup-restore.mjs --apply` (round-trip proven on 52283 before batch —
+byte-faithful: created_at/fub_created_at restored, lead_created re-inserted w/ same ts+dedupe_key,
+cleanup note removed). Files: `scripts/_newlead-cleanup-fix.mjs`, `scripts/_newlead-cleanup-restore.mjs`,
+proof `out/newlead-cleanup-PROOF.md`. G44 registry row added for the FOREIGN (concurrent-session)
+`EMAIL_SEND_AUDIT_2026-07-02.md` to unblock the chain. `ci:gates` exit 0 (with the concurrent
+session's untracked `design_system/.../ui_kits/newsletter/` isolated — not mine, left in place;
+proven green with it set aside then restored). vitest 2473 green. SEPARATELY (do NOT act without
+Matt): the 48 FUB 'archived' `email_out` rows still await Matt revoking FUB access —
+`docs/plans/EMAIL_SEND_AUDIT_2026-07-02.md` — left untouched.
+
 ### NOTES RANKING — broker notes above auto-generated system notes ✅ (2026-07-02, commit fe85d8f5)
 Matt: "my notes on top." The person-detail Notes view buried hand-written notes under the
 "Automated outreach packet generated" firehose (e.g. expired lead #18187: 212 notes, all system).

@@ -2,6 +2,21 @@
 
 # CROSS-AGENT HANDOFF — CRM GROUND-UP REBUILD, screen-by-screen under ci:crm-screen-parity (2026-07-01)
 
+## NEW-LEAD REPORT CLEANUP — 16 un-merges de-polluted from New Leads + Activity (2026-07-02)
+Today's merge-victim splits (`scripts/_split-merge-victims.mjs`) recreated 16 OLD spouse un-merges
+(#52283..52298), and the `crm_people_lead_created` AFTER-INSERT trigger stamped each a `lead_created`
+event at ts=today → they flooded Matt's New Leads report + Activity as "new business." FIXED (fully
+reversible): deleted the 16 wrong `lead_created` events, backdated `created_at`+`fub_created_at` to
+each survivor spouse's real `fub_created_at` (household lead origin), source left (already == survivor).
+New Leads THIS YEAR 5,252 → **5,236** (−16, live prod KPI confirmed); today's `lead_created` 18 → 2
+(only genuine #52281 Serrano Woods + #52282 Martinez Paul remain, both UNTOUCHED). Net-zero on contact
+points/messages/relationships/stage/name. Activity-feed `system` Change Log rows LEFT AS-IS (global
+feed excludes `system` by design — no pollution; they're per-contact audit trail). Undo:
+`node scripts/_newlead-cleanup-restore.mjs --apply` (backup `out/newlead-cleanup-backup.json`,
+round-trip proven on 52283). `ci:gates` exit 0 (concurrent `ui_kits/newsletter/` untracked artifact
+isolated), vitest 2473. Full entry: mission PROGRESS "NEW-LEAD REPORT CLEANUP". STILL AWAITING MATT:
+the 48 FUB 'archived' email_out rows (`docs/plans/EMAIL_SEND_AUDIT_2026-07-02.md`) — untouched.
+
 ## NOTES RANKING — Matt's own notes now sit ABOVE auto-generated system notes (2026-07-02, commit fe85d8f5)
 "My notes on top." The person-detail Notes view buried broker notes under the "Automated outreach
 packet generated" firehose (expired lead #18187 = 212 notes, all system). NEW pure classifier
