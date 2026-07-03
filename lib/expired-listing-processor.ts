@@ -32,36 +32,21 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
-  findPersonByEmail,
-  findPersonByPhone,
-  getPersonById,
-  updatePersonProfile,
-  isPlaceholderFubEmail,
-  addPersonTags,
-  addPersonNote,
-  postLeadOriginNote,
-  createRealtimeTask,
-  setPersonCustomFields,
-  sendEvent,
-  type FubEventPerson,
-} from '@/lib/followupboss'
-import {
   lookupOwnerForExpiredListing,
   hasReachableOwnerContact,
   type OwnerLookupResult,
 } from '@/lib/expired-owner-lookup'
-import { mirrorPersonFromFub } from '@/lib/crm/mirror'
-import { autoEnrollByFubId } from '@/lib/crm/enroll'
+import { autoEnrollPerson } from '@/lib/crm/enroll'
+import {
+  ensureNativeLead,
+  enrichNativeLead,
+  createNativeTask,
+} from '@/lib/data/crm/ensureNativeLead'
 
-/**
- * FUB Action Plan id for the Expired Recovery (auto) plan. The 7-touch
- * cadence wired in the prior session (Touch 0 SMS, then day-2 / day-8 /
- * day-14 / day-30 / day-60 / day-90 emails). When this cron creates a
- * fresh expired-listing FUB person, it auto-enrolls them in this plan
- * so Matt does not have to click "Apply Action Plan" by hand on every
- * new lead.
- */
-const EXPIRED_RECOVERY_PLAN_ID = 71
+// Expired leads auto-enroll into the "Expired Recovery (auto)" sequence
+// (crm_sequences.fub_legacy_plan_id = 71) via autoEnrollPerson, which resolves
+// the target sequence from the intent:expired-listing tag through the
+// UI-configurable crm_automation_rules table. No hard-coded plan id needed here.
 import { sendExpiredAlertEmail } from '@/lib/expired-alert'
 
 export const SERVICE_AREA_CITIES = [
@@ -209,57 +194,6 @@ function buildListingNote(l: ExpiredListingRow, owner: OwnerLookupResult): strin
   return lines.join('\n')
 }
 
-function splitOwnerName(fullName: string): { firstName: string; lastName: string } {
-  const parts = fullName.trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return { firstName: 'Owner', lastName: '' }
-  if (parts.length === 1) return { firstName: parts[0], lastName: '' }
-  return { firstName: parts[0], lastName: parts.slice(1).join(' ') }
-}
-
-async function mergeContactOntoFubPerson(
-  personId: number,
-  owner: OwnerLookupResult,
-): Promise<void> {
-  const existing = await getPersonById(personId)
-  if (!existing) return
-
-  const emails = [...(existing.emails ?? [])]
-  const phones = [...(existing.phones ?? [])]
-
-  const hasRealEmail = emails.some(
-    (e) => e.value && !isPlaceholderFubEmail(e.value) && /@/.test(e.value),
-  )
-
-  if (owner.ownerEmail && !emails.some((e) => e.value?.toLowerCase() === owner.ownerEmail?.toLowerCase())) {
-    const withoutPlaceholders = emails.filter((e) => !isPlaceholderFubEmail(e.value))
-    if (hasRealEmail) {
-      withoutPlaceholders.push({ value: owner.ownerEmail, type: 'home' })
-    } else {
-      withoutPlaceholders.unshift({ value: owner.ownerEmail, type: 'home', isPrimary: 1 })
-    }
-    emails.splice(0, emails.length, ...withoutPlaceholders)
-  }
-
-  if (owner.ownerPhone) {
-    const norm = owner.ownerPhone.replace(/\D/g, '').slice(-10)
-    if (norm && !phones.some((p) => p.value?.replace(/\D/g, '').slice(-10) === norm)) {
-      phones.push({ value: owner.ownerPhone, type: 'mobile' })
-    }
-  }
-
-  const { firstName, lastName } = owner.ownerName
-    ? splitOwnerName(owner.ownerName)
-    : { firstName: existing.firstName ?? 'Owner', lastName: existing.lastName ?? '' }
-
-  await updatePersonProfile({
-    personId,
-    firstName,
-    lastName,
-    emails: emails.length ? emails : undefined,
-    phones: phones.length ? phones : undefined,
-  })
-}
-
 async function fetchNewExpiredListings(
   supabase: SupabaseClient,
   maxPerRun: number,
@@ -314,67 +248,52 @@ export async function processNewExpiredListings(
       })
 
       const hasContact = hasReachableOwnerContact(owner)
-      let fubPersonId: number | null = owner.fubPersonId ?? null
+      const lookupPending = !hasContact
+      // The native crm_people id once we create/reuse a lead. Named crmPersonId
+      // (not fubPersonId) because the FUB cutover (2026-06-24) means the workflow
+      // is fully CRM-native now: person + tags + note + task + enrollment all live
+      // in crm_*, no Follow Up Boss round-trip. FUB creds are gone in production,
+      // so the old sendEvent→findPersonByEmail resolve returned null and the whole
+      // downstream (tags/note/task/enroll/CMA) silently no-op'd. This block is the
+      // fix — it creates the lead directly via ensureNativeLead and enrolls via
+      // autoEnrollPerson (crm_people-id keyed), not autoEnrollByFubId.
+      let crmPersonId: number | null = null
       let matchedBy: string = owner.source ?? 'unresolved'
       let skippedFub = false
 
-      if (fubPersonId) {
-        stats.fub_existing_matched++
-        matchedBy = owner.source ?? 'fub-existing'
-        if (hasContact) {
-          await mergeContactOntoFubPerson(fubPersonId, owner)
-        }
-      } else if (hasContact) {
-        const { firstName, lastName } = owner.ownerName
-          ? splitOwnerName(owner.ownerName)
-          : { firstName: 'Expired', lastName: `Listing ${l.ListNumber ?? l.ListingKey}` }
-
-        const person: FubEventPerson = {
-          firstName,
-          lastName,
-          ...(owner.ownerEmail ? { emails: [{ value: owner.ownerEmail }] } : {}),
-          ...(owner.ownerPhone ? { phones: [{ value: owner.ownerPhone }] } : {}),
-        }
-
-        const eventRes = await sendEvent({
-          type: 'Seller Inquiry',
+      if (hasContact) {
+        // Create/reuse the native CRM lead (email-first, then phone dedup).
+        // ensureNativeLead is idempotent and never throws.
+        const native = await ensureNativeLead({
+          name: owner.ownerName ?? `Expired Listing ${l.ListNumber ?? l.ListingKey}`,
+          email: owner.ownerEmail ?? null,
+          phone: owner.ownerPhone ?? null,
           source: 'expired-listing-cron',
-          sourceUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/lp/expired-listing`,
-          pageTitle: 'Expired Listing. Auto-detected.',
-          person,
-          message: `Auto-detected expired listing at ${fullAddress}. Owner source: ${matchedBy}.`,
+          assignedBroker: 'matt',
         })
-        if (eventRes.ok) {
-          if (owner.ownerEmail) {
-            const newly = await findPersonByEmail(owner.ownerEmail)
-            if (newly?.id) fubPersonId = newly.id
-          }
-          if (!fubPersonId && owner.ownerPhone) {
-            const byPhone = await findPersonByPhone(owner.ownerPhone)
-            if (byPhone?.id) fubPersonId = byPhone.id
-          }
-        }
-        if (fubPersonId) {
-          stats.fub_created_dial++
-          matchedBy = `${owner.source ?? 'skiptrace'}-create`
+        if (native.personId > 0) {
+          crmPersonId = native.personId
+          if (native.created) stats.fub_created_dial++
+          else stats.fub_existing_matched++
+          matchedBy = native.created
+            ? `${owner.source ?? 'skiptrace'}-native-create`
+            : `${owner.source ?? 'native'}-existing`
         } else {
+          // Skip = no usable key to anchor a contact point on. Should not happen
+          // here (hasContact implies a real email or phone), but fail safe.
           stats.errors++
         }
       } else {
-        // Matt directive 2026-06-09: no placeholder FUB leads without real contact.
+        // Matt directive 2026-06-09: no placeholder leads without real contact.
+        // County records gave the owner NAME but skip trace returned no phone or
+        // email (typically BATCHDATA_API_KEY missing on Vercel). No person is
+        // created; the audit row + the alert to Matt still fire so nothing is lost.
         skippedFub = true
         stats.fub_skipped_no_contact++
         matchedBy = 'no-contact-skip-fub'
       }
 
-      if (!fubPersonId && !skippedFub) {
-        stats.errors++
-      }
-
-      const lookupPending = !hasContact
-      const listingNote = buildListingNote(l, owner)
-
-      if (fubPersonId) {
+      if (crmPersonId) {
         const plainStatusTag =
           l.StandardStatus === 'Expired'
             ? 'Expired'
@@ -384,98 +303,89 @@ export async function processNewExpiredListings(
                 ? 'withdrawn'
                 : 'Expired'
 
-        await addPersonTags(fubPersonId, [
-          plainStatusTag,
-          'audience:seller',
-          'seller:hot',
-          'intent:expired-listing',
-          'source:expired-listing-cron',
-          'broker:matt',
-          lookupPending ? 'owner-lookup:pending' : 'owner-lookup:resolved',
-          ...(owner.absentee ? ['owner:absentee'] : []),
-          ...(owner.outOfState ? ['geo:out-of-state'] : []),
-          ...(owner.complianceTags ?? []),
-        ])
-
-        await setPersonCustomFields(fubPersonId, {
-          customSellerPropertyAddress: fullAddress,
-          customLeadTier: 'hot',
-          customMoveTimeline: 'ready-now',
+        // Tags + custom + origin note in one native enrichment call. The
+        // intent:expired-listing tag is what auto-enroll keys on for Plan 71.
+        await enrichNativeLead({
+          personId: crmPersonId,
+          tags: [
+            plainStatusTag,
+            'audience:seller',
+            'seller:hot',
+            'intent:expired-listing',
+            'source:expired-listing-cron',
+            'broker:matt',
+            'owner-lookup:resolved',
+            ...(owner.absentee ? ['owner:absentee'] : []),
+            ...(owner.outOfState ? ['geo:out-of-state'] : []),
+            ...(owner.complianceTags ?? []),
+          ],
+          custom: {
+            customClassification: 'EXPIRED',
+            customSellerPropertyAddress: fullAddress,
+            customLeadTier: 'hot',
+            customMoveTimeline: 'ready-now',
+          },
+          assignedBroker: 'matt',
+          originNote: {
+            title: `Expired listing auto-detect. ${l.StandardStatus}`,
+            body: buildListingNote(l, owner),
+          },
         })
+        stats.notes_added++
 
-        stats.plans_enrolled++
-
-        const noteOk = await addPersonNote(fubPersonId, listingNote)
-        if (noteOk) stats.notes_added++
-
-        await postLeadOriginNote(fubPersonId, {
-          source: 'expired-listing-cron',
-          sourceLabel: 'Expired listing auto-detect (MLS delta)',
-          landingPage: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/lp/expired-listing`,
-          audience: 'seller',
-          tier: 'hot',
-          tierReason: `${l.StandardStatus} in service area, ListPrice above floor`,
-          want: `Reach owner at ${fullAddress} before re-list window closes.`,
-          assignedAgent: 'matt',
-          assignmentReason: 'expired listing cron routing',
-          extra: lookupPending
-            ? 'Owner name may be known but contact is still pending. Do not enroll outreach until phone or email is verified.'
-            : `Owner contact resolved via ${owner.source ?? 'skip trace'}.`,
+        const callTaskDue = 60 // minutes
+        await createNativeTask({
+          personId: crmPersonId,
+          name: `Expired listing. ${streetAddress}, ${l.City} (${l.StandardStatus} ${l.status_change_timestamp.slice(0, 10)}).`,
+          type: 'Call',
+          dueInMinutes: callTaskDue,
+          assignedBroker: 'matt',
         })
+        stats.tasks_created++
 
-        const taskOk = await createRealtimeTask({
-          personId: fubPersonId,
-          taskName: `Expired listing. ${streetAddress}, ${l.City} (${l.StandardStatus} ${l.status_change_timestamp.slice(0, 10)}).`,
-          taskType: 'Call',
-          dueInMinutes: 60,
-        })
-        if (taskOk) stats.tasks_created++
-
-        // Mirror BEFORE the CMA request so createCmaRequest can stamp the
-        // CMA link onto crm_people.custom (the expired sequence's opening
-        // text merges %cma_link%; the engine holds the text until it exists).
-        await mirrorPersonFromFub(fubPersonId).catch((e) =>
-          console.warn('[expired-listing-processor] CRM mirror failed:', e),
-        )
-        void autoEnrollByFubId(fubPersonId)
+        // Auto-enroll directly by the native crm_people id (NOT autoEnrollByFubId,
+        // which resolves by fub_legacy_id and would miss a native lead). Fires the
+        // first email touch of Plan 71 Expired Recovery automatically. autoEnrollPerson
+        // is fail-closed on hard-stop + one-master-sequence-per-person. Compliance
+        // (DNC / litigator) is enforced by the sequence engine's suppression gate.
+        await autoEnrollPerson(crmPersonId)
           .then((r) => {
-            if (r.enrolled) console.log(`[expired-listing-processor] auto-enrolled FUB ${fubPersonId} → ${r.sequence}`)
+            if (r.enrolled) {
+              stats.plans_enrolled++
+              console.log(`[expired-listing-processor] auto-enrolled crm ${crmPersonId} → ${r.sequence}`)
+            } else {
+              console.log(`[expired-listing-processor] not enrolled crm ${crmPersonId}: ${r.reason}`)
+            }
           })
           .catch((e) => console.warn('[expired-listing-processor] auto-enroll failed:', e))
 
         // Auto-CMA (Matt directive 2026-06-11): every detected expired listing
         // gets a CMA queued for the property, link attached to the opening
         // outreach. notifyLead=false — the owner never asked us for anything.
-        if (hasContact) {
-          try {
-            const { createCmaRequest, cmaPublicUrl } = await import('@/lib/cma-request')
-            const cmaRes = await createCmaRequest({
-              rawAddress: fullAddress,
-              parsedStreet: streetAddress || null,
-              parsedCity: l.City ?? null,
-              parsedState: 'OR',
-              parsedPostalCode: l.PostalCode ?? null,
-              leadEmail: owner.ownerEmail ?? null,
-              leadName: owner.ownerName ?? null,
-              leadPhone: owner.ownerPhone ?? null,
-              leadTimeline: 'ready-now',
-              leadClassification: 'hot',
-              fubPersonId,
-              requestSource: 'expired-listing-cron',
-              notifyLead: false,
-            })
-            if (cmaRes.ok) {
-              stats.cmas_queued++
-              await addPersonNote(
-                fubPersonId,
-                `CMA queued for ${fullAddress}. Producer builds the 15-page deliverable (SLA 1 business day). Link for outreach once built: ${cmaPublicUrl(cmaRes.slug)} — the opening text in the Expired Recovery sequence carries this link and stays queued until the CMA exists and A2P is approved.`,
-              )
-            } else {
-              console.warn('[expired-listing-processor] CMA request failed:', cmaRes.error)
-            }
-          } catch (e) {
-            console.warn('[expired-listing-processor] CMA request threw:', e)
+        try {
+          const { createCmaRequest } = await import('@/lib/cma-request')
+          const cmaRes = await createCmaRequest({
+            rawAddress: fullAddress,
+            parsedStreet: streetAddress || null,
+            parsedCity: l.City ?? null,
+            parsedState: 'OR',
+            parsedPostalCode: l.PostalCode ?? null,
+            leadEmail: owner.ownerEmail ?? null,
+            leadName: owner.ownerName ?? null,
+            leadPhone: owner.ownerPhone ?? null,
+            leadTimeline: 'ready-now',
+            leadClassification: 'hot',
+            crmPersonId,
+            requestSource: 'expired-listing-cron',
+            notifyLead: false,
+          })
+          if (cmaRes.ok) {
+            stats.cmas_queued++
+          } else {
+            console.warn('[expired-listing-processor] CMA request failed:', cmaRes.error)
           }
+        } catch (e) {
+          console.warn('[expired-listing-processor] CMA request threw:', e)
         }
       }
 
@@ -500,7 +410,7 @@ export async function processNewExpiredListings(
         ownerMailingAddress: owner.ownerMailingAddress ?? null,
         ownerEmail: owner.ownerEmail ?? null,
         ownerPhone: owner.ownerPhone ?? null,
-        fubPersonId,
+        crmPersonId,
         enrichmentNotes: owner.notes ?? null,
       })
       if (alertRes.ok) stats.alert_emails_sent++
@@ -537,7 +447,7 @@ export async function processNewExpiredListings(
           bathrooms: num(l.BathroomsTotal),
           sqft: num(l.TotalLivingAreaSqFt),
           subdivision: l.SubdivisionName,
-          fub_person_id: fubPersonId,
+          fub_person_id: crmPersonId,
           fub_person_matched_by: matchedBy,
           alert_sent_at: alertRes.ok ? new Date().toISOString() : null,
           alert_method: alertRes.ok ? 'resend-email' : null,
@@ -553,7 +463,7 @@ export async function processNewExpiredListings(
         city: l.City,
         status: l.StandardStatus,
         ownerStatus: lookupPending ? 'pending' : owner.status,
-        fubPersonId: fubPersonId ?? undefined,
+        fubPersonId: crmPersonId ?? undefined,
         skippedFub: skippedFub || undefined,
       })
     } catch (err) {

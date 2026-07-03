@@ -191,7 +191,7 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
           phone,
           source: 'expired-lp',
           assignedBroker: assignment.broker,
-          tags: ['audience:seller', 'seller:hot', 'source:expired-lp', 'intent:expired', `broker:${assignment.broker}`],
+          tags: ['audience:seller', 'seller:hot', 'source:expired-lp', 'intent:expired-listing', `broker:${assignment.broker}`],
         })
         if (native.personId > 0) {
           fubPersonId = native.personId
@@ -298,7 +298,7 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
               leadPhone: phone || null,
               leadTimeline: 'ready-now',
               leadClassification: 'hot',
-              fubPersonId,
+              crmPersonId: fubPersonId,
               requestSource: 'expired-listing-cron',
               notifyLead: false,
             }),

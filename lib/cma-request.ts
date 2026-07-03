@@ -38,6 +38,10 @@ export type CreateCmaRequestInput = {
   leadTimeline?: string | null
   leadClassification?: string | null
   fubPersonId?: number | null
+  /** Native crm_people id (post-FUB-cutover callers pass this instead of, or in
+   *  addition to, fubPersonId). Used to stamp the CMA slug onto the correct
+   *  crm_people row directly by id when the lead has no fub_legacy_id. */
+  crmPersonId?: number | null
   /** Optional "About your home" details the seller added on the LP form.
    *  Compiled into the CMA payload (home_details + seller_improvements). */
   sellerHomeDetails?: {
@@ -320,13 +324,14 @@ export async function createCmaRequest(
     // is stamped at finalize (lib/cma-deliver.ts) once the page actually exists,
     // and that is what releases the sequence engine's %cma_link% hold-gate — so a
     // lead never receives an empty or dead CMA link.
-    if (input.fubPersonId) {
+    if (input.crmPersonId || input.fubPersonId) {
       try {
-        const { data: mirror } = await sb
-          .from('crm_people')
-          .select('id,custom')
-          .eq('fub_legacy_id', input.fubPersonId)
-          .maybeSingle()
+        // Prefer a direct crm_people id (native/post-cutover callers); fall back
+        // to resolving by fub_legacy_id for legacy FUB-mirrored leads.
+        const query = sb.from('crm_people').select('id,custom')
+        const { data: mirror } = input.crmPersonId
+          ? await query.eq('id', input.crmPersonId).maybeSingle()
+          : await query.eq('fub_legacy_id', input.fubPersonId!).maybeSingle()
         if (mirror) {
           const custom = { ...((mirror.custom as Record<string, unknown>) ?? {}), cmaSlug: slug }
           await sb.from('crm_people').update({ custom, updated_at: new Date().toISOString() }).eq('id', mirror.id)

@@ -1,6 +1,10 @@
 {
   "$comment": "Ratchet baseline for check-email-send-gated.mjs. Each key is an UNGATED sendEmail/sendBatchEmails call site (<file>:<line>) that is NOT preceded by an isSuppressed()/isSuppressedByEmail() check in its function. The list may only SHRINK. To clear an entry: gate the send and remove the line, then run node scripts/check-email-send-gated.mjs --write. NEVER add a new entry to silence a new lead send, gate it instead. kind=internal: a genuinely-internal or 1:1 transactional send (broker alert, admin notice, the broker's own digest, an e-signature notification to a transaction party) with no marketable lead recipient to suppress; permanently allowlisted. kind=lead-todo is NO LONGER ALLOWED: every lead/client-facing marketing send is now gated through the suppression chokepoint, and the runner asserts only kind=internal entries remain.",
   "sites": {
+    "app/admin/(protected)/crm/inbox/page.tsx:398": {
+      "kind": "internal",
+      "reason": "Internal: inbox note @mention notification to the mentioned BROKER's own ryan-realty.com mailbox (spec 08 paragraph 10.2). Never to a lead — the CRM_MAILBOXES lookup only resolves broker addresses. Client-facing sends on this page route through the gated sendCrmEmailAction. Permanently allowlisted."
+    },
     "app/api/cma/[slug]/gmail-draft/route.ts:166": {
       "kind": "internal",
       "reason": "Internal: Resend fallback to the BROKER (impersonateAs) when the Gmail draft cannot be created. Never to the lead. The lead recipient is gated by isSuppressedByEmail earlier in handleDraft before any draft/fallback runs."
@@ -33,17 +37,17 @@
       "kind": "internal",
       "reason": "Internal: broker-review notification to the assigned broker's email with a signed preview link. processCmaDelivery only builds to 'ready'; it never emails the lead. The lead delivery happens in the gated /api/cma-drafts/[id]/send route and contact-cma.ts."
     },
-    "lib/cma-request.ts:409": {
+    "lib/cma-request.ts:414": {
       "kind": "internal",
-      "reason": "Internal: new-CMA-request notification to the assigned broker (sendBrokerNotification), not the lead. The lead confirmation (sendLeadConfirmation) is gated by isSuppressedByEmail."
+      "reason": "Internal: new-CMA-request notification to the assigned broker (sendBrokerNotification), not the lead. The lead confirmation (sendLeadConfirmation) is gated by isSuppressedByEmail. Line shifted +5 when the crmPersonId input field + slug-stamp support were added (expired-workflow audit 2026-07-03)."
     },
     "lib/deploy-health-alert.ts:53": {
       "kind": "internal",
       "reason": "Internal: ops alert to MATT_ALERT_EMAIL when production has fallen behind main (a stuck/failed deploy). No lead recipient. Permanently allowlisted."
     },
-    "lib/expired-alert.ts:108": {
+    "lib/expired-alert.ts:129": {
       "kind": "internal",
-      "reason": "Internal: expired-listing alert to Matt's inbox (MATT_ALERT_EMAIL), not the homeowner. Permanently allowlisted."
+      "reason": "Internal: expired-listing alert to Matt's inbox (MATT_ALERT_EMAIL), not the homeowner. Permanently allowlisted. Line shifted +21 when resolveAlertFrom() + its doc block were added to fix the unverified-sender bug (expired-workflow audit 2026-07-03)."
     },
     "lib/fsbo-alert.ts:113": {
       "kind": "internal",
@@ -68,10 +72,6 @@
     "lib/tc/signing-emails.ts:77": {
       "kind": "internal",
       "reason": "1:1 transactional: completed-and-signed copy (sealed PDF + certificate) to a transaction party for one specific envelope. CAN-SPAM transactional-message exemption. Not a marketing send."
-    },
-    "app/admin/(protected)/crm/inbox/page.tsx:398": {
-      "kind": "internal",
-      "reason": "Internal: inbox note @mention notification to the mentioned BROKER's own ryan-realty.com mailbox (spec 08 paragraph 10.2). Never to a lead — the CRM_MAILBOXES lookup only resolves broker addresses. Client-facing sends on this page route through the gated sendCrmEmailAction. Permanently allowlisted."
     }
   }
 }

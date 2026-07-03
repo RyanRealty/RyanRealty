@@ -251,9 +251,19 @@ export async function autoEnrollByFubId(
   const sb = createServiceClient()
   let { data } = await sb.from('crm_people').select('id').eq('fub_legacy_id', fubPersonId).maybeSingle()
   if (!data) {
-    const { mirrorPersonFromFub } = await import('@/lib/crm/mirror')
-    await mirrorPersonFromFub(fubPersonId)
-    ;({ data } = await sb.from('crm_people').select('id').eq('fub_legacy_id', fubPersonId).maybeSingle())
+    // Post-FUB-cutover (2026-06-24): most lead-capture paths (LP forms, the
+    // expired/FSBO/seller crons) now create a NATIVE crm_people row via
+    // ensureNativeLead and pass its crm_people.id here — there is no
+    // fub_legacy_id to resolve. Before mirroring (a FUB round-trip that is dead
+    // in production), check whether the id IS already a native crm_people id.
+    const { data: nativeRow } = await sb.from('crm_people').select('id').eq('id', fubPersonId).maybeSingle()
+    if (nativeRow) {
+      data = nativeRow
+    } else {
+      const { mirrorPersonFromFub } = await import('@/lib/crm/mirror')
+      await mirrorPersonFromFub(fubPersonId)
+      ;({ data } = await sb.from('crm_people').select('id').eq('fub_legacy_id', fubPersonId).maybeSingle())
+    }
   }
   if (!data) return { enrolled: false, reason: 'mirror not available' }
   // Fail-closed SMS consent (A2P 10DLC / TCPA, Twilio ticket 27497858): a person
