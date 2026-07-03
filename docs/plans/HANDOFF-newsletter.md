@@ -46,6 +46,17 @@ already exist (`/blog`, `/communities`, `/schools`, `/parks`, `/guides`).
 
 ## Build progress log (newest first)
 
+**2026-07-03 (later) — CORRECTIONS from Matt: event pages EXIST + manual auto-draft producer being built.**
+- **Event pages exist + resolve** (200): `app/central-oregon/events/page.tsx` + `[slug]/page.tsx`, data
+  `data/co-events.ts`, DAL `lib/data/events/getEvents.ts` (`getEventsForMonth`). The earlier "404" was a
+  stale WAF/curl read. **R-3 is UNBLOCKED** — the "This Month" links resolve.
+- **Manual auto-draft producer** (curation): a "Generate draft from live data" admin button →
+  `adminGenerateNewsletterDraftAction` pulls LIVE data (getMarketReportData per city → §0-verdicted
+  buyer/seller meters, getEventsForMonth, recent blog posts, a community + live count), assembles the
+  section body_html + a `citations` entry per stat, and writes a DRAFT to `newsletters` for Matt to
+  review/approve. §0 enforced: every number from the DAL, never invented. (Supersedes the earlier
+  "producer-freeze blocks curation" note — a MANUAL-run draft generator is not a new autonomous producer.)
+
 **2026-07-03 — Phase 6 (scheduling) shipped; curation-automation noted as constrained.**
 - **scheduled_at honored** (§4.2 UC-R5): the admin "Schedule" button sets status='scheduled' +
   scheduled_at; `enqueueDueScheduled` (called by the send cron each tick, before the drain) promotes

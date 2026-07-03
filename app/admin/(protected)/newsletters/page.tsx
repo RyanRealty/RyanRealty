@@ -8,6 +8,7 @@ import { StatusPill } from '@/components/console/StatusPill'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 import { KpiStrip } from '@/components/console/KpiStrip'
 import { TableWithMobileCards, type TwmcColumn } from '@/components/admin/TableWithMobileCards'
+import { GenerateDraftButton } from './GenerateDraftButton'
 
 export const metadata = { title: 'Newsletter | Admin' }
 export const dynamic = 'force-dynamic'
@@ -76,7 +77,8 @@ export default async function NewslettersPage() {
             Compose, send, and measure newsletters across the subscriber list.
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <GenerateDraftButton />
           <Button asChild variant="outline">
             <Link href="/admin/newsletters/analytics">Broker analytics</Link>
           </Button>

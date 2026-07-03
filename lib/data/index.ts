@@ -627,6 +627,7 @@ export {
   markSubscribersSent,
   createNewsletterDraft,
   updateNewsletter,
+  setNewsletterCitations,
   listNewsletters,
   getNewsletter,
   deleteNewsletterDraft,
@@ -637,7 +638,7 @@ export {
   getNewsletterRecipients,
   getNewsletterMembershipForLead,
 } from '@/lib/data/newsletter'
-export type { NewsletterSubscriber, NewsletterRow, NewsletterSegment, SubscriberStatus, NewsletterRecipient, NewsletterStats } from '@/lib/data/newsletter'
+export type { NewsletterSubscriber, NewsletterRow, NewsletterSegment, SubscriberStatus, NewsletterRecipient, NewsletterStats, NewsletterCitationEntry } from '@/lib/data/newsletter'
 export {
   getNewsletterStatsFromLedger,
   getNewsletterBrokerBreakdown,

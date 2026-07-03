@@ -390,3 +390,21 @@ export async function adminNewsletterAudiencePreviewAction(
   }
   return { ok: true, total: audience.length, brokerSplit }
 }
+
+/**
+ * Generate a monthly newsletter DRAFT from LIVE data (the curation button).
+ *
+ * requireAdmin, then delegate to produceNewsletterDraft which pulls every figure
+ * through the DAL (getMarketReportData / getRecentBlogPosts / getCommunityBySlug /
+ * getEventsForMonth), assembles the section body + plain text, writes the §0
+ * citation trace, and returns the new draft id. Never sends — the draft goes to
+ * /admin/newsletters/<id> for Matt's review + approval (draft-first).
+ */
+export async function adminGenerateNewsletterDraftAction(): Promise<{ ok: boolean; id?: string; error?: string }> {
+  const gate = await requireAdmin()
+  if (!gate.ok) return { ok: false, error: 'unauthorized' }
+  const { produceNewsletterDraft } = await import('@/lib/newsletter/produce-draft')
+  const result = await produceNewsletterDraft(gate.email)
+  if (result.ok && result.id) revalidatePath('/admin/newsletters')
+  return result
+}

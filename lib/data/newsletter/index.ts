@@ -225,6 +225,26 @@ export async function updateNewsletter(id: string, fields: Partial<Pick<Newslett
   return { ok: !error }
 }
 
+/** One §8 verification-trace entry stored in newsletters.citations (jsonb array). */
+export type NewsletterCitationEntry = {
+  figure: string
+  source: string
+  filter: string
+  value: string | number
+  fetched_at: string
+}
+
+/**
+ * Attach the §0 verification trace to a draft (newsletters.citations jsonb).
+ * Separate from updateNewsletter because citations is a structured audit column,
+ * not a form field — the curation producer sets it right after createNewsletterDraft.
+ */
+export async function setNewsletterCitations(id: string, citations: NewsletterCitationEntry[]): Promise<{ ok: boolean }> {
+  const sb = createServiceClient()
+  const { error } = await sb.from(LETTERS).update({ citations, updated_at: new Date().toISOString() }).eq('id', id)
+  return { ok: !error }
+}
+
 export async function listNewsletters(limit = 50): Promise<NewsletterRow[]> {
   const sb = createServiceClient()
   const { data } = await sb.from(LETTERS).select('*').order('created_at', { ascending: false }).limit(limit)
