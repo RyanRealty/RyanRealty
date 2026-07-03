@@ -514,6 +514,32 @@ re-runs the E2E checks and states the sign-off inventory to Matt.
 
 ## PROGRESS (agents append here as slices ship)
 
+### EXPIRED-LISTING WORKFLOW — adversarial audit + CRM-native fix ✅ (2026-07-03, commit 41841a53)
+Matt: "do a full audit of the expired listing workflow which seems to be broken." It WAS broken
+end-to-end from person-creation onward, dead since ~2026-06-12: **0 new enrollments in 3 weeks, 0
+alert emails ever sent, only 13/98 detected listings ever produced a CRM lead**. Detection itself
+works (98 rows, last 2026-07-03; trigger = `/api/cron/sync-delta` every 15m, NOT a dedicated cron).
+TWO compounding P0s, both FUB-cutover (2026-06-24) fallout: **(P0-A)** `lib/expired-listing-processor.ts`
+created people through DEAD FUB APIs (`sendEvent → findPersonByEmail` returns null w/o FUB creds) →
+no person → no tags/note/task → **no enrollment** → no CMA. **(P0-B)** `BATCHDATA_API_KEY` missing on
+Vercel prod → county resolves owner NAME but skip-trace returns null → `no-contact-skip-fub` (81/98
+stuck; the key WORKS — proven by live local smoke test on `26695 Horsell, Bend` → 5 phones+1 email).
+Plus **(P1-C)** the alert never sent (`alert_sent_at` NULL on 100%) — unverified `alerts@` sender +
+dead FUB deep-link; **(P1-D)** 10 early enrollments stuck `paused` since 2026-06-16 (secondary).
+FIX (CRM-native rewire, no FUB round-trip): processor now uses `ensureNativeLead → enrichNativeLead →
+createNativeTask → autoEnrollPerson(nativeId)` + `createCmaRequest({crmPersonId})`; `lib/expired-alert.ts`
+`resolveAlertFrom()` (verified RESEND_FROM, no double-wrap) + `crmLink()` → `/admin/crm/<id>`;
+`lib/cma-request.ts` takes `crmPersonId`; `autoEnrollByFubId` falls back to a native id when
+`fub_legacy_id` misses; LP native-fallback tag corrected to `intent:expired-listing`. **E2E proven
+net-zero**: a fresh native expired lead enrolls `running` in seq 3 (Expired Recovery) and the engine's
+exact query picks it up (test contact 52299 created+deleted). Compliance SAFE (nothing was flowing =
+zero exposure; fix is email-first + suppression-gated + fail-closed on hard-stop — unchanged).
+Tests: `lib/expired-alert.test.ts` (6). ci:gates exit 0 (foreign untracked `ui_kits/newsletter/`
+isolated, restored — not mine), vitest 2479 pass. **STILL NEEDS MATT (env, not code):** set
+`BATCHDATA_API_KEY` on Vercel prod (last gate on owner contact for the 81 pending), confirm `RESEND_FROM`,
+optionally re-run `/api/cron/detect-expired-listings?lookbackHours=168` AFTER the key lands to reprocess
+the 81. Full audit: `docs/plans/EXPIRED_WORKFLOW_AUDIT_2026-07-03.md`.
+
 ### NEW-LEAD REPORT CLEANUP — 16 un-merges de-polluted from New Leads + Activity ✅ (2026-07-02)
 Matt: today's repair splits were "blowing up" his New Leads + Activities. ROOT CAUSE (verified):
 the 2026-07-02 merge-victim split (`scripts/_split-merge-victims.mjs`) inserted 16 fresh
