@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { computeSchedule, renderForRecipient, NEWSLETTER_FROM_ADDRESS } from './send-queue'
 import { verifyEmailToken } from '@/lib/email-tracking'
 
 const BROKERS = new Map([
-  ['matt', { slug: 'matt', name: 'Matt Ryan', email: 'matt@ryan-realty.com' }],
-  ['rebecca', { slug: 'rebecca', name: 'Rebecca Ryser Peterson', email: 'rebeccapeterson@ryan-realty.com' }],
-  ['paul', { slug: 'paul', name: 'Paul Stevenson', email: 'paul@ryan-realty.com' }],
+  ['matt', { slug: 'matt', name: 'Matt Ryan', email: 'matt@ryan-realty.com', phone: '(541) 213-6706', title: 'Owner & Principal Broker' }],
+  ['rebecca', { slug: 'rebecca', name: 'Rebecca Ryser Peterson', email: 'rebeccapeterson@ryan-realty.com', phone: '(415) 308-9087', title: 'Broker' }],
+  ['paul', { slug: 'paul', name: 'Paul Stevenson', email: 'paul@ryan-realty.com', phone: '541-977-6841', title: 'Broker' }],
 ])
 
 const LETTER = {
@@ -76,5 +77,36 @@ describe('renderForRecipient — per-broker sender identity + broker-stamped tok
     const r = renderForRecipient(LETTER, { email: 'x@y.com', broker: 'matt', subscriber_id: 's1' }, BROKERS, 'tok', 1)
     expect(r.text.trim().length).toBeGreaterThan(20)
     expect(r.text).toContain('1,831 homes')
+  })
+})
+
+describe('shell frame (email.html parity)', () => {
+  it('renders masthead + hero + per-broker close + compliant footer at 640px', () => {
+    const r = renderForRecipient(LETTER, { email: 'x@y.com', broker: 'rebecca', subscriber_id: 's1' }, BROKERS, 'tok', 27004)
+    const html = r.html!
+    expect(html).toContain('max-width:640px') // approved mockup width (A7)
+    expect(html).toContain('name="color-scheme"') // dark-mode safe (G-NL-7)
+    expect(html).toMatch(/Ryan Realty<\/td>/) // navy masthead wordmark
+    expect(html).toContain('images/lp/hero-oldmill.jpg') // full-bleed hero
+    // per-broker close: Rebecca's name, dotted phone, "TALK TO REBECCA"
+    expect(html).toContain("I'm Rebecca Ryser Peterson.")
+    expect(html).toContain('415.308.9087') // dotted (formatPhoneDotted)
+    expect(html).toContain('TALK TO REBECCA')
+    // footer compliance
+    expect(html).toContain('115 NW Oregon Ave')
+    expect(html).toContain('Unsubscribe')
+    // write a sample for visual review (out/ is gitignored)
+    try {
+      mkdirSync('out', { recursive: true })
+      writeFileSync('out/newsletter-preview.html', html)
+    } catch { /* best effort */ }
+  })
+
+  it('owner (Matt) close uses the owner voice, non-owner uses the broker voice', () => {
+    const matt = renderForRecipient(LETTER, { email: 'x@y.com', broker: 'matt', subscriber_id: 's1' }, BROKERS, 'tok', 1).html!
+    const paul = renderForRecipient(LETTER, { email: 'x@y.com', broker: 'paul', subscriber_id: 's1' }, BROKERS, 'tok', 1).html!
+    expect(matt).toContain('I run Ryan Realty')
+    expect(paul).toContain("I'm a broker at Ryan Realty")
+    expect(paul).toContain('TALK TO PAUL')
   })
 })

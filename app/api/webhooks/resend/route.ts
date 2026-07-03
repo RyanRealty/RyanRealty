@@ -67,6 +67,23 @@ export async function POST(request: NextRequest) {
   const event = classifyResendEvent(payload)
   const emailId = payload.data?.email_id
 
+  // H1 (spec §5): resolve the recipient's FROZEN broker from the newsletter
+  // recipient row (keyed by the Resend message id) so this engagement event
+  // carries broker for per-broker analytics — the webhook is the second of the
+  // two engagement sources (the HMAC pixel/token is the first) and both must
+  // stamp broker or brokers see sends-by-broker but not engagement-by-broker.
+  let eventBroker: string | null = null
+  if (emailId) {
+    const { data: rec } = await createServiceClient()
+      .from('newsletter_recipients')
+      .select('broker')
+      .eq('resend_message_id', emailId)
+      .not('broker', 'is', null)
+      .limit(1)
+      .maybeSingle()
+    eventBroker = (rec as { broker: string | null } | null)?.broker ?? null
+  }
+
   // Newsletter stats (existing behavior).
   if (event.type && emailId) {
     await recordNewsletterEvent({
@@ -99,6 +116,7 @@ export async function POST(request: NextRequest) {
         event: payload.type ?? event.type,
         subject,
         occurredAt: event.isoTs,
+        broker: eventBroker, // H1: per-broker engagement analytics
         meta: event.clickUrl ? { clickUrl: event.clickUrl } : undefined,
       })
       const personIds = await getPersonIdsByEmail(email)
@@ -110,6 +128,7 @@ export async function POST(request: NextRequest) {
             kind,
             title: TIMELINE_TITLE[event.type],
             source: 'resend',
+            broker: eventBroker, // H1: the broker sees this engagement on their timeline
             payload: { emailId, email, label: subject, url: event.clickUrl ?? null },
             dedupe_key: `resend:${emailId}:${event.type}${urlKey}:p${personId}`,
           },

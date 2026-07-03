@@ -46,6 +46,22 @@ already exist (`/blog`, `/communities`, `/schools`, `/parks`, `/guides`).
 
 ## Build progress log (newest first)
 
+**2026-07-03 — Phase 4 (per-broker identity swap + shell rebuild) shipped.**
+- `lib/email-templates/newsletter-shell.ts` rebuilt to the approved 640px editorial
+  `email.html` frame: navy masthead (wordmark + issue line) → Old Mill hero → producer-authored
+  section body → **per-broker close** (headshot + first-person copy + dotted phone + "TALK TO {first}",
+  owner vs broker voice) → CAN-SPAM footer. **Visually verified** by rendering the full mockup sections
+  through the frame with Rebecca as sender and screenshotting (`out/newsletter-full-preview.png`) — the
+  close correctly shows Rebecca's headshot/name/broker-voice/phone, not Matt's; all images resolve.
+- Render wires `senderBroker` (name/firstName/phone dotted/title/absolute-HTTPS headshot/isOwner) from
+  `getCrmBrokers`. H1 completed: the Resend webhook resolves broker via
+  `newsletter_recipients(resend_message_id)` and stamps it on `email_events.broker` + `crm_timeline.broker`,
+  so opens/clicks carry broker on BOTH engagement sources (pixel token + webhook).
+- Tests: 10 send-queue unit (added shell-frame parity: masthead/hero/640px/per-broker close/owner-voice).
+- Gates: G-NL-7 format extended with frame-parity checks (wordmark/hero/broker-close); new
+  `ci:newsletter-broker` (G-NL-5 recipient-broker on both paths + G-NL-8 absolute-HTTPS headshots),
+  red→green demonstrated.
+
 **2026-07-03 — Phase 3 (send reliability queue) shipped.**
 - Replaced the synchronous ≤5,000-send in-request loop with a QUEUE (spec §6):
   `lib/data/newsletter/queue.ts` (data ops) + `lib/newsletter/send-queue.ts` (orchestration).

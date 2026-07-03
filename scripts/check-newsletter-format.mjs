@@ -110,6 +110,35 @@ export function runChecks(source) {
       : 'newsletter-shell.ts — no #102742 found; the masthead must use the Design System v2 navy',
   })
 
+  // Frame parity with the approved email.html mockup (spec §7): wordmark masthead,
+  // Old Mill hero, and the per-broker close block.
+  const hasWordmark = />\s*Ryan Realty\s*<\/td>/.test(source)
+  results.push({
+    id: 'masthead-wordmark',
+    ok: hasWordmark,
+    detail: hasWordmark
+      ? 'newsletter-shell.ts — "Ryan Realty" masthead wordmark present'
+      : 'newsletter-shell.ts — missing the "Ryan Realty" masthead wordmark cell (email.html parity)',
+  })
+
+  const hasHero = /hero-oldmill/.test(source)
+  results.push({
+    id: 'hero-image',
+    ok: hasHero,
+    detail: hasHero
+      ? 'newsletter-shell.ts — Old Mill hero image present'
+      : 'newsletter-shell.ts — missing the canonical Old Mill hero (hero-oldmill), the email.html full-bleed hero',
+  })
+
+  const hasBrokerClose = /senderBroker/.test(source) && /TALK TO/.test(source)
+  results.push({
+    id: 'broker-close',
+    ok: hasBrokerClose,
+    detail: hasBrokerClose
+      ? 'newsletter-shell.ts — per-broker close block present (senderBroker + "TALK TO" CTA)'
+      : 'newsletter-shell.ts — missing the per-broker close block (senderBroker param + "TALK TO {first}" CTA, spec §5/A6)',
+  })
+
   return results
 }
 

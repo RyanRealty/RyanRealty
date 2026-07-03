@@ -5,7 +5,7 @@ import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { sendEmail } from '@/lib/resend'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
-import { wrapNewsletterHtml, newsletterTextFooter } from '@/lib/email-templates/newsletter-shell'
+import { wrapNewsletterHtml, newsletterTextFooter, type SenderBroker } from '@/lib/email-templates/newsletter-shell'
 import { htmlToPlainText } from '@/lib/email/prepare'
 import {
   anyNewsletterEverSent,
@@ -56,13 +56,41 @@ function unsubUrl(token: string): string {
   return `${SITE_URL}/newsletter/unsubscribe?token=${encodeURIComponent(token)}`
 }
 
-type BrokerIdentity = { slug: string; name: string; email: string | null }
+type BrokerIdentity = { slug: string; name: string; email: string | null; phone: string | null; title: string | null }
+
+/** Absolute-HTTPS headshots (email can't load relative/app assets) — all verified reachable. */
+const HEADSHOTS: Record<string, string> = {
+  matt: 'https://ryan-realty.com/images/brokers/ryan-matt.png',
+  rebecca: 'https://ryan-realty.com/images/brokers/peterson-rebecca.jpg',
+  paul: 'https://ryan-realty.com/images/brokers/stevenson-paul.jpg',
+}
+
+/** Brand-voice phone format: 541.703.3095 (dotted). Returns the input if it can't parse 10 digits. */
+function formatPhoneDotted(phone: string | null): string | null {
+  if (!phone) return null
+  const d = phone.replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '')
+  return d.length === 10 ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}` : phone
+}
 
 async function loadBrokerMap(): Promise<Map<string, BrokerIdentity>> {
   const brokers = await getCrmBrokers()
   const map = new Map<string, BrokerIdentity>()
-  for (const b of brokers) map.set(b.slug, { slug: b.slug, name: b.name, email: b.email })
+  for (const b of brokers) map.set(b.slug, { slug: b.slug, name: b.name, email: b.email, phone: b.phone, title: b.title })
   return map
+}
+
+/** Build the per-recipient close identity from a broker (§5/A6). */
+function senderBrokerFor(slug: string, brokers: Map<string, BrokerIdentity>): SenderBroker {
+  const b = brokers.get(slug) ?? brokers.get('matt') ?? { slug: 'matt', name: 'Matt Ryan', email: null, phone: null, title: null }
+  return {
+    name: b.name,
+    firstName: b.name.split(/\s+/)[0] || b.name,
+    title: b.title,
+    phone: formatPhoneDotted(b.phone),
+    email: b.email,
+    headshotUrl: HEADSHOTS[b.slug] ?? HEADSHOTS.matt,
+    isOwner: b.slug === 'matt',
+  }
 }
 
 // ── enqueue (approve) ──────────────────────────────────────────────────────────
@@ -277,11 +305,16 @@ export function renderForRecipient(
   personId: number | null,
 ): { html: string | undefined; text: string; from: string; replyTo: string | null } {
   const slug = normalizeBroker(recipient.broker)
-  const b = brokers.get(slug) ?? brokers.get('matt') ?? { slug: 'matt', name: 'Ryan Realty', email: null }
+  const b = brokers.get(slug) ?? brokers.get('matt') ?? { slug: 'matt', name: 'Ryan Realty', email: null, phone: null, title: null }
   const u = unsubUrl(unsubscribeToken)
 
   const wrapped = letter.body_html
-    ? wrapNewsletterHtml({ bodyHtml: letter.body_html, previewText: letter.preview_text, unsubscribeUrl: u })
+    ? wrapNewsletterHtml({
+        bodyHtml: letter.body_html,
+        previewText: letter.preview_text,
+        unsubscribeUrl: u,
+        senderBroker: senderBrokerFor(slug, brokers),
+      })
     : undefined
   // Links carry ?agent=<frozen recipient broker>; when the subscriber is linked to a
   // crm person, opens/clicks are tracked with the broker stamped into the token (§5/H1).
