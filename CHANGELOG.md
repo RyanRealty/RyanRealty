@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.727.3 (2026-07-03)
+
+### Maintenance
+- docs(content-engine): record the final review pass + trail heroes
+
+---
+
+
 ## v1.727.2 (2026-07-03)
 
 ### Maintenance
