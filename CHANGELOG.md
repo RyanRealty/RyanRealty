@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.718.3 (2026-07-03)
+
+### Bug Fixes
+- fix(expired): CRM-native rewire — restore person creation + auto-enrollment + alerts (0-enrollment break)
+
+---
+
+
 ## v1.718.2 (2026-07-03)
 
 ### Other
