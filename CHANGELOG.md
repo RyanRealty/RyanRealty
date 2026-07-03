@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.725.0 (2026-07-03)
+
+### Features
+- feat(newsletter): Phase 5b pre-send reputation gate (G-NL-20)
+- feat(newsletter): Phase 7 admin UX (preview-as-broker, test-send, stats)
+- feat(newsletter): Phase 5 event integrity (ledger counts + unsubscribe)
+
+### Bug Fixes
+- fix(newsletter): frame the broker close headshot on the face (no crop)
+
+### Maintenance
+- refactor(golf): consolidate per-course pages onto the canonical registry (kill the duplicate)
+
+---
+
+
 ## v1.724.0 (2026-07-03)
 
 ### Features
