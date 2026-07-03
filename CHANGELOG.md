@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.721.0 (2026-07-03)
+
+### Features
+- feat(crm): streamline phases 1-2 applied — tag migration + canonical smart lists
+- feat(newsletter): Phase 2 compliance + format hardening + 3 gates
+
+---
+
+
 ## v1.720.0 (2026-07-03)
 
 ### Features
