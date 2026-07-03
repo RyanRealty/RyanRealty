@@ -158,7 +158,14 @@ incomplete address gets `owner:unknown` rather than a guess.
 
 1. **Feeder-market list** for Migration Realtors — use the observed set (greater Seattle/WA, CA metros
    incl. Bay Area + SoCal, Portland metro, Colorado Front Range), or a specific list you work?
-2. **`neighborhood`** — keep as a tag (heavily used, 17,763) or move to a field like the other geo data?
+2. **`neighborhood`** — RESOLVED (Matt 2026-07-03): move to a single-select **field** "Neighborhood",
+   NOT a tag. A property is in exactly one neighborhood → single-valued → field. Populate in the
+   migration by moving the existing 28 tag values (already assigned); going forward **derive from the
+   owned-property address** (geocode + point-in-polygon against the Bend neighborhood boundaries the CRM
+   already has, same mechanism as Out-Of-Area) so new contacts self-fill and it can't drift. Optional
+   cheap follow-up: boundary-backfill to correct stale values. The existing "Neighborhoods" smart-list
+   collection points at the field (filtering unchanged). Do NOT block the migration on geocoding 17K
+   addresses — move-the-values now, derive forward.
 3. The **83 manual-review tags** — you rule on these from the dry-run (they're the ambiguous ones like
    `SOI`, `sphere`, `long-term`, `high-lead-score`).
 4. Approve → I run steps 1–2 and bring you the dry-run before anything writes.
