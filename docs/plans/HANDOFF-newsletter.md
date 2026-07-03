@@ -46,6 +46,23 @@ already exist (`/blog`, `/communities`, `/schools`, `/parks`, `/guides`).
 
 ## Build progress log (newest first)
 
+**2026-07-03 — Phase 7 (admin UX) shipped.**
+- Compose form: added a plain-text body field (posts body_text; auto-gen at send if blank); a
+  **Preview-as-broker** tab — an iframe rendering the draft through the REAL shell
+  (adminPreviewNewsletterAction → wrapNewsletterHtml + senderBroker) with a Matt/Rebecca/Paul Select
+  that visibly swaps the close block; a **"Send test to me"** button (adminTestSendNewsletterAction —
+  one email to the admin's own inbox, [TEST] subject, news. domain, never touches the list/queue).
+- Send confirm is now a design-system **Dialog** (not window.confirm) showing audience size + broker
+  split via adminNewsletterAudiencePreviewAction (mirrors enqueue's resolution, no enqueue).
+- Detail stats **lead with Click rate + CTOR**, then Open rate (MPP-inflated caption), then
+  delivered/bounced — all from getNewsletterStatsFromLedger; + a per-broker breakdown Table
+  (getNewsletterBrokerBreakdown). All shadcn `@/components/ui/*`, tabular-nums.
+- Gate G-NL-9 tightened: the no-sync-loop check is scoped to adminSendNewsletterAction's body so the
+  legitimate single test-send doesn't trip it. tsc clean; NewsletterComposeForm token-clean.
+- NOTE: interactive browser click-through of the auth-gated admin flow not yet run (the render it
+  displays is screenshot-verified; actions are tsc-clean + mirror tested code). Do a live walkthrough
+  with Matt's admin session when convenient.
+
 **2026-07-03 — Phase 5 (event integrity) shipped.**
 - Engagement LEDGER (`newsletter_recipient_events`) is now written by the Resend webhook via
   `recordLedgerEvent` with a RECIPIENT-scoped dedupe_key (`nl:<id>:sub:<subscriber|email>:<event>:<url>`,

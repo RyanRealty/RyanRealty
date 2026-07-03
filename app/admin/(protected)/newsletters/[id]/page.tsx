@@ -5,13 +5,23 @@ import { getCrmAccess } from '@/app/actions/crm'
 import {
   getNewsletter,
   getNewsletterStats,
+  getNewsletterStatsFromLedger,
+  getNewsletterBrokerBreakdown,
   getNewsletterRecipients,
   type NewsletterRecipient,
 } from '@/lib/data'
 import { StatusPill } from '@/components/console/StatusPill'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
-import { KpiStrip } from '@/components/console/KpiStrip'
 import { TableWithMobileCards, type TwmcColumn } from '@/components/admin/TableWithMobileCards'
+import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import NewsletterComposeForm from '../NewsletterComposeForm'
 import NewsletterDraftActions from '../NewsletterDraftActions'
 
@@ -107,6 +117,7 @@ function DraftView({ id, letter }: { id: string; letter: Awaited<ReturnType<type
             preview_text: letter.preview_text,
             audience: letter.audience,
             body_html: letter.body_html,
+            body_text: letter.body_text,
           }}
         />
       </ConsoleSection>
@@ -125,19 +136,20 @@ function DraftView({ id, letter }: { id: string; letter: Awaited<ReturnType<type
 }
 
 async function StatsView({ id, sentBy, sentAt, status }: { id: string; sentBy: string | null; sentAt: string | null; status: string }) {
-  const [s, recipients] = await Promise.all([
+  const [s, ledger, brokerRows, recipients] = await Promise.all([
     getNewsletterStats(id),
+    getNewsletterStatsFromLedger(id),
+    getNewsletterBrokerBreakdown(id),
     getNewsletterRecipients(id, { limit: 500 }),
   ])
 
-  const kpiItems = [
-    { label: 'Delivery rate', value: pct(s.deliveryRate) },
-    { label: 'Open rate', value: pct(s.openRate) },
-    { label: 'Click rate', value: pct(s.clickRate) },
-    { label: 'Sent', value: s.sent.toLocaleString('en-US') },
-    { label: 'Delivered', value: s.delivered.toLocaleString('en-US') },
-    { label: 'Opened', value: s.opened.toLocaleString('en-US') },
-  ]
+  // Lead with the metrics that survive Apple Mail Privacy Protection (MPP), which
+  // auto-opens every mail and inflates the open rate. Click rate and CTOR
+  // (clicks / opens) are the honest engagement signals. Open rate is shown, but
+  // labeled as MPP-inflated so it is read for what it is.
+  const clickRate = ledger.clickRate
+  const ctor = ledger.opened > 0 ? ledger.clicked / ledger.opened : 0
+  const bounceRate = ledger.sent > 0 ? ledger.bounced / ledger.sent : 0
 
   const columns: TwmcColumn<NewsletterRecipient>[] = [
     { key: 'email', header: 'Email', cell: (r) => <span className="font-medium text-foreground">{r.email}</span> },
@@ -149,15 +161,79 @@ async function StatsView({ id, sentBy, sentAt, status }: { id: string; sentBy: s
 
   return (
     <div className="mt-6 space-y-6">
-      <ConsoleSection title="Delivery stats">
-        <div className="space-y-3">
-          <KpiStrip items={kpiItems} />
+      <ConsoleSection title="Engagement">
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardContent className="pt-5">
+                <CardDescription>Click rate</CardDescription>
+                <CardTitle className="mt-1 text-3xl tabular-nums">{pct(clickRate)}</CardTitle>
+                <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                  {ledger.clicked.toLocaleString('en-US')} of {ledger.delivered.toLocaleString('en-US')} delivered
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-5">
+                <CardDescription>CTOR (clicks / opens)</CardDescription>
+                <CardTitle className="mt-1 text-3xl tabular-nums">{pct(ctor)}</CardTitle>
+                <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                  {ledger.clicked.toLocaleString('en-US')} of {ledger.opened.toLocaleString('en-US')} opened
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-5">
+                <CardDescription>Open rate</CardDescription>
+                <CardTitle className="mt-1 text-3xl tabular-nums">{pct(ledger.openRate)}</CardTitle>
+                <p className="mt-1 text-xs text-muted-foreground">MPP-inflated. Auto-opens count here.</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-5">
+                <CardDescription>Delivered</CardDescription>
+                <CardTitle className="mt-1 text-3xl tabular-nums">{ledger.delivered.toLocaleString('en-US')}</CardTitle>
+                <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                  {ledger.bounced.toLocaleString('en-US')} bounced ({pct(bounceRate)})
+                </p>
+              </CardContent>
+            </Card>
+          </div>
           <p className="text-sm text-muted-foreground">
             {status === 'sending' ? 'Sending' : 'Sent'} by <span className="font-medium text-foreground">{sentBy ?? '—'}</span> on {fmtDateTime(sentAt)}.
-            {' '}{s.clicked.toLocaleString('en-US')} clicked.
+            {' '}{s.sent.toLocaleString('en-US')} sent.
           </p>
         </div>
       </ConsoleSection>
+
+      {brokerRows.length > 0 ? (
+        <ConsoleSection title="By broker">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Broker</TableHead>
+                <TableHead className="text-right">Recipients</TableHead>
+                <TableHead className="text-right">Delivered</TableHead>
+                <TableHead className="text-right">Clicks</TableHead>
+                <TableHead className="text-right">CTR</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {brokerRows.map((b) => (
+                <TableRow key={b.broker}>
+                  <TableCell className="font-medium text-foreground">
+                    {b.broker.charAt(0).toUpperCase() + b.broker.slice(1)}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{b.recipients.toLocaleString('en-US')}</TableCell>
+                  <TableCell className="text-right tabular-nums">{b.delivered.toLocaleString('en-US')}</TableCell>
+                  <TableCell className="text-right tabular-nums">{b.clicks.toLocaleString('en-US')}</TableCell>
+                  <TableCell className="text-right tabular-nums">{pct(b.clickRate)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </ConsoleSection>
+      ) : null}
 
       <ConsoleSection title="Recipients">
         <TableWithMobileCards

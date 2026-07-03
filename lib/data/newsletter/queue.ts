@@ -432,6 +432,66 @@ export async function getNewsletterStatsFromLedger(newsletterId: string): Promis
   }
 }
 
+/** Per-broker delivery + engagement breakdown row (admin detail table). */
+export type NewsletterBrokerBreakdownRow = {
+  broker: string
+  recipients: number
+  delivered: number
+  clicks: number
+  clickRate: number
+}
+
+/**
+ * Group a newsletter's recipients + deduped click events by frozen broker (§5) so
+ * the admin detail page can show which broker's identity swap earned the clicks.
+ * recipients = all recipient rows for that broker; delivered = rows that reached a
+ * delivered/sent-or-better status; clicks = distinct-row 'click' ledger events for
+ * that broker. clickRate = clicks / delivered (falls back to recipients). Two reads
+ * (recipients + events), grouped in memory — never one query per broker.
+ */
+export async function getNewsletterBrokerBreakdown(newsletterId: string): Promise<NewsletterBrokerBreakdownRow[]> {
+  const sb = createServiceClient()
+  const norm = (b: string | null | undefined) => (b ?? 'matt').trim().toLowerCase() || 'matt'
+  // A recipient row counts as "delivered" once it reached a real inbox — every
+  // non-failed, non-skipped, non-queued/sending terminal status qualifies.
+  const DELIVERED_STATUSES = new Set(['sent', 'delivered', 'opened', 'clicked'])
+
+  const recipients = new Map<string, { recipients: number; delivered: number }>()
+  const { data: recRows } = await sb
+    .from(RECIPIENTS)
+    .select('broker, status')
+    .eq('newsletter_id', newsletterId)
+  for (const row of recRows ?? []) {
+    const r = row as { broker: string | null; status: string }
+    const b = norm(r.broker)
+    const cur = recipients.get(b) ?? { recipients: 0, delivered: 0 }
+    cur.recipients += 1
+    if (DELIVERED_STATUSES.has(r.status)) cur.delivered += 1
+    recipients.set(b, cur)
+  }
+
+  // Deduped click events per broker, keyed off the ledger (webhook-replay safe).
+  const clicksByBroker = new Map<string, number>()
+  const { data: evRows } = await sb
+    .from(EVENTS)
+    .select('broker, event')
+    .eq('newsletter_id', newsletterId)
+    .eq('event', 'click')
+  for (const row of evRows ?? []) {
+    const b = norm((row as { broker: string | null }).broker)
+    clicksByBroker.set(b, (clicksByBroker.get(b) ?? 0) + 1)
+  }
+
+  const out: NewsletterBrokerBreakdownRow[] = []
+  for (const [broker, agg] of recipients) {
+    const clicks = clicksByBroker.get(broker) ?? 0
+    const denom = agg.delivered || agg.recipients || 1
+    out.push({ broker, recipients: agg.recipients, delivered: agg.delivered, clicks, clickRate: clicks / denom })
+  }
+  out.sort((a, b) => b.recipients - a.recipients || a.broker.localeCompare(b.broker))
+  return out
+}
+
 /** Bounce/complaint counts within THIS send window — feeds the circuit-breaker (§6.5 rule 4). */
 export async function sendWindowHealth(newsletterId: string): Promise<{ sent: number; bounced: number; complained: number }> {
   const sb = createServiceClient()

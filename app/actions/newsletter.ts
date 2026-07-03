@@ -5,7 +5,12 @@ import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { scopeBroker, isPersonInScope } from '@/lib/crm/scope'
 import { resolveLeadAssignedBroker, getGuestAlertLead } from '@/lib/data/crm/leadAssignedBroker'
 import { checkNewsletterVoice } from '@/lib/email/voice-precheck'
-import { enqueueNewsletter } from '@/lib/newsletter/send-queue'
+import { enqueueNewsletter, NEWSLETTER_FROM_ADDRESS } from '@/lib/newsletter/send-queue'
+import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
+import { wrapNewsletterHtml, type SenderBroker } from '@/lib/email-templates/newsletter-shell'
+import { getActiveSubscribersForSend } from '@/lib/data/newsletter'
+import { getAssignedBrokersByPersonId } from '@/lib/data/newsletter/queue'
+import { sendEmail } from '@/lib/resend'
 import { createSavedSearchForLead, updateSavedSearch, deleteSavedSearchById } from '@/lib/data'
 import {
   subscribeToNewsletter,
@@ -239,4 +244,149 @@ export async function adminSendNewsletterAction(
 
   revalidatePath('/admin/newsletters')
   return { ok: true, queued: result.queued, brokerSplit: result.brokerSplit, large: result.large }
+}
+
+// ── ADMIN: preview + test-send (per-broker identity swap) ────────────────────
+
+const NL_KNOWN_BROKERS = new Set(['matt', 'rebecca', 'paul'])
+/** Absolute-HTTPS headshots — email can't load app-relative assets (mirrors send-queue). */
+const NL_HEADSHOTS: Record<string, string> = {
+  matt: 'https://ryan-realty.com/images/brokers/ryan-matt.png',
+  rebecca: 'https://ryan-realty.com/images/brokers/peterson-rebecca.jpg',
+  paul: 'https://ryan-realty.com/images/brokers/stevenson-paul.jpg',
+}
+
+function nlNormalizeBroker(slug: string | null | undefined): string {
+  const s = (slug ?? '').trim().toLowerCase()
+  return NL_KNOWN_BROKERS.has(s) ? s : 'matt'
+}
+
+/** Brand-voice dotted phone (541.703.3095). Returns the input if it can't parse 10 digits. */
+function nlFormatPhoneDotted(phone: string | null): string | null {
+  if (!phone) return null
+  const d = phone.replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '')
+  return d.length === 10 ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}` : phone
+}
+
+/**
+ * Build the per-recipient close identity for a chosen broker slug — mirrors
+ * lib/newsletter/send-queue.ts senderBrokerFor + loadBrokerMap so the admin
+ * preview and test-send render through the EXACT identity the real send uses.
+ * Returns null when the broker roster can't be read.
+ */
+async function nlSenderBrokerFor(slug: string): Promise<{ sender: SenderBroker; replyTo: string | null } | null> {
+  const brokers = await getCrmBrokers()
+  if (brokers.length === 0) return null
+  const target = nlNormalizeBroker(slug)
+  const b = brokers.find((x) => x.slug === target) ?? brokers.find((x) => x.slug === 'matt') ?? brokers[0]
+  const sender: SenderBroker = {
+    name: b.name || 'Ryan Realty',
+    firstName: (b.name || 'Ryan').split(/\s+/)[0] || b.name,
+    title: b.title,
+    phone: nlFormatPhoneDotted(b.phone),
+    email: b.email,
+    headshotUrl: NL_HEADSHOTS[b.slug] ?? NL_HEADSHOTS.matt,
+    isOwner: b.slug === 'matt',
+  }
+  return { sender, replyTo: b.email }
+}
+
+/**
+ * Render a newsletter through the REAL send pipeline (wrapNewsletterHtml) for a
+ * chosen broker and return the HTML. Powers the admin "preview as broker" iframe —
+ * it proves the per-broker identity swap visually before anything is sent. Uses a
+ * placeholder unsubscribe URL (the preview never sends).
+ */
+export async function adminPreviewNewsletterAction(
+  id: string,
+  brokerSlug: string,
+): Promise<{ ok: boolean; html?: string; error?: string }> {
+  const gate = await requireAdmin()
+  if (!gate.ok) return { ok: false, error: 'unauthorized' }
+  const letter = await getNewsletter(id)
+  if (!letter) return { ok: false, error: 'not_found' }
+  if (!letter.body_html) return { ok: false, error: 'empty_body' }
+  const identity = await nlSenderBrokerFor(brokerSlug)
+  if (!identity) return { ok: false, error: 'no_brokers' }
+  const html = wrapNewsletterHtml({
+    bodyHtml: letter.body_html,
+    previewText: letter.preview_text,
+    unsubscribeUrl: 'https://ryan-realty.com/newsletter/unsubscribe?token=preview',
+    senderBroker: identity.sender,
+  })
+  return { ok: true, html }
+}
+
+/**
+ * Send ONE test copy of the rendered-as-broker newsletter to the admin's own
+ * inbox (gate.email). Uses the real shell + FROM address + List-Unsubscribe
+ * headers so the test matches production delivery, with replyTo set to the chosen
+ * broker. Never touches the subscriber list or the send queue.
+ */
+export async function adminTestSendNewsletterAction(
+  id: string,
+  brokerSlug: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const gate = await requireAdmin()
+  if (!gate.ok) return { ok: false, error: 'unauthorized' }
+  const letter = await getNewsletter(id)
+  if (!letter) return { ok: false, error: 'not_found' }
+  if (!letter.body_html && !letter.body_text) return { ok: false, error: 'empty_body' }
+  const identity = await nlSenderBrokerFor(brokerSlug)
+  if (!identity) return { ok: false, error: 'no_brokers' }
+
+  const unsubscribeUrl = 'https://ryan-realty.com/newsletter/unsubscribe?token=preview'
+  const html = letter.body_html
+    ? wrapNewsletterHtml({
+        bodyHtml: letter.body_html,
+        previewText: letter.preview_text,
+        unsubscribeUrl,
+        senderBroker: identity.sender,
+      })
+    : undefined
+  const text = letter.body_text?.trim() || undefined
+
+  const res = await sendEmail({
+    to: gate.email,
+    from: `${identity.sender.name} · Ryan Realty <${NEWSLETTER_FROM_ADDRESS}>`,
+    replyTo: identity.replyTo ?? undefined,
+    subject: `[TEST] ${letter.subject}`,
+    html,
+    text,
+    headers: {
+      'List-Unsubscribe': `<${unsubscribeUrl}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
+  })
+  if (res.error) return { ok: false, error: res.error }
+  return { ok: true }
+}
+
+/**
+ * Resolve the audience size + per-broker split for a draft WITHOUT enqueuing —
+ * powers the send-confirm dialog. Mirrors enqueueNewsletter's audience resolution
+ * (getActiveSubscribersForSend + getAssignedBrokersByPersonId), so the preview
+ * matches what the actual send will fan out to.
+ */
+export async function adminNewsletterAudiencePreviewAction(
+  id: string,
+): Promise<{ ok: boolean; total?: number; brokerSplit?: Record<string, number>; error?: string }> {
+  const gate = await requireAdmin()
+  if (!gate.ok) return { ok: false, error: 'unauthorized' }
+  const letter = await getNewsletter(id)
+  if (!letter) return { ok: false, error: 'not_found' }
+
+  const segment = letter.audience?.startsWith('segment:')
+    ? (letter.audience.slice('segment:'.length) as NewsletterSegment)
+    : undefined
+  const audience = await getActiveSubscribersForSend({ segment })
+  const personIds = audience.map((s) => s.crm_person_id).filter((n): n is number => Number.isFinite(n as number))
+  const brokerByPerson = await getAssignedBrokersByPersonId(personIds)
+
+  const brokerSplit: Record<string, number> = {}
+  for (const s of audience) {
+    const broker = nlNormalizeBroker(s.crm_person_id ? brokerByPerson.get(s.crm_person_id) : null)
+    brokerSplit[broker] = (brokerSplit[broker] ?? 0) + 1
+  }
+  return { ok: true, total: audience.length, brokerSplit }
 }

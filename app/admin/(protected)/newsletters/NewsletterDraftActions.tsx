@@ -3,23 +3,54 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { adminSendNewsletterAction, adminDeleteNewsletterAction } from '@/app/actions/newsletter'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  adminSendNewsletterAction,
+  adminDeleteNewsletterAction,
+  adminNewsletterAudiencePreviewAction,
+} from '@/app/actions/newsletter'
 
 /**
- * Send-now + delete controls for a draft newsletter. Send asks for an explicit
- * confirm (it fans out real email), then on success refreshes the page into the
- * stats view. Delete returns to the management home.
+ * Send-now + delete controls for a draft newsletter. Send opens a confirm
+ * Dialog that first resolves the audience size + per-broker split (so the admin
+ * sees exactly who it reaches before approving), then on confirm enqueues the
+ * send and refreshes into the stats view. Delete returns to the management home.
  */
 export default function NewsletterDraftActions({ id }: { id: string }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [message, setMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [audience, setAudience] = useState<{ total: number; brokerSplit: Record<string, number> } | null>(null)
+  const [audienceError, setAudienceError] = useState<string | null>(null)
 
-  function onSend() {
-    if (!window.confirm('Approve and send this newsletter to its audience? It will be delivered by the send queue.')) return
+  function openConfirm() {
+    setMessage(null)
+    setAudience(null)
+    setAudienceError(null)
+    setConfirmOpen(true)
+    startTransition(async () => {
+      const r = await adminNewsletterAudiencePreviewAction(id)
+      if (r.ok) {
+        setAudience({ total: r.total ?? 0, brokerSplit: r.brokerSplit ?? {} })
+      } else {
+        setAudienceError(r.error ?? 'Could not resolve the audience.')
+      }
+    })
+  }
+
+  function onConfirmSend() {
     setMessage(null)
     startTransition(async () => {
       const r = await adminSendNewsletterAction(id)
+      setConfirmOpen(false)
       if (r.ok) {
         const n = r.queued ?? 0
         const split = r.brokerSplit
@@ -57,9 +88,16 @@ export default function NewsletterDraftActions({ id }: { id: string }) {
     })
   }
 
+  const splitLine = audience
+    ? Object.entries(audience.brokerSplit)
+        .sort((a, b) => b[1] - a[1])
+        .map(([b, c]) => `${b[0].toUpperCase()}${b.slice(1)} ${c.toLocaleString('en-US')}`)
+        .join(' · ')
+    : ''
+
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <Button type="button" onClick={onSend} disabled={pending}>
+      <Button type="button" onClick={openConfirm} disabled={pending}>
         {pending ? 'Working…' : 'Send now'}
       </Button>
       <Button type="button" variant="destructive" onClick={onDelete} disabled={pending}>
@@ -70,6 +108,47 @@ export default function NewsletterDraftActions({ id }: { id: string }) {
           {message.text}
         </p>
       ) : null}
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve and send this newsletter?</DialogTitle>
+            <DialogDescription>
+              It enqueues immediately. The send queue delivers to active subscribers, skipping any suppressed contacts.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-2">
+            {audienceError ? (
+              <p className="text-sm text-destructive" role="alert">{audienceError}</p>
+            ) : audience ? (
+              <div>
+                <p className="text-lg font-semibold text-foreground tabular-nums">
+                  {audience.total.toLocaleString('en-US')} recipient{audience.total === 1 ? '' : 's'}
+                </p>
+                {splitLine ? (
+                  <p className="mt-1 text-sm text-muted-foreground tabular-nums">{splitLine}</p>
+                ) : null}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Resolving the audience…</p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)} disabled={pending}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={onConfirmSend}
+              disabled={pending || !audience || audience.total === 0}
+            >
+              {pending ? 'Sending…' : 'Confirm and send'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

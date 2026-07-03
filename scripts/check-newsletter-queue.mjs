@@ -74,12 +74,22 @@ export function runChecks({ queue, bulkAction, reconcileRouteExists }) {
   }
 
   // G-NL-9b: no synchronous mega-loop calling sendEmail directly; must enqueue.
+  // Scope the sendEmail check to adminSendNewsletterAction's BODY — a single
+  // test-send-to-self (adminTestSendNewsletterAction) legitimately calls sendEmail
+  // once and must not trip this gate. Only the BULK approve path must be loop-free.
   if (bulkAction == null) {
     results.push({ id: 'G-NL-9 no-sync-mega-loop', ok: false, detail: 'app/actions/newsletter.ts not found' })
   } else {
-    const callsSendEmailDirectly = /sendEmail\(/.test(bulkAction)
-    const callsEnqueue = /enqueueNewsletter\(/.test(bulkAction)
-    const ok = !callsSendEmailDirectly && callsEnqueue
+    const start = bulkAction.indexOf('function adminSendNewsletterAction')
+    let body = ''
+    if (start >= 0) {
+      const rest = bulkAction.slice(start)
+      const nextExport = rest.slice(1).search(/\n(export\s+(async\s+)?function|export\s+const)\b/)
+      body = nextExport >= 0 ? rest.slice(0, nextExport + 1) : rest
+    }
+    const callsSendEmailDirectly = start >= 0 && /sendEmail\(/.test(body)
+    const callsEnqueue = /enqueueNewsletter\(/.test(body)
+    const ok = start >= 0 && !callsSendEmailDirectly && callsEnqueue
     results.push({
       id: 'G-NL-9 no-sync-mega-loop',
       ok,
