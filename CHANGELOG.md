@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.723.0 (2026-07-03)
+
+### Features
+- feat(crm): desktop Stages strip — pipeline stages as clickable chips w/ live counts
+- feat(newsletter): Phase 3 send-reliability queue (CAS + tiered drain + crons)
+
+---
+
+
 ## v1.722.1 (2026-07-03)
 
 ### Bug Fixes
