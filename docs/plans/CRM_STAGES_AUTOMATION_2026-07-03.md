@@ -94,6 +94,38 @@ absorbs every soft signal (opens, visits, lead score) so they inform *who to cal
   month 6 market report — the researched cadence.
 - **No stage is a dead end except Lost/Trash**, and even Lost re-enters Engaged on a fresh inbound.
 
+## Execution spec — stage migration + Stages strip (PLANNED, not yet run; awaiting Matt's go)
+
+**A. Stage set + reversible remap** (dry-run + before/after report FIRST, then apply; back up every
+contact's current `stage` to `out/stage-migration-backup.json` + `scripts/_stage-migration-restore.mjs`):
+
+New active `crm_stages` (this order): **Nurture · Engaged · Active · Under Contract · Closed · Past
+Client · Sphere** + **Trash** (terminal). Deactivate (don't delete) the old 16.
+
+Old → new `crm_people.stage` map (touches only `stage` + `crm_stages`; tags/points/timeline/compliance
+untouched; idempotent):
+
+| Old stage (count) | → New |
+|---|---|
+| Lead (8,265) · Seller Prospect (7,524) · Renter-future buyer · old Nurture | **Nurture** |
+| A-Hot / B-Warm / C-Cold (temperature → becomes priority, not a stage) | **Nurture** |
+| Active Client (12) | **Active** |
+| Pending | **Under Contract** |
+| Closed | **Closed** |
+| Past Client (32) | **Past Client** |
+| Real Estate Agent (2,342) · Vendor (1) | **Sphere** (non-pipeline network) |
+| Archive (2) · Trash | **Trash** |
+
+Reconcile totals (no contact lost/duped) before applying. Big visible change (every contact's stage) →
+report the before→after distribution + one-command restore.
+
+**B. Stages strip on `/admin/crm`** — add ABOVE the Pipeline Collection in
+`components/admin/crm/people-list/PeopleSidebar.tsx` (collection grouping in `saved-view-grouping.ts`,
+label 'Pipeline'; page `app/admin/(protected)/crm/page.tsx` already computes stage counts + filters on
+`?stage=`): the 5 pipeline stages as clickable chips w/ live broker-scoped `count:'exact'` counts,
+linking to `?stage=<stage>`. Match the sidebar's design-system language; mirror the mobile Stages strip
+(`ptab='stages'`); don't break mobile. Verify live at 1440×900 + screenshot.
+
 ## Implementation (against existing infra, when Matt approves)
 
 - Migration: map the 16 current stages → the 6 (Seller Prospect → Nurture + `segment:seller`;
