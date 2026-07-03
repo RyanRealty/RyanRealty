@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.724.0 (2026-07-03)
+
+### Features
+- feat(content-engine): Central Oregon trails family (19 source-verified hikes + rides)
+- feat(newsletter): Phase 4 per-broker identity swap + shell rebuild
+
+---
+
+
 ## v1.723.2 (2026-07-03)
 
 ### Maintenance
