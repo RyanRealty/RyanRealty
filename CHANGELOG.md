@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.719.0 (2026-07-03)
+
+### Features
+- feat(crm): corrected tag-streamline migration v2 + preflight gate (dry-run reconciles)
+- feat(content-engine): Central Oregon events + venues families, gated
+
+---
+
+
 ## v1.718.7 (2026-07-03)
 
 ### Maintenance
