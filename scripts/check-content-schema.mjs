@@ -87,6 +87,21 @@ for (const { slug, block } of objects(path.join(ROOT, 'data/co-golf.ts'))) {
   if (!/^https:\/\//.test(official ?? '')) fail.push(`golf/${slug}: officialUrl not https`)
 }
 
+// ── Trails ──
+const TRAIL_USES = ['hike', 'mtb', 'both']
+for (const { slug, block } of objects(path.join(ROOT, 'data/co-trails.ts'))) {
+  const name = field(block, 'name')
+  const geoSlug = field(block, 'geoSlug')
+  const use = field(block, 'use')
+  const landManager = field(block, 'landManager')
+  const official = field(block, 'officialUrl')
+  if (!name) fail.push(`trail/${slug}: missing name (Place.name)`)
+  if (!geoSlug) fail.push(`trail/${slug}: missing geoSlug (Place.address.addressLocality)`)
+  if (!use || !TRAIL_USES.includes(use)) fail.push(`trail/${slug}: use '${use}' invalid`)
+  if (!landManager) fail.push(`trail/${slug}: missing landManager`)
+  if (!/^https:\/\//.test(official ?? '')) fail.push(`trail/${slug}: officialUrl not https`)
+}
+
 // ── Templates must emit schema (MetadataBlock) ──
 const templates = [
   'app/central-oregon/events/page.tsx',
@@ -95,6 +110,8 @@ const templates = [
   'app/central-oregon/venues/[slug]/page.tsx',
   'app/central-oregon/golf/page.tsx',
   'app/central-oregon/golf/[slug]/page.tsx',
+  'app/central-oregon/trails/page.tsx',
+  'app/central-oregon/trails/[slug]/page.tsx',
 ]
 for (const t of templates) {
   const src = fs.readFileSync(path.join(ROOT, t), 'utf8')

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getRecentBlogPosts, getPublishedGuides, listMarketReports, getEventsForIndex, getVenuesForIndex, getGolfForIndex } from '@/lib/data'
+import { getRecentBlogPosts, getPublishedGuides, listMarketReports, getEventsForIndex, getVenuesForIndex, getGolfForIndex, getTrailsForIndex } from '@/lib/data'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -51,6 +51,12 @@ export async function GET() {
       (c) => `- ${c.name} (${c.city}): ${SITE_URL}/central-oregon/golf/${c.slug}`,
     ),
   )
+  const { hiking, biking } = getTrailsForIndex()
+  const trailLines = lines(
+    [...hiking, ...biking]
+      .filter((t, i, arr) => arr.findIndex((x) => x.slug === t.slug) === i)
+      .map((t) => `- ${t.name} (${t.city}): ${SITE_URL}/central-oregon/trails/${t.slug}`),
+  )
 
   const body = `# Ryan Realty Central Oregon Real Estate
 
@@ -86,6 +92,9 @@ export async function GET() {
 
 ## Golf
 - Central Oregon golf courses: ${SITE_URL}/central-oregon/golf${golfLines}
+
+## Trails
+- Central Oregon hiking & mountain-bike trails: ${SITE_URL}/central-oregon/trails${trailLines}
 
 ## Guides
 - All guides: ${SITE_URL}/guides${guideLines}

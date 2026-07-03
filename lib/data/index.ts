@@ -588,6 +588,15 @@ export type { GolfIndex } from '@/lib/data/golf/getGolf'
 export { getGolfDetail } from '@/lib/data/golf/getGolfDetail'
 export type { GolfDetail, GolfHomeTile, GolfStats } from '@/lib/data/golf/getGolfDetail'
 
+// Central Oregon trails — the region's marquee hiking + mountain-bike trails
+// (data/co-trails.ts, verified + cited per CLAUDE.md §0). getTrailDetail joins
+// the trailhead to the live active single-family listings within ~1.5 miles +
+// the live city market band.
+export { getTrailsForIndex, getTrailsCount } from '@/lib/data/trails/getTrails'
+export type { TrailIndex } from '@/lib/data/trails/getTrails'
+export { getTrailDetail } from '@/lib/data/trails/getTrailDetail'
+export type { TrailDetail, TrailHomeTile, TrailStats } from '@/lib/data/trails/getTrailDetail'
+
 // More functions get exported here as Wave 1-3 lands them.
 
 // Brokerage track record (seller conviction LP + similar surfaces)
