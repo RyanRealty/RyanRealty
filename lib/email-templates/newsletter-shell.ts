@@ -102,7 +102,7 @@ function brokerClose(b: SenderBroker): string {
   return `<tr><td style="padding:40px 34px 0;">
     <table width="100%" style="background:${NAVY};"><tr><td style="padding:28px;">
       <table width="100%"><tr>
-        <td width="116" valign="top"><img src="${b.headshotUrl}" alt="${escapeHtml(b.name)}" width="100" style="width:100px;height:auto;border-radius:12px;display:block;background:#1c3350;"></td>
+        <td width="116" valign="top"><img src="${b.headshotUrl}" alt="${escapeHtml(b.name)}" width="100" height="150" style="width:100px;height:150px;border-radius:12px;display:block;background:#1c3350;"></td>
         <td width="16"></td>
         <td valign="top" style="color:#dbe2ec;font-size:16px;line-height:1.6;">
           <div style="font-family:${SERIF};color:${CREAM};font-size:22px;line-height:1.2;margin-bottom:10px;">Buying, selling, or just weighing it up.</div>
