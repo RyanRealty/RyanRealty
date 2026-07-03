@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.718.4 (2026-07-03)
+
+### Maintenance
+- docs(crm): adversarial pre-execution audit of the streamline plan — 5 P0 / 4 P1 / 5 P2, verdict NO-GO
+- docs(newsletter): commit approved newsletter spec + design + cross-session handoffs
+- docs(crm): refresh adversarial audit prompt for the finalized plan (stages/neighborhood/realtors resolved)
+- docs(crm): sweep remaining 45d refs to 30d two-way (Engaged only) for consistency
+- docs(crm): resolve stage opens — Sphere for realtors/vendors; 30d demote on Engaged only (two-way activity), Active/UC never time out
+- docs(crm): resolve migration realtors (data-driven from city-realtor tags; retire broker-recruit)
+- docs(crm): resolve neighborhood -> single-select field, derived from property address (Matt 2026-07-03)
+- docs(crm): adversarial audit prompt for the streamline plan (read-only, pre-execution)
+- docs(crm): execution approach = one coordinated migration (Matt: all at once) + pre-run checklist
+- docs(crm): add stage-remap mapping + Stages-strip build to the plan (spec only, not executed)
+- docs(crm): remove New stage (5 pipeline stages) + stages-strip-above-Pipeline-Collection UI note
+- docs(crm): unified buyer+seller 6-stage pipeline (Matt directive — one pipeline, side-neutral names)
+- docs(crm): researched stage model (16->6) + stage-automation trigger table, seller-farm tuned, sourced
+- docs(crm): mark Vendors segment deferred (Matt: add later; no existing list in CRM or FUB)
+- docs(crm): session handoff 2026-07-03 — streamline plan + data-quality state for the next session
+- docs(crm): add Vendors as segment #8 to the streamline plan (segment:vendor + curated vendor:<type>, manual pick)
+- docs(crm): tag + smart-list streamline plan (1,447 tags → ~40, 7 smart lists, auto-tagging for new leads)
+
+---
+
+
 ## v1.718.3 (2026-07-03)
 
 ### Bug Fixes
