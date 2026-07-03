@@ -46,6 +46,20 @@ already exist (`/blog`, `/communities`, `/schools`, `/parks`, `/guides`).
 
 ## Build progress log (newest first)
 
+**2026-07-03 — Phase 6 (scheduling) shipped; curation-automation noted as constrained.**
+- **scheduled_at honored** (§4.2 UC-R5): the admin "Schedule" button sets status='scheduled' +
+  scheduled_at; `enqueueDueScheduled` (called by the send cron each tick, before the drain) promotes
+  every due one via enqueueNewsletter (CAS-locks scheduled→sending). DAL: `getDueScheduledNewsletterIds`.
+  Verified live: the due-query finds a past-scheduled issue, not a future one.
+- **Curation automation (monthly auto-draft producer + R-2 citations + R-3 events freshness) NOT built —
+  constrained, by design:** (1) the marketing-brain producer layer is FROZEN (G45, maintenance-only), so
+  new autonomous content producers aren't added — the live agent/Matt authors each issue in the compose
+  form (Phase 7) with live-traced data, which is the sanctioned path. (2) R-3 (every linked event page
+  returns 200 + Event schema) is BLOCKED on the separate content-engine — `/central-oregon/events/*` 404s
+  today. So a real SEND is gated on those event pages existing, regardless of newsletter code. The
+  scheduling + send machinery is complete; the monthly-curate cron is a thin follow-up once the event
+  pipeline lands (docs/plans/HANDOFF-content-engine.md).
+
 **2026-07-03 — Phase 8 (per-broker analytics console) shipped.**
 - `lib/data/newsletter/brokerAnalytics.ts`: `getBrokerNewsletterAnalytics(slug)` (recipients/delivered/
   opened/clicked/CTR/CTOR, scoped `.eq('broker',slug)` on recipients + the deduped ledger) +

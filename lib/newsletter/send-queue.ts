@@ -8,6 +8,7 @@ import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { wrapNewsletterHtml, newsletterTextFooter, type SenderBroker } from '@/lib/email-templates/newsletter-shell'
 import { htmlToPlainText } from '@/lib/email/prepare'
 import { getLatestDeliverability, deliverabilityVerdict } from '@/lib/data/deliverability'
+import { getDueScheduledNewsletterIds } from '@/lib/data/newsletter/scheduled'
 import {
   anyNewsletterEverSent,
   bumpScheduleSent,
@@ -200,6 +201,26 @@ export function computeSchedule(
     }
   }
   return out
+}
+
+// ── scheduled sends (cron) ───────────────────────────────────────────────────
+
+/**
+ * Enqueue every newsletter whose scheduled_at has arrived (§4.2 UC-R5). The admin
+ * "Schedule" control set status='scheduled'; this promotes each due one via
+ * enqueueNewsletter (which CAS-locks scheduled→sending, freezes brokers, writes the
+ * queue). Called by the send cron each tick, before the drain.
+ */
+export async function enqueueDueScheduled(nowMs = Date.now()): Promise<{ enqueued: string[]; skipped: Array<{ id: string; error: string }> }> {
+  const ids = await getDueScheduledNewsletterIds(new Date(nowMs).toISOString())
+  const enqueued: string[] = []
+  const skipped: Array<{ id: string; error: string }> = []
+  for (const id of ids) {
+    const r = await enqueueNewsletter(id)
+    if (r.ok) enqueued.push(id)
+    else skipped.push({ id, error: r.error })
+  }
+  return { enqueued, skipped }
 }
 
 // ── drain (cron) ─────────────────────────────────────────────────────────────

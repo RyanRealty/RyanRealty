@@ -10,7 +10,7 @@
  * failure is a 200 JSON status. Auth: Authorization: Bearer $CRON_SECRET.
  */
 import { NextResponse } from 'next/server'
-import { drainAllSending } from '@/lib/newsletter/send-queue'
+import { drainAllSending, enqueueDueScheduled } from '@/lib/newsletter/send-queue'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -27,12 +27,14 @@ function isAuthorized(request: Request): boolean {
 export async function GET(request: Request) {
   if (!isAuthorized(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
+    // Promote any scheduled newsletter whose time has arrived, then drain.
+    const scheduled = await enqueueDueScheduled()
     const reports = await drainAllSending()
     const totals = reports.reduce(
       (a, r) => ({ sent: a.sent + r.sent, skipped: a.skipped + r.skipped, failed: a.failed + r.failed }),
       { sent: 0, skipped: 0, failed: 0 },
     )
-    return NextResponse.json({ ok: true, newsletters: reports.length, ...totals, reports })
+    return NextResponse.json({ ok: true, scheduledEnqueued: scheduled.enqueued.length, newsletters: reports.length, ...totals, reports })
   } catch (err) {
     console.error('[cron/newsletter-send]', err)
     return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : 'drain_failed' }, { status: 200 })
