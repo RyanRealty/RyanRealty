@@ -1,4 +1,6 @@
-> **Newest, complete, self-contained handoff: [`HANDOFF_2026-06-28.md`](./HANDOFF_2026-06-28.md)** — but read the blocks below FIRST; the top one is newest (2026-07-01, ground-up rebuild).
+> **NEWEST, START HERE: [`HANDOFF_CRM_STREAMLINE_2026-07-03.md`](./HANDOFF_CRM_STREAMLINE_2026-07-03.md)** — the current session's self-contained handoff (expired workflow fixed, FUB-import data-corruption repaired, the live FUB "archived"-email leak, and the tag/smart-list streamline plan awaiting Matt's inputs). Read it first. The blocks below are older history.
+>
+> _(Prior: `HANDOFF_2026-06-28.md`; the 2026-07-01 ground-up-rebuild block below.)_
 
 # CROSS-AGENT HANDOFF — CRM GROUND-UP REBUILD, screen-by-screen under ci:crm-screen-parity (2026-07-01)
 
