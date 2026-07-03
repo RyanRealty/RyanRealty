@@ -64,3 +64,15 @@ Live progress record for the coordinated streamline execution. Specs: `CRM_STREA
   next increment. Nothing sits in Engaged yet (it is entered by a live signal), so the demote has nothing to act
   on until promotion wiring lands; and a scheduled book-mutation needs Matt's explicit ops go. Two-way source must
   be computed from crm_timeline inbound rows (NOT last_activity_at — see audit P1-3), not built here.
+
+## Phase 5 — End-to-end browser verification (production /admin/crm)
+- ✅ Sidebar renders all 12 canonical lists with correct live counts (Sellers 8K, Buyers 54, Expired 926,
+  FSBO 6, Local Realtors 2K, Migration Realtors 59, Vendors 0, Active 12, Past 32, Pending 0, Compliance 3K,
+  Out Of Area 1K).
+- 🐛→✅ **Found + fixed in-browser:** clicking a list showed "18,227 people" (unfiltered). Root cause:
+  `listCrmPeople` (app/actions/crm.ts:186-188) resolves a view via the LEGACY `filter` bag, while the count
+  path uses `ast`; the canonical rebuild set only `ast`. Backfilled `filter` on all 12 views
+  (`20260703140500_crm_saved_views_filter_backfill.sql`, applied to hosted). Re-verified live: Sellers now
+  "Showing 7,524 people" with the `segment:seller` filter chip and a correctly filtered list.
+- ⚠️ **Tech debt:** unify `listCrmPeople` onto the `ast` compiler (buildCrmPeopleQuery) so `filter`/`ast`
+  can't drift. Safe today (all 12 canonical views are single-condition, fully captured by the filter bag).
