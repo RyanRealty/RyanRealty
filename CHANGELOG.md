@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.722.1 (2026-07-03)
+
+### Bug Fixes
+- fix(crm): backfill saved-view filter bag so clicked lists actually filter
+
+---
+
+
 ## v1.722.0 (2026-07-03)
 
 ### Features
