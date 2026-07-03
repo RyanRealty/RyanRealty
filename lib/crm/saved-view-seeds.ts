@@ -1,171 +1,64 @@
 /**
- * saved-view-seeds — the 12 FUB smart lists as canonical CrmSegment ASTs.
+ * saved-view-seeds — the canonical Ryan Realty smart lists as CrmSegment ASTs.
  *
- * This is the SINGLE definition of the seeded system views. The migration
- * (supabase/migrations/<ts>_crm_saved_views_ast.sql) inserts the same 12 rows;
- * the seed test (lib/crm/saved-view-seeds.test.ts) validates every AST here with
- * validateSegment and checks the migration's seed block mirrors this list. Keeping
- * the defs in one PURE module (no Supabase, no server-only) means the migration,
- * the DAL, and the test can never drift from one another.
+ * This is the SINGLE definition of the seeded system views. A migration
+ * (supabase/migrations/20260703140000_crm_saved_views_canonical.sql) replaces the
+ * system-view set with the same rows; the seed test (saved-view-seeds.test.ts)
+ * validates every AST here and checks the migration mirrors this list. Keeping the
+ * defs in one PURE module (no Supabase, no server-only) means the migration, the
+ * DAL, and the test can never drift.
  *
- * Each FUB smart list maps to an intent expressed with the stage/tag/last_activity
- * conditions the CrmSegment AST already supports (lib/crm/segment-ast.ts). Where a
- * clean mapping is not possible (Email Activity, IDX Activity have no first-class
- * event condition yet) the closest last_activity / tag approximation is used and
- * the reason is noted in `mappingNote`.
+ * v2 (2026-07-03): after the tag/segment streamline, the lists key on the CANONICAL
+ * segment/realtor tags the migration emits (docs/plans/CRM_STREAMLINE_PLAN_V2). Eight
+ * workflow lists (each on ONE canonical signal) + four operational lists. Stage
+ * navigation (Leads/Nurture/Sphere/Closed) moves to the Stages strip, not a list.
  *
- * Stage keys MUST match the crm_stages config table exactly (READ getCrmStages /
- * lib/crm/constants.ts CRM_STAGES). They are pinned below as literals so the test
- * can assert against CRM_STAGES without a DB.
+ * Stage keys MUST match crm_stages / lib/crm/constants.ts CRM_STAGES exactly.
  */
 
 import type { CrmSegment } from '@/lib/crm/segment-ast'
 
-/** ~90 days, the "Stay In Touch" staleness window, in milliseconds. */
-const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000
-/** ~30 days, the "recent activity" approximation window for Email / IDX activity. */
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
-
-/**
- * A relative date condition is resolved to an absolute ISO at seed time so the AST
- * stays a plain serializable shape (the resolver has no "relative now" support).
- * The seeded value is a fixed point; the views are refreshable by re-running the
- * seed if the window needs to advance. For the live DAL count the AST is read
- * straight from the row, so the seeded window is what the count reflects.
- */
-function isoDaysAgo(ms: number, now: Date = new Date()): string {
-  return new Date(now.getTime() - ms).toISOString()
-}
-
 export type SavedViewSeed = {
-  /** Display name (matches the FUB smart-list name). */
   name: string
-  /** Short description shown under the chip. */
   description: string
-  /** Render order. Dense 0..n-1. */
   position: number
-  /** The segment AST that resolves the list. */
   ast: CrmSegment
   /** When the mapping is an approximation, why. Empty for a clean mapping. */
   mappingNote: string
 }
 
-/**
- * Build the 12 seeds. `now` is injectable so the test gets deterministic ISO
- * windows for the date-based views.
- */
-export function buildSavedViewSeeds(now: Date = new Date()): SavedViewSeed[] {
-  const ninetyDaysAgo = isoDaysAgo(NINETY_DAYS_MS, now)
-  const thirtyDaysAgo = isoDaysAgo(THIRTY_DAYS_MS, now)
+/** A single-tag "has" list. */
+const tagList = (value: string): CrmSegment => ({
+  type: 'group', op: 'and', nodes: [{ field: 'tag', op: 'has', value }],
+})
+/** A single-stage list. */
+const stageList = (value: string): CrmSegment => ({
+  type: 'group', op: 'and', nodes: [{ field: 'stage', value }],
+})
 
+/**
+ * The canonical smart lists. `now` kept in the signature for API compatibility with
+ * the previous date-windowed seeds (unused now — none of the canonical lists are
+ * time-based; dormancy is handled by the demote sweep, not a list).
+ */
+export function buildSavedViewSeeds(_now: Date = new Date()): SavedViewSeed[] {
   return [
-    {
-      name: 'Leads',
-      description: 'New leads in the pipeline.',
-      position: 0,
-      ast: { type: 'group', op: 'and', nodes: [{ field: 'stage', value: 'Lead' }] },
-      mappingNote: '',
-    },
-    {
-      name: 'Hot Prospects',
-      description: 'Hot prospects, 1 to 3 months out.',
-      position: 1,
-      ast: { type: 'group', op: 'and', nodes: [{ field: 'stage', value: 'A - Hot 1-3 Months' }] },
-      mappingNote: '',
-    },
-    {
-      name: 'Sellers',
-      description: 'Seller audience and seller prospects.',
-      position: 2,
-      ast: {
-        type: 'group',
-        op: 'or',
-        nodes: [
-          { field: 'tag', op: 'has', value: 'audience:seller' },
-          { field: 'stage', value: 'Seller Prospect' },
-        ],
-      },
-      mappingNote: '',
-    },
-    {
-      name: 'Buyers',
-      description: 'Buyer audience.',
-      position: 3,
-      ast: { type: 'group', op: 'and', nodes: [{ field: 'tag', op: 'has', value: 'audience:buyer' }] },
-      mappingNote: '',
-    },
-    {
-      name: 'Past Clients',
-      description: 'Closed clients to stay in touch with.',
-      position: 4,
-      ast: { type: 'group', op: 'and', nodes: [{ field: 'stage', value: 'Past Client' }] },
-      mappingNote: '',
-    },
-    {
-      name: 'Sphere',
-      description: 'Your sphere of influence.',
-      position: 5,
-      ast: { type: 'group', op: 'and', nodes: [{ field: 'stage', value: 'Sphere' }] },
-      mappingNote: '',
-    },
-    {
-      name: 'Nurture',
-      description: 'Long-term nurture contacts.',
-      position: 6,
-      ast: { type: 'group', op: 'and', nodes: [{ field: 'stage', value: 'Nurture' }] },
-      mappingNote: '',
-    },
-    {
-      name: 'Pending',
-      description: 'Contacts with a transaction in progress.',
-      position: 7,
-      ast: { type: 'group', op: 'and', nodes: [{ field: 'stage', value: 'Pending' }] },
-      mappingNote: '',
-    },
-    {
-      name: 'Closed',
-      description: 'Closed transactions.',
-      position: 8,
-      ast: { type: 'group', op: 'and', nodes: [{ field: 'stage', value: 'Closed' }] },
-      mappingNote: '',
-    },
-    {
-      name: 'Stay In Touch',
-      description: 'No activity in the last 90 days.',
-      position: 9,
-      ast: {
-        type: 'group',
-        op: 'and',
-        nodes: [{ field: 'last_activity', op: 'before', value: ninetyDaysAgo }],
-      },
-      mappingNote: 'Staleness proxy: last_activity older than 90 days (no dedicated dormancy column).',
-    },
-    {
-      name: 'Email Activity',
-      description: 'Recent email engagement.',
-      position: 10,
-      ast: {
-        type: 'group',
-        op: 'and',
-        nodes: [{ field: 'last_activity', op: 'after', value: thirtyDaysAgo }],
-      },
-      mappingNote: 'Approximation: last_activity within 30 days (no first-class email-event condition in the AST yet).',
-    },
-    {
-      name: 'IDX Activity',
-      description: 'Recent website and search activity.',
-      position: 11,
-      ast: {
-        type: 'group',
-        op: 'and',
-        nodes: [{ field: 'last_activity', op: 'after', value: thirtyDaysAgo }],
-      },
-      mappingNote: 'Approximation: last_activity within 30 days (no first-class IDX-event condition in the AST yet).',
-    },
+    { name: 'Sellers', description: 'Seller prospects (the farm).', position: 0, ast: tagList('segment:seller'), mappingNote: '' },
+    { name: 'Buyers', description: 'Active and prospective buyers.', position: 1, ast: tagList('segment:buyer'), mappingNote: '' },
+    { name: 'Expired', description: 'Expired listings to recover.', position: 2, ast: tagList('segment:expired'), mappingNote: '' },
+    { name: 'FSBO', description: 'For-sale-by-owner leads.', position: 3, ast: tagList('segment:fsbo'), mappingNote: '' },
+    { name: 'Out Of Area Home Owners', description: 'Own a local property, mail out of the area.', position: 4, ast: tagList('segment:out-of-area'), mappingNote: '' },
+    { name: 'Local Realtors', description: 'Central Oregon agents.', position: 5, ast: tagList('realtor:local'), mappingNote: '' },
+    { name: 'Migration Realtors', description: 'Feeder-market referral agents.', position: 6, ast: tagList('realtor:migration'), mappingNote: '' },
+    { name: 'Vendors', description: 'Your vendor rolodex.', position: 7, ast: tagList('segment:vendor'), mappingNote: '' },
+    { name: 'Active Clients', description: 'Clients under active representation.', position: 8, ast: stageList('Active Client'), mappingNote: '' },
+    { name: 'Past Clients', description: 'Closed clients to stay in touch with.', position: 9, ast: stageList('Past Client'), mappingNote: '' },
+    { name: 'Pending', description: 'Transactions in progress.', position: 10, ast: stageList('Pending'), mappingNote: '' },
+    { name: 'Compliance Blocked', description: 'Do-not-contact / hard stop.', position: 11, ast: tagList('compliance:hard-stop'), mappingNote: '' },
   ]
 }
 
-/** The 12 seeds with the default (now) window — convenience for non-test callers. */
+/** The canonical seeds with the default window — convenience for non-test callers. */
 export const SAVED_VIEW_SEEDS: SavedViewSeed[] = buildSavedViewSeeds()
 
 /** Just the names, in order — used by the seed test against the migration block. */
