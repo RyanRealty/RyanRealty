@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.723.2 (2026-07-03)
+
+### Maintenance
+- docs(crm): streamline execution log — all phases complete + browser-verified
+
+---
+
+
 ## v1.723.1 (2026-07-03)
 
 ### Bug Fixes
