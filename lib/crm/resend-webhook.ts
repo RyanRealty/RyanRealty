@@ -50,7 +50,7 @@ export function isFreshTimestamp(svixTimestamp: string, nowMs: number, tolerance
   return Math.abs(nowMs / 1000 - ts) <= toleranceSec
 }
 
-export type ResendEventType = 'delivered' | 'opened' | 'clicked' | 'bounced' | 'complained'
+export type ResendEventType = 'delivered' | 'opened' | 'clicked' | 'bounced' | 'complained' | 'unsubscribed'
 
 const EVENT_MAP: Record<string, ResendEventType> = {
   'email.delivered': 'delivered',
@@ -58,6 +58,10 @@ const EVENT_MAP: Record<string, ResendEventType> = {
   'email.clicked': 'clicked',
   'email.bounced': 'bounced',
   'email.complained': 'complained',
+  // T-8: Resend's native one-click unsubscribe — must flip subscriber status, not
+  // be silently dropped (was absent from EVENT_MAP → an unsubscribe via Resend's
+  // List-Unsubscribe header never reached newsletter_subscribers).
+  'email.unsubscribed': 'unsubscribed',
 }
 
 export interface ClassifiedResendEvent {

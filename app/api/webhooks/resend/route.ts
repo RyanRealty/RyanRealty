@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { recordNewsletterEvent, setSubscriberStatusByEmail } from '@/lib/data'
+import { getRecipientByMessageId, recordLedgerEvent, ledgerEventFor } from '@/lib/data/newsletter/queue'
 import { getPersonIdsByEmail } from '@/lib/data/crm/getPersonIdsByEmail'
 import { addSuppression } from '@/lib/crm/suppressions'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -15,6 +16,7 @@ const TIMELINE_KIND: Record<ResendEventType, string> = {
   clicked: 'email_click',
   bounced: 'email_bounce',
   complained: 'email_complaint',
+  unsubscribed: 'email_unsubscribe',
 }
 const TIMELINE_TITLE: Record<ResendEventType, string> = {
   delivered: 'Email delivered',
@@ -22,6 +24,7 @@ const TIMELINE_TITLE: Record<ResendEventType, string> = {
   clicked: 'Email link clicked',
   bounced: 'Email bounced',
   complained: 'Spam complaint',
+  unsubscribed: 'Unsubscribed',
 }
 
 /**
@@ -67,24 +70,56 @@ export async function POST(request: NextRequest) {
   const event = classifyResendEvent(payload)
   const emailId = payload.data?.email_id
 
-  // H1 (spec §5): resolve the recipient's FROZEN broker from the newsletter
-  // recipient row (keyed by the Resend message id) so this engagement event
-  // carries broker for per-broker analytics — the webhook is the second of the
-  // two engagement sources (the HMAC pixel/token is the first) and both must
-  // stamp broker or brokers see sends-by-broker but not engagement-by-broker.
-  let eventBroker: string | null = null
-  if (emailId) {
-    const { data: rec } = await createServiceClient()
-      .from('newsletter_recipients')
-      .select('broker')
-      .eq('resend_message_id', emailId)
-      .not('broker', 'is', null)
-      .limit(1)
-      .maybeSingle()
-    eventBroker = (rec as { broker: string | null } | null)?.broker ?? null
+  // Resolve the newsletter recipient (broker + subscriber + newsletter) from the
+  // Resend message id — powers per-broker analytics (H1) AND the engagement ledger.
+  const recipient = emailId ? await getRecipientByMessageId(emailId) : null
+  const eventBroker = recipient?.broker ?? null
+
+  // T-8: Resend's native one-click unsubscribe. Flip the subscriber to
+  // unsubscribed + log it — it's a status change, not an engagement event, so it
+  // does NOT run through the stats/ledger/timeline-engagement paths below.
+  if (event.type === 'unsubscribed') {
+    const sb = createServiceClient()
+    for (const email of event.recipients) {
+      await setSubscriberStatusByEmail(email, 'unsubscribed')
+      for (const personId of await getPersonIdsByEmail(email)) {
+        await sb.from('crm_timeline').upsert(
+          {
+            person_id: personId,
+            kind: TIMELINE_KIND.unsubscribed,
+            title: TIMELINE_TITLE.unsubscribed,
+            source: 'resend',
+            broker: eventBroker,
+            payload: { emailId, email },
+            dedupe_key: `resend:${emailId}:unsubscribed:p${personId}`,
+          },
+          { onConflict: 'dedupe_key', ignoreDuplicates: true },
+        )
+      }
+    }
+    return NextResponse.json({ ok: true, unsubscribed: event.recipients.length })
   }
 
-  // Newsletter stats (existing behavior).
+  // Append the deduped engagement ledger row (spec §3.1) — the source of truth for
+  // open/click counts, recipient-scoped so a webhook redelivery can't inflate it.
+  if (event.type && emailId && recipient) {
+    const le = ledgerEventFor(event.type)
+    if (le) {
+      await recordLedgerEvent({
+        newsletterId: recipient.newsletter_id,
+        subscriberId: recipient.subscriber_id,
+        email: recipient.email,
+        resendMessageId: emailId,
+        broker: eventBroker,
+        event: le,
+        url: event.clickUrl,
+        occurredAt: event.isoTs,
+      })
+    }
+  }
+
+  // Newsletter stats (legacy recipient-row counters — kept for back-compat; the
+  // ledger above is the deduped source of truth the admin reads).
   if (event.type && emailId) {
     await recordNewsletterEvent({
       resendMessageId: emailId,

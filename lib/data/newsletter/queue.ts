@@ -316,6 +316,122 @@ export async function finalizeNewsletter(newsletterId: string): Promise<'sent' |
   return status
 }
 
+/** Ledger event vocabulary (spec §3.1). */
+export type LedgerEvent = 'delivered' | 'open' | 'click' | 'bounce' | 'complaint'
+
+/** Map a Resend event type to a ledger event (opened->open, clicked->click, ...). */
+export function ledgerEventFor(resendType: string): LedgerEvent | null {
+  switch (resendType) {
+    case 'delivered': return 'delivered'
+    case 'opened': return 'open'
+    case 'clicked': return 'click'
+    case 'bounced': return 'bounce'
+    case 'complained': return 'complaint'
+    default: return null
+  }
+}
+
+/**
+ * Insert one engagement row into the append-only ledger (spec §3.1/A3). The
+ * dedupe_key is RECIPIENT-scoped and source-agnostic —
+ * `nl:<newsletter_id>:sub:<subscriber_id|lower(email)>:<event>:<url>` — so a Resend
+ * webhook redelivery, or the same open arriving from two sources, collapses to ONE
+ * row (on conflict do nothing). This is the deduped source of truth from which
+ * open/click counts derive, so a replay can never inflate them (T-2/T-3/T-4).
+ */
+export async function recordLedgerEvent(input: {
+  newsletterId: string
+  subscriberId: string | null
+  email: string
+  resendMessageId: string | null
+  broker: string | null
+  event: LedgerEvent
+  url?: string | null
+  occurredAt?: string | null
+}): Promise<void> {
+  const sb = createServiceClient()
+  const email = input.email.trim().toLowerCase()
+  const key = input.subscriberId ?? email
+  const url = input.event === 'click' ? (input.url ?? '') : ''
+  const dedupe = `nl:${input.newsletterId}:sub:${key}:${input.event}:${url}`
+  const { error } = await sb.from(EVENTS).upsert(
+    {
+      newsletter_id: input.newsletterId,
+      subscriber_id: input.subscriberId,
+      email,
+      resend_message_id: input.resendMessageId,
+      broker: input.broker,
+      event: input.event,
+      url: input.event === 'click' ? (input.url ?? null) : null,
+      occurred_at: input.occurredAt ?? new Date().toISOString(),
+      dedupe_key: dedupe,
+    },
+    { onConflict: 'dedupe_key', ignoreDuplicates: true },
+  )
+  if (error) console.warn('[newsletter] recordLedgerEvent:', error.message)
+}
+
+/** Resolve the newsletter recipient context for a Resend message id (for ledger + broker stamping). */
+export async function getRecipientByMessageId(
+  resendMessageId: string,
+): Promise<{ newsletter_id: string; subscriber_id: string | null; email: string; broker: string | null } | null> {
+  const sb = createServiceClient()
+  const { data } = await sb
+    .from(RECIPIENTS)
+    .select('newsletter_id, subscriber_id, email, broker')
+    .eq('resend_message_id', resendMessageId)
+    .limit(1)
+    .maybeSingle()
+  return (data as { newsletter_id: string; subscriber_id: string | null; email: string; broker: string | null } | null) ?? null
+}
+
+/**
+ * Deduped engagement counts for a newsletter, DERIVED FROM THE LEDGER (spec §3.1) —
+ * not the newsletter_recipients.open_count/click_count columns, which a webhook
+ * redelivery can inflate. delivered/open/click/bounce/complaint are distinct-row
+ * counts over newsletter_recipient_events; sent is the recipient-row count.
+ */
+export async function getNewsletterStatsFromLedger(newsletterId: string): Promise<{
+  sent: number
+  delivered: number
+  opened: number
+  clicked: number
+  bounced: number
+  complained: number
+  openRate: number
+  clickRate: number
+}> {
+  const sb = createServiceClient()
+  const countEvent = async (event: LedgerEvent) => {
+    const { count } = await sb
+      .from(EVENTS)
+      .select('id', { count: 'exact', head: true })
+      .eq('newsletter_id', newsletterId)
+      .eq('event', event)
+    return count ?? 0
+  }
+  const counts = await recipientStatusCounts(newsletterId)
+  const sent = (counts.sent ?? 0) + (counts.delivered ?? 0) + (counts.opened ?? 0) + (counts.clicked ?? 0)
+  const [delivered, opened, clicked, bounced, complained] = await Promise.all([
+    countEvent('delivered'),
+    countEvent('open'),
+    countEvent('click'),
+    countEvent('bounce'),
+    countEvent('complaint'),
+  ])
+  const denom = delivered || sent || 1
+  return {
+    sent,
+    delivered,
+    opened,
+    clicked,
+    bounced,
+    complained,
+    openRate: opened / denom,
+    clickRate: clicked / denom,
+  }
+}
+
 /** Bounce/complaint counts within THIS send window — feeds the circuit-breaker (§6.5 rule 4). */
 export async function sendWindowHealth(newsletterId: string): Promise<{ sent: number; bounced: number; complained: number }> {
   const sb = createServiceClient()

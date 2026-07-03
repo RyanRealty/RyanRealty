@@ -32,13 +32,14 @@ const ROOT = process.cwd()
 const PATHS = {
   sendQueue: join(ROOT, 'lib/newsletter/send-queue.ts'),
   webhook: join(ROOT, 'app/api/webhooks/resend/route.ts'),
+  queue: join(ROOT, 'lib/data/newsletter/queue.ts'),
 }
 
 function safeRead(p) {
   return existsSync(p) ? stripJsComments(readFileSync(p, 'utf8')) : null
 }
 
-export function runChecks({ sendQueue, webhook }) {
+export function runChecks({ sendQueue, webhook, queue: sendQueueQueue }) {
   const results = []
 
   // G-NL-5a: render resolves broker from the recipient's frozen slug.
@@ -55,19 +56,25 @@ export function runChecks({ sendQueue, webhook }) {
     })
   }
 
-  // G-NL-5b: webhook stamps broker from newsletter_recipients by message_id.
+  // G-NL-5b: webhook resolves the recipient (broker) by message_id and stamps it.
+  // The lookup lives in getRecipientByMessageId (queue.ts, selects broker); the
+  // webhook calls it and passes broker: eventBroker onto the event rows (H1).
   if (webhook == null) {
     results.push({ id: 'G-NL-5b webhook-broker', ok: false, detail: 'app/api/webhooks/resend/route.ts not found' })
   } else {
-    const looksUp = /newsletter_recipients/.test(webhook) && /resend_message_id/.test(webhook) && /broker/.test(webhook)
+    const looksUp = /getRecipientByMessageId\(/.test(webhook)
     const stamps = /broker:\s*eventBroker/.test(webhook)
-    const ok = looksUp && stamps
+    const queueResolvesBroker =
+      sendQueueQueue == null
+        ? true // can't read the queue lib; don't fail on that
+        : /getRecipientByMessageId[\s\S]*?select\([^)]*broker/.test(sendQueueQueue)
+    const ok = looksUp && stamps && queueResolvesBroker
     results.push({
       id: 'G-NL-5b webhook-broker',
       ok,
       detail: ok
-        ? 'resend webhook — resolves broker via newsletter_recipients(resend_message_id) and stamps it on the event rows (H1)'
-        : `resend webhook — missing ${!looksUp ? 'the newsletter_recipients broker lookup by resend_message_id' : ''}${!looksUp && !stamps ? ' and ' : ''}${!stamps ? 'broker: eventBroker on the event write' : ''}`,
+        ? 'resend webhook — resolves the recipient via getRecipientByMessageId (selects broker) and stamps broker: eventBroker on the event rows (H1)'
+        : `resend webhook — missing ${!looksUp ? 'getRecipientByMessageId(...) call' : ''}${!looksUp && !stamps ? ' and ' : ''}${!stamps ? 'broker: eventBroker on the event write' : ''}${!queueResolvesBroker ? ' (getRecipientByMessageId must select broker)' : ''}`,
     })
   }
 
@@ -97,7 +104,7 @@ const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.arg
 if (isMain) {
   const asJson = process.argv.includes('--json')
   const report = process.argv.includes('--report')
-  const results = runChecks({ sendQueue: safeRead(PATHS.sendQueue), webhook: safeRead(PATHS.webhook) })
+  const results = runChecks({ sendQueue: safeRead(PATHS.sendQueue), webhook: safeRead(PATHS.webhook), queue: safeRead(PATHS.queue) })
   const failures = results.filter((r) => !r.ok)
   if (asJson) {
     console.log(JSON.stringify({ pass: failures.length === 0, results }, null, 2))

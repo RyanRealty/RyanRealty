@@ -46,6 +46,19 @@ already exist (`/blog`, `/communities`, `/schools`, `/parks`, `/guides`).
 
 ## Build progress log (newest first)
 
+**2026-07-03 — Phase 5 (event integrity) shipped.**
+- Engagement LEDGER (`newsletter_recipient_events`) is now written by the Resend webhook via
+  `recordLedgerEvent` with a RECIPIENT-scoped dedupe_key (`nl:<id>:sub:<subscriber|email>:<event>:<url>`,
+  A3) — verified against the live DB that a webhook replay collapses to one row and a distinct-URL click
+  stays separate. `getNewsletterStatsFromLedger` derives deduped open/click counts from the ledger
+  (not the inflatable recipient counters). `email.unsubscribed` added to EVENT_MAP + handled (flip
+  subscriber → unsubscribed + timeline, T-8); `setSubscriberStatusByEmail` extended (+stamps
+  bounced_at/complained_at). Broker stamped on ledger + email_events + timeline (H1 complete).
+- Tests: classify `email.unsubscribed` (no false-suppress); live-DB ledger dedup. Gate:
+  `ci:newsletter-events` (G-NL-10/13); `ci:newsletter-broker` G-NL-5b updated for the
+  getRecipientByMessageId refactor. MPP: opens are caveated at the dashboard (clicks lead, R-5) —
+  a Phase 7/8 presentation rule, no schema column.
+
 **2026-07-03 — Phase 4 (per-broker identity swap + shell rebuild) shipped.**
 - `lib/email-templates/newsletter-shell.ts` rebuilt to the approved 640px editorial
   `email.html` frame: navy masthead (wordmark + issue line) → Old Mill hero → producer-authored

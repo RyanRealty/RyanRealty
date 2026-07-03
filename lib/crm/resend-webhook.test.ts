@@ -81,4 +81,10 @@ describe('classifyResendEvent', () => {
   it('maps an unknown event type to null', () => {
     expect(classifyResendEvent({ type: 'email.scheduled' }).type).toBeNull()
   })
+  it('classifies email.unsubscribed (T-8) without suppressing as a bounce', () => {
+    const e = classifyResendEvent({ type: 'email.unsubscribed', data: { to: ['x@y.com'] } })
+    expect(e.type).toBe('unsubscribed')
+    expect(e.suppressEmail).toBe(false)
+    expect(e.suppressReason).toBeNull()
+  })
 })

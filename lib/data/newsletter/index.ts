@@ -174,12 +174,15 @@ export async function getActiveSubscribersForSend(args: { segment?: NewsletterSe
  * this keeps subscriber status honest). Only ever moves an ACTIVE subscriber to
  * a terminal status — never reactivates.
  */
-export async function setSubscriberStatusByEmail(email: string, status: 'bounced' | 'complained'): Promise<void> {
+export async function setSubscriberStatusByEmail(email: string, status: 'bounced' | 'complained' | 'unsubscribed'): Promise<void> {
   const e = email.trim().toLowerCase()
   if (!e) return
   const sb = createServiceClient()
-  await sb.from(SUBS).update({ status, updated_at: new Date().toISOString() })
-    .eq('email', e).eq('status', 'active')
+  const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString() }
+  if (status === 'bounced') patch.bounced_at = new Date().toISOString()
+  if (status === 'complained') patch.complained_at = new Date().toISOString()
+  // Only ever move an ACTIVE subscriber to a terminal state — never reactivate.
+  await sb.from(SUBS).update(patch).eq('email', e).eq('status', 'active')
 }
 
 /** Stamp last_sent_at for a batch after a send. */
