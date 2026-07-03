@@ -432,3 +432,11 @@ app/admin/(protected)/settings/MobileSettingsScreen.tsx
 # desktop dashboard renders DashboardActivityTable instead). Same exception
 # class as the §25/§26/§28/§29 mobile surfaces above.
 components/admin/DashboardActivityFeed.tsx
+# Content-engine map pins (events/venues/golf/trails detail maps, 2026-07-03):
+# priced home markers + the venue/trailhead dot render as HTML overlays ON a
+# Google Maps AdvancedMarkerElement, outside the normal KB cascade. They need
+# explicit navy #102742 + white #ffffff to (a) override the KB `.kb-root a` color
+# rule that otherwise makes the price invisible, and (b) render legibly over
+# arbitrary map imagery. Same class of exception as the CRM map/chart pins above.
+components/site/VenueMap.client.tsx
+components/site/VenueMap.tsx
