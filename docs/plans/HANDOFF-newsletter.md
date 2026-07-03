@@ -46,6 +46,22 @@ already exist (`/blog`, `/communities`, `/schools`, `/parks`, `/guides`).
 
 ## Build progress log (newest first)
 
+**2026-07-03 — Phase 2 (compliance + format hardening) shipped.**
+- Tracking token hardened (`lib/email-tracking.ts`): prod hard-fail `assertTrackingSecret()` (refuses
+  the insecure dev-fallback secret in production), optional TTL (`exp`) + nonce (`n` via `randomBytes`)
+  on sign + enforced on verify (backward compatible — no-TTL tokens still verify), and a `broker` field
+  (Phase 4 prep). 12 unit tests (round-trip, tamper, TTL expiry, broker) — a dropped `SITE_URL` const
+  was caught by the test, fixed.
+- `crm_timeline` open/click inserts now de-duped (T-4): upsert with a recipient-scoped `dedupe_key` +
+  `onConflict` + `ignoreDuplicates` so a pixel firing repeatedly collapses to one timeline row.
+- Plain-text multipart guaranteed (G-NL-3): the send derives text via `htmlToPlainText(body_html)` when
+  the admin left it blank — no more near-empty text part.
+- Gates built + wired + demonstrated red→green: `ci:newsletter-compliance` (G-NL-1/2/3),
+  `ci:newsletter-format` (G-NL-7 static), `ci:email-tracking` (G-NL-11 + G-NL-10). Caught + fixed a
+  comment-blindness defect where a gate passed on a token that only appeared in a doc comment — added
+  `scripts/lib/strip-js-comments.mjs` so gates check CODE, not comments. Verified the tracking gate goes
+  red on a realistic dedup-removal.
+
 **2026-07-03 — Phase 0 + Phase 1 shipped.**
 - **Phase 0 (verify + adversarial audit) DONE.** Verified spec vs live DB/code/DNS/routes. Ran an
   adversarial "assume everything is broken" pass → spec bumped to **v1.2** with 7 corrections (A1–A7).

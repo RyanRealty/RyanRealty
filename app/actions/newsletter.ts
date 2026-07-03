@@ -9,6 +9,7 @@ import { sendEmail } from '@/lib/resend'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { wrapNewsletterHtml, newsletterTextFooter } from '@/lib/email-templates/newsletter-shell'
+import { htmlToPlainText } from '@/lib/email/prepare'
 import { checkNewsletterVoice } from '@/lib/email/voice-precheck'
 import { createSavedSearchForLead, updateSavedSearch, deleteSavedSearchById } from '@/lib/data'
 import {
@@ -271,7 +272,12 @@ export async function adminSendNewsletterAction(id: string): Promise<{ ok: boole
     const html = rawHtml
       ? attributeOutbound(rawHtml, { brokerSlug, personId: r.crm_person_id ?? null, emailKey: `newsletter:${id}`, label: letter.subject })
       : undefined
-    const text = (letter.body_text ?? '') + newsletterTextFooter(u)
+    // Multipart guarantee (gate G-NL-3): never dispatch a whitespace-only text
+    // part. If the admin left the plain-text body blank, derive it from the HTML
+    // (the compose form doesn't expose a text field), so every send is real
+    // multipart — better inbox placement and a readable copy in text-only clients.
+    const bodyText = letter.body_text?.trim() || htmlToPlainText(letter.body_html ?? '')
+    const text = bodyText + newsletterTextFooter(u)
     const res = await sendEmail({
       to: r.email,
       from: NEWSLETTER_FROM,

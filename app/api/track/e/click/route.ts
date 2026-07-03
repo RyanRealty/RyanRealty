@@ -19,14 +19,22 @@ export async function GET(req: NextRequest) {
   if (ctx && Number.isFinite(ctx.personId)) {
     try {
       const sb = createServiceClient()
-      const { error } = await sb.from('crm_timeline').insert({
-        person_id: ctx.personId,
-        kind: 'email_click',
-        source: 'email-tracking',
-        title: ctx.label ? `Clicked a link in: ${ctx.label}` : 'Clicked an email link',
-        body: target,
-        payload: { emailKey: ctx.emailKey, label: ctx.label ?? null, url: target },
-      })
+      // De-duped (edge case T-4): the dedupe_key includes the target URL, so
+      // repeat clicks of the SAME link collapse to one timeline row while a click
+      // on a DIFFERENT link still records (matches the email_events click grain).
+      const { error } = await sb.from('crm_timeline').upsert(
+        {
+          person_id: ctx.personId,
+          kind: 'email_click',
+          source: 'email-tracking',
+          broker: ctx.broker ?? null,
+          title: ctx.label ? `Clicked a link in: ${ctx.label}` : 'Clicked an email link',
+          body: target,
+          payload: { emailKey: ctx.emailKey, label: ctx.label ?? null, url: target },
+          dedupe_key: `track:click:${ctx.personId}:${ctx.emailKey}:${target}`,
+        },
+        { onConflict: 'dedupe_key', ignoreDuplicates: true },
+      )
       if (error) console.warn('[track/click] insert error:', error.message)
 
       // Also record into the unified email_events store (the single source the

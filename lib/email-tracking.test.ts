@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   instrumentEmailHtml,
   isComplianceLink,
@@ -30,6 +30,37 @@ describe('signEmailToken / verifyEmailToken', () => {
     expect(verifyEmailToken(`${payload}.AAAA`)).toBeNull()
     expect(verifyEmailToken('garbage')).toBeNull()
     expect(verifyEmailToken(null)).toBeNull()
+  })
+})
+
+describe('token TTL + broker (Phase 2 hardening)', () => {
+  afterEach(() => vi.useRealTimers())
+
+  it('stamps and round-trips the broker slug', () => {
+    const ctx = verifyEmailToken(signEmailToken({ ...CTX, broker: 'rebecca' }))
+    expect(ctx?.broker).toBe('rebecca')
+  })
+
+  it('omits broker when not provided', () => {
+    const ctx = verifyEmailToken(signEmailToken(CTX))
+    expect(ctx?.broker).toBeUndefined()
+  })
+
+  it('rejects a token whose TTL has expired, accepts one still live', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-07-03T00:00:00Z'))
+    const tok = signEmailToken({ ...CTX, ttlSeconds: 3600 })
+    expect(verifyEmailToken(tok)).not.toBeNull() // within the hour
+    vi.setSystemTime(new Date('2026-07-03T02:00:00Z')) // +2h > 1h TTL
+    expect(verifyEmailToken(tok)).toBeNull()
+  })
+
+  it('a token without a TTL never expires (backward compatible with sent mail)', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-07-03T00:00:00Z'))
+    const tok = signEmailToken(CTX)
+    vi.setSystemTime(new Date('2030-01-01T00:00:00Z'))
+    expect(verifyEmailToken(tok)).not.toBeNull()
   })
 })
 

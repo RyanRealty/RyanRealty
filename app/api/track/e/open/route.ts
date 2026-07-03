@@ -32,17 +32,27 @@ export async function GET(req: NextRequest) {
     const ctx = verifyEmailToken(req.nextUrl.searchParams.get('t'))
     if (ctx && Number.isFinite(ctx.personId)) {
       const sb = createServiceClient()
-      const { error } = await sb.from('crm_timeline').insert({
-        person_id: ctx.personId,
-        kind: 'email_open',
-        source: 'email-tracking',
-        title: ctx.label || 'Email opened',
-        payload: {
-          emailKey: ctx.emailKey,
-          label: ctx.label ?? null,
-          userAgent: req.headers.get('user-agent')?.slice(0, 240) ?? null,
+      // De-duped (edge case T-4): a pixel can fire on every render/forward. The
+      // dedupe_key collapses repeat opens of the same email to ONE timeline row
+      // (matches the email_events store), so the comms chain never floods with
+      // hundreds of identical "Email opened" entries. ignoreDuplicates makes the
+      // repeat a no-op instead of an error.
+      const { error } = await sb.from('crm_timeline').upsert(
+        {
+          person_id: ctx.personId,
+          kind: 'email_open',
+          source: 'email-tracking',
+          broker: ctx.broker ?? null,
+          title: ctx.label || 'Email opened',
+          payload: {
+            emailKey: ctx.emailKey,
+            label: ctx.label ?? null,
+            userAgent: req.headers.get('user-agent')?.slice(0, 240) ?? null,
+          },
+          dedupe_key: `track:open:${ctx.personId}:${ctx.emailKey}`,
         },
-      })
+        { onConflict: 'dedupe_key', ignoreDuplicates: true },
+      )
       if (error) console.warn('[track/open] insert error:', error.message)
 
       // Also record into the unified email_events store (the single source the
