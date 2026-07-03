@@ -33,6 +33,8 @@ import {
 } from '@/components/admin/crm/saved-view-grouping'
 import { fmtSidebarCount } from './people-list-utils'
 
+export type SidebarStage = { key: string; label: string; count: number }
+
 export type PeopleSidebarProps = {
   /** Every view the caller may see, each with a live scoped count. */
   views: SavedViewItem[]
@@ -40,11 +42,15 @@ export type PeopleSidebarProps = {
   activeViewId: number | null
   /** Total contacts in the caller's scope — the All People badge. */
   totalCount: number
+  /** Active pipeline stages with live scoped counts — the Stages strip. */
+  stages?: SidebarStage[]
+  /** The currently active stage (from ?stage=), or null. */
+  activeStage?: string | null
   /** Query params to carry across list navigation (broker/pond scope overlay). */
   carry?: Record<string, string | undefined>
 }
 
-export default function PeopleSidebar({ views, activeViewId, totalCount, carry = {} }: PeopleSidebarProps) {
+export default function PeopleSidebar({ views, activeViewId, totalCount, stages = [], activeStage = null, carry = {} }: PeopleSidebarProps) {
   const { system: systemViews, mine: myViews, shared: sharedViews } = groupSavedViews(views)
   const collections = groupSystemByCollection(systemViews)
 
@@ -54,6 +60,13 @@ export default function PeopleSidebar({ views, activeViewId, totalCount, carry =
     if (viewId != null) p.set('view', String(viewId))
     const qs = p.toString()
     return qs ? `/admin/crm?${qs}` : '/admin/crm'
+  }
+
+  const stageHref = (stageKey: string): string => {
+    const p = new URLSearchParams()
+    for (const [k, v] of Object.entries(carry)) if (v) p.set(k, v)
+    p.set('stage', stageKey)
+    return `/admin/crm?${p.toString()}`
   }
 
   return (
@@ -68,6 +81,25 @@ export default function PeopleSidebar({ views, activeViewId, totalCount, carry =
           active={activeViewId === null}
         />
       </ul>
+
+      {/* STAGES strip — the pipeline as clickable chips w/ live scoped counts (?stage=) */}
+      {stages.length > 0 ? (
+        <>
+          <p className="mt-4 px-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Stages</p>
+          <ul className="mt-1">
+            {stages.map((s) => (
+              <SidebarRow
+                key={s.key}
+                href={stageHref(s.key)}
+                label={s.label}
+                count={s.count}
+                active={activeStage === s.key}
+                indent
+              />
+            ))}
+          </ul>
+        </>
+      ) : null}
 
       {/* COLLECTIONS */}
       <p className="mt-4 px-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Collections</p>

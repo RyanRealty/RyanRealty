@@ -76,3 +76,9 @@ Live progress record for the coordinated streamline execution. Specs: `CRM_STREA
   "Showing 7,524 people" with the `segment:seller` filter chip and a correctly filtered list.
 - ⚠️ **Tech debt:** unify `listCrmPeople` onto the `ast` compiler (buildCrmPeopleQuery) so `filter`/`ast`
   can't drift. Safe today (all 12 canonical views are single-condition, fully captured by the filter bag).
+
+## Phase 3B — Desktop Stages strip ✅ (built)
+- `getCrmStageCounts` DAL (scoped per-stage counts via buildCrmPeopleQuery, mirrors getCrmSavedViews).
+- PeopleSidebar renders a "Stages" strip above Collections: the 8 active stages as chips w/ live counts,
+  linking to ?stage=<key> (active-state highlight). Wired from `app/admin/(protected)/crm/page.tsx`.
+- 0 TS errors; 450 CRM data tests green. Browser-verify on production after Vercel deploy.

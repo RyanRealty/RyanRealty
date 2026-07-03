@@ -25,6 +25,7 @@ import BrokerScopeSheet from '@/components/admin/crm/BrokerScopeSheet'
 import MobileCrmHeader from '@/components/admin/crm/mobile/MobileCrmHeader'
 import { MobilePeopleRoot } from '@/components/admin/crm/mobile/MobilePeopleRoot'
 import PeopleSidebar from '@/components/admin/crm/people-list/PeopleSidebar'
+import { getCrmStageCounts } from '@/lib/data/crm/getCrmStageCounts'
 import PeopleListView, { type PeopleRow } from '@/components/admin/crm/people-list/PeopleListView'
 import {
   groupSavedViews, groupSystemByCollection, type SavedViewItem,
@@ -68,7 +69,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
   const requestedBroker = sp.broker === 'all' ? undefined : sp.broker || undefined
   const effectiveBroker = scope ?? requestedBroker
 
-  const [views, overview, result, stageRows, tagRows, areaRows, templateRows, sequenceRows, ponds] = await Promise.all([
+  const [views, overview, result, stageRows, tagRows, areaRows, templateRows, sequenceRows, ponds, stageCounts] = await Promise.all([
     getCrmSavedViews(access),
     getCrmOverview(scope),
     listCrmPeople({ q: sp.q, stage: sp.stage, broker: effectiveBroker, tag: sp.tag, view: sp.view, page, pond: sp.pond }),
@@ -78,6 +79,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
     getCrmTemplatesAdmin(),
     listCrmSequences(),
     getCrmPonds(),
+    getCrmStageCounts(access),
   ])
 
   const { rows, total, pageSize, appliedView } = result
@@ -258,6 +260,8 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
           views={savedViewItems}
           activeViewId={activeViewId}
           totalCount={overview.total}
+          stages={stageCounts}
+          activeStage={sp.stage || null}
           carry={{ broker: sp.broker, pond: sp.pond }}
         />
         <PeopleListView
