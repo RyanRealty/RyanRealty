@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.726.0 (2026-07-03)
+
+### Features
+- feat(newsletter): Phase 6 scheduling — honor scheduled_at via the send cron
+- feat(newsletter): Phase 8 per-broker analytics console (G-NL-12)
+
+### Bug Fixes
+- fix(build): edge-safe crypto.randomUUID in newsletter/queue (unbreak /api/og on origin)
+- fix(newsletter): explicit broker photo height for Outlook/Word-engine clients
+- fix(newsletter): natural-aspect broker photo (no crop) + brand-voice close
+
+---
+
+
 ## v1.725.0 (2026-07-03)
 
 ### Features
