@@ -1,0 +1,194 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Ryan Realty Newsletter — v5 photos + events</title>
+<style>
+  :root{--navy:#102742;--cream:#faf8f4;--ink:#26303c;--muted:#8a8a8a;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:#dcd8d0;font-family:-apple-system,system-ui,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:600px;margin:0 auto;background:var(--cream);}
+  .pad{padding:0 34px;}
+  img{max-width:100%;display:block;}
+  .btn{display:inline-block;background:var(--navy);color:var(--cream);font-size:15px;font-weight:700;text-decoration:none;
+       padding:12px 20px;border-radius:10px;transition:transform .15s ease,box-shadow .15s ease,background .15s ease;}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(16,39,66,.22);background:#0a1a2e;}
+  .kicker{font-size:12px;font-weight:800;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;}
+  .serif{font-family:Georgia,'Times New Roman',serif;}
+  .card{background:#fff;border:1px solid rgba(16,39,66,.10);border-radius:16px;overflow:hidden;transition:transform .2s ease,box-shadow .2s ease;}
+  .card:hover{transform:translateY(-3px);box-shadow:0 16px 32px rgba(16,39,66,.14);}
+  .card img{transition:transform .5s ease;}
+  .card:hover img{transform:scale(1.05);}
+  .sec{opacity:0;transform:translateY(14px);animation:rise .7s ease forwards;}
+  @keyframes rise{to{opacity:1;transform:none;}}
+  .num{font-size:30px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;line-height:1;}
+  .gauge{position:relative;width:280px;height:150px;margin:8px auto 0;overflow:hidden;}
+  .gauge .arc{width:280px;height:280px;border-radius:50%;
+    background:conic-gradient(from -90deg,#2e6f4e 0deg 72deg,#c8a23a 72deg 126deg,#b4533a 126deg 180deg,transparent 180deg);
+    -webkit-mask:radial-gradient(circle 78px at 50% 50%,transparent 77px,#000 78px);mask:radial-gradient(circle 78px at 50% 50%,transparent 77px,#000 78px);}
+  .needle{position:absolute;left:50%;bottom:0;width:4px;height:118px;background:var(--navy);border-radius:4px;transform-origin:bottom center;
+    transform:translateX(-50%) rotate(0deg);animation:sweep 1.4s cubic-bezier(.34,1.56,.64,1) .3s forwards;}
+  @keyframes sweep{to{transform:translateX(-50%) rotate(-52deg);}}
+  .hub{position:absolute;left:50%;bottom:-9px;width:20px;height:20px;background:var(--navy);border-radius:50%;transform:translateX(-50%);}
+  .glabel{display:flex;justify-content:space-between;max-width:280px;margin:8px auto 0;font-size:11px;font-weight:800;letter-spacing:.05em;}
+  .ev{display:flex;gap:14px;align-items:stretch;}
+  .ev .thumb{width:112px;min-width:112px;height:92px;border-radius:12px;overflow:hidden;}
+  .ev .thumb img{width:112px;height:92px;object-fit:cover;}
+  .date{display:inline-block;background:var(--navy);color:var(--cream);font-size:11px;font-weight:800;letter-spacing:.04em;padding:3px 8px;border-radius:6px;}
+  .srow{display:flex;gap:16px;align-items:center;}
+  .srow .txt{flex:1;}
+  .srow .pic{width:120px;min-width:120px;height:110px;border-radius:12px;overflow:hidden;}
+  .srow .pic img{width:120px;height:110px;object-fit:cover;}
+</style>
+</head>
+<body>
+
+<div style="max-width:600px;margin:0 auto;background:#fff3cd;color:#7a5b00;font-size:12px;line-height:1.5;padding:8px 16px;text-align:center;">
+  DESIGN MOCKUP v5 — real Bend photography, sample numbers/events (verified from NAR + Freddie Mac + dated event sources in production). Email keeps the layout; the gauge becomes a GIF.
+</div>
+
+<div class="wrap">
+
+  <!-- HERO PHOTO -->
+  <div style="position:relative;">
+    <img src="https://ryan-realty.com/images/lp/hero-oldmill.jpg" alt="Old Mill District, Bend Oregon" style="width:100%;height:210px;object-fit:cover;">
+    <div style="position:absolute;left:0;right:0;bottom:0;padding:16px 34px;background:linear-gradient(transparent,rgba(16,39,66,.82));">
+      <div style="color:#fff;font-size:13px;font-weight:800;letter-spacing:.16em;">RYAN REALTY</div>
+      <div style="color:#dfe5ee;font-size:12px;letter-spacing:.12em;">THE BEND BRIEF · JUNE 2026</div>
+    </div>
+  </div>
+
+  <!-- 1 · BUYER'S OR SELLER'S MARKET (gauge = data as a picture) -->
+  <div class="sec pad" style="padding-top:28px;text-align:center;">
+    <div class="kicker">Buyer's or seller's market?</div>
+    <h1 class="serif" style="margin:10px 0 2px;font-size:36px;line-height:1.1;color:var(--navy);">It's a buyer's market.</h1>
+    <div class="gauge"><div class="arc"></div><div class="needle"></div><div class="hub"></div></div>
+    <div class="glabel"><span style="color:#2e6f4e;">◀ BUYER'S</span><span style="color:#a5842c;">BALANCED</span><span style="color:#b4533a;">SELLER'S ▶</span></div>
+    <!-- Smart Brevity read (Axios): what changed / why it matters, bolded anchors -->
+    <table width="100%" style="margin:18px 0 0;text-align:left;"><tr><td>
+      <p style="margin:0 0 8px;color:var(--ink);font-size:16px;line-height:1.55;"><b style="color:var(--navy);">What changed:</b> inventory is up and mortgage rates are easing, so for the first time in two years buyers actually have leverage.</p>
+      <p style="margin:0;color:var(--ink);font-size:16px;line-height:1.55;"><b style="color:var(--navy);">Why it matters:</b> whether you're buying or selling, the game just changed. Here's your move.</p>
+    </td></tr></table>
+  </div>
+
+  <!-- 2 · GENERAL MARKET UPDATE + CTA -->
+  <div class="sec pad" style="padding-top:26px;">
+    <div class="card" style="padding:22px;">
+      <div class="kicker">The market in 30 seconds</div>
+      <table width="100%" style="margin:14px 0 4px;"><tr>
+        <td style="text-align:center;"><div class="num">6.8%</div><div style="font-size:12px;color:#6b7280;margin-top:4px;">mortgage rate<br>(easing)</div></td>
+        <td style="text-align:center;border-left:1px solid rgba(16,39,66,.1);border-right:1px solid rgba(16,39,66,.1);"><div class="num">4.4mo</div><div style="font-size:12px;color:#6b7280;margin-top:4px;">homes for sale<br>(most since '19)</div></td>
+        <td style="text-align:center;"><div class="num">+43d</div><div style="font-size:12px;color:#6b7280;margin-top:4px;">to sell, YoY<br>(slower)</div></td>
+      </tr></table>
+      <p style="margin:8px 0 16px;color:var(--ink);font-size:15px;line-height:1.55;">Rates are drifting down and inventory is up. The pressure's off, and you've got options.</p>
+      <a class="btn" href="https://ryan-realty.com/reports">See the full market report →</a>
+      <a href="https://ryan-realty.com/reports" style="display:inline-block;margin-left:6px;color:var(--navy);font-size:14px;font-weight:600;text-decoration:underline;padding:12px 4px;">or get it monthly</a>
+    </div>
+  </div>
+
+  <!-- 3 · SELLERS (with photo) -->
+  <div class="sec pad" style="padding-top:20px;">
+    <div class="card" style="padding:20px;border-left:4px solid #b4533a;">
+      <div class="srow">
+        <div class="txt">
+          <div class="kicker" style="color:#b4533a;">For sellers</div>
+          <h2 class="serif" style="margin:8px 0 8px;font-size:21px;color:var(--navy);">Priced right, homes still fly.</h2>
+          <p style="margin:0 0 14px;color:var(--ink);font-size:15px;line-height:1.5;">In a balanced market the first week is everything. Know your real number before you list.</p>
+          <a class="btn" href="https://ryan-realty.com/lp/seller-home-value">What's your home worth? →</a>
+        </div>
+        <div class="pic"><img src="https://ryan-realty.com/images/blog/how-to-sell-your-home-bend.jpg" alt="Selling a home in Bend"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 · BUYERS (with photo) → broker landing page -->
+  <div class="sec pad" style="padding-top:16px;">
+    <div class="card" style="padding:20px;border-left:4px solid #2e6f4e;">
+      <div class="srow">
+        <div class="pic"><img src="https://ryan-realty.com/images/blog/moving-to-bend-relocation-guide.jpg" alt="Moving to Bend"></div>
+        <div class="txt">
+          <div class="kicker" style="color:#2e6f4e;">For buyers</div>
+          <h2 class="serif" style="margin:8px 0 8px;font-size:21px;color:var(--navy);">This is your opening.</h2>
+          <p style="margin:0 0 14px;color:var(--ink);font-size:15px;line-height:1.5;">Less competition means room to negotiate. Start with homes in your budget.</p>
+          <a class="btn" href="https://ryan-realty.com/buy">Start browsing homes →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 · COMMUNITY SPOTLIGHT (photo) -->
+  <div class="sec pad" style="padding-top:22px;">
+    <a href="https://ryan-realty.com/communities/tetherow" style="text-decoration:none;display:block;">
+    <div class="card">
+      <img src="https://ryan-realty.com/images/homepage/tetherow-golf-aerial.jpg" alt="Tetherow, Bend" style="width:100%;height:180px;object-fit:cover;">
+      <div style="padding:18px 20px;">
+        <div class="kicker">Premier community</div>
+        <h2 class="serif" style="margin:6px 0 6px;font-size:22px;color:var(--navy);">Tetherow</h2>
+        <p style="margin:0 0 6px;color:var(--ink);font-size:15px;line-height:1.5;">Golf, trails, and a resort at your doorstep on Bend's west side. See what life there looks like and what's for sale.</p>
+        <span style="color:var(--navy);font-size:15px;font-weight:700;">Explore Tetherow →</span>
+      </div>
+    </div></a>
+  </div>
+
+  <!-- 6 · THIS MONTH IN CENTRAL OREGON (3 big events, each with photo) -->
+  <div class="sec pad" style="padding-top:28px;">
+    <div class="kicker" style="text-align:center;">This month in Central Oregon</div>
+    <h2 class="serif" style="margin:8px 0 18px;font-size:24px;color:var(--navy);text-align:center;">3 things worth leaving the house for</h2>
+
+    <a href="https://ryan-realty.com/central-oregon/events/sisters-rodeo" style="text-decoration:none;display:block;margin-bottom:14px;">
+    <div class="card" style="padding:12px;"><div class="ev">
+      <div class="thumb"><img src="https://ryan-realty.com/images/homepage/sisters-downtown-three-peaks.jpg" alt="Sisters Rodeo"></div>
+      <div style="flex:1;"><span class="date">JUN 4–8</span>
+        <div style="font-size:17px;font-weight:700;color:var(--navy);margin:6px 0 2px;">Sisters Rodeo</div>
+        <div style="font-size:14px;color:#6b7280;line-height:1.45;">"The Biggest Little Show in the World." Real rodeo, small-town Central Oregon. →</div>
+      </div>
+    </div></div></a>
+
+    <a href="https://ryan-realty.com/central-oregon/events/bite-of-bend" style="text-decoration:none;display:block;margin-bottom:14px;">
+    <div class="card" style="padding:12px;"><div class="ev">
+      <div class="thumb"><img src="https://ryan-realty.com/images/blog/dining-craft-beer-bend.jpg" alt="Bite of Bend"></div>
+      <div style="flex:1;"><span class="date">JUN 20–22</span>
+        <div style="font-size:17px;font-weight:700;color:var(--navy);margin:6px 0 2px;">Bite of Bend</div>
+        <div style="font-size:14px;color:#6b7280;line-height:1.45;">Downtown fills with food carts, chef throwdowns, and local brews. →</div>
+      </div>
+    </div></div></a>
+
+    <a href="https://ryan-realty.com/central-oregon/events/munch-and-music" style="text-decoration:none;display:block;">
+    <div class="card" style="padding:12px;"><div class="ev">
+      <div class="thumb"><img src="https://ryan-realty.com/images/homepage/bend-drake-park-aerial.jpg" alt="Munch & Music, Drake Park"></div>
+      <div style="flex:1;"><span class="date">JUN 26</span>
+        <div style="font-size:17px;font-weight:700;color:var(--navy);margin:6px 0 2px;">Munch &amp; Music opens, Drake Park</div>
+        <div style="font-size:14px;color:#6b7280;line-height:1.45;">Free Thursday concerts by the river all summer. Bring a blanket. →</div>
+      </div>
+    </div></div></a>
+  </div>
+
+  <!-- closing CTA (RGE: repeat the primary CTA at the bottom) -->
+  <div class="sec pad" style="padding-top:30px;">
+    <div style="background:var(--navy);border-radius:16px;padding:26px;text-align:center;">
+      <div class="serif" style="color:var(--cream);font-size:22px;line-height:1.3;margin-bottom:16px;">See what's for sale in Bend right now.</div>
+      <a class="btn" style="background:var(--cream);color:var(--navy);" href="https://ryan-realty.com/search">Start your home search →</a>
+    </div>
+  </div>
+
+  <!-- footer w/ compact broker line (per-broker identity) -->
+  <div class="pad" style="padding-top:30px;padding-bottom:30px;">
+    <div style="height:1px;background:rgba(16,39,66,.1);margin-bottom:18px;"></div>
+    <table width="100%"><tr>
+      <td width="52"><img src="https://ryan-realty.com/images/brokers/ryan-matt.png" alt="Matt Ryan" width="44" height="44" style="width:44px;height:44px;border-radius:50%;object-fit:cover;background:#e9e6e0;"></td>
+      <td style="font-size:13px;color:#6b7280;line-height:1.5;">
+        <b style="color:var(--navy);">Matt Ryan · Ryan Realty</b> · <a href="tel:15412136706" style="color:#6b7280;">541.213.6706</a><br>
+        Reply anytime, it comes straight to me.
+      </td>
+    </tr></table>
+    <div style="margin-top:18px;color:#9aa0a8;font-size:12px;line-height:1.6;text-align:center;">
+      Ryan Realty · 115 NW Oregon Ave #2, Bend, OR 97703 · <a href="https://ryan-realty.com" style="color:#9aa0a8;">ryan-realty.com</a><br>
+      <a href="#" style="color:#9aa0a8;text-decoration:underline;">Unsubscribe</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
