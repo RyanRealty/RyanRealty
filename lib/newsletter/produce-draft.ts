@@ -63,6 +63,13 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
+/** Absolute HTTPS URL for email (a relative /path can't load in an inbox). Null → null. */
+function absolutize(url: string | null | undefined): string | null {
+  if (!url) return null
+  if (/^https?:\/\//i.test(url)) return url
+  return `${SITE}${url.startsWith('/') ? '' : '/'}${url}`
+}
+
 /** Round a whole-dollar figure to the nearest thousand and format as $895,000. */
 function currencyRounded(n: number): string {
   const k = Math.round(n / 1000) * 1000
@@ -176,8 +183,9 @@ function worthReadingSection(posts: BlogItem[]): string {
   const rows = posts.map((p, i) => {
     const last = i === posts.length - 1
     const border = last ? '' : 'border-bottom:1px solid rgba(16,39,66,.12);'
-    const img = p.heroImageUrl
-      ? `<img src="${escapeHtml(p.heroImageUrl)}" alt="" width="84" style="width:84px;height:72px;object-fit:cover;display:block;">`
+    const imgUrl = absolutize(p.heroImageUrl)
+    const img = imgUrl
+      ? `<img src="${escapeHtml(imgUrl)}" alt="" width="84" style="width:84px;height:72px;object-fit:cover;display:block;">`
       : ''
     const excerpt = p.excerpt ? escapeHtml(p.excerpt.slice(0, 120)) : ''
     const cat = p.category ? escapeHtml(p.category.toUpperCase()) : 'READ'
@@ -207,8 +215,9 @@ type CommunityItem = { slug: string; name: string; activeCount: number | null; h
 
 /** Community — one featured community. The count is authoritative (getCommunityBySlug). */
 function communitySection(c: CommunityItem): string {
-  const hero = c.heroImageUrl
-    ? `<img src="${escapeHtml(c.heroImageUrl)}" alt="${escapeHtml(c.name)}" width="640" style="display:block;width:100%;height:230px;object-fit:cover;">`
+  const heroUrl = absolutize(c.heroImageUrl)
+  const hero = heroUrl
+    ? `<img src="${escapeHtml(heroUrl)}" alt="${escapeHtml(c.name)}" width="640" style="display:block;width:100%;height:230px;object-fit:cover;">`
     : ''
   // Only render the count when it is a real, positive figure (§0: omit, never fill).
   const hasCount = c.activeCount != null && c.activeCount > 0
@@ -256,10 +265,12 @@ function thisMonthSection(events: EventItem[]): string {
     const last = i === events.length - 1
     const border = last ? '' : 'border-bottom:1px solid rgba(16,39,66,.12);'
     const date = e.nextConfirmedDate ? eventDateLabel(e.nextConfirmedDate, e.endDate) : ''
-    const meta = [date, e.city.toUpperCase()].filter(Boolean).join(' &middot; ')
+    // Escape the PARTS, then join with the raw middle-dot entity — escaping the whole
+    // joined string would turn `&middot;` into a literal `&amp;middot;` in the inbox.
+    const meta = [date, e.city.toUpperCase()].filter(Boolean).map(escapeHtml).join(' &middot; ')
     return `<a href="${SITE}/central-oregon/events/${escapeHtml(e.slug)}" style="text-decoration:none;"><table width="100%"><tr>
       <td valign="middle" style="${border}padding:12px 0;">
-        <div style="font-size:11px;letter-spacing:.1em;color:${RED};font-weight:700;">${escapeHtml(meta)}</div>
+        <div style="font-size:11px;letter-spacing:.1em;color:${RED};font-weight:700;">${meta}</div>
         <div style="font-family:${SERIF};font-size:20px;color:${NAVY};margin-top:2px;">${escapeHtml(e.name)}</div>
       </td>
     </tr></table></a>`
