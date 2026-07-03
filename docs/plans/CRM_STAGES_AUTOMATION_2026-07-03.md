@@ -31,15 +31,21 @@ Matt directive 2026-07-03: buyers and sellers move through the **same** stages (
 Stage names are side-neutral; the `segment:buyer`/`segment:seller` tag says which side, the stage says
 where. This is more maintainable than two pipelines and both journeys share the same shape.
 
+Matt removed **New** 2026-07-03 → **5 stages** (new leads land directly in Nurture; a `New`/uncontacted
+flag or the Speed-to-Lead priority handles first-touch instead of a stage).
+
 | # | Stage | Entry (what puts them here) | Seller = | Buyer = | Exit |
 |---|---|---|---|---|---|
-| 1 | **New** | lead created, zero contact | new homeowner lead | new buyer lead | first outbound logged |
-| 2 | **Nurture** | contacted, no active intent (90% of the 18K live here) | farming, no sell intent | no active buy intent | a hard intent signal → Engaged |
-| 3 | **Engaged** | **hard signal**: inbound reply, seller-LP/buyer form, valuation/CMA or showing request, or appointment booked | wants to sell, working to the listing appt | wants to buy, consult / pre-approval | signed agreement → Active; OR stale 45d → Nurture |
-| 4 | **Active** | signed representation / actively in-market | listed & marketing | signed buyer-rep, touring + offering | goes under contract → Under Contract; OR lost → Nurture |
-| 5 | **Under Contract** | `crm_deals` row / accepted offer | listing pending | offer accepted | closing date passes |
-| 6 | **Closed → Past Client** | deal closes | sold | bought | (rarely; re-enters Engaged on new intent) |
+| 1 | **Nurture** | lead created (new leads start here), on the database, no active intent (90% of the 18K live here) | farming, no sell intent | no active buy intent | a hard intent signal → Engaged |
+| 2 | **Engaged** | **hard signal**: inbound reply, seller-LP/buyer form, valuation/CMA or showing request, or appointment booked | wants to sell, working to the listing appt | wants to buy, consult / pre-approval | signed agreement → Active; OR stale 45d → Nurture |
+| 3 | **Active** | signed representation / actively in-market | listed & marketing | signed buyer-rep, touring + offering | goes under contract → Under Contract; OR lost → Nurture |
+| 4 | **Under Contract** | `crm_deals` row / accepted offer | listing pending | offer accepted | closing date passes |
+| 5 | **Closed → Past Client** | deal closes | sold | bought | (rarely; re-enters Engaged on new intent) |
 | — | **Lost / Trash** (terminal) | opt-out, hard-stop, bad contact, or dead after long inactivity | — | — | manual reactivation only |
+
+**UI (Matt 2026-07-03):** on `/admin/crm`, the 5 stages render as a **Stages strip ABOVE the Pipeline
+Collection** in the left sidebar — clickable stage chips w/ live counts (like the mobile Stages strip),
+filtering the list by stage.
 
 **Why Engaged AND Active are both kept:** Engaged = intent shown, no signed agreement yet; Active =
 signed & in-market (listed / touring). Different work, different next actions — collapsing them hides
