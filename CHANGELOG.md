@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.727.0 (2026-07-03)
+
+### Features
+- feat(content-engine): real credited hero photos for 16 Central Oregon trails
+
+---
+
+
 ## v1.726.0 (2026-07-03)
 
 ### Features
