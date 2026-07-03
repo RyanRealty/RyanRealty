@@ -8,6 +8,8 @@ const ACTIVE_STATUS_OR =
 
 import { fetchAllRows } from '@/lib/supabase/paginate'
 import { isCentralOregonCity, SITE_CITY_SLUGS } from '@/lib/central-oregon'
+import { CO_EVENTS } from '@/data/co-events'
+import { CO_VENUES } from '@/data/co-venues'
 
 // The ONLY slugs with a real /communities/[slug] page — the curated resort
 // registry (data/resort-communities.json). The old code emitted every row of
@@ -59,6 +61,8 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     { url: `${baseUrl}${teamPath()}`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${baseUrl}/blog`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
     { url: `${baseUrl}/guides`, lastModified: now, changeFrequency: 'weekly', priority: 0.65 },
+    { url: `${baseUrl}/central-oregon/events`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${baseUrl}/central-oregon/venues`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${baseUrl}/housing-market`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${baseUrl}/housing-market/central-oregon`, lastModified: now, changeFrequency: 'weekly', priority: 0.65 },
     { url: `${baseUrl}/open-houses`, lastModified: now, changeFrequency: 'daily', priority: 0.7 },
@@ -105,6 +109,26 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     { url: `${baseUrl}/fair-housing`, lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
     { url: `${baseUrl}/dmca`, lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
   ]
+
+  // Central Oregon event detail pages — registry-driven (data/co-events.ts), so
+  // they belong in the static set (crawlable even on the no-DB early return).
+  // lastModified is the verified date, not now(), so freshness is honest (§0).
+  for (const event of CO_EVENTS) {
+    staticPages.push({
+      url: `${baseUrl}/central-oregon/events/${event.slug}`,
+      lastModified: event.lastVerified,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    })
+  }
+  for (const venue of CO_VENUES) {
+    staticPages.push({
+      url: `${baseUrl}/central-oregon/venues/${venue.slug}`,
+      lastModified: venue.lastVerified,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    })
+  }
 
   // Price Drop Radar -- pillar + per-city pages (daily-crawl magnet)
   staticPages.push({

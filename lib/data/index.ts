@@ -545,6 +545,40 @@ export type { ParkCityGroup } from '@/lib/data/parks/getParks'
 export { getParkBoundaryGeoJSON } from '@/lib/data/parks/getParkBoundaryGeoJSON'
 export type { ParkBoundaryGeometry } from '@/lib/data/parks/getParkBoundaryGeoJSON'
 
+// Central Oregon events — recurring anchor events (data/co-events.ts, verified +
+// cited, never invented per CLAUDE.md §0). getEventsForIndex/Count feed the hub;
+// getEventsForMonth feeds the monthly newsletter; getEventDetail joins the venue
+// to the live active single-family listings within ~1.5 miles.
+export {
+  getEventsForIndex,
+  getEventsByCategory,
+  getEventsCount,
+  getEventsForMonth,
+} from '@/lib/data/events/getEvents'
+export type { EventsIndex, EventCategoryGroup } from '@/lib/data/events/getEvents'
+export { getEventDetail } from '@/lib/data/events/getEventDetail'
+export type {
+  EventDetail,
+  EventHomeTile,
+  EventStats,
+} from '@/lib/data/events/getEventDetail'
+
+// Central Oregon venues — live-music + performing-arts venues (data/co-venues.ts,
+// verified + cited per CLAUDE.md §0). The durable way to cover ever-changing show
+// calendars: each venue links out to its own official calendar. getVenueDetail
+// joins the venue to the live active single-family listings within ~1.5 miles.
+export {
+  getVenuesForIndex,
+  getVenuesCount,
+} from '@/lib/data/venues/getVenues'
+export type { VenuesIndex } from '@/lib/data/venues/getVenues'
+export { getVenueDetail } from '@/lib/data/venues/getVenueDetail'
+export type {
+  VenueDetail,
+  VenueHomeTile,
+  VenueStats,
+} from '@/lib/data/venues/getVenueDetail'
+
 // More functions get exported here as Wave 1-3 lands them.
 
 // Brokerage track record (seller conviction LP + similar surfaces)

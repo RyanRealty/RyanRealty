@@ -35,6 +35,8 @@ export type SchemaInput =
   | PlaceInput
   | DatasetInput
   | ArticleInput
+  | EventInput
+  | ItemListInput
 
 /** A single named, verified statistic — feeds Place.additionalProperty + Dataset.variableMeasured. */
 export type StatValue = { name: string; value: string | number; unitText?: string }
@@ -108,6 +110,9 @@ export type PlaceInput = {
     | 'MiddleSchool'
     | 'HighSchool'
     | 'Park'
+    | 'MusicVenue'
+    | 'PerformingArtsTheater'
+    | 'EventVenue'
   name: string
   description?: string
   url?: string
@@ -145,6 +150,60 @@ export type ArticleInput = {
   datePublished?: string
   dateModified?: string
   authorName?: string
+}
+
+/**
+ * A local event (festival, race, market, concert, seasonal happening).
+ *
+ * CLAUDE.md §0: a page must only emit this schema when it has a real, verified
+ * `startDate` traced to the event's official source — never a fabricated date.
+ * Recurring anchors whose next occurrence is not yet published render with the
+ * recurrence descriptor and NO Event schema until a date is confirmed.
+ *
+ * `startDate`/`endDate` accept ISO-8601 date ('YYYY-MM-DD') or datetime.
+ * `eventType` is a schema.org Event subtype; all are valid Event specializations.
+ */
+export type EventInput = {
+  type: 'event'
+  name: string
+  description?: string
+  url?: string
+  /** ISO-8601 date or datetime. Required — do not emit this schema without a verified date. */
+  startDate: string
+  endDate?: string
+  /** schema.org Event subtype. Defaults to 'Event'. */
+  eventType?:
+    | 'Event'
+    | 'Festival'
+    | 'MusicEvent'
+    | 'SportsEvent'
+    | 'TheaterEvent'
+    | 'ComedyEvent'
+    | 'FoodEvent'
+    | 'VisualArtsEvent'
+    | 'ChildrensEvent'
+  locationName?: string
+  address?: AddressInput
+  geo?: GeoInput
+  image?: string
+  organizerName?: string
+  organizerUrl?: string
+  /** Offer node. Emit only verified pricing. `isFree` → price 0. */
+  offers?: { url?: string; price?: string; priceCurrency?: string; isFree?: boolean }
+  /** schema.org event status. Defaults to EventScheduled. */
+  eventStatus?: 'EventScheduled' | 'EventCancelled' | 'EventPostponed' | 'EventRescheduled'
+  /** Defaults to OfflineEventAttendanceMode (in-person). */
+  attendanceMode?: 'OfflineEventAttendanceMode' | 'OnlineEventAttendanceMode' | 'MixedEventAttendanceMode'
+}
+
+/**
+ * A ranked/ordered list — the "listicle" page type AI answer engines cite most.
+ * Used by hub pages (e.g. the events index) to expose an ordered set of links.
+ */
+export type ItemListInput = {
+  type: 'itemList'
+  name?: string
+  items: ReadonlyArray<{ name: string; url: string }>
 }
 
 // ─── Builder ──────────────────────────────────────────────────────────
@@ -304,6 +363,63 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
           '@type': 'Person',
           name: input.authorName,
         } : undefined,
+      })
+
+    case 'event':
+      return prune({
+        '@context': 'https://schema.org',
+        '@type': input.eventType ?? 'Event',
+        name: input.name,
+        description: input.description,
+        url: absoluteUrl(input.url),
+        startDate: input.startDate,
+        endDate: input.endDate,
+        eventStatus: `https://schema.org/${input.eventStatus ?? 'EventScheduled'}`,
+        eventAttendanceMode: `https://schema.org/${input.attendanceMode ?? 'OfflineEventAttendanceMode'}`,
+        image: absoluteUrl(input.image),
+        location: input.locationName || input.address || input.geo ? prune({
+          '@type': 'Place',
+          name: input.locationName,
+          address: input.address ? prune({
+            '@type': 'PostalAddress',
+            streetAddress: input.address.street,
+            addressLocality: input.address.city,
+            addressRegion: input.address.state,
+            postalCode: input.address.postalCode,
+            addressCountry: input.address.country ?? 'US',
+          }) : undefined,
+          geo: input.geo ? {
+            '@type': 'GeoCoordinates',
+            latitude: input.geo.lat,
+            longitude: input.geo.lng,
+          } : undefined,
+        }) : undefined,
+        organizer: input.organizerName ? prune({
+          '@type': 'Organization',
+          name: input.organizerName,
+          url: absoluteUrl(input.organizerUrl),
+        }) : undefined,
+        offers: input.offers ? prune({
+          '@type': 'Offer',
+          url: absoluteUrl(input.offers.url),
+          price: input.offers.isFree ? '0' : input.offers.price,
+          priceCurrency: input.offers.priceCurrency ?? 'USD',
+          availability: 'https://schema.org/InStock',
+        }) : undefined,
+      })
+
+    case 'itemList':
+      return prune({
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        name: input.name,
+        numberOfItems: input.items.length,
+        itemListElement: input.items.map((item, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          name: item.name,
+          url: absoluteUrl(item.url),
+        })),
       })
   }
 }

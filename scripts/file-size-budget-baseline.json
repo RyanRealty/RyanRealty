@@ -15,7 +15,7 @@
     "app/admin/(protected)/deals/page.tsx": 657,
     "app/admin/(protected)/people/[fubPersonId]/page.tsx": 727,
     "app/admin/(protected)/reports/lead-flow/page.tsx": 642,
-    "app/admin/console/leads/[id]/page.tsx": 723,
+    "app/admin/console/leads/[id]/page.tsx": 615,
     "app/api/meta/lead-webhook/route.ts": 920,
     "app/api/social/publish/route.ts": 783,
     "app/cities/[slug]/page.tsx": 626,
@@ -38,7 +38,7 @@
     "lib/cma.ts": 839,
     "lib/data/crm/getEmailReporting.ts": 686,
     "lib/data/crm/getLeadSourcesReport.ts": 609,
-    "lib/data/index.ts": 602,
+    "lib/data/index.ts": 636,
     "lib/data/sync/syncWrites.ts": 1108,
     "lib/expired-owner-lookup.ts": 689,
     "lib/followupboss.ts": 1599,
@@ -56,6 +56,6 @@
     "lib/x.ts": 787
   },
   "barrels": {
-    "lib/data/index.ts": 134
+    "lib/data/index.ts": 142
   }
 }

@@ -1,0 +1,1077 @@
+/**
+ * Central Oregon events registry.
+ *
+ * Source of truth for the /central-oregon/events index + detail pages. Each
+ * entry is a RECURRING ANCHOR EVENT (the durable entity, e.g. "Bend Summer
+ * Festival"), not a one-off instance. The page shows the recurrence pattern,
+ * the next confirmed date when one is published, an original write-up, and the
+ * live homes for sale near the venue.
+ *
+ * Data provenance (CLAUDE.md §0 — verified + cited, never invented):
+ *   - `nextConfirmedDate` / `endDate` are ISO-8601 dates VERIFIED against the
+ *     event's own official site (`officialUrl`) as of `lastVerified`. When the
+ *     next occurrence has not yet been published by the organizer, the date is
+ *     `null` and the page renders the `recurrence` descriptor only — it never
+ *     shows a guessed date, and the detail page emits NO Event schema until a
+ *     real date exists.
+ *   - `blurb` is an ORIGINAL write-up in brand voice. Event copy and photos are
+ *     copyrighted and venue calendars carry ToS — we do not scrape or republish
+ *     (docs/CONTENT_ENGINE_SPEC.md §7). Dates/times/locations are facts, cited.
+ *   - `lat`/`lng` are the venue location, used to join the live active
+ *     single-family listings within ~1.5 miles (same box as the parks pages).
+ *
+ * Freshness (docs/CONTENT_ENGINE_SPEC.md §5.2): recurring events roll forward
+ * ~2–3 weeks ahead of each occurrence — re-verify the date against officialUrl,
+ * bump `nextConfirmedDate` + `lastVerified`. A past `nextConfirmedDate` is a CI
+ * failure (check-content-freshness) so the roll-forward can never be forgotten.
+ */
+
+export type EventCategory =
+  | 'festival'
+  | 'music'
+  | 'race'
+  | 'sports'
+  | 'arts'
+  | 'food-drink'
+  | 'market'
+  | 'community'
+  | 'seasonal'
+
+/** JSON-LD @type for the detail page — a schema.org Event subtype. */
+export type EventSchemaType =
+  | 'Event'
+  | 'Festival'
+  | 'MusicEvent'
+  | 'SportsEvent'
+  | 'FoodEvent'
+  | 'VisualArtsEvent'
+
+export type CoEvent = {
+  /** kebab-case slug. Stable, unique. */
+  slug: string
+  /** Official event name. */
+  name: string
+  category: EventCategory
+  /** schema.org @type emitted on the detail page. */
+  schemaType: EventSchemaType
+  /** Primary city (matches a listings "City" value). */
+  city: string
+  /** City slug for the cross-link back to /cities/[slug] (e.g. 'bend'). */
+  geoSlug: string
+  /** Venue / grounds display name (e.g. "Drake Park"). */
+  venue: string
+  /** Optional /parks/[slug] cross-link when the venue is a registry park. */
+  venueParkSlug?: string
+  /** Venue latitude (WGS84) — anchors the nearby-homes query + map. */
+  lat?: number
+  /** Venue longitude (WGS84). */
+  lng?: number
+  /** Human recurrence descriptor, ALWAYS present (e.g. "Annually, mid-July"). */
+  recurrence: string
+  /** ISO 'YYYY-MM-DD' START date, verified against officialUrl. null when the
+   *  organizer has not yet published the next occurrence. */
+  nextConfirmedDate: string | null
+  /** ISO 'YYYY-MM-DD' END date. null for single-day or when unknown. */
+  endDate: string | null
+  /** Verified pricing note, e.g. "Free" / "Tickets from $X". Omit when unverified. */
+  priceInfo?: string
+  /** Organizing body. */
+  organizer?: string
+  /** Official event/venue URL the dates + facts trace to (CLAUDE.md §0). */
+  officialUrl: string
+  /** ISO 'YYYY-MM-DD' this row was last verified against officialUrl. */
+  lastVerified: string
+  /** Original, brand-voice write-up. Never scraped. */
+  blurb: string
+  /** First-hand broker note — specific and human. Optional. */
+  brokerPov?: string
+}
+
+export const EVENT_CATEGORY_LABEL: Record<EventCategory, string> = {
+  festival: 'Festival',
+  music: 'Music',
+  race: 'Race',
+  sports: 'Sports',
+  arts: 'Arts',
+  'food-drink': 'Food & drink',
+  market: 'Market',
+  community: 'Community',
+  seasonal: 'Seasonal',
+}
+
+/** kebab-case an event name for its slug. */
+export function slugifyEventName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+/**
+ * The registry. Every date is verified against `officialUrl` as of
+ * `lastVerified`. Populated 2026-07-03 from source-verified research; see
+ * docs/CONTENT_ENGINE_SPEC.md §5.1.
+ */
+export const CO_EVENTS: CoEvent[] = [
+  // ── Confirmed upcoming dates (verified live against officialUrl, 2026-07-03) ──
+  {
+    slug: 'munch-and-music',
+    name: 'Munch & Music',
+    category: 'music',
+    schemaType: 'MusicEvent',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Drake Park',
+    venueParkSlug: 'drake-park',
+    lat: 44.05846,
+    lng: -121.31955,
+    recurrence: 'Annually, Thursday evenings from early July through early August',
+    nextConfirmedDate: '2026-07-09',
+    endDate: '2026-08-06',
+    priceInfo: 'Free',
+    organizer: 'Munch & Music',
+    officialUrl: 'https://www.munchandmusic.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A free Thursday-evening concert series on the Stilson Builders stage in Drake Park, running from early July into August. Music starts at 5:30 in the evening and runs until around 9, with food carts, a beer garden, and a kids area on the lawn along Mirror Pond.',
+    brokerPov:
+      'Drake Park runs right along Mirror Pond in the heart of downtown Bend, so the walkable blocks just west and across the river are some of the most sought-after addresses in the city.',
+  },
+  {
+    slug: 'balloons-over-bend',
+    name: 'Balloons Over Bend',
+    category: 'festival',
+    schemaType: 'Festival',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'R.E. Jewell Elementary launch field and COCC',
+    lat: 44.0333,
+    lng: -121.2872,
+    recurrence: 'Annually, late July',
+    nextConfirmedDate: '2026-07-24',
+    endDate: '2026-07-26',
+    priceInfo: 'Free morning launches',
+    organizer: 'Lay It Out Events',
+    officialUrl: 'https://balloonsoverbend.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'Hot air balloons lift off over Bend on summer mornings, with a family street fair and a ticketed Night Glow that lights up the balloons after dark. The morning launches are free to watch from the fields on the east side of town.',
+  },
+  {
+    slug: 'sisters-outdoor-quilt-show',
+    name: 'Sisters Outdoor Quilt Show',
+    category: 'arts',
+    schemaType: 'VisualArtsEvent',
+    city: 'Sisters',
+    geoSlug: 'sisters',
+    venue: 'Downtown Sisters',
+    lat: 44.2909,
+    lng: -121.5493,
+    recurrence: 'Annually, the second Saturday of July',
+    nextConfirmedDate: '2026-07-11',
+    endDate: '2026-07-11',
+    organizer: 'Sisters Outdoor Quilt Show',
+    officialUrl: 'https://www.soqs.org/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'Billed as the largest outdoor quilt show in the world, it drapes more than a thousand quilts across the storefronts and fences of downtown Sisters for one Saturday each July. The show runs from 9 in the morning to 4 in the afternoon and turns the whole town into an open-air gallery.',
+    brokerPov:
+      'Quilt Show Saturday is the busiest day of the year in Sisters. If you are house hunting nearby, it is a good window to see how the town handles a crowd.',
+  },
+  {
+    slug: 'bend-oktoberfest',
+    name: 'Bend Oktoberfest',
+    category: 'food-drink',
+    schemaType: 'FoodEvent',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Deschutes Historical Museum lawn, downtown Bend',
+    lat: 44.0588,
+    lng: -121.3186,
+    recurrence: 'Annually, mid-to-late September',
+    nextConfirmedDate: '2026-09-19',
+    endDate: '2026-09-19',
+    priceInfo: 'Free',
+    organizer: 'Bend Oktoberfest',
+    officialUrl: 'https://oktoberfestbend.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A one-day Bavarian street party on the Deschutes Historical Museum lawn in downtown Bend, with local beer, brats, a stein-holding contest, and live polka. Admission is free and the day runs from early afternoon into the evening.',
+  },
+  {
+    slug: 'bendfilm-festival',
+    name: 'BendFilm Festival',
+    category: 'arts',
+    schemaType: 'Festival',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Tower Theatre and downtown Bend venues',
+    lat: 44.0601,
+    lng: -121.3138,
+    recurrence: 'Annually, the second weekend of October',
+    nextConfirmedDate: '2026-10-07',
+    endDate: '2026-10-11',
+    priceInfo: 'Ticketed',
+    organizer: 'BendFilm',
+    officialUrl: 'https://bendfilm.org/2026-bendfilm-festival/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'An independent film festival that fills the Tower Theatre and other downtown venues with five days of screenings, filmmaker Q and As, and parties each October. It is pass and ticket based, with showings across several downtown venues.',
+  },
+  {
+    slug: 'deschutes-county-fair',
+    name: 'Deschutes County Fair & Rodeo',
+    category: 'community',
+    schemaType: 'Festival',
+    city: 'Redmond',
+    geoSlug: 'redmond',
+    venue: 'Deschutes County Fair & Expo Center, Redmond',
+    lat: 44.254,
+    lng: -121.158,
+    recurrence: 'Annually, late July into early August',
+    nextConfirmedDate: '2026-07-29',
+    endDate: '2026-08-02',
+    priceInfo: 'Ticketed',
+    organizer: 'Deschutes County Fair & Expo Center',
+    officialUrl: 'https://expo.deschutes.org/p/fair',
+    lastVerified: '2026-07-03',
+    blurb:
+      'Five days of carnival rides, 4-H and livestock exhibits, a PRCA rodeo, and headline concerts at the fairgrounds in Redmond. It draws some of the biggest crowds in Central Oregon each summer.',
+  },
+  {
+    slug: 'sunriver-music-festival',
+    name: 'Sunriver Music Festival',
+    category: 'music',
+    schemaType: 'MusicEvent',
+    city: 'Sunriver',
+    geoSlug: 'sunriver',
+    venue: 'Sunriver Resort Great Hall and Tower Theatre, Bend',
+    lat: 43.8735,
+    lng: -121.4419,
+    recurrence: 'Annually, mid-August',
+    nextConfirmedDate: '2026-08-10',
+    endDate: '2026-08-20',
+    priceInfo: 'Ticketed',
+    organizer: 'Sunriver Music Festival',
+    officialUrl: 'https://sunrivermusic.org/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A classical music festival that has run for close to half a century, with orchestral concerts in the Sunriver Resort Great Hall and a closing night at the Tower Theatre in Bend. Guest soloists and a festival orchestra perform across roughly ten days each August.',
+  },
+
+  // ── Recurring anchors — next date not yet published by the organizer, so no
+  //    confirmed date is asserted (CLAUDE.md §0). The page shows the recurrence
+  //    pattern and rolls forward once the organizer posts the next edition. ──
+  {
+    slug: 'bend-summer-festival',
+    name: 'Bend Summer Festival',
+    category: 'festival',
+    schemaType: 'Festival',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Downtown Bend',
+    lat: 44.0582,
+    lng: -121.3145,
+    recurrence: 'Annually in late May (recently moved from mid-July)',
+    nextConfirmedDate: null,
+    endDate: null,
+    organizer: 'Lay It Out Events',
+    officialUrl: 'https://bendsummerfestival.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A downtown Bend street festival with local art vendors, several stages of live music, food, and a kids zone across the closed-off blocks of Bond and Oregon. The event recently shifted from mid-July to late May.',
+  },
+  {
+    slug: 'sisters-rodeo',
+    name: 'Sisters Rodeo',
+    category: 'sports',
+    schemaType: 'SportsEvent',
+    city: 'Sisters',
+    geoSlug: 'sisters',
+    venue: 'Sisters Rodeo Grounds',
+    lat: 44.301,
+    lng: -121.523,
+    recurrence: 'Annually, the second week of June',
+    nextConfirmedDate: null,
+    endDate: null,
+    organizer: 'Sisters Rodeo Association',
+    officialUrl: 'https://sistersrodeo.com/rodeo-info/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A PRCA rodeo held on the grounds east of town for a long weekend each June, known locally as the Biggest Little Show in the World. Bull riding, barrel racing, and a rodeo parade fill the second week of June.',
+  },
+  {
+    slug: 'pole-pedal-paddle',
+    name: 'Pole Pedal Paddle',
+    category: 'race',
+    schemaType: 'SportsEvent',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Mt. Bachelor to the Old Mill District, Bend',
+    lat: 44.0522,
+    lng: -121.3136,
+    recurrence: 'Annually, mid-May',
+    nextConfirmedDate: null,
+    endDate: null,
+    organizer: 'Mt. Bachelor Sports Education Foundation',
+    officialUrl: 'https://pppbend.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      "Bend's signature multi-sport race sends athletes from the slopes of Mt. Bachelor through alpine and nordic skiing, cycling, running, and a paddle down the Deschutes to a finish in the Old Mill District. Teams and soloists of every ability turn out each May.",
+  },
+  {
+    slug: 'cascade-lakes-relay',
+    name: 'Cascade Lakes Relay',
+    category: 'race',
+    schemaType: 'SportsEvent',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Cascade Lakes to Bend (running relay)',
+    lat: 44.0522,
+    lng: -121.3136,
+    recurrence: 'Annually, late June',
+    nextConfirmedDate: null,
+    endDate: null,
+    organizer: 'Cascade Relays',
+    officialUrl: 'https://cascaderelays.com/events/cascade-lakes-relay/important-dates/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A long-distance running relay that moves teams from the Cascade Lakes down to Bend across roughly two days each summer. Runners hand off leg by leg along the high desert and forest roads of Central Oregon.',
+  },
+  {
+    slug: 'bend-winterfest',
+    name: 'Oregon WinterFest',
+    category: 'seasonal',
+    schemaType: 'Festival',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Old Mill District, Bend',
+    lat: 44.0522,
+    lng: -121.3136,
+    recurrence: 'Annually, mid-February',
+    nextConfirmedDate: null,
+    endDate: null,
+    organizer: 'Lay It Out Events',
+    officialUrl: 'https://oregonwinterfest.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A winter festival in the Old Mill District with ice carving, fire pits, a rail jam, live music, and a wine and beer walk along the Deschutes. It fills a mid-February weekend when the town leans into the cold.',
+  },
+  {
+    slug: 'bend-fall-festival',
+    name: 'Bend Fall Festival',
+    category: 'festival',
+    schemaType: 'Festival',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Downtown Bend',
+    lat: 44.0588,
+    lng: -121.314,
+    recurrence: 'Annually, the first weekend of October',
+    nextConfirmedDate: null,
+    endDate: null,
+    organizer: 'Lay It Out Events',
+    officialUrl: 'https://bendfallfestival.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A downtown Bend street festival marking the turn to autumn, with local makers, live music, a harvest theme, food, and drinks across the closed streets. It lands on the first weekend of October.',
+  },
+  {
+    slug: 'bend-farmers-market',
+    name: 'Bend Farmers Market',
+    category: 'market',
+    schemaType: 'Event',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Brooks Alley, downtown Bend',
+    lat: 44.0585,
+    lng: -121.3132,
+    recurrence: 'Weekly, Wednesdays 11am to 3pm, May through mid-October',
+    nextConfirmedDate: null,
+    endDate: null,
+    priceInfo: 'Free',
+    organizer: 'Bend Farmers Market',
+    officialUrl: 'https://www.bendfarmersmarket.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A downtown Bend farmers market in Brooks Alley, with local growers, food makers, and prepared food every Wednesday through the growing season.',
+  },
+  {
+    slug: 'nwx-farmers-market',
+    name: 'NorthWest Crossing Farmers Market',
+    category: 'market',
+    schemaType: 'Event',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'NW Crossing Dr & Fort Clatsop, Bend',
+    lat: 44.0606,
+    lng: -121.3462,
+    recurrence: 'Weekly, Saturdays 10am to 2pm, late May through September',
+    nextConfirmedDate: null,
+    endDate: null,
+    priceInfo: 'Free',
+    officialUrl: 'https://www.nwxfarmersmarket.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A Saturday market in the NorthWest Crossing neighborhood, with farm stands, makers, live music, and a strong local following through the summer.',
+  },
+  {
+    slug: 'redmond-farmers-market',
+    name: 'Redmond Farmers Market',
+    category: 'market',
+    schemaType: 'Event',
+    city: 'Redmond',
+    geoSlug: 'redmond',
+    venue: 'Centennial Park, 725 SW Evergreen Ave, Redmond',
+    lat: 44.2726,
+    lng: -121.1745,
+    recurrence: 'Weekly, Fridays 3pm to 7pm, May through August',
+    nextConfirmedDate: null,
+    endDate: null,
+    priceInfo: 'Free',
+    organizer: 'Redmond Oregon Farmers Market',
+    officialUrl: 'https://www.redmondoregonfarmersmarket.org/',
+    lastVerified: '2026-07-03',
+    blurb:
+      "A Friday afternoon farmers market in Centennial Park in downtown Redmond, running from May into August. Local growers, ranchers, and food makers set up each week alongside food carts and live music, a warm-weather gathering that pauses only for the week of the county fair.",
+  },
+  {
+    slug: 'sisters-farmers-market',
+    name: 'Sisters Farmers Market',
+    category: 'market',
+    schemaType: 'Event',
+    city: 'Sisters',
+    geoSlug: 'sisters',
+    venue: 'Fir Street Park, Sisters',
+    lat: 44.2912,
+    lng: -121.5487,
+    recurrence: 'Weekly, Sundays 10am to 2pm, June through October',
+    nextConfirmedDate: null,
+    endDate: null,
+    priceInfo: 'Free',
+    organizer: 'Seed to Table Oregon',
+    officialUrl: 'https://www.sistersfarmersmarket.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A Sunday market in Fir Street Park run by Seed to Table, with local growers and makers through the season.',
+  },
+  {
+    slug: 'crop-farmers-market',
+    name: 'CROP Farmers Market',
+    category: 'market',
+    schemaType: 'Event',
+    city: 'Prineville',
+    geoSlug: 'prineville',
+    venue: 'Stryker Park, Prineville',
+    lat: 44.2996,
+    lng: -120.8345,
+    recurrence: 'Weekly, Saturdays 9am to 1pm, June through September',
+    nextConfirmedDate: null,
+    endDate: null,
+    priceInfo: 'Free',
+    organizer: 'Crooked River Open Pastures',
+    officialUrl: 'https://cropfarmersmarket.org/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'Prineville’s Saturday farmers market in Stryker Park, run by Crooked River Open Pastures, with local farm goods through the summer.',
+  },
+  {
+    slug: 'first-friday-art-walk',
+    name: 'First Friday Art Walk',
+    category: 'arts',
+    schemaType: 'VisualArtsEvent',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Downtown Bend galleries and shops',
+    lat: 44.0582,
+    lng: -121.3153,
+    recurrence: 'Monthly, the first Friday of every month, 5pm to 8pm',
+    nextConfirmedDate: null,
+    endDate: null,
+    priceInfo: 'Free',
+    organizer: 'Downtown Bend Business Association',
+    officialUrl: 'https://www.downtownbend.org/first-friday',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A monthly evening art walk through downtown Bend, with galleries, shops, and restaurants showing local artists on the first Friday of every month.',
+  },
+  {
+    slug: 'bend-venture-conference',
+    name: 'Bend Venture Conference',
+    category: 'community',
+    schemaType: 'Event',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Downtown Bend',
+    lat: 44.0601,
+    lng: -121.3138,
+    recurrence: 'Annually, mid-October',
+    nextConfirmedDate: '2026-10-15',
+    endDate: '2026-10-16',
+    priceInfo: 'Ticketed',
+    organizer: 'EDCO',
+    officialUrl: 'https://www.bendvc.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'The largest angel conference in the Northwest, run by EDCO, bringing founders and investors to downtown Bend for two days each October.',
+  },
+  {
+    slug: 'sunriver-art-fair',
+    name: 'Sunriver Art Fair',
+    category: 'arts',
+    schemaType: 'VisualArtsEvent',
+    city: 'Sunriver',
+    geoSlug: 'sunriver',
+    venue: 'The Village at Sunriver',
+    lat: 43.8735,
+    lng: -121.4419,
+    recurrence: 'Annually, the second weekend of August',
+    nextConfirmedDate: '2026-08-07',
+    endDate: '2026-08-09',
+    priceInfo: 'Free',
+    organizer: 'Sunriver Women’s Club',
+    officialUrl: 'https://sunriverwomensclub.org/sraf-home',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A juried outdoor art fair in The Village at Sunriver, with dozens of artists across three days, run by the Sunriver Women’s Club.',
+  },
+  {
+    slug: 'the-little-woody',
+    name: 'The Little Woody',
+    category: 'food-drink',
+    schemaType: 'FoodEvent',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Deschutes Historical Museum lawn, downtown Bend',
+    lat: 44.0588,
+    lng: -121.3186,
+    recurrence: 'Historically annual in late August. 2026 is billed as the final year.',
+    nextConfirmedDate: '2026-08-29',
+    endDate: '2026-08-29',
+    priceInfo: 'Ticketed',
+    organizer: 'Deschutes Historical Museum',
+    officialUrl: 'https://thelittlewoody.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A barrel aged beer, cider, and whiskey festival on the Deschutes Historical Museum lawn. The 2026 edition is billed as the last one.',
+  },
+  {
+    slug: 'central-oregon-beer-week',
+    name: 'Central Oregon Beer Week',
+    category: 'food-drink',
+    schemaType: 'FoodEvent',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Breweries across Central Oregon',
+    lat: 44.0582,
+    lng: -121.3153,
+    recurrence: 'Annually, late May, at breweries across the region',
+    nextConfirmedDate: null,
+    endDate: null,
+    organizer: 'Oregon Brewers Guild',
+    officialUrl: 'https://www.oregoncraftbeer.org/cobeerweek',
+    lastVerified: '2026-07-03',
+    blurb:
+      "A week of tap takeovers, brewer dinners, rare keg tappings, and collaboration pours across Central Oregon breweries each spring. Bend anchors one of the densest brewery scenes in the country, and Beer Week is when the region puts its best and most experimental beers forward.",
+  },
+  {
+    slug: 'bend-4th-of-july-pet-parade',
+    name: 'Bend 4th of July Pet Parade',
+    category: 'community',
+    schemaType: 'Event',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Harmon Park to Drake Park, downtown Bend',
+    lat: 44.0577,
+    lng: -121.3204,
+    recurrence: 'Annually, the morning of July 4th',
+    nextConfirmedDate: null,
+    endDate: null,
+    priceInfo: 'Free',
+    organizer: 'Bend Park and Recreation District',
+    officialUrl: 'https://www.bendparksandrec.org/activities/4th-of-july/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A downtown Bend tradition since 1932, when kids and families march their pets from Harmon Park to Drake Park on the morning of the Fourth.',
+  },
+  {
+    slug: 'sunriver-4th-of-july',
+    name: 'Sunriver 4th of July Festival & Bike Parade',
+    category: 'seasonal',
+    schemaType: 'Event',
+    city: 'Sunriver',
+    geoSlug: 'sunriver',
+    venue: 'The Village at Sunriver',
+    lat: 43.8735,
+    lng: -121.4419,
+    recurrence: 'Annually, July 4th',
+    nextConfirmedDate: null,
+    endDate: null,
+    organizer: 'The Village at Sunriver',
+    officialUrl: 'https://www.villageatsunriver.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A family Fourth of July in The Village at Sunriver, with a decorated bike parade and carnival games. Sunriver holds no fireworks because of fire risk.',
+  },
+  {
+    slug: 'la-pine-frontier-days',
+    name: 'La Pine Frontier Days',
+    category: 'festival',
+    schemaType: 'Festival',
+    city: 'La Pine',
+    geoSlug: 'la-pine',
+    venue: 'Frontier Heritage Park, La Pine',
+    lat: 43.6704,
+    lng: -121.5031,
+    recurrence: 'Annually, over the July 4th weekend',
+    nextConfirmedDate: null,
+    endDate: null,
+    organizer: 'La Pine Frontier Days Association',
+    officialUrl: 'https://lapinefrontierdays.org/',
+    lastVerified: '2026-07-03',
+    blurb:
+      "La Pine marks the Fourth of July weekend with Frontier Days, a small town tradition built around a downtown parade, a community barbecue, vendors, and family games at Frontier Heritage Park. It is La Pine at its most neighborly, the kind of hometown Fourth that has faded in bigger places.",
+  },
+  {
+    slug: 'downtown-bend-tree-lighting',
+    name: 'Downtown Bend Christmas Tree Lighting',
+    category: 'seasonal',
+    schemaType: 'Event',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Brandis Square, downtown Bend',
+    lat: 44.0587,
+    lng: -121.3122,
+    recurrence: 'Annually, the first Sunday of December',
+    nextConfirmedDate: '2026-12-07',
+    endDate: null,
+    priceInfo: 'Free',
+    organizer: 'Downtown Bend Business Association',
+    officialUrl: 'https://www.downtownbend.org/christmas',
+    lastVerified: '2026-07-03',
+    blurb:
+      'The downtown holiday kickoff at Brandis Square, with the tree lighting, music, and shops open late on the first Sunday of December.',
+  },
+  {
+    slug: 'sunriver-grand-illumination',
+    name: 'Sunriver Resort Grand Illumination',
+    category: 'seasonal',
+    schemaType: 'Event',
+    city: 'Sunriver',
+    geoSlug: 'sunriver',
+    venue: 'Sunriver Resort',
+    lat: 43.8918,
+    lng: -121.4407,
+    recurrence: 'Annually, mid-to-late November',
+    nextConfirmedDate: '2026-11-21',
+    endDate: null,
+    organizer: 'Sunriver Resort',
+    officialUrl: 'https://www.sunriverresort.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      "Sunriver Resort opens the holiday season with its Grand Illumination, a late November evening when the resort lights up for winter. Families gather for the tree lighting, hot cocoa, music, and a visit from Santa, kicking off weeks of holiday activities across Sunriver.",
+  },
+  {
+    slug: 'winter-pridefest',
+    name: 'Winter PrideFest',
+    category: 'community',
+    schemaType: 'Event',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Venues across Bend and Mt. Bachelor',
+    lat: 44.0035,
+    lng: -121.6884,
+    recurrence: 'Annually, early March',
+    nextConfirmedDate: null,
+    endDate: null,
+    priceInfo: 'Ticketed',
+    organizer: 'Out Central Oregon',
+    officialUrl: 'https://www.winterpridefestcentraloregon.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A four day winter celebration and the largest annual fundraiser for Out Central Oregon, with events across Bend and on the slopes of Mt. Bachelor.',
+  },
+  {
+    slug: 'bend-pride',
+    name: 'Bend Pride',
+    category: 'community',
+    schemaType: 'Event',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Drake Park, Bend',
+    lat: 44.0585,
+    lng: -121.3196,
+    recurrence: 'Annually, early June',
+    nextConfirmedDate: null,
+    endDate: null,
+    priceInfo: 'Free',
+    officialUrl: 'https://www.bendpride.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      "Bend Pride brings the community together in Drake Park each June for a free afternoon of music, local vendors, drag performances, and family activities along Mirror Pond. It is a growing celebration in a town that has become one of the more welcoming small cities in the interior Northwest.",
+  },
+  {
+    slug: 'sisters-harvest-faire',
+    name: 'Sisters Harvest Faire',
+    category: 'festival',
+    schemaType: 'Festival',
+    city: 'Sisters',
+    geoSlug: 'sisters',
+    venue: 'Downtown Sisters',
+    lat: 44.2909,
+    lng: -121.5493,
+    recurrence: 'Annually, the second weekend of October',
+    nextConfirmedDate: '2026-10-10',
+    endDate: '2026-10-11',
+    priceInfo: 'Free',
+    organizer: 'Sisters Area Chamber of Commerce',
+    officialUrl: 'https://www.sisterscountry.com/events/sisters-harvest-faire',
+    lastVerified: '2026-07-03',
+    blurb:
+      "One of the largest craft fairs in Central Oregon, the Sisters Harvest Faire fills the downtown streets with more than a hundred artisan and food booths across a fall weekend. It pairs handmade goods and regional food with the crisp shoulder season weather that makes autumn in Sisters worth the drive.",
+  },
+  {
+    slug: 'crook-county-fair',
+    name: 'Crook County Fair',
+    category: 'festival',
+    schemaType: 'Festival',
+    city: 'Prineville',
+    geoSlug: 'prineville',
+    venue: 'Crook County Fairgrounds, Prineville',
+    lat: 44.2857,
+    lng: -120.8339,
+    recurrence: 'Annually, the first full week of August',
+    nextConfirmedDate: '2026-08-05',
+    endDate: '2026-08-08',
+    priceInfo: 'Free',
+    organizer: 'Crook County Fairgrounds',
+    officialUrl: 'https://www.crookcountyfairgrounds.com/p/fair',
+    lastVerified: '2026-07-03',
+    blurb:
+      'Prineville’s Blue Ribbon Days, four days of 4-H and livestock exhibits, carnival rides, and free admission at the county fairgrounds.',
+  },
+  {
+    slug: 'jefferson-county-fair',
+    name: 'Jefferson County Fair & Rodeo',
+    category: 'festival',
+    schemaType: 'Festival',
+    city: 'Madras',
+    geoSlug: 'madras',
+    venue: 'Jefferson County Fairgrounds, Madras',
+    lat: 44.6459,
+    lng: -121.1301,
+    recurrence: 'Annually, the last full week of July',
+    nextConfirmedDate: '2026-07-22',
+    endDate: '2026-07-25',
+    organizer: 'Jefferson County Event Complex',
+    officialUrl: 'https://www.jeffersoncountyor.gov/fairgrounds',
+    lastVerified: '2026-07-03',
+    blurb:
+      "Madras hosts the Jefferson County Fair and Rodeo over four days in late July at the county fairgrounds. Expect 4-H and livestock exhibits, carnival rides, live music, and PRCA rodeo action, the kind of full county fair that anchors the agricultural calendar in this part of Central Oregon.",
+  },
+  {
+    slug: 'airshow-of-the-cascades',
+    name: 'Airshow of the Cascades',
+    category: 'festival',
+    schemaType: 'Festival',
+    city: 'Madras',
+    geoSlug: 'madras',
+    venue: 'Madras Municipal Airport',
+    lat: 44.6699,
+    lng: -121.1548,
+    recurrence: 'Annually, late August',
+    nextConfirmedDate: '2026-08-28',
+    endDate: '2026-08-29',
+    priceInfo: 'Ticketed',
+    organizer: 'Airshow of the Cascades',
+    officialUrl: 'https://cascadeairshow.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A two day airshow at the Madras airport, with vintage aircraft, aerobatics, and a Friday night show, now in its third decade.',
+  },
+  {
+    slug: 'crooked-river-roundup',
+    name: 'Crooked River Roundup',
+    category: 'community',
+    schemaType: 'SportsEvent',
+    city: 'Prineville',
+    geoSlug: 'prineville',
+    venue: 'Crook County Fairgrounds, Prineville',
+    lat: 44.2857,
+    lng: -120.8339,
+    recurrence: 'Annually. Rodeo in late June, horse races in mid-July.',
+    nextConfirmedDate: '2026-07-15',
+    endDate: '2026-07-18',
+    organizer: 'Crooked River Roundup Association',
+    officialUrl: 'https://crookedriverroundup.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'Prineville’s long running rodeo and pari-mutuel horse races at the county fairgrounds, a summer tradition since the 1940s.',
+  },
+  {
+    slug: 'dirty-half',
+    name: 'Dirty Half',
+    category: 'race',
+    schemaType: 'SportsEvent',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Skyline Ranch Road, Bend',
+    lat: 44.0206,
+    lng: -121.3908,
+    recurrence: 'Annually, early June',
+    nextConfirmedDate: null,
+    endDate: null,
+    priceInfo: 'Ticketed',
+    organizer: 'FootZone Bend',
+    officialUrl: 'https://www.footzonebend.com/dirty-half',
+    lastVerified: '2026-07-03',
+    blurb:
+      "A trail half marathon on the singletrack and forest roads just west of Bend, the Dirty Half is one of the signature FootZone races and a fixture of the local running calendar each June. The course climbs into the pines above town and rewards runners with big Cascade views.",
+  },
+  {
+    slug: 'happy-girls-run',
+    name: 'Happy Girls Run',
+    category: 'race',
+    schemaType: 'SportsEvent',
+    city: 'Sisters',
+    geoSlug: 'sisters',
+    venue: 'FivePine Campus, Sisters',
+    lat: 44.2846,
+    lng: -121.5364,
+    recurrence: 'Annually, late October',
+    nextConfirmedDate: '2026-10-24',
+    endDate: null,
+    priceInfo: 'Ticketed',
+    organizer: 'Happy Girls Run',
+    officialUrl: 'https://happygirlsrun.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      "A race weekend for women on the trails and roads around Sisters, with half marathon, 10K, and 5K distances each fall. Based at the FivePine campus, Happy Girls draws a big, supportive field and finishes with music, food, and a celebration built around the runners.",
+  },
+  {
+    slug: 'i-like-pie',
+    name: 'I Like Pie',
+    category: 'race',
+    schemaType: 'SportsEvent',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Riverbend Park, Bend',
+    lat: 44.0446,
+    lng: -121.3186,
+    recurrence: 'Annually, Thanksgiving morning',
+    nextConfirmedDate: '2026-11-26',
+    endDate: null,
+    priceInfo: 'Ticketed',
+    organizer: 'Cascade Relays Foundation',
+    officialUrl: 'https://cascaderelays.com/events/i-like-pie/',
+    lastVerified: '2026-07-03',
+    blurb:
+      "A Thanksgiving morning fun run from Riverbend Park along the Deschutes, the I Like Pie run trades finish line medals for slices of pie and raises money for the Cascade Relays Foundation. It has become a holiday tradition for Bend families looking to earn their turkey.",
+  },
+  {
+    slug: 'cascade-gravel-grinder',
+    name: 'Cascade Gravel Grinder',
+    category: 'sports',
+    schemaType: 'SportsEvent',
+    city: 'Sisters',
+    geoSlug: 'sisters',
+    venue: 'Sisters, Oregon',
+    lat: 44.2909,
+    lng: -121.5493,
+    recurrence: 'Annually, late May',
+    nextConfirmedDate: null,
+    endDate: null,
+    priceInfo: 'Ticketed',
+    organizer: 'Oregon Gravel Grinder Series',
+    officialUrl: 'https://www.oregongravelgrinder.com/cascade',
+    lastVerified: '2026-07-03',
+    blurb:
+      "A gravel cycling event on the forest and ranch roads around Sisters, part of the Oregon Gravel Grinder series. Riders choose from several distances across high desert terrain, with the Three Sisters on the horizon and a finish line gathering in town. It lands in late spring each year.",
+  },
+  {
+    slug: 'bend-marathon',
+    name: 'Bend Marathon and Half',
+    category: 'race',
+    schemaType: 'SportsEvent',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Downtown Bend',
+    lat: 44.0582,
+    lng: -121.3153,
+    recurrence: 'Annually, mid-April',
+    nextConfirmedDate: null,
+    endDate: null,
+    priceInfo: 'Ticketed',
+    organizer: 'Bend Marathon',
+    officialUrl: 'https://www.bend-marathon.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      "The Bend Marathon and Half runs through the neighborhoods, river trails, and Old Mill District of Bend each spring, with marathon, half, and relay options. It is a mid sized, runner friendly race that shows off the city on foot, from the west side streets to the banks of the Deschutes.",
+  },
+  {
+    slug: 'music-on-the-green',
+    name: 'Music on the Green',
+    category: 'music',
+    schemaType: 'MusicEvent',
+    city: 'Redmond',
+    geoSlug: 'redmond',
+    venue: 'American Legion Park, Redmond',
+    lat: 44.2726,
+    lng: -121.1745,
+    recurrence: 'Alternating Wednesdays, late June through early September',
+    nextConfirmedDate: '2026-07-08',
+    endDate: '2026-09-02',
+    priceInfo: 'Free',
+    organizer: 'Visit Redmond Oregon',
+    officialUrl: 'https://www.visitredmondoregon.com/music-on-the-green/',
+    lastVerified: '2026-07-03',
+    blurb:
+      "A free outdoor concert series on alternating Wednesday evenings in Redmond through the summer, Music on the Green brings regional bands to a city park for a relaxed family night out. Neighbors bring chairs and blankets, food carts line up, and kids run the lawn while the music plays.",
+  },
+  {
+    slug: 'bend-roots-revival',
+    name: 'Bend Roots Revival',
+    category: 'music',
+    schemaType: 'MusicEvent',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Midtown Bend corridor',
+    lat: 44.0596,
+    lng: -121.3126,
+    recurrence: 'Annually, mid-September',
+    nextConfirmedDate: '2026-09-11',
+    endDate: '2026-09-13',
+    priceInfo: 'Free',
+    organizer: 'Bend Roots Revival',
+    officialUrl: 'https://bendroots.net/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A free, family friendly celebration of the region’s music, with more than a hundred local and regional acts across Midtown Bend stages.',
+  },
+  {
+    slug: 'sisters-folk-festival',
+    name: 'Sisters Folk Festival',
+    category: 'music',
+    schemaType: 'MusicEvent',
+    city: 'Sisters',
+    geoSlug: 'sisters',
+    venue: 'Stages across downtown Sisters',
+    lat: 44.2909,
+    lng: -121.5493,
+    recurrence: 'Annually, late September',
+    nextConfirmedDate: '2026-09-25',
+    endDate: '2026-09-27',
+    priceInfo: 'Ticketed',
+    organizer: 'Sisters Folk Festival',
+    officialUrl: 'https://www.sistersfolkfest.org/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'An Americana and roots festival across seven stages in downtown Sisters, with more than thirty artists over a weekend each fall.',
+  },
+  {
+    slug: 'big-ponderoo',
+    name: 'Big Ponderoo',
+    category: 'music',
+    schemaType: 'MusicEvent',
+    city: 'Sisters',
+    geoSlug: 'sisters',
+    venue: 'Village Green City Park, Sisters',
+    lat: 44.2905,
+    lng: -121.5525,
+    recurrence: 'Annually, late June',
+    nextConfirmedDate: '2027-06-25',
+    endDate: '2027-06-26',
+    priceInfo: 'Ticketed',
+    organizer: 'Sisters Folk Festival',
+    officialUrl: 'https://www.bigponderoo.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      "A summer Americana and bluegrass festival in the Village Green park in Sisters, from the team behind the Sisters Folk Festival. Big Ponderoo pairs a strong roots music lineup with art, food, and the walkable small town setting that makes Sisters a festival town. It returns in late June.",
+  },
+  {
+    slug: 'bend-comedy-festival',
+    name: 'Bend Comedy Festival',
+    category: 'arts',
+    schemaType: 'Event',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Tower Theatre and downtown Bend venues',
+    lat: 44.0601,
+    lng: -121.3138,
+    recurrence: 'Annually, Labor Day weekend',
+    nextConfirmedDate: '2026-09-04',
+    endDate: '2026-09-06',
+    priceInfo: 'Ticketed',
+    organizer: 'Bend Comedy',
+    officialUrl: 'https://www.bendcomedyfestival.com/',
+    lastVerified: '2026-07-03',
+    blurb:
+      "Over Labor Day weekend, the Bend Comedy Festival takes over the Tower Theatre and other downtown venues with three days of stand-up, improv, and sketch. National touring comics share the bill with the local comedy scene that has grown up around the weekly open mics in Bend.",
+  },
+  {
+    slug: 'ballet-bend',
+    name: 'Ballet Bend Presents',
+    category: 'arts',
+    schemaType: 'Event',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Tower Theatre, Bend',
+    lat: 44.058,
+    lng: -121.313,
+    recurrence: 'Recurring performances through the Tower Theatre season',
+    nextConfirmedDate: '2026-09-25',
+    endDate: '2026-09-26',
+    priceInfo: 'Ticketed',
+    organizer: 'Ballet Bend',
+    officialUrl: 'https://www.towertheatre.org/events',
+    lastVerified: '2026-07-03',
+    blurb:
+      "Ballet Bend is a contemporary dance company that stages performances at the Tower Theatre through the season, from original works to guest companies on tour. Its shows bring a level of professional dance to Central Oregon that a town this size rarely supports.",
+  },
+  {
+    slug: 'nutcracker-bend',
+    name: 'The Nutcracker',
+    category: 'arts',
+    schemaType: 'Event',
+    city: 'Bend',
+    geoSlug: 'bend',
+    venue: 'Mountain View High School Auditorium, Bend',
+    lat: 44.0705,
+    lng: -121.2758,
+    recurrence: 'Annually, December',
+    nextConfirmedDate: '2026-12-06',
+    endDate: '2026-12-14',
+    priceInfo: 'Ticketed',
+    organizer: 'Central Oregon School of Ballet',
+    officialUrl: 'https://centraloregonschoolofballet.com/nutcracker/',
+    lastVerified: '2026-07-03',
+    blurb:
+      "The Central Oregon School of Ballet stages its Nutcracker each December, a full length holiday production that has been a Bend tradition since the early 1980s. Generations of local dancers have grown up performing it, and it fills the auditorium across a run of December shows.",
+  },
+  {
+    slug: 'sunriver-stars-summer-play',
+    name: 'Sunriver Stars Summer Play',
+    category: 'arts',
+    schemaType: 'Event',
+    city: 'Sunriver',
+    geoSlug: 'sunriver',
+    venue: 'Sunriver Nature Center Amphitheater',
+    lat: 43.8735,
+    lng: -121.4419,
+    recurrence: 'Annually, late August',
+    nextConfirmedDate: '2026-08-20',
+    endDate: '2026-08-21',
+    priceInfo: 'Free',
+    organizer: 'Sunriver Stars Community Theater',
+    officialUrl: 'https://sunriverstars.org/',
+    lastVerified: '2026-07-03',
+    blurb:
+      'A free outdoor family play at the Sunriver Nature Center Amphitheater, staged by the Sunriver Stars community theater each summer.',
+  },
+]
+
+/** Direct slug lookup. */
+export function getEventBySlug(slug: string): CoEvent | undefined {
+  return CO_EVENTS.find((e) => e.slug === slug)
+}

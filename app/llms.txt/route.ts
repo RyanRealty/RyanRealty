@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getRecentBlogPosts, getPublishedGuides, listMarketReports } from '@/lib/data'
+import { getRecentBlogPosts, getPublishedGuides, listMarketReports, getEventsForIndex, getVenuesForIndex } from '@/lib/data'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -31,6 +31,21 @@ export async function GET() {
     reports.map((r) => `- ${r.title}: ${SITE_URL}/housing-market/reports/${r.slug}`)
   )
 
+  // Confirmed-upcoming events first, then the annual anchors — both link to the
+  // detail page. Dates are the verified registry dates, never generated (§0).
+  const { upcoming, anchors } = getEventsForIndex()
+  const eventLines = lines(
+    [...upcoming, ...anchors].map(
+      (e) => `- ${e.name}: ${SITE_URL}/central-oregon/events/${e.slug}`,
+    ),
+  )
+  const { music, performingArts } = getVenuesForIndex()
+  const venueLines = lines(
+    [...music, ...performingArts]
+      .filter((v, i, arr) => arr.findIndex((x) => x.slug === v.slug) === i)
+      .map((v) => `- ${v.name} (${v.city}): ${SITE_URL}/central-oregon/venues/${v.slug}`),
+  )
+
   const body = `# Ryan Realty Central Oregon Real Estate
 
 > Ryan Realty serves Central Oregon buyers and sellers with live listings, market reports, and neighborhood guidance.
@@ -56,6 +71,12 @@ export async function GET() {
 ## Local Areas
 - Cities: ${SITE_URL}/cities
 - Communities: ${SITE_URL}/communities
+
+## Local Events
+- Central Oregon events: ${SITE_URL}/central-oregon/events${eventLines}
+
+## Live Music & Shows (venues)
+- Central Oregon live music & show venues: ${SITE_URL}/central-oregon/venues${venueLines}
 
 ## Guides
 - All guides: ${SITE_URL}/guides${guideLines}

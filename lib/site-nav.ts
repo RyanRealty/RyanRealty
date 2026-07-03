@@ -114,6 +114,8 @@ export const PRIMARY_NAV: NavGroup[] = [
     children: [
       { href: '/blog', label: 'Blog' },
       { href: '/guides', label: 'Buyer and seller guides' },
+      { href: '/central-oregon/events', label: 'Central Oregon events' },
+      { href: '/central-oregon/venues', label: 'Live music & shows' },
       { href: '/resources', label: 'Resources' },
       { href: '/faq', label: 'FAQ' },
       { href: '/videos', label: 'Video tours' },
@@ -208,6 +210,8 @@ export const FOOTER_NAV: FooterGroup[] = [
     links: [
       { href: '/blog', label: 'Blog' },
       { href: '/guides', label: 'Guides' },
+      { href: '/central-oregon/events', label: 'Central Oregon events' },
+      { href: '/central-oregon/venues', label: 'Live music & shows' },
       { href: '/videos', label: 'Video tours' },
       { href: '/faq', label: 'FAQ' },
       { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
