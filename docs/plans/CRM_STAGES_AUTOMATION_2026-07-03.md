@@ -69,7 +69,7 @@ Nurture. Decision for Matt.
 | Engaged → **Appointment** | `crm_appointments` row created for this person | high |
 | Appointment → Listed/Under Contract | listing agreement / `crm_deals` created | high |
 | Under Contract → Closed → Past Client | `crm_deals` close date passes / marked closed | high |
-| **Engaged/Appointment → Nurture (DEMOTE)** | no logged activity in **45 days** | high — the load-bearing automation |
+| **Engaged/Appointment → Nurture (DEMOTE)** | no TWO-WAY activity in **30 days** (Engaged only; Active/UC never demote) | high — the load-bearing automation |
 | any → Lost/Trash | opt-out · `compliance:hard-stop` · bounce · dead after long silence | high |
 
 **DO NOT AUTOMATE — route to priority instead:**
@@ -138,9 +138,14 @@ linking to `?stage=<stage>`. Match the sidebar's design-system language; mirror 
 - Temperature: a `priority` signal (Hot/Warm/Cold) derived from recent engagement + lead score, sortable
   within a stage — replaces the A/B/C stages.
 
-## Open for Matt
+## Resolved (Matt 2026-07-03)
 
-1. 6 stages vs 5 — is **New** real (do you have a speed-to-lead SLA) or merge into Nurture?
-2. Confirm the **45-day** demotion window (or set your own).
-3. Where do realtors/vendors sit — a **Sphere** stage, or Nurture with their segment tag? (They're not in
-   the sales pipeline; recommend a light "Sphere/Network" holding stage so they don't clutter Nurture.)
+1. **New removed** → 5 pipeline stages (leads start in Nurture).
+2. **Realtors/vendors → Sphere.** One non-pipeline "Sphere" stage holds all network contacts (realtors,
+   vendors, personal sphere); the segment tag sub-classifies. Keeps the 5-stage pipeline purely
+   buyer/seller.
+3. **Demotion = 30 days, Engaged ONLY.** Engaged → Nurture after 30 days of no **two-way** activity
+   (inbound reply / held call / kept appointment — NOT email opens, NOT outbound drip sends). **Active and
+   Under Contract never auto-demote** (a signed client isn't stale) — they exit only on deal events (deal
+   lost = manual; Under Contract → Closed on the close date). Demotion is a scalpel on the intent phase,
+   not a blanket inactivity rule.
