@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.723.1 (2026-07-03)
+
+### Bug Fixes
+- fix(crm): new native leads enter at stage Nurture, not the retired Lead stage
+
+---
+
+
 ## v1.723.0 (2026-07-03)
 
 ### Features
