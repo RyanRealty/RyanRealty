@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.727.2 (2026-07-03)
+
+### Maintenance
+- chore(budget): re-baseline (LP course links + DAL barrel net-growth)
+
+---
+
+
 ## v1.727.1 (2026-07-03)
 
 ### Maintenance
