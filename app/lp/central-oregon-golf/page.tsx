@@ -361,7 +361,11 @@ function DestinationCoursesSection() {
                     className="golf-rank-photo"
                   />
                 )}
-                <h3 className="golf-rank-name">{c.name}</h3>
+                <h3 className="golf-rank-name">
+                  <Link href={`/central-oregon/golf/${c.slug}`} className="golf-rank-link">
+                    {c.name}
+                  </Link>
+                </h3>
                 <div className="golf-rank-meta">
                   <span>{c.designer}</span>
                   <span>·</span>
@@ -467,9 +471,13 @@ function ByArchitectSection() {
                 <p className="golf-architect-bio">{architect.bio}</p>
                 <div className="golf-architect-courses">
                   {courses.map((c) => (
-                    <span key={c.slug} className="golf-architect-course">
+                    <Link
+                      key={c.slug}
+                      href={`/central-oregon/golf/${c.slug}`}
+                      className="golf-architect-course"
+                    >
                       {c.shortName}
-                    </span>
+                    </Link>
                   ))}
                 </div>
                 {architect.alsoKnownFor && architect.alsoKnownFor.length > 0 && (

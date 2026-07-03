@@ -101,7 +101,6 @@ function checkFamily(name, file) {
 const families = [
   ['events', path.join(ROOT, 'data/co-events.ts')],
   ['venues', path.join(ROOT, 'data/co-venues.ts')],
-  ['golf', path.join(ROOT, 'data/co-golf.ts')],
   ['trails', path.join(ROOT, 'data/co-trails.ts')],
 ]
 

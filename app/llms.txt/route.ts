@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { getRecentBlogPosts, getPublishedGuides, listMarketReports, getEventsForIndex, getVenuesForIndex, getGolfForIndex, getTrailsForIndex } from '@/lib/data'
+import { getRecentBlogPosts, getPublishedGuides, listMarketReports, getEventsForIndex, getVenuesForIndex, getTrailsForIndex } from '@/lib/data'
+import { GOLF_COURSES } from '@/data/golf/courses'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -45,10 +46,9 @@ export async function GET() {
       .filter((v, i, arr) => arr.findIndex((x) => x.slug === v.slug) === i)
       .map((v) => `- ${v.name} (${v.city}): ${SITE_URL}/central-oregon/venues/${v.slug}`),
   )
-  const { playable, private: privateCourses } = getGolfForIndex()
   const golfLines = lines(
-    [...playable, ...privateCourses].map(
-      (c) => `- ${c.name} (${c.city}): ${SITE_URL}/central-oregon/golf/${c.slug}`,
+    GOLF_COURSES.map(
+      (c) => `- ${c.name} (${c.city.replace(/\s*\(.*?\)/g, '')}): ${SITE_URL}/central-oregon/golf/${c.slug}`,
     ),
   )
   const { hiking, biking } = getTrailsForIndex()
@@ -91,7 +91,7 @@ export async function GET() {
 - Central Oregon live music & show venues: ${SITE_URL}/central-oregon/venues${venueLines}
 
 ## Golf
-- Central Oregon golf courses: ${SITE_URL}/central-oregon/golf${golfLines}
+- Central Oregon golf guide (every course by architect): ${SITE_URL}/lp/central-oregon-golf${golfLines}
 
 ## Trails
 - Central Oregon hiking & mountain-bike trails: ${SITE_URL}/central-oregon/trails${trailLines}

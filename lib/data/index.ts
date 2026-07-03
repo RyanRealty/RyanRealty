@@ -579,12 +579,11 @@ export type {
   VenueStats,
 } from '@/lib/data/venues/getVenueDetail'
 
-// Central Oregon golf courses — the region's public/resort/semi-private courses
-// (data/co-golf.ts, verified + cited per CLAUDE.md §0). getGolfDetail joins the
-// clubhouse to the live active single-family listings within ~1.5 miles + the
-// live city market band. Cross-links to resort community pages.
-export { getGolfForIndex, getGolfCount } from '@/lib/data/golf/getGolf'
-export type { GolfIndex } from '@/lib/data/golf/getGolf'
+// Per-course golf detail pages (/central-oregon/golf/[slug]) — the "course +
+// homes for sale nearby + market" layer built on the CANONICAL golf registry
+// (data/golf/courses.ts, the same one that powers /lp/central-oregon-golf). One
+// registry, no duplication. getGolfDetail joins the clubhouse to the live active
+// single-family listings within ~1.5 miles + the live city market band.
 export { getGolfDetail } from '@/lib/data/golf/getGolfDetail'
 export type { GolfDetail, GolfHomeTile, GolfStats } from '@/lib/data/golf/getGolfDetail'
 
@@ -639,6 +638,11 @@ export {
   getNewsletterMembershipForLead,
 } from '@/lib/data/newsletter'
 export type { NewsletterSubscriber, NewsletterRow, NewsletterSegment, SubscriberStatus, NewsletterRecipient, NewsletterStats } from '@/lib/data/newsletter'
+export {
+  getNewsletterStatsFromLedger,
+  getNewsletterBrokerBreakdown,
+} from '@/lib/data/newsletter/queue'
+export type { NewsletterBrokerBreakdownRow } from '@/lib/data/newsletter/queue'
 
 // Anonymous partial-address capture — LP step-1 advance without cookie identity.
 export { saveAnonymousPartialAddress } from '@/lib/data/leads/saveAnonymousPartialAddress'

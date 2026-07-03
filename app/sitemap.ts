@@ -10,7 +10,7 @@ import { fetchAllRows } from '@/lib/supabase/paginate'
 import { isCentralOregonCity, SITE_CITY_SLUGS } from '@/lib/central-oregon'
 import { CO_EVENTS } from '@/data/co-events'
 import { CO_VENUES } from '@/data/co-venues'
-import { CO_GOLF_COURSES } from '@/data/co-golf'
+import { GOLF_COURSES } from '@/data/golf/courses'
 import { CO_TRAILS } from '@/data/co-trails'
 
 // The ONLY slugs with a real /communities/[slug] page — the curated resort
@@ -65,7 +65,6 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     { url: `${baseUrl}/guides`, lastModified: now, changeFrequency: 'weekly', priority: 0.65 },
     { url: `${baseUrl}/central-oregon/events`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${baseUrl}/central-oregon/venues`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
-    { url: `${baseUrl}/central-oregon/golf`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${baseUrl}/central-oregon/trails`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${baseUrl}/housing-market`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${baseUrl}/housing-market/central-oregon`, lastModified: now, changeFrequency: 'weekly', priority: 0.65 },
@@ -133,10 +132,12 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
       priority: 0.5,
     })
   }
-  for (const course of CO_GOLF_COURSES) {
+  // Per-course golf detail pages (data/golf/courses.ts — the canonical registry
+  // shared with /lp/central-oregon-golf). The golf hub itself is that LP.
+  for (const course of GOLF_COURSES) {
     staticPages.push({
       url: `${baseUrl}/central-oregon/golf/${course.slug}`,
-      lastModified: course.lastVerified,
+      lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.5,
     })

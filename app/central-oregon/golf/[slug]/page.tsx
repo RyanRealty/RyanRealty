@@ -1,21 +1,22 @@
-// @no-parity — content-engine route, replicates the venue/event detail KB
+// @no-parity — content-engine route, replicates the venue/trail detail KB
 // register in code (docs/CONTENT_ENGINE_SPEC.md §11b), not a Wave-3 mockup.
 /**
- * /central-oregon/golf/[slug] — golf-course detail page, KB design.
+ * /central-oregon/golf/[slug] — per-course detail page, KB design.
  *
- * Pairs a verified course profile (a per-course hero, an original write-up, the
- * facts, a link OUT to the official site) with the live homes for sale within
- * about 1.5 miles of the clubhouse (the moat), a map, the city market read, and
- * an FAQ + FAQPage schema. Cross-links to the resort community where the course
- * sits. Data ONLY through @/lib/data (Gate G8).
+ * The "each course + homes for sale nearby" layer on top of the CANONICAL golf
+ * registry (data/golf/courses.ts) that also powers the /lp/central-oregon-golf
+ * hub. One registry, no duplication. Pairs the course profile (broker-shot hero,
+ * the registry signature, the facts, an outbound tee-time link) with the live
+ * homes within ~1.5 miles of the clubhouse, a map, the city market read, and an
+ * FAQ + FAQPage schema. Data ONLY through @/lib/data (Gate G8).
  */
 
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getGolfDetail, type GolfHomeTile } from '@/lib/data'
-import { CO_GOLF_COURSES, getGolfCourseBySlug, GOLF_ACCESS_LABEL, type CoGolfCourse } from '@/data/co-golf'
-import { GOLF_HERO_CREDITS } from '@/data/golf-hero-credits'
-import { buildGolfFaq } from '@/lib/golf-format'
+import { GOLF_COURSES, type GolfCourse } from '@/data/golf/courses'
+import { GOLF_ACCESS_LABEL, buildGolfFaq, cityToGeoSlug, displayCity } from '@/lib/golf-format'
+import { golfHeroFor } from '@/lib/golf-hero'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { VenueMap, type VenuePin } from '@/components/site/VenueMap'
@@ -40,17 +41,22 @@ const MAX_CARDS = 12
 
 type Props = { params: Promise<{ slug: string }> }
 
+function courseBySlug(slug: string): GolfCourse | undefined {
+  return GOLF_COURSES.find((c) => c.slug === slug)
+}
+
 export function generateStaticParams(): Array<{ slug: string }> {
-  return CO_GOLF_COURSES.map((c) => ({ slug: c.slug }))
+  return GOLF_COURSES.map((c) => ({ slug: c.slug }))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const course = getGolfCourseBySlug(slug)
+  const course = courseBySlug(slug)
   if (!course) notFound()
-  const desc = `${course.name}, a ${GOLF_ACCESS_LABEL[course.access].toLowerCase()} ${course.holes}-hole golf course in ${course.city}, Central Oregon. What it is, where it plays, and the homes for sale nearby, from Ryan Realty.`
+  const city = displayCity(course.city)
+  const desc = `${course.name}, a ${GOLF_ACCESS_LABEL[course.access].toLowerCase()} ${course.holes}-hole golf course in ${city}, Central Oregon. What it is, where it plays, and the homes for sale nearby, from Ryan Realty.`
   return pageMetadata({
-    title: `${course.name} | Central Oregon Golf`,
+    title: `${course.shortName} | Central Oregon Golf`,
     description: desc,
     path: `/central-oregon/golf/${slug}`,
   })
@@ -81,22 +87,24 @@ export default async function GolfDetailPage({ params }: Props) {
   const { slug } = await params
 
   const detail = await getGolfDetail(slug).catch(() => null)
-  const course = detail?.course ?? getGolfCourseBySlug(slug)
+  const course = detail?.course ?? courseBySlug(slug)
   if (!course) notFound()
 
+  const geoSlug = detail?.geoSlug ?? cityToGeoSlug(course.city)
+  const city = displayCity(course.city)
   const homes = detail?.homes ?? []
   const stats = detail?.stats ?? { count: 0, medianListPrice: null }
   const relatedCourses =
     detail?.relatedCourses ??
-    CO_GOLF_COURSES.filter((c) => c.slug !== course.slug && c.city === course.city)
+    GOLF_COURSES.filter((c) => c.slug !== course.slug && cityToGeoSlug(c.city) === geoSlug)
   const cityMarket = detail?.cityMarket ?? null
 
-  const hero = GOLF_HERO_CREDITS[slug]
-  const heroSrc = hero?.image ?? CONTENT_HERO_IMAGES.golf
+  const heroSrc = golfHeroFor(slug) ?? CONTENT_HERO_IMAGES.golf
+  const hasBrokerHero = golfHeroFor(slug) !== null
 
   const cards = homes.slice(0, MAX_CARDS)
   const mapPins = homes.map(homeToPin).filter((p): p is VenuePin => p !== null)
-  const seeAllHref = `/search?city=${encodeURIComponent(course.city)}`
+  const seeAllHref = `/search?city=${encodeURIComponent(city)}`
   const hasGeo = typeof course.lat === 'number' && typeof course.lng === 'number'
 
   const medianLabel = stats.medianListPrice != null ? kbMoneyFull(stats.medianListPrice) : null
@@ -107,18 +115,18 @@ export default async function GolfDetailPage({ params }: Props) {
       type: 'breadcrumb',
       items: [
         { name: 'Home', url: '/' },
-        { name: 'Golf', url: '/central-oregon/golf' },
-        { name: course.name, url: `/central-oregon/golf/${slug}` },
+        { name: 'Golf', url: '/lp/central-oregon-golf' },
+        { name: course.shortName, url: `/central-oregon/golf/${slug}` },
       ],
     },
     {
       type: 'place',
       placeType: 'TouristAttraction',
       name: course.name,
-      description: course.blurb,
+      description: course.signature,
       url: `/central-oregon/golf/${slug}`,
-      address: { street: course.address, city: course.city, state: 'OR', country: 'US' },
-      geo: hasGeo ? { lat: course.lat as number, lng: course.lng as number } : undefined,
+      address: { city, state: 'OR', country: 'US' },
+      geo: hasGeo ? { lat: course.lat, lng: course.lng } : undefined,
     },
     { type: 'faqPage', items: faq },
   ]
@@ -132,8 +140,8 @@ export default async function GolfDetailPage({ params }: Props) {
         overlay
         trail={[
           { label: 'Home', href: '/' },
-          { label: 'Golf', href: '/central-oregon/golf' },
-          { label: course.name },
+          { label: 'Golf', href: '/lp/central-oregon-golf' },
+          { label: course.shortName },
         ]}
       />
 
@@ -147,21 +155,19 @@ export default async function GolfDetailPage({ params }: Props) {
           <div className="ev-photo-hero-scrim" aria-hidden />
           <div className="wrap ev-photo-hero-inner">
             <div className="ev-hero-eyebrow on-photo eyebrow">
-              <span className="dot" /> {GOLF_ACCESS_LABEL[course.access]} · {course.city}
+              <span className="dot" /> {GOLF_ACCESS_LABEL[course.access]} · {city}
             </div>
             <h1 className="ev-hero-h on-photo display">{course.name}</h1>
           </div>
-          {hero ? (
-            <a className="ev-photo-hero-credit" href={hero.creditUrl} target="_blank" rel="noopener noreferrer">
-              Photo: {hero.credit}
-            </a>
+          {hasBrokerHero ? (
+            <span className="ev-photo-hero-credit">Photo: Snowdrift Visuals for Ryan Realty</span>
           ) : null}
         </header>
 
-        {/* Intro — blurb + facts + the primary "official site" action */}
+        {/* Intro — signature + facts + the outbound tee-time action */}
         <section className="section ev-intro" aria-label="About this course">
           <div className="wrap">
-            <p className="ev-hero-blurb">{course.blurb}</p>
+            <p className="ev-hero-blurb">{course.signature}</p>
 
             <div className="ev-when">
               <div className="ev-fact">
@@ -171,39 +177,40 @@ export default async function GolfDetailPage({ params }: Props) {
               <div className="ev-fact">
                 <span className="ev-fact-lbl">Holes</span>
                 <span className="ev-fact-val">
-                  {course.holes}
-                  {course.par ? ` · par ${course.par}` : ''}
+                  {course.holes} · par {course.par}
                 </span>
+                {typeof course.yardsBackTees === 'number' ? (
+                  <span className="ev-fact-sub mono-num">
+                    {course.yardsBackTees.toLocaleString()} yds
+                  </span>
+                ) : null}
               </div>
-              {course.designer ? (
-                <div className="ev-fact">
-                  <span className="ev-fact-lbl">Designer</span>
-                  <span className="ev-fact-val">{course.designer}</span>
-                  {course.yearOpened ? (
-                    <span className="ev-fact-sub mono-num">Opened {course.yearOpened}</span>
-                  ) : null}
-                </div>
-              ) : null}
+              <div className="ev-fact">
+                <span className="ev-fact-lbl">Designer</span>
+                <span className="ev-fact-val">{course.designer}</span>
+                <span className="ev-fact-sub mono-num">Opened {course.yearOpened}</span>
+              </div>
               <div className="ev-fact">
                 <span className="ev-fact-lbl">Where</span>
-                <span className="ev-fact-val">{course.name}</span>
+                <span className="ev-fact-val">{course.shortName}</span>
                 <span className="ev-fact-sub">
-                  <a className="ev-inline-link" href={`/cities/${course.geoSlug}`}>
-                    {course.city}, Oregon
+                  <a className="ev-inline-link" href={`/cities/${geoSlug}`}>
+                    {city}, Oregon
                   </a>
                 </span>
               </div>
             </div>
 
-            <a className="ev-shows" href={course.officialUrl} target="_blank" rel="noopener noreferrer">
-              Visit the official site for tee times and rates <span className="arr">→</span>
-            </a>
+            {course.teeTimeUrl ? (
+              <a className="ev-shows" href={course.teeTimeUrl} target="_blank" rel="noopener noreferrer">
+                Tee times and course info <span className="arr">→</span>
+              </a>
+            ) : null}
 
             <p className="ev-source mono-num">
-              Course details verified {course.lastVerified}
-              {' · '}
-              <a className="ev-source-link" href={course.officialUrl} target="_blank" rel="noopener noreferrer">
-                Official site
+              Part of the{' '}
+              <a className="ev-source-link" href="/lp/central-oregon-golf">
+                Central Oregon golf guide
               </a>
             </p>
           </div>
@@ -211,19 +218,19 @@ export default async function GolfDetailPage({ params }: Props) {
 
         {/* Course map + nearby home pins */}
         {hasGeo ? (
-          <section className="section ev-map-section" aria-label={`${course.name} on the map`}>
+          <section className="section ev-map-section" aria-label={`${course.shortName} on the map`}>
             <div className="wrap">
               <div className="sec-head">
-                <span className="sec-index">{course.city}</span>
+                <span className="sec-index">{city}</span>
                 <h2 className="sec-title display">Homes nearby</h2>
               </div>
               <p className="ev-map-intro">
-                The active single-family homes for sale within about 1.5 miles of {course.name}, from
-                our listings. The marked point is the course, not a listing.
+                The active single-family homes for sale within about 1.5 miles of {course.shortName},
+                from our listings. The marked point is the course, not a listing.
               </p>
             </div>
             <VenueMap
-              venue={{ lat: course.lat as number, lng: course.lng as number, name: course.name }}
+              venue={{ lat: course.lat, lng: course.lng, name: course.shortName }}
               listings={mapPins}
               zoom={14}
               height={480}
@@ -232,14 +239,14 @@ export default async function GolfDetailPage({ params }: Props) {
         ) : null}
 
         {/* Nearby-homes stat band */}
-        <section className="section ev-stats" aria-label={`Homes near ${course.name}`}>
+        <section className="section ev-stats" aria-label={`Homes near ${course.shortName}`}>
           <div className="wrap">
             <div className="ev-stat-grid">
               <div className="ev-stat">
                 <span className="ev-stat-lbl mono-lab">Homes for sale nearby</span>
                 <span className="ev-stat-val display">{stats.count.toLocaleString()}</span>
                 <span className="ev-stat-sub">
-                  Active single-family homes within about 1.5 miles of {course.name}
+                  Active single-family homes within about 1.5 miles of {course.shortName}
                 </span>
               </div>
               <div className="ev-stat">
@@ -254,12 +261,12 @@ export default async function GolfDetailPage({ params }: Props) {
         {/* Home cards */}
         {cards.length > 0 ? (
           <>
-            <KbFeatured items={cards.map(homeToFeatured)} eyebrow={`Homes for sale near ${course.name}`} />
+            <KbFeatured items={cards.map(homeToFeatured)} eyebrow={`Homes for sale near ${course.shortName}`} />
             {stats.count > cards.length ? (
               <section className="section ev-seeall" aria-label="More homes">
                 <div className="wrap">
                   <a className="ev-link" href={seeAllHref}>
-                    See more homes in {course.city} <span className="arr">→</span>
+                    See more homes in {city} <span className="arr">→</span>
                   </a>
                 </div>
               </section>
@@ -273,12 +280,12 @@ export default async function GolfDetailPage({ params }: Props) {
                 <h2 className="sec-title display">None nearby right now</h2>
               </div>
               <p className="about-p" style={{ paddingTop: 'clamp(24px,3vw,36px)' }}>
-                There are no active single-family listings within about 1.5 miles of {course.name} at
-                the moment. Inventory changes often. Browse current homes in {course.city}.
+                There are no active single-family listings within about 1.5 miles of {course.shortName}{' '}
+                at the moment. Inventory changes often. Browse current homes in {city}.
               </p>
               <p style={{ marginTop: '18px' }}>
                 <a className="ev-link" href={seeAllHref}>
-                  Browse homes in {course.city} <span className="arr">→</span>
+                  Browse homes in {city} <span className="arr">→</span>
                 </a>
               </p>
             </div>
@@ -294,13 +301,12 @@ export default async function GolfDetailPage({ params }: Props) {
                 <h2 className="sec-title display">The community around the course</h2>
               </div>
               <p className="about-p" style={{ paddingTop: 'clamp(24px,3vw,36px)' }}>
-                {course.name} sits inside a Ryan Realty community page with its own boundary, market
-                read, and current listings. See what it is like to own a home on this course.
+                {course.shortName} sits inside a Ryan Realty community page with its own boundary,
+                market read, and current listings. See what it is like to own a home on this course.
               </p>
               <p style={{ marginTop: '18px' }}>
                 <a className="ev-link" href={`/communities/${course.communitySlug}`}>
-                  Explore the {course.name.replace(/ Golf.*$/, '')} community{' '}
-                  <span className="arr">→</span>
+                  Explore the community <span className="arr">→</span>
                 </a>
               </p>
             </div>
@@ -308,7 +314,7 @@ export default async function GolfDetailPage({ params }: Props) {
         ) : null}
 
         {/* Live city market read — the real-estate moat. */}
-        {cityMarket ? <AreaMarketBand market={cityMarket} citySlug={course.geoSlug} /> : null}
+        {cityMarket ? <AreaMarketBand market={cityMarket} citySlug={geoSlug} /> : null}
 
         {/* FAQ */}
         <section className="section about ev-faq" id="faq" aria-label="Common questions">
@@ -330,30 +336,30 @@ export default async function GolfDetailPage({ params }: Props) {
 
         {/* Other courses in the same city */}
         {relatedCourses.length > 0 ? (
-          <section className="section about" id="more-courses" aria-label={`Other courses in ${course.city}`}>
+          <section className="section about" id="more-courses" aria-label={`Other courses near ${city}`}>
             <div className="wrap">
               <div className="sec-head">
                 <span className="sec-index">More golf</span>
-                <h2 className="sec-title display">Other courses in {course.city}</h2>
+                <h2 className="sec-title display">Other courses near {city}</h2>
               </div>
               <ul className="ev-grid">
-                {relatedCourses.map((c: CoGolfCourse) => (
+                {relatedCourses.map((c: GolfCourse) => (
                   <li key={c.slug}>
                     <a className="ev-card" href={`/central-oregon/golf/${c.slug}`}>
                       <span className="ev-card-cat mono-num">
                         {GOLF_ACCESS_LABEL[c.access]} · {c.holes} holes
                       </span>
-                      <span className="ev-card-name display">{c.name}</span>
+                      <span className="ev-card-name display">{c.shortName}</span>
                       <span className="ev-card-meta">
-                        <span className="ev-card-where">{c.city}</span>
+                        <span className="ev-card-where">{displayCity(c.city)}</span>
                       </span>
                     </a>
                   </li>
                 ))}
               </ul>
               <p style={{ marginTop: '22px' }}>
-                <a className="ev-link" href="/central-oregon/golf">
-                  All Central Oregon golf <span className="arr">→</span>
+                <a className="ev-link" href="/lp/central-oregon-golf">
+                  The full Central Oregon golf guide <span className="arr">→</span>
                 </a>
               </p>
             </div>
@@ -363,11 +369,11 @@ export default async function GolfDetailPage({ params }: Props) {
         {/* CTA band */}
         <section className="section ev-cta" aria-label="Contact the team">
           <div className="wrap">
-            <span className="ev-cta-eyebrow mono-lab">Living near {course.name}</span>
+            <span className="ev-cta-eyebrow mono-lab">Living near {course.shortName}</span>
             <h2 className="ev-cta-h display">Local brokers. Specific numbers. No pressure.</h2>
             <p className="ev-cta-body">
-              We work across {course.city} and the rest of Central Oregon. Tell us what matters to
-              you, and we will show you the homes that fit, on the course or off it.
+              We work across {city} and the rest of Central Oregon. Tell us what matters to you, and
+              we will show you the homes that fit, on the course or off it.
             </p>
             <div className="ev-cta-row">
               <a className="btn" href="/contact">

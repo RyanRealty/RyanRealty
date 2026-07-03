@@ -1,9 +1,8 @@
 /**
- * getGolfDetail — resolve a golf-course registry entry + the REAL active
- * single-family homes near the clubhouse (from our own MLS listings) + the live
- * city market band, for the /central-oregon/golf/[slug] page. Mirrors
- * getVenueDetail (same ~1.5-mile bounding box, video-attached tiles, market
- * snapshot). Course facts come from the static registry (CLAUDE.md §0).
+ * getGolfDetail — resolve a course from the canonical registry (data/golf/
+ * courses.ts, the SAME registry that powers /lp/central-oregon-golf) + the REAL
+ * active single-family homes near the clubhouse + the live city market band, for
+ * the /central-oregon/golf/[slug] per-course page. One registry, no duplication.
  *
  * Lives entirely behind the DAL boundary (Gate G1). Pages import from
  * @/lib/data only (Gate G8).
@@ -12,7 +11,8 @@
 import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
-import { getGolfCourseBySlug, CO_GOLF_COURSES, type CoGolfCourse } from '@/data/co-golf'
+import { GOLF_COURSES, type GolfCourse } from '@/data/golf/courses'
+import { cityToGeoSlug } from '@/lib/golf-format'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
@@ -43,10 +43,11 @@ export type GolfHomeTile = {
 export type GolfStats = { count: number; medianListPrice: number | null }
 
 export type GolfDetail = {
-  course: CoGolfCourse
+  course: GolfCourse
+  geoSlug: string
   homes: GolfHomeTile[]
   stats: GolfStats
-  relatedCourses: CoGolfCourse[]
+  relatedCourses: GolfCourse[]
   cityMarket: AreaMarket | null
 }
 
@@ -71,6 +72,10 @@ const PROJECTION = [
 ].join(', ')
 
 const ACTIVE_STATUSES = ['Active', 'Coming Soon', 'Active Under Contract']
+
+function getCourseBySlug(slug: string): GolfCourse | undefined {
+  return GOLF_COURSES.find((c) => c.slug === slug)
+}
 
 function rowToHome(row: RawRow): GolfHomeTile {
   const street = [row.StreetNumber, row.StreetName].filter(Boolean).join(' ').trim()
@@ -127,8 +132,7 @@ async function attachTileVideos(homes: GolfHomeTile[]): Promise<void> {
   homes.sort((a, b) => (a.video ? 0 : a.hasTour ? 1 : 2) - (b.video ? 0 : b.hasTour ? 1 : 2))
 }
 
-async function fetchCourseHomes(course: CoGolfCourse): Promise<GolfHomeTile[]> {
-  if (typeof course.lat !== 'number' || typeof course.lng !== 'number') return []
+async function fetchCourseHomes(course: GolfCourse): Promise<GolfHomeTile[]> {
   const supabase = supabaseAnon()
   if (!supabase) return []
   const { data, error } = await supabase
@@ -147,17 +151,20 @@ async function fetchCourseHomes(course: CoGolfCourse): Promise<GolfHomeTile[]> {
 }
 
 async function fetchGolfDetail(slug: string): Promise<GolfDetail | null> {
-  const course = getGolfCourseBySlug(slug)
+  const course = getCourseBySlug(slug)
   if (!course) return null
 
+  const geoSlug = cityToGeoSlug(course.city)
   const homes = await fetchCourseHomes(course)
   await attachTileVideos(homes)
-  const relatedCourses = CO_GOLF_COURSES.filter((c) => c.slug !== course.slug && c.city === course.city)
+  const relatedCourses = GOLF_COURSES.filter(
+    (c) => c.slug !== course.slug && cityToGeoSlug(c.city) === geoSlug,
+  )
 
-  const pulse = await getMarketPulse({ geoType: 'city', geoSlug: course.geoSlug }).catch(() => null)
+  const pulse = await getMarketPulse({ geoType: 'city', geoSlug }).catch(() => null)
   const cityMarket: AreaMarket | null = pulse
     ? {
-        city: course.city,
+        city: course.city.replace(/\s*\(.*?\)/g, '').split('/')[0].trim(),
         medianListPrice: pulse.medianListPrice,
         activeCount: pulse.activeCount,
         monthsOfSupply: pulse.monthsOfSupply,
@@ -167,6 +174,7 @@ async function fetchGolfDetail(slug: string): Promise<GolfDetail | null> {
 
   return {
     course,
+    geoSlug,
     homes,
     stats: { count: homes.length, medianListPrice: medianListPrice(homes) },
     relatedCourses,
@@ -175,7 +183,7 @@ async function fetchGolfDetail(slug: string): Promise<GolfDetail | null> {
 }
 
 export function getGolfDetail(slug: string): Promise<GolfDetail | null> {
-  return unstable_cache(() => fetchGolfDetail(slug), ['golf-detail-v1', slug], {
+  return unstable_cache(() => fetchGolfDetail(slug), ['golf-detail-v2', slug], {
     revalidate: CACHE_WINDOWS.listingsByGeo,
     tags: [cacheTag.listings, 'golf'],
   })()
