@@ -1,5 +1,4 @@
 import 'server-only'
-import { randomUUID } from 'node:crypto'
 import { createServiceClient } from '@/lib/data/client'
 
 /**
@@ -39,7 +38,9 @@ export type ScheduleRow = { day_index: number; tier: number; cap: number; sent_c
  */
 export async function claimNewsletterForSending(newsletterId: string): Promise<string | null> {
   const sb = createServiceClient()
-  const token = randomUUID()
+  // Web-Crypto global (Node 18+ and edge runtime) — avoids importing node:crypto,
+  // which breaks the edge /api/og route that pulls this in via the @/lib/data barrel.
+  const token = crypto.randomUUID()
   const { data, error } = await sb
     .from(LETTERS)
     .update({ status: 'sending', lock_token: token, send_started_at: new Date().toISOString() })
