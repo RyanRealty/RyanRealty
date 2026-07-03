@@ -37,7 +37,7 @@ flag or the Speed-to-Lead priority handles first-touch instead of a stage).
 | # | Stage | Entry (what puts them here) | Seller = | Buyer = | Exit |
 |---|---|---|---|---|---|
 | 1 | **Nurture** | lead created (new leads start here), on the database, no active intent (90% of the 18K live here) | farming, no sell intent | no active buy intent | a hard intent signal → Engaged |
-| 2 | **Engaged** | **hard signal**: inbound reply, seller-LP/buyer form, valuation/CMA or showing request, or appointment booked | wants to sell, working to the listing appt | wants to buy, consult / pre-approval | signed agreement → Active; OR stale 45d → Nurture |
+| 2 | **Engaged** | **hard signal**: inbound reply, seller-LP/buyer form, valuation/CMA or showing request, or appointment booked | wants to sell, working to the listing appt | wants to buy, consult / pre-approval | signed agreement → Active; OR stale 30d (no two-way) → Nurture |
 | 3 | **Active** | signed representation / actively in-market | listed & marketing | signed buyer-rep, touring + offering | goes under contract → Under Contract; OR lost → Nurture |
 | 4 | **Under Contract** | `crm_deals` row / accepted offer | listing pending | offer accepted | closing date passes |
 | 5 | **Closed → Past Client** | deal closes | sold | bought | (rarely; re-enters Engaged on new intent) |
@@ -88,7 +88,7 @@ absorbs every soft signal (opens, visits, lead score) so they inform *who to cal
 
 ## Anti-stuck rules (from the research)
 
-- **45-day inactivity demote** on Engaged/Appointment → Nurture prevents those lists from silting up
+- **30-day two-way-inactivity demote** on Engaged → Nurture (Active/UC exempt) prevents those lists from silting up
   and becoming meaningless (the #1 failure mode). This matters more than any promotion rule.
 - **Re-nurture sequence** on demote: month 1 value email, month 3 "still thinking about selling?" text,
   month 6 market report — the researched cadence.
