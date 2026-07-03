@@ -99,7 +99,7 @@ function brokerClose(b: SenderBroker): string {
   return `<tr><td style="padding:40px 34px 0;">
     <table width="100%" style="background:${NAVY};"><tr><td style="padding:28px;">
       <table width="100%"><tr>
-        <td width="90" valign="top"><img src="${b.headshotUrl}" alt="${escapeHtml(b.name)}" width="74" style="width:74px;height:74px;border-radius:50%;object-fit:cover;display:block;background:#1c3350;"></td>
+        <td width="104" valign="top"><img src="${b.headshotUrl}" alt="${escapeHtml(b.name)}" width="88" height="88" style="width:88px;height:88px;border-radius:50%;object-fit:cover;object-position:center 18%;display:block;background:#1c3350;border:2px solid rgba(255,255,255,.14);"></td>
         <td valign="top" style="color:#dbe2ec;font-size:16px;line-height:1.6;">
           <div style="font-family:${SERIF};color:${CREAM};font-size:23px;margin-bottom:8px;">Buying, selling, or just wondering.</div>
           I'm ${escapeHtml(b.name)}. ${role}. When you want a straight read on what your place is worth or what you can actually buy in this market, I'm here.${phoneLine} I'll tell you what I'd tell my own family. No pitch.
