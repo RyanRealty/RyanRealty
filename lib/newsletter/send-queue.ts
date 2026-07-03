@@ -59,11 +59,15 @@ function unsubUrl(token: string): string {
 
 type BrokerIdentity = { slug: string; name: string; email: string | null; phone: string | null; title: string | null }
 
-/** Absolute-HTTPS headshots (email can't load relative/app assets) — all verified reachable. */
+/**
+ * Absolute-HTTPS headshots (email can't load relative/app assets) — all verified
+ * reachable. The transparent .png cutouts are canonical (design system): they drop
+ * cleanly onto the navy close card with no white box.
+ */
 const HEADSHOTS: Record<string, string> = {
   matt: 'https://ryan-realty.com/images/brokers/ryan-matt.png',
-  rebecca: 'https://ryan-realty.com/images/brokers/peterson-rebecca.jpg',
-  paul: 'https://ryan-realty.com/images/brokers/stevenson-paul.jpg',
+  rebecca: 'https://ryan-realty.com/images/brokers/peterson-rebecca.png',
+  paul: 'https://ryan-realty.com/images/brokers/stevenson-paul.png',
 }
 
 /** Brand-voice phone format: 541.703.3095 (dotted). Returns the input if it can't parse 10 digits. */

@@ -252,8 +252,8 @@ const NL_KNOWN_BROKERS = new Set(['matt', 'rebecca', 'paul'])
 /** Absolute-HTTPS headshots — email can't load app-relative assets (mirrors send-queue). */
 const NL_HEADSHOTS: Record<string, string> = {
   matt: 'https://ryan-realty.com/images/brokers/ryan-matt.png',
-  rebecca: 'https://ryan-realty.com/images/brokers/peterson-rebecca.jpg',
-  paul: 'https://ryan-realty.com/images/brokers/stevenson-paul.jpg',
+  rebecca: 'https://ryan-realty.com/images/brokers/peterson-rebecca.png',
+  paul: 'https://ryan-realty.com/images/brokers/stevenson-paul.png',
 }
 
 function nlNormalizeBroker(slug: string | null | undefined): string {

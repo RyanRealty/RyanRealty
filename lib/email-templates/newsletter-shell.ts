@@ -90,19 +90,23 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;"
  * clean (no banned words, no em-dash).
  */
 function brokerClose(b: SenderBroker): string {
-  const role = b.isOwner
-    ? 'I run Ryan Realty here in Bend and I answer my own phone'
-    : `I'm a broker at Ryan Realty here in Bend and I answer my own phone`
+  // Who they are, in one plain clause. No "I answer my own phone" / "I'll tell you
+  // what I'd tell my own family" — that's tell-don't-show and category-naming (VOICE.md).
+  const whoami = b.isOwner ? ', and I run Ryan Realty' : ''
   const phoneLine = b.phone
-    ? ` Call me at <a href="tel:${b.phone.replace(/[^\d+]/g, '')}" style="color:${CREAM};">${escapeHtml(b.phone)}</a>.`
-    : ''
+    ? ` call me at <a href="tel:${b.phone.replace(/[^\d+]/g, '')}" style="color:${CREAM};text-decoration:underline;">${escapeHtml(b.phone)}</a>`
+    : ' get in touch'
+  // Natural 2:3 portrait (800x1200 normalized), NOT a forced circle — object-fit is
+  // unreliable across email clients and a cover-crop chops the face. A fixed-width
+  // image with height:auto shows the full head-and-shoulders, no crop, no distortion.
   return `<tr><td style="padding:40px 34px 0;">
     <table width="100%" style="background:${NAVY};"><tr><td style="padding:28px;">
       <table width="100%"><tr>
-        <td width="104" valign="top"><img src="${b.headshotUrl}" alt="${escapeHtml(b.name)}" width="88" height="88" style="width:88px;height:88px;border-radius:50%;object-fit:cover;object-position:center 18%;display:block;background:#1c3350;border:2px solid rgba(255,255,255,.14);"></td>
+        <td width="116" valign="top"><img src="${b.headshotUrl}" alt="${escapeHtml(b.name)}" width="100" style="width:100px;height:auto;border-radius:12px;display:block;background:#1c3350;"></td>
+        <td width="16"></td>
         <td valign="top" style="color:#dbe2ec;font-size:16px;line-height:1.6;">
-          <div style="font-family:${SERIF};color:${CREAM};font-size:23px;margin-bottom:8px;">Buying, selling, or just wondering.</div>
-          I'm ${escapeHtml(b.name)}. ${role}. When you want a straight read on what your place is worth or what you can actually buy in this market, I'm here.${phoneLine} I'll tell you what I'd tell my own family. No pitch.
+          <div style="font-family:${SERIF};color:${CREAM};font-size:22px;line-height:1.2;margin-bottom:10px;">Buying, selling, or just weighing it up.</div>
+          I'm ${escapeHtml(b.name)}${whoami}. For a straight read on what your home is worth, or what your budget actually buys in this market,${phoneLine}.
         </td>
       </tr></table>
       <div style="text-align:center;margin-top:22px;">

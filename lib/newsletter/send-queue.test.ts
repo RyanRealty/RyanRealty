@@ -102,11 +102,15 @@ describe('shell frame (email.html parity)', () => {
     } catch { /* best effort */ }
   })
 
-  it('owner (Matt) close uses the owner voice, non-owner uses the broker voice', () => {
+  it('owner (Matt) close names the ownership; a non-owner does not', () => {
     const matt = renderForRecipient(LETTER, { email: 'x@y.com', broker: 'matt', subscriber_id: 's1' }, BROKERS, 'tok', 1).html!
     const paul = renderForRecipient(LETTER, { email: 'x@y.com', broker: 'paul', subscriber_id: 's1' }, BROKERS, 'tok', 1).html!
-    expect(matt).toContain('I run Ryan Realty')
-    expect(paul).toContain("I'm a broker at Ryan Realty")
+    expect(matt).toContain('I run Ryan Realty') // owner
+    expect(paul).not.toContain('I run Ryan Realty') // non-owner: no ownership claim
+    expect(paul).toContain("I'm Paul Stevenson.")
     expect(paul).toContain('TALK TO PAUL')
+    // brand-voice: the corny trust-me lines are gone
+    expect(matt).not.toContain('answer my own phone')
+    expect(matt).not.toContain('No pitch')
   })
 })
