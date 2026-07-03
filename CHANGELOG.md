@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.722.0 (2026-07-03)
+
+### Features
+- feat(crm): streamline phase 3 (stage remap) + phase 4 (go-forward auto-tagging)
+- feat(content-engine): Central Oregon golf family (19 source-verified courses)
+
+---
+
+
 ## v1.721.0 (2026-07-03)
 
 ### Features
