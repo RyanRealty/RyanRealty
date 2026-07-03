@@ -25,24 +25,32 @@
   [ihomefinder.com/blog real-estate-crm-automation · realgeeks.com/blog/real-estate-crm-automations ·
   keetechnology.com/blog/crm-workflow-templates-for-real-estate]
 
-## Recommended stages — 6 + terminal (seller farm)
+## Recommended stages — ONE unified pipeline, 6 + terminal (buyers AND sellers)
 
-| # | Stage | Entry (what puts them here) | Exit (what moves them out) | Owns the record |
-|---|---|---|---|---|
-| 1 | **New** | lead created, zero contact | first outbound attempt logged | pipeline entry |
-| 2 | **Nurture** | contacted, on the farm, no listing intent yet (90% of the 18K live here) | a hard intent signal → Engaged | the long-hold bucket |
-| 3 | **Engaged** | **hard signal**: inbound reply (text/email/call), seller-LP form, or valuation/CMA request | appointment set → Appointment; OR stale (no activity 45d) → back to Nurture | the "work these now" list |
-| 4 | **Appointment** | listing appointment booked (`crm_appointments`) | listing agreement signed → Listed; OR no-show/lost → Nurture | pre-listing |
-| 5 | **Listed / Under Contract** | listing agreement or `crm_deals` row created | closing date passes | the transaction |
-| 6 | **Closed → Past Client** | deal closes | (rarely; re-enters Engaged on new intent) | repeat + referral |
-| — | **Lost / Trash** (terminal) | opt-out, hard-stop, bad contact, or dead after long inactivity | manual reactivation only | dead |
+Matt directive 2026-07-03: buyers and sellers move through the **same** stages (simple, one pipeline).
+Stage names are side-neutral; the `segment:buyer`/`segment:seller` tag says which side, the stage says
+where. This is more maintainable than two pipelines and both journeys share the same shape.
 
-**Seller-farm difference vs a buyer funnel:** the mass sits in **Nurture** for years; the pipeline's job
-is to *detect the few who move to Engaged*, not march everyone forward. Optimize for cheap warm-hold +
-sharp intent detection, not velocity.
+| # | Stage | Entry (what puts them here) | Seller = | Buyer = | Exit |
+|---|---|---|---|---|---|
+| 1 | **New** | lead created, zero contact | new homeowner lead | new buyer lead | first outbound logged |
+| 2 | **Nurture** | contacted, no active intent (90% of the 18K live here) | farming, no sell intent | no active buy intent | a hard intent signal → Engaged |
+| 3 | **Engaged** | **hard signal**: inbound reply, seller-LP/buyer form, valuation/CMA or showing request, or appointment booked | wants to sell, working to the listing appt | wants to buy, consult / pre-approval | signed agreement → Active; OR stale 45d → Nurture |
+| 4 | **Active** | signed representation / actively in-market | listed & marketing | signed buyer-rep, touring + offering | goes under contract → Under Contract; OR lost → Nurture |
+| 5 | **Under Contract** | `crm_deals` row / accepted offer | listing pending | offer accepted | closing date passes |
+| 6 | **Closed → Past Client** | deal closes | sold | bought | (rarely; re-enters Engaged on new intent) |
+| — | **Lost / Trash** (terminal) | opt-out, hard-stop, bad contact, or dead after long inactivity | — | — | manual reactivation only |
 
-**6 vs 7:** keep **New** separate ONLY with a speed-to-lead SLA (contact within X hours); if leads sit
-uncontacted regardless, merge New into Nurture (→ 5 stages). Decision for Matt.
+**Why Engaged AND Active are both kept:** Engaged = intent shown, no signed agreement yet; Active =
+signed & in-market (listed / touring). Different work, different next actions — collapsing them hides
+"chasing the listing" vs "selling the listing." If Matt wants leaner, drop Active into Under Contract
+→ 5 stages; recommend keeping Active (most of the real work lives there).
+
+**Farm note:** the mass sits in **Nurture** for years; the pipeline's job is to *detect the few who move
+to Engaged*, not march everyone forward. Optimize for cheap warm-hold + sharp intent detection.
+
+**New separate?** Keep it ONLY with a speed-to-lead SLA; if leads sit uncontacted regardless, merge into
+Nurture. Decision for Matt.
 
 ## Stage automation — trigger table
 
