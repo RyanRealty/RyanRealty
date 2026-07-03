@@ -31,6 +31,7 @@
 |---|---|---|---|
 | **Segment** | 21 → 25,890 | **5 tags** | `segment:seller` · `segment:expired` · `segment:fsbo` · `segment:out-of-area` · `segment:buyer` |
 | **Realtor** | 98 → 5,662 | **3 tags** | `industry:realtor` + `realtor:local` / `realtor:migration` |
+| **Vendor** | (new) | **1 + type set** | `segment:vendor` + `vendor:<type>` (curated, §3.2) |
 | **Occupancy** (address-derived) | (from owner:* + 2 dup) | **2 tags** | `owner:occupied` / `owner:absentee` |
 | **Location** (address-derived) | 7 → 29,953 | **3 tags** | `location:local` / `location:out-of-area` / `location:out-of-state` |
 | **Source** | 17 → 21,428 | **kept (~14)** | `source:*` — where the lead came from |
@@ -69,11 +70,24 @@ any compliance flag — instead of ~14.
   `brokerage:*`→`brokerage` field.
 - **→ delete**: `expired-mls:<id>`, `expired-detected:<date>`, `ExpiredWaveN`, `import:*`, `auto:*`,
   `status:*`, `lifecycle:*`, `repeat-relist:*`, `owner-lookup:*`, `exclude:*`, `fb-audience:*`, dup `Realtor`.
-- **→ keep verbatim**: `source:*`, `contact:*`, `compliance:*`, `email:invalid/bounced`, unsubscribe.
+- **→ keep verbatim**: `source:*`, `contact:*`, `compliance:*`, `email:invalid/bounced`, unsubscribe, `vendor:*`.
+
+### 3.2 Vendor type set (curated — Matt-approved 2026-07-03)
+
+Vendors are segment #8. `segment:vendor` drives the Vendors list; `vendor:<type>` is the trade,
+from a fixed set (a vendor may carry more than one). Type is a **manual pick** from a dropdown when a
+vendor is added — it can't be auto-derived. Canonical set:
+
+`vendor:lender` · `vendor:title` · `vendor:appraiser` · `vendor:inspector` · `vendor:electrician` ·
+`vendor:plumber` · `vendor:hvac` · `vendor:roofer` · `vendor:contractor` · `vendor:painter` ·
+`vendor:landscaper` · `vendor:stager` · `vendor:photographer` · `vendor:handyman` · `vendor:cleaner` ·
+`vendor:pest` · `vendor:surveyor` · `vendor:attorney` · `vendor:insurance` · `vendor:flooring` · `vendor:mover`
+
+The existing `Vendor` stage maps to `segment:vendor`.
 
 ## 4. The Smart Lists (the sidebar after)
 
-**7 core workflow lists** — each keys on ONE canonical signal:
+**8 core workflow lists** — each keys on ONE canonical signal:
 
 | List | Filter | ~Count |
 |---|---|---|
@@ -84,6 +98,7 @@ any compliance flag — instead of ~14.
 | **Buyers** | tag `segment:buyer` | ~55 |
 | **Local Realtors** | tag `realtor:local` | (of 2,341) |
 | **Migration Realtors** | tag `realtor:migration` (feeder-market referral agents) | (of 2,341) |
+| **Vendors** | tag `segment:vendor` (filter within by `vendor:<type>`) | your rolodex |
 
 **Out Of Area = non-local absentee** (Matt-confirmed 2026-07-03): mailing ≠ owned property, from outside
 Central Oregon. Central-OR city list: Bend, Redmond, Sisters, La Pine, Sunriver, Terrebonne, Tumalo,
@@ -107,6 +122,7 @@ address change**.
 | **`owner:occupied`/`:absentee`** + **`location:*`** | `deriveCanonicalTags` computes from mailing-vs-`Property` address | at creation + after enrichment + on address edit |
 | **`segment:out-of-area`** | set when `owner:absentee` AND `location` is non-local | same |
 | **`realtor:local`/`:migration`** | when the contact is classified a realtor, from brokerage/mailing market vs the feeder-market list | at creation/enrichment |
+| **`segment:vendor` + `vendor:<type>`** | **manual pick** from the curated dropdown (§3.2) — trade can't be auto-derived | when a vendor is added/edited |
 | **`source:*`** | the lead source (already wired) | at creation |
 | **`contact:*` / `compliance:*`** | skip-trace DNC/litigator/TCPA flags + inbound opt-outs (already wired, unchanged) | at creation + on inbound STOP |
 
