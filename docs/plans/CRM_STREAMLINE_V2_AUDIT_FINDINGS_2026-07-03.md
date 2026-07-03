@@ -17,10 +17,40 @@ Author: Claude (Opus session, 2026-07-03). Audits [`CRM_STREAMLINE_PLAN_V2_2026-
 
 ## Findings: 3 P1 (wrong result / would-corrupt-if-built) · 5 P2
 
-### V2-1 · P1 — Neighborhood/subdivision/city are **multi-valued**. Single-select loses data for 7,294 contacts, and the whole premise is wrong.
-- **v2 claim:** §2 "`neighborhood` → convert to **single-select**"; §8.2 (from v1) "A property is in exactly one neighborhood → single-valued → field."
-- **Contradicting evidence (live):** **7,294** contacts carry **≥2** `neighborhood:` tags (of 10,051 tagged = **73%**), up to **6** each. Also 955 carry ≥2 `subdivision:`, 311 carry ≥2 `city:`. A sampled contact's tags: `northwest-crossing · bend-summit-west · bend-awbrey-butte · tetherow · awbrey-glen · bend-southern-crossing` — these are a realtor's **farm/market areas** (or a buyer's search areas), **not** the single neighborhood a home sits in. The tag's real meaning is "areas of interest/activity," which a scalar field cannot hold.
-- **Blast radius:** building §2 as written writes **one** value into a single-select and drops the other 1–5 for 7,294 contacts → mass silent loss, and the field would misrepresent what the data means. The boundary tables **do** exist (`boundaries` ≈3,251 rows, `neighborhoods`, `neighborhood_subdivisions`) so a point-in-polygon *is* technically possible — but it derives ONE neighborhood from the owned-property address, a **different semantic** than the multi-area farm tags, so it won't reconcile with the existing values either.
+### V2-1 · **CORRECTED after a code review (2026-07-03)** — single-value IS right; the tags are pollution; the authoritative field already exists. **Never migrate tag→field by picking one tag.**
+
+> **Retraction.** My first pass claimed the `neighborhood:` tags are an intentional multi-area farm
+> semantic and that a single field would lose data. That was wrong. Reading the assignment code
+> (`scripts/geocode-all-untagged.mjs`, `scripts/westside-bend-build-fub-import.mjs`) and the boundary
+> model shows single-value is the *correct* design and the authoritative value already exists in a field.
+
+- **How neighborhoods are actually defined (code):** a neighborhood is an authoritative polygon in
+  `boundaries` (`geo_type='neighborhood'`, **28** polygons, City-of-Bend-GIS sourced). A property's
+  neighborhood is resolved by geocoding its street address → `lookup_address_geo(lat,lng)` RPC →
+  point-in-polygon → **exactly one `neighborhood_slug`** (`geocode-all-untagged.mjs:78-88`). That path
+  **skips any contact already carrying a `neighborhood:` tag** and writes an authoritative row to
+  `fub_person_geo` (2,242 rows, 1,466 with a neighborhood). Model = **one property → one neighborhood.**
+- **The single-value field already exists and is populated:** `customNeighborhood` is set on **7,408**
+  contacts, one clean value each (sample: "Widgi Creek", "Southern Crossing", "Awbrey Butte"), and it
+  matches `fub_person_geo.neighborhood_slug` where both exist (id 11232 → both `summit-west`).
+- **Why the tags are multi-valued (pollution, not semantics):** (a) `westside-bend-build-fub-import.mjs:161-162`
+  writes **both** `neighborhood_slug` **and** `planned_community_slug` under the `neighborhood:` prefix
+  (2 tags per import row — a planned community mis-modeled as a neighborhood); (b) the 5–6-tag contacts are
+  the documented westside parcel mis-match corruption — sampled id 2454 has **6 neighborhood tags but 0
+  property addresses / 1 total address** (a one-address contact can't be in six neighborhoods). Genuine
+  multi-property owners exist but are rare (id 8122 has 7 property addresses).
+- **So the corrected guidance:** v2 is **right** to make neighborhood a single-value field. The real trap
+  is the **source**: v1 §8.2's "move the existing tag values into the field" would pick one of up to six
+  polluted tags → wrong value. Instead — **keep the already-populated `customNeighborhood` field, drop the
+  tags entirely**, and for the **2,643** contacts that carry a tag but have an empty field, geocode the
+  primary property address (the `lookup_address_geo` mechanism already exists) or leave blank. Convert the
+  field to a select over the 28 canonical neighborhood labels. Note the field-key mismatch (definition key
+  `neighborhood` vs stored key `customNeighborhood` — same class as the display bug fixed in `f99a45df`;
+  standardize on one). Subdivision (955 multi) / city (311 multi) get the same treatment: field is
+  authoritative, tags are the polluted layer to drop — not the source to migrate from.
+- **Net severity:** this is **not** a data-loss risk under the corrected approach (field already holds the
+  truth); it flips to a **P1 "don't build it v1 §8.2's way"** — migrating *from* the tags would corrupt the
+  field for thousands. Downgraded from "premise wrong" to "source wrong."
 - **Fix:** either (a) keep neighborhood/subdivision/city as a **multi-value** field (text[]/multiselect) preserving all values, or (b) recognize these are farm/interest markers and keep them as tags (don't move them at all). Do **not** collapse to single-select. If a true "property neighborhood" field is wanted, derive it fresh by point-in-polygon and name it distinctly — don't overload the farm tags into it.
 
 ### V2-2 · P1 — Out Of Area Home Owners = **957**, not 1,743. v2 carried over v1's unverified number.
@@ -71,11 +101,16 @@ Author: Claude (Opus session, 2026-07-03). Audits [`CRM_STREAMLINE_PLAN_V2_2026-
 | Local Realtors | ~2,240 | **~2,347** |
 | Migration Realtors | ~100 | **59** |
 | absentee / occupied (derived) | — | 2,615 / 7,351 (unknown 8,260) |
-| multi-value neighborhood contacts | (assumed 0) | **7,294** (73% of tagged) |
+| neighborhood single-value field | needs building | **already exists** — `customNeighborhood` populated on 7,408; tags are the polluted layer |
+| multi-`neighborhood:`-tag contacts | (assumed 0) | **7,294** — pollution (planned-community double-write + westside mis-match), not a real multi-area model |
 
-## Recommendation
-v2's plumbing is right; its numbers and the single-select-neighborhood idea are not. Before writing any
-script: (1) drop single-select neighborhood — keep neighborhood/subdivision/city **multi-value or as tags**;
-(2) replace every count with the live figures above; (3) pick the seller definition (recommend stage-only
-7,524); (4) add `stage` to the classifier signature; (5) harden the mailing-address selection; (6) declare
-the segment-overlap/enrollment-dedup policy. Then dry-run and reconcile each list to a live query before apply.
+## Recommendation (updated after the code review)
+v2's plumbing is right, and — corrected — its single-value neighborhood field is right too. The fixes:
+(1) **Neighborhood/subdivision/city:** keep the already-populated `customNeighborhood`/`customSubdivision`
+fields, **drop the tags**, and geocode-backfill the ~2,643 tagged-but-empty via `lookup_address_geo`. Do
+**NOT** populate the field by picking one of the multiple tags (that corrupts thousands). Standardize the
+field key (`neighborhood` vs `customNeighborhood`). (2) replace every count with the live figures above
+(Out-Of-Area 957, seller union 9,586, expired ~925, migration realtors 59); (3) pick the seller definition
+(recommend stage-only 7,524); (4) add `stage` to the classifier signature; (5) harden the mailing-address
+selection; (6) declare the segment-overlap/enrollment-dedup policy. Then dry-run and reconcile each list to
+a live query before apply.
