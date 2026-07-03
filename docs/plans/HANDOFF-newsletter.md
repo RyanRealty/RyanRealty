@@ -44,17 +44,37 @@ events** (`/central-oregon/events/*` doesn't exist yet) — that is owned by the
 initiative (`docs/plans/HANDOFF-content-engine.md`). Housing/community/school links point at pages that
 already exist (`/blog`, `/communities`, `/schools`, `/parks`, `/guides`).
 
-## Where we left off / what's next
-The **newsletter system itself is not built** — only the spec, the approved design, and the mail infra.
-Everything above is in the working tree, likely **uncommitted** (check `git status`). Next:
-1. Confirm with Matt: commit the spec + mockup first, or start building.
-2. Execute the **§13 phase plan** — Phase 0 (verify current code vs spec) → Phase 1 (schema:
-   `newsletter_recipient_events` ledger, `newsletter_send_schedule`, `recipients.broker`+`tier`,
-   `unique(lower(email))`) → Phase 3 (send queue) → Phase 4 (per-broker identity swap + webhook broker
-   stamping) → … → Phase 7 (admin UX) → Phase 8 (per-broker analytics). Each phase wires its gates,
-   verifies in a real browser, ships draft-first.
-- Make `lib/email-templates/newsletter-shell.ts` render the approved `email.html` design, gated by
-  mockup-parity.
+## Build progress log (newest first)
+
+**2026-07-03 — Phase 0 + Phase 1 shipped.**
+- **Phase 0 (verify + adversarial audit) DONE.** Verified spec vs live DB/code/DNS/routes. Ran an
+  adversarial "assume everything is broken" pass → spec bumped to **v1.2** with 7 corrections (A1–A7).
+  Key finds: (A1) `newsletter_recipients_status_check` excluded `queued` → queue would be DOA;
+  (A2) `unique(lower(email))` already existed (spec was stale); (A3) spec's `dedupe_key` formula was
+  broken (our pixel has no message_id) → recipient-scoped; (A4) live `NEWSLETTER_FROM` points at
+  `mail.` not `news.`; (A5) `recordRecipientSend` onConflict targets raw email not the functional
+  index; (A6) broker close is Matt-only, must template per broker; (A7) mockup is 640px + all numbers
+  are samples. Brokers use SHORT slug (`matt`), Matt=superuser + Paul/Rebecca=broker (M4 ✓), all
+  headshots resolve HTTPS, `/central-oregon/events/*` 404s (content-engine dep = the real send blocker).
+- **Phase 1 (schema) DONE + APPLIED + COMMITTED.** 5 migrations applied to hosted Supabase
+  (`20260703100000..100400`): `newsletter_recipient_events` ledger (+broker, recipient-scoped
+  dedupe_key), `newsletter_send_schedule`, `newsletters` (+send_started/finished_at, lock_token,
+  citations, status CHECK widened), `newsletter_recipients` (+broker, tier, status CHECK widened for
+  queued/skipped), subscribers (+bounced_at/complained_at). Live schema verified. First gate built:
+  **`scripts/check-newsletter-schema.mjs` (G-NL-14)** — proven red on the A1 bug, green on the fix,
+  wired into `ci:gates`, catalogued in MECHANICAL_GATES.md. Snapshot refreshed.
+
+## What's next
+Execute the remaining **§13 phase plan** (each: build → wire its gates → real-browser/e2e test →
+commit): **Phase 2** compliance+format hardening (postal, multipart, shell static lint, tracking-token
+TTL + prod hard-fail, dedup timeline) → **Phase 3** send queue (CAS lock, tier drain cron, reconciler,
+circuit-breaker, one-click parity, `NEWSLETTER_FROM` `mail.`→`news.` flip gated on a test-send, fix the
+onConflict target) → **Phase 4** per-broker identity swap + shell rebuilt to the 640px `email.html`
+(mockup-parity, per-broker close) → **Phase 5** event integrity (ledger-derived counts, recipient-scoped
+dedupe, `email.unsubscribed`, MPP) → **Phase 5b** scale readiness (hygiene, warm-up ramp, circuit-breaker,
+Postmaster gate) → **Phase 6** curation producer + scheduling → **Phase 7** admin UX → **Phase 8**
+per-broker analytics. External send-blockers (do NOT gate the build): event pages 404; `news.` verify
+test-send. No bulk send to the real list without Matt's per-issue approval + Phase 5b gates green.
 
 ## Constraints (non-negotiable)
 Draft-first (nothing sends without Matt's per-issue approval) · brand voice (VOICE.md, gate) · §0 data

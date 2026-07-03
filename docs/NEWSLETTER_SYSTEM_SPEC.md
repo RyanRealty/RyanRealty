@@ -1,6 +1,6 @@
 # Ryan Realty Newsletter System — Production Spec
 
-**Status:** Draft for Matt's approval · **Version:** 1.1 · **Date:** 2026-07-02
+**Status:** Draft for Matt's approval · **Version:** 1.2 · **Date:** 2026-07-03
 **Owner (spec):** Claude Code · **Intended builder:** a separate implementation process
 **Companion:** [`NEWSLETTER_CONVERSION_RESEARCH.md`](NEWSLETTER_CONVERSION_RESEARCH.md) (the evidence base)
 
@@ -13,6 +13,25 @@
 > no-data branch; **M3** the queue (P4) builds before the identity swap (P3); **M4** Phase 0 verifies
 > broker admin accounts. Plus doc-consistency: From-address is `news.ryan-realty.com` throughout,
 > §6.6 current-state refreshed, freeze-vs-live broker resolved (§9.5).
+
+> **v1.2 — implementation-audit corrections (2026-07-03).** Phase 0 was run against the live DB +
+> code + DNS + routes and attacked adversarially ("assume everything is broken"). Corrections to v1.1,
+> each proven against reality:
+> **A1** the `newsletter_recipients` status CHECK already exists and **excludes `queued`** — Phase 1
+> must widen it to `queued`/`skipped` or the queue is dead on arrival (§3.1).
+> **A2** `unique(lower(email))` on subscribers **already exists** (`newsletter_subscribers_email_key`);
+> S-9 is already mitigated, do NOT re-add it (§3.1). **A3** the ledger `dedupe_key` formula
+> `resend_message_id:event:url` is **broken** — our own open-pixel has no `resend_message_id`, so it
+> would collapse every recipient's open into one row; the key must be **recipient-scoped** (§3.1/§5/§13-P5).
+> **A4** the live `NEWSLETTER_FROM` constant points at the **transactional** `mail.` domain, not the
+> bulk `news.` subdomain — a real bug that defeats §6.6 stream isolation (§1/§13-P3).
+> **A5** `recordRecipientSend` upserts `onConflict:'newsletter_id,email'` but the only unique index is
+> the expression `(newsletter_id, lower(email))` — a latent PostgREST mismatch Phase 3 must fix (§3.1).
+> **A6** the mockup broker **close** paragraph + phone are first-person Matt-only and must be templated
+> per broker, beyond the §5 signature swap (§5). **A7** the approved mockup is **640px** (spec said 600)
+> and every number in it is a **sample** — the gate threshold and the live-data obligation are restated
+> (§7). External blockers to the first real send confirmed: event pages 404 (content-engine, §8.1) and
+> `news.` verification unproven until a test-send (§14). None block building Phases 1–8.
 
 This is the buildable definition of the Ryan Realty monthly newsletter, end to end. It is written
 so an implementation process can build it without re-discovering the codebase. Every requirement
@@ -88,6 +107,12 @@ Three full-code sweeps established exactly what exists. **This supersedes the st
     no path into the `newsletters` table.
 12. **Tracking-token secret has no prod hard-fail**; open/click `crm_timeline` inserts are un-deduped
     (uncapped rows); tokens never expire.
+13. **Newsletter `From` sends from the wrong domain** (audit A4, 2026-07-03). The live constant
+    `NEWSLETTER_FROM` in both `app/actions/newsletter.ts` and `app/actions/contact-newsletter.ts` is
+    `newsletter@mail.ryan-realty.com` — the **transactional** domain — not the verified bulk subdomain
+    `newsletter@news.ryan-realty.com` (decision #6). Left as-is, a bulk complaint spike sinks
+    transactional deliverability, defeating the entire §6.6 stream-isolation setup. One-line fix, folded
+    into Phase 3, gated behind a `news.` verification test-send (§14).
 
 ---
 
@@ -120,7 +145,10 @@ newsletter-send-drain, stuck-send-reconcile), Resend (send + webhook), Supabase 
 ### 3.1 Existing tables — required changes
 
 **`newsletters`** — add columns:
-- `status` enum extended: `draft | scheduled | sending | sent | failed | canceled`.
+- `status` extended: `draft | scheduled | sending | sent | failed | canceled`. **Audit (2026-07-03):**
+  `status` is plain text with an existing `newsletters_status_check` = `CHECK (status IN ('draft',
+  'sending','sent','failed'))` — Phase 1 must **drop + recreate** it with the full set (the table is
+  empty, and the running app only writes `sending`/`sent`/`failed`, so the widen can't reject a live row).
 - `scheduled_at timestamptz` — already present; will now be honored.
 - `send_started_at timestamptz`, `send_finished_at timestamptz` — reliability/observability.
 - `citations jsonb` — the verification trace for every figure in the body (see §8).
@@ -130,26 +158,53 @@ newsletter-send-drain, stuck-send-reconcile), Resend (send + webhook), Supabase 
 **`newsletter_subscribers`** — no structural change required; `crm_person_id` is the broker-resolution
 join key. Add:
 - `bounced_at / complained_at timestamptz` (observability; status already flips).
-- unique index on `lower(email)` (fixes the non-atomic upsert race, edge case S-9).
+- ~~unique index on `lower(email)`~~ **Audit A2 (2026-07-03): already exists** as
+  `newsletter_subscribers_email_key` = `UNIQUE (lower(email))`. S-9 is already mitigated at the DB and
+  G-NL-14's email-uniqueness half is already satisfied — **do NOT re-create it** (a second, differently
+  named index would be a redundant duplicate). This bullet is done; only the timestamps are new.
+- Note: `newsletter_subscribers_segment_check` = `CHECK (segment IN ('general','buyer','seller',
+  'past-client'))` also already exists, so the segment allowlist is DB-enforced for subscribers (the
+  `newsletters.audience` string still needs code validation — G-NL-14 code half).
 
 **`newsletter_recipients`** — add:
 - `broker text` — the **recipient's** resolved broker at send time (frozen for this issue).
 - `tier smallint` — engagement tier (1 engaged / 2 new / 3 cold) assigned at enqueue; drives which
   day of the tranche this recipient sends (§6.5 rule 2).
+- **Audit A1 (2026-07-03) — CRITICAL:** the existing `newsletter_recipients_status_check` =
+  `CHECK (status IN ('sent','delivered','opened','clicked','bounced','complained','failed'))` has **no
+  `queued`**. The Phase 3 queue enqueues rows as `queued` and marks skipped-at-drain rows `skipped`
+  (S-8/S-14). Phase 1 must **drop + recreate** this CHECK adding `queued` + `skipped`, or every enqueue
+  is rejected and the queue is dead on arrival. (Done in migration `…100300`.)
+- **Audit A5 (2026-07-03):** a `UNIQUE (newsletter_id, lower(email))` index already exists
+  (`newsletter_recipients_letter_email_key`), but `recordRecipientSend` upserts
+  `onConflict:'newsletter_id,email'` (raw column) which PostgREST **cannot** match to a functional
+  index — a latent failure (0 rows today, never exercised). Phase 3's send-path rewrite must target the
+  functional index correctly (or add a plain `(newsletter_id, email)` unique on the already-lowercased
+  column) so the drain is truly idempotent (S-3).
 - Stop trusting `open_count/click_count` as the source of truth; derive them from a new ledger:
 
 **New table `newsletter_recipient_events`** (fixes double-count, edge case T-4):
 ```
-id bigserial pk
+id bigint generated always as identity pk
 newsletter_id uuid, subscriber_id uuid, email text
 resend_message_id text
+broker text                   -- recipient's FROZEN short slug (§5) — engagement-by-broker analytics
 event text check (event in ('delivered','open','click','bounce','complaint'))
 url text null                 -- for click granularity
 occurred_at timestamptz
-dedupe_key text unique        -- resend_message_id:event:url  (idempotent on redelivery)
+dedupe_key text unique        -- see Audit A3 below — RECIPIENT-scoped, NOT resend_message_id-scoped
 ```
 `open_count`/`click_count` become **views/derived counts** over this ledger, so a webhook redelivery
 can never inflate them.
+
+**Audit A3 (2026-07-03) — the `dedupe_key` formula in v1.1 was broken.** `resend_message_id:event:url`
+fails on two counts: (1) our own HMAC **open pixel has no `resend_message_id`**, so every recipient's
+open would collapse to the key `":open:"` and only the first open on the whole list is ever recorded;
+(2) when both our pixel **and** Resend's `email.opened` webhook report the same open, a message-id key
+double-counts. The key must be **recipient-scoped and source-agnostic**:
+`nl:<newsletter_id>:sub:<subscriber_id|lower(email)>:<event>:<url>` (`url` empty for non-click events).
+That collapses replays AND cross-source duplicates to one row per recipient-per-link-per-event. Phase 5
+implements this construction; the schema (`dedupe_key text unique`) is already flexible enough.
 
 **New table `newsletter_send_schedule`** (drives the tranche drain, §6.5/§6):
 ```
@@ -248,7 +303,18 @@ later reassigned.
 | Pixel/click token, `newsletter_recipient_events.broker`, `email_events.broker`, `crm_timeline.broker` | short broker slug | resolved slug |
 
 **Identical across recipients:** masthead, all editorial body, market data, featured sale, events,
-CTA copy, footer text, unsubscribe.
+section CTA copy, footer text, unsubscribe.
+
+**Per-broker beyond the signature swap (Audit A6, 2026-07-03).** The approved mockup's **broker close**
+block is first-person Matt-only prose — `"I'm Matt Ryan… call me at 541.213.6706… TALK TO MATT →"`. The
+v1.1 swap map only swapped From/reply/signature/links, which would ship Matt's *words* under Rebecca's
+or Paul's name. Phase 4 must **template the close per broker**: first-person intro (`I'm {display_name}`),
+CTA label (`Talk to {first_name} →`), and the phone number. **Phone decision:** the close is a
+lead-capture surface, so it uses the broker's own reachable line — Matt `541.213.6706` (his direct,
+brand voice), Rebecca `415.308.9087`, Paul `541.977.6841` (from `brokers.phone`/`twilio_number`); the
+FUB-tracked bio line `541.703.3095` is for social profiles, not the newsletter close. `brokers.email_signature`
+is **empty for all three today** (verified) — so the close copy is authored per-broker in the shell,
+and `email_signature` is consumed only as an override when populated (not a hard dependency).
 
 **Broker on engagement events — BOTH sources (fixes H1).** Per-broker analytics require broker on
 opens/clicks, not just sends. There are two engagement sources and **both** must stamp broker:
@@ -531,8 +597,19 @@ can only see the shell, so body-content rules are **runtime** checks in the rend
 a static shell lint.
 
 *Static (shell structure) — G-NL-7 static part:*
-- Single `<table>` column, `max-width:600px`; `color-scheme` meta present (dark-mode safe); shell body
-  default font ≥16px / line-height 1.4–1.6; masthead + compliant footer present.
+- Single `<table>` column, **`max-width:640px`** (Audit A7, 2026-07-03: the approved mockup is 640px, not
+  600 — the mockup is canonical, so the gate threshold is ≤640); `color-scheme` meta present (dark-mode
+  safe); shell body default font ≥16px / line-height 1.4–1.6; masthead + compliant footer present.
+- **Absolute HTTPS assets only.** `brokers.photo_url` is stored relative (`/images/brokers/*.png`) — the
+  shell must prefix the site origin (all broker headshots verified reachable at
+  `https://ryan-realty.com/images/brokers/{ryan-matt.png, stevenson-paul.jpg, peterson-rebecca.jpg}`).
+
+> **Audit A7 (2026-07-03) — every number in the mockup is a SAMPLE, not shippable data.** `1,831 homes`,
+> `19 days`, `$739,000`, Tetherow `16 for sale`, and the Bend `BALANCED` / Redmond `BUYER'S` / Sisters
+> `SELLER'S` meters are placeholders (the mockup footer says so). None ships as a literal: the Phase 6
+> producer computes each live + traces it (R-2), and the **per-city buyer/seller meter derives from live
+> months-of-supply per city** against the §0 thresholds (≤4 seller · 4–6 balanced · ≥6 buyer), with the
+> arrow position a function of MoS. The mockup encodes the visual language; the data is always live.
 
 *Runtime (rendered body) — G-NL-7 runtime part, runs at approve + at render:*
 - **Exactly one primary CTA**, defined concretely as exactly one element carrying the
@@ -774,11 +851,11 @@ Draft-first; no production send without Matt's per-issue approval.
 | Phase | Deliverable | Gates that must go green |
 |-------|-------------|--------------------------|
 | **0** | Verify-and-delta pass (read-only): confirm this spec vs live code, produce the exact diff. Confirm `BROKERAGE_POSTAL_ADDRESS` value. **Verify Rebecca + Paul have `admin_roles` rows (`role='broker'`, `broker_id`→`crm_slug`) so per-broker analytics is reachable (M4).** | — |
-| **1** | Schema: `newsletter_recipient_events` ledger, subscribers `unique(lower(email))`, `newsletters` new columns/status, `newsletter_recipients.broker` + `tier`, `newsletter_send_schedule`. Refresh snapshot. | G16, G-NL-14 |
+| **1** | Schema: `newsletter_recipient_events` ledger (+`broker`, recipient-scoped `dedupe_key` A3), `newsletters` new cols + **widen `newsletters_status_check`** (A2), `newsletter_recipients.broker` + `tier` + **widen `newsletter_recipients_status_check` to add `queued`/`skipped` (A1 — else the queue is DOA)**, `newsletter_send_schedule`, subscribers `bounced_at`/`complained_at` (the `unique(lower(email))` **already exists** — A2, don't re-add). Refresh snapshot. **Migrations drafted 2026-07-03: `supabase/migrations/20260703100000..100400`.** | G16, G-NL-14 |
 | **2** | Compliance + format hardening: verify postal address, multipart (auto-gen plain text), shell static lint, tracking-token TTL + prod secret hard-fail, de-dup timeline inserts. | G-NL-1/2/3/7-static/11, G-NL-10 (timeline part) |
-| **3** | **Send reliability (build the queue BEFORE the swap — fixes M3):** CAS lock, tier-aware queue + drain cron, tranche-aware reconciler, circuit-breaker, one-click parity (voice, tracking-on-failure, no reactivation). | G-NL-4/6/9, G-NL-15 |
-| **4** | **Per-broker identity swap (built INTO the drain from P3):** shell broker block, recipient-broker resolution + freeze, From-name/reply/link/token stamping, **broker on BOTH engagement paths — pixel/token payload + Resend-webhook `message_id`→`recipients.broker` (H1)**, G-NL-7 runtime body checks, Preview-as-broker + test-send. | G-NL-5/7-runtime/8, R-4 |
-| **5** | Event integrity: derive counts from ledger, URL-inclusive dedupe, `email.unsubscribed` handling, MPP flagging. | G-NL-10/13, R-5 |
+| **3** | **Send reliability (build the queue BEFORE the swap — fixes M3):** CAS lock, tier-aware queue + drain cron, tranche-aware reconciler, circuit-breaker, one-click parity (voice, tracking-on-failure, no reactivation). **Also (audit): flip `NEWSLETTER_FROM` `mail.`→`news.` (A4, gated behind the §14 verification test-send), and fix `recordRecipientSend` onConflict to target the functional `(newsletter_id, lower(email))` index (A5).** | G-NL-4/6/9, G-NL-15 |
+| **4** | **Per-broker identity swap (built INTO the drain from P3):** shell rebuilt to the approved 640px `email.html` (mockup-parity), **per-broker close paragraph + phone templated (A6)**, absolute-HTTPS headshot prefix, recipient-broker resolution + freeze, From-name/reply/link/token stamping, **broker on BOTH engagement paths — pixel/token payload + Resend-webhook `message_id`→`recipients.broker` (H1)**, G-NL-7 runtime body checks, Preview-as-broker + test-send. | G-NL-5/7-runtime/8, R-4 |
+| **5** | Event integrity: derive counts from ledger, **recipient-scoped source-agnostic `dedupe_key` (A3 — NOT the v1.1 `message_id:event:url` formula)**, URL-inclusive click dedupe, `email.unsubscribed` handling, MPP flagging. | G-NL-10/13, R-5 |
 | **5b** | **Scale readiness (gates the first large send):** email verification at enrollment + pre-send hygiene, warm-up schedule + ramp-aware drain, deliverability circuit-breaker + auto-pause, engagement sunset, DMARC/plan verification. (No auto-migration — enrollment stays manual per §5.) | G-NL-16/17/18 |
 | **6** | Curation pipe + scheduling: producer → `newsletters` draft, citations, monthly cron, `scheduled_at` honored, R-2/R-3. | R-2/R-3, G-NL-15 |
 | **7** | Admin UX: list (all-time count, CTR, pagination, per-row actions), compose (plain-text, preview-as-broker, test-send, voice/cite panel, schedule, Dialog confirm), subscribers (filters/search/import/export/bulk-assign+scope), detail (CTR/CTOR lead, per-broker breakdown, warm list). | G-NL-12, R-1 |
@@ -800,6 +877,13 @@ Draft-first; no production send without Matt's per-issue approval.
   1024-bit — Resend default, no 2048 toggle in UI), TXT `send.news` (SPF `include:amazonses.com`),
   MX `send.news` (`feedback-smtp.us-east-1.amazonses.com`). DMARC already covered by the root record.
   Resend verification was "Pending" at hand-off (records are live+correct; auto-verifies).
+  **Audit re-confirmed 2026-07-03:** all three `news.` records still resolve (DKIM public key live, SPF
+  `include:amazonses.com`, MX `feedback-smtp`), so Resend has near-certainly auto-verified. **But the
+  prod `RESEND_API_KEY` is send-only and cannot query domain status, so verification is not *proven*.
+  Hard gate on the `NEWSLETTER_FROM` `mail.`→`news.` flip (A4/Phase 3): a single test-send from
+  `news.` to matt@ must land (Gmail: DKIM `d=news.ryan-realty.com`, no auth warning) BEFORE the flip
+  ships.** The existing `scripts/_send-newsletter-test.mjs` already sends from `news.` with a `mail.`
+  fallback — that is the verification instrument. Do not flip the constant until that send is confirmed.
 - ✅ **Google Postmaster Tools — all 3 sending domains registered + verified** (ryan-realty.com,
   mail.ryan-realty.com, news.ryan-realty.com) under matt@. Subdomains auto-verified via the verified
   parent. Automated ingestion + reputation gate architected in §6.7 (build Phase 5b; needs Postmaster
