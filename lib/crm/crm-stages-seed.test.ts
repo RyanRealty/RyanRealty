@@ -42,12 +42,17 @@ describe('crm_stages seed', () => {
   const sql = readFileSync(MIGRATION_PATH, 'utf8')
   const seed = parseSeed(sql)
 
-  it('seeds exactly one row per CRM_STAGES entry', () => {
-    expect(seed).toHaveLength(CRM_STAGES.length)
+  // Stages added to CRM_STAGES AFTER this seed migration (seeded by their own later
+  // migration): the original seed mirrors the legacy set; these are appended live.
+  const ADDED_AFTER_SEED = new Set(['Engaged']) // streamline v2, 20260703150000_crm_stages_canonical.sql
+  const LEGACY_STAGES = CRM_STAGES.filter((s) => !ADDED_AFTER_SEED.has(s))
+
+  it('seeds exactly one row per legacy CRM_STAGES entry', () => {
+    expect(seed).toHaveLength(LEGACY_STAGES.length)
   })
 
   it('preserves the const order via position', () => {
-    CRM_STAGES.forEach((stage, index) => {
+    LEGACY_STAGES.forEach((stage, index) => {
       const row = seed[index]
       expect(row.key).toBe(stage)
       expect(row.label).toBe(stage)

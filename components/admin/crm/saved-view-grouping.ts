@@ -73,7 +73,10 @@ export function groupSystemByCollection(systemViews: SavedViewItem[]): SystemCol
   const neighborhoods: SavedViewItem[] = []
   for (const v of systemViews) {
     const lower = v.name.toLowerCase()
-    if (NEIGHBORHOOD_KEYWORDS.some((kw) => lower.includes(kw))) {
+    // "Out Of Area Home Owners" is a workflow segment list (keys on segment:out-of-area),
+    // not a per-neighborhood list — the bare word "area" must not file it under Neighborhoods.
+    const isWorkflowList = lower.includes('out of area')
+    if (!isWorkflowList && NEIGHBORHOOD_KEYWORDS.some((kw) => lower.includes(kw))) {
       neighborhoods.push(v)
     } else {
       pipeline.push(v)

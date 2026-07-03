@@ -9,8 +9,8 @@ Live progress record for the coordinated streamline execution. Specs: `CRM_STREA
 |---|---|---|---|
 | 1 | Tag migration (segments + field capture) | ✅ done + verified | `_tag-streamline-restore.mjs --apply` |
 | 2 | Smart-list rebuild (canonical AST views) | ✅ done + verified | `20260625180500` seed re-apply |
-| 3 | Stage remap (create target stages + map) | ⬜ | `_stage-migration-restore.mjs --apply` |
-| 4 | Automation (deriveCanonicalTags + demote sweep) | ⬜ | feature-flag / revert commit |
+| 3 | Stage remap (create target stages + map) | ✅ done + verified | `_stage-migration-restore.mjs --apply` |
+| 4 | Automation — go-forward auto-tagging | ✅ done + wired; demote sweep = documented next | revert commit |
 | 5 | End-to-end browser verification (/admin/crm) | ⬜ | — |
 | 6 | Final review pass | ⬜ | — |
 
@@ -43,3 +43,24 @@ Live progress record for the coordinated streamline execution. Specs: `CRM_STREA
   Local Realtors 2,347 · Migration Realtors 59 · Vendors 0 · Active 12 · Past 32 · Pending 0 · Compliance 3,229.
 - Retired: Leads/Hot Prospects/Nurture/Sphere/Seller Prospects/Closed/Realtors/Stay In Touch/Email+IDX Activity/
   Expired Pipeline/FSBO Pipeline (stage nav moves to the Stages strip in Phase 3).
+
+## Phase 3 — Stage remap ✅
+- `_stage-migration.mjs` (backup-first, reversible) remapped 18,183 contacts. Backup:
+  `out/stage-migration-backup-stage-v2-2026-07-03.json`. Restore: `_stage-migration-restore.mjs --apply`.
+- Config migration `20260703150000_crm_stages_canonical.sql` applied: added Engaged, repositioned targets,
+  deactivated the 9 emptied legacy stages. `CRM_STAGES` constant + Engaged.
+- Live verified: Nurture 15,838 · Sphere 2,343 · Active Client 12 · Past Client 32 · Trash 2 (=18,227).
+  8 active stages in order: Nurture · Engaged · Active Client · Pending · Closed · Past Client · Sphere · Trash.
+- Smart lists unaffected (they key on tags): Sellers still 7,524 etc.
+
+## Phase 4 — Automation
+- ✅ **Go-forward auto-tagging** (`lib/crm/tag-canonical.ts`, 8 tests): `canonicalTagsToAdd()` is pure +
+  ADDITIVE (never removes, never touches compliance). Wired into `enrichNativeLead` + the reuse path in
+  `ensureNativeLead.ts` so every new/re-touched LP lead gains its segment/realtor/occupancy tags and lands
+  in the right smart list. Closes the gap where the new lists key on segment:*/realtor:* the old path didn't emit.
+- Also fixed: "Out Of Area Home Owners" mis-filed under the Neighborhoods collection (bare word "area") →
+  now in Pipeline (`saved-view-grouping.ts`).
+- ⏭️ **Stage-transition automation (promote on inbound reply / demote on 30d no-two-way)** — documented as the
+  next increment. Nothing sits in Engaged yet (it is entered by a live signal), so the demote has nothing to act
+  on until promotion wiring lands; and a scheduled book-mutation needs Matt's explicit ops go. Two-way source must
+  be computed from crm_timeline inbound rows (NOT last_activity_at — see audit P1-3), not built here.

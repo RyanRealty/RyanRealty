@@ -120,13 +120,23 @@ describe('ensureNativeLead REUSE merges tags', () => {
     expect(tags.filter((t) => t === 'existing:tag')).toHaveLength(1)
   })
 
-  it('skips the update when the incoming tags are already present and no source/broker given', async () => {
+  it('skips the update when nothing changes (incoming already present, no canonical add)', async () => {
     state.contactPointPersonId = 77
-    state.personRow = { tags: ['audience:seller'] }
-    const res = await ensureNativeLead({ email: 'a@b.com', source: '', tags: ['audience:seller'] })
+    // a non-signal tag → canonical tagger derives nothing → true no-op.
+    state.personRow = { tags: ['source:manual-import'] }
+    const res = await ensureNativeLead({ email: 'a@b.com', source: '', tags: ['source:manual-import'] })
     expect(res).toEqual({ personId: 77, created: false })
-    // nothing to change → no crm_people update written
     expect(state.updates.find((u) => u.table === 'crm_people')).toBeUndefined()
+  })
+
+  it('canonicalizes on reuse — an audience:seller lead gains segment:seller so it lands in the Sellers list', async () => {
+    state.contactPointPersonId = 88
+    state.personRow = { tags: ['audience:seller'] }
+    const res = await ensureNativeLead({ email: 'c@d.com', source: '', tags: ['audience:seller'] })
+    expect(res).toEqual({ personId: 88, created: false })
+    const update = state.updates.find((u) => u.table === 'crm_people')
+    expect(update).toBeDefined()
+    expect(update!.payload.tags as string[]).toEqual(expect.arrayContaining(['audience:seller', 'segment:seller']))
   })
 })
 

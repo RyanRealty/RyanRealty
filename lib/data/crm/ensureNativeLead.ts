@@ -4,6 +4,10 @@ import { normalizeEmail, normalizePhone } from './resolvePersonIdentity'
 import { buildNativePersonRow } from './nativeCreate'
 import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
 import { pickRoutedBroker } from '@/lib/crm/lead-routing'
+import { canonicalTagsToAdd } from '@/lib/crm/tag-canonical'
+
+/** Address shape the canonical tagger reads (subset of crm_people.addresses). */
+type CanonicalAddr = { type?: string | null; street?: string | null; city?: string | null; state?: string | null }
 
 /**
  * Native-capture fallback on a FUB push failure (CONTACT360 Phase 0.2 — stop a
@@ -272,7 +276,7 @@ async function mergeReuseEnrichment(
   try {
     const { data: existing, error: readError } = await sb
       .from('crm_people')
-      .select('tags')
+      .select('tags, custom, addresses, stage')
       .eq('id', personId)
       .maybeSingle()
     if (readError) {
@@ -281,10 +285,17 @@ async function mergeReuseEnrichment(
     }
     const current = Array.isArray(existing?.tags) ? (existing!.tags as string[]) : []
     const update: Record<string, unknown> = {}
-    if (incoming.length > 0) {
-      const merged = Array.from(new Set([...current, ...incoming]))
-      if (merged.length !== current.length) update.tags = merged
-    }
+    const merged = incoming.length > 0 ? Array.from(new Set([...current, ...incoming])) : current
+    // Streamline v2: canonicalize on re-touch too (additive) so a re-submitting lead
+    // gains its segment/realtor tags and appears in the right smart list.
+    const derived = canonicalTagsToAdd({
+      tags: merged,
+      custom: (existing?.custom as Record<string, unknown> | null) ?? null,
+      addresses: (existing?.addresses as CanonicalAddr[] | null) ?? null,
+      stage: (existing?.stage as string | null) ?? null,
+    })
+    const finalTags = derived.length > 0 ? Array.from(new Set([...merged, ...derived])) : merged
+    if (finalTags.length !== current.length) update.tags = finalTags
     if (hasSource) update.source = input.source!.trim()
     if (hasBroker) update.assigned_broker = input.assignedBroker
     if (Object.keys(update).length === 0) return
@@ -336,7 +347,7 @@ export async function enrichNativeLead(input: NativeEnrichmentInput): Promise<vo
     if (incomingTags.length > 0 || customEntries.length > 0 || hasBroker) {
       const { data: existing, error: readError } = await sb
         .from('crm_people')
-        .select('tags, custom')
+        .select('tags, custom, addresses, stage')
         .eq('id', input.personId)
         .maybeSingle()
       if (readError) {
@@ -347,13 +358,19 @@ export async function enrichNativeLead(input: NativeEnrichmentInput): Promise<vo
           existing?.custom && typeof existing.custom === 'object' && !Array.isArray(existing.custom)
             ? (existing.custom as Record<string, unknown>)
             : {}
+        const mergedTags = incomingTags.length > 0 ? Array.from(new Set([...currentTags, ...incomingTags])) : currentTags
+        const mergedCustom = customEntries.length > 0 ? { ...currentCustom, ...Object.fromEntries(customEntries) } : currentCustom
+        // Streamline v2: emit the canonical segment/realtor/occupancy tags the smart
+        // lists key on, so a fresh LP lead lands in the right list. Additive only.
+        const derived = canonicalTagsToAdd({
+          tags: mergedTags, custom: mergedCustom,
+          addresses: (existing?.addresses as CanonicalAddr[] | null) ?? null,
+          stage: (existing?.stage as string | null) ?? null,
+        })
+        const finalTags = derived.length > 0 ? Array.from(new Set([...mergedTags, ...derived])) : mergedTags
         const update: Record<string, unknown> = {}
-        if (incomingTags.length > 0) {
-          update.tags = Array.from(new Set([...currentTags, ...incomingTags]))
-        }
-        if (customEntries.length > 0) {
-          update.custom = { ...currentCustom, ...Object.fromEntries(customEntries) }
-        }
+        if (finalTags.length !== currentTags.length) update.tags = finalTags
+        if (customEntries.length > 0) update.custom = mergedCustom
         if (hasBroker) update.assigned_broker = input.assignedBroker
         if (Object.keys(update).length > 0) {
           const { error: updateError } = await sb
