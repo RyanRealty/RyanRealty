@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.731.5 (2026-07-04)
+
+### Bug Fixes
+- fix(crm): close import/double-send/webhook holes (adversarial audit batch 2)
+
+---
+
+
 ## v1.731.4 (2026-07-04)
 
 ### Bug Fixes
