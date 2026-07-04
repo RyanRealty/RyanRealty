@@ -37,6 +37,14 @@ export type BuildOptions = {
   offset?: number
   /** When true, return a head-count instead of a row query. */
   countOnly?: boolean
+  /**
+   * Override the row projection. Defaults to CRM_PEOPLE_SELECT. The people list
+   * reads a few extra columns (price, timeframe, pond_id) it renders but the bulk
+   * / audience consumers don't — they pass their superset here so every reader
+   * still shares this one compiler (and its scope clamp + deleted baseline).
+   * Ignored when countOnly (a head count always selects `id`).
+   */
+  select?: string
 }
 
 /** The columns the people list + bulk consumers read. */
@@ -227,7 +235,7 @@ export function buildCrmPeopleQuery(
   // Defensive: never compile a malformed AST into a production query.
   validateSegment(ast)
 
-  const select = opts.countOnly ? 'id' : CRM_PEOPLE_SELECT
+  const select = opts.countOnly ? 'id' : opts.select ?? CRM_PEOPLE_SELECT
   const selectOpts = opts.countOnly
     ? { count: 'exact' as const, head: true }
     : { count: 'exact' as const }

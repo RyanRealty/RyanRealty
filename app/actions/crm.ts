@@ -30,6 +30,9 @@ import {
 } from '@/lib/crm/constants'
 import { scopeBroker, isPersonInScope } from '@/lib/crm/scope'
 import { isQualifyingStage, fireQualifiedLeadEvent } from '@/lib/meta/qualifiedEvent'
+import { buildCrmPeopleQuery, CRM_PEOPLE_SELECT } from '@/lib/data/crm/buildCrmPeopleQuery'
+import { savedViewToSegment } from '@/lib/data/crm/getSavedViewSegment'
+import { EMPTY_SEGMENT, type CrmSegment, type CrmNode } from '@/lib/crm/segment-ast'
 
 export type CrmActionResult = { ok: true } | { ok: false; error: string }
 
@@ -163,36 +166,56 @@ export async function listCrmPeople(filters: CrmListFilters): Promise<{
   const scope = scopeBroker(access)
   const effectiveBroker = scope ?? filters.broker
 
+  // Resolve the applied saved view through the SAME segment recovery the counts
+  // use (savedViewToSegment, ast-first). This is the one thing that used to drift:
+  // the list read the legacy `filter` bag while getCrmSavedViews / getCrmStageCounts
+  // resolved the `ast` — a view whose ast and filter disagreed showed one cohort in
+  // the sidebar count and another in the list. Both now compile the same segment.
   let appliedView: CrmSavedView | null = null
+  let viewSegment: CrmSegment = EMPTY_SEGMENT
   if (filters.view) {
     const { data } = await sb
       .from('crm_saved_views')
-      .select('id,name,description,filter,position')
+      .select('id,name,description,filter,ast,position')
       .eq('id', Number(filters.view))
       .maybeSingle()
-    appliedView = (data as CrmSavedView | null) ?? null
+    if (data) {
+      const row = data as { id: number; name: string; description: string | null; filter: { stage?: string; tagsAny?: string[] } | null; ast: unknown; position: number }
+      appliedView = { id: row.id, name: row.name, description: row.description, filter: row.filter ?? {}, position: row.position }
+      viewSegment = savedViewToSegment({ ast: row.ast, filter: row.filter })
+    }
   }
 
-  let query = sb
-    .from('crm_people')
-    .select(
-      'id,fub_legacy_id,name,first_name,last_name,stage,source,assigned_broker,tags,emails,phones,last_activity_at,fub_created_at,picture_url,price,timeframe,pond_id',
-      { count: 'exact' },
-    )
-    // Baseline: never return soft-deleted contacts (matches getCrmStageCounts /
-    // getCrmSavedViewsWithCounts, which already filter deleted=false).
-    .eq('deleted', false)
+  // Compose the request: the view segment AND-ed with the session-level URL
+  // overlays that carry no saved-view representation (an ad-hoc stage/tag chip, a
+  // superuser's broker filter). A restricted broker's scope is clamped INSIDE the
+  // compiler and can never be widened by these, so we only honor filters.broker for
+  // a superuser (scope null) — matching the prior `scope ?? filters.broker`.
+  const overlays: CrmNode[] = []
+  if (filters.view) overlays.push(viewSegment)
+  if (!scope && effectiveBroker) overlays.push({ field: 'assigned_broker', value: effectiveBroker })
+  if (filters.stage) overlays.push({ field: 'stage', value: filters.stage })
+  if (filters.tag) overlays.push({ field: 'tag', op: 'has', value: filters.tag })
+  const segment: CrmSegment =
+    overlays.length > 0 ? { type: 'group', op: 'and', nodes: overlays } : EMPTY_SEGMENT
 
-  const stage = filters.stage || appliedView?.filter?.stage
-  if (stage) query = query.eq('stage', stage)
-  const tagsAny = filters.tag ? [filters.tag] : appliedView?.filter?.tagsAny
-  if (tagsAny?.length) query = query.overlaps('tags', tagsAny)
-  if (effectiveBroker) query = query.eq('assigned_broker', effectiveBroker)
-  // Pond scope (§07): a view-level overlay, applied alongside broker scope so a
-  // restricted broker still can't widen past their own book.
+  const from = (page - 1) * PAGE_SIZE
+  const LIST_SELECT = `${CRM_PEOPLE_SELECT},price,timeframe,pond_id`
+  let query = buildCrmPeopleQuery(sb, segment, scope, {
+    limit: PAGE_SIZE,
+    offset: from,
+    select: LIST_SELECT,
+  }).query
+
+  // Pond scope (§07): a session overlay on crm_people.pond_id — no segment field,
+  // so it's chained onto the compiled query. Scope is already clamped by the
+  // compiler, so this can't widen a restricted broker's book.
   const pondId = Number(filters.pond)
   if (filters.pond && Number.isInteger(pondId) && pondId > 0) query = query.eq('pond_id', pondId)
 
+  // Free-text q: email/phone resolve to an exact contact-point id set; a bare token
+  // is a name search. Kept as a chained overlay (not a segment field) so the exact
+  // email/phone matching semantics are preserved verbatim.
   const q = filters.q?.trim()
   if (q) {
     if (q.includes('@')) {
@@ -219,11 +242,7 @@ export async function listCrmPeople(filters: CrmListFilters): Promise<{
     }
   }
 
-  const from = (page - 1) * PAGE_SIZE
   const { data, count, error } = await query
-    .order('last_activity_at', { ascending: false, nullsFirst: false })
-    .order('fub_created_at', { ascending: false, nullsFirst: false })
-    .range(from, from + PAGE_SIZE - 1)
 
   if (error) {
     console.error('[listCrmPeople]', error.message)
