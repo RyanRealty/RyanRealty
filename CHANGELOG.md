@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.732.0 (2026-07-04)
+
+### Features
+- feat(trails): add Phil's Trail line (USFS, apostrophe-safe match)
+
+---
+
+
 ## v1.731.7 (2026-07-04)
 
 ### Maintenance
