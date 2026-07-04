@@ -46,6 +46,28 @@ already exist (`/blog`, `/communities`, `/schools`, `/parks`, `/guides`).
 
 ## Build progress log (newest first)
 
+**2026-07-03 (latest) — Bulk enroll + bulk one-off send (Matt request) + S-10 opt-out guard.**
+- **Bulk enroll** (subscribers page → "Bulk add subscribers"): paste a list and/or pick a CRM tag →
+  `adminBulkEnrollNewsletterAction` adds everyone as recurring subscribers (cap 5000). Tag resolution via
+  `getAudienceEligiblePeople({ tag })` (new optional filter; realtor-exclusion + contactable gates still
+  apply). `BulkEnrollForm.tsx`.
+- **Bulk one-off** (draft page → "Send this issue to a list (one-off)", inside DraftView only):
+  `adminBulkOneOffSendAction` → `enqueueNewsletterToEmails` sends THIS issue once to an explicit list
+  without long-term enrollment. Creates a subscriber row per recipient (for the unsubscribe token), runs
+  the SAME brand-voice hard-fail gate, CAS-locks, then routes through the EXISTING drain (per-row
+  suppression + active recheck, per-broker render) — no bypass. Confirm-count Dialog before send.
+  `BulkOneOffForm.tsx` + `parse-emails.ts` (`parseEmailList`, 6 tests).
+- **Compliance hardening (S-10, caught in review):** `subscribeToNewsletter` reactivates ANY existing row
+  to active, so both bulk paths would have silently resurrected a prior unsubscribe/bounce/complaint — a
+  CAN-SPAM violation. Both now exclude non-active addresses BEFORE enrolling (`getSubscribersByEmails` now
+  returns `status`; filter `status !== 'active'`). One-off returns `all_opted_out` + rolls the lock back to
+  draft when the whole list opted out. Locked behind **G-NL-3b** in `check-newsletter-compliance.mjs`
+  (red→green proven). Real-DB integration test `lib/newsletter/one-off-compliance.int.test.ts` runs the
+  actual enqueue against live Supabase (new address enrolled+tokened+queued, opt-out skipped; self-cleaning).
+- Also recorded the pre-existing newsletter test-send (admin self-send, `[TEST]` to `gate.email`) in the
+  `email-send-gated` baseline as `kind=internal` — it was failing `ci:gates` from an earlier phase.
+- Commit `cc4856fd` (feature). tsc clean, all 12 newsletter gates + email-send-gated green, 18 newsletter tests pass.
+
 **2026-07-03 (later) — CORRECTIONS from Matt: event pages EXIST + manual auto-draft producer being built.**
 - **Event pages exist + resolve** (200): `app/central-oregon/events/page.tsx` + `[slug]/page.tsx`, data
   `data/co-events.ts`, DAL `lib/data/events/getEvents.ts` (`getEventsForMonth`). The earlier "404" was a
