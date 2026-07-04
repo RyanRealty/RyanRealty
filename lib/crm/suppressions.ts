@@ -5,6 +5,7 @@
 
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
 
 export type SendChannel = 'email' | 'sms' | 'call'
 
@@ -36,6 +37,11 @@ export async function isSuppressed(personId: number, channel: SendChannel): Prom
   if (rows.error) {
     // fail CLOSED: if the compliance table is unreadable, do not send
     return { suppressed: true, reasons: ['suppression-check-failed: ' + rows.error.message] }
+  }
+  if (person.error) {
+    // fail CLOSED: the tags read carries compliance:hard-stop / contact:do-not-*.
+    // A swallowed error would make those tags invisible and send anyway.
+    return { suppressed: true, reasons: ['tag-check-failed: ' + person.error.message] }
   }
   const reasons = (rows.data ?? []).map((r) => `${r.channel}:${r.reason}`)
   // tags are an equally authoritative source (set at lead creation by
@@ -91,24 +97,29 @@ export async function isSuppressedByEmail(
   // 1 + 2. Resolve every person carrying this email, then run the canonical
   // per-person check (covers suppression rows AND protected tags) plus an
   // explicit protected-tag scan.
-  const people = await sb
-    .from('crm_people')
-    // jsonb containment (@>) needs a JSON STRING, not a JS array — passing a bare
-    // array makes supabase-js emit a Postgres array literal `{...}`, which the
-    // server rejects with "invalid input syntax for type json". Fail-closed then
-    // marks EVERY address suppressed and silently skips every send.
-    .select('id,tags')
-    .contains('emails', JSON.stringify([{ value: normalized }]))
-  if (people.error) {
-    return { suppressed: true, reasons: ['email-suppression-check-failed: ' + people.error.message] }
+  // CASE-INSENSITIVE match: ~25% of stored emails carry uppercase, and a jsonb `@>`
+  // is byte-exact — a lowercased query would MISS a person stored "Jane@X.com" and
+  // skip their compliance tags (a suppression bypass). personIdsByEmailCi matches
+  // over lower(value), so suppression is correct regardless of stored case.
+  let personIds: number[]
+  try {
+    personIds = await personIdsByEmailCi(sb, normalized)
+  } catch (e) {
+    return { suppressed: true, reasons: ['email-suppression-check-failed: ' + (e as Error).message] }
   }
-  for (const p of people.data ?? []) {
-    const tags = ((p.tags as string[] | undefined) ?? []).map((t) => t.toLowerCase())
-    for (const t of tags) {
-      if (PROTECTED_COMPLIANCE_TAGS.has(t)) reasons.push(`tag:${t}`)
+  if (personIds.length > 0) {
+    const people = await sb.from('crm_people').select('id,tags').in('id', personIds)
+    if (people.error) {
+      return { suppressed: true, reasons: ['email-suppression-check-failed: ' + people.error.message] }
     }
-    const per = await isSuppressed(p.id as number, channel)
-    if (per.suppressed) reasons.push(...per.reasons.map((r) => `person:${p.id}:${r}`))
+    for (const p of people.data ?? []) {
+      const tags = ((p.tags as string[] | undefined) ?? []).map((t) => t.toLowerCase())
+      for (const t of tags) {
+        if (PROTECTED_COMPLIANCE_TAGS.has(t)) reasons.push(`tag:${t}`)
+      }
+      const per = await isSuppressed(p.id as number, channel)
+      if (per.suppressed) reasons.push(...per.reasons.map((r) => `person:${p.id}:${r}`))
+    }
   }
 
   // 3. Email-keyed suppression rows (no person required).

@@ -8,6 +8,7 @@
  * per the DAL boundary (G1).
  */
 import { createServiceClient } from '@/lib/data/client'
+import { personIdsByEmailCi } from './personByEmailCi'
 
 /** The assigned_broker of the crm person a lead resolves to. found=false when no person matches. */
 export async function resolveLeadAssignedBroker(input: {
@@ -17,26 +18,33 @@ export async function resolveLeadAssignedBroker(input: {
   const sb = createServiceClient()
 
   if (input.fubLegacyId) {
-    const { data } = await sb
+    const { data, error } = await sb
       .from('crm_people')
       .select('assigned_broker')
       .eq('fub_legacy_id', input.fubLegacyId)
       .maybeSingle()
+    // FAIL CLOSED: this feeds a scope check. A swallowed error → found:false → the
+    // caller reads "not out of scope" → access GRANTED. Throw so the scope check denies.
+    if (error) throw new Error(`resolveLeadAssignedBroker(fub): ${error.message}`)
     if (data) return { found: true, assignedBroker: (data as { assigned_broker: string | null }).assigned_broker ?? null }
   }
 
   const email = (input.email ?? '').trim().toLowerCase()
   if (email) {
-    // emails is jsonb [{value,isPrimary}]; object containment matches the value key.
-    const { data } = await sb
-      .from('crm_people')
-      // jsonb containment needs a JSON STRING, not a JS array (a bare array becomes
-      // a Postgres array literal → "invalid input syntax for type json").
-      .select('assigned_broker')
-      .contains('emails', JSON.stringify([{ value: email }]))
-      .limit(1)
-      .maybeSingle()
-    if (data) return { found: true, assignedBroker: (data as { assigned_broker: string | null }).assigned_broker ?? null }
+    // CASE-INSENSITIVE: stored emails carry mixed case; a byte-exact jsonb match would
+    // miss them → found:false → the scope check would GRANT access. Match over
+    // lower(value) instead. personIdsByEmailCi throws on error (fail-closed upstream).
+    const ids = await personIdsByEmailCi(sb, email)
+    if (ids.length > 0) {
+      const { data, error } = await sb
+        .from('crm_people')
+        .select('assigned_broker')
+        .in('id', ids)
+        .limit(1)
+        .maybeSingle()
+      if (error) throw new Error(`resolveLeadAssignedBroker(email): ${error.message}`)
+      if (data) return { found: true, assignedBroker: (data as { assigned_broker: string | null }).assigned_broker ?? null }
+    }
   }
 
   return { found: false, assignedBroker: null }

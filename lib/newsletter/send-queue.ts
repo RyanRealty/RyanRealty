@@ -41,6 +41,7 @@ const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com')
 const KNOWN_BROKERS = new Set(['matt', 'rebecca', 'paul'])
 /** Above this recipient count a send is "large" → tranched over days (§6.5). */
 export const LARGE_SEND_THRESHOLD = 1000
+export const ONE_OFF_MAX = 5000 // hard cap on a single one-off blast (matches bulk-enroll)
 const DRAIN_BATCH = 100
 const DAY_MS = 24 * 60 * 60 * 1000
 const STALE_CLAIM_MS = 15 * 60 * 1000 // a row stuck 'sending' >15min = a crashed claim
@@ -181,10 +182,11 @@ export async function enqueueNewsletter(newsletterId: string): Promise<EnqueueRe
  * recipient a real subscriber ROW first (that row carries the unsubscribe_token
  * the drain needs to render the one-click unsubscribe rail, required by CAN-SPAM
  * / RFC 8058), then reuse the EXACT enqueue machinery: freeze broker + tier,
- * insert queued rows, write the day-0 tranche schedule. The send cron drains
- * these rows through the SAME path — re-checking suppression + active per row and
- * rendering per broker — so a suppressed or opted-out address is still skipped and
- * nothing bypasses the reputation / warm-up / circuit-breaker machinery.
+ * insert queued rows, write the tranche schedule. The send cron drains these rows
+ * through the SAME path — re-checking suppression + active per row and rendering per
+ * broker. A one-off is capped at ONE_OFF_MAX and runs the SAME reputation gate +
+ * warm-up tranching as a large audience send, so it can't bypass the deliverability
+ * / circuit-breaker machinery (it used to: it hard-coded large=false).
  */
 export async function enqueueNewsletterToEmails(
   newsletterId: string,
@@ -194,8 +196,10 @@ export async function enqueueNewsletterToEmails(
   if (!letter) return { ok: false, error: 'not_found' }
   if (!letter.body_html && !letter.body_text) return { ok: false, error: 'empty_body' }
 
-  const list = [...new Set(emails.map((e) => e.trim().toLowerCase()).filter((e) => e.includes('@')))]
-  if (list.length === 0) return { ok: false, error: 'no_recipients' }
+  const deduped = [...new Set(emails.map((e) => e.trim().toLowerCase()).filter((e) => e.includes('@')))]
+  if (deduped.length === 0) return { ok: false, error: 'no_recipients' }
+  if (deduped.length > ONE_OFF_MAX) return { ok: false, error: 'too_many_recipients' }
+  const list = deduped
 
   // CAS lock — a concurrent send/one-off gets null and aborts (S-1).
   const token = await claimNewsletterForSending(newsletterId)
@@ -229,6 +233,17 @@ export async function enqueueNewsletterToEmails(
       return { ok: false, error: 'no_recipients' }
     }
 
+    // H1: a large one-off runs the SAME pre-send reputation gate as the audience send
+    // (was skipped entirely). Block on LOW/BAD Gmail reputation or spam over ceiling.
+    const large = subs.length > LARGE_SEND_THRESHOLD
+    if (large) {
+      const verdict = deliverabilityVerdict(await getLatestDeliverability())
+      if (verdict.action === 'block') {
+        await releaseNewsletterLock(newsletterId, 'draft')
+        return { ok: false, error: `deliverability_block: ${verdict.reason}` }
+      }
+    }
+
     // Freeze broker + tier per recipient — identical logic to enqueueNewsletter.
     const personIds = subs.map((s) => s.crm_person_id).filter((n): n is number => Number.isFinite(n as number))
     const brokerByPerson = await getAssignedBrokersByPersonId(personIds)
@@ -243,12 +258,12 @@ export async function enqueueNewsletterToEmails(
 
     const queued = await insertQueuedRecipients(newsletterId, rows)
 
-    // A one-off is an immediate send: one day-0 schedule row per present tier, cap =
-    // that tier's count (large=false → computeSchedule emits day-0 rows only). The
-    // drain still honors caps/breaker; this just doesn't tranche across days.
+    // Small one-off → day-0 (goes immediately). Large one-off → the SAME tranche +
+    // warm-up ramp as the audience send, so a big pasted list doesn't blast the domain.
+    const warmup = !(await anyNewsletterEverSent())
     const tierCounts = new Map<number, number>()
     for (const r of rows) tierCounts.set(r.tier, (tierCounts.get(r.tier) ?? 0) + 1)
-    await writeSendSchedule(newsletterId, computeSchedule(tierCounts, false, false))
+    await writeSendSchedule(newsletterId, computeSchedule(tierCounts, large, warmup))
 
     return { ok: true, queued }
   } catch (err) {

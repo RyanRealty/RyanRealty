@@ -30,6 +30,7 @@ import { instrumentEmailHtml } from '@/lib/email-tracking'
 import { sendEmail } from '@/lib/resend'
 import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { createServiceClient } from '@/lib/supabase/service'
+import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const FUB_BCC = process.env.FUB_BCC_ADDRESS?.trim() || 'ryan.realty@followupboss.me'
@@ -259,13 +260,12 @@ export async function finalizeAndDeliverCma(
   if (finalized && leadEmail) {
     try {
       const sb = createServiceClient()
-      const { data: people } = await sb
-        .from('crm_people')
-        // jsonb containment needs a JSON STRING, not a JS array (a bare array
-        // becomes a Postgres array literal → "invalid input syntax for type json").
-        .select('id,custom')
-        .contains('emails', JSON.stringify([{ value: leadEmail }]))
-        .limit(1)
+      // CASE-INSENSITIVE: match the lead's person over lower(email) so a mixed-case
+      // stored address still resolves (byte-exact jsonb match would miss it).
+      const ids = await personIdsByEmailCi(sb, leadEmail)
+      const { data: people } = ids.length
+        ? await sb.from('crm_people').select('id,custom').in('id', ids).limit(1)
+        : { data: null as { id: number; custom: unknown }[] | null }
       const person = people?.[0]
       if (person) {
         recipientPersonId = person.id as number

@@ -19,13 +19,21 @@ let emailSuppressionRows: { data: Array<{ channel: string; reason: string }> | n
 
 function makeSb() {
   return {
+    // isSuppressedByEmail resolves people via the case-insensitive RPC (returns ids).
+    // Model peopleResult.error as an RPC error so the fail-closed path still triggers.
+    rpc(fn: string, _args: unknown) {
+      if (fn === 'crm_person_ids_by_email_ci') {
+        if (peopleResult.error) return Promise.resolve({ data: null, error: peopleResult.error })
+        return Promise.resolve({ data: (peopleResult.data ?? []).map((p) => p.id), error: null })
+      }
+      return Promise.resolve({ data: null, error: null })
+    },
     from(table: string) {
-      // crm_people contains('emails', ...) → returns a thenable (no maybeSingle)
       if (table === 'crm_people') {
         const chain: Record<string, unknown> = {}
         chain.select = () => chain
-        // .contains resolves the multi-row people query for isSuppressedByEmail
-        chain.contains = () => Promise.resolve(peopleResult)
+        // .in('id', ids) is the multi-row people fetch after the RPC resolves ids.
+        chain.in = () => Promise.resolve(peopleResult)
         // .eq + .maybeSingle is the isSuppressed per-person tag read
         let pendingId = 0
         chain.eq = (_c: string, id: number) => {

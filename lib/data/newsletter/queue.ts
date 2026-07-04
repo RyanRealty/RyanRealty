@@ -153,10 +153,14 @@ export async function getSubscribersByEmails(
   const out: Array<{ id: string; email: string; crm_person_id: number | null; status: string }> = []
   const CHUNK = 500
   for (let i = 0; i < wanted.length; i += CHUNK) {
-    const { data } = await sb
+    const { data, error } = await sb
       .from(SUBS)
       .select('id, email, crm_person_id, status')
       .in('email', wanted.slice(i, i + CHUNK))
+    // FAIL CLOSED: a swallowed error here returns a short/empty set, which the S-10
+    // opt-out guard reads as "nobody opted out" and would resurrect unsubscribes.
+    // Throw so the caller aborts the enroll/enqueue instead of sending.
+    if (error) throw new Error(`getSubscribersByEmails: ${error.message}`)
     for (const row of data ?? []) {
       const r = row as { id: string; email: string; crm_person_id: number | null; status: string }
       out.push({ id: r.id, email: (r.email || '').toLowerCase(), crm_person_id: r.crm_person_id, status: r.status })

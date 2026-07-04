@@ -45,9 +45,24 @@ export async function subscribeNewsletterAction(formData: FormData): Promise<{ o
 }
 
 // ── ADMIN gate helper ────────────────────────────────────────────────────────
-async function requireAdmin(): Promise<{ ok: true; email: string } | { ok: false }> {
+async function requireAdmin(): Promise<{ ok: true; email: string; role: string } | { ok: false }> {
   const access = await getCrmAccess()
   if (!access) return { ok: false }
+  return { ok: true, email: access.email, role: access.role }
+}
+
+/**
+ * OWNER-ONLY gate for newsletter mutations that (a) reach the whole subscriber
+ * list or the company-wide CRM (bulk enroll/send, crmTag targeting), or (b) author
+ * recipient-facing HTML (create/update body_html). requireAdmin() only proves the
+ * caller is SOME admin — it never checks role — so a `broker` (Paul/Rebecca) or a
+ * future `report_viewer` would otherwise pass. Company-wide reach + the Matt-only
+ * bulk-ops rule mean these are superuser-only. Closes the cross-broker audience
+ * leak (getAudienceEligiblePeople has no assigned_broker scope) at the entry point.
+ */
+async function requireSuperuser(): Promise<{ ok: true; email: string } | { ok: false }> {
+  const access = await getCrmAccess()
+  if (!access || access.role !== 'superuser') return { ok: false }
   return { ok: true, email: access.email }
 }
 
@@ -61,7 +76,16 @@ async function leadOutOfScope(lead: { email?: string | null; fubLegacyId?: numbe
   const access = await getCrmAccess()
   const slug = access ? scopeBroker(access) : null
   if (!slug) return false
-  const { found, assignedBroker } = await resolveLeadAssignedBroker(lead)
+  // FAIL CLOSED: resolveLeadAssignedBroker throws on a DB error; a restricted broker
+  // must be DENIED (out of scope = true) when ownership can't be verified, not waved
+  // through.
+  let found: boolean
+  let assignedBroker: string | null
+  try {
+    ({ found, assignedBroker } = await resolveLeadAssignedBroker(lead))
+  } catch {
+    return true
+  }
   if (!found) return false
   return !isPersonInScope(slug, assignedBroker)
 }
@@ -98,7 +122,7 @@ export async function adminSetSubscriberStatusAction(id: string, status: Subscri
 
 /** Bulk-assign many CRM people to the newsletter (resolves each email). */
 export async function adminBulkAssignNewsletterAction(personIds: number[], segment?: NewsletterSegment): Promise<{ ok: boolean; assigned: number; skipped: number; error?: string }> {
-  const gate = await requireAdmin()
+  const gate = await requireSuperuser()
   if (!gate.ok) return { ok: false, assigned: 0, skipped: 0, error: 'unauthorized' }
   let assigned = 0
   let skipped = 0
@@ -141,32 +165,40 @@ export async function adminBulkEnrollNewsletterAction(input: {
   emails?: string
   crmTag?: string
   segment?: NewsletterSegment
-}): Promise<{ ok: boolean; enrolled: number; skipped: number; error?: string }> {
-  const gate = await requireAdmin()
+}): Promise<{ ok: boolean; enrolled: number; skipped: number; optedOut?: number; failed?: number; dropped?: number; error?: string }> {
+  const gate = await requireSuperuser()
   if (!gate.ok) return { ok: false, enrolled: 0, skipped: 0, error: 'unauthorized' }
 
   const segment: NewsletterSegment = input.segment ?? 'general'
   const pasted = parseEmailList(input.emails ?? '')
   const tagged = input.crmTag ? await emailsForCrmTag(input.crmTag) : []
-  const all = [...new Set([...pasted, ...tagged])].slice(0, 5000)
+  const deduped = [...new Set([...pasted, ...tagged])]
+  const all = deduped.slice(0, 5000)
+  const dropped = deduped.length - all.length // M2: surface the silent >5,000 truncation
   if (all.length === 0) return { ok: false, enrolled: 0, skipped: 0, error: 'no_recipients' }
 
-  // S-10: never resurrect an opt-out. subscribeToNewsletter reactivates any existing
-  // row to active, so exclude addresses that previously unsubscribed / bounced /
-  // complained. A bulk enroll cannot override a recipient's prior opt-out; those are
-  // reported as skipped. New + already-active addresses enroll normally.
-  const preexisting = await getSubscribersByEmails(all)
-  const optedOut = new Set(preexisting.filter((s) => s.status !== 'active').map((s) => s.email))
-  const eligible = all.filter((e) => !optedOut.has(e))
+  try {
+    // S-10: never resurrect an opt-out. subscribeToNewsletter reactivates any existing
+    // row to active, so exclude addresses that previously unsubscribed / bounced /
+    // complained. A bulk enroll cannot override a recipient's prior opt-out.
+    // getSubscribersByEmails now THROWS on a DB error (C2 fail-closed) so a lookup
+    // failure aborts here instead of enrolling everyone with an empty opt-out set.
+    const preexisting = await getSubscribersByEmails(all)
+    const optedOut = new Set(preexisting.filter((s) => s.status !== 'active').map((s) => s.email))
+    const eligible = all.filter((e) => !optedOut.has(e))
 
-  let enrolled = 0
-  let skipped = optedOut.size
-  for (const email of eligible) {
-    const r = await subscribeToNewsletter({ email, source: 'bulk-enroll', segment })
-    if (r.ok) enrolled++
-    else skipped++
+    let enrolled = 0
+    let failed = 0
+    for (const email of eligible) {
+      const r = await subscribeToNewsletter({ email, source: 'bulk-enroll', segment })
+      if (r.ok) enrolled++
+      else failed++ // M3: a persist failure is NOT an opt-out — count it separately
+    }
+    // `skipped` kept for back-compat; optedOut + failed break it down.
+    return { ok: true, enrolled, skipped: optedOut.size + failed, optedOut: optedOut.size, failed, dropped }
+  } catch {
+    return { ok: false, enrolled: 0, skipped: 0, error: 'lookup_failed' }
   }
-  return { ok: true, enrolled, skipped }
 }
 
 // ── ADMIN: saved-search assignment (broker-created, origin='broker') ──────────
@@ -235,7 +267,7 @@ export async function adminBulkAssignSavedSearchAction(personIds: number[], name
 // ── ADMIN: newsletter drafts ─────────────────────────────────────────────────
 
 export async function adminCreateNewsletterAction(formData: FormData): Promise<{ ok: boolean; id?: string; error?: string }> {
-  const gate = await requireAdmin()
+  const gate = await requireSuperuser()
   if (!gate.ok) return { ok: false, error: 'unauthorized' }
   const subject = String(formData.get('subject') ?? '').trim()
   if (!subject) return { ok: false, error: 'subject_required' }
@@ -250,7 +282,7 @@ export async function adminCreateNewsletterAction(formData: FormData): Promise<{
 }
 
 export async function adminUpdateNewsletterAction(id: string, formData: FormData): Promise<{ ok: boolean }> {
-  const gate = await requireAdmin()
+  const gate = await requireSuperuser()
   if (!gate.ok) return { ok: false }
   return updateNewsletter(id, {
     subject: String(formData.get('subject') ?? '').trim(),
@@ -261,9 +293,14 @@ export async function adminUpdateNewsletterAction(id: string, formData: FormData
   })
 }
 
-export async function adminDeleteNewsletterAction(id: string): Promise<{ ok: boolean }> {
-  const gate = await requireAdmin()
+export async function adminDeleteNewsletterAction(id: string): Promise<{ ok: boolean; error?: string }> {
+  const gate = await requireSuperuser()
   if (!gate.ok) return { ok: false }
+  // M5: only a draft is deletable. A stale tab could otherwise fire delete against a
+  // newsletter that's already sending/sent and orphan its queued recipient rows.
+  const letter = await getNewsletter(id)
+  if (!letter) return { ok: false, error: 'not_found' }
+  if (letter.status !== 'draft') return { ok: false, error: 'not_deletable' }
   return deleteNewsletterDraft(id)
 }
 
@@ -279,7 +316,7 @@ export async function adminDeleteNewsletterAction(id: string): Promise<{ ok: boo
 export async function adminSendNewsletterAction(
   id: string,
 ): Promise<{ ok: boolean; queued?: number; brokerSplit?: Record<string, number>; large?: boolean; error?: string }> {
-  const gate = await requireAdmin()
+  const gate = await requireSuperuser()
   if (!gate.ok) return { ok: false, error: 'unauthorized' }
 
   const letter = await getNewsletter(id)
@@ -319,7 +356,7 @@ export async function adminBulkOneOffSendAction(
   newsletterId: string,
   input: { emails?: string; crmTag?: string },
 ): Promise<{ ok: boolean; queued?: number; error?: string }> {
-  const gate = await requireAdmin()
+  const gate = await requireSuperuser()
   if (!gate.ok) return { ok: false, error: 'unauthorized' }
 
   const letter = await getNewsletter(newsletterId)
@@ -499,7 +536,7 @@ export async function adminNewsletterAudiencePreviewAction(
  * /admin/newsletters/<id> for Matt's review + approval (draft-first).
  */
 export async function adminGenerateNewsletterDraftAction(): Promise<{ ok: boolean; id?: string; error?: string }> {
-  const gate = await requireAdmin()
+  const gate = await requireSuperuser()
   if (!gate.ok) return { ok: false, error: 'unauthorized' }
   const { produceNewsletterDraft } = await import('@/lib/newsletter/produce-draft')
   const result = await produceNewsletterDraft(gate.email)

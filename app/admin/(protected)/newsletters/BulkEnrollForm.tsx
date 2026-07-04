@@ -45,14 +45,22 @@ export function BulkEnrollForm() {
     startTransition(async () => {
       const r = await adminBulkEnrollNewsletterAction({ emails, segment })
       if (r.ok) {
-        setMessage({ type: 'ok', text: `Enrolled ${r.enrolled.toLocaleString('en-US')}, skipped ${r.skipped.toLocaleString('en-US')}.` })
+        const n = (v?: number) => (v ?? 0).toLocaleString('en-US')
+        // M2/M3: break down WHY addresses didn't enroll instead of one opaque "skipped".
+        const parts = [`Enrolled ${n(r.enrolled)}`]
+        if (r.optedOut) parts.push(`${n(r.optedOut)} skipped (previously unsubscribed)`)
+        if (r.failed) parts.push(`${n(r.failed)} failed to save`)
+        if (r.dropped) parts.push(`${n(r.dropped)} dropped over the 5,000 cap`)
+        setMessage({ type: 'ok', text: parts.join(' · ') + '.' })
         setEmails('')
         router.refresh()
       } else {
-        setMessage({
-          type: 'err',
-          text: r.error === 'no_recipients' ? 'No valid emails found in that list.' : 'Could not enroll. Try again.',
-        })
+        const map: Record<string, string> = {
+          no_recipients: 'No valid emails found in that list.',
+          unauthorized: 'Only the account owner can bulk-enroll.',
+          lookup_failed: 'Could not verify opt-out status. Nothing was enrolled. Try again.',
+        }
+        setMessage({ type: 'err', text: map[r.error ?? ''] ?? 'Could not enroll. Try again.' })
       }
     })
   }

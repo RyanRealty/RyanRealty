@@ -296,6 +296,11 @@ function NewsletterPreviewPane({ id }: { id: string }) {
         <iframe
           title="Newsletter preview"
           srcDoc={html}
+          // Fully-restricted sandbox: the preview renders the draft's body_html, which
+          // is authored content. No sandbox = a <script>/onerror in the HTML would run
+          // in the admin's session (stored XSS). An email never needs script, so block
+          // all of it — static HTML, CSS, and images still render under sandbox="".
+          sandbox=""
           style={{ height: 720 }}
           className="w-full rounded-xl border border-border bg-background"
         />

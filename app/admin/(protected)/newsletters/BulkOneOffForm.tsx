@@ -55,6 +55,7 @@ export default function BulkOneOffForm({ id }: { id: string }) {
           empty_body: 'Add a body before sending.',
           no_recipients: 'No valid emails found in that list.',
           all_opted_out: 'Everyone on that list previously unsubscribed. Nothing was sent.',
+          too_many_recipients: 'That list is over the 5,000-recipient limit for one send. Split it into batches.',
           already_sent: 'This issue has already been sent.',
           already_sending: 'This issue is already sending.',
           not_found: 'Newsletter not found.',

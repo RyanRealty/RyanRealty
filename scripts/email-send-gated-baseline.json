@@ -1,7 +1,7 @@
 {
   "$comment": "Ratchet baseline for check-email-send-gated.mjs. Each key is an UNGATED sendEmail/sendBatchEmails call site (<file>:<line>) that is NOT preceded by an isSuppressed()/isSuppressedByEmail() check in its function. The list may only SHRINK. To clear an entry: gate the send and remove the line, then run node scripts/check-email-send-gated.mjs --write. NEVER add a new entry to silence a new lead send, gate it instead. kind=internal: a genuinely-internal or 1:1 transactional send (broker alert, admin notice, the broker's own digest, an e-signature notification to a transaction party) with no marketable lead recipient to suppress; permanently allowlisted. kind=lead-todo is NO LONGER ALLOWED: every lead/client-facing marketing send is now gated through the suppression chokepoint, and the runner asserts only kind=internal entries remain.",
   "sites": {
-    "app/actions/newsletter.ts:447": {
+    "app/actions/newsletter.ts:484": {
       "kind": "internal",
       "reason": "Internal: newsletter test-send (adminTestSendNewsletterAction) to the authenticated admin's OWN inbox (gate.email from requireAdmin()), subject prefixed [TEST]. Never a lead or subscriber — it renders the issue as-broker so the admin can preview real delivery before enqueueing. The actual audience send routes through the gated queue drain (per-row isSuppressedByEmail). Permanently allowlisted."
     },
@@ -9,7 +9,7 @@
       "kind": "internal",
       "reason": "Internal: inbox note @mention notification to the mentioned BROKER's own ryan-realty.com mailbox (spec 08 paragraph 10.2). Never to a lead — the CRM_MAILBOXES lookup only resolves broker addresses. Client-facing sends on this page route through the gated sendCrmEmailAction. Permanently allowlisted."
     },
-    "app/api/cma/[slug]/gmail-draft/route.ts:166": {
+    "app/api/cma/[slug]/gmail-draft/route.ts:167": {
       "kind": "internal",
       "reason": "Internal: Resend fallback to the BROKER (impersonateAs) when the Gmail draft cannot be created. Never to the lead. The lead recipient is gated by isSuppressedByEmail earlier in handleDraft before any draft/fallback runs."
     },
