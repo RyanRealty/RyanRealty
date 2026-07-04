@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.733.0 (2026-07-04)
+
+### Features
+- feat(schools): draw each school's attendance-area polygon on its page
+
+---
+
+
 ## v1.732.0 (2026-07-04)
 
 ### Features
