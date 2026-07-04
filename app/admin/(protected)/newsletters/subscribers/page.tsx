@@ -13,6 +13,7 @@ import { ConsoleSection } from '@/components/console/ConsoleSection'
 import { KpiStrip } from '@/components/console/KpiStrip'
 import { TableWithMobileCards, type TwmcColumn } from '@/components/admin/TableWithMobileCards'
 import { AddSubscriberForm, SubscriberStatusToggle } from '../SubscriberForms'
+import { BulkEnrollForm } from '../BulkEnrollForm'
 
 export const metadata = { title: 'Subscribers | Newsletter | Admin' }
 export const dynamic = 'force-dynamic'
@@ -85,6 +86,10 @@ export default async function NewsletterSubscribersPage({
 
       <ConsoleSection title="Add subscriber" className="mt-6">
         <AddSubscriberForm />
+      </ConsoleSection>
+
+      <ConsoleSection title="Bulk add subscribers" className="mt-6">
+        <BulkEnrollForm />
       </ConsoleSection>
 
       <div className="mt-8">

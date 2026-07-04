@@ -1,6 +1,7 @@
 import 'server-only'
 import { getNewsletter } from '@/lib/data/newsletter'
 import { getActiveSubscribersForSend } from '@/lib/data/newsletter'
+import { subscribeToNewsletter } from '@/lib/data/newsletter'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { sendEmail } from '@/lib/resend'
@@ -21,6 +22,7 @@ import {
   getSendSchedule,
   getSendingNewsletters,
   getSubscriberSendMeta,
+  getSubscribersByEmails,
   insertQueuedRecipients,
   isNewsletterPaused,
   recipientStatusCounts,
@@ -169,6 +171,88 @@ export async function enqueueNewsletter(newsletterId: string): Promise<EnqueueRe
   } catch (err) {
     // Roll the lock back so a failed enqueue doesn't strand the newsletter (S-2).
     await releaseNewsletterLock(newsletterId, 'draft')
+    return { ok: false, error: err instanceof Error ? err.message : 'enqueue_failed' }
+  }
+}
+
+/**
+ * ONE-OFF bulk send: enqueue THIS issue to an explicit list of emails (not the
+ * recurring subscriber audience). Compliance-critical — it must give every
+ * recipient a real subscriber ROW first (that row carries the unsubscribe_token
+ * the drain needs to render the one-click unsubscribe rail, required by CAN-SPAM
+ * / RFC 8058), then reuse the EXACT enqueue machinery: freeze broker + tier,
+ * insert queued rows, write the day-0 tranche schedule. The send cron drains
+ * these rows through the SAME path — re-checking suppression + active per row and
+ * rendering per broker — so a suppressed or opted-out address is still skipped and
+ * nothing bypasses the reputation / warm-up / circuit-breaker machinery.
+ */
+export async function enqueueNewsletterToEmails(
+  newsletterId: string,
+  emails: string[],
+): Promise<{ ok: boolean; queued?: number; error?: string }> {
+  const letter = await getNewsletter(newsletterId)
+  if (!letter) return { ok: false, error: 'not_found' }
+  if (!letter.body_html && !letter.body_text) return { ok: false, error: 'empty_body' }
+
+  const list = [...new Set(emails.map((e) => e.trim().toLowerCase()).filter((e) => e.includes('@')))]
+  if (list.length === 0) return { ok: false, error: 'no_recipients' }
+
+  // CAS lock — a concurrent send/one-off gets null and aborts (S-1).
+  const token = await claimNewsletterForSending(newsletterId)
+  if (!token) return { ok: false, error: 'already_sending' }
+
+  try {
+    // Compliance step (S-10): NEVER resurrect an opt-out. subscribeToNewsletter
+    // reactivates any existing row to status='active', so we must exclude every
+    // address that previously unsubscribed / bounced / complained BEFORE enrolling.
+    // A one-off Matt pastes cannot override a recipient's prior opt-out — re-sending
+    // to them is a CAN-SPAM violation. Only brand-new or already-active addresses
+    // proceed. (The drain re-checks suppression per row too, but a plain unsubscribe
+    // with no suppression row would slip through if we reactivated it here.)
+    const preexisting = await getSubscribersByEmails(list)
+    const optedOut = new Set(preexisting.filter((s) => s.status !== 'active').map((s) => s.email))
+    const eligible = list.filter((e) => !optedOut.has(e))
+    if (eligible.length === 0) {
+      await releaseNewsletterLock(newsletterId, 'draft') // S-14
+      return { ok: false, error: 'all_opted_out' }
+    }
+
+    // Guarantee a subscriber row per ELIGIBLE recipient BEFORE queueing, so each has
+    // an unsubscribe_token. source='one-off' marks how they got on the list. Then read
+    // the ids back (filtered to active) to freeze broker + tier.
+    for (const email of eligible) {
+      await subscribeToNewsletter({ email, source: 'one-off', segment: 'general' })
+    }
+    const subs = (await getSubscribersByEmails(eligible)).filter((s) => s.status === 'active')
+    if (subs.length === 0) {
+      await releaseNewsletterLock(newsletterId, 'draft') // S-14
+      return { ok: false, error: 'no_recipients' }
+    }
+
+    // Freeze broker + tier per recipient — identical logic to enqueueNewsletter.
+    const personIds = subs.map((s) => s.crm_person_id).filter((n): n is number => Number.isFinite(n as number))
+    const brokerByPerson = await getAssignedBrokersByPersonId(personIds)
+    const { engaged, everSent } = await getEngagementSets()
+
+    const rows = subs.map((s) => {
+      const broker = normalizeBroker(s.crm_person_id ? brokerByPerson.get(s.crm_person_id) : null)
+      const email = s.email.trim().toLowerCase()
+      const tier = engaged.has(email) ? 1 : !everSent.has(email) ? 2 : 3
+      return { subscriber_id: s.id, email, broker, tier }
+    })
+
+    const queued = await insertQueuedRecipients(newsletterId, rows)
+
+    // A one-off is an immediate send: one day-0 schedule row per present tier, cap =
+    // that tier's count (large=false → computeSchedule emits day-0 rows only). The
+    // drain still honors caps/breaker; this just doesn't tranche across days.
+    const tierCounts = new Map<number, number>()
+    for (const r of rows) tierCounts.set(r.tier, (tierCounts.get(r.tier) ?? 0) + 1)
+    await writeSendSchedule(newsletterId, computeSchedule(tierCounts, false, false))
+
+    return { ok: true, queued }
+  } catch (err) {
+    await releaseNewsletterLock(newsletterId, 'draft') // S-2: don't strand on a failed enqueue
     return { ok: false, error: err instanceof Error ? err.message : 'enqueue_failed' }
   }
 }

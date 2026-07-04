@@ -137,6 +137,34 @@ export async function getSubscriberSendMeta(
   return map
 }
 
+/**
+ * Resolve subscriber id + crm_person_id for a set of emails (lowercased). Used by
+ * the one-off send path AFTER subscribeToNewsletter has guaranteed a row exists
+ * per email — this reads the ids back so the enqueue can freeze broker + tier and
+ * insert queued recipient rows. One query, chunked; missing emails are simply
+ * absent from the result.
+ */
+export async function getSubscribersByEmails(
+  emails: string[],
+): Promise<Array<{ id: string; email: string; crm_person_id: number | null; status: string }>> {
+  const wanted = [...new Set(emails.map((e) => e.trim().toLowerCase()).filter(Boolean))]
+  if (wanted.length === 0) return []
+  const sb = createServiceClient()
+  const out: Array<{ id: string; email: string; crm_person_id: number | null; status: string }> = []
+  const CHUNK = 500
+  for (let i = 0; i < wanted.length; i += CHUNK) {
+    const { data } = await sb
+      .from(SUBS)
+      .select('id, email, crm_person_id, status')
+      .in('email', wanted.slice(i, i + CHUNK))
+    for (const row of data ?? []) {
+      const r = row as { id: string; email: string; crm_person_id: number | null; status: string }
+      out.push({ id: r.id, email: (r.email || '').toLowerCase(), crm_person_id: r.crm_person_id, status: r.status })
+    }
+  }
+  return out
+}
+
 /** True if any newsletter has ever been sent (used to decide warm-up ramp vs steady caps). */
 export async function anyNewsletterEverSent(): Promise<boolean> {
   const sb = createServiceClient()

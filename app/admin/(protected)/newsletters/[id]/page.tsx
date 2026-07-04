@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/table'
 import NewsletterComposeForm from '../NewsletterComposeForm'
 import NewsletterDraftActions from '../NewsletterDraftActions'
+import BulkOneOffForm from '../BulkOneOffForm'
 
 export const metadata = { title: 'Newsletter | Admin' }
 export const dynamic = 'force-dynamic'
@@ -130,6 +131,10 @@ function DraftView({ id, letter }: { id: string; letter: Awaited<ReturnType<type
           </p>
           <NewsletterDraftActions id={id} />
         </div>
+      </ConsoleSection>
+
+      <ConsoleSection title="Send this issue to a list (one-off)">
+        <BulkOneOffForm id={id} />
       </ConsoleSection>
     </div>
   )

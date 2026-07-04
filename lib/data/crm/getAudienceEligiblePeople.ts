@@ -117,6 +117,12 @@ export type GetAudienceEligibleOptions = {
    * The full book is ~18k people, so the default comfortably covers it.
    */
   limit?: number
+  /**
+   * Optional CRM-tag filter: when set, only people carrying this exact tag (case-
+   * insensitive) are returned. Used by the bulk newsletter tools ("enroll everyone
+   * tagged X"). The realtor-exclusion + contactable-key gates still apply on top.
+   */
+  tag?: string
 }
 
 /**
@@ -133,6 +139,7 @@ export async function getAudienceEligiblePeople(
   const suppressedIds = await getSuppressedPersonIds(sb)
 
   const limit = options.limit ?? 50000
+  const tagFilter = options.tag?.trim().toLowerCase() || null
   const people: AudienceEligiblePerson[] = []
   let excludedSuppressed = 0
   let excludedRealtors = 0
@@ -167,6 +174,14 @@ export async function getAudienceEligiblePeople(
       if (isAudienceExcludedByTag(row.tags)) {
         excludedRealtors += 1
         continue
+      }
+
+      // Optional tag filter (bulk newsletter "enroll everyone tagged X"). Applied
+      // after the exclusion gates so a realtor tagged X is still excluded.
+      if (tagFilter) {
+        const tags = Array.isArray(row.tags) ? row.tags : []
+        const hit = tags.some((t) => typeof t === 'string' && t.trim().toLowerCase() === tagFilter)
+        if (!hit) continue
       }
 
       people.push({

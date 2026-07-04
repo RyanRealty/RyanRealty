@@ -5,11 +5,13 @@ import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { scopeBroker, isPersonInScope } from '@/lib/crm/scope'
 import { resolveLeadAssignedBroker, getGuestAlertLead } from '@/lib/data/crm/leadAssignedBroker'
 import { checkNewsletterVoice } from '@/lib/email/voice-precheck'
-import { enqueueNewsletter, NEWSLETTER_FROM_ADDRESS } from '@/lib/newsletter/send-queue'
+import { enqueueNewsletter, enqueueNewsletterToEmails, NEWSLETTER_FROM_ADDRESS } from '@/lib/newsletter/send-queue'
+import { parseEmailList } from '@/lib/newsletter/parse-emails'
+import { getAudienceEligiblePeople } from '@/lib/data/crm/getAudienceEligiblePeople'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { wrapNewsletterHtml, type SenderBroker } from '@/lib/email-templates/newsletter-shell'
 import { getActiveSubscribersForSend } from '@/lib/data/newsletter'
-import { getAssignedBrokersByPersonId } from '@/lib/data/newsletter/queue'
+import { getAssignedBrokersByPersonId, getSubscribersByEmails } from '@/lib/data/newsletter/queue'
 import { sendEmail } from '@/lib/resend'
 import { createSavedSearchForLead, updateSavedSearch, deleteSavedSearchById } from '@/lib/data'
 import {
@@ -107,6 +109,64 @@ export async function adminBulkAssignNewsletterAction(personIds: number[], segme
     if (r.ok) assigned++; else skipped++
   }
   return { ok: true, assigned, skipped }
+}
+
+/**
+ * Resolve the primary email for people carrying a given CRM tag, via the consent-
+ * gated audience read (realtor-tagged + no-contact-key people are already excluded
+ * there). Primary email = first email value in the JSONB emails array. Shared by
+ * both bulk newsletter tools. Empty tag → [].
+ */
+async function emailsForCrmTag(tag: string): Promise<string[]> {
+  const trimmed = tag.trim()
+  if (!trimmed) return []
+  const { people } = await getAudienceEligiblePeople({ tag: trimmed })
+  const out: string[] = []
+  for (const p of people) {
+    const email = p.emails?.[0]?.trim().toLowerCase()
+    if (email && email.includes('@')) out.push(email)
+  }
+  return [...new Set(out)]
+}
+
+/**
+ * BULK ENROLL (recurring): add many emails to the newsletter as active subscribers
+ * so they receive ALL future issues. Accepts a pasted email list and/or a CRM tag
+ * (people carrying that tag, realtor-excluded + no-email skipped). Each becomes an
+ * active subscriber via subscribeToNewsletter (upsert by lower(email) de-dupes).
+ * Previously opted-out addresses (unsubscribed/bounced/complained) are NEVER
+ * reactivated — they count as skipped (S-10). Capped at 5000. Returns counts.
+ */
+export async function adminBulkEnrollNewsletterAction(input: {
+  emails?: string
+  crmTag?: string
+  segment?: NewsletterSegment
+}): Promise<{ ok: boolean; enrolled: number; skipped: number; error?: string }> {
+  const gate = await requireAdmin()
+  if (!gate.ok) return { ok: false, enrolled: 0, skipped: 0, error: 'unauthorized' }
+
+  const segment: NewsletterSegment = input.segment ?? 'general'
+  const pasted = parseEmailList(input.emails ?? '')
+  const tagged = input.crmTag ? await emailsForCrmTag(input.crmTag) : []
+  const all = [...new Set([...pasted, ...tagged])].slice(0, 5000)
+  if (all.length === 0) return { ok: false, enrolled: 0, skipped: 0, error: 'no_recipients' }
+
+  // S-10: never resurrect an opt-out. subscribeToNewsletter reactivates any existing
+  // row to active, so exclude addresses that previously unsubscribed / bounced /
+  // complained. A bulk enroll cannot override a recipient's prior opt-out; those are
+  // reported as skipped. New + already-active addresses enroll normally.
+  const preexisting = await getSubscribersByEmails(all)
+  const optedOut = new Set(preexisting.filter((s) => s.status !== 'active').map((s) => s.email))
+  const eligible = all.filter((e) => !optedOut.has(e))
+
+  let enrolled = 0
+  let skipped = optedOut.size
+  for (const email of eligible) {
+    const r = await subscribeToNewsletter({ email, source: 'bulk-enroll', segment })
+    if (r.ok) enrolled++
+    else skipped++
+  }
+  return { ok: true, enrolled, skipped }
 }
 
 // ── ADMIN: saved-search assignment (broker-created, origin='broker') ──────────
@@ -244,6 +304,44 @@ export async function adminSendNewsletterAction(
 
   revalidatePath('/admin/newsletters')
   return { ok: true, queued: result.queued, brokerSplit: result.brokerSplit, large: result.large }
+}
+
+/**
+ * BULK ONE-OFF SEND: deliver THIS draft issue to an explicit list (this issue
+ * only — recipients are NOT enrolled in the recurring audience beyond the row the
+ * one-off path creates for the unsubscribe token). Resolve the list from a pasted
+ * email list ∪ a CRM tag's people, run the SAME brand-voice gate as the normal
+ * send FIRST (abort on fail), record the approver, then enqueueNewsletterToEmails
+ * — which creates a subscriber row per recipient and routes through the existing
+ * drain (per-row suppression + active re-check, no bypass).
+ */
+export async function adminBulkOneOffSendAction(
+  newsletterId: string,
+  input: { emails?: string; crmTag?: string },
+): Promise<{ ok: boolean; queued?: number; error?: string }> {
+  const gate = await requireAdmin()
+  if (!gate.ok) return { ok: false, error: 'unauthorized' }
+
+  const letter = await getNewsletter(newsletterId)
+  if (!letter) return { ok: false, error: 'not_found' }
+  if (letter.status === 'sent' || letter.status === 'sending') return { ok: false, error: 'already_sent' }
+  if (!letter.body_html && !letter.body_text) return { ok: false, error: 'empty_body' }
+
+  const pasted = parseEmailList(input.emails ?? '')
+  const tagged = input.crmTag ? await emailsForCrmTag(input.crmTag) : []
+  const emails = [...new Set([...pasted, ...tagged])]
+  if (emails.length === 0) return { ok: false, error: 'no_recipients' }
+
+  // Same voice hard-fail gate as the audience send (CI skips app/admin/).
+  const voice = checkNewsletterVoice({ subject: letter.subject, bodyHtml: letter.body_html, bodyText: letter.body_text })
+  if (!voice.ok) return { ok: false, error: `Brand-voice check failed. Fix before sending: ${voice.violations.join('; ')}` }
+
+  await updateNewsletter(newsletterId, { sent_by: gate.email })
+  const result = await enqueueNewsletterToEmails(newsletterId, emails)
+  if (!result.ok) return { ok: false, error: result.error }
+
+  revalidatePath('/admin/newsletters')
+  return { ok: true, queued: result.queued }
 }
 
 // ── ADMIN: preview + test-send (per-broker identity swap) ────────────────────

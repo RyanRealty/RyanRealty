@@ -46,6 +46,8 @@ const PATHS = {
   // in contact-newsletter.ts. Both must carry the RFC 8058 headers + multipart.
   sendQueue: join(ROOT, 'lib/newsletter/send-queue.ts'),
   contactNewsletter: join(ROOT, 'app/actions/contact-newsletter.ts'),
+  // Bulk enroll + bulk one-off live here; both must refuse to resurrect an opt-out.
+  newsletterActions: join(ROOT, 'app/actions/newsletter.ts'),
 }
 
 /** A real street-number-first address, e.g. "115 NW Oregon Ave". Placeholder/empty fails. */
@@ -62,7 +64,7 @@ function safeRead(path) {
  * Pure: run every check against already-read file contents. Returns an array
  * of { id, ok, detail } — one row per assertion, in check order.
  */
-export function runChecks({ prepare, shell, sendQueue, contactNewsletter }) {
+export function runChecks({ prepare, shell, sendQueue, contactNewsletter, newsletterActions }) {
   const results = []
 
   // G-NL-1a: BROKERAGE_POSTAL_ADDRESS defined with a real street-number fallback.
@@ -142,6 +144,31 @@ export function runChecks({ prepare, shell, sendQueue, contactNewsletter }) {
     })
   }
 
+  // G-NL-3b: bulk enroll + bulk one-off must NEVER reactivate an opt-out. Both
+  // paths enroll via subscribeToNewsletter, which flips ANY existing row back to
+  // status='active' — so each must exclude previously unsubscribed/bounced/complained
+  // addresses BEFORE enrolling. Re-sending to an opt-out is a CAN-SPAM violation
+  // (CLAUDE.md §0). The guard is a `status !== 'active'` filter feeding an exclusion
+  // set. This gate fails if either path drops it. (See S-10 in the send-queue.)
+  for (const [label, src] of [
+    ['lib/newsletter/send-queue.ts (one-off enqueue)', sendQueue],
+    ['app/actions/newsletter.ts (bulk enroll)', newsletterActions],
+  ]) {
+    if (src == null) {
+      results.push({ id: `G-NL-3b no-optout-reactivation (${label})`, ok: false, detail: `${label} not found` })
+      continue
+    }
+    // Match `.filter((x) => x.status !== 'active')` regardless of the param name.
+    const hasGuard = /\.filter\(\s*\(\s*\w+\s*\)\s*=>\s*\w+\.status\s*!==\s*'active'\s*\)/.test(src)
+    results.push({
+      id: `G-NL-3b no-optout-reactivation (${label})`,
+      ok: hasGuard,
+      detail: hasGuard
+        ? `${label} — excludes non-active (opted-out) addresses before enrolling`
+        : `${label} — missing the opt-out guard \`.filter((s) => s.status !== 'active')\` before subscribeToNewsletter; a bulk send could resurrect an unsubscribe (CAN-SPAM risk)`,
+    })
+  }
+
   return results
 }
 
@@ -151,6 +178,7 @@ function loadInputs() {
     shell: safeRead(PATHS.shell),
     sendQueue: safeRead(PATHS.sendQueue),
     contactNewsletter: safeRead(PATHS.contactNewsletter),
+    newsletterActions: safeRead(PATHS.newsletterActions),
   }
 }
 
