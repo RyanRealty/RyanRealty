@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.735.0 (2026-07-04)
+
+### Features
+- feat(crm): map contacts onto canonical geo (neighborhood_slug/subdivision/is_resort)
+
+---
+
+
 ## v1.734.0 (2026-07-04)
 
 ### Features
