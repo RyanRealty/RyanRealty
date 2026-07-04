@@ -4,10 +4,6 @@
     {
       "key": "app/actions/crm-ponds.ts::claimLeadFromPondAction",
       "reason": "Intentionally cross-broker: claiming an unowned pond lead. Authorization is pond membership (crm_pond_members) + an optimistic pond_id lock, NOT current ownership — requirePersonInScope would defeat the feature (you claim a lead you do not yet own)."
-    },
-    {
-      "key": "app/actions/crm-stages.ts::deleteCrmStageAction",
-      "reason": "Global pipeline config, not a per-person IDOR: bulk-reassigns crm_people by stage KEY (.eq('stage', key)), never by a caller-supplied person id. Whether stage-config management should be superuser-only is a separate authorization-policy question tracked for Matt, not a contact-scoping bug this gate governs."
     }
   ]
 }

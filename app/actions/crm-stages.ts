@@ -89,6 +89,13 @@ export async function deleteCrmStageAction(formData: FormData): Promise<ConfigRe
   // The reassign target must exist and be a different, active-or-not stage.
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
+  // Deleting a stage bulk-reassigns EVERY broker's contacts out of it — an
+  // owner-level pipeline-config change, mirroring deleteDealPipeline/deleteGroup
+  // (both superuser-only). A restricted broker must not reshape the shared
+  // pipeline or move other brokers' contacts wholesale.
+  if (access.role !== 'superuser') {
+    return { ok: false, error: 'Only the account owner can delete a pipeline stage.' }
+  }
   const sb = createServiceClient()
   const { data: target } = await sb
     .from('crm_stages')
