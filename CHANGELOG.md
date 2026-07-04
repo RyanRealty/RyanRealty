@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.730.0 (2026-07-04)
+
+### Features
+- feat(nav): surface the Central Oregon content hubs in site nav + footer
+
+---
+
+
 ## v1.729.1 (2026-07-04)
 
 ### Maintenance
