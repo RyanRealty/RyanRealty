@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.736.0 (2026-07-04)
+
+### Features
+- feat(maps): flagship KB listing map to Google Maps; drop MapLibre entirely
+
+---
+
+
 ## v1.735.0 (2026-07-04)
 
 ### Features
