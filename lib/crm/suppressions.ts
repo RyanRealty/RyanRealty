@@ -93,8 +93,12 @@ export async function isSuppressedByEmail(
   // explicit protected-tag scan.
   const people = await sb
     .from('crm_people')
+    // jsonb containment (@>) needs a JSON STRING, not a JS array — passing a bare
+    // array makes supabase-js emit a Postgres array literal `{...}`, which the
+    // server rejects with "invalid input syntax for type json". Fail-closed then
+    // marks EVERY address suppressed and silently skips every send.
     .select('id,tags')
-    .contains('emails', [{ value: normalized }])
+    .contains('emails', JSON.stringify([{ value: normalized }]))
   if (people.error) {
     return { suppressed: true, reasons: ['email-suppression-check-failed: ' + people.error.message] }
   }

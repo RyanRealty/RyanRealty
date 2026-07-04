@@ -30,8 +30,10 @@ export async function resolveLeadAssignedBroker(input: {
     // emails is jsonb [{value,isPrimary}]; object containment matches the value key.
     const { data } = await sb
       .from('crm_people')
+      // jsonb containment needs a JSON STRING, not a JS array (a bare array becomes
+      // a Postgres array literal → "invalid input syntax for type json").
       .select('assigned_broker')
-      .contains('emails', [{ value: email }])
+      .contains('emails', JSON.stringify([{ value: email }]))
       .limit(1)
       .maybeSingle()
     if (data) return { found: true, assignedBroker: (data as { assigned_broker: string | null }).assigned_broker ?? null }

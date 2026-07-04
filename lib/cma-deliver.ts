@@ -261,8 +261,10 @@ export async function finalizeAndDeliverCma(
       const sb = createServiceClient()
       const { data: people } = await sb
         .from('crm_people')
+        // jsonb containment needs a JSON STRING, not a JS array (a bare array
+        // becomes a Postgres array literal → "invalid input syntax for type json").
         .select('id,custom')
-        .contains('emails', [{ value: leadEmail }])
+        .contains('emails', JSON.stringify([{ value: leadEmail }]))
         .limit(1)
       const person = people?.[0]
       if (person) {
