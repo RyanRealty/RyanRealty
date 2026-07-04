@@ -83,6 +83,13 @@ export function KbFooter({ towns }: { towns: KbTownItem[] }) {
             <a href="/communities/northwest-crossing">NorthWest Crossing</a>
             <a href="/communities/caldera-springs">Caldera Springs</a>
           </nav>
+          <nav className="foot-col" aria-label="Explore Central Oregon">
+            <h3>Central Oregon</h3>
+            <a href="/central-oregon/events">Events</a>
+            <a href="/central-oregon/venues">Live music {'&'} shows</a>
+            <a href="/central-oregon/trails">Trails</a>
+            <a href="/lp/central-oregon-golf">Golf</a>
+          </nav>
           <nav className="foot-col" aria-label="Buyers">
             <h3>Buyers</h3>
             <a href="/homes-for-sale">Search homes</a>

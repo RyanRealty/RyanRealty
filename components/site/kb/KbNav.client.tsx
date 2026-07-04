@@ -45,6 +45,15 @@ const MENU_GROUPS: { title: string; links: { href: string; label: string }[] }[]
     ],
   },
   {
+    title: 'Things to do',
+    links: [
+      { href: '/central-oregon/events', label: 'Events' },
+      { href: '/central-oregon/venues', label: 'Live music & shows' },
+      { href: '/central-oregon/trails', label: 'Trails' },
+      { href: '/lp/central-oregon-golf', label: 'Golf' },
+    ],
+  },
+  {
     title: 'Company',
     links: [
       { href: '/blog', label: 'Guides and blog' },
