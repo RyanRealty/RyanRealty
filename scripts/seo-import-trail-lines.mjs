@@ -37,6 +37,10 @@ const USFS_TRAILS = {
   'peterson-ridge': { th: [44.280732, -121.549999], terms: ['PETERSON RIDGE'] },
   'alder-springs': { th: [44.423848, -121.364331], terms: ['ALDER SPRINGS'] },
   'gray-butte': { th: [44.428816, -121.09023], terms: ['GRAY BUTTE'] },
+  // 'PHIL' (not "PHIL'S" — the apostrophe breaks the ArcGIS LIKE); proximity to
+  // the Phil's Trailhead keeps only the Phil's complex. Whoops is a COTA-built
+  // trail absent from the USFS federal layer, so it stays a point (phase 2).
+  'phils-trail': { th: [44.044608, -121.384984], terms: ['PHIL'] },
 }
 
 const R = 6371
