@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.731.4 (2026-07-04)
+
+### Bug Fixes
+- fix(newsletter): deferred adversarial-audit items — batch enroll, tag UI, parser, hardening
+
+---
+
+
 ## v1.731.3 (2026-07-04)
 
 ### Bug Fixes
