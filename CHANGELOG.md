@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.731.0 (2026-07-04)
+
+### Features
+- feat(trails): render 9 trails as authoritative route lines on the map
+
+---
+
+
 ## v1.730.2 (2026-07-04)
 
 ### Maintenance
