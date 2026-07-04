@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.730.1 (2026-07-04)
+
+### Bug Fixes
+- fix(crm): jsonb .contains() must pass a JSON string, not a JS array (silent send-killer)
+- fix(tracking): KbSectionTracker sent a bare path, so 0 section_views ever recorded
+
+### Maintenance
+- refactor(crm): route listCrmPeople through the ast compiler (kill filter/ast drift)
+
+---
+
+
 ## v1.730.0 (2026-07-04)
 
 ### Features
