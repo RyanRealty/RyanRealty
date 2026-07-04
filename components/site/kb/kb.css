@@ -671,27 +671,21 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .neigh-legend .nl-live .dot{width:6px;height:6px;border-radius:50%;background:var(--cream);animation:mktBlink 1.4s ease-in-out infinite;}
 @media(max-width:600px){.kb-root .nm-label{font-size:18px;}.kb-root .nm-peaklbl{display:none;}.kb-root .neigh-legend{font-size:.56rem;gap:12px;}}
 .kb-root #kbMap{width:100%;height:clamp(440px,58vw,640px);background:var(--navy);}
-.kb-root .neigh-map .maplibregl-canvas{outline:none;}
-.kb-root .neigh-map .maplibregl-ctrl-group{background:rgba(16,39,66,.85)!important;border:1px solid var(--cream-12)!important;border-radius:5px;overflow:hidden;box-shadow:none;margin:14px;}
-.kb-root .neigh-map .maplibregl-ctrl-group button{width:32px;height:32px;}
-.kb-root .neigh-map .maplibregl-ctrl-group button+button{border-top:1px solid var(--cream-12);}
-.kb-root .neigh-map .maplibregl-ctrl button .maplibregl-ctrl-icon{filter:invert(1) brightness(1.4);}
-.kb-root .neigh-map .maplibregl-ctrl-attrib{background:rgba(16,39,66,.55)!important;color:var(--cream-muted)!important;font-size:9px;}
-.kb-root .neigh-map .maplibregl-ctrl-attrib a{color:var(--cream-70)!important;}
-.kb-root .neigh-map .maplibregl-ctrl-attrib-button{filter:invert(1) brightness(1.4);}
+/* Google Maps is the only mapping we use. The basemap is styled in JS
+   (MAP_BOUNDARY_STYLES); controls use Google's default chrome. */
 .kb-root .neigh-legend{z-index:5;pointer-events:none;color:rgba(16,39,66,.6);}
 .kb-root .neigh-legend b{color:var(--navy);}
 .kb-root .neigh-legend .nl-live .dot{background:var(--navy);}
-.kb-root .kb-town{display:flex;flex-direction:column;align-items:center;pointer-events:none;}
-.kb-root .kb-town .ring{width:13px;height:13px;border-radius:50%;background:var(--cream);border:3px solid var(--navy);box-shadow:0 0 0 3px rgba(250,248,244,.7);}
-.kb-root .kb-town .lbl{margin-top:5px;font-family:var(--font-amboqia),serif;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--navy);text-shadow:0 1px 5px rgba(250,248,244,.95);white-space:nowrap;}
-.kb-root .kb-peak{display:flex;flex-direction:column;align-items:center;pointer-events:none;}
-.kb-root .kb-peak .pk-mark{font-size:10px;line-height:1;color:var(--navy);text-shadow:0 1px 3px rgba(250,248,244,.95);}
-.kb-root .kb-peak .pk-lbl{margin-top:2px;font-family:var(--font-sans),sans-serif;font-size:9.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:rgba(16,39,66,.8);text-shadow:0 1px 3px rgba(250,248,244,.95);white-space:nowrap;}
-.kb-root .maplibregl-popup.kb-pop .maplibregl-popup-content{background:var(--navy);border:1px solid var(--cream-40);border-radius:6px;padding:0;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,.55);width:232px;}
-.kb-root .maplibregl-popup.kb-pop .maplibregl-popup-tip{border-top-color:var(--cream-40);}
-.kb-root .maplibregl-popup.kb-pop .maplibregl-popup-close-button{color:var(--cream-70);font-size:19px;padding:1px 8px;}
-.kb-root .maplibregl-popup.kb-pop .maplibregl-popup-close-button:hover{background:none;color:var(--cream);}
+/* Town / peak marker labels (google.maps.Marker label className) — readable over the map. */
+.kb-root .kb-map-town-lbl{font-family:var(--font-amboqia),serif!important;letter-spacing:.05em;text-transform:uppercase;text-shadow:0 1px 5px rgba(250,248,244,.95);}
+.kb-root .kb-map-peak-lbl{letter-spacing:.09em;text-transform:uppercase;text-shadow:0 1px 3px rgba(250,248,244,.95);}
+/* Listing popup — the navy KB card lives inside a Google InfoWindow. Give the
+   card its own navy bg (the InfoWindow box is transparentized around it). */
+.kb-root .kb-pop{background:var(--navy);border-radius:6px;overflow:hidden;width:212px;}
+.kb-root .gm-style .gm-style-iw-c{padding:0!important;background:var(--navy)!important;border-radius:6px;box-shadow:0 12px 32px rgba(0,0,0,.55);}
+.kb-root .gm-style .gm-style-iw-d{overflow:hidden!important;background:var(--navy);}
+.kb-root .gm-style .gm-style-iw-tc::after{background:var(--navy)!important;}
+.kb-root .gm-style .gm-style-iw-c button[aria-label="Close"] span{background:var(--cream-70)!important;}
 .kb-root .kb-pop-img{width:100%;height:124px;object-fit:cover;display:block;background:#0b1c30;}
 .kb-root .kb-pop-body{padding:12px 14px 14px;color:var(--cream);}
 .kb-root .kb-pop-price{font-family:var(--font-amboqia),serif;font-size:1.5rem;line-height:1;}

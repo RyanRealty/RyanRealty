@@ -21,7 +21,7 @@ uses the section, so we never go through the build process twice.
 | `KbExploreTowns` | `towns: KbTownItem[]` | Stat-ledger town rows | Pass any geo set. |
 | `KbCommunities` | `communities: KbCommunityItem[]` | Featured community cards, photo → silent Area Guide clip on focus | Pass per-item `video` (hosted by `sync-city-videos.mjs`). Viewport-autoplay + hover. |
 | `KbFeatured` | `items: KbFeaturedItem[]` | Poster grid, silent video tours play on focus (video homes first) | Pass any listing set + per-item `video`. Viewport-autoplay + hover. |
-| `KbListingMap` | `geojson`, `totalActive` | MapLibre listing map | Pass any GeoJSON + count. |
+| `KbListingMap` | `geojson`, `totalActive` | Google Maps listing map (clustered pins + optional boundary polygon); loaded via a dynamic `ssr:false` wrapper | Pass any GeoJSON + count. |
 | `KbTicker` | `items: KbTickerItem[]` | Scrolling price/address ticker | |
 | `KbTestimonials` | `reviews: KbReview[]` | Review wall | |
 | `KbTeam` | — | The three brokers | Same everywhere. |
