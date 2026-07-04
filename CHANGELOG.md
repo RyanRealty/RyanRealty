@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.731.3 (2026-07-04)
+
+### Bug Fixes
+- fix(crm): lock all global config to superuser (Matt directive 2026-07-04)
+- fix(newsletter/crm): close adversarial-audit holes — authz scope, fail-open, case-sensitive suppression
+
+---
+
+
 ## v1.731.2 (2026-07-04)
 
 ### Bug Fixes
