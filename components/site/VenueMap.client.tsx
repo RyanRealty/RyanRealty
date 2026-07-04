@@ -1,8 +1,8 @@
 'use client'
 // brand-voice:exempt — pure UI component, no user-facing prose
 
-import { useCallback, useMemo, useRef, useState } from 'react'
-import { GoogleMap, OverlayViewF, OVERLAY_MOUSE_TARGET } from '@react-google-maps/api'
+import { Fragment, useCallback, useMemo, useRef, useState } from 'react'
+import { GoogleMap, OverlayViewF, OVERLAY_MOUSE_TARGET, Polyline } from '@react-google-maps/api'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { formatPriceLabel, getBaseMapOptions, MAP_BOUNDARY_STYLES } from '@/lib/maps/markers'
 import { cn } from '@/lib/utils'
@@ -31,6 +31,18 @@ type Props = {
   listings?: ReadonlyArray<VenuePin>
   zoom?: number
   height?: number
+  /**
+   * Optional authoritative route linework (GeoJSON LineString | MultiLineString,
+   * from public.trail_lines). When present the map draws the trail as a line and
+   * fits to it. Never approximated — null means no verified line, point only.
+   */
+  line?: GeoJSON.LineString | GeoJSON.MultiLineString | null
+}
+
+/** GeoJSON [lng,lat] rings -> Google Maps {lat,lng} paths. */
+function lineToPaths(geom: GeoJSON.LineString | GeoJSON.MultiLineString): google.maps.LatLngLiteral[][] {
+  const rings = geom.type === 'LineString' ? [geom.coordinates] : geom.coordinates
+  return rings.map((ring) => ring.map(([lng, lat]) => ({ lat, lng })))
 }
 
 /** Navy price pill that links to the listing. */
@@ -63,10 +75,12 @@ function PricePill({ pin }: { pin: VenuePin }) {
   )
 }
 
-export default function VenueMapClient({ venue, listings, zoom = 13, height = 460 }: Props) {
+export default function VenueMapClient({ venue, listings, zoom = 13, height = 460, line }: Props) {
   const { ready, error } = useGoogleMapsReady()
   const mapRef = useRef<google.maps.Map | null>(null)
   const [center] = useState(() => ({ lat: venue.lat, lng: venue.lng }))
+
+  const linePaths = useMemo(() => (line ? lineToPaths(line) : []), [line])
 
   const containerStyle = useMemo(() => ({ width: '100%', height: height + 'px' }), [height])
   const mapOptions = useMemo<google.maps.MapOptions>(
@@ -82,9 +96,20 @@ export default function VenueMapClient({ venue, listings, zoom = 13, height = 46
     [listings],
   )
 
-  const onLoad = useCallback((map: google.maps.Map) => {
-    mapRef.current = map
-  }, [])
+  const onLoad = useCallback(
+    (map: google.maps.Map) => {
+      mapRef.current = map
+      // When a route line exists, fit the map to the whole trail (+ trailhead)
+      // rather than a fixed zoom on the point.
+      if (linePaths.length > 0) {
+        const bounds = new google.maps.LatLngBounds()
+        bounds.extend({ lat: venue.lat, lng: venue.lng })
+        for (const ring of linePaths) for (const pt of ring) bounds.extend(pt)
+        map.fitBounds(bounds, 48)
+      }
+    },
+    [linePaths, venue.lat, venue.lng],
+  )
 
   if (error || !ready) {
     return (
@@ -105,6 +130,15 @@ export default function VenueMapClient({ venue, listings, zoom = 13, height = 46
         options={mapOptions}
         onLoad={onLoad}
       >
+        {/* Authoritative trail route (public.trail_lines). White casing under a
+            navy line so it stays legible over any map imagery. */}
+        {linePaths.map((path, i) => (
+          <Fragment key={'ln-' + i}>
+            <Polyline path={path} options={{ strokeColor: '#ffffff', strokeOpacity: 0.9, strokeWeight: 7, clickable: false, zIndex: 1 }} />
+            <Polyline path={path} options={{ strokeColor: '#102742', strokeOpacity: 1, strokeWeight: 4, clickable: false, zIndex: 2 }} />
+          </Fragment>
+        ))}
+
         {/* Venue location marker — a distinct ringed dot, NOT a price pill, so it
             never reads as a listing. The section heading names the venue; this
             just marks the reference point the nearby homes are measured from. */}

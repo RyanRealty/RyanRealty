@@ -595,6 +595,10 @@ export { getTrailsForIndex, getTrailsCount } from '@/lib/data/trails/getTrails'
 export type { TrailIndex } from '@/lib/data/trails/getTrails'
 export { getTrailDetail } from '@/lib/data/trails/getTrailDetail'
 export type { TrailDetail, TrailHomeTile, TrailStats } from '@/lib/data/trails/getTrailDetail'
+// Authoritative trail route linework (public.trail_lines, USFS/BPR/OPRD/BLM) —
+// rendered as a polyline on the trail map. null → the trail shows a point only.
+export { getTrailLineGeoJSON } from '@/lib/data/trails/getTrailLineGeoJSON'
+export type { TrailLineGeometry } from '@/lib/data/trails/getTrailLineGeoJSON'
 
 // More functions get exported here as Wave 1-3 lands them.
 

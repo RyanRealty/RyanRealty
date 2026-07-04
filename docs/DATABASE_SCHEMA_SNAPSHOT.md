@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-03T20:39:40.282Z
+**Generated:** 2026-07-04T01:41:59.589Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -303,7 +303,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 595,064**
+### `listing_tile_mv` · **rows ≈ 589,354**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -3713,6 +3713,18 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `expires_at` | timestamp with time zone | no |  |
 | `updated_at` | timestamp with time zone | no | now() |
 | `open_id` | text | yes |  |
+
+### `trail_lines`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `trail_slug` | text | no |  |
+| `geom` | USER-DEFINED | no |  |
+| `source` | text | no |  |
+| `source_url` | text | no |  |
+| `verified_by` | text | yes |  |
+| `imported_at` | timestamp with time zone | no | now() |
 
 ### `trails`
 

@@ -25,8 +25,10 @@ type Props = {
   listings?: ReadonlyArray<VenuePin>
   zoom?: number
   height?: number
+  /** Authoritative route linework (GeoJSON LineString | MultiLineString) — trails only. */
+  line?: GeoJSON.LineString | GeoJSON.MultiLineString | null
 }
 
-export function VenueMap({ venue, listings, zoom, height }: Props) {
-  return <VenueMapClient venue={venue} listings={listings} zoom={zoom} height={height} />
+export function VenueMap({ venue, listings, zoom, height, line }: Props) {
+  return <VenueMapClient venue={venue} listings={listings} zoom={zoom} height={height} line={line} />
 }

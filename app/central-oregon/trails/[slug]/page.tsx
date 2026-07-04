@@ -11,7 +11,7 @@
 
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { getTrailDetail, type TrailHomeTile } from '@/lib/data'
+import { getTrailDetail, getTrailLineGeoJSON, type TrailHomeTile } from '@/lib/data'
 import {
   CO_TRAILS,
   getTrailBySlug,
@@ -96,6 +96,9 @@ export default async function TrailDetailPage({ params }: Props) {
   const detail = await getTrailDetail(slug).catch(() => null)
   const trail = detail?.trail ?? getTrailBySlug(slug)
   if (!trail) notFound()
+
+  // Authoritative route linework (public.trail_lines) — null → point-only map.
+  const trailLine = await getTrailLineGeoJSON(slug).catch(() => null)
 
   const homes = detail?.homes ?? []
   const stats = detail?.stats ?? { count: 0, medianListPrice: null }
@@ -233,13 +236,15 @@ export default async function TrailDetailPage({ params }: Props) {
                 <h2 className="sec-title display">Homes nearby</h2>
               </div>
               <p className="ev-map-intro">
-                The active single-family homes for sale within about 1.5 miles of the {trail.name}{' '}
-                trailhead, from our listings. The marked point is the trailhead, not a listing.
+                {trailLine
+                  ? `The ${trail.name} route, drawn from ${trail.landManager} trail data, with the active single-family homes for sale near the trailhead. The line is the trail, the ringed dot is the trailhead.`
+                  : `The active single-family homes for sale within about 1.5 miles of the ${trail.name} trailhead, from our listings. The marked point is the trailhead, not a listing.`}
               </p>
             </div>
             <VenueMap
               venue={{ lat: trail.lat as number, lng: trail.lng as number, name: trail.name }}
               listings={mapPins}
+              line={trailLine}
               zoom={14}
               height={480}
             />
