@@ -29,11 +29,11 @@
       "kind": "internal",
       "reason": "Internal: new-lead notification to ADMIN_EMAIL (the brokerage), not the lead. The two LEAD-facing sends in this action (auto-CMA + acknowledgment) are gated by isSuppressedByEmail. Permanently allowlisted."
     },
-    "lib/cma-deliver.ts:353": {
+    "lib/cma-deliver.ts:355": {
       "kind": "internal",
       "reason": "Internal: Resend fallback to the BROKER when the Gmail draft fails (preserves the human-review gate). Never to the lead. The lead is gated by isSuppressed/isSuppressedByEmail earlier in finalizeAndDeliverCma."
     },
-    "lib/cma-deliver.ts:412": {
+    "lib/cma-deliver.ts:414": {
       "kind": "internal",
       "reason": "Internal: notifies Matt (MATT_ALERT_EMAIL) that a CMA is ready for review, not the client. Permanently allowlisted."
     },

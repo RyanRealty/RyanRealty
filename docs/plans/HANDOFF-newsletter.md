@@ -46,6 +46,18 @@ already exist (`/blog`, `/communities`, `/schools`, `/parks`, `/guides`).
 
 ## Build progress log (newest first)
 
+**2026-07-03 (latest+1) — CRITICAL send-killer bug found via a real end-to-end send + fixed.**
+- Confirming "it all works" with a REAL one-off send to matt@ surfaced that the drain SKIPPED the
+  recipient. Root cause: `supabase-js .contains('<jsonb col>', [jsArray])` serializes to a Postgres ARRAY
+  literal `{...}`, which the server rejects for a jsonb `@>` with "invalid input syntax for type json".
+  In `isSuppressedByEmail` (FAIL-CLOSED) the throw marked EVERY address suppressed — the newsletter drain,
+  CMA delivery, and lead→broker routing all SILENTLY skipped every recipient. Three sites fixed to
+  `JSON.stringify([...])` (`lib/crm/suppressions.ts`, `lib/cma-deliver.ts`, `lib/data/crm/leadAssignedBroker.ts`).
+  Locked behind **ci:jsonb-contains** (`check-jsonb-contains.mjs`, red→green proven; `tags` is text[] so
+  it's excluded). The existing suppressions-by-email tests MOCK `.contains` so never caught it — a real-DB
+  send is the only proof. **After the fix the probe delivered a real email to matt@ (Resend id, drain
+  sent:1, finalized:sent).** Commit `27003886`.
+
 **2026-07-03 (latest) — Bulk enroll + bulk one-off send (Matt request) + S-10 opt-out guard.**
 - **Bulk enroll** (subscribers page → "Bulk add subscribers"): paste a list and/or pick a CRM tag →
   `adminBulkEnrollNewsletterAction` adds everyone as recurring subscribers (cap 5000). Tag resolution via
