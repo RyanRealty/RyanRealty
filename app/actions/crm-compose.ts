@@ -34,6 +34,7 @@ import {
   getComposeAudienceOptions,
   type ComposeAudienceOptions,
 } from '@/lib/data/crm/getComposeAudienceOptions'
+import { resolveAudienceIds, type AudienceSelection } from '@/lib/crm/audience'
 import {
   parseComposeAudience,
   audienceToSelection,
@@ -183,9 +184,24 @@ export async function scheduleComposeCohortAction(
     return { ok: false, error: e instanceof Error ? e.message : 'Pick an audience to send to' }
   }
 
-  let frozenSelection
+  // FREEZE the cohort to a concrete id snapshot AT SCHEDULE TIME, under the
+  // caller's scope. Previously a view/matching audience stored its {ast} and the
+  // cron re-resolved it live at fire time, so the cohort the broker previewed
+  // ("50 people") was not the cohort that mailed (new arrivals could push it to
+  // 70) — contradicting this action's "FREEZES the resolved selection" contract.
+  // Snapshotting to ids makes previewed count == sent count. Suppression still
+  // runs per-recipient in the worker, so anyone who opts out between now and the
+  // send is still dropped.
+  const brokerScope = scopeBroker(access)
+  const sb = createServiceClient()
+  let frozenSelection: { ids: number[] }
   try {
-    frozenSelection = await resolveBulkSelection(selection)
+    const built = await resolveBulkSelection(selection, brokerScope)
+    const frozenIds = await resolveAudienceIds(sb, built as AudienceSelection, brokerScope)
+    if (frozenIds.length === 0) {
+      return { ok: false, error: 'No contacts in your book match that audience' }
+    }
+    frozenSelection = { ids: frozenIds }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Invalid audience' }
   }
@@ -200,8 +216,6 @@ export async function scheduleComposeCohortAction(
     Number.isFinite(parsedTid) && parsedTid > 0 ? parsedTid : null
   const params = { templateId, subject: subject || null, body: body || null }
 
-  const brokerScope = scopeBroker(access)
-  const sb = createServiceClient()
   const { data, error } = await sb
     .from('crm_scheduled_sends')
     .insert({

@@ -105,13 +105,12 @@ function getFubConfig(): { apiKey: string; pipelineId: string | null } {
 function verifySignature(body: string, signatureHeader: string | null): boolean {
   const appSecret = (process.env.META_APP_SECRET || '').trim()
   if (!appSecret) {
-    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
-    if (isProd) {
-      console.error('[lead-webhook] META_APP_SECRET not set in production — rejecting')
-      return false
-    }
-    console.warn('[lead-webhook] META_APP_SECRET not set — allowing in dev')
-    return true
+    // Fail CLOSED everywhere, not just in prod. The old dev-allow branch meant a
+    // preview/staging deploy missing the secret accepted ANY forged leadgen POST
+    // (fake contacts, poisoned attribution). A webhook receiver that cannot
+    // verify a signature must reject — set META_APP_SECRET to test locally.
+    console.error('[lead-webhook] META_APP_SECRET not set — rejecting (fail closed)')
+    return false
   }
 
   if (!signatureHeader) {

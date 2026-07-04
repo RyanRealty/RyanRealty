@@ -40,14 +40,15 @@ const TIMELINE_TITLE: Record<ResendEventType, string> = {
 export async function POST(request: NextRequest) {
   const raw = await request.text()
   const secret = process.env.RESEND_WEBHOOK_SECRET?.trim()
-  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
 
   if (!secret) {
-    if (isProd) {
-      console.error('[resend-webhook] RESEND_WEBHOOK_SECRET not set in production — rejecting')
-      return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
-    }
-    console.warn('[resend-webhook] RESEND_WEBHOOK_SECRET not set — allowing in dev')
+    // Fail CLOSED everywhere, not just in prod. The old dev-allow branch let a
+    // preview/staging deploy missing the secret accept a FORGED bounce/complaint
+    // event, which silently suppresses a real client's email (or writes fake
+    // engagement). A webhook that cannot verify must reject — set the secret to
+    // test locally.
+    console.error('[resend-webhook] RESEND_WEBHOOK_SECRET not set — rejecting (fail closed)')
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
   } else {
     const svixId = request.headers.get('svix-id') ?? ''
     const svixTimestamp = request.headers.get('svix-timestamp') ?? ''

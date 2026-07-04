@@ -41,18 +41,26 @@ export async function POST(req: NextRequest) {
 
   const sb = createServiceClient()
 
-  // Load the job
-  const { data: job, error: jobErr } = await sb
-    .from('crm_imports')
-    .select('id,status,field_mapping,row_count,cursor')
-    .eq('id', jobId)
-    .single()
-
-  if (jobErr || !job) {
-    return NextResponse.json({ error: 'Import job not found' }, { status: 404 })
+  // Atomically CLAIM the job (TOCTOU fix). A plain status read let two
+  // concurrent POSTs both see 'running' and both process the whole file,
+  // double-creating every contact. crm_claim_import row-locks + sets
+  // processing_started_at and returns the job ONLY to the winning caller; a
+  // second concurrent call gets zero rows. A run older than the stale window
+  // (600s, past the 60s maxDuration) is re-claimable so a crash can't wedge it.
+  const { data: claimed, error: jobErr } = await sb.rpc('crm_claim_import', { p_job_id: jobId })
+  const job = Array.isArray(claimed) ? claimed[0] : null
+  if (jobErr) {
+    return NextResponse.json({ error: `Could not claim import job: ${jobErr.message}` }, { status: 500 })
   }
-  if (job.status !== 'running') {
-    return NextResponse.json({ error: `Job is in status '${job.status}', expected 'running'` }, { status: 409 })
+  if (!job) {
+    // Not claimable: either the job does not exist / is not 'running', or
+    // another worker already claimed it. Disambiguate for a clear response.
+    const { data: exists } = await sb.from('crm_imports').select('status').eq('id', jobId).maybeSingle()
+    if (!exists) return NextResponse.json({ error: 'Import job not found' }, { status: 404 })
+    return NextResponse.json(
+      { error: `Import job is '${exists.status}' or already being processed` },
+      { status: 409 },
+    )
   }
 
   const mapping = (job.field_mapping ?? {}) as FieldMapping
@@ -118,25 +126,19 @@ export async function POST(req: NextRequest) {
             .eq('id', existingPersonId)
           if (upErr) throw new Error(upErr.message)
 
-          // Add phone contact point if missing
+          // Add phone contact point. Upsert (ignore dup) on the per-person
+          // unique index (person_id,kind,value) — race-safe, no check-then-insert.
           if (c.phone) {
-            const phoneNorm = c.phone.replace(/\D/g, '')
-            const { data: existingPhone } = await sb
-              .from('crm_contact_points')
-              .select('id')
-              .eq('person_id', existingPersonId)
-              .eq('kind', 'phone')
-              .eq('value', phoneNorm)
-              .maybeSingle()
-            if (!existingPhone) {
-              await sb.from('crm_contact_points').insert({
+            await sb.from('crm_contact_points').upsert(
+              {
                 person_id: existingPersonId,
                 kind: 'phone',
-                value: phoneNorm,
+                value: c.phone.replace(/\D/g, ''),
                 label: 'mobile',
                 is_primary: false,
-              })
-            }
+              },
+              { onConflict: 'person_id,kind,value', ignoreDuplicates: true },
+            )
           }
         } else {
           // Insert new person
@@ -172,7 +174,9 @@ export async function POST(req: NextRequest) {
             cps.push({ person_id: newPerson.id, kind: 'phone', value: c.phone.replace(/\D/g, ''), label: 'mobile', is_primary: !emailLower })
           }
           if (cps.length > 0) {
-            const { error: cpErr } = await sb.from('crm_contact_points').insert(cps)
+            const { error: cpErr } = await sb
+              .from('crm_contact_points')
+              .upsert(cps, { onConflict: 'person_id,kind,value', ignoreDuplicates: true })
             if (cpErr) throw new Error(`contact_points: ${cpErr.message}`)
           }
         }

@@ -41,6 +41,7 @@
  * happen here — they happen in the worker's handlers.
  */
 
+import { createHash } from 'node:crypto'
 import {
   enqueueBulkJob,
   type BulkSelection,
@@ -172,11 +173,34 @@ async function enqueue(
       params,
       actorEmail: access.email,
       brokerScope,
+      // Idempotency: a double-clicked "Send" (or a retried action) with the
+      // identical actor + kind + resolved cohort + content returns the SAME job
+      // instead of enqueuing a second that would double-send. The key frees once
+      // the job reaches a terminal state, so a deliberate later re-send works.
+      dedupeKey: bulkDedupeKey(access.email, kind, built, params),
     })
     return { ok: true, jobId }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Could not start the bulk job' }
   }
+}
+
+/**
+ * Stable idempotency key for an enqueue: same actor + kind + resolved selection
+ * + params -> same key. ids are sorted so set-order variance never changes it.
+ */
+function bulkDedupeKey(
+  actorEmail: string,
+  kind: string,
+  built: BulkSelection,
+  params: Record<string, unknown>,
+): string {
+  const selPart =
+    'ids' in built && Array.isArray((built as { ids?: number[] }).ids)
+      ? `ids:${[...(built as { ids: number[] }).ids].sort((a, b) => a - b).join(',')}`
+      : `ast:${JSON.stringify((built as { ast?: unknown }).ast ?? built)}`
+  const raw = `${actorEmail}|${kind}|${selPart}|${JSON.stringify(params)}`
+  return createHash('sha1').update(raw).digest('hex')
 }
 
 // ── Actions ──────────────────────────────────────────────────────────────────

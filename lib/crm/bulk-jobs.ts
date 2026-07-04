@@ -144,6 +144,13 @@ export type EnqueueArgs = {
   actorEmail: string
   /** Frozen at enqueue: the broker the actor is scoped to (null = superuser). */
   brokerScope: string | null
+  /**
+   * Optional idempotency key. When set, a second enqueue with the same key while
+   * an earlier job is still non-terminal returns that job's id instead of
+   * creating a duplicate (double-click / retry protection). Enforced by the
+   * partial unique index crm_bulk_jobs_active_dedupe_uidx.
+   */
+  dedupeKey?: string
 }
 
 /**
@@ -172,16 +179,30 @@ export function buildBulkJobInsert(args: EnqueueArgs): {
   }
 }
 
-/** Enqueue a bulk job. Returns the new job id. */
+/** Enqueue a bulk job. Returns the new job id (or the existing one on a dedupe hit). */
 export async function enqueueBulkJob(args: EnqueueArgs): Promise<number> {
   const sb = createServiceClient()
-  const { data, error } = await sb
-    .from('crm_bulk_jobs')
-    .insert(buildBulkJobInsert(args))
-    .select('id')
-    .single()
-  if (error) throw new Error(`enqueueBulkJob failed: ${error.message}`)
-  return data.id as number
+  const row: Record<string, unknown> = { ...buildBulkJobInsert(args) }
+  if (args.dedupeKey) row.dedupe_key = args.dedupeKey
+
+  const { data, error } = await sb.from('crm_bulk_jobs').insert(row).select('id').single()
+  if (!error) return data.id as number
+
+  // Unique-violation on the active-dedupe index = a job with this key is already
+  // in flight (a double-click / retry). Return the existing job instead of
+  // duplicating the send. 23505 = unique_violation.
+  if (args.dedupeKey && error.code === '23505') {
+    const { data: existing } = await sb
+      .from('crm_bulk_jobs')
+      .select('id')
+      .eq('dedupe_key', args.dedupeKey)
+      .not('status', 'in', '("done","error","failed")')
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (existing) return existing.id as number
+  }
+  throw new Error(`enqueueBulkJob failed: ${error.message}`)
 }
 
 /**
