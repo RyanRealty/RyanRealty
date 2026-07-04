@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.729.0 (2026-07-04)
+
+### Features
+- feat(newsletter): bulk enroll + bulk one-off send, with opt-out reactivation guard (S-10)
+
+### Bug Fixes
+- fix(newsletter): absolute-HTTPS producer images + fix &middot; double-escape in event meta
+
+---
+
+
 ## v1.728.0 (2026-07-03)
 
 ### Features
