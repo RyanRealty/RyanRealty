@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.731.6 (2026-07-04)
+
+### Maintenance
+- perf(crm): cron overlap leases, sequence N+1, streamed export (audit batch 3)
+
+---
+
+
 ## v1.731.5 (2026-07-04)
 
 ### Bug Fixes
