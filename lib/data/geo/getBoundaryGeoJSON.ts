@@ -25,7 +25,7 @@ import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 
 export type BoundaryGeoJSONInput = {
-  geoType: 'city' | 'neighborhood' | 'subdivision'
+  geoType: 'city' | 'neighborhood' | 'subdivision' | 'park' | 'school'
   geoSlug: string
 }
 

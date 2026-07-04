@@ -92,17 +92,22 @@ export default async function SchoolDetailPage({ params }: Props) {
 
   const { school, homes, stats, nearby } = detail
 
-  // Frame the map on the school's primary-city boundary polygon (shared DAL),
-  // then render the school's own feeding-home pins inside it. The polygon is
-  // just the frame; the pins are the verified homes that feed this school.
+  // Draw the school's own ATTENDANCE-AREA polygon (Deschutes County GIS, stored
+  // in boundaries as geo_type='school') where one exists — that is the boundary
+  // buyers care about. Fall back to the primary-city polygon as a frame when the
+  // school has no attendance polygon (out-of-county districts, alt schools). The
+  // pins are the verified feeding homes either way.
   const citySlug = slugifySchoolName(school.city)
+  const schoolBoundary =
+    homes.length > 0 ? await getGeoBoundaryMapData({ geoType: 'school', geoSlug: school.slug }).catch(() => null) : null
+  const usingAttendanceArea = !!schoolBoundary?.polygon
   const boundary =
-    homes.length > 0
-      ? await getGeoBoundaryMapData({ geoType: 'city', geoSlug: citySlug }).catch(() => ({
-          polygon: null,
-          pins: [],
-        }))
-      : { polygon: null, pins: [] }
+    schoolBoundary?.polygon
+      ? schoolBoundary
+      : homes.length > 0
+        ? await getGeoBoundaryMapData({ geoType: 'city', geoSlug: citySlug }).catch(() => ({ polygon: null, pins: [] }))
+        : { polygon: null, pins: [] }
+  const polygonLabel = usingAttendanceArea ? `${school.name} attendance area` : school.city
 
   // KB map geojson — the school's own feeding-home pins (price + beds/baths/sqft
   // + address in the popup). The city polygon below is the frame only.
@@ -128,7 +133,7 @@ export default async function SchoolDetailPage({ params }: Props) {
       ? {
           type: 'FeatureCollection' as const,
           features: [
-            { type: 'Feature' as const, geometry: boundary.polygon, properties: { name: school.city } },
+            { type: 'Feature' as const, geometry: boundary.polygon, properties: { name: polygonLabel } },
           ],
         }
       : undefined

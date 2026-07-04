@@ -25,7 +25,7 @@ import { getBoundaryGeoJSON } from '@/lib/data/geo/getBoundaryGeoJSON'
 import type { BoundaryGeometry } from '@/lib/data/geo/getBoundaryGeoJSON'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 
-export type GeoType = 'city' | 'neighborhood' | 'subdivision'
+export type GeoType = 'city' | 'neighborhood' | 'subdivision' | 'park' | 'school'
 
 export type GeoBoundaryMapInput = {
   geoType: GeoType
