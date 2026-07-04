@@ -21,7 +21,8 @@
 
 import { redirect } from 'next/navigation'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getCrmAccess } from '@/app/actions/crm'
+import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
+import { scopeBroker } from '@/lib/crm/scope'
 import { CRM_BROKERS, CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
 
 export type CrmPersonGapResult = { ok: true } | { ok: false; error: string }
@@ -40,6 +41,8 @@ export async function addCrmCollaboratorAction(
 ): Promise<CrmPersonGapResult> {
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
+  const scope = await requirePersonInScope(personId, access)
+  if (!scope.ok) return scope
 
   if (!CRM_BROKERS.includes(brokerSlug as CrmBrokerSlug)) {
     return { ok: false, error: `Unknown broker slug: ${brokerSlug}` }
@@ -86,6 +89,8 @@ export async function removeCrmCollaboratorAction(
 ): Promise<CrmPersonGapResult> {
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
+  const scope = await requirePersonInScope(personId, access)
+  if (!scope.ok) return scope
 
   const sb = createServiceClient()
   const { error } = await sb
@@ -134,14 +139,17 @@ export async function searchPeopleForMergeAction(
 
   const sb = createServiceClient()
 
-  const { data } = await sb
+  // Scope the candidate list to the caller's own book — a restricted broker must
+  // not enumerate (or merge into) another broker's contacts. Superuser (null) sees all.
+  const slug = scopeBroker(access)
+  let qb = sb
     .from('crm_people')
     .select('id, name, emails, phones, stage')
     .neq('id', excludeId)
     .eq('deleted', false)
     .ilike('name', `%${q}%`)
-    .order('name', { ascending: true })
-    .limit(20)
+  if (slug) qb = qb.eq('assigned_broker', slug)
+  const { data } = await qb.order('name', { ascending: true }).limit(20)
 
   if (!data) return []
 
@@ -177,6 +185,12 @@ export async function linkUnknownCallerToPersonAction(
     return { ok: false, error: 'Both contacts are required' }
   }
   if (survivorId === mergedId) return { ok: false, error: 'Cannot link a contact to itself' }
+  // Both sides must be in the caller's scope — merge moves timeline/tasks across
+  // records, so a restricted broker must own each end.
+  const survivorScope = await requirePersonInScope(survivorId, access)
+  if (!survivorScope.ok) return survivorScope
+  const mergedScope = await requirePersonInScope(mergedId, access)
+  if (!mergedScope.ok) return mergedScope
 
   const sb = createServiceClient()
   const [{ data: survivor }, { data: merged }] = await Promise.all([
@@ -224,6 +238,11 @@ export async function mergeCrmContactAction(formData: FormData): Promise<void> {
   if (survivorId === mergedId) {
     errRedirect('Cannot merge a contact with itself.')
   }
+  // Both sides must be in the caller's scope (superuser passes unconditionally).
+  const survivorScope = await requirePersonInScope(survivorId, access)
+  if (!survivorScope.ok) errRedirect(survivorScope.error)
+  const mergedScope = await requirePersonInScope(mergedId, access)
+  if (!mergedScope.ok) errRedirect(mergedScope.error)
 
   const sb = createServiceClient()
 
@@ -366,6 +385,9 @@ export async function bulkMergePeopleAction(input: {
     return { ok: false, error: 'Merge is capped at 10 contacts at once.' }
   }
 
+  const survivorScope = await requirePersonInScope(survivorId, access)
+  if (!survivorScope.ok) return survivorScope
+
   const sb = createServiceClient()
   const { data: survivor } = await sb
     .from('crm_people')
@@ -377,6 +399,10 @@ export async function bulkMergePeopleAction(input: {
 
   let merged = 0
   for (const mergedId of mergedIds) {
+    // Skip any duplicate outside the caller's scope rather than pulling another
+    // broker's contact into the survivor.
+    const dupScope = await requirePersonInScope(mergedId, access)
+    if (!dupScope.ok) continue
     const { data: dup } = await sb
       .from('crm_people')
       .select('id, name')

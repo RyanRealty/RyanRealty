@@ -25,7 +25,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getCrmAccess } from '@/app/actions/crm'
+import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 
 export type PersonDetailResult = { ok: true } | { ok: false; error: string }
 
@@ -44,6 +44,8 @@ export async function updatePersonFieldAction(
 ): Promise<PersonDetailResult> {
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
+  const scope = await requirePersonInScope(personId, access)
+  if (!scope.ok) return scope
   if (!EDITABLE_FIELDS.includes(field as EditableField)) {
     return { ok: false, error: `Field not editable: ${field}` }
   }
@@ -94,6 +96,8 @@ export async function updatePersonNameAction(
 ): Promise<PersonDetailResult> {
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
+  const scope = await requirePersonInScope(personId, access)
+  if (!scope.ok) return scope
 
   const first = firstName.trim()
   const last = lastName.trim()
@@ -142,6 +146,8 @@ export async function savePhoneNumbersAction(
 ): Promise<PersonDetailResult> {
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
+  const scope = await requirePersonInScope(personId, access)
+  if (!scope.ok) return scope
 
   const clean = rows
     .map((r) => ({
@@ -210,6 +216,8 @@ export async function saveEmailRowAction(
 ): Promise<PersonDetailResult> {
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
+  const scope = await requirePersonInScope(personId, access)
+  if (!scope.ok) return scope
   const value = next.trim().toLowerCase()
   const sb = createServiceClient()
 
@@ -282,6 +290,13 @@ export async function toggleTimelineStarAction(
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
   const sb = createServiceClient()
+  // The star toggle targets a timeline row, not a person — resolve the owning
+  // contact and scope-check it so a restricted broker can't star/unstar an
+  // entry on another broker's lead by guessing a timeline id.
+  const { data: row } = await sb.from('crm_timeline').select('person_id').eq('id', timelineId).maybeSingle()
+  if (!row) return { ok: false, error: 'Timeline entry not found' }
+  const scope = await requirePersonInScope(row.person_id as number, access)
+  if (!scope.ok) return scope
   const { error } = await sb.from('crm_timeline').update({ starred }).eq('id', timelineId)
   if (error) return { ok: false, error: error.message }
   return { ok: true }
@@ -296,6 +311,8 @@ export async function logCrmCallAction(formData: FormData): Promise<PersonDetail
   if (!access) return { ok: false, error: 'Unauthorized' }
   const personId = Number(formData.get('personId'))
   if (!Number.isFinite(personId) || personId <= 0) return { ok: false, error: 'Bad person id' }
+  const scope = await requirePersonInScope(personId, access)
+  if (!scope.ok) return scope
   const outcome = String(formData.get('outcome') ?? 'Other')
   const minutes = Number(formData.get('minutes') ?? 0)
   const notes = String(formData.get('notes') ?? '').trim()
@@ -328,6 +345,8 @@ export async function logCrmCallAction(formData: FormData): Promise<PersonDetail
 export async function quickFollowUpAction(personId: number, days: number): Promise<PersonDetailResult> {
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
+  const scope = await requirePersonInScope(personId, access)
+  if (!scope.ok) return scope
   if (!Number.isFinite(days) || days <= 0 || days > 400) return { ok: false, error: 'Bad interval' }
   const sb = createServiceClient()
   const due = new Date(Date.now() + days * 86400_000)
@@ -361,6 +380,8 @@ export async function addRelationshipContactAction(
 ): Promise<PersonDetailResult & { relatedId?: number }> {
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
+  const scope = await requirePersonInScope(personId, access)
+  if (!scope.ok) return scope
   const first = draft.firstName.trim()
   if (!first) return { ok: false, error: 'First name is required.' }
   const last = draft.lastName.trim()
@@ -431,6 +452,8 @@ export async function applyAutomationAction(
 ): Promise<PersonDetailResult> {
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
+  const scope = await requirePersonInScope(personId, access)
+  if (!scope.ok) return scope
   const { manualEnrollPerson } = await import('@/lib/crm/enroll')
   const r = await manualEnrollPerson(personId, sequenceId, access.email)
   if (!r.enrolled) return { ok: false, error: 'reason' in r ? r.reason : 'Could not enroll.' }
@@ -449,6 +472,8 @@ export async function saveAddressRowAction(
 ): Promise<PersonDetailResult> {
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
+  const scope = await requirePersonInScope(personId, access)
+  if (!scope.ok) return scope
   const sb = createServiceClient()
   const { data: person } = await sb.from('crm_people').select('addresses').eq('id', personId).maybeSingle()
   const rest = Array.isArray(person?.addresses) ? (person!.addresses as unknown[]).slice(1) : []
@@ -475,6 +500,8 @@ export async function saveAddressRowAction(
 export async function assignPondAction(personId: number, pondId: number | null): Promise<PersonDetailResult> {
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
+  const scope = await requirePersonInScope(personId, access)
+  if (!scope.ok) return scope
   const sb = createServiceClient()
   const { error } = await sb
     .from('crm_people')

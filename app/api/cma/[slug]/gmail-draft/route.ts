@@ -3,6 +3,7 @@ import { renderCmaPdfBuffer, CmaNotFoundError } from '@/lib/cma-pdf'
 import { createGmailDraft } from '@/lib/gmail-draft'
 import { createServiceClient } from '@/lib/supabase/service'
 import { isSuppressedByEmail } from '@/lib/crm/suppressions'
+import { isAuthorizedAdminOrCron } from '@/lib/auth/guards'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -210,6 +211,9 @@ Ryan Realty
 }
 
 export async function POST(request: Request, context: { params: Promise<{ slug: string }> }) {
+  if (!(await isAuthorizedAdminOrCron(request))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   const { slug } = await context.params
   let body: DraftPayload = {}
   try {
@@ -221,6 +225,9 @@ export async function POST(request: Request, context: { params: Promise<{ slug: 
 }
 
 export async function GET(request: Request, context: { params: Promise<{ slug: string }> }) {
+  if (!(await isAuthorizedAdminOrCron(request))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   const { slug } = await context.params
   const sp = new URL(request.url).searchParams
   return handleDraft(slug, {

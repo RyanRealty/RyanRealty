@@ -8,7 +8,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getCrmAccess } from '@/app/actions/crm'
+import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import type { PersonDetailResult } from '@/app/actions/crm-person-detail'
 
 const BASE = '/admin/console/leads'
@@ -20,6 +20,8 @@ export async function addPersonFileLinkAction(
 ): Promise<PersonDetailResult> {
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
+  const scope = await requirePersonInScope(personId, access)
+  if (!scope.ok) return scope
   const cleanUrl = url.trim()
   if (!/^https?:\/\//i.test(cleanUrl)) return { ok: false, error: 'Enter a full URL (https://…).' }
   const sb = createServiceClient()
@@ -44,6 +46,8 @@ export async function uploadPersonFileAction(formData: FormData): Promise<Person
   const personId = Number(formData.get('personId'))
   const file = formData.get('file') as File | null
   if (!Number.isFinite(personId) || personId <= 0) return { ok: false, error: 'Bad person id' }
+  const scope = await requirePersonInScope(personId, access)
+  if (!scope.ok) return scope
   if (!file || file.size === 0) return { ok: false, error: 'Choose a file.' }
   if (file.size > MAX_FILE_BYTES) return { ok: false, error: 'Max file size is 100 MB.' }
   const lower = file.name.toLowerCase()
@@ -83,6 +87,8 @@ export async function deletePersonFileAction(fileId: number): Promise<PersonDeta
     .eq('id', fileId)
     .maybeSingle()
   if (!row) return { ok: false, error: 'File not found.' }
+  const scope = await requirePersonInScope(Number(row.person_id), access)
+  if (!scope.ok) return scope
   if (row.storage_path) await sb.storage.from('crm-files').remove([row.storage_path])
   const { error } = await sb.from('crm_person_files').delete().eq('id', fileId)
   if (error) return { ok: false, error: error.message }

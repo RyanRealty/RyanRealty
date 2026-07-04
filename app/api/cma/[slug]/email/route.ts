@@ -3,6 +3,7 @@ import { renderCmaPdfBuffer, CmaNotFoundError } from '@/lib/cma-pdf'
 import { sendEmail } from '@/lib/resend'
 import { createServiceClient } from '@/lib/supabase/service'
 import { isSuppressedByEmail } from '@/lib/crm/suppressions'
+import { isAuthorizedAdminOrCron } from '@/lib/auth/guards'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -22,6 +23,12 @@ async function handleEmail(
   body: EmailPayload,
   options: { preview?: boolean } = {}
 ) {
+  // Sends a client CMA (with attacker-controllable to/cc/from/subject) from the
+  // brokerage's verified domain and exposes client PII — admin session or cron
+  // secret only. Covers POST, GET, and the GET preview envelope.
+  if (!(await isAuthorizedAdminOrCron(request))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   const { slug } = await context.params
   const safeSlug = String(slug ?? '').trim().toLowerCase()
   if (!/^[a-z0-9-]+$/.test(safeSlug)) {
