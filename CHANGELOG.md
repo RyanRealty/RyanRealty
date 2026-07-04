@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.731.1 (2026-07-04)
+
+### Bug Fixes
+- fix(crm): close cross-broker IDOR + unauth CMA routes (authz audit)
+
+### Other
+- ci(crm): gate person-scoped mutations must carry an ownership guard (G: crm-scope)
+
+---
+
+
 ## v1.731.0 (2026-07-04)
 
 ### Features
