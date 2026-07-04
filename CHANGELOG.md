@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.731.2 (2026-07-04)
+
+### Bug Fixes
+- fix(crm): stage deletion is owner-only (config authz consistency)
+
+---
+
+
 ## v1.731.1 (2026-07-04)
 
 ### Bug Fixes
