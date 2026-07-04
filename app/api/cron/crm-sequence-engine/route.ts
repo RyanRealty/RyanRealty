@@ -43,6 +43,18 @@ export async function GET(request: Request) {
   const startMs = Date.now()
   const sb = createServiceClient()
 
+  // Overlap lease: if a previous run is still going (it exceeded the cron
+  // interval), skip this tick instead of re-processing the same due enrollments
+  // and racing the step-index advance. The lease self-expires after 300s (the
+  // maxDuration) so a crash can't wedge the cron.
+  const { data: gotLease } = await sb.rpc('crm_try_cron_lease', {
+    p_name: 'crm-sequence-engine',
+    p_lease_seconds: 300,
+  })
+  if (gotLease === false) {
+    return NextResponse.json({ ok: true, skipped: 'previous run still in progress' })
+  }
+
   const { data: due, error } = await sb
     .from('crm_sequence_enrollments')
     .select('id,person_id,sequence_id,step_index,created_at,first_touch_override,crm_sequences!inner(id,name,status,stop_on_reply,steps)')
@@ -50,7 +62,10 @@ export async function GET(request: Request) {
     .eq('crm_sequences.status', 'active')
     .or(`next_run_at.is.null,next_run_at.lte.${new Date().toISOString()}`)
     .limit(BATCH)
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+  if (error) {
+    await sb.rpc('crm_release_cron_lease', { p_name: 'crm-sequence-engine' })
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+  }
 
   let executed = 0, paused = 0, completed = 0, skippedDupEmail = 0, suppressed = 0, errored = 0, queuedSms = 0
   const skippedSms = 0 // reserved for future direct-SMS skip tracking; currently unused
@@ -59,6 +74,19 @@ export async function GET(request: Request) {
   // queue visibly (timeline row with the rendered text) instead of erroring,
   // and fire automatically on the first run after approval.
   const a2pStatus = await getA2pCampaignStatus().catch(() => null)
+
+  // Per-run template cache: a batch of 50 enrollments commonly shares a handful
+  // of templates. Fetch each templateKey at most once per run instead of once
+  // per enrollment (perf audit: repeated crm_templates lookups in the loop).
+  const templateCache = new Map<string, { subject: string | null; body: string | null }>()
+  async function loadTemplate(key: string): Promise<{ subject: string | null; body: string | null }> {
+    const hit = templateCache.get(key)
+    if (hit) return hit
+    const { data } = await sb.from('crm_templates').select('subject,body').eq('key', key).maybeSingle()
+    const tpl = { subject: (data?.subject as string | null) ?? null, body: (data?.body as string | null) ?? null }
+    templateCache.set(key, tpl)
+    return tpl
+  }
 
   for (const en of due ?? []) {
     const seq = en.crm_sequences as unknown as { name: string; stop_on_reply: boolean; steps: Step[] }
@@ -84,32 +112,38 @@ export async function GET(request: Request) {
         }
       }
 
+      // Load the contact ONCE per enrollment. Previously the condition loop
+      // re-fetched stage/tags/source every iteration (up to 10 queries) and the
+      // step path fetched the full row again — this single read replaces all of
+      // them (perf audit: per-enrollment N+1 + duplicate person fetch).
+      const { data: person } = await sb
+        .from('crm_people')
+        .select('id,fub_legacy_id,first_name,last_name,name,stage,source,lender_name,emails,phones,addresses,tags,custom,assigned_broker')
+        .eq('id', en.person_id)
+        .single()
+      if (!person) { await finish({ status: 'stopped' }); errored++; continue }
+
       // ── Condition node resolution ────────────────────────────────────────
       // A 'condition' node (type === 'condition') is not an execution step —
       // it is a branching decision. The engine evaluates it, splices the
       // chosen path into the remaining steps, and then re-reads the step at
       // the same index (which is now the first step of the chosen path).
-      // This is done in a loop so nested conditions resolve correctly.
+      // This is done in a loop so nested conditions resolve correctly. The
+      // contact loaded above (stage/tags/source live on it) is reused every
+      // iteration — no per-iteration re-fetch.
       let rawSteps = (seq.steps ?? []) as AnyStepOrCondition[]
       let condIterations = 0
       while (condIterations < 10) {
         const candidate = rawSteps[en.step_index] as AnyStepOrCondition | undefined
         if (!candidate || !isConditionNode(candidate)) break
-        const { data: condPerson } = await sb
-          .from('crm_people')
-          .select('stage,tags,source')
-          .eq('id', en.person_id)
-          .single()
-        const chosen = resolveConditionPath(candidate, condPerson ?? {})
+        const chosen = resolveConditionPath(candidate, person)
         // Splice: replace the condition node with the chosen path's steps
         rawSteps = [
           ...rawSteps.slice(0, en.step_index),
           ...chosen,
           ...rawSteps.slice(en.step_index + 1),
         ]
-        // Write the materialized steps back so the advance logic uses the same
-        // array. We do NOT persist this to the DB (the steps column stays the
-        // authoritative tree); the flattening is purely in-memory for this tick.
+        // Materialized in-memory only; the steps column stays authoritative.
         condIterations++
       }
 
@@ -120,13 +154,6 @@ export async function GET(request: Request) {
         errored++
         continue
       }
-
-      const { data: person } = await sb
-        .from('crm_people')
-        .select('id,fub_legacy_id,first_name,last_name,name,stage,source,lender_name,emails,phones,addresses,tags,custom,assigned_broker')
-        .eq('id', en.person_id)
-        .single()
-      if (!person) { await finish({ status: 'stopped' }); errored++; continue }
 
       // Merge context — resolves %agent_*%/%sender_*%/%company_*% from real
       // data. Automated sends come "from" the assigned broker, so sender=agent.
@@ -185,8 +212,9 @@ export async function GET(request: Request) {
         let subject = step.subject ?? ''
         let body = step.body ?? ''
         if (step.templateKey) {
-          const { data: tpl } = await sb.from('crm_templates').select('subject,body').eq('key', step.templateKey).maybeSingle()
-          if (tpl) { subject = tpl.subject ?? subject; body = tpl.body ?? body }
+          const tpl = await loadTemplate(step.templateKey)
+          subject = tpl.subject ?? subject
+          body = tpl.body ?? body
         }
         if (!body) { await finish({ status: 'stopped' }); await log(`Sequence "${seq.name}" stopped — empty email step`); errored++; continue }
         // Archived-placeholder guard: a FUB-archived template imports with
@@ -266,8 +294,8 @@ export async function GET(request: Request) {
         }
         let body = step.body ?? ''
         if (step.templateKey) {
-          const { data: tpl } = await sb.from('crm_templates').select('body').eq('key', step.templateKey).maybeSingle()
-          if (tpl?.body) body = tpl.body
+          const tpl = await loadTemplate(step.templateKey)
+          if (tpl.body) body = tpl.body
         }
         // Broker-edited first touch (set at approval) wins over the template.
         if (en.step_index === 0 && (en as { first_touch_override?: string | null }).first_touch_override) {
@@ -521,6 +549,10 @@ export async function GET(request: Request) {
       await log('Sequence step error — retrying in 30m', e instanceof Error ? e.message : String(e))
     }
   }
+
+  // Release the overlap lease so the next scheduled tick (or a manual re-run)
+  // can proceed immediately; it self-expires anyway if this line is missed.
+  await sb.rpc('crm_release_cron_lease', { p_name: 'crm-sequence-engine' })
 
   return NextResponse.json({
     ok: true, due: (due ?? []).length, executed, paused, completed, skippedSms, skippedDupEmail, suppressed, errored, queuedSms, a2pStatus,

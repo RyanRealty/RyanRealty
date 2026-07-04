@@ -30,6 +30,14 @@ export async function GET(request: Request) {
   const startMs = Date.now()
   const sb = createServiceClient()
 
+  // Overlap lease: this cron does ~10 serial queries per candidate over up to 300
+  // leads with no processed-flag, so an overrun would re-scan the same window on
+  // the next tick. Skip an overlapping run. Self-expires after 300s.
+  const { data: gotLease } = await sb.rpc('crm_try_cron_lease', { p_name: 'crm-auto-enroll', p_lease_seconds: 300 })
+  if (gotLease === false) {
+    return NextResponse.json({ ok: true, skipped: 'previous run still in progress' })
+  }
+
   const windowStart = new Date(Math.max(
     new Date(ENROLLMENT_EPOCH).getTime(),
     Date.now() - 7 * 86400e3,
@@ -41,7 +49,10 @@ export async function GET(request: Request) {
     .gte('fub_created_at', windowStart)
     .order('id', { ascending: false })
     .limit(300)
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+  if (error) {
+    await sb.rpc('crm_release_cron_lease', { p_name: 'crm-auto-enroll' })
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+  }
 
   let enrolled = 0
   let alerted = 0
@@ -70,6 +81,7 @@ export async function GET(request: Request) {
     if (queued) alerted++
   }
 
+  await sb.rpc('crm_release_cron_lease', { p_name: 'crm-auto-enroll' })
   return NextResponse.json({
     ok: true,
     scanned: (candidates ?? []).length,

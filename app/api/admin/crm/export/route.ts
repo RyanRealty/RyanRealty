@@ -98,33 +98,6 @@ export async function GET(req: NextRequest) {
     if (!tag && f.tagsAny?.length) viewTags = f.tagsAny
   }
 
-  // Build the query the same way listCrmPeople does (proven working, filter-for-filter).
-  let query = sb
-    .from('crm_people')
-    .select(allColumns ? CRM_EXPORT_SELECT_ALL : CRM_EXPORT_SELECT)
-    .eq('deleted', false)
-
-  if (ids.length > 0) query = query.in('id', ids)
-  if (stage) query = query.eq('stage', stage)
-  if (tag) query = query.overlaps('tags', [tag])
-  else if (viewTags?.length) query = query.overlaps('tags', viewTags)
-  if (effectiveBroker) query = query.eq('assigned_broker', effectiveBroker)
-
-  // q: name ilike (matches listCrmPeople's non-email / non-phone branch)
-  if (q) query = query.ilike('name', `%${q}%`)
-
-  // Safety ceiling — real book is ~18K; 50K covers any realistic export.
-  query = query
-    .order('last_activity_at', { ascending: false, nullsFirst: false })
-    .order('fub_created_at', { ascending: false, nullsFirst: false })
-    .range(0, 49_999)
-
-  const { data, error } = await query
-
-  if (error) {
-    return new Response(`Export failed: ${error.message}`, { status: 500 })
-  }
-
   type FullPersonRow = PersonRow & {
     first_name: string | null
     last_name: string | null
@@ -136,7 +109,24 @@ export async function GET(req: NextRequest) {
     custom: Record<string, unknown> | null
     last_activity_at: string | null
   }
-  const rows = (data ?? []) as unknown as FullPersonRow[]
+
+  // Fetch ONE page of the filtered set. Rebuilt per page (a PostgREST builder is
+  // single-use) so the export streams instead of materializing up to 50K wide
+  // rows + the whole CSV string in memory at once (OOM audit finding).
+  const cols = allColumns ? CRM_EXPORT_SELECT_ALL : CRM_EXPORT_SELECT
+  function pageQuery(offset: number, limit: number) {
+    let query = sb.from('crm_people').select(cols).eq('deleted', false)
+    if (ids.length > 0) query = query.in('id', ids)
+    if (stage) query = query.eq('stage', stage)
+    if (tag) query = query.overlaps('tags', [tag])
+    else if (viewTags?.length) query = query.overlaps('tags', viewTags)
+    if (effectiveBroker) query = query.eq('assigned_broker', effectiveBroker)
+    if (q) query = query.ilike('name', `%${q}%`)
+    return query
+      .order('last_activity_at', { ascending: false, nullsFirst: false })
+      .order('fub_created_at', { ascending: false, nullsFirst: false })
+      .range(offset, offset + limit - 1)
+  }
 
   const allValues = (items: Array<{ value?: string }> | null): string =>
     (items ?? []).map((i) => i?.value).filter(Boolean).join('; ')
@@ -149,51 +139,55 @@ export async function GET(req: NextRequest) {
        'Created', 'Last Activity']
     : HEADERS
 
-  const lines: string[] = [csvRow(headers)]
-  for (const p of rows) {
+  function formatRow(p: FullPersonRow): string {
     if (allColumns) {
-      lines.push(
-        csvRow([
-          p.name ?? '',
-          p.first_name ?? '',
-          p.last_name ?? '',
-          allValues(p.emails),
-          allValues(p.phones),
-          (p.addresses ?? []).map(fmtAddress).filter(Boolean).join('; '),
-          p.stage,
-          p.assigned_broker ?? '',
-          (p.tags ?? []).join('; '),
-          p.source ?? '',
-          p.price != null ? String(p.price) : '',
-          p.timeframe ?? '',
-          p.lender_name ?? '',
-          p.background ?? '',
-          p.custom && Object.keys(p.custom).length > 0 ? JSON.stringify(p.custom) : '',
-          p.fub_created_at ? p.fub_created_at.slice(0, 10) : '',
-          p.last_activity_at ? p.last_activity_at.slice(0, 10) : '',
-        ]),
-      )
-    } else {
-      lines.push(
-        csvRow([
-          p.name ?? '',
-          primaryContact(p.emails),
-          primaryContact(p.phones),
-          p.stage,
-          p.assigned_broker ?? '',
-          (p.tags ?? []).join('; '),
-          p.source ?? '',
-          p.fub_created_at ? p.fub_created_at.slice(0, 10) : '',
-        ]),
-      )
+      return csvRow([
+        p.name ?? '', p.first_name ?? '', p.last_name ?? '',
+        allValues(p.emails), allValues(p.phones),
+        (p.addresses ?? []).map(fmtAddress).filter(Boolean).join('; '),
+        p.stage, p.assigned_broker ?? '', (p.tags ?? []).join('; '), p.source ?? '',
+        p.price != null ? String(p.price) : '', p.timeframe ?? '', p.lender_name ?? '',
+        p.background ?? '',
+        p.custom && Object.keys(p.custom).length > 0 ? JSON.stringify(p.custom) : '',
+        p.fub_created_at ? p.fub_created_at.slice(0, 10) : '',
+        p.last_activity_at ? p.last_activity_at.slice(0, 10) : '',
+      ])
     }
+    return csvRow([
+      p.name ?? '', primaryContact(p.emails), primaryContact(p.phones), p.stage,
+      p.assigned_broker ?? '', (p.tags ?? []).join('; '), p.source ?? '',
+      p.fub_created_at ? p.fub_created_at.slice(0, 10) : '',
+    ])
   }
 
-  const csv = lines.join('')
+  const PAGE = 1000
+  const MAX_ROWS = 50_000 // safety ceiling; real book is ~18K
+  const encoder = new TextEncoder()
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      controller.enqueue(encoder.encode(csvRow(headers)))
+      for (let offset = 0; offset < MAX_ROWS; offset += PAGE) {
+        const { data, error } = await pageQuery(offset, PAGE)
+        if (error) {
+          // Header + rows so far already flushed; surface the error as a trailing
+          // CSV comment rather than a torn download with no signal.
+          controller.enqueue(encoder.encode(`# export error after ${offset} rows: ${error.message}\r\n`))
+          break
+        }
+        const rows = (data ?? []) as unknown as FullPersonRow[]
+        if (rows.length === 0) break
+        let block = ''
+        for (const p of rows) block += formatRow(p)
+        controller.enqueue(encoder.encode(block))
+        if (rows.length < PAGE) break
+      }
+      controller.close()
+    },
+  })
+
   const date = new Date().toISOString().slice(0, 10)
   const filename = `crm-contacts-${date}.csv`
-
-  return new Response(csv, {
+  return new Response(stream, {
     status: 200,
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',

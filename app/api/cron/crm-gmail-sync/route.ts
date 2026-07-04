@@ -9,6 +9,7 @@
 
 import { NextResponse } from 'next/server'
 import { CRM_MAILBOXES, loadEmailPersonMap, syncMailboxWindow } from '@/lib/crm/gmail'
+import { createServiceClient } from '@/lib/supabase/service'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -31,6 +32,15 @@ export async function GET(request: Request) {
   const pageBudget = Math.min(40, Math.max(1, Number(url.searchParams.get('pages') ?? '4')))
   const only = url.searchParams.get('mailbox') // broker slug filter for backfill loops
 
+  // Overlap lease: a slow backfill (?pages=40) can exceed the 15-min interval;
+  // skip an overlapping tick rather than rebuild the 18k-contact email map and
+  // re-walk the same Gmail pages concurrently. Self-expires after 300s.
+  const sb = createServiceClient()
+  const { data: gotLease } = await sb.rpc('crm_try_cron_lease', { p_name: 'crm-gmail-sync', p_lease_seconds: 300 })
+  if (gotLease === false) {
+    return NextResponse.json({ ok: true, skipped: 'previous run still in progress' })
+  }
+
   const emailMap = await loadEmailPersonMap()
   const results = []
   for (const mb of CRM_MAILBOXES) {
@@ -38,6 +48,7 @@ export async function GET(request: Request) {
     results.push(await syncMailboxWindow({ mailboxEmail: mb.email, brokerSlug: mb.slug, pageBudget, emailMap }))
   }
   const anyError = results.some((r) => r.error)
+  await sb.rpc('crm_release_cron_lease', { p_name: 'crm-gmail-sync' })
   return NextResponse.json({
     ok: !anyError,
     results,
