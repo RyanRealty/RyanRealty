@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.729.1 (2026-07-04)
+
+### Maintenance
+- docs(newsletter): log bulk enroll + one-off + S-10 guard in handoff
+
+---
+
+
 ## v1.729.0 (2026-07-04)
 
 ### Features
