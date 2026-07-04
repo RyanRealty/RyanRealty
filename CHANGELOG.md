@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.731.7 (2026-07-04)
+
+### Maintenance
+- chore(db): refresh schema snapshot + DAL index for audit-batch migrations
+
+---
+
+
 ## v1.731.6 (2026-07-04)
 
 ### Maintenance
