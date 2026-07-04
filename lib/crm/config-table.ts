@@ -124,6 +124,15 @@ export function makeConfigTable(opts: MakeConfigTableOptions) {
   async function requireAccess(): Promise<ConfigResult> {
     const access = await getCrmAccess()
     if (!access) return { ok: false, error: 'Unauthorized' }
+    // Global CRM configuration (stages, tags, task types, newsletter segments,
+    // report areas) is shared across every broker — creating/renaming/reordering/
+    // deleting a config row reshapes what all brokers see. Owner-only, matching
+    // the deal-pipeline / custom-field / pond / group config surfaces (Matt
+    // directive 2026-07-04). Applying a tag/task to a contact is a separate,
+    // broker-scoped action and is unaffected.
+    if (access.role !== 'superuser') {
+      return { ok: false, error: 'Only the account owner can change this configuration.' }
+    }
     return { ok: true }
   }
 
