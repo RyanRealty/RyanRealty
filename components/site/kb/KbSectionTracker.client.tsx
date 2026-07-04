@@ -7,7 +7,11 @@ import { trackEvent, readRrSessionId } from '@/lib/tracking'
 function internalTrack(eventType: 'section_view' | 'scroll_depth', extra?: Record<string, unknown>) {
   try {
     const sessionId = readRrSessionId()
-    const body = JSON.stringify({ sessionId, eventType, pageUrl: location.pathname + location.search, ...extra })
+    // The /api/visitors/track endpoint REQUIRES a full http(s) URL (it 400s a bare
+    // path and uses new URL(pageUrl).hostname for source-domain attribution). Send
+    // location.href, matching VisitTracker — a bare pathname silently dropped every
+    // section_view + scroll_depth event site-wide (0 recorded; found in audit).
+    const body = JSON.stringify({ sessionId, eventType, pageUrl: location.href, ...extra })
     if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
       navigator.sendBeacon('/api/visitors/track', new Blob([body], { type: 'application/json' }))
     } else {
