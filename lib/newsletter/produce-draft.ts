@@ -32,7 +32,7 @@ import { getMarketReportData } from '@/lib/data/crm/getMarketReportData'
 import { getRecentBlogPosts } from '@/lib/data/blog/getRecentBlogPosts'
 import { getEventsForMonth } from '@/lib/data/events/getEvents'
 import { getCommunityBySlug } from '@/app/actions/communities'
-import { createNewsletterDraft, setNewsletterCitations, type NewsletterCitationEntry } from '@/lib/data'
+import { createNewsletterDraft, listNewsletters, setNewsletterCitations, type NewsletterCitationEntry } from '@/lib/data'
 import { htmlToPlainText } from '@/lib/email/prepare'
 
 const SITE = 'https://ryan-realty.com'
@@ -433,6 +433,12 @@ export async function produceNewsletterDraft(createdBy: string | null): Promise<
   const previewText = bend && bend.medianPrice != null
     ? `The median home in Bend closed at ${currencyRounded(bend.medianPrice)}. Where every city sits, buyer to seller.`
     : `Where each Central Oregon city sits this month, buyer to seller.`
+
+  // M7: don't silently create a duplicate. If a draft for this exact subject (same
+  // month) already exists, return it instead of a second identical row.
+  const existing = await listNewsletters(50)
+  const dup = existing.find((n) => n.status === 'draft' && n.subject === subject)
+  if (dup) return { ok: false, error: 'draft_exists', id: dup.id }
 
   // ── Write the draft, then attach citations ──────────────────────────────────
   const created = await createNewsletterDraft({

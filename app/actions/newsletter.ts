@@ -11,7 +11,7 @@ import { getAudienceEligiblePeople } from '@/lib/data/crm/getAudienceEligiblePeo
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { wrapNewsletterHtml, type SenderBroker } from '@/lib/email-templates/newsletter-shell'
 import { getActiveSubscribersForSend } from '@/lib/data/newsletter'
-import { getAssignedBrokersByPersonId, getSubscribersByEmails } from '@/lib/data/newsletter/queue'
+import { getAssignedBrokersByPersonId, getSubscribersByEmails, bulkActivateSubscribers } from '@/lib/data/newsletter/queue'
 import { sendEmail } from '@/lib/resend'
 import { createSavedSearchForLead, updateSavedSearch, deleteSavedSearchById } from '@/lib/data'
 import {
@@ -64,6 +64,13 @@ async function requireSuperuser(): Promise<{ ok: true; email: string } | { ok: f
   const access = await getCrmAccess()
   if (!access || access.role !== 'superuser') return { ok: false }
   return { ok: true, email: access.email }
+}
+
+/** Sanitize a newsletter subject: strip CR/LF + control chars (header-injection
+ *  defense-in-depth) and collapse whitespace. */
+function cleanSubject(v: FormDataEntryValue | null): string {
+  // eslint-disable-next-line no-control-regex
+  return String(v ?? '').replace(/[\u0000-\u001F\u007F]+/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
 /**
@@ -187,13 +194,9 @@ export async function adminBulkEnrollNewsletterAction(input: {
     const optedOut = new Set(preexisting.filter((s) => s.status !== 'active').map((s) => s.email))
     const eligible = all.filter((e) => !optedOut.has(e))
 
-    let enrolled = 0
-    let failed = 0
-    for (const email of eligible) {
-      const r = await subscribeToNewsletter({ email, source: 'bulk-enroll', segment })
-      if (r.ok) enrolled++
-      else failed++ // M3: a persist failure is NOT an opt-out — count it separately
-    }
+    // P1/P2: one batch upsert, not a per-email loop (which timed out near the cap).
+    const enrolled = await bulkActivateSubscribers(eligible, 'bulk-enroll', segment)
+    const failed = eligible.length - enrolled // M3: NOT an opt-out — a persist gap
     // `skipped` kept for back-compat; optedOut + failed break it down.
     return { ok: true, enrolled, skipped: optedOut.size + failed, optedOut: optedOut.size, failed, dropped }
   } catch {
@@ -269,7 +272,7 @@ export async function adminBulkAssignSavedSearchAction(personIds: number[], name
 export async function adminCreateNewsletterAction(formData: FormData): Promise<{ ok: boolean; id?: string; error?: string }> {
   const gate = await requireSuperuser()
   if (!gate.ok) return { ok: false, error: 'unauthorized' }
-  const subject = String(formData.get('subject') ?? '').trim()
+  const subject = cleanSubject(formData.get('subject'))
   if (!subject) return { ok: false, error: 'subject_required' }
   return createNewsletterDraft({
     subject,
@@ -285,7 +288,7 @@ export async function adminUpdateNewsletterAction(id: string, formData: FormData
   const gate = await requireSuperuser()
   if (!gate.ok) return { ok: false }
   return updateNewsletter(id, {
-    subject: String(formData.get('subject') ?? '').trim(),
+    subject: cleanSubject(formData.get('subject')),
     preview_text: String(formData.get('preview_text') ?? '').trim() || null,
     body_html: String(formData.get('body_html') ?? '') || null,
     body_text: String(formData.get('body_text') ?? '') || null,

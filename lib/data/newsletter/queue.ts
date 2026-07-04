@@ -52,9 +52,18 @@ export async function claimNewsletterForSending(newsletterId: string): Promise<s
 }
 
 /** Release the lock back to draft (used when enqueue finds 0 real recipients — S-14). */
-export async function releaseNewsletterLock(newsletterId: string, status: 'draft' | 'failed' = 'draft'): Promise<void> {
+export async function releaseNewsletterLock(
+  newsletterId: string,
+  status: 'draft' | 'failed' = 'draft',
+  expectedToken?: string,
+): Promise<void> {
   const sb = createServiceClient()
-  await sb.from(LETTERS).update({ status, lock_token: null, send_started_at: null }).eq('id', newsletterId)
+  // M4: when the caller holds a token, only release IF it still owns the lock. Without
+  // this, a late error handler from a crashed enqueue could reset a newsletter that a
+  // newer send has since re-locked, orphaning its queued rows.
+  let q = sb.from(LETTERS).update({ status, lock_token: null, send_started_at: null }).eq('id', newsletterId)
+  if (expectedToken) q = q.eq('lock_token', expectedToken)
+  await q
 }
 
 /**
@@ -167,6 +176,37 @@ export async function getSubscribersByEmails(
     }
   }
   return out
+}
+
+/**
+ * Batch-enroll many emails to active in ONE statement (P1/P2: replaces the per-email
+ * subscribeToNewsletter loop that did N×2 sequential round-trips and timed out).
+ * Returns the number of rows upserted.
+ *
+ * COMPLIANCE: this activates on conflict, so callers MUST pass only opt-out-filtered
+ * addresses (new + already-active). Never pass an unsubscribed/bounced/complained
+ * email — it would resurrect an opt-out (S-10).
+ */
+export async function bulkActivateSubscribers(
+  emails: string[],
+  source: string,
+  segment: string,
+): Promise<number> {
+  const clean = [...new Set(emails.map((e) => e.trim().toLowerCase()).filter((e) => e.includes('@')))]
+  if (clean.length === 0) return 0
+  const sb = createServiceClient()
+  let total = 0
+  const CHUNK = 1000
+  for (let i = 0; i < clean.length; i += CHUNK) {
+    const { data, error } = await sb.rpc('bulk_activate_newsletter_subscribers', {
+      p_emails: clean.slice(i, i + CHUNK),
+      p_source: source,
+      p_segment: segment,
+    })
+    if (error) throw new Error(`bulkActivateSubscribers: ${error.message}`)
+    total += Number(data ?? 0)
+  }
+  return total
 }
 
 /** True if any newsletter has ever been sent (used to decide warm-up ramp vs steady caps). */

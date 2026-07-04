@@ -18,7 +18,9 @@ export function GenerateDraftButton() {
     setError(null)
     startTransition(async () => {
       const res = await adminGenerateNewsletterDraftAction()
-      if (res.ok && res.id) {
+      // M7: on ok OR when a draft for this month already exists, route to that draft
+      // (don't create a duplicate row).
+      if (res.id && (res.ok || res.error === 'draft_exists')) {
         router.push(`/admin/newsletters/${res.id}`)
       } else {
         setError(res.error ?? 'Could not generate a draft.')

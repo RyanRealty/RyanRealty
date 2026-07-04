@@ -1,7 +1,6 @@
 import 'server-only'
 import { getNewsletter } from '@/lib/data/newsletter'
 import { getActiveSubscribersForSend } from '@/lib/data/newsletter'
-import { subscribeToNewsletter } from '@/lib/data/newsletter'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { sendEmail } from '@/lib/resend'
@@ -12,6 +11,7 @@ import { getLatestDeliverability, deliverabilityVerdict } from '@/lib/data/deliv
 import { getDueScheduledNewsletterIds } from '@/lib/data/newsletter/scheduled'
 import {
   anyNewsletterEverSent,
+  bulkActivateSubscribers,
   bumpScheduleSent,
   claimNewsletterForSending,
   claimQueuedBatch,
@@ -129,7 +129,7 @@ export async function enqueueNewsletter(newsletterId: string): Promise<EnqueueRe
       : undefined
     const audience = await getActiveSubscribersForSend({ segment })
     if (audience.length === 0) {
-      await releaseNewsletterLock(newsletterId, 'draft') // S-14: no recipients → stays draft, not falsely sent
+      await releaseNewsletterLock(newsletterId, 'draft', token) // S-14: no recipients → stays draft, not falsely sent
       return { ok: false, error: 'no_recipients' }
     }
 
@@ -140,7 +140,7 @@ export async function enqueueNewsletter(newsletterId: string): Promise<EnqueueRe
     if (large) {
       const verdict = deliverabilityVerdict(await getLatestDeliverability())
       if (verdict.action === 'block') {
-        await releaseNewsletterLock(newsletterId, 'draft')
+        await releaseNewsletterLock(newsletterId, 'draft', token)
         return { ok: false, error: `deliverability_block: ${verdict.reason}` }
       }
     }
@@ -171,7 +171,7 @@ export async function enqueueNewsletter(newsletterId: string): Promise<EnqueueRe
     return { ok: true, queued, brokerSplit, large }
   } catch (err) {
     // Roll the lock back so a failed enqueue doesn't strand the newsletter (S-2).
-    await releaseNewsletterLock(newsletterId, 'draft')
+    await releaseNewsletterLock(newsletterId, 'draft', token)
     return { ok: false, error: err instanceof Error ? err.message : 'enqueue_failed' }
   }
 }
@@ -217,19 +217,18 @@ export async function enqueueNewsletterToEmails(
     const optedOut = new Set(preexisting.filter((s) => s.status !== 'active').map((s) => s.email))
     const eligible = list.filter((e) => !optedOut.has(e))
     if (eligible.length === 0) {
-      await releaseNewsletterLock(newsletterId, 'draft') // S-14
+      await releaseNewsletterLock(newsletterId, 'draft', token) // S-14
       return { ok: false, error: 'all_opted_out' }
     }
 
     // Guarantee a subscriber row per ELIGIBLE recipient BEFORE queueing, so each has
-    // an unsubscribe_token. source='one-off' marks how they got on the list. Then read
-    // the ids back (filtered to active) to freeze broker + tier.
-    for (const email of eligible) {
-      await subscribeToNewsletter({ email, source: 'one-off', segment: 'general' })
-    }
+    // an unsubscribe_token. source='one-off' marks how they got on the list. One batch
+    // upsert (P1/P2) — not a per-email loop that timed out near the cap. Then read the
+    // ids back (filtered to active) to freeze broker + tier.
+    await bulkActivateSubscribers(eligible, 'one-off', 'general')
     const subs = (await getSubscribersByEmails(eligible)).filter((s) => s.status === 'active')
     if (subs.length === 0) {
-      await releaseNewsletterLock(newsletterId, 'draft') // S-14
+      await releaseNewsletterLock(newsletterId, 'draft', token) // S-14
       return { ok: false, error: 'no_recipients' }
     }
 
@@ -239,7 +238,7 @@ export async function enqueueNewsletterToEmails(
     if (large) {
       const verdict = deliverabilityVerdict(await getLatestDeliverability())
       if (verdict.action === 'block') {
-        await releaseNewsletterLock(newsletterId, 'draft')
+        await releaseNewsletterLock(newsletterId, 'draft', token)
         return { ok: false, error: `deliverability_block: ${verdict.reason}` }
       }
     }
@@ -267,7 +266,7 @@ export async function enqueueNewsletterToEmails(
 
     return { ok: true, queued }
   } catch (err) {
-    await releaseNewsletterLock(newsletterId, 'draft') // S-2: don't strand on a failed enqueue
+    await releaseNewsletterLock(newsletterId, 'draft', token) // S-2: don't strand on a failed enqueue
     return { ok: false, error: err instanceof Error ? err.message : 'enqueue_failed' }
   }
 }

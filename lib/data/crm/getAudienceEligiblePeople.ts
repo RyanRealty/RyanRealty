@@ -63,7 +63,11 @@ async function getSuppressedPersonIds(
       .select('person_id')
       .not('person_id', 'is', null)
       .range(offset, offset + PAGE - 1)
-    if (error || !data) break
+    // FAIL CLOSED: a mid-pagination error must NOT be read as "that's everyone" —
+    // a partial suppressed set silently un-suppresses people on later pages. Throw
+    // so the whole audience build aborts rather than sending to a suppressed person.
+    if (error) throw new Error(`getSuppressedPersonIds: ${error.message}`)
+    if (!data) break
     for (const row of data) {
       const id = row.person_id
       if (typeof id === 'number' && Number.isFinite(id)) suppressed.add(id)
@@ -152,7 +156,10 @@ export async function getAudienceEligiblePeople(
       .select('id,first_name,last_name,emails,phones,deleted,tags')
       .eq('deleted', false)
       .range(offset, offset + PAGE - 1)
-    if (error || !data) break
+    // FAIL CLOSED: a partial people scan would silently shrink the excluded set and
+    // could send to a tag-matched person whose suppression lives on a dropped page.
+    if (error) throw new Error(`getAudienceEligiblePeople: ${error.message}`)
+    if (!data) break
 
     for (const row of data) {
       const id = row.id

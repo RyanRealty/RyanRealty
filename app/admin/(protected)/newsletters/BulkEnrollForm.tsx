@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
@@ -32,18 +33,19 @@ export function BulkEnrollForm() {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [emails, setEmails] = useState('')
+  const [crmTag, setCrmTag] = useState('')
   const [segment, setSegment] = useState<NewsletterSegment>('general')
   const [message, setMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setMessage(null)
-    if (!emails.trim()) {
-      setMessage({ type: 'err', text: 'Paste at least one email address.' })
+    if (!emails.trim() && !crmTag.trim()) {
+      setMessage({ type: 'err', text: 'Paste at least one email address or enter a CRM tag.' })
       return
     }
     startTransition(async () => {
-      const r = await adminBulkEnrollNewsletterAction({ emails, segment })
+      const r = await adminBulkEnrollNewsletterAction({ emails, crmTag: crmTag.trim() || undefined, segment })
       if (r.ok) {
         const n = (v?: number) => (v ?? 0).toLocaleString('en-US')
         // M2/M3: break down WHY addresses didn't enroll instead of one opaque "skipped".
@@ -51,8 +53,10 @@ export function BulkEnrollForm() {
         if (r.optedOut) parts.push(`${n(r.optedOut)} skipped (previously unsubscribed)`)
         if (r.failed) parts.push(`${n(r.failed)} failed to save`)
         if (r.dropped) parts.push(`${n(r.dropped)} dropped over the 5,000 cap`)
+        if (r.enrolled === 0 && !r.optedOut && !r.failed) parts.push('(check the tag spelling — 0 people matched)')
         setMessage({ type: 'ok', text: parts.join(' · ') + '.' })
         setEmails('')
+        setCrmTag('')
         router.refresh()
       } else {
         const map: Record<string, string> = {
@@ -77,6 +81,16 @@ export function BulkEnrollForm() {
           rows={6}
         />
         <p className="text-xs text-muted-foreground">Invalid and duplicate addresses are dropped automatically. Cap 5,000 per batch.</p>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="bulk-tag">CRM tag (optional)</Label>
+        <Input
+          id="bulk-tag"
+          value={crmTag}
+          onChange={(e) => setCrmTag(e.target.value)}
+          placeholder="e.g. past-client — enrolls everyone carrying that exact tag"
+        />
+        <p className="text-xs text-muted-foreground">Realtors and already-suppressed contacts are excluded automatically. The tag must match exactly.</p>
       </div>
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1.5">

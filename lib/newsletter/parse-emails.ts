@@ -12,26 +12,32 @@
 
 // Local part: letters/digits and the common punctuation RFC 5321 allows, no
 // leading/trailing/double dots. Domain: labels separated by dots, a 2+ char TLD.
-const EMAIL_RE =
-  /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/
+// `EXTRACT` finds an email ANYWHERE in a chunk (so "Name <e@x.com>" and "e@x.com"
+// both yield the address); the global flag lets one chunk hold several.
+const EMAIL_SRC =
+  "[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z]{2,}"
 
 /**
  * Parse a raw pasted email list into a clean, lowercased, de-duped array of
- * syntactically valid emails. Splits on newlines, commas, semicolons, and any
- * whitespace; trims each token; drops anything that fails the validity check;
- * collapses case-insensitive duplicates (preserving first-seen order).
+ * syntactically valid emails. Splits on newlines / commas / semicolons (NOT bare
+ * whitespace — that would shred "Name <email>"), then EXTRACTS every email-shaped
+ * substring from each chunk. So display-name format ("Jane Doe <jane@x.com>"),
+ * quote-wrapped CSV values ("jane@x.com"), header rows, and space-separated lists
+ * all resolve to just the addresses. Case-insensitive dedupe, first-seen order.
  */
 export function parseEmailList(raw: string): string[] {
   if (!raw || typeof raw !== 'string') return []
   const seen = new Set<string>()
   const out: string[] = []
-  for (const token of raw.split(/[\s,;]+/)) {
-    const email = token.trim().toLowerCase()
-    if (!email) continue
-    if (!EMAIL_RE.test(email)) continue
-    if (seen.has(email)) continue
-    seen.add(email)
-    out.push(email)
+  for (const chunk of raw.split(/[\n,;]+/)) {
+    const found = chunk.match(new RegExp(EMAIL_SRC, 'gi'))
+    if (!found) continue
+    for (const raw of found) {
+      const email = raw.toLowerCase()
+      if (seen.has(email)) continue
+      seen.add(email)
+      out.push(email)
+    }
   }
   return out
 }

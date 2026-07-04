@@ -7,6 +7,16 @@ describe('parseEmailList', () => {
     expect(parseEmailList(raw)).toEqual(['a@x.com', 'b@x.com', 'c@x.com', 'd@x.com', 'e@x.com'])
   })
 
+  it('extracts the address from display-name format (Name <email>)', () => {
+    const raw = 'Jane Doe <jane@x.com>\nJohn Q. Public <john@y.org>, plain@z.net'
+    expect(parseEmailList(raw)).toEqual(['jane@x.com', 'john@y.org', 'plain@z.net'])
+  })
+
+  it('extracts from quote-wrapped CSV values and skips header rows', () => {
+    const raw = 'Email,Name\n"alice@x.com","Alice"\n"bob@y.com","Bob"'
+    expect(parseEmailList(raw)).toEqual(['alice@x.com', 'bob@y.com'])
+  })
+
   it('drops syntactically invalid tokens', () => {
     const raw = 'good@x.com, not-an-email, missing@tld, @no-local.com, two@@at.com, ok@sub.x.co'
     expect(parseEmailList(raw)).toEqual(['good@x.com', 'ok@sub.x.co'])

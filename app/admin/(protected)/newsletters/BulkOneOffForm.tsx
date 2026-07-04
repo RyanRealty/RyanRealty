@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
@@ -27,6 +28,7 @@ export default function BulkOneOffForm({ id }: { id: string }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [emails, setEmails] = useState('')
+  const [crmTag, setCrmTag] = useState('')
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [message, setMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
 
@@ -34,8 +36,8 @@ export default function BulkOneOffForm({ id }: { id: string }) {
 
   function openConfirm() {
     setMessage(null)
-    if (parsed.length === 0) {
-      setMessage({ type: 'err', text: 'Paste at least one valid email address.' })
+    if (parsed.length === 0 && !crmTag.trim()) {
+      setMessage({ type: 'err', text: 'Paste at least one valid email address or enter a CRM tag.' })
       return
     }
     setConfirmOpen(true)
@@ -43,12 +45,13 @@ export default function BulkOneOffForm({ id }: { id: string }) {
 
   function onConfirm() {
     startTransition(async () => {
-      const r = await adminBulkOneOffSendAction(id, { emails })
+      const r = await adminBulkOneOffSendAction(id, { emails, crmTag: crmTag.trim() || undefined })
       setConfirmOpen(false)
       if (r.ok) {
         const n = r.queued ?? 0
         setMessage({ type: 'ok', text: `Queued ${n.toLocaleString('en-US')} one-off recipient${n === 1 ? '' : 's'}.` })
         setEmails('')
+        setCrmTag('')
         router.refresh()
       } else {
         const map: Record<string, string> = {
@@ -85,6 +88,15 @@ export default function BulkOneOffForm({ id }: { id: string }) {
           {parsed.length.toLocaleString('en-US')} valid recipient{parsed.length === 1 ? '' : 's'} parsed.
         </p>
       </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="oneoff-tag">CRM tag (optional)</Label>
+        <Input
+          id="oneoff-tag"
+          value={crmTag}
+          onChange={(e) => setCrmTag(e.target.value)}
+          placeholder="e.g. past-client — also sends to everyone carrying that exact tag"
+        />
+      </div>
       <Button type="button" onClick={openConfirm} disabled={pending}>
         {pending ? 'Working…' : 'Send this issue to the list'}
       </Button>
@@ -104,14 +116,17 @@ export default function BulkOneOffForm({ id }: { id: string }) {
           </DialogHeader>
           <div className="py-2">
             <p className="text-lg font-semibold text-foreground tabular-nums">
-              {parsed.length.toLocaleString('en-US')} recipient{parsed.length === 1 ? '' : 's'}
+              {parsed.length.toLocaleString('en-US')} pasted recipient{parsed.length === 1 ? '' : 's'}
             </p>
+            {crmTag.trim() ? (
+              <p className="text-sm text-muted-foreground">plus everyone tagged &ldquo;{crmTag.trim()}&rdquo; (realtors and suppressed excluded)</p>
+            ) : null}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)} disabled={pending}>
               Cancel
             </Button>
-            <Button type="button" onClick={onConfirm} disabled={pending || parsed.length === 0}>
+            <Button type="button" onClick={onConfirm} disabled={pending || (parsed.length === 0 && !crmTag.trim())}>
               {pending ? 'Sending…' : 'Confirm and send'}
             </Button>
           </DialogFooter>
