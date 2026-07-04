@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.734.0 (2026-07-04)
+
+### Features
+- feat(trails): OSM lines for the 3 trails with no gov REST endpoint (18/19)
+
+---
+
+
 ## v1.733.0 (2026-07-04)
 
 ### Features
