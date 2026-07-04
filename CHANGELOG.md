@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.730.2 (2026-07-04)
+
+### Maintenance
+- chore(newsletter): bump email-send-gated baseline for cma-deliver line shift + log jsonb fix
+
+---
+
+
 ## v1.730.1 (2026-07-04)
 
 ### Bug Fixes
