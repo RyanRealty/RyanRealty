@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.740.0 (2026-07-05)
+
+### Features
+- feat(cma): 3480 SW 45th — smaller signature headshot + seller net sheet
+
+---
+
+
 ## v1.739.0 (2026-07-05)
 
 ### Features
