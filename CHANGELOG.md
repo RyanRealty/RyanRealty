@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.737.0 (2026-07-05)
+
+### Features
+- feat(crm): neighborhood as a first-class column filter (self-serve smart lists)
+
+---
+
+
 ## v1.736.0 (2026-07-04)
 
 ### Features
