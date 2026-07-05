@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="robots" content="noindex,nofollow" />
+<title>CMA · 3480 SW 45th St · Redmond, OR 97756</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  @font-face {
+    font-family: 'Amboqia Boriango';
+    src: url('./assets/Amboqia_Boriango.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  :root {
+    --navy: #102742;
+    --cream: #faf8f4;
+    --navy-line: rgba(16, 39, 66, 0.18);
+    --navy-fill: rgba(16, 39, 66, 0.06);
+    --muted: rgba(16, 39, 66, 0.62);
+  }
+
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #e8e3d8;
+    font-family: 'Geist', system-ui, -apple-system, sans-serif;
+    color: var(--navy);
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    width: 8.5in;
+    height: 11in;
+    min-height: 11in;
+    margin: 0.4in auto;
+    background: var(--cream);
+    padding: 0.4in 0.6in 0.85in 0.6in;
+    box-shadow: 0 6px 24px rgba(16, 39, 66, 0.18);
+    position: relative;
+    page-break-after: always;
+    overflow: hidden;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  .pg-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--navy-line);
+    padding-bottom: 9px;
+    margin-bottom: 16px;
+  }
+  .pg-header img.logo { height: 34px; }
+  .pg-header .pg-meta {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: right;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .pg-footer {
+    position: absolute;
+    bottom: 0.32in;
+    left: 0.6in;
+    right: 0.6in;
+    border-top: 1px solid var(--navy-line);
+    padding-top: 7px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    background: var(--cream);
+  }
+
+  h2.section {
+    font-family: 'Geist', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--navy);
+    margin: 0 0 10px 0;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--navy);
+    display: inline-block;
+  }
+  h3.subhead {
+    font-family: 'Geist', sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--navy);
+    margin: 12px 0 5px 0;
+  }
+  p { font-size: 11px; line-height: 1.45; margin: 0 0 6px 0; }
+  .small { font-size: 10px; color: var(--muted); line-height: 1.45; }
+
+  .cover-label {
+    font-size: 10px;
+    letter-spacing: 0.20em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .cover-title {
+    font-family: 'Amboqia Boriango', serif;
+    font-size: 60px;
+    line-height: 0.95;
+    color: var(--navy);
+    margin: 0 0 6px 0;
+  }
+  .cover-sub {
+    font-size: 16px;
+    color: var(--navy);
+    font-weight: 400;
+    margin-bottom: 18px;
+  }
+
+  .hero-photo {
+    width: 100%;
+    height: 280px;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 8px;
+    background: var(--navy-fill);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .hero-caption {
+    font-size: 9.5px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    margin-bottom: 16px;
+  }
+
+  .value-block {
+    background: var(--navy);
+    color: var(--cream);
+    padding: 24px 28px;
+    margin: 0 0 18px 0;
+    border-radius: 10px;
+  }
+  .value-block .vb-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(250, 248, 244, 0.72);
+    margin-bottom: 8px;
+  }
+  .value-block .vb-range {
+    font-family: 'Amboqia Boriango', serif;
+    font-size: 44px;
+    line-height: 1;
+    color: var(--cream);
+    margin: 0;
+  }
+  .value-block .vb-detail {
+    font-size: 11px;
+    color: rgba(250, 248, 244, 0.80);
+    margin-top: 10px;
+    line-height: 1.55;
+  }
+  .value-block .vb-most-likely {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(250, 248, 244, 0.20);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .value-block .vb-most-likely strong { color: var(--cream); font-weight: 600; }
+
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    margin: 14px 0 18px 0;
+    border-top: 1px solid var(--navy-line);
+    border-bottom: 1px solid var(--navy-line);
+  }
+  .stat-strip .stat {
+    padding: 12px 8px;
+    text-align: center;
+    border-right: 1px solid var(--navy-line);
+  }
+  .stat-strip .stat:last-child { border-right: 0; }
+  .stat-strip .stat .lbl {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+  .stat-strip .stat .val {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--navy);
+  }
+
+  .presented-by {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--navy-line);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+  }
+  .presented-by strong {
+    color: var(--navy);
+    font-weight: 500;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  table.comps {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9px;
+    margin-top: 4px;
+  }
+  table.comps thead th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 8.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--navy);
+    padding: 5px 5px;
+    border-bottom: 2px solid var(--navy);
+  }
+  table.comps tbody td {
+    padding: 4px 5px;
+    border-bottom: 1px solid var(--navy-line);
+    vertical-align: middle;
+  }
+  table.comps tbody tr.subject td {
+    background: var(--navy);
+    color: var(--cream);
+    font-weight: 500;
+  }
+  table.comps .num { text-align: right; }
+  table.comps .anchor td {
+    background: var(--navy-fill);
+    font-weight: 500;
+  }
+
+  .comp-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin: 4px 0 10px 0;
+  }
+  .comp-card {
+    border: 1px solid var(--navy-line);
+    border-radius: 6px;
+    overflow: hidden;
+    background: white;
+  }
+  .comp-card .ph {
+    width: 100%;
+    height: 58px;
+    object-fit: cover;
+    display: block;
+    background: var(--navy-fill);
+  }
+  .comp-card .body {
+    padding: 5px 7px 6px;
+  }
+  .comp-card .addr {
+    font-size: 9.5px;
+    font-weight: 500;
+    color: var(--navy);
+    line-height: 1.2;
+    margin-bottom: 2px;
+  }
+  .comp-card .stats {
+    font-size: 8.5px;
+    color: var(--muted);
+    line-height: 1.3;
+  }
+  .comp-card .price {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .comp-card .price .when {
+    font-size: 8.5px;
+    font-weight: 400;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-left: 4px;
+  }
+
+  .tier-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .tier {
+    border: 1px solid var(--navy-line);
+    border-radius: 10px;
+    padding: 16px 14px;
+    background: white;
+  }
+  .tier.featured {
+    background: var(--navy);
+    color: var(--cream);
+    border-color: var(--navy);
+  }
+  .tier .t-lbl {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .tier.featured .t-lbl { color: rgba(250, 248, 244, 0.72); }
+  .tier .t-val {
+    font-family: 'Amboqia Boriango', serif;
+    font-size: 24px;
+    line-height: 1;
+    color: var(--navy);
+    margin: 0 0 7px 0;
+  }
+  .tier.featured .t-val { color: var(--cream); }
+  .tier .t-note { font-size: 10px; color: var(--muted); line-height: 1.4; }
+  .tier.featured .t-note { color: rgba(250, 248, 244, 0.80); }
+
+  /* Signature page — transparent portrait, no constraints (CLAUDE.md). */
+  .signature-page {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 36px;
+    align-items: end;
+    margin-top: 22px;
+    padding-top: 22px;
+    border-top: 1px solid var(--navy-line);
+  }
+  .signature-page .portrait {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .signature-page .sig-content { padding-bottom: 6px; }
+  .signature-page .sig-name {
+    font-family: 'Caveat', cursive;
+    font-size: 48px;
+    color: var(--navy);
+    line-height: 1;
+    border-bottom: 1px solid var(--navy);
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+    width: 260px;
+  }
+  .signature-page .sig-printed {
+    font-family: 'Amboqia Boriango', serif;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--navy);
+    margin: 0 0 4px 0;
+  }
+  .signature-page .sig-title {
+    font-size: 11px;
+    color: var(--navy);
+    margin-bottom: 14px;
+    line-height: 1.45;
+  }
+  .signature-page .sig-contact {
+    font-size: 11px;
+    line-height: 1.7;
+    color: var(--navy);
+  }
+  .signature-page .sig-contact strong { font-weight: 500; }
+  .signature-page .sig-license {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--navy-line);
+    font-size: 9.5px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  .trace {
+    background: var(--navy-fill);
+    border-left: 3px solid var(--navy);
+    padding: 12px 14px;
+    margin-top: 14px;
+    font-size: 9.5px;
+    line-height: 1.55;
+    color: var(--navy);
+  }
+  .trace .t-hd {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .trace code {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9px;
+    background: rgba(16,39,66,0.10);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+
+  .note-list {
+    margin: 5px 0 8px 16px;
+    padding: 0;
+  }
+  .note-list li {
+    font-size: 10.5px;
+    line-height: 1.4;
+    margin-bottom: 3px;
+  }
+
+  /* Comp flyer pages */
+  .flyer-badge {
+    display: inline-block;
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 8.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 3px 11px;
+    border-radius: 999px;
+    margin-bottom: 8px;
+  }
+  .flyer-title {
+    font-family: 'Amboqia Boriango', serif;
+    font-size: 32px;
+    line-height: 1;
+    color: var(--navy);
+    margin: 0 0 3px 0;
+  }
+  .flyer-sub {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    margin-bottom: 9px;
+  }
+  .flyer-hero {
+    width: 100%;
+    height: 2.4in;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 8px;
+    background: var(--navy-fill);
+    display: block;
+    margin-bottom: 9px;
+  }
+  .flyer-stats {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    border-top: 1px solid var(--navy-line);
+    border-bottom: 1px solid var(--navy-line);
+    margin-bottom: 9px;
+  }
+  .flyer-stats .s {
+    padding: 7px 6px;
+    text-align: center;
+    border-right: 1px solid var(--navy-line);
+  }
+  .flyer-stats .s:last-child { border-right: 0; }
+  .flyer-stats .s .l {
+    font-size: 8px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1px;
+  }
+  .flyer-stats .s .v {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--navy);
+  }
+  .flyer-stats .s.featured .v {
+    color: var(--navy);
+    font-weight: 600;
+  }
+  .flyer-desc {
+    font-size: 9.5px;
+    line-height: 1.45;
+    color: var(--navy);
+    margin: 0 0 9px 0;
+  }
+  .flyer-features {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+    margin-bottom: 9px;
+    font-size: 9px;
+  }
+  .flyer-features .f {
+    background: var(--navy-fill);
+    padding: 4px 8px;
+    border-radius: 5px;
+    color: var(--navy);
+  }
+  .flyer-features .f .fl {
+    font-size: 7.5px;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0;
+  }
+  .flyer-features .f .fv {
+    font-size: 9px;
+    line-height: 1.2;
+  }
+  .flyer-photos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+  }
+  .flyer-photos img {
+    width: 100%;
+    height: 0.95in;
+    object-fit: cover;
+    border-radius: 5px;
+    display: block;
+    background: var(--navy-fill);
+  }
+
+  @page {
+    size: Letter;
+    margin: 0;
+  }
+  @media print {
+    body { background: white; margin: 0; padding: 0; }
+    .page {
+      box-shadow: none;
+      margin: 0;
+      width: 8.5in;
+      height: 11in;
+      min-height: 11in;
+      max-height: 11in;
+      overflow: hidden;
+      page-break-after: always;
+    }
+    .page:last-child { page-break-after: auto; }
+  }
+</style>
+</head>
+<body>
+<section class="page">
+<header class="pg-header"><img class="logo" src="assets/logo-blue.png" alt="Ryan Realty" /><div class="pg-meta">COMPARATIVE MARKET ANALYSIS · JULY 2026</div></header>
+<div class="cover-label">Comparative Market Analysis · Prepared for Doug &amp; Charise</div>
+<h1 class="cover-title">3480 SW 45th St</h1>
+<div class="cover-sub">Redmond, Oregon 97756 · Forked Horn Butte</div>
+<img class="hero-photo" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20250428185127515536000000-o.jpg" alt="3480 SW 45th St" />
+<div class="hero-caption">Subject property · photo from the 2025 listing. New photography recommended before listing.</div>
+<div class="value-block">
+  <div class="vb-label">Supported Value Range</div>
+  <div class="vb-range">$639,000 to $669,000</div>
+  <div class="vb-most-likely"><strong>Recommended list price: $655,000</strong> &nbsp;($402/sq ft). You bought well in 2025 and the home has held and modestly built value. This priced against the view homes on and around SW 45th, not the entry-level Redmond market, using seven closed sales within about 1.2 miles.</div>
+</div>
+<div class="stat-strip">
+  <div class="stat"><div class="lbl">Beds</div><div class="val">3</div></div>
+  <div class="stat"><div class="lbl">Baths</div><div class="val">2</div></div>
+  <div class="stat"><div class="lbl">Living Area</div><div class="val">1,631 sf</div></div>
+  <div class="stat"><div class="lbl">Year Built</div><div class="val">2018</div></div>
+  <div class="stat"><div class="lbl">Lot</div><div class="val">0.21 ac</div></div>
+</div>
+<div class="presented-by">Presented by <strong>Matt Ryan</strong> · Ryan Realty · 541.213.6706 · ryan-realty.com</div>
+<footer class="pg-footer"><span>3480 SW 45TH ST · REDMOND OR · PREPARED FOR DOUG &amp; CHARISE</span><span>RYAN REALTY · PAGE 1 OF 16</span></footer>
+</section><section class="page">
+<header class="pg-header"><img class="logo" src="assets/logo-blue.png" alt="Ryan Realty" /><div class="pg-meta">COMPARATIVE MARKET ANALYSIS · JULY 2026</div></header>
+<h2 class="section">Your Home at a Glance</h2>
+<div class="two-col">
+  <div>
+    <h3 class="subhead">Site &amp; structure</h3>
+    <p>Single-level home built in 2018 in Forked Horn Butte, on the southwest side of Redmond. Three bedrooms, two baths, 1,631 square feet on a 0.21-acre lot with an attached two-car garage. Mid-century modern design with an open floor plan and large windows that frame Cascade Mountain views.</p>
+    <h3 class="subhead">Why this matters for pricing</h3>
+    <p>Your home sits in a west-Redmond pocket where mountain views are common and buyers pay for newer, well-kept single levels. That places it above the entry-level Redmond tract market and lets it compete with the stronger view-corridor sales in this report.</p>
+  </div>
+  <div>
+    <h3 class="subhead">Ownership &amp; listing history</h3>
+    <ul class="note-list">
+      <li>Purchased by Doug &amp; Charise on Aug 14, 2025 for $650,000.</li>
+      <li>That sale started at $799,000, was reduced to $699,000, and closed at $650,000 after 105 days on market.</li>
+      <li>First sold new in 2018 at $460,645.</li>
+    </ul>
+    <h3 class="subhead">The market since you bought</h3>
+    <p>You bought this home well in August 2025. Since then, Redmond single-family prices have been essentially flat (median sale price down about 2% year over year, price per square foot roughly level). That combination means your purchase basis has held and modestly built value, so you carry real equity into this sale. This report prices the home to today's market.</p>
+    <p class="small">Source: Supabase listings (ListingKey 20250425215911506663000000) and market_pulse_live / market_stats_cache for Redmond, methodology v3-2026-05-07, pulled Jul 5, 2026.</p>
+  </div>
+</div>
+<footer class="pg-footer"><span>3480 SW 45TH ST · REDMOND OR · PREPARED FOR DOUG &amp; CHARISE</span><span>RYAN REALTY · PAGE 2 OF 16</span></footer>
+</section><section class="page">
+<header class="pg-header"><img class="logo" src="assets/logo-blue.png" alt="Ryan Realty" /><div class="pg-meta">COMPARATIVE MARKET ANALYSIS · JULY 2026</div></header>
+<span class="flyer-badge">Subject Property · Off-Market</span>
+<h2 class="flyer-title">3480 SW 45th St</h2>
+<div class="flyer-sub">Redmond OR 97756 · Forked Horn Butte</div>
+<img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20250428185127515536000000-o.jpg" alt="3480 SW 45th St" />
+<div class="flyer-stats">
+  <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+  <div class="s"><div class="l">Baths</div><div class="v">2</div></div>
+  <div class="s"><div class="l">Sq Ft</div><div class="v">1,631</div></div>
+  <div class="s"><div class="l">Year</div><div class="v">2018</div></div>
+  <div class="s"><div class="l">Lot</div><div class="v">0.21 ac</div></div>
+  <div class="s featured"><div class="l">Garage</div><div class="v">2-car</div></div>
+</div>
+<p class="flyer-desc">Mid-century modern single level with a bright, open floor plan. Large windows through the living space bring in natural light and frame Cascade Mountain views. Comfortable, functional layout on a manageable 0.21-acre lot in an established southwest-Redmond neighborhood.</p>
+<div class="flyer-features">
+  <div class="f"><div class="fl">Style</div><div class="fv">Mid-century modern</div></div>
+  <div class="f"><div class="fl">Level</div><div class="fv">Single level</div></div>
+  <div class="f"><div class="fl">View</div><div class="fv">Cascade Mountains</div></div>
+  <div class="f"><div class="fl">Subdivision</div><div class="fv">Forked Horn Butte</div></div>
+</div>
+<div class="flyer-photos"><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20250428185128503415000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20250428185139183367000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20250428185138393892000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20250428185135257861000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20250428185134524293000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20250428185145233180000000-o.jpg" alt="" /></div>
+<p class="small" style="margin-top:7px">Photos from the 2025 listing. Fresh professional photography is recommended before this home returns to market.</p>
+<footer class="pg-footer"><span>3480 SW 45TH ST · REDMOND OR · PREPARED FOR DOUG &amp; CHARISE</span><span>RYAN REALTY · PAGE 3 OF 16</span></footer>
+</section><section class="page">
+<header class="pg-header"><img class="logo" src="assets/logo-blue.png" alt="Ryan Realty" /><div class="pg-meta">COMPARATIVE MARKET ANALYSIS · JULY 2026</div></header>
+<h2 class="section">Where the Comps Sit</h2>
+<img src="assets/map.png" alt="Comparable sales map" style="width:100%;height:3.3in;object-fit:cover;border-radius:8px;border:1px solid var(--navy-line);display:block;margin-bottom:10px" />
+<table class="comps">
+  <thead><tr><th style="width:36px">Pin</th><th>Address · Neighborhood</th><th class="num">Close Price</th></tr></thead>
+  <tbody><tr><td class="num">S</td><td>3480 SW 45th St · <em>subject</em></td><td class="num">&mdash;</td></tr><tr><td class="num">1</td><td>3638 SW 45th St · Redtail Ridge</td><td class="num">$770,000</td></tr><tr><td class="num">2</td><td>3344 SW Cascade Vista Ln · Cascade View Estates</td><td class="num">$655,000</td></tr><tr><td class="num">3</td><td>4778 SW Zenith Ave · Josie Meadows</td><td class="num">$610,000</td></tr><tr><td class="num">4</td><td>2845 SW 31st St · Volcano</td><td class="num">$579,000</td></tr><tr><td class="num">5</td><td>4015 SW 38th St · Owen Ridge</td><td class="num">$599,900</td></tr><tr><td class="num">6</td><td>4201 SW 42nd St · Prairie Crossing</td><td class="num">$561,750</td></tr><tr><td class="num">7</td><td>4176 SW 34th St · Village at Ridgeview</td><td class="num">$527,000</td></tr></tbody>
+</table>
+<p class="small" style="margin-top:8px">Red pin is your home. Numbered pins are the seven closed comparable sales, in the same order as the flyers that follow. All within about 1.2 miles, all in southwest and west Redmond. Coordinates are each listing's verified location.</p>
+<footer class="pg-footer"><span>3480 SW 45TH ST · REDMOND OR · PREPARED FOR DOUG &amp; CHARISE</span><span>RYAN REALTY · PAGE 4 OF 16</span></footer>
+</section><section class="page">
+<header class="pg-header"><img class="logo" src="assets/logo-blue.png" alt="Ryan Realty" /><div class="pg-meta">COMPARATIVE MARKET ANALYSIS · JULY 2026</div></header>
+<h2 class="section">The Comparable Sales</h2>
+<table class="comps">
+ <thead><tr><th>#</th><th>Address</th><th class="num">Sq Ft</th><th class="num">Year</th><th class="num">Bd/Ba</th><th class="num">Close</th><th class="num">$/sf</th><th class="num">DOM (DTO)</th></tr></thead>
+ <tbody><tr class="subject"><td class="num">S</td><td>3480 SW 45th St</td><td class="num">1,631</td><td class="num">2018</td><td class="num">3/2</td><td class="num">$655,000*</td><td class="num">$402*</td><td class="num">&mdash;</td></tr><tr><td class="num">1</td><td>3638 SW 45th St</td><td class="num">1,806</td><td class="num">2021</td><td class="num">3/2</td><td class="num">$770,000</td><td class="num">$426</td><td class="num">29 (7)</td></tr><tr><td class="num">2</td><td>3344 SW Cascade Vista Ln</td><td class="num">1,747</td><td class="num">2015</td><td class="num">3/2</td><td class="num">$655,000</td><td class="num">$375</td><td class="num">64 (35)</td></tr><tr><td class="num">3</td><td>4778 SW Zenith Ave</td><td class="num">1,727</td><td class="num">2020</td><td class="num">3/2</td><td class="num">$610,000</td><td class="num">$353</td><td class="num">100 (71)</td></tr><tr><td class="num">4</td><td>2845 SW 31st St</td><td class="num">1,529</td><td class="num">2012</td><td class="num">3/2</td><td class="num">$579,000</td><td class="num">$379</td><td class="num">68 (34)</td></tr><tr><td class="num">5</td><td>4015 SW 38th St</td><td class="num">1,552</td><td class="num">2025</td><td class="num">3/2</td><td class="num">$599,900</td><td class="num">$387</td><td class="num">76 (&mdash;)</td></tr><tr><td class="num">6</td><td>4201 SW 42nd St</td><td class="num">1,551</td><td class="num">2020</td><td class="num">3/2</td><td class="num">$561,750</td><td class="num">$362</td><td class="num">75 (26)</td></tr><tr><td class="num">7</td><td>4176 SW 34th St</td><td class="num">1,574</td><td class="num">2020</td><td class="num">3/2</td><td class="num">$527,000</td><td class="num">$335</td><td class="num">18 (3)</td></tr></tbody>
+</table>
+<p class="small" style="margin:6px 0 12px">*Subject row shows the recommended list price and its implied $/sf for context, not a sale. DOM is days on market; DTO is days to offer (active days from list to pending). All comp figures verified against Supabase closed-sale records, pulled Jul 5, 2026.</p>
+<div class="comp-grid" style="grid-template-columns:repeat(4,1fr)"><div class="comp-card"><img class="ph" style="height:90px" src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260407195905349800000000-o.jpg" alt="" /><div class="body"><div class="addr">1. 3638 SW 45th St</div><div class="stats">1,806 sf · 2021 · 3/2</div><div class="price">$770,000<span class="when">JUN 3, 2</span></div></div></div><div class="comp-card"><img class="ph" style="height:90px" src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260309184105537795000000-o.jpg" alt="" /><div class="body"><div class="addr">2. 3344 SW Cascade Vista Ln</div><div class="stats">1,747 sf · 2015 · 3/2</div><div class="price">$655,000<span class="when">MAY 15, </span></div></div></div><div class="comp-card"><img class="ph" style="height:90px" src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20251108224806601272000000-o.jpg" alt="" /><div class="body"><div class="addr">3. 4778 SW Zenith Ave</div><div class="stats">1,727 sf · 2020 · 3/2</div><div class="price">$610,000<span class="when">FEB 19, </span></div></div></div><div class="comp-card"><img class="ph" style="height:90px" src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260324214427274426000000-o.jpg" alt="" /><div class="body"><div class="addr">4. 2845 SW 31st St</div><div class="stats">1,529 sf · 2012 · 3/2</div><div class="price">$579,000<span class="when">JUN 1, 2</span></div></div></div><div class="comp-card"><img class="ph" style="height:90px" src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260227190416265700000000-o.jpg" alt="" /><div class="body"><div class="addr">5. 4015 SW 38th St</div><div class="stats">1,552 sf · 2025 · 3/2</div><div class="price">$599,900<span class="when">FEB 27, </span></div></div></div><div class="comp-card"><img class="ph" style="height:90px" src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260309203559612198000000-o.jpg" alt="" /><div class="body"><div class="addr">6. 4201 SW 42nd St</div><div class="stats">1,551 sf · 2020 · 3/2</div><div class="price">$561,750<span class="when">MAY 26, </span></div></div></div><div class="comp-card"><img class="ph" style="height:90px" src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260511163845807565000000-o.jpg" alt="" /><div class="body"><div class="addr">7. 4176 SW 34th St</div><div class="stats">1,574 sf · 2020 · 3/2</div><div class="price">$527,000<span class="when">JUN 1, 2</span></div></div></div></div>
+<h3 class="subhead">How each sale reconciles to your home</h3>
+<table class="comps">
+ <thead><tr><th>Comp</th><th class="num">Close $</th><th class="num">Time</th><th class="num">Size ($200/sf)</th><th class="num">Other (garage / condition / lot)</th><th class="num">Adjusted</th></tr></thead>
+ <tbody><tr><td>1. 3638 SW 45th St</td><td class="num">$770,000</td><td class="num">$0</td><td class="num">-35,000</td><td class="num">High anchor</td><td class="num">$670,000</td></tr><tr><td>2. 3344 SW Cascade Vista Ln</td><td class="num">$655,000</td><td class="num">$0</td><td class="num">-23,200</td><td class="num">Best match</td><td class="num">$636,000</td></tr><tr><td>3. 4778 SW Zenith Ave</td><td class="num">$610,000</td><td class="num">$0</td><td class="num">-19,200</td><td class="num">Sold over asking</td><td class="num">$574,000</td></tr><tr><td>4. 2845 SW 31st St</td><td class="num">$579,000</td><td class="num">$0</td><td class="num">+20,400</td><td class="num">Similar lot</td><td class="num">$599,000</td></tr><tr><td>5. 4015 SW 38th St</td><td class="num">$599,900</td><td class="num">$0</td><td class="num">+15,800</td><td class="num">New construction</td><td class="num">$594,000</td></tr><tr><td>6. 4201 SW 42nd St</td><td class="num">$561,750</td><td class="num">$0</td><td class="num">+16,000</td><td class="num">Overpriced start, corrected</td><td class="num">$575,000</td></tr><tr><td>7. 4176 SW 34th St</td><td class="num">$527,000</td><td class="num">$0</td><td class="num">+11,400</td><td class="num">Floor anchor</td><td class="num">$531,000</td></tr></tbody>
+</table>
+<p class="small" style="margin-top:7px">Time adjustment is $0 because the Redmond market has been flat over the last year and every comp closed within about five months. Size is adjusted at $200 per square foot against your 1,631 sf. Other adjustments cover garage or shop space, new-construction premium, ADU upside, and condition. View is treated as neutral because most homes in this corridor also carry mountain views.</p>
+<footer class="pg-footer"><span>3480 SW 45TH ST · REDMOND OR · PREPARED FOR DOUG &amp; CHARISE</span><span>RYAN REALTY · PAGE 5 OF 16</span></footer>
+</section><section class="page">
+<header class="pg-header"><img class="logo" src="assets/logo-blue.png" alt="Ryan Realty" /><div class="pg-meta">COMPARATIVE MARKET ANALYSIS · JULY 2026</div></header>
+<span class="flyer-badge">Comparable Sale 1 of 7 · High anchor</span>
+<h2 class="flyer-title">3638 SW 45th St</h2>
+<div class="flyer-sub">Redmond OR · Redtail Ridge · closed Jun 3, 2026</div>
+<img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20260407195905349800000000-o.jpg" alt="3638 SW 45th St" />
+<div class="flyer-stats">
+  <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+  <div class="s"><div class="l">Baths</div><div class="v">2</div></div>
+  <div class="s"><div class="l">Sq Ft</div><div class="v">1,806</div></div>
+  <div class="s"><div class="l">Year</div><div class="v">2021</div></div>
+  <div class="s featured"><div class="l">Sold</div><div class="v">$770,000</div></div>
+  <div class="s"><div class="l">$/sf</div><div class="v">$426</div></div>
+</div>
+<p class="flyer-desc">Custom single-level on the same street as the subject, with unobstructed Cascade Mountain views and an attached 1,038 sf heated shop. Vaulted great room, hardwood floors, granite island kitchen.</p>
+<div class="flyer-features">
+  <div class="f"><div class="fl">Lot</div><div class="fv">0.22 ac</div></div>
+  <div class="f"><div class="fl">Garage</div><div class="fv">Shop</div></div>
+  <div class="f"><div class="fl">Days on Market</div><div class="fv">29 days</div></div>
+  <div class="f"><div class="fl">Days to Offer</div><div class="fv">7 days</div></div>
+</div>
+<div class="flyer-photos"><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260407195905349800000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260407200203071435000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260407200159363131000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260407200156005522000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260407200031076628000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260407200152631000000000-o.jpg" alt="" /></div>
+<p class="small" style="margin-top:7px"><strong>Listing story:</strong> Listed at $799,990, sold in 29 days (7 days to offer) at $770,000. Adjusted to your home: $670,000.</p>
+<footer class="pg-footer"><span>3480 SW 45TH ST · REDMOND OR · PREPARED FOR DOUG &amp; CHARISE</span><span>RYAN REALTY · PAGE 6 OF 16</span></footer>
+</section><section class="page">
+<header class="pg-header"><img class="logo" src="assets/logo-blue.png" alt="Ryan Realty" /><div class="pg-meta">COMPARATIVE MARKET ANALYSIS · JULY 2026</div></header>
+<span class="flyer-badge">Comparable Sale 2 of 7 · Best match</span>
+<h2 class="flyer-title">3344 SW Cascade Vista Ln</h2>
+<div class="flyer-sub">Redmond OR · Cascade View Estates · closed May 15, 2026</div>
+<img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20260309184105537795000000-o.jpg" alt="3344 SW Cascade Vista Ln" />
+<div class="flyer-stats">
+  <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+  <div class="s"><div class="l">Baths</div><div class="v">2</div></div>
+  <div class="s"><div class="l">Sq Ft</div><div class="v">1,747</div></div>
+  <div class="s"><div class="l">Year</div><div class="v">2015</div></div>
+  <div class="s featured"><div class="l">Sold</div><div class="v">$655,000</div></div>
+  <div class="s"><div class="l">$/sf</div><div class="v">$375</div></div>
+</div>
+<p class="flyer-desc">Well-maintained single-level ranch on a 0.23-acre lot. Hardwood floors through the main living areas, upgraded kitchen cabinetry, fully fenced low-maintenance yards. Closest match to the subject in size and tier.</p>
+<div class="flyer-features">
+  <div class="f"><div class="fl">Lot</div><div class="fv">0.23 ac</div></div>
+  <div class="f"><div class="fl">Garage</div><div class="fv">2-car</div></div>
+  <div class="f"><div class="fl">Days on Market</div><div class="fv">64 days</div></div>
+  <div class="f"><div class="fl">Days to Offer</div><div class="fv">35 days</div></div>
+</div>
+<div class="flyer-photos"><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260309184105537795000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260309184117868359000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260309184128868749000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260309183949066477000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260309184150978728000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260309191844782651000000-o.jpg" alt="" /></div>
+<p class="small" style="margin-top:7px"><strong>Listing story:</strong> Listed at $665,000, reduced to $655,000, sold at asking after 64 days. Adjusted to your home: $636,000.</p>
+<footer class="pg-footer"><span>3480 SW 45TH ST · REDMOND OR · PREPARED FOR DOUG &amp; CHARISE</span><span>RYAN REALTY · PAGE 7 OF 16</span></footer>
+</section><section class="page">
+<header class="pg-header"><img class="logo" src="assets/logo-blue.png" alt="Ryan Realty" /><div class="pg-meta">COMPARATIVE MARKET ANALYSIS · JULY 2026</div></header>
+<span class="flyer-badge">Comparable Sale 3 of 7 · Sold over asking</span>
+<h2 class="flyer-title">4778 SW Zenith Ave</h2>
+<div class="flyer-sub">Redmond OR · Josie Meadows · closed Feb 19, 2026</div>
+<img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20251108224806601272000000-o.jpg" alt="4778 SW Zenith Ave" />
+<div class="flyer-stats">
+  <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+  <div class="s"><div class="l">Baths</div><div class="v">2</div></div>
+  <div class="s"><div class="l">Sq Ft</div><div class="v">1,727</div></div>
+  <div class="s"><div class="l">Year</div><div class="v">2020</div></div>
+  <div class="s featured"><div class="l">Sold</div><div class="v">$610,000</div></div>
+  <div class="s"><div class="l">$/sf</div><div class="v">$353</div></div>
+</div>
+<p class="flyer-desc">Single-level craftsman with like-new finishes on a quarter-acre lot. Light and open floor plan, expansive 3-car garage sized for a long truck bed. Sold above the asking price.</p>
+<div class="flyer-features">
+  <div class="f"><div class="fl">Lot</div><div class="fv">0.26 ac</div></div>
+  <div class="f"><div class="fl">Garage</div><div class="fv">3-car</div></div>
+  <div class="f"><div class="fl">Days on Market</div><div class="fv">100 days</div></div>
+  <div class="f"><div class="fl">Days to Offer</div><div class="fv">71 days</div></div>
+</div>
+<div class="flyer-photos"><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20251108224806601272000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20251108224802024991000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20251108224822428776000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20251108224816718703000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20251108224811377091000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20251108224813898418000000-o.jpg" alt="" /></div>
+<p class="small" style="margin-top:7px"><strong>Listing story:</strong> Listed at $598,900, sold $11,100 over asking at $610,000 after 100 days. Adjusted to your home: $574,000.</p>
+<footer class="pg-footer"><span>3480 SW 45TH ST · REDMOND OR · PREPARED FOR DOUG &amp; CHARISE</span><span>RYAN REALTY · PAGE 8 OF 16</span></footer>
+</section><section class="page">
+<header class="pg-header"><img class="logo" src="assets/logo-blue.png" alt="Ryan Realty" /><div class="pg-meta">COMPARATIVE MARKET ANALYSIS · JULY 2026</div></header>
+<span class="flyer-badge">Comparable Sale 4 of 7 · Similar lot</span>
+<h2 class="flyer-title">2845 SW 31st St</h2>
+<div class="flyer-sub">Redmond OR · Volcano · closed Jun 1, 2026</div>
+<img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20260324214427274426000000-o.jpg" alt="2845 SW 31st St" />
+<div class="flyer-stats">
+  <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+  <div class="s"><div class="l">Baths</div><div class="v">2</div></div>
+  <div class="s"><div class="l">Sq Ft</div><div class="v">1,529</div></div>
+  <div class="s"><div class="l">Year</div><div class="v">2012</div></div>
+  <div class="s featured"><div class="l">Sold</div><div class="v">$579,000</div></div>
+  <div class="s"><div class="l">$/sf</div><div class="v">$379</div></div>
+</div>
+<p class="flyer-desc">Updated single-level on a near quarter-acre R2 lot with open living and good separation. Convertible garage space usable as a guest suite, plus room to build a detached ADU behind the fence.</p>
+<div class="flyer-features">
+  <div class="f"><div class="fl">Lot</div><div class="fv">0.21 ac</div></div>
+  <div class="f"><div class="fl">Garage</div><div class="fv">2-car</div></div>
+  <div class="f"><div class="fl">Days on Market</div><div class="fv">68 days</div></div>
+  <div class="f"><div class="fl">Days to Offer</div><div class="fv">34 days</div></div>
+</div>
+<div class="flyer-photos"><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260324214427274426000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260324214443916973000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260324192807145811000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260324192803378165000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260320164801285033000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260324230447518344000000-o.jpg" alt="" /></div>
+<p class="small" style="margin-top:7px"><strong>Listing story:</strong> Listed at $599,000, sold at $579,000 after 68 days. Adjusted to your home: $599,000.</p>
+<footer class="pg-footer"><span>3480 SW 45TH ST · REDMOND OR · PREPARED FOR DOUG &amp; CHARISE</span><span>RYAN REALTY · PAGE 9 OF 16</span></footer>
+</section><section class="page">
+<header class="pg-header"><img class="logo" src="assets/logo-blue.png" alt="Ryan Realty" /><div class="pg-meta">COMPARATIVE MARKET ANALYSIS · JULY 2026</div></header>
+<span class="flyer-badge">Comparable Sale 5 of 7 · New construction</span>
+<h2 class="flyer-title">4015 SW 38th St</h2>
+<div class="flyer-sub">Redmond OR · Owen Ridge · closed Feb 27, 2026</div>
+<img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20260227190416265700000000-o.jpg" alt="4015 SW 38th St" />
+<div class="flyer-stats">
+  <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+  <div class="s"><div class="l">Baths</div><div class="v">2</div></div>
+  <div class="s"><div class="l">Sq Ft</div><div class="v">1,552</div></div>
+  <div class="s"><div class="l">Year</div><div class="v">2025</div></div>
+  <div class="s featured"><div class="l">Sold</div><div class="v">$599,900</div></div>
+  <div class="s"><div class="l">$/sf</div><div class="v">$387</div></div>
+</div>
+<p class="flyer-desc">New-construction single-level with mountain views, vaulted ceiling and covered patio. Quartz throughout, A/C, tankless water heater, landscaped yards, plus a side yard for recreational vehicles. Sold with a builder credit.</p>
+<div class="flyer-features">
+  <div class="f"><div class="fl">Lot</div><div class="fv">0.16 ac</div></div>
+  <div class="f"><div class="fl">Garage</div><div class="fv">2-car</div></div>
+  <div class="f"><div class="fl">Days on Market</div><div class="fv">76 days</div></div>
+  <div class="f"><div class="fl">Days to Offer</div><div class="fv">&mdash;</div></div>
+</div>
+<div class="flyer-photos"><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260227190416265700000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260227185033294466000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260227185024610728000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260227185030556232000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20251211151741950910000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20251211151734407033000000-o.jpg" alt="" /></div>
+<p class="small" style="margin-top:7px"><strong>Listing story:</strong> New build listed at $599,900, sold at list with up to a $10,000 builder credit. Adjusted to your home: $594,000.</p>
+<footer class="pg-footer"><span>3480 SW 45TH ST · REDMOND OR · PREPARED FOR DOUG &amp; CHARISE</span><span>RYAN REALTY · PAGE 10 OF 16</span></footer>
+</section><section class="page">
+<header class="pg-header"><img class="logo" src="assets/logo-blue.png" alt="Ryan Realty" /><div class="pg-meta">COMPARATIVE MARKET ANALYSIS · JULY 2026</div></header>
+<span class="flyer-badge">Comparable Sale 6 of 7 · Overpriced start, corrected</span>
+<h2 class="flyer-title">4201 SW 42nd St</h2>
+<div class="flyer-sub">Redmond OR · Prairie Crossing · closed May 26, 2026</div>
+<img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20260309203559612198000000-o.jpg" alt="4201 SW 42nd St" />
+<div class="flyer-stats">
+  <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+  <div class="s"><div class="l">Baths</div><div class="v">2</div></div>
+  <div class="s"><div class="l">Sq Ft</div><div class="v">1,551</div></div>
+  <div class="s"><div class="l">Year</div><div class="v">2020</div></div>
+  <div class="s featured"><div class="l">Sold</div><div class="v">$561,750</div></div>
+  <div class="s"><div class="l">$/sf</div><div class="v">$362</div></div>
+</div>
+<p class="flyer-desc">Single-level on a private corner lot with a vaulted great room and open island kitchen. Floor-to-ceiling stacked-rock fireplace, hardwood floors, coffered primary suite with heated bathroom floors.</p>
+<div class="flyer-features">
+  <div class="f"><div class="fl">Lot</div><div class="fv">0.15 ac</div></div>
+  <div class="f"><div class="fl">Garage</div><div class="fv">2-car</div></div>
+  <div class="f"><div class="fl">Days on Market</div><div class="fv">75 days</div></div>
+  <div class="f"><div class="fl">Days to Offer</div><div class="fv">26 days</div></div>
+</div>
+<div class="flyer-photos"><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260309203559612198000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260309203600598950000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260309203602058421000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260309203603246399000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260309203604092976000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260309203604980299000000-o.jpg" alt="" /></div>
+<p class="small" style="margin-top:7px"><strong>Listing story:</strong> Started at $610,000, cut to $568,500, sold at $561,750 after 75 days. Adjusted to your home: $575,000.</p>
+<footer class="pg-footer"><span>3480 SW 45TH ST · REDMOND OR · PREPARED FOR DOUG &amp; CHARISE</span><span>RYAN REALTY · PAGE 11 OF 16</span></footer>
+</section><section class="page">
+<header class="pg-header"><img class="logo" src="assets/logo-blue.png" alt="Ryan Realty" /><div class="pg-meta">COMPARATIVE MARKET ANALYSIS · JULY 2026</div></header>
+<span class="flyer-badge">Comparable Sale 7 of 7 · Floor anchor</span>
+<h2 class="flyer-title">4176 SW 34th St</h2>
+<div class="flyer-sub">Redmond OR · Village at Ridgeview · closed Jun 1, 2026</div>
+<img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20260511163845807565000000-o.jpg" alt="4176 SW 34th St" />
+<div class="flyer-stats">
+  <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+  <div class="s"><div class="l">Baths</div><div class="v">2</div></div>
+  <div class="s"><div class="l">Sq Ft</div><div class="v">1,574</div></div>
+  <div class="s"><div class="l">Year</div><div class="v">2020</div></div>
+  <div class="s featured"><div class="l">Sold</div><div class="v">$527,000</div></div>
+  <div class="s"><div class="l">$/sf</div><div class="v">$335</div></div>
+</div>
+<p class="flyer-desc">Built in 2020 with mountain views and a low-maintenance layout. Fully fenced, xeriscaped yard backing an HOA-maintained walking path for added separation. Gas fireplace insert and pantry storage.</p>
+<div class="flyer-features">
+  <div class="f"><div class="fl">Lot</div><div class="fv">0.26 ac</div></div>
+  <div class="f"><div class="fl">Garage</div><div class="fv">2-car</div></div>
+  <div class="f"><div class="fl">Days on Market</div><div class="fv">18 days</div></div>
+  <div class="f"><div class="fl">Days to Offer</div><div class="fv">3 days</div></div>
+</div>
+<div class="flyer-photos"><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260511163845807565000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260511163851097216000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260511163859707399000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260511163906491051000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260511163915218013000000-o.jpg" alt="" /><img src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260511163922239734000000-o.jpg" alt="" /></div>
+<p class="small" style="margin-top:7px"><strong>Listing story:</strong> Listed at $530,000, sold quickly at $527,000 (3 days to offer). Adjusted to your home: $531,000.</p>
+<footer class="pg-footer"><span>3480 SW 45TH ST · REDMOND OR · PREPARED FOR DOUG &amp; CHARISE</span><span>RYAN REALTY · PAGE 12 OF 16</span></footer>
+</section><section class="page">
+<header class="pg-header"><img class="logo" src="assets/logo-blue.png" alt="Ryan Realty" /><div class="pg-meta">COMPARATIVE MARKET ANALYSIS · JULY 2026</div></header>
+<h2 class="section">The Redmond Market Right Now</h2>
+<div class="stat-strip" style="grid-template-columns:repeat(4,1fr)">
+  <div class="stat"><div class="lbl">Months of Supply</div><div class="val">3.8</div></div>
+  <div class="stat"><div class="lbl">Median Days to Pending</div><div class="val">15</div></div>
+  <div class="stat"><div class="lbl">Sale-to-List</div><div class="val">98.9%</div></div>
+  <div class="stat"><div class="lbl">Sold Last 90 Days</div><div class="val">145</div></div>
+</div>
+<div class="two-col">
+  <div>
+    <h3 class="subhead">Verdict: a seller's market that rewards accurate pricing</h3>
+    <p>At 3.8 months of supply, Redmond sits just inside seller's-market territory (under four months). Homes priced correctly are going under contract in about 15 days. But the market is measured, not frantic. Health reads "Warm," not "Hot."</p>
+    <p>The clearest signal for your strategy: 59% of Redmond sales close <em>below</em> the asking price and only 18% close above. The average home settles at 98.9% of list. Buyers are active but disciplined.</p>
+  </div>
+  <div>
+    <h3 class="subhead">What it means for your list price</h3>
+    <p>Price it right and it moves fast. Overprice it and it sits, then sells for less after cuts. Your own 2025 purchase shows the pattern: that sale chased $799,000 down to $650,000 over 105 days.</p>
+    <p>Year over year, Redmond prices are essentially flat (median down about 2%, price per square foot roughly level). Your home has held its value since August 2025. This is a market to enter at a realistic number, not an aspirational one.</p>
+    <p class="small">Source: market_pulse_live (SFR only, PropertyType=A) and market_stats_cache for Redmond, methodology v3-2026-05-07, computed Jul 5, 2026. Sale-to-list 0.9888; over/under/at asking 17.9% / 59.3% / 22.8%; median days to pending 15.0.</p>
+  </div>
+</div>
+<footer class="pg-footer"><span>3480 SW 45TH ST · REDMOND OR · PREPARED FOR DOUG &amp; CHARISE</span><span>RYAN REALTY · PAGE 13 OF 16</span></footer>
+</section><section class="page">
+<header class="pg-header"><img class="logo" src="assets/logo-blue.png" alt="Ryan Realty" /><div class="pg-meta">COMPARATIVE MARKET ANALYSIS · JULY 2026</div></header>
+<h2 class="section">What Your Home Is Worth</h2>
+<p>Three independent methods, each pointing to the same range.</p>
+<h3 class="subhead">Method 1 · Price per square foot</h3>
+<p>View-corridor comps close around $375 to $426 per square foot. Placing your 2018 view home in the upper-middle at $380 to $395 per foot gives $620,000 to $644,000 on 1,631 square feet.</p>
+<h3 class="subhead">Method 2 · Baseline plus condition</h3>
+<p>A well-kept corridor baseline near $360 per foot is $587,000. Adding for your home's mountain views, open modern layout and 2018 build ($40,000 to $55,000) gives $627,000 to $642,000.</p>
+<h3 class="subhead">Method 3 · Adjusted comparable sales</h3>
+<p>The seven sales, each reconciled to your home for size, garage, condition and timing, split into two tiers. The view homes on and around SW 45th set your tier: your best match at 3344 Cascade Vista adjusts to $636,000 and the same-street custom sale at 3638 SW 45th anchors the top at $670,000. Your own tested August 2025 sale of $650,000, in a flat market, sits right in that tier.</p>
+<p style="margin-top:6px">Weighting your home into the view and same-street tier where it competes, the supported value lands around $645,000 to $655,000. The entry-level Redmond sales that reconcile lower are a different product and set the floor, not your number.</p>
+<div class="tier-grid">
+  <div class="tier"><div class="t-lbl">Conservative · Quick Sale</div><div class="t-val">$639,000</div><div class="t-note">Prices for a fast contract if the Idaho timeline matters most. About $392/sf.</div></div>
+  <div class="tier featured"><div class="t-lbl">Recommended List</div><div class="t-val">$655,000</div><div class="t-note">At the tier value with room to negotiate. In a market closing at 98.9% of list, this targets a sale near $648,000 to $655,000. About $402/sf.</div></div>
+  <div class="tier"><div class="t-lbl">High End</div><div class="t-val">$669,000</div><div class="t-note">Supportable with pro photography and staging, near the same-street ceiling. Expect longer market time.</div></div>
+</div>
+<p class="small" style="margin-top:12px"><strong>Confidence: Moderate to High.</strong> Seven closed comps, all within about 1.2 miles, all closed within five months, in a tight 1,529 to 1,806 square foot band. The main variable is how strongly a buyer values the view, which is why a range rather than a single number.</p>
+<footer class="pg-footer"><span>3480 SW 45TH ST · REDMOND OR · PREPARED FOR DOUG &amp; CHARISE</span><span>RYAN REALTY · PAGE 14 OF 16</span></footer>
+</section><section class="page">
+<header class="pg-header"><img class="logo" src="assets/logo-blue.png" alt="Ryan Realty" /><div class="pg-meta">COMPARATIVE MARKET ANALYSIS · JULY 2026</div></header>
+<h2 class="section">Why $655,000</h2>
+<h3 class="subhead">Reading the two ends of the range</h3>
+<ul class="note-list">
+  <li><strong>3638 SW 45th ($770,000)</strong> is on your street: a custom home with unobstructed views and a 1,038 sf heated shop. After removing that shop and its extra size, it reconciles to about $670,000. It sets the ceiling this street can reach.</li>
+  <li><strong>3344 Cascade Vista ($655,000)</strong> is your closest match, a 2015 view home that sold at its full asking price. Adjusted for your newer 2018 build, it supports listing at the same number.</li>
+  <li><strong>4176 SW 34th ($527,000)</strong> is the floor: a smaller entry-level 2020 home that sold in three days. It confirms your home sits well above that tier, not within it.</li>
+</ul>
+<h3 class="subhead">The market case</h3>
+<p>Redmond rewards accurate pricing and punishes reaches. With 59% of homes selling under asking and the average closing at 98.9% of list, $655,000 lists at your tier value with just enough room to negotiate, and points to a sale near $648,000 to $655,000. It stays inside what the same-street and best-match sales support.</p>
+<h3 class="subhead">The ownership case</h3>
+<p>You bought this home well in August 2025 at $650,000. In a flat market, a strong buy holds its value, so you carry real equity into this sale. Recommending $655,000 reflects that the home has held and modestly built value in the view and same-street tier where it belongs, and puts you in position to sell at or above your basis.</p>
+<div class="trace">
+  <div class="t-hd">Verification Trace</div>
+  Subject: Supabase listings, ListingKey <code>2025042521...</code>, sold $650,000 on Aug 14, 2025.<br/>
+  Comps: 7 closed SFR sales, Redmond 97756, PropertyType=A, closed Feb 19 to Jun 3, 2026, 1,529 to 1,806 sf, pulled Jul 5, 2026.<br/>
+  Market: market_pulse_live + market_stats_cache, Redmond, v3-2026-05-07, computed Jul 5, 2026. MoS 3.84, sale-to-list 0.9888, YoY median -2.1%.<br/>
+  Photos HEAD-checked 200 OK. Map coordinates verified per listing.
+</div>
+<footer class="pg-footer"><span>3480 SW 45TH ST · REDMOND OR · PREPARED FOR DOUG &amp; CHARISE</span><span>RYAN REALTY · PAGE 15 OF 16</span></footer>
+</section><section class="page">
+<header class="pg-header"><img class="logo" src="assets/logo-blue.png" alt="Ryan Realty" /><div class="pg-meta">COMPARATIVE MARKET ANALYSIS · JULY 2026</div></header>
+<h2 class="section">About This Analysis</h2>
+<p>This Comparative Market Analysis is an informed opinion of value prepared by a licensed Oregon real estate broker. It is not a formal appraisal under USPAP and is not a guarantee of sale price. Value opinions rest on closed comparable sales, current market conditions and professional judgment. Actual sale price depends on buyer demand, financing, condition at showing, marketing and negotiation.</p>
+<p>All figures trace to Oregon Data Share MLS records via the Ryan Realty data platform and to Redmond market statistics, pulled July 5, 2026. Comparable sales were selected for proximity, size, age and comparability to your home. This analysis was prepared for Doug and Charise and is confidential to them.</p>
+<div class="signature-page">
+  <img class="portrait" src="assets/matt-ryan.png" alt="Matt Ryan" />
+  <div class="sig-content">
+    <div class="sig-name">Matt Ryan</div>
+    <div class="sig-printed">Matt Ryan</div>
+    <div class="sig-title">Principal Broker · Owner, Ryan Realty</div>
+    <div class="sig-contact">
+      <strong>541.213.6706</strong><br/>
+      matt@ryan-realty.com<br/>
+      ryan-realty.com
+    </div>
+    <div class="sig-license">Oregon Principal Broker License #201206613 · Prepared July 5, 2026</div>
+  </div>
+</div>
+<footer class="pg-footer"><span>3480 SW 45TH ST · REDMOND OR · PREPARED FOR DOUG &amp; CHARISE</span><span>RYAN REALTY · PAGE 16 OF 16</span></footer>
+</section>
+</body>
+</html>
