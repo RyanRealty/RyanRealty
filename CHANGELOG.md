@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.738.0 (2026-07-05)
+
+### Features
+- feat(crm): one shared contact-merge core that loses nothing + consolidates properties
+
+---
+
+
 ## v1.737.0 (2026-07-05)
 
 ### Features
