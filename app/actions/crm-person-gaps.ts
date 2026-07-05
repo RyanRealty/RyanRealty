@@ -24,6 +24,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { CRM_BROKERS, CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
+import { mergePeopleCore } from '@/lib/crm/merge-people'
 
 export type CrmPersonGapResult = { ok: true } | { ok: false; error: string }
 
@@ -266,8 +267,12 @@ export async function mergeCrmContactAction(formData: FormData): Promise<void> {
 
 /**
  * The merge steps shared by the single-pair form action and the §14.3 bulk
- * "Merge People" action. Survivor keeps its fields; the duplicate's timeline,
- * tasks, enrollments, relationships, and collaborators move; the duplicate is
+ * "Merge People" action. Delegates to the ONE merge core in lib/crm/merge-people
+ * (also used by the batch deduper) so there is a single implementation: the
+ * duplicate's timeline/tasks/enrollments/relationships/collaborators AND every
+ * other person-keyed table move, the duplicate's own emails/phones/tags/custom
+ * are UNIONED onto the survivor (previously dropped), owned properties
+ * (westside_parcels) consolidate onto the survivor, and the duplicate is
  * soft-deleted (stage=Trash, deleted=true) with a permanent audit row.
  */
 async function mergePairInternal(
@@ -277,86 +282,11 @@ async function mergePairInternal(
   mergedId: number,
   mergedName: string,
 ): Promise<void> {
-  // 1. Timeline
-  await sb.from('crm_timeline').update({ person_id: survivorId }).eq('person_id', mergedId)
-
-  // 2. Tasks
-  await sb.from('crm_tasks').update({ person_id: survivorId }).eq('person_id', mergedId)
-
-  // 3. Sequence enrollments: re-point or stop (if survivor already enrolled)
-  const LIVE = ['running', 'paused', 'paused_reply', 'awaiting_broker', 'awaiting_broker_next']
-  const [{ data: mergedE }, { data: survivorE }] = await Promise.all([
-    sb
-      .from('crm_sequence_enrollments')
-      .select('id, sequence_id')
-      .eq('person_id', mergedId)
-      .in('status', LIVE),
-    sb
-      .from('crm_sequence_enrollments')
-      .select('sequence_id')
-      .eq('person_id', survivorId)
-      .in('status', LIVE),
-  ])
-
-  if (mergedE && mergedE.length > 0) {
-    const survivorSeqs = new Set((survivorE ?? []).map((e) => Number(e.sequence_id)))
-    const toRepoint: number[] = []
-    const toStop: number[] = []
-    for (const e of mergedE) {
-      if (survivorSeqs.has(Number(e.sequence_id))) {
-        toStop.push(Number(e.id))
-      } else {
-        toRepoint.push(Number(e.id))
-      }
-    }
-    await Promise.all([
-      toRepoint.length > 0
-        ? sb.from('crm_sequence_enrollments').update({ person_id: survivorId }).in('id', toRepoint)
-        : Promise.resolve(),
-      toStop.length > 0
-        ? sb.from('crm_sequence_enrollments').update({ status: 'stopped' }).in('id', toStop)
-        : Promise.resolve(),
-    ])
-  }
-
-  // 4. Relationships (both directions)
-  await Promise.all([
-    sb.from('crm_relationships').update({ person_id: survivorId }).eq('person_id', mergedId),
-    sb
-      .from('crm_relationships')
-      .update({ related_person_id: survivorId })
-      .eq('related_person_id', mergedId),
-  ])
-
-  // 5. Collaborators (upsert to skip conflicts)
-  const { data: mergedCollabs } = await sb
-    .from('crm_people_collaborators')
-    .select('broker_slug, added_by')
-    .eq('person_id', mergedId)
-  for (const c of mergedCollabs ?? []) {
-    await sb.from('crm_people_collaborators').upsert(
-      {
-        person_id: survivorId,
-        broker_slug: c.broker_slug,
-        added_by: (c as { added_by?: string }).added_by ?? 'merge',
-      },
-      { onConflict: 'person_id,broker_slug' },
-    )
-  }
-
-  // 6. Soft-delete the duplicate
-  await sb
-    .from('crm_people')
-    .update({ stage: 'Trash', deleted: true, updated_at: new Date().toISOString() })
-    .eq('id', mergedId)
-
-  // 7. Permanent audit trail on survivor
-  await sb.from('crm_timeline').insert({
-    person_id: survivorId,
-    kind: 'system',
-    title: `Merged with "${mergedName}" (ID ${mergedId}) by ${access.email}. Duplicate archived to Trash. Unmerge not supported.`,
-    source: 'app',
-    broker: access.brokerSlug ?? null,
+  await mergePeopleCore(sb, {
+    survivorId,
+    mergedId,
+    mergedName,
+    actor: { email: access.email, brokerSlug: access.brokerSlug },
   })
 }
 
