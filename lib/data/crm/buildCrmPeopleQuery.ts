@@ -96,6 +96,9 @@ function conditionFragments(cond: CrmCondition): { joiner: 'and' | 'or'; fragmen
       return { joiner: 'and', fragments: [`stage.eq.${pgrstValue(cond.value)}`] }
     case 'source':
       return { joiner: 'and', fragments: [`source.eq.${pgrstValue(cond.value)}`] }
+    case 'neighborhood':
+      // filters the neighborhood_slug COLUMN (not a tag) — the canonical geo home.
+      return { joiner: 'and', fragments: [`neighborhood_slug.eq.${pgrstValue(cond.value)}`] }
     case 'assigned_broker':
       return { joiner: 'and', fragments: [`assigned_broker.eq.${pgrstValue(cond.value)}`] }
     case 'tag':

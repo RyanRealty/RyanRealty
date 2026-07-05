@@ -81,6 +81,8 @@ export type CrmListFilters = {
   page?: number
   /** §07 scope dropdown: restrict to one pond (crm_people.pond_id). */
   pond?: string
+  /** Canonical neighborhood filter — the crm_people.neighborhood_slug COLUMN. */
+  neighborhood?: string
 }
 
 export type CrmSavedView = {
@@ -196,6 +198,7 @@ export async function listCrmPeople(filters: CrmListFilters): Promise<{
   if (!scope && effectiveBroker) overlays.push({ field: 'assigned_broker', value: effectiveBroker })
   if (filters.stage) overlays.push({ field: 'stage', value: filters.stage })
   if (filters.tag) overlays.push({ field: 'tag', op: 'has', value: filters.tag })
+  if (filters.neighborhood) overlays.push({ field: 'neighborhood', value: filters.neighborhood })
   const segment: CrmSegment =
     overlays.length > 0 ? { type: 'group', op: 'and', nodes: overlays } : EMPTY_SEGMENT
 

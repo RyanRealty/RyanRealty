@@ -34,21 +34,23 @@ export type PeopleFilters = {
   q?: string
   stage?: string
   tagsAny?: string[]
+  neighborhood?: string
 }
 
 export type FilterPanelProps = {
   filters: PeopleFilters
   stageOptions: FilterOption[]
   tagOptions: FilterOption[]
+  neighborhoodOptions: FilterOption[]
   /** Params carried through every filter navigation (broker/pond/view). */
   carry: Record<string, string | undefined>
 }
 
-type FilterField = 'stage' | 'tag' | 'q'
+type FilterField = 'stage' | 'tag' | 'neighborhood' | 'q'
 
-const FIELD_LABEL: Record<FilterField, string> = { stage: 'Stage', tag: 'Tags', q: 'Name' }
+const FIELD_LABEL: Record<FilterField, string> = { stage: 'Stage', tag: 'Tags', neighborhood: 'Neighborhood', q: 'Name' }
 
-export default function FilterPanel({ filters, stageOptions, tagOptions, carry }: FilterPanelProps) {
+export default function FilterPanel({ filters, stageOptions, tagOptions, neighborhoodOptions, carry }: FilterPanelProps) {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState<Set<FilterField>>(new Set())
@@ -61,6 +63,7 @@ export default function FilterPanel({ filters, stageOptions, tagOptions, carry }
     if (next.q) p.set('q', next.q)
     if (next.stage) p.set('stage', next.stage)
     if (next.tagsAny?.[0]) p.set('tag', next.tagsAny[0])
+    if (next.neighborhood) p.set('neighborhood', next.neighborhood)
     const qs = p.toString()
     router.push(qs ? `/admin/crm?${qs}` : '/admin/crm')
   }
@@ -68,6 +71,7 @@ export default function FilterPanel({ filters, stageOptions, tagOptions, carry }
   const active: Array<{ field: FilterField; summary: string }> = []
   if (filters.stage) active.push({ field: 'stage', summary: `Stage includes any of: ${filters.stage}` })
   if (filters.tagsAny?.length) active.push({ field: 'tag', summary: `Tags include any of: ${filters.tagsAny.join(', ')}` })
+  if (filters.neighborhood) active.push({ field: 'neighborhood', summary: `Neighborhood is: ${neighborhoodOptions.find((n) => n.key === filters.neighborhood)?.label ?? filters.neighborhood}` })
   if (filters.q) active.push({ field: 'q', summary: `Name contains: ${filters.q}` })
 
   const rows: Array<{ field: FilterField; summary: string; isDraft: boolean }> = [
@@ -98,6 +102,7 @@ export default function FilterPanel({ filters, stageOptions, tagOptions, carry }
       q: field === 'q' ? undefined : filters.q,
       stage: field === 'stage' ? undefined : filters.stage,
       tagsAny: field === 'tag' ? undefined : filters.tagsAny,
+      neighborhood: field === 'neighborhood' ? undefined : filters.neighborhood,
     })
   }
 
@@ -181,6 +186,17 @@ export default function FilterPanel({ filters, stageOptions, tagOptions, carry }
                         </SelectContent>
                       </Select>
                     ) : null}
+                    {field === 'neighborhood' ? (
+                      <Select
+                        value={filters.neighborhood ?? ''}
+                        onValueChange={(v) => navigate({ ...filters, neighborhood: v })}
+                      >
+                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pick a neighborhood" /></SelectTrigger>
+                        <SelectContent>
+                          {neighborhoodOptions.map((n) => <SelectItem key={n.key} value={n.key}>{n.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : null}
                     {field === 'q' ? (
                       <form
                         onSubmit={(e) => {
@@ -194,7 +210,7 @@ export default function FilterPanel({ filters, stageOptions, tagOptions, carry }
                     ) : null}
                     {!isDraft ? (
                       <div className="flex flex-wrap items-center gap-1.5">
-                        {(field === 'stage' ? [filters.stage!] : field === 'tag' ? filters.tagsAny ?? [] : [filters.q!]).map((v) => (
+                        {(field === 'stage' ? [filters.stage!] : field === 'tag' ? filters.tagsAny ?? [] : field === 'neighborhood' ? [neighborhoodOptions.find((n) => n.key === filters.neighborhood)?.label ?? filters.neighborhood!] : [filters.q!]).map((v) => (
                           <Badge key={v} variant="secondary" className="gap-1 pr-1 text-[11px]">
                             {v}
                             <button type="button" onClick={() => removeFilter(field)} aria-label={`Remove ${v}`} className="rounded-full p-0.5 hover:bg-muted">

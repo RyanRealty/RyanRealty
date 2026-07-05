@@ -19,6 +19,7 @@ import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants
 import { getCrmStages } from '@/lib/data/crm/getCrmStages'
 import { getCrmTags } from '@/lib/data/crm/getCrmTags'
 import { getCrmReportAreas } from '@/lib/data/crm/getCrmReportAreas'
+import { getCrmNeighborhoodOptions } from '@/lib/data/crm/getCrmNeighborhoodOptions'
 import { getCrmTemplatesAdmin } from '@/lib/data/crm/getCrmTemplatesAdmin'
 import ContactsSearch from '@/components/admin/crm/ContactsSearch'
 import BrokerScopeSheet from '@/components/admin/crm/BrokerScopeSheet'
@@ -52,7 +53,7 @@ const BROKER_HEADSHOT: Record<string, string> = {
 
 type SearchParams = {
   q?: string; stage?: string; broker?: string; tag?: string; view?: string
-  page?: string; ptab?: string; pond?: string
+  page?: string; ptab?: string; pond?: string; neighborhood?: string
 }
 
 export default async function CrmPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
@@ -69,10 +70,10 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
   const requestedBroker = sp.broker === 'all' ? undefined : sp.broker || undefined
   const effectiveBroker = scope ?? requestedBroker
 
-  const [views, overview, result, stageRows, tagRows, areaRows, templateRows, sequenceRows, ponds, stageCounts] = await Promise.all([
+  const [views, overview, result, stageRows, tagRows, areaRows, templateRows, sequenceRows, ponds, stageCounts, neighborhoodOptions] = await Promise.all([
     getCrmSavedViews(access),
     getCrmOverview(scope),
-    listCrmPeople({ q: sp.q, stage: sp.stage, broker: effectiveBroker, tag: sp.tag, view: sp.view, page, pond: sp.pond }),
+    listCrmPeople({ q: sp.q, stage: sp.stage, broker: effectiveBroker, tag: sp.tag, view: sp.view, page, pond: sp.pond, neighborhood: sp.neighborhood }),
     getCrmStages(),
     getCrmTags(),
     getCrmReportAreas(),
@@ -80,6 +81,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
     listCrmSequences(),
     getCrmPonds(),
     getCrmStageCounts(access),
+    getCrmNeighborhoodOptions(),
   ])
 
   const { rows, total, pageSize, appliedView } = result
@@ -89,7 +91,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
   const signals = await getPeopleListSignals(rows.map((r) => r.id))
 
   const baseParams = new URLSearchParams()
-  for (const [k, v] of Object.entries({ q: sp.q, stage: sp.stage, broker: sp.broker, tag: sp.tag, view: sp.view, pond: sp.pond })) {
+  for (const [k, v] of Object.entries({ q: sp.q, stage: sp.stage, broker: sp.broker, tag: sp.tag, view: sp.view, pond: sp.pond, neighborhood: sp.neighborhood })) {
     if (v) baseParams.set(k, v)
   }
   const pageHref = (p: number) => {
@@ -187,10 +189,12 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
     stage: sp.stage || undefined,
     broker: effectiveBroker || undefined,
     tagsAny: sp.tag ? [sp.tag] : undefined,
+    neighborhood: sp.neighborhood || undefined,
   }
   const filterExportHref = (() => {
     const p = new URLSearchParams()
     if (sp.q) p.set('q', sp.q)
+    if (sp.neighborhood) p.set('neighborhood', sp.neighborhood)
     if (sp.stage) p.set('stage', sp.stage)
     if (sp.tag) p.set('tag', sp.tag)
     if (effectiveBroker) p.set('broker', effectiveBroker)
@@ -204,6 +208,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
     q: sp.q || undefined,
     stage: sp.stage || appliedView?.filter?.stage || undefined,
     tagsAny: sp.tag ? [sp.tag] : appliedView?.filter?.tagsAny ?? undefined,
+    neighborhood: sp.neighborhood || undefined,
   }
 
   return (
@@ -285,6 +290,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
           ponds={pondOptions}
           stageOptions={stageOptions}
           tagOptions={tagOptions}
+          neighborhoodOptions={neighborhoodOptions}
           sourceOptions={sourceOptions}
           reportAreas={areaOptions}
           emailTemplates={templateOptions}

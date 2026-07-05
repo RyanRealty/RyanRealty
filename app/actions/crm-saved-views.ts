@@ -144,6 +144,7 @@ export async function saveCurrentFilterAsViewAction(input: {
     stage: input.filters?.stage || undefined,
     tagsAny: input.filters?.tagsAny?.filter(Boolean),
     q: input.filters?.q || undefined,
+    neighborhood: input.filters?.neighborhood || undefined,
   }
   const ast = upgradeLegacyFilters(bag)
   // Dual-write filter + ast (lockstep, same as updateSavedViewFilterAction) so
@@ -225,6 +226,7 @@ export async function updateSavedViewFilterAction(input: {
     stage: input.filters?.stage || undefined,
     tagsAny: input.filters?.tagsAny?.filter(Boolean),
     q: input.filters?.q || undefined,
+    neighborhood: input.filters?.neighborhood || undefined,
   }
   let ast: CrmSegment
   try {

@@ -33,6 +33,9 @@ export type TagCondition = { field: 'tag'; op: 'has' | 'not'; value: string }
 /** Match against crm_people.source (exact). */
 export type SourceCondition = { field: 'source'; value: string }
 
+/** Match against the crm_people.neighborhood_slug COLUMN (exact canonical slug). */
+export type NeighborhoodCondition = { field: 'neighborhood'; value: string }
+
 /** Match against crm_people.assigned_broker (a broker slug). */
 export type AssignedBrokerCondition = { field: 'assigned_broker'; value: string }
 
@@ -70,6 +73,7 @@ export type CrmCondition =
   | StageCondition
   | TagCondition
   | SourceCondition
+  | NeighborhoodCondition
   | AssignedBrokerCondition
   | DateCondition
   | TextCondition
@@ -102,6 +106,7 @@ const CONDITION_FIELDS = new Set([
   'stage',
   'tag',
   'source',
+  'neighborhood',
   'assigned_broker',
   'created',
   'last_activity',
@@ -130,6 +135,7 @@ function validateCondition(cond: CrmCondition, path: string): void {
   switch (cond.field) {
     case 'stage':
     case 'source':
+    case 'neighborhood':
     case 'assigned_broker':
     case 'q':
       if (!nonEmptyString(cond.value)) {
@@ -229,6 +235,7 @@ export type LegacyFilters = {
   tagsAny?: string[]
   broker?: string
   q?: string
+  neighborhood?: string
 }
 
 /**
@@ -262,6 +269,9 @@ export function upgradeLegacyFilters(filters: LegacyFilters): CrmSegment {
   const broker = filters.broker?.trim()
   if (broker) nodes.push({ field: 'assigned_broker', value: broker })
 
+  const neighborhood = filters.neighborhood?.trim()
+  if (neighborhood) nodes.push({ field: 'neighborhood', value: neighborhood })
+
   const q = filters.q?.trim()
   if (q) nodes.push({ field: 'q', value: q })
 
@@ -276,6 +286,8 @@ function describeCondition(cond: CrmCondition): string {
       return `stage is ${cond.value}`
     case 'source':
       return `source is ${cond.value}`
+    case 'neighborhood':
+      return `neighborhood is ${cond.value}`
     case 'assigned_broker':
       return `broker is ${cond.value}`
     case 'tag':

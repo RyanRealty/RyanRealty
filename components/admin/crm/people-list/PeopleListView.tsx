@@ -115,10 +115,10 @@ export type PeopleListViewProps = {
   appliedView: AppliedViewInfo | null
   activeViewId: number | null
   /** Panel filter state (URL params merged with the applied view's saved bag). */
-  filters: { q?: string; stage?: string; tagsAny?: string[] }
+  filters: { q?: string; stage?: string; tagsAny?: string[]; neighborhood?: string }
   /** The RAW URL filter params (?q/?stage/?tag only) — carried on scope changes
    *  so a view's saved filters are never materialized into the URL. */
-  urlFilters: { q?: string; stage?: string; tag?: string }
+  urlFilters: { q?: string; stage?: string; tag?: string; neighborhood?: string }
   /** The full legacy bag for bulk "all matching" + save-view. */
   activeFilters: LegacyFilters
   /** Scope overlay state (§7). */
@@ -130,6 +130,7 @@ export type PeopleListViewProps = {
   ponds: ScopePondOption[]
   stageOptions: FilterOption[]
   tagOptions: FilterOption[]
+  neighborhoodOptions: FilterOption[]
   sourceOptions: FilterOption[]
   reportAreas: BulkPickerOption[]
   emailTemplates: BulkTemplateOption[]
@@ -143,7 +144,7 @@ export default function PeopleListView(props: PeopleListViewProps) {
     rows, total, page, pageSize, lastPage, pageHrefPrev, pageHrefNext,
     appliedView, activeViewId, filters, urlFilters, activeFilters,
     currentBroker, currentPond, myBrokerSlug, canAssignBroker,
-    brokers, ponds, stageOptions, tagOptions, sourceOptions,
+    brokers, ponds, stageOptions, tagOptions, neighborhoodOptions, sourceOptions,
     reportAreas, emailTemplates, sequences, brokerPicker, filterExportHref,
   } = props
 
@@ -511,6 +512,7 @@ export default function PeopleListView(props: PeopleListViewProps) {
               filters={filters}
               stageOptions={stageOptions}
               tagOptions={tagOptions}
+              neighborhoodOptions={neighborhoodOptions}
               carry={carry}
             />
           )}

@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-04T16:53:56.171Z
+**Generated:** 2026-07-05T15:30:49.890Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -303,7 +303,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 593,272**
+### `listing_tile_mv` · **rows ≈ 591,809**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -347,7 +347,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 74,556**
+### `similar_listings_mv` · **rows ≈ 74,418**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 
@@ -416,7 +416,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 22,331**
+### `market_stats_cache` · **rows ≈ 22,768**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -590,7 +590,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 14**
+### `cmas` · **rows ≈ 19**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -662,7 +662,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 100**
+### `expired_listings` · **rows ≈ 105**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -706,7 +706,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `owner_lookup_attempts` | integer | yes | 0 |
 | `last_owner_lookup_at` | timestamp with time zone | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 136**
+### `marketing_brain_actions` · **rows ≈ 142**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -4015,6 +4015,50 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `navigation_type` | text | yes |  |
 | `device` | text | yes |  |
 | `created_at` | timestamp with time zone | no | now() |
+
+### `westside_parcels`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `apn` | text | no |  |
+| `site_street` | text | yes |  |
+| `site_city` | text | yes |  |
+| `site_state` | text | yes |  |
+| `site_zip` | text | yes |  |
+| `lat` | double precision | yes |  |
+| `lon` | double precision | yes |  |
+| `mail_street` | text | yes |  |
+| `mail_city` | text | yes |  |
+| `mail_state` | text | yes |  |
+| `mail_zip` | text | yes |  |
+| `owner1_first` | text | yes |  |
+| `owner1_last` | text | yes |  |
+| `owner2_first` | text | yes |  |
+| `owner2_last` | text | yes |  |
+| `spouse_first` | text | yes |  |
+| `all_owners` | text | yes |  |
+| `owner_occupied` | boolean | yes |  |
+| `absentee` | boolean | yes |  |
+| `owner_type` | text | yes |  |
+| `purchase_date` | date | yes |  |
+| `purchase_price` | numeric | yes |  |
+| `tenure_years` | numeric | yes |  |
+| `subdivision` | text | yes |  |
+| `year_built` | integer | yes |  |
+| `bedrooms` | integer | yes |  |
+| `baths` | numeric | yes |  |
+| `building_sqft` | integer | yes |  |
+| `lot_sqft` | numeric | yes |  |
+| `acreage` | numeric | yes |  |
+| `property_type` | text | yes |  |
+| `assessed_value` | numeric | yes |  |
+| `market_value` | numeric | yes |  |
+| `neighborhood_slug` | text | yes |  |
+| `subdivision_slug` | text | yes |  |
+| `person_id` | bigint | yes |  |
+| `match_method` | text | yes |  |
+| `source_file` | text | yes |  |
+| `loaded_at` | timestamp with time zone | no | now() |
 
 ### `x_auth`
 
