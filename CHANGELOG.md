@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.739.0 (2026-07-05)
+
+### Features
+- feat(cma): 3480 SW 45th St Redmond seller CMA for Doug & Charise
+
+---
+
+
 ## v1.738.0 (2026-07-05)
 
 ### Features
