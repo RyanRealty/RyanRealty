@@ -1,0 +1,419 @@
+# FUB Screen Analysis — Batch 03 (screen-017 through screen-024)
+
+---
+
+## screen-017.png
+- **Module / area:** Person detail — Email compose / Inbox thread view
+- **Browser tab title / URL path:** `ryan-realty.followupboss.com/2/people/view/27022` (visible in address bar)
+- **Purpose:** Shows a Person detail page for Laurie McAdam with an email compose panel open in the center, displaying Matt Ryan's email signature block and the top-of-thread; right rail shows Action Plans, Activity, Tasks, Appointments, and other widgets.
+- **Layout regions:**
+  - **Left sidebar (narrow, ~180px):** Contact summary card (name, avatar, last contacted label), section links (People, Relationships, Details, Financing, Lender, Custom Fields, Background, Social Profile), and a lead profile snapshot at the bottom showing LinkedIn, Google, Name, Birthday, Gender, Location fields.
+  - **Center main panel:** Email thread / compose area. Top shows "to:" addressee field (Laurie McAdam pre-populated), subject line area, a toolbar row (formatting, Follow Up, AI Writing, Business Card | Counter buttons), then the email body which contains Matt Ryan's signature block (headshot photo, name, title, company, phone, website, tagline). Below the signature is the thread history.
+  - **Right rail (~250px):** Stacked widgets: Action Plans (2 of 4 label visible), Activity (most recent note/activity), Tasks (count badge), Appointments, AgentFire FUB Widget, Deals, Automations (#1 visible), Files, Collaborators.
+- **Global navigation:** Top nav bar: People, Inbox, Tasks, Calendar, Deals, Reporting, Admin icons/tabs; Search bar center-top; notification bell; account avatar (top right); "Ask Gemini" button (top-right corner, blue).
+- **Primary content:**
+  - **Email compose pane (center):** 
+    - "To:" field pre-filled with "Laurie McAdam" (chip/badge style)
+    - Subject line field (text visible but small/[illegible])
+    - Toolbar: Bold, Italic, Underline, Link, and additional formatting buttons | "Follow Up" button | "AI Writing" button | "Business Card" button | "Counter" button
+    - Body: Matt Ryan's email signature is rendered with:
+      - Circular headshot photo (Matt Ryan in suit/tie, green background)
+      - Name: **Matt Ryan**
+      - Title: Owner & Principal Broker — Ryan Realty LLC
+      - Phone: 541.703.3095 (visible)
+      - Website: ryan-realty.com (visible)
+      - Tagline: "Building community through authentic relationships and unparalleled real estate service"
+      - Ryan Realty logo image below the text block
+      - Additional line: "Read our Google reviews · [illegible]"
+    - Below the signature: email thread history (collapsed/preview of prior messages)
+  - **Thread preview area (below signature):** Shows 2-3 prior email exchanges with timestamps and short content previews. One visible reply appears to reference a follow-up or prior communication.
+- **Filters / search / sort:** None active in this view. The center pane is compose-mode.
+- **Buttons & actions:**
+  - "Follow Up" — (inferred) inserts follow-up reminder or schedules a follow-up task
+  - "AI Writing" — opens AI-assisted email drafting tool
+  - "Business Card" — inserts Matt's contact card/signature into the email
+  - "Counter" — (inferred) counter-offer related action specific to real estate context
+  - Send button (inferred, likely bottom-right of compose area, not clearly visible)
+  - Reply/Forward icons on thread rows
+- **Statuses / stages / tags / lead score / pills:**
+  - Left sidebar contact: "Last contacted [timeframe] ago" label under name
+  - Tasks badge on right rail (number badge, count [illegible] at this resolution)
+  - Action Plans "2 of 4" progress indicator
+- **Automation / workflow elements:**
+  - **Action Plans** right-rail widget showing "2 of 4" plans (inferred: 2 active, total 4)
+  - **Automations** widget on right rail showing "#1" (inferred: 1 automation active)
+  - Activity feed showing most recent interaction
+- **Data-model implications:**
+  - Person entity: `id=27022`, `name="Laurie McAdam"`, `email` (pre-populated in compose)
+  - Email composition: `to`, `subject`, `body` (rich text with HTML signature), linked to Person
+  - Signature: broker-level entity with `name`, `title`, `company`, `phone`, `website`, `tagline`, `headshot_url`, `logo_url`
+  - Thread: parent email thread linked to Person, showing historical messages
+  - Action Plans: many-to-many Person ↔ ActionPlan, with progress tracking (completed/total steps)
+  - Automations: Person ↔ Automation enrollment
+- **Notable details / edge cases / counts / numbers:**
+  - The "Business Card" button in the compose toolbar inserts the full HTML signature block — this is a distinct button from just a text signature
+  - "Counter" button suggests deal/offer-related email actions are surfaced directly in the compose toolbar
+  - The headshot photo is circular-cropped and embedded in the signature
+  - Matt's phone number shown as 541.703.3095 (FUB-tracked line, not the direct line)
+  - Two separate clickable links visible in the signature footer area ("Read our Google reviews" + another link)
+
+---
+
+## screen-018.png
+- **Module / area:** Person detail — Edit Phone Numbers modal overlay
+- **Browser tab title / URL path:** `ryan-realty.followupboss.com/2/people/view/27022` (same person, Laurie McAdam)
+- **Purpose:** Modal dialog for adding or editing phone numbers for a contact, allowing label assignment (Mobile, Home, Work, etc.) and multiple phone number entries.
+- **Layout regions:**
+  - **Background (dimmed):** Person detail page for Laurie McAdam visible behind the modal (same layout as screen-017 — left sidebar, center email thread area, right rail widgets)
+  - **Modal overlay (center screen):** "Edit Phone Numbers" dialog box, white background, ~400px wide
+- **Global navigation:** Same top nav as screen-017 (People, Inbox, Tasks, Calendar, Deals, Reporting, Admin, Search, Ask Gemini). Dimmed by modal overlay.
+- **Primary content — Modal "Edit Phone Numbers":**
+  - **Modal title:** "Edit Phone Numbers" (bold header)
+  - **Column headers:** "Phone Number" (left column) | "Label" (right column) | "Best Number" (far right, with radio/checkbox indicator)
+  - **Row 1 (existing number):**
+    - Phone Number field: [illegible at this resolution — appears to be a 10-digit number field, pre-filled]
+    - Label dropdown: "Mobile" (selected)
+    - Best Number: radio button (selected/filled — this is the best/primary number)
+  - **Row 2 (empty/add):**
+    - Phone Number field: empty text input
+    - Label dropdown: "Mobile" (default selected)
+    - Best Number: radio button (unselected)
+  - **"+ Add another phone" link/button:** below the rows, allows adding additional phone number rows
+  - **Action buttons at bottom:**
+    - "Cancel" — secondary/outline button (closes modal, discards changes)
+    - "Save Phone Numbers" — primary/blue button (saves changes)
+- **Filters / search / sort:** None.
+- **Buttons & actions:**
+  - "Cancel" — closes modal without saving
+  - "Save Phone Numbers" — persists phone number changes to the Person record
+  - "+ Add another phone" — (inferred) dynamically appends a new phone number row
+  - Label dropdown on each row — select from: Mobile, Home, Work, Other (inferred standard FUB labels)
+  - "Best Number" radio column — marks one phone as the primary/preferred contact number
+  - Individual row delete icon — (inferred, small X or trash icon per row, may not be visible at this resolution)
+- **Statuses / stages / tags / lead score / pills:** None visible in modal.
+- **Automation / workflow elements:** None directly in this modal. Phone number changes may trigger automations (inferred).
+- **Data-model implications:**
+  - Person has `phones[]` array: each entry has `{ number: string, label: enum(Mobile|Home|Work|Other), is_best: boolean }`
+  - Only one phone can be marked "Best Number" at a time (radio button behavior)
+  - Multiple phone numbers supported per Person
+  - Label options are a fixed enum set
+- **Notable details / edge cases / counts / numbers:**
+  - Modal is modal (blocks background interaction) — background is dimmed/overlaid
+  - "Best Number" radio paradigm means the UI enforces a single primary phone
+  - The label dropdown defaults to "Mobile" for new entries
+  - At least 2 phone rows visible (1 pre-filled, 1 empty for new entry)
+
+---
+
+## screen-019.png
+- **Module / area:** Person detail — Email thread view (reading a full email thread)
+- **Browser tab title / URL path:** `ryan-realty.followupboss.com/2/people/view/27022` (Laurie McAdam — Follow Up tab)
+- **Purpose:** Displays the full-length email thread for Laurie McAdam, showing a multi-paragraph CMA/market analysis email from Matt Ryan, followed by a response and another follow-up — the center panel is in read/thread mode rather than compose mode.
+- **Layout regions:**
+  - **Left sidebar:** Contact card (Laurie McAdam, avatar, last contacted), navigation links (People, Relationships, Details, Financing, Lender, Custom Fields, Background, Social Profile), and lead profile data at bottom (LinkedIn, Google, Name, Birthday, Gender, Location: Bend, OR United States visible)
+  - **Center main panel:** Full email thread, scrolled to show message body content. No compose toolbar visible — read-only thread view.
+  - **Right rail:** Widgets — Action Plans, Activity, Tasks, Appointments, AgentFire FUB Widget, Deals, Automations, Files, Collaborators (same right-rail structure as prior screens, but scrolled differently — "Web Inquiry Option #2" visible under Automations)
+- **Global navigation:** Same top nav. "Ask Gemini" button top-right.
+- **Primary content — Email thread:**
+  - **Email 1 (Matt Ryan → Laurie McAdam, full body visible):**
+    - Opening: "Hi Laurie,"
+    - Body paragraph 1: "Thank you for the details on your home. They made a real difference in the analysis. I put together a full comparative market analysis for your address..."
+    - Body paragraph 2 (summarizing findings): References "the short version: based on recent sales of comparable average homes in your corridor, plus what you shared (the 2 acres of 1/3[?]) the condition. I've never seen this area in such good condition. For homes with similar features and amenities found at around $X of $1,012,000. This report wouldn't make sense and here you will need [illegible] a market."
+    - Body references a price: **$821,215** (visible — likely a home value estimate or range)
+    - Continues: "I am in a position to give answers any questions, and if it helps I am happy to come see the home in person and walk through it with you. Just let me know a time that works."
+    - Closing: "Matt Ryan / Ryan Realty, Bend Oregon / [phone] / [website] / [tagline line]"
+    - **Signature block** visible at the bottom of email 1 (same signature as screen-017)
+  - **Email 2 (response — Laurie McAdam or Matt Ryan, smaller):** A shorter reply visible below (body partially readable: "Hi Laurie, thanks for reaching out to Ryan Realty. We have your request for #[illegible] Over Trail Rd, Bend, OR 97701 USA and a broker is pulling the comparative market now. Your full report details will be available today, and I will send the link the moment it is ready. Matt or call [illegible]")
+  - **Email 3 (further thread item):** Another message visible, short, appears to be an automated or quick reply
+- **Filters / search / sort:** Thread view — no filters. Tab selector at top of center pane: likely "Email | Text | Notes | Activity" tabs (inferred from FUB layout pattern).
+- **Buttons & actions:**
+  - Reply/Forward buttons (inferred per message row — small icons)
+  - "Send Email" or compose trigger (inferred, top of thread panel)
+  - Scroll within thread to read full content
+- **Statuses / stages / tags / lead score / pills:** 
+  - Right rail: "Web Inquiry Option #2" label under Automations section (this is an automation name/template)
+  - Activity feed on right rail shows recent actions
+- **Automation / workflow elements:**
+  - Right rail "Automations" widget shows **"Web Inquiry Option #2"** — an active automation enrollment for this person
+  - The second email in thread appears to be an **automated response** triggered by a web inquiry (the text pattern "thanks for reaching out to Ryan Realty. We have your request for... and a broker is pulling the comparative market now" reads like an auto-responder / drip email)
+- **Data-model implications:**
+  - EmailThread entity linked to Person (`person_id=27022`)
+  - Each email message: `from`, `to`, `body_html`, `sent_at`, `direction` (inbound/outbound)
+  - Automation "Web Inquiry Option #2" is an action plan / drip sequence that fires templated emails based on a web inquiry trigger
+  - CMA delivery workflow: broker manually composes CMA email (email 1); automation may have sent initial acknowledgment (email 2)
+- **Notable details / edge cases / counts / numbers:**
+  - Price mentioned in email body: **$821,215** (a specific CMA estimate)
+  - The automated email references "Trail Rd, Bend, OR 97701" — suggesting the lead submitted a CMA request for a specific property address
+  - Matt's email is a genuine manually-written CMA summary with personalized detail, not a template
+  - The thread shows at least 3 messages; the center panel is scrolled to show the body content of the longest message
+
+---
+
+## screen-020.png
+- **Module / area:** Person detail — Text/SMS thread view with a hover-revealed automation tooltip
+- **Browser tab title / URL path:** `ryan-realty.followupboss.com/2/people/view/27022` (Laurie McAdam — Follow Up tab)
+- **Purpose:** Shows the Person detail page with the center panel displaying a text/SMS thread or a note/activity feed, and a tooltip/popup is visible over a button showing automation or lead-routing detail.
+- **Layout regions:**
+  - **Left sidebar:** Same as prior screens — Laurie McAdam contact card, nav links, lead profile at bottom (LinkedIn, Google, Name, Birthday, Gender, Location: Bend, OR United States)
+  - **Center main panel:** Email compose area visible with Matt Ryan's signature block (same as screen-017), plus a text/note area below. A tooltip or dropdown popup is displayed over a button in the compose area.
+  - **Right rail:** Same widgets — Action Plans, Activity, Tasks, Appointments, AgentFire FUB Widget, Deals, Automations, Files, Collaborators. "Web Inquiry Option #2" visible under Automations.
+- **Global navigation:** Same top nav.
+- **Primary content:**
+  - The center panel shows the email compose/draft area with Matt Ryan's signature rendered (same headshot, name, title, phone, website, tagline, Ryan Realty logo)
+  - A **tooltip/hover popup** is visible overlaid on the compose area. The popup appears to contain:
+    - Title: "Send Email" or an automation label (text [illegible] at this resolution)
+    - Content showing lead details or automation parameters: text mentions "LEAD ORIGIN:", "Campaign: [illegible]", "Source: [illegible]", "Points: [illegible]", "Assigned: matt (default routing is field)" — (partially legible)
+    - This looks like a "lead details" tooltip that surfaces when hovering over a Send or route button
+  - Below the tooltip, the compose area body remains with the signature
+- **Filters / search / sort:** None active.
+- **Buttons & actions:**
+  - The tooltip is triggered by hovering/clicking a button in the compose toolbar (inferred — the "Counter" or a routing button)
+  - "Send Now" (inferred button inside or near tooltip)
+  - Compose toolbar buttons remain: Follow Up, AI Writing, Business Card, Counter
+- **Statuses / stages / tags / lead score / pills:**
+  - Tooltip reveals: "LEAD ORIGIN" label (lead source attribution data)
+  - "Assigned: matt" — agent assignment visible
+  - "default routing is field" — routing rule description
+  - Right rail: "Web Inquiry Option #2" automation active
+- **Automation / workflow elements:**
+  - Tooltip content suggests this is the **lead routing / drip assignment** popup, showing:
+    - Lead source/campaign attribution
+    - Point/score value
+    - Assignment rule ("matt (default routing is field)")
+  - This surfaces when Matt hovers over or clicks a Send/Route button in the compose area
+- **Data-model implications:**
+  - Lead routing: `assigned_agent`, `routing_rule`, `campaign`, `source`, `lead_score/points`
+  - The tooltip pulls from the Person/Lead record's source attribution fields
+  - "Default routing is field" suggests a field-based routing rule (e.g., route by geographic field or lead type field)
+- **Notable details / edge cases / counts / numbers:**
+  - The tooltip is an inline overlay on the compose pane, not a separate modal
+  - "LEAD ORIGIN:" label suggests FUB stores UTM/source attribution per lead
+  - Assignment shown as "matt" (lowercase) — agent username/identifier in FUB routing rules
+
+---
+
+## screen-021.png
+- **Module / area:** Person detail — Email/Activity thread, scrolled down to show multiple FUB-generated/automated email excerpts
+- **Browser tab title / URL path:** `ryan-realty.followupboss.com/2/people/view/27022` (Laurie McAdam — Follow Up tab)
+- **Purpose:** Shows the contact's activity/email thread scrolled to display a series of outbound emails from Matt Ryan, each containing a URL/link block (likely automated drip emails or CMA delivery links), with the right rail showing the same widgets.
+- **Layout regions:**
+  - **Left sidebar:** Same — Laurie McAdam, nav links, lead profile (LinkedIn, Google, Name, Birthday, Gender, Location: Bend, OR United States, flagged/icon).
+  - **Center main panel:** Scrolled email thread showing 4+ email message rows, each with a short body and a long URL string visible.
+  - **Right rail:** Same widgets. Automations shows "Web Inquiry Option #2, 4 actions, [X] days ago." Appointments section visible. "Web Inquiry Option #2" label prominent.
+- **Global navigation:** Same top nav. Ask Gemini button.
+- **Primary content — Email thread rows (center):**
+  - Each row shows:
+    - Sender avatar + name: "Matt Ryan" with blue avatar circle
+    - Timestamp (relative, e.g., "[X] days ago" or specific date)
+    - Message body: short text then a long hyperlink/URL string
+    - The URLs visible are all similar in format: `https://[domain]/...?param=...` (long tracking URLs — appear to be CMA report delivery links or property search links sent to the lead)
+    - Some rows show: "archived (https://[URL])" — suggesting the email contained an archived or delivered link
+    - Reply/Forward action icons per row
+  - **Row 1:** Matt Ryan → [timestamp] — body begins "archived (https://ryan-realty..." or similar, with a long tracking URL
+  - **Row 2:** Matt Ryan → [timestamp] — similar pattern, long URL
+  - **Row 3:** Matt Ryan → [timestamp] — similar pattern
+  - **Row 4:** Matt Ryan → [timestamp] — similar pattern
+  - All 4 visible messages appear to be outbound from Matt Ryan, automated or manually triggered drip emails containing unique tracking/delivery URLs
+- **Filters / search / sort:** Thread view — no active filters.
+- **Buttons & actions:**
+  - Reply button per email row (inferred)
+  - "View full email" expand per row (inferred)
+  - Links/URLs in email bodies are clickable (opens in new tab, inferred)
+- **Statuses / stages / tags / lead score / pills:**
+  - Right rail Automations: "Web Inquiry Option #2" — **"4 actions"** count visible, "[X] days ago" timestamp
+  - This tells us the automation has 4 steps/actions total
+- **Automation / workflow elements:**
+  - Right rail confirms: **"Web Inquiry Option #2"** automation with **4 actions** is enrolled for this Person
+  - The 4 email rows in the thread likely correspond to the 4 action steps of this automation drip sequence
+  - Each email contains a unique tracking URL (CMA report link, property search link, or follow-up resource)
+  - "Archived" prefix on some email bodies suggests emails were logged/archived from an external email client (not composed inside FUB directly) or FUB is displaying the thread-archive notation
+- **Data-model implications:**
+  - Automation steps map 1:1 to email messages sent in the thread
+  - Each automation step: `step_number`, `action_type=email`, `sent_at`, `body`, `tracking_url`
+  - ActionPlan entity: `name="Web Inquiry Option #2"`, `total_steps=4`, `enrolled_person_id=27022`
+  - Tracking URLs are unique per person/step (personalized delivery links)
+- **Notable details / edge cases / counts / numbers:**
+  - 4 email rows visible, matching "4 actions" in the Automations widget — strong correlation
+  - The thread is entirely outbound (Matt Ryan is the sender on all visible rows) — this is a drip sequence with no replies visible in this scroll position
+  - Long URL strings are not wrapped/truncated in the thread view — full raw URLs shown
+
+---
+
+## screen-022.png
+- **Module / area:** Person detail — Collaborators modal overlay
+- **Browser tab title / URL path:** `ryan-realty.followupboss.com/2/people/view/27022` (Laurie McAdam)
+- **Purpose:** Modal dialog for adding or managing collaborators (other agents/brokers) on a contact/lead, showing a search interface and a list of available team members to add.
+- **Layout regions:**
+  - **Background (dimmed):** Same Person detail page for Laurie McAdam visible behind the modal (left sidebar, center email/activity area, right rail widgets — same as prior screens in this batch).
+  - **Modal overlay (center screen):** "Collaborators" dialog, white background, ~350–400px wide
+- **Global navigation:** Same top nav (dimmed by overlay). Ask Gemini button visible.
+- **Primary content — Collaborators modal:**
+  - **Modal title:** "Collaborators" (bold, top of modal)
+  - **Search field:** Text input with placeholder "Search or add collaborators" (or similar — partially legible); allows typing to filter the agent list
+  - **Collaborator list (team members available to add):**
+    - **Rebecca Peterson** — avatar/initials icon + name listed (first entry)
+    - **Paul Stevenson** — avatar/initials icon + name listed (second entry)
+    - (No other team members visible — likely only 2 other agents on the Ryan Realty team beyond Matt)
+  - **Current collaborators section:** (if any already added — not clearly visible at this resolution; modal may show both "add" and "current" sections)
+  - **Action buttons at bottom:**
+    - "Cancel" — secondary button (closes modal, no changes)
+    - "Save" (or "Add") — primary/blue button (saves collaborator selections)
+- **Filters / search / sort:** Search input in modal for filtering collaborator list by name.
+- **Buttons & actions:**
+  - Checkbox or toggle next to each team member name to select/deselect
+  - "Cancel" — dismiss modal
+  - "Save" / "Add" — commits collaborator additions
+  - Search field — filters displayed agent list
+- **Statuses / stages / tags / lead score / pills:**
+  - Each listed collaborator shows name + avatar/initials only (no status or role indicator visible at this resolution)
+- **Automation / workflow elements:**
+  - Adding a collaborator likely grants that agent visibility into this contact's timeline and may trigger notifications (inferred)
+  - No automation-specific elements visible in modal itself
+- **Data-model implications:**
+  - Person ↔ Agent many-to-many relationship via `collaborators[]` join table
+  - Collaborator entity: `person_id`, `agent_id`, `added_at`, `added_by`
+  - Available agents: exactly 2 non-Matt agents: **Rebecca Peterson** and **Paul Stevenson** — confirms 3-broker team total
+  - The collaborators widget on the right rail of the Person detail page is the entry point to this modal
+- **Notable details / edge cases / counts / numbers:**
+  - Only 2 agents listed (Rebecca Peterson, Paul Stevenson) — confirms the 3-person brokerage (Matt is the owner/primary, these two are the other brokers)
+  - The search field implies the team could be larger in other FUB installations — it's a generic pattern
+  - Collaborator modal is accessed from the "Collaborators" widget on the right rail of any Person detail page
+
+---
+
+## screen-023.png
+- **Module / area:** Person detail — Dan Conkil contact page, Email/Activity thread (different person)
+- **Browser tab title / URL path:** `ryan-realty.followupboss.com/2/people/view/[different ID]` — person is "Dan Conkil" (not Laurie McAdam; different person record)
+- **Purpose:** Shows a different contact (Dan Conkil) with their email/activity thread in the center panel, displaying a series of emails from Matt Ryan with newsletter or market update content visible, demonstrating the thread view for a different lead/contact.
+- **Layout regions:**
+  - **Left sidebar:** Dan Conkil contact card — name, avatar (initials "DC" or photo), "Last contacted [timeframe] ago" label, navigation links (People, Relationships, Details, Financing, Lender, Custom Fields, Background, Social Profile), lead profile at bottom (LinkedIn, Google, Name, Birthday, Gender, Location: Bend, OR United States and other fields)
+  - **Center main panel:** Email thread showing multiple outbound emails from Matt Ryan with content visible in the thread rows
+  - **Right rail:** Action Plans widget, Activity, Tasks (with badge), Appointments, AgentFire FUB Widget, Deals, Automations, Files, Collaborators — same right-rail widget structure
+- **Global navigation:** Same top nav (People, Inbox, Tasks, Calendar, Deals, Reporting, Admin, Search, Ask Gemini). Different contact but same nav.
+- **Primary content — Email thread (Dan Conkil):**
+  - **Row 1 — Matt Ryan → [timestamp]:**
+    - Tags/pills: "Matt Ryan" sender badge, green/colored label visible (e.g., "Saved" or status tag)
+    - Subject or opening: "[illegible]" — may reference a market update or listing
+    - Body: "I think I would personally reject our three towns and suggest three towns we actually invest in: the three towns that will actually flourish in [illegible]" — appears to be a market commentary or editorial note (may be from a newsletter/drip email body)
+    - Reply/action icons
+  - **Row 2 — Matt Ryan → [timestamp]:**
+    - Opening line visible: references "October Housing Market Update" or similar seasonal market update title
+    - Body: "Hi Dan, I wanted to share the latest market updates and interest changes across Central Oregon. We [illegible]..."
+    - Tags visible on this row (colored pill tags for email category or campaign)
+    - Reply icon
+  - **Row 3 — Matt Ryan → [timestamp]:**
+    - Opening: "Sharing My Take on the Central Oregon Housing Market"
+    - Body excerpt: "Hello Neighbor, I know the news on the market (some say it's consolidating, housing values are [illegible])"
+    - This appears to be a newsletter/market commentary email
+    - Tags on this row
+- **Filters / search / sort:** Thread view — tab selector at top of center pane (Email | Text | Notes tabs, inferred). No active filters.
+- **Buttons & actions:**
+  - Reply/Forward per email row
+  - Email tab / Text tab / Notes tab switcher at top of center pane
+  - "New Email" or compose button (inferred top-right of center pane)
+  - Tag/label chips on email rows may be clickable (filter by that campaign tag)
+- **Statuses / stages / tags / lead score / pills:**
+  - Multiple colored pill tags visible on email rows (campaign labels, e.g., "Market Update", "Newsletter" — exact text [illegible] at resolution)
+  - Right rail shows: Action Plans, Automations active, Tasks badge
+- **Automation / workflow elements:**
+  - Multiple emails visible are consistent with a newsletter drip or market update campaign sequence
+  - "October Housing Market Update" and "Central Oregon Housing Market" subject lines suggest a recurring market content series
+  - These are likely part of an Action Plan / drip automation for contacts in the "nurture" stage
+- **Data-model implications:**
+  - New Person entity: `name="Dan Conkil"`, `location="Bend, OR United States"`, `id=[different from 27022]`
+  - Email messages with campaign tags: `campaign_label`, `message_type=newsletter|market_update|drip`
+  - Tag model: emails can have labels/campaign tags beyond just the contact's own tags
+  - Demonstrates that the same right-rail widget structure applies across all Person detail pages (not unique to Laurie McAdam)
+- **Notable details / edge cases / counts / numbers:**
+  - Dan Conkil is a different person record — confirms the thread view pattern generalizes across contacts
+  - The email bodies visible show market commentary content (not transactional/listing-specific) — consistent with a market update newsletter sequence
+  - "Central Oregon Housing Market" and "October Housing Market Update" are two distinct email subjects visible in thread rows
+  - At least 3 email rows visible in this scroll view
+
+---
+
+## screen-024.png
+- **Module / area:** Inbox — Email thread reading pane (Inbox list + open message view)
+- **Browser tab title / URL path:** `ryan-realty.followupboss.com/2/inbox/view/[ID]` (Inbox module — different URL pattern; tab title visible as "Inbox" area)
+- **Purpose:** Shows the FUB Inbox module with a two-panel layout: left panel is the inbox message list (showing multiple conversation threads) and the right panel shows the open/selected email thread for "Amy More" (or similar name), displaying a promotional listing email with property photos and bullet-point copy.
+- **Layout regions:**
+  - **Left panel — Inbox list (~300px wide):** List of inbox conversation threads, each row showing contact name, subject/preview, timestamp. Multiple threads visible.
+  - **Right panel — Open email thread (~remaining width):** Full email thread for the selected contact "Amy More" (or "Amy Moran" — [partially legible]), showing an inbound email that is a property listing/marketing email with photos.
+  - **Right-side contact rail (far right, narrow):** Contact summary for Amy More — name, phone, email, agent assignment, and mini-widget links (Relationships, Lender, Recent Conversations, Recent Activity, AgentFire FUB Widget). This is a condensed version of the Person detail right rail, contextual to the Inbox.
+- **Global navigation:** Top nav bar: **People**, **Inbox** (currently active/highlighted), Tasks, Calendar, Deals, Reporting, Admin, Search. Ask Gemini button. Account avatar.
+- **Primary content:**
+  - **Inbox list (left panel):**
+    - **Filters/tabs at top:** "All" tab | "Unread" tab (or similar filter tabs) — "All" appears selected
+    - **Thread row 1 (top):** Contact name [illegible], subject "[illegible]", timestamp, preview text
+    - **Thread row 2:** Contact name [illegible], subject visible: references "228 Unread Messages" or a count badge — this is a filter/header row, not a thread (inferred: showing inbox stats or filter state)
+    - **Multiple thread rows visible:** approximately 8–12 conversation threads listed, each with:
+      - Contact name (bold if unread)
+      - Subject/preview snippet
+      - Timestamp (right-aligned)
+      - Unread badge (blue dot or count, on some rows)
+    - Specific visible thread entries (partially legible):
+      - "Jennifer Angelo" — "1781 Julia Buchanan [illegible] Rd" — timestamp
+      - "[Name]" — subject mentioning "RSVP" or appointment
+      - "Brad [illegible]" — some subject
+      - "Jennifer Angelo" (appears again — second thread)
+      - "[Name] Ranking" — subject
+      - "Thomas Wise" — "[illegible]"
+      - Other rows below
+    - **"No more" or pagination indicator** at bottom of list
+    - Left rail also shows inbox sub-sections: "Inbox", "All" label, filter by "Company" or team (a "Company" label is visible on the left nav within the inbox module)
+  - **Open email thread (right panel) — Amy More / Amy Moran:**
+    - **Thread header:** Contact name "Amy More" (or "Amy Moran") at top with avatar, timestamp
+    - **Email body (inbound marketing/listing email):**
+      - Subject or headline: **"Incredible value in SW Bend. Modern, updated & feels like new"**
+      - Sub-headline: **"And now MORE polished perfect than ever, with a pretty new price at $479,000"**
+      - Bullet-point list:
+        - "Walk & bike to old mill, concerts & trails!"
+        - "4 bedrooms + a bonus room"
+        - "Covered back porch with extended patio"
+        - "Multiple upgrades throughout"
+      - CTA line: **"Easy to show, go see it today!"**
+      - **Property photo:** a listing photo of a home (exterior view — single-family home, appears to be in SW Bend neighborhood) — rendered inline in the email body below the bullet points
+    - **Reply / Forward actions** at bottom of email
+    - **"Close" or archive button** (inferred, top-right of thread panel)
+  - **Contact right rail (far right):**
+    - **Amy More / Amy Moran** — name displayed at top
+    - Phone number visible (partially [illegible])
+    - Email address visible (partially [illegible])
+    - "Agent: Real Estate Agent" or assigned agent label
+    - Mini sections: Relationships, Lender, Recent Conversations, Recent Activity, AgentFire FUB Widget
+    - A "Source" or lead origin label
+- **Filters / search / sort:**
+  - Inbox list: "All" / "Unread" tab filter at top of list panel
+  - Company/team filter (visible as "Company" label in left nav area of inbox)
+  - Inbox sub-nav: appears to have sections (e.g., Inbox, Sent, All — inferred)
+- **Buttons & actions:**
+  - "Reply" button (inferred, at bottom of open email)
+  - "Forward" button (inferred)
+  - "Archive" / "Mark as read" / "Delete" per thread row (inferred hover actions)
+  - Tab click (All | Unread) to filter inbox
+  - Thread row click — opens that thread in right panel
+  - Contact name in right rail — links to Person detail page
+- **Statuses / stages / tags / lead score / pills:**
+  - Unread badge (blue dot) on some thread rows in left panel
+  - The inbound email is a **listing marketing email** — this is a promotional email received by Amy More (or sent to her by another agent/seller) that arrived in the FUB-monitored inbox
+  - Property price: **$479,000** (visible in email headline)
+- **Automation / workflow elements:**
+  - None directly in this view
+  - The email is inbound (marketing/listing email sent to Amy More, appearing in FUB inbox because FUB monitors/syncs the connected email account)
+- **Data-model implications:**
+  - Inbox module: `conversations[]` list with `contact_name`, `subject`, `preview`, `timestamp`, `is_unread`
+  - Inbox has two-panel layout: list + reading pane (standard email client pattern)
+  - Contact right rail in Inbox is a condensed Person detail widget — same data model, different presentation
+  - The email body shows that FUB's inbox displays rich HTML emails with inline images (not plain text only)
+  - `InboxThread` entity: `id`, `contact_id`, `subject`, `messages[]`, `unread_count`, `last_message_at`
+  - Person (Amy More): `name`, `phone`, `email`, `assigned_agent`, `lead_source`
+- **Notable details / edge cases / counts / numbers:**
+  - Price mentioned in inbound email: **$479,000** (SW Bend listing)
+  - Property features: 4 bedrooms + bonus room, covered back porch with extended patio, walk/bike to Old Mill district
+  - The email in the reading pane is an **inbound listing marketing email** (likely a listing flyer / showing-request email received from another agent or auto-sent from a listing platform), not a FUB-drafted outbound
+  - "Jennifer Angelo" appears twice in the inbox list — two separate threads with the same contact
+  - The inbox list shows approximately 8–12 threads visible without scrolling
+  - "228 Unread Messages" (or a similar unread count) may be visible as a badge or filter count in the inbox header — indicating a potentially high-volume inbox
+  - The "Company" filter label in the left inbox nav suggests inbox can be filtered to show only company-wide messages vs personal
+
+---
