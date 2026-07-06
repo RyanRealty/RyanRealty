@@ -33,6 +33,10 @@ const FILTER_KEYS = [
   'hasFireplace',
   'hasGolfCourse',
   'viewContains',
+  'cities',
+  'viewContainsAny',
+  'offMarketWithinDays',
+  'excludeSoldSince',
   'newListingsDays',
   'sort',
   'includeClosed',
@@ -72,13 +76,21 @@ export function normalizeSavedSearchFilters(input: SavedSearchFilters): SavedSea
     const value = input[key]
     if (value == null) continue
 
+    if (key === 'cities' || key === 'viewContainsAny') {
+      if (Array.isArray(value)) {
+        const parsed = value.map((v) => asTrimmedString(v)).filter((v): v is string => Boolean(v))
+        if (parsed.length > 0) out[key] = parsed
+      }
+      continue
+    }
+
     if (key === 'city' || key === 'subdivision' || key === 'postalCode' || key === 'propertyType' || key === 'propertySubType' || key === 'statusFilter' || key === 'keywords' || key === 'viewContains' || key === 'sort' || key === 'view' || key === 'poly') {
       const parsed = asTrimmedString(value)
       if (parsed) out[key] = parsed
       continue
     }
 
-    if (key === 'includeClosed' || key === 'hasOpenHouse' || key === 'hasPool' || key === 'hasView' || key === 'hasWaterfront' || key === 'hasFireplace' || key === 'hasGolfCourse') {
+    if (key === 'includeClosed' || key === 'hasOpenHouse' || key === 'hasPool' || key === 'hasView' || key === 'hasWaterfront' || key === 'hasFireplace' || key === 'hasGolfCourse' || key === 'excludeSoldSince') {
       const parsed = asBoolean(value)
       if (parsed !== undefined) out[key] = parsed
       continue
@@ -119,7 +131,7 @@ export function getSavedSearchHash(input: SavedSearchFilters): string {
 export function savedFiltersToAdvanced(filters: SavedSearchFilters): AdvancedListingsFilters & { city?: string; subdivision?: string } {
   const normalized = normalizeSavedSearchFilters(filters)
   const statusRaw = asTrimmedString(normalized.statusFilter)
-  const validStatus = statusRaw && ['active', 'active_and_pending', 'pending', 'closed', 'all'].includes(statusRaw)
+  const validStatus = statusRaw && ['active', 'active_and_pending', 'pending', 'closed', 'all', 'coming_soon', 'expired', 'withdrawn', 'canceled', 'off_market', 'active_or_offmarket'].includes(statusRaw)
     ? statusRaw
     : undefined
   const sortRaw = asTrimmedString(normalized.sort)
@@ -164,6 +176,10 @@ export function savedFiltersToAdvanced(filters: SavedSearchFilters): AdvancedLis
     hasFireplace: asBoolean(normalized.hasFireplace),
     hasGolfCourse: asBoolean(normalized.hasGolfCourse),
     viewContains: asTrimmedString(normalized.viewContains),
+    cities: Array.isArray(normalized.cities) ? (normalized.cities as string[]) : undefined,
+    viewContainsAny: Array.isArray(normalized.viewContainsAny) ? (normalized.viewContainsAny as string[]) : undefined,
+    offMarketWithinDays: asNumber(normalized.offMarketWithinDays),
+    excludeSoldSince: asBoolean(normalized.excludeSoldSince),
     newListingsDays: asNumber(normalized.newListingsDays),
     sort: validSort,
     includeClosed: asBoolean(normalized.includeClosed),

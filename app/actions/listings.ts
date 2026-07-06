@@ -568,7 +568,7 @@ export type AdvancedListingsFilters = Omit<ListingsFilters, 'sort'> & {
   lotAcresMax?: number
   postalCode?: string
   propertySubType?: string
-  /** active | active_and_pending | pending | closed | coming_soon | all */
+  /** active | active_and_pending | pending | closed | coming_soon | all | expired | withdrawn | canceled | off_market | active_or_offmarket */
   statusFilter?: string
   keywords?: string
   hasOpenHouse?: boolean
@@ -580,6 +580,14 @@ export type AdvancedListingsFilters = Omit<ListingsFilters, 'sort'> & {
   hasGolfCourse?: boolean
   /** View type keyword (e.g. 'Mountain', 'Golf', 'Lake') — details.View ILIKE %viewContains% */
   viewContains?: string
+  /** Match any of these cities (exact) — in addition to the single `city` param. */
+  cities?: string[]
+  /** Either-or view match: view_description ILIKE any of these terms (e.g. ['Cascade','Panoramic']). */
+  viewContainsAny?: string[]
+  /** Off-market rows only: constrain to off_market_date within N days. */
+  offMarketWithinDays?: number
+  /** Off-market rows only: drop addresses that later recorded a Closed sale. */
+  excludeSoldSince?: boolean
   /** Listed in last N days */
   newListingsDays?: number
   sort?: AdvancedSort
@@ -748,6 +756,10 @@ function hasAdvancedFilters(opts: Record<string, unknown>): boolean {
     opts.hasFireplace === true ||
     opts.hasGolfCourse === true ||
     (opts.viewContains != null && String(opts.viewContains).trim() !== '') ||
+    (Array.isArray(opts.cities) && opts.cities.length > 0) ||
+    (Array.isArray(opts.viewContainsAny) && opts.viewContainsAny.length > 0) ||
+    opts.offMarketWithinDays != null ||
+    opts.excludeSoldSince === true ||
     (opts.sort != null && ['price_per_sqft_asc', 'price_per_sqft_desc', 'year_newest', 'year_oldest'].includes(String(opts.sort)))
   )
 }
@@ -769,7 +781,7 @@ export async function getListingsAdvanced(options: {
   }
   const limit = Math.min(options.limit ?? 100, 200)
   const offset = options.offset ?? 0
-  const validStatus = ['active', 'active_and_pending', 'pending', 'closed', 'all'] as const
+  const validStatus = ['active', 'active_and_pending', 'pending', 'closed', 'all', 'coming_soon', 'expired', 'withdrawn', 'canceled', 'off_market', 'active_or_offmarket'] as const
   const statusFilter =
     (options.statusFilter && validStatus.includes(options.statusFilter as typeof validStatus[number]))
       ? options.statusFilter
@@ -862,6 +874,10 @@ export async function getListingsAdvanced(options: {
     p_has_fireplace: options.hasFireplace === true ? true : null,
     p_has_golf_course: options.hasGolfCourse === true ? true : null,
     p_view_contains: options.viewContains?.trim() || null,
+    p_cities: Array.isArray(options.cities) && options.cities.length > 0 ? options.cities : null,
+    p_view_contains_any: Array.isArray(options.viewContainsAny) && options.viewContainsAny.length > 0 ? options.viewContainsAny : null,
+    p_off_market_within_days: options.offMarketWithinDays != null && options.offMarketWithinDays > 0 ? options.offMarketWithinDays : null,
+    p_exclude_sold_since: options.excludeSoldSince === true ? true : null,
     p_new_listings_days: options.newListingsDays != null && options.newListingsDays > 0 ? options.newListingsDays : null,
     p_sort: options.sort ?? 'newest',
     p_limit: limit,
