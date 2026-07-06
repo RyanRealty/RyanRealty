@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.741.0 (2026-07-06)
+
+### Features
+- feat(cma): 3480 SW 45th draft assets (cma + net sheet html, brand assets, map)
+- feat(search): off-market statuses, multi-city, either-or view match in advanced search
+
+### Maintenance
+- chore(scripts): one-off CRM, FUB recon, westside enrichment, SEO verify scripts
+- docs: FUB CRM analysis, avatar market channel, westside enrichment plan, saved search goal
+- chore(seo): improve trail-lines import script parsing and dedupe
+- chore(tc): envelope field type parity, immutable events trigger, recipient token index
+
+---
+
+
 ## v1.740.0 (2026-07-05)
 
 ### Features
