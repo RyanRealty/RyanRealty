@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.742.0 (2026-07-07)
+
+### Features
+- feat(saved-search): complete saved-search + market-report subscription system (W1-W5)
+
+---
+
+
 ## v1.741.0 (2026-07-06)
 
 ### Features
