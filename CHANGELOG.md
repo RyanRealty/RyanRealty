@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.744.0 (2026-07-07)
+
+### Features
+- feat(lifecycle-workflows): CMA build engine + newsletter auto-draft/visual approval + subscriptions hub E2E + unified brutalist email shell
+
+---
+
+
 ## v1.743.3 (2026-07-07)
 
 ### Bug Fixes
