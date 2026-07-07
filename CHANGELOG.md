@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.743.3 (2026-07-07)
+
+### Bug Fixes
+- fix(saved-search): unschedule neighborhood default enrollment + fast neighborhood RPC scope
+
+---
+
+
 ## v1.743.2 (2026-07-07)
 
 ### Maintenance
