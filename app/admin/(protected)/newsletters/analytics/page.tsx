@@ -8,6 +8,7 @@ import { getBrokerNewsletterAnalytics, getBrokerWarmList } from '@/lib/data'
 import { KpiStrip } from '@/components/console/KpiStrip'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 import { TableWithMobileCards, type TwmcColumn } from '@/components/admin/TableWithMobileCards'
+import { Card, CardContent } from '@/components/ui/card'
 import { BrokerFilterSelect } from './BrokerFilterSelect'
 import { formatDate } from '@/lib/format/date'
 
@@ -146,19 +147,21 @@ export default async function NewsletterAnalyticsPage({
             getRowKey={(r) => r.email}
             cap={25}
             renderCard={(r) => (
-              <div className="rounded-lg border border-border bg-card p-3">
-                <div className="flex items-start justify-between gap-2">
-                  {r.personId ? (
-                    <Link href={`/admin/crm/${r.personId}`} className="min-w-0 flex-1 truncate text-sm font-medium text-foreground hover:underline">
-                      {r.email}
-                    </Link>
-                  ) : (
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{r.email}</span>
-                  )}
-                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{r.clicks} clicks</span>
-                </div>
-                <div className="mt-1 text-xs text-muted-foreground tabular-nums">{fmtDate(r.lastAt)}</div>
-              </div>
+              <Card>
+                <CardContent className="space-y-1">
+                  <div className="flex items-start justify-between gap-2">
+                    {r.personId ? (
+                      <Link href={`/admin/crm/${r.personId}`} className="min-w-0 flex-1 truncate text-sm font-medium text-foreground hover:underline">
+                        {r.email}
+                      </Link>
+                    ) : (
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{r.email}</span>
+                    )}
+                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{r.clicks} clicks</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground tabular-nums">{fmtDate(r.lastAt)}</div>
+                </CardContent>
+              </Card>
             )}
             empty={<p>No clicks recorded yet for this scope.</p>}
           />

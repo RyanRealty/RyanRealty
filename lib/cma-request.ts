@@ -62,9 +62,11 @@ export type CreateCmaRequestInput = {
   notifyLead?: boolean
 }
 
-/** Public URL where the finished CMA is served once the producer builds it. */
+/** Public URL where the finished CMA is served once it is built.
+ *  /cma/[slug] serves DB-stored documents and redirects legacy file-based
+ *  CMAs to their static public/cmas/ path. */
 export function cmaPublicUrl(slug: string): string {
-  return `${SITE_URL}/cmas/${slug}/cma.html`
+  return `${SITE_URL}/cma/${slug}`
 }
 
 export type CreateCmaRequestResult =
@@ -206,7 +208,9 @@ export async function createCmaRequest(
       broker_id: brokerId,
       broker_slug: broker.slug,
       status: 'draft',
-      html_path: `public/drafts/${slug}/cma.html`,
+      // Placeholder until the deterministic builder writes html_content and
+      // stamps html_path 'db:cmas.html_content:<slug>' (lib/cma/build.ts).
+      html_path: `pending:${slug}`,
       generation_reason: `${sourceLabel} from ${leadEmail ?? input.leadPhone ?? 'unknown contact'}${
         input.leadTimeline ? ` (${input.leadTimeline})` : ''
       }`,
@@ -383,9 +387,9 @@ async function sendBrokerNotification(params: {
     params.leadPhone ? `  Phone:     ${params.leadPhone}` : null,
     params.leadTimeline ? `  Timeline:  ${params.leadTimeline}` : null,
     '',
-    `The request is queued in /admin/cmas as a draft (slug: ${params.cmaSlug}).`,
-    `When you're ready, build the canonical CMA via the producer skill:`,
-    `  marketing_brain_skills/producers/cma/SKILL.md`,
+    `The request is queued in /admin/cmas (slug: ${params.cmaSlug}).`,
+    `The CMA builds automatically within about 30 minutes and lands there as a`,
+    `draft for review. Approve it, then send it to the lead from the review page.`,
     '',
     `Open the queue: ${queueUrl}`,
     '',
@@ -405,7 +409,7 @@ async function sendBrokerNotification(params: {
     ${params.leadPhone ? `<tr><td style="padding:4px 0;color:#5b6473;">Phone:</td><td style="padding:4px 0;"><a href="tel:${escapeHtml(params.leadPhone)}">${escapeHtml(params.leadPhone)}</a></td></tr>` : ''}
     ${params.leadTimeline ? `<tr><td style="padding:4px 0;color:#5b6473;">Timeline:</td><td style="padding:4px 0;">${escapeHtml(params.leadTimeline)}</td></tr>` : ''}
   </table>
-  <p>The request is queued in <strong>/admin/cmas</strong> as a draft (slug: <code>${escapeHtml(params.cmaSlug)}</code>). When you're ready, build the canonical CMA via the producer skill at <code>marketing_brain_skills/producers/cma/SKILL.md</code>.</p>
+  <p>The request is queued in <strong>/admin/cmas</strong> (slug: <code>${escapeHtml(params.cmaSlug)}</code>). The CMA builds automatically within about 30 minutes and lands there as a draft. Approve it on the review page, then send it to the lead.</p>
   <p><a href="${queueUrl}" style="display:inline-block;background:#102742;color:#faf8f4;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:600;">Open the CMA queue</a></p>
   <p style="margin-top:24px;color:#5b6473;font-size:13px;">— Ryan Realty automation</p>
 </div>

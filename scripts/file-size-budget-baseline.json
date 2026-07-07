@@ -34,12 +34,12 @@
     "app/price-drops/page.tsx": 648,
     "app/reports/explore/ExploreClient.tsx": 919,
     "app/search/[...slug]/page.tsx": 1037,
-    "lib/cma-delivery.ts": 772,
+    "lib/cma-delivery.ts": 782,
     "lib/cma.ts": 839,
     "lib/data/crm/getEmailReporting.ts": 686,
     "lib/data/crm/getLeadSourcesReport.ts": 609,
-    "lib/data/index.ts": 667,
-    "lib/data/sync/syncWrites.ts": 1108,
+    "lib/data/index.ts": 691,
+    "lib/data/sync/syncWrites.ts": 1121,
     "lib/expired-owner-lookup.ts": 689,
     "lib/followupboss.ts": 1599,
     "lib/listing-mapper.ts": 657,
@@ -56,6 +56,6 @@
     "lib/x.ts": 787
   },
   "barrels": {
-    "lib/data/index.ts": 154
+    "lib/data/index.ts": 161
   }
 }

@@ -1,58 +1,36 @@
 'use server'
 
 /**
- * One-click CMA from a CRM contact record (Stream 2).
+ * One-click CMA from a CRM contact record.
  *
- * Matt's rule: the owns-home next step is "Send CMA", and the CMA must
- * auto-generate + queue, then the broker REVIEWS before it sends. Review-first,
- * always — there is NO auto-send between build and delivery.
+ * Rewired 2026-07-07 (W1 lifecycle workflows): the legacy React-PDF
+ * cma_deliveries pipeline (lib/cma-delivery.ts) is retired for NEW builds.
+ * "Send CMA" on a contact now runs the canonical deterministic builder
+ * (lib/cma/build.ts) — the same engine behind the content:cma queue and
+ * /admin/cmas — and the draft lands in /admin/cmas for review.
  *
- * Two server actions map onto the existing two-stage auto-CMA pipeline plus the
- * existing draft-send path:
- *
+ * Review-first, always:
  *   startCmaForContactAction(personId)
- *     → resolve the contact's owned home from CRM geo (fub_person_geo, same
- *       resolution the lead page uses: formatted_address / source_address +
- *       lat/lng), parse it into the address parts createCmaDelivery wants,
- *       insert the cma_deliveries row (status 'pending' = QUEUED), then build it
- *       to a REVIEWABLE state (status 'ready') via processCmaDelivery. The build
- *       renders the PDF + drafts the email + notifies the assigned broker with a
- *       signed /cma-drafts/<id> review link. It does NOT email the lead.
- *
- *   sendCmaForContactAction(deliveryId)
- *     → after the broker has reviewed the draft, deliver the drafted email to
- *       the lead (the 'ready' → 'sent' transition). The CMA email carries
- *       open/click tracking (instrumentEmailHtml) so engagement lands on the
- *       contact's communication chain. Logs the send to crm_timeline. FUB notes
- *       are intentionally NOT written (FUB cutover — see file footer notes).
- *
- * State machine (review-first, no auto-send):
- *   [start]  createCmaDelivery → 'pending'
- *            processCmaDelivery → 'ready'    (reviewable; broker notified)
- *   [review] broker opens /cma-drafts/<id> or the contact card "Send CMA" UI
- *   [send]   sendCmaForContactAction → 'ready' → 'sent' (lead emailed + tracked)
- *
- * NOTE on the original Stream-2 spec: it said sendCmaForContactAction should
- * "fire it via processCmaDelivery". processCmaDelivery only BUILDS to 'ready'
- * (it never emails the lead), so calling it as the send step would never deliver
- * the CMA. The completion standard ("a second call sends it") governs: the send
- * step performs the 'ready' → 'sent' delivery (the same logic as the existing
- * /api/cma-drafts/<id>/send route), minus the FUB note. processCmaDelivery is
- * used in the START step where it belongs (auto-build to a reviewable draft).
- *
- * DAL boundary: this is a 'use server' action file, so the cma_deliveries +
- * crm_timeline mutations live here legitimately (G1 allows raw .from() in
- * server actions). Reads of the contact + geo go through the service client too,
- * scoped behind the CRM access guard + requirePersonInScope.
+ *     → resolve the contact's owned home from CRM geo, run the deterministic
+ *       build, land a `cmas` row in status 'draft'. Returns the slug (the
+ *       `deliveryId` field name is kept for the existing form callers).
+ *       Nothing is emailed to the lead.
+ *   sendCmaForContactAction(idOrSlug)
+ *     → for a cmas slug: deliver the APPROVED (finalized) CMA through the
+ *       canonical tracked-send rail (lib/cma/send.ts — suppression checked,
+ *       branded shell, attributed + instrumented, PDF attached).
+ *     → for a legacy cma_deliveries uuid: the old rows still send through
+ *       their stored draft so in-flight reviews aren't stranded.
  */
 
 import { revalidatePath } from 'next/cache'
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
-import { createCmaDelivery, processCmaDelivery } from '@/lib/cma-delivery'
+import { buildCma } from '@/lib/cma/build'
+import { sendCmaToLead } from '@/lib/cma/send'
+import { slugifyAddress } from '@/lib/cma-request'
 import { parseContactAddress } from '@/lib/crm/contact-cma-address'
-import { instrumentEmailHtml } from '@/lib/email-tracking'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { prepareDeliverableEmail } from '@/lib/email/prepare'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
@@ -60,6 +38,7 @@ import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { sendEmail } from '@/lib/resend'
 
 const STORAGE_BUCKET = 'cma-deliveries'
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export type StartCmaResult =
   | { ok: true; deliveryId: string }
@@ -77,16 +56,9 @@ type ContactCmaContext = {
   leadEmail: string | null
   leadName: string | null
   leadPhone: string | null
-  /** The owned-home address resolved from CRM geo. */
   homeAddress: string | null
 }
 
-/**
- * Resolve the contact's identity + owned-home address from the CRM. Mirrors how
- * app/admin/console/leads/[id]/page.tsx derives homeAddress from full.geo:
- * fub_person_geo.formatted_address (preferred) or .source_address, keyed by the
- * contact's fub_legacy_id.
- */
 async function resolveContactContext(personId: number): Promise<ContactCmaContext | { error: string }> {
   const sb = createServiceClient()
   const { data: person } = await sb
@@ -134,13 +106,8 @@ async function resolveContactContext(personId: number): Promise<ContactCmaContex
   }
 }
 
-// ─── Action 1: start (auto-build → queue → REVIEW) ──────────────────────────
+// ─── Action 1: start (deterministic build → reviewable draft) ────────────────
 
-/**
- * Queue + auto-build a reviewable CMA for the contact's owned home. Returns the
- * delivery id once the draft is built (status 'ready'); the broker reviews +
- * sends with sendCmaForContactAction. Never throws — returns the result shape.
- */
 export async function startCmaForContactAction(personId: number): Promise<StartCmaResult> {
   try {
     if (!Number.isFinite(personId) || personId <= 0) {
@@ -169,62 +136,45 @@ export async function startCmaForContactAction(personId: number): Promise<StartC
 
     const parsed = parseContactAddress(ctx.homeAddress)
     if (!parsed || !parsed.parsedCity) {
-      // createCmaDelivery's property match keys on city + street number; without
-      // a parseable city we cannot resolve the MLS property reliably.
       return {
         ok: false,
         error: 'Could not read a city from the home address. Check the owner address on file.',
       }
     }
 
-    // ── Stage 1: queue the delivery row (status 'pending').
-    const created = await createCmaDelivery({
+    const slug = slugifyAddress(parsed.rawAddress)
+    const built = await buildCma({
+      slug,
       rawAddress: parsed.rawAddress,
-      parsedStreet: parsed.parsedStreet,
-      parsedCity: parsed.parsedCity,
-      parsedState: parsed.parsedState,
-      parsedPostalCode: parsed.parsedPostalCode,
-      leadEmail: ctx.leadEmail,
-      leadName: ctx.leadName,
-      leadPhone: ctx.leadPhone,
-      fubPersonId: ctx.fubPersonId,
+      city: parsed.parsedCity,
+      postalCode: parsed.parsedPostalCode,
+      client: {
+        name: ctx.leadName,
+        email: ctx.leadEmail,
+        phone: ctx.leadPhone,
+        notes: null,
+      },
+      requestSource: 'crm-contact-card',
     })
-    if ('error' in created) {
-      return { ok: false, error: `Could not queue the CMA: ${created.error}` }
-    }
-    const deliveryId = created.id
 
-    // Log the QUEUED-for-review event to the contact timeline.
     await logCrmTimeline(personId, {
       kind: 'system',
-      title: 'CMA queued for review',
-      body: `Auto-CMA queued for ${parsed.rawAddress}. Building a draft for you to review before it sends.`,
+      title: built.ok ? 'CMA draft built' : 'CMA build did not finish',
+      body: built.ok
+        ? `CMA for ${parsed.rawAddress} built as a draft. Review and approve it at /admin/cmas/${slug}, then send.`
+        : `CMA build for ${parsed.rawAddress} failed: ${built.error ?? 'unknown error'}`,
       broker: access.brokerSlug,
-      dedupeKey: `cma:queued:${deliveryId}`,
+      dedupeKey: `cma:${built.ok ? 'built' : 'build-failed'}:${slug}:${new Date().toISOString().slice(0, 10)}`,
     })
 
-    // ── Stage 2: build to a REVIEWABLE draft (status 'ready'). This renders the
-    // PDF, drafts the email, and notifies the assigned broker with a signed
-    // /cma-drafts/<id> review link. It does NOT email the lead.
-    const built = await processCmaDelivery(deliveryId)
     if (!built.ok) {
-      const reason =
-        built.status === 'no_match'
-          ? 'We could not match this address to an MLS property, so a CMA cannot be built automatically.'
-          : `CMA build did not finish (${built.reason ?? built.status}).`
-      await logCrmTimeline(personId, {
-        kind: 'system',
-        title: 'CMA build did not finish',
-        body: reason,
-        broker: access.brokerSlug,
-        dedupeKey: `cma:build-failed:${deliveryId}`,
-      })
-      return { ok: false, error: reason }
+      return { ok: false, error: built.error ?? 'CMA build did not finish.' }
     }
 
     revalidatePath(`/admin/console/leads/${personId}`)
     revalidatePath(`/admin/crm/${personId}`)
-    return { ok: true, deliveryId }
+    revalidatePath('/admin/cmas')
+    return { ok: true, deliveryId: slug }
   } catch (e) {
     return {
       ok: false,
@@ -235,12 +185,6 @@ export async function startCmaForContactAction(personId: number): Promise<StartC
 
 // ─── Action 2: send (after broker review) ───────────────────────────────────
 
-/**
- * Deliver the reviewed CMA email to the lead (status 'ready' → 'sent'). The
- * email body is instrumented with open/click tracking so engagement lands on
- * the contact's communication chain. Logs the send to crm_timeline. Never
- * throws — returns the result shape. FUB notes are NOT written (cutover).
- */
 export async function sendCmaForContactAction(deliveryId: string): Promise<SendCmaResult> {
   try {
     const id = (deliveryId ?? '').trim()
@@ -249,132 +193,145 @@ export async function sendCmaForContactAction(deliveryId: string): Promise<SendC
     const access = await getCrmAccess()
     if (!access) return { ok: false, error: 'Unauthorized' }
 
-    const sb = createServiceClient()
-    const { data: row, error } = await sb
-      .from('cma_deliveries')
-      .select(
-        'id,status,fub_person_id,lead_email,lead_name,raw_address,pdf_storage_path,email_subject,email_body_html,email_body_text,assigned_broker_email,assigned_broker_name,cma_estimated_value',
-      )
-      .eq('id', id)
-      .maybeSingle()
-    if (error || !row) return { ok: false, error: 'CMA draft not found' }
-
-    // Resolve the contact this delivery belongs to (for scope + timeline) by its
-    // fub_person_id, the only link cma_deliveries carries back to a contact.
-    const fubPersonId = (row.fub_person_id as number | null) ?? null
-    let crmPersonId: number | null = null
-    if (fubPersonId) {
-      const { data: p } = await sb
-        .from('crm_people')
-        .select('id')
-        .eq('fub_legacy_id', fubPersonId)
-        .maybeSingle()
-      crmPersonId = (p?.id as number | null) ?? null
-    }
-    // Scope-guard the send to the contact when we can resolve them. A delivery
-    // with no resolvable contact (legacy LP row) is owner/superuser-only.
-    if (crmPersonId) {
-      const scoped = await requirePersonInScope(crmPersonId, access)
-      if (!scoped.ok) return { ok: false, error: scoped.error }
-    } else if (access.brokerSlug) {
-      // Restricted broker cannot send an unlinked delivery.
-      return { ok: false, error: 'Not authorized for this CMA draft' }
+    // Canonical path: a cmas slug from the deterministic pipeline.
+    if (!UUID_RE.test(id)) {
+      const slug = id.toLowerCase()
+      const result = await sendCmaToLead(slug)
+      if (!result.ok) {
+        return {
+          ok: false,
+          error:
+            result.error ??
+            `Could not send CMA ${slug}. Approve it at /admin/cmas/${slug} first if it is still a draft.`,
+        }
+      }
+      if (result.personId) {
+        revalidatePath(`/admin/console/leads/${result.personId}`)
+        revalidatePath(`/admin/crm/${result.personId}`)
+      }
+      return { ok: true }
     }
 
-    if (row.status === 'sent') {
-      return { ok: true, alreadySent: true }
-    }
-    if (row.status !== 'ready') {
-      return { ok: false, error: `This CMA is not ready to send (status: ${row.status})` }
-    }
-    if (!row.email_body_html || !row.email_subject || !row.pdf_storage_path) {
-      return { ok: false, error: 'This CMA draft is missing its email or PDF' }
-    }
-
-    // Pull the PDF from Storage to attach.
-    const { data: pdfBlob, error: dlError } = await sb.storage
-      .from(STORAGE_BUCKET)
-      .download(row.pdf_storage_path as string)
-    if (dlError || !pdfBlob) {
-      return { ok: false, error: `Could not load the CMA PDF: ${dlError?.message ?? 'no data'}` }
-    }
-    const pdfBuffer = Buffer.from(await pdfBlob.arrayBuffer())
-
-    // Broker-attribute (every link gets ?agent=<broker>) AND instrument open/click
-    // tracking on the drafted email so the broker sees routing + engagement on the
-    // contact's communication chain. emailKey is stable per delivery; label is the
-    // subject (the engagement panel keys on the email title). (CRM cutover 2026-06-24.)
-    const subject = row.email_subject as string
-    const cmaBrokerSlug = CRM_BROKER_BY_EMAIL[String(row.assigned_broker_email ?? '').trim().toLowerCase()] ?? 'matt'
-    const trackedHtml = crmPersonId
-      ? attributeOutbound(row.email_body_html as string, {
-          brokerSlug: cmaBrokerSlug,
-          personId: crmPersonId,
-          fubPersonId,
-          emailKey: `cma:${id}`,
-          label: subject,
-        })
-      : (row.email_body_html as string)
-
-    // Suppression chokepoint (fails closed). Gate on the resolved CRM person
-    // when known, else on the lead_email. Honors the consent record before the
-    // CMA reaches the wire.
-    const sup = crmPersonId
-      ? await isSuppressed(crmPersonId, 'email')
-      : await isSuppressedByEmail(row.lead_email as string, 'email')
-    if (sup.suppressed) {
-      return { ok: false, error: 'This contact has opted out of email and cannot be sent a CMA.' }
-    }
-
-    // Route through the deliverability preflight: multipart text + RFC 8058
-    // List-Unsubscribe headers + CAN-SPAM postal footer (CRM cutover 2026-06-24).
-    const prepared = await prepareDeliverableEmail({
-      subject,
-      html: trackedHtml,
-      text: (row.email_body_text as string) ?? null,
-      personId: crmPersonId,
-    })
-    const result = await sendEmail({
-      to: row.lead_email as string,
-      subject: prepared.subject,
-      html: prepared.html,
-      text: prepared.text,
-      headers: prepared.headers,
-      replyTo: (row.assigned_broker_email as string | null) ?? 'matt@ryan-realty.com',
-      attachments: [{ filename: 'home-valuation.pdf', content: pdfBuffer }],
-    })
-    if (result.error) {
-      return { ok: false, error: `Email send failed: ${result.error}` }
-    }
-
-    const sentAt = new Date().toISOString()
-    await sb
-      .from('cma_deliveries')
-      .update({ status: 'sent', sent_email_resend_id: result.id ?? null, sent_at: sentAt })
-      .eq('id', id)
-
-    // Log the send to the contact's timeline (kind 'email_out' so it threads
-    // into the conversation view). NO FUB note (FUB cutover).
-    if (crmPersonId) {
-      await logCrmTimeline(crmPersonId, {
-        kind: 'email_out',
-        title: subject,
-        body: `CMA sent to ${row.lead_email as string} for ${row.raw_address as string}.`,
-        broker: (row.assigned_broker_name as string | null) ?? access.brokerSlug,
-        payload: { deliveryId: id, resendId: result.id ?? null, to: row.lead_email },
-        dedupeKey: `cma:sent:${id}`,
-      })
-      revalidatePath(`/admin/console/leads/${crmPersonId}`)
-      revalidatePath(`/admin/crm/${crmPersonId}`)
-    }
-
-    return { ok: true }
+    // Legacy path: an in-flight cma_deliveries row from before the cutover.
+    return await sendLegacyCmaDelivery(id, access)
   } catch (e) {
     return {
       ok: false,
       error: e instanceof Error ? e.message : 'Unexpected error sending the CMA',
     }
   }
+}
+
+/**
+ * Legacy cma_deliveries send — kept ONLY so 'ready' rows created before the
+ * 2026-07-07 cutover can still be delivered from the contact card. No new
+ * rows are created on this path.
+ */
+async function sendLegacyCmaDelivery(
+  id: string,
+  access: NonNullable<Awaited<ReturnType<typeof getCrmAccess>>>,
+): Promise<SendCmaResult> {
+  const sb = createServiceClient()
+  const { data: row, error } = await sb
+    .from('cma_deliveries')
+    .select(
+      'id,status,fub_person_id,lead_email,lead_name,raw_address,pdf_storage_path,email_subject,email_body_html,email_body_text,assigned_broker_email,assigned_broker_name',
+    )
+    .eq('id', id)
+    .maybeSingle()
+  if (error || !row) return { ok: false, error: 'CMA draft not found' }
+
+  const fubPersonId = (row.fub_person_id as number | null) ?? null
+  let crmPersonId: number | null = null
+  if (fubPersonId) {
+    const { data: p } = await sb
+      .from('crm_people')
+      .select('id')
+      .eq('fub_legacy_id', fubPersonId)
+      .maybeSingle()
+    crmPersonId = (p?.id as number | null) ?? null
+  }
+  if (crmPersonId) {
+    const scoped = await requirePersonInScope(crmPersonId, access)
+    if (!scoped.ok) return { ok: false, error: scoped.error }
+  } else if (access.brokerSlug) {
+    return { ok: false, error: 'Not authorized for this CMA draft' }
+  }
+
+  if (row.status === 'sent') return { ok: true, alreadySent: true }
+  if (row.status !== 'ready') {
+    return { ok: false, error: `This CMA is not ready to send (status: ${row.status})` }
+  }
+  if (!row.email_body_html || !row.email_subject || !row.pdf_storage_path) {
+    return { ok: false, error: 'This CMA draft is missing its email or PDF' }
+  }
+
+  const { data: pdfBlob, error: dlError } = await sb.storage
+    .from(STORAGE_BUCKET)
+    .download(row.pdf_storage_path as string)
+  if (dlError || !pdfBlob) {
+    return { ok: false, error: `Could not load the CMA PDF: ${dlError?.message ?? 'no data'}` }
+  }
+  const pdfBuffer = Buffer.from(await pdfBlob.arrayBuffer())
+
+  const subject = row.email_subject as string
+  const cmaBrokerSlug = CRM_BROKER_BY_EMAIL[String(row.assigned_broker_email ?? '').trim().toLowerCase()] ?? 'matt'
+  const trackedHtml = crmPersonId
+    ? attributeOutbound(row.email_body_html as string, {
+        brokerSlug: cmaBrokerSlug,
+        personId: crmPersonId,
+        fubPersonId,
+        emailKey: `cma:${id}`,
+        label: subject,
+      })
+    : (row.email_body_html as string)
+
+  const sup = crmPersonId
+    ? await isSuppressed(crmPersonId, 'email')
+    : await isSuppressedByEmail(row.lead_email as string, 'email')
+  if (sup.suppressed) {
+    return { ok: false, error: 'This contact has opted out of email and cannot be sent a CMA.' }
+  }
+
+  const prepared = await prepareDeliverableEmail({
+    subject,
+    html: trackedHtml,
+    text: (row.email_body_text as string) ?? null,
+    personId: crmPersonId,
+  })
+  const result = await sendEmail({
+    to: row.lead_email as string,
+    subject: prepared.subject,
+    html: prepared.html,
+    text: prepared.text,
+    headers: prepared.headers,
+    replyTo: (row.assigned_broker_email as string | null) ?? 'matt@ryan-realty.com',
+    attachments: [{ filename: 'home-valuation.pdf', content: pdfBuffer }],
+  })
+  if (result.error) {
+    return { ok: false, error: `Email send failed: ${result.error}` }
+  }
+
+  const sentAt = new Date().toISOString()
+  await sb
+    .from('cma_deliveries')
+    .update({ status: 'sent', sent_email_resend_id: result.id ?? null, sent_at: sentAt })
+    .eq('id', id)
+
+  if (crmPersonId) {
+    await logCrmTimeline(crmPersonId, {
+      kind: 'email_out',
+      title: subject,
+      body: `CMA sent to ${row.lead_email as string} for ${row.raw_address as string}.`,
+      broker: (row.assigned_broker_name as string | null) ?? access.brokerSlug,
+      payload: { deliveryId: id, resendId: result.id ?? null, to: row.lead_email },
+      dedupeKey: `cma:sent:${id}`,
+    })
+    revalidatePath(`/admin/console/leads/${crmPersonId}`)
+    revalidatePath(`/admin/crm/${crmPersonId}`)
+  }
+
+  return { ok: true }
 }
 
 // ─── Timeline helper ────────────────────────────────────────────────────────
@@ -404,7 +361,6 @@ async function logCrmTimeline(
       dedupe_key: entry.dedupeKey ?? null,
     })
   } catch (e) {
-    // Timeline logging is best-effort; never fail the action on a log write.
     console.warn('[contact-cma] timeline log failed:', e instanceof Error ? e.message : String(e))
   }
 }

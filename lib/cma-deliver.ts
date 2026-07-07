@@ -271,7 +271,8 @@ export async function finalizeAndDeliverCma(
         recipientPersonId = person.id as number
         const custom = {
           ...((person.custom as Record<string, unknown>) ?? {}),
-          cmaLink: `${SITE_URL}/cmas/${safeSlug}/cma.html`,
+          // /cma/[slug] serves DB-stored CMAs and redirects legacy file CMAs.
+          cmaLink: `${SITE_URL}/cma/${safeSlug}`,
           cmaSlug: safeSlug,
         }
         await sb

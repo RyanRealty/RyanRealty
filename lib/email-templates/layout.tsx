@@ -1,43 +1,51 @@
 import { Html, Head, Body, Container, Section, Text, Link } from '@react-email/components'
 import * as React from 'react'
-import { EMAIL_FONT_STACK } from '@/lib/email/brand'
+import {
+  EMAIL_FONT_STACK,
+  EMAIL_SERIF,
+  EMAIL_NAVY,
+  EMAIL_CREAM,
+  EMAIL_MUTED,
+  EMAIL_CANVAS,
+} from '@/lib/email/brand'
+import { BRAND } from '@/lib/brand/contact'
 
-const footerStyle: React.CSSProperties = {
-  marginTop: 24,
-  paddingTop: 24,
-  borderTop: '1px solid #e5e7eb',
-  fontSize: 12,
-  color: '#6b7280',
-}
-
+/**
+ * React-email frame for account/transactional mail (welcome, password reset).
+ * Mirrors the canonical branded shell (lib/email/shell.ts): navy masthead with
+ * the serif wordmark, cream sheet on the warm canvas, muted footer with the
+ * real postal address. Template-literal placeholders ({{unsubscribe_url}}) are
+ * substituted by the sender.
+ */
 export function EmailLayout({ children, preheader }: { children: React.ReactNode; preheader?: string }) {
   return (
     <Html>
-      <Head />
+      <Head>
+        <meta name="color-scheme" content="light" />
+      </Head>
       {preheader ? (
         <div style={{ display: 'none', maxHeight: 0, overflow: 'hidden' }}>
           {preheader}
         </div>
       ) : null}
-      <Body style={{ fontFamily: EMAIL_FONT_STACK, backgroundColor: '#faf8f4', margin: 0, padding: 0 }}>
-        <Container style={{ maxWidth: 600, margin: '0 auto', padding: 24 }}>
-          <Section style={{ backgroundColor: '#102742', padding: '16px 24px', borderRadius: '8px 8px 0 0' }}>
-            <Text style={{ color: '#f0eeec', margin: 0, fontSize: 20, fontWeight: 700 }}>Ryan Realty</Text>
+      <Body style={{ fontFamily: EMAIL_FONT_STACK, backgroundColor: EMAIL_CANVAS, margin: 0, padding: 0 }}>
+        <Container style={{ maxWidth: 640, margin: '0 auto', backgroundColor: EMAIL_CREAM }}>
+          <Section style={{ backgroundColor: EMAIL_NAVY, padding: '16px 32px' }}>
+            <Text style={{ fontFamily: EMAIL_SERIF, color: EMAIL_CREAM, margin: 0, fontSize: 22, fontWeight: 700 }}>
+              Ryan Realty
+            </Text>
           </Section>
-          <Section style={{ backgroundColor: '#ffffff', padding: 24, borderRadius: '0 0 8px 8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+          <Section style={{ padding: '28px 34px 8px' }}>
             {children}
           </Section>
-          <Section style={footerStyle}>
-            <Text style={{ margin: '0 0 8px 0' }}>
-              Ryan Realty · Central Oregon Real Estate
+          <Section style={{ padding: '26px 34px 32px', fontSize: 12, color: EMAIL_MUTED, textAlign: 'center' as const }}>
+            <Text style={{ margin: '0 0 8px 0', fontSize: 12, color: EMAIL_MUTED }}>
+              {BRAND.mailingAddress} · <Link href={BRAND.url} style={{ color: EMAIL_MUTED }}>ryan-realty.com</Link>
             </Text>
-            <Text style={{ margin: '0 0 8px 0' }}>
-              <Link href="{{unsubscribe_url}}" style={{ color: '#6b7280' }}>Unsubscribe</Link>
+            <Text style={{ margin: 0, fontSize: 12, color: EMAIL_MUTED }}>
+              <Link href="{{unsubscribe_url}}" style={{ color: EMAIL_MUTED, textDecoration: 'underline' }}>Unsubscribe</Link>
               {' · '}
-              <Link href="{{manage_preferences_url}}" style={{ color: '#6b7280' }}>Manage preferences</Link>
-            </Text>
-            <Text style={{ margin: 0 }}>
-              Physical address: 123 Main St, Bend, OR 97702 (CAN-SPAM)
+              <Link href="{{manage_preferences_url}}" style={{ color: EMAIL_MUTED, textDecoration: 'underline' }}>Manage preferences</Link>
             </Text>
           </Section>
         </Container>

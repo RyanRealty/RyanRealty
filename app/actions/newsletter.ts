@@ -8,8 +8,8 @@ import { checkNewsletterVoice } from '@/lib/email/voice-precheck'
 import { enqueueNewsletter, enqueueNewsletterToEmails, NEWSLETTER_FROM_ADDRESS } from '@/lib/newsletter/send-queue'
 import { parseEmailList } from '@/lib/newsletter/parse-emails'
 import { getAudienceEligiblePeople } from '@/lib/data/crm/getAudienceEligiblePeople'
-import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
-import { wrapNewsletterHtml, type SenderBroker } from '@/lib/email-templates/newsletter-shell'
+import { wrapNewsletterHtml } from '@/lib/email-templates/newsletter-shell'
+import { renderNewsletterPreview, senderIdentityFor, PREVIEW_UNSUBSCRIBE_URL } from '@/lib/newsletter/preview'
 import { getActiveSubscribersForSend } from '@/lib/data/newsletter'
 import { getAssignedBrokersByPersonId, getSubscribersByEmails, bulkActivateSubscribers } from '@/lib/data/newsletter/queue'
 import { sendEmail } from '@/lib/resend'
@@ -395,48 +395,14 @@ export async function adminBulkOneOffSendAction(
 }
 
 // ── ADMIN: preview + test-send (per-broker identity swap) ────────────────────
+// Rendering lives in lib/newsletter/preview.ts — the review page (server) and
+// these actions (client refresh) share the exact same render path.
 
 const NL_KNOWN_BROKERS = new Set(['matt', 'rebecca', 'paul'])
-/** Absolute-HTTPS headshots — email can't load app-relative assets (mirrors send-queue). */
-const NL_HEADSHOTS: Record<string, string> = {
-  matt: 'https://ryan-realty.com/images/brokers/ryan-matt.png',
-  rebecca: 'https://ryan-realty.com/images/brokers/peterson-rebecca.png',
-  paul: 'https://ryan-realty.com/images/brokers/stevenson-paul.png',
-}
 
 function nlNormalizeBroker(slug: string | null | undefined): string {
   const s = (slug ?? '').trim().toLowerCase()
   return NL_KNOWN_BROKERS.has(s) ? s : 'matt'
-}
-
-/** Brand-voice dotted phone (541.703.3095). Returns the input if it can't parse 10 digits. */
-function nlFormatPhoneDotted(phone: string | null): string | null {
-  if (!phone) return null
-  const d = phone.replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '')
-  return d.length === 10 ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}` : phone
-}
-
-/**
- * Build the per-recipient close identity for a chosen broker slug — mirrors
- * lib/newsletter/send-queue.ts senderBrokerFor + loadBrokerMap so the admin
- * preview and test-send render through the EXACT identity the real send uses.
- * Returns null when the broker roster can't be read.
- */
-async function nlSenderBrokerFor(slug: string): Promise<{ sender: SenderBroker; replyTo: string | null } | null> {
-  const brokers = await getCrmBrokers()
-  if (brokers.length === 0) return null
-  const target = nlNormalizeBroker(slug)
-  const b = brokers.find((x) => x.slug === target) ?? brokers.find((x) => x.slug === 'matt') ?? brokers[0]
-  const sender: SenderBroker = {
-    name: b.name || 'Ryan Realty',
-    firstName: (b.name || 'Ryan').split(/\s+/)[0] || b.name,
-    title: b.title,
-    phone: nlFormatPhoneDotted(b.phone),
-    email: b.email,
-    headshotUrl: NL_HEADSHOTS[b.slug] ?? NL_HEADSHOTS.matt,
-    isOwner: b.slug === 'matt',
-  }
-  return { sender, replyTo: b.email }
 }
 
 /**
@@ -451,18 +417,7 @@ export async function adminPreviewNewsletterAction(
 ): Promise<{ ok: boolean; html?: string; error?: string }> {
   const gate = await requireAdmin()
   if (!gate.ok) return { ok: false, error: 'unauthorized' }
-  const letter = await getNewsletter(id)
-  if (!letter) return { ok: false, error: 'not_found' }
-  if (!letter.body_html) return { ok: false, error: 'empty_body' }
-  const identity = await nlSenderBrokerFor(brokerSlug)
-  if (!identity) return { ok: false, error: 'no_brokers' }
-  const html = wrapNewsletterHtml({
-    bodyHtml: letter.body_html,
-    previewText: letter.preview_text,
-    unsubscribeUrl: 'https://ryan-realty.com/newsletter/unsubscribe?token=preview',
-    senderBroker: identity.sender,
-  })
-  return { ok: true, html }
+  return renderNewsletterPreview(id, brokerSlug)
 }
 
 /**
@@ -480,10 +435,10 @@ export async function adminTestSendNewsletterAction(
   const letter = await getNewsletter(id)
   if (!letter) return { ok: false, error: 'not_found' }
   if (!letter.body_html && !letter.body_text) return { ok: false, error: 'empty_body' }
-  const identity = await nlSenderBrokerFor(brokerSlug)
+  const identity = await senderIdentityFor(brokerSlug)
   if (!identity) return { ok: false, error: 'no_brokers' }
 
-  const unsubscribeUrl = 'https://ryan-realty.com/newsletter/unsubscribe?token=preview'
+  const unsubscribeUrl = PREVIEW_UNSUBSCRIBE_URL
   const html = letter.body_html
     ? wrapNewsletterHtml({
         bodyHtml: letter.body_html,

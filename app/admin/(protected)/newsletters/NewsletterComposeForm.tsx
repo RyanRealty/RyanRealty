@@ -44,6 +44,12 @@ type Props = {
     body_html: string | null
     body_text: string | null
   }
+  /**
+   * Render only the edit form, no internal preview tab — the review page owns
+   * the rendered preview (NewsletterPreviewPanel) and embeds this in its Edit
+   * section.
+   */
+  editOnly?: boolean
 }
 
 /**
@@ -55,7 +61,7 @@ type Props = {
  * through the REAL send pipeline for a chosen broker — proving the per-broker
  * identity swap — and a "Send test to me" control sends one copy to the admin.
  */
-export default function NewsletterComposeForm({ id, initial }: Props) {
+export default function NewsletterComposeForm({ id, initial, editOnly }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [subject, setSubject] = useState(initial?.subject ?? '')
@@ -175,8 +181,9 @@ export default function NewsletterComposeForm({ id, initial }: Props) {
     </>
   )
 
-  // New-draft form: no preview yet (nothing saved to render). Edit form: tabs.
-  if (!id) {
+  // New-draft form: no preview yet (nothing saved to render). editOnly: the
+  // review page already renders the visual preview, so skip the internal tab.
+  if (!id || editOnly) {
     return (
       <form onSubmit={onSubmit} className="space-y-5">
         {fields}

@@ -1,6 +1,41 @@
-> **NEWEST, START HERE: the NEIGHBORHOOD-DEFAULTS block immediately below (2026-07-06 evening).** Prior session handoff: [`HANDOFF_CRM_STREAMLINE_2026-07-03.md`](./HANDOFF_CRM_STREAMLINE_2026-07-03.md) (expired workflow fixed, FUB-import data-corruption repaired, the live FUB "archived"-email leak, tag/smart-list streamline plan awaiting Matt's inputs). The blocks below that are older history.
->
-> _(Prior: `HANDOFF_2026-06-28.md`; the 2026-07-01 ground-up-rebuild block below.)_
+> **NEWEST, START HERE: the LIFECYCLE-WORKFLOWS block immediately below (2026-07-07 morning).** Prior session: the NEIGHBORHOOD-DEFAULTS block (2026-07-06 evening). Older: [`HANDOFF_CRM_STREAMLINE_2026-07-03.md`](./HANDOFF_CRM_STREAMLINE_2026-07-03.md), `HANDOFF_2026-06-28.md`.
+
+# LIFECYCLE WORKFLOWS: CMA + NEWSLETTER + SUBSCRIPTIONS + UNIFIED EMAIL SHELL (2026-07-07, Cursor)
+
+**Matt goal doc: `docs/plans/LIFECYCLE_WORKFLOWS_MASTER_GOAL.md`.** Four parallel workstreams built,
+integrated, gate-cleaned, browser-verified, and shipped in one commit (Matt approved 2026-07-07 ~6am):
+
+- **W1 CMA engine:** deterministic builder in `lib/cma/` replaced the dead LLM producer path (Anthropic
+  credits). The 12 stuck `marketing_brain_actions` rows drained: 11 built into reviewable drafts, 1 junk
+  killed. Document HTML now stored in `cmas.html_content` (NOT the read-only Vercel filesystem), served by
+  `/cma/[slug]` (font URLs rewritten to serving origin; X-Frame-Options SAMEORIGIN override for the admin
+  iframe preview). Review/approve/send UI at `/admin/cmas` (+ `/new` manual builder, `[slug]` review page,
+  price override + rebuild, Resend send or Gmail draft — both suppression-gated). Cron:
+  `/api/cron/cma-build-worker` every 30 min builds queued requests; expired-listing detection auto-queues.
+- **W2 Newsletter:** `/api/cron/newsletter-monthly-draft` (daily 13:15 UTC, no-ops unless the 1st Pacific)
+  auto-drafts + notifies Matt. Review page is visual-first (rendered iframe, per-broker + mobile toggles,
+  HTML behind a tab). Approve & Schedule blocked by R-1 voice / R-2 stat-citation / R-3 link gates;
+  pause/resume/unschedule; tranched delivery protects sender reputation. Pixel/click events land on
+  `newsletter_recipient_events`. Full subscriber management + CSV export.
+- **W3 Subscriptions hub:** per-row engagement metrics (sends/opens/clicks), `alert:` emailKey
+  classification fix, edit/assign/preview dialogs with rendered email previews, engine fairness
+  (overdue-first + `last_notified_at` always advances), dead unsubscribe link fixed.
+- **W4 Unified brutalist email shell:** `lib/email/shell.ts` (navy #102742 / cream #faf8f4 editorial) now
+  wraps listing alerts, market reports, newsletters (facade in `lib/email-templates/newsletter-shell.ts`),
+  CMA delivery, welcome, password-reset.
+- **Integration (W5):** build + 2,598 vitest + full ~120-gate chain green. Gate fixes: design tokens (3
+  admin components), hydration-safety (NewsletterScheduleControls), currency/date formatters migrated to
+  `lib/format/money.ts` (`formatPriceExact` added — CMA figures must equal source rows) + `lib/format/date.ts`,
+  email-quality NON_SENDER additions (CMA 1:1 send, draft-ready internal notification), email-send-gated
+  baseline line shifts. Authenticated Playwright click-through of every surface (screenshots
+  `out/w5-integration/`, `out/w2-newsletter/`): zero console errors after the iframe/font fixes.
+- **Migrations applied to hosted:** `20260707120000_cma_documents_and_build.sql`,
+  `20260707121000_subscriptions_email_events_key_idx.sql`.
+- **Nothing auto-sends:** every lead/subscriber-facing send requires Matt's explicit approve action in
+  the admin UI. The 11 CMA drafts await Matt's review at `/admin/cmas`; the July newsletter draft at
+  `/admin/newsletters`.
+
+_(Prior handoff history continues below.)_
 
 # NEIGHBORHOOD DEFAULTS: ENROLLMENT ROLLED BACK, MACHINERY SMOKE-TESTED (2026-07-06 late evening, Cursor)
 

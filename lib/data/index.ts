@@ -468,6 +468,30 @@ export {
 } from '@/lib/data/communities/subdivisionFlags'
 export type { CommunityRowForBackfill } from '@/lib/data/communities/subdivisionFlags'
 
+// CMA deterministic builder — subject/comp/market reads, document storage,
+// and the content:cma build queue (W1 lifecycle workflows, 2026-07-07)
+export {
+  findCmaSubjectByMls,
+  findCmaSubjectByAddress,
+  selectCmaCompsPool,
+  getCmaMarketStatsRow,
+  getCmaMarketPulseRow,
+  getCmaBrokerBySlugOrEmail,
+  listActiveBrokersForCma,
+} from '@/lib/data/cma/builderReads'
+export type { CmaListingRow, CmaMarketStatsRow, CmaMarketPulseRow } from '@/lib/data/cma/builderReads'
+export {
+  getCmaAdminRowBySlug,
+  getCmaHtmlBySlug,
+  updateCmaRowFieldsBySlug,
+  deleteCmaRowById,
+  replaceCmaComps,
+} from '@/lib/data/cma/documents'
+export type { CmaAdminRow, CmaCompInsert } from '@/lib/data/cma/documents'
+export { listOpenCmaActions, updateCmaActionRow } from '@/lib/data/cma/queue'
+export type { CmaActionRow } from '@/lib/data/cma/queue'
+export { findCrmPersonIdByEmail, stampCmaLinkOnPerson, logCmaTimelineEvent } from '@/lib/data/cma/crm'
+
 // Resort community registry — typed read access to data/resort-communities.json
 export {
   getResortCommunityBySlug,

@@ -14,6 +14,16 @@ export function formatPrice(n: number | null | undefined): string {
   return USD0.format(Math.round(n / 1000) * 1000)
 }
 
+/**
+ * Exact whole-dollar price (no thousand-rounding) for data documents where the
+ * displayed figure must equal the source row (CMA comp grids, adjustment math
+ * that has to foot). Marketing copy should prefer formatPrice.
+ */
+export function formatPriceExact(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return '—'
+  return USD0.format(n)
+}
+
 /** Compact price for tight UI: `$1.2M` / `$895K`. One agreed rounding rule. */
 export function formatPriceCompact(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return '—'

@@ -1,5 +1,18 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import {
+  getAlertEngagementByIds,
+  getReportEngagementByPersonIds,
+  emptyEngagement,
+  type SubscriptionEngagement,
+} from '@/lib/data/crm/subscriptionsAdminEngagement'
+
+export {
+  getAlertEngagementByIds,
+  getReportEngagementByPersonIds,
+  emptyEngagement,
+  type SubscriptionEngagement,
+}
 
 /**
  * Admin DAL for the unified Subscriptions hub (/admin/crm/subscriptions).
@@ -28,6 +41,7 @@ export type AdminAlertSubscriptionRow = {
   origin: string | null
   assignedBy: string | null
   crmPersonId: number | null
+  engagement: SubscriptionEngagement
 }
 
 export type ListAlertSubscriptionsOptions = {
@@ -104,7 +118,9 @@ export async function listGuestAlertSubscriptions(
     console.error('[listGuestAlertSubscriptions]', error.message)
     return { rows: [], total: 0 }
   }
-  const rows: AdminAlertSubscriptionRow[] = ((data ?? []) as unknown as GuestRow[]).map((r) => ({
+  const guestRows = (data ?? []) as unknown as GuestRow[]
+  const engagementById = await getAlertEngagementByIds(guestRows.map((r) => r.id))
+  const rows: AdminAlertSubscriptionRow[] = guestRows.map((r) => ({
     kind: 'guest',
     id: r.id,
     email: r.email,
@@ -117,6 +133,7 @@ export async function listGuestAlertSubscriptions(
     origin: r.origin ?? 'user',
     assignedBy: r.assigned_by,
     crmPersonId: r.crm_person_id,
+    engagement: engagementById.get(r.id) ?? emptyEngagement(),
   }))
   return { rows, total: count ?? rows.length }
 }
@@ -150,6 +167,7 @@ export async function listUserSavedSearches(
   const userRows = (data ?? []) as unknown as UserRow[]
   const uniqueUserIds = [...new Set(userRows.map((r) => r.user_id))]
   const emailByUserId = new Map<string, string>()
+  const engagementPromise = getAlertEngagementByIds(userRows.map((r) => r.id))
   await Promise.all(
     uniqueUserIds.map(async (uid) => {
       try {
@@ -163,6 +181,7 @@ export async function listUserSavedSearches(
       }
     }),
   )
+  const engagementById = await engagementPromise
 
   const rows: AdminAlertSubscriptionRow[] = userRows.map((r) => ({
     kind: 'user',
@@ -177,6 +196,7 @@ export async function listUserSavedSearches(
     origin: 'user',
     assignedBy: null,
     crmPersonId: r.crm_person_id,
+    engagement: engagementById.get(r.id) ?? emptyEngagement(),
   }))
   return { rows, total: count ?? rows.length }
 }
@@ -251,6 +271,7 @@ export type AdminReportSubscriptionRow = {
   active: boolean
   lastSentAt: string | null
   updatedAt: string | null
+  engagement: SubscriptionEngagement
 }
 
 export type ListReportSubscriptionsOptions = {
@@ -301,15 +322,16 @@ export async function listReportSubscriptionsAdmin(
   const limit = Math.min(100, Math.max(1, opts.limit ?? 50))
   const offset = Math.max(0, opts.offset ?? 0)
 
-  // Step 0 (search only): resolve person ids matching the query by name.
+  // Step 0 (search only): resolve person ids matching the query by name OR
+  // email (the emails jsonb cast to text, same pattern as buildCrmPeopleQuery).
   let personIdFilter: number[] | null = null
-  const q = (opts.q ?? '').trim()
+  const q = (opts.q ?? '').trim().replace(/[,()"\\]/g, ' ').trim()
   if (q) {
     const { data: matches, error: matchErr } = await sb
       .from('crm_people')
       .select('id')
       .eq('deleted', false)
-      .ilike('name', `%${q}%`)
+      .or(`name.ilike.%${q}%,emails::text.ilike.%${q}%`)
       .limit(2000)
     if (matchErr) {
       console.error('[listReportSubscriptionsAdmin match]', matchErr.message)
@@ -337,17 +359,21 @@ export async function listReportSubscriptionsAdmin(
   }
   const subs = (data ?? []) as unknown as ReportSubRow[]
 
-  // Step 2: hydrate the page's people in one read.
+  // Step 2: hydrate the page's people + engagement in two parallel reads.
   const ids = [...new Set(subs.map((r) => r.person_id))]
   const peopleById = new Map<number, PersonLite>()
-  if (ids.length > 0) {
-    const { data: people, error: pErr } = await sb
-      .from('crm_people')
-      .select('id, name, emails, assigned_broker, deleted')
-      .in('id', ids)
-    if (pErr) console.error('[listReportSubscriptionsAdmin people]', pErr.message)
-    for (const p of (people ?? []) as unknown as PersonLite[]) peopleById.set(p.id, p)
-  }
+  const [engagementByPersonId] = await Promise.all([
+    getReportEngagementByPersonIds(ids),
+    (async () => {
+      if (ids.length === 0) return
+      const { data: people, error: pErr } = await sb
+        .from('crm_people')
+        .select('id, name, emails, assigned_broker, deleted')
+        .in('id', ids)
+      if (pErr) console.error('[listReportSubscriptionsAdmin people]', pErr.message)
+      for (const p of (people ?? []) as unknown as PersonLite[]) peopleById.set(p.id, p)
+    })(),
+  ])
 
   const rows: AdminReportSubscriptionRow[] = subs.map((r) => {
     const person = peopleById.get(r.person_id) ?? null
@@ -361,9 +387,189 @@ export async function listReportSubscriptionsAdmin(
       active: r.is_active,
       lastSentAt: r.last_sent_at,
       updatedAt: r.updated_at,
+      engagement: engagementByPersonId.get(r.person_id) ?? emptyEngagement(),
     }
   })
   return { rows, total: count ?? rows.length }
+}
+
+// ── Single-row reads + mutations (edit / preview / assign) ──────────────────
+
+export type AlertSubscriptionDetail = {
+  kind: AlertSubscriptionKind
+  id: string
+  email: string | null
+  name: string | null
+  filters: Record<string, unknown> | null
+  frequency: string
+  active: boolean
+  unsubscribeToken: string | null
+  crmPersonId: number | null
+}
+
+/** Fetch one listing alert / saved search by id (edit dialog + email preview). */
+export async function getAlertSubscriptionById(
+  kind: AlertSubscriptionKind,
+  id: string,
+): Promise<AlertSubscriptionDetail | null> {
+  const sb = createServiceClient()
+  if (kind === 'guest') {
+    const { data, error } = await sb
+      .from('guest_search_alerts')
+      .select('id, email, name, filters, notification_frequency, is_active, unsubscribe_token, crm_person_id')
+      .eq('id', id)
+      .maybeSingle()
+    if (error || !data) {
+      if (error) console.error('[getAlertSubscriptionById guest]', error.message)
+      return null
+    }
+    const r = data as unknown as GuestRow & { unsubscribe_token: string | null }
+    return {
+      kind: 'guest',
+      id: r.id,
+      email: r.email,
+      name: r.name,
+      filters: r.filters,
+      frequency: r.notification_frequency ?? 'daily',
+      active: r.is_active,
+      unsubscribeToken: r.unsubscribe_token,
+      crmPersonId: r.crm_person_id,
+    }
+  }
+  const { data, error } = await sb
+    .from('saved_searches')
+    .select('id, user_id, name, filters, notification_frequency, is_paused, unsubscribe_token, crm_person_id')
+    .eq('id', id)
+    .maybeSingle()
+  if (error || !data) {
+    if (error) console.error('[getAlertSubscriptionById user]', error.message)
+    return null
+  }
+  const r = data as unknown as UserRow & { unsubscribe_token: string | null }
+  return {
+    kind: 'user',
+    id: r.id,
+    email: null,
+    name: r.name,
+    filters: r.filters,
+    frequency: r.notification_frequency ?? 'daily',
+    active: !r.is_paused,
+    unsubscribeToken: r.unsubscribe_token,
+    crmPersonId: r.crm_person_id,
+  }
+}
+
+export type AlertSubscriptionUpdate = {
+  name?: string
+  filters?: Record<string, unknown>
+  /** Stable hash of the normalized filters (guest rows carry a unique email+hash index). */
+  filtersHash?: string
+  frequency?: 'daily' | 'weekly'
+  active?: boolean
+}
+
+/** Update one listing alert / saved search (edit dialog write-back). */
+export async function updateAlertSubscription(
+  kind: AlertSubscriptionKind,
+  id: string,
+  patch: AlertSubscriptionUpdate,
+): Promise<{ ok: boolean, error: string | null }> {
+  const sb = createServiceClient()
+  const fields: Record<string, unknown> = {}
+  if (patch.name !== undefined) fields.name = patch.name
+  if (patch.filters !== undefined) fields.filters = patch.filters
+  if (patch.frequency !== undefined) fields.notification_frequency = patch.frequency
+  if (kind === 'guest') {
+    if (patch.filtersHash !== undefined) fields.filters_hash = patch.filtersHash
+    if (patch.active !== undefined) fields.is_active = patch.active
+    fields.updated_at = new Date().toISOString()
+  } else if (patch.active !== undefined) {
+    fields.is_paused = !patch.active
+  }
+  if (Object.keys(fields).length === 0) return { ok: true, error: null }
+  const table = kind === 'guest' ? 'guest_search_alerts' : 'saved_searches'
+  const { error } = await sb.from(table).update(fields).eq('id', id)
+  if (error) {
+    console.error('[updateAlertSubscription]', error.message)
+    return { ok: false, error: 'Could not save those changes' }
+  }
+  return { ok: true, error: null }
+}
+
+/** Fetch one market report subscription by person id (edit dialog + preview). */
+export async function getReportSubscriptionByPersonId(
+  personId: number,
+): Promise<{ personId: number, areas: string[], frequency: string, active: boolean } | null> {
+  const sb = createServiceClient()
+  const { data, error } = await sb
+    .from('crm_report_subscriptions')
+    .select('person_id, areas, frequency, is_active')
+    .eq('person_id', personId)
+    .maybeSingle()
+  if (error || !data) {
+    if (error) console.error('[getReportSubscriptionByPersonId]', error.message)
+    return null
+  }
+  const r = data as unknown as ReportSubRow
+  return {
+    personId: r.person_id,
+    areas: Array.isArray(r.areas) ? r.areas : [],
+    frequency: r.frequency ?? 'monthly',
+    active: r.is_active,
+  }
+}
+
+/** Update one market report subscription (areas / cadence / active). */
+export async function updateReportSubscription(
+  personId: number,
+  patch: { areas?: string[], frequency?: 'weekly' | 'monthly' | 'quarterly', active?: boolean },
+): Promise<{ ok: boolean, error: string | null }> {
+  const sb = createServiceClient()
+  const fields: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (patch.areas !== undefined) fields.areas = patch.areas
+  if (patch.frequency !== undefined) fields.frequency = patch.frequency
+  if (patch.active !== undefined) fields.is_active = patch.active
+  const { error } = await sb.from('crm_report_subscriptions').update(fields).eq('person_id', personId)
+  if (error) {
+    console.error('[updateReportSubscription]', error.message)
+    return { ok: false, error: 'Could not save those changes' }
+  }
+  return { ok: true, error: null }
+}
+
+/** Delete one market report subscription (the person keeps their CRM record). */
+export async function deleteReportSubscription(
+  personId: number,
+): Promise<{ ok: boolean, error: string | null }> {
+  const sb = createServiceClient()
+  const { error } = await sb.from('crm_report_subscriptions').delete().eq('person_id', personId)
+  if (error) {
+    console.error('[deleteReportSubscription]', error.message)
+    return { ok: false, error: 'Could not delete that subscription' }
+  }
+  return { ok: true, error: null }
+}
+
+/**
+ * Assign the CRM person behind a subscription to a broker. Subscription rows
+ * carry no broker column — attribution + report sends resolve the broker from
+ * crm_people.assigned_broker, so that is what an admin assignment writes.
+ */
+export async function setPersonAssignedBroker(
+  personId: number,
+  brokerSlug: string,
+): Promise<{ ok: boolean, error: string | null }> {
+  const sb = createServiceClient()
+  const { error } = await sb
+    .from('crm_people')
+    .update({ assigned_broker: brokerSlug })
+    .eq('id', personId)
+    .eq('deleted', false)
+  if (error) {
+    console.error('[setPersonAssignedBroker]', error.message)
+    return { ok: false, error: 'Could not assign that broker' }
+  }
+  return { ok: true, error: null }
 }
 
 /** Bulk pause/resume/re-cadence market report subscriptions by person id. */

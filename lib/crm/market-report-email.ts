@@ -7,24 +7,32 @@
  * fetches the data, calls this, then routes through the suppression-gated send
  * path (isSuppressed -> prepareDeliverableEmail -> attributeOutbound -> sendEmail).
  *
- * Brand voice (CLAUDE.md §3): sentence case, currency rounded to the nearest
- * thousand, "38 days", signed-arrow YoY, tabular numerals, no em-dash, no
- * semicolon, no banned words. Every number shown here came from the cache via
- * the data block; this module only formats it. It never invents a figure.
+ * The frame is the ONE branded shell (lib/email/shell.ts): navy masthead
+ * ("MARKET REPORT · <AREA>") → brand hero → editorial stat blocks (big serif
+ * numbers, hard hairline rules, tabular figures, one-decimal signed YoY) →
+ * optional broker close card → CAN-SPAM footer.
  *
- * Email-safe styling: inline hex from the locked two-color v2 palette (navy
- * #102742 on cream #faf8f4) via lib/email/brand. Email clients do not load web
- * fonts, so the font stack leads with Geist then the OS UI font (no retired
- * font names). Layout is table-based for Outlook/Gmail.
+ * Brand voice (CLAUDE.md §3): sentence case, currency rounded to the nearest
+ * thousand, "38 days", signed-arrow YoY ("↑ 2.1% YoY"), tabular numerals, no
+ * em-dash, no semicolon, no banned words. Every number shown here came from the
+ * cache via the data block; this module only formats it. It never invents a
+ * figure.
  */
 
-import { EMAIL_FONT_STACK, EMAIL_NAVY, EMAIL_CREAM, EMAIL_BORDER } from '@/lib/email/brand'
+import {
+  EMAIL_NAVY,
+  EMAIL_CREAM,
+  EMAIL_INK,
+  EMAIL_BODY_MUTED,
+  EMAIL_BORDER,
+  EMAIL_SERIF,
+} from '@/lib/email/brand'
+import { wrapBrandedEmail, type ShellBroker } from '@/lib/email/shell'
 import { formatDate } from '@/lib/format/date'
 import type { MarketReportAreaBlock } from '@/lib/data/crm/getMarketReportData'
 import type { MoSVerdict } from '@/lib/data/types/market'
 
-const CHARCOAL = '#1a1a1a'
-const MUTED = '#667085'
+const MUTED = EMAIL_BODY_MUTED
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 export interface RenderMarketReportEmailInput {
@@ -36,6 +44,8 @@ export interface RenderMarketReportEmailInput {
   areas: MarketReportAreaBlock[]
   /** One-click unsubscribe URL embedded in the footer. */
   unsubscribeUrl: string
+  /** The subscription's assigned broker — renders the close card when set. */
+  senderBroker?: ShellBroker | null
 }
 
 export interface RenderedMarketReportEmail {
@@ -75,14 +85,13 @@ export function formatDays(value: number | null | undefined): string {
   return `${Math.round(value)} days`
 }
 
-/** Signed-arrow YoY: "up 2.1% YoY" / "down 1.4% YoY" / flat. Em-dash when null. */
+/** One-decimal signed-arrow YoY: "↑ 2.1% YoY" / "↓ 1.4% YoY" / flat. Em-dash when null. */
 export function formatYoy(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return '—'
   const rounded = Math.round(value * 10) / 10
   if (rounded === 0) return 'flat YoY'
   const arrow = rounded > 0 ? '↑' : '↓'
-  const word = rounded > 0 ? 'up' : 'down'
-  return `${arrow} ${word} ${Math.abs(rounded).toFixed(1)}% YoY`
+  return `${arrow} ${Math.abs(rounded).toFixed(1)}% YoY`
 }
 
 /** Months of supply with one decimal + " months". Em-dash when null. */
@@ -105,12 +114,6 @@ export function verdictLabel(verdict: MoSVerdict | null | undefined): string {
   }
 }
 
-/** Verdict pill background color from the design-system palette intent. */
-function verdictColor(verdict: MoSVerdict | null | undefined): string {
-  // Navy for the decisive ends, muted for balanced. Two-color palette only.
-  return verdict === 'balanced' ? MUTED : EMAIL_NAVY
-}
-
 /** Build the subject line. One area names it; several use a regional framing. */
 export function buildSubject(areas: MarketReportAreaBlock[]): string {
   if (areas.length === 1) {
@@ -119,42 +122,50 @@ export function buildSubject(areas: MarketReportAreaBlock[]): string {
   return `Your Central Oregon market update`
 }
 
-/** One area's HTML card. */
-function areaCardHtml(area: MarketReportAreaBlock): string {
+/** Whole number with comma separators. Em-dash when unavailable. */
+function formatCount(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return '—'
+  return Math.round(value).toLocaleString('en-US')
+}
+
+/**
+ * One area's editorial stat block: uppercase verdict kicker, serif area name,
+ * a big serif median-price moment with the signed YoY, then hairline-ruled
+ * stat rows and a navy CTA.
+ */
+function areaBlockHtml(area: MarketReportAreaBlock): string {
   const verdict = verdictLabel(area.marketVerdict)
   const hasVerdict = area.marketVerdict != null
   const href = `${SITE_URL}${area.href}`
 
-  const row = (label: string, value: string): string =>
-    `<tr>
-      <td style="padding:6px 0;font-size:14px;color:${MUTED};">${escapeHtml(label)}</td>
-      <td style="padding:6px 0;font-size:14px;color:${CHARCOAL};text-align:right;font-weight:600;font-variant-numeric:tabular-nums;">${value}</td>
-    </tr>`
-
-  const verdictPill = hasVerdict
-    ? `<span style="display:inline-block;background:${verdictColor(area.marketVerdict)};color:${EMAIL_CREAM};font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;">${escapeHtml(verdict)} &middot; ${formatMonths(area.monthsOfSupply)} of supply</span>`
+  const kicker = hasVerdict
+    ? `<div style="font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:${MUTED};margin-bottom:8px;font-variant-numeric:tabular-nums;">${escapeHtml(verdict)} &middot; ${formatMonths(area.monthsOfSupply)} of supply</div>`
     : ''
 
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:#ffffff;border:1px solid ${EMAIL_BORDER};border-radius:14px;">
-    <tr><td style="padding:20px 24px;">
-      <p style="margin:0 0 4px;font-size:18px;font-weight:700;color:${EMAIL_NAVY};">${escapeHtml(area.areaLabel)}</p>
-      ${verdictPill ? `<p style="margin:0 0 12px;">${verdictPill}</p>` : ''}
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-        ${row('Median sale price', formatCurrencyRounded(area.medianPrice))}
-        ${row('Price change', formatYoy(area.yoyPct))}
-        ${row('Active listings', area.activeListings != null ? String(area.activeListings) : '—')}
-        ${row('Median days on market', formatDays(area.domMedian))}
-        ${row('Homes sold, last 12 months', area.soldLast12mo != null ? String(area.soldLast12mo) : '—')}
-      </table>
-      <p style="margin:14px 0 0;">
-        <a href="${href}" style="display:inline-block;background:${EMAIL_NAVY};color:${EMAIL_CREAM};font-size:14px;font-weight:600;text-decoration:none;padding:10px 18px;border-radius:10px;">See the full ${escapeHtml(area.areaLabel)} report</a>
-      </p>
-    </td></tr>
-  </table>`
+  const row = (label: string, value: string): string =>
+    `<tr>
+      <td style="padding:10px 0;font-size:14px;color:${MUTED};border-top:1px solid ${EMAIL_BORDER};">${escapeHtml(label)}</td>
+      <td style="padding:10px 0;font-size:14px;color:${EMAIL_INK};text-align:right;font-weight:600;font-variant-numeric:tabular-nums;border-top:1px solid ${EMAIL_BORDER};">${value}</td>
+    </tr>`
+
+  return `<tr><td style="padding:30px 34px 0;">
+    ${kicker}
+    <div style="font-family:${EMAIL_SERIF};font-size:26px;line-height:1.2;color:${EMAIL_NAVY};margin-bottom:16px;">${escapeHtml(area.areaLabel)}</div>
+    <div style="font-family:${EMAIL_SERIF};font-size:42px;line-height:1.05;color:${EMAIL_NAVY};font-variant-numeric:tabular-nums;">${formatCurrencyRounded(area.medianPrice)}</div>
+    <div style="font-size:13px;color:${MUTED};margin:6px 0 18px;font-variant-numeric:tabular-nums;">Median sale price &middot; ${formatYoy(area.yoyPct)}</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-variant-numeric:tabular-nums;">
+      ${row('Active listings', formatCount(area.activeListings))}
+      ${row('Median days on market', formatDays(area.domMedian))}
+      ${row('Homes sold, last 12 months', formatCount(area.soldLast12mo))}
+    </table>
+    <div style="margin-top:20px;padding-bottom:6px;">
+      <a href="${href}" style="display:inline-block;background:${EMAIL_NAVY};color:${EMAIL_CREAM};font-size:13px;font-weight:700;letter-spacing:.08em;text-decoration:none;padding:12px 26px;">SEE THE FULL ${escapeHtml(area.areaLabel.toUpperCase())} REPORT &rarr;</a>
+    </div>
+  </td></tr>`
 }
 
 /** One area's plain-text block. */
-function areaCardText(area: MarketReportAreaBlock): string {
+function areaBlockText(area: MarketReportAreaBlock): string {
   const lines: string[] = []
   lines.push(area.areaLabel)
   if (area.marketVerdict != null) {
@@ -162,9 +173,9 @@ function areaCardText(area: MarketReportAreaBlock): string {
   }
   lines.push(`Median sale price: ${formatCurrencyRounded(area.medianPrice)}`)
   lines.push(`Price change: ${formatYoy(area.yoyPct)}`)
-  lines.push(`Active listings: ${area.activeListings != null ? String(area.activeListings) : '-'}`)
+  lines.push(`Active listings: ${area.activeListings != null ? formatCount(area.activeListings) : '-'}`)
   lines.push(`Median days on market: ${formatDays(area.domMedian)}`)
-  lines.push(`Homes sold, last 12 months: ${area.soldLast12mo != null ? String(area.soldLast12mo) : '-'}`)
+  lines.push(`Homes sold, last 12 months: ${area.soldLast12mo != null ? formatCount(area.soldLast12mo) : '-'}`)
   lines.push(`Full report: ${SITE_URL}${area.href}`)
   return lines.join('\n')
 }
@@ -183,49 +194,42 @@ export function renderMarketReportEmail(
   const areas = Array.isArray(input.areas) ? input.areas : []
   const subject = buildSubject(areas)
   const asOf = formatDate(areas[0]?.refreshedAt ?? new Date())
+  const mastheadArea = areas.length === 1 ? areas[0].areaLabel : 'Central Oregon'
 
-  const introLine =
+  // Raw for the preheader (the shell escapes it), escaped inline for the body.
+  const introRaw =
     areas.length === 1
-      ? `Here is where the ${escapeHtml(areas[0].areaLabel)} market stands as of ${escapeHtml(asOf)}.`
-      : `Here is where your Central Oregon markets stand as of ${escapeHtml(asOf)}.`
+      ? `Here is where the ${areas[0].areaLabel} market stands as of ${asOf}.`
+      : `Here is where your Central Oregon markets stand as of ${asOf}.`
+  const introLine = escapeHtml(introRaw)
 
-  const cardsHtml = areas.map(areaCardHtml).join('')
+  const headerHtml = `<tr><td style="padding:30px 34px 0;">
+    <p style="margin:0 0 10px;font-size:16px;color:${EMAIL_INK};">${greeting}</p>
+    <p style="margin:0;font-size:16px;line-height:1.6;color:${EMAIL_INK};">${introLine}</p>
+  </td></tr>`
 
-  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"></head>
-<body style="margin:0;padding:0;background:${EMAIL_CREAM};font-family:${EMAIL_FONT_STACK};">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${EMAIL_CREAM};padding:24px 0;">
-  <tr><td align="center">
-    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
-      <tr><td style="background:${EMAIL_NAVY};padding:20px 24px;border-radius:14px 14px 0 0;">
-        <span style="color:${EMAIL_CREAM};font-size:18px;font-weight:700;letter-spacing:0.04em;">RYAN REALTY</span>
-      </td></tr>
-      <tr><td style="background:#ffffff;padding:24px;border-left:1px solid ${EMAIL_BORDER};border-right:1px solid ${EMAIL_BORDER};">
-        <p style="margin:0 0 12px;font-size:16px;color:${CHARCOAL};">${greeting}</p>
-        <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:${CHARCOAL};">${introLine}</p>
-        ${cardsHtml}
-        <p style="margin:20px 0 0;font-size:13px;line-height:1.6;color:${MUTED};">Every figure here comes from closed and active Central Oregon MLS data for single-family homes, refreshed daily. Reply to this email if you want a pricing read on a specific home.</p>
-      </td></tr>
-      <tr><td style="background:#ffffff;padding:18px 24px 24px;border:1px solid ${EMAIL_BORDER};border-top:none;border-radius:0 0 14px 14px;color:${MUTED};font-size:12px;line-height:1.6;">
-        Ryan Realty &middot; Bend, Oregon &middot; <a href="${SITE_URL}" style="color:${MUTED};">ryan-realty.com</a><br>
-        You are receiving this market update because you subscribed to Ryan Realty reports.
-        <a href="${escapeHtml(input.unsubscribeUrl)}" style="color:${MUTED};text-decoration:underline;">Unsubscribe</a>.
-      </td></tr>
-    </table>
-  </td></tr>
-</table>
-</body></html>`
+  const blocksHtml = areas.map(areaBlockHtml).join('')
+
+  const methodologyHtml = `<tr><td style="padding:28px 34px 6px;">
+    <p style="margin:0;font-size:13px;line-height:1.6;color:${MUTED};border-top:1px solid ${EMAIL_BORDER};padding-top:16px;">Every figure here comes from closed and active Central Oregon MLS data for single-family homes, refreshed daily. Reply to this email if you want a pricing read on a specific home.</p>
+  </td></tr>`
+
+  const html = wrapBrandedEmail({
+    bodyHtml: headerHtml + blocksHtml + methodologyHtml,
+    previewText: introRaw,
+    mastheadLine: `MARKET REPORT · ${mastheadArea}`,
+    senderBroker: input.senderBroker ?? null,
+    unsubscribeUrl: input.unsubscribeUrl,
+    audienceLine: 'You are receiving this market update because you subscribed to Ryan Realty reports.',
+  })
 
   const textParts: string[] = []
   textParts.push(fn ? `Hi ${fn},` : 'Hi,')
   textParts.push('')
-  textParts.push(
-    areas.length === 1
-      ? `Here is where the ${areas[0].areaLabel} market stands as of ${asOf}.`
-      : `Here is where your Central Oregon markets stand as of ${asOf}.`,
-  )
+  textParts.push(introRaw)
   textParts.push('')
   for (const area of areas) {
-    textParts.push(areaCardText(area))
+    textParts.push(areaBlockText(area))
     textParts.push('')
   }
   textParts.push(

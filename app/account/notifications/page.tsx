@@ -1,5 +1,6 @@
 // @data-free - auth'd account page; user-specific data via server actions, not the public cached DAL
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getProfile } from '@/app/actions/profile'
@@ -11,7 +12,8 @@ export const metadata: Metadata = {
   description: 'Manage your email and notification preferences at Ryan Realty.',
 }
 
-export const dynamic = 'force-dynamic'
+// Rendered per-request automatically: getSession() reads the auth cookie, which
+// opts the route out of static rendering.
 
 export default async function AccountNotificationsPage() {
   const session = await getSession()
@@ -33,7 +35,7 @@ export default async function AccountNotificationsPage() {
       {/* ── Notification preferences ── */}
       <section>
         <div className="mb-3 min-w-0">
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">Email &amp; alerts</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">Email and alerts</h2>
           <p className="mt-0.5 text-sm text-muted-foreground">Pick the updates you want and how often we send them.</p>
         </div>
         <DashboardNotificationPrefs initialPrefs={prefs} />
@@ -44,11 +46,13 @@ export default async function AccountNotificationsPage() {
         <Card className="flex flex-col items-start gap-2 p-4">
           <span className="text-sm font-semibold text-foreground">Unsubscribe</span>
           <span className="text-xs text-muted-foreground">
-            Turn off every email from Ryan Realty at once (required by CAN-SPAM).
+            Turning off email notifications above stops every alert email from Ryan Realty
+            (required by CAN-SPAM). To stop or edit one search, manage your saved searches.
+            Every email we send also carries its own one-click unsubscribe link.
           </span>
-          <a href="/alerts/unsubscribe" className="mt-1 text-sm font-medium text-primary hover:underline">
-            Unsubscribe from all
-          </a>
+          <Link href="/account/saved-searches" className="mt-1 text-sm font-medium text-primary hover:underline">
+            Manage saved searches and alerts
+          </Link>
         </Card>
       </section>
     </div>

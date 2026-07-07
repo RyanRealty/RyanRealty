@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-07T00:03:53.512Z
+**Generated:** 2026-07-07T05:21:02.812Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -303,7 +303,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 595,997**
+### `listing_tile_mv` · **rows ≈ 596,580**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -347,7 +347,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 74,154**
+### `similar_listings_mv` · **rows ≈ 73,932**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 
@@ -624,6 +624,12 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `finalized_at` | timestamp with time zone | yes |  |
 | `delivered_at` | timestamp with time zone | yes |  |
 | `archived_at` | timestamp with time zone | yes |  |
+| `html_content` | text | yes |  |
+| `citations` | jsonb | yes |  |
+| `build_summary` | jsonb | yes |  |
+| `built_at` | timestamp with time zone | yes |  |
+| `build_error` | text | yes |  |
+| `price_override` | integer | yes |  |
 
 ### `content_performance` · **rows ≈ 6**
 

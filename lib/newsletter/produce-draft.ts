@@ -63,6 +63,24 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
+/**
+ * Decode the HTML entities this producer emits into real characters for the
+ * PLAIN-TEXT alternative. htmlToPlainText strips tags but leaves entities, so
+ * without this the text/plain part ships literal "&bull;" strings (and the
+ * entity semicolons false-fail the R-1 punctuation check).
+ */
+function decodeEntitiesForText(s: string): string {
+  return s
+    .replace(/&bull;/g, '•')
+    .replace(/&middot;/g, '·')
+    .replace(/&rarr;/g, '→')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&#9650;/g, '')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+}
+
 /** Absolute HTTPS URL for email (a relative /path can't load in an inbox). Null → null. */
 function absolutize(url: string | null | undefined): string | null {
   if (!url) return null
@@ -189,12 +207,15 @@ function worthReadingSection(posts: BlogItem[]): string {
       : ''
     const excerpt = p.excerpt ? escapeHtml(p.excerpt.slice(0, 120)) : ''
     const cat = p.category ? escapeHtml(p.category.toUpperCase()) : 'READ'
+    // data-nl-quote: the excerpt (and title) quote an ALREADY-PUBLISHED post
+    // verbatim — its figures were verified at publish time, so the R-2 citation
+    // gate excludes this block (quoted editorial content, not authored stats).
     return `<a href="${SITE}/blog/${escapeHtml(p.slug)}" style="text-decoration:none;"><table width="100%"><tr>
       <td width="96" style="padding:12px 14px 12px 0;">${img}</td>
       <td valign="middle" style="${border}padding:12px 0;">
         <div style="font-size:11px;letter-spacing:.1em;color:${GREEN};font-weight:700;">${cat}</div>
-        <div style="font-family:${SERIF};font-size:18px;color:${NAVY};margin:2px 0;">${escapeHtml(p.title)}</div>
-        <div style="font-size:13px;color:#6b7280;line-height:1.4;">${excerpt} &rarr;</div>
+        <div data-nl-quote="blog" style="font-family:${SERIF};font-size:18px;color:${NAVY};margin:2px 0;">${escapeHtml(p.title)}</div>
+        <div data-nl-quote="blog" style="font-size:13px;color:#6b7280;line-height:1.4;">${excerpt} &rarr;</div>
       </td>
     </tr></table></a>`
   })
@@ -291,6 +312,15 @@ function thisMonthSection(events: EventItem[]): string {
 export type ProduceDraftResult = { ok: boolean; id?: string; error?: string }
 
 /**
+ * The canonical subject for a month's issue — shared with the monthly auto-draft
+ * cron, whose idempotency check is "does a newsletter with this month's subject
+ * already exist in ANY status".
+ */
+export function monthlyNewsletterSubject(now: Date): string {
+  return `The Bend Brief · ${MONTHS[now.getMonth()]!}`
+}
+
+/**
  * Pull live data, assemble the section body + plain text + citations, write a
  * DRAFT. Never sends. `createdBy` is the admin email for the audit trail.
  */
@@ -299,7 +329,6 @@ export async function produceNewsletterDraft(createdBy: string | null): Promise<
   const fetchedAt = now.toISOString()
   const year = now.getFullYear()
   const month = now.getMonth() + 1 // 1-based
-  const monthName = MONTHS[now.getMonth()]!
 
   const citations: NewsletterCitation[] = []
 
@@ -426,10 +455,10 @@ export async function produceNewsletterDraft(createdBy: string | null): Promise<
   if (eventItems.length > 0) parts.push(thisMonthSection(eventItems))
 
   const bodyHtml = parts.join('\n\n')
-  const bodyText = htmlToPlainText(bodyHtml)
+  const bodyText = decodeEntitiesForText(htmlToPlainText(bodyHtml))
 
   // ── Subject + preview (from live data) ──────────────────────────────────────
-  const subject = `The Bend Brief · ${monthName}`
+  const subject = monthlyNewsletterSubject(now)
   const previewText = bend && bend.medianPrice != null
     ? `The median home in Bend closed at ${currencyRounded(bend.medianPrice)}. Where every city sits, buyer to seller.`
     : `Where each Central Oregon city sits this month, buyer to seller.`

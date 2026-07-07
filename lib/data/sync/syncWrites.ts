@@ -848,7 +848,9 @@ export async function upsertCmaRowBySlug(
   }
 }
 
-/** Paginated cmas list for admin detail. */
+/** Paginated cmas list for admin detail.
+ *  Explicit projection — html_content/citations are multi-hundred-KB blobs
+ *  since the 2026-07-07 deterministic builder and must never ride a list read. */
 export async function listCmasForAdmin(options: {
   limit: number
   offset: number
@@ -857,7 +859,10 @@ export async function listCmasForAdmin(options: {
   if (!sb) return { rows: [], total: 0 }
   const { data, count } = await sb
     .from('cmas')
-    .select('*', { count: 'exact' })
+    .select(
+      'id, slug, subject_address, subject_subdivision, subject_city, client_name, client_email, broker_slug, value_low, value_high, recommended_list, comps_count, status, generation_reason, created_at, finalized_at, delivered_at, built_at, build_error, html_path, price_override',
+      { count: 'exact' },
+    )
     .order('created_at', { ascending: false })
     .range(options.offset, options.offset + options.limit - 1)
   return { rows: (data ?? []) as Array<Record<string, unknown>>, total: count ?? data?.length ?? 0 }
@@ -866,6 +871,10 @@ export async function listCmasForAdmin(options: {
 /**
  * Per-lead CMA history. Used by the admin person view to list every CMA
  * ever created for one lead email. Results are ordered newest first.
+ *
+ * Fixed 2026-07-07: the lead's email lives in `cmas.client_email` — the table
+ * has never had a `lead_email` column, so the old select errored and this
+ * always returned []. ilike with no wildcard = case-insensitive equality.
  */
 export async function listCmasForLeadEmail(options: {
   email: string
@@ -875,12 +884,16 @@ export async function listCmasForLeadEmail(options: {
   if (!sb) return []
   const email = options.email.trim().toLowerCase()
   if (!email) return []
-  const { data } = await sb
+  const { data, error } = await sb
     .from('cmas')
-    .select('id, created_at, status, slug, lead_email')
-    .eq('lead_email', email)
+    .select('id, created_at, status, slug, client_email, subject_address, recommended_list')
+    .ilike('client_email', email)
     .order('created_at', { ascending: false })
     .limit(Math.min(Math.max(options.limit ?? 20, 1), 100))
+  if (error) {
+    console.error('[listCmasForLeadEmail]', error.message)
+    return []
+  }
   return (data ?? []) as Array<Record<string, unknown>>
 }
 

@@ -10,6 +10,7 @@ import { getActiveGuestSearchAlerts, markGuestAlertNotified } from '@/lib/data/l
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
+import { recordEmailEvent } from '@/lib/crm/email-events'
 import { buildListingAlertEmail, type ListingAlertListing } from '@/lib/crm/listing-alert-email'
 import {
   resolvePersonForTracking,
@@ -144,12 +145,16 @@ export async function runSavedSearchAlerts(options?: {
 
   const supabase = createServiceClient()
   // Paused rows are excluded in the DB (null counts as not paused) — the cron
-  // never spends its scan budget on rows that could not send.
+  // never spends its scan budget on rows that could not send. Most-overdue
+  // first (never-notified rows lead) so the queue drains fairly across runs —
+  // the same ordering as the guest path (getActiveGuestSearchAlerts) — instead
+  // of newest-created rows starving the rest.
   const { data: searchesRaw, error: searchesError } = await supabase
     .from('saved_searches')
     .select('id, user_id, name, filters, notification_frequency, is_paused, last_notified_at, unsubscribe_token, crm_person_id')
     .or('is_paused.is.null,is_paused.eq.false')
-    .order('created_at', { ascending: false })
+    .order('last_notified_at', { ascending: true, nullsFirst: true })
+    .order('created_at', { ascending: true })
     .limit(maxSearches)
   if (searchesError) {
     return {
@@ -170,11 +175,27 @@ export async function runSavedSearchAlerts(options?: {
         continue
       }
 
+      // Every due row we DECIDE not to email (no new listings, prefs off,
+      // hard-stop, suppression) still advances last_notified_at — mirroring the
+      // guest path. The scan is most-overdue-first, so a due row that never
+      // advances would sit at the front of every run and starve the queue.
+      // Advancing on an empty check is also semantically right: "checked
+      // through <now>, nothing new".
+      const advanceCursor = async () => {
+        if (!dryRun) {
+          await supabase
+            .from('saved_searches')
+            .update({ last_notified_at: now.toISOString() })
+            .eq('id', search.id)
+        }
+        summary.skipped += 1
+      }
+
       const filters = (search.filters ?? {}) as Record<string, unknown>
       // Full stored filters (getCachedSearchListings re-normalizes + honors every key).
       const results = await getCachedSearchListings(filters, 1, 15)
       if (!results.listings.length) {
-        summary.skipped += 1
+        await advanceCursor()
         continue
       }
 
@@ -187,7 +208,7 @@ export async function runSavedSearchAlerts(options?: {
           })
         : results.listings
       if (!fresh.length) {
-        summary.skipped += 1
+        await advanceCursor()
         continue
       }
 
@@ -198,7 +219,7 @@ export async function runSavedSearchAlerts(options?: {
         .maybeSingle()
       const prefs = (profileResp.data as { notification_preferences?: { emailEnabled?: boolean } } | null)?.notification_preferences
       if (prefs?.emailEnabled === false) {
-        summary.skipped += 1
+        await advanceCursor()
         continue
       }
 
@@ -206,7 +227,7 @@ export async function runSavedSearchAlerts(options?: {
       const userResp = await (supabase as any).auth.admin.getUserById(search.user_id)
       const toEmail = userResp?.data?.user?.email?.trim()
       if (!toEmail) {
-        summary.skipped += 1
+        await advanceCursor()
         continue
       }
 
@@ -219,11 +240,11 @@ export async function runSavedSearchAlerts(options?: {
       // suppressed for email. The signed-in account opted in, but a later
       // opt-out / suppression / protected compliance tag wins. Fails closed.
       if (fuid && (await isHardStopped(fuid))) {
-        summary.skipped += 1
+        await advanceCursor()
         continue
       }
       if ((await isSuppressedByEmail(toEmail, 'email')).suppressed) {
-        summary.skipped += 1
+        await advanceCursor()
         continue
       }
 
@@ -262,11 +283,12 @@ export async function runSavedSearchAlerts(options?: {
       // person resolved, attributeOutbound applies attribution only (no
       // tracking wrapper) by design. Unsubscribe links stay unwrapped.
       const brokerSlug = person.assignedBroker ?? DEFAULT_BROKER
+      const emailKey = `listing-alert:${search.id}:${runDate}`
       const finalHtml = attributeOutbound(built.html, {
         brokerSlug,
         personId: person.personId,
         fubPersonId: person.fubPersonId ?? fuid,
-        emailKey: `listing-alert:${search.id}:${runDate}`,
+        emailKey,
         label: built.subject,
         broker: brokerSlug,
       })
@@ -275,7 +297,7 @@ export async function runSavedSearchAlerts(options?: {
         // Final suppression gate in the send scope (fails closed). Redundant
         // with the skip above, kept so the send is gated in its own scope.
         if ((await isSuppressedByEmail(toEmail, 'email')).suppressed) {
-          summary.skipped += 1
+          await advanceCursor()
           continue
         }
         const emailResult = await sendEmail({
@@ -291,6 +313,21 @@ export async function runSavedSearchAlerts(options?: {
           summary.errors.push({ searchId: search.id, error: emailResult.error })
           continue
         }
+
+        // Measurement — mirror the market-report send path: one 'sent' row in
+        // email_events per send, keyed on the SAME emailKey the tracker signs
+        // into the open/click tokens so per-subscription engagement aggregates.
+        // Best-effort: a reporting-side failure must never undo a real send.
+        await recordEmailEvent({
+          messageId: emailResult.id ?? null,
+          recipientEmail: toEmail,
+          personId: person.personId,
+          broker: brokerSlug,
+          sendType: 'alert',
+          event: 'sent',
+          emailKey,
+          subject: built.subject,
+        })
 
         const { error: updateError } = await supabase
           .from('saved_searches')
@@ -420,11 +457,12 @@ export async function runGuestSearchAlerts(options?: {
       })
 
       const brokerSlug = person.assignedBroker ?? DEFAULT_BROKER
+      const emailKey = `listing-alert:${row.id}:${runDate}`
       const finalHtml = attributeOutbound(built.html, {
         brokerSlug,
         personId: person.personId,
         fubPersonId: person.fubPersonId ?? row.fub_person_id,
-        emailKey: `listing-alert:${row.id}:${runDate}`,
+        emailKey,
         label: built.subject,
         broker: brokerSlug,
       })
@@ -450,6 +488,18 @@ export async function runGuestSearchAlerts(options?: {
           summary.errors.push({ searchId: row.id, error: emailResult.error })
           continue
         }
+        // Measurement — mirror the market-report send path (one 'sent' row in
+        // email_events, keyed on the tracker emailKey). Best-effort.
+        await recordEmailEvent({
+          messageId: emailResult.id ?? null,
+          recipientEmail: row.email,
+          personId: person.personId,
+          broker: brokerSlug,
+          sendType: 'alert',
+          event: 'sent',
+          emailKey,
+          subject: built.subject,
+        })
         const marked = await markGuestAlertNotified(row.id, now.toISOString())
         if (!marked.ok) {
           summary.errors.push({ searchId: row.id, error: marked.error ?? 'mark failed' })

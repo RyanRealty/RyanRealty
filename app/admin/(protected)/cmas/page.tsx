@@ -54,6 +54,7 @@ interface CmaRow {
   subject_address: string
   subject_subdivision: string | null
   client_name: string | null
+  client_email: string | null
   broker_slug: string | null
   value_low: number | null
   value_high: number | null
@@ -62,8 +63,15 @@ interface CmaRow {
   status: 'draft' | 'finalized' | 'delivered' | 'archived'
   created_at: string
   finalized_at: string | null
+  built_at: string | null
+  build_error: string | null
   html_path: string
-  asset_available: boolean
+}
+
+/** A CMA has an openable document when the builder stored HTML in the DB
+ *  (html_path 'db:…') or a legacy finalized file ships under public/cmas/. */
+function hasDocument(cma: CmaRow): boolean {
+  return cma.html_path?.startsWith('db:') || cma.html_path?.startsWith('public/cmas/') || false
 }
 
 type SearchParams = Record<string, string | string[] | undefined>
@@ -160,7 +168,7 @@ async function CmasContent({ params }: { params: Record<string, string | undefin
   if (params.status) rows = rows.filter((r) => r.status === params.status)
   if (q) {
     rows = rows.filter((r) =>
-      [r.subject_address, r.subject_subdivision, r.client_name, r.broker_slug]
+      [r.subject_address, r.subject_subdivision, r.client_name, r.client_email, r.broker_slug]
         .filter((v): v is string => Boolean(v))
         .some((v) => v.toLowerCase().includes(q)),
     )
@@ -235,8 +243,8 @@ async function CmasContent({ params }: { params: Record<string, string | undefin
       <ConsoleSection title="CMAs" count={`(${formatInt(matchCount)})`}>
         <p className="mb-4 text-xs text-muted-foreground">
           {matchCount === 0
-            ? 'Newest first. Tap a CMA to open its PDF or HTML.'
-            : `Showing ${formatInt(pageStart + 1)}–${formatInt(pageStart + pageRows.length)}. Newest first. Tap a CMA to open its PDF or HTML.`}
+            ? 'Newest first. Tap Review to open a CMA.'
+            : `Showing ${formatInt(pageStart + 1)}–${formatInt(pageStart + pageRows.length)}. Newest first. Tap Review to open a CMA.`}
         </p>
           {matchCount === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
@@ -293,26 +301,21 @@ async function CmasContent({ params }: { params: Record<string, string | undefin
                       </span>
                       <span className="shrink-0 tabular-nums">{formatDate(cma.created_at)}</span>
                     </div>
-                    {cma.asset_available ? (
-                      <div className="mt-3 flex gap-2">
+                    <div className="mt-3 flex gap-2">
+                      <Button asChild size="sm" className="h-11 flex-1">
+                        <Link href={`/admin/cmas/${cma.slug}`}>Review</Link>
+                      </Button>
+                      {hasDocument(cma) ? (
                         <Button asChild size="sm" variant="outline" className="h-11 flex-1">
                           <Link href={`/api/cma/${cma.slug}/pdf`} target="_blank" rel="noopener noreferrer">
                             PDF
                           </Link>
                         </Button>
-                        <Button asChild size="sm" variant="ghost" className="h-11 flex-1">
-                          <Link
-                            href={cma.status === 'finalized' ? `/cmas/${cma.slug}/cma.html` : `/drafts/${cma.slug}/cma.html`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            HTML
-                          </Link>
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="mt-3 text-xs text-muted-foreground">Document not available</div>
-                    )}
+                      ) : null}
+                    </div>
+                    {cma.build_error ? (
+                      <div className="mt-2 text-xs text-destructive">Build failed. Open Review for detail.</div>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -358,26 +361,18 @@ async function CmasContent({ params }: { params: Record<string, string | undefin
                         <TableCell className="text-sm">{formatDate(cma.created_at)}</TableCell>
                         <TableCell className="text-sm">{formatDate(cma.finalized_at)}</TableCell>
                         <TableCell className="text-right">
-                          {cma.asset_available ? (
-                            <div className="flex justify-end gap-2">
+                          <div className="flex justify-end gap-2">
+                            <Button asChild size="sm">
+                              <Link href={`/admin/cmas/${cma.slug}`}>Review</Link>
+                            </Button>
+                            {hasDocument(cma) ? (
                               <Button asChild size="sm" variant="outline">
                                 <Link href={`/api/cma/${cma.slug}/pdf`} target="_blank" rel="noopener noreferrer">
                                   PDF
                                 </Link>
                               </Button>
-                              <Button asChild size="sm" variant="ghost">
-                                <Link
-                                  href={cma.status === 'finalized' ? `/cmas/${cma.slug}/cma.html` : `/drafts/${cma.slug}/cma.html`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  HTML
-                                </Link>
-                              </Button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">Not available</span>
-                          )}
+                            ) : null}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -436,11 +431,17 @@ export default async function AdminCmasPage({ searchParams }: { searchParams: Pr
 
   return (
     <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">Comparative Market Analyses</h1>
-        <p className="text-sm text-muted-foreground">
-          Every CMA the shop has built, drafts in progress and finalized deliverables. Tap a CMA to open its PDF or HTML.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold text-foreground">Comparative Market Analyses</h1>
+          <p className="text-sm text-muted-foreground">
+            Every CMA the shop has built. Queued requests build automatically every 30 minutes and land
+            here as drafts. Review a draft, approve it, then send it to the lead.
+          </p>
+        </div>
+        <Button asChild className="min-h-11">
+          <Link href="/admin/cmas/new">Build CMA</Link>
+        </Button>
       </header>
 
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>

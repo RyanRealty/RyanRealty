@@ -61,10 +61,10 @@ describe('formatDays', () => {
 
 describe('formatYoy (signed arrow, one decimal)', () => {
   it('renders an up arrow for positive', () => {
-    expect(formatYoy(2.14)).toBe('↑ up 2.1% YoY')
+    expect(formatYoy(2.14)).toBe('↑ 2.1% YoY')
   })
   it('renders a down arrow for negative', () => {
-    expect(formatYoy(-1.22)).toBe('↓ down 1.2% YoY')
+    expect(formatYoy(-1.22)).toBe('↓ 1.2% YoY')
   })
   it('renders flat for zero', () => {
     expect(formatYoy(0)).toBe('flat YoY')
@@ -121,8 +121,14 @@ describe('renderMarketReportEmail', () => {
     expect(out.html).toContain('25 days')
     expect(out.html).toContain("Seller's market")
     expect(out.html).toContain('3.5 months of supply')
+    expect(out.html).toContain('↓ 1.2% YoY')
     expect(out.html).toContain('https://ryan-realty.com/cities/bend')
     expect(out.html).toContain(UNSUB)
+    // The one branded frame (lib/email/shell.ts): masthead + navy + 640px sheet.
+    expect(out.html).toContain('MARKET REPORT · BEND')
+    expect(out.html).toContain('#102742')
+    expect(out.html).toContain('max-width:640px')
+    expect(out.html).toContain('name="color-scheme"')
     // text part carries the same figures
     expect(out.text).toContain('$721,000')
     expect(out.text).toContain('Median days on market: 25 days')
@@ -141,6 +147,31 @@ describe('renderMarketReportEmail', () => {
     expect(out.html).toContain('Tetherow')
     expect(out.html).toContain('$1,700,000')
     expect(out.html).toContain("Buyer's market")
+    expect(out.html).toContain('MARKET REPORT · CENTRAL OREGON')
+  })
+
+  it('renders the broker close card when a senderBroker is passed', () => {
+    const out = renderMarketReportEmail({
+      contactName: 'Sam',
+      areas: [block()],
+      unsubscribeUrl: UNSUB,
+      senderBroker: {
+        name: 'Matt Ryan',
+        firstName: 'Matt',
+        title: 'Owner & Principal Broker',
+        phone: '541.703.3095',
+        email: 'matt@ryan-realty.com',
+        headshotUrl: 'https://ryan-realty.com/images/brokers/ryan-matt.png',
+        isOwner: true,
+      },
+    })
+    expect(out.html).toContain('TALK TO MATT')
+    expect(out.html).toContain('541.703.3095')
+  })
+
+  it('omits the broker close card by default', () => {
+    const out = renderMarketReportEmail({ contactName: 'Sam', areas: [block()], unsubscribeUrl: UNSUB })
+    expect(out.html).not.toContain('TALK TO')
   })
 
   it('renders the em-dash placeholder for an unavailable field rather than a fabricated number', () => {

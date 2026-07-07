@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDate } from '@/lib/format/date'
+import type { SubscriptionEngagement } from '@/lib/data/crm/subscriptionsAdminEngagement'
 
 export const PAGE_SIZE = 50
 
@@ -33,6 +34,27 @@ export function OriginBadge({ origin }: { origin: string | null }) {
   if (o === 'broker') return <Badge variant="soft-hot">Broker</Badge>
   if (o === 'system') return <Badge variant="outline">System</Badge>
   return <Badge variant="soft-neutral">User</Badge>
+}
+
+/**
+ * Compact sends / opens / clicks rollup + last-open date for one subscription,
+ * aggregated from email_events by the DAL. Em dash = never engaged.
+ */
+export function EngagementCell({ engagement }: { engagement: SubscriptionEngagement }) {
+  const { sends, opens, clicks, lastOpenAt } = engagement
+  if (sends === 0 && opens === 0 && clicks === 0) {
+    return <span className="text-sm text-muted-foreground">—</span>
+  }
+  return (
+    <div className="min-w-0">
+      <p className="whitespace-nowrap text-sm tabular-nums text-foreground">
+        {sends.toLocaleString('en-US')} sent · {opens.toLocaleString('en-US')} opened · {clicks.toLocaleString('en-US')} clicked
+      </p>
+      <p className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
+        Last open {formatDate(lastOpenAt)}
+      </p>
+    </div>
+  )
 }
 
 export function PaginationBar({

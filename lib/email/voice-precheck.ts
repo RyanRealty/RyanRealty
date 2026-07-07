@@ -43,6 +43,10 @@ function htmlToText(html: string): string {
     .replace(/&middot;/g, '·')
     .replace(/&amp;/g, '&')
     .replace(/&nbsp;/g, ' ')
+    // Remaining entities (&bull; &rarr; &#8226; ...) become a space BEFORE the
+    // punctuation scan — otherwise the entity's own semicolon false-fails the
+    // banned-punctuation check on every producer-authored body.
+    .replace(/&#?[a-zA-Z0-9]{2,10};/g, ' ')
     .replace(/\s+/g, ' ')
 }
 
@@ -55,10 +59,14 @@ export function checkNewsletterVoice(input: {
   bodyHtml?: string | null
   bodyText?: string | null
 }): VoicePrecheckResult {
+  // body_text can carry residual HTML entities when it was auto-generated from
+  // the HTML body — treat entity tokens as the characters they encode, not as
+  // literal ampersand-semicolon punctuation.
+  const bodyTextClean = (input.bodyText ?? '').replace(/&#?[a-zA-Z0-9]{2,10};/g, ' ')
   const text = [
     input.subject ?? '',
     input.bodyHtml ? htmlToText(input.bodyHtml) : '',
-    input.bodyText ?? '',
+    bodyTextClean,
   ].join(' \n ')
   const lower = text.toLowerCase()
   const violations: string[] = []

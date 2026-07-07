@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyEmailToken } from '@/lib/email-tracking'
 import { createServiceClient } from '@/lib/supabase/service'
 import { recordEmailEvent, sendTypeFromEmailKey } from '@/lib/crm/email-events'
+import { recordNewsletterEngagement } from '@/lib/newsletter/track-ledger'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -52,6 +53,18 @@ export async function GET(req: NextRequest) {
         meta: { url: target },
       })
       if (!res.ok) console.warn('[track/click] email_events error:', res.error)
+
+      // Newsletter ledger (spec §3.1/H1): a `newsletter:<id>` click ALSO lands on
+      // newsletter_recipient_events with a URL-inclusive recipient-scoped dedupe
+      // key — repeat clicks of the same link collapse, a distinct link still
+      // records. Non-blocking — the redirect always fires.
+      await recordNewsletterEngagement({
+        personId: ctx.personId,
+        emailKey: ctx.emailKey,
+        broker: ctx.broker ?? null,
+        event: 'click',
+        url: target,
+      })
     } catch (err) {
       console.warn('[track/click] log failed:', err)
     }

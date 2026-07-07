@@ -1,13 +1,13 @@
 {
   "$comment": "Ratchet baseline for check-email-send-gated.mjs. Each key is an UNGATED sendEmail/sendBatchEmails call site (<file>:<line>) that is NOT preceded by an isSuppressed()/isSuppressedByEmail() check in its function. The list may only SHRINK. To clear an entry: gate the send and remove the line, then run node scripts/check-email-send-gated.mjs --write. NEVER add a new entry to silence a new lead send, gate it instead. kind=internal: a genuinely-internal or 1:1 transactional send (broker alert, admin notice, the broker's own digest, an e-signature notification to a transaction party) with no marketable lead recipient to suppress; permanently allowlisted. kind=lead-todo is NO LONGER ALLOWED: every lead/client-facing marketing send is now gated through the suppression chokepoint, and the runner asserts only kind=internal entries remain.",
   "sites": {
-    "app/actions/newsletter.ts:497": {
+    "app/actions/newsletter.ts:452": {
       "kind": "internal",
-      "reason": "Internal: newsletter test-send (adminTestSendNewsletterAction) to the authenticated admin's OWN inbox (gate.email from requireAdmin()), subject prefixed [TEST]. Never a lead or subscriber — it renders the issue as-broker so the admin can preview real delivery before enqueueing. The actual audience send routes through the gated queue drain (per-row isSuppressedByEmail). Permanently allowlisted."
+      "reason": "Internal: newsletter test-send (adminTestSendNewsletterAction) to the authenticated admin's OWN inbox (gate.email from requireAdmin()), subject prefixed [TEST]. Never a lead or subscriber \u2014 it renders the issue as-broker so the admin can preview real delivery before enqueueing. The actual audience send routes through the gated queue drain (per-row isSuppressedByEmail). Permanently allowlisted. Line shifted -45 when the preview render helpers moved to lib/newsletter/preview.ts (W2 review-surface build 2026-07-06)."
     },
     "app/admin/(protected)/crm/inbox/page.tsx:398": {
       "kind": "internal",
-      "reason": "Internal: inbox note @mention notification to the mentioned BROKER's own ryan-realty.com mailbox (spec 08 paragraph 10.2). Never to a lead — the CRM_MAILBOXES lookup only resolves broker addresses. Client-facing sends on this page route through the gated sendCrmEmailAction. Permanently allowlisted."
+      "reason": "Internal: inbox note @mention notification to the mentioned BROKER's own ryan-realty.com mailbox (spec 08 paragraph 10.2). Never to a lead \u2014 the CRM_MAILBOXES lookup only resolves broker addresses. Client-facing sends on this page route through the gated sendCrmEmailAction. Permanently allowlisted."
     },
     "app/api/cma/[slug]/gmail-draft/route.ts:167": {
       "kind": "internal",
@@ -23,27 +23,11 @@
     },
     "app/api/cron/weekly-pipeline-digest/route.ts:277": {
       "kind": "internal",
-      "reason": "Internal: weekly pipeline digest to the broker (or the admin-configured Weekly Report Recipients from Company Settings — staff addresses the owner adds, not leads). Same allowlisted site; line shifted when recipients were wired to crm_company_settings (§15 slice)."
+      "reason": "Internal: weekly pipeline digest to the broker (or the admin-configured Weekly Report Recipients from Company Settings \u2014 staff addresses the owner adds, not leads). Same allowlisted site; line shifted when recipients were wired to crm_company_settings (\u00a715 slice)."
     },
     "app/home-valuation/actions.ts:178": {
       "kind": "internal",
       "reason": "Internal: new-lead notification to ADMIN_EMAIL (the brokerage), not the lead. The two LEAD-facing sends in this action (auto-CMA + acknowledgment) are gated by isSuppressedByEmail. Permanently allowlisted."
-    },
-    "lib/cma-deliver.ts:355": {
-      "kind": "internal",
-      "reason": "Internal: Resend fallback to the BROKER when the Gmail draft fails (preserves the human-review gate). Never to the lead. The lead is gated by isSuppressed/isSuppressedByEmail earlier in finalizeAndDeliverCma."
-    },
-    "lib/cma-deliver.ts:414": {
-      "kind": "internal",
-      "reason": "Internal: notifies Matt (MATT_ALERT_EMAIL) that a CMA is ready for review, not the client. Permanently allowlisted."
-    },
-    "lib/cma-delivery.ts:373": {
-      "kind": "internal",
-      "reason": "Internal: broker-review notification to the assigned broker's email with a signed preview link. processCmaDelivery only builds to 'ready'; it never emails the lead. The lead delivery happens in the gated /api/cma-drafts/[id]/send route and contact-cma.ts."
-    },
-    "lib/cma-request.ts:414": {
-      "kind": "internal",
-      "reason": "Internal: new-CMA-request notification to the assigned broker (sendBrokerNotification), not the lead. The lead confirmation (sendLeadConfirmation) is gated by isSuppressedByEmail. Line shifted +5 when the crmPersonId input field + slug-stamp support were added (expired-workflow audit 2026-07-03)."
     },
     "lib/deploy-health-alert.ts:53": {
       "kind": "internal",
@@ -76,6 +60,26 @@
     "lib/tc/signing-emails.ts:77": {
       "kind": "internal",
       "reason": "1:1 transactional: completed-and-signed copy (sealed PDF + certificate) to a transaction party for one specific envelope. CAN-SPAM transactional-message exemption. Not a marketing send."
+    },
+    "app/api/cron/newsletter-monthly-draft/route.ts:58": {
+      "kind": "internal",
+      "reason": "Internal: draft-ready notification to matt@ryan-realty.com (MATT only) after the monthly auto-draft cron writes a newsletter DRAFT. Never a lead or subscriber \u2014 the draft itself sends nothing until Matt approves and schedules it on the review page. Permanently allowlisted. Line shifted in the 2026-07-06 lifecycle-workflows integration (W5)."
+    },
+    "lib/cma-deliver.ts:356": {
+      "kind": "internal",
+      "reason": "Internal: Resend fallback to the BROKER when the Gmail draft fails (preserves the human-review gate). Never to the lead. The lead is gated by isSuppressed/isSuppressedByEmail earlier in finalizeAndDeliverCma. Line shifted in the 2026-07-06 lifecycle-workflows integration (W5)."
+    },
+    "lib/cma-deliver.ts:415": {
+      "kind": "internal",
+      "reason": "Internal: notifies Matt (MATT_ALERT_EMAIL) that a CMA is ready for review, not the client. Permanently allowlisted. Line shifted in the 2026-07-06 lifecycle-workflows integration (W5)."
+    },
+    "lib/cma-delivery.ts:383": {
+      "kind": "internal",
+      "reason": "Internal: broker-review notification to the assigned broker's email with a signed preview link. processCmaDelivery only builds to 'ready'; it never emails the lead. The lead delivery happens in the gated /api/cma-drafts/[id]/send route and contact-cma.ts. Line shifted in the 2026-07-06 lifecycle-workflows integration (W5)."
+    },
+    "lib/cma-request.ts:418": {
+      "kind": "internal",
+      "reason": "Internal: new-CMA-request notification to the assigned broker (sendBrokerNotification), not the lead. The lead confirmation (sendLeadConfirmation) is gated by isSuppressedByEmail. Line shifted +5 when the crmPersonId input field + slug-stamp support were added (expired-workflow audit 2026-07-03). Line shifted in the 2026-07-06 lifecycle-workflows integration (W5)."
     }
   }
 }

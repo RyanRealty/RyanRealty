@@ -8,21 +8,29 @@
  * access, no send, no tracking — attribution + open/click instrumentation is
  * applied by the caller via attributeOutbound AFTER this HTML is built.
  *
+ * The frame is the ONE branded shell (lib/email/shell.ts): navy masthead
+ * ("NEW LISTINGS · <search name>") → editorial listing cards (serif display
+ * prices, hard hairline rules, tabular figures, navy CTA) → optional broker
+ * close card → CAN-SPAM footer with the audience line + manage + unsubscribe.
+ *
  * Brand voice (CLAUDE.md §3): sentence case, every number carries units, no
  * em-dash, no semicolon, no exclamation mark, no banned words in visible copy.
  * List prices render exactly as listed ($749,900 style with commas) per §0 —
  * a listing's price is a fact, not a stat to round.
- *
- * Email-safe styling: inline hex from the locked two-color v2 palette (navy
- * #102742 on cream #faf8f4) via lib/email/brand. Table-based layout for
- * Outlook/Gmail. No web fonts (clients do not load them).
  */
 
-import { EMAIL_FONT_STACK, EMAIL_NAVY, EMAIL_CREAM, EMAIL_BORDER } from '@/lib/email/brand'
+import {
+  EMAIL_NAVY,
+  EMAIL_CREAM,
+  EMAIL_INK,
+  EMAIL_BODY_MUTED,
+  EMAIL_BORDER,
+  EMAIL_SERIF,
+} from '@/lib/email/brand'
+import { wrapBrandedEmail, type ShellBroker } from '@/lib/email/shell'
 import { BRAND } from '@/lib/brand/contact'
 
-const CHARCOAL = '#1a1a1a'
-const MUTED = '#667085'
+const MUTED = EMAIL_BODY_MUTED
 
 export interface ListingAlertListing {
   /** Street address line, e.g. "61542 Hosmer Lake Dr". */
@@ -59,6 +67,8 @@ export interface BuildListingAlertEmailInput {
   manageUrl?: string | null
   /** Optional intro sentence above the cards. */
   intro?: string | null
+  /** The subscription's assigned broker — renders the close card when set. */
+  senderBroker?: ShellBroker | null
 }
 
 export interface BuiltListingAlertEmail {
@@ -103,7 +113,10 @@ export function buildListingAlertSubject(count: number, searchName: string): str
   return `${safeCount} new ${noun} for ${searchName.trim()}`
 }
 
-/** One listing's HTML card. */
+/**
+ * One listing's editorial card: full-width photo, status kicker, serif display
+ * price, address, meta line, closed by a hard hairline rule.
+ */
 function listingCardHtml(listing: ListingAlertListing): string {
   const address = escapeHtml(listing.address.trim() || 'New listing')
   const cityLine = (listing.city ?? '').trim()
@@ -114,20 +127,20 @@ function listingCardHtml(listing: ListingAlertListing): string {
   const href = escapeHtml(listing.detailUrl)
 
   const photo = listing.photoUrl?.trim()
-    ? `<tr><td><a href="${href}"><img src="${escapeHtml(listing.photoUrl.trim())}" alt="${fullAddress}" width="552" style="display:block;width:100%;height:auto;border-radius:12px 12px 0 0;" /></a></td></tr>`
+    ? `<a href="${href}"><img src="${escapeHtml(listing.photoUrl.trim())}" alt="${fullAddress}" width="572" style="display:block;width:100%;height:auto;"></a>`
     : ''
 
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:#ffffff;border:1px solid ${EMAIL_BORDER};border-radius:14px;">
+  return `<tr><td style="padding:26px 34px 0;">
     ${photo}
-    <tr><td style="padding:16px 20px;">
-      ${status ? `<p style="margin:0 0 6px;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:${MUTED};">${escapeHtml(status)}</p>` : ''}
-      <p style="margin:0 0 4px;font-size:16px;font-weight:700;">
-        <a href="${href}" style="color:${EMAIL_NAVY};text-decoration:none;">${fullAddress}</a>
-      </p>
-      <p style="margin:0 0 4px;font-size:18px;font-weight:700;color:${CHARCOAL};font-variant-numeric:tabular-nums;">${price}</p>
-      ${meta ? `<p style="margin:0;font-size:14px;color:${MUTED};font-variant-numeric:tabular-nums;">${meta}</p>` : ''}
-    </td></tr>
-  </table>`
+    <div style="padding:16px 0 22px;border-bottom:1px solid ${EMAIL_BORDER};">
+      ${status ? `<div style="font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:${MUTED};margin-bottom:8px;">${escapeHtml(status)}</div>` : ''}
+      <div style="font-family:${EMAIL_SERIF};font-size:28px;line-height:1.15;color:${EMAIL_NAVY};font-variant-numeric:tabular-nums;margin-bottom:6px;">${price}</div>
+      <div style="font-size:16px;font-weight:700;line-height:1.4;margin-bottom:4px;">
+        <a href="${href}" style="color:${EMAIL_INK};text-decoration:none;">${fullAddress}</a>
+      </div>
+      ${meta ? `<div style="font-size:14px;color:${MUTED};font-variant-numeric:tabular-nums;">${meta}</div>` : ''}
+    </div>
+  </td></tr>`
 }
 
 /** One listing's plain-text block. */
@@ -159,45 +172,35 @@ export function buildListingAlertEmail(input: BuildListingAlertEmailInput): Buil
   const filtersSummary = (input.filtersSummary ?? '').trim()
   const browseHref = escapeHtml(input.browseAllUrl)
 
+  const headerHtml = `<tr><td style="padding:32px 34px 0;">
+    <div style="font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:${MUTED};margin-bottom:10px;">${escapeHtml(searchName)}</div>
+    <div style="font-family:${EMAIL_SERIF};font-size:26px;line-height:1.2;color:${EMAIL_NAVY};font-variant-numeric:tabular-nums;">${escapeHtml(countLine)}</div>
+    ${filtersSummary ? `<div style="font-size:13px;color:${MUTED};margin-top:8px;">${escapeHtml(filtersSummary)}</div>` : ''}
+    ${intro ? `<div style="font-size:16px;line-height:1.6;color:${EMAIL_INK};margin-top:14px;">${escapeHtml(intro)}</div>` : ''}
+  </td></tr>`
+
   const cardsHtml = shown.map(listingCardHtml).join('')
 
   const moreHtml = moreCount > 0
-    ? `<p style="margin:0 0 16px;font-size:14px;color:${CHARCOAL};"><a href="${browseHref}" style="color:${EMAIL_NAVY};font-weight:600;">+${moreCount} more new ${moreCount === 1 ? 'listing' : 'listings'} on the site</a></p>`
+    ? `<tr><td style="padding:20px 34px 0;font-size:15px;font-variant-numeric:tabular-nums;">
+        <a href="${browseHref}" style="color:${EMAIL_NAVY};font-weight:700;text-decoration:underline;">+${moreCount} more new ${moreCount === 1 ? 'listing' : 'listings'} on the site</a>
+      </td></tr>`
     : ''
 
-  const manageHtml = input.manageUrl?.trim()
-    ? ` <a href="${escapeHtml(input.manageUrl.trim())}" style="color:${MUTED};text-decoration:underline;">Manage your alerts</a>.`
-    : ''
+  const ctaHtml = `<tr><td align="center" style="padding:28px 34px 8px;">
+    <a href="${browseHref}" style="display:inline-block;background:${EMAIL_NAVY};color:${EMAIL_CREAM};font-size:13px;font-weight:700;letter-spacing:.08em;text-decoration:none;padding:14px 32px;">SEE ALL MATCHING HOMES &rarr;</a>
+  </td></tr>`
 
-  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"></head>
-<body style="margin:0;padding:0;background:${EMAIL_CREAM};font-family:${EMAIL_FONT_STACK};">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${EMAIL_CREAM};padding:24px 0;">
-  <tr><td align="center">
-    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
-      <tr><td style="background:${EMAIL_NAVY};padding:20px 24px;border-radius:14px 14px 0 0;">
-        <span style="color:${EMAIL_CREAM};font-size:18px;font-weight:700;letter-spacing:0.04em;">RYAN REALTY</span>
-      </td></tr>
-      <tr><td style="background:#ffffff;padding:24px;border-left:1px solid ${EMAIL_BORDER};border-right:1px solid ${EMAIL_BORDER};">
-        <p style="margin:0 0 4px;font-size:20px;font-weight:700;color:${EMAIL_NAVY};">${escapeHtml(searchName)}</p>
-        <p style="margin:0 0 4px;font-size:15px;color:${CHARCOAL};">${escapeHtml(countLine)}</p>
-        ${filtersSummary ? `<p style="margin:0 0 16px;font-size:13px;color:${MUTED};">${escapeHtml(filtersSummary)}</p>` : '<p style="margin:0 0 16px;"></p>'}
-        ${intro ? `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:${CHARCOAL};">${escapeHtml(intro)}</p>` : ''}
-        ${cardsHtml}
-        ${moreHtml}
-        <p style="margin:8px 0 0;">
-          <a href="${browseHref}" style="display:inline-block;background:${EMAIL_NAVY};color:${EMAIL_CREAM};font-size:14px;font-weight:600;text-decoration:none;padding:12px 22px;border-radius:10px;">See all matching homes</a>
-        </p>
-      </td></tr>
-      <tr><td style="background:#ffffff;padding:18px 24px 24px;border:1px solid ${EMAIL_BORDER};border-top:none;border-radius:0 0 14px 14px;color:${MUTED};font-size:12px;line-height:1.6;">
-        Ryan Realty · Bend, Oregon · <a href="${BRAND.url}" style="color:${MUTED};">ryan-realty.com</a><br>
-        ${escapeHtml(BRAND.mailingAddress)}<br>
-        You are receiving this because you asked for listing alerts at ryan-realty.com.${manageHtml}
-        <a href="${escapeHtml(input.unsubscribeUrl)}" style="color:${MUTED};text-decoration:underline;">Unsubscribe</a>.
-      </td></tr>
-    </table>
-  </td></tr>
-</table>
-</body></html>`
+  const html = wrapBrandedEmail({
+    bodyHtml: headerHtml + cardsHtml + moreHtml + ctaHtml,
+    previewText: countLine,
+    mastheadLine: `NEW LISTINGS · ${searchName}`,
+    heroUrl: null, // the listing photos are the visual — no brand hero
+    senderBroker: input.senderBroker ?? null,
+    unsubscribeUrl: input.unsubscribeUrl,
+    manageUrl: input.manageUrl?.trim() || null,
+    audienceLine: "You're receiving this because you asked for listing alerts at ryan-realty.com.",
+  })
 
   const textParts: string[] = []
   textParts.push(searchName)

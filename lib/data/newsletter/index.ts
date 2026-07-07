@@ -29,13 +29,16 @@ export type NewsletterSubscriber = {
   updated_at: string
 }
 
+/** Full lifecycle (matches the newsletters_status_check CHECK, spec §3.1). */
+export type NewsletterStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed' | 'canceled'
+
 export type NewsletterRow = {
   id: string
   subject: string
   preview_text: string | null
   body_html: string | null
   body_text: string | null
-  status: 'draft' | 'sending' | 'sent' | 'failed'
+  status: NewsletterStatus
   audience: string
   recipient_count: number
   sent_count: number
@@ -44,6 +47,12 @@ export type NewsletterRow = {
   sent_by: string | null
   scheduled_at: string | null
   sent_at: string | null
+  send_started_at: string | null
+  send_finished_at: string | null
+  /** Circuit-breaker / manual pause flag — the drain skips a paused issue. */
+  send_paused: boolean | null
+  /** §0 verification trace, one entry per stat token (R-2). */
+  citations: NewsletterCitationEntry[] | null
   created_at: string
   updated_at: string
 }
@@ -271,7 +280,8 @@ export type NewsletterRecipient = {
   id: string
   newsletter_id: string
   email: string
-  status: 'sent' | 'delivered' | 'opened' | 'clicked' | 'bounced' | 'complained' | 'failed'
+  /** Queue lifecycle (queued/sending/skipped) + delivery outcomes — matches the DB CHECK. */
+  status: 'queued' | 'sending' | 'skipped' | 'sent' | 'delivered' | 'opened' | 'clicked' | 'bounced' | 'complained' | 'failed'
   open_count: number
   last_opened_at: string | null
   click_count: number

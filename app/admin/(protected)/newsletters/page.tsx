@@ -24,7 +24,10 @@ function audienceLabel(a: string): string {
 }
 
 function statusPill(status: NewsletterRow['status']) {
-  const tone = ({ draft: 'neutral', sending: 'info', sent: 'success', failed: 'danger' } as const)[status]
+  const tone =
+    ({ draft: 'neutral', scheduled: 'info', sending: 'info', sent: 'success', failed: 'danger', canceled: 'neutral' } as const)[
+      status
+    ] ?? 'neutral'
   return <StatusPill tone={tone} label={status} />
 }
 
@@ -65,7 +68,16 @@ export default async function NewslettersPage() {
       className: 'tabular-nums',
       cell: (r) => (r.status === 'draft' ? <span className="text-muted-foreground">—</span> : <span>{r.sent_count.toLocaleString('en-US')} of {r.recipient_count.toLocaleString('en-US')}</span>),
     },
-    { key: 'sent_at', header: 'Sent', className: 'tabular-nums', cell: (r) => <span className="text-muted-foreground">{fmtDate(r.sent_at)}</span> },
+    {
+      key: 'sent_at',
+      header: 'Date',
+      className: 'tabular-nums',
+      cell: (r) => (
+        <span className="text-muted-foreground">
+          {r.status === 'scheduled' ? `Scheduled ${fmtDate(r.scheduled_at)}` : fmtDate(r.sent_at)}
+        </span>
+      ),
+    },
   ]
 
   return (

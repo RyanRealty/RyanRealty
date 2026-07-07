@@ -78,6 +78,10 @@ describe('sendTypeFromEmailKey (emailKey prefix inference)', () => {
     expect(sendTypeFromEmailKey('cma:cma-62285-deer')).toBe('cma')
     expect(sendTypeFromEmailKey('market-report:bend')).toBe('market-report')
     expect(sendTypeFromEmailKey('alert:new-listing')).toBe('alert')
+    // The real alert send paths sign `listing-alert:<rowId>:<runDate>` — must
+    // classify as 'alert', not fall through to 'other' (regression 2026-07-06).
+    expect(sendTypeFromEmailKey('listing-alert:2b6a4c9e:2026-07-06')).toBe('alert')
+    expect(sendTypeFromEmailKey('Listing-Alert:2b6a4c9e:2026-07-06')).toBe('alert')
     expect(sendTypeFromEmailKey('seq:69:2')).toBe('sequence')
     expect(sendTypeFromEmailKey('sequence:69:2')).toBe('sequence')
     expect(sendTypeFromEmailKey('manual:42:1700')).toBe('one-off')

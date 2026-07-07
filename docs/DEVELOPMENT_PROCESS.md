@@ -124,6 +124,7 @@ Everything in `docs/plans/` is registered here. A new file in that directory wit
 | `CONTACT_HEADER_REDESIGN_2026-06-30.md` | open input — contact header redesign spec, feed into Experience loop |
 | `GLOBAL_SKILLS_REGISTRY.md` | tool index (live reference) |
 | `SAVED_SEARCH_MASTER_GOAL.md` | **live** — saved-search + market-report subscription system: end-state definition, W1-W5 workstream plan, email open/click tracking requirement, ship gates |
+| `LIFECYCLE_WORKFLOWS_MASTER_GOAL.md` | **live** — Expired→CMA auto-build + review/send, newsletter monthly draft + visual approval + gradual delivery, subscriptions hub E2E, unified brutalist email shell: W1-W5 workstream plan, hard constraints, ship gates |
 | `WESTSIDE_HOMEOWNER_ENRICHMENT_PLAN.md` | executed — westside homeowner enrichment plan (record) |
 | `HANDOFF-newsletter.md`, `HANDOFF-content-engine.md` | session-continuity records |
 | `HANDOFF_CRM_STREAMLINE_2026-07-03.md` | session-continuity record |

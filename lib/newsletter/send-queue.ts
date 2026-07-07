@@ -9,6 +9,7 @@ import { wrapNewsletterHtml, newsletterTextFooter, type SenderBroker } from '@/l
 import { htmlToPlainText } from '@/lib/email/prepare'
 import { getLatestDeliverability, deliverabilityVerdict } from '@/lib/data/deliverability'
 import { getDueScheduledNewsletterIds } from '@/lib/data/newsletter/scheduled'
+import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
 import {
   anyNewsletterEverSent,
   bulkActivateSubscribers,
@@ -355,6 +356,12 @@ export async function drainNewsletter(newsletterId: string, sendStartedAt: strin
     console.error(
       `[newsletter] CIRCUIT BREAKER tripped for ${newsletterId}: ${health.bounced} bounced / ${health.complained} complained of ${health.sent} sent. Auto-paused. Resume needs admin ok.`,
     )
+    // §6.5 rule 4: auto-pause AND alert Matt (cooldown-deduped SMS rail).
+    await queueBrokerHealthAlert({
+      key: `newsletter-breaker:${newsletterId}`,
+      body: `Newsletter auto-paused: ${health.bounced} bounced / ${health.complained} complained of ${health.sent} sent. Resume at ${SITE_URL}/admin/newsletters/${newsletterId}`,
+      cooldownMinutes: 360,
+    })
     return { ...report, paused: true }
   }
 
@@ -500,6 +507,12 @@ export async function reconcileSending(nowMs = Date.now()): Promise<ReconcileRep
     if ((counts.queued ?? 0) > 0 && overdue) {
       out.push({ newsletterId: nl.id, action: 'stalled', detail: `${counts.queued} queued rows past their tranche day` })
       console.error(`[newsletter] STALL: ${nl.id} has ${counts.queued} queued rows past their tranche day but none sent.`)
+      // S-15: a real stuck drain pages Matt (deduped by cooldown), not just a log line.
+      await queueBrokerHealthAlert({
+        key: `newsletter-stall:${nl.id}`,
+        body: `Newsletter send stalled: ${counts.queued} queued rows past their tranche day. Check ${SITE_URL}/admin/newsletters/${nl.id}`,
+        cooldownMinutes: 360,
+      })
     } else {
       out.push({ newsletterId: nl.id, action: 'draining', detail: `${counts.queued ?? 0} queued, waiting for the next tranche day` })
     }

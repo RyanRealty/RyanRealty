@@ -24,6 +24,13 @@
 export const EMAIL_FONT_STACK =
   "'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
 
+/**
+ * Display serif for editorial moments (masthead wordmark, headline prices, big
+ * stat numbers). Georgia stands in for Amboqia — email clients never load the
+ * brand display font, and Georgia is the closest universally installed serif.
+ */
+export const EMAIL_SERIF = "Georgia, 'Times New Roman', serif"
+
 /** Primary navy. Logo, headings, CTAs, header backgrounds. */
 export const EMAIL_NAVY = '#102742'
 
@@ -32,3 +39,15 @@ export const EMAIL_CREAM = '#faf8f4'
 
 /** Warm-stone hairline for borders/dividers (replaces retired sand #e8e2d4). */
 export const EMAIL_BORDER = 'rgba(16,39,66,0.08)'
+
+/** Body ink on cream/white (the newsletter shell's reading color). */
+export const EMAIL_INK = '#26303c'
+
+/** Frame captions + footer text (the newsletter shell's muted gray). */
+export const EMAIL_MUTED = '#9aa0a8'
+
+/** Secondary/meta text inside body sections (higher contrast than EMAIL_MUTED). */
+export const EMAIL_BODY_MUTED = '#667085'
+
+/** The page canvas behind the 640px cream sheet. */
+export const EMAIL_CANVAS = '#e4e0d8'

@@ -57,6 +57,17 @@ const NON_SENDER = new Set([
   // list targeting. CAN-SPAM List-Unsubscribe on a personal meeting invite
   // would be misleading noise (same class as the 1:1 composer send).
   'app/actions/appointments.ts',
+  // CMA delivery to a lead: a broker-initiated 1:1 send — Matt explicitly clicks
+  // "Send to lead" on ONE approved CMA for ONE contact who requested a market
+  // analysis. Suppression-checked (fails closed), attributeOutbound-tracked, no
+  // list targeting. The branded shell carries the postal address + audience
+  // line; a List-Unsubscribe header on requested 1:1 relationship content would
+  // be misleading noise (same class as the appointment invite above).
+  'lib/cma/send.ts',
+  // Newsletter monthly-draft cron notification: an INTERNAL ops email to Matt's
+  // own mailbox ("draft ready for review"). No contact/lead recipient, no list
+  // targeting — CAN-SPAM footers would be misleading on a self-notification.
+  'app/api/cron/newsletter-monthly-draft/route.ts',
   // Inbound group-text broker alert: an INTERNAL notification from the broker's
   // own mailbox TO that same mailbox ("new group text from X"), mirroring the
   // baselined inbound-sms webhook alert. No contact/lead recipient, no list

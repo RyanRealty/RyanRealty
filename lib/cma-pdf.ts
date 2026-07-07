@@ -13,6 +13,7 @@ import chromium from '@sparticuz/chromium-min'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { fetchCmaMapPngBuffer } from '@/lib/cma-map'
+import { getCmaHtmlBySlug } from '@/lib/data'
 
 const CHROMIUM_REMOTE =
   'https://github.com/Sparticuz/chromium/releases/download/v138.0.2/chromium-v138.0.2-pack.x64.tar'
@@ -135,10 +136,22 @@ export interface RenderCmaPdfResult {
 
 export async function renderCmaPdfBuffer(slug: string): Promise<RenderCmaPdfResult> {
   const resolved = await resolveCmaDir(slug)
-  if (!resolved) throw new CmaNotFoundError(slug)
 
-  let html = await inlineLocalAssets(resolved.html, resolved.dir)
-  html = await inlineMapReferences(html)
+  let html: string
+  let finalizedSource: boolean
+  if (resolved) {
+    html = await inlineLocalAssets(resolved.html, resolved.dir)
+    html = await inlineMapReferences(html)
+    finalizedSource = resolved.dir.includes(path.sep + 'cmas' + path.sep)
+  } else {
+    // DB-stored CMA (deterministic builder, 2026-07-07): the HTML is fully
+    // self-contained (inline CSS, absolute asset URLs, data-URI map), so no
+    // asset or map inlining is needed before the render.
+    const row = await getCmaHtmlBySlug(slug)
+    if (!row?.html_content) throw new CmaNotFoundError(slug)
+    html = row.html_content
+    finalizedSource = row.status === 'finalized' || row.status === 'delivered'
+  }
 
   let browser: Browser | null = null
   try {
@@ -160,6 +173,11 @@ export async function renderCmaPdfBuffer(slug: string): Promise<RenderCmaPdfResu
         )
       )
     })
+    // Web fonts (Geist / Caveat / Amboqia) load over the network in the
+    // DB-stored variant — wait for them so the PDF matches the browser view.
+    await page
+      .evaluateHandle('document.fonts ? document.fonts.ready : Promise.resolve()')
+      .catch(() => {})
     await page.emulateMediaType('print')
     const pdf = await page.pdf({
       format: 'Letter',
@@ -169,7 +187,7 @@ export async function renderCmaPdfBuffer(slug: string): Promise<RenderCmaPdfResu
     })
     return {
       buffer: Buffer.from(pdf),
-      finalized: resolved.dir.includes(path.sep + 'cmas' + path.sep),
+      finalized: finalizedSource,
     }
   } finally {
     if (browser) await browser.close().catch(() => {})

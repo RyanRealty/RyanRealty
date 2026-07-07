@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyEmailToken } from '@/lib/email-tracking'
 import { createServiceClient } from '@/lib/supabase/service'
 import { recordEmailEvent, sendTypeFromEmailKey } from '@/lib/crm/email-events'
+import { recordNewsletterEngagement } from '@/lib/newsletter/track-ledger'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -69,6 +70,21 @@ export async function GET(req: NextRequest) {
         subject: ctx.label || null,
       })
       if (!res.ok) console.warn('[track/open] email_events error:', res.error)
+
+      // Newsletter ledger (spec §3.1/H1): a `newsletter:<id>` open ALSO lands on
+      // newsletter_recipient_events, the deduped source every per-issue stat
+      // derives from. Recipient-scoped dedupe collapses pixel refires + webhook
+      // duplicates to one row. Non-blocking — the pixel always returns.
+      try {
+        await recordNewsletterEngagement({
+          personId: ctx.personId,
+          emailKey: ctx.emailKey,
+          broker: ctx.broker ?? null,
+          event: 'open',
+        })
+      } catch (err) {
+        console.warn('[track/open] newsletter ledger error:', err)
+      }
     }
   } catch (err) {
     console.warn('[track/open] log failed:', err)

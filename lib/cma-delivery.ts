@@ -1,6 +1,16 @@
 /**
  * Auto-CMA delivery orchestrator.
  *
+ * ── RETIRED for new builds (2026-07-07, W1 lifecycle workflows) ────────────
+ * The React-PDF cma_deliveries pipeline is legacy. New CMAs build through the
+ * deterministic engine at lib/cma/build.ts (canonical brutalist HTML stored in
+ * public.cmas.html_content, reviewed at /admin/cmas, sent via lib/cma/send.ts).
+ * app/actions/contact-cma.ts no longer calls createCmaDelivery /
+ * processCmaDelivery. This module remains ONLY so pre-cutover 'ready' rows in
+ * cma_deliveries (and the /cma-drafts review routes) keep working until the
+ * orchestrator removes them. Do not add new callers.
+ * ───────────────────────────────────────────────────────────────────────────
+ *
  * Called from the seller LP form (`submitSellerLPForm`) and the legacy
  * `/home-valuation` path. Lifts the address-to-property-id, computeCMA, PDF
  * render, Storage upload, broker resolution, and broker-review-email logic

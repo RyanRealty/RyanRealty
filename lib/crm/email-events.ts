@@ -175,7 +175,11 @@ export function sendTypeFromEmailKey(emailKey: string | null | undefined): Email
     case 'market':
     case 'report':
       return 'market-report'
+    // The alert send paths (app/actions/saved-search-alerts.ts) sign
+    // `listing-alert:<rowId>:<runDate>` into the tracker token — both spellings
+    // classify as 'alert' so opens/clicks report against the right send type.
     case 'alert':
+    case 'listing-alert':
       return 'alert'
     case 'seq':
     case 'sequence':
