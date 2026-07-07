@@ -1,6 +1,38 @@
-> **NEWEST, START HERE: the SAVED-SEARCH block immediately below (2026-07-06).** Prior session handoff: [`HANDOFF_CRM_STREAMLINE_2026-07-03.md`](./HANDOFF_CRM_STREAMLINE_2026-07-03.md) (expired workflow fixed, FUB-import data-corruption repaired, the live FUB "archived"-email leak, tag/smart-list streamline plan awaiting Matt's inputs). The blocks below that are older history.
+> **NEWEST, START HERE: the NEIGHBORHOOD-DEFAULTS block immediately below (2026-07-06 evening).** Prior session handoff: [`HANDOFF_CRM_STREAMLINE_2026-07-03.md`](./HANDOFF_CRM_STREAMLINE_2026-07-03.md) (expired workflow fixed, FUB-import data-corruption repaired, the live FUB "archived"-email leak, tag/smart-list streamline plan awaiting Matt's inputs). The blocks below that are older history.
 >
 > _(Prior: `HANDOFF_2026-06-28.md`; the 2026-07-01 ground-up-rebuild block below.)_
+
+# NEIGHBORHOOD DEFAULT SUBSCRIPTIONS SHIPPED (2026-07-06 evening, Cursor, `main` @ 788c4ff1)
+
+Matt directive: "BY DEFAULT WE SHOULD HAVE SAVED SEARCHES AND MARKET REPORTS FOR ALL OF THE
+NEIGHBORHOOD LISTS THAT WE HAVE DEFINED IN THE CRM." Shipped end-to-end same session
+(commits 398745c5 + the feature commit; Vercel READY via deploy:verify; hosted migrations applied).
+
+- **RPC:** `search_listings_advanced` gained `p_neighborhood_slug`. TWO match strategies (verified
+  live): `bend-*` district slugs → City of Bend GIS polygon via `listing_boundary_xref_mv`; resort
+  slugs (tetherow, broken-top, ...) → `neighborhood_subdivisions` SubdivisionName aliases. The v6
+  discovery polygons OVER-MATCH (broken-top polygon caught 346 active incl. Tetherow/Awbrey Butte
+  vs 22 true alias matches) — do NOT use them for resort listing matching.
+- **Filter model:** `neighborhoodSlug` is a canonical FILTER_KEY (lib/search-filters.ts);
+  `lib/neighborhood-areas.ts` centralizes slug→label + slug→href (`bend-*` → `/cities/bend/<district>`,
+  resorts → `/communities/<slug>`). 13 Bend districts added to `crm_report_areas` (38 areas total).
+- **Provisioning:** `lib/data/crm/neighborhoodDefaultSubscriptions.ts` + daily cron
+  `/api/cron/neighborhood-default-subscriptions` (15:30 UTC). INSERT-ONLY (`ON CONFLICT DO NOTHING`) —
+  never re-activates an unsubscribed alert, never overwrites an existing report subscription.
+  **Backfill ran against prod: 8,961 weekly saved searches + 9,004 monthly report subscriptions across
+  27 neighborhoods** (14,264 contacts scanned; 5,260 no-email skipped). Idempotency re-run on prod: 0 created.
+  `last_notified_at` stamped at enrollment → first alert email fires next weekly tick with only
+  genuinely-new listings (no day-one blast).
+- **Alert engine scale:** guest scan orders most-overdue-first (`last_notified_at asc nulls first`),
+  600-row scan default, 200-sends-per-run cap, and due-but-skipped rows now ADVANCE `last_notified_at`
+  (otherwise no-inventory rows would permanently clog the front of the queue).
+- **Market-report cron cadence:** `crm-market-report-send` moved 1x→4x daily (0 4,10,16,22 UTC) — its
+  200-send cap could not drain 9k monthly subs at steady state. Never-sent rows are due immediately,
+  so the first report wave drips out over ~11 days starting at the next tick.
+- Skills/refs read: `docs/DATABASE_FOR_AI_AGENTS.md` (§3a resort aliases), DATABASE_SCHEMA_SNAPSHOT,
+  data-architecture + supabase-migrations-auto + deploy-verify rules.
+- Open follow-ups: none blocking. Watch the first weekly alert tick (~2026-07-13) and the report-send
+  drain in `/admin/crm/subscriptions`.
 
 # SAVED-SEARCH + MARKET-REPORT SUBSCRIPTION SYSTEM SHIPPED (2026-07-06, Cursor, commit f04c5b46)
 
