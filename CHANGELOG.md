@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.743.0 (2026-07-07)
+
+### Features
+- feat(saved-search): default neighborhood saved searches + market reports for every CRM neighborhood list
+
+---
+
+
 ## v1.742.1 (2026-07-07)
 
 ### Maintenance
