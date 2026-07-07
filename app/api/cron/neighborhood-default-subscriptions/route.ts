@@ -2,12 +2,16 @@ import { NextResponse } from 'next/server'
 import { provisionNeighborhoodDefaultSubscriptions } from '@/lib/data/crm/neighborhoodDefaultSubscriptions'
 
 /**
- * Cron: provision the DEFAULT saved search + market report for every contact on
- * a CRM neighborhood list (crm_people.neighborhood_slug) — Matt directive
- * 2026-07-06. Insert-only + idempotent (never re-activates an unsubscribed
- * alert, never overwrites an existing report subscription), so the daily run
- * simply tops up contacts who joined a list since the last pass.
+ * MANUAL-TRIGGER ONLY (not scheduled in vercel.json) — Matt directive
+ * 2026-07-06: assignment of contacts to these defaults is Matt's call, so this
+ * endpoint never runs automatically.
  *
+ * When invoked it provisions the DEFAULT saved search + market report for every
+ * contact on a CRM neighborhood list (crm_people.neighborhood_slug).
+ * Insert-only + idempotent (never re-activates an unsubscribed alert, never
+ * overwrites an existing report subscription).
+ *
+ * Safety: dry-run by default. A live run requires BOTH confirm=1 and dryRun=0.
  * Protect with Authorization: Bearer CRON_SECRET (same pattern as other crons).
  */
 export const maxDuration = 300
@@ -33,7 +37,8 @@ export async function GET(request: Request) {
     20000,
     Math.max(1, Number(url.searchParams.get('limit') ?? '3000') || 3000),
   )
-  const dryRun = url.searchParams.get('dryRun') === '1'
+  // Live enrollment must be explicitly requested twice over; anything else is a dry run.
+  const dryRun = !(url.searchParams.get('confirm') === '1' && url.searchParams.get('dryRun') === '0')
 
   try {
     const summary = await provisionNeighborhoodDefaultSubscriptions({ maxEnrollments, dryRun })

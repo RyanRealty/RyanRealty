@@ -2,7 +2,35 @@
 >
 > _(Prior: `HANDOFF_2026-06-28.md`; the 2026-07-01 ground-up-rebuild block below.)_
 
-# NEIGHBORHOOD DEFAULT SUBSCRIPTIONS SHIPPED (2026-07-06 evening, Cursor, `main` @ 788c4ff1)
+# NEIGHBORHOOD DEFAULTS: ENROLLMENT ROLLED BACK, MACHINERY SMOKE-TESTED (2026-07-06 late evening, Cursor)
+
+**Matt correction after the backfill: "DO NOT ASSIGN ANYONE TO THESE REPORTS ETC I WILL DO THAT
+BUT YOU MUST SMOKE TEST EVERYTHING."** Actions taken the same night, BEFORE the first send tick:
+
+- **Rollback (prod, verified 0 sends had gone out):** deleted the 9,004 backfilled
+  `crm_report_subscriptions`, the 8,961 `guest_search_alerts` (`source='neighborhood-default'`), and
+  all 17,965 provisioning `crm_timeline` audit rows. Assignment is Matt's, via the existing admin
+  tools (bulk "Assign a saved search", bulk `crm:set-report-subscription`, per-contact UI).
+- **Provisioning cron UNSCHEDULED:** removed from `vercel.json`. The route
+  `/api/cron/neighborhood-default-subscriptions` remains as a MANUAL trigger only, dry-run by
+  default — a live run now requires `?confirm=1&dryRun=0`.
+- **RPC perf fix (migration `20260707110000_advanced_search_neighborhood_slug_fast`, applied to
+  hosted):** the correlated-EXISTS neighborhood predicate seq-scanned 589K rows (~3.8s) and blew the
+  3s statement timeout on the app role, so neighborhood-scoped alerts silently matched nothing.
+  Rewrote to precompute the scope into arrays (`ListingKey = ANY(xref keys)` for `bend-*`,
+  `SubdivisionName = ANY(alias labels)` for resorts). Verified on hosted: tetherow 227ms/43 active,
+  bend-old-bend 142ms/14, sunriver 212ms/108; city search unaffected.
+- **Smoke tests, all end-to-end against prod data (test rows cleaned up after):**
+  12/12 Playwright E2E (admin bulk assign, guest save-search, account edit, report self-subscribe);
+  a real neighborhood-default-style alert (`neighborhoodSlug: tetherow`) SENT to
+  matt@ryan-realty.com with listings; open pixel 200 + click 302→destination, both wrote
+  `crm_timeline` rows for person 13168; one-click unsubscribe 200 → `is_active=false`;
+  market report SENT to Matt (areas bend + bend-old-bend + tetherow, `last_sent_at` stamped);
+  bulk `crm:set-report-subscription` job drained (invalid slug dropped, timeline row written).
+  Matt's own subscription (id 3) restored to `areas: ['bend']`.
+
+Everything below describes the feature build itself (still live and correct — only the automatic
+enrollment was reverted):
 
 Matt directive: "BY DEFAULT WE SHOULD HAVE SAVED SEARCHES AND MARKET REPORTS FOR ALL OF THE
 NEIGHBORHOOD LISTS THAT WE HAVE DEFINED IN THE CRM." Shipped end-to-end same session

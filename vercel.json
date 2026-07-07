@@ -125,10 +125,6 @@
       "schedule": "0 2,8,14,20 * * *"
     },
     {
-      "path": "/api/cron/neighborhood-default-subscriptions",
-      "schedule": "30 15 * * *"
-    },
-    {
       "path": "/api/cron/performance-pull-48h",
       "schedule": "0 1 * * *"
     },
