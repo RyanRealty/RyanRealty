@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.743.2 (2026-07-07)
+
+### Maintenance
+- docs(handoff): record neighborhood default subscriptions ship (788c4ff1)
+
+---
+
+
 ## v1.743.1 (2026-07-07)
 
 ### Bug Fixes
