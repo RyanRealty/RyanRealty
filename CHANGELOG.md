@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.745.0 (2026-07-07)
+
+### Features
+- feat(cma): send CMA through the CRM from the broker's own mailbox
+
+---
+
+
 ## v1.744.0 (2026-07-07)
 
 ### Features
