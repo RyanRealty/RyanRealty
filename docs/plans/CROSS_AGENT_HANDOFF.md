@@ -1,6 +1,39 @@
-> **NEWEST, START HERE: [`HANDOFF_CRM_STREAMLINE_2026-07-03.md`](./HANDOFF_CRM_STREAMLINE_2026-07-03.md)** — the current session's self-contained handoff (expired workflow fixed, FUB-import data-corruption repaired, the live FUB "archived"-email leak, and the tag/smart-list streamline plan awaiting Matt's inputs). Read it first. The blocks below are older history.
+> **NEWEST, START HERE: the SAVED-SEARCH block immediately below (2026-07-06).** Prior session handoff: [`HANDOFF_CRM_STREAMLINE_2026-07-03.md`](./HANDOFF_CRM_STREAMLINE_2026-07-03.md) (expired workflow fixed, FUB-import data-corruption repaired, the live FUB "archived"-email leak, tag/smart-list streamline plan awaiting Matt's inputs). The blocks below that are older history.
 >
 > _(Prior: `HANDOFF_2026-06-28.md`; the 2026-07-01 ground-up-rebuild block below.)_
+
+# SAVED-SEARCH + MARKET-REPORT SUBSCRIPTION SYSTEM SHIPPED (2026-07-06, Cursor, commit f04c5b46)
+
+Master goal doc: `docs/plans/SAVED_SEARCH_MASTER_GOAL.md` (registered in DEVELOPMENT_PROCESS.md).
+All five workstreams (W1-W5) shipped in one delivery: `main` @ f04c5b46, Vercel production READY
+(deploy:verify exit 0), hosted Supabase migrations applied (`20260706170000_saved_search_admin_foundation`
++ the reworked `search_listings_advanced`). What shipped:
+
+- **W1 foundation:** `guest_search_alerts.crm_person_id` (+backfill), admin subscriptions DAL
+  (`lib/data/crm/subscriptionsAdmin.ts` — two-step person hydration, no FK for PostgREST embed),
+  `crm:assign-saved-search` bulk handler + `bulkAssignSavedSearchAction`.
+- **W2 email + tracking (the CRM standard):** every saved-search alert is branded HTML
+  (`lib/crm/listing-alert-email.ts`) routed through `attributeOutbound` — opens + clicks land on the
+  CRM person timeline. `resolveCrmPersonId` stamps person linkage at guest-alert creation. Alert cron 4x daily.
+- **W3 user UI:** SaveSearchButton captures all 36 FILTER_KEYS; `/account/saved-searches` edit dialog
+  (`EditSearchDialog.tsx`, split from SavedSearchControls per file-size budget); market-report
+  self-subscribe in dashboard notification prefs.
+- **W4 admin UI:** `/admin/crm/subscriptions` hub (alert + report tabs, search/filter/pagination),
+  "Assign saved search" bulk action with filter builder, admin nav entry.
+- **Perf fix found by gates:** `search_listings_advanced` numeric filters moved off `details->>` jsonb
+  casts (which crashed on `'********'` sentinels and hit the 120s statement timeout at city scale) onto
+  promoted columns `year_built` / `lot_size_acres` / `garage_spaces`; year sort sanity-bounded 1700-2100.
+  Verified on hosted DB: year filter 368ms, sorts clean. Migration file matches deployed function.
+- Global sonner `Toaster` hoisted to `RootProvider` — client components must NOT mount local Toasters.
+- E2E (Playwright vs real prod DB): admin bulk assign, guest save-search capture (crm_person_id stamped),
+  signed-in edit, report self-subscribe — all pass (`scripts/_e2e-saved-search-flows.mjs`, `_e2e-report-optin.mjs`).
+- Gate housekeeping in the same commit: newsletter broker table mobile fallback, formatDate migrations,
+  plan-doc registrations, mockup allowlist (`ui_kits/newsletter/`), email-quality + email-send-gated
+  baselines (line-shift only), file-size re-baseline.
+
+Skills/refs read: `docs/DATABASE_FOR_AI_AGENTS.md`, `docs/DAL_INDEX.md`, `.cursor/rules/*` (data-architecture,
+supabase-migrations-auto, deploy-verify-before-done). Open follow-ups: none blocking; guest_search_alerts
+table currently has 0 rows in prod (feature is new), backfill is a no-op until alerts exist.
 
 # CROSS-AGENT HANDOFF — CRM GROUND-UP REBUILD, screen-by-screen under ci:crm-screen-parity (2026-07-01)
 
