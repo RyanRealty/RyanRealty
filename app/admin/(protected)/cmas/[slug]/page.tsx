@@ -4,7 +4,8 @@
  *
  * Matt SEES the CMA (large rendered iframe of the stored document — never raw
  * code), edits client info + price adjustment (rebuild), approves the draft,
- * and sends via tracked email or a Gmail draft. Sending is an explicit click.
+ * and sends through the CRM — a tracked email from the signing broker's own
+ * mailbox (Resend fallback). Sending is an explicit click.
  */
 
 import Link from 'next/link'

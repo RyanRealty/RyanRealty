@@ -10,7 +10,8 @@ integrated, gate-cleaned, browser-verified, and shipped in one commit (Matt appr
   killed. Document HTML now stored in `cmas.html_content` (NOT the read-only Vercel filesystem), served by
   `/cma/[slug]` (font URLs rewritten to serving origin; X-Frame-Options SAMEORIGIN override for the admin
   iframe preview). Review/approve/send UI at `/admin/cmas` (+ `/new` manual builder, `[slug]` review page,
-  price override + rebuild, Resend send or Gmail draft — both suppression-gated). Cron:
+  price override + rebuild; send goes through the CRM from the signing broker's own mailbox via Gmail DWD
+  with Resend fallback, suppression-gated, timeline-logged — Gmail-draft path retired 2026-07-07). Cron:
   `/api/cron/cma-build-worker` every 30 min builds queued requests; expired-listing detection auto-queues.
 - **W2 Newsletter:** `/api/cron/newsletter-monthly-draft` (daily 13:15 UTC, no-ops unless the 1st Pacific)
   auto-drafts + notifies Matt. Review page is visual-first (rendered iframe, per-broker + mobile toggles,

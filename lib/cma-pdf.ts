@@ -44,7 +44,9 @@ async function getBrowser(): Promise<Browser> {
   const localChrome =
     process.env.PUPPETEER_EXECUTABLE_PATH ||
     process.env.CHROME_PATH ||
-    '/usr/bin/google-chrome'
+    (process.platform === 'darwin'
+      ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+      : '/usr/bin/google-chrome')
   return puppeteer.launch({
     executablePath: localChrome,
     headless: true,

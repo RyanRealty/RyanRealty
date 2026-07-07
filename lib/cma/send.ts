@@ -1,15 +1,20 @@
 /**
- * CMA delivery rails — the ONLY way a built CMA reaches a lead.
+ * CMA delivery rail — the ONLY way a built CMA reaches a lead.
  *
- * Two explicit, button-triggered paths (never automatic):
- *   sendCmaToLead()      — tracked Resend email in the branded shell, PDF
- *                          attached, open/click instrumented, suppression
- *                          checked (fails closed), timeline logged.
- *   createCmaGmailDraftForLead() — a Gmail DRAFT in the signing broker's
- *                          mailbox (DWD), PDF attached, FUB BCC'd. Matt
- *                          reviews and hits Send himself.
+ * One explicit, button-triggered path (never automatic):
+ *   sendCmaToLead() — a real CRM send from the signing broker's own mailbox
+ *   (Gmail DWD, same transport as the CRM composer), PDF attached, FUB BCC'd,
+ *   open/click instrumented, suppression checked (fails closed), and logged
+ *   as email_out on the contact's CRM timeline. Replies thread straight back
+ *   into the broker's inbox (and the CRM via mailbox sync).
  *
- * Both require the cmas row to be finalized (Matt approved the draft).
+ *   If the Gmail DWD send fails (auth/scope/outage), the send automatically
+ *   falls back to Resend so the lead still gets the CMA — the timeline row
+ *   records which transport carried it.
+ *
+ * Requires the cmas row to be finalized (Matt approved the draft).
+ * The Gmail-DRAFT path was retired 2026-07-07 per Matt's directive: sends go
+ * out through the CRM, not through a manual Gmail draft review.
  */
 
 import {
@@ -26,7 +31,7 @@ import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { sendEmail } from '@/lib/resend'
-import { createGmailDraft } from '@/lib/gmail-draft'
+import { sendGmailMessage } from '@/lib/gmail-draft'
 import { formatPriceExact } from '@/lib/format/money'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -151,11 +156,19 @@ Ryan Realty${ctx.brokerRow.phone ? `\n${ctx.brokerRow.phone}` : ''}${brandedText
 export interface SendCmaToLeadResult {
   ok: boolean
   error?: string
+  /** Which rail carried the email: the broker's own mailbox, or the Resend fallback. */
+  transport?: 'gmail' | 'resend'
+  /** The broker mailbox the email went out from (gmail transport only). */
+  mailbox?: string | null
+  gmailMessageId?: string
   resendId?: string
   personId?: number | null
 }
 
-/** Tracked Resend send to the lead. Explicit-click only — never automatic. */
+/**
+ * CRM send to the lead — from the signing broker's own mailbox (Gmail DWD),
+ * with Resend as automatic fallback. Explicit-click only — never automatic.
+ */
 export async function sendCmaToLead(slug: string): Promise<SendCmaToLeadResult> {
   const { ctx, error } = await resolveSendContext(slug)
   if (!ctx) return { ok: false, error: error ?? 'CMA not sendable' }
@@ -191,7 +204,32 @@ export async function sendCmaToLead(slug: string): Promise<SendCmaToLeadResult> 
     label: body.subject,
   })
 
-  const result = await sendEmail({
+  // Primary rail: the signing broker's real mailbox (same DWD transport the
+  // CRM composer uses). The lead gets a 1:1 email from matt@ryan-realty.com
+  // (or the signing broker), FUB is BCC'd, and a reply threads straight back
+  // into the broker's inbox — where the CRM mailbox sync picks it up.
+  const brokerMailbox =
+    ctx.brokerRow.email && /@ryan-realty\.com$/i.test(ctx.brokerRow.email)
+      ? ctx.brokerRow.email
+      : 'matt@ryan-realty.com'
+  const gmailRes = await sendGmailMessage({
+    to: ctx.clientEmail,
+    subject: body.subject,
+    bodyHtml: trackedHtml,
+    bodyText: body.text,
+    bcc: FUB_BCC,
+    impersonateAs: brokerMailbox,
+    attachments: [{ filename: `${slug}.pdf`, content: pdf, mimeType: 'application/pdf' }],
+  })
+  const transport: 'gmail' | 'resend' = gmailRes.ok ? 'gmail' : 'resend'
+  const gmailMessageId = gmailRes.ok ? gmailRes.messageId : undefined
+  if (!gmailRes.ok) {
+    // Fallback rail: Resend. The lead still gets the CMA; the timeline row
+    // records the degraded transport so the outage is visible.
+    console.error(`[sendCmaToLead] Gmail send from ${brokerMailbox} failed (${gmailRes.error ?? 'unknown'}); falling back to Resend`)
+  }
+  // The suppression gate above covers this fallback too — same function scope.
+  const fallback = gmailRes.ok ? null : await sendEmail({
     to: ctx.clientEmail,
     subject: body.subject,
     html: trackedHtml,
@@ -199,7 +237,10 @@ export async function sendCmaToLead(slug: string): Promise<SendCmaToLeadResult> 
     replyTo: ctx.brokerRow.email ?? 'matt@ryan-realty.com',
     attachments: [{ filename: `${slug}.pdf`, content: pdf }],
   })
-  if (result.error) return { ok: false, error: `Email send failed: ${result.error}` }
+  if (fallback?.error) {
+    return { ok: false, error: `Email send failed on both rails (Gmail: ${gmailRes.ok ? '' : gmailRes.error ?? 'unknown'}; Resend: ${fallback.error})` }
+  }
+  const resendId = fallback?.id
 
   const sentAt = new Date().toISOString()
   await updateCmaRowFieldsBySlug(slug, { status: 'delivered', delivered_at: sentAt })
@@ -211,58 +252,8 @@ export async function sendCmaToLead(slug: string): Promise<SendCmaToLeadResult> 
       body: `CMA sent to ${ctx.clientEmail} for ${ctx.subjectAddress}.`,
       broker: crmBrokerSlug,
       dedupeKey: `cma:sent:${slug}:${sentAt.slice(0, 10)}`,
-      payload: { slug, resendId: result.id ?? null },
+      payload: { slug, transport, mailbox: transport === 'gmail' ? brokerMailbox : null, gmailMessageId: gmailMessageId ?? null, resendId: resendId ?? null },
     })
   }
-  return { ok: true, resendId: result.id, personId }
-}
-
-export interface CmaGmailDraftResult {
-  ok: boolean
-  error?: string
-  draftId?: string
-}
-
-/** Gmail DRAFT in the signing broker's mailbox. Matt reviews + sends himself. */
-export async function createCmaGmailDraftForLead(slug: string): Promise<CmaGmailDraftResult> {
-  const { ctx, error } = await resolveSendContext(slug)
-  if (!ctx) return { ok: false, error: error ?? 'CMA not sendable' }
-
-  const personId = await findCrmPersonIdByEmail(ctx.clientEmail)
-  const sup = personId
-    ? await isSuppressed(personId, 'email')
-    : await isSuppressedByEmail(ctx.clientEmail, 'email')
-  if (sup.suppressed) {
-    return { ok: false, error: `This contact has opted out of email (${sup.reasons.join(', ')}).` }
-  }
-
-  let pdf: Buffer
-  try {
-    const rendered = await renderCmaPdfBuffer(slug)
-    pdf = rendered.buffer
-  } catch (e) {
-    return { ok: false, error: `PDF render failed: ${e instanceof Error ? e.message : String(e)}` }
-  }
-  if (pdf.byteLength > MAX_PDF_BYTES) {
-    return { ok: false, error: 'The rendered PDF exceeds the 25 MB Gmail attachment cap.' }
-  }
-
-  const body = buildLeadBody(ctx)
-  const brokerEmail =
-    ctx.brokerRow.email && /@ryan-realty\.com$/i.test(ctx.brokerRow.email)
-      ? ctx.brokerRow.email
-      : 'matt@ryan-realty.com'
-  const draft = await createGmailDraft({
-    to: ctx.clientEmail,
-    subject: body.subject,
-    bodyHtml: body.html,
-    bodyText: body.text,
-    bcc: FUB_BCC,
-    impersonateAs: brokerEmail,
-    attachments: [{ filename: `${slug}.pdf`, content: pdf, mimeType: 'application/pdf' }],
-  })
-  if (!draft.ok) {
-    return { ok: false, error: `Gmail draft failed: ${draft.error ?? 'unknown'}` }
-  }
-  return { ok: true, draftId: draft.draftId }
+  return { ok: true, transport, mailbox: transport === 'gmail' ? brokerMailbox : null, gmailMessageId, resendId, personId }
 }

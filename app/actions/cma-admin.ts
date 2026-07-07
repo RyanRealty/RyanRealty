@@ -14,7 +14,7 @@ import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { buildCma } from '@/lib/cma/build'
 import { runCmaBuildWorker } from '@/lib/cma/worker'
-import { sendCmaToLead, createCmaGmailDraftForLead } from '@/lib/cma/send'
+import { sendCmaToLead } from '@/lib/cma/send'
 import { resolveCmaSubject } from '@/lib/cma/subject'
 import { slugifyAddress } from '@/lib/cma-request'
 import {
@@ -182,34 +182,23 @@ export async function deleteCmaAction(id: string): Promise<{ error: string | nul
   }
 }
 
-// ─── Send paths (explicit click only) ────────────────────────────────────────
+// ─── Send path (explicit click only) ─────────────────────────────────────────
 
 export async function sendCmaToLeadAction(
   slug: string,
-): Promise<{ data: { resendId: string | null } | null; error: string | null }> {
+): Promise<{ data: { transport: 'gmail' | 'resend'; mailbox: string | null } | null; error: string | null }> {
   try {
     if (!(await requireAdmin())) return { data: null, error: 'Unauthorized' }
     const result = await sendCmaToLead(slug.trim().toLowerCase())
     if (!result.ok) return { data: null, error: result.error ?? 'Send failed' }
     refresh(slug.trim().toLowerCase())
-    return { data: { resendId: result.resendId ?? null }, error: null }
+    return {
+      data: { transport: result.transport ?? 'resend', mailbox: result.mailbox ?? null },
+      error: null,
+    }
   } catch (e) {
     console.error('[sendCmaToLeadAction]', e)
     return { data: null, error: 'Send failed unexpectedly' }
-  }
-}
-
-export async function createCmaGmailDraftAction(
-  slug: string,
-): Promise<{ data: { draftId: string | null } | null; error: string | null }> {
-  try {
-    if (!(await requireAdmin())) return { data: null, error: 'Unauthorized' }
-    const result = await createCmaGmailDraftForLead(slug.trim().toLowerCase())
-    if (!result.ok) return { data: null, error: result.error ?? 'Gmail draft failed' }
-    return { data: { draftId: result.draftId ?? null }, error: null }
-  } catch (e) {
-    console.error('[createCmaGmailDraftAction]', e)
-    return { data: null, error: 'Gmail draft failed unexpectedly' }
   }
 }
 

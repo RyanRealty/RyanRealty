@@ -2,9 +2,10 @@
 
 /**
  * Review-page action rail: edit client info + price adjustment (rebuild),
- * approve draft → finalized, send to lead (tracked email), create a Gmail
- * draft, or delete. Sending requires the explicit button click plus a
- * confirmation dialog — nothing fires automatically.
+ * approve draft → finalized, send to lead, or delete. Send goes out through
+ * the CRM — a real email from the signing broker's own mailbox, tracked and
+ * logged on the contact's timeline. Sending requires the explicit button
+ * click plus a confirmation dialog — nothing fires automatically.
  */
 
 import { useState, useTransition } from 'react'
@@ -36,7 +37,6 @@ import {
   approveCmaAction,
   deleteCmaAction,
   sendCmaToLeadAction,
-  createCmaGmailDraftAction,
 } from '@/app/actions/cma-admin'
 
 export interface CmaReviewActionsProps {
@@ -108,20 +108,13 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
   function sendToLead() {
     setSendOpen(false)
     startTransition(async () => {
-      const { error } = await sendCmaToLeadAction(props.slug)
+      const { data, error } = await sendCmaToLeadAction(props.slug)
       if (error) toast.error(error)
       else {
-        toast.success(`Sent to ${clientEmail.trim()}. Opens and clicks will track on the contact.`)
+        const from = data?.transport === 'gmail' && data.mailbox ? ` from ${data.mailbox}` : ''
+        toast.success(`Sent to ${clientEmail.trim()}${from}. Opens, clicks, and replies land on the contact record.`)
         router.refresh()
       }
-    })
-  }
-
-  function gmailDraft() {
-    startTransition(async () => {
-      const { data, error } = await createCmaGmailDraftAction(props.slug)
-      if (error) toast.error(error)
-      else toast.success(`Gmail draft created${data?.draftId ? ` (${data.draftId})` : ''}. Review it in the broker's Drafts folder.`)
     })
   }
 
@@ -204,8 +197,9 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
             <DialogHeader>
               <DialogTitle>Send this CMA to the lead?</DialogTitle>
               <DialogDescription>
-                A tracked email goes to {clientEmail.trim() || 'the client'} with the PDF attached and a link
-                to the online report. Opens and clicks land on the contact record.
+                A tracked email goes to {clientEmail.trim() || 'the client'} through the CRM, sent from the
+                signing broker&apos;s own mailbox with the PDF attached and a link to the online report.
+                Opens, clicks, and replies land on the contact record.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -224,15 +218,6 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
         {!clientEmail.trim() ? (
           <p className="text-xs text-muted-foreground">Add a client email (and rebuild) to enable sending.</p>
         ) : null}
-
-        <Button
-          onClick={gmailDraft}
-          disabled={isPending || !isSendable}
-          variant="outline"
-          className="w-full min-h-11"
-        >
-          Create Gmail draft instead
-        </Button>
       </div>
 
       <Separator />

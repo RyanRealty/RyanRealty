@@ -112,6 +112,10 @@ const nextConfig: NextConfig = {
       // SAMEORIGIN keeps cross-origin embedding blocked while letting the
       // admin surface frame the document. (Same-key headers: last match wins.)
       { source: '/cma/:slug', headers: [{ key: 'X-Frame-Options', value: 'SAMEORIGIN' }] },
+      // Legacy file-based CMAs live as static assets under /cmas/<slug>/cma.html
+      // and /cma/[slug] 302-redirects there — the redirect target needs the
+      // same frame policy or the admin preview iframe goes blank for old CMAs.
+      { source: '/cmas/:path*', headers: [{ key: 'X-Frame-Options', value: 'SAMEORIGIN' }] },
       // SITE_SPEC §45-47 — aggressive edge caching on the public LP families.
       // The cookie-aware Header / Footer live inside <Suspense> islands; the
       // page shell + content (sourced from cached MVs) is safe to cache at
