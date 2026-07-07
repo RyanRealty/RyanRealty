@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.743.1 (2026-07-07)
+
+### Bug Fixes
+- fix(crons): run crm-market-report-send 4x daily to keep up with 9k monthly subscriptions
+
+---
+
+
 ## v1.743.0 (2026-07-07)
 
 ### Features
