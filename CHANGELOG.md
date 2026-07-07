@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.742.1 (2026-07-07)
+
+### Maintenance
+- docs(handoff): record saved-search subscription system ship (f04c5b46)
+
+---
+
+
 ## v1.742.0 (2026-07-07)
 
 ### Features
