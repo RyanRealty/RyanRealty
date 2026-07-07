@@ -58,6 +58,7 @@ import {
   type CrmSegment,
 } from '@/lib/crm/segment-ast'
 import { getSavedViewSegment } from '@/lib/data/crm/getSavedViewSegment'
+import { normalizeSavedSearchFilters } from '@/lib/search-filters'
 import { buildCrmPeopleQuery } from '@/lib/data/crm/buildCrmPeopleQuery'
 import { resolveAudienceIds } from '@/lib/crm/audience'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -295,6 +296,33 @@ export async function bulkSetReportSubscriptionAction(
     frequency: String(input?.frequency ?? 'monthly'),
     isActive,
   })
+}
+
+/**
+ * Bulk assign a saved search (listing alerts) to the cohort — with REAL filters
+ * (mirrors createSavedSearchForLead's broker-origin path). The handler upserts
+ * guest_search_alerts per contact keyed (email, filters_hash), stamped with
+ * crm_person_id so the alert email's open/click tracking attributes correctly.
+ * Not a send kind (a preference. The alert cron suppression-gates delivery).
+ */
+export async function bulkAssignSavedSearchAction(
+  selection: BulkActionSelection,
+  input: {
+    filters: Record<string, unknown>
+    name?: string
+    frequency?: string
+  },
+): Promise<BulkEnqueueResult> {
+  const filters = input?.filters && typeof input.filters === 'object' && !Array.isArray(input.filters)
+    ? input.filters
+    : {}
+  const normalized = normalizeSavedSearchFilters(filters)
+  if (Object.keys(normalized).length === 0) {
+    return { ok: false, error: 'Add at least one search filter first' }
+  }
+  const name = typeof input?.name === 'string' ? input.name.trim().slice(0, 120) : ''
+  const frequency = input?.frequency === 'weekly' ? 'weekly' : 'daily'
+  return enqueue('crm:assign-saved-search', selection, { filters: normalized, name, frequency })
 }
 
 /**

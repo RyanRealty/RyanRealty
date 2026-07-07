@@ -6,7 +6,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // double supports: select().in() (people read), select().eq() (crm_stages read),
 // update().eq(), insert(), upsert().
 
-type PersonRow = { id: number; tags?: string[]; stage?: string; assigned_broker?: string | null }
+type PersonRow = {
+  id: number
+  tags?: string[]
+  stage?: string
+  assigned_broker?: string | null
+  deleted?: boolean
+  fub_legacy_id?: number | null
+  emails?: Array<{ value?: string; isPrimary?: number | boolean }>
+}
 
 let people: PersonRow[] = []
 let stageRows: Array<{ key: string; label: string }> = []
@@ -87,6 +95,7 @@ import { removeTagHandler } from './remove-tag'
 import { setStageHandler, resolveStageLabel } from './set-stage'
 import { enrollWorkflowHandler, enrollSkipReasonKey } from './enroll-workflow'
 import { setReportSubscriptionHandler, sanitizeReportAreas } from './set-report-subscription'
+import { assignSavedSearchHandler, pickPersonEmail } from './assign-saved-search'
 import { isProtectedComplianceTag, listProtectedComplianceTags } from './protected-tags'
 
 const ctxOwner = { jobId: 1, actorEmail: 'matt@ryan-realty.com', brokerScope: null }
@@ -338,5 +347,61 @@ describe('setReportSubscriptionHandler', () => {
     expect(res.processed).toBe(1)
     expect(upserts[0].row.is_active).toBe(false)
     accountedFor(res, 1)
+  })
+})
+
+// ── assign-saved-search ──────────────────────────────────────────────────────
+
+describe('pickPersonEmail (pure)', () => {
+  it('prefers the primary email', () => {
+    expect(pickPersonEmail([{ value: 'b@x.com' }, { value: 'a@x.com', isPrimary: 1 }])).toBe('a@x.com')
+  })
+  it('falls back to the first email with a value', () => {
+    expect(pickPersonEmail([{ value: '' }, { value: 'B@X.com' }])).toBe('b@x.com')
+  })
+  it('returns null when nothing usable', () => {
+    expect(pickPersonEmail([])).toBeNull()
+    expect(pickPersonEmail(null)).toBeNull()
+    expect(pickPersonEmail([{ value: 'not-an-email' }])).toBeNull()
+  })
+})
+
+describe('assignSavedSearchHandler', () => {
+  it('refuses the whole chunk when normalized filters are empty', async () => {
+    const res = await assignSavedSearchHandler([1, 2], { filters: {}, name: 'X', frequency: 'daily' }, ctxOwner)
+    expect(res.skipped).toBe(2)
+    expect(res.breakdown?.refused_empty_filters).toBe(2)
+    expect(upserts).toHaveLength(0)
+    accountedFor(res, 2)
+  })
+  it('upserts a guest_search_alerts row per contact with crm_person_id + origin broker', async () => {
+    people = [
+      { id: 1, deleted: false, fub_legacy_id: 900, emails: [{ value: 'lead@x.com', isPrimary: 1 }] },
+      { id: 2, deleted: false, fub_legacy_id: null, emails: [] }, // no email -> skipped
+    ]
+    const res = await assignSavedSearchHandler(
+      [1, 2],
+      { filters: { city: 'Bend', minPrice: 500000 }, name: 'Bend 500k+', frequency: 'weekly' },
+      ctxOwner,
+    )
+    expect(res.processed).toBe(1)
+    expect(res.skipped).toBe(1)
+    expect(res.breakdown?.no_email).toBe(1)
+    accountedFor(res, 2)
+    const row = upserts.find((u) => u.table === 'guest_search_alerts')?.row
+    expect(row?.email).toBe('lead@x.com')
+    expect(row?.crm_person_id).toBe(1)
+    expect(row?.fub_person_id).toBe(900)
+    expect(row?.origin).toBe('broker')
+    expect(row?.assigned_by).toBe('matt@ryan-realty.com')
+    expect(row?.notification_frequency).toBe('weekly')
+    expect(inserts.filter((i) => i.table === 'crm_timeline')).toHaveLength(1)
+  })
+  it('skips deleted or missing contacts (counted)', async () => {
+    people = [{ id: 1, deleted: true, emails: [{ value: 'gone@x.com' }] }]
+    const res = await assignSavedSearchHandler([1, 99], { filters: { city: 'Bend' } }, ctxOwner)
+    expect(res.skipped).toBe(2)
+    expect(res.breakdown?.missing_or_deleted).toBe(2)
+    accountedFor(res, 2)
   })
 })

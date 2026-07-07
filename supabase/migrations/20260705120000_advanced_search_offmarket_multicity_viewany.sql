@@ -115,6 +115,7 @@ BEGIN
       l."StandardStatus",
       l."TotalLivingAreaSqFt",
       l.details,
+      l.year_built AS yb,
       count(*) OVER () AS fc
     FROM listings l
     WHERE
@@ -161,12 +162,17 @@ BEGIN
       AND (p_keywords IS NULL OR p_keywords = '' OR (l.details->>'PublicRemarks' IS NOT NULL AND l.details->>'PublicRemarks' ILIKE '%' || p_keywords || '%'))
       AND (p_has_open_house IS NULL OR NOT p_has_open_house OR (jsonb_typeof(l.details->'OpenHouses') = 'array' AND jsonb_array_length(l.details->'OpenHouses') > 0))
       AND (p_new_listings_days IS NULL OR (l."ModificationTimestamp" IS NOT NULL AND l."ModificationTimestamp" >= (now() - (p_new_listings_days || ' days')::interval)))
-      AND (p_year_built_min IS NULL OR (l.details->>'YearBuilt' IS NOT NULL AND (l.details->>'YearBuilt')::int >= p_year_built_min))
-      AND (p_year_built_max IS NULL OR (l.details->>'YearBuilt' IS NOT NULL AND (l.details->>'YearBuilt')::int <= p_year_built_max))
-      AND (p_lot_acres_min IS NULL OR (l.details->>'LotSizeAcres' IS NOT NULL AND (l.details->>'LotSizeAcres')::numeric >= p_lot_acres_min))
-      AND (p_lot_acres_max IS NULL OR (l.details->>'LotSizeAcres' IS NOT NULL AND (l.details->>'LotSizeAcres')::numeric <= p_lot_acres_max))
+      -- Numeric filters use the PROMOTED first-class columns (year_built,
+      -- lot_size_acres, garage_spaces, garage_yn) per the data-architecture
+      -- rule: filtering on details->> jsonb detoasts every candidate row and
+      -- times out at city scale, and the raw values carry non-numeric MLS
+      -- sentinels ('********') that crash a bare ::int cast.
+      AND (p_year_built_min IS NULL OR (l.year_built IS NOT NULL AND l.year_built >= p_year_built_min))
+      AND (p_year_built_max IS NULL OR (l.year_built IS NOT NULL AND l.year_built <= p_year_built_max))
+      AND (p_lot_acres_min IS NULL OR (l.lot_size_acres IS NOT NULL AND l.lot_size_acres >= p_lot_acres_min))
+      AND (p_lot_acres_max IS NULL OR (l.lot_size_acres IS NOT NULL AND l.lot_size_acres <= p_lot_acres_max))
       AND (p_property_subtype IS NULL OR p_property_subtype = '' OR (l.details->>'PropertySubType' IS NOT NULL AND l.details->>'PropertySubType' ILIKE '%' || p_property_subtype || '%'))
-      AND (p_garage_min IS NULL OR (l.details->>'GarageSpaces' IS NOT NULL AND (l.details->>'GarageSpaces')::int >= p_garage_min) OR (l.details->>'GarageYN' IS NOT NULL AND (l.details->>'GarageYN')::text ILIKE 'true%' AND p_garage_min <= 1))
+      AND (p_garage_min IS NULL OR (l.garage_spaces IS NOT NULL AND l.garage_spaces >= p_garage_min) OR (l.garage_yn IS TRUE AND p_garage_min <= 1))
       AND (p_has_pool IS NULL OR NOT p_has_pool OR (l.details->>'PoolYN' IS NOT NULL AND (l.details->>'PoolYN')::text ILIKE 'true%') OR (l.details->>'PoolFeatures' IS NOT NULL AND l.details->>'PoolFeatures' != ''))
       AND (p_has_view IS NULL OR NOT p_has_view OR (l.details->>'ViewYN' IS NOT NULL AND (l.details->>'ViewYN')::text ILIKE 'true%') OR (l.details->>'View' IS NOT NULL AND l.details->>'View' != ''))
       AND (p_has_waterfront IS NULL OR NOT p_has_waterfront OR (l.details->>'WaterfrontYN' IS NOT NULL AND (l.details->>'WaterfrontYN')::text ILIKE 'true%') OR (l.details->>'WaterfrontFeatures' IS NOT NULL AND l.details->>'WaterfrontFeatures' != ''))
@@ -189,8 +195,9 @@ BEGIN
       CASE WHEN p_sort = 'price_desc' THEN base."ListPrice" END DESC NULLS LAST,
       CASE WHEN p_sort = 'price_per_sqft_asc' THEN (CASE WHEN base."TotalLivingAreaSqFt" IS NOT NULL AND base."TotalLivingAreaSqFt" > 0 THEN base."ListPrice" / base."TotalLivingAreaSqFt" END) END ASC NULLS LAST,
       CASE WHEN p_sort = 'price_per_sqft_desc' THEN (CASE WHEN base."TotalLivingAreaSqFt" IS NOT NULL AND base."TotalLivingAreaSqFt" > 0 THEN base."ListPrice" / base."TotalLivingAreaSqFt" END) END DESC NULLS LAST,
-      CASE WHEN p_sort = 'year_newest' THEN (base.details->>'YearBuilt')::int END DESC NULLS LAST,
-      CASE WHEN p_sort = 'year_oldest' THEN (base.details->>'YearBuilt')::int END ASC NULLS LAST,
+      -- Sanity-bound the year sort: MLS sentinel years (9999, 0) sort last.
+      CASE WHEN p_sort = 'year_newest' AND base.yb BETWEEN 1700 AND 2100 THEN base.yb END DESC NULLS LAST,
+      CASE WHEN p_sort = 'year_oldest' AND base.yb BETWEEN 1700 AND 2100 THEN base.yb END ASC NULLS LAST,
       base."ListNumber" ASC
   )
   SELECT

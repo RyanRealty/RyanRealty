@@ -14,14 +14,6 @@ import { StatusPill } from '@/components/console/StatusPill'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 import { TableWithMobileCards, type TwmcColumn } from '@/components/admin/TableWithMobileCards'
 import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import NewsletterComposeForm from '../NewsletterComposeForm'
 import NewsletterDraftActions from '../NewsletterDraftActions'
 import BulkOneOffForm from '../BulkOneOffForm'
@@ -213,30 +205,31 @@ async function StatsView({ id, sentBy, sentAt, status }: { id: string; sentBy: s
 
       {brokerRows.length > 0 ? (
         <ConsoleSection title="By broker">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Broker</TableHead>
-                <TableHead className="text-right">Recipients</TableHead>
-                <TableHead className="text-right">Delivered</TableHead>
-                <TableHead className="text-right">Clicks</TableHead>
-                <TableHead className="text-right">CTR</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {brokerRows.map((b) => (
-                <TableRow key={b.broker}>
-                  <TableCell className="font-medium text-foreground">
-                    {b.broker.charAt(0).toUpperCase() + b.broker.slice(1)}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{b.recipients.toLocaleString('en-US')}</TableCell>
-                  <TableCell className="text-right tabular-nums">{b.delivered.toLocaleString('en-US')}</TableCell>
-                  <TableCell className="text-right tabular-nums">{b.clicks.toLocaleString('en-US')}</TableCell>
-                  <TableCell className="text-right tabular-nums">{pct(b.clickRate)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <TableWithMobileCards
+            rows={brokerRows}
+            columns={[
+              { key: 'broker', header: 'Broker', cell: (b) => <span className="font-medium text-foreground">{b.broker.charAt(0).toUpperCase() + b.broker.slice(1)}</span> },
+              { key: 'recipients', header: 'Recipients', className: 'text-right tabular-nums', cell: (b) => <span>{b.recipients.toLocaleString('en-US')}</span> },
+              { key: 'delivered', header: 'Delivered', className: 'text-right tabular-nums', cell: (b) => <span>{b.delivered.toLocaleString('en-US')}</span> },
+              { key: 'clicks', header: 'Clicks', className: 'text-right tabular-nums', cell: (b) => <span>{b.clicks.toLocaleString('en-US')}</span> },
+              { key: 'ctr', header: 'CTR', className: 'text-right tabular-nums', cell: (b) => <span>{pct(b.clickRate)}</span> },
+            ]}
+            getRowKey={(b) => b.broker}
+            empty={<p className="text-sm text-muted-foreground">No broker sends yet.</p>}
+            renderCard={(b) => (
+              <div className="rounded-lg border border-border bg-muted/40 p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-sm font-medium text-foreground">{b.broker.charAt(0).toUpperCase() + b.broker.slice(1)}</span>
+                  <span className="text-xs text-muted-foreground tabular-nums">{pct(b.clickRate)} CTR</span>
+                </div>
+                <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
+                  <span>{b.recipients.toLocaleString('en-US')} recipients</span>
+                  <span>{b.delivered.toLocaleString('en-US')} delivered</span>
+                  <span>{b.clicks.toLocaleString('en-US')} clicks</span>
+                </div>
+              </div>
+            )}
+          />
         </ConsoleSection>
       ) : null}
 

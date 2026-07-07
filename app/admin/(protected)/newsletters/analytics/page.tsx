@@ -9,6 +9,7 @@ import { KpiStrip } from '@/components/console/KpiStrip'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 import { TableWithMobileCards, type TwmcColumn } from '@/components/admin/TableWithMobileCards'
 import { BrokerFilterSelect } from './BrokerFilterSelect'
+import { formatDate } from '@/lib/format/date'
 
 export const metadata = { title: 'Newsletter analytics | Admin' }
 export const dynamic = 'force-dynamic'
@@ -18,7 +19,7 @@ function pct(n: number): string {
 }
 
 function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return formatDate(iso)
 }
 
 type WarmRow = { email: string; personId: number | null; clicks: number; lastAt: string }

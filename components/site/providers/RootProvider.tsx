@@ -4,6 +4,7 @@ import CookieConsentBanner from '@/components/CookieConsentBanner'
 import HideOnLP, { HideOnAdmin } from '@/components/layout/HideOnLP'
 import { AnalyticsScripts } from './AnalyticsScripts'
 import { IdentityBridges } from './IdentityBridges'
+import { Toaster } from '@/components/ui/sonner'
 
 /**
  * Site v2 root provider — wraps every page in the canonical chrome
@@ -32,6 +33,10 @@ export function RootProvider({ children }: { children: ReactNode }) {
       </HideOnAdmin>
       <IdentityBridges />
       {children}
+      {/* Global toast surface (sonner). Mounted once for every route so
+          toast.success/error calls render. Client components must never
+          mount their own local Toaster. */}
+      <Toaster position="bottom-right" />
       <HideOnLP>
         <CookieConsentBanner />
       </HideOnLP>

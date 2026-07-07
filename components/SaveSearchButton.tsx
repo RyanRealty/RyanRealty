@@ -4,6 +4,12 @@ import { useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { createSavedSearch } from '@/app/actions/saved-searches'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
+import { normalizeSavedSearchFilters } from '@/lib/search-filters'
+import {
+  SAVED_SEARCH_QUERY_KEYS,
+  SAVED_SEARCH_ARRAY_QUERY_KEYS,
+  readArrayParam,
+} from '@/components/search/SearchAlertCapture'
 import { trackEvent } from '@/lib/tracking'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -18,49 +24,41 @@ export default function SaveSearchButton({ user }: Props) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [company, setCompany] = useState('') // honeypot — humans never see this
+  const [company, setCompany] = useState('') // honeypot, humans never see this
   const [isPublic, setIsPublic] = useState(false)
   const [status, setStatus] = useState<'idle' | 'saving' | 'done' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
-  // Guests can save a search too. Instead of returning null (the old behavior —
+  // Guests can save a search too. Instead of returning null (the old behavior,
   // which made "Save this search" invisible to anyone not signed in, i.e. most
   // visitors), the guest branch captures an email and routes it through the same
   // FUB buyer-lead path the alert strip uses (audience:buyer). Save a search is
   // therefore ALWAYS reachable and always feeds the buyer funnel.
 
+  /**
+   * FULL filter capture: the path supplies city/subdivision, then EVERY
+   * canonical filter key (SAVED_SEARCH_QUERY_KEYS mirrors FILTER_KEYS in
+   * lib/search-filters.ts) present in the live query round-trips into the
+   * saved filters. normalizeSavedSearchFilters coerces strings to the typed
+   * shape (numbers, booleans, arrays) the alert cron and edit UI expect.
+   */
   function buildFilters(): Record<string, unknown> {
-    const filters: Record<string, unknown> = {}
+    const raw: Record<string, unknown> = {}
     const parts = pathname?.split('/').filter(Boolean) ?? []
     if (parts[0] === 'search' || parts[0] === 'homes-for-sale') {
-      if (parts[1]) filters.city = decodeURIComponent(parts[1]).trim()
-      if (parts[2]) filters.subdivision = decodeURIComponent(parts[2])
+      if (parts[1]) raw.city = decodeURIComponent(parts[1]).trim()
+      if (parts[2]) raw.subdivision = decodeURIComponent(parts[2])
     }
-    const minPrice = searchParams.get('minPrice')
-    const maxPrice = searchParams.get('maxPrice')
-    const beds = searchParams.get('beds')
-    const baths = searchParams.get('baths')
-    const minSqFt = searchParams.get('minSqFt')
-    const maxSqFt = searchParams.get('maxSqFt')
-    const propertyType = searchParams.get('propertyType')
-    const sort = searchParams.get('sort')
-    const statusFilter = searchParams.get('statusFilter')
-    const includeClosed = searchParams.get('includeClosed')
-    const view = searchParams.get('view')
-    const poly = searchParams.get('poly')
-    if (minPrice) filters.minPrice = Number(minPrice)
-    if (maxPrice) filters.maxPrice = Number(maxPrice)
-    if (beds) filters.beds = Number(beds)
-    if (baths) filters.baths = Number(baths)
-    if (minSqFt) filters.minSqFt = Number(minSqFt)
-    if (maxSqFt) filters.maxSqFt = Number(maxSqFt)
-    if (propertyType) filters.propertyType = propertyType
-    if (sort) filters.sort = sort
-    if (statusFilter) filters.statusFilter = statusFilter
-    if (includeClosed === '1') filters.includeClosed = true
-    if (view) filters.view = view
-    if (poly) filters.poly = poly
-    return filters
+    for (const key of SAVED_SEARCH_QUERY_KEYS) {
+      if (SAVED_SEARCH_ARRAY_QUERY_KEYS.has(key)) {
+        const values = readArrayParam(searchParams, key)
+        if (values.length > 0) raw[key] = values
+        continue
+      }
+      const value = searchParams.get(key)
+      if (value && value.trim()) raw[key] = value.trim()
+    }
+    return normalizeSavedSearchFilters(raw)
   }
 
   async function handleGuestSave(e: React.FormEvent) {
@@ -68,11 +66,15 @@ export default function SaveSearchButton({ user }: Props) {
     setStatus('saving')
     setErrorMsg('')
     const filters = buildFilters()
-    // Map the URL/path filters to the alert-capture string shape, then route
+    // Map the normalized filters to the alert-capture string shape, then route
     // through the existing spam-hardened FUB buyer-lead path (audience:buyer).
     const stringFilters: Record<string, string> = {}
     for (const [key, value] of Object.entries(filters)) {
       if (value == null) continue
+      if (Array.isArray(value)) {
+        stringFilters[key] = value.join(',')
+        continue
+      }
       stringFilters[key] = typeof value === 'boolean' ? (value ? '1' : '0') : String(value)
     }
     const res = await submitSearchAlertSignup({ email, filters: stringFilters, company })
@@ -149,7 +151,7 @@ export default function SaveSearchButton({ user }: Props) {
           {user ? (
             <form
               onSubmit={handleSave}
-              className="absolute right-0 top-full z-50 mt-1 w-72 rounded-lg border border-border bg-card p-4 shadow-md"
+              className="absolute left-0 top-full z-50 mt-1 w-72 rounded-lg border border-border bg-card p-4 shadow-md"
             >
               <Label className="block text-sm font-medium text-muted-foreground">Name this search</Label>
               <Input
@@ -192,11 +194,11 @@ export default function SaveSearchButton({ user }: Props) {
           ) : (
             <form
               onSubmit={handleGuestSave}
-              className="absolute right-0 top-full z-50 mt-1 w-72 rounded-lg border border-border bg-card p-4 shadow-md"
+              className="absolute left-0 top-full z-50 mt-1 w-72 rounded-lg border border-border bg-card p-4 shadow-md"
             >
               <p className="text-sm font-medium text-foreground">Save this search</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Add your email and we&apos;ll send new matches as they hit the market.
+                Add your email and we will send new matches as they hit the market.
               </p>
               {/* Honeypot: visually + a11y hidden, not tab-reachable. Bots fill it. */}
               <Input

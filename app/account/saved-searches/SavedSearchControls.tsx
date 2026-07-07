@@ -1,22 +1,22 @@
 'use client'
 
 /**
- * SavedSearchControls — the consumer "manage my saved searches" island
- * (CONTACT360 Phase 7.4). Matt's ask: "they need to be able to manage their
- * own saved searches." A signed-in user can pause/resume alerts, change the
- * email cadence, rename, and delete each saved search from /account, on mobile.
+ * SavedSearchControls, the consumer "manage my saved searches" island
+ * (CONTACT360 Phase 7.4 + saved-search master goal W3). A signed-in user can
+ * pause/resume alerts, change the email cadence, rename, edit the core filters
+ * (via EditSearchDialog in ./EditSearchDialog.tsx), and delete each saved
+ * search from /account, on mobile.
  *
  * Optimistic + transition shape mirrors components/admin/crm/MembershipToggles:
  * a control flips the UI immediately, fires the matching server action, and
  * reverts + surfaces the reason on failure. The server actions are the auth
- * chokepoint — every one scopes to the session user (`user_id = auth.uid()`),
+ * chokepoint (every one scopes to the session user via user_id = auth.uid()),
  * so this island only renders state and dispatches. Design-system components
  * only (@/components/ui/*), tokens only, cn() for class merges.
  */
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { homesForSalePath, listingsBrowsePath } from '@/lib/slug'
 import {
   pauseSavedSearch,
   resumeSavedSearch,
@@ -26,6 +26,7 @@ import {
 } from '@/app/actions/saved-searches'
 import type { SavedSearchRow } from '@/app/actions/saved-searches'
 import { SAVED_SEARCH_CADENCES, type SavedSearchCadence } from '@/lib/saved-search-cadence'
+import { buildSearchUrlFromFilters, getFiltersSummary } from '@/lib/search-filters'
 import { cn } from '@/lib/utils'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -50,36 +51,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { EditSearchDialog, type RowState } from './EditSearchDialog'
 
 type Props = { searches: SavedSearchRow[] }
 
 type ActionResult = { error: string | null }
-
-function buildSearchUrl(filters: Record<string, unknown>): string {
-  const city = typeof filters.city === 'string' ? filters.city.trim() : undefined
-  const subdivision = typeof filters.subdivision === 'string' ? filters.subdivision : undefined
-  const params = new URLSearchParams()
-  if (typeof filters.minPrice === 'number') params.set('minPrice', String(filters.minPrice))
-  if (typeof filters.maxPrice === 'number') params.set('maxPrice', String(filters.maxPrice))
-  if (typeof filters.beds === 'number') params.set('beds', String(filters.beds))
-  if (typeof filters.baths === 'number') params.set('baths', String(filters.baths))
-  if (typeof filters.minSqFt === 'number') params.set('minSqFt', String(filters.minSqFt))
-  if (typeof filters.maxSqFt === 'number') params.set('maxSqFt', String(filters.maxSqFt))
-  if (typeof filters.propertyType === 'string') params.set('propertyType', filters.propertyType)
-  if (typeof filters.sort === 'string') params.set('sort', filters.sort)
-  if (typeof filters.statusFilter === 'string') params.set('statusFilter', filters.statusFilter)
-  if (filters.includeClosed === true) params.set('includeClosed', '1')
-  const q = params.toString()
-  if (city && subdivision) return `${homesForSalePath(city, subdivision)}${q ? `?${q}` : ''}`
-  if (city) return `${homesForSalePath(city)}${q ? `?${q}` : ''}`
-  return `${listingsBrowsePath()}${q ? `?${q}` : ''}`
-}
-
-type RowState = {
-  name: string
-  paused: boolean
-  cadence: SavedSearchCadence
-}
 
 function SavedSearchCard({
   search,
@@ -92,11 +68,12 @@ function SavedSearchCard({
     name: search.name || 'Untitled search',
     paused: search.is_paused,
     cadence: search.notification_frequency,
+    filters: search.filters ?? {},
   })
   const [editing, setEditing] = useState(false)
   const [draftName, setDraftName] = useState(state.name)
   const [pending, startTransition] = useTransition()
-  const [note, setNote] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null)
+  const [note, setNote] = useState<{ tone: 'ok' | 'err', text: string } | null>(null)
 
   function dispatch(apply: () => void, revert: () => void, action: () => Promise<ActionResult>) {
     apply()
@@ -167,10 +144,11 @@ function SavedSearchCard({
 
   const cadenceId = `cadence-${search.id}`
   const alertsId = `alerts-${search.id}`
+  const filtersSummary = getFiltersSummary(state.filters)
 
   return (
     <Card className="p-4">
-      {/* ── Name + deep link ── */}
+      {/* Name + deep link */}
       {editing ? (
         <div className="flex flex-col gap-2">
           <Input
@@ -209,8 +187,9 @@ function SavedSearchCard({
         </div>
       ) : (
         <div className="flex items-start justify-between gap-3">
-          <Link href={buildSearchUrl(search.filters)} className="min-w-0 flex-1">
+          <Link href={buildSearchUrlFromFilters(state.filters)} className="min-w-0 flex-1">
             <span className="block break-words text-sm font-medium text-foreground">{state.name}</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">{filtersSummary}</span>
             <span className="mt-0.5 block text-xs text-muted-foreground">
               {typeof search.result_count === 'number' ? (
                 <span className="tabular-nums">{search.result_count} matches</span>
@@ -219,20 +198,31 @@ function SavedSearchCard({
               )}
             </span>
           </Link>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={startRename}
-            disabled={pending}
-            className="shrink-0 text-muted-foreground hover:text-foreground"
-          >
-            Rename
-          </Button>
+          <div className="flex shrink-0 items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={startRename}
+              disabled={pending}
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+            >
+              Rename
+            </Button>
+            <EditSearchDialog
+              search={search}
+              state={state}
+              onSaved={(next) => {
+                setState(next)
+                setNote(null)
+                onChanged()
+              }}
+            />
+          </div>
         </div>
       )}
 
-      {/* ── Alert controls ── */}
+      {/* Alert controls */}
       <div className="mt-4 flex flex-col gap-4 border-t border-border pt-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex items-center justify-between gap-3 sm:justify-start">
           <div className="min-w-0">
@@ -269,7 +259,7 @@ function SavedSearchCard({
         </div>
       </div>
 
-      {/* ── Delete + error ── */}
+      {/* Delete + error */}
       <div className="mt-4 flex items-center justify-between gap-3">
         {note ? (
           <p

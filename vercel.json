@@ -122,7 +122,7 @@
     },
     {
       "path": "/api/cron/saved-search-alerts",
-      "schedule": "0 14 * * *"
+      "schedule": "0 2,8,14,20 * * *"
     },
     {
       "path": "/api/cron/performance-pull-48h",

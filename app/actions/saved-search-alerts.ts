@@ -3,13 +3,19 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendEmail } from '@/lib/resend'
 import { getCachedSearchListings } from '@/app/actions/search-cache'
+import type { ListingTileRow } from '@/app/actions/listings'
 import { listingDetailPath } from '@/lib/slug'
-import { buildSearchUrlFromFilters } from '@/lib/search-filters'
+import { buildSearchUrlFromFilters, getFiltersSummary } from '@/lib/search-filters'
 import { getActiveGuestSearchAlerts, markGuestAlertNotified } from '@/lib/data/leads/guestSearchAlerts'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { isSuppressedByEmail } from '@/lib/crm/suppressions'
-import { attributeUrl } from '@/lib/crm/attributed-links'
-import { BRAND } from '@/lib/brand/contact'
+import { attributeOutbound } from '@/lib/crm/attributed-links'
+import { buildListingAlertEmail, type ListingAlertListing } from '@/lib/crm/listing-alert-email'
+import {
+  resolvePersonForTracking,
+  getGuestAlertPersonLinks,
+  linkAlertRowToPerson,
+} from '@/lib/data/crm/resolvePersonForTracking'
 import { findPersonByEmail } from '@/lib/followupboss'
 
 type SavedSearchAlertRow = {
@@ -21,6 +27,7 @@ type SavedSearchAlertRow = {
   is_paused: boolean | null
   last_notified_at: string | null
   unsubscribe_token: string | null
+  crm_person_id: number | null
 }
 
 type AlertRunSummary = {
@@ -29,6 +36,15 @@ type AlertRunSummary = {
   skipped: number
   errors: Array<{ searchId: string; error: string }>
 }
+
+/** Max listing cards in one alert email. Overflow becomes a "+N more" link. */
+const MAX_LISTINGS_PER_EMAIL = 12
+
+/**
+ * Default broker slug when the recipient has no assigned_broker — same desk
+ * default as lib/crm/market-report-send.ts DEFAULT_BROKER.
+ */
+const DEFAULT_BROKER = 'matt'
 
 function normalizeFrequency(raw: string | null | undefined): 'instant' | 'daily' | 'weekly' {
   const value = (raw ?? '').trim().toLowerCase()
@@ -48,21 +64,6 @@ function shouldSendByFrequency(
   if (freq === 'instant') return elapsedMs >= 6 * 60 * 60 * 1000
   if (freq === 'weekly') return elapsedMs >= 7 * 24 * 60 * 60 * 1000
   return elapsedMs >= 24 * 60 * 60 * 1000
-}
-
-function parseNumber(value: unknown): number | undefined {
-  if (typeof value === 'number' && Number.isFinite(value)) return value
-  if (typeof value === 'string' && value.trim()) {
-    const parsed = Number(value)
-    if (Number.isFinite(parsed)) return parsed
-  }
-  return undefined
-}
-
-function parseString(value: unknown): string | undefined {
-  if (typeof value !== 'string') return undefined
-  const trimmed = value.trim()
-  return trimmed || undefined
 }
 
 function buildListingUrl(row: {
@@ -92,28 +93,35 @@ function buildListingUrl(row: {
 }
 
 /**
- * Append email-click tracking to an alert-email browse link:
- *  - ?_fuid=<id> so the site's FubIdentityBridge identifies the recipient to
- *    their FUB contact (logs "Visited Website" + sets the 90-day cookie; the
- *    visit tracker then logs "Viewed Property: <address>" on that person).
- *  - utm_source/medium/campaign so GA4 attributes the session to the alert
- *    email as a traffic source (visible as Email on the scoreboard).
- * So a click shows up on the lead's FUB timeline AND in GA4 as email traffic.
- * Unsubscribe links stay plain (no tracking).
+ * Plain UTM stamping so GA4 attributes the session to the alert email as a
+ * traffic source. Broker attribution (?agent=) and ?_fuid= are NOT added here —
+ * attributeOutbound stamps them on the final HTML, and stamping twice would
+ * double-encode. Unsubscribe links never pass through this.
  */
-function appendTracking(url: string, fubPersonId: number | null): string {
+function withUtm(url: string): string {
   const params = new URLSearchParams({
     utm_source: 'ryan-realty',
     utm_medium: 'email',
     utm_campaign: 'listing-alerts',
   })
-  if (fubPersonId && fubPersonId > 0) params.set('_fuid', String(fubPersonId))
-  const withUtm = `${url}${url.includes('?') ? '&' : '?'}${params.toString()}`
-  // Broker attribution on every alert link (Matt's rule: saved-search links carry
-  // ?agent=<broker> so the broker sees the click). All leads route to Matt today
-  // (canonical-lead-tagger). If per-contact broker assignment is later adopted,
-  // resolve the recipient's assigned broker here instead of the default desk.
-  return attributeUrl(withUtm, 'matt', fubPersonId)
+  return `${url}${url.includes('?') ? '&' : '?'}${params.toString()}`
+}
+
+/** Map a search-cache listing row to the email builder's card shape. */
+function toAlertListing(row: ListingTileRow, siteUrl: string): ListingAlertListing {
+  const path = buildListingUrl(row)
+  const address = [row.StreetNumber, row.StreetName].filter(Boolean).join(' ').trim()
+  return {
+    address: address || 'New listing',
+    city: row.City,
+    price: row.ListPrice != null ? Number(row.ListPrice) : null,
+    beds: row.BedroomsTotal,
+    baths: row.BathroomsTotal,
+    sqft: row.TotalLivingAreaSqFt ?? null,
+    photoUrl: row.PhotoURL,
+    detailUrl: withUtm(path ? `${siteUrl}${path}` : `${siteUrl}/homes-for-sale`),
+    status: row.StandardStatus ?? null,
+  }
 }
 
 export async function runSavedSearchAlerts(options?: {
@@ -124,11 +132,15 @@ export async function runSavedSearchAlerts(options?: {
   const maxSearches = Math.min(500, Math.max(1, options?.maxSearches ?? 120))
   const dryRun = options?.dryRun === true
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const runDate = now.toISOString().slice(0, 10)
 
   const supabase = createServiceClient()
+  // Paused rows are excluded in the DB (null counts as not paused) — the cron
+  // never spends its scan budget on rows that could not send.
   const { data: searchesRaw, error: searchesError } = await supabase
     .from('saved_searches')
-    .select('id, user_id, name, filters, notification_frequency, is_paused, last_notified_at, unsubscribe_token')
+    .select('id, user_id, name, filters, notification_frequency, is_paused, last_notified_at, unsubscribe_token, crm_person_id')
+    .or('is_paused.is.null,is_paused.eq.false')
     .order('created_at', { ascending: false })
     .limit(maxSearches)
   if (searchesError) {
@@ -145,10 +157,6 @@ export async function runSavedSearchAlerts(options?: {
 
   for (const search of searches) {
     try {
-      if (search.is_paused) {
-        summary.skipped += 1
-        continue
-      }
       if (!shouldSendByFrequency(search, now)) {
         summary.skipped += 1
         continue
@@ -211,22 +219,49 @@ export async function runSavedSearchAlerts(options?: {
         continue
       }
 
-      const topRows = fresh.slice(0, 3)
-      const bodyLines = topRows.map((row, index) => {
-        const path = buildListingUrl(row)
-        const url = appendTracking(path ? `${siteUrl}${path}` : `${siteUrl}/homes-for-sale`, fuid)
-        const address = [row.StreetNumber, row.StreetName, row.City].filter(Boolean).join(' ')
-        const price = row.ListPrice != null ? `$${Math.round(Number(row.ListPrice)).toLocaleString()}` : 'Price on request'
-        return `${index + 1}. ${address || 'Listing'}, ${price}\n${url}`
+      // Open/click tracking identity: the row's crm_person_id when present,
+      // else a case-insensitive email match (then write the link back so the
+      // next send is pre-linked). Unresolved sends untracked by design.
+      const person = await resolvePersonForTracking({
+        crmPersonId: search.crm_person_id,
+        email: toEmail,
       })
+      if (!dryRun && person.personId && person.resolvedBy === 'email') {
+        await linkAlertRowToPerson('saved_searches', search.id, person.personId)
+      }
 
+      const topRows = fresh.slice(0, MAX_LISTINGS_PER_EMAIL)
       const label = search.name?.trim() || 'your saved search'
-      const searchUrl = appendTracking(`${siteUrl}${buildSearchUrlFromFilters(filters)}`, fuid)
+      const browseAllUrl = withUtm(`${siteUrl}${buildSearchUrlFromFilters(filters)}`)
       const unsubscribeUrl = `${siteUrl}/alerts/unsubscribe?token=${encodeURIComponent(search.unsubscribe_token ?? '')}`
       // RFC 8058 one-click target for the List-Unsubscribe header (route handler
       // POST), separate from the page link above so a provider's one-click POST
       // gets a 2xx instead of the page Server Action's 403.
       const oneClickUrl = `${siteUrl}/api/alerts/unsubscribe?token=${encodeURIComponent(search.unsubscribe_token ?? '')}`
+
+      const built = buildListingAlertEmail({
+        searchName: label,
+        filtersSummary: getFiltersSummary(filters),
+        listings: topRows.map((row) => toAlertListing(row, siteUrl)),
+        totalNewCount: fresh.length,
+        browseAllUrl,
+        unsubscribeUrl,
+        manageUrl: `${siteUrl}/account/saved-searches`,
+      })
+
+      // Broker attribution (?agent= / ?_fuid=) + open/click instrumentation on
+      // the FINAL HTML — exactly once, after the body is fully built. When no
+      // person resolved, attributeOutbound applies attribution only (no
+      // tracking wrapper) by design. Unsubscribe links stay unwrapped.
+      const brokerSlug = person.assignedBroker ?? DEFAULT_BROKER
+      const finalHtml = attributeOutbound(built.html, {
+        brokerSlug,
+        personId: person.personId,
+        fubPersonId: person.fubPersonId ?? fuid,
+        emailKey: `listing-alert:${search.id}:${runDate}`,
+        label: built.subject,
+        broker: brokerSlug,
+      })
 
       if (!dryRun) {
         // Final suppression gate in the send scope (fails closed). Redundant
@@ -237,22 +272,12 @@ export async function runSavedSearchAlerts(options?: {
         }
         const emailResult = await sendEmail({
           to: toEmail,
-          subject: `Listings for ${label}`,
+          subject: built.subject,
           headers: search.unsubscribe_token
             ? { 'List-Unsubscribe': `<${oneClickUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
             : undefined,
-          text: [
-            `Here are listings matching ${label}.`,
-            '',
-            ...bodyLines,
-            '',
-            `See all matches: ${searchUrl}`,
-            '',
-            `Manage your alerts: ${siteUrl}/account/saved-searches`,
-            `Stop these alerts: ${unsubscribeUrl}`,
-            '',
-            `Ryan Realty, ${BRAND.mailingAddress}`,
-          ].join('\n'),
+          html: finalHtml,
+          text: built.text,
         })
         if (emailResult.error) {
           summary.errors.push({ searchId: search.id, error: emailResult.error })
@@ -296,9 +321,14 @@ export async function runGuestSearchAlerts(options?: {
   const maxAlerts = Math.min(500, Math.max(1, options?.maxAlerts ?? 120))
   const dryRun = options?.dryRun === true
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const runDate = now.toISOString().slice(0, 10)
 
   const rows = await getActiveGuestSearchAlerts(maxAlerts)
   const summary: AlertRunSummary = { scanned: rows.length, sent: 0, skipped: 0, errors: [] }
+
+  // The DAL's cron projection predates the crm_person_id bridge column — fetch
+  // the linkage for this batch in one DAL query.
+  const personLinkByRowId = await getGuestAlertPersonLinks(rows.map((r) => r.id))
 
   for (const row of rows) {
     try {
@@ -339,24 +369,42 @@ export async function runGuestSearchAlerts(options?: {
         continue
       }
 
-      const topRows = fresh.slice(0, 3)
-      // Carry the recipient's FUB id on every browse link so a click logs
-      // "Visited Website" + "Viewed Property" on their FUB timeline and ties the
-      // session back to them.
-      const fuid = row.fub_person_id
-      const bodyLines = topRows.map((listing, index) => {
-        const path = buildListingUrl(listing)
-        const url = appendTracking(path ? `${siteUrl}${path}` : `${siteUrl}/homes-for-sale`, fuid)
-        const address = [listing.StreetNumber, listing.StreetName, listing.City].filter(Boolean).join(' ')
-        const price = listing.ListPrice != null ? `$${Math.round(Number(listing.ListPrice)).toLocaleString()}` : 'Price on request'
-        return `${index + 1}. ${address || 'Listing'}, ${price}\n${url}`
+      // Open/click tracking identity: the row's crm_person_id when present,
+      // else a case-insensitive email match with write-back. Unresolved sends
+      // untracked (attribution only) by design.
+      const person = await resolvePersonForTracking({
+        crmPersonId: personLinkByRowId.get(row.id) ?? null,
+        email: row.email,
       })
+      if (!dryRun && person.personId && person.resolvedBy === 'email') {
+        await linkAlertRowToPerson('guest_search_alerts', row.id, person.personId)
+      }
 
+      const topRows = fresh.slice(0, MAX_LISTINGS_PER_EMAIL)
       const label = row.name?.trim() || 'your search'
-      const searchUrl = appendTracking(`${siteUrl}${buildSearchUrlFromFilters(filters)}`, fuid)
+      const browseAllUrl = withUtm(`${siteUrl}${buildSearchUrlFromFilters(filters)}`)
       const unsubscribeUrl = `${siteUrl}/alerts/unsubscribe?token=${encodeURIComponent(row.unsubscribe_token)}`
       // One-click List-Unsubscribe target (see runSavedSearchAlerts note above).
       const oneClickUrl = `${siteUrl}/api/alerts/unsubscribe?token=${encodeURIComponent(row.unsubscribe_token)}`
+
+      const built = buildListingAlertEmail({
+        searchName: label,
+        filtersSummary: getFiltersSummary(filters),
+        listings: topRows.map((listing) => toAlertListing(listing, siteUrl)),
+        totalNewCount: fresh.length,
+        browseAllUrl,
+        unsubscribeUrl,
+      })
+
+      const brokerSlug = person.assignedBroker ?? DEFAULT_BROKER
+      const finalHtml = attributeOutbound(built.html, {
+        brokerSlug,
+        personId: person.personId,
+        fubPersonId: person.fubPersonId ?? row.fub_person_id,
+        emailKey: `listing-alert:${row.id}:${runDate}`,
+        label: built.subject,
+        broker: brokerSlug,
+      })
 
       if (!dryRun) {
         // Suppression gate in the send scope (fails closed) — alongside the
@@ -367,23 +415,13 @@ export async function runGuestSearchAlerts(options?: {
         }
         const emailResult = await sendEmail({
           to: row.email,
-          subject: `Listings for ${label}`,
+          subject: built.subject,
           headers: {
             'List-Unsubscribe': `<${oneClickUrl}>`,
             'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
           },
-          text: [
-            `Here are listings matching ${label}.`,
-            '',
-            ...bodyLines,
-            '',
-            `See all matches: ${searchUrl}`,
-            '',
-            'You are getting this because you asked for listing alerts at ryan-realty.com.',
-            `Stop these alerts: ${unsubscribeUrl}`,
-            '',
-            `Ryan Realty, ${BRAND.mailingAddress}`,
-          ].join('\n'),
+          html: finalHtml,
+          text: built.text,
         })
         if (emailResult.error) {
           summary.errors.push({ searchId: row.id, error: emailResult.error })

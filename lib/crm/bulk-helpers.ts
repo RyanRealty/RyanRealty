@@ -38,6 +38,7 @@ export type BulkKind =
   | 'crm:set-stage'
   | 'crm:enroll-workflow'
   | 'crm:set-report-subscription'
+  | 'crm:assign-saved-search'
   | 'crm:delete'
   | 'crm:set-source'
   | 'crm:set-timeframe'

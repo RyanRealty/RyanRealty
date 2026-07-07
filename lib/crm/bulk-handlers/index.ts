@@ -22,6 +22,7 @@
  *   crm:set-stage              { stage }        validates against live crm_stages
  *   crm:enroll-workflow        { sequenceId }   per-id manualEnrollPerson
  *   crm:set-report-subscription{ areas, frequency, isActive }
+ *   crm:assign-saved-search    { filters, name, frequency }  refuses empty filters
  *
  * This module exports nothing — its only job is the registration side effect.
  */
@@ -33,6 +34,7 @@ import { removeTagHandler } from './remove-tag'
 import { setStageHandler } from './set-stage'
 import { enrollWorkflowHandler } from './enroll-workflow'
 import { setReportSubscriptionHandler } from './set-report-subscription'
+import { assignSavedSearchHandler } from './assign-saved-search'
 import { registerEmailCohortHandler } from './email-cohort'
 import { deleteContactsHandler } from './delete'
 import {
@@ -46,6 +48,7 @@ registerBulkHandler('crm:remove-tag', removeTagHandler)
 registerBulkHandler('crm:set-stage', setStageHandler)
 registerBulkHandler('crm:enroll-workflow', enrollWorkflowHandler)
 registerBulkHandler('crm:set-report-subscription', setReportSubscriptionHandler)
+registerBulkHandler('crm:assign-saved-search', assignSavedSearchHandler)
 registerBulkHandler('crm:delete', deleteContactsHandler)
 // §14.3 mass actions (05-people-list spec): single-column updates + collaborators.
 registerBulkHandler('crm:set-source', setSourceHandler)

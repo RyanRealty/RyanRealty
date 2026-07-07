@@ -23,10 +23,11 @@
  * After enqueue the bar mounts BulkProgress to poll the job to completion. The
  * chunked worker cron drains the job; this bar never loops over thousands inline.
  *
- * The two legacy bulk actions (add-to-newsletter, assign-saved-search) live here
- * too so there is one bulk surface. They run on the explicit id set only (they
- * are not part of the suppression-gated bulk-job framework — newsletter
- * subscription has its own double-opt-in path).
+ * The one legacy bulk action (add-to-newsletter) lives here too so there is one
+ * bulk surface. It runs on the explicit id set only (it is not part of the
+ * suppression-gated bulk-job framework — newsletter subscription has its own
+ * double-opt-in path). Assign-saved-search graduated to the bulk-job framework
+ * (kind 'crm:assign-saved-search') with a real filter builder — no more {} filters.
  */
 
 import { forwardRef, useImperativeHandle, useState, useTransition } from 'react'
@@ -40,6 +41,7 @@ import {
   bulkSetStageAction,
   bulkEnrollWorkflowAction,
   bulkSetReportSubscriptionAction,
+  bulkAssignSavedSearchAction,
   bulkEmailCohortAction,
   bulkPreflightCount,
   bulkDeleteAction,
@@ -57,10 +59,9 @@ import type {
   BulkKind,
   BulkEnqueueResult,
 } from '@/lib/crm/bulk-helpers'
-import {
-  adminBulkAssignNewsletterAction,
-  adminBulkAssignSavedSearchAction,
-} from '@/app/actions/newsletter'
+import { adminBulkAssignNewsletterAction } from '@/app/actions/newsletter'
+import { getFiltersSummary } from '@/lib/search-filters'
+import { PROPERTY_TYPES } from '@/lib/property-type'
 import type { LegacyFilters } from '@/lib/crm/segment-ast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -155,6 +156,7 @@ const ACTION_KIND: Partial<Record<ActionId, BulkKind>> = {
   set_stage: 'crm:set-stage',
   enroll_workflow: 'crm:enroll-workflow',
   set_report_subscription: 'crm:set-report-subscription',
+  saved_search: 'crm:assign-saved-search',
   email_cohort: 'email-cohort',
   delete_contacts: 'crm:delete',
   set_source: 'crm:set-source',
@@ -228,6 +230,13 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
   const [reportFrequency, setReportFrequency] = useState('monthly')
   const [segment, setSegment] = useState('general')
   const [ssName, setSsName] = useState('')
+  const [ssFrequency, setSsFrequency] = useState('daily')
+  const [ssCity, setSsCity] = useState('')
+  const [ssMinPrice, setSsMinPrice] = useState('')
+  const [ssMaxPrice, setSsMaxPrice] = useState('')
+  const [ssBeds, setSsBeds] = useState('any')
+  const [ssBaths, setSsBaths] = useState('any')
+  const [ssPropertyType, setSsPropertyType] = useState('any')
   // §14.3 mass-action form state
   const [source, setSource] = useState('')
   const [timeframe, setTimeframe] = useState('')
@@ -263,6 +272,13 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
     setReportFrequency('monthly'); setSegment('general'); setSsName('')
     setSource(''); setTimeframe(''); setLender(''); setPondId(''); setCollabBroker('')
     setMergeSurvivorId('')
+    setSsFrequency('daily')
+    setSsCity('')
+    setSsMinPrice('')
+    setSsMaxPrice('')
+    setSsBeds('any')
+    setSsBaths('any')
+    setSsPropertyType('any')
   }
 
   const closeDialog = () => {
@@ -336,6 +352,22 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
       if (!res.ok) { setError(res.error); return }
       setPreflight({ total: res.total, skip: res.suppressedEstimate })
     })
+  }
+
+  // The filters object for Assign a saved search — EXACT FILTER_KEYS names
+  // from lib/search-filters.ts (city, minPrice, maxPrice, beds, baths,
+  // propertyType) so the alert cron + search URL builders read them natively.
+  const buildSavedSearchFilters = (): Record<string, unknown> => {
+    const filters: Record<string, unknown> = {}
+    if (ssCity.trim()) filters.city = ssCity.trim()
+    const minPrice = Number(ssMinPrice)
+    if (ssMinPrice.trim() && Number.isFinite(minPrice) && minPrice > 0) filters.minPrice = minPrice
+    const maxPrice = Number(ssMaxPrice)
+    if (ssMaxPrice.trim() && Number.isFinite(maxPrice) && maxPrice > 0) filters.maxPrice = maxPrice
+    if (ssBeds !== 'any') filters.beds = Number(ssBeds)
+    if (ssBaths !== 'any') filters.baths = Number(ssBaths)
+    if (ssPropertyType !== 'any') filters.propertyType = ssPropertyType
+    return filters
   }
 
   const onEnqueued = (res: BulkEnqueueResult) => {
@@ -413,14 +445,16 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
           return
         }
         case 'saved_search': {
-          const name = ssName.trim()
-          if (!name) { setError('Name the saved search'); return }
-          const res = await adminBulkAssignSavedSearchAction(selectedIds, name, {})
-          if (!res.ok) { setError(res.error ?? 'Could not assign the saved search'); return }
-          setError(null)
-          setLegacyResult({ assigned: res.assigned ?? 0, skipped: res.skipped ?? 0 })
-          onClear()
-          startTransition(() => router.refresh())
+          const filters = buildSavedSearchFilters()
+          if (Object.keys(filters).length === 0) {
+            setError('Add at least one search filter first')
+            return
+          }
+          onEnqueued(await bulkAssignSavedSearchAction(sel, {
+            filters,
+            name: ssName.trim() || undefined,
+            frequency: ssFrequency,
+          }))
           return
         }
         case 'delete_contacts': {
@@ -485,7 +519,7 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
   }
 
   const actingCount = scope === 'ids' ? idCount : matchingTotal
-  const isLegacy = open === 'newsletter' || open === 'saved_search' || open === 'merge_people'
+  const isLegacy = open === 'newsletter' || open === 'merge_people'
   const isDelete = open === 'delete_contacts'
 
   return (
@@ -618,7 +652,7 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => openAction('set_report_subscription')}>Market report subscription</DropdownMenuItem>
                 <DropdownMenuItem disabled={!hasIds} onSelect={() => openAction('newsletter')}>Add to newsletter</DropdownMenuItem>
-                <DropdownMenuItem disabled={!hasIds} onSelect={() => openAction('saved_search')}>Assign a saved search</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => openAction('saved_search')}>Assign a saved search</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -751,10 +785,83 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
             ) : null}
 
             {open === 'saved_search' ? (
-              <div>
-                <Label htmlFor="bulk-ss-name" className="mb-1.5 block text-xs text-muted-foreground">Search name</Label>
-                <Input id="bulk-ss-name" value={ssName} onChange={(e) => setSsName(e.target.value)} placeholder="Bend under 600k" className="h-10 md:h-9" />
-              </div>
+              <>
+                <div>
+                  <Label htmlFor="bulk-ss-name" className="mb-1.5 block text-xs text-muted-foreground">Search name (optional)</Label>
+                  <Input id="bulk-ss-name" value={ssName} onChange={(e) => setSsName(e.target.value)} placeholder="Bend under 600k" className="h-10 md:h-9" />
+                </div>
+                <FormSelect
+                  label="Alert frequency"
+                  value={ssFrequency}
+                  onChange={setSsFrequency}
+                  placeholder="Frequency"
+                  options={[{ key: 'daily', label: 'Daily' }, { key: 'weekly', label: 'Weekly' }]}
+                />
+                <div>
+                  <Label htmlFor="bulk-ss-city" className="mb-1.5 block text-xs text-muted-foreground">City</Label>
+                  <Input id="bulk-ss-city" value={ssCity} onChange={(e) => setSsCity(e.target.value)} placeholder="Bend" className="h-10 md:h-9" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="bulk-ss-min-price" className="mb-1.5 block text-xs text-muted-foreground">Min price</Label>
+                    <Input
+                      id="bulk-ss-min-price" type="number" inputMode="numeric" min={0}
+                      value={ssMinPrice} onChange={(e) => setSsMinPrice(e.target.value)}
+                      placeholder="500000" className="h-10 md:h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bulk-ss-max-price" className="mb-1.5 block text-xs text-muted-foreground">Max price</Label>
+                    <Input
+                      id="bulk-ss-max-price" type="number" inputMode="numeric" min={0}
+                      value={ssMaxPrice} onChange={(e) => setSsMaxPrice(e.target.value)}
+                      placeholder="900000" className="h-10 md:h-9"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <FormSelect
+                    label="Min beds"
+                    value={ssBeds}
+                    onChange={setSsBeds}
+                    placeholder="Any"
+                    options={[
+                      { key: 'any', label: 'Any' },
+                      { key: '1', label: '1+' },
+                      { key: '2', label: '2+' },
+                      { key: '3', label: '3+' },
+                      { key: '4', label: '4+' },
+                      { key: '5', label: '5+' },
+                    ]}
+                  />
+                  <FormSelect
+                    label="Min baths"
+                    value={ssBaths}
+                    onChange={setSsBaths}
+                    placeholder="Any"
+                    options={[
+                      { key: 'any', label: 'Any' },
+                      { key: '1', label: '1+' },
+                      { key: '2', label: '2+' },
+                      { key: '3', label: '3+' },
+                      { key: '4', label: '4+' },
+                    ]}
+                  />
+                </div>
+                <FormSelect
+                  label="Property type"
+                  value={ssPropertyType}
+                  onChange={setSsPropertyType}
+                  placeholder="All types"
+                  options={[
+                    { key: 'any', label: 'All types' },
+                    ...PROPERTY_TYPES.filter((t) => t.value !== '').map((t) => ({ key: t.value, label: t.label })),
+                  ]}
+                />
+                <p className="text-xs text-muted-foreground" aria-live="polite">
+                  Alerts will match {getFiltersSummary(buildSavedSearchFilters())}
+                </p>
+              </>
             ) : null}
 
             {open === 'set_source' ? (
@@ -802,7 +909,7 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
             {open === 'merge_people' && !legacyResult ? (
               <div>
                 <Label className="mb-1.5 block text-xs text-muted-foreground">
-                  Surviving contact (the {idCount - 1} other {idCount === 2 ? 'contact keeps' : 'contacts keep'} nothing — timeline, tasks and workflows move to the survivor, duplicates are archived to Trash)
+                  Surviving contact (the {idCount - 1} other {idCount === 2 ? 'contact keeps' : 'contacts keep'} nothing. Timeline, tasks and workflows move to the survivor, duplicates are archived to Trash)
                 </Label>
                 <Select value={mergeSurvivorId} onValueChange={setMergeSurvivorId}>
                   <SelectTrigger className="h-10 md:h-9">

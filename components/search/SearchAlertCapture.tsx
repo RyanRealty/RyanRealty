@@ -14,16 +14,69 @@ import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
  * ANONYMOUS visitors on /search (signed-in users already have save-search).
  *
  * The URL is the source of truth for the current search on /search, so we read
- * the live filters from useSearchParams() — the captured alert matches exactly
+ * the live filters from useSearchParams(). The captured alert matches exactly
  * what the visitor is looking at, even after they change a filter client-side.
  */
 
-const FILTER_PARAM_KEYS = [
-  'city', 'subdivision', 'minPrice', 'maxPrice', 'beds', 'baths', 'minSqFt', 'maxSqFt',
-  'propertyType', 'keywords', 'postalCode', 'hasPool', 'hasView', 'hasWaterfront',
-  'hasFireplace', 'hasGolfCourse', 'garageMin', 'lotAcresMin', 'lotAcresMax',
-  'yearBuiltMin', 'yearBuiltMax',
+/**
+ * Every saved-search filter key that can live in the URL query. Mirrors
+ * FILTER_KEYS in lib/search-filters.ts (the canonical filter model) so a saved
+ * alert captures the FULL search state, not a subset. Shared with
+ * components/SaveSearchButton.tsx so the two capture paths can never drift.
+ */
+export const SAVED_SEARCH_QUERY_KEYS = [
+  'city',
+  'subdivision',
+  'minPrice',
+  'maxPrice',
+  'beds',
+  'baths',
+  'minSqFt',
+  'maxSqFt',
+  'maxBeds',
+  'maxBaths',
+  'yearBuiltMin',
+  'yearBuiltMax',
+  'lotAcresMin',
+  'lotAcresMax',
+  'postalCode',
+  'propertyType',
+  'propertySubType',
+  'statusFilter',
+  'keywords',
+  'hasOpenHouse',
+  'garageMin',
+  'hasPool',
+  'hasView',
+  'hasWaterfront',
+  'hasFireplace',
+  'hasGolfCourse',
+  'viewContains',
+  'cities',
+  'viewContainsAny',
+  'offMarketWithinDays',
+  'excludeSoldSince',
+  'newListingsDays',
+  'sort',
+  'includeClosed',
+  'view',
+  'poly',
 ] as const
+
+/** The multi-value keys, sent as repeated params or comma-separated in one param. */
+export const SAVED_SEARCH_ARRAY_QUERY_KEYS: ReadonlySet<string> = new Set([
+  'cities',
+  'viewContainsAny',
+])
+
+/** Read every multi-value entry for a key (repeated params + comma-separated). */
+export function readArrayParam(params: URLSearchParams, key: string): string[] {
+  return params
+    .getAll(key)
+    .flatMap((entry) => entry.split(','))
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+}
 
 export function SearchAlertCapture({
   signedIn,
@@ -40,7 +93,7 @@ export function SearchAlertCapture({
 }) {
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
-  const [company, setCompany] = useState('') // honeypot — humans never see this
+  const [company, setCompany] = useState('') // honeypot, humans never see this
   const [state, setState] = useState<'idle' | 'done' | 'error'>('idle')
   const [error, setError] = useState('')
   const [dismissed, setDismissed] = useState(false)
@@ -57,12 +110,20 @@ export function SearchAlertCapture({
         if (value) out[key] = value
       }
     }
-    for (const key of FILTER_PARAM_KEYS) {
+    // FULL capture: every canonical filter key present in the live query round-
+    // trips into the alert, so the saved filters mirror lib/search-filters.ts
+    // FILTER_KEYS instead of a hand-picked subset.
+    for (const key of SAVED_SEARCH_QUERY_KEYS) {
+      if (SAVED_SEARCH_ARRAY_QUERY_KEYS.has(key)) {
+        const values = readArrayParam(searchParams, key)
+        if (values.length > 0) out[key] = values.join(',')
+        continue
+      }
       const value = searchParams.get(key)
-      if (value) out[key] = value
+      if (value && value.trim()) out[key] = value.trim()
     }
     // On bare /search the server defaults the visible results to a city the URL
-    // omits — capture it so the alert matches what the visitor is looking at.
+    // omits. Capture it so the alert matches what the visitor is looking at.
     if (!out.city && defaultCity) out.city = defaultCity
     if (!out.subdivision && defaultSubdivision) out.subdivision = defaultSubdivision
     return out
@@ -70,7 +131,7 @@ export function SearchAlertCapture({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, defaultCity, defaultSubdivision, defaultFiltersSnapshot])
 
-  // Signed-in users already have the save-search affordance — this is for guests.
+  // Signed-in users already have the save-search affordance. This is for guests.
   if (signedIn || dismissed) return null
 
   if (state === 'done') {
@@ -78,7 +139,7 @@ export function SearchAlertCapture({
       <div className="w-full border-b border-border bg-card">
         <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-2.5 text-sm text-foreground sm:px-6">
           <BellAlertIcon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-          <p>You&apos;re set. We&apos;ll email you when a match comes up.</p>
+          <p>You are set. We will email you when a match comes up.</p>
         </div>
       </div>
     )
@@ -110,7 +171,7 @@ export function SearchAlertCapture({
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground">Get new listings first</p>
             <p className="line-clamp-2 text-xs text-muted-foreground">
-              We&apos;ll email you new matches for {target}.
+              We will email you new matches for {target}.
             </p>
           </div>
         </div>
@@ -124,8 +185,8 @@ export function SearchAlertCapture({
             aria-hidden="true"
             value={company}
             onChange={(event) => setCompany(event.target.value)}
-            // P0-6: h-px w-px so tailwind-merge drops the Input base h-8/w-full —
-            // bare sr-only loses the width war to w-full (absolute 390px input
+            // P0-6: h-px w-px so tailwind-merge drops the Input base h-8/w-full.
+            // Bare sr-only loses the width war to w-full (absolute 390px input
             // widened the document and caused horizontal page scroll at 390px).
             className="sr-only h-px w-px"
           />

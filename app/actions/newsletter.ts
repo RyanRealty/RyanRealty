@@ -14,6 +14,7 @@ import { getActiveSubscribersForSend } from '@/lib/data/newsletter'
 import { getAssignedBrokersByPersonId, getSubscribersByEmails, bulkActivateSubscribers } from '@/lib/data/newsletter/queue'
 import { sendEmail } from '@/lib/resend'
 import { createSavedSearchForLead, updateSavedSearch, deleteSavedSearchById } from '@/lib/data'
+import { normalizeSavedSearchFilters, getSavedSearchHash, getFilterNameFallback } from '@/lib/search-filters'
 import {
   subscribeToNewsletter,
   setSubscriberStatus,
@@ -211,7 +212,13 @@ function stableHash(filters: Record<string, unknown>): string {
   return `broker:${sorted}`
 }
 
-/** Assign ONE lead a broker-created saved search (origin='broker'). */
+/**
+ * Assign ONE lead a broker-created saved search (origin='broker'). Filters are
+ * normalized through the canonical model (lib/search-filters) and an EMPTY
+ * filter set is refused — a saved search with no filters would email the whole
+ * MLS feed. Hash comes from getSavedSearchHash so a broker-assigned search
+ * dedupes against the same search saved by the lead themselves.
+ */
 export async function adminAssignSavedSearchAction(formData: FormData): Promise<{ ok: boolean; error?: string }> {
   const gate = await requireAdmin()
   if (!gate.ok) return { ok: false, error: 'unauthorized' }
@@ -219,10 +226,13 @@ export async function adminAssignSavedSearchAction(formData: FormData): Promise<
   if (!email) return { ok: false, error: 'no_email' }
   const fubPersonId = Number(formData.get('fubPersonId')) || null
   if (await leadOutOfScope({ email, fubLegacyId: fubPersonId })) return { ok: false, error: 'unauthorized' }
-  const name = String(formData.get('name') ?? 'Saved search').trim() || 'Saved search'
-  let filters: Record<string, unknown> = {}
-  try { filters = JSON.parse(String(formData.get('filters') ?? '{}')) } catch { filters = {} }
-  return createSavedSearchForLead({ email, fubPersonId, name, filters, filtersHash: stableHash(filters), origin: 'broker', assignedBy: gate.email, frequency: 'weekly' })
+  let raw: Record<string, unknown> = {}
+  try { raw = JSON.parse(String(formData.get('filters') ?? '{}')) } catch { raw = {} }
+  const filters = normalizeSavedSearchFilters(raw)
+  if (Object.keys(filters).length === 0) return { ok: false, error: 'no_filters' }
+  const name = String(formData.get('name') ?? '').trim() || getFilterNameFallback(filters)
+  const frequency = String(formData.get('frequency') ?? '') === 'daily' ? 'daily' as const : 'weekly' as const
+  return createSavedSearchForLead({ email, fubPersonId, name, filters, filtersHash: getSavedSearchHash(filters), origin: 'broker', assignedBy: gate.email, frequency })
 }
 
 /** Edit a saved search (rename + change parameters) — used on the lead page. */

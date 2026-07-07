@@ -160,6 +160,7 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
     item('/admin/crm/settings/templates', 'Templates', 'file-text'),
     ...has(people, '/admin/email/compose'),
     ...has(marketing, '/admin/newsletters'),
+    item('/admin/crm/subscriptions', 'Subscriptions', 'mail'),
     ...has(listings, '/admin/cmas'),
     ...(isSuperuser ? [item('/admin/crm/settings', 'CRM settings', 'gauge')] : []),
   ]

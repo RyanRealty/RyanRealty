@@ -123,6 +123,13 @@ Everything in `docs/plans/` is registered here. A new file in that directory wit
 | `TWILIO_FEATURE_RESEARCH_2026-06-29.md` | research record — Twilio feature coverage analysis (archive) |
 | `CONTACT_HEADER_REDESIGN_2026-06-30.md` | open input — contact header redesign spec, feed into Experience loop |
 | `GLOBAL_SKILLS_REGISTRY.md` | tool index (live reference) |
+| `SAVED_SEARCH_MASTER_GOAL.md` | **live** — saved-search + market-report subscription system: end-state definition, W1-W5 workstream plan, email open/click tracking requirement, ship gates |
+| `WESTSIDE_HOMEOWNER_ENRICHMENT_PLAN.md` | executed — westside homeowner enrichment plan (record) |
+| `HANDOFF-newsletter.md`, `HANDOFF-content-engine.md` | session-continuity records |
+| `HANDOFF_CRM_STREAMLINE_2026-07-03.md` | session-continuity record |
+| `CRM_STAGES_AUTOMATION_2026-07-03.md`, `CRM_TAG_SMARTLIST_STREAMLINE_PLAN_2026-07-03.md`, `CRM_STREAMLINE_PLAN_V2_2026-07-03.md`, `CRM_STREAMLINE_AUDIT_PROMPT.md` | CRM streamline plans 2026-07-03 (record) |
+| `CRM_STREAMLINE_AUDIT_FINDINGS_2026-07-03.md`, `CRM_STREAMLINE_V2_AUDIT_FINDINGS_2026-07-03.md`, `CRM_STREAMLINE_EXECUTION_LOG_2026-07-03.md` | CRM streamline audit + execution records 2026-07-03 (record) |
+| `EXPIRED_WORKFLOW_AUDIT_2026-07-03.md` | executed — expired-listing workflow audit (record) |
 | `task-registry.json` | live registry (non-md, exempt) |
 
 ## Changelog

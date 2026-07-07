@@ -1,5 +1,5 @@
 import 'server-only'
-import { unstable_cache } from 'next/cache'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { createServiceClient } from '@/lib/supabase/service'
 
 /**
@@ -10,8 +10,10 @@ import { createServiceClient } from '@/lib/supabase/service'
  * not a tag.
  *
  * DAL boundary (G1): the raw .from('boundaries') read lives here in lib/data/.
- * Cached (neighborhoods change rarely); fails soft to [] so the filter degrades
- * to "no neighborhoods" rather than crashing the page.
+ * Cached (neighborhoods change rarely). A transient DB error THROWS so the
+ * empty result is never cached (poison-null); makeResilientCached retries once
+ * uncached, then degrades to [] so the filter shows "no neighborhoods" rather
+ * than crashing the page.
  */
 export type CrmNeighborhoodOption = { key: string; label: string }
 
@@ -30,10 +32,8 @@ async function query(): Promise<CrmNeighborhoodOption[]> {
     .from('boundaries')
     .select('geo_slug')
     .eq('geo_type', 'neighborhood')
-  if (error || !data) {
-    if (error) console.error('[getCrmNeighborhoodOptions]', error.message)
-    return []
-  }
+  if (error) throw new Error(`[getCrmNeighborhoodOptions] ${error.message}`)
+  if (!data) return []
   const seen = new Set<string>()
   const out: CrmNeighborhoodOption[] = []
   for (const r of data as Array<{ geo_slug: string | null }>) {
@@ -45,9 +45,9 @@ async function query(): Promise<CrmNeighborhoodOption[]> {
   return out.sort((a, b) => a.label.localeCompare(b.label))
 }
 
-export function getCrmNeighborhoodOptions(): Promise<CrmNeighborhoodOption[]> {
-  return unstable_cache(query, ['crm-neighborhood-options'], {
-    revalidate: 3600,
-    tags: ['crm-neighborhoods'],
-  })()
-}
+export const getCrmNeighborhoodOptions = makeResilientCached(
+  query,
+  ['crm-neighborhood-options-v2'],
+  { revalidate: 3600, tags: ['crm-neighborhoods'] },
+  [] as CrmNeighborhoodOption[],
+)

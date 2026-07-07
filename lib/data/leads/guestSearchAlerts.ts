@@ -10,6 +10,39 @@ import { createServiceClient } from '@/lib/supabase/service'
 
 const TABLE = 'guest_search_alerts'
 
+/**
+ * Resolve the crm_people.id for an alert row (fub legacy id link first, then
+ * email match). Every alert row should be born tracking-ready — the send path
+ * needs a crm_person_id for open/click attribution.
+ */
+async function resolveCrmPersonId(
+  supabase: ReturnType<typeof createServiceClient>,
+  args: { email?: string | null; fubPersonId?: number | null },
+): Promise<number | null> {
+  if (args.fubPersonId) {
+    const { data } = await supabase
+      .from('crm_people')
+      .select('id')
+      .eq('fub_legacy_id', args.fubPersonId)
+      .eq('deleted', false)
+      .limit(1)
+      .maybeSingle()
+    if (data?.id) return data.id as number
+  }
+  const email = (args.email ?? '').trim().toLowerCase()
+  if (email) {
+    const { data } = await supabase
+      .from('crm_people')
+      .select('id')
+      .contains('emails', JSON.stringify([{ value: email }]))
+      .eq('deleted', false)
+      .limit(1)
+      .maybeSingle()
+    if (data?.id) return data.id as number
+  }
+  return null
+}
+
 export type GuestSearchAlertInput = {
   /** Already lowercased + trimmed by the caller (the unique index is on the raw column). */
   email: string
@@ -42,6 +75,8 @@ export type GuestSearchAlertRow = {
 export async function createSavedSearchForLead(input: {
   email: string
   fubPersonId?: number | null
+  /** crm_people.id — required for the alert email's open/click tracking. Resolved from fub id or email when omitted. */
+  crmPersonId?: number | null
   name: string
   filters: Record<string, unknown>
   filtersHash: string
@@ -50,13 +85,21 @@ export async function createSavedSearchForLead(input: {
   frequency?: 'daily' | 'weekly'
 }): Promise<{ ok: boolean; error?: string }> {
   const supabase = createServiceClient()
+  const email = input.email.trim().toLowerCase()
+
+  // Resolve the CRM person when the caller didn't supply one, so the row is
+  // born tracking-ready (fub id link first, then email match).
+  const crmPersonId = input.crmPersonId
+    ?? await resolveCrmPersonId(supabase, { email, fubPersonId: input.fubPersonId })
+
   const { error } = await supabase.from(TABLE).upsert(
     {
-      email: input.email.trim().toLowerCase(),
+      email,
       filters: input.filters,
       filters_hash: input.filtersHash,
       name: input.name,
       fub_person_id: input.fubPersonId ?? null,
+      crm_person_id: crmPersonId,
       origin: input.origin,
       assigned_by: input.assignedBy ?? null,
       source: input.origin === 'broker' ? 'broker-assigned' : 'system',
@@ -111,6 +154,10 @@ export async function getGuestSearchAlertsForLead(args: {
  */
 export async function upsertGuestSearchAlert(input: GuestSearchAlertInput): Promise<{ ok: boolean; error?: string }> {
   const supabase = createServiceClient()
+  const crmPersonId = await resolveCrmPersonId(supabase, {
+    email: input.email,
+    fubPersonId: input.fubPersonId,
+  })
   const { error } = await supabase.from(TABLE).upsert(
     {
       email: input.email,
@@ -118,6 +165,7 @@ export async function upsertGuestSearchAlert(input: GuestSearchAlertInput): Prom
       filters_hash: input.filtersHash,
       name: input.name,
       fub_person_id: input.fubPersonId ?? null,
+      crm_person_id: crmPersonId,
       is_active: true,
       updated_at: new Date().toISOString(),
     },
