@@ -4,7 +4,11 @@ import { runSavedSearchAlerts, runGuestSearchAlerts } from '@/app/actions/saved-
 /**
  * Cron endpoint to send saved-search alert emails.
  * Protect with Authorization: Bearer CRON_SECRET (same pattern as other cron routes).
+ *
+ * 300s budget: the guest scan can walk hundreds of rows (neighborhood-default
+ * rollout) even though sends per run are capped in runGuestSearchAlerts.
  */
+export const maxDuration = 300
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET?.trim()
   const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
@@ -22,7 +26,11 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url)
-  const maxSearches = Math.min(500, Math.max(1, Number(url.searchParams.get('limit') ?? '120') || 120))
+  // 600-row default scan budget: large enough that the weekly-cadence
+  // neighborhood-default cohort (thousands of guest rows, mostly not-due
+  // skips against a cached search result) fully cycles every day across the
+  // 4x-daily cron. Emails per run stay capped inside runGuestSearchAlerts.
+  const maxSearches = Math.min(1000, Math.max(1, Number(url.searchParams.get('limit') ?? '600') || 600))
   const dryRun = url.searchParams.get('dryRun') === '1'
 
   // Both alert paths are now CAN-SPAM compliant (postal footer + one-click token

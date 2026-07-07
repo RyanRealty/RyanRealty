@@ -1,5 +1,6 @@
 import type { AdvancedListingsFilters } from '@/app/actions/listings'
 import { homesForSalePath, listingsBrowsePath } from '@/lib/slug'
+import { hrefForNeighborhoodSlug, labelForNeighborhoodSlug } from '@/lib/neighborhood-areas'
 
 export type SavedSearchFilters = Record<string, unknown>
 
@@ -8,6 +9,7 @@ type Primitive = string | number | boolean
 const FILTER_KEYS = [
   'city',
   'subdivision',
+  'neighborhoodSlug',
   'minPrice',
   'maxPrice',
   'beds',
@@ -84,7 +86,7 @@ export function normalizeSavedSearchFilters(input: SavedSearchFilters): SavedSea
       continue
     }
 
-    if (key === 'city' || key === 'subdivision' || key === 'postalCode' || key === 'propertyType' || key === 'propertySubType' || key === 'statusFilter' || key === 'keywords' || key === 'viewContains' || key === 'sort' || key === 'view' || key === 'poly') {
+    if (key === 'city' || key === 'subdivision' || key === 'neighborhoodSlug' || key === 'postalCode' || key === 'propertyType' || key === 'propertySubType' || key === 'statusFilter' || key === 'keywords' || key === 'viewContains' || key === 'sort' || key === 'view' || key === 'poly') {
       const parsed = asTrimmedString(value)
       if (parsed) out[key] = parsed
       continue
@@ -151,6 +153,7 @@ export function savedFiltersToAdvanced(filters: SavedSearchFilters): AdvancedLis
   return {
     city: asTrimmedString(normalized.city),
     subdivision: asTrimmedString(normalized.subdivision),
+    neighborhoodSlug: asTrimmedString(normalized.neighborhoodSlug),
     minPrice: asNumber(normalized.minPrice),
     maxPrice: asNumber(normalized.maxPrice),
     minBeds: asNumber(normalized.beds),
@@ -190,10 +193,18 @@ export function buildSearchUrlFromFilters(filters: SavedSearchFilters): string {
   const normalized = normalizeSavedSearchFilters(filters)
   const city = asTrimmedString(normalized.city)
   const subdivision = asTrimmedString(normalized.subdivision)
+  const neighborhoodSlug = asTrimmedString(normalized.neighborhoodSlug)
+
+  // Neighborhood-scoped searches land on the neighborhood's canonical page
+  // (Bend district or resort community) — the richest "browse all" surface.
+  if (neighborhoodSlug && !city && !subdivision) {
+    return hrefForNeighborhoodSlug(neighborhoodSlug)
+  }
+
   const params = new URLSearchParams()
 
   for (const [key, value] of Object.entries(normalized)) {
-    if (key === 'city' || key === 'subdivision') continue
+    if (key === 'city' || key === 'subdivision' || key === 'neighborhoodSlug') continue
     if (typeof value === 'boolean') {
       if (value === true) params.set(key, key === 'includeClosed' ? '1' : '1')
       continue
@@ -217,6 +228,7 @@ export function getFiltersSummary(filters: SavedSearchFilters): string {
   const minPrice = asNumber(normalized.minPrice)
   const maxPrice = asNumber(normalized.maxPrice)
   const city = asTrimmedString(normalized.city)
+  const neighborhoodSlug = asTrimmedString(normalized.neighborhoodSlug)
   const status = asTrimmedString(normalized.statusFilter)
 
   if (beds && beds > 0) parts.push(`${beds}+ Beds`)
@@ -226,6 +238,7 @@ export function getFiltersSummary(filters: SavedSearchFilters): string {
     const max = maxPrice ? `$${Math.round(maxPrice / 1000)}K` : ''
     parts.push([min, max].filter(Boolean).join('-') || 'Any price')
   }
+  if (neighborhoodSlug) parts.push(labelForNeighborhoodSlug(neighborhoodSlug))
   if (city) parts.push(city)
   if (status) parts.push(status)
 
@@ -236,9 +249,11 @@ export function getFilterNameFallback(filters: SavedSearchFilters): string {
   const normalized = normalizeSavedSearchFilters(filters)
   const city = asTrimmedString(normalized.city)
   const subdivision = asTrimmedString(normalized.subdivision)
+  const neighborhoodSlug = asTrimmedString(normalized.neighborhoodSlug)
   const minPrice = asNumber(normalized.minPrice)
   const maxPrice = asNumber(normalized.maxPrice)
 
+  if (neighborhoodSlug) return `${labelForNeighborhoodSlug(neighborhoodSlug)} homes`
   if (city && subdivision) return `${subdivision} in ${city}`
   if (city && minPrice && maxPrice) return `${city} $${Math.round(minPrice / 1000)}K-$${Math.round(maxPrice / 1000)}K`
   if (city) return `${city} homes`

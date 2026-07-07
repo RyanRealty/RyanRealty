@@ -559,6 +559,14 @@ export type AdvancedSort =
 
 /** Extended filters for advanced search (RPC). When any of these are set, use getListingsAdvanced. */
 export type AdvancedListingsFilters = Omit<ListingsFilters, 'sort'> & {
+  /**
+   * Canonical neighborhood boundary slug (boundaries.geo_slug,
+   * geo_type='neighborhood'): Bend districts ('bend-river-west') and resort
+   * communities ('tetherow'). Matched via listing_boundary_xref_mv in the RPC —
+   * on-market listings only. Distinct from getListings' `neighborhood` option,
+   * which takes the boundary_neighborhood LABEL and covers Bend districts only.
+   */
+  neighborhoodSlug?: string
   maxBeds?: number
   maxBaths?: number
   maxSqFt?: number
@@ -744,6 +752,7 @@ export async function getListings(options: {
  */
 function hasAdvancedFilters(opts: Record<string, unknown>): boolean {
   return (
+    (opts.neighborhoodSlug != null && String(opts.neighborhoodSlug).trim() !== '') ||
     opts.maxBeds != null ||
     opts.maxBaths != null ||
     (opts.postalCode != null && String(opts.postalCode).trim() !== '') ||
@@ -804,6 +813,7 @@ export async function getListingsAdvanced(options: {
     !!kw &&
     (statusFilter === 'active' || statusFilter === 'active_and_pending') &&
     !options.subdivision?.trim() &&
+    !options.neighborhoodSlug?.trim() &&
     (options.minPrice ?? 0) <= 0 && (options.maxPrice ?? 0) <= 0 &&
     (options.minBeds ?? 0) <= 0 && (options.maxBeds ?? 0) <= 0 &&
     (options.minBaths ?? 0) <= 0 && (options.maxBaths ?? 0) <= 0 &&
@@ -879,6 +889,7 @@ export async function getListingsAdvanced(options: {
     p_off_market_within_days: options.offMarketWithinDays != null && options.offMarketWithinDays > 0 ? options.offMarketWithinDays : null,
     p_exclude_sold_since: options.excludeSoldSince === true ? true : null,
     p_new_listings_days: options.newListingsDays != null && options.newListingsDays > 0 ? options.newListingsDays : null,
+    p_neighborhood_slug: options.neighborhoodSlug?.trim() || null,
     p_sort: options.sort ?? 'newest',
     p_limit: limit,
     p_offset: offset,

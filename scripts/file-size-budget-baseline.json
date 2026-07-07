@@ -7,7 +7,7 @@
     "app/actions/dashboard.ts": 910,
     "app/actions/lead-capture.ts": 610,
     "app/actions/listing-detail.ts": 1238,
-    "app/actions/listings.ts": 2687,
+    "app/actions/listings.ts": 2698,
     "app/actions/sync-full-cron.ts": 654,
     "app/actions/sync-spark.ts": 1661,
     "app/actions/tc-envelopes.ts": 761,

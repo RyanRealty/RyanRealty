@@ -183,12 +183,16 @@ export async function upsertGuestSearchAlert(input: GuestSearchAlertInput): Prom
 /** Active guest alerts for the cron to email. Newest first, capped. */
 export async function getActiveGuestSearchAlerts(limit: number): Promise<GuestSearchAlertRow[]> {
   const supabase = createServiceClient()
+  // Most-overdue first (never-notified rows lead) so a large active set —
+  // e.g. the neighborhood-default rollout — drains fairly across cron runs
+  // instead of newest-created rows starving the rest.
   const { data, error } = await supabase
     .from(TABLE)
     .select('id, email, filters, name, notification_frequency, is_active, last_notified_at, unsubscribe_token, fub_person_id')
     .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(Math.min(500, Math.max(1, limit)))
+    .order('last_notified_at', { ascending: true, nullsFirst: true })
+    .order('created_at', { ascending: true })
+    .limit(Math.min(1000, Math.max(1, limit)))
   if (error) return []
   return (data ?? []) as GuestSearchAlertRow[]
 }

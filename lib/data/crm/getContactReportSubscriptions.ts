@@ -14,6 +14,7 @@
  */
 import { createServiceClient } from '@/lib/supabase/service'
 import resortCommunities from '@/data/resort-communities.json'
+import { BEND_DISTRICTS } from '@/lib/neighborhood-areas'
 
 export type ReportFrequency = 'weekly' | 'monthly' | 'quarterly'
 
@@ -81,6 +82,13 @@ export function buildMarketReportAreas(): MarketReportArea[] {
     const label = typeof c.label === 'string' ? c.label : null
     if (!slug || !label || bySlug.has(slug)) continue
     bySlug.set(slug, { slug, label })
+  }
+
+  // Bend neighborhood districts (bend-* boundary slugs) — every CRM
+  // neighborhood list gets a subscribable market-report area (2026-07-06).
+  // market_stats_cache carries geo_type='neighborhood' rows for each.
+  for (const d of BEND_DISTRICTS) {
+    if (!bySlug.has(d.slug)) bySlug.set(d.slug, { slug: d.slug, label: d.label })
   }
 
   return [...bySlug.values()].sort((a, b) => a.label.localeCompare(b.label))

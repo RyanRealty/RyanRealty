@@ -54,6 +54,7 @@
 import { getCityMarketDetail } from '@/lib/data/market/getCityMarketDetail'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 import { buildMarketReportAreas } from '@/lib/data/crm/getContactReportSubscriptions'
+import { hrefForNeighborhoodSlug } from '@/lib/neighborhood-areas'
 import { marketVerdict } from '@/lib/market/classify'
 import type { MoSVerdict } from '@/lib/data/types/market'
 
@@ -160,7 +161,10 @@ function labelForSlug(slug: string): string {
 }
 
 function hrefForArea(slug: string, geoType: 'city' | 'neighborhood'): string {
-  return geoType === 'city' ? `/cities/${slug}` : `/communities/${slug}`
+  if (geoType === 'city') return `/cities/${slug}`
+  // Neighborhood slugs split by kind: Bend districts ('bend-river-west') live
+  // under /cities/bend/<district>; resort communities under /communities/<slug>.
+  return hrefForNeighborhoodSlug(slug)
 }
 
 function toNum(v: unknown): number | null {

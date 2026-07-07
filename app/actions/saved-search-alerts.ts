@@ -41,6 +41,14 @@ type AlertRunSummary = {
 const MAX_LISTINGS_PER_EMAIL = 12
 
 /**
+ * Max EMAILS one guest-alert run may send (scans are cheap — the neighborhood
+ * defaults collapse to a few dozen cached filter sets — but each send is a
+ * Resend call). Bounds the first-send wave of a mass rollout to a smooth
+ * drip instead of a single burst that hurts deliverability.
+ */
+const MAX_GUEST_SENDS_PER_RUN = 200
+
+/**
  * Default broker slug when the recipient has no assigned_broker — same desk
  * default as lib/crm/market-report-send.ts DEFAULT_BROKER.
  */
@@ -318,7 +326,7 @@ export async function runGuestSearchAlerts(options?: {
   dryRun?: boolean
 }): Promise<AlertRunSummary> {
   const now = new Date()
-  const maxAlerts = Math.min(500, Math.max(1, options?.maxAlerts ?? 120))
+  const maxAlerts = Math.min(1000, Math.max(1, options?.maxAlerts ?? 120))
   const dryRun = options?.dryRun === true
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const runDate = now.toISOString().slice(0, 10)
@@ -332,15 +340,30 @@ export async function runGuestSearchAlerts(options?: {
 
   for (const row of rows) {
     try {
+      // Send budget spent — stop scanning; the next cron run resumes with the
+      // most-overdue rows (getActiveGuestSearchAlerts orders by last_notified_at).
+      if (summary.sent >= MAX_GUEST_SENDS_PER_RUN) break
+
       if (!shouldSendByFrequency(row, now)) {
         summary.skipped += 1
         continue
       }
 
+      // Every due row that we DECIDE not to email (no new listings, hard-stop,
+      // suppression) still advances last_notified_at. The scan is ordered
+      // most-overdue-first, so a due row that never advances would sit at the
+      // front of every run and starve the rest of the queue. Advancing on an
+      // empty check is also semantically right: "checked through <now>, nothing
+      // new" — the next check only looks for listings after this stamp.
+      const advanceCursor = async () => {
+        if (!dryRun) await markGuestAlertNotified(row.id, now.toISOString())
+        summary.skipped += 1
+      }
+
       // Compliance: skip anyone hard-stopped in FUB (do_not_email, unsubscribed,
       // bounced, realtor). The guest opted in, but a later FUB opt-out wins.
       if (row.fub_person_id && (await isHardStopped(row.fub_person_id))) {
-        summary.skipped += 1
+        await advanceCursor()
         continue
       }
 
@@ -350,7 +373,7 @@ export async function runGuestSearchAlerts(options?: {
       const filters = (row.filters ?? {}) as Record<string, unknown>
       const results = await getCachedSearchListings(filters, 1, 15)
       if (!results.listings.length) {
-        summary.skipped += 1
+        await advanceCursor()
         continue
       }
 
@@ -365,7 +388,7 @@ export async function runGuestSearchAlerts(options?: {
           })
         : results.listings
       if (!fresh.length) {
-        summary.skipped += 1
+        await advanceCursor()
         continue
       }
 
@@ -410,7 +433,7 @@ export async function runGuestSearchAlerts(options?: {
         // Suppression gate in the send scope (fails closed) — alongside the
         // isHardStopped check above, covers email-keyed opt-outs + protected tags.
         if ((await isSuppressedByEmail(row.email, 'email')).suppressed) {
-          summary.skipped += 1
+          await advanceCursor()
           continue
         }
         const emailResult = await sendEmail({
