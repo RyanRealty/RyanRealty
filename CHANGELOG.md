@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.12 (2026-07-08)
+
+### Bug Fixes
+- fix(site): design-audit backlog batch 10 — geo-browse map scope + ghost KPI cells (2 items)
+
+---
+
+
 ## v1.751.11 (2026-07-08)
 
 ### Bug Fixes
