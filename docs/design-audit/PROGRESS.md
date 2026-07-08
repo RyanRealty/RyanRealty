@@ -68,4 +68,6 @@ Open P1s closed in this phase (each browser-verified): /cities + /communities ov
 - **150 still open** (134 small, 16 medium) — being fixed by the parallel worktree fan-out; per-item outcomes recorded below when it lands
 - 1 item reclassified during triage (component capped reviews at 6 since June; the mobile-wall aspect stays open)
 
+**Wave 1 applied (commit 9f08ecf4):** home (16 items) + sell-core (11 items) — 25 patched, 2 product-decision skips resolved by the lead per Matt's delegation: primary nav keeps "Communities / Cities" (plain-English labels; renaming primary nav churns SEO for a P3 gain), and the locked hero line stays (an Amboqia glyph nit does not justify changing approved brand copy).
+
 ## Phase F — final review pass — PENDING
