@@ -1,0 +1,218 @@
+[
+ {
+  "page": "/ and /housing-market",
+  "viewport": "both",
+  "severity": "P0",
+  "dimension": "trust-signals",
+  "hurts": [
+   "trust"
+  ],
+  "issue": "The same city-stat ledger shows contradictory MLS figures one click apart. Homepage: \"Bend 798 Active $800,000 median\", \"Sunriver 60 Active $679,000 median\", \"Sisters 110 Active\", \"Terrebonne 50 Active\"; /housing-market: \"Bend 500 Active $775,000 median\", \"Sunriver 60 Active $938,000 median\", \"Sisters 41 Active\", \"Terrebonne 7 Active\". Both footers claim the identical scope: \"Active single-family by town: ... Figures from the MLS.\" A seller checking their own town sees the site disagree with itself by up to 60% (count) and $259,000 (Sunriver median) on the exact data the brand stakes its credibility on.",
+  "fix": "Reconcile to one canonical source. / and /about read geo_snapshot_mv.active_sfr_count via getCitiesForIndex (app/actions/cities.ts:100-105); /housing-market reads market_pulse_live via getMarketPulseCitySnapshots (app/housing-market/page.tsx:196-206). Feed every \"X Active · $Y median\" ledger from the same table (market_pulse_live per docs/DATABASE_FOR_AI_AGENTS.md), or if the scopes genuinely differ, say how in the label.",
+  "evidence": "curl text of / (lines: Explore grid + footer 'Active single-family by town: Bend 798 / $800,000') vs /housing-market ('Market by city' grid + footer 'Bend 500 / $775,000 · Sunriver 60 / $938,000'); source: app/actions/cities.ts:104, app/housing-market/page.tsx:196",
+  "quick_win": false
+ },
+ {
+  "page": "/sell",
+  "viewport": "both",
+  "severity": "P1",
+  "dimension": "trust-signals",
+  "hurts": [
+   "trust",
+   "understanding"
+  ],
+  "issue": "The seller-page hero says \"500 homes for sale across Central Oregon ... Median list $775,000. Pending in 13 days.\" but every one of those numbers is Bend-only (the page fetches getMarketPulse({geoType:'city', geoSlug:'bend'}) while the lead copy says \"across Central Oregon\"). Lower on the same page the identical 500 is correctly labeled: \"500 single-family homes are for sale in Bend.\" A seller who just saw the homepage claim 1,823 homes and $740,000 median for the region reads this as broken data.",
+  "fix": "One-line fix in app/sell/page.tsx: change the lead (line 166) to \"for sale in Bend...\" or swap line 116 to the region pulse so the numbers match the stated geography.",
+  "evidence": "curl text of /sell: hero '500 homes for sale across Central Oregon... Median list $775,000. Pending in 13 days.' vs body 'The Bend market right now: 500 single-family homes are for sale in Bend'; source: app/sell/page.tsx:116 (geoSlug: 'bend') and :166 (lead 'across Central Oregon')",
+  "quick_win": true
+ },
+ {
+  "page": "/sell/valuation (also /sell)",
+  "viewport": "both",
+  "severity": "P1",
+  "dimension": "conversion-paths",
+  "hurts": [
+   "conversion",
+   "understanding"
+  ],
+  "issue": "The shared editorial hero hardcodes buyer CTAs on seller pages: the primary button is \"Browse →\" (to /homes-for-sale) and the seller CTA is the bare ghost word \"Sell\", which on /sell/valuation links to /sell/valuation — the page the user is already on, so it does nothing. On /sell the hero centerpiece is additionally the buyer search input (\"3 bed under $800k\"). A seller entering the valuation flow gets one working hero button and it leads away from the form; \"Sell\" names a topic, not an outcome.",
+  "fix": "Give KbHero per-page CTA props (labels + hrefs). On /sell and /sell/valuation make the primary CTA \"Get my home value\" anchoring to the address form, remove the self-link, demote or drop \"Browse\", and suppress the buyer search input on /sell.",
+  "evidence": "curl text of /sell/valuation ('Browse → Sell' between the H1 and the form) and /sell (search input placeholder '3 bed under $800k'); source: components/site/kb/KbHero.client.tsx:230-231 (hardcoded href=/homes-for-sale 'Browse' and href=/sell/valuation 'Sell')",
+  "quick_win": true
+ },
+ {
+  "page": "/team",
+  "viewport": "both",
+  "severity": "P2",
+  "dimension": "copy",
+  "hurts": [
+   "trust",
+   "understanding"
+  ],
+  "issue": "The page instructs \"Call any broker directly using the number on their card. The broker who prices your home is the one who answers your calls.\" — but the broker cards render only photo, name, role, and \"Work with Matt →\"; no phone number appears on any card, and no tel: link exists on the page outside the footer. The direct-access trust claim points at something that is not there, so the user scans the cards for a number and concludes the promise is hollow.",
+  "fix": "Either add each broker's dotted tel: line to the KbTeam card, or change the sentence to \"Open a broker's page for their direct line\" (the /team/[slug] pages do carry the phone).",
+  "evidence": "curl text of /team ('Call any broker directly using the number on their card' with cards showing only 'Work with Matt →' etc.); source: app/team/page.tsx:170 (the claim), components/site/kb/KbTeam.client.tsx:49-58 (cards render name/role/link only, no phone)",
+  "quick_win": true
+ },
+ {
+  "page": "/team (also /, /about via shared KbTeam section)",
+  "viewport": "both",
+  "severity": "P2",
+  "dimension": "navigation",
+  "hurts": [
+   "understanding",
+   "conversion"
+  ],
+  "issue": "The \"Talk to a broker →\" button under the team cards links to /sell, the seller pitch page. A user clicking it expects a contact method or a person and instead lands on \"Selling your home, done honestly\" — a mislabeled destination that is especially disorienting for buyers, who make up half the audience of a team page.",
+  "fix": "Point \"Talk to a broker →\" at /contact (or the phone number), or relabel it \"See our selling plan →\" if /sell is the intended target.",
+  "evidence": "curl text of /team ('Talk to a broker →' after the three broker cards); source: components/site/kb/KbTeam.client.tsx:62 (<a href=\"/sell\">Talk to a broker</a>)",
+  "quick_win": true
+ },
+ {
+  "page": "/sell/valuation",
+  "viewport": "both",
+  "severity": "P2",
+  "dimension": "copy",
+  "hurts": [
+   "conversion",
+   "understanding"
+  ],
+  "issue": "After tapping \"Get my home value\" the user is never told when or how the answer arrives. The form intro says only \"We'll look up your property and send you a Comparative Market Analysis. If your home isn't in our system yet, we'll still reach out with an estimate.\" The 24-hour promise exists only on /sell (\"A written valuation within 24 hours\"), and \"Comparative Market Analysis\" appears here as unexplained capitalized jargon. Uncertainty about what happens next (instant number? email? phone call from an agent?) is the classic reason valuation forms get abandoned.",
+  "fix": "Add one line under the submit button: \"A broker emails your written valuation within 24 hours — the comps behind the number, no obligation.\" This also carries the CMA gloss.",
+  "evidence": "curl text of /sell/valuation ('We'll look up your property and send you a Comparative Market Analysis...' — no timeframe anywhere on the page) vs /sell ('Written CMA within 24 hours of your request')",
+  "quick_win": true
+ },
+ {
+  "page": "/homes-for-sale",
+  "viewport": "both",
+  "severity": "P2",
+  "dimension": "copy",
+  "hurts": [
+   "trust"
+  ],
+  "issue": "The results header reads \"501+ homes in this area\" — a capped, hedged count produced when the 500-row fetch maxes out — while the homepage told the same user \"Bend 798 Active\". Zillow-class portals show exact totals; \"501+\" reads as the site not knowing its own inventory, and it contradicts the count shown two clicks earlier.",
+  "fix": "Run a real count query for the header (keep the 500-tile render cap) so the header states the true total, e.g. \"798 homes in this area\".",
+  "evidence": "curl text of /homes-for-sale ('501+ homes in this area') vs / ('Bend 798 Active'); source: components/search/MapSearchView.tsx:241 (countLabel = capped ? `${totalCount}+` : ...)",
+  "quick_win": false
+ },
+ {
+  "page": "/sell",
+  "viewport": "both",
+  "severity": "P2",
+  "dimension": "copy",
+  "hurts": [
+   "understanding"
+  ],
+  "issue": "The fee section — where comprehension matters most — leans on unexplained industry jargon, twice: \"We show you the exact ALTA breakdown, the buyer-agency agreement we use, and the realistic concession math for your price point before you sign.\" No consumer knows what an ALTA is, and \"concession math\" is broker-speak; the sentences meant to prove transparency are the ones a seller cannot parse.",
+  "fix": "Gloss or replace: \"the settlement statement (the ALTA) that lists every dollar at closing\" and \"what a realistic buyer credit looks like at your price point.\"",
+  "evidence": "curl text of /sell (two occurrences: 'We show you the exact ALTA breakdown, the buyer-agency agreement we use, and the realistic concession math...' and card 'We show you the exact ALTA breakdown and the buyer-agency agreement we use before you sign anything.')",
+  "quick_win": true
+ },
+ {
+  "page": "/contact",
+  "viewport": "both",
+  "severity": "P2",
+  "dimension": "conversion-paths",
+  "hurts": [
+   "understanding",
+   "conversion"
+  ],
+  "issue": "The contact hero stacks four navigation CTAs — \"Browse →\", \"Sell\", \"Meet the team →\", \"View listings →\" — where \"Browse →\" and \"View listings →\" lead to the same listings search under two different labels, and none of the four is the page's actual job (the message form sits below). A user pauses to figure out how Browse differs from View listings, and the page's own action is the only one not offered.",
+  "fix": "Drop the generic Browse/Sell pair from the contact hero, keep \"Meet the team →\", and add a \"Send a message\" anchor to the form as the primary CTA.",
+  "evidence": "curl text of /contact (hero sequence 'Browse → Sell Meet the team → View listings →' before 'Send a message'); source: app/contact/page.tsx:149 (View listings href = listingsBrowsePath(), same surface as KbHero's Browse) and components/site/kb/KbHero.client.tsx:230-231",
+  "quick_win": true
+ },
+ {
+  "page": "/housing-market",
+  "viewport": "both",
+  "severity": "P3",
+  "dimension": "copy",
+  "hurts": [
+   "trust",
+   "understanding"
+  ],
+  "issue": "The hero states the count and the median twice each in one paragraph: \"1,824 homes for sale 1,824 single-family homes active across Central Oregon. Region median list price $740,000. 6.3 months of supply: buyer's market. Median list $740,000. Pending in 19 days.\" The hand-built lede repeats the figures the KbHero template already renders from its data props, and the stutter reads like a template bug on the site's flagship data page.",
+  "fix": "Strip the count and median sentences from the lede in app/housing-market/page.tsx (lines 168-176) and let the KbHero stat template carry them once, keeping only the months-of-supply verdict in the lede.",
+  "evidence": "curl text of /housing-market (hero paragraph with '1,824' and '$740,000' each appearing twice); source: app/housing-market/page.tsx:168-176 (lede builds count+median) + components/site/kb/KbHero.client.tsx:202-225 (template renders them again)",
+  "quick_win": true
+ },
+ {
+  "page": "/",
+  "viewport": "both",
+  "severity": "P3",
+  "dimension": "copy",
+  "hurts": [
+   "trust"
+  ],
+  "issue": "The hero claims \"1,823 homes for sale across six cities\" but the six city cards directly below sum to 1,450 (798+179+253+60+110+50); 1,823 is the whole-region count including cities the page never names (Prineville alone carries 76 on /housing-market). Any user who adds up the cards catches the mismatch on a site whose pitch is arithmetic honesty.",
+  "fix": "Change the hero phrasing to \"across Central Oregon\" (matching the regional scope of the number), leaving the six featured city cards as a subset.",
+  "evidence": "curl text of / (hero '1,823 homes for sale across six cities' vs Explore cards Bend 798 / La Pine 179 / Redmond 253 / Sunriver 60 / Sisters 110 / Terrebonne 50 = 1,450)",
+  "quick_win": true
+ },
+ {
+  "page": "/",
+  "viewport": "both",
+  "severity": "P3",
+  "dimension": "copy",
+  "hurts": [
+   "understanding"
+  ],
+  "issue": "The homepage H1 — the biggest words on the site — is \"Welcome to the High Desert\": pure atmosphere. A first-time visitor learns what the product is only from the small eyebrow (\"Central Oregon Real Estate\") and the stat dek below. The heading spends the page's prime comprehension real estate on mood rather than the job the visitor came to do.",
+  "fix": "Keep the register but let the display type carry meaning, e.g. \"Find your home in the High Desert\" — one verb turns the greeting into the product.",
+  "evidence": "curl text of / ([H1] 'Welcome to the High Desert', eyebrow 'Central Oregon Real Estate')",
+  "quick_win": true
+ },
+ {
+  "page": "/housing-market",
+  "viewport": "both",
+  "severity": "P3",
+  "dimension": "states",
+  "hurts": [
+   "understanding"
+  ],
+  "issue": "In the \"Market by city\" grid the Tumalo tile renders the city name with no figures at all (its count is 0, and the tile component hides the ledger when activeCount is 0), so it sits beside fully-populated cards looking broken. The code comment in the page even promises \"activeCount: 0 renders as '0 active'\" — the component contradicts it.",
+  "fix": "In components/site/kb/KbExploreTowns.client.tsx (line 66), render \"0 active\" instead of hiding the stat block when activeCount is 0.",
+  "evidence": "curl text of /housing-market (grid shows 'Tumalo' then 'Terrebonne 7 Active $700,000 median' with nothing between; page footer 'Tumalo 0 / —'); source: components/site/kb/KbExploreTowns.client.tsx:66 (activeCount > 0 guard), app/housing-market/page.tsx:209 (comment claiming '0 active' renders)",
+  "quick_win": true
+ },
+ {
+  "page": "/signup",
+  "viewport": "both",
+  "severity": "P3",
+  "dimension": "trust-signals",
+  "hurts": [
+   "trust"
+  ],
+  "issue": "Account creation collects full name, email, and password with no terms acknowledgment — there is no \"By creating an account you agree to the Terms of Use and Privacy Policy\" line anywhere in the form, while the SMS-consent copy on the lead forms is meticulous. Users handing over credentials get no statement of what they are agreeing to, and the omission is conspicuous next to the careful consent language elsewhere.",
+  "fix": "Add the standard one-line consent under the \"Create account\" button, linking /privacy and /terms (both already exist in the portal footer).",
+  "evidence": "curl text of /signup (form: Full name / Email / Password / 'At least 6 characters' / Create account — no terms text); grep of components/auth/SignupForm.tsx and app/signup/page.tsx returns no Terms/Privacy/agree references",
+  "quick_win": true
+ },
+ {
+  "page": "/",
+  "viewport": "both",
+  "severity": "P3",
+  "dimension": "copy",
+  "hurts": [
+   "understanding"
+  ],
+  "issue": "The market panel's explainer footnote defines only months of supply; \"95.1% Sale to list\" and \"19 days Median to pending\" sit unexplained. A normal buyer or seller does not know whether 95.1% is good, or that \"to pending\" means days until an accepted offer — the two stats most useful for negotiation are the two left as jargon.",
+  "fix": "Extend the existing footnote one sentence: \"Sale to list compares final sale price to asking price. Median to pending is days from listing to an accepted offer.\"",
+  "evidence": "curl text of / (panel: '95.1% Sale to list', '19 days Median to pending'; footnote explains only 'Months of supply is active inventory divided by...')",
+  "quick_win": true
+ },
+ {
+  "page": "/faq",
+  "viewport": "both",
+  "severity": "P3",
+  "dimension": "copy",
+  "hurts": [
+   "conversion",
+   "understanding"
+  ],
+  "issue": "The sitewide FAQ's Selling category (2 questions: timeline, expired listings) omits the number-one seller question — what it costs — even though /sell answers it well (\"What does it cost to list with you?\" / 3% plan). A seller who lands on /faq researching fees finds nothing and may assume the answer is being hidden, the opposite of the transparency positioning.",
+  "fix": "Add the cost question to the /faq Selling category, reusing the /sell FAQ answer verbatim (it is already in the FAQ_ITEMS pattern) or linking to /sell#faq.",
+  "evidence": "curl text of /faq (categories 'Selling ( 2 )' = timeline + did-not-sell; JSON-LD dump confirms all 10 questions, none about cost/commission) vs /sell ('What does it cost to list with you?')",
+  "quick_win": true
+ }
+]

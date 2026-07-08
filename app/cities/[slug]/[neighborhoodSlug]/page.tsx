@@ -527,9 +527,11 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           />
         ) : null}
         <KbAreaGuideVideo videoUrl={areaGuideVideo} locationName={neighborhood.name} />
+        {/* Feed is fetched city-wide (getActivityFeedWithFallbackMulti cities:[cityName])
+            — label the city, not the neighborhood (§0 honest-relabeling). */}
         <KbActivity
           items={activityItems}
-          eyebrow={`Live · ${neighborhood.name}`}
+          eyebrow={`Live · ${cityName}`}
           heading="Latest market activity"
           viewAllHref="/housing-market"
           viewAllLabel="Full market pulse"

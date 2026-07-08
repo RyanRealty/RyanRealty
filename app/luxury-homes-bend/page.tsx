@@ -13,6 +13,7 @@ import { listingTileHref } from '@/lib/slug'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import '@/components/site/kb/kb.css'
 
 export const revalidate = 900
 

@@ -164,15 +164,12 @@ export default async function HousingMarketHubPage() {
   // -------------------------------------------------------------------------
   // KbHero lede — data-driven from the region pulse (§0).
   // -------------------------------------------------------------------------
+  // KbHero's stat template already renders the count ("N homes for sale …"),
+  // the median, and days-to-pending from the data prop — the lede must not
+  // repeat them (they rendered twice in one paragraph).
   const ledeParts: string[] = []
   if (regionPulse && regionPulse.activeCount > 0) {
-    ledeParts.push(
-      `${regionPulse.activeCount.toLocaleString()} single-family homes active across Central Oregon.`,
-    )
-  }
-  if (regionPulse?.medianListPrice != null) {
-    const r = Math.round(regionPulse.medianListPrice / 1000) * 1000
-    ledeParts.push(`Region median list price $${r.toLocaleString()}.`)
+    ledeParts.push('across Central Oregon.')
   }
   if (regionPulse?.monthsOfSupply != null) {
     const mos = Math.round(regionPulse.monthsOfSupply * 10) / 10

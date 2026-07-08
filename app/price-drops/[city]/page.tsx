@@ -330,6 +330,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
           eyebrow={`${cityName}, Oregon · Live MLS data`}
           titleTop="Price drops in"
           titleBottom={cityName}
+          countNoun="price drops"
           lead={`in ${cityName} in the last 7 days, from the regional MLS.`}
           videoSrc={null}
           posterSrc="/images/hero/hero-old-mill-master-4k.jpg"

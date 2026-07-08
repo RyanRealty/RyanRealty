@@ -147,7 +147,9 @@ export default async function BlogPostPage({ params }: PageProps) {
 
   return (
     <main className="kb-root">
-      <KbNav />
+      {/* solid — article pages have no dark hero; the transparent bar rendered
+          white links + a white wordmark on cream (invisible) at scroll 0. */}
+      <KbNav solid />
       <KbSectionTracker pageType="blog_post" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
       <script

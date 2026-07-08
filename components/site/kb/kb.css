@@ -41,7 +41,11 @@ html.lenis, html.lenis body{height:auto;}
   line-height:1.4;
 }
 .kb-root img{display:block;max-width:100%;}
-.kb-root a{color:inherit;text-decoration:none;}
+/* In @layer base so Tailwind color utilities (.text-white etc.) win — un-layered,
+   this rule beats the entire utilities layer regardless of specificity (Tailwind v4
+   cascade layers), which rendered navy-on-navy/white-on-white text on every filled
+   CTA link (CTAButton) inside kb-root pages. */
+@layer base{.kb-root a{color:inherit;text-decoration:none;}}
 .kb-root ::selection{background:var(--navy);color:var(--cream);}
 .kb-root .display{
   font-family:var(--font-amboqia),serif;
@@ -456,8 +460,11 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .menu-top{display:flex;align-items:center;justify-content:space-between;}
 .kb-root .menu-top .logo-img{height:26px;width:auto;filter:brightness(0) invert(1);}
 .kb-root .menu-close{background:none;border:0;color:var(--cream);font-size:.78rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;font-family:inherit;}
-.kb-root .menu-nav{flex:1;display:flex;flex-direction:column;justify-content:center;}
-.kb-root .menu-grid{display:grid;grid-template-columns:1fr;gap:26px 40px;align-content:center;padding:clamp(20px,4vh,40px) 0;overflow-y:auto;}
+/* `safe center` keeps the first links reachable when the menu is taller than the
+   viewport — plain `center` pushed "Search homes"/"Map search" above the
+   scrollable area on phones (unreachable at scrollTop 0). */
+.kb-root .menu-nav{flex:1;display:flex;flex-direction:column;justify-content:safe center;min-height:0;}
+.kb-root .menu-grid{display:grid;grid-template-columns:1fr;gap:26px 40px;align-content:safe center;padding:clamp(20px,4vh,40px) 0 56px;overflow-y:auto;}
 @media(min-width:680px){.kb-root .menu-grid{grid-template-columns:repeat(2,1fr);}}
 @media(min-width:1000px){.kb-root .menu-grid{grid-template-columns:repeat(4,1fr);}}
 .kb-root .menu-group{display:flex;flex-direction:column;gap:10px;}

@@ -163,7 +163,7 @@ export default async function SellPage() {
           eyebrow="Sell with Ryan Realty"
           titleTop="Selling your home,"
           titleBottom="done honestly."
-          lead="across Central Oregon. The broker who prices your home is the broker who walks you to the finish line. Specific numbers from the data, no layered hand-offs."
+          lead="in Bend. The broker who prices your home is the broker who walks you to the finish line. Specific numbers from the data, no layered hand-offs."
           videoSrc={null}
           posterSrc={heroSrc ?? OLD_MILL_HERO}
         />

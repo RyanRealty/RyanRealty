@@ -234,8 +234,13 @@ export function getFiltersSummary(filters: SavedSearchFilters): string {
   if (beds && beds > 0) parts.push(`${beds}+ Beds`)
   if (baths && baths > 0) parts.push(`${baths}+ Baths`)
   if (minPrice || maxPrice) {
-    const min = minPrice ? `$${Math.round(minPrice / 1000)}K` : ''
-    const max = maxPrice ? `$${Math.round(maxPrice / 1000)}K` : ''
+    // $850K below a million, $1.5M / $2M at and above it — never "$1500K".
+    const fmt = (value: number) =>
+      value >= 1_000_000
+        ? `$${(value / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
+        : `$${Math.round(value / 1000)}K`
+    const min = minPrice ? fmt(minPrice) : ''
+    const max = maxPrice ? fmt(maxPrice) : ''
     parts.push([min, max].filter(Boolean).join('-') || 'Any price')
   }
   if (neighborhoodSlug) parts.push(labelForNeighborhoodSlug(neighborhoodSlug))

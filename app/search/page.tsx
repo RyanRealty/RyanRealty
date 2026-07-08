@@ -274,7 +274,9 @@ export default async function SearchPage({
         subdivision={filters.subdivision ?? undefined}
         resultsCount={resultsCount}
       />
-      <div className="sticky top-0 z-20 w-full border-b border-border bg-card shadow-sm">
+      {/* top-[72px] docks below the sticky 72px SiteHeader — top-0 slid the
+          filter row underneath it, hiding the controls on any scrolled state. */}
+      <div className="sticky top-[72px] z-20 w-full border-b border-border bg-card shadow-sm">
         <SearchFilters initialFilters={initialFiltersFromUrl} />
       </div>
       {/* Guest listing-alert capture — shown only to anonymous visitors. */}

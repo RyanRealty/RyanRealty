@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { signInWithOAuthBrowser } from '@/lib/supabase/oauth'
 import type { AuthUser } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { GoogleIcon, FacebookIcon } from '@/components/icons/AuthProviderIcons'
 
 const DISMISS_KEY = 'ryan_realty_signin_prompt_dismissed'
@@ -68,6 +69,9 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
   // Dedicated landing pages own their own conversion funnel (their own lead form).
   // The global social sign-in modal must never auto-pop over an /lp/* page.
   const isLandingPage = (pathname || '').startsWith('/lp/')
+  // /login and /signup ARE the sign-in UI — popping the modal over them (e.g. after
+  // a Save-listing redirect with ?next=) stacks two identical OAuth prompts.
+  const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password'
   // Ad / marketing traffic (Matt directive 2026-06-02): a visitor arriving from a
   // paid click should never be asked to continue with Google or Facebook. Detect
   // the click ids plus any utm_* and suppress the auto-pop for that page load.
@@ -82,6 +86,8 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
     if (user) return
     // Never interrupt a landing-page or paid-traffic conversion with the social modal.
     if (isLandingPage || fromAdClick) return
+    // Never stack the modal over the dedicated auth pages.
+    if (isAuthPage) return
     if (hasNextParam) {
       if (!isNotFoundPage()) setShow(true)
       return
@@ -94,7 +100,7 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
       if (!isNotFoundPage()) setShow(true)
     }, 1000)
     return () => clearTimeout(t)
-  }, [user, hasNextParam, isHome, isLandingPage, fromAdClick])
+  }, [user, hasNextParam, isHome, isLandingPage, fromAdClick, isAuthPage])
 
   async function handleSignIn(provider: 'google' | 'facebook') {
     setLoading(provider)
@@ -112,21 +118,14 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
   if (!show) return null
 
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-primary/50" aria-hidden onClick={handleMaybeLater} />
-      <div
-        role="dialog"
-        aria-labelledby="signin-prompt-title"
-        aria-modal="true"
-        className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border bg-card p-6 shadow-lg sm:p-8"
-      >
-        {/* heading-display-ok — dialog title, not a brand display heading */}
-        <h2 id="signin-prompt-title" className="text-xl font-semibold text-foreground">
+    <Dialog open={show} onOpenChange={(open) => { if (!open) handleMaybeLater() }}>
+      <DialogContent showCloseButton={false} className="max-w-md p-6 sm:p-8">
+        <DialogTitle className="text-xl font-semibold text-foreground">
           Get the most out of Ryan Realty
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
+        </DialogTitle>
+        <DialogDescription className="mt-2 text-sm text-muted-foreground">
           Sign in with Google or Facebook. No new password needed.
-        </p>
+        </DialogDescription>
         <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-muted-foreground" aria-hidden>
           <li>Save searches and get new listing alerts</li>
           <li>Pick up where you left off on any device</li>
@@ -159,8 +158,8 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
         >
           Maybe later
         </Button>
-      </div>
-    </>
+      </DialogContent>
+    </Dialog>
   )
 }
 

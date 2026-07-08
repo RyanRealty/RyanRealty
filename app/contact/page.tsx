@@ -77,6 +77,10 @@ export default async function ContactPage({ searchParams }: PageProps) {
   // Default to a buyer/property inquiry and carry the listing through to FUB.
   const defaultInquiry = params.inquiry ?? (params.listingKey ? 'Buying' : undefined)
   const contactTitle = pageContent?.title?.trim() || 'Contact Us'
+  // Split the last word onto the hero's second display line ("Contact" / "Us").
+  const contactTitleWords = contactTitle.split(/\s+/)
+  const contactTitleTop = contactTitleWords.length > 1 ? contactTitleWords.slice(0, -1).join(' ') : contactTitle
+  const contactTitleBottom = contactTitleWords.length > 1 ? contactTitleWords[contactTitleWords.length - 1] : ''
   const baseUrl = getCanonicalSiteUrl()
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -122,9 +126,10 @@ export default async function ContactPage({ searchParams }: PageProps) {
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
           eyebrow="Central Oregon · Talk to a broker"
-          titleTop={contactTitle}
-          titleBottom="us"
+          titleTop={contactTitleTop}
+          titleBottom={contactTitleBottom}
           lead="Questions about buying, selling, or just exploring? Reach out and we will get back to you quickly."
+          showSearch={false}
           videoSrc={null}
           posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
         />
@@ -158,7 +163,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
           <div className="wrap">
             <div className="grid gap-10 lg:grid-cols-2">
               <div
-                className="bg-white p-6 sm:p-8"
+                className="bg-card p-6 sm:p-8"
                 style={{ border: 'var(--edge) solid var(--navy)' }}
               >
                 <span className="sec-index" style={{ display: 'block', marginBottom: '14px' }}>

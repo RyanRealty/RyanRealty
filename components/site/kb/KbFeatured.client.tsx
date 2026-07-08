@@ -77,7 +77,13 @@ export function KbFeatured({ items, eyebrow = 'Featured homes' }: { items: KbFea
                 onBlur={() => leave(it.href)}
               >
                 <div className="lst-media">
-                  <img className="lst-img" src={it.img} alt={it.address} loading="lazy" />
+                  {it.img ? (
+                    <img className="lst-img" src={it.img} alt={it.address} loading="lazy" />
+                  ) : (
+                    // No MLS photo: brand-navy block instead of an empty <img src="">
+                    // (which re-requests the page and renders a broken frame).
+                    <div className="lst-img" style={{ background: 'var(--navy)' }} aria-hidden="true" />
+                  )}
                   {playing && it.video ? (
                     it.video.embedType === 'video-tag' ? (
                       <video
@@ -87,7 +93,7 @@ export function KbFeatured({ items, eyebrow = 'Featured homes' }: { items: KbFea
                         muted
                         loop
                         playsInline
-                        poster={it.img}
+                        poster={it.img || undefined}
                       />
                     ) : (
                       <iframe

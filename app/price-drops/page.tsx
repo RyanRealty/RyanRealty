@@ -358,6 +358,7 @@ export default async function PriceDropsRegionPage() {
           eyebrow="Central Oregon · Live MLS data"
           titleTop="Price Drop"
           titleBottom="Radar"
+          countNoun="price drops"
           lead="across Central Oregon in the last 7 days."
           videoSrc={null}
           posterSrc="/images/hero/hero-old-mill-master-4k.jpg"

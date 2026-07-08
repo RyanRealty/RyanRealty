@@ -50,6 +50,12 @@ type KbHeroProps = {
    * venues, golf) whose lead is a full sentence, not a listings count.
    */
   statless?: boolean
+  /**
+   * What `data.activeCount` counts, when it is not homes for sale — e.g.
+   * "price drops" renders "60 price drops <lead>" instead of the default
+   * "60 homes for sale <lead>". Keeps the stat prefix honest (§0).
+   */
+  countNoun?: string
 }
 
 export function KbHero({
@@ -65,6 +71,7 @@ export function KbHero({
   portraitSrc,
   showSearch = true,
   statless = false,
+  countNoun,
 }: KbHeroProps) {
   const root = useRef<HTMLElement>(null)
   const router = useRouter()
@@ -193,12 +200,16 @@ export function KbHero({
             ) : (
               <>
                 {data.activeCount != null ? (
-                  <>
-                    <b>{data.activeCount.toLocaleString('en-US')} homes</b> for sale
-                  </>
-                ) : (
-                  'Homes for sale'
-                )}{' '}
+                  countNoun ? (
+                    <>
+                      <b>{data.activeCount.toLocaleString('en-US')} {countNoun}</b>{' '}
+                    </>
+                  ) : (
+                    <>
+                      <b>{data.activeCount.toLocaleString('en-US')} homes</b> for sale{' '}
+                    </>
+                  )
+                ) : null}
                 {lead}
                 {median ? (
                   <>

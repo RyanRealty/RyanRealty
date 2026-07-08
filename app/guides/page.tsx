@@ -81,8 +81,13 @@ export default async function GuidesIndexPage() {
     description: 'Local buying and selling guides for Bend and Central Oregon.',
     url: `${siteUrl}/guides`,
   }
+  // Duplicate slug rows render the same card twice (and collide on React keys) —
+  // keep the first row per slug.
+  const seenSlugs = new Set<string>()
   const grouped = new Map<string, typeof guides>()
   for (const guide of guides) {
+    if (seenSlugs.has(guide.slug)) continue
+    seenSlugs.add(guide.slug)
     const key = guide.category?.trim() || 'General'
     grouped.set(key, [...(grouped.get(key) ?? []), guide])
   }

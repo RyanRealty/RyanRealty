@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
@@ -147,6 +148,21 @@ export default function MapSearchView({
 
   const searchFilters = useMemo(() => toSearchFilters(filters), [filters])
   const filtersSnapshot = JSON.stringify(filters)
+  const router = useRouter()
+  const pathname = usePathname()
+  // Zero results can come from tight filters, not just the map viewport — the
+  // empty state names the likely cause and offers the same reset as "Clear all".
+  const hasNarrowingFilters = useMemo(() => {
+    const keys: (keyof typeof filters)[] = [
+      'minPrice', 'maxPrice', 'beds', 'baths', 'propertyType', 'minSqFt', 'maxSqFt',
+      'lotAcresMin', 'lotAcresMax', 'yearBuiltMin', 'yearBuiltMax', 'hasPool', 'hasView',
+      'hasWaterfront', 'hasFireplace', 'hasGolfCourse', 'garageMin', 'daysOnMarket', 'keywords',
+    ]
+    return keys.some((k) => {
+      const v = filters[k]
+      return typeof v === 'string' && v.trim() !== ''
+    })
+  }, [filters])
 
   // Re-seed from server props whenever the URL filters change (new SSR payload).
   useEffect(() => {
@@ -234,10 +250,26 @@ export default function MapSearchView({
         {loading && <span className="text-xs text-muted-foreground">Updating…</span>}
       </div>
       {listings.length === 0 ? (
-        <div className="p-8 text-center text-muted-foreground">
-          <p className="text-base font-medium text-foreground">No homes in this part of the map.</p>
-          <p className="mt-1 text-sm">Zoom out or pan to a different area to see listings.</p>
-        </div>
+        hasNarrowingFilters ? (
+          <div className="p-8 text-center text-muted-foreground">
+            <p className="text-base font-medium text-foreground">No homes match your filters here.</p>
+            <p className="mt-1 text-sm">Loosen a filter, or zoom out to widen the search area.</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-4"
+              onClick={() => router.push(`${pathname ?? '/homes-for-sale'}?view=${filters.view ?? 'split'}`, { scroll: false })}
+            >
+              Clear all filters
+            </Button>
+          </div>
+        ) : (
+          <div className="p-8 text-center text-muted-foreground">
+            <p className="text-base font-medium text-foreground">No homes in this part of the map.</p>
+            <p className="mt-1 text-sm">Zoom out or pan to a different area to see listings.</p>
+          </div>
+        )
       ) : (
         <>
         <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">

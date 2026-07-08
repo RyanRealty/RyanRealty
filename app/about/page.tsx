@@ -255,7 +255,7 @@ export default async function AboutPage() {
           eyebrow="Ryan Realty · Bend, Oregon"
           titleTop="Homes here deserve"
           titleBottom="more than a sign."
-          lead="across Central Oregon, with cinematic video, a 3D walkthrough, and a price built from live market data."
+          lead="Every home we list across Central Oregon gets cinematic video, a 3D walkthrough, and a price built from live market data."
           videoSrc={null}
           posterSrc={heroSrc ?? OLD_MILL_HERO}
         />

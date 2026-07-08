@@ -59,7 +59,7 @@ export default function ValuationForm() {
           type="text"
           autoComplete="street-address"
           required
-          className="mt-1 block w-full rounded-lg border border-border bg-card px-3 py-2.5 text-foreground shadow-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          className="mt-1 block w-full"
           placeholder="123 Main St, Bend, OR 97701"
         />
       </div>
@@ -73,7 +73,7 @@ export default function ValuationForm() {
             name="name"
             type="text"
             autoComplete="name"
-            className="mt-1 block w-full rounded-lg border border-border bg-card px-3 py-2.5 text-foreground shadow-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="mt-1 block w-full"
             placeholder="Your name"
           />
         </div>
@@ -87,7 +87,7 @@ export default function ValuationForm() {
             type="email"
             autoComplete="email"
             required
-            className="mt-1 block w-full rounded-lg border border-border bg-card px-3 py-2.5 text-foreground shadow-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="mt-1 block w-full"
             placeholder="you@example.com"
           />
         </div>
@@ -101,7 +101,7 @@ export default function ValuationForm() {
           name="phone"
           type="tel"
           autoComplete="tel"
-          className="mt-1 block w-full rounded-lg border border-border bg-card px-3 py-2.5 text-foreground shadow-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          className="mt-1 block w-full"
           placeholder="(541) 555-0123"
         />
       </div>
@@ -113,7 +113,8 @@ export default function ValuationForm() {
       <Button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-accent px-6 py-3.5 text-base font-semibold text-primary shadow-md hover:bg-accent/90 disabled:opacity-70"
+        size="lg"
+        className="w-full text-base font-semibold disabled:opacity-70"
       >
         {loading ? 'Sending…' : 'Get my home value'}
       </Button>
