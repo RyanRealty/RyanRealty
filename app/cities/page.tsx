@@ -218,6 +218,7 @@ export default async function CitiesPage() {
       />
 
       <KbBreadcrumb
+        overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Cities' },
@@ -226,7 +227,9 @@ export default async function CitiesPage() {
 
       <SmoothScrollProvider>
         {/* Compact navy hero: the LIVE region pulse is the identity. */}
-        <section className="section region" id="region-pulse" aria-label="Central Oregon cities market pulse">
+        {/* Extra top padding clears the fixed nav + overlay crumbs — this compact
+            hero starts content at the top (full-viewport heroes bottom-anchor). */}
+        <section className="section region" id="region-pulse" aria-label="Central Oregon cities market pulse" style={{ paddingTop: 'clamp(128px, 18vh, 170px)' }}>
           <div className="wrap">
             <div className="sec-head">
               <span className="sec-index mkt-live">

@@ -204,6 +204,7 @@ export default async function CommunitiesPage() {
       />
 
       <KbBreadcrumb
+        overlay
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Communities' },
@@ -212,7 +213,9 @@ export default async function CommunitiesPage() {
 
       <SmoothScrollProvider>
         {/* Compact navy hero — the live aggregate is the identity (Hub archetype) */}
-        <section className="section region" id="communities-pulse" aria-label="Central Oregon communities market pulse">
+        {/* Extra top padding clears the fixed nav + overlay crumbs — this compact
+            hero starts content at the top (full-viewport heroes bottom-anchor). */}
+        <section className="section region" id="communities-pulse" aria-label="Central Oregon communities market pulse" style={{ paddingTop: 'clamp(128px, 18vh, 170px)' }}>
           <div className="wrap">
             <div className="sec-head">
               <span className="sec-index mkt-live">

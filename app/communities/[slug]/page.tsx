@@ -785,31 +785,10 @@ export default async function CommunityDetailPage({ params }: Props) {
           posterAlt={`${community.name} in ${cityName}, Oregon`}
           mediaCaption={mediaCaption}
         />
-        {/* Rich resort/golf/master-planned depth (overview · amenities · golf ·
-            membership · builders) — null when no config. When present it carries the
-            overview, so the thin data-driven About is suppressed to avoid duplication. */}
-        <KbResortOverview
-          content={richContent}
-          name={community.name}
-          postsBySlug={amenityPosts}
-          aliases={registryEntry?.subdivision_aliases ?? []}
-        />
-        {!richContent && aboutParagraphs.length > 0 ? (
-          <KbAbout
-            eyebrow={communityLabel}
-            heading={`Living in ${community.name}`}
-            paragraphs={aboutParagraphs}
-            facts={aboutFacts}
-          />
-        ) : null}
-        {/* Flow (same coherent order as the city page): the lifestyle overview
-            leads, then the MARKET → the homes → a live ticker → the map →
-            nearby communities → this-week → activity → guides → explore. */}
-        <KbMarketHud
-          data={marketData}
-          eyebrow={`${community.name} · The market`}
-          chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
-        />
+        {/* Inventory FIRST (design-audit P1): the page is titled "<name> homes
+            for sale" but a mobile buyer scrolled 10+ viewports of amenities and
+            membership tables before seeing a single home. Order now: homes →
+            map → market → resort depth. */}
         <KbFeatured items={featuredItems} eyebrow={`${community.name} · For sale`} />
         <KbTicker items={tickerItems} />
         {/* Fix 3: Visible freshness signal — "Market data updated [Month Year]" crawled
@@ -843,6 +822,28 @@ export default async function CommunityDetailPage({ params }: Props) {
           // this community has no active listings (empty geojson features). (§0)
           centerLonLat={registryEntry?.center_lon_lat ?? undefined}
         />
+        <KbMarketHud
+          data={marketData}
+          eyebrow={`${community.name} · The market`}
+          chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
+        />
+        {/* Rich resort/golf/master-planned depth (overview · amenities · golf ·
+            membership · builders) — null when no config. When present it carries the
+            overview, so the thin data-driven About is suppressed to avoid duplication. */}
+        <KbResortOverview
+          content={richContent}
+          name={community.name}
+          postsBySlug={amenityPosts}
+          aliases={registryEntry?.subdivision_aliases ?? []}
+        />
+        {!richContent && aboutParagraphs.length > 0 ? (
+          <KbAbout
+            eyebrow={communityLabel}
+            heading={`Living in ${community.name}`}
+            paragraphs={aboutParagraphs}
+            facts={aboutFacts}
+          />
+        ) : null}
         <KbCommunities communities={communityItems} eyebrow={`${cityName} · Communities`} />
         {/* Per-location area guide video — self-hides when this community has no
             approved guide video. Sits after the communities rail, before the

@@ -191,11 +191,15 @@ export default async function BuyPage() {
 
       <KbBreadcrumb overlay trail={[{ label: 'Home', href: '/' }, { label: 'Buy' }]} />
 
+      <style>{`@media(min-width:760px){.kb-root .buy-hero{min-height:clamp(440px,68vh,620px);height:auto}}`}</style>
       <SmoothScrollProvider>
         {/* HERO — headline + broker lede + canonical photo + quick-links.
             Restyled in place (kept the 5 quick-links the KB shared hero can't
             carry; full-bleed photo with masked navy overlay, Amboqia H1). */}
-        <section className="hero" id="top" style={{ minHeight: 'clamp(440px,68vh,620px)' }}>
+        {/* Compact hero on >=760px only — on phones the 4-line H1 + lede + 5
+            chips overflow a 68vh box upward into the fixed nav (design-audit
+            P1); mobile keeps the KB default 100svh bottom-anchored hero. */}
+        <section className="hero buy-hero" id="top">
           <div className="hero-photo">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
