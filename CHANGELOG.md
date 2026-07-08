@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.9 (2026-07-08)
+
+### Bug Fixes
+- fix(site): design-audit backlog batch 7 — consistency-sweep group (7 items)
+
+---
+
+
 ## v1.751.8 (2026-07-08)
 
 ### Bug Fixes
