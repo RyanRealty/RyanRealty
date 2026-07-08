@@ -20,6 +20,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useEngagementTracking } from '@/components/site/experience/useEngagementTracking'
 
 export type CommunityIndexItem = {
@@ -57,6 +58,13 @@ function IndexLink({ item }: { item: CommunityIndexItem }) {
 
 export default function CommunityIndexBrowser({ items }: { items: CommunityIndexItem[] }) {
   const [query, setQuery] = useState('')
+  // "A to Z" only helps someone who already knows a community's name — a
+  // relocating buyer building a mental model of the area had no way in
+  // (~20 near-empty letter rows, no city grouping, no counts beyond a
+  // letter). "By city" groups the same data a different way with zero new
+  // fetches, sorted by community count so the biggest towns lead
+  // (design-audit P3).
+  const [viewMode, setViewMode] = useState<'az' | 'city'>('az')
   const searchedOnce = useRef(false)
   const { trackInteract } = useEngagementTracking('all-communities', { pageType: 'geo-hub' })
 
@@ -70,6 +78,16 @@ export default function CommunityIndexBrowser({ items }: { items: CommunityIndex
       map.set(letter, arr)
     }
     return Array.from(map.entries())
+  }, [items])
+
+  const cityGroups = useMemo(() => {
+    const map = new Map<string, CommunityIndexItem[]>()
+    for (const item of items) {
+      const arr = map.get(item.city) ?? []
+      arr.push(item)
+      map.set(item.city, arr)
+    }
+    return Array.from(map.entries()).sort((a, b) => b[1].length - a[1].length)
   }, [items])
 
   const q = query.trim().toLowerCase()
@@ -102,6 +120,27 @@ export default function CommunityIndexBrowser({ items }: { items: CommunityIndex
         autoComplete="off"
       />
 
+      {!matches ? (
+        <ToggleGroup
+          type="single"
+          value={viewMode}
+          onValueChange={(v) => {
+            if (v === 'az' || v === 'city') {
+              setViewMode(v)
+              trackInteract(`browse-${v}`)
+            }
+          }}
+          className="mt-4 inline-flex w-fit rounded-lg border border-border"
+        >
+          <ToggleGroupItem value="az" aria-label="Browse A to Z" className="text-xs">
+            A to Z
+          </ToggleGroupItem>
+          <ToggleGroupItem value="city" aria-label="Browse by city" className="text-xs">
+            By city
+          </ToggleGroupItem>
+        </ToggleGroup>
+      ) : null}
+
       {matches ? (
         <div className="mt-6">
           <p className="text-xs text-muted-foreground tabular-nums">
@@ -120,14 +159,14 @@ export default function CommunityIndexBrowser({ items }: { items: CommunityIndex
           ) : null}
         </div>
       ) : (
-        <div className="mt-6 divide-y divide-border border-t border-b border-border">
-          {groups.map(([letter, rows]) => (
-            <details key={letter} className="group">
+        <div className="mt-2 divide-y divide-border border-t border-b border-border">
+          {(viewMode === 'city' ? cityGroups : groups).map(([label, rows]) => (
+            <details key={label} className="group">
               <summary
                 className="flex cursor-pointer list-none items-center justify-between gap-4 py-3 [&::-webkit-details-marker]:hidden"
-                onClick={() => trackInteract(`expand-${letter}`)}
+                onClick={() => trackInteract(`expand-${label}`)}
               >
-                <span className="font-display text-lg text-foreground">{letter}</span>
+                <span className="font-display text-lg text-foreground">{label}</span>
                 <span className="flex items-center gap-3">
                   <span className="text-xs tabular-nums text-muted-foreground">
                     {rows.length} {rows.length === 1 ? 'community' : 'communities'}

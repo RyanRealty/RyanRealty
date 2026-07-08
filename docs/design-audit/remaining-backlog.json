@@ -448,23 +448,5 @@
     "effort": "small",
     "issue": "The breadcrumb's middle crumb 'TOOLS' is a link that points at the current page (/tools/mortgage-calculator) — there is no /tools index route. Tapping",
     "hint": "app/tools/mortgage-calculator/page.tsx line 93 still renders the Tools crumb as href=\"/tools/mortgage-calculator\" (self-link) and no /tools index rout"
-  },
-  {
-    "index": 84,
-    "group": "geo-browse",
-    "page": "/communities",
-    "sev": "P3",
-    "effort": "medium",
-    "issue": "'Every community, A to Z' is a collapsed alphabet accordion ('# 5 communities', 'A 26 communities'...) — ~20 near-empty rows that only help someone wh",
-    "hint": "CommunityIndexBrowser.tsx unchanged: search box + <details>-per-letter alphabet accordion only (lines 123-150); no city grouping, price bands, or coun"
-  },
-  {
-    "index": 99,
-    "group": "geo-browse",
-    "page": "cities (/cities)",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "Bend's card on /cities says '55 DAYS MEDIAN ON MARKET' while /cities/bend's hero says 'Pending in 13 days' and its ledger 'MEDIAN TO PENDING 13 days' ",
-    "hint": "Still two unreconciled day metrics: /cities cards show median_active_dom labeled 'Median on market' (Bend 55 days, app/cities/page.tsx:364-373) while "
   }
 ]

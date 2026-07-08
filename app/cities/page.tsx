@@ -376,6 +376,13 @@ export default async function CitiesPage() {
                             Median list
                           </p>
                         </div>
+                        {/* "Median on market" here and "Median to pending" on the
+                            city's own detail page measure two different things
+                            (how long CURRENT actives have been listed, vs. how
+                            fast RECENT listings went pending) — the same-sounding
+                            label with a 4x-different number read as a
+                            contradiction between the two pages (design-audit P3).
+                            Label now names which population it's measuring. */}
                         {city.medianDom != null ? (
                           <div>
                             <p className="display mono-num" style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}>
@@ -383,7 +390,7 @@ export default async function CitiesPage() {
                               <span className="font-sans text-xs font-medium" style={{ color: 'var(--navy-70)', marginLeft: '5px' }}>days</span>
                             </p>
                             <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
-                              Median on market
+                              Active listings' median age
                             </p>
                           </div>
                         ) : null}
