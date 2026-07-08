@@ -73,6 +73,10 @@ export type ListingTileRow = {
   BathroomsTotal: number | null
   StreetNumber: string | null
   StreetName: string | null
+  /** Street suffix (Loop/Rd/Ct) from listing_tile_mv. Present on the tile-MV
+   * paths; the advanced/keyword RPCs don't return it (address falls back to
+   * number + name there). Display-only — never part of a URL slug. */
+  StreetSuffix?: string | null
   City: string | null
   State: string | null
   PostalCode: string | null
@@ -408,6 +412,7 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
     ListingKey: t.listingKey,
     StreetNumber: t.streetNumber,
     StreetName: t.streetName,
+    StreetSuffix: t.streetSuffix ?? null,
     City: t.city,
     State: 'OR' as const,
     PostalCode: t.postalCode,
@@ -445,13 +450,14 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
   for (const row of addrRows) {
     const sn = (row.StreetNumber ?? '').toString().trim()
     const sname = (row.StreetName ?? '').toString().trim()
+    const ssuffix = (row.StreetSuffix ?? '').toString().trim()
     const city = (row.City ?? '').toString().trim()
     const state = (row.State ?? '').toString().trim()
     const zip = (row.PostalCode ?? '').toString().trim()
     const addrKey = `${sn}|${sname}|${city}`.toLowerCase()
     if (seenAddr.has(addrKey)) continue
     seenAddr.add(addrKey)
-    const parts = [sn, sname].filter(Boolean).join(' ')
+    const parts = [sn, sname, ssuffix].filter(Boolean).join(' ')
     const label = parts
       ? [parts, [city, state, zip].filter(Boolean).join(', ')].filter(Boolean).join(', ')
       : [city, state, zip].filter(Boolean).join(', ')
@@ -724,6 +730,7 @@ export async function getListings(options: {
       BathroomsTotal: t.baths,
       StreetNumber: t.streetNumber,
       StreetName: t.streetName,
+      StreetSuffix: t.streetSuffix ?? null,
       City: t.city,
       State: null,
       PostalCode: t.postalCode,
@@ -1312,6 +1319,7 @@ export async function getListingsInBounds(
     BathroomsTotal: t.baths,
     StreetNumber: t.streetNumber,
     StreetName: t.streetName,
+    StreetSuffix: t.streetSuffix ?? null,
     City: t.city,
     State: 'OR',
     PostalCode: t.postalCode,
@@ -1407,6 +1415,7 @@ export async function getViewportListings(
     BathroomsTotal: t.baths,
     StreetNumber: t.streetNumber,
     StreetName: t.streetName,
+    StreetSuffix: t.streetSuffix ?? null,
     City: t.city,
     State: 'OR',
     PostalCode: t.postalCode,
@@ -2448,6 +2457,7 @@ function tileToListingTileRow(t: ListingTile): ListingTileRow {
     BathroomsTotal: t.baths,
     StreetNumber: t.streetNumber,
     StreetName: t.streetName,
+    StreetSuffix: t.streetSuffix ?? null,
     City: t.city,
     State: 'OR',
     PostalCode: t.postalCode,
@@ -2490,6 +2500,7 @@ export type AdjacentListingThumb = {
   ListPrice: number | null
   StreetNumber: string | null
   StreetName: string | null
+  StreetSuffix?: string | null
   City: string | null
   State?: string | null
   PostalCode?: string | null
@@ -2517,6 +2528,7 @@ export async function getAdjacentListingsFromSupabase(modificationTimestamp: str
           ListPrice: t.listPrice,
           StreetNumber: t.streetNumber,
           StreetName: t.streetName,
+          StreetSuffix: t.streetSuffix ?? null,
           City: t.city,
           State: 'OR',
           PostalCode: t.postalCode,
@@ -2557,6 +2569,7 @@ export async function getAdjacentListingsSliceFromSupabase(
     ListPrice: t.listPrice,
     StreetNumber: t.streetNumber,
     StreetName: t.streetName,
+    StreetSuffix: t.streetSuffix ?? null,
     City: t.city,
     State: 'OR',
     PostalCode: t.postalCode,
@@ -2609,6 +2622,7 @@ export async function getListingsSliceInSubdivision(
     ListPrice: t.listPrice,
     StreetNumber: t.streetNumber,
     StreetName: t.streetName,
+    StreetSuffix: t.streetSuffix ?? null,
     City: t.city,
     State: 'OR',
     PostalCode: t.postalCode,

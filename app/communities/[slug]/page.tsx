@@ -484,7 +484,7 @@ export default async function CommunityDetailPage({ params }: Props) {
       geometry: { type: 'Point' as const, coordinates: [Number(t.lng), Number(t.lat)] as [number, number] },
       properties: {
         p: t.listPrice, bd: t.beds, ba: t.baths, sf: t.sqft,
-        a: [t.streetNumber, t.streetName].filter(Boolean).join(' '),
+        a: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
         sub: t.subdivisionName ?? '', city: t.city ?? '', img: t.photoUrl ?? '',
       },
     }))
@@ -505,7 +505,7 @@ export default async function CommunityDetailPage({ params }: Props) {
 
   const tickerItems: KbTickerItem[] = communityTiles.slice(0, 6).map((t) => ({
     price: t.listPrice,
-    address: [t.streetNumber, t.streetName].filter(Boolean).join(' '),
+    address: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
     town: t.city ?? cityName,
   }))
 
@@ -576,7 +576,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     return {
       kind: km.kind,
       label: km.label,
-      address: [a.StreetNumber, a.StreetName].filter(Boolean).join(' ') || 'Address on request',
+      address: [a.StreetNumber, a.StreetName, a.StreetSuffix].filter(Boolean).join(' ') || 'Address on request',
       cityLine: [a.City, a.SubdivisionName].filter(Boolean).join(' · '),
       price: a.ListPrice ?? null,
       imageUrl: a.PhotoURL ?? null,

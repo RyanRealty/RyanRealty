@@ -184,7 +184,7 @@ async function fetchNavData(): Promise<NavData> {
         const best = drops.find((d) => d.listingKey === bd.listingKey) ?? drops[0]
         if (best) {
           topDrop = {
-            address: [best.streetNumber, best.streetName].filter(Boolean).join(' ') || bd.address,
+            address: [best.streetNumber, best.streetName, best.streetSuffix].filter(Boolean).join(' ') || bd.address,
             amount: best.lastDropAmount ?? bd.amount,
             pct: best.lastDropPct ?? bd.pct,
             listPrice: best.listPrice,

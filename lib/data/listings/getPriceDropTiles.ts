@@ -18,7 +18,7 @@ const ACTIVE_OR =
 
 const PROJECTION = [
   'ListingKey, ListNumber, ListPrice, OriginalListPrice, BedroomsTotal, BathroomsTotal',
-  'TotalLivingAreaSqFt, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName',
+  'TotalLivingAreaSqFt, StreetNumber, StreetName, StreetSuffix:details->>StreetSuffix, City, State, PostalCode, SubdivisionName',
   'PhotoURL, StandardStatus, OnMarketDate, CloseDate, ClosePrice',
   'ListAgentName, ListOfficeName',
   'has_virtual_tour, virtual_tour_url',
@@ -36,6 +36,7 @@ export type PriceDropTile = {
   TotalLivingAreaSqFt: number | null
   StreetNumber: string | null
   StreetName: string | null
+  StreetSuffix?: string | null
   City: string | null
   State: string | null
   PostalCode: string | null

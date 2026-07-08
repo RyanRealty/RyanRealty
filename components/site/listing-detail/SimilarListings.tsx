@@ -17,7 +17,7 @@ type Props = {
 }
 
 function tileToCard(tile: ListingTile): ListingCardData {
-  const street = [tile.streetNumber, tile.streetName].filter(Boolean).join(' ').trim()
+  const street = [tile.streetNumber, tile.streetName, tile.streetSuffix].filter(Boolean).join(' ').trim()
   const cityParts: string[] = []
   if (tile.city) cityParts.push(tile.city)
   const cityLine = [cityParts.join(', '), tile.postalCode, displaySubdivision(tile.subdivisionName)]

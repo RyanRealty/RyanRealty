@@ -33,7 +33,7 @@ function formatPrice(n: number | null | undefined): string {
 
 function formatAddress(l: ListingTileRow): string {
   return [
-    [l.StreetNumber, l.StreetName].filter(Boolean).join(' ').trim(),
+    [l.StreetNumber, l.StreetName, l.StreetSuffix].filter(Boolean).join(' ').trim(),
     l.City,
     l.State,
     l.PostalCode,
@@ -61,6 +61,7 @@ function toMapListing(l: ListingTileRow): ListingForMap {
     ListPrice: l.ListPrice,
     StreetNumber: l.StreetNumber,
     StreetName: l.StreetName,
+    StreetSuffix: l.StreetSuffix ?? null,
     City: l.City,
     State: l.State,
     PostalCode: l.PostalCode,

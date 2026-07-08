@@ -83,7 +83,7 @@ export type PulseFeedResult = {
 
 const LISTING_SELECT = [
   'ListingKey, ListNumber, ListPrice, OriginalListPrice, BedroomsTotal, BathroomsTotal',
-  'TotalLivingAreaSqFt, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName',
+  'TotalLivingAreaSqFt, StreetNumber, StreetName, StreetSuffix:details->>StreetSuffix, City, State, PostalCode, SubdivisionName',
   'PhotoURL, StandardStatus, OnMarketDate, CloseDate, ClosePrice',
   'ListAgentName, ListOfficeName',
   'virtual_tour_url, has_virtual_tour, sale_to_list_ratio, days_to_pending',
@@ -163,6 +163,7 @@ export async function getPulseFeed(options: PulseFeedQuery): Promise<PulseFeedRe
     TotalLivingAreaSqFt: t.sqft,
     StreetNumber: t.streetNumber,
     StreetName: t.streetName,
+    StreetSuffix: t.streetSuffix ?? null,
     City: t.city,
     State: 'OR',
     PostalCode: t.postalCode,
@@ -225,6 +226,7 @@ export async function getPulseFeed(options: PulseFeedQuery): Promise<PulseFeedRe
       ListOfficeName: (listing.ListOfficeName as string | null | undefined) ?? null,
       StreetNumber: (listing.StreetNumber as string | null | undefined) ?? null,
       StreetName: (listing.StreetName as string | null | undefined) ?? null,
+      StreetSuffix: (listing.StreetSuffix as string | null | undefined) ?? null,
       City: listingCity,
       State: (listing.State as string | null | undefined) ?? null,
       PostalCode: (listing.PostalCode as string | null | undefined) ?? null,

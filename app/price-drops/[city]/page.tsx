@@ -136,7 +136,7 @@ function fmtPrice(n: number): string {
 
 function dropToCardData(drop: PriceDrop) {
   const addressLine =
-    [drop.streetNumber, drop.streetName].filter(Boolean).join(' ') || 'Address on request'
+    [drop.streetNumber, drop.streetName, drop.streetSuffix].filter(Boolean).join(' ') || 'Address on request'
   const cityParts: string[] = []
   if (drop.city) cityParts.push(`${drop.city}, OR`)
   if (drop.postalCode) cityParts.push(drop.postalCode)
@@ -186,7 +186,7 @@ function dropToFeaturedItem(drop: PriceDrop): KbFeaturedItem {
 
   return {
     price: drop.listPrice,
-    address: [drop.streetNumber, drop.streetName].filter(Boolean).join(' ') || 'Address on request',
+    address: [drop.streetNumber, drop.streetName, drop.streetSuffix].filter(Boolean).join(' ') || 'Address on request',
     sub: dropSub,
     city: drop.city ?? '',
     beds: drop.beds ?? null,
@@ -253,7 +253,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
         bd: d.beds,
         ba: d.baths,
         sf: d.sqft,
-        a: [d.streetNumber, d.streetName].filter(Boolean).join(' '),
+        a: [d.streetNumber, d.streetName, d.streetSuffix].filter(Boolean).join(' '),
         sub: d.subdivisionName ?? '',
         city: d.city ?? '',
         img: d.photoUrl ?? '',

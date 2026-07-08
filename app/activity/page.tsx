@@ -82,7 +82,7 @@ function toKbActivityItem(a: ActivityFeedItem): KbActivityItem {
   return {
     kind: km.kind,
     label: km.label,
-    address: [a.StreetNumber, a.StreetName].filter(Boolean).join(' ') || 'Address on request',
+    address: [a.StreetNumber, a.StreetName, a.StreetSuffix].filter(Boolean).join(' ') || 'Address on request',
     cityLine: [a.City, a.SubdivisionName].filter(Boolean).join(' · '),
     price: a.ListPrice ?? null,
     imageUrl: a.PhotoURL ?? null,

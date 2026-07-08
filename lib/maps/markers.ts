@@ -211,6 +211,7 @@ export type InfoWindowListingData = {
   photoURL?: string | null
   streetNumber?: string | null
   streetName?: string | null
+  streetSuffix?: string | null
   city?: string | null
   state?: string | null
   postalCode?: string | null
@@ -246,7 +247,7 @@ export function buildInfoWindowHTML(listing: InfoWindowListingData): string {
         }).format(Number(listing.price))
       : null
 
-  const streetLine = [listing.streetNumber, listing.streetName].filter(Boolean).join(' ')
+  const streetLine = [listing.streetNumber, listing.streetName, listing.streetSuffix].filter(Boolean).join(' ')
   const cityLine = [listing.city, listing.state, listing.postalCode].filter(Boolean).join(' ')
   const addressLine = [streetLine, cityLine].filter(Boolean).join(', ')
 

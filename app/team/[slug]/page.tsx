@@ -105,7 +105,7 @@ function soldBadgeLabel(closeDate: string | null | undefined): string {
 /** Map a brokerage closing tile to a KbFeaturedItem (price = recorded MLS close). */
 function brokerageTileToFeatured(tile: PriceDropTile): KbFeaturedItem | null {
   if (!tile.ListingKey) return null
-  const addressLine = [tile.StreetNumber, tile.StreetName].filter(Boolean).join(' ') || 'Address unavailable'
+  const addressLine = [tile.StreetNumber, tile.StreetName, tile.StreetSuffix].filter(Boolean).join(' ') || 'Address unavailable'
   const cityParts = [tile.City, tile.PostalCode].filter(Boolean).join(' ')
   const sub = [cityParts, tile.SubdivisionName].filter(Boolean).join(' · ')
   return {

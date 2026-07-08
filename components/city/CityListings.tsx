@@ -160,7 +160,7 @@ export default function CityListings({
                       className="block h-full rounded-lg border border-border bg-card p-4 shadow-sm transition hover:shadow-md"
                     >
                       <p className="font-semibold text-primary">
-                        {[listing.StreetNumber, listing.StreetName].filter(Boolean).join(' ')} {listing.City}
+                        {[listing.StreetNumber, listing.StreetName, listing.StreetSuffix].filter(Boolean).join(' ')} {listing.City}
                       </p>
                       <p className="mt-1 text-sm text-muted-foreground">
                         Sold {formatPrice(listing.ClosePrice)} · {formatDate(listing.CloseDate)}

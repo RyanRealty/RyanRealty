@@ -62,7 +62,7 @@ function formatPrice(n: number | null | undefined): string {
 }
 
 function formatAddress(item: ActivityFeedItem): string {
-  const street = [item.StreetNumber, item.StreetName].filter(Boolean).join(' ').trim()
+  const street = [item.StreetNumber, item.StreetName, item.StreetSuffix].filter(Boolean).join(' ').trim()
   const parts = [street, item.City].filter(Boolean) as string[]
   return parts.join(', ') || 'Listing'
 }

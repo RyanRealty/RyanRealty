@@ -77,7 +77,7 @@ export default function ActivityFeedCard({
   const imageContainerRef = useRef<HTMLDivElement>(null)
   const [savedState, setSavedState] = useState(saved)
   const [likedState, setLikedState] = useState(liked)
-  const address = [item.StreetNumber, item.StreetName].filter(Boolean).join(' ').trim() || 'Property'
+  const address = [item.StreetNumber, item.StreetName, item.StreetSuffix].filter(Boolean).join(' ').trim() || 'Property'
   // Activity items can carry inconsistent hierarchy fields; by-key path is always resolvable.
   const href = listingDetailPath(
     item.listing_key,

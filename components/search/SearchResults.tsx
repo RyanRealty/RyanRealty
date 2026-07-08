@@ -128,7 +128,7 @@ export default function SearchResults({
           const cityZip = [cityParts, listing.PostalCode].filter(Boolean).join(' ').trim()
           const cityLine = listing.SubdivisionName ? `${cityZip} · ${listing.SubdivisionName}` : cityZip
           const addressLine =
-            [listing.StreetNumber, listing.StreetName].filter(Boolean).join(' ').trim() || cityParts || 'Listing'
+            [listing.StreetNumber, listing.StreetName, listing.StreetSuffix].filter(Boolean).join(' ').trim() || cityParts || 'Listing'
           // Wrapper carries data-listing-key for the map<->list hover sync
           // (consumed by SearchSplitView / MapSearchView). ListingCard is the
           // canonical site card — one look across the whole site.

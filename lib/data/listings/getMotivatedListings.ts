@@ -64,6 +64,8 @@ export type MotivatedListing = {
   sqft: number | null
   streetNumber: string | null
   streetName: string | null
+  /** Street suffix (Loop/Rd/Ct) from the raw feed payload — display-only. */
+  streetSuffix: string | null
   city: string | null
   citySlug: string | null
   postalCode: string | null
@@ -131,7 +133,9 @@ export type GetMotivatedListingsResult = {
 const PROJECTION = [
   'ListingKey, ListNumber, StandardStatus, ListPrice',
   'BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt',
-  'StreetNumber, StreetName, City, PostalCode, SubdivisionName',
+  // Suffix (Loop/Rd/Ct) lives only in the raw feed payload — same alias
+  // pattern as getListingDetail (design-audit P1, address trust).
+  'StreetNumber, StreetName, StreetSuffix:details->>StreetSuffix, City, PostalCode, SubdivisionName',
   'Latitude, Longitude, PhotoURL',
   'PropertyType, property_sub_type, OnMarketDate, ModificationTimestamp',
   'DaysOnMarket, OriginalListPrice',
@@ -232,6 +236,7 @@ type RawRow = {
   TotalLivingAreaSqFt: number | null
   StreetNumber: string | null
   StreetName: string | null
+  StreetSuffix?: string | null
   City: string | null
   PostalCode: string | null
   SubdivisionName: string | null
@@ -292,6 +297,7 @@ function toMotivatedListing(
     sqft: row.TotalLivingAreaSqFt,
     streetNumber: row.StreetNumber,
     streetName: row.StreetName,
+    streetSuffix: row.StreetSuffix ?? null,
     city: row.City,
     citySlug,
     postalCode: row.PostalCode,
@@ -424,7 +430,9 @@ export const getMotivatedListings = (
   return makeResilientCached(
     () => fetchMotivatedListings(input),
     // v2 (2026-06-10, audit P0-3): region-wide pull now service-area scoped.
-    ['motivated-listings-v2', key],
+    // v3 (2026-07-08, design-audit P1): rows carry streetSuffix — evict
+    // entries cached without it.
+    ['motivated-listings-v3', key],
     { revalidate: 600, tags: [cacheTag.listings] },
     { listings: [], total: 0 }
   )()

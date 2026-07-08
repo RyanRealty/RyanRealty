@@ -165,7 +165,7 @@ async function loadActiveListings(): Promise<ActiveListing[]> {
   return tiles.map((t) => ({
     list_number: t.listNumber ?? '',
     listing_key: t.listingKey,
-    address: [t.streetNumber, t.streetName].filter(Boolean).join(' '),
+    address: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
     city: t.city ?? 'Bend',
     list_price: Number(t.listPrice ?? 0),
     beds: t.beds,

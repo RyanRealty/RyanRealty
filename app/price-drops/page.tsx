@@ -122,7 +122,7 @@ function fmtPrice(n: number): string {
 
 function dropToCardData(drop: PriceDrop) {
   const addressLine =
-    [drop.streetNumber, drop.streetName].filter(Boolean).join(' ') || 'Address on request'
+    [drop.streetNumber, drop.streetName, drop.streetSuffix].filter(Boolean).join(' ') || 'Address on request'
   const cityParts: string[] = []
   if (drop.city) cityParts.push(`${drop.city}, OR`)
   if (drop.postalCode) cityParts.push(drop.postalCode)
@@ -173,7 +173,7 @@ function dropToFeaturedItem(drop: PriceDrop): KbFeaturedItem {
 
   return {
     price: drop.listPrice,
-    address: [drop.streetNumber, drop.streetName].filter(Boolean).join(' ') || 'Address on request',
+    address: [drop.streetNumber, drop.streetName, drop.streetSuffix].filter(Boolean).join(' ') || 'Address on request',
     sub: dropSub,
     city: drop.city ?? '',
     beds: drop.beds ?? null,
@@ -283,7 +283,7 @@ export default async function PriceDropsRegionPage() {
         bd: d.beds,
         ba: d.baths,
         sf: d.sqft,
-        a: [d.streetNumber, d.streetName].filter(Boolean).join(' '),
+        a: [d.streetNumber, d.streetName, d.streetSuffix].filter(Boolean).join(' '),
         sub: d.subdivisionName ?? '',
         city: d.city ?? '',
         img: d.photoUrl ?? '',
@@ -414,7 +414,7 @@ export default async function PriceDropsRegionPage() {
               <div className="grid sm:grid-cols-[1fr_auto] gap-6 items-center mt-6">
                 <div>
                   <p className="text-2xl sm:text-3xl font-display">
-                    {[featured.streetNumber, featured.streetName].filter(Boolean).join(' ') ||
+                    {[featured.streetNumber, featured.streetName, featured.streetSuffix].filter(Boolean).join(' ') ||
                       'Address on request'}
                   </p>
                   <p className="text-muted-foreground mt-1">

@@ -60,6 +60,7 @@ export type CityListingRow = {
   BathroomsTotal: number | null
   StreetNumber: string | null
   StreetName: string | null
+  StreetSuffix?: string | null
   City: string | null
   State: string | null
   PostalCode: string | null
@@ -207,6 +208,7 @@ function tileToCityListingRow(tile: ListingTile): CityListingRow {
     BathroomsTotal: tile.baths,
     StreetNumber: tile.streetNumber,
     StreetName: tile.streetName,
+    StreetSuffix: tile.streetSuffix ?? null,
     City: tile.city,
     State: null,
     PostalCode: tile.postalCode,
@@ -537,6 +539,7 @@ function tileToCityRow(t: ListingTile): CityListingRow & { ClosePrice?: number |
     ListPrice: t.listPrice ?? undefined,
     StreetNumber: t.streetNumber ?? undefined,
     StreetName: t.streetName ?? undefined,
+    StreetSuffix: t.streetSuffix ?? undefined,
     City: t.city ?? undefined,
     State: 'OR',
     PostalCode: t.postalCode ?? undefined,

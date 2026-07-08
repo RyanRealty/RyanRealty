@@ -42,6 +42,7 @@ export type BoundaryMapPin = {
   photoUrl: string | null
   streetNumber: string | null
   streetName: string | null
+  streetSuffix: string | null
   city: string | null
   postalCode: string | null
   beds: number | null
@@ -94,6 +95,7 @@ async function fetchPins(
     photoUrl: null,
     streetNumber: null,
     streetName: null,
+    streetSuffix: null,
     city: null,
     postalCode: null,
     beds: null,
@@ -120,6 +122,7 @@ async function enrichPins(pins: BoundaryMapPin[]): Promise<BoundaryMapPin[]> {
         photoUrl: t.photoUrl ?? null,
         streetNumber: t.streetNumber ?? null,
         streetName: t.streetName ?? null,
+        streetSuffix: t.streetSuffix ?? null,
         city: t.city ?? null,
         postalCode: t.postalCode ?? null,
         beds: t.beds ?? null,

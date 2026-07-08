@@ -292,7 +292,7 @@ export default async function SubdivisionPage({ params }: Props) {
       geometry: { type: 'Point' as const, coordinates: [Number(t.lng), Number(t.lat)] as [number, number] },
       properties: {
         p: t.listPrice, bd: t.beds, ba: t.baths, sf: t.sqft,
-        a: [t.streetNumber, t.streetName].filter(Boolean).join(' '),
+        a: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
         sub: t.subdivisionName ?? '', city: t.city ?? '', img: t.photoUrl ?? '',
       },
     }))

@@ -83,7 +83,7 @@ function leadFor(event: ActivityFeedItem['event_type']): string {
 }
 
 function buildAddress(item: ActivityFeedItem): string {
-  const street = [item.StreetNumber, item.StreetName].filter(Boolean).join(' ').trim()
+  const street = [item.StreetNumber, item.StreetName, item.StreetSuffix].filter(Boolean).join(' ').trim()
   const city = item.City
   if (street && city) return `${street}, ${city}`
   return street || city || 'Central Oregon'

@@ -151,6 +151,7 @@ type ListingTileMvRow = {
   sqft: number | null
   street_number: string | null
   street_name: string | null
+  street_suffix: string | null
   city: string | null
   postal_code: string | null
   subdivision_name: string | null
@@ -193,6 +194,7 @@ function mvRowToTile(row: ListingTileMvRow): ListingTile {
     sqft: row.sqft,
     streetNumber: row.street_number,
     streetName: row.street_name,
+    streetSuffix: row.street_suffix ?? null,
     city: row.city,
     citySlug,
     postalCode: row.postal_code,
@@ -404,7 +406,9 @@ export const getListingTiles = (filter: GetListingTilesFilter): Promise<ListingT
     // entries cached under propertyType=Residential held a poisoned empty result.
     // v4 (2026-06-10, audit P0-3): default service-area guard — evict entries
     // cached before the guard that held region-wide (Southern Oregon) tiles.
-    ['listing-tiles-v4', cacheKey],
+    // v5 (2026-07-08, design-audit P1): tiles now carry streetSuffix from the
+    // rebuilt listing_tile_mv — evict entries cached without it.
+    ['listing-tiles-v5', cacheKey],
     {
       revalidate: CACHE_WINDOWS.listingTile,
       tags: [cacheTag.listings],

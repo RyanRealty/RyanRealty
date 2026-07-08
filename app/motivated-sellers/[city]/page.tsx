@@ -98,7 +98,7 @@ function MotivatedTile({ listing }: { listing: MotivatedListing }) {
     { mlsNumber: listing.listNumber },
   )
   const addressLine =
-    [listing.streetNumber, listing.streetName].filter(Boolean).join(' ') || 'Address on request'
+    [listing.streetNumber, listing.streetName, listing.streetSuffix].filter(Boolean).join(' ') || 'Address on request'
   const cityParts: string[] = []
   if (listing.city) cityParts.push(`${listing.city}, OR`)
   if (listing.postalCode) cityParts.push(listing.postalCode)

@@ -40,7 +40,7 @@ export function RentalAnalysis({ listing }: { listing: ListingDetail }) {
     listing.taxAnnualAmount && listing.taxAnnualAmount > 0
       ? listing.taxAnnualAmount
       : Math.round(price * TAX_FALLBACK_PCT)
-  const label = [listing.streetNumber, listing.streetName].filter(Boolean).join(' ').trim() || undefined
+  const label = [listing.streetNumber, listing.streetName, listing.streetSuffix].filter(Boolean).join(' ').trim() || undefined
   const hud = getAreaRentEstimate(listing.city, listing.beds)
   const rent = hud
     ? { value: hud.value, low: hud.low, high: hud.high, source: hud.label }

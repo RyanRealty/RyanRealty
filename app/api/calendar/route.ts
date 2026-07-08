@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
   const listingUrl = `${siteUrl.replace(/\/$/, '')}${listingDetailPath(key)}`
   void supabase
   const address = tile
-    ? [tile.streetNumber, tile.streetName].filter(Boolean).join(' ') +
+    ? [tile.streetNumber, tile.streetName, tile.streetSuffix].filter(Boolean).join(' ') +
       (tile.city ? `, ${tile.city}` : '') +
       (tile.postalCode ? ` ${tile.postalCode}` : '')
     : ''

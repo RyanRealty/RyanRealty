@@ -164,7 +164,7 @@ export async function fetchTetherowActiveListings(): Promise<TetherowActiveListi
       limit: 12,
     })
     return tiles.map((t) => {
-      const addressLine = [t.streetNumber, t.streetName].filter(Boolean).join(' ').trim() || 'Tetherow'
+      const addressLine = [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' ').trim() || 'Tetherow'
       const statusLabel = toUiStatusLabel(t.status)
       const isContingent = statusLabel.toLowerCase().includes('pending') || statusLabel.toLowerCase().includes('contract')
       const priceSuffix = t.listPrice != null ? formatPriceFull(t.listPrice) : ''

@@ -43,7 +43,7 @@ export async function resolveFeaturedItems(tiles: ListingTile[], limit = 6): Pro
     .slice(0, limit)
     .map(({ t, m }) => ({
       price: t.listPrice,
-      address: [t.streetNumber, t.streetName].filter(Boolean).join(' '),
+      address: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
       sub: displaySubdivision(t.subdivisionName) ?? '',
       city: t.city ?? '',
       beds: t.beds,

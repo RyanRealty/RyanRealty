@@ -48,7 +48,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
       const { getListingsByKeys } = await import('@/app/actions/listings')
       const [tile] = await getListingsByKeys([listingKey])
       if (tile) {
-        const street = [tile.StreetNumber, tile.StreetName].filter(Boolean).join(' ').trim()
+        const street = [tile.StreetNumber, tile.StreetName, tile.StreetSuffix].filter(Boolean).join(' ').trim()
         const where = [street, tile.City].filter(Boolean).join(', ')
         listingLabel = (where || 'a listing') + (tile.ListNumber ? ` (MLS ${tile.ListNumber})` : '')
       } else {

@@ -26,7 +26,7 @@ function formatPrice(n: number | null | undefined): string {
 }
 
 function addressOneLine(listing: AdjacentListingThumb): string {
-  const parts = [listing.StreetNumber, listing.StreetName].filter(Boolean).join(' ')
+  const parts = [listing.StreetNumber, listing.StreetName, listing.StreetSuffix].filter(Boolean).join(' ')
   return parts || listing.City || ''
 }
 

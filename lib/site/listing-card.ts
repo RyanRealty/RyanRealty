@@ -12,7 +12,8 @@ import { listingTileHref, displaySubdivision } from '@/lib/slug'
 export function motivatedToCardData(l: MotivatedListing): ListingCardData | null {
   const key = (l.listingKey ?? l.listNumber ?? '').toString()
   if (!key) return null
-  const addressLine = [l.streetNumber, l.streetName].filter(Boolean).join(' ') || 'Address on request'
+  const addressLine =
+    [l.streetNumber, l.streetName, l.streetSuffix].filter(Boolean).join(' ') || 'Address on request'
   const cityParts: string[] = []
   if (l.city) cityParts.push(`${l.city}, OR`)
   if (l.postalCode) cityParts.push(l.postalCode)
@@ -42,7 +43,8 @@ export function tileToCardData(
 ): ListingCardData | null {
   const key = (t.listingKey ?? t.listNumber ?? '').toString()
   if (!key) return null
-  const addressLine = [t.streetNumber, t.streetName].filter(Boolean).join(' ') || 'Address on request'
+  const addressLine =
+    [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' ') || 'Address on request'
   const cityParts: string[] = []
   if (t.city) cityParts.push(`${t.city}, OR`)
   if (t.postalCode) cityParts.push(t.postalCode)

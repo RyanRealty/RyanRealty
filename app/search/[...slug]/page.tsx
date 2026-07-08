@@ -917,7 +917,7 @@ export default async function SearchPage({
           <Grid cols={4} gap="loose" className="mt-2">
             {listings.map((listing, i) => {
               const key = (listing.ListNumber ?? listing.ListingKey ?? `listing-${i}`).toString().trim()
-              const street = [listing.StreetNumber, listing.StreetName].filter(Boolean).join(' ').trim()
+              const street = [listing.StreetNumber, listing.StreetName, listing.StreetSuffix].filter(Boolean).join(' ').trim()
               const cityLine = [[listing.City ?? city, 'OR'].filter(Boolean).join(', '), listing.PostalCode].filter(Boolean).join(' ').trim()
               const card: ListingCardData = {
                 listingKey: key,

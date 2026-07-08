@@ -121,7 +121,7 @@ export default async function ComparePage({
     })
 
     listings = deduped.map((t) => {
-      const streetParts = [t.streetNumber, t.streetName].filter(Boolean).join(' ').trim()
+      const streetParts = [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' ').trim()
       const addressParts = [streetParts, t.city, 'OR', t.postalCode].filter(Boolean)
       return {
         listingKey: t.listingKey,

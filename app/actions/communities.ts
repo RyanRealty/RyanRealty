@@ -248,6 +248,7 @@ export type ListingRow = {
   BathroomsTotal: number | null
   StreetNumber: string | null
   StreetName: string | null
+  StreetSuffix?: string | null
   City: string | null
   State: string | null
   PostalCode: string | null
@@ -286,6 +287,7 @@ function tileToCommunityRow(tile: ListingTile): ListingRow {
     BathroomsTotal: tile.baths,
     StreetNumber: tile.streetNumber,
     StreetName: tile.streetName,
+    StreetSuffix: tile.streetSuffix ?? null,
     City: tile.city,
     State: null,
     PostalCode: tile.postalCode,

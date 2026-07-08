@@ -66,6 +66,7 @@ export type ListingForMap = {
   ListPrice?: number | null
   StreetNumber?: string | null
   StreetName?: string | null
+  StreetSuffix?: string | null
   City?: string | null
   State?: string | null
   PostalCode?: string | null
@@ -974,6 +975,7 @@ export default function SearchMapClustered({
                       photoURL: openListing.PhotoURL ?? null,
                       streetNumber: openListing.StreetNumber ?? null,
                       streetName: openListing.StreetName ?? null,
+                      streetSuffix: openListing.StreetSuffix ?? null,
                       city: openListing.City ?? null,
                       state: openListing.State ?? null,
                       postalCode: openListing.PostalCode ?? null,

@@ -52,6 +52,8 @@ export type PriceDrop = {
   listNumber: string | null
   streetNumber: string | null
   streetName: string | null
+  /** Street suffix (Loop/Rd/Ct) from the tile MV — display-only, never in slugs. */
+  streetSuffix: string | null
   city: string | null
   citySlug: string | null
   postalCode: string | null
@@ -195,6 +197,7 @@ function tileAndEventToDrop(
     listNumber: tile.listNumber,
     streetNumber: tile.streetNumber,
     streetName: tile.streetName,
+    streetSuffix: tile.streetSuffix ?? null,
     city,
     citySlug,
     postalCode: tile.postalCode,
@@ -379,7 +382,7 @@ async function fetchPriceDropDigest(
   const top = sorted[0]
   const biggestDrop = top
     ? {
-        address: [top.streetNumber, top.streetName].filter(Boolean).join(' ') || 'Address on request',
+        address: [top.streetNumber, top.streetName, top.streetSuffix].filter(Boolean).join(' ') || 'Address on request',
         amount: top.lastDropAmount ?? 0,
         pct: top.lastDropPct ?? 0,
         neighborhood: top.boundaryNeighborhood ?? top.subdivisionName ?? null,
@@ -433,7 +436,9 @@ export const getPriceDrops = (
     () => fetchPriceDrops(input),
     // v3 (2026-06-10, audit P0-3): region-wide pull now scoped to the Central
     // Oregon service area — evict entries holding out-of-area drops.
-    ['price-drops-v3', key],
+    // v4 (2026-07-08, design-audit P1): drops carry streetSuffix — evict
+    // entries cached without it.
+    ['price-drops-v4', key],
     { revalidate: 1800, tags: [cacheTag.listings] },
     { drops: [], total: 0, fetchedAt: new Date().toISOString() },
   )()
@@ -455,8 +460,8 @@ export const getPriceDropDigest = (
   const key = `${cityOrRegion.toLowerCase()}-${days}d`
   return makeResilientCached(
     () => fetchPriceDropDigest(cityOrRegion, days),
-    // v3 (2026-06-10, audit P0-3): same service-area eviction as price-drops-v3.
-    ['price-drop-digest-v3', key],
+    // v4 (2026-07-08): same streetSuffix eviction as price-drops-v4.
+    ['price-drop-digest-v4', key],
     { revalidate: 3600, tags: [cacheTag.listings] },
     {
       count: 0,

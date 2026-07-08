@@ -31,7 +31,7 @@ export async function GET(request: Request) {
       })
       const tile = tiles[0]
       if (tile) {
-        const address = [tile.streetNumber, tile.streetName].filter(Boolean).join(' ')
+        const address = [tile.streetNumber, tile.streetName, tile.streetSuffix].filter(Boolean).join(' ')
         let photoUrl: string | undefined = tile.photoUrl ?? undefined
         if (!photoUrl) {
           void supabase

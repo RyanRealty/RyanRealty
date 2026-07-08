@@ -33,6 +33,7 @@ type Props = {
     | 'listingKey'
     | 'streetNumber'
     | 'streetName'
+    | 'streetSuffix'
     | 'city'
     | 'citySlug'
     | 'postalCode'
@@ -67,7 +68,7 @@ type Props = {
 function buildAddressLine(
   l: Props['listing'],
 ): { street: string; city: string; full: string } {
-  const street = [l.streetNumber, l.streetName].filter(Boolean).join(' ').trim()
+  const street = [l.streetNumber, l.streetName, l.streetSuffix].filter(Boolean).join(' ').trim()
   // Ryan Realty is Oregon-only; state hardcoded so the address line has a
   // canonical "City, OR ZIP" form even though the ListingTile type does
   // not expose a `state` field.

@@ -31,6 +31,7 @@ export type ActivityFeedItem = {
   BathroomsTotal?: number | null
   StreetNumber?: string | null
   StreetName?: string | null
+  StreetSuffix?: string | null
   City?: string | null
   State?: string | null
   PostalCode?: string | null

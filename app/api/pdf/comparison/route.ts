@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   })
 
   const listings: ComparisonListing[] = deduped.map((t) => {
-    const streetParts = [t.streetNumber, t.streetName].filter(Boolean).join(' ').trim()
+    const streetParts = [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' ').trim()
     const addressParts = [streetParts, t.city, 'OR', t.postalCode].filter(Boolean)
     return {
       address: addressParts.join(', '),

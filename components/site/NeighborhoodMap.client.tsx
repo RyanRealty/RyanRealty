@@ -59,6 +59,7 @@ export type MapListingPin = {
   photoURL?: string | null
   streetNumber?: string | null
   streetName?: string | null
+  streetSuffix?: string | null
   city?: string | null
   state?: string | null
   postalCode?: string | null
@@ -351,6 +352,7 @@ export default function NeighborhoodMapClient({
                   photoURL: selectedPin.photoURL ?? null,
                   streetNumber: selectedPin.streetNumber ?? null,
                   streetName: selectedPin.streetName ?? null,
+                  streetSuffix: selectedPin.streetSuffix ?? null,
                   city: selectedPin.city ?? null,
                   state: selectedPin.state ?? null,
                   postalCode: selectedPin.postalCode ?? null,

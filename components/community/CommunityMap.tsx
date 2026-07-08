@@ -212,7 +212,7 @@ export default function CommunityMap({
               >
                 <div className="min-w-[180px] p-1">
                   <p className="font-semibold text-primary">
-                    {[infoListing.StreetNumber, infoListing.StreetName].filter(Boolean).join(' ')}
+                    {[infoListing.StreetNumber, infoListing.StreetName, infoListing.StreetSuffix].filter(Boolean).join(' ')}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {formatPrice(infoListing.ListPrice)} · {infoListing.BedroomsTotal} bed · {infoListing.BathroomsTotal} bath

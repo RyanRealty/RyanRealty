@@ -189,7 +189,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={listingTile.photoUrl}
-                        alt={[listingTile.streetNumber, listingTile.streetName].filter(Boolean).join(' ')}
+                        alt={[listingTile.streetNumber, listingTile.streetName, listingTile.streetSuffix].filter(Boolean).join(' ')}
                         className="h-16 w-24 shrink-0 object-cover"
                         loading="lazy"
                       />
@@ -198,7 +198,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
                     )}
                     <div className="min-w-0">
                       <p className="truncate font-semibold" style={{ color: 'var(--navy)' }}>
-                        {[listingTile.streetNumber, listingTile.streetName].filter(Boolean).join(' ')}
+                        {[listingTile.streetNumber, listingTile.streetName, listingTile.streetSuffix].filter(Boolean).join(' ')}
                         {listingTile.city ? `, ${listingTile.city}` : ''}
                       </p>
                       <p className="mono-num text-sm" style={{ color: 'var(--navy-70)' }}>

@@ -175,7 +175,7 @@ export default async function BuyerLPPage() {
     .filter((l) => typeof l.photoUrl === 'string' && l.photoUrl.trim() !== '' && l.listPrice != null)
     .slice(0, 6)
     .map((l) => {
-      const address = [l.streetNumber, l.streetName].filter(Boolean).join(' ').trim() || 'Bend, Oregon'
+      const address = [l.streetNumber, l.streetName, l.streetSuffix].filter(Boolean).join(' ').trim() || 'Bend, Oregon'
       const meta = [
         l.beds != null ? `${Math.round(l.beds)} bd` : null,
         l.baths != null ? `${l.baths} ba` : null,

@@ -89,7 +89,7 @@ function formatDetailLine(item: PulseFeedItem): string {
 }
 
 function formatLocation(item: PulseFeedItem): string {
-  const street = [item.StreetNumber, item.StreetName].filter(Boolean).join(' ').trim()
+  const street = [item.StreetNumber, item.StreetName, item.StreetSuffix].filter(Boolean).join(' ').trim()
   const place = [item.SubdivisionName, item.City].filter(Boolean).join(', ')
   if (street && place) return `${street} · ${place}`
   return street || place || ''

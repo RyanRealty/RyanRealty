@@ -65,7 +65,7 @@ export default function BrokerSoldHistory({ soldListings }: Props) {
                   onClick={() => trackEvent('view_listing', { context: 'broker_sold_history', listing_key: String(key) })}
                 >
                   <p className="font-semibold text-primary">
-                    {[listing.StreetNumber, listing.StreetName].filter(Boolean).join(' ')} {listing.City}
+                    {[listing.StreetNumber, listing.StreetName, listing.StreetSuffix].filter(Boolean).join(' ')} {listing.City}
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
                     Sold {formatPrice(listing.ClosePrice)} · {formatDate(listing.CloseDate)}

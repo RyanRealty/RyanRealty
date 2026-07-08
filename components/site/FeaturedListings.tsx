@@ -39,7 +39,7 @@ function citySlug(city: string): string {
 function toCardData(l: ListingTileRow): ListingCardData | null {
   const key = (l.ListingKey ?? l.ListNumber ?? '').toString()
   if (!key) return null
-  const addressLine = [l.StreetNumber, l.StreetName].filter(Boolean).join(' ') || 'Address on request'
+  const addressLine = [l.StreetNumber, l.StreetName, l.StreetSuffix].filter(Boolean).join(' ') || 'Address on request'
   const cityParts: string[] = []
   if (l.City) cityParts.push(`${l.City}, OR`)
   if (l.PostalCode) cityParts.push(l.PostalCode)
