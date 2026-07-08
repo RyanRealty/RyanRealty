@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.749.0 (2026-07-08)
+
+### Features
+- feat(data): design-audit Phase C — one number per metric, gate-enforced
+
+---
+
+
 ## v1.748.0 (2026-07-08)
 
 ### Features
