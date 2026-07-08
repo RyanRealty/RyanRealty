@@ -32,7 +32,20 @@ Ratchet cleanups the gate required in touched files: `no-scrollbar` utility on t
 
 Ratchet cleanups: ContactForm labels → `text-primary`; sell sticky bar `tracking-widest`; PriceCtaStrip/TextMattCTA arbitrary text sizes → ladder (`text-4xl/lg/sm/xs`, `leading-relaxed/normal`); PriceCtaStrip registered in `.design-token-lint-ignore` for its two KB `.btn` controls (same exception class as components/site/kb/).
 
-## Phase C — market-stat pipeline unification — PENDING
+## Phase C — market-stat pipeline unification (2026-07-08) ✅
+
+The 788-vs-500 investigation: geo_snapshot_mv counted by the MLS City field and included Active Under Contract; market_pulse_live (the methodology-versioned canonical) counts Active + Coming Soon SFRs inside the city GIS polygon. One metric, two definitions, same label.
+
+| Item | Fix | Verified |
+|---|---|---|
+| Same stat, different number (P0) | City-level snapshots in the DAL now override count/median/pending from market_pulse_live when a pulse row exists; MV stays the resilient base + the community/neighborhood source. Cache keys bumped (geo-snapshot v3, cities-index v3) | Homepage and /housing-market both render "Bend 501 ACTIVE $775,000 median" — byte-identical |
+| Pronghorn "$194K median" (P1, §0) | Migration `20260708090000_geo_snapshot_mv_sfr_medians.sql` (applied to hosted): PropertyType='A' + SFR subtype on every median block; Active definition aligned to the pulse (AUC counts as pending) | SQL: bend:pronghorn = 13 active, median $1,595,000; Brasada $1,799,900 |
+| 11 flagship resort rows rendered em-dashes (P1) | /communities join gains label-only fallback (registry-city vs MLS-city mismatches) + city-row fallback (Sunriver/BBR/CRR are MLS cities) + honest "0 active" default for registry resorts | All 14 resort cards carry numbers (Sunriver 58/$938K from the pulse; Widgi Creek honest 0 — zero matching actives confirmed in SQL) |
+| Luxury page led with Costco land parcels (P1) | propertyType='A' on tiles + count | 213 homes (was 242 inflated); no land parcels render |
+| "501+ homes in this area" (P2) | When the tile fetch caps, an uncapped count query (same filters, cached) supplies the exact header total; polygon path marks exact when the overfetch didn't cap | header reads "966 homes in this area" |
+| Drift gate | New daily cron `/api/cron/market-stat-consistency`: (1) DAL city snapshots must equal their pulse rows, (2) pulse freshness < 2h, (3) bend:pronghorn SFR-median sentinel (> $500K). Alerts Matt via the ops-email pattern; registered in vercel.json | route + alert helper + email-gate allowlist + full ci:gates green |
+
+Gate ratchet: poison-null `// poison-null-ok` marker on the restructured genuine-miss branch; hydration-safety marker on the submit-handler session read; file-size baseline refresh (+30 lines of real logic); market-stat alert classified internal in email-quality NON_SENDER.
 
 ## Phase D — seam continuity, curation, media states, signup, addresses — PENDING
 

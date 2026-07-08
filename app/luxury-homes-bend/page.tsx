@@ -47,9 +47,12 @@ const fmtK = (n: number | null): string =>
   n != null ? '$' + (Math.round(n / 1000) * 1000).toLocaleString('en-US') : 'Call for price'
 
 export default async function LuxuryHomesBendPage() {
+  // propertyType 'A' (design-audit P1): without it, $14M+ commercial land
+  // parcels headlined "Luxury homes" with lot area rendered as living sqft,
+  // and the hero count was inflated by non-residential listings.
   const [tiles, count] = await Promise.all([
-    getListingTiles({ city: 'Bend', status: 'active', minPrice: LUX_MIN, sort: 'price-desc', limit: 12 }),
-    getListingTilesCount({ city: 'Bend', status: 'active', minPrice: LUX_MIN }).catch(() => null),
+    getListingTiles({ city: 'Bend', status: 'active', minPrice: LUX_MIN, sort: 'price-desc', limit: 12, propertyType: 'A' }),
+    getListingTilesCount({ city: 'Bend', status: 'active', minPrice: LUX_MIN, propertyType: 'A' }).catch(() => null),
   ])
   const cards = tiles
     .filter((l) => typeof l.photoUrl === 'string' && l.photoUrl.trim() !== '' && l.listPrice != null)

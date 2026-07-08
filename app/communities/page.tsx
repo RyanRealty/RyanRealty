@@ -31,7 +31,7 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
-import { getAllCommunitySnapshots } from '@/lib/data'
+import { getAllCommunitySnapshots, getAllCitySnapshots } from '@/lib/data'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { communityImage, cityHero } from '@/lib/geo-images'
 import { subdivisionEntityKey } from '@/lib/slug'
@@ -93,23 +93,37 @@ function fmtPrice(n: number | null | undefined): string | null {
 export default async function CommunitiesPage() {
   const registry = resortCommunitiesRegistry.communities as ReadonlyArray<RegistryCommunity>
 
-  const [allCommunities, snapshots] = await Promise.all([
+  const [allCommunities, snapshots, citySnapshots] = await Promise.all([
     getCommunitiesForIndex(),
     getAllCommunitySnapshots(),
+    getAllCitySnapshots(),
   ])
 
   // geo_snapshot_mv keys: lowercase "city:subdivision" with spaces preserved
   // (e.g. "powell butte:brasada ranch") — same construction the community
   // detail page uses, so index numbers and detail-page numbers agree.
   const snapByKey = new Map(snapshots.map((s) => [s.geoKey, s]))
+  // Fallbacks (design-audit P1 — 11 of 19 flagship rows rendered em-dashes):
+  // 1. label-only: the registry city and the MLS "City" field disagree for some
+  //    resorts (e.g. Brasada rows carry Powell Butte). Pick the busiest row.
+  // 2. city row: Sunriver / Black Butte Ranch / Crooked River Ranch are CITIES
+  //    in the MLS, so their inventory lives on a city row, not city:subdivision.
+  const snapByLabel = new Map<string, (typeof snapshots)[number]>()
+  for (const s of snapshots) {
+    const label = s.geoKey.split(':')[1] ?? ''
+    const prev = snapByLabel.get(label)
+    if (!prev || s.activeSfrCount > prev.activeSfrCount) snapByLabel.set(label, s)
+  }
+  const cityByKey = new Map(citySnapshots.map((s) => [s.geoKey, s]))
   const indexByEntityKey = new Map(allCommunities.map((c) => [c.entityKey, c]))
 
   // The 14 registry communities — the editorial layer. Registry order is
   // curated (data/resort-communities.json is the source of truth).
   const resorts = await Promise.all(
     registry.map(async (r) => {
-      const geoKey = `${r.city.toLowerCase().trim()}:${r.label.toLowerCase().trim()}`
-      const snap = snapByKey.get(geoKey) ?? null
+      const labelKey = r.label.toLowerCase().trim()
+      const geoKey = `${r.city.toLowerCase().trim()}:${labelKey}`
+      const snap = snapByKey.get(geoKey) ?? snapByLabel.get(labelKey) ?? cityByKey.get(labelKey) ?? null
       const idx = indexByEntityKey.get(subdivisionEntityKey(r.city, r.label)) ?? null
       const content = await getResortCommunityContent(r.slug)
       const sentence = content?.aboutProse?.[0] ? firstSentence(content.aboutProse[0]) : null
@@ -126,7 +140,10 @@ export default async function CommunitiesPage() {
         // fallback's alt describes what the photo actually shows.
         photoAlt: curated ? `${r.label}, ${r.city} Oregon` : fallbackHero.alt,
         photoIsCommunity: curated != null,
-        activeCount: snap?.activeSfrCount ?? idx?.activeCount ?? null,
+        // Registry resorts are permanent fixtures: no snapshot row means zero
+        // current inventory (the shared fetch drops 0-count rows), and "0
+        // active" is the honest ledger — an em-dash read as broken data.
+        activeCount: snap?.activeSfrCount ?? idx?.activeCount ?? 0,
         pendingCount: snap?.pendingCount ?? null,
         medianPrice: snap?.medianListPrice ?? idx?.medianPrice ?? null,
       }

@@ -61,6 +61,56 @@ function rowToSnapshot(row: GeoSnapshotMvRow): GeoSnapshot {
   }
 }
 
+// ── Canonical city override (§0 one-number rule, design-audit P0) ───────────
+// The same "Bend: N active · $X median" ledger rendered 788 from this MV on
+// one page and 500 from market_pulse_live on the next: the MV counts by the
+// MLS City FIELD and includes Active Under Contract, while the pulse is the
+// methodology-versioned canonical (Active+Coming Soon, SFR, city-polygon
+// scoped). City-level snapshots therefore OVERRIDE count/median/pending with
+// the pulse row when one exists; the MV remains the resilient base and the
+// only source for community/neighborhood levels (the pulse has no rows there).
+
+type PulseCityRow = {
+  geo_slug: string
+  geo_label: string
+  active_count: number
+  pending_count: number
+  median_list_price: number | null
+  updated_at: string
+}
+
+async function fetchPulseCityMap(): Promise<Map<string, PulseCityRow>> {
+  const map = new Map<string, PulseCityRow>()
+  const supabase = supabaseAnon()
+  if (!supabase) return map
+  try {
+    const { data, error } = await supabase
+      .from('market_pulse_live')
+      .select('geo_slug, geo_label, active_count, pending_count, median_list_price, updated_at')
+      .eq('geo_type', 'city')
+    if (error || !data) return map
+    for (const r of data as PulseCityRow[]) {
+      map.set(r.geo_slug.toLowerCase().trim(), r)
+      map.set(r.geo_label.toLowerCase().trim(), r)
+    }
+    return map
+  } catch {
+    return map // pulse unavailable: MV values stand rather than failing the page
+  }
+}
+
+function withPulseOverride(snap: GeoSnapshot, pulse: PulseCityRow | undefined): GeoSnapshot {
+  if (!pulse) return snap
+  return {
+    ...snap,
+    activeSfrCount: pulse.active_count,
+    pendingCount: pulse.pending_count,
+    medianListPrice:
+      pulse.median_list_price != null ? Math.round(Number(pulse.median_list_price)) : snap.medianListPrice,
+    refreshedAt: pulse.updated_at,
+  }
+}
+
 /**
  * Raw lookup. Returns the row, or null for a GENUINE miss (no matching row).
  * THROWS on a transient DB error — this distinction is load-bearing: see
@@ -87,9 +137,13 @@ async function fetchOneOrThrow(input: GeoSnapshotInput): Promise<GeoSnapshot | n
       .eq('geo_type', parsed.geoType)
       .eq('geo_key', key)
       .maybeSingle()
-    if (!error) {
+    if (!error) { // poison-null-ok — genuine miss only; the error branch below still throws
       // Success — a present row, or a genuine miss (null). Both are cacheable.
-      return data ? rowToSnapshot(data as GeoSnapshotMvRow) : null
+      if (!data) return null
+      const snap = rowToSnapshot(data as GeoSnapshotMvRow)
+      if (parsed.geoType !== 'city') return snap
+      const pulse = await fetchPulseCityMap()
+      return withPulseOverride(snap, pulse.get(key))
     }
     lastError = error
   }
@@ -119,10 +173,10 @@ export const getGeoSnapshot = async (input: GeoSnapshotInput): Promise<GeoSnapsh
   const parsed = GeoSnapshotSchema.parse(input)
   const cached = unstable_cache(
     () => fetchOneOrThrow(parsed),
-    // v2 cache-key bump 2026-05-31 — evicts poison-null entries cached before the
-    // throw-on-error fix (Vercel's Data Cache persists across deploys, so the old
-    // nulls would otherwise linger until TTL and keep flashing "City Not Found").
-    ['geo-snapshot-v2', parsed.geoType, parsed.geoKey],
+    // v3 cache-key bump 2026-07-08 — evicts pre-pulse-override city entries
+    // (v2 bump 2026-05-31 evicted poison-nulls after the throw-on-error fix;
+    // Vercel's Data Cache persists across deploys, so old values linger to TTL).
+    ['geo-snapshot-v3', parsed.geoType, parsed.geoKey],
     {
       revalidate:
         parsed.geoType === 'city'
@@ -156,16 +210,21 @@ export const getGeoSnapshot = async (input: GeoSnapshotInput): Promise<GeoSnapsh
 async function _fetchAllCitySnapshots(): Promise<GeoSnapshot[]> {
   const supabase = supabaseAnon()
   if (!supabase) return []
-  const { data, error } = await supabase
-    .from('geo_snapshot_mv')
-    .select('*')
-    .eq('geo_type', 'city')
-    .gt('active_sfr_count', 0)
-    .order('active_sfr_count', { ascending: false })
-    .limit(50)
+  const [{ data, error }, pulse] = await Promise.all([
+    supabase
+      .from('geo_snapshot_mv')
+      .select('*')
+      .eq('geo_type', 'city')
+      .gt('active_sfr_count', 0)
+      .order('active_sfr_count', { ascending: false })
+      .limit(50),
+    fetchPulseCityMap(),
+  ])
   if (error) throw new Error(`[getAllCitySnapshots] ${error.message ?? JSON.stringify(error)}`)
   if (!data) return []
-  return (data as GeoSnapshotMvRow[]).map(rowToSnapshot)
+  return (data as GeoSnapshotMvRow[])
+    .map((row) => withPulseOverride(rowToSnapshot(row), pulse.get(row.geo_key.toLowerCase().trim())))
+    .sort((a, b) => b.activeSfrCount - a.activeSfrCount)
 }
 
 /**
@@ -174,7 +233,7 @@ async function _fetchAllCitySnapshots(): Promise<GeoSnapshot[]> {
  */
 export const getAllCitySnapshots = makeResilientCached(
   _fetchAllCitySnapshots,
-  ['geo-snapshot-all-cities-v2'],
+  ['geo-snapshot-all-cities-v3'],
   { revalidate: CACHE_WINDOWS.geoCity, tags: ['cities-index'] },
   [],
 )

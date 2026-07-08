@@ -139,9 +139,11 @@ async function _getCitiesForIndexUncached(): Promise<CityForIndex[]> {
   return result
 }
 
+// v3 cache-key bump 2026-07-08 — evicts entries computed before city counts
+// switched to the canonical market_pulse_live override (design-audit §0).
 export const getCitiesForIndex = unstable_cache(
   _getCitiesForIndexUncached,
-  ['cities-index-v2'],
+  ['cities-index-v3'],
   { revalidate: 1800, tags: ['cities-index'] }
 )
 

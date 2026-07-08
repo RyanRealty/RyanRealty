@@ -80,6 +80,10 @@
     "lib/cma-request.ts:418": {
       "kind": "internal",
       "reason": "Internal: new-CMA-request notification to the assigned broker (sendBrokerNotification), not the lead. The lead confirmation (sendLeadConfirmation) is gated by isSuppressedByEmail. Line shifted +5 when the crmPersonId input field + slug-stamp support were added (expired-workflow audit 2026-07-03). Line shifted in the 2026-07-06 lifecycle-workflows integration (W5)."
+    },
+    "lib/market-stat-alert.ts:42": {
+      "kind": "internal",
+      "reason": "Internal: market-stat consistency alert to MATT_ALERT_EMAIL when the one-number-per-metric contract breaks (design-audit drift gate). No lead recipient. Permanently allowlisted."
     }
   }
 }

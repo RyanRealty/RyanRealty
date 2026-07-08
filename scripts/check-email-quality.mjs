@@ -38,6 +38,7 @@ const NON_SENDER = new Set([
   'lib/email/deliverability.ts',
   // Internal infrastructure alerts — not marketing/automated sends
   'lib/deploy-health-alert.ts',
+  'lib/market-stat-alert.ts',
   // Broker self-preview: sends the CALLING BROKER'S own email/phone a rendered
   // draft of a template they're editing. Not a marketing/automated send: no real
   // contact is involved, no list targeting, and CAN-SPAM List-Unsubscribe

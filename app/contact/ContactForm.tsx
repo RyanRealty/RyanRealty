@@ -42,7 +42,7 @@ export default function ContactForm({ defaultInquiryType, listingKey, intent, hi
     setLoading(true)
     setState({})
     const formData = new FormData(e.currentTarget)
-    const rrSession = readRrSessionId()
+    const rrSession = readRrSessionId() // hydration-safe — runs in the submit handler, not render
     if (rrSession) formData.append('sessionId', rrSession)
     // Carry the listing the visitor was asking about (tour/question CTA), so the
     // broker knows which home and the lead is valued as a property inquiry.

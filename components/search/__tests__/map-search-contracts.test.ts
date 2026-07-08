@@ -28,7 +28,12 @@ describe('search-as-you-move data layer', () => {
 
   it('getViewportListings returns an honest capped count (no fabricated exact totals)', () => {
     expect(listings).toMatch(/capped:\s*boolean/)
-    expect(listings).toMatch(/const capped = rows\.length > cap/)
+    expect(listings).toMatch(/let capped = rows\.length > cap/)
+    // When the tile fetch caps, the exact header total must come from a REAL
+    // uncapped count query (same filters) — never from padding the capped
+    // row count (design-audit P2: "501+" -> exact totals).
+    expect(listings).toMatch(/getListingTilesCount\(/)
+    expect(listings).toMatch(/exact != null && exact >= rows\.length/)
   })
 
   it('getViewportSearch (server action) bridges filters + bounds + polygon to one fetch', () => {

@@ -1431,8 +1431,35 @@ export async function getViewportListings(
     })
   }
 
-  const capped = rows.length > cap
-  return { listings: rows.slice(0, cap), totalCount: rows.length, capped }
+  let totalCount = rows.length
+  let capped = rows.length > cap
+  if (capped && !(polygon && polygon.length >= 3)) {
+    // Exact header count (design-audit P2): "501+ homes in this area" read as
+    // the site not knowing its own inventory. The tile render stays capped;
+    // only the count query runs uncapped (same filters, cached).
+    const { getListingTilesCount } = await import('@/lib/data')
+    const exact = await getListingTilesCount({
+      bbox: {
+        west: effectiveBounds.west,
+        south: effectiveBounds.south,
+        east: effectiveBounds.east,
+        north: effectiveBounds.north,
+      },
+      city: options.city?.trim() || undefined,
+      subdivision: canonicalSubdivision || undefined,
+      status: dalStatus,
+      ...advancedTileFilters(options),
+    }).catch(() => null)
+    if (exact != null && exact >= rows.length) {
+      totalCount = exact
+      capped = false
+    }
+  } else if (polygon && polygon.length >= 3 && tiles.length < fetchLimit) {
+    // Polygon path: the overfetch did not cap, so the in-polygon row count IS
+    // the exact total even when it exceeds the render cap.
+    capped = false
+  }
+  return { listings: rows.slice(0, cap), totalCount, capped }
 }
 
 /**
