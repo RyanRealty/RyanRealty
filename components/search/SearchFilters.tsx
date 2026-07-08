@@ -664,7 +664,10 @@ export default function SearchFilters({ initialFilters }: Props) {
           </SelectContent>
         </Select>
 
-        {/* View toggle (split / list / map) */}
+        {/* View toggle (split / list / map) — desktop only. MapSearchView's
+            own List/Map tab bar is the single mobile switcher; both showing
+            at once left "Split" selected up here while the actual bottom
+            tabs told a different story (design-audit P2). */}
         <ToggleGroup
           type="single"
           value={view}
@@ -676,7 +679,7 @@ export default function SearchFilters({ initialFilters }: Props) {
           }}
           variant="outline"
           size="sm"
-          className="rounded-lg border border-border overflow-hidden"
+          className="hidden lg:flex rounded-lg border border-border overflow-hidden"
         >
           {(['split', 'list', 'map'] as const).map((v) => (
             <ToggleGroupItem
@@ -894,9 +897,14 @@ export default function SearchFilters({ initialFilters }: Props) {
         </Button>
       </div>
 
-      {/* Row 3: active filter chips */}
+      {/* Row 3: active filter chips. Row 2's trigger buttons already show the
+          same value ("Price: $90M+") in their own label, so on mobile this
+          row said the same fact twice before any results even rendered,
+          costing ~90px of scarce viewport (design-audit P3). Desktop has
+          the room and keeps the faster per-chip remove affordance; mobile
+          drops to Row 2 + its dropdown's own clear control. */}
       {hasAnyFilter && (
-        <div className="flex flex-wrap items-center gap-1.5 border-t border-border px-3 py-2 sm:px-4">
+        <div className="hidden flex-wrap items-center gap-1.5 border-t border-border px-3 py-2 sm:flex sm:px-4">
           {activeStatusLabel && (
             <FilterChip label={activeStatusLabel} onRemove={() => setFilter('status', undefined)} />
           )}

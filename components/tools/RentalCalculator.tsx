@@ -168,9 +168,13 @@ function KpiTile({
         {label}
         {glossary && <Glossary>{glossary}</Glossary>}
       </div>
+      {/* clamp instead of a fixed text-2xl: the widest state (negative
+          five-figure + "/mo") overflowed the tile at a fixed size and read as
+          clipped (design-audit P3). */}
       <div
         className={cn(
-          'mt-1 text-2xl font-semibold tabular-nums',
+          'mt-1 font-semibold tabular-nums break-words',
+          'text-[clamp(1.15rem,5vw,1.5rem)]',
           tone === 'positive' && 'text-success',
           tone === 'negative' && 'text-destructive',
           tone === 'default' && 'text-foreground'

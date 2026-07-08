@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import SaveListingButton from '@/components/listing/SaveListingButton'
 
 const SearchMapClustered = dynamic(() => import('@/components/SearchMapClustered'), {
   ssr: false,
@@ -40,6 +41,42 @@ function formatAddress(l: ListingTileRow): string {
   ]
     .filter(Boolean)
     .join(', ')
+}
+
+// "street, City" only — the full "street, City, ST, zip" string never fits
+// the 2-up card width, so every card title truncated with an ellipsis and
+// no card showed a complete address (design-audit P3). The search is
+// already Oregon-scoped, so state + zip add nothing a buyer needs to scan a
+// result card. formatAddress() above still carries the full string for
+// photo alt text.
+function formatCardAddress(l: ListingTileRow): string {
+  return [[l.StreetNumber, l.StreetName, l.StreetSuffix].filter(Boolean).join(' ').trim(), l.City]
+    .filter(Boolean)
+    .join(', ')
+}
+
+const NEW_LISTING_WINDOW_DAYS = 7
+
+// Status/new badge — nothing distinguished fresh or under-contract inventory
+// on the result card, so a buyer triaging hundreds of homes couldn't tell
+// them apart without opening each one (design-audit P2). Only uses fields
+// already on the viewport row (StandardStatus, OnMarketDate) — no
+// fabricated price-drop or open-house data.
+//
+// `nowMs` is passed in rather than reading the wall clock here: this is a
+// 'use client' component, and a clock read in the render body disagrees
+// between the server-rendered HTML and the client's first hydration pass,
+// which kills hydration for the whole tree (G37 hydration-safety gate, the
+// React #418 regression class). The server page computes `now` once and
+// passes it down as a prop instead.
+function cardBadge(l: ListingTileRow, nowMs: number): string | null {
+  const status = l.StandardStatus?.trim()
+  if (status && status !== 'Active' && status !== 'Closed') return status
+  if (l.OnMarketDate) {
+    const days = (nowMs - new Date(l.OnMarketDate).getTime()) / 86_400_000
+    if (Number.isFinite(days) && days >= 0 && days <= NEW_LISTING_WINDOW_DAYS) return 'New'
+  }
+  return null
 }
 
 function rowKey(l: ListingTileRow): string {
@@ -113,6 +150,9 @@ export type MapSearchViewProps = {
   placeQuery: string
   boundaryGeojson?: unknown
   initialPolygon?: MapPolygonPoint[] | null
+  /** Server-computed request timestamp (ms) for the card "New" badge — see
+   *  cardBadge()'s comment for why this isn't read client-side. */
+  nowMs?: number
 }
 
 export default function MapSearchView({
@@ -126,6 +166,7 @@ export default function MapSearchView({
   placeQuery,
   boundaryGeojson,
   initialPolygon = null,
+  nowMs,
 }: MapSearchViewProps) {
   const [listings, setListings] = useState(initialListings)
   const [totalCount, setTotalCount] = useState(initialTotalCount)
@@ -238,6 +279,7 @@ export default function MapSearchView({
   }, [])
 
   const mapListings = useMemo(() => listings.map(toMapListing), [listings])
+  const savedSet = useMemo(() => new Set(savedListingKeys), [savedListingKeys])
 
   const countLabel = capped ? `${totalCount.toLocaleString()}+` : totalCount.toLocaleString()
   const headerText = `${countLabel} home${totalCount === 1 ? '' : 's'} in this area`
@@ -284,50 +326,66 @@ export default function MapSearchView({
             )
             const isHovered = hoveredKey === key
             const sqft = rowSqft(l)
+            const badge = nowMs != null ? cardBadge(l, nowMs) : null
             return (
-              <Link
+              // A <button> (SaveListingButton) can't legally nest inside an
+              // <a> — the card used to be one big Link wrapping everything.
+              // The Link is now a stretched absolute overlay UNDER the save
+              // button (which sits above it in the DOM/z-index), so the
+              // whole card is still one click target except the save corner.
+              <article
                 key={key}
-                href={href}
                 data-listing-key={key}
-                className="group block"
+                className={cn(
+                  'group relative overflow-hidden rounded-lg bg-card shadow-sm transition-shadow',
+                  isHovered ? 'shadow-lg ring-2 ring-primary' : 'hover:shadow-md'
+                )}
                 onMouseEnter={() => onListHover(key)}
                 onMouseLeave={() => onListHover(null)}
-                onFocus={() => onListHover(key)}
-                onBlur={() => onListHover(null)}
               >
-                <article
-                  className={cn(
-                    'overflow-hidden rounded-lg bg-card shadow-sm transition-shadow',
-                    isHovered ? 'shadow-lg ring-2 ring-primary' : 'hover:shadow-md'
-                  )}
-                >
-                  <div className="relative aspect-[4/3] bg-border">
-                    {l.PhotoURL ? (
-                      <Image
-                        src={l.PhotoURL}
-                        alt={`${formatAddress(l)} property photo`}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width:1024px) 50vw, 25vw"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-                        No photo
-                      </div>
-                    )}
-                    <div className="absolute left-2 top-2 rounded bg-primary px-2 py-0.5 text-sm font-semibold text-primary-foreground tabular-nums">
-                      {formatPrice(l.ListPrice)}
+                <Link
+                  href={href}
+                  className="absolute inset-0 z-0"
+                  aria-label={`${formatCardAddress(l)} — ${formatPrice(l.ListPrice)}`}
+                  onFocus={() => onListHover(key)}
+                  onBlur={() => onListHover(null)}
+                />
+                <div className="relative aspect-[4/3] bg-border">
+                  {l.PhotoURL ? (
+                    <Image
+                      src={l.PhotoURL}
+                      alt={`${formatAddress(l)} property photo`}
+                      fill
+                      className="pointer-events-none object-cover"
+                      sizes="(max-width:1024px) 50vw, 25vw"
+                    />
+                  ) : (
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+                      No photo
                     </div>
+                  )}
+                  <div className="pointer-events-none absolute left-2 top-2 flex items-center gap-1.5">
+                    <span className="rounded bg-primary px-2 py-0.5 text-sm font-semibold text-primary-foreground tabular-nums">
+                      {formatPrice(l.ListPrice)}
+                    </span>
+                    {badge ? (
+                      <span className="rounded bg-card px-2 py-0.5 text-xs font-semibold text-foreground shadow-sm">
+                        {badge}
+                      </span>
+                    ) : null}
                   </div>
-                  <div className="p-3">
-                    <p className="truncate font-medium text-primary">{formatAddress(l)}</p>
-                    <p className="mt-0.5 text-sm text-muted-foreground tabular-nums">
-                      {l.BedroomsTotal ?? '—'} bd · {l.BathroomsTotal ?? '—'} ba
-                      {sqft != null && ` · ${sqft.toLocaleString()} sqft`}
-                    </p>
+                  <div className="absolute right-2 top-2 z-10">
+                    <SaveListingButton listingKey={key} saved={savedSet.has(key)} compact />
                   </div>
-                </article>
-              </Link>
+                </div>
+                <div className="pointer-events-none p-3">
+                  <p className="truncate font-medium text-primary">{formatCardAddress(l)}</p>
+                  <p className="mt-0.5 text-sm text-muted-foreground tabular-nums">
+                    {l.BedroomsTotal ?? '—'} bd · {l.BathroomsTotal ?? '—'} ba
+                    {sqft != null && ` · ${sqft.toLocaleString()} sqft`}
+                  </p>
+                </div>
+              </article>
             )
           })}
         </div>

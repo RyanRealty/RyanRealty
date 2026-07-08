@@ -6,7 +6,6 @@ import {
   getListingPhotos,
   getListingVideos,
   getListingDetailOpenHouses,
-  getListingTiles,
   getMarketPulse,
   getMarketStats,
   getBrokers,
@@ -14,6 +13,7 @@ import {
   resolveListingAgent,
 } from '@/lib/data'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
+import { fetchNearbyTiles } from '@/lib/kb/fetch-nearby-tiles'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingShareSummary } from '@/lib/share-metadata'
@@ -268,15 +268,11 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const [nearbyTilesRaw, history, photos, videos, brokers, listingAgent, marketPulse, marketStats, openHouses, reviews] =
     await Promise.all([
+      // price-desc + widen-on-thin-scope, see lib/kb/fetch-nearby-tiles.ts.
       withTimeoutFallback(
-        // sort price-desc (same as the homepage featured rail): the top-priced
-        // active homes in the area are the ones carrying cinematic autoplay video
-        // tours, so resolveFeaturedItems can surface them video-first and the cards
-        // autoplay in-view. Default 'newest' buried them and the rail showed only
-        // photos / "Tour" badges.
-        getListingTiles({ ...nearbyScope, status: 'active', propertyType: 'A', sort: 'price-desc', limit: 14 }),
+        fetchNearbyTiles(nearbyScope, listing.listingKey, listing.listNumber),
         [],
-        3000,
+        4000,
         'listing:nearby',
       ),
       withTimeoutFallback(getListingDetailHistory(listingKey), [], 3000, 'listing:history'),
@@ -591,7 +587,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         {featuredItems.length > 0 ? (
           <KbFeatured items={featuredItems} eyebrow={`${marketGeo?.name ?? listing.city ?? 'Nearby'} · For sale`} />
         ) : null}
-        <KbFooter towns={[]} />
+        <KbFooter towns={[]} listingKey={listing.listingKey} />
       </SmoothScrollProvider>
     </main>
   )

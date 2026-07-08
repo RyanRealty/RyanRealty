@@ -519,7 +519,14 @@ export default function SearchMapClustered({
       draggable: !drawingMode,
       clickableIcons: !drawingMode,
     }
-  }, [drawingMode])
+    // isLoaded: getSearchMapOptions()'s control-position fields are gated on
+    // `typeof google !== 'undefined'` internally. This memo's first
+    // computation usually runs before the Maps script has loaded, freezing
+    // in the position-less defaults (zoom control landing bottom-right,
+    // map type control stuck top-left under the Draw-area button) since
+    // isLoaded flipping true afterward wasn't a dependency (design-audit
+    // P2, evidence: mapTypeControlOptions.position never took effect).
+  }, [drawingMode, isLoaded])
 
   // ─── Imperative map creation ───────────────────────────────────────────────
   // We create the google.maps.Map instance ourselves rather than relying on

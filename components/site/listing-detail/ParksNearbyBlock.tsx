@@ -39,12 +39,17 @@ export function ParksNearbyBlock({ listing, className }: Props) {
         </div>
       </div>
 
+      {/* flex-wrap, not a CSS grid: a grid's auto-fit still reserves full
+          tracks for a partially-filled last row, so the container's
+          navy-tinted background painted through the empty cells as a solid
+          gray slab (design-audit P3). flex-wrap leaves genuinely no box
+          where there is no card; each card carries its own border instead of
+          the container background supplying the "grout" between cells. */}
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          display: 'flex',
+          flexWrap: 'wrap',
           gap: '3px',
-          background: 'rgba(16,39,66,0.12)',
           border: '1px solid rgba(16,39,66,0.12)',
           marginTop: 'clamp(22px,3vw,36px)',
         }}
@@ -55,6 +60,7 @@ export function ParksNearbyBlock({ listing, className }: Props) {
             href={`/parks/${park.slug}`}
             style={{
               display: 'block',
+              flex: '1 1 200px',
               background: 'var(--cream, #faf8f4)',
               padding: '18px 20px',
               textDecoration: 'none',

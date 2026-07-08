@@ -87,6 +87,7 @@ function formatPrice(p: number): string {
 export function ListingHero({ photos, videos, addressLine, price, beds, baths, sqft, className }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [isMuted, setIsMuted] = useState(true)
+  const [isPaused, setIsPaused] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const total = photos.length
 
@@ -95,11 +96,26 @@ export function ListingHero({ photos, videos, addressLine, price, beds, baths, s
   const altBase = addressLine ? `Photo of ${addressLine}` : 'Listing photo'
   const heroVideo = videos.find((v) => v.embedType === 'iframe' || v.embedType === 'video-tag') ?? null
   const hasVideo = heroVideo != null
+  // Pause/play is only wired for the native <video> path — that's the one
+  // element this component directly controls via videoRef. The iframe path
+  // (external embed) has no reliable cross-origin pause API here.
+  const canTogglePlay = hasVideo && heroVideo?.embedType === 'video-tag'
 
   function toggleMute() {
     if (videoRef.current) {
       videoRef.current.muted = !videoRef.current.muted
       setIsMuted(videoRef.current.muted)
+    }
+  }
+
+  function togglePlay() {
+    if (!videoRef.current) return
+    if (videoRef.current.paused) {
+      videoRef.current.play()
+      setIsPaused(false)
+    } else {
+      videoRef.current.pause()
+      setIsPaused(true)
     }
   }
 
@@ -175,14 +191,18 @@ export function ListingHero({ photos, videos, addressLine, price, beds, baths, s
           }}
         >
           {addressLine ? (
+            // Geist, not Amboqia: an address is data, not display copy, and
+            // Amboqia's capital "I" reads as a numeral 1 in an uppercase,
+            // alphanumeric string ("63177 INER" → "63177 1NER" —
+            // design-audit P3, accessibility).
             <div
               style={{
-                fontFamily: 'var(--font-amboqia, serif)',
-                fontSize: 'clamp(1.6rem,4.2vw,3.4rem)',
-                lineHeight: 0.92,
+                fontFamily: 'var(--font-sans)',
+                fontSize: 'clamp(1.3rem,3.2vw,2.4rem)',
+                lineHeight: 1.05,
                 letterSpacing: '-0.01em',
                 textTransform: 'uppercase',
-                fontWeight: 400,
+                fontWeight: 600,
                 overflow: 'visible',
                 marginBottom: 'clamp(10px,1.4vw,20px)',
               }}
@@ -256,35 +276,69 @@ export function ListingHero({ photos, videos, addressLine, price, beds, baths, s
           </div>
         </div>
 
-        {/* Video mute-toggle affordance */}
+        {/* Video mute + pause affordances. WCAG 2.2.2 requires a way to stop
+            motion that autoplays longer than 5s — mute alone doesn't satisfy
+            that (design-audit P2, accessibility). */}
         {hasVideo ? (
-          <button
-            type="button"
-            onClick={toggleMute}
-            aria-label={isMuted ? 'Unmute video' : 'Mute video'}
+          <div
             style={{
               position: 'absolute',
               bottom: 'clamp(22px,3.5vw,48px)',
               right: 'clamp(18px,3.5vw,56px)',
               zIndex: 5,
               display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: '0.68rem',
-              fontWeight: 700,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              color: 'var(--navy, #102742)',
-              background: 'var(--cream, #faf8f4)',
-              border: 0,
-              padding: '9px 14px',
-              cursor: 'pointer',
-              opacity: 0.92,
+              gap: 8,
             }}
           >
-            {isMuted ? <UnmuteIcon /> : <MuteIcon />}
-            {isMuted ? 'Unmute' : 'Mute'}
-          </button>
+            {canTogglePlay ? (
+              <button
+                type="button"
+                onClick={togglePlay}
+                aria-label={isPaused ? 'Play video' : 'Pause video'}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: 'var(--navy, #102742)',
+                  background: 'var(--cream, #faf8f4)',
+                  border: 0,
+                  padding: '9px 14px',
+                  cursor: 'pointer',
+                  opacity: 0.92,
+                }}
+              >
+                {isPaused ? <PlayIcon /> : <PauseIcon />}
+                {isPaused ? 'Play' : 'Pause'}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={toggleMute}
+              aria-label={isMuted ? 'Unmute video' : 'Mute video'}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: 'var(--navy, #102742)',
+                background: 'var(--cream, #faf8f4)',
+                border: 0,
+                padding: '9px 14px',
+                cursor: 'pointer',
+                opacity: 0.92,
+              }}
+            >
+              {isMuted ? <UnmuteIcon /> : <MuteIcon />}
+              {isMuted ? 'Unmute' : 'Mute'}
+            </button>
+          </div>
         ) : null}
       </div>
 
@@ -509,6 +563,23 @@ function MuteIcon() {
       <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
       <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
       <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+    </svg>
+  )
+}
+
+function PlayIcon() {
+  return (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <polygon points="6 4 20 12 6 20" />
+    </svg>
+  )
+}
+
+function PauseIcon() {
+  return (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <rect x="5" y="4" width="5" height="16" />
+      <rect x="14" y="4" width="5" height="16" />
     </svg>
   )
 }

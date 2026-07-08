@@ -225,28 +225,33 @@ export function PriceCtaStrip({
         ) : null}
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2.5">
+      {/* Mobile: primary full-width, three secondaries in one even row (was
+          ragged 1/2/1 wrapping across three rows — design-audit P3).
+          Desktop keeps the original inline-wrap layout. */}
+      <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
         {/* Primary action — navy-filled KB button (.btn.alt) on the cream strip. */}
-        <a href={tourHref} className="btn alt">
+        <a href={tourHref} className="btn alt sm:w-auto w-full text-center">
           Schedule a tour <span className="arr">→</span>
         </a>
-        {/* Secondary actions — outlined navy KB buttons on cream. */}
-        <a href={askHrefResolved} className="btn" style={OUTLINE_BTN_STYLE}>
-          Ask a question
-        </a>
-        <button
-          type="button"
-          className="btn"
-          style={OUTLINE_BTN_STYLE}
-          onClick={handleSave}
-          disabled={saveState === 'saving'}
-          aria-pressed={saveState === 'saved'}
-        >
-          {saveState === 'saved' ? 'Saved' : saveState === 'saving' ? 'Saving...' : 'Save'}
-        </button>
-        <button type="button" className="btn" style={OUTLINE_BTN_STYLE} onClick={handleShare}>
-          Share
-        </button>
+        <div className="grid grid-cols-3 gap-2.5 sm:contents">
+          {/* Secondary actions — outlined navy KB buttons on cream. */}
+          <a href={askHrefResolved} className="btn" style={OUTLINE_BTN_STYLE}>
+            Ask a question
+          </a>
+          <button
+            type="button"
+            className="btn"
+            style={OUTLINE_BTN_STYLE}
+            onClick={handleSave}
+            disabled={saveState === 'saving'}
+            aria-pressed={saveState === 'saved'}
+          >
+            {saveState === 'saved' ? 'Saved' : saveState === 'saving' ? 'Saving...' : 'Save'}
+          </button>
+          <button type="button" className="btn" style={OUTLINE_BTN_STYLE} onClick={handleShare}>
+            Share
+          </button>
+        </div>
       </div>
     </div>
   )

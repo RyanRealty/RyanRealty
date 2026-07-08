@@ -10,7 +10,18 @@ import { CONTACT } from '@/lib/brand/contact'
  * KB footer — dual-audience close + full sitemap. Per-town inventory fine print
  * is live (from the towns prop). Contact/social/license static.
  */
-export function KbFooter({ towns, hideCta = false }: { towns: KbTownItem[]; hideCta?: boolean }) {
+export function KbFooter({
+  towns,
+  hideCta = false,
+  listingKey,
+}: {
+  towns: KbTownItem[]
+  hideCta?: boolean
+  /** On a listing page, swap the seller CTA pair for a tour/question pair
+   *  scoped to that home — a buyer who just read the whole listing hit a
+   *  "What's my home worth" pitch (design-audit P2). */
+  listingKey?: string
+}) {
   const root = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -48,14 +59,28 @@ export function KbFooter({ towns, hideCta = false }: { towns: KbTownItem[]; hide
             comps and the number it trades for.
           </p>
           <div className="btn-row">
-            {/* "What's my home worth" lands on the valuation FORM, not the /sell
-                marketing page (design-audit P2 — the promise must match the page). */}
-            <a href="/sell/valuation" className="btn">
-              What&rsquo;s my home worth <span className="arr">→</span>
-            </a>
-            <a href="/homes-for-sale" className="btn ghost">
-              Browse homes
-            </a>
+            {listingKey ? (
+              <>
+                <a href={`/contact?listingKey=${encodeURIComponent(listingKey)}&intent=tour`} className="btn">
+                  Schedule a tour <span className="arr">→</span>
+                </a>
+                <a href={`/contact?listingKey=${encodeURIComponent(listingKey)}&intent=question`} className="btn ghost">
+                  Ask about this home
+                </a>
+              </>
+            ) : (
+              <>
+                {/* "What's my home worth" lands on the valuation FORM, not the
+                    /sell marketing page (design-audit P2 — the promise must
+                    match the page). */}
+                <a href="/sell/valuation" className="btn">
+                  {"What's my home worth"} <span className="arr">→</span>
+                </a>
+                <a href="/homes-for-sale" className="btn ghost">
+                  Browse homes
+                </a>
+              </>
+            )}
           </div>
         </div>
         )}

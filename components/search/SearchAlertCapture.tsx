@@ -170,8 +170,11 @@ export function SearchAlertCapture({
           <BellAlertIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary sm:mt-0" aria-hidden />
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground">Get new listings first</p>
+            {/* "for $90M, Bend" read as nonsense (matches FOR a price?) — "matching"
+                works grammatically no matter what the filter-shorthand contains
+                (design-audit P3). */}
             <p className="line-clamp-2 text-xs text-muted-foreground">
-              We will email you new matches for {target}.
+              We will email you new homes matching {target}.
             </p>
           </div>
         </div>

@@ -8,6 +8,7 @@ import { getLikedListingKeys } from '@/app/actions/likes'
 import { getBoundaryGeoJSON } from '@/lib/data'
 import { BEND_DEFAULT_BOUNDS } from '@/lib/map-constants'
 import { slugify } from '@/lib/slug'
+import { cn } from '@/lib/utils'
 
 /** Compute a [west,south,east,north] bbox from a GeoJSON Polygon/MultiPolygon. */
 function bboxFromGeometry(
@@ -41,6 +42,7 @@ import SearchMapClustered from '@/components/LazySearchMapClustered'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { ResultsStamp } from '@/components/search/ResultsStamp.client'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
+import { SplitViewBodyLock } from '@/components/search/SplitViewBodyLock'
 
 const DEFAULT_VIEW = 'split'
 
@@ -264,12 +266,23 @@ export default async function SearchPage({
     .filter(Boolean)
     .join(' ')
 
+  // split/map are the viewport-fit "app frame" views — no document scroll,
+  // the shell fills whatever room is left below the chrome. list keeps
+  // normal scrollable document flow so the footer/newsletter stay reachable
+  // (design-audit P2: the frame's calc() height ignored the breadcrumb + the
+  // guest alert bar's variable height and ran the shell's bottom past the
+  // fold on page load).
+  const isAppFrame = view === 'map' || view === 'split'
+
   return (
-    <div className="min-h-screen w-full bg-muted">
+    <div className={cn('w-full bg-muted', isAppFrame ? 'search-app-frame' : 'min-h-screen')}>
+      <SplitViewBodyLock active={isAppFrame} />
       <h1 className="sr-only">{h1Text}</h1>
       {/* P1-1: the search index was the only top-3 page with no breadcrumb at
           all (its child /homes-for-sale/<city> has one). Canonical chrome. */}
-      <PageBreadcrumb trail={[{ label: 'Homes for sale' }]} />
+      <div className={isAppFrame ? 'shrink-0' : undefined}>
+        <PageBreadcrumb trail={[{ label: 'Homes for sale' }]} />
+      </div>
       <ResultsStamp />
       <TrackSearchView
         city={filters.city ?? undefined}
@@ -278,12 +291,14 @@ export default async function SearchPage({
       />
       {/* top-[72px] docks below the sticky 72px SiteHeader — top-0 slid the
           filter row underneath it, hiding the controls on any scrolled state. */}
-      <div className="sticky top-[72px] z-20 w-full border-b border-border bg-card shadow-sm">
+      <div className={cn('sticky top-[72px] z-20 w-full border-b border-border bg-card shadow-sm', isAppFrame && 'shrink-0')}>
         <SearchFilters initialFilters={initialFiltersFromUrl} />
       </div>
       {/* Guest listing-alert capture — shown only to anonymous visitors. */}
-      <SearchAlertCapture signedIn={!!session?.user} defaultCity={effectiveFilters.city ?? ''} />
-      <div className="w-full">
+      <div className={isAppFrame ? 'shrink-0' : undefined}>
+        <SearchAlertCapture signedIn={!!session?.user} defaultCity={effectiveFilters.city ?? ''} />
+      </div>
+      <div className={cn('w-full', isAppFrame && 'flex min-h-0 flex-1 flex-col')}>
         {view === 'map' && (
           <div className="map-search-shell w-full">
             <SearchMapClustered
@@ -296,7 +311,7 @@ export default async function SearchPage({
           </div>
         )}
         {(view === 'split' || view === 'list') && (
-          <div className="w-full">
+          <div className={cn('w-full', isAppFrame && 'flex min-h-0 flex-1 flex-col')}>
             {view === 'split' ? (
               <MapSearchView
                 initialListings={viewport?.listings ?? []}
@@ -308,6 +323,7 @@ export default async function SearchPage({
                 likedListingKeys={likedKeys}
                 placeQuery={placeQuery}
                 boundaryGeojson={boundaryGeojson ?? undefined}
+                nowMs={Date.now()}
               />
             ) : (
               <SearchResults

@@ -14,9 +14,20 @@ type Props = {
   userEmail?: string | null
   listingUrl?: string
   property?: { street?: string; city?: string; state?: string; mlsNumber?: string; price?: number; bedrooms?: number; bathrooms?: number }
+  /** Icon-only round badge for a result-card photo corner (search/map cards). */
+  compact?: boolean
+  className?: string
 }
 
-export default function SaveListingButton({ listingKey, saved, userEmail, listingUrl, property }: Props) {
+export default function SaveListingButton({
+  listingKey,
+  saved,
+  userEmail,
+  listingUrl,
+  property,
+  compact = false,
+  className,
+}: Props) {
   const router = useRouter()
 
   async function handleClick(e: React.MouseEvent) {
@@ -53,6 +64,23 @@ export default function SaveListingButton({ listingKey, saved, userEmail, listin
       }
     }
     router.refresh()
+  }
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={handleClick}
+        className={
+          className ??
+          'inline-flex h-8 w-8 items-center justify-center rounded-full bg-card/90 shadow-sm hover:bg-card'
+        }
+        aria-label={saved ? 'Remove from saved homes' : 'Save to saved homes'}
+        aria-pressed={saved}
+      >
+        <BookmarkIcon filled={saved} className={saved ? 'h-4 w-4 text-primary' : 'h-4 w-4 text-muted-foreground'} />
+      </button>
+    )
   }
 
   return (

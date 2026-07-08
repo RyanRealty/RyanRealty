@@ -71,16 +71,27 @@ export function getBaseMapOptions(): google.maps.MapOptions {
  *   (no ctrl-key required). Standard behavior on Zillow/Redfin search maps.
  * - Fewer cluttering controls (no fullscreen on the constrained split panel,
  *   zoom still top-right).
+ * - Map/Satellite type control moved off the default top-left corner: the
+ *   search map's own "Draw area" button lives there, and the two controls
+ *   overlapped so Satellite view was effectively unreachable (design-audit
+ *   P2). RIGHT_TOP stacks it above the zoom control instead.
  */
 export function getSearchMapOptions(): google.maps.MapOptions {
   const base = getBaseMapOptions()
-  return {
+  const opts: google.maps.MapOptions = {
     ...base,
     gestureHandling: 'greedy',
     fullscreenControl: false,
     // Suppress clutter POI labels (restaurants, shops) so listing markers read.
     styles: MAP_SEARCH_STYLES,
   }
+  if (typeof google !== 'undefined' && google.maps?.ControlPosition && base.mapTypeControlOptions) {
+    opts.mapTypeControlOptions = {
+      ...base.mapTypeControlOptions,
+      position: google.maps.ControlPosition.TOP_RIGHT,
+    }
+  }
+  return opts
 }
 
 /**

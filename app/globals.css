@@ -391,6 +391,19 @@
    These are app-shell layout primitives kept here (not as arbitrary Tailwind
    brackets in the .tsx) so the design-token ladder stays clean — G26/D17. */
 .map-search-shell { height: calc(100vh - 120px); min-height: 400px; }
+/* Split/map search view app-frame (/search only): the page-level breadcrumb
+   + guest alert bar sit above the shell and have variable height (signed-in
+   visitors skip the alert bar entirely, it wraps to 2 lines on narrow
+   screens), so a static calc() constant on the shell always undercounted the
+   real chrome height and let the shell's bottom run past the fold, sliding
+   the map away on any page scroll (design-audit P2). flexbox self-sizes the
+   shell to whatever room is actually left below the sibling chrome instead
+   of guessing a pixel constant. Scoped via descendant selector so the
+   shared .map-search-shell class is untouched everywhere else it's used
+   (app/search/[...slug]/page.tsx renders it as a standalone top-level
+   shell with no .search-app-frame ancestor). */
+.search-app-frame { height: calc(100dvh - 72px); display: flex; flex-direction: column; overflow: hidden; }
+.search-app-frame .map-search-shell { height: auto; flex: 1 1 auto; min-height: 320px; }
 .map-search-rail { width: 420px; min-width: 360px; max-width: 480px; }
 /* Map marker InfoWindow photo card width. */
 .map-infowindow-card { min-width: 200px; max-width: 240px; }

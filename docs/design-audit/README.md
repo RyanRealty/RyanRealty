@@ -123,7 +123,7 @@ Every fix was verified in a real browser (Playwright or the preview harness) and
 
 The full register follows.
 
-> **Remediation status (2026-07-08):** all three P0s and every P1 in this report are fixed, gate-verified, and confirmed live on production (see [PROGRESS.md](PROGRESS.md) for the six-phase remediation log). Of the 150 P2/P3 items, 41 are fixed and live; **109 remain as a documented, file:line-verified backlog** at [remaining-backlog.json](remaining-backlog.json) — mostly copy/spacing polish, none P0/P1, ready to pick up in a follow-up session without re-auditing.
+> **Remediation status (2026-07-08):** all three P0s and every P1 in this report are fixed, gate-verified, and confirmed live on production (see [PROGRESS.md](PROGRESS.md) for the phase-by-phase remediation log). Of the 150 P2/P3 items, 67 are fixed and live (Phase G is working the remaining backlog to zero, group by group, per Matt's directive to finish the full register rather than stop partway); **83 remain**, tracked at [remaining-backlog.json](remaining-backlog.json) with file:line evidence.
 
 ### P0 + P1 — every finding in detail
 

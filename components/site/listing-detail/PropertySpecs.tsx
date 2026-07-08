@@ -140,7 +140,18 @@ function buildGroups(listing: Props['listing']): Group[] {
   const overview: Spec[] = []
   if (num(listing.beds)) overview.push({ label: 'Bedrooms', value: <TabularNumber value={listing.beds} /> })
   if (num(listing.baths))
-    overview.push({ label: 'Bathrooms', value: <TabularNumber value={listing.baths} fractionDigits={1} /> })
+    // Trailing .0 on a whole bath count read as a formatting bug ("2.0") next
+    // to the whole-number bedroom count beside it (design-audit P3) — only
+    // show a decimal when the value genuinely has one (half-baths).
+    overview.push({
+      label: 'Bathrooms',
+      value: (
+        <TabularNumber
+          value={listing.baths as number}
+          fractionDigits={Number.isInteger(listing.baths) ? 0 : 1}
+        />
+      ),
+    })
   if (num(sqft))
     overview.push({ label: 'Living area', value: <><TabularNumber value={sqft} /> sq ft</> })
   if (ptypeLabel) overview.push({ label: 'Property type', value: ptypeLabel })
@@ -197,8 +208,12 @@ function buildGroups(listing: Props['listing']): Group[] {
 
   // ── Systems & utilities ─────────────────────────────────────────────────────
   const systems: Spec[] = []
-  if (listing.heatingYn) systems.push({ label: 'Heating', value: 'Yes' })
-  if (listing.coolingYn) systems.push({ label: 'Cooling', value: 'Yes' })
+  // heatingYn/coolingYn only confirm a system exists, which is true of
+  // nearly every Central Oregon home — "Yes" carried no decision-useful
+  // information and read like placeholder data (design-audit P2). The RETS
+  // feed's actual heating/cooling type list (forced air, heat pump, etc.)
+  // isn't captured in this table, so the row is omitted rather than shown
+  // as a bare boolean.
   if (txt(listing.water)) systems.push({ label: 'Water', value: listing.water })
   if (txt(listing.sewer)) systems.push({ label: 'Sewer', value: listing.sewer })
   if (systems.length > 0) groups.push({ label: 'Systems & utilities', specs: systems })
@@ -226,9 +241,13 @@ function buildGroups(listing: Props['listing']): Group[] {
       ),
     })
   if (num(listing.taxAnnualAmount))
-    financial.push({ label: 'Annual taxes', value: <Price value={listing.taxAnnualAmount} /> })
+    // exact: a tax bill is a filed dollar figure, not a marketing price.
+    // Rounding to the nearest thousand made this cell disagree with the
+    // rental calculator's exact tax prefill further down the same page
+    // (design-audit P2 — $4,000 here vs $4,089 there, same field).
+    financial.push({ label: 'Annual taxes', value: <Price value={listing.taxAnnualAmount} exact /> })
   if (num(listing.taxAssessedValue))
-    financial.push({ label: 'Assessed value', value: <Price value={listing.taxAssessedValue} /> })
+    financial.push({ label: 'Assessed value', value: <Price value={listing.taxAssessedValue} exact /> })
   if (num(listing.taxYear))
     financial.push({ label: 'Tax year', value: <span className="tabular-nums">{listing.taxYear}</span> })
   if (financial.length > 0) groups.push({ label: 'Financial', specs: financial })
@@ -247,9 +266,11 @@ function buildGroups(listing: Props['listing']): Group[] {
       value: <><TabularNumber value={listing.cumulativeDaysOnMarket} /> days</>,
     })
   if (txt(listing.schoolDistrict)) listingInfo.push({ label: 'School district', value: listing.schoolDistrict })
-  if (txt(listing.elementarySchool)) listingInfo.push({ label: 'Elementary', value: listing.elementarySchool })
-  if (txt(listing.middleSchool)) listingInfo.push({ label: 'Middle', value: listing.middleSchool })
-  if (txt(listing.highSchool)) listingInfo.push({ label: 'High', value: listing.highSchool })
+  // Elementary/Middle/High used to repeat here AND in the dedicated
+  // SchoolsBlock section a scroll below with identical values and no added
+  // detail — pure duplication (design-audit P3). SchoolsBlock is the richer
+  // surface (links to a registered school's page, shows the district under
+  // each card), so it stays canonical and these three rows are dropped.
   if (listingInfo.length > 0) groups.push({ label: 'Listing', specs: listingInfo })
 
   return groups
