@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { ArrowRightHugeIcon } from '@/components/icons/HugeIcons'
 
 /**
  * Smart 404 body.
@@ -126,7 +127,7 @@ export function NotFoundClient() {
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search homes by city, neighborhood, or address"
+          placeholder="Search by city or address"
           aria-label="Search homes for sale"
           className="h-11"
         />
@@ -135,10 +136,18 @@ export function NotFoundClient() {
         </Button>
       </form>
 
-      <div className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2">
+      {/* Single column, secondary (filled) variant with a trailing arrow —
+          the old outline/justify-start style was visually identical to the
+          search input above it (same border, fill, radius, height), reading
+          as empty fields rather than links; a 2-col grid also orphaned a
+          cell whenever suggestions.length was odd (design-audit P3). */}
+      <div className="mt-6 grid grid-cols-1 gap-2">
         {suggestions.map((s) => (
-          <Button key={s.href} asChild variant="outline" className="justify-start">
-            <Link href={s.href}>{s.label}</Link>
+          <Button key={s.href} asChild variant="secondary" className="justify-between">
+            <Link href={s.href}>
+              {s.label}
+              <ArrowRightHugeIcon className="h-4 w-4 shrink-0" />
+            </Link>
           </Button>
         ))}
       </div>

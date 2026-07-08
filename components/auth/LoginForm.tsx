@@ -9,6 +9,7 @@ import { GoogleIcon, FacebookIcon } from '@/components/icons/AuthProviderIcons'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/auth/PasswordInput'
 
 type Props = { next: string }
 
@@ -97,16 +98,15 @@ export default function LoginForm({ next }: Props) {
           <Label htmlFor="login-password" className="block text-sm font-medium text-muted-foreground">
             Password
           </Label>
-          <Input
+          <PasswordInput
             id="login-password"
-            type="password"
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="mt-1 block w-full rounded-lg border border-border bg-card px-3 py-2 text-foreground"
           />
           <p className="mt-1 text-right">
-            <Link href="/forgot-password" className="text-sm text-muted-foreground hover:text-muted-foreground">
+            <Link href="/forgot-password" className="text-sm font-medium text-accent-foreground hover:underline">
               Forgot password?
             </Link>
           </p>

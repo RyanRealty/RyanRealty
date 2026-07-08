@@ -8,6 +8,7 @@ import { GoogleIcon, FacebookIcon } from '@/components/icons/AuthProviderIcons'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/auth/PasswordInput'
 
 type Props = { next: string }
 
@@ -134,9 +135,8 @@ export default function SignupForm({ next }: Props) {
           <Label htmlFor="signup-password" className="block text-sm font-medium text-muted-foreground">
             Password
           </Label>
-          <Input
+          <PasswordInput
             id="signup-password"
-            type="password"
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

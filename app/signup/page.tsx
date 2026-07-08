@@ -24,12 +24,8 @@ export default async function SignupPage({ searchParams }: Props) {
 
   return (
     <main className="mx-auto flex min-h-[60vh] max-w-md flex-col justify-center px-4 py-16">
+      {/* No re-typeset wordmark — see the matching comment on app/login/page.tsx. */}
       <div className="rounded-xl border border-border bg-card p-8 shadow-sm">
-        <div className="mb-6 flex justify-center">
-          <Link href="/" className="text-xl font-bold text-primary">
-            Ryan Realty
-          </Link>
-        </div>
         <H1 className="text-center text-xl text-foreground">Create account</H1>
         <p className="mt-1 text-center text-sm text-muted-foreground">
           Save homes, get alerts, and stay in the loop
@@ -43,7 +39,7 @@ export default async function SignupPage({ searchParams }: Props) {
         </p>
       </div>
       <p className="mt-4 text-center">
-        <Link href="/" className="text-sm text-muted-foreground hover:text-muted-foreground">
+        <Link href="/" className="text-sm font-medium text-accent-foreground hover:underline">
           Back to home
         </Link>
       </p>

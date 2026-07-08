@@ -1,50 +1,5 @@
 [
   {
-    "index": 175,
-    "group": "auth-edges",
-    "page": "not-found",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "The three recovery links ('Browse homes for sale', 'Market reports', 'Sell your home') are outline Buttons with left-aligned text, visually near-ident",
-    "hint": "Still present: components/NotFoundClient.tsx:138-144 renders suggestions as Button variant=\"outline\" className=\"justify-start\" in grid-cols-1 sm:grid-"
-  },
-  {
-    "index": 180,
-    "group": "auth-edges",
-    "page": "login",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "Password fields on both login and signup have no show-password toggle, and signup gives no strength feedback beyond the static 'At least 6 characters'",
-    "hint": "Still present: plain type=\"password\" with no show/hide toggle (LoginForm.tsx:97-104, SignupForm.tsx:137-144) and the 6-char minimum + 'At least 6 char"
-  },
-  {
-    "index": 181,
-    "group": "auth-edges",
-    "page": "login",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "The auth card re-typesets the brand: 'Ryan Realty' appears in bold Geist navy directly beneath the real Amboqia wordmark in the header, so the brand n",
-    "hint": "Still present: app/login/page.tsx:29-31 and app/signup/page.tsx:29-31 render 'Ryan Realty' as a bold Geist text-primary Link inside the card, re-types"
-  },
-  {
-    "index": 182,
-    "group": "auth-edges",
-    "page": "login",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "'Forgot password?' and 'Back to home' are muted gray text with no underline — the same color and weight as the static field labels — so on a touch scr",
-    "hint": "Still present: 'Forgot password?' at LoginForm.tsx:106 and 'Back to home' at app/login/page.tsx:46 + app/signup/page.tsx:46 are text-muted-foreground "
-  },
-  {
-    "index": 183,
-    "group": "auth-edges",
-    "page": "not-found",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "The 404 page's search placeholder hard-clips mid-word on a phone: 'Search homes by city, neighborho'. The recovery pattern itself is excellent (contex",
-    "hint": "Still present: components/NotFoundClient.tsx:129 placeholder is 'Search homes by city, neighborhood, or address' (confirmed on the live 404), which cl"
-  },
-  {
     "index": 125,
     "group": "content-trust",
     "page": "guides",
