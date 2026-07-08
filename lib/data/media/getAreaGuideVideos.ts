@@ -45,12 +45,20 @@ export const getAreaGuideVideos = makeResilientCached(
 )
 
 /**
- * The area-guide video URL for an EXACT geo slug (no regional fallback). Returns
+ * The area-guide video for an EXACT geo slug (no regional fallback). Returns
  * null when the location has no approved guide video — the caller hides the slot.
  * Pass extra alias slugs (e.g. ['nw-crossing','northwest-crossing']) when a geo is
  * tagged inconsistently; the first exact match wins.
+ *
+ * `wide` comes back with the URL (not silently dropped) so the player can size
+ * itself to the clip's REAL aspect ratio server-side — most of these are
+ * phone-shot portrait cuts, and guessing 16:9 client-side before the video's
+ * metadata loads pillarboxed them into a mostly-empty navy frame
+ * (design-audit P2).
  */
-export async function getAreaGuideVideo(geoSlugs: string | string[]): Promise<string | null> {
+export async function getAreaGuideVideo(
+  geoSlugs: string | string[]
+): Promise<{ url: string; wide: boolean } | null> {
   const wanted = (Array.isArray(geoSlugs) ? geoSlugs : [geoSlugs])
     .filter(Boolean)
     .map((g) => g.toLowerCase())
@@ -60,5 +68,6 @@ export async function getAreaGuideVideo(geoSlugs: string | string[]): Promise<st
   if (!matches.length) return null
   // Prefer the landscape (16:9) cut; it fills the 16:9 player. A portrait 9:16
   // social only letterboxes (acceptable fallback when no wide cut exists).
-  return (matches.find((m) => m.wide) ?? matches[0]).url
+  const picked = matches.find((m) => m.wide) ?? matches[0]
+  return { url: picked.url, wide: picked.wide }
 }

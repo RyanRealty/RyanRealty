@@ -13,10 +13,17 @@ export function KbAreaGuideVideo({
   videoUrl,
   locationName,
   posterSrc,
+  wide = true,
 }: {
   videoUrl: string | null
   locationName: string
   posterSrc?: string | null
+  /** True for a 16:9 landscape cut, false for a 9:16 portrait cut. Known
+   *  server-side from asset_library.surface_tags (area-guide-wide) — not
+   *  guessed client-side from the video's own metadata, which loads after
+   *  first paint and left a hardcoded-16:9 frame pillarboxing every portrait
+   *  clip into ~60% empty navy (design-audit P2). */
+  wide?: boolean
 }) {
   if (!videoUrl) return null
   return (
@@ -31,6 +38,8 @@ export function KbAreaGuideVideo({
             border: '3px solid var(--navy)',
             background: 'var(--navy)',
             marginTop: 'clamp(18px,2.4vw,28px)',
+            display: 'flex',
+            justifyContent: 'center',
           }}
         >
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
@@ -40,7 +49,11 @@ export function KbAreaGuideVideo({
             playsInline
             poster={posterSrc ?? undefined}
             aria-label={`${locationName} area guide video`}
-            style={{ width: '100%', display: 'block', aspectRatio: '16 / 9', objectFit: 'contain' }}
+            style={
+              wide
+                ? { width: '100%', maxHeight: '70vh', aspectRatio: '16 / 9', display: 'block' }
+                : { height: '70vh', maxWidth: '100%', aspectRatio: '9 / 16', display: 'block' }
+            }
           >
             <source src={videoUrl} type="video/mp4" />
           </video>

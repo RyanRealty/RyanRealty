@@ -848,7 +848,7 @@ export default async function CommunityDetailPage({ params }: Props) {
         {/* Per-location area guide video — self-hides when this community has no
             approved guide video. Sits after the communities rail, before the
             this-week / activity / FAQ / sell blocks. */}
-        <KbAreaGuideVideo videoUrl={areaGuideVideo} locationName={community.name} />
+        <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={community.name} posterSrc={heroPhoto} />
         <KbOpenHouses
           items={openHouseItems}
           eyebrow={`${cityName} · This week`}

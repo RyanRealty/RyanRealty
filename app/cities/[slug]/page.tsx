@@ -616,7 +616,7 @@ export default async function CityDetailPage({ params }: Props) {
             cta={{ href: '/communities', label: 'Every community' }}
           />
         ) : null}
-        <KbAreaGuideVideo videoUrl={areaGuideVideo} locationName={cityName} />
+        <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={cityName} posterSrc={heroPosterSrc} />
         <KbOpenHouses items={openHouseItems} eyebrow={`${cityName} · This week`} heading="Open houses" viewAllHref={`/open-houses/${slug}`} />
         <KbActivity items={activityItems} eyebrow={`Live · ${cityName}`} heading="Latest market activity" viewAllHref="/housing-market" viewAllLabel="Full market pulse" />
         <KbArticles

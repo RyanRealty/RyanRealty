@@ -529,7 +529,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             cta={{ href: `/homes-for-sale/${citySlug}`, label: `All ${cityName} homes` }}
           />
         ) : null}
-        <KbAreaGuideVideo videoUrl={areaGuideVideo} locationName={neighborhood.name} />
+        <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={neighborhood.name} posterSrc={heroPhoto} />
         {/* Feed is fetched city-wide (getActivityFeedWithFallbackMulti cities:[cityName])
             — label the city, not the neighborhood (§0 honest-relabeling). */}
         <KbActivity

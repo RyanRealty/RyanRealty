@@ -459,15 +459,6 @@
     "hint": "Unchanged: /communities RSC payload still shows 4× 'Area view · Bend' chips — the four new Bend registry resorts (Mt Bachelor Village, Inn of the 7th "
   },
   {
-    "index": 80,
-    "group": "geo-browse",
-    "page": "/cities/bend, /cities/bend/awbrey-butte, /communities/tetherow",
-    "sev": "P2",
-    "effort": "medium",
-    "issue": "The 'WATCH <place>' area-guide videos are portrait phone clips forced into a full-width 16:9 navy frame (objectFit: contain), so ~60% of a full viewpo",
-    "hint": "KbAreaGuideVideo.tsx unchanged (16:9 frame, objectFit:contain, optional posterSrc) and all three callers (app/cities/[slug]/page.tsx:591, communities/"
-  },
-  {
     "index": 84,
     "group": "geo-browse",
     "page": "/communities",
