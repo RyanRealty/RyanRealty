@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.14 (2026-07-08)
+
+### Bug Fixes
+- fix(site): design-audit backlog batch 12 — geo-browse area-guide video sizing (1 item)
+
+---
+
+
 ## v1.751.13 (2026-07-08)
 
 ### Bug Fixes
