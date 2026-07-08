@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.15 (2026-07-08)
+
+### Bug Fixes
+- fix(site): design-audit backlog batch 13 — geo-browse repeated stock photo (1 item)
+
+---
+
+
 ## v1.751.14 (2026-07-08)
 
 ### Bug Fixes
