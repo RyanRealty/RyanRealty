@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.6 (2026-07-08)
+
+### Bug Fixes
+- fix(site): design-audit backlog batch 4 — buy-core group (19 items)
+
+---
+
+
 ## v1.751.5 (2026-07-08)
 
 ### Bug Fixes
