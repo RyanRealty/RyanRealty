@@ -315,13 +315,17 @@ export default async function CommunitiesPage() {
                         </p>
                       ) : null}
 
-                      {/* Live stat band — tabular numerals, honest em-dash empties */}
+                      {/* Live stat band — tabular numerals, honest em-dash empties.
+                          "0 active" is itself the honest, verified figure
+                          (activeCount always resolves through a `?? 0`
+                          upstream, never truly unknown here) — treating 0 the
+                          same as "data missing" contradicted the same zero-
+                          inventory case rendering as "0 Active" everywhere
+                          else on the site (design-audit P3, one convention). */}
                       <div className="mt-6 flex flex-wrap items-baseline gap-x-9 gap-y-4">
                         <div>
                           <p className="display mono-num" style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}>
-                            {r.activeCount != null && r.activeCount > 0
-                              ? r.activeCount.toLocaleString()
-                              : '—'}
+                            {r.activeCount != null ? r.activeCount.toLocaleString() : '—'}
                           </p>
                           <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
                             Active

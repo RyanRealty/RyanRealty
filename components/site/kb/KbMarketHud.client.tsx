@@ -186,6 +186,17 @@ export function KbMarketHud({
               </span>
               {kbMoneyFull(lastMedian) ? <span className="mkt-phead-now mono-num">{kbMoneyFull(lastMedian)}</span> : null}
             </div>
+            {/* chartScopeLabel means the headline stats above are geo-scoped
+                but this chart fell back to the city's series (too few local
+                sales for a real trend line) — the mono-lab tag alone (10px,
+                62% opacity) was too quiet for a normal reader to register,
+                so a lower-scoped number could look like it contradicted the
+                headline above it (design-audit P2). */}
+            {chartScopeLabel ? (
+              <p className="mkt-chart-note">
+                Too few recent sales here for a standalone trend. This line tracks {chartScopeLabel}.
+              </p>
+            ) : null}
             <KbMarketChart
               years={years}
               ariaLabel={`Median sale price by year${chartScopeLabel ? `, ${chartScopeLabel}` : data.byTown.length ? ', this area' : ', Central Oregon'}`}

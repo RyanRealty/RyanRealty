@@ -450,15 +450,6 @@
     "hint": "app/tools/mortgage-calculator/page.tsx line 93 still renders the Tools crumb as href=\"/tools/mortgage-calculator\" (self-link) and no /tools index rout"
   },
   {
-    "index": 76,
-    "group": "geo-browse",
-    "page": "/cities/bend/awbrey-butte and /communities/tetherow (chart also on /cities/bend)",
-    "sev": "P2",
-    "effort": "small",
-    "issue": "The market chart on neighborhood/community pages plots BEND (CITY) median-sale data directly beneath geo-scoped stats: Awbrey Butte says median list $",
-    "hint": "Unchanged: Awbrey/Tetherow charts still plot the Bend city series ($810,000 phead under the $1,138,000/$1.6M headlines) with only the small mono-lab q"
-  },
-  {
     "index": 77,
     "group": "geo-browse",
     "page": "/communities",
@@ -475,15 +466,6 @@
     "effort": "medium",
     "issue": "The 'WATCH <place>' area-guide videos are portrait phone clips forced into a full-width 16:9 navy frame (objectFit: contain), so ~60% of a full viewpo",
     "hint": "KbAreaGuideVideo.tsx unchanged (16:9 frame, objectFit:contain, optional posterSrc) and all three callers (app/cities/[slug]/page.tsx:591, communities/"
-  },
-  {
-    "index": 83,
-    "group": "geo-browse",
-    "page": "/cities/bend and /communities",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "Zero/unavailable inventory renders three different ways across geo surfaces: '0 ACTIVE · BEND' (Parks At Broken Top carousel card), a fully blank stat",
-    "hint": "Zero inventory still renders three ways (all verified live): golf ledger '0 Active' (KbExploreTowns.client.tsx:68), carousel 'Community guide · Bend' "
   },
   {
     "index": 84,

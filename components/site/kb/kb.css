@@ -542,6 +542,7 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .k-lbl{margin-top:10px;font-size:.62rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(250,248,244,.6);}
 .kb-root .mkt-panel{border:1px solid rgba(250,248,244,.22);padding:22px 22px 18px;margin-bottom:16px;position:relative;}
 .kb-root .mkt-phead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+.kb-root .mkt-chart-note{font-size:.78rem;color:rgba(250,248,244,.72);margin:-8px 0 14px;line-height:1.4;}
 .kb-root .mkt-chart{position:relative;height:clamp(200px,38vw,300px);}
 .kb-root .mkt-chart svg{width:100%;height:100%;display:block;overflow:visible;}
 .kb-root .mkt-grid-line{stroke:rgba(250,248,244,.16);stroke-width:1;vector-effect:non-scaling-stroke;}
