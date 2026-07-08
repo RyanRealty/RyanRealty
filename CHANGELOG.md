@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.5 (2026-07-08)
+
+### Bug Fixes
+- fix(site): design-audit backlog batch 3 — geo-browse group (8 items)
+
+---
+
+
 ## v1.751.4 (2026-07-08)
 
 ### Maintenance
