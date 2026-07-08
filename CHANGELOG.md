@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.7 (2026-07-08)
+
+### Bug Fixes
+- fix(site): design-audit backlog batch 5 — a11y-states + copy-clarity + home (6 items)
+
+---
+
+
 ## v1.751.6 (2026-07-08)
 
 ### Bug Fixes
