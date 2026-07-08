@@ -32,7 +32,7 @@ export default function ContactsSearch({ initial }: { initial: string }) {
   }
 
   return (
-    <div className="relative w-full sm:w-72">
+    <div data-tour="crm-search" className="relative w-full sm:w-72">
       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
       <Input
         type="search"

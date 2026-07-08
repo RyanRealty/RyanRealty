@@ -440,3 +440,20 @@ components/admin/DashboardActivityFeed.tsx
 # arbitrary map imagery. Same class of exception as the CRM map/chart pins above.
 components/site/VenueMap.client.tsx
 components/site/VenueMap.tsx
+# Market-report email chart (WS3, admin consolidation 2026-07-07): the
+# /api/email/market-chart route renders a PNG via satori for email clients —
+# a rasterized image cannot read CSS variables, so the brand navy #102742 and
+# cream #faf8f4 are inlined by necessity. Same exception class as the
+# unsubscribe HTML route above.
+app/api/email/market-chart/route.tsx
+# Market-report preview dialog (WS3, 2026-07-07): the rendered-email preview
+# iframe sizes to the viewport (max-h-[75vh] / h-[52vh]) so the broker sees
+# the whole email without the dialog overflowing the screen. The locked ladder
+# has no viewport-relative sizes. Same class as the chart/report exceptions.
+components/admin/crm/settings/MarketReportPreviewDialog.tsx
+# Photo curation board (moved photos/ -> media/photos/ in the media-library
+# merge, 2026-07-07): content unchanged since before the move — the path move
+# dropped its grandfathered baseline. Raw buttons are the photo-tile tap
+# targets and the board chrome predates the merge. Tracked for cleanup with
+# the rest of the curation board backlog.
+app/admin/(protected)/media/photos/PhotoCurationBoard.tsx

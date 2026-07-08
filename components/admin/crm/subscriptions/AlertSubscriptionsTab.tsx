@@ -1,14 +1,15 @@
 'use client'
 
 /**
- * AlertSubscriptionsTab — one tab of the Subscriptions hub, parameterized by
- * alert kind: 'guest' (guest_search_alerts) or 'user' (signed-in
- * saved_searches). Search + status + frequency (+ origin for guest) filters, a
- * paginated table with a checkbox column, per-row engagement (sends / opens /
- * clicks / last open from email_events), a per-row actions menu (edit filters,
- * rendered email preview, assign broker, pause/resume, delete), and a
- * selection toolbar for bulk pause / resume / re-cadence / delete via
- * app/actions/subscriptions-admin.ts.
+ * AlertSubscriptionsTab — one tab of the Alerts & reports hub, parameterized
+ * by alert kind. Both kinds are rows of the ONE canonical listing_alerts
+ * table (unified 2026-07-07): 'user' rows carry a user_id (signed-in saved
+ * searches), 'guest' rows do not. Search + status + frequency (+ origin for
+ * guest) filters, a paginated table with a checkbox column, per-row
+ * engagement (sends / opens / clicks / last open from email_events), a
+ * per-row actions menu (edit criteria, rendered email preview, assign
+ * broker, pause/resume, delete), and a selection toolbar for bulk pause /
+ * resume / re-cadence / delete via app/actions/subscriptions-admin.ts.
  */
 
 import { useEffect, useRef, useState, useTransition } from 'react'
@@ -56,7 +57,7 @@ import AssignBrokerDialog from '@/components/admin/crm/subscriptions/AssignBroke
 import EmailPreviewDialog from '@/components/admin/crm/subscriptions/EmailPreviewDialog'
 
 type StatusFilter = 'active' | 'paused' | 'all'
-type FrequencyFilter = 'daily' | 'weekly' | 'all'
+type FrequencyFilter = 'instant' | 'daily' | 'weekly' | 'all'
 type OriginFilter = 'user' | 'broker' | 'system' | 'all'
 
 function frequencyLabel(f: string): string {
@@ -150,7 +151,7 @@ export default function AlertSubscriptionsTab({
 
   const runUpdate = (
     targetIds: string[],
-    patch: { active?: boolean, frequency?: 'daily' | 'weekly' },
+    patch: { active?: boolean, frequency?: 'instant' | 'daily' | 'weekly' },
     verb: string,
   ) => {
     startTransition(async () => {
@@ -189,7 +190,7 @@ export default function AlertSubscriptionsTab({
   return (
     <div className="space-y-3">
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div data-tour="subs-filters" className="flex flex-wrap items-center gap-2">
         <Input
           value={qInput}
           onChange={(e) => {
@@ -228,6 +229,7 @@ export default function AlertSubscriptionsTab({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All frequencies</SelectItem>
+            <SelectItem value="instant">Instant</SelectItem>
             <SelectItem value="daily">Daily</SelectItem>
             <SelectItem value="weekly">Weekly</SelectItem>
           </SelectContent>
@@ -265,11 +267,12 @@ export default function AlertSubscriptionsTab({
           <Button size="sm" variant="outline" disabled={isPending} onClick={() => runUpdate(ids, { active: true }, 'Resumed')}>
             Resume
           </Button>
-          <Select value="" onValueChange={(v) => runUpdate(ids, { frequency: v as 'daily' | 'weekly' }, 'Updated frequency for')}>
+          <Select value="" onValueChange={(v) => runUpdate(ids, { frequency: v as 'instant' | 'daily' | 'weekly' }, 'Updated frequency for')}>
             <SelectTrigger className="h-8 w-36" aria-label="Set frequency" disabled={isPending}>
               <SelectValue placeholder="Set frequency" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="instant">Instant</SelectItem>
               <SelectItem value="daily">Daily</SelectItem>
               <SelectItem value="weekly">Weekly</SelectItem>
             </SelectContent>
@@ -293,7 +296,7 @@ export default function AlertSubscriptionsTab({
       {isPending ? (
         <TableSkeleton />
       ) : (
-        <div className="no-scrollbar overflow-x-auto rounded-lg border border-border">
+        <div data-tour="subs-table" className="no-scrollbar overflow-x-auto rounded-lg border border-border">
           <Table>
             <TableHeader>
               <TableRow>

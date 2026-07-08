@@ -11,7 +11,7 @@ import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
  * KB Community Alerts — inline email capture for community pages.
  *
  * Reuses the existing guest listing-alert backend (`submitSearchAlertSignup`
- * + `guest_search_alerts` table). Prefills city + subdivision from the
+ * + the unified `listing_alerts` table). Prefills city + subdivision from the
  * community registry so the captured alert matches the page the visitor
  * is looking at. No new backend wiring — same server action, same DB table,
  * same FUB integration that SearchAlertCapture uses on /search.

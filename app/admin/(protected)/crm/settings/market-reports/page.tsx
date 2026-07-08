@@ -4,6 +4,7 @@ import { getCrmAccess } from '@/app/actions/crm'
 import { getMarketReportSubscribers } from '@/lib/data/crm/getMarketReportSubscribers'
 import { buildMarketReportAreas } from '@/lib/data/crm/getContactReportSubscriptions'
 import { SettingsSubpageShell } from '@/components/admin/crm/settings/SettingsSubpageShell'
+import { MarketReportPreviewDialog } from '@/components/admin/crm/settings/MarketReportPreviewDialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -40,6 +41,18 @@ export default async function CrmMarketReportSubscribersPage() {
       title="Market-report subscribers"
       description="Contacts subscribed to recurring market reports. The daily send cron mails each contact on their chosen cadence, with every figure pulled live from the market cache."
     >
+      <Card className="mb-4 flex flex-wrap items-center justify-between gap-3 p-4">
+        <div className="text-sm text-muted-foreground">
+          See exactly what a subscriber receives, with the verification trace for every figure.
+        </div>
+        <MarketReportPreviewDialog
+          areas={['bend']}
+          label="Preview a sample report (Bend)"
+          variant="default"
+          size="default"
+        />
+      </Card>
+
       <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <span>
           {subscribers.length} {subscribers.length === 1 ? 'subscriber' : 'subscribers'}
@@ -62,6 +75,7 @@ export default async function CrmMarketReportSubscribersPage() {
                 <TableHead>Cadence</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Last sent</TableHead>
+                <TableHead className="text-right">Preview</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -83,6 +97,9 @@ export default async function CrmMarketReportSubscribersPage() {
                   </TableCell>
                   <TableCell className="text-muted-foreground tabular-nums">
                     {s.lastSentAt ? formatDate(s.lastSentAt) : 'Never'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <MarketReportPreviewDialog areas={s.areas} contactName={s.personName} />
                   </TableCell>
                 </TableRow>
               ))}

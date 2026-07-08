@@ -30,6 +30,7 @@ import {
   type AdminReportSubscriptionRow,
   type AlertSubscriptionKind,
 } from '@/lib/data/crm/subscriptionsAdmin'
+import { getGlobalDeliverySummary, type GlobalDeliverySummary } from '@/lib/data/crm/emailDelivery'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { getCrmReportAreas } from '@/lib/data/crm/getCrmReportAreas'
 import { getMarketReportData } from '@/lib/data/crm/getMarketReportData'
@@ -73,16 +74,16 @@ export async function listAlertSubscriptionsAction(
 export async function bulkUpdateAlertSubscriptionsAction(
   kind: AlertSubscriptionKind,
   ids: string[],
-  patch: { active?: boolean, frequency?: 'daily' | 'weekly' },
+  patch: { active?: boolean, frequency?: 'instant' | 'daily' | 'weekly' },
 ): Promise<{ data: { updated: number } | null, error: string | null }> {
   try {
     const access = await getCrmAccess()
     if (!access) return { data: null, error: 'Unauthorized' }
     const clean = cleanIds(ids)
     if (clean.length === 0) return { data: null, error: 'Select at least one alert' }
-    const sanitized: { active?: boolean, frequency?: 'daily' | 'weekly' } = {}
+    const sanitized: { active?: boolean, frequency?: 'instant' | 'daily' | 'weekly' } = {}
     if (typeof patch?.active === 'boolean') sanitized.active = patch.active
-    if (patch?.frequency === 'daily' || patch?.frequency === 'weekly') sanitized.frequency = patch.frequency
+    if (patch?.frequency === 'instant' || patch?.frequency === 'daily' || patch?.frequency === 'weekly') sanitized.frequency = patch.frequency
     if (Object.keys(sanitized).length === 0) return { data: null, error: 'Nothing to change' }
     const { updated, error } = await bulkUpdateAlertSubscriptions(kind, clean, sanitized)
     if (error) return { data: null, error }
@@ -132,7 +133,7 @@ export async function updateAlertSubscriptionAction(
   id: string,
   patch: {
     name?: string
-    frequency?: 'daily' | 'weekly'
+    frequency?: 'instant' | 'daily' | 'weekly'
     filters?: Record<string, unknown>
     active?: boolean
   },
@@ -145,7 +146,7 @@ export async function updateAlertSubscriptionAction(
 
     const sanitized: Parameters<typeof updateAlertSubscription>[2] = {}
     if (typeof patch?.name === 'string') sanitized.name = patch.name.trim().slice(0, 120)
-    if (patch?.frequency === 'daily' || patch?.frequency === 'weekly') sanitized.frequency = patch.frequency
+    if (patch?.frequency === 'instant' || patch?.frequency === 'daily' || patch?.frequency === 'weekly') sanitized.frequency = patch.frequency
     if (typeof patch?.active === 'boolean') sanitized.active = patch.active
     if (patch?.filters && typeof patch.filters === 'object') {
       // Normalize through the canonical filter model so the stored JSON is
@@ -388,5 +389,27 @@ export async function bulkUpdateReportSubscriptionsAction(
   } catch (err) {
     console.error('[bulkUpdateReportSubscriptionsAction]', err)
     return { data: null, error: 'Could not update those subscriptions' }
+  }
+}
+
+// ── Delivery observability (the Delivery tab, WS4) ────────────────────────────
+
+/**
+ * The Delivery tab's rollup: per-stream sends/opens/clicks/failures, the
+ * "needs attention" list with plain-English fixes, and the recent-sends table.
+ * Read-only; same CRM-admin gate as the sibling list actions.
+ */
+export async function getGlobalDeliverySummaryAction(
+  days: number,
+): Promise<{ data: GlobalDeliverySummary | null, error: string | null }> {
+  try {
+    const access = await getCrmAccess()
+    if (!access) return { data: null, error: 'Unauthorized' }
+    const data = await getGlobalDeliverySummary({ days })
+    if (data.unreadable) return { data: null, error: 'Could not load delivery data' }
+    return { data, error: null }
+  } catch (err) {
+    console.error('[getGlobalDeliverySummaryAction]', err)
+    return { data: null, error: 'Could not load delivery data' }
   }
 }

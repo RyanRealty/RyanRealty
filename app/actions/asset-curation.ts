@@ -1,7 +1,7 @@
 'use server'
 
 /**
- * Server actions for the photo/video curation board (`/admin/photos`).
+ * Server actions for the photo/video curation board (`/admin/media/photos`).
  *
  * Reads happen in the page (inline service client). Writes go through here so
  * they can be guarded by admin role, validated against the asset_library
@@ -69,6 +69,6 @@ export async function curateAssets(
   // updateTag = read-your-own-writes: expires the `assets` tag (getGeoTileImages /
   // getSurfaceImage) immediately so an approval shows on the next site request.
   updateTag(cacheTag.assets)
-  revalidatePath('/admin/photos')
+  revalidatePath('/admin/media/photos')
   return { updated: data?.length ?? 0 }
 }

@@ -69,6 +69,11 @@ const BANNED_TABLES = [
   'cmas',
   'cma_comps',
   'guest_search_alerts',
+  // Unified alert table (2026-07-07) — all access via lib/data/leads/listingAlerts.ts.
+  // saved_searches stays unlisted: the legacy public-search feature in
+  // app/actions/saved-searches.ts queries it directly by design (and app/actions
+  // is a WRITE_PATH_PREFIX anyway).
+  'listing_alerts',
   // Wave 3 additions — DAL readers now exist for these; consumer pages must use them.
   'blog_posts',
   'guides',

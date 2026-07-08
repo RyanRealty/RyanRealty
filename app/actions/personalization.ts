@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getListingTiles } from '@/lib/data'
+import { countListingAlertsForUser } from '@/lib/data/leads/listingAlerts'
 
 export type PersonalizedContent = {
   /** Cities the user has browsed */
@@ -83,16 +84,15 @@ export async function getPersonalizedContent(): Promise<PersonalizedContent | nu
       }
     }
 
-    // Check saved searches and listings
-    const { count: savedSearchCount } = await supabase
-      .from('saved_searches')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-
-    const { count: savedListingCount } = await supabase
-      .from('saved_listings')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
+    // Check saved searches (unified listing_alerts) and saved listings.
+    const [savedSearchCount, savedListingRes] = await Promise.all([
+      countListingAlertsForUser(user.id),
+      supabase
+        .from('saved_listings')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id),
+    ])
+    const savedListingCount = savedListingRes.count
 
     return {
       browsedCities,

@@ -1,8 +1,8 @@
 // Interactive E2E for the saved-search build (W5), against the local dev server.
 // Flow A (admin): CRM people list -> select Matthew Ryan -> bulk "Assign a saved
 //   search" with real filters -> drain crm-bulk-worker -> assert the
-//   guest_search_alerts row (crm_person_id + origin broker + filters).
-// Flow B (user): /search -> Save search dialog -> assert saved_searches row
+//   listing_alerts row (crm_person_id + origin broker + filters).
+// Flow B (user): /search -> Save search dialog -> assert listing_alerts row
 //   captures the full filter set.
 // Flow C (user): /account/notifications -> market report self-subscribe ->
 //   assert crm_report_subscriptions row.
@@ -78,9 +78,9 @@ console.log('worker cron:', cron.status, cronBody.slice(0, 300))
 await new Promise((r) => setTimeout(r, 1500))
 
 // Assert the row
-const { data: alertRows } = await admin.from('guest_search_alerts').select('*').eq('email', 'matt@ryan-realty.com')
+const { data: alertRows } = await admin.from('listing_alerts').select('*').eq('email', 'matt@ryan-realty.com')
 const row = (alertRows ?? [])[0]
-pass('A: guest_search_alerts row created', Boolean(row), row ? `id=${row.id}` : 'no row')
+pass('A: listing_alerts row created', Boolean(row), row ? `id=${row.id}` : 'no row')
 if (row) {
   pass('A: crm_person_id stamped', row.crm_person_id === 13168, String(row.crm_person_id))
   pass('A: origin broker', row.origin === 'broker', row.origin)
@@ -90,7 +90,7 @@ if (row) {
 
 // ── Flow B1: guest saves a search from /search (full filter capture) ─────────
 // The search page is ISR-cached so the button renders its guest branch; the
-// guest path writes guest_search_alerts through submitSearchAlertSignup.
+// guest path writes listing_alerts through submitSearchAlertSignup.
 console.log('\n-- Flow B1: guest save search (full filters) --')
 const guestEmail = 'matt@ryan-realty.com'
 // A REAL guest: fresh context with no session cookies, so the page renders the
@@ -109,7 +109,7 @@ await gp.screenshot({ path: 'out/saved-search-verify/e2e-b2-saved.png' })
 await guestCtx.close()
 
 const { data: guestRows } = await admin
-  .from('guest_search_alerts')
+  .from('listing_alerts')
   .select('*')
   .eq('email', guestEmail)
   .order('created_at', { ascending: false })
@@ -123,13 +123,15 @@ if (b1) {
 // ── Flow B2: signed-in edit dialog on /account/saved-searches ────────────────
 console.log('\n-- Flow B2: edit saved search on account page --')
 const authUserId = session.user.id
-// Seed a saved_searches row for the signed-in user
+// Seed a listing_alerts row for the signed-in user
 const { data: seeded, error: seedErr } = await admin
-  .from('saved_searches')
+  .from('listing_alerts')
   .insert({
     user_id: authUserId,
+    email: 'matt@ryan-realty.com',
     name: 'E2E seed search',
     filters: { city: 'Bend', minPrice: 700000, beds: 3 },
+    filters_hash: 's_e2e_seed_' + Date.now(),
     notification_frequency: 'daily',
   })
   .select('id')
@@ -151,7 +153,7 @@ await editDialog.getByRole('button', { name: /save/i }).first().click({ timeout:
 await page.waitForTimeout(2500)
 await page.screenshot({ path: 'out/saved-search-verify/e2e-b5-after-edit.png', fullPage: true })
 if (seeded) {
-  const { data: after } = await admin.from('saved_searches').select('name, filters').eq('id', seeded.id).single()
+  const { data: after } = await admin.from('listing_alerts').select('name, filters').eq('id', seeded.id).single()
   pass('B2: rename persisted', after?.name === 'E2E renamed search', after?.name ?? 'missing')
   pass('B2: filters survived edit', after?.filters?.city === 'Bend' && Number(after?.filters?.minPrice) === 700000, JSON.stringify(after?.filters))
 }

@@ -6,6 +6,8 @@ import { getCrmAccess } from '@/app/actions/crm'
 import { CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
 import { buildAdminNav } from '@/app/components/admin/admin-nav'
 import ConsoleShell from '@/components/console/ConsoleShell'
+import HelpProvider from '@/components/admin/help/HelpProvider'
+import { getHelpArticleIndex } from '@/lib/admin-help'
 
 /**
  * Auth + chrome for every admin dashboard page.
@@ -61,6 +63,8 @@ export default async function AdminProtectedLayout({
       >
         {children}
       </ConsoleShell>
+      {/* Persistent Help button — tours + contextual KB links on every admin page. */}
+      <HelpProvider articles={getHelpArticleIndex()} />
     </div>
   )
 }

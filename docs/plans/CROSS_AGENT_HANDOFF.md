@@ -1,4 +1,41 @@
-> **NEWEST, START HERE: the LIFECYCLE-WORKFLOWS block immediately below (2026-07-07 morning).** Prior session: the NEIGHBORHOOD-DEFAULTS block (2026-07-06 evening). Older: [`HANDOFF_CRM_STREAMLINE_2026-07-03.md`](./HANDOFF_CRM_STREAMLINE_2026-07-03.md), `HANDOFF_2026-06-28.md`.
+> **NEWEST, START HERE: the ADMIN-CONSOLIDATION block immediately below (2026-07-07 evening).** Prior sessions: LIFECYCLE-WORKFLOWS (2026-07-07 morning), NEIGHBORHOOD-DEFAULTS (2026-07-06 evening). Older: [`HANDOFF_CRM_STREAMLINE_2026-07-03.md`](./HANDOFF_CRM_STREAMLINE_2026-07-03.md), `HANDOFF_2026-06-28.md`.
+
+# ADMIN CONSOLIDATION: ~40 PAGES → BROKER WORKFLOWS (2026-07-07 evening, Claude Code — SHIPPED)
+
+**Goal doc: `docs/plans/ADMIN_CONSOLIDATION_MASTER_GOAL.md` (PROGRESS block carries the full detail).
+Audit: `docs/plans/ADMIN_CONSOLIDATION_AUDIT.md`. Matt approved + shipped 2026-07-07 evening.**
+
+- **WS1 unified alerts LIVE:** one canonical `public.listing_alerts` table (migration
+  `20260707160000_unify_listing_alerts.sql`, applied to hosted). GOTCHA that will bite again: hosted
+  prod carried a DIFFERENT dead `listing_alerts` (+ `listing_alert_matches` FK child) from 2026-05-18
+  MCP-applied migrations that never existed as local files — the migration's §0 shape-guard block
+  (guards on `filters_hash` absence) cleared the orphan pair. Memory:
+  `reference_migration_name_collision_check.md`. Legacy `guest_search_alerts` + `saved_searches`
+  retained (alerts migrated off; saved_searches still live for the public-search feature only).
+- **WS2 criteria editors wired:** AlertEditDialog + ReportEditDialog now use the sentence editors
+  (`components/admin/crm/criteria/`) with live plain-English summary + live matching count
+  (`app/actions/criteria-count.ts`). Admin cadence path now accepts `instant` (foot-gun #4 closed).
+- **WS4 delivery observability:** ContactDeliveryPanel on the person page right rail (Website
+  Activity RailSection now `defaultOpen`); Home dashboard gained `DashboardDeliveryAttention`
+  (attention items + superuser Hot leads card) fed by `getGlobalDeliverySummary`.
+- **WS5 help system verified:** 5/5 driver.js tours end-to-end in a real browser (dashboard tour has
+  a new delivery step), /admin/help search, Help button desktop + 390px. `scripts/_ws5-help-verify.mjs`.
+- **Phase 2 merges:** `/admin/people(+/[fubId])` → redirects to `/admin/crm` / person page (fub-id
+  lookup: `lib/data/crm/getPersonIdByFubLegacyId.ts`); Reports + Analytics → ONE Performance hub at
+  `/admin/analytics` (`_components/ReportCatalog.tsx` carries the catalog + weekly tool + city
+  builder; `/admin/reports` redirects); query-builder → `ListingsCsvExport` panel inside
+  `/admin/listings` (route redirects, superuser layout deleted); nav: "Alerts & reports",
+  "Performance", Query builder + Reports entries removed.
+- **Verification:** tsc + build + 2613 vitest + full `ci:gates` green. Broker acid test 12/12
+  (`scripts/_broker-walkthrough-verify.mjs`), Phase 2 checks 18/18
+  (`scripts/_phase2-consolidation-verify.mjs`), 42-route sweep clean. Gate maintenance: console-kit
+  list updated for the 3 redirect pages, hydration baseline re-pathed for 2 moved files,
+  file-size baseline rewritten, 3 justified `.design-token-lint-ignore` entries (satori chart hex,
+  preview vh sizing, moved curation board).
+- **Known wart (chip spawned):** approval-queue has a stale `marketing_brain_actions` draft row
+  pointing at a deleted local render (`listing_video_v4/out/algorithm-prefers-june.mp4`) → console 404.
+
+_(Prior handoff history continues below.)_
 
 # LIFECYCLE WORKFLOWS: CMA + NEWSLETTER + SUBSCRIPTIONS + UNIFIED EMAIL SHELL (2026-07-07, Cursor)
 

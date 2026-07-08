@@ -6,6 +6,8 @@ import { getCrmAccess } from '@/app/actions/crm'
 import { CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
 import { buildAdminNav } from '@/app/components/admin/admin-nav'
 import ConsoleShell from '@/components/console/ConsoleShell'
+import HelpProvider from '@/components/admin/help/HelpProvider'
+import { getHelpArticleIndex } from '@/lib/admin-help'
 
 /**
  * Console — the clean, brand-free broker workspace (Matt directive 2026-06-15).
@@ -50,6 +52,8 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
       >
         {children}
       </ConsoleShell>
+      {/* Persistent Help button — tours + contextual KB links on every console page. */}
+      <HelpProvider articles={getHelpArticleIndex()} />
     </div>
   )
 }

@@ -149,10 +149,10 @@ export default async function AdminDashboardPage() {
         <ul className="flex flex-wrap gap-4 text-sm">
           <li><Link href="/admin/sync" className="text-success hover:underline">Sync & history</Link></li>
           <li><Link href="/admin/geo" className="text-success hover:underline">Geo hierarchy</Link></li>
-          <li><Link href="/admin/resort-communities" className="text-success hover:underline">Resort communities</Link></li>
-          <li><Link href="/admin/banners" className="text-success hover:underline">Banners</Link></li>
-          <li><Link href="/admin/reports" className="text-success hover:underline">Reports</Link></li>
-          <li><Link href="/admin/spark-status" className="text-success hover:underline">Spark API status</Link></li>
+          <li><Link href="/admin/geo/resort-communities" className="text-success hover:underline">Resort communities</Link></li>
+          <li><Link href="/admin/media/banners" className="text-success hover:underline">Banners</Link></li>
+          <li><Link href="/admin/analytics" className="text-success hover:underline">Performance</Link></li>
+          <li><Link href="/admin/sync/spark" className="text-success hover:underline">Spark API status</Link></li>
         </ul>
       </ConsoleSection>
     </main>

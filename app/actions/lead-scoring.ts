@@ -1,6 +1,7 @@
 'use server'
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { countListingAlertsForUser } from '@/lib/data/leads/listingAlerts'
 
 /**
  * Lead Scoring System
@@ -95,13 +96,8 @@ export async function computeLeadScore(userId: string): Promise<LeadScore> {
     const inquiries = inquiryCount ?? 0
     components.contactActions = clamp(inquiries * 10, 0, 20)
 
-    // Count saved searches (indicates intent depth)
-    const { count: searchCount } = await supabase
-      .from('saved_searches')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-
-    const searches = searchCount ?? 0
+    // Count saved searches (indicates intent depth) — unified listing_alerts.
+    const searches = await countListingAlertsForUser(userId)
     components.timeDepth = clamp(searches * 5, 0, 10)
 
     // Return visits — check distinct dates of activity

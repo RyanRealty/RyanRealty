@@ -452,7 +452,7 @@ export function PersonRightRail({
   }
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-muted/40 px-3 py-3">
+    <div data-tour="person-right-rail" className="flex h-full flex-col overflow-y-auto bg-muted/40 px-3 py-3">
       {/* Last-lead metadata strip (§07b 13) */}
       {(metaAddress || metaCreatedAt || metaAssignedName) && (
         <div className="mb-3 space-y-0.5 px-1 text-xs text-muted-foreground">
@@ -670,9 +670,12 @@ export function PersonRightRail({
           )}
         </RailSection>
 
-        {/* Website Activity (§7c.8.5 slot — in-house equivalent of the AgentFire FUB widget) */}
+        {/* Website Activity (§7c.8.5 slot — in-house equivalent of the AgentFire FUB widget).
+            Open by default since the admin consolidation (2026-07-07): this section now
+            carries the lead's alerts, report subscriptions, and email delivery story —
+            the core of the person-as-lead-hub. Collapse state still persists per user. */}
         {websiteActivityNode ? (
-          <RailSection id="website-activity" icon={<Footprints className="h-4 w-4" />} title="Website Activity" defaultOpen={false}>
+          <RailSection id="website-activity" icon={<Footprints className="h-4 w-4" />} title="Website Activity" defaultOpen>
             {websiteActivityNode}
           </RailSection>
         ) : null}

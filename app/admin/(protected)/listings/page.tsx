@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import ListingsCsvExport from './ListingsCsvExport'
 import {
   Pagination,
   PaginationContent,
@@ -393,6 +394,9 @@ export default async function AdminListingsPage({
           )}
         </CardContent>
       </Card>
+
+      {/* Advanced query + CSV export (merged from /admin/query-builder, 2026-07-07) */}
+      <ListingsCsvExport />
     </div>
   )
 }

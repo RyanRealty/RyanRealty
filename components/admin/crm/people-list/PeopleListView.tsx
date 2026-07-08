@@ -339,6 +339,7 @@ export default function PeopleListView(props: PeopleListViewProps) {
               className="h-8 w-8"
               aria-label="Add Person"
               title="Add Person"
+              data-tour="crm-add-person"
               onClick={() => setAddOpen(true)}
             >
               <UserRoundPlus className="h-4 w-4" aria-hidden />
@@ -360,7 +361,7 @@ export default function PeopleListView(props: PeopleListViewProps) {
         </div>
 
         {/* §5 toolbar row */}
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div data-tour="crm-toolbar" className="mt-3 flex flex-wrap items-center gap-2">
           <Popover>
             <PopoverTrigger asChild>
               <button type="button" className="inline-flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline">
@@ -436,7 +437,7 @@ export default function PeopleListView(props: PeopleListViewProps) {
         </div>
 
         {/* §6/§13 table */}
-        <div className="mt-2 overflow-x-auto no-scrollbar rounded-lg border border-border bg-card">
+        <div data-tour="crm-table" className="mt-2 overflow-x-auto no-scrollbar rounded-lg border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow className="border-b border-border">

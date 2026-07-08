@@ -1,7 +1,9 @@
-import StockPhotosPicker from './StockPhotosPicker'
+// @no-parity — pure redirect
 
-export const dynamic = 'force-dynamic'
+/** /admin/stock-photos moved into the Media library (consolidation 2026-07-07). */
 
-export default function StockPhotosPage() {
-  return <StockPhotosPicker />
+import { redirect } from 'next/navigation'
+
+export default function StockPhotosRedirect() {
+  redirect('/admin/media/stock-photos')
 }

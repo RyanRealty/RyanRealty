@@ -2,11 +2,11 @@
  * Bulk handler: crm:assign-saved-search — create (or refresh) a saved search
  * for a chunk of CRM contacts, with REAL filters.
  *
- * Writes guest_search_alerts rows (origin='broker'), the same table + engine
- * the alert cron drains, so an assigned search emails exactly like a search
- * the lead built themselves. Every row carries crm_person_id so the alert
- * email's open/click tracking attributes to the right person (Matt directive
- * 2026-07-06: all CRM email is tracked).
+ * Writes listing_alerts rows (origin='broker') through the canonical DAL —
+ * the same table + engine the alert cron drains, so an assigned search emails
+ * exactly like a search the lead built themselves. Every row carries
+ * crm_person_id so the alert email's open/click tracking attributes to the
+ * right person (Matt directive 2026-07-06: all CRM email is tracked).
  *
  * Params:
  *   filters   object — raw filter map; normalized via normalizeSavedSearchFilters.
@@ -15,13 +15,14 @@
  *   name      string — optional; falls back to a summary derived from filters.
  *   frequency 'daily' | 'weekly' — default daily.
  *
- * Per-contact skips: deleted contact, no email on file. Upsert conflict target
- * is (email, filters_hash) so re-running the same assignment re-activates
- * rather than duplicating. Every id is accounted for (processed OR skipped).
+ * Per-contact skips: deleted contact, no email on file. The DAL upserts on
+ * (email, filters_hash) so re-running the same assignment re-activates rather
+ * than duplicating. Every id is accounted for (processed OR skipped).
  */
 
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import { createListingAlertForLead } from '@/lib/data/leads/listingAlerts'
 import {
   normalizeSavedSearchFilters,
   getSavedSearchHash,
@@ -70,7 +71,6 @@ export const assignSavedSearchHandler: BulkHandler = async (ids, params, ctx): P
   const frequency = params.frequency === 'weekly' ? 'weekly' : 'daily'
 
   const sb = createServiceClient()
-  const nowIso = new Date().toISOString()
 
   const { data: peopleRows, error: peopleErr } = await sb
     .from('crm_people')
@@ -89,24 +89,18 @@ export const assignSavedSearchHandler: BulkHandler = async (ids, params, ctx): P
     const email = pickPersonEmail(person.emails)
     if (!email) { result.skipped++; bump('no_email'); continue }
 
-    const { error: upErr } = await sb.from('guest_search_alerts').upsert(
-      {
-        email,
-        filters,
-        filters_hash: filtersHash,
-        name,
-        crm_person_id: id,
-        fub_person_id: person.fub_legacy_id ?? null,
-        origin: 'broker',
-        assigned_by: ctx.actorEmail,
-        source: 'broker-assigned',
-        notification_frequency: frequency,
-        is_active: true,
-        updated_at: nowIso,
-      },
-      { onConflict: 'email,filters_hash' },
-    )
-    if (upErr) { result.skipped++; bump('upsert_failed'); continue }
+    const created = await createListingAlertForLead({
+      email,
+      crmPersonId: id,
+      fubPersonId: person.fub_legacy_id ?? null,
+      name,
+      filters,
+      filtersHash,
+      origin: 'broker',
+      assignedBy: ctx.actorEmail,
+      frequency,
+    })
+    if (!created.ok) { result.skipped++; bump('upsert_failed'); continue }
 
     await sb.from('crm_timeline').insert({
       person_id: id,

@@ -28,12 +28,13 @@ import { renderCrmMerge } from '@/lib/crm/merge'
 import { buildMergeContext } from '@/lib/crm/merge-context'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
 import { CRM_MAILBOXES } from '@/lib/crm/gmail'
-import { getOwnedHomeMatches, getGuestSearchAlertsForLead, getViewedListingsForLead, type OwnedHomeMatch } from '@/lib/data'
+import { getOwnedHomeMatches, getListingAlertsForLead, getViewedListingsForLead, type OwnedHomeMatch } from '@/lib/data'
 import { getOwnedHomeMedia } from '@/lib/crm/owned-home-media'
 import { getContactMemberships } from '@/lib/data/crm/getContactMemberships'
 import { ContactQuickActions } from '@/components/admin/crm/ContactQuickActions'
 import { getContactEmailEngagement } from '@/lib/data/crm/getContactEmailEngagement'
 import ContactEmailEngagement from '@/components/admin/crm/ContactEmailEngagement'
+import ContactDeliveryPanel from '@/components/admin/crm/ContactDeliveryPanel'
 import { getContactBehaviorSummary } from '@/lib/data/crm/getContactBehaviorSummary'
 import ContactBehaviorPanel from '@/components/admin/crm/ContactBehaviorPanel'
 import { getContactRelationships } from '@/lib/data/crm/getContactRelationships'
@@ -143,7 +144,7 @@ export default async function ConsoleLeadPage({
 
   // What they're shopping for — saved searches + the homes they're watching (live MLS) + newsletter status.
   const [savedSearches, viewedListings, contactMemberships, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, fieldDefs, emailEngagementSummary, collaborators, actionPlanEnrollments, detailExtras, activeSequences, crmSources] = await Promise.all([
-    getGuestSearchAlertsForLead({ fubPersonId: person.fub_legacy_id, emails: personEmails }),
+    getListingAlertsForLead({ crmPersonId: person.id, fubPersonId: person.fub_legacy_id, emails: personEmails }),
     getViewedListingsForLead(person.fub_legacy_id),
     getContactMemberships(person.id),
     getContactBehaviorSummary(person.id),
@@ -434,7 +435,7 @@ export default async function ConsoleLeadPage({
         {/* \u00a707 three-column layout: left sidebar (\u00a707a) \u00b7 center timeline (\u00a707b) \u00b7 right rail (\u00a77c.8).
             Each column scrolls independently (no outer scroll shell). */}
         <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-5 sm:-mt-7 -mb-24 lg:-mb-8 grid h-[calc(100dvh-3.5rem)] grid-cols-[minmax(230px,24%)_1fr_minmax(290px,28%)] overflow-hidden lg:h-dvh">
-          <div className="overflow-y-auto border-r border-border px-3 py-3">
+          <div data-tour="person-profile" className="overflow-y-auto border-r border-border px-3 py-3">
             <PersonSidebar
               data={sidebarData}
               customFieldsNode={
@@ -447,7 +448,7 @@ export default async function ConsoleLeadPage({
             />
           </div>
 
-          <div className="min-w-0 overflow-hidden border-r border-border">
+          <div data-tour="person-timeline" className="min-w-0 overflow-hidden border-r border-border">
             <PersonCenterColumn
               personId={person.id}
               personName={displayName}
@@ -535,7 +536,7 @@ export default async function ConsoleLeadPage({
               ) : null
             }
             websiteActivityNode={
-              <div className="space-y-3">
+              <div data-tour="person-website-activity" className="space-y-3">
                 <ContactQuickActions
                   personId={person.id}
                   newsletterSubscribed={contactMemberships.newsletter.subscribed}
@@ -555,6 +556,9 @@ export default async function ConsoleLeadPage({
                   </div>
                 ) : null}
                 <ContactEmailEngagement engagement={emailEngagementSummary} />
+                {/* WS4 delivery observability: what they're subscribed to +
+                    every email they've gotten, with opened/clicked status. */}
+                <ContactDeliveryPanel personId={person.id} email={primaryEmail} />
                 <ReportSubscriptionsPanel
                   current={reportSub ? { isActive: reportSub.isActive, areas: reportSub.areas, frequency: reportSub.frequency } : null}
                   areaOptions={reportAreas}

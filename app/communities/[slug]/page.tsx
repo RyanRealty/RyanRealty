@@ -895,9 +895,9 @@ export default async function CommunityDetailPage({ params }: Props) {
           contactHref={`/contact?inquiryType=Buying&message=${encodeURIComponent(`Interested in ${community.name} — please get in touch.`)}`}
         />
         {/* Listing-alert email capture — reuses submitSearchAlertSignup + the
-            guest_search_alerts table (same path as SearchAlertCapture on /search).
-            City + subdivision prefilled from community data so the alert matches
-            what the visitor is looking at. No new backend. (§0) */}
+            canonical listing_alerts table (same path as SearchAlertCapture on
+            /search). City + subdivision prefilled from community data so the
+            alert matches what the visitor is looking at. No new backend. (§0) */}
         <KbCommunityAlerts
           communityName={community.name}
           city={cityName}

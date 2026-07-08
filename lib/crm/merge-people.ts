@@ -99,8 +99,10 @@ const PLAIN_PERSON_TABLES = [
   'cma_deliveries',
   'email_events',
 ]
-// crm_person_id-keyed denormalized caches.
-const PLAIN_CRMPERSON_TABLES = ['newsletter_subscribers', 'saved_searches', 'visitor_identity_map', 'visitor_sessions']
+// crm_person_id-keyed denormalized caches. listing_alerts is the unified
+// alert table (2026-07-07); saved_searches stays listed so LEGACY rows keep
+// repointing until the parent drops the table.
+const PLAIN_CRMPERSON_TABLES = ['newsletter_subscribers', 'saved_searches', 'listing_alerts', 'visitor_identity_map', 'visitor_sessions']
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Count rows on any table WITHOUT assuming an `id` column — westside_parcels is

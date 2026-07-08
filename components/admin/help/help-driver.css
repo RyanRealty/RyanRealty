@@ -1,0 +1,71 @@
+/*
+ * driver.js popover re-skin — the ONE allowed custom-CSS exception in the
+ * admin (design-system rule). driver.js injects its own DOM outside React,
+ * so shadcn components cannot wrap it. Everything below maps driver.js
+ * classes onto the design-system tokens (.console-root scope provides the
+ * values). Keep this file minimal and token-based: no hex, no px colors.
+ */
+
+.driver-popover {
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 30px rgb(0 0 0 / 0.12);
+  padding: 1rem;
+  max-width: 320px;
+}
+
+.driver-popover-title {
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.driver-popover-description {
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  margin-top: 0.375rem;
+}
+
+.driver-popover-progress-text {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+.driver-popover-navigation-btns button {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-shadow: none;
+}
+
+.driver-popover-navigation-btns button:hover {
+  background-color: var(--primary);
+  opacity: 0.9;
+}
+
+.driver-popover-navigation-btns button.driver-popover-prev-btn {
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+}
+
+.driver-popover-close-btn {
+  color: var(--muted-foreground);
+}
+
+.driver-popover-close-btn:hover {
+  color: var(--foreground);
+}
+
+/* Arrows pick up the popover surface color. */
+.driver-popover-arrow-side-left.driver-popover-arrow { border-left-color: var(--popover); }
+.driver-popover-arrow-side-right.driver-popover-arrow { border-right-color: var(--popover); }
+.driver-popover-arrow-side-top.driver-popover-arrow { border-top-color: var(--popover); }
+.driver-popover-arrow-side-bottom.driver-popover-arrow { border-bottom-color: var(--popover); }

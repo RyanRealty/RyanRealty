@@ -32,7 +32,6 @@ const item = (href: string, label: string, icon: AdminIconName): AdminNavItem =>
  */
 export function buildAdminNav(role: AdminRoleType, brokerId: string | null): AdminNavSection[] {
   const isSuperuser = role === 'superuser'
-  const canReports = isSuperuser || role === 'report_viewer'
   const canBrokers = isSuperuser || role === 'broker'
 
   // ── Today: the daily loop — what needs attention right now ──
@@ -41,7 +40,10 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
     item('/admin/crm/inbox', 'Inbox', 'inbox'),
     item('/admin/crm/tasks', 'Tasks', 'list-todo'),
   ]
-  if (canBrokers) today.push(item('/admin/analytics/action-required', 'Hot leads', 'flame'))
+  // Hot leads lives under /admin/analytics, whose layout is superuser-only
+  // (Phase 1 decision 2026-05-21). Showing it to brokers produced an
+  // access-denied dead end — gate the nav item to match the layout.
+  if (isSuperuser) today.push(item('/admin/analytics/action-required', 'Hot leads', 'flame'))
   today.push(item('/admin/crm/approvals', 'Approvals', 'clipboard-check'))
   if (isSuperuser) today.push(item('/admin/sign-off', 'Sign-off queue', 'pen-line'))
 
@@ -69,12 +71,15 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
   const listings: AdminNavItem[] = [item('/admin/listings', 'Listings', 'home')]
   if (isSuperuser) listings.push(item('/admin/expired-listings', 'Expired listings', 'clock'))
   if (canBrokers) listings.push(item('/admin/cmas', 'CMAs', 'file-search'))
-  listings.push(item('/admin/search', 'Search', 'search'))
+  // /admin/search was merged into the listings browser (consolidation 2026-07-07)
 
-  // ── Marketing: analytics + reports + channels ──
+  // ── Marketing: performance + channels ──
+  // Consolidation 2026-07-07: the Analytics and Reports launchpads merged into
+  // ONE Performance hub at /admin/analytics (/admin/reports redirects there).
+  // Nav gate matches the analytics layout (superuser) so the item never
+  // dead-ends — no report_viewer roles exist (verified against admin_roles).
   const marketing: AdminNavItem[] = []
-  if (isSuperuser) marketing.push(item('/admin/analytics', 'Analytics', 'bar-chart'))
-  if (canReports) marketing.push(item('/admin/reports', 'Reports', 'pie-chart'))
+  if (isSuperuser) marketing.push(item('/admin/analytics', 'Performance', 'bar-chart'))
   if (isSuperuser) {
     marketing.push(
       item('/admin/approval-queue', 'Marketing approvals', 'badge-check'),
@@ -87,10 +92,14 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
       item('/admin/analytics/google-search', 'Google Search (SEO)', 'globe'),
       item('/admin/analytics/google-business-profile', 'Google Business Profile', 'map-pin'),
       item('/admin/visitors/live', 'Live visitors', 'activity'),
-      item('/admin/optimization', 'Optimization', 'gauge'),
+      item('/admin/operations/optimization', 'Optimization', 'gauge'),
     )
   }
   if (canBrokers) marketing.push(item('/admin/newsletters', 'Newsletter', 'mail'))
+  // Restored to nav 2026-07-07: blog + email campaigns were live pages reachable
+  // only by URL (consolidation audit — orphan routes).
+  if (isSuperuser) marketing.push(item('/admin/blog', 'Blog', 'file-text'))
+  if (isSuperuser) marketing.push(item('/admin/email/campaigns', 'Email campaigns', 'mail'))
   if (canBrokers) marketing.push(item('/admin/fub-attribution', 'FUB attribution', 'target'))
   if (canBrokers) marketing.push(item('/admin/broker-links', 'Ad links', 'megaphone'))
 
@@ -98,13 +107,11 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
   const content: AdminNavItem[] = []
   if (isSuperuser) {
     content.push(
-      item('/admin/geo', 'Communities & geo', 'map'),
-      item('/admin/resort-communities', 'Resort & master plan', 'building'),
+      // Consolidation 2026-07-07: resort-communities is a tab under Geography;
+      // photos/banners/stock-photos are tabs under the Media library.
+      item('/admin/geo', 'Geography', 'map'),
       item('/admin/site-pages', 'Site pages', 'files'),
-      item('/admin/media', 'Media', 'folder-open'),
-      item('/admin/photos', 'Photo curation', 'images'),
-      item('/admin/banners', 'Banners', 'image'),
-      item('/admin/stock-photos', 'Stock photos', 'camera'),
+      item('/admin/media', 'Media library', 'folder-open'),
     )
   }
 
@@ -113,8 +120,9 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
   if (isSuperuser) system.push(item('/admin/operations', 'Operations', 'gauge'))
   if (isSuperuser) system.push(item('/admin/crm/health', 'CRM health', 'activity'))
   if (isSuperuser) system.push(item('/admin/crm/settings', 'CRM settings', 'gauge'))
-  system.push(item('/admin/sync', 'Sync status', 'refresh'))
-  if (isSuperuser) system.push(item('/admin/spark-status', 'Spark', 'zap'))
+  // /admin/sync's layout is superuser-only; match the nav gate to it.
+  // Consolidation 2026-07-07: Spark is now a tab inside System health (/admin/sync).
+  if (isSuperuser) system.push(item('/admin/sync', 'System health', 'refresh'))
   if (canBrokers) {
     system.push(
       item(
@@ -124,11 +132,12 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
       ),
     )
   }
+  // Consolidation 2026-07-07: the query builder folded into the listings
+  // browser (CSV export panel at the bottom of /admin/listings).
   if (isSuperuser) {
     system.push(
       item('/admin/users', 'Users', 'user-cog'),
       item('/admin/audit-log', 'Audit log', 'scroll-text'),
-      item('/admin/query-builder', 'Query builder', 'database'),
     )
   }
 
@@ -160,7 +169,8 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
     item('/admin/crm/settings/templates', 'Templates', 'file-text'),
     ...has(people, '/admin/email/compose'),
     ...has(marketing, '/admin/newsletters'),
-    item('/admin/crm/subscriptions', 'Subscriptions', 'mail'),
+    ...has(marketing, '/admin/email/campaigns'),
+    item('/admin/crm/subscriptions', 'Alerts & reports', 'mail'),
     ...has(listings, '/admin/cmas'),
     ...(isSuperuser ? [item('/admin/crm/settings', 'CRM settings', 'gauge')] : []),
   ]
@@ -172,12 +182,13 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
   ]
 
   const reportsItems = marketing.filter((i) =>
-    /\/admin\/(analytics|reports|optimization|visitors|fub-attribution)/.test(i.href),
+    /\/admin\/(analytics|reports|operations\/optimization|visitors|fub-attribution)/.test(i.href),
   )
 
   const adminItems: AdminNavItem[] = [
-    ...exclude(listings, ['/admin/cmas']), // Listings, Expired, Search
+    ...exclude(listings, ['/admin/cmas']), // Listings, Expired
     ...has(marketing, '/admin/approval-queue'),
+    ...has(marketing, '/admin/blog'),
     ...has(marketing, '/admin/broker-links'),
     ...content,
     ...system,

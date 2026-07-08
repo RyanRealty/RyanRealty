@@ -109,18 +109,39 @@ export async function removeAdminRole(email: string): Promise<{ ok: true } | { o
   return { ok: true }
 }
 
-/** List all platform users with engagement counts (superuser only). */
+/** List all platform users with engagement counts (superuser only).
+ *
+ * Auth (`auth.users`) is the source of truth for email + created_at — the
+ * `profiles` table has neither (it carries display_name/phone keyed by
+ * user_id). Engagement tables key on the auth user id.
+ */
 export async function listPlatformUsersForAdmin(): Promise<AdminPlatformUserRow[]> {
   const session = await getSession()
   const role = await getAdminRoleForEmail(session?.user?.email ?? null)
   if (role?.role !== 'superuser') return []
 
   const supabase = createServiceClient()
+
+  const authUsers: Array<{
+    id: string
+    email?: string | null
+    phone?: string | null
+    created_at: string
+    updated_at?: string | null
+    user_metadata?: Record<string, unknown>
+  }> = []
+  for (let page = 1; page <= 20; page++) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 })
+    if (error) {
+      console.error('[admin-roles] auth listUsers failed:', error.message)
+      break
+    }
+    authUsers.push(...(data?.users ?? []))
+    if (!data || data.users.length < 1000) break
+  }
+
   const [profilesRes, savedListingsRes, savedSearchesRes, activitiesRes] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('id, email, display_name, first_name, last_name, phone, created_at, updated_at')
-      .order('created_at', { ascending: false }),
+    supabase.from('profiles').select('user_id, display_name, phone, updated_at'),
     supabase.from('saved_listings').select('user_id'),
     supabase.from('saved_searches').select('user_id'),
     supabase.from('user_activities').select('user_id'),
@@ -129,10 +150,11 @@ export async function listPlatformUsersForAdmin(): Promise<AdminPlatformUserRow[
   if (savedListingsRes.error) console.error('[admin-roles] saved_listings query failed:', savedListingsRes.error.message)
   if (savedSearchesRes.error) console.error('[admin-roles] saved_searches query failed:', savedSearchesRes.error.message)
   if (activitiesRes.error) console.error('[admin-roles] user_activities query failed:', activitiesRes.error.message)
-  const { data: profiles } = profilesRes
-  const { data: savedListings } = savedListingsRes
-  const { data: savedSearches } = savedSearchesRes
-  const { data: activities } = activitiesRes
+
+  const profileByUserId = new Map(
+    ((profilesRes.data ?? []) as Array<{ user_id: string; display_name: string | null; phone: string | null; updated_at: string }>)
+      .map((p) => [p.user_id, p])
+  )
 
   const countByUser = (rows: Array<{ user_id: string | null }> | null | undefined) => {
     const map = new Map<string, number>()
@@ -143,23 +165,32 @@ export async function listPlatformUsersForAdmin(): Promise<AdminPlatformUserRow[
     return map
   }
 
-  const savedListingsMap = countByUser(savedListings as Array<{ user_id: string | null }>)
-  const savedSearchesMap = countByUser(savedSearches as Array<{ user_id: string | null }>)
-  const activitiesMap = countByUser(activities as Array<{ user_id: string | null }>)
+  const savedListingsMap = countByUser(savedListingsRes.data as Array<{ user_id: string | null }>)
+  const savedSearchesMap = countByUser(savedSearchesRes.data as Array<{ user_id: string | null }>)
+  const activitiesMap = countByUser(activitiesRes.data as Array<{ user_id: string | null }>)
 
-  return ((profiles ?? []) as Array<{
-    id: string
-    email: string | null
-    display_name: string | null
-    first_name: string | null
-    last_name: string | null
-    phone: string | null
-    created_at: string
-    updated_at: string
-  }>).map((row) => ({
-    ...row,
-    saved_listings_count: savedListingsMap.get(row.id) ?? 0,
-    saved_searches_count: savedSearchesMap.get(row.id) ?? 0,
-    activities_count: activitiesMap.get(row.id) ?? 0,
-  }))
+  const metaString = (meta: Record<string, unknown> | undefined, key: string): string | null => {
+    const value = meta?.[key]
+    return typeof value === 'string' && value.trim() ? value : null
+  }
+
+  return authUsers
+    .sort((a, b) => (b.created_at > a.created_at ? 1 : -1))
+    .map((user) => {
+      const profile = profileByUserId.get(user.id)
+      const meta = user.user_metadata
+      return {
+        id: user.id,
+        email: user.email ?? null,
+        display_name: profile?.display_name ?? metaString(meta, 'full_name') ?? metaString(meta, 'name'),
+        first_name: metaString(meta, 'first_name') ?? metaString(meta, 'given_name'),
+        last_name: metaString(meta, 'last_name') ?? metaString(meta, 'family_name'),
+        phone: profile?.phone ?? user.phone ?? null,
+        created_at: user.created_at,
+        updated_at: profile?.updated_at ?? user.updated_at ?? user.created_at,
+        saved_listings_count: savedListingsMap.get(user.id) ?? 0,
+        saved_searches_count: savedSearchesMap.get(user.id) ?? 0,
+        activities_count: activitiesMap.get(user.id) ?? 0,
+      }
+    })
 }

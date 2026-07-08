@@ -1,8 +1,9 @@
 {
   "generatedAt": "2026-07-01T17:26:31.127Z",
-  "format": "file:line:ruleId — each entry is one violation; both the set (no new entries) and total (count ceiling) must not grow.",
-  "total": 140,
+  "format": "file:line:ruleId \u2014 each entry is one violation; both the set (no new entries) and total (count ceiling) must not grow.",
+  "total": 139,
   "violations": [
+    "app/admin/(protected)/analytics/_components/CityReportSection.tsx:45:clock-new-date",
     "app/admin/(protected)/blog/page.tsx:452:locale-date",
     "app/admin/(protected)/crm/calendar/AppointmentSheet.tsx:78:clock-new-date",
     "app/admin/(protected)/crm/calendar/CalendarGrid.tsx:153:locale-date",
@@ -11,9 +12,7 @@
     "app/admin/(protected)/crm/reporting/agent-activity/AgentActivityChart.tsx:50:locale-date",
     "app/admin/(protected)/crm/reporting/agent-goals/AgentGoalsYearSelect.tsx:24:clock-new-date",
     "app/admin/(protected)/expired-listings/ExpiredListingRow.tsx:28:locale-date",
-    "app/admin/(protected)/query-builder/AdminQueryBuilderForm.tsx:253:clock-now",
-    "app/admin/(protected)/reports/CityReportSection.tsx:45:clock-new-date",
-    "app/admin/(protected)/stock-photos/StockPhotosPicker.tsx:222:clock-new-date",
+    "app/admin/(protected)/media/stock-photos/StockPhotosPicker.tsx:222:clock-new-date",
     "app/admin/(protected)/sync/FullSync.tsx:150:clock-now",
     "app/admin/(protected)/sync/FullSync.tsx:56:clock-now",
     "app/admin/(protected)/sync/SyncAllButtons.tsx:116:clock-now",

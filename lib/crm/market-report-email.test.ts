@@ -2,16 +2,46 @@ import { describe, it, expect } from 'vitest'
 import {
   renderMarketReportEmail,
   buildSubject,
+  buildHeadline,
+  chartImageUrl,
   formatCurrencyRounded,
   formatDays,
   formatYoy,
+  formatMomPct,
   formatMonths,
+  meaningLine,
   verdictLabel,
 } from './market-report-email'
-import type { MarketReportAreaBlock } from '@/lib/data/crm/getMarketReportData'
+import type {
+  MarketReportAreaBlock,
+  MarketTrendSummary,
+} from '@/lib/data/crm/getMarketReportData'
 
 const BANNED_VOCAB = require('../../scripts/brand-voice-vocabulary.cjs') as {
   BANNED_WORD_STRINGS: string[]
+}
+
+/** A realistic monthly trend fixture (chronological completed months). */
+function trend(overrides: Partial<MarketTrendSummary> = {}): MarketTrendSummary {
+  const points = [
+    { periodStart: '2026-03-01', medianSalePrice: 705000, soldCount: 98, medianDom: 31, endOfPeriodInventory: 402 },
+    { periodStart: '2026-04-01', medianSalePrice: 718000, soldCount: 121, medianDom: 27, endOfPeriodInventory: 441 },
+    { periodStart: '2026-05-01', medianSalePrice: 732000, soldCount: 143, medianDom: 24, endOfPeriodInventory: 468 },
+    { periodStart: '2026-06-01', medianSalePrice: 748000, soldCount: 151, medianDom: 22, endOfPeriodInventory: 480 },
+  ]
+  return {
+    points,
+    latestMonthLabel: 'June',
+    prevMonthLabel: 'May',
+    latestMedianPrice: 748000,
+    prevMedianPrice: 732000,
+    momPricePct: 2.2,
+    latestInventory: 480,
+    momInventoryDelta: 12,
+    latestDom: 22,
+    momDomDelta: -2,
+    ...overrides,
+  }
 }
 
 function block(overrides: Partial<MarketReportAreaBlock> = {}): MarketReportAreaBlock {
@@ -30,6 +60,7 @@ function block(overrides: Partial<MarketReportAreaBlock> = {}): MarketReportArea
     refreshedAt: '2026-06-25T12:00:00Z',
     source: 'market_pulse_live',
     href: '/cities/bend',
+    trend: trend(),
     ...overrides,
   }
 }
@@ -105,6 +136,65 @@ describe('buildSubject', () => {
   })
 })
 
+describe('formatMomPct', () => {
+  it('renders a signed one-decimal arrow vs the prior month', () => {
+    expect(formatMomPct(2.18, 'May')).toBe('↑ 2.2% vs May')
+    expect(formatMomPct(-0.5, 'May')).toBe('↓ 0.5% vs May')
+    expect(formatMomPct(0.01, 'May')).toBe('flat vs May')
+  })
+  it('em-dash when unavailable', () => {
+    expect(formatMomPct(null, 'May')).toBe('—')
+    expect(formatMomPct(2.2, null)).toBe('—')
+  })
+})
+
+describe('meaningLine', () => {
+  it('maps each verdict to a plain-English implication and null when unknown', () => {
+    expect(meaningLine('sellers')).toContain('sellers hold the leverage')
+    expect(meaningLine('balanced')).toContain('realistic pricing')
+    expect(meaningLine('buyers')).toContain('room to negotiate')
+    expect(meaningLine(null)).toBeNull()
+  })
+})
+
+describe('buildHeadline', () => {
+  it('leads with the largest YoY move', () => {
+    const h = buildHeadline([
+      block({ yoyPct: -1.22 }),
+      block({ slug: 'redmond', areaLabel: 'Redmond', yoyPct: 4.25 }),
+    ])
+    expect(h).toBe('Redmond home prices are up 4.3% from a year ago')
+  })
+  it('falls back to the verdict when no YoY exists', () => {
+    const h = buildHeadline([block({ yoyPct: null })])
+    expect(h).toBe("Bend is a seller's market with 3.5 months of supply")
+  })
+  it('falls back to the median when neither exists', () => {
+    const h = buildHeadline([
+      block({ yoyPct: null, marketVerdict: null, monthsOfSupply: null }),
+    ])
+    expect(h).toBe('The Bend median sale price now sits at $721,000')
+  })
+  it('contains no colon or hyphen (headline rule)', () => {
+    for (const areas of [[block()], [block({ yoyPct: null })]]) {
+      const h = buildHeadline(areas)
+      expect(h).not.toContain(':')
+      expect(h).not.toContain(' - ')
+    }
+  })
+})
+
+describe('chartImageUrl', () => {
+  it('builds an absolute URL against the site origin', () => {
+    const url = chartImageUrl({ geoType: 'city', slug: 'bend' }, 'median_price')
+    expect(url).toMatch(/^https:\/\//)
+    expect(url).toContain('/api/email/market-chart?')
+    expect(url).toContain('geo=city')
+    expect(url).toContain('slug=bend')
+    expect(url).toContain('metric=median_price')
+  })
+})
+
 describe('renderMarketReportEmail', () => {
   const UNSUB = 'https://ryan-realty.com/api/email/unsubscribe?t=abc.def'
 
@@ -131,8 +221,61 @@ describe('renderMarketReportEmail', () => {
     expect(out.html).toContain('name="color-scheme"')
     // text part carries the same figures
     expect(out.text).toContain('$721,000')
-    expect(out.text).toContain('Median days on market: 25 days')
+    expect(out.text).toContain('Median days on market 25 days')
     expect(out.text).toContain(`Unsubscribe: ${UNSUB}`)
+  })
+
+  it('renders the hero headline, month-over-month context, meaning line, and chart images', () => {
+    const out = renderMarketReportEmail({
+      contactName: 'Jordan',
+      areas: [block()],
+      unsubscribeUrl: UNSUB,
+    })
+    // Hero headline — the one story (largest YoY move).
+    expect(out.html).toContain('Bend home prices are down 1.2% from a year ago')
+    // MoM context sentence from the monthly cache series.
+    expect(out.html).toContain('June closed at a $748,000 median, ↑ 2.2% vs May ($732,000).')
+    // Inventory + DOM context sub-lines.
+    expect(out.html).toContain('June ended 12 more than May')
+    expect(out.html).toContain('22 days in June, 2 days faster than May')
+    // Threshold-driven meaning line.
+    expect(out.html).toContain('What this means for you')
+    expect(out.html).toContain('sellers hold the leverage')
+    // Chart images with alt text, absolute URLs.
+    expect(out.html).toContain('/api/email/market-chart?geo=city&slug=bend&metric=median_price')
+    expect(out.html).toContain('metric=inventory')
+    expect(out.html).toContain('alt="Line chart of the Bend median sale price by month over the last 12 months"')
+    expect(out.html).toContain('alt="Bar chart of homes for sale in Bend by month over the last 12 months"')
+  })
+
+  it('omits charts and MoM context when the area has no trend series', () => {
+    const out = renderMarketReportEmail({
+      contactName: 'Jordan',
+      areas: [block({ trend: null })],
+      unsubscribeUrl: UNSUB,
+    })
+    expect(out.html).not.toContain('/api/email/market-chart')
+    expect(out.html).not.toContain('vs May')
+  })
+
+  it('returns a §0 trace for every displayed figure and none leak into the html', () => {
+    const out = renderMarketReportEmail({
+      contactName: 'Jordan',
+      areas: [block()],
+      unsubscribeUrl: UNSUB,
+    })
+    const figures = out.traces.map((t) => t.figure).join('\n')
+    expect(figures).toContain('median sale price $721,000')
+    expect(figures).toContain('homes for sale 480')
+    expect(figures).toContain('median days on market 25 days')
+    expect(figures).toContain('homes sold last 12 months 1,657')
+    expect(figures).toContain('months of supply 3.5 months')
+    const sources = out.traces.map((t) => t.source).join('\n')
+    expect(sources).toContain('market_stats_cache geo_type=city geo=bend period=rolling_365d')
+    expect(sources).toContain('market_pulse_live geo_type=city geo=bend')
+    // Traces are admin-only — the trace source strings never render in the email.
+    expect(out.html).not.toContain('rolling_365d')
+    expect(out.text).not.toContain('rolling_365d')
   })
 
   it('renders a multi-area email', () => {

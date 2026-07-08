@@ -53,13 +53,44 @@
 
 import { getCityMarketDetail } from '@/lib/data/market/getCityMarketDetail'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+import { getMarketTrend, type MarketTrendPoint } from '@/lib/data/market/getMarketTrend'
 import { buildMarketReportAreas } from '@/lib/data/crm/getContactReportSubscriptions'
 import { hrefForNeighborhoodSlug } from '@/lib/neighborhood-areas'
 import { marketVerdict } from '@/lib/market/classify'
 import type { MoSVerdict } from '@/lib/data/types/market'
+import { formatDate } from '@/lib/format/date'
 
 /** Source tag carried on every block so a reviewer can audit the trace. */
 export type MarketReportSource = 'market_stats_cache:rolling_365d' | 'market_pulse_live'
+
+/**
+ * Month-over-month context derived from the monthly cache series (completed
+ * months only — getMarketTrend drops the in-progress month). Every figure here
+ * traces to `market_stats_cache` period_type='monthly' rows; nothing is
+ * estimated. A field is null when the underlying months do not carry it.
+ */
+export type MarketTrendSummary = {
+  /** Chronological completed-month points (oldest → newest). */
+  points: MarketTrendPoint[]
+  /** Display label of the latest completed month, e.g. "June". */
+  latestMonthLabel: string | null
+  /** Display label of the month before it, e.g. "May". */
+  prevMonthLabel: string | null
+  /** Latest completed month's median sale price (whole dollars). */
+  latestMedianPrice: number | null
+  /** The prior month's median sale price. */
+  prevMedianPrice: number | null
+  /** Median price change, latest vs prior month, percent (signed). */
+  momPricePct: number | null
+  /** Latest completed month's end-of-period active inventory. */
+  latestInventory: number | null
+  /** Inventory change vs the prior month (signed count). */
+  momInventoryDelta: number | null
+  /** Latest completed month's median days on market. */
+  latestDom: number | null
+  /** DOM change vs the prior month (signed days). */
+  momDomDelta: number | null
+}
 
 /**
  * One subscribed area's verified market figures. Every numeric field is sourced
@@ -95,6 +126,12 @@ export type MarketReportAreaBlock = {
   source: MarketReportSource
   /** Canonical web path to the full report for this area. */
   href: string
+  /**
+   * Monthly trend context (charts + month-over-month lines). Optional so pure
+   * consumers built before Wave 8's chart upgrade keep compiling; null/absent
+   * when the geo has no monthly cache series.
+   */
+  trend?: MarketTrendSummary | null
 }
 
 /** The 7 Central Oregon city slugs the report engine serves as cities. */
@@ -148,6 +185,54 @@ export function classifyMarketVerdict(mos: number | null | undefined): MoSVerdic
  */
 export function resolveAreaGeoType(slug: string): 'city' | 'neighborhood' {
   return CITY_SLUGS.has(slug) ? 'city' : 'neighborhood'
+}
+
+/** UTC month name for an ISO date, e.g. "June". Null when unparseable. */
+export function monthLabel(isoDate: string | null | undefined): string | null {
+  if (!isoDate) return null
+  const label = formatDate(isoDate, { month: 'long', day: undefined, year: undefined, timeZone: 'UTC' })
+  return label === '—' ? null : label
+}
+
+/**
+ * Summarize a monthly trend series into the email's month-over-month context.
+ * Pure — exported for unit tests and the sample-render script. Returns null
+ * when fewer than 2 completed months exist (no honest comparison possible).
+ * Every derived delta is computed from two REAL cache rows, never estimated.
+ */
+export function buildTrendSummary(points: MarketTrendPoint[]): MarketTrendSummary | null {
+  if (!Array.isArray(points) || points.length < 2) return null
+  const latest = points[points.length - 1]
+  const prev = points[points.length - 2]
+
+  const latestPrice = toNum(latest.medianSalePrice)
+  const prevPrice = toNum(prev.medianSalePrice)
+  const momPricePct =
+    latestPrice != null && prevPrice != null && prevPrice > 0
+      ? Math.round(((latestPrice - prevPrice) / prevPrice) * 1000) / 10
+      : null
+
+  const latestInv = toNum(latest.endOfPeriodInventory)
+  const prevInv = toNum(prev.endOfPeriodInventory)
+  const momInventoryDelta = latestInv != null && prevInv != null ? latestInv - prevInv : null
+
+  const latestDom = toNum(latest.medianDom)
+  const prevDom = toNum(prev.medianDom)
+  const momDomDelta =
+    latestDom != null && prevDom != null ? Math.round(latestDom) - Math.round(prevDom) : null
+
+  return {
+    points,
+    latestMonthLabel: monthLabel(latest.periodStart),
+    prevMonthLabel: monthLabel(prev.periodStart),
+    latestMedianPrice: latestPrice,
+    prevMedianPrice: prevPrice,
+    momPricePct,
+    latestInventory: latestInv,
+    momInventoryDelta,
+    latestDom: latestDom != null ? Math.round(latestDom) : null,
+    momDomDelta,
+  }
 }
 
 /** Look up the registry display label for a slug, falling back to a titleized slug. */
@@ -289,16 +374,19 @@ export async function getMarketReportData(
     slugs.map(async (slug): Promise<MarketReportAreaBlock | null> => {
       const geoType = resolveAreaGeoType(slug)
 
-      const [detail, pulse] = await Promise.all([
+      const [detail, pulse, trendPoints] = await Promise.all([
         getCityMarketDetail({ geoType, geoSlug: slug, periodType: 'rolling_365d' }),
         // market_pulse_live carries city + region only — skip the lookup for
         // resort communities (geo_type='neighborhood'), which never have a row.
         geoType === 'city'
           ? getMarketPulse({ geoType: 'city', geoSlug: slug })
           : Promise.resolve(null),
+        // Monthly series for the email charts + month-over-month context.
+        // Resilient-cached with an [] fallback — a miss never blocks the block.
+        getMarketTrend(geoType, slug, 12),
       ])
 
-      return buildAreaBlock({
+      const block = buildAreaBlock({
         slug,
         geoType,
         detail: detail
@@ -320,6 +408,8 @@ export async function getMarketReportData(
             }
           : null,
       })
+      if (!block) return null
+      return { ...block, trend: buildTrendSummary(trendPoints) }
     }),
   )
 

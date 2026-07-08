@@ -10,7 +10,7 @@
  *
  * The homepage keeps its canonical Old Mill master hero (a design-system file
  * served from /public, NOT in asset_library) — so it stays homepage-only and is
- * never returned here. Curators set `surface_tags` (hero/card) via /admin/photos;
+ * never returned here. Curators set `surface_tags` (hero/card) via /admin/media/photos;
  * `getGeoTileImages` covers untagged area tiles, this covers banner/hero slots.
  */
 

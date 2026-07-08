@@ -33,7 +33,7 @@ const TABS: Tab[] = [
     href: '/admin/crm',
     label: 'People',
     icon: Users,
-    also: ['/admin/console/leads', '/admin/people'],
+    also: ['/admin/console/leads'],
   },
   { href: '/admin/crm/deals', label: 'Deals', icon: Layers },
   { href: '/admin/crm/activity', label: 'Activity', icon: Activity },

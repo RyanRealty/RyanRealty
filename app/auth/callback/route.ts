@@ -57,14 +57,14 @@ async function stampFubCidFromEmail(
 }
 
 /**
- * CONTACT360 Phase 7.3 — claim-on-sign-in. Attach a guest's email-keyed saved
- * searches (guest_search_alerts) to their account on first sign-in so they are
- * not orphaned. EMAIL-VERIFICATION GATED: only claim when Supabase reports the
- * account email as confirmed (user.email_confirmed_at). The OAuth + magic-link +
- * recovery flows that reach this callback all verify the email, but we re-check
- * the field so we never attach another person's guest searches to an account on
- * an unverified address. Best-effort and idempotent (dedupes by filters_hash) —
- * never blocks or fails sign-in.
+ * CONTACT360 Phase 7.3 — claim-on-sign-in. Attach a guest's email-keyed listing
+ * alerts (unified listing_alerts table) to their account on first sign-in by
+ * stamping user_id onto the matching rows. EMAIL-VERIFICATION GATED: only claim
+ * when Supabase reports the account email as confirmed (user.email_confirmed_at).
+ * The OAuth + magic-link + recovery flows that reach this callback all verify
+ * the email, but we re-check the field so we never attach another person's
+ * guest searches to an account on an unverified address. Best-effort and
+ * idempotent — never blocks or fails sign-in.
  */
 async function claimGuestSearchesForUser(user: User): Promise<void> {
   const email = user.email?.trim().toLowerCase()

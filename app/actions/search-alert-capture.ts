@@ -10,15 +10,16 @@ import {
   buildSearchUrlFromFilters,
 } from '@/lib/search-filters'
 import { trackSavedPropertySearch, findPersonByEmail, createRealtimeTask } from '@/lib/followupboss'
-import { upsertGuestSearchAlert } from '@/lib/data/leads/guestSearchAlerts'
+import { upsertListingAlert } from '@/lib/data/leads/listingAlerts'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 
 /**
  * Anonymous "get listing alerts for this search" capture (public).
  *
  * Turns a not-signed-in /search visitor into a canonical buyer lead AND a
- * durable alert the cron can email. This is a PUBLIC server-action write into
- * FUB + the DB, so it is the spam-hardened path the repo previously lacked:
+ * durable alert the cron can email (a listing_alerts row). This is a PUBLIC
+ * server-action write into FUB + the DB, so it is the spam-hardened path the
+ * repo previously lacked:
  *   1. honeypot   2. per-IP rate limit   3. email validation
  *   4. FUB dedup (findPersonByEmail)   5. compliance gate (inside canonicallyTagLead)
  */
@@ -30,10 +31,10 @@ export type SearchAlertResult = { ok: true } | { ok: false; error: string }
 export async function submitSearchAlertSignup(input: {
   email: string
   filters: Record<string, unknown>
-  /** Honeypot — a hidden field humans never fill. */
+  /** Honeypot, a hidden field humans never fill. */
   company?: string
 }): Promise<SearchAlertResult> {
-  // 1. Honeypot. A filled hidden field means a bot — pretend success, do nothing.
+  // 1. Honeypot. A filled hidden field means a bot. Pretend success, do nothing.
   if (typeof input.company === 'string' && input.company.trim() !== '') {
     return { ok: true }
   }
@@ -61,7 +62,7 @@ export async function submitSearchAlertSignup(input: {
     if (isProd) return { ok: false, error: 'Too many requests. Please try again later.' }
   }
 
-  // 3. Validate email (length-bounded — RFC 5321 max is 254).
+  // 3. Validate email (length-bounded, RFC 5321 max is 254).
   const email = (input.email ?? '').trim().toLowerCase()
   if (email.length > 254 || !EMAIL_RE.test(email)) {
     return { ok: false, error: 'Please enter a valid email address.' }
@@ -74,7 +75,7 @@ export async function submitSearchAlertSignup(input: {
     cappedFilters[key] = typeof value === 'string' ? value.slice(0, 200) : value
   }
   const normalized = normalizeSavedSearchFilters(cappedFilters)
-  // Never sign someone up for "every home" — require at least one real filter.
+  // Never sign someone up for "every home". Require at least one real filter.
   if (Object.keys(normalized).length === 0) {
     return { ok: false, error: 'Add a filter (like a city or price) so we know what to alert you about.' }
   }
@@ -84,7 +85,7 @@ export async function submitSearchAlertSignup(input: {
   const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const searchUrl = `${base}${buildSearchUrlFromFilters(normalized)}`
 
-  // 5. FUB buyer lead — canonical audience:buyer + buyer:warm + source:idx-registration.
+  // 5. FUB buyer lead: canonical audience:buyer + buyer:warm + source:idx-registration.
   //    trackSavedPropertySearch fires the event AND applies the tags (awaited
   //    internally, with its built-in compliance hard-stop guard). Best-effort:
   //    a FUB outage must never block the signup or the durable persistence.
@@ -106,14 +107,14 @@ export async function submitSearchAlertSignup(input: {
       })
     }
   } catch {
-    // FUB best-effort — never block the signup or the durable persistence.
+    // FUB best-effort. Never block the signup or the durable persistence.
   }
 
   // 6. Persist so the alert cron can email this guest when new homes match.
-  const persisted = await upsertGuestSearchAlert({ email, filters: normalized, filtersHash, name, fubPersonId })
+  const persisted = await upsertListingAlert({ email, filters: normalized, filtersHash, name, fubPersonId })
   if (!persisted.ok) return { ok: false, error: 'We could not set up your alert. Please try again.' }
 
-  // 7. GA4 conversion mirror (best-effort, zero value — this is a free capture).
+  // 7. GA4 conversion mirror (best-effort, zero value: this is a free capture).
   try {
     await fireLeadGenerated({
       lp_variant: 'search-alert',

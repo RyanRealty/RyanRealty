@@ -4,7 +4,65 @@ import {
   classifyMarketVerdict,
   resolveAreaGeoType,
   buildAreaBlock,
+  buildTrendSummary,
+  monthLabel,
 } from './getMarketReportData'
+import type { MarketTrendPoint } from '@/lib/data/market/getMarketTrend'
+
+describe('buildTrendSummary', () => {
+  const pt = (
+    periodStart: string,
+    overrides: Partial<MarketTrendPoint> = {},
+  ): MarketTrendPoint => ({
+    periodStart,
+    medianSalePrice: null,
+    soldCount: null,
+    medianDom: null,
+    endOfPeriodInventory: null,
+    ...overrides,
+  })
+
+  it('summarizes the two most recent completed months into MoM context', () => {
+    const s = buildTrendSummary([
+      pt('2026-04-01', { medianSalePrice: 718000, medianDom: 27, endOfPeriodInventory: 441 }),
+      pt('2026-05-01', { medianSalePrice: 732000, medianDom: 24, endOfPeriodInventory: 468 }),
+      pt('2026-06-01', { medianSalePrice: 748000, medianDom: 22, endOfPeriodInventory: 480 }),
+    ])
+    expect(s).not.toBeNull()
+    expect(s!.latestMonthLabel).toBe('June')
+    expect(s!.prevMonthLabel).toBe('May')
+    expect(s!.latestMedianPrice).toBe(748000)
+    expect(s!.prevMedianPrice).toBe(732000)
+    // (748000 - 732000) / 732000 = 2.185...% -> 2.2 one decimal
+    expect(s!.momPricePct).toBe(2.2)
+    expect(s!.momInventoryDelta).toBe(12)
+    expect(s!.momDomDelta).toBe(-2)
+  })
+
+  it('returns null with fewer than 2 points (no honest comparison possible)', () => {
+    expect(buildTrendSummary([])).toBeNull()
+    expect(buildTrendSummary([pt('2026-06-01', { medianSalePrice: 748000 })])).toBeNull()
+  })
+
+  it('leaves a delta null when either month lacks the figure (never fabricates)', () => {
+    const s = buildTrendSummary([
+      pt('2026-05-01', { medianSalePrice: 732000 }),
+      pt('2026-06-01', { medianSalePrice: 748000, endOfPeriodInventory: 480 }),
+    ])
+    expect(s!.momPricePct).toBe(2.2)
+    expect(s!.momInventoryDelta).toBeNull()
+    expect(s!.momDomDelta).toBeNull()
+  })
+})
+
+describe('monthLabel', () => {
+  it('renders the UTC month name and null on garbage', () => {
+    expect(monthLabel('2026-06-01')).toBe('June')
+    expect(monthLabel('2026-12-01')).toBe('December')
+    expect(monthLabel('not-a-date')).toBeNull()
+    expect(monthLabel(null)).toBeNull()
+  })
+})
 
 describe('computeMonthsOfSupply', () => {
   it('computes active / (sold12mo / 12) and rounds to one decimal', () => {

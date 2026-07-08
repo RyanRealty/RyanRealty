@@ -374,7 +374,7 @@ describe('assignSavedSearchHandler', () => {
     expect(upserts).toHaveLength(0)
     accountedFor(res, 2)
   })
-  it('upserts a guest_search_alerts row per contact with crm_person_id + origin broker', async () => {
+  it('upserts a listing_alerts row per contact with crm_person_id + origin broker', async () => {
     people = [
       { id: 1, deleted: false, fub_legacy_id: 900, emails: [{ value: 'lead@x.com', isPrimary: 1 }] },
       { id: 2, deleted: false, fub_legacy_id: null, emails: [] }, // no email -> skipped
@@ -388,7 +388,7 @@ describe('assignSavedSearchHandler', () => {
     expect(res.skipped).toBe(1)
     expect(res.breakdown?.no_email).toBe(1)
     accountedFor(res, 2)
-    const row = upserts.find((u) => u.table === 'guest_search_alerts')?.row
+    const row = upserts.find((u) => u.table === 'listing_alerts')?.row
     expect(row?.email).toBe('lead@x.com')
     expect(row?.crm_person_id).toBe(1)
     expect(row?.fub_person_id).toBe(900)

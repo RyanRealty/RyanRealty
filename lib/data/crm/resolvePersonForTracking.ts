@@ -62,45 +62,20 @@ function toResolution(row: PersonRow, resolvedBy: 'crm_person_id' | 'email'): Tr
 }
 
 /**
- * The crm_person_id linkage for a batch of guest_search_alerts rows. The cron
- * DAL projection (lib/data/leads/guestSearchAlerts.ts) predates the bridge
- * column; this reads just the linkage so the alert cron can resolve tracking
- * without touching that projection. Missing ids map to null.
- */
-export async function getGuestAlertPersonLinks(rowIds: string[]): Promise<Map<string, number | null>> {
-  const links = new Map<string, number | null>()
-  if (rowIds.length === 0) return links
-  const sb = createServiceClient()
-  const { data, error } = await sb
-    .from('guest_search_alerts')
-    .select('id, crm_person_id')
-    .in('id', rowIds)
-  if (error) {
-    console.error('[getGuestAlertPersonLinks]', error.message)
-    return links
-  }
-  for (const row of (data ?? []) as Array<{ id: string; crm_person_id: number | null }>) {
-    links.set(row.id, row.crm_person_id ?? null)
-  }
-  return links
-}
-
-/**
- * Backfill crm_person_id onto an alert row after an email-match resolution so
- * the next send is pre-linked (no repeat lookup). Best-effort — a failed
- * write-back must never undo a real send.
+ * Backfill crm_person_id onto a listing_alerts row after an email-match
+ * resolution so the next send is pre-linked (no repeat lookup). Best-effort —
+ * a failed write-back must never undo a real send.
  */
 export async function linkAlertRowToPerson(
-  table: 'saved_searches' | 'guest_search_alerts',
   rowId: string,
   personId: number,
 ): Promise<void> {
   const sb = createServiceClient()
   const { error } = await sb
-    .from(table)
+    .from('listing_alerts')
     .update({ crm_person_id: personId })
     .eq('id', rowId)
-  if (error) console.error('[linkAlertRowToPerson]', table, rowId, error.message)
+  if (error) console.error('[linkAlertRowToPerson]', rowId, error.message)
 }
 
 export async function resolvePersonForTracking(input: {

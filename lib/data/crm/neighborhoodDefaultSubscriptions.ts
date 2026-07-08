@@ -7,7 +7,7 @@ import { pickPersonEmail } from '@/lib/crm/bulk-handlers/assign-saved-search'
 /**
  * Default neighborhood subscriptions (Matt directive 2026-07-06): every contact
  * on a CRM neighborhood list (crm_people.neighborhood_slug) gets, BY DEFAULT,
- *   1. a saved search for that neighborhood (guest_search_alerts row with
+ *   1. a saved search for that neighborhood (listing_alerts row with
  *      filters { neighborhoodSlug }, weekly cadence, origin='system') — drained
  *      by the same alert cron as every other saved search, tracked via
  *      crm_person_id, suppression-gated at send time.
@@ -99,7 +99,7 @@ async function fetchExistingAlertEmails(
   const emails = new Set<string>()
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await sb
-      .from('guest_search_alerts')
+      .from('listing_alerts')
       .select('email')
       .eq('filters_hash', filtersHash)
       .range(from, from + PAGE - 1)
@@ -254,7 +254,7 @@ export async function provisionNeighborhoodDefaultSubscriptions(options?: {
         // ignoreDuplicates: INSERT ... ON CONFLICT DO NOTHING — never touches
         // (and never re-activates) a row the homeowner already owns.
         const { error } = await sb
-          .from('guest_search_alerts')
+          .from('listing_alerts')
           .upsert(chunk, { onConflict: 'email,filters_hash', ignoreDuplicates: true })
         if (error) throw new Error(`[neighborhoodDefaults] alert insert(${slug}): ${error.message}`)
       }

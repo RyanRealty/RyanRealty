@@ -7,7 +7,7 @@ export default async function AdminCustomReportPage() {
   return (
     <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       <nav className="mb-6 text-sm text-muted-foreground">
-        <Link href="/admin/reports" className="hover:text-primary">Reports</Link>
+        <Link href="/admin/analytics" className="hover:text-primary">Performance</Link>
         <span className="mx-2">/</span>
         <span className="text-primary">Custom report builder</span>
       </nav>
@@ -17,7 +17,7 @@ export default async function AdminCustomReportPage() {
       </p>
       <CustomReportBuilder cities={cities} />
       <p className="mt-10 text-sm text-muted-foreground">
-        <Link href="/admin/reports" className="underline hover:no-underline">Back to Reports</Link>
+        <Link href="/admin/analytics" className="underline hover:no-underline">Back to Performance</Link>
       </p>
     </main>
   )

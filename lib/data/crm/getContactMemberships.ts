@@ -20,9 +20,8 @@
  *                    can flip it ON; `enrolled` + `status` reflect the live row.
  *   - newsletter:    getNewsletterMembershipForLead (the newsletter DAL) — keyed
  *                    by crm_person_id OR any of the contact's emails.
- *   - listingAlerts: getContactListingAlerts (REUSED, never forked) — already
- *                    unions signed-in saved_searches + guest_search_alerts and
- *                    normalizes `active`.
+ *   - listingAlerts: getContactListingAlerts (REUSED, never forked) — reads
+ *                    the unified listing_alerts table and normalizes `active`.
  *
  * Identity comes from the keystone resolver (resolvePersonIdentity) so a native
  * lead resolves the same as a FUB-imported one.
@@ -143,17 +142,20 @@ async function readSequenceMemberships(crmPersonId: number): Promise<ContactSequ
 }
 
 /**
- * Pause or resume EVERY listing alert a contact receives, across both the
- * signed-in saved_searches (is_paused) and the guest_search_alerts (is_active)
- * tables. Used by the membership toggle's listing-alerts action. Lives in the
- * DAL (raw .from() allowed here) keyed off the same identity the reader uses, so
- * the write matches exactly what getContactListingAlerts reads.
+ * Pause or resume EVERY listing alert a contact receives — ONE update on the
+ * unified listing_alerts table, keyed by the same identity the reader uses
+ * (crm_person_id OR auth user_id OR FUB id OR any of the contact's emails), so
+ * the write matches exactly what getContactListingAlerts reads. Used by the
+ * membership toggle's listing-alerts action. Lives in the DAL (raw .from()
+ * allowed here).
  *
- * Returns the number of rows touched in each table so the caller can log a
- * truthful timeline entry. Listing alerts carry NO consent hard-stop (they are
- * a first-party site feature the contact created), so pausing/resuming is a
- * plain state flip — the suppression chokepoint governs email/sms sends, not
- * the alert rows themselves.
+ * Returns the number of rows touched split by signed-in vs guest (user_id
+ * presence) so the caller can log a truthful timeline entry — the historical
+ * shape from the two-table era, kept so callers need no changes. Listing
+ * alerts carry NO consent hard-stop (they are a first-party site feature the
+ * contact created), so pausing/resuming is a plain state flip — the
+ * suppression chokepoint governs email/sms sends, not the alert rows
+ * themselves.
  */
 export async function setContactListingAlertsPaused(
   crmPersonId: number,
@@ -163,30 +165,21 @@ export async function setContactListingAlertsPaused(
   const sb = createServiceClient()
   const identity = await resolvePersonIdentity(crmPersonId)
 
-  let savedSearches = 0
-  if (identity.authUserId) {
-    const { data } = await sb
-      .from('saved_searches')
-      .update({ is_paused: paused })
-      .eq('user_id', identity.authUserId)
-      .select('id')
-    savedSearches = data?.length ?? 0
-  }
-
-  // Guest alerts key by FUB id OR any of the contact's emails. is_active is the
-  // inverse of paused.
-  const ors: string[] = []
+  const ors: string[] = [`crm_person_id.eq.${crmPersonId}`]
+  if (identity.authUserId) ors.push(`user_id.eq.${identity.authUserId}`)
   if (identity.fubLegacyId !== null) ors.push(`fub_person_id.eq.${identity.fubLegacyId}`)
   for (const e of identity.emails) ors.push(`email.eq.${e}`)
-  let guestAlerts = 0
-  if (ors.length > 0) {
-    const { data } = await sb
-      .from('guest_search_alerts')
-      .update({ is_active: !paused, updated_at: new Date().toISOString() })
-      .or(ors.join(','))
-      .select('id')
-    guestAlerts = data?.length ?? 0
-  }
 
-  return { savedSearches, guestAlerts }
+  const { data, error } = await sb
+    .from('listing_alerts')
+    .update({ is_active: !paused, updated_at: new Date().toISOString() })
+    .or(ors.join(','))
+    .select('id, user_id')
+  if (error) {
+    console.error('[setContactListingAlertsPaused]', error.message)
+    return { savedSearches: 0, guestAlerts: 0 }
+  }
+  const rows = (data ?? []) as Array<{ id: string; user_id: string | null }>
+  const savedSearches = rows.filter((r) => r.user_id != null).length
+  return { savedSearches, guestAlerts: rows.length - savedSearches }
 }

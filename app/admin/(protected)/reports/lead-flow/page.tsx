@@ -601,7 +601,7 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
       <div className="space-y-2 text-xs text-muted-foreground">
         <p>
           <strong className="text-foreground">Documentation:</strong>{' '}
-          <Link href="/admin/reports" className="underline hover:no-underline">Back to Reports</Link>
+          <Link href="/admin/analytics" className="underline hover:no-underline">Back to Performance</Link>
           {' · '}
           <Link href="/admin/analytics/funnel-breakdown" className="underline hover:no-underline">Funnel breakdown (visitor_sessions)</Link>
           {' · '}

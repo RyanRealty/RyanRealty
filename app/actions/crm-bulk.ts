@@ -300,8 +300,8 @@ export async function bulkSetReportSubscriptionAction(
 
 /**
  * Bulk assign a saved search (listing alerts) to the cohort — with REAL filters
- * (mirrors createSavedSearchForLead's broker-origin path). The handler upserts
- * guest_search_alerts per contact keyed (email, filters_hash), stamped with
+ * (mirrors createListingAlertForLead's broker-origin path). The handler upserts
+ * listing_alerts per contact keyed (email, filters_hash), stamped with
  * crm_person_id so the alert email's open/click tracking attributes correctly.
  * Not a send kind (a preference. The alert cron suppression-gates delivery).
  */

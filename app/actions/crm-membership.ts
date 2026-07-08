@@ -208,8 +208,8 @@ export async function setNewsletterSubscription(input: {
 // ── Listing-alerts membership ────────────────────────────────────────────────
 
 /**
- * Pause or resume EVERY listing alert a contact receives (saved_searches +
- * guest_search_alerts), in one click. Listing alerts are a first-party site
+ * Pause or resume EVERY listing alert a contact receives (the unified
+ * listing_alerts table), in one click. Listing alerts are a first-party site
  * feature the contact created themselves — they carry NO consent hard-stop, so
  * this is a plain state flip (no suppression write). The email/sms delivery of
  * an alert is still independently suppression-gated at send time. The write goes

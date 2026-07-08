@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   humanizeSearchCriteria,
   buildSearchUrl,
-  mergeListingAlertRows,
+  toContactListingAlerts,
 } from './getContactListingAlerts'
 import { buildSearchUrlFromFilters } from '@/lib/search-filters'
 
@@ -87,71 +87,54 @@ describe('buildSearchUrl', () => {
   })
 })
 
-describe('mergeListingAlertRows', () => {
-  const savedRow = {
-    id: 'saved-1',
+describe('toContactListingAlerts', () => {
+  const userRow = {
+    id: 'alert-1',
     user_id: 'auth-uuid',
     name: 'Bend under 800k',
     filters: { city: 'Bend', minPrice: 400000, maxPrice: 800000, beds: 3 } as Record<string, unknown>,
     notification_frequency: 'daily',
-    is_paused: false,
+    is_active: true,
   }
   const guestRow = {
-    id: 'guest-1',
-    email: 'lead@example.com',
-    filters: { city: 'Redmond', beds: 2 } as Record<string, unknown>,
+    id: 'alert-2',
+    user_id: null,
     name: null,
+    filters: { city: 'Redmond', beds: 2 } as Record<string, unknown>,
     notification_frequency: 'weekly',
     is_active: true,
-    last_notified_at: null,
-    unsubscribe_token: 'tok-1',
-    fub_person_id: 42,
   }
 
-  it('unions saved searches and guest alerts into one list', () => {
-    const out = mergeListingAlertRows([savedRow], [guestRow])
+  it('maps signed-in and guest rows into one list, source derived from user_id', () => {
+    const out = toContactListingAlerts([userRow, guestRow])
     expect(out).toHaveLength(2)
     expect(out[0].source).toBe('saved-search')
     expect(out[1].source).toBe('guest-alert')
   })
 
   it('humanizes + deep-links each row and carries cadence', () => {
-    const [saved] = mergeListingAlertRows([savedRow], [])
-    expect(saved.criteriaText).toBe('Homes in Bend, $400k-$800k, 3+ beds')
-    expect(saved.label).toBe('Bend under 800k')
-    expect(saved.url).toBe(buildSearchUrl(savedRow.filters))
-    expect(saved.cadence).toBe('daily')
+    const [mapped] = toContactListingAlerts([userRow])
+    expect(mapped.criteriaText).toBe('Homes in Bend, $400k-$800k, 3+ beds')
+    expect(mapped.label).toBe('Bend under 800k')
+    expect(mapped.url).toBe(buildSearchUrl(userRow.filters))
+    expect(mapped.cadence).toBe('daily')
   })
 
-  it('normalizes active: saved-search uses !is_paused', () => {
-    const [active] = mergeListingAlertRows([{ ...savedRow, is_paused: false }], [])
-    const [paused] = mergeListingAlertRows([{ ...savedRow, is_paused: true }], [])
-    expect(active.active).toBe(true)
-    expect(paused.active).toBe(false)
-  })
-
-  it('normalizes active: guest-alert uses is_active directly (not backwards)', () => {
-    const [on] = mergeListingAlertRows([], [{ ...guestRow, is_active: true }])
-    const [off] = mergeListingAlertRows([], [{ ...guestRow, is_active: false }])
+  it('normalizes active from is_active (paused rows read false)', () => {
+    const [on] = toContactListingAlerts([{ ...userRow, is_active: true }])
+    const [off] = toContactListingAlerts([{ ...userRow, is_active: false }])
+    const [unknown] = toContactListingAlerts([{ ...userRow, is_active: null }])
     expect(on.active).toBe(true)
     expect(off.active).toBe(false)
+    expect(unknown.active).toBe(false)
   })
 
-  it('falls back to humanized criteria when a guest alert has no name', () => {
-    const [guest] = mergeListingAlertRows([], [guestRow])
+  it('falls back to humanized criteria when a row has no name', () => {
+    const [guest] = toContactListingAlerts([guestRow])
     expect(guest.label).toBe('Homes in Redmond, 2+ beds')
   })
 
-  it('dedupes a guest alert that duplicates a signed-in saved search (saved wins)', () => {
-    const sameFilters = { city: 'Bend', minPrice: 400000, maxPrice: 800000, beds: 3 }
-    const dupeGuest = { ...guestRow, id: 'guest-dupe', filters: sameFilters as Record<string, unknown> }
-    const out = mergeListingAlertRows([savedRow], [dupeGuest])
-    expect(out).toHaveLength(1)
-    expect(out[0].source).toBe('saved-search')
-    expect(out[0].id).toBe('saved-1')
-  })
-
-  it('returns an empty list when neither source has rows', () => {
-    expect(mergeListingAlertRows([], [])).toEqual([])
+  it('returns an empty list for no rows', () => {
+    expect(toContactListingAlerts([])).toEqual([])
   })
 })

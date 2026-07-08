@@ -86,8 +86,8 @@ export default function InboxFolderRail({
   unreadTotal: number
 }) {
   return (
-    <nav className="flex h-full flex-col py-3" aria-label="Inbox folders">
-      <div className="px-3 pb-2">
+    <nav data-tour="inbox-folders" className="flex h-full flex-col py-3" aria-label="Inbox folders">
+      <div data-tour="inbox-compose" className="px-3 pb-2">
         <ComposeButton />
       </div>
 

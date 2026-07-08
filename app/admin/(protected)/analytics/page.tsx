@@ -1,9 +1,13 @@
 /**
- * /admin/analytics — the comprehensive marketing analytics surface.
+ * /admin/analytics — the Performance hub: ONE launchpad for every analytics
+ * and reporting surface (admin consolidation 2026-07-07 — the old /admin/reports
+ * launchpad merged in here and now redirects).
  *
- * Five tabs: Overview, Acquisition, Behavior, Funnel, Conversions.
- * Server-side data fetching via Promise.all. shadcn/ui everywhere. Tabular
- * numerals on every numeric surface. Brand voice compliant copy.
+ * Five GA4 tabs (Overview, Acquisition, Behavior, Funnel, Conversions), the
+ * merged report catalog (market data, broker activity, lead sources,
+ * marketing), and the weekly-report + city-report tools that used to live on
+ * the Reports page. Server-side data fetching via Promise.all. shadcn/ui
+ * everywhere. Tabular numerals on every numeric surface.
  *
  * Data trace:
  *   - Overview / Acquisition / Behavior  → GA4 Data API (getGA4Summary)
@@ -20,6 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
+import { getReportCities } from '@/app/actions/reports'
 import {
   resolveDateRange,
   fetchOverview,
@@ -33,6 +38,7 @@ import { DateRangePicker } from './_components/DateRangePicker'
 import { FunnelVariantFilter } from './_components/FunnelVariantFilter'
 import { KpiCard } from './_components/KpiCard'
 import { HorizontalBarChart, TimeSeriesChart, BrokerPieChart, StackedBarMix } from './_components/charts'
+import ReportCatalog from './_components/ReportCatalog'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -54,31 +60,17 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   const tab = sp.tab || 'overview'
   const lpVariant = sp.lpVariant || ''
   const rangeChoice = sp.range || '30d'
+  const { cities } = await getReportCities()
 
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">Analytics</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Performance</h1>
         <p className="text-sm text-muted-foreground">
-          Acquisition, behavior, funnel, and conversions. Numbers trace to GA4 Data API and Supabase. Range: {range.startDate} to {range.endDate}.
+          Every analytics and reporting surface in one place: traffic, funnel, conversions, and the report catalog. Numbers trace to GA4 Data API and Supabase. Range: {range.startDate} to {range.endDate}.
         </p>
         <DateRangePicker current={rangeChoice} currentStart={sp.startDate} currentEnd={sp.endDate} />
       </header>
-
-      <div className="rounded-lg border border-border bg-card p-3">
-        <p className="text-xs font-medium text-muted-foreground mb-2">Specialised views</p>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-          <Link className="text-primary hover:underline" href="/admin/analytics/action-required">🚨 Action required (start here)</Link>
-          <Link className="text-primary hover:underline font-medium" href="/admin/analytics/ad-roi">💰 Marketing ROI (is my ad money working?)</Link>
-          <Link className="text-primary hover:underline" href="/admin/visitors/live">🟢 Live visitors</Link>
-          <Link className="text-primary hover:underline" href="/admin/analytics/social">📣 Social channels</Link>
-          <Link className="text-primary hover:underline" href="/admin/analytics/demographics">👥 Demographics (age, geo)</Link>
-          <Link className="text-primary hover:underline" href="/admin/analytics/funnel-breakdown">🔻 Funnel breakdown + insights</Link>
-          <Link className="text-primary hover:underline" href="/admin/analytics/lp-leaderboard">🏁 LP leaderboard</Link>
-          <Link className="text-primary hover:underline" href="/admin/analytics/cost-per-lead">💸 Cost per lead</Link>
-          <Link className="text-primary hover:underline" href="/admin/analytics/listing-performance">🏠 Listing performance</Link>
-        </div>
-      </div>
 
       <Tabs defaultValue={String(tab)}>
         <TabsList>
@@ -119,6 +111,9 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
           </Suspense>
         </TabsContent>
       </Tabs>
+
+      {/* Merged report launchpad: catalog + weekly tool + city builder. */}
+      <ReportCatalog cities={cities} />
     </div>
   )
 }
@@ -204,8 +199,9 @@ async function OverviewTab({ range }: { range: { startDate: string; endDate: str
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {d.topLandingPages.map((p) => (
-                      <TableRow key={p.pagePath}>
+                    {/* GA4 can return the same pagePath twice (e.g. "/") — key by position too */}
+                    {d.topLandingPages.map((p, i) => (
+                      <TableRow key={`${i}|${p.pagePath}`}>
                         <TableCell className="font-medium whitespace-nowrap">{p.pagePath}</TableCell>
                         <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(p.sessions)}</TableCell>
                       </TableRow>

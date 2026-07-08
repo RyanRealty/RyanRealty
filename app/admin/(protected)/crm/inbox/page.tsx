@@ -558,7 +558,7 @@ export default async function CrmInboxPage({
           />
 
           {/* Pane 2: thread list */}
-          <div className="flex min-h-0 flex-col">
+          <div data-tour="inbox-threads" className="flex min-h-0 flex-col">
             <div className="border-b border-border px-3 py-2">
               <h1 className="text-sm font-semibold text-foreground">
                 {scopeKey === 'me' ? 'My Inbox' : 'Company'} · {FOLDER_TITLES[folder]}
@@ -582,7 +582,7 @@ export default async function CrmInboxPage({
           </div>
 
           {/* Pane 3: reading pane + contact sidebar */}
-          <div className="flex min-h-0 min-w-0">
+          <div data-tour="inbox-reading" className="flex min-h-0 min-w-0">
             {readingPane}
             {contactSidebar}
           </div>

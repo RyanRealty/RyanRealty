@@ -1038,12 +1038,14 @@ export async function countListingInquiriesSince(sinceIso: string): Promise<numb
   return count ?? 0
 }
 
-/** Count saved_searches rows since an ISO timestamp. */
+/** Count listing-alert rows created since an ISO timestamp (the unified
+ * listing_alerts table replaced saved_searches for alert writes 2026-07-07;
+ * migrated rows keep their original created_at, so windows stay comparable). */
 export async function countSavedSearchesSince(sinceIso: string): Promise<number> {
   const sb = client()
   if (!sb) return 0
   const { count } = await sb
-    .from('saved_searches')
+    .from('listing_alerts')
     .select('id', { count: 'exact', head: true })
     .gte('created_at', sinceIso)
   return count ?? 0

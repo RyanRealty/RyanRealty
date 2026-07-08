@@ -630,18 +630,27 @@ export type { TrailLineGeometry } from '@/lib/data/trails/getTrailLineGeoJSON'
 export { getBrokerageTrackRecord } from '@/lib/data/track-record'
 export type { BrokerageTrackRecord } from '@/lib/data/track-record'
 
-// Guest (anonymous) search-alert capture from /search
+// Listing alerts — the ONE canonical table (public.listing_alerts) for guest,
+// signed-in, broker-assigned, and system-created alert subscriptions.
 export {
-  upsertGuestSearchAlert,
-  getActiveGuestSearchAlerts,
-  getGuestSearchAlertsForLead,
-  createSavedSearchForLead,
-  updateSavedSearch,
-  deleteSavedSearchById,
-  markGuestAlertNotified,
-  deactivateGuestAlertByToken,
-} from '@/lib/data/leads/guestSearchAlerts'
-export type { GuestSearchAlertInput, GuestSearchAlertRow } from '@/lib/data/leads/guestSearchAlerts'
+  upsertListingAlert,
+  createListingAlertForLead,
+  getListingAlertsForLead,
+  getActiveListingAlertsDue,
+  updateListingAlert,
+  setListingAlertActive,
+  deleteListingAlertById,
+  markListingAlertNotified,
+  deactivateListingAlertByToken,
+  claimListingAlertsForUser,
+  getListingAlertsForUser,
+  countListingAlertsForUser,
+  updateListingAlertForUser,
+  setListingAlertActiveForUser,
+  deleteListingAlertForUser,
+  setListingAlertFrequencyForUser,
+} from '@/lib/data/leads/listingAlerts'
+export type { ListingAlertInput, ListingAlertRow, ClaimListingAlertsResult } from '@/lib/data/leads/listingAlerts'
 
 // Newsletter feature — subscriber list + managed sends
 export {

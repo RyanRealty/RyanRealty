@@ -345,7 +345,7 @@ export default async function AdminEmailReportingPage({
       </ConsoleSection>
 
       <p className="text-sm text-muted-foreground">
-        <Link href="/admin/reports" className="underline hover:no-underline">Back to Reports</Link>
+        <Link href="/admin/analytics" className="underline hover:no-underline">Back to Performance</Link>
       </p>
     </main>
   )

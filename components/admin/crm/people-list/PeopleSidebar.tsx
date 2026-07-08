@@ -70,7 +70,7 @@ export default function PeopleSidebar({ views, activeViewId, totalCount, stages 
   }
 
   return (
-    <aside className="hidden w-full shrink-0 md:block md:w-[230px]">
+    <aside data-tour="crm-sidebar" className="hidden w-full shrink-0 md:block md:w-[230px]">
       {/* People — All People */}
       <p className="px-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">People</p>
       <ul className="mt-1">

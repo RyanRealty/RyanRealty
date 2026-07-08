@@ -131,6 +131,8 @@ Everything in `docs/plans/` is registered here. A new file in that directory wit
 | `CRM_STAGES_AUTOMATION_2026-07-03.md`, `CRM_TAG_SMARTLIST_STREAMLINE_PLAN_2026-07-03.md`, `CRM_STREAMLINE_PLAN_V2_2026-07-03.md`, `CRM_STREAMLINE_AUDIT_PROMPT.md` | CRM streamline plans 2026-07-03 (record) |
 | `CRM_STREAMLINE_AUDIT_FINDINGS_2026-07-03.md`, `CRM_STREAMLINE_V2_AUDIT_FINDINGS_2026-07-03.md`, `CRM_STREAMLINE_EXECUTION_LOG_2026-07-03.md` | CRM streamline audit + execution records 2026-07-03 (record) |
 | `EXPIRED_WORKFLOW_AUDIT_2026-07-03.md` | executed — expired-listing workflow audit (record) |
+| `ADMIN_CONSOLIDATION_MASTER_GOAL.md` | **live** — admin consolidation to broker workflows: ~40 routes → 5-8 job areas, unified alert model, editable criteria, market-report email rebuild, delivery observability, guided help system: P0/WS1-WS5/P2 plan, ship gates |
+| `ADMIN_CONSOLIDATION_AUDIT.md` | **live** — Phase 0 findings: per-route disposition (keep/merge/cut), consolidated IA contract, severity punch list |
 | `task-registry.json` | live registry (non-md, exempt) |
 
 ## Changelog

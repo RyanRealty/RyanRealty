@@ -25,7 +25,7 @@ export default async function AdminMarketReportPage() {
         </ul>
       </div>
       <p className="mt-8 text-sm text-muted-foreground">
-        <Link href="/admin/reports" className="underline hover:no-underline">Back to Reports</Link>
+        <Link href="/admin/analytics" className="underline hover:no-underline">Back to Performance</Link>
       </p>
     </main>
   )

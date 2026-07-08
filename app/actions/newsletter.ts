@@ -13,7 +13,7 @@ import { renderNewsletterPreview, senderIdentityFor, PREVIEW_UNSUBSCRIBE_URL } f
 import { getActiveSubscribersForSend } from '@/lib/data/newsletter'
 import { getAssignedBrokersByPersonId, getSubscribersByEmails, bulkActivateSubscribers } from '@/lib/data/newsletter/queue'
 import { sendEmail } from '@/lib/resend'
-import { createSavedSearchForLead, updateSavedSearch, deleteSavedSearchById } from '@/lib/data'
+import { createListingAlertForLead, updateListingAlert, deleteListingAlertById } from '@/lib/data'
 import { normalizeSavedSearchFilters, getSavedSearchHash, getFilterNameFallback } from '@/lib/search-filters'
 import {
   subscribeToNewsletter,
@@ -75,7 +75,7 @@ function cleanSubject(v: FormDataEntryValue | null): string {
 }
 
 /**
- * Saved-search (guest_search_alerts) broker-scope guard. Returns true (DENY) only
+ * Saved-search (listing_alerts) broker-scope guard. Returns true (DENY) only
  * when a restricted broker is acting on a lead that resolves to a DIFFERENT
  * broker. Owner/superuser, a non-CRM admin, the broker's own lead, or an
  * unresolvable/new lead all pass (false). Authorization read lives in the DAL.
@@ -232,7 +232,7 @@ export async function adminAssignSavedSearchAction(formData: FormData): Promise<
   if (Object.keys(filters).length === 0) return { ok: false, error: 'no_filters' }
   const name = String(formData.get('name') ?? '').trim() || getFilterNameFallback(filters)
   const frequency = String(formData.get('frequency') ?? '') === 'daily' ? 'daily' as const : 'weekly' as const
-  return createSavedSearchForLead({ email, fubPersonId, name, filters, filtersHash: getSavedSearchHash(filters), origin: 'broker', assignedBy: gate.email, frequency })
+  return createListingAlertForLead({ email, fubPersonId, name, filters, filtersHash: getSavedSearchHash(filters), origin: 'broker', assignedBy: gate.email, frequency })
 }
 
 /** Edit a saved search (rename + change parameters) — used on the lead page. */
@@ -246,7 +246,7 @@ export async function adminUpdateSavedSearchAction(formData: FormData): Promise<
   const name = String(formData.get('name') ?? 'Saved search').trim() || 'Saved search'
   let filters: Record<string, unknown> = {}
   try { filters = JSON.parse(String(formData.get('filters') ?? '{}')) } catch { filters = {} }
-  return updateSavedSearch(id, { name, filters, filtersHash: stableHash(filters) })
+  return updateListingAlert(id, { name, filters, filtersHash: stableHash(filters) })
 }
 
 /** Remove a saved search by id. */
@@ -255,7 +255,7 @@ export async function adminDeleteSavedSearchAction(id: string): Promise<{ ok: bo
   if (!gate.ok) return { ok: false }
   const lead = await getGuestAlertLead(id)
   if (lead && (await leadOutOfScope(lead))) return { ok: false }
-  return deleteSavedSearchById(id)
+  return deleteListingAlertById(id)
 }
 
 /** Bulk-assign many CRM people the SAME broker-created saved search. */
@@ -271,7 +271,7 @@ export async function adminBulkAssignSavedSearchAction(personIds: number[], name
     if (access && !(await requirePersonInScope(pid, access)).ok) { skipped++; continue }
     const contact = await getCrmPersonContact(pid)
     if (!contact) { skipped++; continue }
-    const r = await createSavedSearchForLead({ email: contact.email, fubPersonId: null, name, filters, filtersHash: hash, origin: 'broker', assignedBy: gate.email, frequency: 'weekly' })
+    const r = await createListingAlertForLead({ email: contact.email, fubPersonId: null, name, filters, filtersHash: hash, origin: 'broker', assignedBy: gate.email, frequency: 'weekly' })
     if (r.ok) assigned++; else skipped++
   }
   return { ok: true, assigned, skipped }

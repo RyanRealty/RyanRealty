@@ -466,8 +466,8 @@ async function TrafficSourcesContent({ range }: { range: { startDate: string; en
           <strong className="text-foreground">Related:</strong>{' '}
           <Link href="/admin/analytics/google-business-profile" className="underline hover:no-underline">GBP performance dashboard</Link>{' · '}
           <Link href="/admin/reports/lead-flow" className="underline hover:no-underline">Lead-flow report</Link>{' · '}
-          <Link href="/admin/people" className="underline hover:no-underline">People index</Link>{' · '}
-          <Link href="/admin/reports" className="underline hover:no-underline">Reports home</Link>
+          <Link href="/admin/crm" className="underline hover:no-underline">Contacts</Link>{' · '}
+          <Link href="/admin/analytics" className="underline hover:no-underline">Performance hub</Link>
         </p>
       </div>
     </div>

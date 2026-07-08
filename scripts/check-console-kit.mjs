@@ -62,12 +62,18 @@ const REQUIRED_KIT_PAGES = [
   // Ops / data cluster
   'app/admin/(protected)/approval-queue/page.tsx',
   'app/admin/(protected)/expired-listings/page.tsx',
-  'app/admin/(protected)/spark-status/page.tsx',
+  // app/admin/(protected)/spark-status/page.tsx — REMOVED 2026-07-07: pure
+  // redirect to /admin/sync/spark (admin consolidation — Spark is a tab inside
+  // System health). The surface it pointed at (sync) stays in this list.
   'app/admin/(protected)/sync/page.tsx',
-  'app/admin/(protected)/reports/page.tsx',
+  // app/admin/(protected)/reports/page.tsx — REMOVED 2026-07-07: pure redirect
+  // to /admin/analytics (admin consolidation — the Reports launchpad merged
+  // into the Performance hub, which carries the catalog + ConsoleSections).
   'app/admin/(protected)/audit-log/page.tsx',
   // People / transactions cluster
-  'app/admin/(protected)/people/page.tsx',
+  // app/admin/(protected)/people/page.tsx — REMOVED 2026-07-07: pure redirect
+  // to /admin/crm (admin consolidation — the people index merged into the
+  // contacts list + person page, both under stricter parity contracts).
   'app/admin/(protected)/deals/page.tsx',
   'app/admin/(protected)/financials/page.tsx',
   'app/admin/(protected)/commissions/page.tsx',

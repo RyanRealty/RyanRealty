@@ -4,15 +4,18 @@ import { revalidatePath } from 'next/cache'
 import { ChevronRight, CheckCircle2 } from 'lucide-react'
 import { getBrokerCommandCenterData } from '@/app/actions/broker-command-center'
 import { getBrokerActionQueue, confirmNextStepAction, getRecentNewLeads, getRecentWebsiteVisitors, getRecentEmailPeople, getCrmAccess } from '@/app/actions/crm'
+import { getGlobalDeliverySummary } from '@/lib/data/crm/emailDelivery'
 import { ActionSubmitButton } from '@/components/admin/ActionSubmitButton'
 import DashboardActivityFeed from '@/components/admin/DashboardActivityFeed'
 import { DashboardActivityTable } from '@/components/admin/DashboardActivityTable'
+import DashboardDeliveryAttention from '@/components/admin/DashboardDeliveryAttention'
 import { getDashboardRecentActivity } from '@/lib/data/crm/getDashboardRecentActivity'
 import { getDashboardKpis } from '@/lib/data/crm/getDashboardKpis'
 import MonthCalendar from '@/components/admin/MonthCalendar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import HelpTip from '@/components/admin/help/HelpTip'
 import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -102,12 +105,16 @@ export default async function BrokerCommandCenterPage({
 }) {
   const feedAccess = await getCrmAccess()
   const feedSlug = feedAccess?.brokerSlug ?? null
-  const [data, actionQueue, websiteRows, emailRows, recentLeads] = await Promise.all([
+  const [data, actionQueue, websiteRows, emailRows, recentLeads, deliverySummary] = await Promise.all([
     getBrokerCommandCenterData(),
     getBrokerActionQueue(),
     getRecentWebsiteVisitors(feedSlug, 12).catch(() => []),
     getRecentEmailPeople(feedSlug, 12).catch(() => []),
     getRecentNewLeads(12).catch(() => []),
+    // WS4 delivery observability on Home: alert/report sends that look wrong,
+    // each with a plain-English fix. Fails soft — the section renders honest
+    // all-clear or nothing rather than crashing the dashboard.
+    getGlobalDeliverySummary({ days: 30 }).catch(() => null),
   ])
   const { tab: activeTab, days: activeDays, broker: activeBroker } = await searchParams
   const selectedDays = activeDays ?? '30d'
@@ -165,7 +172,7 @@ export default async function BrokerCommandCenterPage({
 
       {/* ── Header — slim: greeting + the Everyone / Just me scope toggle (FUB
           "Everyone ▾"). No date pills / KPI controls — the feed is the page. ── */}
-      <header className="flex items-center justify-between gap-3">
+      <header data-tour="dash-header" className="flex items-center justify-between gap-3">
         <h1 className="min-w-0 truncate text-xl font-bold tracking-tight text-foreground">
           {greet()}, {data.broker.displayName.split(' ')[0]}.
         </h1>
@@ -191,7 +198,7 @@ export default async function BrokerCommandCenterPage({
 
       {/* ── Mobile: the FUB person feed IS the dashboard (New Leads · Emails ·
           Website). ── */}
-      <section aria-label="Recent activity" className="lg:hidden">
+      <section aria-label="Recent activity" data-tour="dash-activity-mobile" className="lg:hidden">
         <GroupCard>
           <DashboardActivityFeed website={websiteRows} emails={emailRows} newLeads={leadRows} />
         </GroupCard>
@@ -201,23 +208,41 @@ export default async function BrokerCommandCenterPage({
           table (Name · Email · Phone · Last Activity · Time · Stage · Assigned),
           identical to FUB. Matt directive 2026-06-30 + screenshots. ── */}
       <section className="hidden lg:block">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div data-tour="dash-kpis" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {[
-            { label: 'New Leads', value: String(kpis.newLeads30d), sub: `${kpis.unactioned} unactioned` },
-            { label: 'Needs Action', value: String(needsActionCount), sub: needsActionCount === 0 ? 'all caught up' : 'to act on' },
-            { label: 'Tasks Due', value: String(upcomingTasks.length), sub: 'upcoming' },
-            { label: 'Appts (30 days)', value: String(data.calendar.length), sub: 'scheduled' },
-            { label: 'Active Deals', value: String(liveDeals.length), sub: money(liveDeals.reduce((s, d) => s + (d.salePrice ?? 0), 0)) },
+            {
+              label: 'New Leads', value: String(kpis.newLeads30d), sub: `${kpis.unactioned} unactioned`,
+              help: 'Contacts that first came in during the last 30 days, counted from when each lead was created. Imports and edits do not count.',
+            },
+            {
+              label: 'Needs Action', value: String(needsActionCount), sub: needsActionCount === 0 ? 'all caught up' : 'to act on',
+              help: 'Automated follow-ups paused and waiting for your approval. Each one is a message ready to send from the list below.',
+            },
+            {
+              label: 'Tasks Due', value: String(upcomingTasks.length), sub: 'upcoming',
+              help: 'Your tasks due today or coming up. Overdue tasks are not counted here, they live on the Tasks page.',
+            },
+            {
+              label: 'Appts (30 days)', value: String(data.calendar.length), sub: 'scheduled',
+              help: 'Everything on your calendar for the next 30 days: appointments, closings, contract dates, task deadlines, and synced Google Calendar events.',
+            },
+            {
+              label: 'Active Deals', value: String(liveDeals.length), sub: money(liveDeals.reduce((s, d) => s + (d.salePrice ?? 0), 0)),
+              help: 'Transactions in progress. Canceled, lost, and withdrawn deals are excluded. The line below is the combined sale price.',
+            },
           ].map((k) => (
             <Card key={k.label} className="p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{k.label}</p>
+              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {k.label}
+                <HelpTip label={k.label}>{k.help}</HelpTip>
+              </p>
               <p className="mt-2 text-3xl font-bold tabular-nums text-foreground">{k.value}</p>
               <p className="mt-1 truncate text-xs text-muted-foreground">{k.sub}</p>
             </Card>
           ))}
         </div>
 
-        <div className="mt-6">
+        <div className="mt-6" data-tour="dash-recent-activity">
           <SectionLabel action={{ href: '/admin/crm', label: 'View all people' }}>Recent Activity</SectionLabel>
           <GroupCard>
             <DashboardActivityTable rows={activityRows} />
@@ -226,7 +251,7 @@ export default async function BrokerCommandCenterPage({
       </section>
 
       {/* ── Focus: what needs the broker to act now ── */}
-      <section>
+      <section data-tour="dash-needs-action">
         <GroupCard>
           <div className="flex items-center justify-between gap-3 bg-primary px-4 py-3">
             <div className="flex items-center gap-2">
@@ -287,11 +312,14 @@ export default async function BrokerCommandCenterPage({
         </GroupCard>
       </section>
 
+      {/* ── Email delivery attention (WS4) + gated Hot leads ── */}
+      <DashboardDeliveryAttention summary={deliverySummary} isSuperuser={data.isSuperuser} />
+
       {/* ── Deals + Schedule ── */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[3fr_2fr]">
 
         {/* Active deals */}
-        <section>
+        <section data-tour="dash-deals">
           <SectionLabel action={{ href: '/admin/deals', label: 'All deals' }}>Active deals</SectionLabel>
           <GroupCard>
             {liveDeals.length === 0 ? (
@@ -354,7 +382,7 @@ export default async function BrokerCommandCenterPage({
         </section>
 
         {/* Schedule — month calendar */}
-        <section>
+        <section data-tour="dash-calendar">
           <div className="mb-2 flex items-center justify-between gap-2 px-1">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Calendar</h2>
             {data.gcalConnected ? (
@@ -374,7 +402,7 @@ export default async function BrokerCommandCenterPage({
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
 
         {/* Tasks due */}
-        <section>
+        <section data-tour="dash-tasks">
           <SectionLabel action={{ href: '/admin/crm/tasks', label: 'All tasks' }}>Tasks due</SectionLabel>
           <GroupCard>
             {upcomingTasks.length === 0 ? (
@@ -407,7 +435,7 @@ export default async function BrokerCommandCenterPage({
         </section>
 
         {/* Active clients */}
-        <section>
+        <section data-tour="dash-clients">
           <SectionLabel action={{ href: '/admin/crm', label: 'CRM' }}>Active clients</SectionLabel>
           <GroupCard>
             {data.activeClients.length === 0 ? (

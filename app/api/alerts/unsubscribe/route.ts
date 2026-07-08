@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { deactivateGuestAlertByToken, pauseSavedSearchByToken } from '@/lib/data'
+import { deactivateListingAlertByToken } from '@/lib/data'
 
 /**
  * One-click unsubscribe endpoint for the email List-Unsubscribe header
@@ -13,10 +13,9 @@ import { deactivateGuestAlertByToken, pauseSavedSearchByToken } from '@/lib/data
  * a provider sends). The human-facing in-email link still points at the branded
  * /alerts/unsubscribe confirm page; only the List-Unsubscribe header points here.
  *
- * A token belongs to a guest alert OR a signed-in saved search, so we try both
- * (each matches at most one row; the other is a harmless no-op). The token is a
- * random UUID carried in the URL — knowing it is the authorization, same model
- * as the confirm page.
+ * Every alert token (guest or signed-in) lives in the unified listing_alerts
+ * table, so one deactivate covers all. The token is a random UUID carried in
+ * the URL — knowing it is the authorization, same model as the confirm page.
  */
 
 export const dynamic = 'force-dynamic'
@@ -30,8 +29,7 @@ export async function POST(request: NextRequest) {
   if (!token) {
     return NextResponse.json({ ok: false, error: 'missing token' }, { status: 400 })
   }
-  await deactivateGuestAlertByToken(token)
-  await pauseSavedSearchByToken(token)
+  await deactivateListingAlertByToken(token)
   return NextResponse.json({ ok: true })
 }
 

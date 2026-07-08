@@ -2,7 +2,7 @@
  * Broker-ownership resolution for guest-search-alert (saved-search) scope checks.
  *
  * The admin saved-search actions key off a lead's email / FUB id (or a
- * guest_search_alerts row id), not a crm_people.id — so to honor broker scope we
+ * listing_alerts row id), not a crm_people.id — so to honor broker scope we
  * resolve the lead's crm person and read its assigned_broker. Deliberately
  * uncached (authorization must see the live owner). Raw .from() stays in lib/data/
  * per the DAL boundary (G1).
@@ -50,11 +50,11 @@ export async function resolveLeadAssignedBroker(input: {
   return { found: false, assignedBroker: null }
 }
 
-/** The email + FUB id a guest_search_alerts row resolves to (for update/delete scope). */
+/** The email + FUB id a listing_alerts row resolves to (for update/delete scope). */
 export async function getGuestAlertLead(alertId: string): Promise<{ email: string | null; fubLegacyId: number | null } | null> {
   const sb = createServiceClient()
   const { data } = await sb
-    .from('guest_search_alerts')
+    .from('listing_alerts')
     .select('email,fub_person_id')
     .eq('id', alertId)
     .maybeSingle()

@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-07T05:21:02.812Z
+**Generated:** 2026-07-08T00:50:15.921Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -303,7 +303,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 596,580**
+### `listing_tile_mv` · **rows ≈ 593,318**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -416,7 +416,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 23,203**
+### `market_stats_cache` · **rows ≈ 23,638**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -668,7 +668,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 116**
+### `expired_listings` · **rows ≈ 118**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -712,7 +712,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `owner_lookup_attempts` | integer | yes | 0 |
 | `last_owner_lookup_at` | timestamp with time zone | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 154**
+### `marketing_brain_actions` · **rows ≈ 155**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -2362,41 +2362,27 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `office_phone` | text | yes |  |
 | `created_at` | timestamp with time zone | no | now() |
 
-### `listing_alert_matches`
-
-| Column | Type | Nullable | Default |
-|---|---|---|---|
-| `id` | uuid | no | gen_random_uuid() |
-| `alert_id` | uuid | no |  |
-| `listing_id` | text | no |  |
-| `match_type` | text | no |  |
-| `matched_at` | timestamp with time zone | no | now() |
-| `sent_at` | timestamp with time zone | yes |  |
-| `digest_id` | uuid | yes |  |
-
 ### `listing_alerts`
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
 | `id` | uuid | no | gen_random_uuid() |
 | `email` | text | no |  |
+| `user_id` | uuid | yes |  |
+| `crm_person_id` | bigint | yes |  |
+| `fub_person_id` | bigint | yes |  |
 | `name` | text | no |  |
-| `source_lp` | text | no |  |
-| `community_slug` | text | yes |  |
-| `city_slug` | text | yes |  |
-| `criteria` | jsonb | no |  |
-| `status` | text | no | 'active'::text |
-| `paused_until` | timestamp with time zone | yes |  |
-| `pause_reason` | text | yes |  |
-| `unsubscribe_token` | text | no | replace((gen_random_uuid())::text, '-'::text, ''::text) |
-| `utm` | jsonb | yes |  |
-| `fub_lead_id` | text | yes |  |
-| `consent_marketing` | boolean | no | false |
-| `consent_sms` | boolean | yes | false |
+| `filters` | jsonb | no | '{}'::jsonb |
+| `filters_hash` | text | no |  |
+| `notification_frequency` | text | no | 'daily'::text |
+| `is_active` | boolean | no | true |
+| `origin` | text | no | 'user'::text |
+| `assigned_by` | text | yes |  |
+| `source` | text | no | 'user'::text |
+| `unsubscribe_token` | text | no | (gen_random_uuid())::text |
+| `last_notified_at` | timestamp with time zone | yes |  |
 | `created_at` | timestamp with time zone | no | now() |
 | `updated_at` | timestamp with time zone | no | now() |
-| `last_sent_at` | timestamp with time zone | yes |  |
-| `unsubscribed_at` | timestamp with time zone | yes |  |
 
 ### `listing_boundary_xref_mv`
 
