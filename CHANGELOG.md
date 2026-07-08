@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.750.2 (2026-07-08)
+
+### Bug Fixes
+- fix(site): design-audit P2/P3 batch — FAQ cost question, stat explainers, rail snap
+
+---
+
+
 ## v1.750.1 (2026-07-08)
 
 ### Bug Fixes
