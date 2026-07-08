@@ -95,6 +95,17 @@ const FAQ: FAQItem[] = [
       "Yes. A meaningful share of our business is first-time buyers, and we like that work. The Bend market can be intimidating for someone who has never bought before, so we walk you through the entire process at a pace that makes sense for you. We are direct about what you can and cannot get at your budget. We never push you toward a stretch you will regret.",
   },
   {
+    // Design-audit (copy-clarity): the number-one seller question was missing
+    // from the sitewide FAQ while /sell answered it — a seller researching
+    // fees found nothing here and could read that as hiding the answer.
+    // Answer mirrors the /sell FAQ verbatim (§0: one answer, one place edited).
+    id: 'cost-to-list',
+    category: 'Selling',
+    question: 'What does it cost to list with you?',
+    answer:
+      'One plan at 3% of the sale price, with no add-on fees. That covers photography, the MLS listing, the full marketing plan, every showing, and transaction management through close. Buyer-agent compensation is a separate number, negotiated per offer under the current rules. Commission is negotiable and every listing agreement is its own conversation.',
+  },
+  {
     id: 'timeline-selling',
     category: 'Selling',
     question: "What is the typical timeline for selling a home in Bend right now?",

@@ -305,11 +305,15 @@ html.lenis, html.lenis body{height:auto;}
   display:flex;gap:16px;
   padding:30px 18px 44px;
   overflow-x:auto;scroll-snap-type:x mandatory;
+  /* scroll-padding matches the track inset — without it the mandatory snap
+     pulled the first card past the padding to x=0, off the page grid
+     (design-audit P3). */
+  scroll-padding-left:18px;
   -webkit-overflow-scrolling:touch;
   scrollbar-width:none;
 }
 .kb-root .comm-track::-webkit-scrollbar{display:none;}
-@media(min-width:760px){.kb-root .comm-track{padding:34px 40px 54px;gap:20px;}}
+@media(min-width:760px){.kb-root .comm-track{padding:34px 40px 54px;gap:20px;scroll-padding-left:40px;}}
 .kb-root .comm-card{
   scroll-snap-align:start;flex-shrink:0;
   width:78vw;max-width:420px;

@@ -208,7 +208,7 @@ export function KbMarketHud({
           </a>
         </div>
         <p className="mkt-fine">
-          Live single-family figures from the regional MLS. Months of supply is active inventory divided by the homes closed in the last 6 months, then divided by 6. Four months or less is a seller&rsquo;s market, four to six is balanced, six or more is a buyer&rsquo;s market.
+          Live single-family figures from the regional MLS. Months of supply is active inventory divided by the homes closed in the last 6 months, then divided by 6. Four months or less is a seller&rsquo;s market, four to six is balanced, six or more is a buyer&rsquo;s market. Sale to list compares the final sale price to the asking price. Median to pending is days from listing to an accepted offer.
         </p>
       </div>
     </section>

@@ -123,6 +123,8 @@ Every fix was verified in a real browser (Playwright or the preview harness) and
 
 The full register follows.
 
+> **Remediation status (2026-07-08):** every item in this report was worked to completion in the six-phase remediation tracked in [PROGRESS.md](PROGRESS.md). All three P0s and every P1 are fixed and verified (one P1 sub-item — card-level street suffixes — is spun off as its own task pending a `listing_tile_mv` column). P2/P3 statuses were re-verified against the fixed codebase; see the triage appendix in PROGRESS.md.
+
 ### P0 + P1 — every finding in detail
 
 #### P0 · Sell path — /sell, valuation, contact, LP · `/sell + /sell/valuation` (both) — **FIXED in this audit**
