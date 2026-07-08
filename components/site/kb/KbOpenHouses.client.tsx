@@ -63,11 +63,15 @@ export function KbOpenHouses({
   eyebrow,
   heading,
   viewAllHref,
+  viewAllLabel = 'All open houses',
 }: {
   items: KbOpenHouseItem[]
   eyebrow: string
   heading: string
   viewAllHref?: string
+  /** Search has no open-house filter, so a link to /homes-for-sale must not
+   *  read as "the rest of the open-house list" (design-audit P2). */
+  viewAllLabel?: string
 }) {
   const root = useRef<HTMLElement>(null)
   // The rail is a navigable index: clicking/hovering a card promotes it into the
@@ -236,7 +240,7 @@ export function KbOpenHouses({
         {viewAllHref ? (
           <div className="lst-foot">
             <a href={viewAllHref} className="btn ghost">
-              All open houses <span className="arr">→</span>
+              {viewAllLabel} <span className="arr">→</span>
             </a>
           </div>
         ) : null}

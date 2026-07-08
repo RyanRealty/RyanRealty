@@ -44,7 +44,7 @@ export function KbFooter({ towns, hideCta = false }: { towns: KbTownItem[]; hide
         <div className="foot-cta">
           <h2 className="display">Let&rsquo;s<br />talk.</h2>
           <p className="sub">
-            Buying, selling, or still deciding which of the six cities fits. Tell us the street. We bring the
+            Buying, selling, or still deciding which town fits. Tell us the street. We bring the
             comps and the number it trades for.
           </p>
           <div className="btn-row">

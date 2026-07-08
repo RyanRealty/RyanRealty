@@ -71,7 +71,7 @@ export function KbHero({
   eyebrow = 'Central Oregon Real Estate',
   titleTop = 'Welcome to the',
   titleBottom = 'High Desert',
-  lead = 'across six cities, from the Deschutes to Smith Rock.',
+  lead = 'across Central Oregon, from the Deschutes to Smith Rock.',
   videoSrc = '/videos/hero-optimized.mp4',
   posterSrc = '/images/hero/hero-old-mill-master-4k.jpg',
   posterAlt,

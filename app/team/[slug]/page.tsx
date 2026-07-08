@@ -252,12 +252,12 @@ export default async function TeamMemberPage({ params }: Props) {
     )?.[0] as BrokerSlug | undefined) ?? null)
 
   // KbAbout facts — live data only, no fabricated stats.
-  const aboutFacts: { label: string; value: string }[] = [
+  const aboutFacts: { label: string; value: string; href?: string }[] = [
     { label: 'Title', value: broker.title ?? 'Real Estate Broker' },
     ...(broker.license_number ? [{ label: 'Oregon license', value: `#${broker.license_number}` }] : []),
     ...(hasOwnSales ? [{ label: 'Homes closed', value: closings.toLocaleString('en-US') }] : []),
     ...(reviews.count > 0 ? [{ label: 'Google rating', value: `${reviews.averageRating}/5 · ${reviews.count} reviews` }] : []),
-    ...(broker.phone ? [{ label: 'Phone', value: broker.phone }] : []),
+    ...(broker.phone ? [{ label: 'Phone', value: broker.phone, href: `tel:${broker.phone.replace(/[^\d]/g, '')}` }] : []),
   ]
 
   // KbHero sub-row copy — honest, from live data.

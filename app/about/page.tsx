@@ -256,6 +256,7 @@ export default async function AboutPage() {
           titleTop="Homes here deserve"
           titleBottom="more than a sign."
           lead="Every home we list across Central Oregon gets cinematic video, a 3D walkthrough, and a price built from live market data."
+          showSearch={false}
           videoSrc={null}
           posterSrc={heroSrc ?? OLD_MILL_HERO}
         />

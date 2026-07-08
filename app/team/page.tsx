@@ -159,6 +159,7 @@ export default async function TeamPage() {
           titleTop="The broker you call"
           titleBottom="is the broker you get."
           lead="No hand-offs, no transaction desk, no junior agent learning on your deal."
+          showSearch={false}
           videoSrc={null}
           posterSrc="/brand/hero/hero-old-mill-master-4k.jpg"
         />

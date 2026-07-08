@@ -72,6 +72,11 @@ export function KbListingMapImpl({
   // (design-audit P3).
   subtitle = 'Every active listing across the six cities, on the real terrain. Open any dot for the price, the beds, and the street.',
   centerLonLat,
+  // What the pinned count actually counts, when it is not "active listings"
+  // (open houses, price drops) — the legend chip used to say "N ACTIVE
+  // LISTINGS" for every consumer, contradicting the page's own hero stat
+  // (design-audit P2, §0).
+  countNoun = 'active listings',
 }: {
   geojson: KbMapGeo
   totalActive: number
@@ -82,6 +87,7 @@ export function KbListingMapImpl({
   title?: string
   subtitle?: string
   centerLonLat?: [number, number]
+  countNoun?: string
 }) {
   const { ready } = useGoogleMapsReady()
   const countEl = useRef<HTMLElement>(null)
@@ -247,7 +253,7 @@ export function KbListingMapImpl({
               <span className="dot" /> Live · MLS
             </span>
             <span>
-              <b ref={countEl}>0</b> active listings
+              <b ref={countEl}>0</b> {countNoun}
             </span>
           </div>
         </div>

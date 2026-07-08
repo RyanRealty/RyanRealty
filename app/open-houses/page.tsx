@@ -183,16 +183,21 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
       ) : null}
       <KbBreadcrumb overlay trail={[{ label: 'Home', href: '/' }, { label: 'Open houses' }]} />
       <SmoothScrollProvider>
+        {/* Lead with the open-house count, not total regional inventory (the
+            stat a visitor came for was buried second, behind an unrelated
+            1,824-homes figure); "this week", matching the section eyebrow
+            below, not "this weekend" (the feed is not weekend-scoped). §0. */}
         <KbHero
           data={{
-            activeCount: regionPulse?.activeCount ?? null,
-            medianListPrice: regionPulse?.medianListPrice ?? null,
-            medianDaysToPending: regionPulse?.medianDaysToPending ?? null,
+            activeCount: openHouseCount || null,
+            medianListPrice: null,
+            medianDaysToPending: null,
           }}
+          countNoun={openHouseCount === 1 ? 'open house' : 'open houses'}
           eyebrow="Central Oregon · Open houses"
           titleTop="Open houses in"
           titleBottom="Central Oregon"
-          lead={`across Central Oregon this weekend. ${openHouseCount > 0 ? `${openHouseCount} open ${openHouseCount === 1 ? 'house' : 'houses'} on the calendar.` : ''}`}
+          lead="across Central Oregon this week."
           videoSrc={null}
           posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
         />
@@ -201,6 +206,7 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
           eyebrow="Central Oregon · This week"
           heading="Open houses"
           viewAllHref={listingsBrowsePath()}
+          viewAllLabel="Browse all homes"
         />
         {mapFeatures.length > 0 ? (
           <KbListingMap
@@ -210,7 +216,8 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
             showRegionMarkers={false}
             eyebrow="Central Oregon · On the map"
             title={'Open houses\non the map'}
-            subtitle="Every open house with a location, on the real terrain. Click any dot for the price, the beds, and the street."
+            subtitle="Every open house with a location, on the real terrain. Open any dot for the price, the beds, and the street."
+            countNoun="open houses"
           />
         ) : null}
         <KbSell

@@ -24,13 +24,27 @@ import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { supabaseAnon } from '@/lib/data/client'
 import { cacheTag } from '@/lib/data/cache/unstable-cache'
 
-/** Bend NA districts shown on the v6 homepage ledger (label = boundary_neighborhood value). */
+/** Bend NA districts shown on the /cities/bend neighborhoods ledger (label =
+ *  boundary_neighborhood value, verified against live listing_tile_mv rows).
+ *  Expanded from the original 5-district homepage set to all 13 polygons in
+ *  data/bend/bend-neighborhood-polygons.json (design-audit §0: the page was
+ *  reading getBendNeighborhoodStats, which sources a market_pulse_live
+ *  neighborhood row that has never existed, rendering "0 Active" for all 13
+ *  districts on the live page). */
 const LEDGER_NEIGHBORHOODS: ReadonlyArray<{ label: string; slug: string }> = [
   { label: 'Awbrey Butte', slug: 'awbrey-butte' },
-  { label: 'Summit West', slug: 'summit-west' },
+  { label: 'Boyd Acres', slug: 'boyd-acres' },
   { label: 'Century West', slug: 'century-west' },
-  { label: 'River West', slug: 'river-west' },
+  { label: 'Larkspur', slug: 'larkspur' },
+  { label: 'Mountain View', slug: 'mountain-view' },
   { label: 'Old Bend', slug: 'old-bend' },
+  { label: 'Old Farm District', slug: 'old-farm-district' },
+  { label: 'Orchard District', slug: 'orchard-district' },
+  { label: 'River West', slug: 'river-west' },
+  { label: 'Southeast Bend', slug: 'southeast-bend' },
+  { label: 'Southern Crossing', slug: 'southern-crossing' },
+  { label: 'Southwest Bend', slug: 'southwest-bend' },
+  { label: 'Summit West', slug: 'summit-west' },
 ]
 
 export type NeighborhoodLedgerRow = {
@@ -110,7 +124,8 @@ async function _fetchBendNeighborhoodLedger(): Promise<NeighborhoodLedgerRow[]> 
  */
 export const getBendNeighborhoodLedger = makeResilientCached(
   _fetchBendNeighborhoodLedger,
-  ['bend-neighborhood-ledger-v1'],
+  // v2 (2026-07-08, design-audit §0): scope expanded 5 -> 13 districts.
+  ['bend-neighborhood-ledger-v2'],
   {
     revalidate: 900,
     tags: [cacheTag.city('bend'), cacheTag.market],

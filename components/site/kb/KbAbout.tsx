@@ -12,6 +12,9 @@
 interface KbAboutFact {
   label: string
   value: string
+  /** Optional tel:/mailto: target — renders the value as a real link instead
+   *  of inert text (a phone number in this ledger used to be unclickable). */
+  href?: string
 }
 
 interface KbAboutProps {
@@ -48,7 +51,9 @@ export function KbAbout({ eyebrow, heading, paragraphs, facts }: KbAboutProps) {
                 {facts.map((f, i) => (
                   <div key={i} className="about-fact">
                     <dt className="about-fact-lbl">{f.label}</dt>
-                    <dd className="about-fact-val mono-num">{f.value}</dd>
+                    <dd className="about-fact-val mono-num">
+                      {f.href ? <a href={f.href}>{f.value}</a> : f.value}
+                    </dd>
                   </div>
                 ))}
               </dl>
