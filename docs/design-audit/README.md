@@ -123,7 +123,7 @@ Every fix was verified in a real browser (Playwright or the preview harness) and
 
 The full register follows.
 
-> **Remediation status (2026-07-08):** every item in this report was worked to completion in the six-phase remediation tracked in [PROGRESS.md](PROGRESS.md). All three P0s and every P1 are fixed and verified (one P1 sub-item — card-level street suffixes — is spun off as its own task pending a `listing_tile_mv` column). P2/P3 statuses were re-verified against the fixed codebase; see the triage appendix in PROGRESS.md.
+> **Remediation status (2026-07-08):** all three P0s and every P1 in this report are fixed, gate-verified, and confirmed live on production (see [PROGRESS.md](PROGRESS.md) for the six-phase remediation log). Of the 150 P2/P3 items, 41 are fixed and live; **109 remain as a documented, file:line-verified backlog** at [remaining-backlog.json](remaining-backlog.json) — mostly copy/spacing polish, none P0/P1, ready to pick up in a follow-up session without re-auditing.
 
 ### P0 + P1 — every finding in detail
 

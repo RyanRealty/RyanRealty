@@ -1,0 +1,983 @@
+[
+ {
+  "index": 175,
+  "group": "auth-edges",
+  "page": "not-found",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The three recovery links ('Browse homes for sale', 'Market reports', 'Sell your home') are outline Buttons with left-aligned text, visually near-ident",
+  "hint": "Still present: components/NotFoundClient.tsx:138-144 renders suggestions as Button variant=\"outline\" className=\"justify-start\" in grid-cols-1 sm:grid-"
+ },
+ {
+  "index": 180,
+  "group": "auth-edges",
+  "page": "login",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "Password fields on both login and signup have no show-password toggle, and signup gives no strength feedback beyond the static 'At least 6 characters'",
+  "hint": "Still present: plain type=\"password\" with no show/hide toggle (LoginForm.tsx:97-104, SignupForm.tsx:137-144) and the 6-char minimum + 'At least 6 char"
+ },
+ {
+  "index": 181,
+  "group": "auth-edges",
+  "page": "login",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The auth card re-typesets the brand: 'Ryan Realty' appears in bold Geist navy directly beneath the real Amboqia wordmark in the header, so the brand n",
+  "hint": "Still present: app/login/page.tsx:29-31 and app/signup/page.tsx:29-31 render 'Ryan Realty' as a bold Geist text-primary Link inside the card, re-types"
+ },
+ {
+  "index": 182,
+  "group": "auth-edges",
+  "page": "login",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "'Forgot password?' and 'Back to home' are muted gray text with no underline — the same color and weight as the static field labels — so on a touch scr",
+  "hint": "Still present: 'Forgot password?' at LoginForm.tsx:106 and 'Back to home' at app/login/page.tsx:46 + app/signup/page.tsx:46 are text-muted-foreground "
+ },
+ {
+  "index": 183,
+  "group": "auth-edges",
+  "page": "not-found",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The 404 page's search placeholder hard-clips mid-word on a phone: 'Search homes by city, neighborho'. The recovery pattern itself is excellent (contex",
+  "hint": "Still present: components/NotFoundClient.tsx:129 placeholder is 'Search homes by city, neighborhood, or address' (confirmed on the live 404), which cl"
+ },
+ {
+  "index": 10,
+  "group": "home",
+  "page": "home",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The editorial nav offers SEARCH, COMMUNITIES, CITIES, SELL — three of four items are buyer paths, and the COMMUNITIES vs CITIES split is MLS-insider t",
+  "hint": "KbNav.client.tsx:9-20 was touched (SEARCH renamed 'Homes', 'Account' added) but the top bar still reads Homes / Communities / Cities / Sell — the COMM"
+ },
+ {
+  "index": 22,
+  "group": "home",
+  "page": "home",
+  "sev": "P3",
+  "effort": "medium",
+  "issue": "In the Amboqia display face, the all-caps capital I has a numeral-like flag serif, so the hero headline scans as 'H1GH DESERT' at first glance — the s",
+  "hint": "No change: hero still 'High Desert' / section titles still contain I-words, and kb.css enables no stylistic alternate (only 'tnum' feature settings an"
+ },
+ {
+  "index": 125,
+  "group": "content-trust",
+  "page": "guides",
+  "sev": "P2",
+  "effort": "medium",
+  "issue": "The entire guides library is machine-generated boilerplate presented as authored expertise: all 11 city cards carry the identical sentence with only t",
+  "hint": "Template unchanged at lib/data/guides/getGuides.ts:84-92 ('remains one of Central Oregon's most competitive markets' + same 4 generic sections). Live:"
+ },
+ {
+  "index": 126,
+  "group": "content-trust",
+  "page": "blog",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "Every one of the 11 post cards says '1 MIN READ' because the index computes reading time from the ~30-word excerpt instead of the article, and it cont",
+  "hint": "app/blog/page.tsx:302 still estimateReadTime(post.excerpt); live index renders '1 min read' on all 11 grid cards while post pages compute from content"
+ },
+ {
+  "index": 127,
+  "group": "content-trust",
+  "page": "blog",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The 'Popular posts' list at the bottom of the index is actually just the five most recent posts (the DAL orders by published_at desc), which are the s",
+  "hint": "lib/data/blog/getPopularBlogSlugs.ts still orders by published_at desc (no popularity signal) and app/blog/page.tsx:358 still labels the list 'Popular"
+ },
+ {
+  "index": 128,
+  "group": "content-trust",
+  "page": "blog",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "11 of 12 posts carry no author anywhere — the grid cards show only a date, and their post pages render no byline and no 'About the author' box (verifi",
+  "hint": "Live blog index: 0 of 11 grid cards render an author span (only the featured market report shows Matt Ryan; other 'Matt Ryan' hits are org JSON-LD/foo"
+ },
+ {
+  "index": 129,
+  "group": "content-trust",
+  "page": "blog",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "Every card's CTA is the hard-coded 'READ THE GUIDE →', including on Local Housing News items and the June market report — a news story and a market re",
+  "hint": "Hard-coded 'Read the guide' still at app/blog/page.tsx:265 (featured) and :305 (grid cards), including on Local Housing News and market-report posts. "
+ },
+ {
+  "index": 130,
+  "group": "content-trust",
+  "page": "blog",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "Card dates render as bare numerics ('6/9/2026', '12/18/2025') while the post page and related-posts module spell them out ('June 9, 2026', 'APR 1, 202",
+  "hint": "Three date formats persist: index bare toLocaleDateString('en-US') (app/blog/page.tsx:260,299 — live shows '6/9/2026'), post page long form (app/blog/"
+ },
+ {
+  "index": 131,
+  "group": "content-trust",
+  "page": "area-guides",
+  "sev": "P2",
+  "effort": "medium",
+  "issue": "The community directory contains duplicates and misfiled entries a local will spot instantly: 'Crosswater' appears twice as two different links (/comm",
+  "hint": "Live /area-guides communities ledger still renders Crosswater twice (/communities/bend-crosswater + /communities/sunriver-crosswater), Eagle Crest (24"
+ },
+ {
+  "index": 132,
+  "group": "content-trust",
+  "page": "area-guides",
+  "sev": "P2",
+  "effort": "medium",
+  "issue": "Pronghorn shows '5 Active / $180,000 median' — an implausible median for a gated luxury golf community where homes trade above $1M, almost certainly b",
+  "hint": "Live /area-guides still renders 'Pronghorn 5 Active $180,000 median' (row /communities/bend-pronghorn). Community median calc still mixes lots into sm"
+ },
+ {
+  "index": 136,
+  "group": "content-trust",
+  "page": "faq",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "Each category gets a viewport-scale display heading (NEIGHBORHOODS, SELLING, WORKING WITH US) followed by only 2-4 one-line collapsed questions, so th",
+  "hint": "app/faq/page.tsx:292-295 still renders a full sec-head display heading per category (eyebrow AND title both set to the category name), so 11 questions"
+ },
+ {
+  "index": 137,
+  "group": "content-trust",
+  "page": "reviews",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "Review cards in the same grid row stretch to the tallest neighbor, so short quotes sit in bordered boxes that are 50-70% empty space (e.g. the cason m",
+  "hint": "kb.css:1258 .kb-reviews-grid still display:grid repeat(3,1fr) with h-full cards (app/reviews/page.tsx:176) — short quotes still stretch to the tallest"
+ },
+ {
+  "index": 138,
+  "group": "content-trust",
+  "page": "faq",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The hero on FAQ and Reviews carries the buyer listing-search bar ('3 bed under $800k in Bend with a shop') plus BROWSE/SELL buttons above content that",
+  "hint": "KbHero showSearch defaults true; /faq and /reviews pass no showSearch={false} (only sell, sell/valuation, contact, team/[slug] do). Live-confirmed: th"
+ },
+ {
+  "index": 139,
+  "group": "content-trust",
+  "page": "blog",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "One scroll presents two competing names for the same artifact: the hero H1 says 'REAL ESTATE BLOG' and the very next section heading says 'THE JOURNAL",
+  "hint": "Hero still 'Real Estate / Blog' (app/blog/page.tsx:170-171) and the next section heading still 'The Journal' (:184). Fix: rename the section heading ("
+ },
+ {
+  "index": 140,
+  "group": "content-trust",
+  "page": "blog",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "A lone unlabeled icon-only button (share glyph) floats below the category filter chips with no text, tooltip, or visual connection to anything — most ",
+  "hint": "app/blog/page.tsx:205-211 still renders ShareButton variant='compact' (icon-only per components/ShareButton.tsx) in the justify-between row with 12 wr"
+ },
+ {
+  "index": 141,
+  "group": "content-trust",
+  "page": "guides",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "All 12 guide cards render a large blank navy rectangle where the photo should be — the page reads as unfinished scaffolding. For a brokerage whose pit",
+  "hint": "app/guides/page.tsx:155-159 still maps guides to KbArticlePost without imageUrl; KbArticles.tsx:58-59 falls to .art-noimg (kb.css:902 — dark navy plat"
+ },
+ {
+  "index": 142,
+  "group": "content-trust",
+  "page": "blog-post",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The article's closing conversion links — 'request a valuation', 'browse current Bend listings', 'live Bend market dashboard' — render as bold navy tex",
+  "hint": "app/blog/[slug]/page.tsx:50-53 still sets --tw-prose-links to the same NAVY as body/bold, and kb.css:52 (.kb-root a{text-decoration:none}) strips the "
+ },
+ {
+  "index": 146,
+  "group": "content-trust",
+  "page": "blog-post",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The 'About the author' box describes Matt Ryan — the owner and principal broker — with a hard-coded generic bio: 'Ryan Realty team member sharing loca",
+  "hint": "Hard-coded generic bio unchanged at app/blog/[slug]/page.tsx:319 ('Ryan Realty team member sharing local market insights and expertise...') for every "
+ },
+ {
+  "index": 147,
+  "group": "content-trust",
+  "page": "blog",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "Twelve category chips stack vertically and consume a full viewport of scroll between 'The Journal' heading and the first post — a reader has to swipe ",
+  "hint": "Chip nav still flex flex-wrap (app/blog/page.tsx:189) with 12 chips (live-confirmed) — full-viewport vertical stack on mobile before any post. Fix: ov"
+ },
+ {
+  "index": 148,
+  "group": "content-trust",
+  "page": "faq",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The 'NEIGHBORHOODS' section heading is clipped mid-glyph at the right viewport edge ('NEIGHBORH...') because the sec-head is a side-by-side flex row (",
+  "hint": "kb.css unchanged: .sec-head still side-by-side flex (line 227) and the mobile 9vw sec-title override (line 710) has no stacking rule, so single-word d"
+ },
+ {
+  "index": 149,
+  "group": "content-trust",
+  "page": "blog",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The hero photo caption 'CENTRAL OREGON · OLD MILL DISTRICT' is absolutely positioned bottom-right of the hero and collides with the SELL CTA button on",
+  "hint": ".hero-caption still position:absolute right:14px bottom:14px z-index:3 with no mobile hide (kb.css:933), and /blog still passes mediaCaption='Central "
+ },
+ {
+  "index": 150,
+  "group": "content-trust",
+  "page": "blog-post",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The post's tag chips (bend, market report, june 2026, housing market) are non-interactive <span>s styled identically to the blog index's clickable cat",
+  "hint": "Post tags still non-interactive <span>s styled like the clickable category chips (navy 1px border, same padding) at app/blog/[slug]/page.tsx:247-255. "
+ },
+ {
+  "index": 151,
+  "group": "content-trust",
+  "page": "guides",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "Guide cards carry no date or 'updated' signal while their identical templated excerpts all promise 'current pricing, inventory, and pace of sale' — a ",
+  "hint": "app/guides/page.tsx:155-159 still doesn't pass dateLabel (KbArticles supports it, renders as media strip); guide rows carry updated_at/period_end. Liv"
+ },
+ {
+  "index": 152,
+  "group": "content-trust",
+  "page": "blog",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The April 1 news post's excerpt still reads 'Bend City Council meets today to consider...' — three months later the deictic 'today' makes the journal ",
+  "hint": "Live blog index still contains the deictic excerpt 'Bend City Council meets today to consider...' on the April 1 post. Content fix: edit the blog_post"
+ },
+ {
+  "index": 153,
+  "group": "content-trust",
+  "page": "blog",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "Card titles set in all-caps Amboqia at the mobile display size run five to six lines tall ('BEND CONSIDERS WILDFIRE-RESISTANT BUILDING STANDARDS COST ",
+  "hint": "kb.css:931 mobile .art-title still 8vw (~31px at 390px) — long all-caps Amboqia card titles still run 5-6 lines on mobile. No clamp change shipped. Fi"
+ },
+ {
+  "index": 186,
+  "group": "consistency-sweep",
+  "page": "home / listing detail / all editorial pages (footer)",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The site ships two entirely different footers. The portal footer (search, login, 404) has the legal row — Privacy policy, Terms of use, Accessibility,",
+  "hint": "KbFooter.client.tsx still ends at '© 2026 Ryan Realty · Principal Broker Matt Ryan · Licensed in Oregon · Equal Housing Opportunity' (lines 106-109) —"
+ },
+ {
+  "index": 188,
+  "group": "consistency-sweep",
+  "page": "site-wide seller entry points (cross-page)",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The identical seller action carries four labels and three destinations depending on which chrome you're in: portal header 'What's my home worth?' → /l",
+  "hint": "Fragmentation persists across all three cited surfaces: SiteHeader.tsx:105-106 'What's my home worth?' → /lp/seller-home-value; KbNav.client.tsx:39 'W"
+ },
+ {
+  "index": 189,
+  "group": "consistency-sweep",
+  "page": "sell / blog / team / faq / about (cross-page hero template)",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "Every editorial page reuses the identical hero block — full-bleed photo, giant Amboqia H1, the buyer search bar '3 bed under $800k in Bend with a shop",
+  "hint": "Partially fixed: /sell now passes showSearch={false} + valuation CTA (app/sell/page.tsx:167-168), and /sell/valuation + /contact were fixed in Phase B"
+ },
+ {
+  "index": 190,
+  "group": "consistency-sweep",
+  "page": "home vs search (mobile chrome)",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The mobile menu control changes identity across the seam: editorial pages use a text button 'MENU +' top-right over the hero, while the portal search ",
+  "hint": "Still two affordances: editorial KbNav.client.tsx:130-131 renders a text button 'Menu +' while portal MobileNav.tsx uses a boxed Bars3Icon hamburger i"
+ },
+ {
+  "index": 191,
+  "group": "consistency-sweep",
+  "page": "/login",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The sign-in card re-typesets the brand name as plain bold text 'Ryan Realty' directly beneath the header that already shows the real wordmark — duplic",
+  "hint": "app/login/page.tsx:29-31 still renders <Link href=\"/\" className=\"text-xl font-bold text-primary\">Ryan Realty</Link> — the brand name re-typeset as pla"
+ },
+ {
+  "index": 192,
+  "group": "consistency-sweep",
+  "page": "/not-found (404)",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The 404 page's quick links ('Browse homes for sale', 'Market reports', 'Sell your home') are borderless white pills that match neither register's butt",
+  "hint": "Half stale, half open. The 'borderless white pills' premise is wrong: the quick links are already the portal's standard outline Buttons (NotFoundClien"
+ },
+ {
+  "index": 193,
+  "group": "consistency-sweep",
+  "page": "cities-bend / sell / listing detail (number formatting)",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The same dollar values render in two formats across adjacent surfaces: Bend median is '$775,000' in the /sell hero but '$775K' in /cities/bend's BY TH",
+  "hint": "Both cited mismatches persist. /cities/[slug]/page.tsx:161 defines fmtK → '$775K' for the city facts table while the /sell hero uses kbMoneyFull → '$7"
+ },
+ {
+  "index": 198,
+  "group": "a11y-states",
+  "page": "/homes-for-sale/bend/63177-iner-220223630",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The listing page's only H1 is the bare price — <h1><span class=\"tabular-nums\">$742,000</span></h1> — with the address in plain sibling divs. A screen-",
+  "hint": "Live-verified: curl of /homes-for-sale/bend/63177-iner-220223630 returns <h1><span class=\"tabular-nums\">$742,000</span></h1> with '63177 Iner Loop' in"
+ },
+ {
+  "index": 199,
+  "group": "a11y-states",
+  "page": "all editorial-register pages (/, /sell/valuation, /contact, listing detail)",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "Opening the MENU + overlay does no focus management: focus stays on the trigger behind the full-screen overlay, Tab can walk out of the overlay into t",
+  "hint": "Unchanged. components/site/kb/KbNav.client.tsx:106-116 handles only Escape + body scroll lock; opening the overlay (button line 130, overlay line 135)"
+ },
+ {
+  "index": 104,
+  "group": "market-data",
+  "page": "price-drops",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The literal MLS string \"N/A\" renders as a neighborhood name across every market surface: listing cards read \"Bend, OR · 97702 · N/A\" (price-drops grid",
+  "hint": "Live-confirmed: /price-drops cards render 'Prineville, OR · 97754 · N/A' (x4) and 'Terrebonne, OR · 97760 · N/A' (x2); 'Where prices are being cut' ta"
+ },
+ {
+  "index": 106,
+  "group": "market-data",
+  "page": "price-drops",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The \"Get the weekly price-drop summary\" section promises a specific product — \"Every Monday we pull the prior week's reductions... and send a plain-la",
+  "hint": "app/price-drops/page.tsx:556-576 unchanged: section still promises 'Every Monday we pull the prior week's reductions… and send a plain-language summar"
+ },
+ {
+  "index": 107,
+  "group": "market-data",
+  "page": "luxury",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The listings section claims \"New homes in this range reach your inbox the morning they list\" but the page contains no alert signup anywhere — the only",
+  "hint": "app/luxury-homes-bend/page.tsx:115 still claims 'New homes in this range reach your inbox the morning they list' with no alert signup anywhere on the "
+ },
+ {
+  "index": 110,
+  "group": "market-data",
+  "page": "housing-market-co",
+  "sev": "P3",
+  "effort": "medium",
+  "issue": "/housing-market and /housing-market/central-oregon are near-duplicate pages (same hero photo and headline block, same city ledger, same three guides, ",
+  "hint": "Both pages now read the same DAL call (getMarketPulse region row, revalidate 300 on both), but live they still disagree: /housing-market shows 1,823 a"
+ },
+ {
+  "index": 111,
+  "group": "market-data",
+  "page": "price-drops",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The same property appears three times down one page: 60985 Bachelor View is the first featured card, then the \"largest price cut\" spotlight, then a ca",
+  "hint": "app/price-drops/page.tsx unchanged: featured poster grid (top-6 by dollar drop, :266-273), 'largest price cut' spotlight (:261-264), and the full 48-c"
+ },
+ {
+  "index": 113,
+  "group": "market-data",
+  "page": "housing-market-co",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The price chart header \"MEDIAN SALE · SINGLE-FAMILY · 5-YEAR OVERLAY ↑ 2.0% OVER THE WINDOW\" is unexplained jargon for a consumer: it never says what ",
+  "hint": "KbMarketHud.client.tsx:170-172 unchanged: '…{N}-year overlay ↑ X% over the window' with no definition of the window or comparison points, and KbMarket"
+ },
+ {
+  "index": 115,
+  "group": "market-data",
+  "page": "/housing-market/central-oregon",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The market HUD's bar-chart panel is titled 'MEDIAN LIST · BY NEIGHBORHOOD' but every row is a city (Redmond, Bend, Sisters, Sunriver, Prineville, La P",
+  "hint": "KbMarketHud.client.tsx:187 unchanged: `Median {data.byTown.length > 6 ? 'list · by neighborhood' : 'list · by town'}` — the region page feeds 7+ city "
+ },
+ {
+  "index": 117,
+  "group": "market-data",
+  "page": "/open-houses + /price-drops",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The map's status caption ('● LIVE · MLS   22 ACTIVE LISTINGS') is absolutely positioned at the map's bottom-left, exactly where Google renders its man",
+  "hint": "kb.css:683 unchanged: `.kb-root .neigh-legend{position:absolute;left:14px;bottom:12px;…}` — the legend still sits exactly in Google's bottom-left attr"
+ },
+ {
+  "index": 118,
+  "group": "market-data",
+  "page": "/housing-market/central-oregon",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "On the region market-report page, the market HUD's CTA reads 'See the full market report →' but links to /housing-market — the summary hub above it. A",
+  "hint": "KbMarketHud.client.tsx:205-208 unchanged: hardcoded `<a href=\"/housing-market\">See the full market report →`. Live-verified on /housing-market/central"
+ },
+ {
+  "index": 119,
+  "group": "market-data",
+  "page": "/housing-market/central-oregon",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The consumer-facing Methodology block prints raw database identifiers: 'Data source: market_pulse_live, single-family homes (property_type = A), geo_t",
+  "hint": "Live-confirmed on /housing-market/central-oregon: Methodology block still prints 'Data source: market_pulse_live, single-family homes (property_type ="
+ },
+ {
+  "index": 120,
+  "group": "market-data",
+  "page": "/housing-market + /housing-market/central-oregon",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The FAQ answer says 'There are 1824 active single-family listings' — no thousands separator — while the hero, HUD, and city rows on the same pages all",
+  "hint": "lib/site/market-faq.ts:118 unchanged: `There are ${pulse.activeCount} active single-family listings` — no toLocaleString. Live-confirmed: 'There are 1"
+ },
+ {
+  "index": 121,
+  "group": "market-data",
+  "page": "/housing-market vs /housing-market/central-oregon",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The same stat (395 closed sales in the last 30 days) is labeled 'SOLD · 30 DAYS' in the seller section on the hub page and 'CLOSED · 30 DAYS' in the m",
+  "hint": "Both labels still ship: KbMarketHud.client.tsx:105 'Closed · 30 days' vs KbSell.client.tsx:93 'Sold · 30 days'. Live-confirmed — /housing-market/centr"
+ },
+ {
+  "index": 122,
+  "group": "market-data",
+  "page": "/open-houses",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "Every open-house date stamp renders the weekday as huge display type with a dangling comma — 'SUN,' — because the label 'Sun, Jul 12 · 10am-12pm' is s",
+  "hint": "Live-confirmed: every open-house day stamp renders 'Sun,' with the dangling comma (oh-stamp-day spans in /open-houses markup). splitWhen() at KbOpenHo"
+ },
+ {
+  "index": 123,
+  "group": "market-data",
+  "page": "/housing-market/central-oregon",
+  "sev": "P3",
+  "effort": "medium",
+  "issue": "The same four stats (1,824 active / $740K median / 6.3 MoS / 19 days) are recited in four consecutive blocks — hero sentence, HUD, FAQ answers, then a",
+  "hint": "Still four consecutive recitations of the same stats on /housing-market/central-oregon: hero sentence, HUD (plus its mkt-fine threshold footnote), FAQ"
+ },
+ {
+  "index": 154,
+  "group": "company-tools",
+  "page": "/team",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "On the roster page, the actual roster is buried: hero (with a buyer search box and Browse/Sell CTAs, no contact CTA), then license facts, then a six-c",
+  "hint": "Order unchanged in app/team/page.tsx lines 174-175: KbTestimonials renders BEFORE KbTeam (live /team byte offsets: reviews 21292 < roster 31117), and "
+ },
+ {
+  "index": 155,
+  "group": "company-tools",
+  "page": "/team/matt-ryan",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The bio is generic agent-site boilerplate that contradicts the site's own positioning: 'His passion for real estate comes from witnessing how homeowne",
+  "hint": "Live /team/matt-ryan bio (from brokers.bio in DB) still verbatim boilerplate: 'His passion for real estate comes from witnessing how homeownership tra"
+ },
+ {
+  "index": 156,
+  "group": "company-tools",
+  "page": "/team",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "All six reviews displayed on the team page name Matt specifically ('working with Matt', 'contact Matt Ryan immediately'), while the page presents thre",
+  "hint": "Live /team shows 6 review cards and all 6 name Matt (grep of kb-rev-quote, 0 non-Matt). app/team/page.tsx line 112 maps getReviews(8) unfiltered with "
+ },
+ {
+  "index": 157,
+  "group": "company-tools",
+  "page": "/tools/mortgage-calculator",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "A buyer tool ends in a seller CTA: the closing guide paragraph pivots to 'start with a free home value report' and the only section CTA is 'GET YOUR H",
+  "hint": "app/tools/mortgage-calculator/page.tsx lines 175-184: guide copy still pivots to 'start with a free home value report' and the section's only CTA is '"
+ },
+ {
+  "index": 158,
+  "group": "company-tools",
+  "page": "/about + /team (broker cards)",
+  "sev": "P3",
+  "effort": "medium",
+  "issue": "Rebecca Peterson's headshot shows visible alpha-matting artifacts — white blobs and halo fringes in her hair on the right side — while Matt's and Paul",
+  "hint": "peterson-rebecca.png unchanged since 2026-05-26 (md5 c1323670... identical in public/images/brokers/ and design_system assets, predates the audit); co"
+ },
+ {
+  "index": 164,
+  "group": "company-tools",
+  "page": "/team/matt-ryan",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The hero H1 renders the broker's name as one word: 'MATTRYAN'. KbHero emits titleTop and titleBottom as adjacent inline-block .reveal-mask spans with ",
+  "hint": "Live /team/matt-ryan HTML still emits the two reveal-mask spans adjacent with no whitespace (…>Matt</span></span><span class=\"reveal-mask\"…>Ryan…); kb"
+ },
+ {
+  "index": 165,
+  "group": "company-tools",
+  "page": "/team/matt-ryan",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "In the 'By the numbers' ledger, the value 'Owner & Principal Broker' overlaps and partially covers its own 'TITLE' label on mobile — the row's grid is",
+  "hint": "kb.css line 778 unchanged: .about-fact{grid-template-columns:minmax(0,1fr) auto} with .about-fact-val locked to 1.7rem on ≤760px (line 782); live brok"
+ },
+ {
+  "index": 168,
+  "group": "company-tools",
+  "page": "/team/matt-ryan",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "Sold cards print raw MLS placeholder text: '64350 Old Bend Redmond Hwy — Sold Sep 2025 · Bend 97703 · N/A · Bend' and '54474 Huntington — ... · N/A · ",
+  "hint": "Live /team/matt-ryan still prints 'Sold Sep 2025 · Bend 97703 · N/A · Bend' — brokerageTileToFeatured (app/team/[slug]/page.tsx line 110) joins tile.S"
+ },
+ {
+  "index": 169,
+  "group": "company-tools",
+  "page": "/about vs /team",
+  "sev": "P2",
+  "effort": "medium",
+  "issue": "About and Team are near-duplicates: both pages show the same seven Google reviews, the same three broker cards with 'Work with X' links, the same 'Tal",
+  "hint": "Both pages still render the same three modules: KbTestimonials (about line 278 / team line 174, quotes from the same Google pool), the full KbTeam car"
+ },
+ {
+  "index": 170,
+  "group": "company-tools",
+  "page": "/buy (vs /team FAQ)",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "Two different FAQ treatments exist on sibling pages: /buy sets multi-line questions in the Amboqia display face, where the capital I glyph reads as th",
+  "hint": "app/buy/page.tsx lines 404-434 still render the FAQ as an inline <dl> with className=\"display\" (Amboqia) on multi-line <dt> questions at up to 1.55rem"
+ },
+ {
+  "index": 171,
+  "group": "company-tools",
+  "page": "/team/matt-ryan",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The hero claims '14 homes closed across Central Oregon' but the track record grid directly below features 534 Crowson in Ashland 97520 — southern Oreg",
+  "hint": "heroLead template unchanged (app/team/[slug]/page.tsx lines 264-265) — live page claims '19 homes closed across Central Oregon' but the 19 closings (a"
+ },
+ {
+  "index": 172,
+  "group": "company-tools",
+  "page": "/tools/mortgage-calculator",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "Before reaching the calculator a mobile user scrolls past four stacked CTAs that do the same two things twice: hero BROWSE → + SELL, then immediately ",
+  "hint": "Live calc page still stacks hero Browse/Sell (default CTAs, lines 83-84 of KbHero) directly above the tool-cta row 'Browse listings' + 'Get a home val"
+ },
+ {
+  "index": 173,
+  "group": "company-tools",
+  "page": "/tools/mortgage-calculator",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The breadcrumb's middle crumb 'TOOLS' is a link that points at the current page (/tools/mortgage-calculator) — there is no /tools index route. Tapping",
+  "hint": "app/tools/mortgage-calculator/page.tsx line 93 still renders the Tools crumb as href=\"/tools/mortgage-calculator\" (self-link) and no /tools index rout"
+ },
+ {
+  "index": 209,
+  "group": "copy-clarity",
+  "page": "/sell",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The fee section — where comprehension matters most — leans on unexplained industry jargon, twice: \"We show you the exact ALTA breakdown, the buyer-age",
+  "hint": "Still live in two places on /sell: 'We show you the exact ALTA breakdown... and the realistic concession math' at components/site/sell/SellCommission."
+ },
+ {
+  "index": 213,
+  "group": "copy-clarity",
+  "page": "/",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The homepage H1 — the biggest words on the site — is \"Welcome to the High Desert\": pure atmosphere. A first-time visitor learns what the product is on",
+  "hint": "H1 is still 'Welcome to the High Desert' — KbHero.client.tsx:72-73 defaults (titleTop='Welcome to the', titleBottom='High Desert') and app/page.tsx pa"
+ },
+ {
+  "index": 27,
+  "group": "buy-core",
+  "page": "listing-detail",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The end-of-page CTA block on a buyer's listing page is seller-oriented: 'LET'S TALK' resolves to a primary 'WHAT'S MY HOME WORTH' button and a seconda",
+  "hint": "KbFooter.client.tsx:46-53 still hard-codes the CTA pair: primary '/sell What's my home worth' + secondary '/homes-for-sale Browse homes'; the listing "
+ },
+ {
+  "index": 28,
+  "group": "buy-core",
+  "page": "search",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The custom 'Draw area' button is absolutely positioned at the map's top-left (left-3 top-3 z-[100]) directly on top of Google's default Map/Satellite ",
+  "hint": "Draw controls still absolutely positioned at map top-left (components/SearchMapClustered.tsx:1006 'absolute left-3 top-3 z-[100]'). lib/maps/markers.t"
+ },
+ {
+  "index": 29,
+  "group": "buy-core",
+  "page": "search",
+  "sev": "P2",
+  "effort": "medium",
+  "issue": "The split view scrolls as a document instead of a viewport-fitted app frame: the shell is calc(100vh - 120px) tall but sits below breadcrumb + search ",
+  "hint": "Shell height still fixed: app/globals.css:393 '.map-search-shell { height: calc(100vh - 120px) }' while app/search/page.tsx stacks breadcrumb + Result"
+ },
+ {
+  "index": 30,
+  "group": "buy-core",
+  "page": "listing-detail",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The same fact appears with two different values on one page: the Financial grid says 'ANNUAL TAXES $4,000' while the rental-analysis calculator prefil",
+  "hint": "PropertySpecs.tsx:229 renders Annual taxes via <Price value={listing.taxAnnualAmount}/> without `exact`, and Price.tsx default mode rounds to the near"
+ },
+ {
+  "index": 32,
+  "group": "buy-core",
+  "page": "listing-detail",
+  "sev": "P2",
+  "effort": "medium",
+  "issue": "The 'Similar homes' rail never renders: absent on the captured Bend listing (vacation-rental box goes straight to the footer) and absent again on a se",
+  "hint": "Live-confirmed still broken: /homes-for-sale/bend/21140-wilderness-220224675 ($850K Active SFR in Bend, city fallback scope) renders zero 'lst-grid'/'"
+ },
+ {
+  "index": 33,
+  "group": "buy-core",
+  "page": "listing-detail",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The hero is an auto-playing video with only an UNMUTE control — no visible pause/stop, and no reduced-motion handling found in ListingHero. Auto-playi",
+  "hint": "ListingHero.tsx video path (lines 356-376) still has muted+autoPlay+loop with only the Unmute/Mute toggle (lines 260-288); no pause/play control and n"
+ },
+ {
+  "index": 34,
+  "group": "buy-core",
+  "page": "listing-detail",
+  "sev": "P2",
+  "effort": "medium",
+  "issue": "The Systems & Utilities facts render booleans where buyers expect substance: 'HEATING Yes', 'COOLING Yes'. In Central Oregon, heating type (forced air",
+  "hint": "PropertySpecs.tsx:200-201 still emits {label:'Heating', value:'Yes'} / {label:'Cooling', value:'Yes'} from heating_yn/cooling_yn booleans — live page "
+ },
+ {
+  "index": 35,
+  "group": "buy-core",
+  "page": "listing-detail",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The Amboqia display face draws capital 'I' as a numeral-1-like glyph, which is fine in section heads ('DESCR1PT1ON') but genuinely ambiguous in the al",
+  "hint": "ListingHero.tsx:177-191 still sets the address overlay in var(--font-amboqia) with text-transform:uppercase — live HTML confirms '21140 Wilderness Way"
+ },
+ {
+  "index": 36,
+  "group": "buy-core",
+  "page": "search",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "Every card title in the split-view rail truncates with an ellipsis ('21140 Wilderness, B…', '63177 Iner, Bend, O…') because the full 'street, City, ST",
+  "hint": "MapSearchView.tsx:34-43 formatAddress still joins street + City + State + PostalCode for the card title (line 322 renders it with `truncate`), so spli"
+ },
+ {
+  "index": 37,
+  "group": "buy-core",
+  "page": "listing-detail",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The Parks Nearby grid renders its second row as one card (Drake Park) followed by a solid gray slab filling the three empty grid cells — it reads as a",
+  "hint": "ParksNearbyBlock.tsx:42-51 unchanged: grid repeat(auto-fit,minmax(200px,1fr)) on a rgba(16,39,66,0.12) tinted container — a partial last row still exp"
+ },
+ {
+  "index": 38,
+  "group": "buy-core",
+  "page": "listing-detail",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "In the rental-analysis KPI tiles, the CASH FLOW value '-$2,608/mo' runs flush to the card's right edge with the '/mo' visually clipped — the widest va",
+  "hint": "RentalCalculator.tsx KpiTile (lines 154-183) unchanged: value at text-2xl in a p-3 grid-cols-2 tile with no min-width/overflow handling, and the Cash "
+ },
+ {
+  "index": 43,
+  "group": "buy-core",
+  "page": "search",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "Two competing view switchers are visible at once on mobile: a Split/List/Map segmented control in the top control row and a second full-width List/Map",
+  "hint": "Both switchers still render on mobile: SearchFilters.tsx:668-691 Split/List/Map ToggleGroup has no responsive hiding (the Phase remediation only fixed"
+ },
+ {
+  "index": 44,
+  "group": "buy-core",
+  "page": "search",
+  "sev": "P2",
+  "effort": "medium",
+  "issue": "Result cards carry only photo, price pill, address, and bd/ba/sqft — no save/heart button, no status badges (new, price cut, open house), no photo cou",
+  "hint": "MapSearchView.tsx:297-328 card still renders only photo + price pill + address + bd/ba/sqft — no SaveListingButton (component exists at components/lis"
+ },
+ {
+  "index": 45,
+  "group": "buy-core",
+  "page": "search",
+  "sev": "P2",
+  "effort": "medium",
+  "issue": "On mobile the results list is a fixed-height nested scroll region (map-search-shell = calc(100vh - 120px)) inside a page that also scrolls, with a ~2,",
+  "hint": "Mobile still nests a fixed-height scroll region: globals.css:393 shell calc(100vh - 120px) unchanged; MapSearchView.tsx:245 listPanel is overflow-y-au"
+ },
+ {
+  "index": 46,
+  "group": "buy-core",
+  "page": "listing-detail",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The action button group wraps raggedly on mobile: SCHEDULE A TOUR sits alone on row one at partial width, ASK A QUESTION and SAVE share row two, and S",
+  "hint": "PriceCtaStrip.tsx:228 CTA row is still 'mt-4 flex flex-wrap gap-2.5' — four buttons wrap raggedly on narrow viewports. The Phase D diff to this file o"
+ },
+ {
+  "index": 47,
+  "group": "buy-core",
+  "page": "listing-detail",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The same three school assignments render twice ~one scroll apart: once inside the LISTING facts grid (ELEMENTARY/MIDDLE/HIGH) and again as a dedicated",
+  "hint": "Duplication live-confirmed: facts grid emits Elementary/Middle/High rows (PropertySpecs.tsx:250-252) AND SchoolsBlock renders the same three names as "
+ },
+ {
+  "index": 48,
+  "group": "buy-core",
+  "page": "listing-detail",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "Numeric formats drift within the same facts grid: BEDROOMS shows '3' while BATHROOMS shows '2.0' (trailing .0 on a whole number), and the hero pill ab",
+  "hint": "Both drifts live-confirmed on 21140 Wilderness: BATHROOMS '3.0' (PropertySpecs.tsx:143 fractionDigits={1}) next to BEDROOMS '4', and the hero pill sho"
+ },
+ {
+  "index": 49,
+  "group": "buy-core",
+  "page": "search-empty-state-fixed",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The alert-capture subline concatenates raw filter shorthand into prose: 'We will email you new matches for $90M, Bend.' — a machine-built phrase that ",
+  "hint": "SearchAlertCapture.tsx:148-149,173-175 still interpolates getFiltersSummary output ('$90M, Bend') into 'We will email you new matches for {target}.' —"
+ },
+ {
+  "index": 50,
+  "group": "buy-core",
+  "page": "search-empty-state-fixed",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "With a filter applied, the same fact renders in two stacked rows: the chip row shows 'Price: $90M+' and an applied-filters row directly beneath repeat",
+  "hint": "Live search HTML with minPrice=90000000 shows 'Price: $90M+' twice: the Row-2 FilterDropdown trigger label (SearchFilters.tsx:729) and the Row-3 Filte"
+ },
+ {
+  "index": 73,
+  "group": "geo-browse",
+  "page": "/cities/bend, /cities/bend/awbrey-butte, /communities/tetherow",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "'The market, on record' paints lighter 'ghost' cells wherever a KPI is missing: Awbrey Butte shows a huge empty block beside the $1,150,000 headline p",
+  "hint": "Verified live (desktop, /cities/bend/awbrey-butte): .mkt-kpis renders 2 tiles into a 3-track grid (ghost cell) and .mkt-verdict-row renders 1 child in"
+ },
+ {
+  "index": 74,
+  "group": "geo-browse",
+  "page": "/cities/bend",
+  "sev": "P2",
+  "effort": "medium",
+  "issue": "The same communities appear twice back-to-back: a 'COMMUNITIES' photo carousel (Tetherow 41, NorthWest Crossing 23, Broken Top 18, Parks At Broken Top",
+  "hint": "Still duplicated: /cities/bend renders KbCommunities rail immediately followed by the 'Golf and master-planned communities' KbExploreTowns ledger (app"
+ },
+ {
+  "index": 76,
+  "group": "geo-browse",
+  "page": "/cities/bend/awbrey-butte and /communities/tetherow (chart also on /cities/bend)",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The market chart on neighborhood/community pages plots BEND (CITY) median-sale data directly beneath geo-scoped stats: Awbrey Butte says median list $",
+  "hint": "Unchanged: Awbrey/Tetherow charts still plot the Bend city series ($810,000 phead under the $1,138,000/$1.6M headlines) with only the small mono-lab q"
+ },
+ {
+  "index": 77,
+  "group": "geo-browse",
+  "page": "/communities",
+  "sev": "P2",
+  "effort": "medium",
+  "issue": "Four consecutive communities (Mt Bachelor Village, Inn of the 7th Mountain, Rivers Edge, Mountain High) all show the same Old Mill smokestacks photo c",
+  "hint": "Unchanged: /communities RSC payload still shows 4× 'Area view · Bend' chips — the four new Bend registry resorts (Mt Bachelor Village, Inn of the 7th "
+ },
+ {
+  "index": 79,
+  "group": "geo-browse",
+  "page": "/cities",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The hero stat band's third cell shows the words 'Buyer's market' sitting above the label 'MONTHS OF SUPPLY' — a verdict where a number is promised. Tw",
+  "hint": "Verified live: /cities hero third stat cell renders the words \"Buyer's market\" above the label 'MONTHS OF SUPPLY' (app/cities/page.tsx:262-269 renders"
+ },
+ {
+  "index": 80,
+  "group": "geo-browse",
+  "page": "/cities/bend, /cities/bend/awbrey-butte, /communities/tetherow",
+  "sev": "P2",
+  "effort": "medium",
+  "issue": "The 'WATCH <place>' area-guide videos are portrait phone clips forced into a full-width 16:9 navy frame (objectFit: contain), so ~60% of a full viewpo",
+  "hint": "KbAreaGuideVideo.tsx unchanged (16:9 frame, objectFit:contain, optional posterSrc) and all three callers (app/cities/[slug]/page.tsx:591, communities/"
+ },
+ {
+  "index": 81,
+  "group": "geo-browse",
+  "page": "/cities/bend",
+  "sev": "P2",
+  "effort": "medium",
+  "issue": "Bend's 'Featured homes' is six ultra-luxury outliers ($5.9M-$16.8M, including two raw-land satellite tiles) on a page whose own median is $775K. The t",
+  "hint": "Verified live: /cities/bend featured rail is $11.9M, $8.75M, $7.9M, $5.99M, 2×$16.8M — price-desc only. The curateFeaturedTiles mixer (lib/kb/curate-f"
+ },
+ {
+  "index": 82,
+  "group": "geo-browse",
+  "page": "/communities",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The flagship section's eyebrow reads 'The fourteen' but the registry and the rendered list contain 19 communities — a reader who counts catches the si",
+  "hint": "Still 'The fourteen' at app/communities/page.tsx:261 (confirmed live) while data/resort-communities.json has 19 entries and 19 rows render. One-line f"
+ },
+ {
+  "index": 83,
+  "group": "geo-browse",
+  "page": "/cities/bend and /communities",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "Zero/unavailable inventory renders three different ways across geo surfaces: '0 ACTIVE · BEND' (Parks At Broken Top carousel card), a fully blank stat",
+  "hint": "Zero inventory still renders three ways (all verified live): golf ledger '0 Active' (KbExploreTowns.client.tsx:68), carousel 'Community guide · Bend' "
+ },
+ {
+  "index": 84,
+  "group": "geo-browse",
+  "page": "/communities",
+  "sev": "P3",
+  "effort": "medium",
+  "issue": "'Every community, A to Z' is a collapsed alphabet accordion ('# 5 communities', 'A 26 communities'...) — ~20 near-empty rows that only help someone wh",
+  "hint": "CommunityIndexBrowser.tsx unchanged: search box + <details>-per-letter alphabet accordion only (lines 123-150); no city grouping, price bands, or coun"
+ },
+ {
+  "index": 88,
+  "group": "geo-browse",
+  "page": "cities-bend (/cities/bend)",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The Featured Homes rail shows the same property twice back-to-back (63672 O B Riley, $16,800,000 — two MLS entries for one address), and that 'home' r",
+  "hint": "Verified live: /cities/bend featured rail shows 63672 O B Riley at $16,800,000 twice back-to-back. resolveFeaturedItems (lib/kb/resolve-featured-items"
+ },
+ {
+  "index": 89,
+  "group": "geo-browse",
+  "page": "cities-bend (/cities/bend)",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The market banner says 'Balanced market · 4.0 MONTHS OF SUPPLY' while the page's own methodology text three screens later states 'four months or less ",
+  "hint": "No threshold-aware rounding shipped: KbMarketHud still displays raw mos via toFixed(1) (lines 111, 142) with verdictOf on the raw value. Today's data "
+ },
+ {
+  "index": 90,
+  "group": "geo-browse",
+  "page": "cities (/cities)",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "Tumalo and Crooked River Ranch are in the page's FEATURED_CITY_SLUGS list and in the live market-pulse tracking set, but both are silently dropped by ",
+  "hint": "Verified live: zero occurrences of 'Tumalo' or 'Crooked River Ranch' on /cities (10 featured cities render). Both are still in FEATURED_CITY_SLUGS (ap"
+ },
+ {
+  "index": 91,
+  "group": "geo-browse",
+  "page": "cities-bend (/cities/bend)",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "Two section headings overflow the mobile viewport and are cut mid-word: 'NEIGHBORH…' (Neighborhoods) and 'COMMUNITIE…' (Communities). Long single-word",
+  "hint": "Verified live at 375px: 'Neighborhoods' sec-title measures 336px wide starting at x=152 (right edge 488px, 113px past the viewport) — renders as 'NEIG"
+ },
+ {
+  "index": 92,
+  "group": "geo-browse",
+  "page": "cities-bend (/cities/bend)",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "The listings map's 'LIVE · MLS — 500 ACTIVE LISTINGS' legend sits on top of the Google logo and attribution bar at the map's bottom-left, making both ",
+  "hint": "Verified live (mobile screenshot): '500 ACTIVE LISTINGS' legend still overlaps the Google logo/attribution at the map's bottom-left. .neigh-legend is "
+ },
+ {
+  "index": 93,
+  "group": "geo-browse",
+  "page": "cities-bend (/cities/bend)",
+  "sev": "P2",
+  "effort": "medium",
+  "issue": "The map section says 'Every active single-family listing in Bend' with a '500 ACTIVE LISTINGS' pill, but visible cluster markers sit near Redmond, Tum",
+  "hint": "Scope mismatch persists and is measurably larger: the map plots ~1,009 City-field features (1,023 Feature objects in the payload incl. ~14 polygons; g"
+ },
+ {
+  "index": 94,
+  "group": "geo-browse",
+  "page": "communities (/communities)",
+  "sev": "P2",
+  "effort": "small",
+  "issue": "Each resort card's first link '<Name> homes for sale' actually goes to the community guide page (/communities/<slug>), not to listings — the label pro",
+  "hint": "Unchanged at app/communities/page.tsx:352-365: first link '{name} homes for sale' still points at the /communities/{slug} guide page, second at /homes"
+ },
+ {
+  "index": 95,
+  "group": "geo-browse",
+  "page": "cities (/cities)",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The 'Other Central Oregon cities' section heading is set in the same giant display register as the page H1 'Central Oregon Cities' — scrolling users h",
+  "hint": "Both halves persist: 'Other Central Oregon cities' still renders in the sec-title display register (app/cities/page.tsx:432), and Black Butte Ranch st"
+ },
+ {
+  "index": 96,
+  "group": "geo-browse",
+  "page": "community (/communities/tetherow)",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "Subdivision chips render raw truncated MLS SubdivisionName strings: 'Lodges at Bachelor V' (cut mid-word by the MLS field length) and the cryptic 'Tri",
+  "hint": "Verified live on /communities/tetherow: chips still render raw truncated MLS strings 'Lodges at Bachelor V' and 'Triple', with hrefs /subdivisions/lod"
+ },
+ {
+  "index": 97,
+  "group": "geo-browse",
+  "page": "community (/communities/tetherow)",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "The membership tables answer 'Initiation' and 'Monthly dues' with the label 'Confirmed at office' four times — it reads as a placeholder, gives no act",
+  "hint": "Verified live: 'Confirmed at office' still renders as the dd value for Initiation and Monthly dues in both Tetherow membership cards (4+ visible insta"
+ },
+ {
+  "index": 98,
+  "group": "geo-browse",
+  "page": "cities-bend (/cities/bend)",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "On the 5-year market chart the 'AS OF JUL' annotation renders twice — once floating beside the cutoff line and again inside the $810K tooltip box dire",
+  "hint": "Verified live on /cities/bend/awbrey-butte: both .kbmc-asof-label ('as of Jul', KbMarketChart.client.tsx:406-414) and .kbmc-endlabel-as ('as of Jul', "
+ },
+ {
+  "index": 99,
+  "group": "geo-browse",
+  "page": "cities (/cities)",
+  "sev": "P3",
+  "effort": "small",
+  "issue": "Bend's card on /cities says '55 DAYS MEDIAN ON MARKET' while /cities/bend's hero says 'Pending in 13 days' and its ledger 'MEDIAN TO PENDING 13 days' ",
+  "hint": "Still two unreconciled day metrics: /cities cards show median_active_dom labeled 'Median on market' (Bend 55 days, app/cities/page.tsx:364-373) while "
+ }
+]

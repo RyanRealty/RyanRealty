@@ -68,6 +68,25 @@ Open P1s closed in this phase (each browser-verified): /cities + /communities ov
 - **150 still open** (134 small, 16 medium) — being fixed by the parallel worktree fan-out; per-item outcomes recorded below when it lands
 - 1 item reclassified during triage (component capped reviews at 6 since June; the mobile-wall aspect stays open)
 
-**Wave 1 applied (commit 9f08ecf4):** home (16 items) + sell-core (11 items) — 25 patched, 2 product-decision skips resolved by the lead per Matt's delegation: primary nav keeps "Communities / Cities" (plain-English labels; renaming primary nav churns SEO for a P3 gain), and the locked hero line stays (an Amboqia glyph nit does not justify changing approved brand copy).
+**Wave 1 applied (commit 9f08ecf4, pushed to production):** home (16 items) + sell-core (11 items) — 25 patched, 2 product-decision skips resolved by the lead per Matt's delegation: primary nav keeps "Communities / Cities" (plain-English labels; renaming primary nav churns SEO for a P3 gain), and the locked hero line stays (an Amboqia glyph nit does not justify changing approved brand copy).
+
+**Direct pass (commits 2b47a32d + 4afa14c0, pushed to production):** the parallel worktree fan-out hit a disk-space collision (each worktree cloned this video-asset-heavy repo in full) and burned through the session's subagent budget, so the remaining 100 items were worked directly instead of via more fan-outs. 16 items fixed, prioritized by severity:
+
+- **The biggest data-accuracy fix in the whole remediation:** `/cities/bend`'s 13-neighborhood ledger (Awbrey Butte, Summit West, Century West, etc.) was reading `getBendNeighborhoodStats`, which sources a `market_pulse_live` neighborhood row that **has never existed** in the live database (confirmed by an existing repo memory note). Every district rendered a false "0 Active" — a live §0 violation on a page search engines and buyers both hit. Swapped to `getBendNeighborhoodLedger` (reads `listing_tile_mv` directly) and expanded its coverage from 5 to all 13 districts, verified against the real `boundary_neighborhood` label set in the database via SQL before shipping. Live-verified: Awbrey Butte 35 active/$1.3M median, Summit West 45/$1.56M, all 13 districts carry real numbers.
+- Map legend chip hardcoded "N ACTIVE LISTINGS" on every consumer (open-houses showed "38 ACTIVE LISTINGS" for 38 open houses, price-drops showed "60 ACTIVE LISTINGS" for 60 price cuts) — added a `countNoun` prop, wired per page.
+- `/open-houses` hero led with regional inventory (1,824 homes) ahead of the actual open-house count; rewritten to lead with the real stat and match the section's "this week" wording.
+- Auth forms: Google OAuth button was visually identical (solid navy) to the primary Sign in/Create account submit; switched to outline style. Submit-button hover color-family bug (`hover:bg-accent/90` on a `bg-primary` button) fixed. Input `text-sm` override that fought the design system's mobile-safe sizing (iOS auto-zoom-on-focus) removed — all three auth forms.
+- Hero background video ignored `prefers-reduced-motion` (the existing check only gated the GSAP text animation, not the video itself) — a vestibular-disorder visitor had no way to stop a full-viewport autoplay loop. Now renders the static poster. Same fix applied to the listing-detail hero video.
+- Cookie consent banner z-index raised above the listing-detail sticky mobile CTA bar — the "Schedule a tour" bar slid up over the Accept/Manage/Essential buttons on first mobile visit.
+- Footer legal links (Privacy, Terms, Fair housing, Accessibility) added — zero existed anywhere in the shared KB footer.
+- Reviews: cards now show a real date; the 5.0/24-review aggregate surfaced as visible text (previously JSON-LD only, invisible to a human).
+- Blog "Market Reports" category added to the filterable chip list.
+- Broker phone in the "By the numbers" ledger is now a real `tel:` link.
+- `showSearch={false}` on /about, /team, /tools/mortgage-calculator (content pages don't need the buyer search widget).
+- Two remaining "six cities" scope claims removed (KbHero default lead, KbFooter CTA line).
+
+All commits gate-clean (`ci:gates` full chain) and production-verified via live browser render (not just curl) after each Vercel deploy landed.
+
+**Remaining backlog: ~109 P2/P3 items**, mostly smaller polish (copy nits, minor CSS spacing, secondary-page label consistency) documented in `remaining.json`/`opens.json` in this session's scratchpad with file:line evidence and effort ratings from the triage pass. None are P0/P1 — every P0 and P1 in the original 218-finding register is fixed and production-verified. This backlog is real work but not urgent; recommend picking it up as a follow-up session using the same triage data (already file:line-verified, ready to fix without re-auditing).
 
 ## Phase F — final review pass — PENDING
