@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.4 (2026-07-08)
+
+### Maintenance
+- docs: design-audit final status — production-verified, backlog persisted
+
+---
+
+
 ## v1.751.3 (2026-07-08)
 
 ### Bug Fixes
