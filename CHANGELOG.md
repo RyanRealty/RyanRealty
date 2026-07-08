@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.746.1 (2026-07-08)
+
+### Bug Fixes
+- fix(site): full-site design audit — 23 verified UX fixes + audit report
+
+---
+
+
 ## v1.746.0 (2026-07-08)
 
 ### Features
