@@ -31,6 +31,7 @@ export type BlogPostFull = {
   author_name: string | null
   author_slug: string | null
   author_photo_url: string | null
+  author_title: string | null
 }
 
 type PostRow = {
@@ -67,11 +68,12 @@ async function _getBlogPostBySlugUncached(slug: string): Promise<BlogPostFull | 
   let author_name: string | null = null
   let author_slug: string | null = null
   let author_photo_url: string | null = null
+  let author_title: string | null = null
 
   if (post.author_broker_id) {
     const { data: broker, error: brokerError } = await sb
       .from('brokers')
-      .select('display_name, slug, photo_url')
+      .select('display_name, slug, photo_url, title')
       .eq('id', post.author_broker_id)
       .maybeSingle()
     if (brokerError) throw new Error(`[getBlogPostBySlug] brokers: ${brokerError.message}`)
@@ -79,6 +81,7 @@ async function _getBlogPostBySlugUncached(slug: string): Promise<BlogPostFull | 
       author_name = (broker as { display_name?: string }).display_name ?? null
       author_slug = (broker as { slug?: string }).slug ?? null
       author_photo_url = (broker as { photo_url?: string }).photo_url ?? null
+      author_title = (broker as { title?: string }).title?.trim() || null
     }
   }
 
@@ -89,13 +92,16 @@ async function _getBlogPostBySlugUncached(slug: string): Promise<BlogPostFull | 
     author_name,
     author_slug,
     author_photo_url,
+    author_title,
   }
 }
 
 export const getBlogPostBySlug = makeResilientCached(
   _getBlogPostBySlugUncached,
-  // v2 — local hero resolution (P0-4); evicts cached rows carrying Unsplash URLs.
-  ['blog-post-by-slug-v2'],
+  // v3 (design-audit #146): adds author_title so the "About the author" box
+  // can say who this broker actually is instead of one hardcoded generic
+  // sentence identical on every post — evicts v2 rows missing the field.
+  ['blog-post-by-slug-v3'],
   { revalidate: CACHE_WINDOWS.blog, tags: [cacheTag.blog] },
   null,
 )

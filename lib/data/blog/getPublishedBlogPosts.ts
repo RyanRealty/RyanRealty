@@ -13,6 +13,7 @@ import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { resolveBlogHeroImage } from '@/lib/blog-hero-images'
+import { estimateReadTimeMinutes } from '@/lib/content/read-time'
 
 export type BlogPostWithAuthor = {
   id: string
@@ -28,6 +29,7 @@ export type BlogPostWithAuthor = {
   author_name: string | null
   author_slug: string | null
   author_photo_url: string | null
+  read_time_min: number
 }
 
 export type GetPublishedBlogPostsResult = {
@@ -48,6 +50,7 @@ type PostRow = {
   author_broker_id: string | null
   seo_title: string | null
   seo_description: string | null
+  content: string | null
 }
 
 type BrokerRow = {
@@ -70,7 +73,7 @@ async function _getPublishedBlogPostsUncached(options: {
 
   let query = sb
     .from('blog_posts')
-    .select('id, title, slug, excerpt, category, hero_image_url, published_at, author_broker_id, seo_title, seo_description', { count: 'exact' })
+    .select('id, title, slug, excerpt, category, hero_image_url, published_at, author_broker_id, seo_title, seo_description, content', { count: 'exact' })
     .eq('status', 'published')
     .not('published_at', 'is', null)
     .order('published_at', { ascending: false })
@@ -97,13 +100,17 @@ async function _getPublishedBlogPostsUncached(options: {
 
   const withAuthor: BlogPostWithAuthor[] = posts.map((p) => {
     const author = p.author_broker_id ? brokerMap.get(p.author_broker_id) : null
+    const { content, ...rest } = p
     return {
-      ...p,
+      ...rest,
       // P0-4: never serve a remote/stock/dead hero — resolve to a verified local photo.
       hero_image_url: resolveBlogHeroImage(p.slug, p.category, p.hero_image_url),
       author_name: author?.display_name ?? null,
       author_slug: author?.slug ?? null,
       author_photo_url: author?.photo_url ?? null,
+      // design-audit #126: every index card showed "1 min read" because this
+      // computed from the excerpt (~30 words), not the article body.
+      read_time_min: estimateReadTimeMinutes(content),
     }
   })
 
@@ -114,8 +121,9 @@ async function _getPublishedBlogPostsUncached(options: {
 // independently. TTL matches the existing blog window (CACHE_WINDOWS.blog = 600s).
 export const getPublishedBlogPosts = makeResilientCached(
   _getPublishedBlogPostsUncached,
-  // v2 — local hero resolution (P0-4); evicts cached rows carrying Unsplash URLs.
-  ['published-blog-posts-v2'],
+  // v3 (design-audit #126): adds read_time_min computed from the full body,
+  // not the excerpt — evicts v2 rows that don't carry the field.
+  ['published-blog-posts-v3'],
   { revalidate: CACHE_WINDOWS.blog, tags: [cacheTag.blog] },
   { posts: [], total: 0 },
 )

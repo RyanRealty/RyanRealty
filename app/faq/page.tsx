@@ -291,7 +291,10 @@ export default async function FAQPage() {
           >
             <div className="wrap">
               <div className="sec-head">
-                <span className="sec-index">{g.cat}</span>
+                {/* design-audit #136: eyebrow + title both repeated the same
+                    category name, a full viewport-scale heading for as few as
+                    2 questions. Eyebrow now carries real information instead. */}
+                <span className="sec-index">{g.items.length} question{g.items.length === 1 ? '' : 's'}</span>
                 <h2 className="sec-title display">{g.cat}</h2>
               </div>
               <div className="pt-2">

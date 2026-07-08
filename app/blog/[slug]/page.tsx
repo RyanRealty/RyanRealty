@@ -241,16 +241,15 @@ export default async function BlogPostPage({ params }: PageProps) {
                 </p>
               )}
 
-              {/* Tags */}
+              {/* Tags — plain metadata labels, not styled as clickable filters
+                  (design-audit #150: these previously matched the clickable
+                  category pills' pill/border styling with no click handler). */}
               {post.tags && post.tags.length > 0 ? (
-                <div className="mt-10 flex flex-wrap gap-2 pt-6" style={{ borderTop: `1px solid ${NAVY_12}` }}>
-                  {post.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-block"
-                      style={{ border: '1px solid var(--navy)', color: NAVY, padding: '7px 13px', fontSize: '.72rem', fontWeight: 600, letterSpacing: '.04em' }}
-                    >
+                <div className="mt-10 flex flex-wrap items-center gap-x-2 gap-y-1.5 pt-6" style={{ borderTop: `1px solid ${NAVY_12}` }}>
+                  {post.tags.map((tag, i) => (
+                    <span key={tag} className="inline-flex items-center" style={{ color: NAVY_70, fontSize: '.78rem', fontWeight: 500 }}>
                       {tag}
+                      {i < post.tags!.length - 1 ? <span aria-hidden="true" style={{ marginLeft: '.5rem', opacity: 0.5 }}>·</span> : null}
                     </span>
                   ))}
                 </div>
@@ -316,7 +315,7 @@ export default async function BlogPostPage({ params }: PageProps) {
                       </span>
                     )}
                     <p className="mt-2.5 font-medium" style={{ color: NAVY_70, fontSize: '.95rem', lineHeight: 1.5 }}>
-                      Ryan Realty team member sharing local market insights and expertise for Central Oregon home buyers and sellers.
+                      {post.author_title ? `${post.author_title} at Ryan Realty.` : 'Ryan Realty.'}
                     </p>
                   </div>
                 </section>

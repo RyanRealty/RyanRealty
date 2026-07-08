@@ -70,8 +70,8 @@ async function _getRelatedBlogPostsUncached(
     if (backfill) posts = [...posts, ...(backfill as PostRow[])]
   }
 
-  // Author info omitted intentionally — related post cards only show
-  // title + hero image + publish date, no author attribution.
+  // Author info + read time omitted intentionally — related post cards only
+  // show title + hero image + publish date.
   return posts.map((p) => ({
     ...p,
     // P0-4: never serve a remote/stock/dead hero — resolve to a verified local photo.
@@ -79,13 +79,15 @@ async function _getRelatedBlogPostsUncached(
     author_name: null,
     author_slug: null,
     author_photo_url: null,
+    read_time_min: 0,
   }))
 }
 
 export const getRelatedBlogPosts = makeResilientCached(
   _getRelatedBlogPostsUncached,
-  // v2 — local hero resolution (P0-4); evicts cached rows carrying Unsplash URLs.
-  ['related-blog-posts-v2'],
+  // v3 — BlogPostWithAuthor now requires read_time_min (unused by this card,
+  // stubbed 0); evicts v2 rows shaped without the field.
+  ['related-blog-posts-v3'],
   { revalidate: CACHE_WINDOWS.blog, tags: [cacheTag.blog] },
   [],
 )

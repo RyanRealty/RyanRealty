@@ -746,7 +746,11 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .kb-pop-addr{font-size:.78rem;font-weight:600;margin-top:6px;letter-spacing:.01em;}
 .kb-root .kb-pop-addr .sub{display:block;font-weight:500;color:var(--cream-70);font-size:.7rem;margin-top:2px;}
 .kb-root .kb-pop-specs{margin-top:9px;font-size:.66rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--cream-70);display:flex;gap:12px;}
-@media(max-width:760px){.kb-root .wrap{padding:0 20px;}.kb-root .sec-title{font-size:9vw!important;line-height:.95;overflow-wrap:anywhere;}.kb-root .hero-h{font-size:11vw!important;}.kb-root .stat-num{font-size:13vw!important;}.kb-root .town-row{grid-template-columns:1fr!important;gap:6px;padding:18px 0;}.kb-root .town-row .town-name{font-size:11vw!important;white-space:normal!important;overflow:visible!important;min-width:0;transform:none!important;}.kb-root .town-stats{text-align:left!important;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;}.kb-root .town-count{font-size:1.7rem!important;}.kb-root .town-count .lbl{display:inline!important;margin:0 0 0 6px;}.kb-root .town-price{margin-top:0!important;}.kb-root .comm-name{font-size:7.5vw!important;white-space:normal!important;}.kb-root .lst-price{font-size:8vw!important;}.kb-root .sell-h{font-size:11vw!important;}.kb-root .team-name{font-size:9vw!important;}.kb-root .foot-cta .display{font-size:13vw!important;}}
+/* design-audit #148: .sec-title at 9vw forced overflow-wrap:anywhere to
+   mid-word-break single long headings ("NEIGHBORHOOD/S") at 375px. 7.5vw
+   fits "NEIGHBORHOODS" (the longest single-word sec-title site-wide) on
+   one line; overflow-wrap:anywhere stays as a safety net for anything longer. */
+@media(max-width:760px){.kb-root .wrap{padding:0 20px;}.kb-root .sec-title{font-size:7.5vw!important;line-height:.95;overflow-wrap:anywhere;}.kb-root .hero-h{font-size:11vw!important;}.kb-root .stat-num{font-size:13vw!important;}.kb-root .town-row{grid-template-columns:1fr!important;gap:6px;padding:18px 0;}.kb-root .town-row .town-name{font-size:11vw!important;white-space:normal!important;overflow:visible!important;min-width:0;transform:none!important;}.kb-root .town-stats{text-align:left!important;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;}.kb-root .town-count{font-size:1.7rem!important;}.kb-root .town-count .lbl{display:inline!important;margin:0 0 0 6px;}.kb-root .town-price{margin-top:0!important;}.kb-root .comm-name{font-size:7.5vw!important;white-space:normal!important;}.kb-root .lst-price{font-size:8vw!important;}.kb-root .sell-h{font-size:11vw!important;}.kb-root .team-name{font-size:9vw!important;}.kb-root .foot-cta .display{font-size:13vw!important;}}
 
 /* ===== KB city-page sections (breadcrumb, about, open houses, activity, articles) ===== */
 /* --- KbBreadcrumb --- */
@@ -967,9 +971,22 @@ html.lenis, html.lenis body{height:auto;}
 }
 .kb-root .art-read .arr{transition:transform .18s ease;}
 .kb-root .art-card:hover .art-read .arr{transform:translateX(4px);}
-@media(max-width:680px){.kb-root .art-title{font-size:8vw;}}
+/* design-audit #153: 8vw with no cap ran long all-caps Amboqia titles to
+   5-6 lines on mobile. Bounded clamp + a 3-line truncation keeps every card
+   the same rough height regardless of title length. */
+@media(max-width:680px){
+  .kb-root .art-title{
+    font-size:clamp(1.3rem,6.4vw,1.6rem);
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+}
 
 .kb-root .hero-caption{position:absolute;right:14px;bottom:14px;z-index:3;font-size:.58rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cream-70);background:rgba(16,39,66,.55);padding:5px 10px;border-radius:2px;}
+/* design-audit #149: the caption is pinned to the bottom-right of the full-bleed
+   hero photo, the same corner the hero CTA row lands in once content stacks on
+   mobile — hide it below the breakpoint where they can collide. */
+@media(max-width:760px){.kb-root .hero-caption{display:none;}}
 
 /* Keyboard focus — visible on navy AND cream surfaces (a11y) */
 .kb-root a:focus-visible,.kb-root button:focus-visible,.kb-root input:focus-visible,.kb-root [tabindex]:focus-visible{outline:3px solid var(--cream);outline-offset:2px;box-shadow:0 0 0 5px rgba(16,39,66,.6);border-radius:2px;}
@@ -1294,7 +1311,10 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .kb-reviews-all{align-self:flex-end;font-size:.82rem;font-weight:600;color:var(--navy);text-decoration:none;border-bottom:1px solid var(--navy);padding-bottom:2px;white-space:nowrap;transition:opacity .15s ease;}
 .kb-root .kb-reviews-all:hover{opacity:.6;}
 .kb-root .kb-reviews-all .arr{margin-left:4px;}
-.kb-root .kb-reviews-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:34px;}
+/* align-items:start (design-audit #137): default grid stretch made every card
+   in a row match the tallest neighbor, leaving short quotes 50-70% empty
+   space in a bordered box. Cards now size to their own content. */
+.kb-root .kb-reviews-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:34px;align-items:start;}
 .kb-root .kb-rev-card{border:1px solid var(--navy);background:var(--cream);padding:22px 22px 20px;display:flex;flex-direction:column;gap:13px;}
 .kb-root .kb-rev-stars{display:flex;gap:3px;}
 .kb-root .kb-rev-stars svg path{fill:var(--navy);}

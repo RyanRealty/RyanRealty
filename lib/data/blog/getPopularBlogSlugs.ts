@@ -1,6 +1,8 @@
 /**
  * getPopularBlogSlugs — most recent published blog post slugs + titles, used as a
- * "popular posts" sidebar on the blog index.
+ * "recent posts" sidebar on the blog index. No view-count/popularity signal is
+ * tracked per post — this orders by published_at desc (design-audit #127: the
+ * sidebar previously mislabeled this "Popular posts").
  *
  * Returns { slug, title } pairs so the sidebar can display the real DB title
  * rather than a slug-derived approximation.

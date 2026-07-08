@@ -25,6 +25,7 @@ import { shouldNoIndexBlogIndex } from '@/lib/seo-routing'
 import ShareButton from '@/components/ShareButton'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
+import { formatDate } from '@/lib/format/date'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
@@ -94,12 +95,6 @@ export async function generateMetadata({
       images: [defaultOgImage],
     },
   }
-}
-
-function estimateReadTime(content: string | null): number {
-  if (!content) return 2
-  const words = content.trim().split(/\s+/).length
-  return Math.max(1, Math.round(words / 200))
 }
 
 type PageProps = { searchParams: Promise<BlogSearchParams> }
@@ -182,19 +177,22 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
             <div className="sec-head">
               <span className="sec-index">Latest posts</span>
               <h2 id="blog-latest-h" className="sec-title display">
-                The Journal
+                All Posts
               </h2>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-4 pt-5">
-              <nav className="flex flex-wrap gap-2" aria-label="Categories">
+              <nav
+                className="flex flex-nowrap gap-2 overflow-x-auto sm:flex-wrap sm:overflow-visible"
+                aria-label="Categories"
+              >
                 {categories.map((cat) => {
                   const active = category === cat
                   return (
                     <Link
                       key={cat}
                       href={cat === 'All' ? '/blog' : `/blog?category=${encodeURIComponent(cat)}`}
-                      className="inline-block transition-colors"
+                      className="inline-block shrink-0 transition-colors"
                       style={catPill(active)}
                       aria-current={active ? 'true' : undefined}
                     >
@@ -208,7 +206,7 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
                 title="Central Oregon real estate blog"
                 text="Market reports, community guides, and buying or selling tips for Central Oregon."
                 trackContext="blog_index"
-                variant="compact"
+                variant="default"
               />
             </div>
 
@@ -258,12 +256,12 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
                       {featured.author_name && <span>{featured.author_name}</span>}
                       {featured.published_at && (
                         <time dateTime={featured.published_at}>
-                          {new Date(featured.published_at).toLocaleDateString('en-US')}
+                          {formatDate(featured.published_at)}
                         </time>
                       )}
                     </div>
                     <span className="art-read mt-4">
-                      Read the guide <span className="arr">&rarr;</span>
+                      Read the post <span className="arr">&rarr;</span>
                     </span>
                   </div>
                 </Link>
@@ -297,13 +295,13 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
                           {post.author_name && <span>{post.author_name}</span>}
                           {post.published_at && (
                             <time dateTime={post.published_at}>
-                              {new Date(post.published_at).toLocaleDateString('en-US')}
+                              {formatDate(post.published_at)}
                             </time>
                           )}
-                          <span>{estimateReadTime(post.excerpt)} min read</span>
+                          <span>{post.read_time_min} min read</span>
                         </div>
                         <span className="art-read">
-                          Read the guide <span className="arr">&rarr;</span>
+                          Read the post <span className="arr">&rarr;</span>
                         </span>
                       </div>
                     </Link>
@@ -356,7 +354,7 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
                   className="uppercase"
                   style={{ color: NAVY_70, fontSize: '.7rem', fontWeight: 700, letterSpacing: '.18em' }}
                 >
-                  Popular posts
+                  Recent posts
                 </h3>
                 <ul className="mt-4 flex list-none flex-col" style={{ borderTop: `1px solid ${NAVY_12}` }}>
                   {popularSlugs.slice(0, 5).map((post) => (
