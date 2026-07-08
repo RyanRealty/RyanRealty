@@ -34,6 +34,7 @@ import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getAllCommunitySnapshots, getAllCitySnapshots } from '@/lib/data'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { communityImage, cityHero } from '@/lib/geo-images'
+import { getSurfaceImages, pickSurfaceImage } from '@/lib/data'
 import { subdivisionEntityKey } from '@/lib/slug'
 import CommunityIndexBrowser from '@/components/community/CommunityIndexBrowser'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -93,10 +94,11 @@ function fmtPrice(n: number | null | undefined): string | null {
 export default async function CommunitiesPage() {
   const registry = resortCommunitiesRegistry.communities as ReadonlyArray<RegistryCommunity>
 
-  const [allCommunities, snapshots, citySnapshots] = await Promise.all([
+  const [allCommunities, snapshots, citySnapshots, heroPhotoPool] = await Promise.all([
     getCommunitiesForIndex(),
     getAllCommunitySnapshots(),
     getAllCitySnapshots(),
+    getSurfaceImages('hero'),
   ])
 
   // geo_snapshot_mv keys: lowercase "city:subdivision" with spaces preserved
@@ -129,13 +131,24 @@ export default async function CommunitiesPage() {
       const sentence = content?.aboutProse?.[0] ? firstSentence(content.aboutProse[0]) : null
       const curated = communityImage(r.slug)
       const fallbackHero = cityHero(r.city_slug)
+      // Four consecutive rows with no curated photo of their own (Mt Bachelor
+      // Village, Inn of the 7th Mountain, Rivers Edge, Mountain High) all fell
+      // back to the SAME single cityHero() image, reading as duplicate
+      // template filler (design-audit P2). pickSurfaceImage spreads them
+      // across the real, approved Bend-area photo pool instead — seeded by
+      // slug so each community's fallback is still stable across renders.
+      const pooledFallback = pickSurfaceImage(heroPhotoPool, {
+        geoTags: [r.city_slug],
+        seed: r.slug,
+        fallback: fallbackHero.src,
+      })
       return {
         slug: r.slug,
         name: r.label,
         city: r.city,
         citySlug: r.city_slug,
         sentence,
-        photoSrc: curated ?? fallbackHero.src,
+        photoSrc: curated ?? pooledFallback ?? fallbackHero.src,
         // Honest alt: a curated photo shows the community itself, the city
         // fallback's alt describes what the photo actually shows.
         photoAlt: curated ? `${r.label}, ${r.city} Oregon` : fallbackHero.alt,

@@ -450,15 +450,6 @@
     "hint": "app/tools/mortgage-calculator/page.tsx line 93 still renders the Tools crumb as href=\"/tools/mortgage-calculator\" (self-link) and no /tools index rout"
   },
   {
-    "index": 77,
-    "group": "geo-browse",
-    "page": "/communities",
-    "sev": "P2",
-    "effort": "medium",
-    "issue": "Four consecutive communities (Mt Bachelor Village, Inn of the 7th Mountain, Rivers Edge, Mountain High) all show the same Old Mill smokestacks photo c",
-    "hint": "Unchanged: /communities RSC payload still shows 4× 'Area view · Bend' chips — the four new Bend registry resorts (Mt Bachelor Village, Inn of the 7th "
-  },
-  {
     "index": 84,
     "group": "geo-browse",
     "page": "/communities",
