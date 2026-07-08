@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.3 (2026-07-08)
+
+### Bug Fixes
+- fix(site): design-audit P2 batch 2 — auth forms, footer legal, a11y, reviews
+
+---
+
+
 ## v1.751.2 (2026-07-08)
 
 ### Bug Fixes
