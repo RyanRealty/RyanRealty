@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.0 (2026-07-08)
+
+### Features
+- feat(site): design-audit buy-core P1 — card addresses carry the street suffix
+
+---
+
+
 ## v1.750.2 (2026-07-08)
 
 ### Bug Fixes
