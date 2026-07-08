@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.8 (2026-07-08)
+
+### Bug Fixes
+- fix(site): design-audit backlog batch 6 — auth-edges group (5 items)
+
+---
+
+
 ## v1.751.7 (2026-07-08)
 
 ### Bug Fixes
