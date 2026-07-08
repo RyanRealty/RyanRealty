@@ -104,12 +104,15 @@ export default async function Home() {
   }).filter((t): t is KbTownItem => t !== null)
 
   const communityVideos = communityVideoManifest as Record<string, { video?: string } | undefined>
+  // DB rows carry raw MLS casing ("caldera springs") — display headline gets
+  // title case; already-cased names (NorthWest Crossing) pass through.
+  const titleCaseName = (s: string) => s.replace(/\b[a-z]/g, (ch) => ch.toUpperCase())
   const communityItems: KbCommunityItem[] = COMM_FEATURED.map((f): KbCommunityItem | null => {
     const c = communities.find((x) => x.subdivision.toLowerCase().includes(f.match))
     if (!c) return null
     const cv = communityVideos[f.videoSlug]
     return {
-      name: c.subdivision,
+      name: titleCaseName(c.subdivision),
       activeCount: c.activeCount,
       town: f.town,
       href: `/communities/${c.slug}`,
@@ -171,17 +174,23 @@ export default async function Home() {
       <KbNav />
       <KbSectionTracker pageType="homepage" />
       <SmoothScrollProvider>
+        {/* Hero lead: regional scope (the count is region-wide, not six cities)
+            + the one line that says why this site over a portal. */}
         <KbHero
           data={{
             activeCount: pulse?.activeCount ?? null,
             medianListPrice: pulse?.medianListPrice ?? null,
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
           }}
+          lead="across Central Oregon, from the Deschutes to Smith Rock. Real numbers, direct from the brokers who close deals here."
         />
         <KbExploreTowns towns={towns} />
         <KbCommunities communities={communityItems} />
         <KbFeatured items={featuredItems} />
-        <KbListingMap geojson={mapGeo} totalActive={pulse?.activeCount ?? mapFeatures.length} />
+        {/* fitToFeatures frames the actual inventory — the REGION box in this
+            wide container padded half the visible map out to the Willamette
+            Valley with zero pins (design-audit). */}
+        <KbListingMap geojson={mapGeo} totalActive={pulse?.activeCount ?? mapFeatures.length} fitToFeatures />
         <KbTicker items={tickerItems} />
         <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
         <KbTeam />

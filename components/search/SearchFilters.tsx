@@ -260,7 +260,7 @@ function FilterDropdown({
       <PopoverContent
         align={align}
         sideOffset={8}
-        className="w-[min(calc(100vw-2rem),22rem)] p-0"
+        className="w-screen max-w-sm p-0"
       >
         {children}
       </PopoverContent>
@@ -545,8 +545,9 @@ export default function SearchFilters({ initialFilters }: Props) {
     <div className="flex flex-col gap-0">
       {/* Row 1: location + sort + view toggle */}
       <div className="flex flex-wrap items-center gap-2 px-3 py-2.5 sm:px-4">
-        {/* Location search input */}
-        <div className="relative min-w-0 flex-1 sm:max-w-sm">
+        {/* Location search input — basis-full gives it its own line on phones
+            (sort + view toggle squeezed it to ~60px, showing "Ben" of "Bend"). */}
+        <div className="relative min-w-0 basis-full sm:basis-auto sm:flex-1 sm:max-w-sm">
           <Input
             ref={locationInputRef}
             type="search"
@@ -653,7 +654,7 @@ export default function SearchFilters({ initialFilters }: Props) {
           value={initialFilters.sort ?? 'newest'}
           onValueChange={(v) => setFilter('sort', v)}
         >
-          <SelectTrigger className="h-8 w-[min(11rem,42vw)]" aria-label="Sort results">
+          <SelectTrigger className="h-8 w-44" aria-label="Sort results">
             <SelectValue placeholder="Newest" />
           </SelectTrigger>
           <SelectContent>
@@ -696,7 +697,7 @@ export default function SearchFilters({ initialFilters }: Props) {
           Horizontal-scroll affordance kept for mobile (overflow-x-auto). The
           dropdown panels portal to <body> via Popover, so this scroll container
           no longer clips them (the old absolute-div approach was clipped here). */}
-      <div className="flex min-w-0 items-center gap-2 overflow-x-auto px-3 py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:px-4">
+      <div className="no-scrollbar flex min-w-0 items-center gap-2 overflow-x-auto px-3 py-2 sm:px-4">
         {/* For Sale / Status */}
         <FilterDropdown
           label={STATUS_OPTIONS.find((s) => s.value === (initialFilters.status ?? 'Active'))?.label ?? 'For sale'}

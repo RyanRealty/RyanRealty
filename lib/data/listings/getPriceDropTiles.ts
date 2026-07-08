@@ -106,6 +106,9 @@ export async function getPriceDropTiles(options?: {
     .not('permit_internet_yn', 'is', false) // IDX: seller internet opt-out
     .not('idx_participant', 'is', false) // IDX: listing broker not a participant
     .not('ListPrice', 'is', null)
+    // Sanity floor (design-audit P1): fractional-share / glitch rows list at
+    // $1K-$2K and would headline the biggest-drop sort.
+    .gte('ListPrice', 50_000)
     .gt('price_drop_count', 0)
     .order('total_price_change_pct', { ascending: true })
     .limit(limit)

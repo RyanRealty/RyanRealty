@@ -118,6 +118,11 @@ export default function ValuationForm() {
       >
         {loading ? 'Sending…' : 'Get my home value'}
       </Button>
+      {/* What happens next — the not-knowing (instant number? phone call?) is
+          the classic valuation-form abandonment reason (design-audit P2). */}
+      <p className="text-center text-sm text-muted-foreground">
+        A broker emails your written valuation within 24 hours, with the comps behind the number. No obligation.
+      </p>
       <SmsConsentDisclosure />
     </form>
   )

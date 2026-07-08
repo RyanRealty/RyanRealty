@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { Eyebrow, H2, Stack } from '@/components/site/primitives'
 import { cn } from '@/lib/utils'
 import type { VideoEmbed } from '@/lib/data/types/video'
@@ -33,7 +34,16 @@ export function ListingVideoEmbed({ videos, className, variant = 'video' }: Prop
   if (videos.length === 0) return null
   // Prefer an inline-embeddable video; fall back to the first (e.g. a Dropbox
   // 'link' video, which renders as a watch-link below).
-  const video = videos.find((v) => v.embedType !== 'link') ?? videos[0]
+  const preferred = videos.find((v) => v.embedType !== 'link') ?? videos[0]
+  // Zillow 3D Home tours refuse framing behind a PerimeterX bot wall — the
+  // iframe renders the competitor's logo plus a CAPTCHA inside our listing
+  // page. Render those as the branded open-in-new-tab card instead.
+  const zillowHosted = (() => {
+    try { return /(^|\.)zillow\.com$/i.test(new URL(preferred.url).hostname) } catch { return false }
+  })()
+  const video = zillowHosted && preferred.embedType === 'iframe'
+    ? { ...preferred, embedType: 'link' as const }
+    : preferred
   const isTour = variant === 'tour'
   const eyebrow = isTour ? 'Virtual tour' : 'Video'
   const heading = isTour ? 'Explore this home in 3D' : 'Walkthrough'
@@ -44,7 +54,7 @@ export function ListingVideoEmbed({ videos, className, variant = 'video' }: Prop
   const directEmbed = isTour && video.embedType === 'iframe'
   const orientationClass =
     video.orientation === 'portrait'
-      ? 'aspect-[9/16] max-w-[420px] mx-auto'
+      ? 'aspect-[9/16] max-w-sm mx-auto'
       : video.orientation === 'square'
       ? 'aspect-square'
       : 'aspect-video'
@@ -130,10 +140,11 @@ export function ListingVideoEmbed({ videos, className, variant = 'video' }: Prop
             />
           )
         ) : (
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => setPlaying(true)}
-            className="absolute inset-0 flex items-center justify-center group bg-cover bg-center"
+            className="absolute inset-0 flex h-auto w-auto items-center justify-center rounded-none p-0 group bg-cover bg-center hover:bg-transparent"
             style={
               video.posterUrl
                 ? { backgroundImage: `url(${video.posterUrl})` }
@@ -154,7 +165,7 @@ export function ListingVideoEmbed({ videos, className, variant = 'video' }: Prop
             >
               <span aria-hidden className="text-2xl ml-1">▶</span>
             </span>
-          </button>
+          </Button>
         )}
       </div>
     </Stack>

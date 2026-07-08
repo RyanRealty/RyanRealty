@@ -309,6 +309,11 @@ async function fetchPriceDrops(
     // Must have a photo
     if (!tile.photoUrl) continue
 
+    // Sanity floor (design-audit P1): $1,000 "homes" (fractional shares, feed
+    // glitches) led the grid and poisoned the per-city medians. No real
+    // Central Oregon SFR lists under $50K.
+    if ((tile.listPrice ?? 0) < 50_000) continue
+
     // City filter
     if (city && tile.city?.toLowerCase() !== city.toLowerCase()) continue
 

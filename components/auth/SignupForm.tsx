@@ -132,6 +132,11 @@ export default function SignupForm({ next }: Props) {
         >
           {loading === 'email' ? 'Creating account…' : 'Create account'}
         </Button>
+        <p className="text-center text-xs text-muted-foreground">
+          By creating an account you agree to the{' '}
+          <a href="/terms" className="underline underline-offset-2">Terms of Service</a> and{' '}
+          <a href="/privacy" className="underline underline-offset-2">Privacy Policy</a>.
+        </p>
       </form>
     </div>
   )

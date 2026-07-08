@@ -3,7 +3,7 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { GoogleMap, Polygon } from '@react-google-maps/api'
-import { MarkerClusterer, type Renderer } from '@googlemaps/markerclusterer'
+import { MarkerClusterer, SuperClusterAlgorithm, type Renderer } from '@googlemaps/markerclusterer'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { getBaseMapOptions, MAP_BOUNDARY_STYLES } from '@/lib/maps/markers'
 
@@ -128,7 +128,24 @@ export function KbListingMapImpl({
       let framed = false
       if (fitToFeatures) {
         for (const rings of polygonPaths) for (const ring of rings) for (const pt of ring) { bounds.extend(pt); framed = true }
-        if (!framed) for (const f of geojson.features) { const [lng, lat] = f.geometry.coordinates; bounds.extend({ lat, lng }); framed = true }
+        if (!framed && geojson.features.length > 0) {
+          // At region scale (many pins), frame the inventory CORE: a handful of
+          // outlying listings (Mitchell, Crescent) stretched the box so far
+          // that fitBounds in a wide container panned in the Willamette Valley.
+          // 5th-95th percentile bounds keep the frame on the market; outliers
+          // stay reachable by panning and still count in the clusters.
+          if (geojson.features.length > 50) {
+            const lats = geojson.features.map((f) => f.geometry.coordinates[1]).sort((a, b) => a - b)
+            const lngs = geojson.features.map((f) => f.geometry.coordinates[0]).sort((a, b) => a - b)
+            const lo = Math.floor(lats.length * 0.05)
+            const hi = Math.ceil(lats.length * 0.95) - 1
+            bounds.extend({ lat: lats[lo], lng: lngs[lo] })
+            bounds.extend({ lat: lats[hi], lng: lngs[hi] })
+          } else {
+            for (const f of geojson.features) { const [lng, lat] = f.geometry.coordinates; bounds.extend({ lat, lng }) }
+          }
+          framed = true
+        }
         if (!framed && centerLonLat) { bounds.extend({ lat: centerLonLat[1] - 0.008, lng: centerLonLat[0] - 0.012 }); bounds.extend({ lat: centerLonLat[1] + 0.008, lng: centerLonLat[0] + 0.012 }); framed = true }
       }
       if (framed) {
@@ -161,7 +178,9 @@ export function KbListingMapImpl({
           return new g.Marker({ position, zIndex: 1000 + count, icon: { path: g.SymbolPath.CIRCLE, scale: r, fillColor: NAVY, fillOpacity: 1, strokeColor: 'rgba(250,248,244,0.9)', strokeWeight: 2 }, label: { text: String(count), color: CREAM, fontSize: '13px', fontWeight: '700' } })
         },
       }
-      clustererRef.current = new MarkerClusterer({ map, markers, renderer })
+      // radius 80 (default 60): adjacent cluster bubbles overlapped at region
+      // zoom (96/26/2 collided near Redmond on the homepage — design-audit).
+      clustererRef.current = new MarkerClusterer({ map, markers, renderer, algorithm: new SuperClusterAlgorithm({ radius: 80 }) })
 
       // towns + Cascade peaks (region scope only)
       const overlays: google.maps.Marker[] = []

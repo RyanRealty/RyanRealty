@@ -101,7 +101,9 @@ export function KbCommunities({ communities, eyebrow = 'Communities' }: { commun
                 ref={register(c.href)}
                 className={`comm-card${playing ? ' playing' : ''}`}
                 href={c.href}
-                aria-label={`${c.name} – ${c.activeCount.toLocaleString('en-US')} active listings in ${c.town}. View community.`}
+                aria-label={c.activeCount > 0
+                  ? `${c.name}, ${c.activeCount.toLocaleString('en-US')} active listings in ${c.town}. View community.`
+                  : `${c.name} community guide, ${c.town}. View community.`}
                 onMouseEnter={() => setHovered(c.href)}
                 onMouseLeave={() => setHovered((p) => (p === c.href ? null : p))}
                 onFocus={() => setHovered(c.href)}
@@ -125,8 +127,14 @@ export function KbCommunities({ communities, eyebrow = 'Communities' }: { commun
                 </div>
                 <div className="comm-body">
                   <div className="comm-name">{c.name}</div>
+                  {/* "0 ACTIVE" is dead scent on a marquee card — when a featured
+                      community has no inventory, sell the guide instead. */}
                   <div className="comm-sub">
-                    <span className="ct mono-num">{c.activeCount.toLocaleString('en-US')}</span> active · {c.town}
+                    {c.activeCount > 0 ? (
+                      <><span className="ct mono-num">{c.activeCount.toLocaleString('en-US')}</span> active · {c.town}</>
+                    ) : (
+                      <>Community guide · {c.town}</>
+                    )}
                   </div>
                 </div>
               </a>

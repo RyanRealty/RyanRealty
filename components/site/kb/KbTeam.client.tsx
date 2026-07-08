@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { BROKERS as CONTACT_BROKERS } from '@/lib/brand/contact'
 
 /**
  * KB Work-with-us / Team — three brokers, big portraits, each routing to their
@@ -10,9 +11,9 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
  * smallness language). Brokers are fixed.
  */
 const BROKERS = [
-  { name: 'Matt Ryan', role: 'Principal Broker', slug: 'matt-ryan', img: '/images/brokers/ryan-matt.png', first: 'Matt' },
-  { name: 'Paul Stevenson', role: 'Broker', slug: 'paul-stevenson', img: '/images/brokers/stevenson-paul.png', first: 'Paul' },
-  { name: 'Rebecca Peterson', role: 'Broker', slug: 'rebecca-peterson', img: '/images/brokers/peterson-rebecca.png', first: 'Rebecca' },
+  { name: 'Matt Ryan', role: 'Principal Broker', slug: 'matt-ryan', img: '/images/brokers/ryan-matt.png', first: 'Matt', phone: CONTACT_BROKERS.matt.phone },
+  { name: 'Paul Stevenson', role: 'Broker', slug: 'paul-stevenson', img: '/images/brokers/stevenson-paul.png', first: 'Paul', phone: CONTACT_BROKERS.paul.phone },
+  { name: 'Rebecca Peterson', role: 'Broker', slug: 'rebecca-peterson', img: '/images/brokers/peterson-rebecca.png', first: 'Rebecca', phone: CONTACT_BROKERS.rebecca.phone },
 ]
 
 export function KbTeam() {
@@ -52,6 +53,10 @@ export function KbTeam() {
               </div>
               <div className="ww-name">{b.name}</div>
               <div className="ww-role">{b.role}</div>
+              {/* Visible business line — the /team page copy points at "the
+                  number on their card". Text, not a link: the card is already
+                  an anchor, and the broker page carries tap-to-call. */}
+              <div className="ww-role mono-num">{b.phone}</div>
               <span className="ww-link">
                 Work with {b.first} <span className="arr">→</span>
               </span>
@@ -59,7 +64,9 @@ export function KbTeam() {
           ))}
         </div>
         <div className="sec-cta">
-          <a href="/sell" className="btn alt">
+          {/* /contact, not /sell — "Talk to a broker" promised a person and
+              landed on the seller pitch (design-audit mislabeled destination). */}
+          <a href="/contact" className="btn alt">
             Talk to a broker <span className="arr">→</span>
           </a>
         </div>
