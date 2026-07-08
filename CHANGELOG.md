@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.750.0 (2026-07-08)
+
+### Features
+- feat(site): design-audit Phase D — seam continuity, curation, media states, signup, addresses
+
+---
+
+
 ## v1.749.0 (2026-07-08)
 
 ### Features
