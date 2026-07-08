@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.751.2 (2026-07-08)
+
+### Bug Fixes
+- fix(site): design-audit P2 batch — Bend neighborhood ledger, map legends, misc
+
+### Maintenance
+- docs: update design-audit progress log
+
+---
+
+
 ## v1.751.1 (2026-07-08)
 
 ### Bug Fixes
