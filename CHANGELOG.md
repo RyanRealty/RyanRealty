@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.13 (2026-07-08)
+
+### Bug Fixes
+- fix(site): design-audit backlog batch 11 — geo-browse chart scope + zero-inventory convention (2 items)
+
+---
+
+
 ## v1.751.12 (2026-07-08)
 
 ### Bug Fixes
