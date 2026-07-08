@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.747.0 (2026-07-08)
+
+### Features
+- feat(site): design-audit Phase A — the ten quick wins, browser-verified
+
+---
+
+
 ## v1.746.1 (2026-07-08)
 
 ### Bug Fixes
