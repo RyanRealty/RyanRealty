@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.748.0 (2026-07-08)
+
+### Features
+- feat(site): design-audit Phase B — conversion-path opens, E2E-verified
+
+---
+
+
 ## v1.747.0 (2026-07-08)
 
 ### Features
